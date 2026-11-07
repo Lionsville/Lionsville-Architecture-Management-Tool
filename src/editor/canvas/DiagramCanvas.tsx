@@ -80,6 +80,7 @@ import type { OverlayMark } from '../theme/overlayColors';
 import { FIT_ALL, MAX_ZOOM, MIN_ZOOM } from './fitAll';
 import { BoardFocusProvider, BoardFocusSheet, useBoardFocusing } from './boardFocus';
 import { useBoardFrame, useReadingDistance } from './useBoardFrame';
+import { DENSE_LABEL_WORDS_FROM } from '../../widgets/kit/zoom';
 import { awaitsLayout } from '../useAutoLayout';
 import './board.css';
 import { useDragRoutePreview } from './useDragRoutePreview';
@@ -243,6 +244,9 @@ export const VIRTUALISE_ABOVE = 200;
 export function virtualising(nodeCount: number, mountEveryElement?: boolean): boolean {
   return !mountEveryElement && nodeCount > VIRTUALISE_ABOVE;
 }
+
+/** Past this many lines on a container diagram there is no room for their words at a distance. */
+const DENSE_LINES = 24;
 
 export interface DiagramCanvasProps {
   model: DesignModel;
@@ -1075,7 +1079,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const platform = useMemo(() => detectPlatform(), []);
   const containerRef = useRef<HTMLDivElement>(null);
   const boardRef = useBoardZoom(containerRef);
-  useReadingDistance(containerRef);
+  useReadingDistance(containerRef, props.diagram.kind === 'container' && derivedEdges.length > DENSE_LINES ? DENSE_LABEL_WORDS_FROM : undefined);
   const { focus, onNodeMouseEnter, onNodeMouseLeave } = useBoardFocusing(selectedElementIds, selectedConnectionIds, edges);
   const asking = useAskAdd(containerRef, props, actions);
   const { framed } = useBoardFrame({

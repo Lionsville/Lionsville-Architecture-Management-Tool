@@ -15,7 +15,7 @@ export type CategoryBand = { readonly category: string; readonly rect: Rect };
 /** Room at the head of a row for the category's name. */
 export const LAYER_NAME_ROOM = 120;
 const COLUMN_GAP = 28;
-const ROW_GAP = 44;
+const ROW_GAP = 96;
 const PADDING = 12;
 
 /** The rows, by category: the ones with no category go last, under the empty name. */

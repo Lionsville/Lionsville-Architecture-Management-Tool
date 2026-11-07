@@ -11,7 +11,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
-import Link from '@mui/material/Link';
 import ListItemText from '@mui/material/ListItemText';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
@@ -30,7 +29,7 @@ import { OWN_MENU_ATTR } from './isEditableTarget';
 import { menuItemsFor, type MenuItem as MenuItemModel } from './canvas/menuItems';
 import { detectPlatform } from './keymap';
 import type { DesignDiagram, DesignModel, ElementId, Point } from '../model/types';
-import { AddIcon, BackIcon, CaretIcon, RadarIcon } from '../widgets/icons';
+import { AddIcon, CaretIcon, RadarIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { DayControl } from '../widgets/kit/DayControl';
 import { formatDay } from '../i18n/dates';
@@ -425,8 +424,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
             activeDiagram={props.activeDiagram}
             onActiveDiagramChange={props.onActiveDiagramChange}
             cameFrom={props.cameFrom}
-            onMenu={hasTabMenu ? openTabMenuBelow : undefined}
-            {...(props.onOpenThisView ? { onOpenThisView: props.onOpenThisView } : {})}
+            onMenu={hasTabMenu ? openTabMenuBelow : undefined} onOpenThisView={props.onOpenThisView}
           />
           <ContextMenu
             open={tabMenu !== null}
@@ -852,7 +850,7 @@ function Breadcrumb({
    */
   onMenu?(anchor: HTMLElement, diagramId: string): void;
   /** Its name, pressed, opens what it says about itself and the key. */
-  onOpenThisView?(): void;
+  onOpenThisView: (() => void) | undefined;
 }) {
   const { t } = useStrings();
   const application = model.elements.find((e) => e.id === activeDiagram.applicationElementId);

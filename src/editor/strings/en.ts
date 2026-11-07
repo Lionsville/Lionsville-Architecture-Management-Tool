@@ -772,6 +772,7 @@ export const EN = {
   'c4.routeAgain': 'Route again',
   'bar.layers': 'Layers by category',
   'bar.layersSays': 'A row per category, then the lines.',
+  'export.keyHelp': 'What each box and line means, under the title block.',
   'c4.container': 'Container',
   'c4.containerOf': 'Container: {technology}',
   'c4.person': 'Person',

@@ -46,7 +46,7 @@ export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: Ed
       tidyOptions={view.tidyOptions}
       onTidyOptionsChange={view.setTidyOptions}
       onRouteEdges={() => void layout.handleRouteEdges()}
-      {...(diagram.kind === 'container' && writable ? { onLayersByCategory: () => layersByCategory(state, diagram, () => void layout.handleRouteEdges()) } : {})}
+      {...(diagram.kind === 'container' && writable ? { onLayersByCategory: () => layersByCategory(state, diagram, () => void layout.handleRouteEdgesAll()) } : {})}
       onRouteEdgesAll={() => void layout.handleRouteEdgesAll()}
       {...(add ? { add } : {})}
       show={{
@@ -81,7 +81,7 @@ export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: Ed
   );
 }
 
-/** A row per category on the diagram: the moves as one step, and the lines routed after them. */
+/** A row per category on the diagram: the moves as one step, and every line routed again, as none of its old bends still fits. */
 function layersByCategory(state: EditorParts['state'], diagram: DesignDiagram, route: () => void): void {
   const byId = new Map(state.model.elements.map((one) => [one.id, one]));
   const boxes = placedNodes(diagram).flatMap((placement) => {

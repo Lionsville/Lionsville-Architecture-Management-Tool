@@ -53,7 +53,7 @@ export function ContainerCanvas(
       <CategoryBands />
       {!props.readOnly && props.onRouteLines && <LinesCrossing onRoute={props.onRouteLines} boundary={diagram.applicationElementId} />}
       {props.showKey !== false && (
-        <ContainerKey model={model} diagram={diagram} day={diagram.asOf} showDeployment={props.showDeployment === true} />
+        <ContainerKey model={model} diagram={diagram} day={diagram.asOf} showDeployment={props.showDeployment === true} showStatus={props.showStatus === true} />
       )}
       {/* Where the containers run, around them (ADR-0013). Derived and
           measured off the live nodes, so it follows a card as it is dragged

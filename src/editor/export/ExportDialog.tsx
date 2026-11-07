@@ -117,7 +117,7 @@ export function ExportDialog(props: ExportDialogProps) {
             </div>
           )}
           {/* The key lives on the strip: without one there is nowhere to draw it. */}
-          <SettingSwitch label={t('export.legend')} hint={t('export.legendHelp')} checked={options.legend && options.titleBlock} disabled={exporting || !options.titleBlock} onChange={(legend) => onChange({ ...options, legend })} />
+          <SettingSwitch label={t('export.legend')} hint={t(props.offersLineList ? 'export.keyHelp' : 'export.legendHelp')} checked={options.legend && options.titleBlock} disabled={exporting || !options.titleBlock} onChange={(legend) => onChange({ ...options, legend })} />
           {props.offersLineList && (
             <SettingSwitch label={t('export.lineList')} hint={t('export.lineListHelp')} checked={options.lineList === true} disabled={exporting || !options.titleBlock} onChange={(lineList) => onChange({ ...options, lineList })} />
           )}

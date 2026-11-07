@@ -1600,6 +1600,7 @@
       },
       {
         "aspects": {},
+        "category": "Services",
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1611,10 +1612,12 @@
         "kind": "component",
         "lifecycle": "live",
         "name": "Inventory API",
-        "parentId": "wms"
+        "parentId": "wms",
+        "technology": "Java"
       },
       {
         "aspects": {},
+        "category": "Data",
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1626,10 +1629,13 @@
         "kind": "component",
         "lifecycle": "live",
         "name": "Inventory database",
-        "parentId": "wms"
+        "parentId": "wms",
+        "shapeVariant": "store",
+        "technology": "PostgreSQL"
       },
       {
         "aspects": {},
+        "category": "Services",
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1641,10 +1647,12 @@
         "kind": "component",
         "lifecycle": "live",
         "name": "Event stream",
-        "parentId": "wms"
+        "parentId": "wms",
+        "technology": "Kafka"
       },
       {
         "aspects": {},
+        "category": "Channels",
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1656,10 +1664,12 @@
         "kind": "component",
         "lifecycle": "live",
         "name": "Integration service",
-        "parentId": "wms"
+        "parentId": "wms",
+        "technology": "Java"
       },
       {
         "aspects": {},
+        "category": "Channels",
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1671,10 +1681,12 @@
         "kind": "component",
         "lifecycle": "live",
         "name": "Scan service",
-        "parentId": "wms"
+        "parentId": "wms",
+        "technology": "Go"
       },
       {
         "aspects": {},
+        "category": "Services",
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1686,10 +1698,12 @@
         "kind": "component",
         "lifecycle": "live",
         "name": "Task engine",
-        "parentId": "wms"
+        "parentId": "wms",
+        "technology": "Java"
       },
       {
         "aspects": {},
+        "category": "Channels",
         "explicit": {
           "iconType": true,
           "isManaged": false,
@@ -1701,7 +1715,8 @@
         "kind": "component",
         "lifecycle": "live",
         "name": "Floor workstation",
-        "parentId": "wms"
+        "parentId": "wms",
+        "technology": "Web app"
       },
       {
         "aspects": {

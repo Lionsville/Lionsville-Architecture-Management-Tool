@@ -48,7 +48,7 @@ export function BoardTile({ data, selected, shape, outside, sub, about, statuses
   const retired = data.showLifecycle && phase === 'retired';
   const corner = cornerMarks(overlay ? data : { ...data, overlay: undefined }, t);
   const marks = tileMarks(data, phase, statuses === true, t);
-  const type = sub ?? (data.c4Context ? <TileType words={contextType(element.kind, t)} /> : undefined);
+  const type = sub ?? contextTile(data, t);
   const lens = overlay
     ? { '--lv-lens-wash': overlay.tint, '--lv-lens-ink': overlay.ink, '--lv-lens-on': overlay.on } as React.CSSProperties
     : undefined;
@@ -81,8 +81,7 @@ export function BoardTile({ data, selected, shape, outside, sub, about, statuses
         ) : undefined}
         about={about || note ? <>{note?.from}{note && about ? ' · ' : ''}{about}</> : undefined}
         marks={marks}
-        data-context={data.c4Context || undefined}
-        data-store={element.shapeVariant === 'store' && shape === 'component' ? true : undefined}
+        {...c4Attributes(data, shape)}
       />
       {corner.length > 0 && <span className="lv-tile__corner" style={lens}>{corner}</span>}
     </NodeShell>
@@ -97,6 +96,18 @@ export function TileType({ words }: { words: string }) {
 /** C4 says *person* where the rest of the product says actor; everything else goes by the name of its kind. */
 function contextType(kind: DesignElement['kind'], t: Translate): string {
   return kind === 'actor' ? t('c4.person') : t(KIND_LABEL_KEYS[kind]);
+}
+
+function contextTile(data: ElementNodeProps['data'], t: Translate): ReactNode {
+  return data.c4Context ? <TileType words={contextType(data.element.kind, t)} /> : undefined;
+}
+
+/** What board.css reads off a box on a container diagram. */
+function c4Attributes(data: ElementNodeProps['data'], shape: NodeShapeKind) {
+  return {
+    ...(data.c4Context ? { 'data-context': true } : {}),
+    ...(data.element.shapeVariant === 'store' && shape === 'component' ? { 'data-store': true } : {}),
+  };
 }
 
 /** A dashed edge for what is outside; the bands' short boxes have room for one line far off. */

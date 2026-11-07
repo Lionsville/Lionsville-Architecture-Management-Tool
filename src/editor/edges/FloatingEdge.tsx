@@ -491,7 +491,7 @@ export const FloatingEdge = memo(function FloatingEdge({
   // so a coloured edge stays legible while selected.
   const baseStroke = resolveEdgeStroke(data?.color, tokens.edge.stroke);
   const stroke = selected ? tokens.edge.strokeSelected : baseStroke;
-  const dashArray = edgeDashArray(data?.lineStyle ?? (data?.unlanded ? 'dashed' : undefined));
+  const dashArray = edgeDashArray(lineStyleOf(data));
   const hasLabel = Boolean(data?.label || data?.protocol);
   // Handles belong to the SELECTED line, whoever drew it (Phase 2a). Unselected
   // lines — router output above all — show nothing, which is what keeps a
@@ -681,15 +681,7 @@ export const FloatingEdge = memo(function FloatingEdge({
                 }}
               />
             ) : (
-              <LineLabel
-                words={data?.label ?? t('edge.labelHint')}
-                {...(data?.label ? {} : { placeholder: true })}
-                {...(data?.protocol ? { how: data.protocol } : {})}
-                {...(data?.number !== undefined ? { number: data.number } : {})}
-                {...(selected ? { picked: true } : {})}
-                {...(dimmed ? { dimmed: true } : {})}
-                title={[data?.label, data?.protocol].filter(Boolean).join(' · ') || undefined}
-              />
+              <EdgeWords data={data} picked={Boolean(selected)} dimmed={dimmed} />
             )}
           </div>
         </EdgeLabelRenderer>
@@ -793,3 +785,24 @@ export const FloatingEdge = memo(function FloatingEdge({
     </>
   );
 });
+
+/** A line that names no container yet is dashed unless somebody chose how it looks. */
+function lineStyleOf(data: FloatingEdgeData | undefined): FloatingEdgeData['lineStyle'] {
+  return data?.lineStyle ?? (data?.unlanded ? 'dashed' : undefined);
+}
+
+/** What a line says, in the kit's label: two lines of it, and the whole text on a hover and in the panel. */
+function EdgeWords({ data, picked, dimmed }: { data: FloatingEdgeData | undefined; picked: boolean; dimmed: boolean }) {
+  const { t } = useStrings();
+  return (
+    <LineLabel
+      words={data?.label ?? t('edge.labelHint')}
+      {...(data?.label ? {} : { placeholder: true })}
+      {...(data?.protocol ? { how: data.protocol } : {})}
+      {...(data?.number !== undefined ? { number: data.number } : {})}
+      picked={picked}
+      dimmed={dimmed}
+      title={[data?.label, data?.protocol].filter(Boolean).join(' · ') || undefined}
+    />
+  );
+}

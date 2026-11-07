@@ -21,6 +21,7 @@ export type DiagramLine = {
   readonly validUntil?: string;
   /** It reaches the application and names no container yet. */
   readonly unlanded: boolean;
+  readonly assumed: boolean;
 };
 
 const graphArgs = (model: DesignModel, diagram: DesignDiagram, day: string | undefined) => ({
@@ -45,6 +46,7 @@ export function diagramLines(model: DesignModel, diagram: DesignDiagram, day: st
       ...(relation?.validFrom ? { validFrom: relation.validFrom } : {}),
       ...(relation?.validUntil ? { validUntil: relation.validUntil } : {}),
       unlanded: edge.data?.unlanded === true,
+      assumed: relation?.certainty === 'assumed',
     }];
   });
 }

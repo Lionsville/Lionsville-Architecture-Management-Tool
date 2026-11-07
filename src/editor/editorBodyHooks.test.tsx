@@ -17,7 +17,7 @@ import { useViewSettings } from './useViewSettings';
 import { useDeleteRequests } from './useDeleteRequests';
 import { useDocumentation } from './useEditorRequests';
 import { useBoardView } from './useBoardView';
-import type { ShownDays } from './useShownDays';
+import { useCarriedDay, useSelectionPerLevel, type ShownDays } from './useShownDays';
 
 function model(): DesignModel {
   return {
@@ -177,5 +177,41 @@ describe('what a reader’s choice on a board writes', () => {
     act(() => view.result.current.keepLens());
     expect(a.setColourBy).toHaveBeenCalledWith('vendor');
     expect(view.result.current.lensIsOwn).toBe(false);
+  });
+});
+
+describe('a level down and back', () => {
+  const shown = (over: Partial<ShownDays> = {}): ShownDays => ({ days: {}, show: vi.fn(), forget: vi.fn(), ...over });
+  const landscape = { id: 'plan', kind: 'layer7', asOf: '2027-09-01' };
+  const inside = { id: 'wms', kind: 'container' };
+  const neighbour = { id: 'yard', kind: 'container' };
+
+  it('carries the day down from the board and remembers the board', () => {
+    const viewing = shown();
+    const view = renderHook(({ active }) => useCarriedDay(active, viewing), { initialProps: { active: landscape as { id: string; kind: string; asOf?: string } } });
+    view.rerender({ active: inside });
+    expect(viewing.show).toHaveBeenCalledWith('wms', '2027-09-01');
+    expect(view.result.current).toBe('plan');
+  });
+
+  it('goes sideways from one diagram to a neighbour, and comes back the way it went', () => {
+    const viewing = shown();
+    const view = renderHook(({ active }) => useCarriedDay(active, viewing), { initialProps: { active: landscape as { id: string; kind: string; asOf?: string } } });
+    view.rerender({ active: inside });
+    view.rerender({ active: neighbour });
+    expect(view.result.current).toBe('wms');
+    view.rerender({ active: inside });
+    expect(view.result.current).toBe('plan');
+  });
+
+  it('returns what was selected on the way back up, and starts afresh going down', () => {
+    const set = vi.fn();
+    const view = renderHook(({ id, from, selection }) => useSelectionPerLevel(id, from, selection, set, id === 'wms' ? 'nothing' : undefined), {
+      initialProps: { id: 'plan', from: undefined as string | undefined, selection: 'app' },
+    });
+    view.rerender({ id: 'wms', from: 'plan', selection: 'app' });
+    expect(set).toHaveBeenLastCalledWith('nothing');
+    view.rerender({ id: 'plan', from: undefined, selection: 'nothing' });
+    expect(set).toHaveBeenLastCalledWith('app');
   });
 });

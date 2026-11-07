@@ -57,6 +57,7 @@ export function LinesTab({ parts, diagram }: { parts: EditorParts; diagram: Desi
               id: line.id,
               code: String(line.number),
               text: `${line.from} → ${line.to}`,
+              ...(line.assumed ? { note: t('certainty.assumed') } : {}),
               testId: `line-row-${line.number}`,
               actions: (
                 <div className="lv-lines__said">

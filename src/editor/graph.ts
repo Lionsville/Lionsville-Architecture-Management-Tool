@@ -113,7 +113,7 @@ export interface BuildGraphArgs {
 }
 
 const BOUNDARY_PADDING = 56;
-const C4_BOX_MIN = { width: 120, height: 64 };
+const C4_BOX_MIN = { width: 120, height: 100 };
 const BOUNDARY_MIN: Rect = { x: 0, y: 0, width: 520, height: 360 };
 
 export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode[]): ElementNode[] {
@@ -236,6 +236,14 @@ function roomToSayItsType(diagram: DesignDiagram, rect: Rect): Rect {
 }
 
 export type FloatingEdgeModel = Edge<FloatingEdgeData>;
+
+/** What a line on a container diagram carries beyond the rest: its number, and that it reaches only the application. */
+function c4LineData(number: number | undefined, subject: ElementId | undefined, sourceId: ElementId, targetId: ElementId): Partial<FloatingEdgeData> {
+  return {
+    ...(number !== undefined ? { number } : {}),
+    ...(subject !== undefined && (sourceId === subject || targetId === subject) ? { unlanded: true } : {}),
+  };
+}
 
 /** A container diagram's lines by number, in the order the model keeps them: the same numbers as its Lines list. */
 function lineNumbers(numbered: boolean, ids: readonly string[]): ReadonlyMap<string, number> {
@@ -394,8 +402,7 @@ export function buildEdges(
       data: {
         label: connection.label,
         protocol: connection.protocol,
-        ...(numbers.has(connection.id) ? { number: numbers.get(connection.id) } : {}),
-        ...(subject !== undefined && (sourceId === subject || targetId === subject) ? { unlanded: true } : {}),
+        ...c4LineData(numbers.get(connection.id), subject, sourceId, targetId),
         isBidirectional: connection.isBidirectional,
         color: connection.color,
         lineStyle: connection.lineStyle,

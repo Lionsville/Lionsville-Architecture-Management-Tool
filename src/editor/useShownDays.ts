@@ -98,19 +98,21 @@ export function useCarriedDay(
  * Back returns what was selected, as the zoom already is, per view: what a person
  * selected to go down is what they find when they come back up.
  */
-export function useSelectionPerLevel<S>(activeId: string | undefined, cameFrom: string | undefined, selection: S, setSelection: (held: S) => void): void {
+export function useSelectionPerLevel<S>(activeId: string | undefined, cameFrom: string | undefined, selection: S, setSelection: (held: S) => void, startAfresh: S | undefined): void {
   const held = useRef(new Map<string, S>());
   const last = useRef({ id: activeId, selection, cameFrom });
   useEffect(() => {
     const was = last.current;
     if (was.id !== activeId) {
       if (was.id !== undefined) held.current.set(was.id, was.selection);
-      // Up from where it was opened from, and only then: going down starts afresh.
+      // Up from where it was opened from, and only then. Going down starts afresh: what
+      // was selected there is now the whole diagram.
       const kept = activeId !== undefined && was.cameFrom === activeId ? held.current.get(activeId) : undefined;
-      if (kept !== undefined) { setSelection(kept); last.current = { id: activeId, selection: kept, cameFrom }; return; }
+      const next = kept ?? startAfresh;
+      if (next !== undefined) { setSelection(next); last.current = { id: activeId, selection: next, cameFrom }; return; }
     }
     last.current = { id: activeId, selection, cameFrom };
-  }, [activeId, selection, cameFrom, setSelection]);
+  }, [activeId, selection, cameFrom, setSelection, startAfresh]);
 }
 
 /**

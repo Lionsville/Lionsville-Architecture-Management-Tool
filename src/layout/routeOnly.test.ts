@@ -361,11 +361,9 @@ describe('routeDiagramEdges — route-only pass', () => {
     expect(pathHitsObstacles(drawn, [rectFor(model, diagram, 'app')], 0)).toBeGreaterThan(0);
   });
 
-  it('treats the container boundary as a synthetic group: opaque outside, routable inside', async () => {
-    // Both halves of the synthetic-group trick in one board. `west`/`east` sit
-    // outside the boundary, so their edge is an inter-group edge that must go
-    // AROUND the whole box; `c1`/`c2` sit inside it, so their edge is an
-    // intra-group edge that must dodge their sibling `mid` and nothing else.
+  it('routes a container diagram around its boxes and never its boundary', async () => {
+    // A line from the context into a container, with another container in its way, is
+    // what the boundary as an opaque box left straight through that box.
     const diagram: DesignDiagram = laidOut({
       id: 'c1',
       kind: 'container',
@@ -393,15 +391,14 @@ describe('routeDiagramEdges — route-only pass', () => {
       relations: [
         { type: 'flow', id: 'c1-c2', sourceId: 'c1', targetId: 'c2', isBidirectional: false },
         { type: 'flow', id: 'west-east', sourceId: 'west', targetId: 'east', isBidirectional: false },
+        { type: 'flow', id: 'west-c2', sourceId: 'west', targetId: 'c2', isBidirectional: false },
       ],
       diagrams: [diagram],
     };
     const rect = (id: string) => rectFor(model, diagram, id);
     const app = rect('app');
-    // Sanity: straight, the outside edge cuts the boundary and the inside edge
-    // cuts its sibling — both are genuinely blocked before we assert they clear.
     expect(
-      pathHitsObstacles(routedPath(rect('west'), rect('east'), []), [app], ROUTE_CLEARANCE),
+      pathHitsObstacles(routedPath(rect('west'), rect('east'), []), [rect('mid')], ROUTE_CLEARANCE),
     ).toBeGreaterThan(0);
     expect(
       pathHitsObstacles(routedPath(rect('c1'), rect('c2'), []), [rect('mid')], ROUTE_CLEARANCE),
@@ -409,14 +406,17 @@ describe('routeDiagramEdges — route-only pass', () => {
 
     const result = await routeDiagramEdges(model, diagram);
 
-    // Tier 1: the boundary is ONE opaque box, so the outside edge clears it whole.
-    const outside = routeOf(result, 'west-east')!;
-    expect(outside.waypoints.length).toBeGreaterThan(0);
-    const outsideDrawn = routedPath(rect('west'), rect('east'), outside.waypoints);
-    expect(pathHitsObstacles(outsideDrawn, [app], ROUTE_CLEARANCE)).toBe(0);
+    // Across the boundary and past its containers.
+    const across = routeOf(result, 'west-east')!;
+    const acrossDrawn = routedPath(rect('west'), rect('east'), across.waypoints);
+    expect(pathHitsObstacles(acrossDrawn, [rect('mid'), rect('c1'), rect('c2')], ROUTE_CLEARANCE)).toBe(0);
 
-    // Tier 2: inside, the boundary is not an obstacle at all — the edge dodges its
-    // sibling and still crosses the boundary rect rather than leaving it.
+    // In from the context, past the container in its way.
+    const landing = routeOf(result, 'west-c2')!;
+    const landingDrawn = routedPath(rect('west'), rect('c2'), landing.waypoints);
+    expect(pathHitsObstacles(landingDrawn, [rect('mid'), rect('c1')], ROUTE_CLEARANCE)).toBe(0);
+
+    // Inside, it dodges its sibling and stays inside.
     const inside = routeOf(result, 'c1-c2')!;
     expect(inside.waypoints.length).toBeGreaterThan(0);
     const insideDrawn = routedPath(rect('c1'), rect('c2'), inside.waypoints);

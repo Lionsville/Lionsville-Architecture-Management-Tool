@@ -3,7 +3,11 @@
 
 import { Panel } from '@xyflow/react';
 import { useStrings } from '../../i18n/LanguageContext';
+import { badgeLegend } from '../../model/aspects';
 import { KeyStrip, type KeyValue } from '../../widgets/kit/KeyStrip';
+import { Mark } from '../../widgets/kit/Mark';
+import { ASPECT_STATUS_LABEL } from '../aspectLegend';
+import { STATUS_MARK } from '../nodes/AspectBadgeRow';
 import { containerFacts } from '../containerLines';
 import type { DesignDiagram, DesignModel } from '../../model/types';
 
@@ -43,20 +47,31 @@ export function containerKeyValues(
   ];
 }
 
-export function ContainerKey({ model, diagram, day, showDeployment }: {
+export function ContainerKey({ model, diagram, day, showDeployment, showStatus }: {
   model: DesignModel;
   diagram: DesignDiagram;
   day: string | undefined;
   showDeployment: boolean;
+  /** The boxes carry their status marks, asked for: the key then says what they mean. */
+  showStatus: boolean;
 }) {
   const { t } = useStrings();
+  const legend = showStatus ? badgeLegend(diagram) : undefined;
+  const status: KeyValue[] = legend && legend.columns.length > 0
+    ? [...legend.statuses, 'unset' as const].map((one) => ({
+      id: one,
+      label: one === 'unset' ? t('overlay.unset') : t(ASPECT_STATUS_LABEL[one]),
+      shown: <Mark kind={STATUS_MARK[one]} />,
+    }))
+    : [];
   return (
     <Panel position="bottom-right" style={{ maxWidth: 'min(720px, 60%)' }}>
       <KeyStrip
         all
         data-testid="container-key"
         data-guide="board.key"
-        values={containerKeyValues(model, diagram, day, t, { deployment: showDeployment })}
+        values={[...containerKeyValues(model, diagram, day, t, { deployment: showDeployment }), ...status]}
+        {...(status.length > 0 ? { note: t('board.keyColumns', { columns: legend?.columns.map((column) => column.label).join(', ') ?? '' }) } : {})}
       />
     </Panel>
   );

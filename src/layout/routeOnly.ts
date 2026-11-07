@@ -57,13 +57,14 @@ export type DeclinedPolicy = 'keep-stored' | 'clear';
  *    its on-screen position can disagree — and route-only exists precisely to run
  *    on a hand-nudged board. Boxes may overlap, so a centre inside more than one
  *    box picks the first by NAME, never by array order, to stay deterministic.
- * 2. **A container diagram's application boundary is a synthetic group**, not an
- *    ordinary node. Its placement rect CONTAINS its components' placements, so
- *    feeding it in as a node would make it an opaque obstacle and bow every
- *    component↔context edge around the entire boundary — deliberate deviation #3
- *    of `docs/plans/2026-06-10-solution-design/edge-routing/2026-07-24-edge-routing-plan.md`,
- *    the bug we are not reintroducing. As a group it is one opaque box to tier 1
- *    while tier 2 routes the internals.
+ * 2. **A container diagram's application boundary is no obstacle at all.** Its
+ *    placement rect CONTAINS its components' placements, so feeding it in as a node
+ *    would bow every component↔context edge around the entire boundary — deliberate
+ *    deviation #3 of `docs/plans/2026-06-10-solution-design/edge-routing/2026-07-24-edge-routing-plan.md`.
+ *    Nor is it a group: a line from the context into a container crosses it, and an
+ *    opaque box in tier 1 left that line's inside unrouted, straight through whatever
+ *    container stood in its way, read as a connection to that box. So every box on the
+ *    diagram is an obstacle in one tier, and only a box.
  *
  * The result is a {@link TidyResult} carrying routes ONLY: `placements` is empty
  * (a verified no-op in `overlayWithPlacements`) and `canvas`/`domainGroups` are
@@ -128,18 +129,15 @@ export async function routeDiagramEdges(
     });
   }
 
-  // The boxes the ROUTER groups nodes into: a layer7 diagram's domain groups, or a
-  // container diagram's application boundary standing in for itself (see 2. above).
-  const domainGroups: DomainGroupRect[] = diagram.geometry?.groups ?? [];
+  // The boxes the ROUTER groups nodes into: a layer7 diagram's domain groups. A
+  // container diagram has none (see 2. above).
   const boundaryId = diagram.kind === 'container' ? diagram.applicationElementId : undefined;
-  const boundaryBox = boundaryId === undefined ? undefined : rectById.get(boundaryId);
-  const routerGroups: DomainGroupRect[] =
-    boundaryId !== undefined && boundaryBox ? [{ id: boundaryId, ...boundaryBox }] : domainGroups;
+  const domainGroups: DomainGroupRect[] = diagram.geometry?.groups ?? [];
+  const routerGroups: DomainGroupRect[] = boundaryId !== undefined ? [] : domainGroups;
 
   const nodes: RouterNode[] = [];
   for (const [id, rect] of rectById) {
-    // The boundary is represented by its synthetic group, never also as a node —
-    // an obstacle enclosing its own members breaks both tiers at once.
+    // Never a node: an obstacle enclosing its own members breaks the tier it is in.
     if (id === boundaryId) continue;
     nodes.push({ id, rect, group: groupContaining(routerGroups, rect)?.id });
   }

@@ -17,6 +17,11 @@ describe('spreadLabels', () => {
     expect(moved.get('b')).toBe(22)
   })
 
+  it('moves a label off a box it would cover', () => {
+    const moved = spreadLabels([box('a', 0, 10)], [box('card', 0, 0)]);
+    expect(moved.get('a')).toBe(22);
+  });
+
   it('leaves no two on each other in a pile', () => {
     const boxes = Array.from({ length: 8 }, (_, index) => box(`l${index}`, 0, index))
     const moved = spreadLabels(boxes)

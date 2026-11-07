@@ -9,7 +9,7 @@ import { useCallback, useState } from 'react';
 import type { ComponentProps } from 'react';
 import { deletionSummary, rolesEndedSentences } from '../model/deletion';
 import type { DeletionSummary } from '../model/deletion';
-import type { DesignDiagram } from '../model/types';
+import type { DesignDiagram, DesignModel } from '../model/types';
 import { useStrings } from '../i18n/LanguageContext';
 import { usePersonNames } from '../people/ui/names';
 import { ElementSearchDialog } from '../search/ui/ElementSearchDialog';
@@ -76,6 +76,7 @@ export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles
   roles?: EditorOwnership['roles'];
   unitDeletion?: EditorOwnership['unitDeletion'];
 }) {
+  const { t } = useStrings();
   const { exportOptions, exportSize } = exports;
   return (
     <>
@@ -84,7 +85,7 @@ export function EditorDialogs({ state, diagram, deletes, exports, dialogs, roles
       {exportOptions && exportSize && (
         <ExportDialog
           open
-          name={diagram.name}
+          name={diagram.kind === 'container' ? t('c4.containerTitle', { name: exportedApplication(diagram, state.model) }) : diagram.name}
           offersLineList={diagram.kind === 'container'}
           options={exportOptions}
           onChange={exports.setExportOptions}
@@ -222,4 +223,9 @@ function DeleteDialogs({ state, diagram, deletes, roles, unitDeletion }: {
       )}
     </>
   );
+}
+
+/** What a container diagram's picture is called: by its application, as its bar says. */
+function exportedApplication(diagram: DesignDiagram, model: DesignModel): string {
+  return model.elements.find((one) => one.id === diagram.applicationElementId)?.name ?? diagram.name;
 }

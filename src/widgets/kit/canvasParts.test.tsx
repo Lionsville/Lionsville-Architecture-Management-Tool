@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axeFindings } from '../../app/testing/axe'
 import { Card } from './Card'
-import { arrowAt, labelWords, Line, LineLabel } from './Line'
+import { arrowAt, labelWords, Line, howWords, LineLabel } from './Line'
 import { Zone } from './Zone'
 
 afterEach(cleanup)
@@ -169,16 +169,22 @@ describe('a label', () => {
   })
 
   it('says how in a second line, and an exception in a word', () => {
-    render(<LineLabel words="scans" how="[HTTPS]" exception="Exception" />)
+    render(<LineLabel words="scans" how="HTTPS" exception="Exception" />)
     expect(screen.getByText('[HTTPS]')).toBeTruthy()
     expect(screen.getByText(/Exception/)).toBeTruthy()
   })
 
-  it('carries a number for the Lines list, which the far distance swaps its words for', () => {
+  it('keeps what was written about how, on one line, however long or unsure', () => {
+    render(<LineLabel words="asks" how="???" />)
+    expect(screen.getByText('[???]')).toBeTruthy()
+    expect(howWords('a spreadsheet somebody emails around')).toBe('[a spreadsheet som…]')
+  })
+
+  it('carries a number for the Lines list, which a canvas with no room swaps its words for', () => {
     const { container } = render(<LineLabel words="scans" number={5} />)
     expect(screen.getByLabelText('Line 5').textContent).toBe('5')
     expect((container.firstElementChild as HTMLElement).dataset.numbered).toBe('true')
-    expect(css('./Line.css')).toContain("[data-distance='far'] .kit-linelabel[data-numbered]:not([data-picked]) .kit-linelabel__number { display: inline; }")
+    expect(css('./Line.css')).toContain("[data-labels='numbers'] .kit-linelabel[data-numbered]:not([data-picked]) .kit-linelabel__number { display: inline; }")
   })
 })
 

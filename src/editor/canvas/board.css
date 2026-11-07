@@ -51,14 +51,14 @@
 .lv-board[data-kind='container'] .lv-tile[data-context] { background: var(--c4-context-fill); }
 .lv-board[data-kind='container'] .lv-tile .kit-card__head { justify-content: center; }
 .lv-board[data-kind='container'] .lv-tile .kit-card__name { padding-right: 0; -webkit-line-clamp: 2; }
-.lv-board[data-kind='container'][data-distance='far'] .lv-tile .kit-card__sub { display: -webkit-box; }
-.lv-board[data-kind='container'][data-labels='numbers'] .lv-tile__description { display: none; }
+.lv-board[data-kind='container'][data-distance='far'] .lv-tile .kit-card__sub { display: block; }
+.lv-board[data-kind='container'][data-distance='far'] .lv-tile__description { display: none; }
 /* The cylinder: a lid on the box and a curve at its foot, in the box's own edge. */
 .lv-tile[data-store] {
-  --lv-lid: calc(14px / var(--canvas-zoom, 1));
-  padding-top: calc(var(--lv-lid) + 4px / var(--canvas-zoom, 1));
+  --lv-lid: calc(9px / var(--canvas-zoom, 1));
   border-radius: 50% / var(--lv-lid) !important;
 }
+.lv-board .lv-tile[data-store] { padding-top: calc(var(--lv-lid) * 2 + 2px / var(--canvas-zoom, 1)); }
 .lv-tile[data-store]::before {
   content: '';
   position: absolute;
@@ -78,7 +78,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 360px;
+  width: 340px;
   pointer-events: auto;
   cursor: default;
   zoom: calc(1 / var(--canvas-zoom, 1));

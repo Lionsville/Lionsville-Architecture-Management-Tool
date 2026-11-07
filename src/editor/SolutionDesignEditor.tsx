@@ -14,9 +14,9 @@ import type { SolutionDesignEditorProps } from './props';
 import { LogoLibraryProvider } from './nodes/logoRegistry';
 import { LanguageProvider, useStrings } from '../i18n/LanguageContext';
 import { ViewportMemory } from './canvas/viewportMemory';
-import { useEditorState } from './useEditorState';
+import { EMPTY_SELECTION, useEditorState } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
-import { useViewSettings } from './useViewSettings';
+import { labelsOn, useViewSettings } from './useViewSettings';
 import { useBoardView } from './useBoardView';
 import { isLookingAway, useCarriedDay, useSelectionPerLevel, useShownDays } from './useShownDays';
 import { useCanvasRequests, useDocumentation } from './useEditorRequests';
@@ -157,7 +157,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const viewing = props.document.viewing ?? ownDays;
   const looking = isLookingAway(activeDiagram, viewing.days);
   const cameFrom = useCarriedDay(activeDiagram, viewing);
-  useSelectionPerLevel(activeDiagram?.id, cameFrom, state.selection, state.setSelection);
+  useSelectionPerLevel(activeDiagram?.id, cameFrom, state.selection, state.setSelection, activeDiagram?.kind === 'container' ? EMPTY_SELECTION : undefined);
   const writable = !(props.editing.readOnly ?? false);
   // A look is read-only (ADR-0027, amended): everything that draws from `readOnly`
   // puts its edits away, and what takes the day it is looking at reads `writable`.
@@ -176,7 +176,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const docs = useDocumentation(props, state, activeDiagram);
   const deletes = useDeleteRequests(state, activeDiagram, readOnly, props.ownership?.roles?.today, props.ownership?.unitDeletion);
   const exports = useExportDialog({
-    props, wrapperRef, theme, showEdgeLabels: view.showEdgeLabels, reportLayoutError: layout.reportLayoutError,
+    props, wrapperRef, theme, showEdgeLabels: activeDiagram ? labelsOn(view, activeDiagram) : view.showEdgeLabels, reportLayoutError: layout.reportLayoutError,
     titleBlock: {
       // The board as drawn, whose sheet the picture frames: for a reader, one
       // nobody has laid out carries the pass's canvas. Its own fields are the

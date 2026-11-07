@@ -424,16 +424,16 @@ function dispatch(
     case 'rename':
       h.onRequestRename();
       return;
-    case 'find':
-      h.onOpenSearch?.();
-      return;
-    case 'level-in':
-      h.onLevelIn?.();
-      return;
-    case 'level-out':
-      h.onLevelOut?.();
-      return;
+    default:
+      goSomewhere(id, h);
   }
+}
+
+/** The keys that leave the canvas for somewhere else. */
+function goSomewhere(id: string, h: CanvasShortcutHandlers): void {
+  if (id === 'find') h.onOpenSearch?.();
+  else if (id === 'level-in') h.onLevelIn?.();
+  else if (id === 'level-out') h.onLevelOut?.();
 }
 
 /**

@@ -15,7 +15,6 @@ import type {
   ResizableZone,
 } from '../model/types';
 import {
-  NODE_SIZES,
   domainGroupForPoint,
   domainGroupRectMap,
   memberOf,
@@ -1484,7 +1483,8 @@ export async function tidyContainer(
             children:
               components.length > 0
                 ? components
-                : [{ id: `${GROUP_PREFIX}empty`, ...NODE_SIZES.component }],
+                // Room for what an empty boundary says, and for the first few to land in it.
+                : [{ id: `${GROUP_PREFIX}empty`, width: 620, height: 400 }],
           },
     );
   }

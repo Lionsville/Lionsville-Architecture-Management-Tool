@@ -756,6 +756,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'c4.routeAgain': 'Opnieuw routeren',
   'bar.layers': 'Lagen per categorie',
   'bar.layersSays': 'Een rij per categorie, dan de lijnen.',
+  'export.keyHelp': 'Wat elk vak en elke lijn betekent, onder het titelblok.',
   'c4.container': 'Container',
   'c4.containerOf': 'Container: {technology}',
   'c4.person': 'Persoon',

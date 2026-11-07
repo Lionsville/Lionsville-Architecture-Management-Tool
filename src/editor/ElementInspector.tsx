@@ -148,11 +148,11 @@ function Elsewhere({ owned, t }: { owned: NonNullable<ElementInspectorProps['own
 
 
 /** An application with a diagram says what is under it, and offers the way down first. */
-function OpenContainerDiagram({ element, model, onOpenView, dayShown }: Pick<ElementInspectorProps, 'element' | 'model' | 'onOpenView' | 'dayShown'>) {
+function OpenContainerDiagram({ element, model, diagram, onOpenView, dayShown }: Pick<ElementInspectorProps, 'element' | 'model' | 'diagram' | 'onOpenView' | 'dayShown'>) {
   const { t, language } = useStrings();
   if (element.kind !== 'application' || !onOpenView) return null;
   const under = model.diagrams.find((one) => one.kind === 'container' && one.applicationElementId === element.id);
-  if (!under) return null;
+  if (!under || under.id === diagram?.id) return null;
   const count = model.elements.filter((one) => one.kind === 'component' && one.parentId === element.id).length;
   return (
     <div className="inspector-open-under">

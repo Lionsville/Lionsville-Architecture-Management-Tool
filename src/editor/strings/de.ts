@@ -755,6 +755,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'c4.routeAgain': 'Neu führen',
   'bar.layers': 'Ebenen nach Kategorie',
   'bar.layersSays': 'Eine Zeile je Kategorie, dann die Linien.',
+  'export.keyHelp': 'Was jedes Feld und jede Linie bedeutet, unter dem Titelblock.',
   'c4.container': 'Container',
   'c4.containerOf': 'Container: {technology}',
   'c4.person': 'Person',

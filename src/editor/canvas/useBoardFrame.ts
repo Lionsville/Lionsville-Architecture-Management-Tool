@@ -85,7 +85,7 @@ export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFr
 }
 
 /** Keeps the canvas's element told how far the reader is, with no render. */
-export function useReadingDistance(container: RefObject<HTMLDivElement | null>): void {
+export function useReadingDistance(container: RefObject<HTMLDivElement | null>, wordsFrom?: number): void {
   const flow = useStoreApi();
   useLayoutEffect(() => {
     let last = Number.NaN;
@@ -93,14 +93,14 @@ export function useReadingDistance(container: RefObject<HTMLDivElement | null>):
       const element = container.current;
       if (!element || zoom === last || element.dataset.capturing) return;
       last = zoom;
-      const said = canvasZoomProps(zoom);
+      const said = canvasZoomProps(zoom, wordsFrom);
       element.dataset.distance = said['data-distance'];
       element.dataset.labels = said['data-labels'];
       element.style.setProperty('--canvas-zoom', said.style['--canvas-zoom']);
     };
     apply(flow.getState().transform[2]);
     return flow.subscribe((state) => apply(state.transform[2]));
-  }, [flow, container]);
+  }, [flow, container, wordsFrom]);
 }
 
 /**

@@ -94,14 +94,19 @@ export function readingDistance(zoom: number): ReadingDistance {
   return zoom <= 1.2 ? 'middle' : 'near'
 }
 
-/** A label holds its size, so it reads at any zoom until there is no room for it: below this, a line carries a number. */
+/**
+ * A label holds its size, so it reads at any zoom until there is no room for it: below
+ * this, a line carries a number. How much room there is goes by what is drawn, so a
+ * canvas may say it for itself: past about two dozen lines the words want to be near.
+ */
 export const LABEL_WORDS_FROM = 0.5
+export const DENSE_LABEL_WORDS_FROM = 0.9
 
 /**
  * What a canvas puts on the element its drawing sits in, and all it needs to do
  * for the kit's Card, Zone and Line to keep their sizes on screen and to say what
  * the distance allows. Through CSS, because a zoom must not render 500 cards.
  */
-export function canvasZoomProps(zoom: number): { 'data-distance': ReadingDistance; 'data-labels': 'words' | 'numbers'; style: Record<'--canvas-zoom', string> } {
-  return { 'data-distance': readingDistance(zoom), 'data-labels': zoom < LABEL_WORDS_FROM ? 'numbers' : 'words', style: { '--canvas-zoom': String(zoom) } }
+export function canvasZoomProps(zoom: number, wordsFrom = LABEL_WORDS_FROM): { 'data-distance': ReadingDistance; 'data-labels': 'words' | 'numbers'; style: Record<'--canvas-zoom', string> } {
+  return { 'data-distance': readingDistance(zoom), 'data-labels': zoom < wordsFrom ? 'numbers' : 'words', style: { '--canvas-zoom': String(zoom) } }
 }

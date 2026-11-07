@@ -84,6 +84,7 @@ describe('the seam for the reading distances', () => {
   })
 
   it('hands the canvas what the kit reads', () => {
-    expect(canvasZoomProps(0.8)).toEqual({ 'data-distance': 'middle', style: { '--canvas-zoom': '0.8' } })
+    expect(canvasZoomProps(0.8)).toEqual({ 'data-distance': 'middle', 'data-labels': 'words', style: { '--canvas-zoom': '0.8' } })
+    expect(canvasZoomProps(0.8, 0.9)['data-labels']).toBe('numbers')
   })
 })

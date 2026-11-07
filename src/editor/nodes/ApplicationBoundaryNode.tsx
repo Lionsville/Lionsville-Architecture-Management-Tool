@@ -65,7 +65,8 @@ function EmptyBoundary({ name }: { name: string }) {
   const { t } = useStrings();
   const { onAddContainer } = useContext(ContainerBoardContext);
   return (
-    <div className="lv-boundary__empty nodrag nopan" data-testid="empty-boundary">
+    // Its press is its own: the node under it would otherwise take it as selecting the application.
+    <div className="lv-boundary__empty nodrag nopan" data-testid="empty-boundary" onClick={(event) => event.stopPropagation()}>
       <PageState
         state="empty"
         compact

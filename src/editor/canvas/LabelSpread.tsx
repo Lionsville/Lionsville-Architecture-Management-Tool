@@ -9,7 +9,7 @@ import { spreadLabels } from '../../widgets/kit/labelSpread';
 const SETTLE_MS = 80;
 
 /**
- * Keeps the labels on a canvas clear of each other: measured, because how much a
+ * Keeps the labels on a canvas clear of each other and of its cards: measured, because how much a
  * label takes depends on its words, the language and the zoom, and written straight
  * on the label, so that moving them renders no line. A label a person placed is one
  * like any other: it moves off another only as far as it must.
@@ -29,7 +29,11 @@ export function LabelSpread() {
         const inner = (label.firstElementChild ?? label).getBoundingClientRect();
         return { id: String(index), x: inner.x, y: inner.y - nudged(label) * zoom, width: inner.width, height: inner.height };
       });
-      const moved = spreadLabels(boxes);
+      const cards = [...root.querySelectorAll<HTMLElement>('.react-flow__node:not(.react-flow__node-applicationBoundary)')].map((card, index) => {
+        const box = card.getBoundingClientRect();
+        return { id: `card${index}`, x: box.x, y: box.y, width: box.width, height: box.height };
+      });
+      const moved = spreadLabels(boxes, cards);
       labels.forEach((label, index) => {
         const by = moved.get(String(index));
         if (by === undefined) label.style.removeProperty('--lv-nudge-y');
