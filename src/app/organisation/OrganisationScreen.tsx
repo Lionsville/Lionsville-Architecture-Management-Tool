@@ -69,6 +69,7 @@ import { RelevantTopics } from './RelevantTopics'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
 import type { PeopleAccess } from './usePeopleRegister'
 import type { OrgPage } from '../useShellAgent'
+import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import { technologySummary, technologyWithin } from '../../projects/technologyRegister'
 import type { TechnologyRow } from '../../projects/technologyRegister'
 import { ChecksLine } from './NeedsAttention'
@@ -364,7 +365,7 @@ export function OrganisationScreen({
                   />
                 )}
               >
-                {home.description && <p className="kit-pageline">{home.description}</p>}
+                {home.description && <div className="kit-pageline" data-testid="organisation-description">{renderMarkdown(home.description)}</div>}
               </PageHead>
               {home.links && home.links.length > 0 && (
                 <p className="kit-factline">

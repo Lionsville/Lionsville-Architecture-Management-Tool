@@ -157,6 +157,16 @@ describe('the organisation screen — identity', () => {
     expect(link.getAttribute('rel')).toContain('noopener')
   })
 
+  it('reads a description as markdown, the same way the rest of the app does, and what is written as HTML stays text', async () => {
+    const held = organisation()
+    held.model.description = 'A **parcel** operator. <img src=x onerror=alert(1)>'
+    renderApp({ repositories: heldRepositories([held]), today: TODAY })
+    const description = await screen.findByTestId('organisation-description')
+    await waitFor(() => expect(description.querySelector('strong')?.textContent).toBe('parcel'))
+    expect(description.textContent).not.toContain('**')
+    expect(description.querySelector('img')).toBeNull()
+  })
+
   it('counts the scopes beneath by what each says it is, in the words of the badges', async () => {
     renderApp({
       repositories: heldRepositories([
