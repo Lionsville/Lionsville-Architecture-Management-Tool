@@ -180,8 +180,4 @@ export const SECTIONS: SectionTexts = {
     'A unit\'s panel, on the chart or a board: Works with, and + Say how you work with a unit….',
     ['Pick the unit.', 'Under Works with, press + Say how you work with a unit….', 'Choose which unit and how, and the days it holds if they are known.', 'Press a line under Works with to correct it or remove it.'],
     'Say that Warehouse team uses Platform team as a service from 1 March, and the Conway map stops asking about the interfaces between their applications.'],
-  'conway.drawInterface': ['Draw the interface two units said they have', 'Where two units said how they work together but no system connects them, the pair offers to draw the missing interface between two of their applications.',
-    'The Conway map\'s panel, on a pair marked with a ring: Draw the missing interface….',
-    ['Press a ring in the grid, or the pair in What to look at.', 'Press Draw the missing interface….', 'Choose the two applications; the line is drawn on the landscape that holds them.'],
-    'Commercial team and Warehouse team said they work side by side; drawing the interface from Order Management to Warehouse Management turns the ring into a tick.'],
 }

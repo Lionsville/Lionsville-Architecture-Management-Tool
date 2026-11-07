@@ -4,11 +4,6 @@
 import type { SectionTexts } from '../../types'
 
 export const SECTIONS: SectionTexts = {
-  'first.start': ['Start your own organisation', 'Names a new organisation and starts it empty.',
-    'The first screen of an organisation nobody has started.',
-    ['Type the name of your organisation.', 'Press Start or Enter.'],
-    'Type Acme Logistics and press Start.',
-    'Enter'],
   'first.language': ['Choose the language on the first page', 'Switches the app between English, Nederlands and Deutsch before anything is started; the same choice as in Preferences.',
     'First page, top right; desktop first screen, top right',
     ['Pick a language in the list at the top right'],

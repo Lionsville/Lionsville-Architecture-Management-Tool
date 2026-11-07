@@ -193,7 +193,7 @@ export const SECTIONS: SectionTexts = {
   'plan.comments': ['Comment on a plan', 'A thread about the plan that never changes it.',
     'Comments, at the foot of the plan.',
     ['Write in Write a comment.', 'Press Comment.'],
-    'Ask whether the Antwerp doors join the pilot.'],
+    'Ask whether the north dock doors join the pilot.'],
   'plan.agent': ['Let an agent read and keep plans', 'An agent lists and reads plans, checks the roadmap\'s dates, and creates, updates, moves, removes and replaces plans, ports interfaces and keeps milestones, each a step in Activity.',
     'Agent tools plans.list, plan.read, roadmap.check, plan.create, plan.update, plan.move, plan.remove, plan.replace, plan.port, plan.unport, milestone.add, milestone.update, milestone.remove; app.open with page roadmap or plan.',
     ['Connect an agent.', 'Ask it, for example, to give the rest of a plan\'s interfaces a day.'],
