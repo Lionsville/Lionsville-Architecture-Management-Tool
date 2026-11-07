@@ -182,8 +182,9 @@ says the rest in words: **Add** and connect where you are looking, **Arrange**,
 **One undo stack over everything**: a node dragged, a diagram renamed, a
 decision accepted and a project setting cleared are the same kind of change and
 come back in the order you made them. Typing a name is one step, not eleven; a
-drag and the routing that follows it are one step. An **Activity** menu lists
-what has happened since you opened the project, with names and times. Every
+drag and the routing that follows it are one step. An **Activity** panel beside
+the work lists what has happened since you opened the project, with names and
+times, and leads to the whole history. Every
 change an agent made in one session can be taken back as one step while its
 steps are the newest.
 
