@@ -514,23 +514,31 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
     return `the area at ${(shown.left * 100).toFixed(1)}%, ${(shown.top * 100).toFixed(1)}% of a ${box[2]}×${box[3]} picture, where draw.io drew the shape`
   }))
 
-  results.push(await checkHere('the area opens the element it points at, selected on the board', async () => {
+  results.push(await checkHere('the area opens the element it points at, read beside the picture', async () => {
     await page(`(() => { document.querySelector('[data-testid="drawing-area-smoke-a"]').click(); return 'pressed' })()`)
     return page(waitFor(`(() => {
-      const node = document.querySelector('.react-flow__node.selected')
-      return !document.querySelector('[data-testid="drawing-view"]') && node && (node.textContent || '').includes(${JSON.stringify(run.elementName)}) && 'selected: ' + node.textContent.trim().slice(0, 40)
-    })()`, 'the element selected on a board'))
+      const reader = document.querySelector('[data-testid="drawing-reader"]')
+      return document.querySelector('[data-testid="drawing-view"]') && reader && (reader.textContent || '').includes(${JSON.stringify(run.elementName)}) && 'read: ' + ${JSON.stringify(run.elementName)}
+    })()`, 'the element read beside the picture'))
   }))
 
   results.push(await checkHere('Create drawing on the element anchors one to it, and its page lists it', async () => {
-    const before = await agent<{ diagrams: { id: string }[] }>('diagrams.list')
+    const before = await agent<{ diagrams: { id: string; kind: string }[] }>('diagrams.list')
+    const board = before.diagrams.find((one) => one.kind === 'layer7')
+    await agent('app.open', { scope, page: 'board', id: board?.id, select: run.elementId })
     await page(waitFor(`(() => {
-      const button = [...document.querySelectorAll('button')].find((one) => one.textContent.trim() === 'Create drawing')
+      const button = document.querySelector('[data-testid="element-drawings"] button:not([data-testid^="element-drawing-"])')
       if (!button) return null
       button.scrollIntoView({ block: 'center' })
       button.click()
       return 'pressed'
-    })()`, 'the inspector\'s Create drawing'))
+    })()`, 'the inspector\'s Create on its Drawing row'))
+    await page(waitFor(`(() => {
+      const make = document.querySelector('[data-testid="new-drawing-make"]')
+      if (!make || make.disabled) return null
+      make.click()
+      return 'made'
+    })()`, 'the name asked for the drawing'))
     const after = await untilRead('the anchored drawing', () => agent<{ diagrams: { id: string; kind: string; elementId?: string; name: string }[] }>('diagrams.list'),
       (held) => held.diagrams.length === before.diagrams.length + 1)
     const anchored = after.diagrams.find((one) => !before.diagrams.some((was) => was.id === one.id))
@@ -538,7 +546,7 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
     drawn.anchored = anchored.id
     await agent('app.open', { scope, page: 'document', id: run.elementId })
     return page(waitFor(`(() => {
-      const listed = document.querySelector('[data-testid="doc-drawings"]')
+      const listed = document.querySelector('[data-testid="element-drawings"]')
       return listed && (listed.textContent || '').includes(${JSON.stringify(anchored.name)}) && 'listed on its page: ' + ${JSON.stringify(anchored.name)}
     })()`, 'the element\'s page listing the drawing'))
   }))
@@ -662,9 +670,8 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   const openFolder = async (directory: DesktopDirectory): Promise<string> => {
     sendCommand({ type: 'reopen', key: directory.root })
     return page(waitFor(`(() => {
-      const chip = document.querySelector('[data-testid="working-source"]')
-      const cards = document.querySelector('[data-testid="organisation-cards"]')
-      return chip && cards && (chip.textContent || '').includes(${JSON.stringify(directory.name)}) && 'its home is up'
+      const name = document.querySelector('[data-testid="organisation-name"]')
+      return name && (name.textContent || '').includes(${JSON.stringify(directory.name)}) && 'its home is up'
     })()`, `the home of ${directory.name}`))
   }
 
@@ -840,7 +847,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     const shown = JSON.parse(await page(`JSON.stringify({
       name: (document.querySelector('[data-testid="organisation-name"]') || {}).textContent || '',
       example: Boolean(document.querySelector('[data-testid="open-example"]')),
-      rows: document.querySelectorAll('[data-testid^="scope-"]').length,
+      rows: document.querySelectorAll('[data-guide="org.tree.row"]').length - 1,
     })`)) as { name: string; example: boolean; rows: number }
     if (shown.name !== first.name) throw new Error(`the root is called ${JSON.stringify(shown.name)}`)
     if (!shown.example) throw new Error('the example is not on offer')
@@ -946,9 +953,11 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
               the affordance that always re-lays-out and re-routes, so press it
               and the question becomes deterministic: Tidy completing under
               app:// is what proves wasm-in-a-worker works here. */}
-      const named = (b) => (b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('title') || '') + ' ' + (b.textContent || '')
-      const tidy = () => [...document.querySelectorAll('button')]
-        .find((b) => /Tidy layout|Netjes/.test(named(b)))
+      const tidy = () => {
+        const act = document.querySelector('[data-testid="arrange-tidy"]')
+        if (!act) document.querySelector('[data-guide="board.arrange"] button, button[data-guide="board.arrange"]')?.click()
+        return act
+      }
       ${'' /* Waiting for the button, not just looking for it: while any tidy is
               running that button IS the cancel and says so, so "no Tidy button"
               means the settling pass had not finished. */}
@@ -969,8 +978,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   // in a full-size bitmap passes "a PNG arrived" and is unreadable on paper.
   results.push(await check(window, 'PNG export settles at a size worth printing', `
     (async () => {
-      const button = [...document.querySelectorAll('button')]
-        .find((b) => /Export PNG|PNG exporteren/.test((b.getAttribute('aria-label') || '') + ' ' + (b.textContent || '')))
+      const button = document.querySelector('[data-testid="board-export"]')
       if (!button) throw new Error('no export button found')
       const seen = []
       const createObjectURL = URL.createObjectURL.bind(URL)
@@ -1244,7 +1252,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     if (listing.length) throw new Error(`the new folder already holds ${listing.join(', ')}`)
     const shown = JSON.parse(await page(`JSON.stringify({
       name: (document.querySelector('[data-testid="organisation-name"]') || {}).textContent || '',
-      rows: document.querySelectorAll('[data-testid^="scope-"]').length,
+      rows: document.querySelectorAll('[data-guide="org.tree.row"]').length - 1,
     })`)) as { name: string; rows: number }
     if (shown.name !== second.name) throw new Error(`the root is called ${JSON.stringify(shown.name)}`)
     if (shown.rows) throw new Error(`${shown.rows} scopes shown under a root that has none: the old tree is still up`)
@@ -1297,8 +1305,8 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
         await ${waitFor(`document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]') && 'row'`, 'the landscape row')}
         press(document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]'))
         await ${waitFor(`(document.querySelector('[data-testid="organisation-name"]') || {}).textContent === ${JSON.stringify(EXAMPLE.landscapeName)}
-          && document.querySelector('[data-testid="board-name-${EXAMPLE.activeDiagram}"]') && 'its home'`, 'the landscape home with its board')}
-        press(document.querySelector('[data-testid="board-name-${EXAMPLE.activeDiagram}"]'))
+          && document.querySelector('[data-testid="board-${EXAMPLE.activeDiagram}"]') && 'its home'`, 'the landscape home with its board')}
+        press(document.querySelector('[data-testid="board-${EXAMPLE.activeDiagram}"]'))
         return await ${waitFor("document.querySelector('.react-flow') && 'canvas mounted'", 'the canvas to mount')}
       })()`)
     const current = await agent<{ path?: string; activeDiagramId?: string }>('project.current')
@@ -1505,8 +1513,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   // it, and a picture of empty grid says nothing about whether the app works.
   await check(window, 'the view fits to the diagram', `
     (() => {
-      const button = [...document.querySelectorAll('button')]
-        .find((b) => /Fit view|Passend maken/.test((b.getAttribute('aria-label') || '') + ' ' + (b.getAttribute('title') || '')))
+      const button = document.querySelector('[data-testid="zoom-fit"]')
       if (!button) throw new Error('no fit-view button found')
       button.click()
       return 'fitted'
