@@ -119,3 +119,24 @@
 
 .md-attachment { display: inline-flex; align-items: baseline; gap: 3px; overflow-wrap: anywhere; }
 .md-attachment__mark { align-self: center; display: inline-flex; flex: none; }
+
+/* --- a part of a document ------------------------------------------------------ */
+
+/* The sizes are the document's (MarkdownDocument.css), so that the same words stand
+   where they will stand when read, and going from writing to reading does not jump. */
+.md-editor[data-variant='flow'] { margin-top: var(--doc-part-gap); }
+.md-editor[data-variant='flow']:first-child,
+.kit-titleField + .md-editor[data-variant='flow'] { margin-top: 0; }
+.md-editor__flowHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-3); margin-bottom: var(--doc-head-below); }
+.md-editor__flowLabel { margin: 0; font-size: var(--doc-h2); font-weight: var(--fw-strong); line-height: 1.3; }
+.md-editor__flowHint { color: var(--ink-3); font-size: var(--t-small); font-weight: var(--fw-regular); opacity: 0; }
+.md-editor[data-variant='flow']:hover .md-editor__flowHint,
+.md-editor[data-variant='flow']:focus-within .md-editor__flowHint { opacity: 1; }
+.md-editor[data-variant='flow'][data-empty] .md-editor__flowHint { display: none; }
+.md-editor__hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.md-editor[data-variant='flow'] .md-editor__source { position: relative; }
+.md-editor[data-variant='flow'] .md-editor__source:focus-within::before {
+  content: ''; position: absolute; inset-block: 0; inset-inline-start: calc(-1 * var(--s-3)); width: 2px; background: var(--focus-ring); border-radius: var(--r-1);
+}
+.md-editor[data-variant='flow'][data-error='true'] .md-editor__flowHint { color: var(--bad); opacity: 1; }
+.md-editor[data-variant='flow'] .md-editor__text { font-family: inherit; font-size: inherit; line-height: inherit; }

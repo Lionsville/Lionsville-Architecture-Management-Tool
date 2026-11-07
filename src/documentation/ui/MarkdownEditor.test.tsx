@@ -18,6 +18,7 @@ import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
 import type { DocumentAttachments } from '../attachments'
 import { AttachmentsProvider } from './Attachments'
 import { MarkdownEditor } from './MarkdownEditor'
+import { MarkdownFlow, MarkdownFlowBar } from './MarkdownFlow'
 import type { MarkdownEditorProps } from './MarkdownEditor'
 import { MarkdownView } from './MarkdownView'
 
@@ -352,5 +353,68 @@ describe('how much of the window it takes', () => {
     expect(sheet).toMatch(/\.md-editor__preview > \* \{[^}]*max-width: var\(--measure-reader\)/)
     expect(sheet).not.toMatch(/\.md-editor__text \{[^}]*(max-width|padding-inline: max)/)
     expect(sheet).not.toMatch(/86ch/)
+  })
+})
+
+describe('MarkdownEditor, a document in parts', () => {
+  function Parts({ onSecond }: { onSecond?: (next: string) => void }) {
+    const [first, setFirst] = useState('First')
+    const [second, setSecond] = useState('Second')
+    return (
+      <MarkdownFlow>
+        <MarkdownFlowBar words={2} />
+        <div className="md-flow">
+          <MarkdownEditor variant="flow" label="What we saw" helper="The facts." value={first} onChange={setFirst} />
+          <MarkdownEditor variant="flow" label="Evidence" value={second} onChange={(next) => { setSecond(next); onSecond?.(next) }} />
+        </div>
+      </MarkdownFlow>
+    )
+  }
+
+  it('has one bar over all its parts, there from the start, and heads each part as the document does', () => {
+    renderShell(<Parts />)
+    expect(screen.getAllByRole('toolbar')).toHaveLength(1)
+    expect(within(screen.getByTestId('md-flow-bar')).getByRole('toolbar')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'What we saw' })).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Evidence' })).toBeTruthy()
+    expect(screen.getByTestId('md-word-count').textContent).toBe('2 words')
+  })
+
+  it('lends the bar to the part in use: a button means the part the caret is in', () => {
+    const onSecond = vi.fn()
+    renderShell(<Parts onSecond={onSecond} />)
+    const second = screen.getByRole('textbox', { name: 'Evidence' }) as HTMLTextAreaElement
+    fireEvent.focus(second)
+    second.setSelectionRange(0, 6)
+    fireEvent.click(within(screen.getByTestId('md-flow-bar')).getByRole('button', { name: /^Bold/ }))
+    expect(onSecond).toHaveBeenCalled()
+    expect(second.value).toBe('**Second**')
+    expect((screen.getByRole('textbox', { name: 'What we saw' }) as HTMLTextAreaElement).value).toBe('First')
+  })
+
+  it('grows with its text instead of scrolling, and asks in its hint where nothing is written yet', () => {
+    renderShell(<MarkdownFlow><MarkdownEditor variant="flow" label="Evidence" helper="What shows it." value="" onChange={() => {}} /></MarkdownFlow>)
+    const box = screen.getByRole('textbox', { name: 'Evidence' })
+    expect(box.getAttribute('rows')).toBe('1')
+    expect(box.closest('.kit-grow')).toBeTruthy()
+    expect(box.getAttribute('placeholder')).toBe('What shows it.')
+    expect(box.getAttribute('aria-describedby')).toBeTruthy()
+  })
+
+  it('has no heading to show where it is the whole document, and is still named', () => {
+    renderShell(<MarkdownFlow><MarkdownEditor variant="flow" label="Description" labelHidden value="Words" onChange={() => {}} /></MarkdownFlow>)
+    expect(screen.queryByRole('heading')).toBeNull()
+    expect(screen.getByRole('textbox', { name: 'Description' })).toBeTruthy()
+  })
+
+  it('opens the help under the one bar, with the same words a field has', () => {
+    renderShell(<Parts />)
+    fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }))
+    expect(within(screen.getByTestId('md-flow-bar')).getByRole('table')).toBeTruthy()
+  })
+
+  it('passes axe', async () => {
+    renderShell(<Parts />)
+    expect(await axeFindings()).toEqual([])
   })
 })

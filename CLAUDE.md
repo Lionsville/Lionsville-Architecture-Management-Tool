@@ -441,7 +441,9 @@ src/documentation/  Descriptions as documents.
                     attachments       a link to a file a source keeps; the seam
                     bpmn              a process's notation, read into a drawing
                                       from its own coordinates; never laid out
-                    ui/               DocumentationPage, MarkdownEditor (every place of writing), blocks/
+                    ui/               DocumentationPage, MarkdownEditor (every place of writing),
+                                      MarkdownFlow (one document in headed parts under one bar),
+                                      MarkdownDocument (a record's text as it is read), blocks/
 src/decisions/    Decision records: the status machine, the numbering, the page.
 src/observations/ What was seen, what lies behind it (ADR-0021), and what is
                   done about it (ADR-0026); local and global (ADR-0032).

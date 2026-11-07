@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
-import { Field, PropertyRow, PropertyRows, SelectField, TextField, TextInput } from './Field'
+import { Field, GrowingTextArea, PropertyRow, PropertyRows, SelectField, TextField, TextInput, TitleField, TitleRead } from './Field'
 import type { PropertyRowProps } from './Field'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
@@ -344,5 +344,35 @@ describe('a row, for a panel', () => {
     renderShell(<PropertyRows><PropertyRow label="Replaced by" value="Next" action={{ label: 'Replace…', always: true, onPress }} /></PropertyRows>)
     fireEvent.click(screen.getByRole('button', { name: 'Replace…' }))
     expect(onPress).toHaveBeenCalled()
+  })
+})
+
+describe('a form that reads as a page', () => {
+  it('sizes a box by a hidden copy of its text, so it has no scroll of its own and nothing collapses while typing', () => {
+    renderShell(<GrowingTextArea aria-label="Words" value={'One\nTwo'} onChange={() => {}} minRows={2} />)
+    const box = screen.getByRole('textbox', { name: 'Words' })
+    expect(box.getAttribute('rows')).toBe('1')
+    expect(box.parentElement?.dataset.text).toBe('One\nTwo')
+    expect(box.parentElement?.style.getPropertyValue('--grow-rows')).toBe('2')
+  })
+
+  it('writes a title with its hint in the empty box, and says what is wrong under it', async () => {
+    const onChange = vi.fn()
+    const { rerender } = renderShell(<TitleField label="Title" hint="One sentence." required value="" onChange={onChange} />)
+    const box = screen.getByRole('textbox', { name: 'Title' })
+    expect(box.getAttribute('placeholder')).toBe('One sentence.')
+    expect(box.getAttribute('aria-invalid')).toBeNull()
+    fireEvent.change(box, { target: { value: 'Late' } })
+    expect(onChange).toHaveBeenCalledWith('Late')
+    rerender(<TitleField label="Title" hint="One sentence." required value="" error="Say what was seen." onChange={onChange} />)
+    const refused = screen.getByRole('textbox', { name: 'Title' })
+    expect(refused.getAttribute('aria-invalid')).toBe('true')
+    expect(document.getElementById(refused.getAttribute('aria-describedby') as string)?.textContent).toBe('Say what was seen.')
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('reads a title as a heading in the same place', () => {
+    renderShell(<TitleRead>Late every night</TitleRead>)
+    expect(screen.getByRole('heading', { name: 'Late every night' }).parentElement?.className).toBe('kit-titleField')
   })
 })

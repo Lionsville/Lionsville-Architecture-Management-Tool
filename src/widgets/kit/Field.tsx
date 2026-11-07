@@ -22,7 +22,7 @@
  * a long one stops at three lines with *Show all*.
  */
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
-import type { ChangeEvent, ComponentPropsWithRef, KeyboardEvent, ReactNode, RefObject } from 'react'
+import type { ChangeEvent, ComponentPropsWithRef, CSSProperties, KeyboardEvent, ReactNode, RefObject } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
 import { MenuButton } from './Menu'
@@ -90,6 +90,52 @@ export function Select({ options, ...props }: SelectProps & { options: readonly 
       {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
     </select>
   )
+}
+
+/**
+ * A box as tall as its text, for a form that is read as a page: it has no scroll of
+ * its own and needs no measuring. The hidden copy of the text in the same cell gives
+ * the height, so nothing collapses while typing and a page scrolled far down stays
+ * where it is, and a wider window rewraps both alike.
+ */
+export function GrowingTextArea({ classes, minRows = 1, value, ...props }: Omit<TextAreaProps, 'rows' | 'value'> & {
+  value: string
+  /** The class of the box itself, for its type. */
+  classes?: string
+  minRows?: number
+}) {
+  return (
+    <div className="kit-grow" data-text={value} style={{ '--grow-rows': minRows } as CSSProperties}>
+      <textarea {...props} className={classes ? `kit-grow__text ${classes}` : 'kit-grow__text'} value={value} rows={1} />
+    </div>
+  )
+}
+
+/**
+ * A record's title being written, where it stands when read: its size and no box.
+ * One line under it says it can be written in, and the words go under that only
+ * when something is wrong, so the document below does not move for a hint.
+ */
+export function TitleField({ label, hint, error, required, value, onChange, ...rest }: Omit<FieldProps, 'children'> & Omit<TextAreaProps, 'value' | 'onChange' | 'rows' | 'placeholder'> & {
+  value: string
+  onChange: (value: string) => void
+}) {
+  const id = useId()
+  return (
+    <div className="kit-titleField">
+      <GrowingTextArea
+        {...rest} classes="kit-titleField__text" aria-label={label} aria-required={required} placeholder={hint} title={hint} value={value}
+        onChange={(event) => onChange(event.target.value)}
+        {...(error ? { 'aria-invalid': true as const, 'aria-describedby': id } : {})}
+      />
+      {error && <p className="kit-field__words" id={id} data-error>{error}</p>}
+    </div>
+  )
+}
+
+/** A record's title as it reads, in the place and the size `TitleField` writes it. */
+export function TitleRead({ children }: { children: ReactNode }) {
+  return <div className="kit-titleField"><h2 className="kit-titleField__read">{children}</h2></div>
 }
 
 type Words = Pick<FieldProps, 'label' | 'hint' | 'error' | 'required'>

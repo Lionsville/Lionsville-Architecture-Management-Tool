@@ -19,9 +19,15 @@
  *
  * The page keeps what is its own: the draft, when it commits, and what the
  * preview shows around the text.
+ *
+ * A `flow` is a headed part of one document (`MarkdownFlow`): proportional, as
+ * tall as its text with no scroll of its own, and sharing one bar with the other
+ * parts, which it lends itself to while it is the part in use. It writes the same
+ * characters, with the same keys, references and pictures as the other two.
  */
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { ClipboardEvent, DragEvent, FocusEvent, KeyboardEvent, ReactNode, RefObject } from 'react'
+import type { ChangeEvent, ClipboardEvent, ComponentProps, DragEvent, FocusEvent, KeyboardEvent, ReactNode, RefObject, SyntheticEvent } from 'react'
+import { createPortal } from 'react-dom'
 import Button from '@mui/material/Button'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ImageEntry } from '../../model/imageName'
@@ -29,6 +35,7 @@ import { useStrings } from '../../i18n/LanguageContext'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { useInFocusedWindow } from '../../widgets/kit/FocusedWindow'
 import { TrashIcon } from '../../widgets/icons'
+import { GrowingTextArea } from '../../widgets/kit/Field'
 import { attachmentMarkdown } from '../attachments'
 import { businessCaseTemplate } from '../businessCase'
 import { imagesUsedIn, pictureMarkdown } from '../images'
@@ -38,6 +45,7 @@ import {
 } from '../markdownEditing'
 import type { Edit, HeadingAt, Selected } from '../markdownEditing'
 import { useAttachments } from './Attachments'
+import { useFlowSeat } from './MarkdownFlow'
 import { MarkdownGuide } from './MarkdownGuide'
 import { MarkdownToolbar, OutlineMenu, ViewSwitch, toolOfKey } from './MarkdownToolbar'
 import type { MarkdownViewMode } from './MarkdownToolbar'
@@ -69,8 +77,12 @@ export type MarkdownEditorProps = {
   onBlur?(): void
   /** What the text is called: on the field, and for a reader who cannot see it. */
   label: string
-  /** A pane fills the height it is given and always shows its bar; a field grows with its text and shows its tools while in use. */
-  variant?: 'pane' | 'field'
+  /**
+   * A pane fills the height it is given and always shows its bar; a field grows with
+   * its text and shows its tools while in use; a flow is a headed part of a document,
+   * inside a `MarkdownFlow` that holds its one bar.
+   */
+  variant?: 'pane' | 'field' | 'flow'
   disabled?: boolean
   placeholder?: string
   autoFocus?: boolean
@@ -101,6 +113,8 @@ export type MarkdownEditorProps = {
   required?: boolean
   /** A word beside the label: *optional*. */
   note?: string
+  /** A flow that is the whole document has no heading to show: its label is for a reader who cannot see it. */
+  labelHidden?: boolean
   /** ⌘Enter, where the text has a button that sends it. */
   onSubmit?(): void
   textareaRef?: RefObject<HTMLTextAreaElement | null>
@@ -135,7 +149,7 @@ function applyEdit(area: HTMLTextAreaElement, edit: Edit, onChange: (next: strin
 }
 
 /** Whether the window and the pane have the room for the text and its preview side by side. */
-function useRoom(variant: 'pane' | 'field'): { sideBySide: boolean; wordsOnBar: boolean; width: number | undefined; setRoot: (root: HTMLElement | null) => void } {
+function useRoom(variant: 'pane' | 'field' | 'flow'): { sideBySide: boolean; wordsOnBar: boolean; width: number | undefined; setRoot: (root: HTMLElement | null) => void } {
   const narrowWindow = useMediaQuery('(max-width: 1100px)')
   const [root, setRoot] = useState<HTMLElement | null>(null)
   const [width, setWidth] = useState<number | undefined>(undefined)
@@ -369,6 +383,49 @@ function FieldBar({ fieldId, label, required, note, tools, switcher }: {
   )
 }
 
+/** A flow's heading: read as the document's own, with what the part is for beside it, quietly. */
+function FlowHead({ fieldId, hintId, editor }: { fieldId: string; hintId: string; editor: MarkdownEditorProps }) {
+  if (editor.labelHidden) return <label className="md-editor__hidden" htmlFor={fieldId}>{editor.label}</label>
+  return (
+    <div className="md-editor__flowHead">
+      <h2 className="md-editor__flowLabel"><label htmlFor={fieldId}>{editor.label}{editor.required && ' *'}</label></h2>
+      {editor.helper && <span className="md-editor__flowHint" id={hintId}>{editor.helper}</span>}
+    </div>
+  )
+}
+
+/** What stands above the text: a pane's bar, a field's row, or a flow's heading with the one bar lent to it while it is in use. */
+function EditorTop({ fieldId, seat, variant, canAttach, editor, ...bar }: Omit<ComponentProps<typeof PaneBar>, never> & {
+  fieldId: string
+  seat: ReturnType<typeof useFlowSeat>
+  variant: NonNullable<MarkdownEditorProps['variant']>
+  canAttach: boolean
+}) {
+  const { t } = useStrings()
+  const [helpOpen, setHelpOpen] = useState(false)
+  const { images, showPictures, canWrite, put } = bar
+  const pictures = images && showPictures && canWrite && (
+    <PictureList images={images} value={editor.value} onInsert={(image) => put(pictureMarkdown(image.name, image.name.replace(/\.[^.]+$/, '')))} />
+  )
+  if (variant === 'field') return <><FieldBar fieldId={fieldId} label={editor.label} required={editor.required} note={editor.note} tools={bar.tools} switcher={bar.switcher} />{pictures}</>
+  if (variant === 'pane') return <><PaneBar {...bar} editor={editor} />{pictures}</>
+  const tip = t(canAttach ? 'md.hintFiles' : editor.onAddImage ? 'md.hintPictures' : 'md.hint')
+  const help = <FlowHelp open={helpOpen} tip={tip} onPress={() => setHelpOpen((open) => !open)} />
+  return (
+    <>
+      <FlowHead fieldId={fieldId} hintId={`${fieldId}-hint`} editor={editor} />
+      {seat?.slot && seat.mine && createPortal(
+        <>
+          <PaneBar {...bar} editor={{ ...editor, extra: help }} />
+          {pictures}
+          {helpOpen && <MarkdownGuide images={Boolean(editor.onAddImage)} attachments={canAttach} />}
+        </>,
+        seat.slot,
+      )}
+    </>
+  )
+}
+
 /** The preview, in a field with something to say where nothing is written yet. */
 function PreviewColumn({ boxRef, editor, pane, minRows }: { boxRef: RefObject<HTMLDivElement | null>; editor: MarkdownEditorProps; pane: boolean; minRows: number }) {
   const { t } = useStrings()
@@ -414,6 +471,8 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   const previewRef = useRef<HTMLDivElement>(null)
   const fieldId = useId()
   const pane = variant === 'pane'
+  const flow = variant === 'flow'
+  const seat = useFlowSeat(fieldId, flow)
   const { sideBySide, wordsOnBar, width, setRoot } = useRoom(variant)
   const { view, setWanted } = useView({ pane, disabled, canPreview: Boolean(renderPreview), sideBySide })
   const [active, setActive] = useState(false)
@@ -436,11 +495,11 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   const onPictures = useCallback(() => setShowPictures(true), [])
   const blocks = useSlashBlocks({ apply, template, value, hasPictures: Boolean(images), onPictures, pickFile })
   const completion = useReferenceCompletion(areaRef, apply, disabled ? NO_BLOCKS : blocks)
-  useGrowing(areaRef, value, width, !pane && view !== 'preview', minRows, maxRows)
+  useGrowing(areaRef, value, width, !pane && !flow && view !== 'preview', minRows, maxRows)
   const onKeyDown = useKeys({ completion, selection, apply, onSubmit: props.onSubmit, toolbarRef })
   const taking = useTaking({ files, selection, apply, canTake: Boolean(onAddImage) || canAttach })
 
-  const headings = useMemo(() => (pane ? headingsAt(value) : []), [pane, value])
+  const headings = useMemo(() => (pane || flow ? headingsAt(value) : []), [pane, flow, value])
   const words = useMemo(() => wordCount(value), [value])
   const moveTo = (heading: HeadingAt) => {
     goToHeading(view === 'preview' ? null : areaRef.current, previewRef.current, heading)
@@ -463,33 +522,26 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   return (
     <div
       ref={setRoot} className="md-editor" data-variant={variant} data-active={pane || active} data-error={props.error === true}
-      data-dropping={taking.dropping} data-testid={pane ? 'document-source' : 'markdown-field'}
-      onFocus={() => setActive(true)} onBlur={leaving}
+      data-dropping={taking.dropping} data-empty={value.trim() ? undefined : true}
+      data-testid={ROOT_NAME[variant]}
+      onFocus={() => { setActive(true); seat?.claim() }} onBlur={leaving}
     >
-      {pane ? (
-        <PaneBar
-          tools={tools} switcher={switcher} canWrite={canWrite} editor={props} images={images}
-          showPictures={showPictures} onPictures={setShowPictures} pickFile={pickFile} insert={completion.insert} put={put}
-          headings={headings} caret={caret} moveTo={moveTo}
-        />
-      ) : (
-        <FieldBar fieldId={fieldId} label={props.label} required={props.required} note={props.note} tools={tools} switcher={switcher} />
-      )}
-
-      {images && showPictures && canWrite && (
-        <PictureList images={images} value={value} onInsert={(image) => put(pictureMarkdown(image.name, image.name.replace(/\.[^.]+$/, '')))} />
-      )}
+      <EditorTop
+        fieldId={fieldId} seat={seat} variant={variant} tools={tools} switcher={switcher} canWrite={canWrite} editor={props} canAttach={canAttach}
+        images={images} pickFile={pickFile} insert={completion.insert} put={put} headings={headings} caret={caret} moveTo={moveTo}
+        showPictures={showPictures} onPictures={setShowPictures}
+      />
 
       <div className="md-editor__body" data-view={view}>
         {view !== 'preview' && (
           <SourceColumn
-            editor={props} fieldId={fieldId} areaRef={areaRef} pane={pane} minRows={minRows} completion={completion}
+            editor={props} fieldId={fieldId} areaRef={areaRef} pane={pane} flow={flow} minRows={minRows} completion={completion}
             onCaret={setCaret} onKeyDown={onKeyDown} taking={taking} words={words} files={files}
           />
         )}
         {view !== 'write' && renderPreview && <PreviewColumn boxRef={previewRef} editor={props} pane={pane} minRows={minRows} />}
       </div>
-      {props.helper && <div className="md-editor__helper">{props.helper}</div>}
+      {props.helper && !flow && <div className="md-editor__helper">{props.helper}</div>}
       {canAttach && (
         <input
           ref={pickerRef} type="file" multiple hidden aria-hidden tabIndex={-1} data-testid="md-attach-input"
@@ -502,13 +554,15 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
 }
 
 const NO_BLOCKS: readonly SlashBlock[] = []
+const ROOT_NAME = { pane: 'document-source', field: 'markdown-field', flow: 'markdown-part' } as const
 
 /** The text, and what is said under it. */
-function SourceColumn({ editor, fieldId, areaRef, pane, minRows, completion, onCaret, onKeyDown, taking, words, files }: {
+function SourceColumn({ editor, fieldId, areaRef, pane, flow, minRows, completion, onCaret, onKeyDown, taking, words, files }: {
   editor: MarkdownEditorProps
   fieldId: string
   areaRef: RefObject<HTMLTextAreaElement | null>
   pane: boolean
+  flow: boolean
   minRows: number
   completion: Completion
   onCaret(at: number): void
@@ -520,32 +574,44 @@ function SourceColumn({ editor, fieldId, areaRef, pane, minRows, completion, onC
   const [helpOpen, setHelpOpen] = useState(false)
   const canAttach = Boolean(files.attachments)
   const canPicture = Boolean(editor.onAddImage)
+  const text = {
+    id: fieldId,
+    ref: areaRef,
+    'aria-label': editor.label,
+    'aria-required': editor.required,
+    'aria-invalid': editor.error,
+    value: editor.value,
+    disabled: editor.disabled,
+    autoFocus: editor.autoFocus,
+    spellCheck: true,
+    'data-testid': editor.testId,
+    onChange: (event: ChangeEvent<HTMLTextAreaElement>) => { editor.onChange(event.target.value); completion.onInput() },
+    onSelect: (event: SyntheticEvent<HTMLTextAreaElement>) => { onCaret(event.currentTarget.selectionStart); completion.onInput() },
+    onBlur: editor.onBlur,
+    onKeyDown,
+    onPaste: taking.onPaste,
+    onDrop: taking.onDrop,
+    onDragOver: taking.onDragOver,
+    onDragLeave: taking.onDragLeave,
+  }
+  if (flow) {
+    // An empty part asks in the hint's own words, so nothing says it twice; a part with text in it keeps the hint by its heading.
+    const asks = editor.placeholder ?? (typeof editor.helper === 'string' ? editor.helper : undefined)
+    return (
+      <div className="md-editor__source">
+        <GrowingTextArea
+          {...text} {...(asks ? { placeholder: asks } : {})} minRows={minRows}
+          {...(editor.helper && !editor.labelHidden ? { 'aria-describedby': `${fieldId}-hint` } : {})}
+          classes="md-editor__text"
+        />
+        <div className="md-editor__said" role={files.said?.refused ? 'alert' : 'status'} data-refused={files.said?.refused === true} hidden={!files.said}>{files.said?.words}</div>
+      </div>
+    )
+  }
   return (
     <div className="md-editor__source">
       {pane && editor.above}
-      <textarea
-        id={fieldId}
-        ref={areaRef}
-        className="md-editor__text"
-        aria-label={editor.label}
-        aria-required={editor.required}
-        aria-invalid={editor.error}
-        value={editor.value}
-        placeholder={editor.placeholder}
-        disabled={editor.disabled}
-        autoFocus={editor.autoFocus}
-        rows={pane ? undefined : minRows}
-        spellCheck
-        data-testid={editor.testId}
-        onChange={(event) => { editor.onChange(event.target.value); completion.onInput() }}
-        onSelect={(event) => { onCaret(event.currentTarget.selectionStart); completion.onInput() }}
-        onBlur={editor.onBlur}
-        onKeyDown={onKeyDown}
-        onPaste={taking.onPaste}
-        onDrop={taking.onDrop}
-        onDragOver={taking.onDragOver}
-        onDragLeave={taking.onDragLeave}
-      />
+      <textarea {...text} className="md-editor__text" placeholder={editor.placeholder} rows={pane ? undefined : minRows} />
       {!editor.disabled && (
         <EditorFoot
           words={words} helpOpen={helpOpen} onHelp={() => setHelpOpen((open) => !open)}
@@ -554,6 +620,16 @@ function SourceColumn({ editor, fieldId, areaRef, pane, minRows, completion, onC
       )}
       {helpOpen && !editor.disabled && <MarkdownGuide images={canPicture} attachments={canAttach} />}
     </div>
+  )
+}
+
+/** The help's way in on a bar that several parts share: under the bar there is one, for the part in use. */
+function FlowHelp({ open, tip, onPress }: { open: boolean; tip: string; onPress(): void }) {
+  const { t } = useStrings()
+  return (
+    <button type="button" className="md-editor__more" title={tip} aria-expanded={open} onMouseDown={(event) => event.preventDefault()} onClick={onPress}>
+      {t('docHelp.markdown')}
+    </button>
   )
 }
 
@@ -580,6 +656,19 @@ function EditorFoot({ words, helpOpen, onHelp, said, canAttach, canPicture }: {
         </span>
       </div>
     </>
+  )
+}
+
+/** A part of a document that is plain words, for a field no reader draws as markdown: headed and growing like the others, with no tools. */
+export function FlowPlainPart({ label, value, onChange }: { label: string; value: string; onChange(next: string): void }) {
+  const id = useId()
+  return (
+    <div className="md-editor" data-variant="flow" data-testid="plain-part">
+      <div className="md-editor__flowHead"><h2 className="md-editor__flowLabel"><label htmlFor={id}>{label}</label></h2></div>
+      <div className="md-editor__source">
+        <GrowingTextArea id={id} classes="md-editor__text" value={value} onChange={(event) => onChange(event.target.value)} />
+      </div>
+    </div>
   )
 }
 

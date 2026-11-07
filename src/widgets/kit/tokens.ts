@@ -137,7 +137,7 @@ export const SCALE = {
   // What holds text grows with it. A panel stops growing before it leaves the work no room.
   'ctl-h': '1.875rem', 'bar-h': '2.75rem', 'tabs-h': '2.25rem', 'viewbar-h': '2.25rem', 'band-h': '2rem',
   'panel-w-tree': '18.75rem', 'panel-w': 'min(22rem, 42vw)', 'panel-w-l': 'min(34rem, 60vw)', 'rail-w': '5.25rem',
-  'pane-list': 'min(28rem, 50vw)', 'w-dialog-s': '30rem', 'w-dialog-m': '37.5rem', 'w-dialog-l': '68rem',
+  'pane-list': 'min(28rem, 50vw)', 'w-dialog-s': '30rem', 'w-dialog-m': '37.5rem', 'w-dialog-l': '68rem', 'w-document': '48rem',
   'row-h': '1.875rem', 'row-h-dense': '1.5rem', 'row-h-loose': '2.25rem', 'row-prop': '1.5rem',
   'label-col': '7.5rem', 'clamp-lines': '3', 'cell-size': '1.75rem', 'mark-size': '0.625rem',
   'target-min': '1.5rem', 'line-width-structure': '1px', 'line-width-emphasis': '2px',
