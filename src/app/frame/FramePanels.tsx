@@ -12,6 +12,7 @@
  * with what can lose it, because a person expects *Save* to be what protects them
  * and it does nothing a moment later would not have done.
  */
+import { useEffect, useState } from 'react'
 import { LOCALE } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import { manualUrl } from '../../platform/manual'
@@ -21,6 +22,8 @@ import { ActivityLines } from '../ActivityMenu'
 import { chromeProps } from '../AppPanels'
 import { clockTime } from '../clockTime'
 import type { ShellParts } from '../shellParts'
+import { flattenScopes } from '../../projects/scope'
+import type { ScopeId } from '../../projects/scope'
 import { sourceLabel } from '../ShellToolbar'
 import { statusWord } from './statusWord'
 import { useFrameState } from './frameStore'
@@ -56,12 +59,36 @@ function workProps(parts: ShellParts) {
   return { own, session, open, notify, reread, flush, copyText: parts.props.hostControls.copyText }
 }
 
+/**
+ * Whether the history holds anything for this organisation, asked each time the
+ * panel opens. Until it has answered it is not known, and the panel says nothing
+ * rather than *Kept*: a scope being open is not a history having been started.
+ */
+function useHistoryStarted(parts: ShellParts, available: boolean): boolean | undefined {
+  const repository = parts.props.repositories.history
+  const tree = parts.organisation.tree
+  const [started, setStarted] = useState<boolean | undefined>(undefined)
+  useEffect(() => {
+    if (!available || !repository) return undefined
+    let live = true
+    const scopes = flattenScopes(tree).flatMap((scope): ScopeId[] => (scope.id === undefined ? [] : [scope.id]))
+    if (scopes.length === 0) { setStarted(false); return undefined }
+    repository.entries({ scopes, limit: 1 }).then(
+      (page) => { if (live) setStarted(page.entries.length > 0) },
+      // A history that would not answer is not one we can say anything about.
+      () => { if (live) setStarted(undefined) },
+    )
+    return () => { live = false }
+  }, [available, repository, tree])
+  return started
+}
+
 /** What is wrong here, what could lose the work, and when it was last kept. */
 function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: ScreenFacts | undefined; history: boolean }) {
   const { services: { s, prefs }, props, copies } = parts
+  const started = useHistoryStarted(parts, history)
   const riskKey = props.provider?.sayings?.riskKey
   const trouble = facts?.workTrouble
-  const scopeOpen = facts?.kind === 'workspace'
   return (
     <>
       {trouble && (
@@ -78,7 +105,7 @@ function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: Screen
         <PanelSection>
           {facts?.savedAt && <Fact label={s('work.lastSaved')} value={day(facts.savedAt, prefs.language, s)} />}
           <Fact label={s('work.lastCopy')} value={copies.last ? day(copies.last, prefs.language, s) : s('work.never')} />
-          {history && <Fact label={s('work.history')} value={s(scopeOpen || parts.home.history.keeping ? 'work.historyKept' : 'work.historyNot')} />}
+          {history && started !== undefined && <Fact label={s('work.history')} value={s(started ? 'work.historyKept' : 'work.historyNot')} />}
         </PanelSection>
       )}
       {facts?.activity && !parts.provider.YourWork && <p>{s('frame.sessionChanges', { count: facts.activity().length })}</p>}

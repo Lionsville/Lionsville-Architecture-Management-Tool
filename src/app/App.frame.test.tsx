@@ -224,6 +224,22 @@ describe('the status word', () => {
     await waitFor(() => expect(screen.queryByTestId('work-copy')).toBeNull())
   })
 
+  it('says the history is not started until a snapshot starts it, and never Kept before it has asked', async () => {
+    const agent = wire()
+    const repositories = heldRepositories(TREE())
+    renderApp({ agent: agent.gateway, repositories, boot: { initialProject: undefined } })
+    await screen.findByTestId('organisation-cards')
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    const panel = await screen.findByTestId('frame-panel')
+    await waitFor(() => expect(within(panel).getByText('Not started')).toBeDefined())
+    expect(within(panel).queryByText('Kept')).toBeNull()
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('frame-panel')).toBeNull())
+    await repositories.history!.record({ subject: 'First' })
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    await waitFor(() => expect(within(screen.getByTestId('frame-panel')).getByText('Kept')).toBeDefined())
+  })
+
   it('is told by the source that it is offline, rather than saying sent', async () => {
     let up = false
     renderApp({
