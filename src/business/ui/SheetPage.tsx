@@ -27,7 +27,7 @@
  * the session, undoable with an Activity line, and selects what it made with the
  * cursor in its name. Under `readOnly`, and under a look, none of them is rendered.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, CSSProperties, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
@@ -51,7 +51,7 @@ import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
-import { locatedRing, useLocated } from '../../widgets/useLocated'
+import { locatedRing, locatedSelector, useLocated } from '../../widgets/useLocated'
 import { usePlaceReading, usePlaceTab } from '../../widgets/placeTab'
 import { useSessionSet } from '../../widgets/sessionMemory'
 import { captureSheet } from '../../widgets/capturePage'
@@ -679,6 +679,23 @@ function SheetBody({ at, props, level, openArea }: { at: ReturnType<typeof usePa
   )
 }
 
+/**
+ * The panel lies over the page, so nothing reflows for a pick; the one exception
+ * is a row it would cover, for which the page makes room rather than hiding what
+ * the panel is about.
+ */
+function useRoomForPick(page: { current: HTMLDivElement | null }, selectedId: ElementId | undefined, width: number): number {
+  const [room, setRoom] = useState(0)
+  useLayoutEffect(() => {
+    if (selectedId === undefined) { setRoom(0); return }
+    const row = page.current?.querySelector(locatedSelector(selectedId))
+    const over = page.current?.querySelector('.sheet-page__over')
+    if (!row || !over) return
+    if (row.getBoundingClientRect().right > over.getBoundingClientRect().left) setRoom(width)
+  }, [page, selectedId, width])
+  return room
+}
+
 /** A day looked at: one press back, and who may keep it on the view. */
 function SheetLook({ day, at, props }: { day: string; at: ReturnType<typeof usePage>; props: SheetPageProps }) {
   const { t } = useStrings()
@@ -736,6 +753,7 @@ export function SheetPage(props: SheetPageProps) {
   const level = at.tab === 'overview' ? 'overview' : 'names'
   const [laneOpen, setLaneOpen] = useState(false)
   const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
+  const room = useRoomForPick(page, selectedId, detailsWidth)
   const { exporting, capture } = picture
   const selected = selectedId === undefined ? undefined : model.elements.find((element) => element.id === selectedId)
 
@@ -777,7 +795,7 @@ export function SheetPage(props: SheetPageProps) {
         <SheetKey at={at} props={props} onJump={jump} />
         <div className="sheet-page__work">
           <RailPart at={at} props={props} />
-          <div className="sheet-page__body" data-testid="sheet-body" onKeyDown={(event) => onRowKeys(event, at.context)}>
+          <div className="sheet-page__body" data-testid="sheet-body" style={room > 0 ? { paddingInlineEnd: room } : undefined} onKeyDown={(event) => onRowKeys(event, at.context)}>
             <div data-testid="sheet-canvas" data-guide="sheet.canvas" className="sheet-rows" data-finding={finder.lit ? '' : undefined}>
               <SheetBody at={at} props={props} level={level} openArea={openArea} />
             </div>

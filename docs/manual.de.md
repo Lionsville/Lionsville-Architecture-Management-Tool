@@ -2162,36 +2162,32 @@ Board, das sie tatsächlich zeichnet, und wechselt das Board, wenn das, auf dem
 Sie sind, es nicht tut — und zur eigenen Seite der Anwendung, wenn gar kein
 Board sie zeichnet.
 
-### Die Unternehmenskarte
+### Abdeckung
 
-**+** in den Diagrammreitern, dann **Unternehmenskarte**, legt die zweite
-angeordnete Ansicht an — oder **Karte** auf der Karte *Geschäftsarchitektur* des
-Organisationsbildschirms öffnet die der Wurzel. Es ist dieselbe Ebene, andersherum
-gelesen: jede Funktion am Rand, in der Reihenfolge, in der das Blatt sie
-zeichnet, und nach Tiefe eingerückt; eine Spalte je Anwendung, die die Zeilen
-nennen; eine Marke, wo die eine die andere unterstützt. Auf einem Abschnitt —
-einem Gebiet, einer Gruppierung — ist die Marke hohl und
-bedeutet *etwas hierunter*: die Zusammenfassung, sodass der Kopf eines Gebiets
-sagt, worauf sich das ganze Gebiet stützt, bevor Sie seine Fähigkeiten lesen.
-Anwendungen, die ein anderer
-Bereich hält, werden oben quer unter dem Namen dieses Bereichs gruppiert, denn
-die Systeme, die die Fähigkeiten der Organisation unterstützen, sind meist die
-einer Landschaft, und eine Spalte, die nicht sagt, wessen sie ist, hat die Hälfte
-gesagt.
+**Abdeckung**, auf dem Schalter neben **Überblick** und **Namen**, ist dieselbe Schicht
+andersherum gelesen, im Reiter des Blatts selbst: jede Funktion an der Seite, eine
+Spalte je Anwendung, die die Zeilen nennen, und ein Zeichen, wo eine die andere
+unterstützt. Der erste Druck legt die Karte an, wenn der Bereich keine hat und Sie
+schreiben dürfen; auch **+** in den Reitern legt eine an, und **Neue Karte in diesem
+Bereich** unter **⋯** eine zweite, die neben dem Schalter steht. Sie behält ihre eigene
+Adresse, und ein Agent erreicht sie dort.
 
-Zwei Spalten kommen zuletzt. **Menschen** ist markiert, wo jemand zugewiesen ist
-— eine Spalte statt einer je Beteiligtem, denn „von Hand erledigt“ ist eine
-Antwort. **Abdeckung** ist die Lücke: *ungedeckt* auf einer Fähigkeit, die nichts
-und niemand abdeckt, *Menschen* auf einer, die von Hand ohne System erledigt
-wird, und auf einem Abschnitt, wie viele der Fähigkeiten darunter ungedeckt sind.
-Die obere Leiste zählt die drei zusammen. Eine Karte mit einem *Stand*-Tag zählt
-die Zeilen, die an diesem Tag live sind, sodass ein System, das ab März etwas
-unterstützt, auf der Karte vom Februar eine Lücke ist.
+Sie öffnet auf zwei Ebenen, mit **1 2 3** für mehr. Neben jedem Namen steht, worauf er
+hinausläuft: **Abgedeckt**, in Worten (*2 Systeme*, *durch Menschen*, *nichts*, und
+*3 von 4* auf einem Abschnitt), und **Menschen**, wo jemand zugewiesen ist. Auf einem
+Abschnitt sagt eine Zahl, wie viele Fähigkeiten darunter jede Anwendung unterstützt.
+Anwendungen eines anderen Bereichs stehen unter dessen Namen, der sie auch einklappt.
+**Alle**, **Lücken** und **Überschneidungen** machen aus der Seite eine einfache Liste,
+und **Suchen** tut das für einen Namen. **Tag** zählt die Zeilen, die am gewählten Tag
+gelten, und während der Ansicht eines anderen Tages lässt sich nichts ändern.
+**Exportieren** speichert die ganze Tabelle als Bild, mit Schriftfeld. **Was sie
+zeichnet…** unter **⋯** wählt die Bereiche.
 
-Wählen Sie eine Zeile, und sie öffnet sich rechts, wie auf dem Blatt —
-*Unterstützt von…* eingeschlossen, sodass eine Lücke von der Seite aus
-geschlossen werden kann, die sie zeigt. Wählen Sie eine Spaltenüberschrift, um
-die Anwendung zu öffnen, wo dieser Bereich sie hält.
+Ein Druck wählt aus, Lesen ändert also nichts: Eine Zeile öffnet ihr Feld, und ein
+Spaltenkopf zeigt, was diese Anwendung unterstützt, wofür sie die einzige ist, und den
+Weg zu ihr, wo immer sie liegt. **Leertaste** auf einer Zelle verknüpft oder löst, als
+ein Schritt mit **Rückgängig**; eine Verknüpfung in einem anderen Bereich wird als solche
+genannt und dort geändert.
 
 ### Technologie
 

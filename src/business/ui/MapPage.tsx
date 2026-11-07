@@ -452,7 +452,7 @@ function MapPanels({ pick, laidOut, props, readOnly, width, onWidth, onPick, onC
     const heldHere = model.elements.some((element) => element.id === pick.id)
     const open = props.onOpenApplication ? () => props.onOpenApplication?.(pick.id) : heldHere ? () => actions.onOpenElement(pick.id) : undefined
     return (
-      <div className="sheet-page__over">
+      <div className="map-page__dock">
         <ColumnPanel
           id={pick.id} map={laidOut} known={laidOut.columns.find((one) => one.id === pick.id)?.known ?? false} width={width}
           onClose={onClose} onSelect={onPick} t={t} onOpen={open}
@@ -463,7 +463,7 @@ function MapPanels({ pick, laidOut, props, readOnly, width, onWidth, onPick, onC
   const selected = pick?.kind === 'row' ? model.elements.find((element) => element.id === pick.id) : undefined
   if (!selected) return null
   return (
-    <div className="sheet-page__over">
+    <div className="map-page__dock">
       <SeamResizer
         orientation="vertical" region="after" value={width} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
         defaultValue={INSPECTOR_WIDTH.default} onChange={onWidth} label={t('sheet.resizeDetails')}
@@ -566,10 +566,15 @@ function useMapRows(laidOut: LaidOutMap | undefined, filter: Filter, query: stri
   return { rows, counts, matched, hasRows: rows.length > 0 && laidOut !== undefined && laidOut.counts.covered + laidOut.counts.manual > 0 }
 }
 
-/** The map's rows, on the day looked at. */
+/**
+ * The map's rows, on the day looked at, with each owner's columns together and
+ * in the order they first came: a column that moves when a link is made takes the
+ * cell under the cursor with it.
+ */
 function useLaidOutMap(props: MapPageProps, day: string | undefined, allColumns: boolean) {
   const { model, map, elsewhere, describe, today, applications } = props
-  return useMemo(
+  const ranks = useRef(new Map<ElementId, number>())
+  const laidOut = useMemo(
     () => (map
       ? mapPage(model, day !== undefined ? { ...map, asOf: day } : map, {
         ...(elsewhere ? { elsewhere } : {}),
@@ -580,6 +585,18 @@ function useLaidOutMap(props: MapPageProps, day: string | undefined, allColumns:
       : undefined),
     [model, map, day, elsewhere, describe, today, allColumns, applications],
   )
+  return useMemo(() => {
+    if (!laidOut) return undefined
+    const ranked = (id: ElementId) => {
+      if (!ranks.current.has(id)) ranks.current.set(id, ranks.current.size)
+      return ranks.current.get(id) ?? 0
+    }
+    const groups = laidOut.groups
+      .map((group) => ({ group, rank: ranked(`group:${group.where ?? OWN_GROUP}`) }))
+      .sort((a, b) => a.rank - b.rank)
+      .map(({ group }) => ({ ...group, columns: group.columns.map((column) => ({ column, rank: ranked(column.id) })).sort((a, b) => a.rank - b.rank).map((held) => held.column) }))
+    return { ...laidOut, groups, columns: groups.flatMap((group) => group.columns) }
+  }, [laidOut])
 }
 
 export function MapPage(props: MapPageProps) {

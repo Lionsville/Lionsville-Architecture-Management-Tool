@@ -2050,33 +2050,31 @@ Een applicatie openen vanuit de invulling van een capability brengt u naar een
 bord dat hem ook echt tekent — desnoods een ander dan waar u stond — en naar de
 eigen pagina van de applicatie als geen enkel bord hem tekent.
 
-### De bedrijfskaart
+### Dekking
 
-**+** in de diagramtabs, dan **Bedrijfskaart**, maakt de tweede uitgelegde
-weergave — of **Kaart** op de kaart *Bedrijfsarchitectuur* van het
-organisatiescherm opent die van de wortel. Het is dezelfde laag, andersom
-gelezen: elke functie onder elkaar, in de volgorde waarin het blad ze tekent en
-ingesprongen naar diepte; een kolom per applicatie die de rijen noemen; een
-markering waar de een de ander ondersteunt. Op een sectie — een gebied, een
-groep — is de markering hol en betekent *iets hieronder*: het optelsel, zodat de
-kop van een gebied zegt waar het hele gebied op leunt voordat u de capabilities
-leest. Applicaties die een ander niveau bezit staan bovenaan gegroepeerd onder
-de naam van dat niveau, want de systemen die de capabilities van de organisatie
-ondersteunen zijn meestal die van een landschap, en een kolom die niet zegt van
-wie hij is heeft de helft gezegd.
+**Dekking**, op de schakelaar naast **Overzicht** en **Namen**, is dezelfde laag
+andersom gelezen, in het tabblad van het blad zelf: elke functie aan de zijkant, een
+kolom per applicatie die de regels noemen, en een teken waar de een de ander
+ondersteunt. De eerste druk maakt de kaart als de scope er geen heeft en je mag
+schrijven; ook **+** in de tabbladen maakt er een, en **Nieuwe kaart in deze scope**
+onder **⋯** een tweede, die naast de schakelaar staat. Ze houdt haar eigen adres, en
+een agent bereikt haar daar.
 
-Twee kolommen komen laatst. **Mensen** is gemarkeerd waar iemand toegewezen is
-— één kolom en niet één per belanghebbende, want "met de hand gedaan" is één
-antwoord. **Dekking** is het gat: *ongedekt* bij een capability die niets en
-niemand dekt, *mensen* bij een die met de hand gedaan wordt zonder systeem, en
-bij een sectie hoeveel capabilities eronder ongedekt zijn. De bovenbalk telt de
-drie op. Een kaart met een *per*-dag telt de rijen die op die dag gelden, dus
-een systeem dat in maart iets gaat ondersteunen is op de kaart van februari een
-gat.
+Ze opent op twee niveaus, met **1 2 3** voor meer. Naast elke naam staat waar die op
+uitkomt: **Gedekt**, in woorden (*2 systemen*, *door mensen*, *niets*, en *3 van 4* op
+een sectie), en **Mensen**, waar iemand is toegewezen. Op een sectie zegt een getal
+hoeveel capabilities eronder elke applicatie ondersteunt. Applicaties van een andere
+scope staan onder de naam van die scope, die ze ook inklapt. **Alle**, **Gaten** en
+**Overlappen** maken van de pagina een gewone lijst, en **Zoeken** doet dat voor een
+naam. **Dag** telt de regels die op de gekozen dag gelden, en terwijl je naar een
+andere dag kijkt kan niets worden gewijzigd. **Exporteren** bewaart de hele tabel als
+afbeelding, met titelblok. **Wat het tekent…** onder **⋯** kiest de gebieden.
 
-Kies een rij en hij opent rechts, zoals op het blad — *Ondersteund door…*
-inbegrepen, zodat een gat gedicht kan worden vanaf de pagina die het toont.
-Kies een kolomkop om de applicatie te openen, waar dit niveau hem heeft.
+Een druk selecteert, dus lezen verandert niets: een regel opent zijn paneel, en een
+kolomkop toont wat die applicatie ondersteunt, waar zij de enige is, en de weg
+erheen waar ze ook staat. **Spatie** op een cel koppelt of ontkoppelt, als één stap
+met **Ongedaan maken**; een koppeling in een andere scope wordt als zodanig genoemd en
+daar gewijzigd.
 
 ### Technologie
 

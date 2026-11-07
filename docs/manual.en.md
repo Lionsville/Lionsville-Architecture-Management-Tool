@@ -1871,31 +1871,29 @@ Opening an application from a capability's coverage takes you to a board that
 actually draws it, switching boards if the one you are on does not — and to the
 application's own page when no board draws it at all.
 
-### The enterprise map
+### Coverage
 
-**+** in the diagram tabs, then **Enterprise map**, makes the second laid-out
-view — or **Map** on the business architecture card of the organisation screen
-opens the root's. It is the same layer read the other way: every function down
-the side, in the order the sheet draws them and indented by depth; a column per
-application the rows name; a mark where one supports the other. On a section —
-an area, a grouping — the mark is hollow and means *something under this*: the
-roll-up, so the top of an area says what the whole area leans on before you
-read its capabilities. Applications another scope owns are grouped under that
-scope's name across the top, because the systems supporting the organisation's
-capabilities are usually a landscape's, and a column that does not say whose it
-is has said half.
+**Coverage**, on the switch beside **Overview** and **Names**, is the same layer
+read the other way, in the sheet's own tab: every function down the side, a column
+per application the rows name, and a mark where one supports the other. The first
+press makes the map where the scope has none and you may write; **+** in the
+diagram tabs makes one too, and **New map in this scope** under **⋯** a second,
+listed beside the switch. It keeps its own address, and an agent reaches it there.
 
-Two columns come last. **People** is marked where somebody is assigned — one
-column rather than one per stakeholder, because "done by hand" is one answer.
-**Coverage** is the gap: *uncovered* on a capability nothing and nobody covers,
-*people* on one done by hand without a system, and on a section how many of the
-capabilities under it are uncovered. The top bar adds the three up. A map with
-an *as of* day counts the rows live on that day, so a system that starts
-supporting something in March is a gap on February's map.
+It opens at two levels, with **1 2 3** for more. Beside each name stand what it
+comes to: **Covered**, in words (*2 systems*, *by people*, *nothing*, and *3 of 4* on
+a section), and **People**, where somebody is assigned. On a section a number says
+how many capabilities under it each application supports. Applications another
+scope owns stand under that scope's name, whose heading folds them. **All**, **Gaps**
+and **Overlaps** change the page to a plain list, and **Find** does the same for a
+name. **Day** counts the rows live on the day chosen, and nothing can be changed
+while you look at another day. **Export** saves the whole table as a picture, with
+its title block. **What it draws…** under **⋯** chooses the areas.
 
-Pick a row and it opens on the right, as on the sheet — *Supported by…*
-included, so a gap can be closed from the page that shows it. Pick a column
-heading to open the application, where this scope holds it.
+A press selects, so reading cannot change anything: a row opens its panel, and a
+column heading opens what that application supports, what it alone supports, and the
+way to it wherever it is kept. **Space** on a cell links or unlinks, as one step with
+its **Undo**; a link kept in another scope is said to be, and is changed there.
 
 ### Technology
 

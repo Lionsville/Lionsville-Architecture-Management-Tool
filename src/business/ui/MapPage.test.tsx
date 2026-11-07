@@ -103,6 +103,16 @@ describe('the matrix', () => {
     expect(screen.getByRole('columnheader', { name: 'This scope' })).toBeTruthy()
   })
 
+  it('keeps each owner’s columns together, and a column where it was when a link moves what comes first', () => {
+    const { rerender } = open({ describe: (id) => (id === 'wms' ? { name: 'Warehouse system', where: 'Stores' } : undefined) })
+    const heads = () => screen.getAllByRole('columnheader').map((th) => th.textContent).filter((word) => word === 'Warehouse system' || word === 'Finance system' || word === 'Handheld scanners')
+    const before = heads()
+    expect(before).toHaveLength(3)
+    const row = model().relations.filter((one) => one.targetId !== 'picking')
+    rerender(<MapPage open model={model({ relations: [{ id: 'first', type: 'supports', sourceId: 'erp', targetId: 'picking' }, ...row] })} map={MAP} readOnly={false} actions={actions()} onClose={() => {}} />)
+    expect(heads().filter((word) => before.includes(word))).toEqual(before.filter((word) => heads().includes(word)))
+  })
+
   it('draws no owner band when every system is this scope’s own', () => {
     open()
     expect(screen.queryByRole('columnheader', { name: 'This scope' })).toBeNull()

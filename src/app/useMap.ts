@@ -34,7 +34,9 @@ export function useMap(deps: { session: ModelSession; makeId: MakeId; s: Transla
   const mapId = active?.kind === 'map' ? active.id : undefined
 
   const create = useCallback(() => {
-    const map = seedMap({ id: makeId('mp'), name: s('shell.newMap') })
+    // A second one is told apart under the reading's menu, where only the name says which.
+    const held = session.current().diagrams.filter((diagram) => diagram.kind === 'map').length
+    const map = seedMap({ id: makeId('mp'), name: held === 0 ? s('shell.newMap') : `${s('shell.newMap')} ${held + 1}` })
     session.dispatch({ type: 'diagram.create', diagram: toDiagram(map) }, { activeDiagramId: map.id })
   }, [session, makeId, s])
 
