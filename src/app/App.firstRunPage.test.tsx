@@ -75,7 +75,7 @@ describe('Your work', () => {
   it('says the place in a sentence, what can lose it, and when a copy was last saved', async () => {
     renderApp({ repositories: heldRepositories([]), provider: { sayings: { labelKey: 'shell.sourceBrowser', whereKey: 'browser.where', riskKey: 'browser.risk' } } })
     const word = await screen.findByTestId('saved-indicator')
-    expect(word.textContent).toBe('In this browser')
+    expect(word.textContent).toBe('✓In this browser')
     fireEvent.click(word)
     expect((await screen.findByTestId('work-risk')).textContent).toContain('keep a copy somewhere safe')
     expect(screen.getByText('Last copy saved')).toBeDefined()

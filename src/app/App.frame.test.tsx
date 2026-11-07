@@ -181,7 +181,7 @@ describe('the status word', () => {
       boot: { initialProject: TREE()[2] },
       provider: { publishesSteps: true, status: () => 'clean', connected: () => up } as never,
     })
-    await waitFor(() => expect(screen.getByTestId('saved-indicator').textContent).toBe('Working offline'))
+    await waitFor(() => expect(screen.getByTestId('saved-indicator').textContent).toBe('○Working offline'))
     up = true
   })
 })

@@ -78,7 +78,7 @@ describe('what the root’s home says you are working from', () => {
 
   it('calls it what its provider calls a source of its kind, with its name in it', () => {
     renderApp({ source: folder, provider: folderSays })
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Folder · Architecture')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓Folder · Architecture')
   })
 
   it('says where it is kept and what it costs you on the word\'s panel, in its provider\'s sentences', async () => {
@@ -95,7 +95,7 @@ describe('what the root’s home says you are working from', () => {
 
   it('draws the source that keeps nothing in the warning colour', () => {
     renderApp({ source: { provider: 'memory', name: '', key: '', transient: true }, provider: { sayings: { labelKey: 'shell.sourceMemory' } } })
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Not kept anywhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('▲Not kept anywhere')
   })
 
   it('keeps it off the bar over an open scope, where the crumbs are', () => {
@@ -128,7 +128,7 @@ describe('a source a provider answers for', () => {
 
   it('is called on the home what its provider called it, with no word of ours in front', () => {
     renderApp({ source: elsewhere })
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓Elsewhere')
     // Not the nothing-is-kept strip: that is memory's, and this keeps things.
     expect(screen.queryByTestId('storage-notice')).toBeNull()
   })
@@ -153,11 +153,11 @@ describe('a source a provider answers for', () => {
       provider: { status: () => held, onWork: asked.onSourceWork },
     })
     const bar = await screen.findByTestId('saved-indicator')
-    expect(bar.textContent).toBe('Not saved yet · Elsewhere')
+    expect(bar.textContent).toBe('✓Not saved yet · Elsewhere')
 
     held = 'dirty'
     asked.tell()
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Unsaved changes')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('◌Unsaved changes')
   })
 
   /**
@@ -183,7 +183,7 @@ describe('a source a provider answers for', () => {
     fireEvent.click(screen.getByTestId('saved-indicator'))
     await screen.findByTestId('work-copy')
     expect(screen.queryByTestId('work-risk')).toBeNull()
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓Elsewhere')
   })
 
   it('hides what writes when it says it only reads', async () => {
@@ -239,7 +239,7 @@ describe('the chrome a registered provider brought', () => {
     renderApp({ source: elsewhere, provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] } })
     expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
     // Beside the app's own screen rather than instead of it.
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓Elsewhere')
   })
 
   it('is handed the session of the scope that is open, and told when it closes', async () => {
@@ -335,7 +335,7 @@ describe('the chrome a registered provider brought', () => {
       provider: { chrome: [{ kind: 'elsewhere', chrome: Strip }] },
     })
     expect(screen.getByTestId('provider-strip').textContent).toBe('en: nothing open')
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Architecture')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓Architecture')
   })
 
   /**
@@ -439,7 +439,7 @@ describe('the chrome a registered provider brought', () => {
         },
       })
       expect(screen.getByTestId('crash-fallback')).toBeDefined()
-      expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
+      expect(screen.getByTestId('saved-indicator').textContent).toBe('✓Elsewhere')
     } finally {
       spy.mockRestore()
     }
@@ -575,7 +575,7 @@ describe('a way in a registered provider brought', () => {
       provider: { waysIn: [{ ...chooser, required: true }, ...waysIn], sourceNeeded: false },
     })
     expect(screen.queryByTestId('first-run')).toBeNull()
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓Elsewhere')
   })
 
   /** Nothing registered, nothing drawn: every build in this repository. */
@@ -1081,7 +1081,7 @@ describe('the chip a registered provider names', () => {
     renderApp({ source: elsewhere })
     // With no chip of the provider's, the word on row one says the place.
     expect(screen.queryByTestId('working-source')).toBeNull()
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('Elsewhere')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓Elsewhere')
   })
 
   const board = laidOut({ id: 'd1', kind: 'layer7' as const, name: 'L7', placements: [] })

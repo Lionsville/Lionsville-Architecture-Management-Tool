@@ -122,7 +122,7 @@ describe('the tree', () => {
     expect((await screen.findByTestId('organisation-name')).textContent).toBe('Warehouse')
     expect(screen.getByTestId('crumb-current').textContent).toBe('Warehouse')
     // Nothing open, so nothing waits: the word says so on a home too.
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('In this browser')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓In this browser')
     // A board is opened from the home's list of boards, by its name.
     fireEvent.click(await screen.findByTestId('board-l7'))
     await waitFor(() => expect(screen.getByTestId('saved-indicator')).toBeDefined())
@@ -226,7 +226,7 @@ describe('the tree', () => {
     // And it is entered on its home, empty until a board is made: there is no
     // board to open it on, and the canvas would say so as an error.
     await waitFor(() => expect(screen.getByTestId('organisation-name').textContent).toBe('Returns'))
-    expect(screen.getByTestId('saved-indicator').textContent).toBe('In this browser')
+    expect(screen.getByTestId('saved-indicator').textContent).toBe('✓In this browser')
     expect(screen.queryByText(/Diagram not found|no view here to show/)).toBeNull()
   })
 
