@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { getNodesBounds, getViewportForBounds, type Node, type Viewport } from '@xyflow/react';
+import type { Rect } from '../../model/types';
 import { ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
 
 /**
@@ -12,9 +13,10 @@ import { ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
  * drawn, so a fit pressed while zoomed in on one card framed that one card.
  * `includeHiddenNodes` makes it fall back to a node's declared size — and
  * every node here declares one (`graph.ts`), so the whole board is what gets
- * framed, drawn or not.
+ * framed, drawn or not. A fit stops at 100%: three cards fill no screen, and
+ * one card at 250% is a magnified fragment, not the board.
  */
-export const FIT_ALL = { padding: 0.1, includeHiddenNodes: true } as const;
+export const FIT_ALL = { padding: 0.1, includeHiddenNodes: true, maxZoom: 1 } as const;
 
 /** How far the canvas zooms out and in, as every canvas does; the first framing is held to the same. */
 export const MIN_ZOOM = ZOOM_FLOOR;
@@ -40,5 +42,10 @@ export function viewportOverNodes<N extends Node>(
   if (nodes.length === 0 || !(width > 0) || !(height > 0)) return undefined;
   const bounds = getNodesBounds([...nodes]);
   if (!(bounds.width > 0) || !(bounds.height > 0)) return undefined;
-  return getViewportForBounds(bounds, width, height, MIN_ZOOM, MAX_ZOOM, FIT_ALL.padding);
+  return viewportOverRect(bounds, width, height);
+}
+
+/** The viewport that frames this rectangle of the board in a pane of this size. */
+export function viewportOverRect(rect: Rect, width: number, height: number): Viewport {
+  return getViewportForBounds(rect, width, height, MIN_ZOOM, FIT_ALL.maxZoom, FIT_ALL.padding);
 }

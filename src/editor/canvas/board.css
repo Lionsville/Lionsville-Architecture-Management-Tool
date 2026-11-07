@@ -1,0 +1,204 @@
+/* The drawing of a board: what the kit's parts cannot say for themselves because React Flow draws them. */
+
+/* What recedes under the focus. A line only: what is written recedes by its ink. */
+.lv-board { --focus-fade: .25; }
+
+/* Decided before it is shown (`useBoardFrame`). */
+.lv-board[data-unframed] .react-flow__viewport { visibility: hidden; }
+
+.lv-board .react-flow__renderer,
+.lv-board .react-flow { background: var(--canvas-ground); }
+
+/* Say it once for a tile: fills its stored box and never spills out of it. */
+.lv-tile { width: 100%; height: 100%; overflow: hidden; }
+.lv-tile--outside { border-style: dashed; }
+.lv-tile .kit-card__sub {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+[data-distance='far'] .lv-tile .kit-card__sub { display: none; }
+.lv-tile .kit-card__head { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+.lv-tile .kit-card__marks { flex: none; }
+.lv-board[data-hide-descriptions] .lv-tile__description { display: none; }
+.lv-board[data-hide-status] .lv-statuses { display: none; }
+
+/* A logo holds its size on screen, as the words do. */
+.lv-tile__icon { display: flex; zoom: calc(1 / var(--canvas-zoom, 1)); }
+
+/* What sits in a tile's corner, and stays at any distance. */
+.lv-tile__corner {
+  position: absolute;
+  top: calc(var(--s-1) / var(--canvas-zoom, 1));
+  right: calc(var(--s-1) / var(--canvas-zoom, 1));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--ink-3);
+  zoom: calc(1 / var(--canvas-zoom, 1));
+}
+.lv-tile--corner .kit-card__name { padding-right: calc(18px / var(--canvas-zoom, 1)); }
+
+/* A colour question, on a card: its wash, and the band's number. */
+.lv-tile[data-lens] { background: var(--lv-lens-wash); }
+.lv-lens-tag {
+  min-width: 16px;
+  padding: 0 3px;
+  border-radius: var(--r-1);
+  background: var(--lv-lens-ink);
+  color: var(--lv-lens-on);
+  font-size: var(--t-xs);
+  font-weight: var(--fw-strong);
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+/* While a lens is up nothing else on the board is coloured. */
+.lv-board[data-lens] .lv-statuses { filter: grayscale(1); }
+
+/* Status: a shape, then from the middle distance a code on its soft ground. */
+.lv-statuses { display: flex; flex-wrap: wrap; align-items: center; gap: calc(var(--s-1) / var(--canvas-zoom, 1)); }
+.lv-status {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(3px / var(--canvas-zoom, 1));
+  padding: 0 calc(5px / var(--canvas-zoom, 1));
+  border-radius: var(--r-1);
+  color: var(--ink-2);
+  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  font-weight: var(--fw-strong);
+  letter-spacing: .02em;
+  line-height: calc(16px / var(--canvas-zoom, 1));
+  white-space: nowrap;
+}
+.lv-status .kit-mark {
+  width: calc(var(--mark-size) / var(--canvas-zoom, 1));
+  height: calc(var(--mark-size) / var(--canvas-zoom, 1));
+}
+.lv-status[data-status='managed'] { background: var(--ok-soft); }
+.lv-status[data-status='partial'] { background: var(--warn-soft); }
+.lv-status[data-status='risk'] { background: var(--bad-soft); }
+.lv-status[data-status='unset'] { color: var(--ink-3); }
+[data-distance='far'] .lv-status { padding: 0; background: none; }
+[data-distance='far'] .lv-status__code { display: none; }
+
+/* Lifecycle is a word on the card. */
+.lv-life {
+  margin-left: auto;
+  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  font-weight: var(--fw-strong);
+  line-height: var(--lh-tight);
+  white-space: nowrap;
+}
+.lv-life[data-phase='planned'] { color: var(--life-planned); }
+.lv-life[data-phase='retiring'] { color: var(--life-retiring); }
+.lv-life[data-phase='retired'] { color: var(--ink-3); }
+
+/* One nub on the card under the pointer; the rest of the handles are there, and quiet. */
+.lv-board .react-flow__handle {
+  width: calc(10px / var(--canvas-zoom, 1));
+  height: calc(10px / var(--canvas-zoom, 1));
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  background: transparent;
+  opacity: 1;
+}
+/* A target the size a finger or a slow hand needs, on all four sides, drawn or not. */
+.lv-board .react-flow__handle::before {
+  content: '';
+  position: absolute;
+  inset: calc(-7px / var(--canvas-zoom, 1));
+}
+.lv-board .react-flow__node:hover .lv-nub.connectable,
+.lv-board .react-flow__node.selected .lv-nub.connectable,
+.lv-board .lv-nub.connectable:focus-visible {
+  border: calc(2px / var(--canvas-zoom, 1)) solid var(--surface);
+  background: var(--selected-edge);
+  box-shadow: 0 0 0 calc(1px / var(--canvas-zoom, 1)) var(--selected-edge);
+}
+.lv-board .react-flow__handle.lv-side { pointer-events: none; }
+.lv-board[data-connecting] .react-flow__handle.lv-side { pointer-events: all; }
+
+/* While a line is in hand every card it may land on is ringed. */
+.lv-board[data-connecting] .react-flow__node:not([data-id='__none__']) .kit-card {
+  outline: calc(1px / var(--canvas-zoom, 1)) dashed var(--selected-edge);
+  outline-offset: calc(2px / var(--canvas-zoom, 1));
+}
+.lv-board[data-connecting] .react-flow__node:hover .kit-card {
+  outline: calc(2px / var(--canvas-zoom, 1)) solid var(--selected-edge);
+}
+.lv-connect-word {
+  padding: 1px 6px;
+  border: 1px solid var(--line-focus);
+  border-radius: var(--r-1);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: calc(var(--t-xs) / var(--canvas-zoom, 1));
+  white-space: nowrap;
+}
+
+/* Lines hold their width and head on screen; the head scales with the stroke's width. */
+.lv-edge-chip { transform-origin: center; }
+[data-distance='far'] .lv-edge-chip:not([data-up]) { display: none; }
+
+/* The credit, on the board's ground and out of the way. */
+.lv-board .react-flow__attribution { background: transparent; color: var(--ink-3); }
+.lv-board .react-flow__attribution a { color: var(--ink-3); }
+.lv-board .react-flow__minimap { opacity: .9; }
+
+.lv-connecting { pointer-events: none; }
+.lv-started { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.lv-board[data-alt] .react-flow__node:hover .lv-side.connectable {
+  pointer-events: all;
+  border: calc(2px / var(--canvas-zoom, 1)) solid var(--surface);
+  background: var(--selected-edge);
+}
+
+.lv-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--s-1);
+  padding: 2px var(--s-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+.lv-selection-bar__count { color: var(--ink-2); font-size: var(--t-sm); }
+
+.lv-empty {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  z-index: 4;
+  width: min(450px, 80%);
+  box-sizing: border-box;
+  padding: var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-3);
+  background: var(--surface-raised);
+  transform: translate(-50%, -50%);
+}
+.lv-empty__title { margin: 0 0 var(--s-2); font-size: var(--t-md); font-weight: var(--fw-strong); }
+.lv-empty__how { margin: 0 0 var(--s-3); color: var(--ink-2); }
+.lv-empty__acts { display: flex; gap: var(--s-2); }
+
+/* Far off a small logo gives way to the name; a large one is what the tile leads with. */
+[data-distance='far'] .lv-tile__icon:not([data-large]) { display: none; }
+
+/* Board settings */
+.lv-settings__cards, .lv-settings__export { display: grid; gap: var(--s-3); padding-block-start: var(--s-3); }
+.lv-settings__columns { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: var(--s-4); }
+.lv-settings__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.lv-settings__title { margin: 0; font-size: var(--t-md); font-weight: var(--fw-strong); }
+.lv-settings__help { margin: 0; color: var(--ink-2); font-size: var(--t-sm); }
+.lv-settings__preview { display: grid; align-content: start; gap: var(--s-2); }
+.lv-settings__pair { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+.lv-settings__handle { border: 0; background: transparent; color: var(--ink-2); font: inherit; cursor: grab; min-width: var(--target-min); min-height: var(--target-min); }
+.lv-settings__handle:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+
+/* The key gives way to the dock, wrapping its words. */
+.lv-board { container-type: inline-size; }
+.lv-board .react-flow__panel.right .kit-key { max-width: max(240px, calc(100cqw - 400px)); }

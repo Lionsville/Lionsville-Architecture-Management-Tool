@@ -61,7 +61,7 @@ describe('LifecycleBadge', () => {
       const { getByText, getByLabelText } = withProviders(
         <LifecycleBadge lifecycle={lifecycle} show />,
       );
-      expect(getByText(lifecycle)).toBeDefined();
+      expect(getByText(t('en', `lifecycle.${lifecycle}`))).toBeDefined();
       // Flipped in 4B: the badge's accessible name now goes through the string
       // table, so it reads the lifecycle's NAME ("Retired") rather than its
       // stored value ("retired") — and it says it in the UI language.
@@ -121,41 +121,29 @@ const KINDS: { name: string; type: ElementNodeProps['type']; Node: ComponentType
 
 describe.each(KINDS)('$name lifecycle badge', ({ type, Node }) => {
   it('shows the badge for a non-live lifecycle when the toggle is on', () => {
-    const { getByText } = withProviders(<Node {...props(type, 'planned', true)} />);
-    expect(getByText('planned')).toBeDefined();
+    const { getByLabelText } = withProviders(<Node {...props(type, 'planned', true)} />);
+    expect(getByLabelText('Lifecycle: Planned')).toBeDefined();
   });
 
   it('omits the badge for the live state', () => {
-    const { queryByText } = withProviders(<Node {...props(type, 'live', true)} />);
-    expect(queryByText('live')).toBeNull();
+    const { queryByLabelText } = withProviders(<Node {...props(type, 'live', true)} />);
+    expect(queryByLabelText('Lifecycle: Live')).toBeNull();
   });
 
   it('omits the badge when the toggle hides it', () => {
-    const { queryByText } = withProviders(<Node {...props(type, 'planned', false)} />);
-    expect(queryByText('planned')).toBeNull();
+    const { queryByLabelText } = withProviders(<Node {...props(type, 'planned', false)} />);
+    expect(queryByLabelText('Lifecycle: Planned')).toBeNull();
   });
 });
 
-// The retired dim must not swallow the badge: CSS opacity creates a stacking
-// context over its whole subtree, so a badge nested inside the dimmed box would
-// render at 55% and stop being the legible-under-dim channel. The badge must be
-// a sibling of the dimmed content box, never a descendant — asserted here for
-// ComponentNode (regression) and cross-checked on a wrapped kind.
+// Retired recedes by its ink and not by opacity, so its word stays as readable as any.
 describe.each([
   { name: 'ComponentNode', type: 'component' as const, Node: ComponentNode },
   { name: 'ApplicationCardNode', type: 'application' as const, Node: ApplicationCardNode },
-])('$name retired dim', ({ type, Node }) => {
-  it('renders the RETIRED badge outside the dimmed content subtree', () => {
-    const { getByLabelText, getByText } = withProviders(<Node {...props(type, 'retired', true)} />);
-    const badge = getByLabelText('Lifecycle: Retired');
-    const name = getByText('Example');
-    const wrapper = badge.parentElement;
-    expect(wrapper).not.toBeNull();
-    const dimmedBox = Array.from(wrapper!.children).find(
-      (child) => child !== badge && child.contains(name),
-    );
-    expect(dimmedBox).toBeDefined();
-    // The badge is a sibling of the dimmed box, not nested within it.
-    expect(dimmedBox!.contains(badge)).toBe(false);
+])('$name retired', ({ type, Node }) => {
+  it('dims the card and keeps saying so', () => {
+    const { getByLabelText, container } = withProviders(<Node {...props(type, 'retired', true)} />);
+    expect(getByLabelText('Lifecycle: Retired')).toBeDefined();
+    expect(container.querySelector('.kit-card')?.getAttribute('data-dimmed')).toBe('true');
   });
 });

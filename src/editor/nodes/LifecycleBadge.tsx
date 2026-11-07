@@ -1,57 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import Box from '@mui/material/Box';
-import Tooltip from '@mui/material/Tooltip';
-import { useTheme } from '@mui/material/styles';
-import { getNodeTokens } from '../theme/tokens';
+import type { ReactNode } from 'react';
 import { useStrings } from '../../i18n/LanguageContext';
+import type { Translate } from '../../i18n';
 import type { StringKey } from '../../i18n/strings';
 import type { Lifecycle } from '../../model/types';
 
 /**
- * Shared lifecycle badge (U5): a compact, colour-coded uppercase pill shown in
- * the top-right of every node kind. Colour comes from `tokens.lifecycle`
- * (theme-derived, light/dark-aware); the uppercase text label is a second,
- * non-colour channel so lifecycle is never colour-only (accessibility, D1).
- *
- * Renders nothing for `live` (the normal state — badging every node is noise,
- * D3) or when the toolbar toggle hides it. It is an absolute overlay anchored
- * to the node's positioned wrapper and sits *outside* each root box's
- * `overflow: hidden`, so it never clips on the rounded/stadium or small chip
- * shapes (plan positioning constraints, non-clipped-wrapper fallback).
+ * Lifecycle is a word on the card (U5): *Retiring*, *Planned*, *Retired*, and nothing
+ * for `live`, the normal state, since badging every card is noise. A colour would be
+ * one more thing the board says at once, so the word is the channel and its ink quiet.
  */
-export function LifecycleBadge({ lifecycle, show }: { lifecycle: Lifecycle; show: boolean }) {
-  const { t } = useStrings();
-  const tokens = getNodeTokens(useTheme());
-  if (!show || lifecycle === 'live') return null;
-  const token = tokens.lifecycle[lifecycle];
+export function lifecycleWord(lifecycle: Lifecycle, t: Translate): ReactNode {
+  if (lifecycle === 'live') return undefined;
   const word = t(`lifecycle.${lifecycle}` as StringKey);
   return (
-    <Tooltip title={t('node.lifecycleAria', { name: word })}>
-    <Box
-      role="img"
-      aria-label={t('node.lifecycleAria', { name: word })}
-      sx={{
-        position: 'absolute',
-        top: 3,
-        right: 3,
-        zIndex: 2,
-        px: 0.5,
-        fontSize: 8,
-        fontWeight: 700,
-        letterSpacing: 0.4,
-        lineHeight: '13px',
-        borderRadius: '3px',
-        textTransform: 'uppercase',
-        whiteSpace: 'nowrap',
-        color: token.fg,
-        backgroundColor: token.bg,
-        border: `1px solid ${token.border}`,
-      }}
-    >
-      {lifecycle}
-    </Box>
-    </Tooltip>
+    <span className="lv-life" data-phase={lifecycle} role="img" aria-label={t('node.lifecycleAria', { name: word })}>
+      {word}
+    </span>
   );
+}
+
+/** The same word where something other than a tile is drawn, in its corner. */
+export function LifecycleBadge({ lifecycle, show }: { lifecycle: Lifecycle; show: boolean }) {
+  const { t } = useStrings();
+  if (!show) return null;
+  const word = lifecycleWord(lifecycle, t);
+  return word ? <span className="lv-tile__corner">{word}</span> : null;
 }

@@ -1,0 +1,139 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+import type { ReactNode } from 'react';
+import Tooltip from '@mui/material/Tooltip';
+import type { Translate } from '../../i18n';
+import { useStrings } from '../../i18n/LanguageContext';
+import type { Lifecycle } from '../../model/types';
+import { Card } from '../../widgets/kit/Card';
+import { hasDocumentation, shortDescription } from '../../documentation/documentation';
+import { shapeRadiusFor, type NodeShapeKind } from '../theme/elementStyle';
+import { AspectBadgeRow } from './AspectBadgeRow';
+import { BlockGlyph, DocGlyph, DrillGlyph, WarningGlyph } from './glyphs';
+import { lifecycleWord } from './LifecycleBadge';
+import { iconSlotSize, NodeIcon, NodeShell, usesBodyIcon } from './NodeShell';
+import { shownDescription, type ElementNodeProps } from './nodeData';
+
+/**
+ * Every kind on a board, drawn as one thing: the kit's Card, which says more as the
+ * reader comes closer. Far off a name and its marks; from 70% what it does; from 120%
+ * what it is made by. A neutral fill and edge, with colour only for status and the one
+ * lens that is up. What a person set by hand as its accent stays, as the thin rail.
+ *
+ * A kind differs by what it adds, not by what it looks like: its band says what it is.
+ */
+export function BoardTile({ data, selected, shape, outside, sub, about, statuses, figure }: Pick<ElementNodeProps, 'data' | 'selected'> & {
+  shape: NodeShapeKind;
+  /** It belongs to nobody here: told by a dashed edge. */
+  outside?: boolean;
+  /** Said from the middle distance, above the description. */
+  sub?: ReactNode;
+  /** Said only near. */
+  about?: ReactNode;
+  /** Whether this kind carries the board's status columns. */
+  statuses?: boolean;
+  /** Stands in the logo's place where this kind has a mark of its own. */
+  figure?: ReactNode;
+}) {
+  const { t } = useStrings();
+  const { element, note } = data;
+  // A lens asks about what the board's status columns are on: the applications.
+  const overlay = statuses ? data.overlay : undefined;
+  const overlayFaded = statuses ? data.overlayFaded : undefined;
+  const description = shortDescription(shownDescription(data));
+  const large = usesBodyIcon(element);
+  const phase = data.phase ?? element.lifecycle;
+  const retired = data.showLifecycle && phase === 'retired';
+  const corner = cornerMarks(overlay ? data : { ...data, overlay: undefined }, t);
+  const marks = tileMarks(data, phase, statuses === true, t);
+  const lens = overlay
+    ? { '--lv-lens-wash': overlay.tint, '--lv-lens-ink': overlay.ink, '--lv-lens-on': overlay.on } as React.CSSProperties
+    : undefined;
+  return (
+    <NodeShell
+      element={element}
+      selected={selected}
+      readOnly={data.readOnly}
+      showLifecycle={false}
+      phase={phase}
+      resizeLimits={data.resizeLimits}
+      selectionRing={false}
+    >
+      <Card
+        className={`lv-tile${outside ? ' lv-tile--outside' : ''}${corner.length > 0 ? ' lv-tile--corner' : ''}`}
+        name={element.name}
+        title={element.name}
+        data-lens={overlay ? true : undefined}
+        style={{ ...lens, borderRadius: shapeRadiusFor(shape, element.shapeVariant, Boolean(description)) }}
+        selected={selected}
+        dimmed={retired || overlayFaded === true}
+        planned={phase === 'planned' && data.showLifecycle}
+        {...(overlay ? { rail: overlay.ink } : element.accentColor ? { rail: element.accentColor } : {})}
+        lead={tileLead(element, figure, large)}
+        sub={sub || description ? (
+          <>
+            {sub}
+            {description && <span className="lv-tile__description">{sub ? ' ' : ''}{description}</span>}
+          </>
+        ) : undefined}
+        about={about || note ? <>{note?.from}{note && about ? ' · ' : ''}{about}</> : undefined}
+        marks={marks}
+        hoverWord={data.hasContainerDiagram ? t('node.openContainer') : undefined}
+      />
+      {corner.length > 0 && <span className="lv-tile__corner" style={lens}>{corner}</span>}
+    </NodeShell>
+  );
+}
+
+/** What stays on a tile at every distance: its status columns where its kind has them, and a phase that is not the plain one. */
+function tileMarks(data: ElementNodeProps['data'], phase: Lifecycle, statuses: boolean, t: Translate): ReactNode {
+  const row = statuses && data.aspectConfig.length > 0;
+  const life = data.showLifecycle ? lifecycleWord(phase, t) : undefined;
+  if (!row && !life) return undefined;
+  return (
+    <>
+      {row && <AspectBadgeRow aspects={data.element.aspects} config={data.aspectConfig} />}
+      {life}
+    </>
+  );
+}
+
+/** A logo somebody chose, or the kind's own figure; a large one leads at any distance. */
+function tileLead(element: ElementNodeProps['data']['element'], figure: ReactNode, large: boolean): ReactNode {
+  const icon = (
+    <NodeIcon
+      element={element}
+      size={iconSlotSize(element)}
+      fallback={figure ?? (element.kind === 'buildingBlock' ? <BlockGlyph /> : undefined)}
+    />
+  );
+  if (!element.iconKey && !figure && element.kind !== 'buildingBlock') return undefined;
+  return <span className="lv-tile__icon" data-large={large || undefined}>{icon}</span>;
+}
+
+/** What stays in the corner at every distance: a diagram under it, a document, a finding, the lens's number. */
+function cornerMarks(data: ElementNodeProps['data'], t: Translate): ReactNode[] {
+  const marks: ReactNode[] = [];
+  if (data.overlay) {
+    marks.push(
+      <span key="lens" className="lv-lens-tag" data-testid="overlay-tag" aria-label={t('node.overlayBand', { index: String(data.overlay.index) })}>
+        {data.overlay.index}
+      </span>,
+    );
+  }
+  if (data.note?.warning) {
+    marks.push(
+      <span key="warning" role="img" data-testid="stand-in-warning" title={data.note.warning} aria-label={data.note.warning}>
+        <WarningGlyph size={11} />
+      </span>,
+    );
+  }
+  if (data.hasContainerDiagram) {
+    marks.push(<Tooltip key="drill" title={t('node.hasContainer')}><span role="img"><DrillGlyph /></span></Tooltip>);
+  }
+  if (hasDocumentation(shownDescription(data))) {
+    marks.push(<Tooltip key="doc" title={t('node.hasDocumentation')}><span role="img" data-testid="doc-glyph"><DocGlyph /></span></Tooltip>);
+  }
+  return marks;
+}

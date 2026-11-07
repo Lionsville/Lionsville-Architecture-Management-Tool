@@ -262,7 +262,7 @@ describe('Layer7Canvas — domain-group context menu', () => {
     fireEvent.click(screen.getByText('Tidy this group'));
 
     expect(screen.getByText('Direction')).toBeDefined();
-    expect(screen.getByText('Density')).toBeDefined();
+    expect(screen.getByText('Spacing')).toBeDefined();
     expect(screen.getByText('Tidy Core', { selector: 'button' })).toBeDefined();
   });
 
@@ -339,15 +339,13 @@ describe('Layer7Canvas — group colour', () => {
     expect(actions.setDomainGroupColor).toHaveBeenCalledWith('core', undefined);
   });
 
-  it('tints the box and its label, and leaves an uncoloured group neutral', () => {
+  it('keeps a colour as the thin rail, and leaves an uncoloured group neutral', () => {
     renderCanvas({ groupColor: '#2f6fdb' });
-    const box = screen.getByTestId('lv-domain-group');
-    expect(box.style.borderColor).toBe('rgb(47, 111, 219)');
-    expect(box.style.backgroundColor).not.toBe('');
+    expect(screen.getByTestId('lv-domain-group').style.borderLeft).toContain('#2f6fdb');
     cleanup();
 
     renderCanvas();
-    expect(screen.getByTestId('lv-domain-group').style.borderColor).not.toBe('rgb(47, 111, 219)');
+    expect(screen.getByTestId('lv-domain-group').style.borderLeft).not.toContain('#2f6fdb');
   });
 
   /** A decoration is never worth taking the canvas down for. */

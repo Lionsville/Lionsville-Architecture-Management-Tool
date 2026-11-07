@@ -2,77 +2,10 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { memo } from 'react';
-import Typography from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
-import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
-import { getNodeTokens } from '../theme/tokens';
-import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
+import { BoardTile } from './BoardTile';
 import type { ElementNodeProps } from './nodeData';
-import { shownDescription } from './nodeData';
 
-/**
- * Component: C4 container box with a technology line and description.
- * Resizable when selected. It once carried a warning about incomplete
- * parameters; those fields never reached a screen and were removed with
- * ADR-0009.
- *
- * Phase 3 lit its icon slot: a component is as likely to be "the Kafka one" or
- * "the Postgres one" as an application is, and the old three-kind vendor gate
- * kept the mark off it for no reason anyone could name. The mark sits above the
- * name, because this card centres its content rather than leading with a row.
- */
-export const ComponentNode = memo(function ComponentNode({
-  data,
-  selected,
-  height,
-}: ElementNodeProps) {
-  const theme = useTheme();
-  const tokens = getNodeTokens(theme);
-  const { element } = data;
-  return (
-    <NodeShell
-      element={element}
-      selected={selected}
-      readOnly={data.readOnly}
-      showLifecycle={data.showLifecycle}
-      phase={data.phase}
-      resizeLimits={data.resizeLimits}
-      sx={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        textAlign: 'center',
-        px: 1,
-        py: 0.75,
-        backgroundColor: tokens.component.bg,
-        border: `1px solid ${resolveAccent(element, tokens.component.border)}`,
-        borderRadius: shapeRadiusFor('component', element.shapeVariant, false),
-      }}
-    >
-      <NodeIcon
-        element={element}
-        size={iconSlotSize(element)}
-        color={tokens.card.subtitle}
-      />
-      <Typography
-        sx={{
-          fontSize: 12,
-          fontWeight: 700,
-          color: tokens.component.fg,
-          maxWidth: '100%',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {element.name}
-      </Typography>
-      <Typography sx={{ fontSize: 9.5, fontStyle: 'italic', color: tokens.card.subtitle }}>
-        [{element.technology?.trim() || 'Container'}]
-      </Typography>
-      <NodeDescription figure="component" text={shownDescription(data)} height={height} />
-    </NodeShell>
-  );
+/** A container on its application's diagram: what it is built with, then what it does. */
+export const ComponentNode = memo(function ComponentNode({ data, selected }: ElementNodeProps) {
+  return <BoardTile data={data} selected={selected} shape="component" sub={`[${data.element.technology?.trim() || 'Container'}]`} />;
 });

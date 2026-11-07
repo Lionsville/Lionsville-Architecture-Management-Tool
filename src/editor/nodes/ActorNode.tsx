@@ -5,20 +5,15 @@ import { memo } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { useTheme } from '@mui/material/styles';
-import { resolveAccent, shapeRadiusFor } from '../theme/elementStyle';
-import { getNodeTokens } from '../theme/tokens';
 import { useStrings } from '../../i18n/LanguageContext';
-import { PersonGlyph, StickmanGlyph } from './glyphs';
-import { iconSlotSize, NodeDescription, NodeIcon, NodeShell } from './NodeShell';
+import { resolveAccent } from '../theme/elementStyle';
+import { getNodeTokens } from '../theme/tokens';
+import { BoardTile } from './BoardTile';
+import { StickmanGlyph } from './glyphs';
+import { NodeShell } from './NodeShell';
 import type { ElementNodeProps } from './nodeData';
-import { shownDescription } from './nodeData';
-import { shortDescription } from '../../documentation/documentation';
 
-/**
- * Stickman/figure mark (D11). The paths live in `glyphs.tsx` so the palette can
- * draw the same figure; this wrapper supplies what the NODE owns — the accent
- * colour (`currentColor` inherits it), the 26×34 box, and the announcement.
- */
+/** The figure (D11), in the accent somebody chose, with its announcement. */
 function Stickman({ color }: { color: string }) {
   const { t } = useStrings();
   return (
@@ -29,24 +24,13 @@ function Stickman({ color }: { color: string }) {
 }
 
 /**
- * Actor: rounded chip with a person glyph (top zone of the Layer 7 board).
- *
- * Phase 3 lit its icon slot: a chosen mark replaces the generic person, so a
- * "Traveller", a "Conductor" and a "Service desk" stop looking like the same
- * box. The stickman variant keeps the figure — that render exists precisely to
- * be a figure, and swapping the figure for a logo would empty the choice.
+ * An actor (top zone of the board). The figure variant is a figure and no card, and
+ * exists to be one; every other actor is a tile like the rest.
  */
-export const ActorNode = memo(function ActorNode({ data, selected, height }: ElementNodeProps) {
+export const ActorNode = memo(function ActorNode({ data, selected }: ElementNodeProps) {
   const tokens = getNodeTokens(useTheme());
   const { element } = data;
-  const description = shortDescription(shownDescription(data));
-  const hasDescription = Boolean(description);
-
-  // D11: the stickman render bypasses the box/radius entirely (branches BEFORE
-  // shapeRadiusFor), so it never fights the actor's default pill/subtle radius.
-  // Actor-only — no other kind reaches ActorNode. It ignores `hasDescription`.
   if (element.shapeVariant === 'figure') {
-    const stroke = resolveAccent(element, tokens.actor.fg);
     return (
       <NodeShell
         element={element}
@@ -65,10 +49,10 @@ export const ActorNode = memo(function ActorNode({ data, selected, height }: Ele
           color: tokens.actor.fg,
         }}
       >
-        <Stickman color={stroke} />
+        <Stickman color={resolveAccent(element, tokens.actor.fg)} />
         <Typography
           sx={{
-            fontSize: 11.5,
+            fontSize: 'calc(11.5px / var(--canvas-zoom, 1))',
             fontWeight: 600,
             maxWidth: '100%',
             overflow: 'hidden',
@@ -81,57 +65,5 @@ export const ActorNode = memo(function ActorNode({ data, selected, height }: Ele
       </NodeShell>
     );
   }
-
-  return (
-    <NodeShell
-      element={element}
-      selected={selected}
-      readOnly={data.readOnly}
-      showLifecycle={data.showLifecycle}
-      phase={data.phase}
-      resizeLimits={data.resizeLimits}
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: hasDescription ? 'stretch' : 'center',
-        justifyContent: 'center',
-        gap: 0.25,
-        px: 1.25,
-        py: 0.5,
-        backgroundColor: tokens.actor.bg,
-        border: `1px solid ${resolveAccent(element, tokens.actor.border)}`,
-        // Pill when it's just a name; a 2-line description reads better in a
-        // rounded rect than stretched inside a stadium shape.
-        borderRadius: shapeRadiusFor('actor', element.shapeVariant, hasDescription),
-        color: tokens.actor.fg,
-        overflow: 'hidden',
-      }}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: hasDescription ? 'flex-start' : 'center',
-          gap: 0.75,
-          minWidth: 0,
-        }}
-      >
-        <NodeIcon element={element} size={iconSlotSize(element)} fallback={<PersonGlyph />} />
-        <Typography
-          sx={{
-            fontSize: 11.5,
-            fontWeight: 600,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {element.name}
-        </Typography>
-      </Box>
-      {hasDescription && (
-        <NodeDescription figure="actor" text={description} height={height} />
-      )}
-    </NodeShell>
-  );
+  return <BoardTile data={data} selected={selected} shape="actor" />;
 });

@@ -127,7 +127,8 @@ function useOverlay(
     const marks = new Map<ElementId, OverlayMark>();
     for (const band of overlay) {
       if (band.faded) continue;
-      const mark: OverlayMark = { tint: overlayTint(theme, band), ink: overlayInk(theme, band), index: overlayIndex(band) };
+      const ink = overlayInk(theme, band);
+      const mark: OverlayMark = { tint: overlayTint(theme, band), ink, on: theme.palette.getContrastText(ink), index: overlayIndex(band) };
       for (const id of band.memberIds) marks.set(id, mark);
     }
     return marks;

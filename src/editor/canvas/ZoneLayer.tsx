@@ -5,12 +5,12 @@ import { useRef, useState } from 'react';
 import { useReactFlow, ViewportPortal } from '@xyflow/react';
 import Box from '@mui/material/Box';
 import { alpha, useTheme } from '@mui/material/styles';
-import { getNodeTokens } from '../theme/tokens';
 import {
   canvasRect,
   canvasSizeFromPointer,
   RESIZABLE_ZONES,
   zoneLabel,
+  ZONE_MENU_LABEL_KEYS,
   zoneRect,
   zoneSizeFromPointer,
   zoneSizes,
@@ -19,6 +19,7 @@ import type { BoardGeometry } from '../../model/zones';
 import type { Layer7Zone, Rect, ResizableZone } from '../../model/types';
 import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
+import { Zone } from '../../widgets/kit/Zone';
 
 const HANDLE_THICKNESS = 8;
 
@@ -53,7 +54,6 @@ export function ZoneLayer({
 }) {
   const theme = useTheme();
   const { t } = useStrings();
-  const tokens = getNodeTokens(theme);
   // Remembered so the outline fades out over the band it was on, rather than
   // vanishing the moment the pointer leaves it.
   const lastDropZone = useRef<Layer7Zone | null>(null);
@@ -194,8 +194,6 @@ export function ZoneLayer({
           top: board.y,
           width: board.width,
           height: board.height,
-          border: `1px dashed ${tokens.canvas.outline}`,
-          borderRadius: 12,
           pointerEvents: 'none',
           zIndex: -2,
         }}
@@ -212,27 +210,11 @@ export function ZoneLayer({
                 top: rect.y + 4,
                 width: rect.width - 8,
                 height: rect.height - 8,
-                backgroundColor: tokens.zone.fill[zone],
-                borderRadius: 10,
                 pointerEvents: 'none',
                 zIndex: -2,
               }}
             >
-              <span
-                style={{
-                  position: 'absolute',
-                  top: 6,
-                  left: 12,
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: 1.4,
-                  color: tokens.zone.label,
-                  userSelect: 'none',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {zoneLabel(zone, t)}
-              </span>
+              <Zone name={t(ZONE_MENU_LABEL_KEYS[zone])} kind={zone === 'externalSystems' ? 'boundary' : 'zone'} />
             </div>
             {!readOnly && (
               <div

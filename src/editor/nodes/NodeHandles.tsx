@@ -3,20 +3,18 @@
 
 import { Fragment } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { useTheme } from '@mui/material/styles';
-import { getNodeTokens } from '../theme/tokens';
 import { useStrings } from '../../i18n/LanguageContext';
 
 /**
- * Four connection points — one per side — each backed by an overlapping
- * source + target handle so a link can be drawn from OR to any side. The
- * source handle renders last (on top) so a drag always *starts* a
- * source→target link.
+ * Connection points. One shows, on the card under the pointer: the nub at its right,
+ * a drawn dot at a fixed size whatever the zoom, with a target of the size a hand
+ * needs. Where a line lands is where it is released, so the four sides answer while a
+ * line is in hand, and Alt brings them all up for a person choosing the side it leaves.
  *
- * EVERY handle must carry a unique id (POC lesson): React Flow resolves an
- * edge's missing (null) sourceHandle/targetHandle to the *first* handle of
- * that type in DOM order — not to a per-side default — so id-less handles
- * silently pull links to whichever side renders first.
+ * Four sides, each a source and a target, and EVERY handle has a unique id (POC
+ * lesson): React Flow resolves an edge's missing handle to the first of its type in
+ * DOM order, not a per-side default, so an id-less handle pulls links to one side.
+ * The source renders last, on top, so a drag always starts a source-to-target link.
  */
 const SIDES = [
   { pos: Position.Top, source: 'top-s', target: 'top-t' },
@@ -27,24 +25,20 @@ const SIDES = [
 
 export function NodeHandles({ connectable }: { connectable: boolean }) {
   const { t } = useStrings();
-  const tokens = getNodeTokens(useTheme());
-  // The one hint a handle gives: a dot on a card's edge says nothing about
-  // what dragging it does. A title and not a Tooltip, because a handle is
-  // React Flow's element and the browser's own tip is enough for one line.
   const hint = connectable ? t('node.dragToConnect') : undefined;
-  const style: React.CSSProperties = {
-    width: 9,
-    height: 9,
-    background: tokens.handle.bg,
-    border: `2px solid ${tokens.handle.border}`,
-    opacity: connectable ? 0.55 : 0,
-  };
   return (
     <>
       {SIDES.map(({ pos, source, target }) => (
         <Fragment key={pos}>
-          <Handle type="target" position={pos} id={target} style={style} isConnectable={connectable} title={hint} />
-          <Handle type="source" position={pos} id={source} style={style} isConnectable={connectable} title={hint} />
+          <Handle type="target" position={pos} id={target} className="lv-side" isConnectable={connectable} />
+          <Handle
+            type="source"
+            position={pos}
+            id={source}
+            className={pos === Position.Right ? 'lv-nub' : 'lv-side'}
+            isConnectable={connectable}
+            title={hint}
+          />
         </Fragment>
       ))}
     </>

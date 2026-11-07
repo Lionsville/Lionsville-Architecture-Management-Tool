@@ -3,50 +3,29 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useReactFlow, ViewportPortal } from '@xyflow/react';
-import { alpha, useTheme } from '@mui/material/styles';
+import { useTheme } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
 import type { DiagramGroup, DomainGroupRect, Geometry, Point, Rect } from '../../model/types';
 import { useCanvasMenu } from './CanvasMenuContext';
 import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
-import { legibleOn } from '../../widgets';
 
 const MIN_GROUP_SIZE = 120;
 
 /**
- * How far a group's chosen colour reaches: the dashed border takes the hex
- * as-is, and the interior gets the same hue as a wash — enough to read the
- * group as a coloured region when the board is zoomed out, faint enough that a
- * card sitting on it still reads as a card. The wash is a touch stronger on
- * dark, where a 6% tint over a dark ground all but disappears.
- *
- * The label is the same hue, stepped away from the ground until its 10 px
- * capitals read (`legibleOn`). It took the hex as-is until the colour picker's
- * own grey came out at 3.3:1 on the light ground and a dark slate at 1.2:1 on
- * the dark one: a colour is picked for a region, in one mode, and the name
- * written on it has to read in both.
- *
- * A group with no colour is byte-identical to before: the neutral theme tokens.
- * So is a group with a colour this does not recognise: `alpha()` THROWS on an
- * unparseable colour, and a decoration is never worth taking the whole canvas
- * down for, so anything that is not a plain hex degrades to neutral.
+ * A group is told by its edge and its name, on the board's neutral ground, and a
+ * colour somebody chose stays as the thin rail at its left. Anything but a plain hex
+ * draws no rail: a decoration is never worth taking the canvas down for.
  */
 const HEX = /^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
 export function groupColors(
   theme: Theme,
   color: string | undefined,
-): { border: string; fill: string; label: string } {
+): { border: string; fill: string; label: string; rail?: string } {
   const tokens = getNodeTokens(theme);
-  if (!color || !HEX.test(color)) return tokens.domainGroup;
-  return {
-    border: color,
-    // Deeper on the light ground: a tint at a sixteenth over white was a region nobody could see.
-    fill: alpha(color, theme.palette.mode === 'dark' ? 0.1 : 0.12),
-    // Drawn on a patch of the ground (the label's own background, below).
-    label: legibleOn(color, theme.palette.background.default),
-  };
+  return color && HEX.test(color) ? { ...tokens.domainGroup, rail: color } : tokens.domainGroup;
 }
 
 /** One live move/resize: what was grabbed, where from, and where it is now. */
@@ -203,9 +182,7 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
           // ring lifts the box off the band behind it. The group's own colour
           // still owns the border and the wash — selection is a state on top of
           // the decoration, not a replacement for it.
-          const border = isSelected
-            ? `2px solid ${colors.border}`
-            : `1.5px dashed ${colors.border}`;
+          const border = `${isSelected ? 2 : 1}px solid ${colors.border}`;
           return (
             <div
               key={group.id}
@@ -220,7 +197,8 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                 border,
                 boxShadow: isSelected ? `0 0 0 4px ${theme.palette.action.selected}` : undefined,
                 backgroundColor: colors.fill,
-                borderRadius: 14,
+                borderRadius: 'var(--r-2)',
+                ...(colors.rail ? { borderLeft: `calc(3px / var(--canvas-zoom, 1)) solid ${colors.rail}` } : {}),
                 pointerEvents: 'none',
                 zIndex: -1,
               }}
@@ -274,15 +252,11 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                   }}
                   style={{
                     position: 'absolute',
-                    top: -9,
-                    left: 16,
-                    padding: '0 6px',
-                    backgroundColor: theme.palette.background.default,
-                    borderRadius: 4,
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: 1.1,
-                    textTransform: 'uppercase',
+                    top: 'calc(var(--s-1) / var(--canvas-zoom, 1))',
+                    left: 'calc(var(--s-2) / var(--canvas-zoom, 1))',
+                    fontSize: 'calc(var(--t-canvas-name) / var(--canvas-zoom, 1))',
+                    fontWeight: 600,
+                    lineHeight: 'var(--lh-tight)',
                     color: colors.label,
                     userSelect: 'none',
                     whiteSpace: 'nowrap',

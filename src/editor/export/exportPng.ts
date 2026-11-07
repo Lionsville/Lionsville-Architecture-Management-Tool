@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
+import { atFullSize } from '../canvas/useBoardFrame';
 import type { Rect } from '../../model/types';
 import type { ExportDiagramPngOptions, ExportLegend, ExportSwatch, ExportTitleBlock } from '../props';
 import type { ExportTokens } from '../theme/tokens';
@@ -50,6 +51,7 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
   // quietly lose half its marks on its way into a customer document. Inline them
   // first, restore afterwards, and report what could not be reached.
   const restoreImages = await inlineRemoteImages(viewport);
+  const restoreSize = atFullSize(viewport);
   let canvas: HTMLCanvasElement;
   try {
     // `toCanvas` rather than `toPng`, and this is not a detail on a large board.
@@ -71,6 +73,7 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
       },
     });
   } finally {
+    restoreSize();
     restoreImages.restore();
   }
 

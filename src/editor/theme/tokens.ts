@@ -81,6 +81,8 @@ export interface NodeTokens {
   edge: {
     stroke: string;
     strokeSelected: string;
+    /** A line kept by the focus on a card. */
+    strokeFocus: string;
     labelBg: string;
     labelFg: string;
     labelBorder: string;
@@ -239,6 +241,7 @@ function buildTokens(theme: Theme): NodeTokens {
     edge: {
       stroke: colours['line-uses'],
       strokeSelected: colours['selected-edge'],
+      strokeFocus: colours['line-focus'],
       labelBg: colours['card-surface'],
       labelFg: colours['ink-2'],
       labelBorder: colours.line,

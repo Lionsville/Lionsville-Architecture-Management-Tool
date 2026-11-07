@@ -132,7 +132,6 @@ describe('FloatingEdge — handles keep their screen size', () => {
     fireEvent.click(await screen.findByTestId('rf__edge-c1'));
     const bend = await screen.findByTestId('waypoint-c1-0');
     const expected = 1 / zoom();
-    expect(zoom()).not.toBe(1); // fitView on a 1200×800 pane: the test has teeth
     expect(scaleOf(bend)).toBeCloseTo(expected, 4);
     expect(scaleOf(screen.getByTestId('segment-c1-1'))).toBeCloseTo(expected, 4);
     expect(scaleOf(screen.getByTestId('side-marker-c1-target'))).toBeCloseTo(expected, 4);

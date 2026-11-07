@@ -30,6 +30,7 @@ import {
   routeSides,
   type LegAxis,
 } from '../../model/routes';
+import { useLineInFocus } from '../canvas/boardFocus';
 import { useRouteEditing } from '../canvas/RouteEditingContext';
 import { usePointerDrag } from '../canvas/usePointerDrag';
 import { closestSides, type EdgeAnchors } from '../../model/floatingEdgeMath';
@@ -200,6 +201,11 @@ interface SegmentGesture {
  * persists per diagram on the edge route) and double-click opens an inline
  * multiline editor (Enter = newline, blur commits, Esc cancels).
  */
+/** A dash is measured in the canvas's units too, so it keeps its pattern on screen. */
+function scaledDash(dash: string, scale: number): string {
+  return dash.split(' ').map((part) => Number(part) * scale).join(' ');
+}
+
 export const FloatingEdge = memo(function FloatingEdge({
   id,
   source,
@@ -213,6 +219,7 @@ export const FloatingEdge = memo(function FloatingEdge({
   const { t } = useStrings();
   const tokens = getNodeTokens(theme);
   const routeEditing = useRouteEditing();
+  const inFocus = useLineInFocus(id);
   // Handles and markers keep a constant SCREEN size — see `BEND_HANDLE_PX`.
   const { zoom } = useViewport();
   const handleScale = zoom > 0 ? 1 / zoom : 1;
@@ -489,7 +496,7 @@ export const FloatingEdge = memo(function FloatingEdge({
   // A chip up only because the line is under the pointer follows the pointer
   // instead, lifted clear of the cursor; the moment the line is selected or the
   // label edited it goes back to where it lives, so it can be dragged from there.
-  const hoverOnly = !routeEditing.showLabels && !selected && !editing && !dragLabel;
+  const hoverOnly = !routeEditing.showLabels && !selected && !inFocus && !editing && !dragLabel;
   const anchor = hoverOnly && pointerAt
     ? { x: pointerAt.x, y: pointerAt.y - HOVER_LIFT_PX * handleScale }
     : (dragLabel ?? data?.labelPosition ?? { x: labelX, y: labelY });
@@ -497,7 +504,8 @@ export const FloatingEdge = memo(function FloatingEdge({
   // With labels hidden board-wide, a chip is shown only while the line is under
   // the pointer, selected, or being edited — a busy board reads its lines bare.
   const chipWanted = hasLabel || editing || (selected && !routeEditing.readOnly);
-  const showChip = chipWanted && (routeEditing.showLabels || hovered || selected || editing);
+  const up = Boolean(hovered || selected || inFocus || editing);
+  const showChip = chipWanted && (routeEditing.showLabels || up);
   // The chip's own segment handle collision check needs to know whether a chip is
   // actually drawn there.
   const chipAt = showChip ? anchor : undefined;
@@ -596,14 +604,21 @@ export const FloatingEdge = memo(function FloatingEdge({
           path={path}
           markerEnd={markerEnd}
           markerStart={markerStart}
-          style={{ stroke, strokeWidth: selected ? 2 : 1.5, strokeDasharray: dashArray }}
+          // A stroke's width in the canvas's own units, divided by the zoom: the head is
+          // measured in stroke widths, so width and head both hold their size on screen.
+          style={{
+            stroke: inFocus && !selected ? tokens.edge.strokeFocus : stroke,
+            strokeWidth: `calc(${selected || inFocus ? 2 : 1.25}px / var(--canvas-zoom, 1))`,
+            strokeDasharray: dashArray && scaledDash(dashArray, handleScale),
+          }}
         />
       </g>
       {showChip && (
         <EdgeLabelRenderer>
           <div
-            className="nodrag nopan"
+            className="nodrag nopan lv-edge-chip"
             data-testid={`edge-label-${id}`}
+            data-up={up || undefined}
             onMouseEnter={onHoverEnter}
             onMouseLeave={onHoverLeave}
             onPointerDown={beginLabelDrag}
@@ -621,7 +636,7 @@ export const FloatingEdge = memo(function FloatingEdge({
             }}
             style={{
               position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${anchor.x}px, ${anchor.y}px)`,
+              transform: `translate(-50%, -50%) translate(${anchor.x}px, ${anchor.y}px) scale(${handleScale})`,
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
