@@ -211,6 +211,15 @@ export function exportMessage(): { action: 'export'; format: 'xmlsvg' } {
   return { action: 'export', format: 'xmlsvg' }
 }
 
+/**
+ * The page on screen as a picture, for this side to print: the frame may open no
+ * window of its own (`build/drawioBridge.ts`). Plain `svg` is asked for by this side
+ * and nothing else, which is how {@link exportRoute} tells its answer.
+ */
+export function printMessage(): { action: 'export'; format: 'svg' } {
+  return { action: 'export', format: 'svg' }
+}
+
 /** The drawing as it is in the editor now, saved or not: asked for before the look changes. */
 export function currentXmlMessage(): { action: 'export'; format: 'xml' } {
   return { action: 'export', format: 'xml' }
@@ -276,9 +285,10 @@ export function frameEvent(data: unknown): FrameEvent | undefined {
  * draw.io echoes in `message` on an answer, and only on an answer: anything
  * without one came from its menu, and is a file for the person.
  */
-export function exportRoute(event: FrameEvent): 'save' | 'reload' | 'file' {
+export function exportRoute(event: FrameEvent): 'save' | 'reload' | 'print' | 'file' {
   const asked = (event.message as { format?: unknown } | null | undefined)?.format
   if (asked === 'xmlsvg') return 'save'
+  if (asked === 'svg') return 'print'
   if (asked === 'xml') return 'reload'
   return 'file'
 }

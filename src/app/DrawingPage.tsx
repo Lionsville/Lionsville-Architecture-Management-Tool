@@ -38,7 +38,7 @@ export function whereToWord(to: Destination, diagrams: readonly DesignDiagram[],
 }
 
 export function drawingViewProps(
-  parts: Pick<WorkspaceParts, 'props' | 'session' | 'show'> & Partial<Pick<WorkspaceParts, 'pages'>>,
+  parts: Pick<WorkspaceParts, 'props' | 'session' | 'show'> & Partial<Pick<WorkspaceParts, 'pages' | 'files'>>,
   diagram: DesignDiagram,
   view: Pick<PageView, 'readOnly'>,
 ): DrawingViewProps {
@@ -58,6 +58,7 @@ export function drawingViewProps(
     readOnly: view.readOnly,
     dispatch: session.dispatch,
     documents: props.files.documents,
+    ...(parts.files ? { print: parts.files.printPage } : {}),
     diagnostics: props.host.diagnostics,
     notify: props.shell.notify,
     // A box that points at a unit opens it on the scope's chart, where there is one (ADR-0036 §7).

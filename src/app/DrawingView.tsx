@@ -46,6 +46,7 @@ import type { LinkFact, ReadElement } from './DrawingPanels'
 import { DRAWING_DARK_COLOUR, drawingSkin } from './drawingSkin'
 import type { DrawingLook } from './drawingProtocol'
 import { pictureFile } from './drawingExport'
+import type { PrintHost } from './drawingExport'
 import './DrawingView.css'
 
 type Dispatch = (command: { type: 'diagram.update'; id: string; patch: { drawing: DrawingContent } }) => unknown
@@ -67,6 +68,8 @@ export type DrawingViewProps = {
   dispatch?: Dispatch
   /** Where a file goes, from the bar's Export or the editor's, and where its failure is written. */
   documents?: Pick<DocumentGateway, 'save'>
+  /** What the editor's Print ends in. */
+  print?: PrintHost
   diagnostics?: Pick<Diagnostics, 'report'>
   notify?: Notify
   /**
@@ -112,6 +115,7 @@ export function DrawingView(props: DrawingViewProps) {
           origin={editor} language={props.language ?? 'en'} mode={mode} xml={diagram.drawing?.xml}
           elements={props.elements ?? []} paletteTitle={s('shell.drawingElements')} look={look} keeper={keeper} name={diagram.name}
           documents={documents} diagnostics={diagnostics} notify={notify} onClose={() => setEditing(false)}
+          {...(props.print ? { print: props.print } : {})}
           onOpenElement={(id) => props.onOpen?.({ page: 'element', id })}
           staysHere={(to) => to.page === 'drawing' && to.id === diagram.id && to.edit === true}
           {...(props.whereTo ? { whereTo: props.whereTo } : {})} {...(props.kindWord ? { kindWord: props.kindWord } : {})} s={s}

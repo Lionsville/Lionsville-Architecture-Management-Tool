@@ -116,6 +116,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.drawingNotDrawn': 'Noch nicht gezeichnet',
   'shell.drawingElements': 'Elemente',
   'shell.drawingExported': '{name} gespeichert.',
+  'shell.drawingPrintFailed': 'Diese Zeichnung konnte nicht gedruckt werden.',
   'shell.drawingExportFailed': 'Der Editor hat keine Datei gesendet, die gespeichert werden konnte.',
   'shell.drawingOpenElement': '{name} öffnen',
   'shell.add': 'Hinzufügen',

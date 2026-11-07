@@ -118,6 +118,8 @@ describe('the frame query and the palette', () => {
       expect(exportRoute({ event: 'export', format, filename: `.${format}`, data: 'x' })).toBe('file')
     }
     expect(exportRoute({ event: 'export', format: 'png', message: null })).toBe('file')
+    expect(exportRoute({ event: 'export', format: 'svg', message: { action: 'export', format: 'svg' } })).toBe('print')
+    expect(exportRoute({ event: 'export', format: 'svg', filename: '.svg', data: 'x' })).toBe('file')
     const heard = frameEvent(JSON.stringify({ event: 'export', format: 'png', filename: '.drawio.png', message: { format: 'xmlsvg' } }))
     expect(heard?.filename).toBe('.drawio.png')
     expect(heard?.message).toEqual({ format: 'xmlsvg' })
@@ -245,6 +247,53 @@ describe('DrawingEditor', () => {
     expect(messages[1].xml).toBe(XML.replace('label="Billing"', 'label="Billing service"'))
     expect(messages[1].dark).toBe(false)
     expect(frame.posted().every((one) => one.target === ORIGIN)).toBe(true)
+  })
+
+  describe('Print, which the frame may open no window for', () => {
+    const SVG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"/>')
+    const decoded = () => {
+      // jsdom decodes nothing.
+      HTMLImageElement.prototype.decode = () => Promise.resolve()
+      vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:picture')
+      vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    }
+    afterEach(() => { vi.restoreAllMocks() })
+
+    it('asks for the picture when its menu says print, and prints that picture with this name, on A4 the way it fits', async () => {
+      decoded()
+      const print = vi.fn(() => Promise.resolve())
+      const notify = vi.fn()
+      const { keeper: held } = keeper(async () => ({ ok: true }))
+      const frame = open(held, { xml: XML, print, notify })
+      hear(frame.win, { event: 'lvPrint' })
+      expect(frame.actions().at(-1)).toEqual({ action: 'export', format: 'svg' })
+      hear(frame.win, { event: 'export', format: 'svg', data: SVG, message: { action: 'export', format: 'svg' } })
+      await waitFor(() => { expect(print).toHaveBeenCalledWith({ name: 'order-flow.pdf', widthMm: 297, heightMm: 210 }) })
+      await waitFor(() => { expect(document.querySelector('.print-page')).toBeNull() })
+      expect(notify).not.toHaveBeenCalled()
+    })
+
+    it('says so when there is nothing to print from, and files nothing', async () => {
+      decoded()
+      const notify = vi.fn()
+      const save = vi.fn(() => Promise.resolve())
+      const { keeper: held, puts } = keeper(async () => ({ ok: true }))
+      const frame = open(held, { xml: XML, notify, documents: { save } })
+      hear(frame.win, { event: 'export', format: 'svg', data: SVG, message: { action: 'export', format: 'svg' } })
+      expect(notify).toHaveBeenCalledWith('This drawing could not be printed.', 'error')
+      expect(save).not.toHaveBeenCalled()
+      expect(puts).toHaveLength(0)
+    })
+
+    it('says so when what asks for the paper fails', async () => {
+      decoded()
+      const notify = vi.fn()
+      const { keeper: held } = keeper(async () => ({ ok: true }))
+      const frame = open(held, { xml: XML, notify, print: () => Promise.reject(new Error('no printer')) })
+      hear(frame.win, { event: 'export', format: 'svg', data: SVG, message: { action: 'export', format: 'svg' } })
+      await waitFor(() => { expect(notify).toHaveBeenCalledWith('This drawing could not be printed.', 'error') })
+      expect(document.querySelector('.print-page')).toBeNull()
+    })
   })
 
   it('hears nothing from another origin, or from another window', () => {

@@ -43,7 +43,9 @@
  * **A file the person exports.** The frame may not download, so what its menu
  * exports is posted here and saved through the same gateway as every other
  * file. It is told from this side's own exports by {@link exportRoute}, and it
- * touches neither the drawing nor a save waiting for its export.
+ * touches neither the drawing nor a save waiting for its export. Print is the
+ * same: the frame may open no window, so its menu asks here, and the picture it
+ * answers with goes to paper the way every other page does.
  */
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { Destination } from '../agent/screen'
@@ -61,9 +63,11 @@ import type { Notify } from './useToasts'
 import { DrawingLeaveDialog, ShapeStrip } from './DrawingEditorParts'
 import {
   currentXmlMessage, DRAWING_FRAME_SANDBOX, drawingFrameSrc, exportedFile, exportMessage, exportRoute, frameEvent, frameTarget, loadMessage, mergeMessage,
-  newerDrawing, pointMessage, replyTo, savedDrawing, savedStatus, savedXml, svgBytes, unsavedStatus,
+  newerDrawing, pointMessage, printMessage, replyTo, savedDrawing, savedStatus, savedXml, svgBytes, unsavedStatus,
   type DrawingLook, type DrawingMode, type FrameEvent, type PaletteElement,
 } from './drawingProtocol'
+import { printPicture } from './drawingExport'
+import type { PrintHost } from './drawingExport'
 import './DrawingView.css'
 
 /** How long a frame may stay silent before the app says so: it is another service, on another host. */
@@ -102,6 +106,8 @@ type Props = {
   name: string
   /** Where a file exported from the editor goes. */
   documents: Pick<DocumentGateway, 'save'>
+  /** What Print in the editor's menu ends in: the frame may open no window to print from. */
+  print?: PrintHost
   diagnostics: Pick<Diagnostics, 'report'>
   notify: Notify
   /** The person left the editor: Done, or a save and leave that landed. */
@@ -356,6 +362,10 @@ function answer(heard: FrameEvent, held: Held, props: Props, post: (message: { a
     said.selected(typeof heard.shape === 'string' ? heard.shape : undefined, typeof heard.element === 'string' ? heard.element : undefined)
     return
   }
+  if (heard.event === 'lvPrint') {
+    post(printMessage())
+    return
+  }
   if (heard.event === 'save' && typeof heard.xml === 'string') {
     held.saves.push({ xml: heard.xml, exit: heard.exit === true })
     said.saving()
@@ -374,6 +384,10 @@ function answer(heard: FrameEvent, held: Held, props: Props, post: (message: { a
   }
   if (route === 'file') {
     handOver(heard, props)
+    return
+  }
+  if (route === 'print') {
+    printDrawing(heard, props)
     return
   }
   if (route === 'save') {
@@ -411,6 +425,18 @@ function handOver(heard: FrameEvent, props: Props): void {
       notify(s('shell.saveFileFailed', { message: reasonOf(cause) }), 'error')
     },
   )
+}
+
+/** The page in the editor on paper; what could not be printed is said, and a dialog closed is not that. */
+function printDrawing(heard: FrameEvent, props: Props): void {
+  const { diagnostics, notify, print, s } = props
+  const svg = typeof heard.data === 'string' ? svgBytes(heard.data) : undefined
+  const failed = (cause?: unknown) => {
+    diagnostics.report({ level: 'error', where: 'drawingPrint', message: 'shell.drawingPrintFailed', ...(cause !== undefined ? { cause } : {}) })
+    notify(s('shell.drawingPrintFailed'), 'error')
+  }
+  if (!svg || !print) { failed(); return }
+  printPicture(props.name, svg, print).catch(failed)
 }
 
 /** The drawing as it is in the editor, loaded again in the look asked for; still unsaved where it was. */

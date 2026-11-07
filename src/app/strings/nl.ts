@@ -115,6 +115,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.drawingNotDrawn': 'Nog niet getekend',
   'shell.drawingElements': 'Elementen',
   'shell.drawingExported': '{name} bewaard.',
+  'shell.drawingPrintFailed': 'Deze tekening kon niet worden afgedrukt.',
   'shell.drawingExportFailed': 'De editor stuurde geen bestand dat bewaard kon worden.',
   'shell.drawingOpenElement': '{name} openen',
   'shell.add': 'Toevoegen',

@@ -11,6 +11,13 @@
  * where a shape should point, and takes down draw.io's hint with the raw
  * `element:<id>` address, which the page's strip replaces.
  *
+ * Two more things a press in a sandboxed frame comes to nothing at, and a menu's
+ * \`hideMenuItems\` cannot reach, since a shortcut does not go through the menu.
+ * Print opens a window the frame may not open, so it is asked of the page, which
+ * prints the picture itself. Copying as a picture or as SVG writes to a clipboard
+ * the frame may not touch, and ends in an error dialog with nothing to do in it, so
+ * those are taken off the menus and the keys alike; ⌘C inside the editor still copies.
+ *
  * The frame stays as sandboxed as it was and holds nothing it did not have. It
  * speaks only to its parent, the way draw.io's own protocol does. A draw.io
  * whose names have moved loses the strip and keeps everything else, which is why
@@ -29,7 +36,17 @@ export const DRAWIO_BRIDGE = `
     };
   }
 
+  // On the prototype, which each editor's key handler reads a key from when it is pressed.
+  if (EditorUi.prototype.ctrlAltActions) delete EditorUi.prototype.ctrlAltActions[88];
+  if (EditorUi.prototype.ctrlAltShiftActions) delete EditorUi.prototype.ctrlAltShiftActions[88];
+
   var install = function (ui) {
+    var print = ui.actions && ui.actions.get('print');
+    if (print) print.funct = function () { say({ event: 'lvPrint' }); };
+    ['copyAsImage', 'copyAsSvg'].forEach(function (name) {
+      var copy = ui.actions && ui.actions.get(name);
+      if (copy) copy.visible = false;
+    });
     var graph = ui.editor && ui.editor.graph;
     if (!graph || !graph.getSelectionModel) return;
     var told = function () {

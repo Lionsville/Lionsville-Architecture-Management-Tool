@@ -206,6 +206,7 @@ export const EN = {
   'shell.drawingElements': 'Elements',
   /** A file exported from the editor, once it is where the person said. */
   'shell.drawingExported': '{name} saved.',
+  'shell.drawingPrintFailed': 'This drawing could not be printed.',
   /** What the frame sent was not a file this side knows how to save. */
   'shell.drawingExportFailed': 'The editor sent no file that could be saved.',
   /** A shape on the picture that points at an element: what the area is called. */
