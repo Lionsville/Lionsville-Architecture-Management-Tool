@@ -48,7 +48,7 @@ import { mayRemove } from '../authoring'
 import { coverageFor, coverageOf } from '../coverage'
 import { MAX_SPAN, withSpan } from '../grid'
 import type { MapDescribe } from '../map'
-import { childrenOf, wouldCycle } from '../tree'
+import { childrenOf, descendantsOf, wouldCycle } from '../tree'
 
 /**
  * A new thing in one of the sheet's trees.
@@ -804,6 +804,19 @@ function rowsOf(element: DesignElement, model: DesignModel, elsewhere: readonly 
   return { own, coverage: elsewhere?.length ? (coverageOf(model.relations, elsewhere).get(element.id) ?? own) : own }
 }
 
+/**
+ * What a grouping's leaves come to, as the map's row counts them: a grouping is
+ * seldom covered itself, and *Nothing and nobody yet* beside a row reading
+ * 3 of 4 said the opposite of the page.
+ */
+function coverageUnder(element: DesignElement, model: DesignModel, elsewhere: readonly Relation[] | undefined) {
+  const below = descendantsOf(model.elements, element.id)
+  const leaves = below.filter((one) => !below.some((other) => other.parentId === one.id))
+  if (leaves.length === 0) return undefined
+  const all = coverageOf(model.relations, elsewhere ?? [])
+  return { covered: leaves.filter((one) => (all.get(one.id)?.coverage ?? 'uncovered') !== 'uncovered').length, count: leaves.length }
+}
+
 /** Whoever can say what an id is called. */
 function namer(model: DesignModel, applications: readonly Supporter[] | undefined, responsible: SheetResponsible | undefined, describe: MapDescribe | undefined) {
   return (id: ElementId) => applications?.find((held) => held.id === id)?.name
@@ -832,6 +845,7 @@ function CoveredBy({ element, model, readOnly, actions, applications, elsewhere,
 }) {
   const { t, language } = useStrings()
   const { own, coverage } = rowsOf(element, model, elsewhere)
+  const under = coverageUnder(element, model, elsewhere)
   const supporters: readonly Supporter[] = applications ?? model.elements.filter((held) => held.kind === 'application')
   const named = namer(model, applications, responsible, describe)
   const offered = [...supporters].filter((one) => !coverage.supportedBy.includes(one.id)).sort((a, b) => a.name.localeCompare(b.name))
@@ -845,7 +859,7 @@ function CoveredBy({ element, model, readOnly, actions, applications, elsewhere,
   return (
     <div data-testid="sheet-inspector-coverage" data-guide="sheet.coverage">
       <PanelSection title={t('sheet.coverage')}>
-        {coverage.coverage === 'uncovered' && <div className="sheet-held__say">{t('sheet.coverageNobody')}</div>}
+        {coverage.coverage === 'uncovered' && <div className="sheet-held__say">{under ? t('sheet.coverageUnder', under) : t('sheet.coverageNobody')}</div>}
         {coverage.coverage === 'manual' && <div className="sheet-held__say">{t('sheet.coveragePeople')}</div>}
         {coverage.supportedBy.map((id) => (
           <div className="sheet-held" key={id} data-testid={`sheet-supporter-${id}`}>

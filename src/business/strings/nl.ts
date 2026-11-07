@@ -172,6 +172,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.description': 'Beschrijving',
   'sheet.coverage': 'Ingevuld door',
   'sheet.coverageNobody': 'Nog niets en niemand',
+  'sheet.coverageUnder': '{covered} van {count} eronder gedekt, niets er direct op',
   'sheet.coveragePeople': 'Mensen, zonder systeem',
   'sheet.open': '{name} openen',
 

@@ -160,6 +160,14 @@ describe('what the two kinds each add', () => {
     expect(screen.queryByTestId('sheet-inspector-coverage')).toBeNull()
   })
 
+  it('says of a grouping nothing covers directly what its capabilities come to, as the map counts them', () => {
+    open('invoicing')
+    expect(screen.getByTestId('sheet-inspector-coverage').textContent).toContain('1 of 2 under it covered, nothing on it directly')
+    cleanup()
+    open('fulfilment')
+    expect(screen.getByTestId('sheet-inspector-coverage').textContent).toContain('2 of 2 under it covered')
+  })
+
   it('says of a capability that people do, that people do it, and who holds it in the same place as ever', () => {
     open('packing')
     expect(screen.getByTestId('sheet-inspector-coverage').textContent).toContain('People, without a system')

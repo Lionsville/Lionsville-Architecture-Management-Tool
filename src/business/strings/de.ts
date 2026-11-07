@@ -172,6 +172,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.description': 'Beschreibung',
   'sheet.coverage': 'Abgedeckt durch',
   'sheet.coverageNobody': 'Noch nichts und niemand',
+  'sheet.coverageUnder': '{covered} von {count} darunter abgedeckt, nichts direkt darauf',
   'sheet.coveragePeople': 'Menschen, ohne System',
   'sheet.open': '{name} öffnen',
 

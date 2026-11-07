@@ -195,6 +195,7 @@ export const EN = {
   'sheet.description': 'Description',
   'sheet.coverage': 'Covered by',
   'sheet.coverageNobody': 'Nothing and nobody yet',
+  'sheet.coverageUnder': '{covered} of {count} under it covered, nothing on it directly',
   'sheet.coveragePeople': 'People, without a system',
   'sheet.open': 'Open {name}',
 
