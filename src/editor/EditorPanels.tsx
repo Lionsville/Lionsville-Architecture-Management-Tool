@@ -117,6 +117,7 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         showLifecycle={view.showLifecycle}
         noteFor={props.ownership?.noteFor}
         showMinimap={view.showMinimap}
+        onToggleMinimap={() => view.setShowMinimap((on) => !on)}
         showEdgeLabels={exports.exportOptions ? exports.exportOptions.showLabels : view.showEdgeLabels}
         mountEveryElement={parts.capturing || exports.exportOptions !== undefined}
         onElementDoubleClick={clicks.handleDoubleClick}

@@ -30,6 +30,7 @@ import { isMine, mineCaption, mineOf } from '../recordedBy'
 import type { Mine, MineCaption } from '../recordedBy'
 import { registerOf } from '../../people/shown'
 import type { Translate } from '../../i18n'
+import { ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom'
 import { usePersonNames } from '../../people/ui/names'
 
 /** How the picture is looked at: the size of its marks, the zoom, and whether the zoom is the fitted one. */
@@ -46,7 +47,7 @@ export type PictureView = {
   zoomTo: (zoom: number) => void
 }
 
-export const ZOOM = { min: 0.3, max: 2, step: 0.1 } as const
+export const ZOOM = { min: ZOOM_FLOOR, max: ZOOM_CEILING, step: 0.1 } as const
 
 export function clampZoom(zoom: number): number {
   return Math.min(ZOOM.max, Math.max(ZOOM.min, Math.round(zoom * 100) / 100))

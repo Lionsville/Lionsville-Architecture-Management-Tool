@@ -70,7 +70,7 @@ import { GRID_SIZE } from './gridSize';
 import { isRectFullyVisible, toRect } from './viewportFit';
 import { keyboardIntent } from './keyboardIntent';
 import { ViewportMemory, type Viewport } from './viewportMemory';
-import { ZoomControls } from './ZoomControls';
+import { useBoardZoom, ZoomControls } from './ZoomControls';
 import { OverlayLegend, type OverlayLegendProps } from './OverlayLegend';
 import type { OverlayMark } from '../theme/overlayColors';
 import { FIT_ALL, MAX_ZOOM, MIN_ZOOM, viewportOverNodes } from './fitAll';
@@ -251,6 +251,7 @@ export interface DiagramCanvasProps {
   onToggleShowGrid(): void;
   /** The minimap (4B): off by default, remembered in the editor's preferences. */
   showMinimap?: boolean;
+  onToggleMinimap?: () => void;
   /** Line labels always (default), or only on hover and selection. */
   showEdgeLabels?: boolean;
   /**
@@ -1083,6 +1084,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const menu = useContextMenu();
   const platform = useMemo(() => detectPlatform(), []);
   const containerRef = useRef<HTMLDivElement>(null);
+  const boardRef = useBoardZoom(containerRef);
   // When the pointer last went down inside the canvas — how the focus handler
   // tells a click apart from a Tab (see `handleContainerFocus`).
   const lastPointerDownRef = useRef(0);
@@ -1611,7 +1613,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
 
   return (
     <Box
-      ref={containerRef} data-guide="board.canvas"
+      ref={boardRef} data-guide="board.canvas"
       onKeyDown={handleContainerKeyDown}
       onFocus={handleContainerFocus}
       onPointerDownCapture={() => {
@@ -1658,6 +1660,8 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           disableKeyboardA11y
           ariaLabelConfig={ariaLabels}
           zoomOnDoubleClick={false}
+          // The wheel moves around, as on every canvas; ⌘ or Ctrl with it zooms, and so does a pinch.
+          panOnScroll
           nodesDraggable={!props.readOnly}
           nodesConnectable={!props.readOnly}
           elementsSelectable
@@ -1713,6 +1717,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
             />
           )}
           <ZoomControls
+            map={props.onToggleMinimap ? { on: props.showMinimap ?? false, onToggle: props.onToggleMinimap } : undefined}
             placement={props.readOnly ? undefined : {
               snapToGrid: props.snapToGrid,
               onToggleSnapToGrid: props.onToggleSnapToGrid,

@@ -136,6 +136,11 @@ export const CANVAS_SHORTCUTS: ShortcutDef[] = [
   { id: 'zoom-out', keys: ['-'], labelKey: 'shortcut.zoom-out', group: 'view' },
   { id: 'fit-view', keys: ['Shift', '1'], labelKey: 'shortcut.fit-view', group: 'view' },
   { id: 'zoom-100', keys: ['Shift', '2'], labelKey: 'shortcut.zoom-100', group: 'view' },
+  // Listed for the sheet and dispatched by nothing here: these are every canvas's,
+  // and only over one (`widgets/kit/useCanvasZoom`), or the desktop's menu bar's.
+  { id: 'zoom-in-mod', keys: ['Mod', '='], labelKey: 'shortcut.zoom-in', group: 'view', when: () => false },
+  { id: 'zoom-out-mod', keys: ['Mod', '-'], labelKey: 'shortcut.zoom-out', group: 'view', when: () => false },
+  { id: 'zoom-100-mod', keys: ['Mod', '0'], labelKey: 'shortcut.zoom-100', group: 'view', when: () => false },
   // general
   { id: 'force-save', keys: ['Mod', 's'], labelKey: 'shortcut.force-save', group: 'general' },
   // The context menu for the current selection (or the canvas when nothing is

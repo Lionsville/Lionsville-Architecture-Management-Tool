@@ -22,7 +22,7 @@
  * done with it (`PictureMenu`); a line offers its menu only where the link is
  * this scope's to change.
  */
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
 import { toneOf } from '../observation'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -36,7 +36,9 @@ import type { FilterResult } from '../filter'
 import { LINE_HIT_WIDTH, STROKE, seenTint } from './ChainMarks'
 import type { PictureMenuHandler } from './PictureMenu'
 import { RecordMark, anchorOf, recordLabel, recordState, recordTitle } from './PictureMarks'
+import { clampZoom } from './usePictureFilters'
 import type { PictureView } from './usePictureFilters'
+import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom'
 
 export type AnalysisPictureProps = {
   /** The scopes in view: this one first, then those below while View local is on. */
@@ -142,20 +144,31 @@ function PictureFrame({ picture, view, label, children }: { picture: SectionedPi
     if (!element) return undefined
     const measure = () => setViewport({ width: element.clientWidth, height: element.clientHeight })
     measure()
-    const wheel = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) return
-      event.preventDefault()
-      latest.current.zoomTo(latest.current.zoom * (event.deltaY < 0 ? 1.1 : 0.9))
-    }
-    element.addEventListener('wheel', wheel, { passive: false })
     // Absent under a test's DOM, which never resizes.
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(measure)
     observer?.observe(element)
-    return () => {
-      element.removeEventListener('wheel', wheel)
-      observer?.disconnect()
-    }
+    return () => observer?.disconnect()
   }, [])
+
+  const zoomRef = useCanvasZoom(steppedZoomTarget({
+    zoom: () => latest.current.zoom,
+    to: (zoom, at) => {
+      const element = frame.current
+      const ratio = clampZoom(zoom) / latest.current.zoom
+      latest.current.zoomTo(zoom)
+      if (!element || !at) return
+      // The picture has its new size on the next frame, and the record under the pointer stays under it.
+      requestAnimationFrame(() => {
+        element.scrollLeft = (element.scrollLeft + at.x) * ratio - at.x
+        element.scrollTop = (element.scrollTop + at.y) * ratio - at.y
+      })
+    },
+    fit: () => latest.current.fitNow(),
+  }))
+  const frameRef = useCallback((element: HTMLDivElement | null) => {
+    frame.current = element
+    zoomRef(element)
+  }, [zoomRef])
 
   const { fit, fitted } = view
   useEffect(() => {
@@ -175,7 +188,7 @@ function PictureFrame({ picture, view, label, children }: { picture: SectionedPi
   }
   return (
     <Box
-      ref={frame}
+      ref={frameRef}
       role="region"
       aria-label={label}
       tabIndex={0}

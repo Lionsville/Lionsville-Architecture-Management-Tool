@@ -30,6 +30,7 @@ export interface CanvasForDiagramProps {
   /** See `EditorOwnership.noteFor` (ADR-0012 §3). Absent = no scope tree. */
   noteFor?(elementId: ElementId): StandInNote | undefined;
   showMinimap: boolean;
+  onToggleMinimap?: () => void;
   showEdgeLabels: boolean;
   /** See `DiagramCanvasProps.mountEveryElement`: true while a PNG is captured. */
   mountEveryElement: boolean;

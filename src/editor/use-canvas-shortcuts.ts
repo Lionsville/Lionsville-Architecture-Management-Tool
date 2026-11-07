@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { placedNodes } from '../model/placement';
 import { useReactFlow } from '@xyflow/react';
 import { FIT_ALL } from './canvas/fitAll';
+import { stepZoom } from '../widgets/kit/zoom';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
 import { serializeSelection, type ClipboardPayload } from '../model/clipboard';
 import type {
@@ -180,14 +181,14 @@ const ARROW_DELTAS: Record<string, Point> = {
 export function useCanvasShortcuts(
   handlers: CanvasShortcutHandlers,
 ): (node: HTMLElement | null) => void {
-  const { fitView, zoomIn, zoomOut, zoomTo } = useReactFlow();
+  const { fitView, getZoom, zoomTo } = useReactFlow();
 
   // Latest closures reach the stable listener through refs, so the callback ref
   // stays stable and only re-binds when the DOM node itself changes.
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
-  const viewRef = useRef({ fitView, zoomIn, zoomOut, zoomTo });
-  viewRef.current = { fitView, zoomIn, zoomOut, zoomTo };
+  const viewRef = useRef({ fitView, getZoom, zoomTo });
+  viewRef.current = { fitView, getZoom, zoomTo };
   const platformRef = useRef(detectPlatform());
   const detachRef = useRef<(() => void) | null>(null);
   // The currently-attached wrapper node, read by the document force-save
@@ -321,7 +322,7 @@ export function useCanvasShortcuts(
 
 type ViewActions = Pick<
   ReturnType<typeof useReactFlow>,
-  'fitView' | 'zoomIn' | 'zoomOut' | 'zoomTo'
+  'fitView' | 'getZoom' | 'zoomTo'
 >;
 
 function dispatch(
@@ -382,10 +383,10 @@ function dispatch(
       return;
     }
     case 'zoom-in':
-      void view.zoomIn({ duration: 150 });
+      void view.zoomTo(stepZoom(view.getZoom(), 'in'), { duration: 150 });
       return;
     case 'zoom-out':
-      void view.zoomOut({ duration: 150 });
+      void view.zoomTo(stepZoom(view.getZoom(), 'out'), { duration: 150 });
       return;
     case 'fit-view':
       void view.fitView({ ...FIT_ALL, duration: 300 });

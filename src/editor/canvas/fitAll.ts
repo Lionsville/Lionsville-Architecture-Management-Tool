@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { getNodesBounds, getViewportForBounds, type Node, type Viewport } from '@xyflow/react';
+import { ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
 
 /**
  * The options every "fit the board" shares.
@@ -15,9 +16,9 @@ import { getNodesBounds, getViewportForBounds, type Node, type Viewport } from '
  */
 export const FIT_ALL = { padding: 0.1, includeHiddenNodes: true } as const;
 
-/** How far the canvas zooms out and in; the first framing is held to the same. */
-export const MIN_ZOOM = 0.15;
-export const MAX_ZOOM = 2.5;
+/** How far the canvas zooms out and in, as every canvas does; the first framing is held to the same. */
+export const MIN_ZOOM = ZOOM_FLOOR;
+export const MAX_ZOOM = ZOOM_CEILING;
 
 /**
  * The viewport that frames these nodes in a pane of this size, or `undefined`

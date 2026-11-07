@@ -1,48 +1,63 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { Panel, useReactFlow } from '@xyflow/react';
-import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
-import Tooltip from '@mui/material/Tooltip';
-import { FitIcon } from '../../widgets/icons';
-import { useStrings } from '../../i18n/LanguageContext';
+import { useCallback } from 'react';
+import type { RefObject } from 'react';
+import { Panel, useReactFlow, useStore } from '@xyflow/react';
+import { CanvasDock } from '../../widgets/kit/CanvasDock';
+import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom';
+import { stepZoom, zoomAbout, ZOOM_HOME } from '../../widgets/kit/zoom';
 import { FIT_ALL } from './fitAll';
 import { PlacementToolbar } from './PlacementToolbar';
 import type { PlacementToolbarProps } from './PlacementToolbar';
 
 /**
- * The one cluster floating on the canvas, bottom left: zoom in, zoom out and
- * fit — ours, in the corner React Flow's `<Controls>` took, so the words are
- * the table's — and, on a canvas that may be edited, the grid, the snap and
- * the align and distribute buttons beside them. One cluster, not one at the
- * top centre and another at the bottom left: a person looks in one place for
- * what the canvas offers.
+ * The kit's one zoom behaviour on React Flow's viewport: ⌘ or Ctrl with + − 0, and
+ * Safari's pinch. React Flow takes the wheel and any other pinch itself, and the
+ * keymap has the board's own = and − and ⇧ keys. The ref goes on the canvas's element.
  */
-export function ZoomControls({ placement }: { placement?: PlacementToolbarProps }) {
-  const { t } = useStrings();
-  const { zoomIn, zoomOut, fitView } = useReactFlow();
-  const button = (label: string, onClick: () => void, glyph: React.ReactNode, testId: string) => (
-    <Tooltip title={label} placement="top">
-      <IconButton size="small" aria-label={label} onClick={onClick} data-testid={testId}>
-        {glyph}
-      </IconButton>
-    </Tooltip>
-  );
+export function useBoardZoom(container: RefObject<HTMLDivElement | null>): (element: HTMLDivElement | null) => void {
+  const { getViewport, getZoom, setViewport, fitView } = useReactFlow();
+  const attach = useCanvasZoom(steppedZoomTarget({
+    zoom: getZoom,
+    to: (zoom, at) => {
+      const box = container.current?.getBoundingClientRect();
+      const about = at ?? { x: (box?.width ?? 0) / 2, y: (box?.height ?? 0) / 2 };
+      void setViewport(zoomAbout(getViewport(), about, zoom), { duration: 120 });
+    },
+    fit: () => void fitView({ ...FIT_ALL, duration: 300 }),
+  }), { wheel: false, plainKeys: false });
+  return useCallback((element: HTMLDivElement | null) => {
+    container.current = element;
+    attach(element);
+  }, [container, attach]);
+}
+
+/**
+ * The one cluster floating on the canvas, bottom left: the kit's dock, and on a
+ * canvas that may be edited the grid, the snap and the align and distribute buttons
+ * beside it. One cluster, not one at the top centre and another at the bottom left:
+ * a person looks in one place for what the canvas offers.
+ */
+export function ZoomControls({ placement, map }: {
+  placement?: PlacementToolbarProps;
+  map?: { on: boolean; onToggle: () => void };
+}) {
+  const { zoomTo, fitView, getZoom } = useReactFlow();
+  const zoom = useStore((state) => state.transform[2]);
   return (
     <Panel position="bottom-left">
-      <Paper elevation={2} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, px: 0.5, py: 0.25, borderRadius: 2 }} data-testid="zoom-controls">
-        {button(t('canvas.zoomIn'), () => void zoomIn({ duration: 150 }), <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>+</span>, 'zoom-in')}
-        {button(t('canvas.zoomOut'), () => void zoomOut({ duration: 150 }), <span aria-hidden style={{ fontSize: 16, lineHeight: 1 }}>−</span>, 'zoom-out')}
-        {button(t('canvas.zoomFit'), () => void fitView({ ...FIT_ALL, duration: 300 }), <FitIcon size={16} />, 'zoom-fit')}
-        {placement && (
-          <>
-            <Divider orientation="vertical" flexItem sx={{ mx: 0.25 }} />
-            <PlacementToolbar {...placement} />
-          </>
-        )}
-      </Paper>
+      <CanvasDock
+        corner={false}
+        data-testid="zoom-controls"
+        zoom={zoom}
+        onZoomIn={() => void zoomTo(stepZoom(getZoom(), 'in'), { duration: 150 })}
+        onZoomOut={() => void zoomTo(stepZoom(getZoom(), 'out'), { duration: 150 })}
+        onFit={() => void fitView({ ...FIT_ALL, duration: 300 })}
+        onHome={() => void zoomTo(ZOOM_HOME, { duration: 300 })}
+        map={map}
+        extra={placement && <PlacementToolbar {...placement} />}
+      />
     </Panel>
   );
 }

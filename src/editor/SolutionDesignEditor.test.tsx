@@ -158,7 +158,7 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     renderEditor();
     expect(screen.getByLabelText('Zoom in')).toBeDefined();
     expect(screen.getByLabelText('Zoom out')).toBeDefined();
-    expect(screen.getByLabelText('Fit the board to the window')).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Fit' })).toBeDefined();
     expect(document.querySelector('.react-flow__controls')).toBeNull();
   });
 
