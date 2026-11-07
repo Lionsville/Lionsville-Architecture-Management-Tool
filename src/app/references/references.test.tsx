@@ -92,7 +92,7 @@ describe('a ref, drawn', () => {
     const stood = reads({ stoodAt: async () => then })
     renderShell(<>{drawRef({ evaluation: 'blk-gw', scope: 'sales', at: 'r1' }, stood, s, name)}</>)
     await waitFor(() => expect(document.body.textContent).toContain('as it stood when it was referred to'))
-    expect(screen.getByRole('img', { name: 'How far Broker A covers Routes by content: 4/4' })).toBeTruthy()
+    expect(screen.getByRole('gridcell', { name: /^Routes by content, Broker A/ })).toBeTruthy()
     cleanup()
     renderShell(<>{drawRef({ evaluation: 'blk-gw', scope: 'sales', at: 'r1' }, reads({ stoodAt: async () => 'changed' }), s, name)}</>)
     await waitFor(() => expect(document.body.textContent).toContain('changed since it was referred to'))

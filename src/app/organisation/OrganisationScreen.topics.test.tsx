@@ -82,7 +82,7 @@ describe('topics on the homes', () => {
     expect((await wire.ask('app.current')).page).toEqual({ page: 'topics' })
     await wire.ask('app.open', { scope: '', page: 'blocks', id: 'blk-gw' })
     expect(await screen.findByRole('tab', { name: 'Requirements' })).toBeTruthy()
-    expect((await wire.ask('app.current')).page).toEqual({ page: 'blocks' })
+    expect((await wire.ask('app.current')).page).toEqual({ page: 'blocks', id: 'blk-gw' })
   })
 
   it('goes to a topic\'s own home from its page, and the page closes so the home shows', async () => {

@@ -89,6 +89,17 @@ describe('the register of building blocks', () => {
     expect(access.openBlock).toHaveBeenCalledWith('blk-gw')
   })
 
+  it('says what a block is for and which of the three is wanted where there are none, with New only for who may write', async () => {
+    renderShell(<BlocksProvider value={accessOver({ blocks: () => [] })}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
+    expect(screen.getByText(s('guidance.empty.blocksTitle'))).toBeTruthy()
+    expect(screen.getByRole('table')).toBeTruthy()
+    expect(screen.getByRole('button', { name: s('blocks.new') })).toBeTruthy()
+    expect(await axeFindings()).toEqual([])
+    cleanup()
+    renderShell(<BlocksProvider value={accessOver({ blocks: () => [], mayWrite: () => false })}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
+    expect(screen.queryByRole('button', { name: s('blocks.new') })).toBeNull()
+  })
+
   it('keeps a new block in a topic first, and opens it', async () => {
     const access = accessOver()
     renderShell(<BlocksProvider value={access}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)

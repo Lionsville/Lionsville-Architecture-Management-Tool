@@ -106,9 +106,7 @@ export function useShellAgent(deps: {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
   const watchScreen = deps.watchScreen ?? false
   const report = deps.report ?? NOBODY
-  const [orgPage, setOrgPageNow] = useState<OrgPage | undefined>(undefined)
-  const [orgRecord, setOrgRecord] = useState<string | undefined>(undefined)
-  const setOrgPage = useCallback((page: OrgPage | undefined, record?: string) => { setOrgPageNow(page); setOrgRecord(record) }, [])
+  const { orgPage, orgRecord, setOrgPage } = useOrgPage()
   const [orgPageRequest, setOrgPageRequest] = useState<OrgPageRequest | undefined>(
     () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1, ...(deps.initialPick !== undefined ? { select: deps.initialPick } : {}) } : undefined),
   )
@@ -374,6 +372,14 @@ function movesTheApp(screen: Screen, to: Destination & { scope: string }, open: 
   if (to.page !== 'element' || to.id === undefined) return false
   const boards = boardsDrawing(open.current(), to.id)
   return boards.length === 1 && boards[0].id !== open.activeDiagramId()
+}
+
+/** Which of a home's pages is up, as it says, and the record on it. */
+function useOrgPage() {
+  const [orgPage, setOrgPageNow] = useState<OrgPage | undefined>(undefined)
+  const [orgRecord, setOrgRecord] = useState<string | undefined>(undefined)
+  const setOrgPage = useCallback((page: OrgPage | undefined, record?: string) => { setOrgPageNow(page); setOrgRecord(record) }, [])
+  return { orgPage, orgRecord, setOrgPage }
 }
 
 /**
