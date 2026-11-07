@@ -18,6 +18,7 @@
  * row marks; relevance to a topic is said on the scope's home, because an arrow
  * row among the children reads as filing, and filing is what this tree is.
  */
+import { Fragment } from 'react'
 import { LOCALE } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
@@ -66,7 +67,12 @@ export type ScopeTreeProps = RowActs & {
   matching?: readonly ScopePath[]
   /** Paths the listing could not read: a row that says so, and has nothing to press. */
   unread?: ReadonlySet<ScopePath>
+  /** The topics relevant to a scope today, for the rows its open branch shows; absent: none. */
+  topicRows?: ((path: ScopePath) => readonly TopicRow[]) | undefined
 }
+
+/** A topic as a row under a scope it is relevant to: where it lives, and what it is called. */
+export type TopicRow = { path: ScopePath; name: string }
 
 /** When a scope last changed, in the person's own locale. */
 export function whenChanged(
@@ -124,7 +130,7 @@ function pathWords(tree: ScopeSummary, path: ScopePath): string {
 }
 
 export function ScopeTree({
-  tree, folds, onHome, menuOf, holdings, typeLink, language, s, current, onlyWork = false, matching, unread,
+  tree, folds, onHome, menuOf, holdings, typeLink, language, s, current, onlyWork = false, matching, unread, topicRows,
 }: ScopeTreeProps) {
   const rows = rowsOf({ tree, folds, onlyWork, matching, holdings })
   // The top of the tree is its own row, so its children are the first column.
@@ -136,21 +142,45 @@ export function ScopeTree({
 
   return (
     <div data-guide="org.tree">
-      {rows.map((scope) => (
-        <ScopeRow
-          key={scope.path} scope={scope} depth={matching ? 0 : scopeSegments(scope.path).length - base} shut={folds.collapsed.has(scope.path)}
-          current={scope.path === current} foldable={!matching && !onlyWork} above={matching ? pathWords(tree, scope.path) : ''} unread={unread?.has(scope.path) === true}
-          count={holdings.count(scope.path)} words={heldInWords(holdings.all(scope.path), s)} warns={typeWarns(typeLink?.(scope.path))}
-          onHome={onHome} menuOf={menuOf} language={language} s={s} toggleCollapsed={folds.toggleCollapsed}
-        />
-      ))}
+      {rows.map((scope) => {
+        const depth = matching ? 0 : scopeSegments(scope.path).length - base
+        const shut = folds.collapsed.has(scope.path)
+        const topics = matching || onlyWork ? [] : topicRows?.(scope.path) ?? []
+        return (
+          <Fragment key={scope.path}>
+            <ScopeRow
+              scope={scope} depth={depth} shut={shut} hasBranch={scope.children.length > 0 || topics.length > 0}
+              current={scope.path === current} foldable={!matching && !onlyWork} above={matching ? pathWords(tree, scope.path) : ''} unread={unread?.has(scope.path) === true}
+              count={holdings.count(scope.path)} words={heldInWords(holdings.all(scope.path), s)} warns={typeWarns(typeLink?.(scope.path))}
+              onHome={onHome} menuOf={menuOf} language={language} s={s} toggleCollapsed={folds.toggleCollapsed}
+            />
+            {!shut && topics.map((topic) => <TopicTreeRow key={topic.path} at={scope.path} topic={topic} depth={depth + 1} onHome={onHome} s={s} />)}
+          </Fragment>
+        )
+      })}
+    </div>
+  )
+}
+
+/** A topic under a scope it is relevant to: said as that, and pressed to where it lives. */
+export function TopicTreeRow({ at, topic, depth, onHome, s }: { at: ScopePath; topic: TopicRow; depth: number; onHome: RowActs['onHome']; s: Translate }) {
+  return (
+    <div
+      className="kit-tree__row" data-testid={`topic-row-${at}-${topic.path}`} data-topic data-depth={depth}
+      style={{ paddingInlineStart: `${depth * 14}px` }} onClick={() => onHome(topic.path)}
+    >
+      <span className="kit-tree__fold" aria-hidden />
+      <button type="button" className="kit-tree__name" aria-label={s('org.treeTopicRow', { name: topic.name })} title={s('org.treeTopicRow', { name: topic.name })}>
+        <span aria-hidden>↗ </span>{topic.name}
+      </button>
+      <span className="kit-tree__menu" />
     </div>
   )
 }
 
 /** One scope's row: its fold, its name, what it holds, and its acts under ⋯. */
-function ScopeRow({ scope, depth, shut, current, foldable, above, unread, count, words, warns, onHome, menuOf, s, language, toggleCollapsed }: RowActs & {
-  scope: ScopeSummary; depth: number; shut: boolean; current: boolean; foldable: boolean; above: string; unread: boolean
+function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unread, count, words, warns, onHome, menuOf, s, language, toggleCollapsed }: RowActs & {
+  scope: ScopeSummary; depth: number; shut: boolean; hasBranch: boolean; current: boolean; foldable: boolean; above: string; unread: boolean
   count: number; words: string; warns: boolean
   toggleCollapsed: (path: ScopePath) => void
   language: Language; s: Translate
@@ -173,7 +203,7 @@ function ScopeRow({ scope, depth, shut, current, foldable, above, unread, count,
       title={[named, unread ? s('org.notReadTip') : [words, whenChanged(scope.updatedAt, language, s)].filter(Boolean).join(' · ')].join('\n')}
       onClick={unread ? undefined : () => onHome(scope.path)}
     >
-      {foldable && scope.children.length > 0 ? (
+      {foldable && hasBranch ? (
         <button
           type="button" className="kit-tree__fold" aria-label={foldName} aria-expanded={!shut} data-testid={`fold-${scope.path}`}
           onClick={(event) => { event.stopPropagation(); toggleCollapsed(scope.path) }}

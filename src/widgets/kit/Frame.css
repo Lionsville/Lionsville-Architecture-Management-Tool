@@ -75,6 +75,7 @@
 .kit-tree__row:hover { background: var(--surface-2); }
 .kit-tree__row[aria-current='page'] { background: var(--selected-soft); border-inline-start-color: var(--accent); font-weight: var(--fw-strong); }
 .kit-tree__row[data-quiet='true'] .kit-tree__name { color: var(--ink-3); }
+.kit-tree__row[data-topic] .kit-tree__name { color: var(--ink-2); font-size: var(--t-small); }
 .kit-tree__above { color: var(--ink-2); }
 .kit-tree__name:disabled { cursor: default; }
 .kit-tree__name:focus-visible, .kit-tree__fold:focus-visible, .kit-tree__place:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(0px - var(--focus-ring-width)); }

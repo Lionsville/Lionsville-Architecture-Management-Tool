@@ -937,6 +937,7 @@ export const EN = {
   'org.treeEmptyLandscape': 'A landscape keeps its own views. Add a scope below it only to split it up.',
   'org.expand': 'Show what is under {name}',
   'org.collapse': 'Hide what is under {name}',
+  'org.treeTopicRow': 'Topic relevant here: {name}',
   'org.openAll': 'Show all',
   'org.foldAll': 'Fold all',
   'org.underOne': '{count} scope under it',

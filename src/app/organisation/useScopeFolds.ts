@@ -17,7 +17,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import { toggled } from '../sessionFolds'
 
 export type ScopeFolds = {
-  /** Every scope with children, until it is opened. */
+  /** Every scope, until it is opened: one with nothing filed under it may still have a topic to show. */
   collapsed: ReadonlySet<ScopePath>
   toggleCollapsed: (path: ScopePath) => void
   /** Every scope in the tree opened, or every one folded shut again. */
@@ -34,14 +34,12 @@ export function foldsBelow(tree: ScopeSummary): ScopePath[] {
 
 export function useScopeFolds(tree: ScopeSummary): ScopeFolds {
   const [unfolded, setUnfolded] = useState<ReadonlySet<ScopePath>>(() => new Set())
-  const parents = useMemo(() => flattenScopes(tree)
-    .filter((scope) => scope.children.length > 0)
-    .map((scope) => scope.path), [tree])
+  const every = useMemo(() => flattenScopes(tree).map((scope) => scope.path), [tree])
   const collapsed = useMemo<ReadonlySet<ScopePath>>(
-    () => new Set(parents.filter((path) => !unfolded.has(path))), [parents, unfolded],
+    () => new Set(every.filter((path) => !unfolded.has(path))), [every, unfolded],
   )
   const toggleCollapsed = useCallback((path: ScopePath) => setUnfolded((held) => toggled(held, path)), [])
-  const openAll = useCallback(() => setUnfolded(new Set(parents)), [parents])
+  const openAll = useCallback(() => setUnfolded(new Set(every)), [every])
   const foldAll = useCallback(() => setUnfolded(new Set()), [])
   return useMemo(() => ({ collapsed, toggleCollapsed, openAll, foldAll }), [collapsed, toggleCollapsed, openAll, foldAll])
 }

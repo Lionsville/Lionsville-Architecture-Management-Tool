@@ -20,7 +20,7 @@ import { flattenScopes, sortScopes } from '../../projects/scope'
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import { ancestorScopes, parentScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { linkHolds } from '../../projects/topics'
+import { linkHolds, topicRowsAt } from '../../projects/topics'
 import type { TypeLink } from '../../projects/scopeType'
 import { matchesQuery } from '../../model/textSearch'
 import { MoreMenu } from '../../widgets/kit/Menu'
@@ -28,7 +28,8 @@ import type { MenuEntry } from '../../widgets/kit/Menu'
 import { TextInput } from '../../widgets/kit/Field'
 import { LinkLine } from '../../widgets/kit/Section'
 import { Tabs } from '../../widgets/kit/Tabs'
-import { heldInWords, RootRow, ScopeTree } from '../organisation/ScopeTree'
+import { heldInWords, RootRow, ScopeTree, TopicTreeRow } from '../organisation/ScopeTree'
+import type { TopicRow } from '../organisation/ScopeTree'
 import type { Holdings } from '../organisation/holdings'
 import type { ScopeFolds } from '../organisation/useScopeFolds'
 import { ORGANISATION_PLACES, placeShows } from './places'
@@ -92,6 +93,13 @@ export function scopesFound(tree: ScopeSummary, asked: string, today: string): S
   return every.filter((scope) => scope.path !== ROOT_SCOPE && (byTopic.has(scope.path) || matchesQuery(asked, [scope.name]))).map((scope) => scope.path)
 }
 
+/** The rows an open scope shows for the topics relevant to it today, each called what the tree calls it. */
+export function topicRowsOf(tree: ScopeSummary, today: string): (path: ScopePath) => readonly TopicRow[] {
+  const every = flattenScopes(tree)
+  const names = new Map(every.map((one) => [one.path, one.name]))
+  return (path) => topicRowsAt(path, every, today).map((topic) => ({ path: topic, name: names.get(topic) ?? topic }))
+}
+
 function menuFor(scope: ScopeSummary, acts: TreeActs, onHome: (path: ScopePath) => void, writable: (path: ScopePath) => boolean, s: Translate): readonly MenuEntry[] {
   if (!writable(scope.path)) return []
   const movable = scope.path !== ROOT_SCOPE
@@ -122,6 +130,7 @@ export function ScopeTreePanel({
   const { tree: listed, unread } = useMemo(() => withUnread(sortTree(tree, order)), [tree, order])
   const asked = find.trim()
   const matching = useMemo(() => (asked === '' ? undefined : scopesFound(listed, asked, today)), [listed, asked, today])
+  const topicRows = useMemo(() => topicRowsOf(listed, today), [listed, today])
   const name = tree.name.trim() || s('common.organisation')
   const menuOf = (scope: ScopeSummary) => menuFor(scope, acts, onHome, writable, s)
   return (
@@ -164,9 +173,13 @@ export function ScopeTreePanel({
             onHome={onHome} menuOf={menuOf} s={s}
           />
         )}
+        {/* The organisation's branch is always open, so what is relevant to it shows at once. */}
+        {matching === undefined && show !== 'work' && topicRows(ROOT_SCOPE).map((topic) => (
+          <TopicTreeRow key={topic.path} at={ROOT_SCOPE} topic={topic} depth={1} onHome={onHome} s={s} />
+        ))}
         <ScopeTree
           tree={listed} folds={folds} onHome={onHome} menuOf={menuOf} holdings={holdings} current={at} language={language} s={s} unread={unread}
-          onlyWork={show === 'work'}
+          onlyWork={show === 'work'} topicRows={topicRows}
           {...(matching ? { matching } : {})}
           {...(typeLink ? { typeLink } : {})}
         />

@@ -730,6 +730,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.treeEmptyLandscape': 'Een landschap houdt zijn eigen weergaven bij. Voeg er alleen een scope onder toe om het op te splitsen.',
   'org.expand': 'Toon wat onder {name} zit',
   'org.collapse': 'Verberg wat onder {name} zit',
+  'org.treeTopicRow': 'Onderwerp dat hier van belang is: {name}',
   'org.openAll': 'Alles tonen',
   'org.foldAll': 'Alles inklappen',
   'org.underOne': '{count} scope eronder',
