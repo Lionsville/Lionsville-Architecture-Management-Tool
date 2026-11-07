@@ -50,13 +50,13 @@ export function setHostOwnsZoomKeys(owned: boolean): void {
   hostOwnsZoomKeys = owned
 }
 
-/** A dialog holding the focus has the keys, whatever the pointer happens to rest on behind it. */
-function behindAModal(): boolean {
-  return document.activeElement?.closest('[aria-modal="true"]') != null
-}
-
+/**
+ * A dialog holding the focus has the keys, whatever the pointer happens to rest on
+ * behind it. A canvas inside that dialog is not behind it, and a page may be one.
+ */
 function inUse(canvas: Live): boolean {
-  if (behindAModal()) return false
+  const modal = document.activeElement?.closest('[aria-modal="true"]')
+  if (modal && !modal.contains(canvas.element)) return false
   return canvas.pointer !== undefined || canvas.element.contains(document.activeElement)
 }
 

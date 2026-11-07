@@ -141,13 +141,7 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
   }
   const todayAt = fractionOf(view, today)
   const todayInView = sideOf(view, today) === 'inside'
-  const shown = day ?? today
-  const daySide = sideOf(view, shown)
-  // Two words on one line of the ruler: near each other, each goes to its own side of its line.
-  const dayAtFraction = day ? fractionOf(view, day) : 0
-  const close = day !== undefined && Math.abs(dayAtFraction - todayAt) * width < 170
-  const todayFlips = todayAt > 0.8 || (close && dayAtFraction >= todayAt)
-  const dayFlips = dayAtFraction > 0.75 || (close && dayAtFraction < todayAt)
+  const daySide = sideOf(view, day ?? today)
 
   return (
     <AxisContext.Provider value={{ view, width }}>
@@ -171,27 +165,7 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
             />
           </div>
           <div ref={ruler} className="kit-time__ruler" role="group" tabIndex={0} aria-label={t('kit.axis.ruler')} onKeyDown={onRulerKey}>
-            <div className="kit-time__marks">
-              {todayInView && (
-                <span className="kit-time__todaymark" data-flip={todayFlips || undefined} style={{ left: `${todayAt * 100}%` }}>{t('kit.axis.today')}</span>
-              )}
-              {onDayChange && day && daySide === 'inside' && (
-                <span className="kit-time__daymark" data-flip={dayFlips || undefined} style={{ left: `${dayAtFraction * 100}%` }}>
-                  {t('kit.axis.boardShows', { day: formatDay(day, language) })}
-                </span>
-              )}
-              {day && daySide !== 'inside' && (
-                <button
-                  type="button"
-                  className="kit-time__pinned"
-                  data-side={daySide}
-                  aria-label={t('kit.axis.dayBack', { day: formatDay(day, language) })}
-                  onClick={() => onViewChange(viewWith(view, day))}
-                >
-                  {daySide === 'before' && '‹ '}{t('kit.axis.boardPinned', { day: formatDay(day, language) })}{daySide === 'after' && ' ›'}
-                </button>
-              )}
-            </div>
+            <RulerMarks view={view} width={width} today={today} day={day} slides={onDayChange !== undefined} onViewChange={onViewChange} />
             <div className="kit-time__cells">
               {rulerCells(view, width).map((cell) => (
                 <span key={cell.key} className="kit-time__cell" data-major={cell.major || undefined} style={{ left: `${cell.left * 100}%`, width: `${cell.width * 100}%` }}>
@@ -208,12 +182,51 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
           {children}
           <div className="kit-time__lines" aria-hidden>
             {todayInView && <span className="kit-time__line" data-line="today" style={{ left: `${todayAt * 100}%` }} />}
-            {day && daySide === 'inside' && <span className="kit-time__line" data-line="day" style={{ left: `${dayAtFraction * 100}%` }} />}
+            {day && daySide === 'inside' && <span className="kit-time__line" data-line="day" style={{ left: `${fractionOf(view, day) * 100}%` }} />}
             {day && daySide !== 'inside' && <span className="kit-time__line" data-line="day" data-pinned={daySide} />}
           </div>
         </div>
       </div>
     </AxisContext.Provider>
+  )
+}
+
+/** The words on the ruler's top line: Today once, and the board's day, in view or pinned to the edge it went past. */
+function RulerMarks({ view, width, today, day, slides, onViewChange }: {
+  view: AxisView; width: number; today: string; day: string | undefined; slides: boolean
+  onViewChange: (view: AxisView) => void
+}) {
+  const { t, language } = useStrings()
+  const todayAt = fractionOf(view, today)
+  const dayAtFraction = day ? fractionOf(view, day) : 0
+  const daySide = day ? sideOf(view, day) : undefined
+  // Two words on one line: near each other, each goes to its own side of its line.
+  const close = day !== undefined && Math.abs(dayAtFraction - todayAt) * width < 170
+  const todayFlips = todayAt > 0.8 || (close && dayAtFraction >= todayAt)
+  const dayFlips = dayAtFraction > 0.75 || (close && dayAtFraction < todayAt)
+  const said = day ? formatDay(day, language) : ''
+  return (
+    <div className="kit-time__marks">
+      {sideOf(view, today) === 'inside' && (
+        <span className="kit-time__todaymark" data-flip={todayFlips || undefined} style={{ left: `${todayAt * 100}%` }}>{t('kit.axis.today')}</span>
+      )}
+      {slides && daySide === 'inside' && (
+        <span className="kit-time__daymark" data-flip={dayFlips || undefined} style={{ left: `${dayAtFraction * 100}%` }}>
+          {t('kit.axis.boardShows', { day: said })}
+        </span>
+      )}
+      {day && daySide !== 'inside' && (
+        <button
+          type="button"
+          className="kit-time__pinned"
+          data-side={daySide}
+          aria-label={t('kit.axis.dayBack', { day: said })}
+          onClick={() => onViewChange(viewWith(view, day))}
+        >
+          {daySide === 'before' && '‹ '}{t('kit.axis.boardPinned', { day: said })}{daySide === 'after' && ' ›'}
+        </button>
+      )}
+    </div>
   )
 }
 

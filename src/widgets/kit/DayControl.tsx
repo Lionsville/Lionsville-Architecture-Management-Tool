@@ -72,7 +72,6 @@ export function DayControl({ day, groups = [], onChange, outsideData, 'data-guid
             <input
               className="kit-day__field"
               type="date"
-              // eslint-disable-next-line jsx-a11y/no-autofocus -- a person who asked to choose a day is here to type it.
               autoFocus
               value={typed}
               onChange={(event) => setTyped(event.target.value)}

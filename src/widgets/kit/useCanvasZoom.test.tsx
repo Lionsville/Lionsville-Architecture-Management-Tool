@@ -100,6 +100,15 @@ describe('one zoom behaviour', () => {
     expect(zoomCanvasInUse('in')).toBe(false)
   })
 
+  it('still takes them for a canvas inside the dialog holding the focus, as on a page drawn as one', () => {
+    const target = spy()
+    render(<div role="dialog" aria-modal="true"><button>ok</button><Canvas target={target} /></div>)
+    over()
+    act(() => screen.getByRole('button', { name: 'ok' }).focus())
+    fireEvent.keyDown(document.body, { key: '=', metaKey: true })
+    expect(target.go).toHaveBeenCalledOnce()
+  })
+
   it('zooms on ⌘ or Ctrl with the wheel, and lets a plain wheel scroll', () => {
     const target = spy()
     render(<Canvas target={target} />)

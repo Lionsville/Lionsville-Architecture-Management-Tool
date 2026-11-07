@@ -23,7 +23,8 @@ export function useBoardZoom(container: RefObject<HTMLDivElement | null>): (elem
     to: (zoom, at) => {
       const box = container.current?.getBoundingClientRect();
       const about = at ?? { x: (box?.width ?? 0) / 2, y: (box?.height ?? 0) / 2 };
-      void setViewport(zoomAbout(getViewport(), about, zoom), { duration: 120 });
+      // At once: a press reads the zoom the last one left, and one still animating has not left it yet.
+      void setViewport(zoomAbout(getViewport(), about, zoom));
     },
     fit: () => void fitView({ ...FIT_ALL, duration: 300 }),
   }), { wheel: false, plainKeys: false });
@@ -51,8 +52,8 @@ export function ZoomControls({ placement, map }: {
         corner={false}
         data-testid="zoom-controls"
         zoom={zoom}
-        onZoomIn={() => void zoomTo(stepZoom(getZoom(), 'in'), { duration: 150 })}
-        onZoomOut={() => void zoomTo(stepZoom(getZoom(), 'out'), { duration: 150 })}
+        onZoomIn={() => void zoomTo(stepZoom(getZoom(), 'in'))}
+        onZoomOut={() => void zoomTo(stepZoom(getZoom(), 'out'))}
         onFit={() => void fitView({ ...FIT_ALL, duration: 300 })}
         onHome={() => void zoomTo(ZOOM_HOME, { duration: 300 })}
         map={map}

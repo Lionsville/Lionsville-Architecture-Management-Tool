@@ -383,10 +383,10 @@ function dispatch(
       return;
     }
     case 'zoom-in':
-      void view.zoomTo(stepZoom(view.getZoom(), 'in'), { duration: 150 });
+      void view.zoomTo(stepZoom(view.getZoom(), 'in'));
       return;
     case 'zoom-out':
-      void view.zoomTo(stepZoom(view.getZoom(), 'out'), { duration: 150 });
+      void view.zoomTo(stepZoom(view.getZoom(), 'out'));
       return;
     case 'fit-view':
       void view.fitView({ ...FIT_ALL, duration: 300 });
