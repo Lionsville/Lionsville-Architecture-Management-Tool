@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignDiagram, DesignElement } from '../model'
 import { overlapsOf, POSTER_COLUMN_ID, POSTER_WIDTH } from './posterLayout'
-import { isPlaced, posterFirstLayout, posterPlaces } from './posterPlaces'
+import { isPlaced, posterFirstLayout, posterPlaces, posterTiles } from './posterPlaces'
 import { sheetPage } from './sheet'
 
 const el = (id: string, over: Partial<DesignElement>): DesignElement => ({ id, name: id, kind: 'function', lifecycle: 'live', isManaged: true, aspects: {}, ...over })
@@ -103,5 +103,13 @@ describe('a placed sheet', () => {
     expect(places.blocks.map((block) => block.id)).toEqual(['sales'])
     for (const block of places.waiting) expect(block.y).toBeGreaterThanOrEqual(places.height)
     expect(overlapsOf(places.waiting)).toEqual([])
+  })
+})
+
+describe('what takes a tile', () => {
+  const cap = (id: string, depth: number) => ({ element: el(id, {}), depth, coverage: { supportedBy: [], assignedTo: [], coverage: 'uncovered' as const } })
+  it('is a capability of its block, and one under it is counted on it rather than placed', () => {
+    const tiles = posterTiles([cap('a', 1), cap('a1', 2), cap('a2', 3), cap('b', 1)])
+    expect(tiles.map((tile) => [tile.capability.element.id, tile.inside])).toEqual([['a', 2], ['b', 0]])
   })
 })

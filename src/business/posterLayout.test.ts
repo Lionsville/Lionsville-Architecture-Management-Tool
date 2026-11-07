@@ -2,11 +2,45 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { bandRowsFor, bandStepRoomy, contentHeight, firstLayout, freePlace, minWidth, nameLikelyCut, overlapsOf, POSTER_COLUMN_ID, POSTER_GAP, POSTER_WIDTH, readingOrder, tileCells, tileColumns } from './posterLayout'
+import { bandRowsFor, bandStepRoomy, contentHeight, firstLayout, freePlace, minWidth, nameLikelyCut, overlapsOf, POSTER_COLUMN_ID, POSTER_GAP, POSTER_WIDTH, readingOrder, tileCells, tileColumns, contentHeightAt, flowColumns, paperLayout } from './posterLayout'
 import type { PosterAreaSize, PosterBlock } from './posterLayout'
 
 const plain = (id: string, tiles: number, span?: number): PosterAreaSize => ({ id, groupings: [], loose: tiles, ...(span !== undefined ? { span } : {}) })
 const overlap = (a: PosterBlock, b: PosterBlock) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+
+describe('a block pulled to another width', () => {
+  const plain = { id: 'a', groupings: [], loose: 12 }
+  it('comes to as many rows as its tiles take at that width, by the grid the browser draws', () => {
+    expect(flowColumns(104 * 4 - 6)).toBe(4)
+    expect(contentHeightAt(plain, 104 * 4 - 6 + 18)).toBe(3 * 52 - 6 + 46)
+    expect(contentHeightAt(plain, 104 * 2 - 6 + 18)).toBe(6 * 52 - 6 + 46)
+  })
+  it('wraps its groupings when they no longer fit side by side', () => {
+    const grouped = { id: 'b', groupings: [4, 4], loose: 0 }
+    const wide = contentHeightAt(grouped, 1000)
+    expect(contentHeightAt(grouped, 400)).toBeGreaterThan(wide)
+  })
+  it('says a line under its title in its height', () => {
+    expect(contentHeight({ ...plain, line: true })).toBe(contentHeight(plain) + 16)
+    expect(contentHeightAt({ ...plain, line: true }, 600)).toBe(contentHeightAt(plain, 600) + 16)
+  })
+})
+
+describe('the first layout for paper', () => {
+  const areas = (count: number) => Array.from({ length: count }, (_, at) => ({ id: `a${at}`, groupings: [], loose: 16 }))
+  it('pulls a page with few tiles taller, to paper\'s shape', () => {
+    const page = paperLayout({ areas: areas(2) })
+    expect(page.width).toBe(1860)
+    expect(page.height).toBe(Math.round(1860 / 1.41))
+    expect(Math.max(...page.blocks.map((block) => block.y + block.height))).toBeLessThanOrEqual(page.height)
+  })
+  it('makes a page with many wider, never smaller in what is read', () => {
+    const page = paperLayout({ areas: areas(60) })
+    expect(page.width).toBeGreaterThan(1860)
+    expect(page.width / page.height).toBeCloseTo(1.41, 1)
+    expect(overlapsOf(page.blocks)).toEqual([])
+  })
+})
 
 describe('a block on the poster', () => {
   it('stands as tall as its rows of tiles, its title, its meter and its frame', () => {

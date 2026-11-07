@@ -13,6 +13,9 @@ import { coverageOf } from '../coverage'
 import { sheetPage } from '../sheet'
 import { area, capability, grouping, journey, phase, relation, application } from '../testFixtures'
 import { heldInView, openingCamera, SheetPoster } from './SheetPoster'
+import type { SheetPosterProps } from './SheetPoster'
+import type { PosterActions, PosterDesign } from './PosterDesign'
+import { axeFindings } from '../../app/testing/axe'
 
 afterEach(cleanup)
 
@@ -24,8 +27,8 @@ const elements: DesignElement[] = [
 ]
 const relations = [relation('r', 'supports', 'app', 't1')]
 
-function Poster({ selectedId, onSelect = () => {} }: { selectedId?: string; onSelect?(id: string): void }) {
-  const laidOut = sheetPage({ elements, relations }, { journeyId: 'j', areas: ['a', 'b'], showActors: true })
+function Poster({ selectedId, onSelect = () => {}, ...more }: { selectedId?: string; onSelect?(id: string | undefined): void } & Partial<Omit<SheetPosterProps, 'onSelect' | 'selectedId' | 'valueOf'>>) {
+  const laidOut = more.laidOut ?? sheetPage({ elements, relations }, { journeyId: 'j', areas: ['a', 'b'], showActors: true })
   const covering = coverageOf(relations)
   const none = { supportedBy: [], assignedTo: [], coverage: 'uncovered' as const }
   const coverageAt = (id: string) => covering.get(id) ?? none
@@ -33,7 +36,7 @@ function Poster({ selectedId, onSelect = () => {} }: { selectedId?: string; onSe
     <SheetPoster
       laidOut={laidOut} lens={DEFAULT_LENS} coverageAt={coverageAt} nameOf={(id) => elements.find((one) => one.id === id)?.name ?? id}
       valueOf={(element) => lensValue(element, DEFAULT_LENS, { coverage: coverageAt, retiring: () => false })}
-      selectedId={selectedId} onSelect={onSelect} t={(key) => key}
+      selectedId={selectedId} onSelect={onSelect} t={(key) => key} {...more}
     />
   )
 }
@@ -124,5 +127,115 @@ describe('panning', () => {
     expect(heldInView({ x: 5000, y: 5000, zoom: 1 }, pane, page)).toEqual({ x: 936, y: 536, zoom: 1 })
     expect(heldInView({ x: -9000, y: -9000, zoom: 2 }, pane, page)).toEqual({ x: 64 - 3720, y: 64 - 2000, zoom: 2 })
     expect(heldInView({ x: -10, y: 4, zoom: 1 }, pane, page)).toEqual({ x: -10, y: 4, zoom: 1 })
+  })
+})
+
+const fakeDesign = (over: Partial<PosterDesign> = {}): PosterDesign => ({
+  actions: { place: vi.fn(), firstLayout: vi.fn(), resetTiles: vi.fn(), cell: vi.fn(), team: vi.fn(), showLabel: vi.fn(), cover: vi.fn(), hand: vi.fn(), addItem: vi.fn(), updateItem: vi.fn(), placeItem: vi.fn(), removeItem: vi.fn(), undo: vi.fn(), redo: vi.fn() } as PosterActions,
+  picked: new Set(), refusal: () => undefined, moveTile: vi.fn(), onPress: () => false, onBox: vi.fn(), onPick: vi.fn(), addUnder: vi.fn(), addStep: vi.fn(), addPhase: vi.fn(), addLane: vi.fn(),
+  addStakeholder: vi.fn(), addGroup: vi.fn(), chooseIcon: vi.fn(), nameOf: (id) => id,
+  ...over,
+})
+
+describe('reading a poster', () => {
+  it('has a stop per block and the arrows for the rest, and nothing is placed by a drag in Read', async () => {
+    inLanguage(<Poster />)
+    const stops = [...screen.getByTestId('poster-stage').querySelectorAll('button[tabindex="0"]')]
+    expect(stops.map((stop) => stop.textContent)).toEqual(['A step', 'Area one', 'Area two'].filter((name) => stops.some((held) => held.textContent === name)))
+    expect(screen.getByTestId('poster-title-a').tabIndex).toBe(0)
+    expect(screen.getByTestId('poster-tile-t1').tabIndex).toBe(-1)
+    expect(document.querySelector('[data-sheet-add]')).toBeNull()
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('draws the blocks in reading order, whatever order they were placed in', () => {
+    const sheet = { geometry: { nodes: [{ id: 'b', x: 0, y: 0, width: 400, height: 200 }, { id: 'a', x: 0, y: 500, width: 400, height: 200 }, { id: 'j', x: 0, y: 300, width: 400, height: 112 }] } }
+    inLanguage(<Poster sheet={sheet} />)
+    const order = [...screen.getByTestId('poster-stage').querySelectorAll<HTMLElement>('[data-block]')].map((block) => block.dataset.block)
+    expect(order).toEqual(['b', 'j', 'a'])
+  })
+
+  it('names a label a person placed on the tile, and nobody else', () => {
+    const coverageAt = () => ({ supportedBy: [], assignedTo: ['app'], coverage: 'manual' as const })
+    inLanguage(<Poster sheet={{ labels: ['t2'] }} coverageAt={coverageAt} />)
+    expect(screen.getByTestId('poster-tile-t2').hasAttribute('data-labelled')).toBe(true)
+    expect(screen.getByTestId('poster-tile-t2').textContent).toContain('An application')
+    expect(screen.getByTestId('poster-tile-t1').hasAttribute('data-labelled')).toBe(false)
+  })
+
+  it('marks a hand-placed tile in its cell and lets the others flow', () => {
+    inLanguage(<Poster sheet={{ geometry: { nodes: [], cells: [{ id: 't2', col: 2, row: 1 }] } }} />)
+    const tile = screen.getByTestId('poster-tile-t2')
+    expect(tile.style.gridColumn).toContain('3')
+    expect(tile.style.gridRow).toContain('2')
+    expect(screen.getByTestId('poster-tile-t1').style.gridColumn).toBe('')
+  })
+
+  it('dashes what is not there yet on the day read, and strikes through what is gone, and neither moves', () => {
+    const dated: DesignElement[] = elements.map((one) => (one.id === 't1' ? { ...one, lifecycleDates: { live: '2030-01-01' } } : one.id === 't2' ? { ...one, lifecycleDates: { retired: '2020-01-01' } } : one))
+    const laidOut = sheetPage({ elements: dated, relations }, { areas: ['a'], showActors: true })
+    inLanguage(<Poster laidOut={laidOut} day="2026-01-01" />)
+    expect(screen.getByTestId('poster-tile-t1').dataset.life).toBe('planned')
+    expect(screen.getByTestId('poster-tile-t2').dataset.life).toBe('gone')
+  })
+})
+
+describe('designing a poster', () => {
+  const blockRect = { left: 0, top: 0 }
+
+  it('offers nothing to place in Read, and its corners and adds in Design', () => {
+    inLanguage(<Poster design={fakeDesign()} />)
+    expect(screen.getByTestId('poster-pane').dataset.posture).toBe('design')
+    expect(document.querySelectorAll('[data-sheet-add]').length).toBeGreaterThan(0)
+  })
+
+  it('writes every block on the first move, as one step, and only the one moved after that', () => {
+    const design = fakeDesign()
+    inLanguage(<Poster design={design} />)
+    const pane = screen.getByTestId('poster-pane')
+    pane.setPointerCapture = () => {}
+    const title = screen.getByTestId('poster-title-a')
+    fireEvent.pointerDown(title, { clientX: 10, clientY: 10, pointerId: 1, button: 0, ...blockRect })
+    fireEvent.pointerMove(title, { clientX: 110, clientY: 90, pointerId: 1 })
+    fireEvent.pointerUp(title, { clientX: 110, clientY: 90, pointerId: 1 })
+    expect(design.actions.place).toHaveBeenCalledTimes(1)
+    const [nodes] = vi.mocked(design.actions.place).mock.calls[0]
+    expect(nodes.map((node) => node.id).sort()).toEqual(['a', 'b', 'j'])
+    const moved = nodes.find((node) => node.id === 'a')
+    expect((moved?.x ?? 0) % 8).toBe(0)
+  })
+
+  it('lifts a block by the keyboard, moves it a grid step, and puts it back on Escape with nothing written', () => {
+    const design = fakeDesign()
+    inLanguage(<Poster design={design} />)
+    const title = screen.getByTestId('poster-title-a')
+    fireEvent.keyDown(title, { key: ' ' })
+    fireEvent.keyDown(title, { key: 'ArrowDown' })
+    fireEvent.keyDown(title, { key: 'Escape' })
+    expect(design.actions.place).not.toHaveBeenCalled()
+    fireEvent.keyDown(title, { key: ' ' })
+    fireEvent.keyDown(title, { key: 'ArrowDown' })
+    fireEvent.keyDown(title, { key: ' ' })
+    expect(design.actions.place).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('poster-say').textContent).toContain('sheet.poster.dropped')
+  })
+
+  it('offers a tile the tray at the tile, by L and by A', () => {
+    const design = fakeDesign()
+    inLanguage(<Poster design={design} />)
+    fireEvent.keyDown(screen.getByTestId('poster-tile-t1'), { key: 'l' })
+    expect(design.onPick).toHaveBeenCalledWith('team', 't1', expect.anything())
+    fireEvent.keyDown(screen.getByTestId('poster-tile-t1'), { key: 'a' })
+    expect(design.onPick).toHaveBeenCalledWith('application', 't1', expect.anything())
+  })
+
+  it('reads and writes a free note as this view\'s, and takes it off with Delete', () => {
+    const design = fakeDesign()
+    const sheet = { poster: { items: [{ id: 'n', kind: 'note' as const, text: 'Reviewed' }] }, geometry: { nodes: [], items: [{ id: 'n', x: 10, y: 10, width: 100, height: 40 }] } }
+    inLanguage(<Poster design={design} sheet={sheet} />)
+    const note = screen.getByTestId('poster-item-n')
+    expect(note.textContent).toContain('Reviewed')
+    fireEvent.keyDown(note, { key: 'Delete' })
+    expect(design.actions.removeItem).toHaveBeenCalledWith('n')
   })
 })

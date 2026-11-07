@@ -10,6 +10,7 @@
  */
 import { useMemo, useState } from 'react'
 import { useStrings } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import { plural } from '../../i18n/strings'
 import type { DesignDiagram, ElementId } from '../../model'
 import { Button } from '../../widgets/kit/Button'
@@ -55,19 +56,19 @@ export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames,
   onClose(): void
   today: string
 }) {
-  const { t } = useStrings()
+  const { t, language } = useStrings()
   const held = sheet.paper
   const [paperName, setPaperName] = useState<PaperName>(held !== undefined && held !== 'wide' && held !== 'fit' ? held : 'A2')
   const [file, setFile] = useState<'pdf' | 'png'>('pdf')
   const [look, setLook] = useState<PrintLook>('print')
   const [title, setTitle] = useState([sheet.client ?? scopeName, sheet.name].filter(Boolean).join(', '))
   const [foot, setFoot] = useState(sheet.poster?.foot ?? '')
-  const date = sheet.documentDate ?? today
+  const date = sheet.documentDate ?? (today !== '' ? formatDay(today, language) : '')
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | undefined>(undefined)
   const paper = PRINT_PAPERS[paperName]
   const cut = useMemo(() => cutNames(paper), [cutNames, paper])
-  const scale = printScale(page, paper)
+  const scale = printScale(page, paper, true)
   const named = NAME_PT * scale
   const reach = named < DESK_PT ? t('sheet.poster.reachDesk') : named < TABLE_PT ? t('sheet.poster.reachTable') : t('sheet.poster.reachWall')
   const save = async () => {

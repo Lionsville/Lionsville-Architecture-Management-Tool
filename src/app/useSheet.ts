@@ -83,17 +83,7 @@ export function useSheet(deps: {
 
     return {
       updateElement(id, patch, coalesce) {
-        const update = { type: 'element.update' as const, id, patch, ...(coalesce ? { coalesce } : {}) }
-        if (!('parentId' in patch)) { session.dispatch(update); return }
-        // Moved somewhere else: last among its new neighbours, and its hand-placed cell left behind, as one step.
-        const model = session.current()
-        const element = model.elements.find((held) => held.id === id)
-        const order = element && patch.order === undefined && element.kind !== 'application'
-          ? nextOrder(model.elements, element.kind as NewElement['kind'], patch.parentId)
-          : undefined
-        const moved = { ...update, patch: { ...patch, ...(order !== undefined ? { order } : {}) } }
-        const leaves = tileLeaves(model, id)
-        session.dispatch(leaves.length > 0 ? transaction([moved, ...leaves]) : moved)
+        updateAndLeave(session, id, patch, coalesce)
       },
 
       moveElement(id, by) {
@@ -244,112 +234,126 @@ export function useSheet(deps: {
     }
   }, [session, sheetId, s, showElement])
 
-  const poster = useMemo<PosterActions>(() => {
-    const sheetNow = () => (sheetId === undefined ? undefined : session.current().diagrams.find((diagram) => diagram.id === sheetId))
-    const labelled = (sheet: DesignDiagram, ids: readonly ElementId[]) => [...new Set([...(sheet.labels ?? []), ...ids])]
-    const rowsMissing = (type: 'assigned' | 'supports', sourceId: ElementId, ids: readonly ElementId[]): Command[] => {
-      const rows = session.current().relations
-      return ids.filter((id) => !rows.some((row) => row.type === type && row.sourceId === sourceId && row.targetId === id))
-        .map((id) => ({ type: 'relation.create' as const, relation: { id: session.ids.connection(), type, sourceId, targetId: id } }))
-    }
-    const one = (commands: Command[]) => { if (commands.length > 0) session.dispatch(commands.length === 1 ? commands[0] : transaction(commands)) }
-    return {
-      place(blocks, boxes) {
-        if (sheetId === undefined) return
-        one([
-          ...(blocks.length > 0 ? [{ type: 'node.set' as const, diagramId: sheetId, nodes: [...blocks] }] : []),
-          ...(boxes.length > 0 ? [{ type: 'box.set' as const, diagramId: sheetId, boxes: [...boxes] }] : []),
-        ])
-      },
-      firstLayout() {
-        const sheet = sheetNow()
-        if (!sheet) return
-        const geometry = sheet.geometry
-        one([
-          ...(geometry?.nodes.length ? [{ type: 'node.remove' as const, diagramId: sheet.id, elementIds: geometry.nodes.map((node) => node.id) }] : []),
-          ...(geometry?.groups?.length ? [{ type: 'box.remove' as const, diagramId: sheet.id, groupIds: geometry.groups.map((box) => box.id) }] : []),
-          ...(geometry?.cells?.length ? [{ type: 'cell.remove' as const, diagramId: sheet.id, elementIds: geometry.cells.map((cell) => cell.id) }] : []),
-        ])
-      },
-      resetTiles() {
-        const sheet = sheetNow()
-        const cells = sheet?.geometry?.cells
-        if (sheet && cells?.length) session.dispatch({ type: 'cell.remove', diagramId: sheet.id, elementIds: cells.map((cell) => cell.id) })
-      },
-      cell(id, cell, freeing) {
-        if (sheetId === undefined) return
-        one([
-          ...(freeing !== undefined ? [{ type: 'cell.remove' as const, diagramId: sheetId, elementIds: [freeing] }] : []),
-          cell
-            ? { type: 'cell.set' as const, diagramId: sheetId, cells: [{ id, ...cell }] }
-            : { type: 'cell.remove' as const, diagramId: sheetId, elementIds: [id] },
-        ])
-      },
-      team(ids, team) {
-        const sheet = sheetNow()
-        if (!sheet) return undefined
-        const commands: Command[] = []
-        let sourceId = 'id' in team ? team.id : undefined
-        if (sourceId === undefined && 'name' in team) {
-          const name = team.name.trim()
-          const held = session.current().elements.find((element) => element.kind === 'actor' && element.name === name)
-          sourceId = held?.id
-          if (!held) {
-            const actor = newElement(session.ids, session.current().elements, { kind: 'actor', name }, s('sheet.untitled'))
-            commands.push({ type: 'element.create', element: actor })
-            sourceId = actor.id
-          }
-        }
-        if (sourceId === undefined) return undefined
-        commands.push(...rowsMissing('assigned', sourceId, ids), { type: 'diagram.update', id: sheet.id, patch: { labels: labelled(sheet, ids) } })
-        one(commands)
-        return sourceId
-      },
-      showLabel(id, on) {
-        const sheet = sheetNow()
-        if (!sheet) return
-        const labels = on ? labelled(sheet, [id]) : (sheet.labels ?? []).filter((held) => held !== id)
-        session.dispatch({ type: 'diagram.update', id: sheet.id, patch: { labels: labels.length > 0 ? labels : undefined } })
-      },
-      cover(ids, applicationId) {
-        one(rowsMissing('supports', applicationId, ids))
-      },
-      hand(ids, scope) {
-        const elements = session.current().elements
-        one(ids.flatMap((id) => {
-          const handed = elements.find((element) => element.id === id)?.scopes ?? []
-          return handed.includes(scope) ? [] : [{ type: 'element.update' as const, id, patch: { scopes: [...handed, scope] } }]
-        }))
-      },
-      addItem(item, at) {
-        if (sheetId === undefined) return undefined
-        const id = makeId('item')
-        session.dispatch({ type: 'poster.item.add', diagramId: sheetId, item: { ...item, id }, place: { ...at, id } })
-        return id
-      },
-      updateItem(id, patch) {
-        if (sheetId !== undefined) session.dispatch({ type: 'poster.item.update', diagramId: sheetId, id, patch })
-      },
-      placeItem(place) {
-        if (sheetId !== undefined) session.dispatch({ type: 'poster.item.place', diagramId: sheetId, place })
-      },
-      removeItem(id) {
-        if (sheetId !== undefined) session.dispatch({ type: 'poster.item.remove', diagramId: sheetId, id })
-      },
-      undo: session.undo,
-      redo: session.redo,
-    }
-  }, [session, sheetId, makeId, s])
-
+  const poster = useMemo(() => posterActions(session, sheetId, makeId, s), [session, sheetId, makeId, s])
   return {
     sheetId,
-    sheet: sheetId === undefined
-      ? undefined
-      : session.model.diagrams.find((diagram) => diagram.id === sheetId),
+    sheet: sheetId === undefined ? undefined : session.model.diagrams.find((diagram) => diagram.id === sheetId),
     open: session.setActiveDiagramId,
     create,
     actions,
     poster,
+  }
+}
+
+/** A field changed; moved somewhere else it is last among its new neighbours, and its hand-placed cell left behind, as one step. */
+function updateAndLeave(session: ModelSession, id: ElementId, patch: Partial<DesignElement>, coalesce?: string) {
+  const update = { type: 'element.update' as const, id, patch, ...(coalesce ? { coalesce } : {}) }
+  if (!('parentId' in patch)) { session.dispatch(update); return }
+  const model = session.current()
+  const element = model.elements.find((held) => held.id === id)
+  const order = element && patch.order === undefined && element.kind !== 'application'
+    ? nextOrder(model.elements, element.kind as NewElement['kind'], patch.parentId)
+    : undefined
+  const moved = { ...update, patch: { ...patch, ...(order !== undefined ? { order } : {}) } }
+  const leaves = tileLeaves(model, id)
+  session.dispatch(leaves.length > 0 ? transaction([moved, ...leaves]) : moved)
+}
+
+/** What placing and mapping on a poster writes: each through the one dispatch, each one step. */
+function posterActions(session: ModelSession, sheetId: string | undefined, makeId: MakeId, s: Translate): PosterActions {
+  const sheetNow = () => (sheetId === undefined ? undefined : session.current().diagrams.find((diagram) => diagram.id === sheetId))
+  const labelled = (sheet: DesignDiagram, ids: readonly ElementId[]) => [...new Set([...(sheet.labels ?? []), ...ids])]
+  const rowsMissing = (type: 'assigned' | 'supports', sourceId: ElementId, ids: readonly ElementId[]): Command[] => {
+    const rows = session.current().relations
+    return ids.filter((id) => !rows.some((row) => row.type === type && row.sourceId === sourceId && row.targetId === id))
+      .map((id) => ({ type: 'relation.create' as const, relation: { id: session.ids.connection(), type, sourceId, targetId: id } }))
+  }
+  const one = (commands: Command[]) => { if (commands.length > 0) session.dispatch(commands.length === 1 ? commands[0] : transaction(commands)) }
+  return {
+    place(blocks, boxes) {
+      if (sheetId === undefined) return
+      one([
+        ...(blocks.length > 0 ? [{ type: 'node.set' as const, diagramId: sheetId, nodes: [...blocks] }] : []),
+        ...(boxes.length > 0 ? [{ type: 'box.set' as const, diagramId: sheetId, boxes: [...boxes] }] : []),
+      ])
+    },
+    firstLayout() {
+      const sheet = sheetNow()
+      if (!sheet) return
+      const geometry = sheet.geometry
+      one([
+        ...(geometry?.nodes.length ? [{ type: 'node.remove' as const, diagramId: sheet.id, elementIds: geometry.nodes.map((node) => node.id) }] : []),
+        ...(geometry?.groups?.length ? [{ type: 'box.remove' as const, diagramId: sheet.id, groupIds: geometry.groups.map((box) => box.id) }] : []),
+        ...(geometry?.cells?.length ? [{ type: 'cell.remove' as const, diagramId: sheet.id, elementIds: geometry.cells.map((cell) => cell.id) }] : []),
+      ])
+    },
+    resetTiles() {
+      const sheet = sheetNow()
+      const cells = sheet?.geometry?.cells
+      if (sheet && cells?.length) session.dispatch({ type: 'cell.remove', diagramId: sheet.id, elementIds: cells.map((cell) => cell.id) })
+    },
+    cell(id, cell, freeing) {
+      if (sheetId === undefined) return
+      one([
+        ...(freeing !== undefined ? [{ type: 'cell.remove' as const, diagramId: sheetId, elementIds: [freeing] }] : []),
+        cell
+          ? { type: 'cell.set' as const, diagramId: sheetId, cells: [{ id, ...cell }] }
+          : { type: 'cell.remove' as const, diagramId: sheetId, elementIds: [id] },
+      ])
+    },
+    team(ids, team) {
+      const sheet = sheetNow()
+      if (!sheet) return undefined
+      const commands: Command[] = []
+      let sourceId = 'id' in team ? team.id : undefined
+      if (sourceId === undefined && 'name' in team) {
+        const name = team.name.trim()
+        const held = session.current().elements.find((element) => element.kind === 'actor' && element.name === name)
+        sourceId = held?.id
+        if (!held) {
+          const actor = newElement(session.ids, session.current().elements, { kind: 'actor', name }, s('sheet.untitled'))
+          commands.push({ type: 'element.create', element: actor })
+          sourceId = actor.id
+        }
+      }
+      if (sourceId === undefined) return undefined
+      commands.push(...rowsMissing('assigned', sourceId, ids), { type: 'diagram.update', id: sheet.id, patch: { labels: labelled(sheet, ids) } })
+      one(commands)
+      return sourceId
+    },
+    showLabel(id, on) {
+      const sheet = sheetNow()
+      if (!sheet) return
+      const labels = on ? labelled(sheet, [id]) : (sheet.labels ?? []).filter((held) => held !== id)
+      session.dispatch({ type: 'diagram.update', id: sheet.id, patch: { labels: labels.length > 0 ? labels : undefined } })
+    },
+    cover(ids, applicationId) {
+      one(rowsMissing('supports', applicationId, ids))
+    },
+    hand(ids, scope) {
+      const elements = session.current().elements
+      one(ids.flatMap((id) => {
+        const handed = elements.find((element) => element.id === id)?.scopes ?? []
+        return handed.includes(scope) ? [] : [{ type: 'element.update' as const, id, patch: { scopes: [...handed, scope] } }]
+      }))
+    },
+    addItem(item, at) {
+      if (sheetId === undefined) return undefined
+      const id = makeId('item')
+      session.dispatch({ type: 'poster.item.add', diagramId: sheetId, item: { ...item, id }, place: { ...at, id } })
+      return id
+    },
+    updateItem(id, patch) {
+      if (sheetId !== undefined) session.dispatch({ type: 'poster.item.update', diagramId: sheetId, id, patch })
+    },
+    placeItem(place) {
+      if (sheetId !== undefined) session.dispatch({ type: 'poster.item.place', diagramId: sheetId, place })
+    },
+    removeItem(id) {
+      if (sheetId !== undefined) session.dispatch({ type: 'poster.item.remove', diagramId: sheetId, id })
+    },
+    undo: session.undo,
+    redo: session.redo,
   }
 }
 

@@ -333,7 +333,26 @@ const luminanceOf = (colour: string) => luminance(over(colour, { r: 0, g: 0, b: 
 const below = (pairs: Pair[], floor: number) =>
   pairs.filter(({ value }) => value < floor).map(({ name, value }) => `${name}: ${value.toFixed(2)}`)
 
+/**
+ * A sheet's poster: every word on it, on each ground a Colour gives a tile (ADR-0048).
+ * Its text is small, and it is read off a wall, so these are measured with the lowest of
+ * each pair in mind.
+ */
+const POSTER_TILE_GROUNDS = ['card-surface', 'cov-apps-soft', 'cov-moving-soft', 'cov-people-soft', 'warn-soft', 'ok-soft', 'exception-soft', 'life-planned-soft', 'life-retiring-soft', 'selected-soft']
+const POSTER_TEXT: Record<string, string[]> = {
+  'on-poster-title': ['poster-title'],
+  ink: [...POSTER_TILE_GROUNDS, 'surface', 'surface-2', 'zone-fill'],
+  'ink-2': [...POSTER_TILE_GROUNDS, 'surface', 'surface-2', 'zone-fill'],
+  'on-heat-1': ['heat-1'], 'on-heat-2': ['heat-2'], 'on-heat-3': ['heat-3'], 'on-heat-4': ['heat-4'], 'on-heat-5': ['heat-5'],
+  'ink-3': ['life-gone-soft', 'surface'],
+  warn: ['zone-fill'],
+}
+
 describe('the tokens’ contrast', () => {
+  it('draws every word on a poster at 4.5:1 or more on the grounds a Colour gives it, in both modes', () => {
+    expect(below([...tokenPairs('light', POSTER_TEXT), ...tokenPairs('dark', POSTER_TEXT)], 4.5)).toEqual([])
+  })
+
   it('draws every token that carries words at 4.5:1 or more, in both modes', () => {
     expect(below([...tokenPairs('light', TOKEN_TEXT), ...tokenPairs('dark', TOKEN_TEXT)], 4.5)).toEqual([])
   })

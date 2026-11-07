@@ -392,6 +392,12 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(screen.getByRole('button', { name: 'Stakeholders' }))
     fireEvent.click(document.querySelector<HTMLElement>('[data-testid^="sheet-capability-"]')!)
   }]],
+  [['a sheet read as a poster', ['sheet.poster', 'sheet.posture'], async () => {
+    show(false)
+    fireEvent.click(await screen.findByTestId('open-business'))
+    fireEvent.click(await screen.findByRole('radio', { name: 'Poster' }))
+    await screen.findByTestId('sheet-poster')
+  }]],
   // A landscape's own sheet, which may take up what the organisation's sheet holds (ADR-0040 §5).
   [['a sheet below the organisation’s', ['sheet.fromAbove'], async () => {
     const sheeted = example.map((one) => (one.path === landscape.path ? sheetBelow(one) : one))

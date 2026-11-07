@@ -10,7 +10,7 @@
  * cannot reach the actions cannot offer a *+*, a handle or a drop.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode, Ref } from 'react'
+import type { Dispatch, ReactNode, Ref, SetStateAction } from 'react'
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model'
 import type { Translate } from '../../i18n'
 import { captureSheet } from '../../widgets/capturePage'
@@ -41,6 +41,7 @@ import type { Who } from './Responsible'
 const EXPORT_MAX_PIXELS = 40_000_000
 const NOTE_SIZE = { width: 180, height: 46 }
 const PICTURE_SIZE = { width: 160, height: 90 }
+const CUT_PX = 7
 
 /** A copy of the page for paper, at reading distance whatever the window is zoomed to. */
 export function posterCopy(handle: PosterHandle, paper: PrintPaper, dress?: PrintDress) {
@@ -111,49 +112,21 @@ function SelectingBar({ design, places, parts, author, t, onPicture, handle }: {
   )
 }
 
-export function PosterWork({ parts, laidOut, designing, lens, valueOf, coverageAt, nameOf, selectedId, onSelect, made, only, lit, who, day, kept, keyStrip, dockExtra, handle, exporting, onExported, keyWords, today, scopeName, onLane, author, iconAsked, t }: {
-  parts: PosterHostParts
-  laidOut: LaidOutSheet
+/** What Design may do, worked out once for the canvas: nothing at all in Read. */
+function useDesignOf({ designing, poster, picked, setPicked, setLightOf, setPickAt, setIconFor, kept, actions, latest, t }: {
   designing: boolean
-  lens: SheetLens | undefined
-  valueOf(element: DesignElement): LensValue | undefined
-  coverageAt(id: ElementId): FunctionCoverage
-  nameOf(id: ElementId): string
-  selectedId: ElementId | undefined
-  onSelect(id: ElementId | undefined): void
-  made(id: ElementId | undefined): void
-  only: string | undefined
-  lit: ReadonlySet<ElementId> | undefined
-  who: Who | undefined
-  day: string | undefined
+  poster: PosterActions | undefined
+  picked: ReadonlySet<ElementId>
+  setPicked: Dispatch<SetStateAction<ReadonlySet<ElementId>>>
+  setLightOf(to: undefined): void
+  setPickAt(to: { kind: 'team' | 'application'; id: ElementId; anchor: HTMLElement }): void
+  setIconFor(id: ElementId): void
   kept: ReadonlySet<ElementId> | undefined
-  keyStrip: ReactNode
-  dockExtra: ReactNode
-  handle: { current: PosterHandle | undefined }
-  /** The export is asked for. */
-  exporting: boolean
-  onExported(): void
-  keyWords: readonly { label: string; swatch?: string }[]
-  today: string
-  scopeName: string | undefined
-  onLane(): void
-  author: Author | undefined
-  /** Bumped when the panel asks for the selected step's or stakeholder's icon. */
-  iconAsked: number
+  actions: SheetActions
+  latest: { current: { model: DesignModel; parts: PosterHostParts; onSelect(id: ElementId | undefined): void; nameOf(id: ElementId): string; made(id: ElementId | undefined): void; onLane(): void } }
   t: Translate
-}) {
-  const { model, sheet, poster, actions } = parts
-  const [picked, setPicked] = useState<ReadonlySet<ElementId>>(new Set())
-  const [lightOf, setLightOf] = useState<{ id: string; tiles: ReadonlySet<ElementId> } | undefined>(undefined)
-  const [pickAt, setPickAt] = useState<{ kind: 'team' | 'application'; id: ElementId; anchor: HTMLElement } | undefined>(undefined)
-  const [iconFor, setIconFor] = useState<ElementId | undefined>(undefined)
-  const [picturing, setPicturing] = useState(false)
-  const posterRef: Ref<PosterHandle | undefined> = handle as Ref<PosterHandle | undefined>
-  const places = useMemo(() => posterPlaces(laidOut, sheet), [laidOut, sheet])
-  const latest = useRef({ model, parts, onSelect, nameOf, made, author, onLane })
-  latest.current = { model, parts, onSelect, nameOf, made, author, onLane }
-
-  const design: PosterDesign | undefined = useMemo(() => {
+}): PosterDesign | undefined {
+  return useMemo(() => {
     if (!designing || !poster) return undefined
     return {
       actions: poster,
@@ -206,7 +179,90 @@ export function PosterWork({ parts, laidOut, designing, lens, valueOf, coverageA
         return latest.current.nameOf(id)
       },
     }
-  }, [designing, poster, picked, kept, actions, t])
+  }, [designing, poster, picked, setPicked, setLightOf, setPickAt, setIconFor, kept, actions, latest, t])
+}
+
+/** The way onto paper: what a paper cuts, and a PDF or a PNG of the page. */
+function usePaper(handle: { current: PosterHandle | undefined }, keyWords: readonly { label: string; swatch?: string }[], sheetName: string, parts: PosterHostParts) {
+  const cut = useCallback((paper: PrintPaper): readonly ElementId[] => {
+    if (!handle.current) return []
+    const held = posterCopy(handle.current, paper)
+    if (!held) return []
+    const ids: ElementId[] = []
+    for (const name of held.node.querySelectorAll<HTMLElement>('.poster-tile__name')) {
+      // A line's glyphs stand a little proud of its height, so only a whole line more is a name cut.
+      if (name.scrollHeight - name.clientHeight < CUT_PX) continue
+      const id = name.closest<HTMLElement>('[data-element-id]')?.dataset.elementId
+      if (id) ids.push(id)
+    }
+    held.release()
+    return ids
+  }, [handle])
+  const save = useCallback(async (how: PosterExport) => {
+    const on = handle.current
+    if (!on) return
+    const dress: PrintDress = { look: how.look, title: how.title, foot: how.foot, date: how.date, key: keyWords }
+    const name = `${sheetName.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'sheet'}`
+    if (how.file === 'png') {
+      const shot = await posterShot(on, how.paper, EXPORT_MAX_PIXELS, dress)
+      parts.onSave?.({ name: `${name}.png`, bytes: shot.png, mediaType: 'image/png' })
+      return
+    }
+    const held = posterCopy(on, how.paper, dress)
+    if (!held) return
+    try {
+      await document.fonts?.ready
+      await parts.onPrint?.({ name: `${name}.pdf`, widthMm: how.paper.widthMm, heightMm: how.paper.heightMm })
+    } finally {
+      held.release()
+    }
+  }, [handle, keyWords, sheetName, parts])
+  return { cut, save }
+}
+
+export function PosterWork({ parts, laidOut, designing, lens, valueOf, coverageAt, nameOf, selectedId, onSelect, made, only, lit, who, day, kept, keyStrip, dockExtra, handle, exporting, onExported, keyWords, today, scopeName, onLane, author, iconAsked, t }: {
+  parts: PosterHostParts
+  laidOut: LaidOutSheet
+  designing: boolean
+  lens: SheetLens | undefined
+  valueOf(element: DesignElement): LensValue | undefined
+  coverageAt(id: ElementId): FunctionCoverage
+  nameOf(id: ElementId): string
+  selectedId: ElementId | undefined
+  onSelect(id: ElementId | undefined): void
+  made(id: ElementId | undefined): void
+  only: string | undefined
+  lit: ReadonlySet<ElementId> | undefined
+  who: Who | undefined
+  day: string | undefined
+  kept: ReadonlySet<ElementId> | undefined
+  keyStrip: ReactNode
+  dockExtra: ReactNode
+  handle: { current: PosterHandle | undefined }
+  /** The export is asked for. */
+  exporting: boolean
+  onExported(): void
+  keyWords: readonly { label: string; swatch?: string }[]
+  today: string
+  scopeName: string | undefined
+  onLane(): void
+  author: Author | undefined
+  /** Bumped when the panel asks for the selected step's or stakeholder's icon. */
+  iconAsked: number
+  t: Translate
+}) {
+  const { model, sheet, poster, actions } = parts
+  const [picked, setPicked] = useState<ReadonlySet<ElementId>>(() => new Set())
+  const [lightOf, setLightOf] = useState<{ id: string; tiles: ReadonlySet<ElementId> } | undefined>(undefined)
+  const [pickAt, setPickAt] = useState<{ kind: 'team' | 'application'; id: ElementId; anchor: HTMLElement } | undefined>(undefined)
+  const [iconFor, setIconFor] = useState<ElementId | undefined>(undefined)
+  const [picturing, setPicturing] = useState(false)
+  const posterRef: Ref<PosterHandle | undefined> = handle as Ref<PosterHandle | undefined>
+  const places = useMemo(() => posterPlaces(laidOut, sheet), [laidOut, sheet])
+  const latest = useRef({ model, parts, onSelect, nameOf, made, author, onLane })
+  latest.current = { model, parts, onSelect, nameOf, made, author, onLane }
+
+  const design = useDesignOf({ designing, poster, picked, setPicked, setLightOf, setPickAt, setIconFor, kept, actions, latest, t })
 
   const tray: TrayWork | undefined = useMemo(() => (poster ? {
     model, laidOut, actions: poster, coverageAt, responsible: parts.responsible, applications: parts.applications, domains: parts.domains,
@@ -233,38 +289,7 @@ export function PosterWork({ parts, laidOut, designing, lens, valueOf, coverageA
       {design && author && tray && <SelectingBar design={design} places={places} parts={{ ...parts, laidOut }} author={author} t={t} onPicture={() => setPicturing(true)} handle={handle} />}
     </>
   )
-  const cut = useCallback((paper: PrintPaper): readonly ElementId[] => {
-    if (!handle.current) return []
-    const held = posterCopy(handle.current, paper)
-    if (!held) return []
-    const ids: ElementId[] = []
-    for (const name of held.node.querySelectorAll<HTMLElement>('.poster-tile__name')) {
-      if (name.scrollHeight <= name.clientHeight + 1) continue
-      const id = name.closest<HTMLElement>('[data-element-id]')?.dataset.elementId
-      if (id) ids.push(id)
-    }
-    held.release()
-    return ids
-  }, [handle])
-  const save = useCallback(async (how: PosterExport) => {
-    const on = handle.current
-    if (!on) return
-    const dress: PrintDress = { look: how.look, title: how.title, foot: how.foot, date: how.date, key: keyWords }
-    const name = `${sheet.name.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'sheet'}`
-    if (how.file === 'png') {
-      const shot = await posterShot(on, how.paper, EXPORT_MAX_PIXELS, dress)
-      parts.onSave?.({ name: `${name}.png`, bytes: shot.png, mediaType: 'image/png' })
-      return
-    }
-    const held = posterCopy(on, how.paper, dress)
-    if (!held) return
-    try {
-      await document.fonts?.ready
-      await parts.onPrint?.({ name: `${name}.pdf`, widthMm: how.paper.widthMm, heightMm: how.paper.heightMm })
-    } finally {
-      held.release()
-    }
-  }, [handle, keyWords, sheet.name, parts])
+  const { cut, save } = usePaper(handle, keyWords, sheet.name, parts)
 
   return (
     <>

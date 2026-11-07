@@ -134,25 +134,8 @@ function writeRect(element: HTMLElement, rect: Rect) {
   if (element.dataset.itemId !== undefined) element.style.height = `${rect.height}px`
 }
 
-export function usePosterGestures(args: {
-  design: PosterDesign | undefined
-  camera: PosterCamera
-  places: PosterPlaces
-  sheet: PosterSheet | undefined
-  laidOut: LaidOutSheet
-  say(words: string): void
-  t: Translate
-}) {
-  const { design, camera, places, sheet, laidOut, say, t } = args
-  const gesture = useRef<Gesture | undefined>(undefined)
-  const lifted = useRef<{ id: string; element: HTMLElement; was: Rect; now: Rect } | undefined>(undefined)
-
-  const unitsAt = useCallback((event: { clientX: number; clientY: number }) => {
-    const frame = camera.pane.current?.getBoundingClientRect()
-    const { x, y, zoom } = camera.camera.current
-    return { x: (event.clientX - (frame?.left ?? 0) - x) / zoom, y: (event.clientY - (frame?.top ?? 0) - y) / zoom }
-  }, [camera])
-
+/** Where a block lands that was asked to be somewhere, with the line where it aligns. */
+function useSnapping(camera: PosterCamera, places: PosterPlaces, sheet: PosterSheet | undefined, laidOut: LaidOutSheet) {
   const others = (id: string): Rect[] => [
     ...[...places.blocks, ...places.waiting].filter((block) => block.id !== id),
     ...(sheet?.geometry?.items ?? []).filter((item) => item.id !== id),
@@ -197,6 +180,133 @@ export function usePosterGestures(args: {
     const floor = sheet ? posterBlockFloor(laidOut, sheet, id, width) : LEAST_HEIGHT
     return { ...wanted, width, height: Math.max(floor, size('y', wanted.height, wanted.y)) }
   }
+
+  return { guides, landed, pulled }
+}
+
+/** A tile let go: a cell in its own block, or a move to another, with the panel's refusals. */
+function dropTile(held: Gesture, event: { clientX: number; clientY: number }, at: { design: PosterDesign; camera: PosterCamera; sheet: PosterSheet | undefined; say(words: string): void; t: Translate }) {
+  const { design, camera, sheet, say, t } = at
+  const id = held.id
+  delete held.target?.dataset.over
+  const home = held.element.closest<HTMLElement>('[data-drop]')
+  const over = dropTargetAt(event.clientX, event.clientY)
+  const to = over?.dataset.drop
+  if (!over || !to) return
+  // A loose tile's home is the area, and so is a press on the area around a grouping.
+  if (to !== home?.dataset.drop) {
+    const refused = design.refusal(id, to)
+    if (refused) { say(refused); return }
+    design.moveTile(id, to)
+    say(t('sheet.poster.tileMoved', { name: design.nameOf(id), to: design.nameOf(to) }))
+    return
+  }
+  const flow = held.element.closest<HTMLElement>('.poster-flow')
+  if (!flow) return
+  const frame = flow.getBoundingClientRect()
+  const { zoom } = camera.camera.current
+  const tile = POSTER_TILES[sheet?.poster?.tile ?? 'm']
+  const widths = flow.querySelector('.poster-tile')?.getBoundingClientRect().width ?? tile.width * zoom
+  const col = Math.max(0, Math.floor((event.clientX - frame.left) / (widths + POSTER_TILE.gap * zoom)))
+  const row = Math.max(0, Math.floor((event.clientY - frame.top) / ((tile.height + POSTER_TILE.gap) * zoom)))
+  const freeing = sheet?.geometry?.cells?.find((cell) => cell.id !== id && cell.col === col && cell.row === row && flow.querySelector(locatedSelector(cell.id)))
+  design.actions.cell(id, { col, row }, freeing?.id)
+  say(t('sheet.poster.tilePlaced', { name: design.nameOf(id) }))
+}
+
+/** The keyboard's way to everything a drag does: a block lifted, moved and dropped, a tile's pickers. */
+function useLift({ design, camera, say, t, commit, rectOf }: {
+  design: PosterDesign | undefined
+  camera: PosterCamera
+  say(words: string): void
+  t: Translate
+  commit(id: string, rect: Rect): void
+  rectOf(id: string): Rect | undefined
+}) {
+  const lifted = useRef<{ id: string; element: HTMLElement; was: Rect; now: Rect } | undefined>(undefined)
+  return (event: ReactKeyboardEvent<HTMLDivElement>): boolean => {
+    if (!design) return false
+    const element = event.target as HTMLElement
+    if (element.closest('textarea, input')) return false
+    const held = lifted.current
+    if (held) {
+      if (event.key === ' ') {
+        event.preventDefault()
+        lifted.current = undefined
+        delete held.element.dataset.moving
+        commit(held.id, held.now)
+        say(t('sheet.poster.dropped', { name: design.nameOf(held.id), x: held.now.x, y: held.now.y }))
+        return true
+      }
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        lifted.current = undefined
+        delete held.element.dataset.moving
+        writeRect(held.element, held.was)
+        say(t('sheet.poster.putBack', { name: design.nameOf(held.id) }))
+        return true
+      }
+      const way = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key]
+      if (way) {
+        event.preventDefault()
+        const by = event.altKey ? 1 : GRID
+        const now = event.shiftKey
+          ? { ...held.now, width: Math.max(LEAST_WIDTH, held.now.width + way[0] * by), height: Math.max(LEAST_HEIGHT, held.now.height + way[1] * by) }
+          : { ...held.now, x: held.now.x + way[0] * by, y: held.now.y + way[1] * by }
+        held.now = now
+        writeRect(held.element, now)
+        camera.follow(held.element)
+        say(event.shiftKey
+          ? t('sheet.poster.nowSized', { width: now.width, height: now.height })
+          : t('sheet.poster.nowAt', { x: now.x, y: now.y }))
+        return true
+      }
+      return true
+    }
+    const tile = element.closest<HTMLElement>('.poster-tile')
+    if (tile) {
+      const key = event.key.toLowerCase()
+      if ((key === 'l' || key === 'a') && !event.metaKey && !event.ctrlKey && tile.dataset.elementId) {
+        event.preventDefault()
+        design.onPick(key === 'l' ? 'team' : 'application', tile.dataset.elementId, tile)
+        return true
+      }
+      return false
+    }
+    const block = element.closest<HTMLElement>('[data-block], [data-item-id]')
+    if (block && event.key === ' ') {
+      const id = block.dataset.block ?? block.dataset.itemId ?? ''
+      const rect = rectOf(id)
+      if (!rect) return false
+      event.preventDefault()
+      lifted.current = { id, element: block, was: rect, now: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }
+      block.dataset.moving = ''
+      say(t('sheet.poster.lifted', { name: design.nameOf(id) }))
+      return true
+    }
+    return false
+  }
+}
+
+export function usePosterGestures(args: {
+  design: PosterDesign | undefined
+  camera: PosterCamera
+  places: PosterPlaces
+  sheet: PosterSheet | undefined
+  laidOut: LaidOutSheet
+  say(words: string): void
+  t: Translate
+}) {
+  const { design, camera, places, sheet, laidOut, say, t } = args
+  const gesture = useRef<Gesture | undefined>(undefined)
+
+  const unitsAt = useCallback((event: { clientX: number; clientY: number }) => {
+    const frame = camera.pane.current?.getBoundingClientRect()
+    const { x, y, zoom } = camera.camera.current
+    return { x: (event.clientX - (frame?.left ?? 0) - x) / zoom, y: (event.clientY - (frame?.top ?? 0) - y) / zoom }
+  }, [camera])
+
+  const { guides, landed, pulled } = useSnapping(camera, places, sheet, laidOut)
 
   /** A block's place written: every block with it the first time, so the poster stops following the first layout at once. */
   const commit = (id: string, rect: Rect) => {
@@ -285,35 +395,6 @@ export function usePosterGestures(args: {
     return true
   }
 
-  const dropTile = (held: Gesture, event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!design) return
-    const id = held.id
-    delete held.target?.dataset.over
-    const home = held.element.closest<HTMLElement>('[data-drop]')
-    const over = dropTargetAt(event.clientX, event.clientY)
-    const to = over?.dataset.drop
-    if (!over || !to) return
-    // A loose tile's home is the area, and so is a press on the area around a grouping.
-    if (to !== home?.dataset.drop) {
-      const refused = design.refusal(id, to)
-      if (refused) { say(refused); return }
-      design.moveTile(id, to)
-      say(t('sheet.poster.tileMoved', { name: design.nameOf(id), to: design.nameOf(to) }))
-      return
-    }
-    const flow = held.element.closest<HTMLElement>('.poster-flow')
-    if (!flow) return
-    const frame = flow.getBoundingClientRect()
-    const { zoom } = camera.camera.current
-    const tile = POSTER_TILES[sheet?.poster?.tile ?? 'm']
-    const widths = flow.querySelector('.poster-tile')?.getBoundingClientRect().width ?? tile.width * zoom
-    const col = Math.max(0, Math.floor((event.clientX - frame.left) / (widths + POSTER_TILE.gap * zoom)))
-    const row = Math.max(0, Math.floor((event.clientY - frame.top) / ((tile.height + POSTER_TILE.gap) * zoom)))
-    const freeing = sheet?.geometry?.cells?.find((cell) => cell.id !== id && cell.col === col && cell.row === row && flow.querySelector(locatedSelector(cell.id)))
-    design.actions.cell(id, { col, row }, freeing?.id)
-    say(t('sheet.poster.tilePlaced', { name: design.nameOf(id) }))
-  }
-
   const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>): boolean | undefined => {
     const held = gesture.current
     if (!held) return undefined
@@ -323,7 +404,7 @@ export function usePosterGestures(args: {
     if (!held.moved) return false
     if (held.kind === 'tile') {
       held.element.style.transform = ''
-      dropTile(held, event)
+      if (design) dropTile(held, event, { design, camera, sheet, say, t })
     } else if (held.kind === 'box') {
       const stage = camera.stage.current
       const frame = held.box?.getBoundingClientRect()
@@ -345,68 +426,7 @@ export function usePosterGestures(args: {
     return true
   }
 
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>): boolean => {
-    if (!design) return false
-    const element = event.target as HTMLElement
-    if (element.closest('textarea, input')) return false
-    const held = lifted.current
-    if (held) {
-      if (event.key === ' ') {
-        event.preventDefault()
-        lifted.current = undefined
-        delete held.element.dataset.moving
-        commit(held.id, held.now)
-        say(t('sheet.poster.dropped', { name: design.nameOf(held.id), x: held.now.x, y: held.now.y }))
-        return true
-      }
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        lifted.current = undefined
-        delete held.element.dataset.moving
-        writeRect(held.element, held.was)
-        say(t('sheet.poster.putBack', { name: design.nameOf(held.id) }))
-        return true
-      }
-      const way = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[event.key]
-      if (way) {
-        event.preventDefault()
-        const by = event.altKey ? 1 : GRID
-        const now = event.shiftKey
-          ? { ...held.now, width: Math.max(LEAST_WIDTH, held.now.width + way[0] * by), height: Math.max(LEAST_HEIGHT, held.now.height + way[1] * by) }
-          : { ...held.now, x: held.now.x + way[0] * by, y: held.now.y + way[1] * by }
-        held.now = now
-        writeRect(held.element, now)
-        camera.follow(held.element)
-        say(event.shiftKey
-          ? t('sheet.poster.nowSized', { width: now.width, height: now.height })
-          : t('sheet.poster.nowAt', { x: now.x, y: now.y }))
-        return true
-      }
-      return true
-    }
-    const tile = element.closest<HTMLElement>('.poster-tile')
-    if (tile) {
-      const key = event.key.toLowerCase()
-      if ((key === 'l' || key === 'a') && !event.metaKey && !event.ctrlKey && tile.dataset.elementId) {
-        event.preventDefault()
-        design.onPick(key === 'l' ? 'team' : 'application', tile.dataset.elementId, tile)
-        return true
-      }
-      return false
-    }
-    const block = element.closest<HTMLElement>('[data-block], [data-item-id]')
-    if (block && event.key === ' ') {
-      const id = block.dataset.block ?? block.dataset.itemId ?? ''
-      const rect = rectOf(id)
-      if (!rect) return false
-      event.preventDefault()
-      lifted.current = { id, element: block, was: rect, now: { x: rect.x, y: rect.y, width: rect.width, height: rect.height } }
-      block.dataset.moving = ''
-      say(t('sheet.poster.lifted', { name: design.nameOf(id) }))
-      return true
-    }
-    return false
-  }
+  const onKeyDown = useLift({ design, camera, say, t, commit, rectOf })
 
   return { onPointerDown, onPointerMove, onPointerUp, onKeyDown }
 }

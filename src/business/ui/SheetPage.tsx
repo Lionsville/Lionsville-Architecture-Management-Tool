@@ -777,17 +777,14 @@ export function SheetPage(props: SheetPageProps) {
   const { t } = useStrings()
   const page = useRef<HTMLDivElement | null>(null)
   const at = usePage(props, page)
-  const { laidOut, picture, selection, finder, lensed, readOnly, author, reading } = at
-  const { selectedId, naming, journeyOpen } = selection
+  const { laidOut, picture, selection, finder, reading } = at
+  const { selectedId } = selection
   const [laneOpen, setLaneOpen] = useState(false)
   const [detailsWidth, setDetailsWidth] = useState<number>(INSPECTOR_WIDTH.default)
   const [posterExport, setPosterExport] = useState(false)
-  const [iconAsked, setIconAsked] = useState(0)
   const [full, setFull] = useState(false)
   const room = useRoomForPick(page, selectedId, detailsWidth)
   const { exporting, capture } = picture
-  const selected = selectedId === undefined ? undefined : model.elements.find((element) => element.id === selectedId)
-
   const onHandle = props.onHandle
   const sheetId = sheet?.id
   useEffect(() => {
@@ -801,24 +798,11 @@ export function SheetPage(props: SheetPageProps) {
     at.chooseTab('names')
     requestAnimationFrame(() => document.getElementById('sheet-unmapped')?.scrollIntoView?.())
   }
-  // On a poster nothing scrolls for the browser's own find to reach: ⌘F is this one, which lights what it finds.
-  const { finding, toggle: toggleFind } = finder
-  useEffect(() => {
-    if (at.tab !== 'poster') return undefined
-    const keys = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'f') return
-      event.preventDefault()
-      event.stopPropagation()
-      if (!finding) toggleFind()
-    }
-    // Ahead of the editor's own, which has the document.
-    window.addEventListener('keydown', keys, true)
-    return () => window.removeEventListener('keydown', keys, true)
-  }, [at.tab, finding, toggleFind])
+  usePosterFindKey(at.tab === 'poster', finder.finding, finder.toggle)
   const Frame = props.inline ? InlineFrame : PageDialog
   return (
     <Frame open={props.open} topInset={(props.windowChrome ?? NO_WINDOW_CHROME).topInset} onClose={props.onClose} aria-label={t('sheet.page')}>
-      <div className="sheet-full" data-full={full ? '' : undefined} onKeyDown={full ? (event) => { if (event.key === 'Escape' && !selected) setFull(false) } : undefined}>
+      <div className="sheet-full" data-full={full ? '' : undefined} onKeyDown={full ? (event) => { if (event.key === 'Escape' && selectedId === undefined) setFull(false) } : undefined}>
       <SheetTopBar at={at} props={props} onLevel={at.chooseTab} onPosterExport={() => setPosterExport(true)} />
       {at.looking && reading.day !== undefined && <SheetLook day={reading.day} at={at} props={props} />}
       {finder.finding && <FindBar query={finder.query} hits={finder.hits} at={finder.at} onQuery={finder.onQuery} onWalk={finder.walk} onClose={finder.close} t={t} />}
@@ -828,43 +812,7 @@ export function SheetPage(props: SheetPageProps) {
         style={exporting?.width !== undefined ? { width: exporting.width } : undefined}
         sx={exporting ? undefined : locatedRing(at.locatedId)}
       >
-        {at.tab !== 'poster' && laidOut?.journey && (
-          <JourneyBand
-            journey={laidOut.journey} open={journeyOpen || exporting !== undefined} onOpen={selection.setJourneyOpen}
-            selectedId={selectedId} onSelect={selection.select} onNewLane={() => setLaneOpen(true)} author={author} t={t}
-          />
-        )}
-        {at.tab !== 'poster' && <SheetKey at={at} props={props} onJump={jump} />}
-        <div className="sheet-page__work">
-          {at.tab === 'poster' && laidOut && sheet && (laidOut.areas.length > 0 || laidOut.journey
-            ? (
-              <PosterWork
-                parts={posterParts(props, sheet, lensed.retiring)} laidOut={laidOut} designing={at.designing} lens={lensed.lens} valueOf={lensed.valueOf} coverageAt={lensed.coverageAt}
-                nameOf={at.context.named} selectedId={selectedId} onSelect={selection.select} made={selection.made} only={at.only} lit={finder.lit} who={lensed.who}
-                day={lensed.asOf} kept={at.rail.options.kept} keyStrip={<SheetKey at={at} props={props} onJump={jump} />} handle={at.posterHandle} author={author}
-                dockExtra={<Button variant="quiet" size="small" aria-pressed={full} onClick={() => setFull((was) => !was)} data-testid="poster-full">{t(full ? 'sheet.poster.back' : 'sheet.poster.fullWindow')}</Button>}
-                exporting={posterExport} onExported={() => setPosterExport(false)} keyWords={keyWordsOf(at)} today={props.today ?? ''} scopeName={props.scopeName} onLane={() => setLaneOpen(true)}
-                iconAsked={iconAsked} t={t}
-              />
-            )
-            : <div className="sheet-page__body"><EmptySheet author={author} claims={props.claims} t={t} /></div>)}
-          {at.tab !== 'poster' && <RailPart at={at} props={props} />}
-          {at.tab !== 'poster' && <div className="sheet-page__body" data-testid="sheet-body" style={room > 0 ? { paddingInlineEnd: room } : undefined} onKeyDown={(event) => onRowKeys(event, at.context)}>
-            <div data-testid="sheet-canvas" data-guide="sheet.canvas" className="sheet-rows" data-finding={finder.lit ? '' : undefined}>
-              <SheetBody at={at} props={props} />
-            </div>
-          </div>}
-          {selected && !exporting && (
-            <OverPanel
-              selected={selected} sheet={sheet} laidOut={laidOut} width={detailsWidth} onWidth={setDetailsWidth} readOnly={readOnly}
-              naming={naming} asOf={lensed.asOf} select={selection.select} props={props}
-              poster={at.tab === 'poster' ? {
-                panel: posterPanelOf(selected, sheet, props.poster, () => setIconAsked((was) => was + 1), selectedId),
-                onEscape: () => { const id = selected.id; selection.select(undefined); requestAnimationFrame(() => at.posterHandle.current?.focus(id)) },
-              } : undefined}
-            />
-          )}
-        </div>
+        <SheetInside at={at} props={props} jump={jump} room={room} full={full} onFull={setFull} posterExport={posterExport} onPosterExported={() => setPosterExport(false)} onLane={() => setLaneOpen(true)} detailsWidth={detailsWidth} onDetailsWidth={setDetailsWidth} />
       </Box>
 
       </div>
@@ -876,6 +824,109 @@ export function SheetPage(props: SheetPageProps) {
       )}
     </Frame>
   )
+}
+
+/** On a poster nothing scrolls for the browser's own find to reach: ⌘F is this one, which lights what it finds. */
+function usePosterFindKey(on: boolean, finding: boolean, toggle: () => void) {
+  useEffect(() => {
+    if (!on) return undefined
+    const keys = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'f') return
+      event.preventDefault()
+      event.stopPropagation()
+      if (!finding) toggle()
+    }
+    // Ahead of the editor's own, which has the document.
+    window.addEventListener('keydown', keys, true)
+    return () => window.removeEventListener('keydown', keys, true)
+  }, [on, finding, toggle])
+}
+
+/** What is on the page under its bars: a reading, and the panel over it. */
+function SheetInside({ at, props, jump, room, full, onFull, posterExport, onPosterExported, onLane, detailsWidth, onDetailsWidth }: {
+  at: ReturnType<typeof usePage>
+  props: SheetPageProps
+  jump(): void
+  room: number
+  full: boolean
+  onFull(full: boolean): void
+  posterExport: boolean
+  onPosterExported(): void
+  onLane(): void
+  detailsWidth: number
+  onDetailsWidth(width: number): void
+}) {
+  const { t } = useStrings()
+  const { laidOut, picture, selection, finder, lensed, readOnly, author } = at
+  const { selectedId, naming, journeyOpen } = selection
+  const { exporting } = picture
+  const { model, sheet } = props
+  const selected = selectedId === undefined ? undefined : model.elements.find((element) => element.id === selectedId)
+  const [iconAsked, setIconAsked] = useState(0)
+  return (
+    <>
+    {at.tab !== 'poster' && laidOut?.journey && (
+      <JourneyBand
+        journey={laidOut.journey} open={journeyOpen || exporting !== undefined} onOpen={selection.setJourneyOpen}
+        selectedId={selectedId} onSelect={selection.select} onNewLane={() => onLane()} author={author} t={t}
+      />
+    )}
+    {at.tab !== 'poster' && <SheetKey at={at} props={props} onJump={jump} />}
+    <div className="sheet-page__work">
+      {at.tab === 'poster' && <PosterPart at={at} props={props} jump={jump} full={full} onFull={onFull} exporting={posterExport} onExported={onPosterExported} onLane={onLane} iconAsked={iconAsked} />}
+      {at.tab !== 'poster' && <RailPart at={at} props={props} />}
+      {at.tab !== 'poster' && <div className="sheet-page__body" data-testid="sheet-body" style={room > 0 ? { paddingInlineEnd: room } : undefined} onKeyDown={(event) => onRowKeys(event, at.context)}>
+        <div data-testid="sheet-canvas" data-guide="sheet.canvas" className="sheet-rows" data-finding={finder.lit ? '' : undefined}>
+          <SheetBody at={at} props={props} />
+        </div>
+      </div>}
+      {selected && !exporting && (
+        <OverPanel
+          selected={selected} sheet={sheet} laidOut={laidOut} width={detailsWidth} onWidth={onDetailsWidth} readOnly={readOnly}
+          naming={naming} asOf={lensed.asOf} select={selection.select} props={props}
+          poster={at.tab === 'poster' ? posterOnPanel(selected, at, props, () => setIconAsked((was) => was + 1)) : undefined}
+        />
+      )}
+    </div>
+    </>
+  )
+}
+
+/** The poster and what goes round it, or the empty sheet where there is nothing to draw on one. */
+function PosterPart({ at, props, jump, full, onFull, exporting, onExported, onLane, iconAsked }: {
+  at: ReturnType<typeof usePage>
+  props: SheetPageProps
+  jump(): void
+  full: boolean
+  onFull(full: boolean): void
+  exporting: boolean
+  onExported(): void
+  onLane(): void
+  iconAsked: number
+}) {
+  const { t } = useStrings()
+  const { laidOut, lensed, selection, finder, author } = at
+  const { sheet } = props
+  if (!laidOut || !sheet) return null
+  if (laidOut.areas.length === 0 && !laidOut.journey) return <div className="sheet-page__body"><EmptySheet author={author} claims={props.claims} t={t} /></div>
+  return (
+    <PosterWork
+      parts={posterParts(props, sheet, lensed.retiring)} laidOut={laidOut} designing={at.designing} lens={lensed.lens} valueOf={lensed.valueOf} coverageAt={lensed.coverageAt}
+      nameOf={at.context.named} selectedId={selection.selectedId} onSelect={selection.select} made={selection.made} only={at.only} lit={finder.lit} who={lensed.who}
+      day={lensed.asOf} kept={at.rail.options.kept} keyStrip={<SheetKey at={at} props={props} onJump={jump} />} handle={at.posterHandle} author={author}
+      dockExtra={<Button variant="quiet" size="small" aria-pressed={full} onClick={() => onFull(!full)} data-testid="poster-full">{t(full ? 'sheet.poster.back' : 'sheet.poster.fullWindow')}</Button>}
+      exporting={exporting} onExported={onExported} keyWords={keyWordsOf(at)} today={props.today ?? ''} scopeName={props.scopeName} onLane={onLane}
+      iconAsked={iconAsked} t={t}
+    />
+  )
+}
+
+/** The panel's half of a poster: what it says about this one, and Esc back to its tile. */
+function posterOnPanel(selected: DesignElement, at: ReturnType<typeof usePage>, props: SheetPageProps, onChooseIcon: () => void) {
+  return {
+    panel: at.readOnly ? undefined : posterPanelOf(selected, props.sheet, props.poster, onChooseIcon, selected.id),
+    onEscape: () => { at.selection.select(undefined); requestAnimationFrame(() => at.posterHandle.current?.focus(selected.id)) },
+  }
 }
 
 /** The poster first where it can be of use: the sheet has an area and the window has room. Names otherwise, one press from it. */

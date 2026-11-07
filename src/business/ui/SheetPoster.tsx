@@ -120,6 +120,32 @@ function lifeOn(element: DesignElement, day: string | undefined): 'planned' | 'g
   return undefined
 }
 
+/** What a tile says inside: a name always, the rest as far as the distance and the label allow. */
+function TileWords({ element, inside, value, facts, labelled, mark, t }: {
+  element: DesignElement
+  inside: number
+  value: LensValue | undefined
+  facts: Facts | undefined
+  labelled: boolean
+  mark: boolean
+  t: Translate
+}) {
+  const last = facts?.label === undefined ? facts?.via || facts?.unit : undefined
+  return (
+    <>
+      {mark && <i className="poster-tile__mark" />}
+      {value?.heat !== undefined && <span className="poster-tile__value">{value.said}</span>}
+      <span className="poster-tile__name">{element.name}</span>
+      {facts?.apps && <span className="poster-tile__near">{facts.apps}</span>}
+      {labelled && facts?.label !== undefined && <span className="poster-tile__label" data-tile-label={element.id} data-typed={facts.labelTyped ? '' : undefined}>{facts.label}</span>}
+      {last && <span className="poster-tile__near" data-via={facts?.via ? '' : undefined}>{last}</span>}
+      {inside > 0 && <span className="poster-tile__inside" title={t('sheet.poster.inside', { count: inside })}>+{inside}</span>}
+    </>
+  )
+}
+
+const flag = (on: boolean) => (on ? '' : undefined)
+
 const Tile = memo(function Tile({ capability, inside, lens, value, facts, cell, labelled, standIn, life, say, t }: {
   capability: SheetCapability
   inside: number
@@ -135,23 +161,15 @@ const Tile = memo(function Tile({ capability, inside, lens, value, facts, cell, 
 }) {
   const { element } = capability
   const look = lens && value ? lookOf(lens, value) : undefined
-  const last = facts?.label === undefined && (facts?.via || facts?.unit)
   return (
     <li>
       <button
         type="button" tabIndex={-1} className="poster-tile" title={element.name} data-element-id={element.id} data-testid={`poster-tile-${element.id}`}
-        data-value={value?.value} data-heat={value?.heat} data-hand={cell ? '' : undefined} data-labelled={labelled ? '' : undefined}
-        data-stand-in={standIn ? '' : undefined} data-life={life}
+        data-value={value?.value} data-heat={value?.heat} data-hand={flag(cell !== undefined)} data-labelled={flag(labelled)} data-stand-in={flag(standIn)} data-life={life}
         aria-label={say ? `${element.name}, ${say}` : undefined}
         style={cell ? { gridColumn: `${cell.col + 1} / span ${cell.span ?? 1}`, gridRow: cell.row + 1 } : undefined}
       >
-        {look?.mark && <i className="poster-tile__mark" />}
-        {value?.heat !== undefined && <span className="poster-tile__value">{value.said}</span>}
-        <span className="poster-tile__name">{element.name}</span>
-        {facts?.apps && <span className="poster-tile__near">{facts.apps}</span>}
-        {labelled && facts?.label !== undefined && <span className="poster-tile__label" data-tile-label={element.id} data-typed={facts.labelTyped ? '' : undefined}>{facts.label}</span>}
-        {last && <span className="poster-tile__near" data-via={facts?.via ? '' : undefined}>{facts?.via || facts?.unit}</span>}
-        {inside > 0 && <span className="poster-tile__inside" title={t('sheet.poster.inside', { count: inside })}>+{inside}</span>}
+        <TileWords element={element} inside={inside} value={value} facts={facts} labelled={labelled} mark={look?.mark !== undefined} t={t} />
       </button>
     </li>
   )
@@ -409,10 +427,9 @@ const Column = memo(function Column({ actors, block, kept, drawing }: { actors: 
         )
         : (
           <div key={element.id} className="poster-person-row">
-            <button type="button" tabIndex={-1} className="poster-person" data-element-id={element.id} title={element.name}>
+            <button type="button" tabIndex={-1} className="poster-person" data-element-id={element.id} title={kept?.has(element.id) ? `${element.name}. ${t('sheet.nowAUnit')}` : element.name}>
               {element.icon && <IconOrImage icon={element.icon} size={20} wide alt={element.name} />}
               <span className="poster-person__name">{element.name}{outside && !group(at)?.outside ? ` ${t('sheet.outsideWord')}` : ''}</span>
-              {kept?.has(element.id) && <span className="poster-person__note">{t('sheet.nowAUnit')}</span>}
             </button>
             {design && (
               <span className="poster-add poster-add--icon" data-sheet-add>
@@ -481,7 +498,7 @@ function usePan(pane: { current: HTMLDivElement | null }, panBy: (dx: number, dy
 const ARROWS: Readonly<Record<string, readonly [number, number]>> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }
 
 /** What the arrows land on: anything on the page that can be pressed. */
-const ROUTE = '[data-element-id]:is(button), [data-item-id]'
+const ROUTE = '[data-element-id]:is(button), [data-item-id], .poster-add button, .poster-adds button'
 
 /** The next thing that way on screen, across into the next block at the edge of this one. */
 function nextThatWay(stage: HTMLElement, from: Element, [dx, dy]: readonly [number, number]): HTMLElement | undefined {
@@ -665,7 +682,7 @@ export function SheetPoster(props: SheetPosterProps) {
   // A stop is the block's first: a tile an arrow reached is a stop only while it has the keyboard.
   const onBlur = (event: ReactFocusEvent<HTMLDivElement>) => {
     const was = event.target as HTMLElement
-    if (was.matches('.poster-tile, .poster-grouping__name, .poster-band__phase, .poster-person')) was.tabIndex = -1
+    if (was.matches('.poster-tile, .poster-grouping__name, .poster-band__phase, .poster-person, .poster-add button, .poster-adds button')) was.tabIndex = -1
   }
 
   const [unitMenu, setUnitMenu] = useState<{ anchor: HTMLElement; id: ElementId } | undefined>(undefined)

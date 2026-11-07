@@ -74,14 +74,17 @@ export function applyTray(work: TrayWork, kind: TrayMode, value: { id?: string; 
   say(t('sheet.poster.labelled', { name: value.name, count: own.length }))
 }
 
-type Row = { id?: string; name: string; note?: string; typed?: boolean; group?: string; why?: string }
+type Row = { id?: string; name: string; note?: string; detail?: string; typed?: boolean; group?: string; why?: string }
 
 /** The teams in the rail's words: those on this sheet with why, the rest kept short, those that are not units. */
 function teamRows(work: TrayWork, typed: readonly string[], allOthers: boolean): { rows: Row[]; more: number } {
   const { laidOut, responsible, model, t } = work
   const used = laidOut.actors.filter((row) => row.group === 'used')
   const seen = new Set(used.map((row) => row.element.id))
-  const rows: Row[] = used.map((row) => ({ id: row.element.id, name: row.element.name, group: t('sheet.unitsHere'), why: t('sheet.poster.teamsHereWhy') }))
+  const rows: Row[] = used.map((row) => {
+    const first = row.uses?.responsibleFor[0]?.name
+    return { id: row.element.id, name: row.element.name, group: t('sheet.unitsHere'), why: t('sheet.poster.teamsHereWhy'), ...(first !== undefined ? { detail: t('sheet.unitResponsible', { name: first }) } : {}) }
+  })
   const others = (responsible?.choices ?? []).filter((choice) => !seen.has(choice.id) && responsible?.unit?.(choice.id) !== undefined)
   const shown = allOthers ? others : others.slice(0, OTHER_UNITS)
   rows.push(...shown.map((choice): Row => ({ id: choice.id, name: choice.label, group: t('sheet.unitsOther') })))
@@ -117,7 +120,7 @@ function subscopeRows(work: TrayWork): Row[] {
 function Item({ row, on, onDown }: { row: Row; on: boolean; onDown(event: ReactPointerEvent<HTMLButtonElement>): void }) {
   return (
     <button type="button" className="poster-tray__item" data-typed={row.typed ? '' : undefined} data-on={on ? '' : undefined} data-testid={`poster-tray-${row.id ?? row.name}`} onPointerDown={onDown} aria-pressed={on}>
-      <span title={row.name}>{row.name}</span>
+      <span title={row.detail ? `${row.name}. ${row.detail}` : row.name}>{row.name}</span>
       {row.note !== undefined && <span className="poster-tray__note">{row.note}</span>}
     </button>
   )

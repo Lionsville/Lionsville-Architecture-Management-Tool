@@ -205,7 +205,7 @@
 .print-page[data-look="print"] .poster-block { background: white; border-color: black; }
 .print-page[data-look="print"] .poster-grouping { background: white; }
 .print-page[data-look="print"] .poster-column, .print-page[data-look="print"] .poster-band { background: white; }
-.print-page[data-look="print"] .poster-step { background: white; outline: 1px solid black; outline-offset: -1px; color: black; }
+.print-page[data-look="print"] .poster-step { color: black; }
 .print-page__title { position: absolute; display: flex; gap: 0.5em; color: black; font-family: var(--font-ui); font-weight: var(--fw-strong); }
 .print-page__foot { position: absolute; display: flex; justify-content: space-between; color: black; border-top: 1px solid black; font-family: var(--font-ui); }
 .print-page__key { position: absolute; display: flex; flex-wrap: wrap; gap: 1em; color: black; font-family: var(--font-ui); }

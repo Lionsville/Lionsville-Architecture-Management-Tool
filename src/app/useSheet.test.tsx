@@ -496,3 +496,91 @@ describe('from nothing to a covered capability', () => {
     expect(host.model().diagrams.some((d) => d.kind === 'sheet')).toBe(true)
   })
 })
+
+describe('what a poster writes', () => {
+  const withSheet = () => {
+    const mounted = mountPosterHost()
+    return mounted
+  }
+
+  it('places, and First layout takes every place away again, each one step that an undo takes back', () => {
+    const { poster, sheetNow, steps, undo } = withSheet()
+    const before = steps()
+    act(() => poster().place([{ id: 'picking', x: 8, y: 16, width: 200, height: 100 }], [{ id: 'rail', x: 0, y: 0, width: 176, height: 400 }]))
+    expect(steps()).toBe(before + 1)
+    expect(sheetNow().geometry?.nodes[0]).toMatchObject({ id: 'picking', x: 8 })
+    act(() => poster().cell('picking', { col: 1, row: 2 }))
+    act(() => poster().firstLayout())
+    expect(sheetNow().geometry?.nodes ?? []).toEqual([])
+    expect(sheetNow().geometry?.groups ?? []).toEqual([])
+    expect(sheetNow().geometry?.cells ?? []).toEqual([])
+    undo()
+    expect(sheetNow().geometry?.cells?.[0]).toMatchObject({ id: 'picking', col: 1 })
+  })
+
+  it('writes the panel\'s assigned row and the label on the view in one step, for several', () => {
+    const { poster, sheetNow, steps, model, undo } = withSheet()
+    const before = steps()
+    act(() => { poster().team(['picking', 'packing'], { name: 'Night crew' }) })
+    expect(steps()).toBe(before + 1)
+    const crew = model().elements.find((one) => one.name === 'Night crew')
+    expect(crew?.kind).toBe('actor')
+    expect(crew?.unitTypeId).toBeUndefined()
+    expect(model().relations.filter((row) => row.type === 'assigned' && row.sourceId === crew?.id).map((row) => row.targetId).sort()).toEqual(['packing', 'picking'])
+    expect(sheetNow().labels).toEqual(['picking', 'packing'])
+    undo()
+    expect(model().elements.some((one) => one.name === 'Night crew')).toBe(false)
+  })
+
+  it('reuses an actor of that exact name, and taking the label off leaves the row', () => {
+    const { poster, sheetNow, model } = withSheet()
+    act(() => { poster().team(['picking'], { name: 'Night crew' }) })
+    act(() => { poster().team(['packing'], { name: 'Night crew' }) })
+    expect(model().elements.filter((one) => one.name === 'Night crew')).toHaveLength(1)
+    act(() => poster().showLabel('picking', false))
+    expect(sheetNow().labels).toEqual(['packing'])
+    expect(model().relations.some((row) => row.type === 'assigned' && row.targetId === 'picking')).toBe(true)
+  })
+
+  it('moves a tile as the panel does, its order last and its cell left behind, as one step', () => {
+    const { poster, sheets, sheetNow, steps, model } = withSheet()
+    act(() => poster().cell('picking', { col: 0, row: 1 }))
+    const before = steps()
+    act(() => sheets().actions.updateElement('picking', { parentId: 'fulfilment' }))
+    expect(steps()).toBe(before + 1)
+    expect(model().elements.find((one) => one.id === 'picking')?.parentId).toBe('fulfilment')
+    expect(sheetNow().geometry?.cells ?? []).toEqual([])
+  })
+
+  it('adds a note and places it on this view only, and First layout leaves it where it is', () => {
+    const { poster, sheetNow } = withSheet()
+    let id: string | undefined
+    act(() => { id = poster().addItem({ kind: 'note', text: 'A note' }, { x: 1, y: 2, width: 3, height: 4 }) })
+    expect(sheetNow().poster?.items?.[0]).toMatchObject({ id, text: 'A note' })
+    act(() => poster().firstLayout())
+    expect(sheetNow().geometry?.items?.[0]).toMatchObject({ id, x: 1 })
+    act(() => poster().removeItem(id as string))
+    expect(sheetNow().poster?.items ?? []).toEqual([])
+  })
+})
+
+function mountPosterHost() {
+  let sheets!: Sheets
+  let session!: ModelSession
+  let counter = 0
+  function Host() {
+    session = useModelSession({ initialProject: project(), notify: vi.fn(), s: translator('en') })
+    sheets = useSheet({ session, makeId: (prefix) => { counter += 1; return `${prefix}-${counter}` }, s: translator('en'), showElement: vi.fn() })
+    return null
+  }
+  renderShell(<Host />)
+  act(() => sheets.create())
+  return {
+    sheets: () => sheets,
+    poster: () => sheets.poster,
+    model: () => session.current(),
+    sheetNow: () => session.current().diagrams.find((one) => one.id === sheets.sheetId)!,
+    steps: () => session.history().length,
+    undo: () => act(() => session.undo()),
+  }
+}

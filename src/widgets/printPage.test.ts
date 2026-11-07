@@ -47,4 +47,14 @@ describe('a page on paper', () => {
     expect(document.querySelector('.print-page')).toBeNull()
     expect(document.head.querySelector('style')).toBeNull()
   })
+
+  it('says its title, its foot and its key as text, in the look asked for, and leaves room for them', () => {
+    const page = document.createElement('div')
+    const held = printPage(page, { width: 1860, height: 1000 }, PRINT_PAPERS.A2, { look: 'print', title: 'A title', foot: 'A foot', date: 'A day', key: [{ label: 'A value 3' }] })
+    expect(held.node.dataset.look).toBe('print')
+    for (const words of ['A title', 'A foot', 'A day', 'A value 3']) expect(held.node.textContent).toContain(words)
+    expect(printScale({ width: 400, height: 1000 }, PRINT_PAPERS.A2, true)).toBeLessThan(printScale({ width: 400, height: 1000 }, PRINT_PAPERS.A2))
+    held.release()
+    expect(document.querySelector('.print-page')).toBeNull()
+  })
 })
