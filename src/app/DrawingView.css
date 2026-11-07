@@ -1,4 +1,5 @@
-.drawing-view { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--canvas-ground); }
+.drawing-view { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--canvas-ground); isolation: isolate; }
+/* isolate: the dock's z-index stays inside the view, so a page laid over the drawing (Documentation) is not crossed by it. */
 .drawing-view__statement { color: var(--ink-2); font-size: var(--t-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-inline: var(--s-2); }
 .drawing-view__statement strong { color: var(--ink); font-weight: 600; margin-inline-end: var(--s-1); }
 .drawing-view__body { flex: 1; min-height: 0; display: flex; }
