@@ -12,11 +12,13 @@
  * window, the documents a person saves, the trail and the agent's door are the
  * host's to bring, whatever the source.
  *
- * Types only, and no React: a chrome is a component, and what it is handed is
+ * Types only, and no React at run time: a chrome is a component, and what it is handed is
  * declared here so that both the app, which draws it, and a provider, which
  * writes it, can name the same props. The component types themselves stay
  * where a component may be named.
  */
+// A provider's page is a component and its band's words are nodes: named here as types, and gone from what runs.
+// eslint-disable-next-line no-restricted-imports
 import type { ComponentType, ReactNode } from 'react'
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { RecorderSource } from '../model/observation'
