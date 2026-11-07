@@ -409,7 +409,11 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
         }
       }
       const about = [id, ...descendantPlatforms(arrays.elements, id, treeOf(view)).map((one) => one.id)]
-      const report = platformReport(arrays, id, { today: today(), describe, elsewhere: rowsAbout(view, about) })!
+      // The services it delivers count too, so this answers what the landscape's row says.
+      const delivered = arrays.elements.filter((one) => one.kind === 'platformService').map((one) => one.id)
+      const report = platformReport(arrays, id, {
+        today: today(), describe, tree: treeOf(view), elsewhere: rowsAbout(view, [...new Set([...about, ...delivered, ...arrays.elements.filter((one) => one.kind === 'platform').map((one) => one.id)])]),
+      })!
       const end = (one: PlatformEnd) => ({
         id: one.id,
         name: one.name,
@@ -424,6 +428,8 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
         standsOn: report.standsOn.map(end),
         hosted: report.hosted.map(end),
         users: report.users.map(end),
+        standing: report.standing.map((one) => ({ ...end(one.end), how: one.how, ...(one.via ? { via: one.via } : {}) })),
+        applications: report.applications,
         landings: report.landings.map((landing) => ({
           id: landing.relation.id,
           source: end(landing.source),
@@ -468,6 +474,7 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
         maintainers: report.maintainers.map(end),
         realisedBy: report.realisedBy.map(end),
         consumers: report.consumers.map((one) => ({ ...end(one), ...(one.via ? { via: one.via } : {}) })),
+        comesWithHosting: report.comesWithHosting.map(end),
         scopes: report.scopes,
         stranded: report.stranded.map((one) => one.id),
         counts: report.counts,

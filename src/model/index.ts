@@ -78,11 +78,11 @@ export type { Leverage, LeverageLine, LeverageOptions } from './leverage'
 
 /** The technology landscape: the three bands, the lines between them, and what a card touches (ADR-0015). */
 export {
-  FOLD_ABOVE, applicationList, cardFor, drawsCard, landscapeEdges, nodeKey, platformList, seedTechnologyLandscape,
+  FOLD_ABOVE, LANDSCAPE_COLOURS, applicationList, cardFor, drawsCard, landscapeColours, landscapeEdges, nodeKey, platformList, regroupedBy, seedTechnologyLandscape,
   serviceList, startsFolded, technologyLandscape, touchedBy,
 } from './technologyLandscape'
 export type {
-  LandscapeApplication, LandscapeEdge, LandscapeEdgeKind, LandscapeGroup, LandscapePlatform, LandscapeService,
+  LandscapeApplication, LandscapeColour, LandscapeEdge, LandscapeEdgeKind, LandscapeGroup, LandscapePlatform, LandscapeService,
   LandscapeView, NodeKey, SharedElsewhere, TechnologyLandscape, TechnologyLandscapeOptions,
 } from './technologyLandscape'
 

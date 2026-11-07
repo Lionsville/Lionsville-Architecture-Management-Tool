@@ -462,9 +462,6 @@ const DISABLED_INK: Record<string, [uses: number, what: string]> = {
   // The chevron on a palette row, whose name says what it is, and the comment
   // above the palette that says why its words are not in this ink.
   'src/editor/canvas/ElementPalette.tsx': [2, 'chevron, comment'],
-  // A retired element's bar on the roadmap, whose name and dates are words.
-  // The edge of a platform card, beside a name that says it is one.
-  'src/technology/ui/TechnologyLandscapePage.tsx': [1, 'platform edge'],
   // A logo tile's border when it is not the one picked; the logo is the tile.
   'src/editor/nodes/LogoGrid.tsx': [1, 'unpicked border'],
   // What the none band of an overlay is tinted with, under a card that names it.
@@ -480,10 +477,6 @@ const DISABLED_INK: Record<string, [uses: number, what: string]> = {
  * until it is one of those, or is changed.
  */
 const DIMMED: Record<string, [uses: number, what: string]> = {
-  // Lines, a group or a platform out of the focus, a domain chip switched off,
-  // the ▾ glyph, and a ghost that is not in this landscape: a dim that says
-  // "not this", where the words are there to be found, not read.
-  'src/technology/ui/TechnologyLandscapePage.tsx': [6, 'out-of-focus dims, switched-off chip, glyph'],
   // Bars, bands, hatches and the today line: shapes whose words are in their tooltips.
   // The observations and causes not on the selected path, and a dropped solution, struck through as well.
   // On the analysis picture, what is off the chain a hover traces.

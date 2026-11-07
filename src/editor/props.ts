@@ -44,7 +44,7 @@ export interface PageView {
   selectedId?: ElementId;
   onSelect(elementId: ElementId | undefined): void;
   /** Make one of the kinds the view authors, filed under `parentId` where given. */
-  onAdd(seed: { kind: CanvasKind; parentId?: ElementId }): void;
+  onAdd(seed: { kind: CanvasKind; name?: string; parentId?: ElementId }): void;
   /**
    * The technology landscape's one write gesture (ADR-0020), as the
    * editor's own `setHostedOn` and `setUses`: where an application runs, and
@@ -54,6 +54,12 @@ export interface PageView {
    */
   onHost(elementId: ElementId, platformId: ElementId): void;
   onUse(elementId: ElementId, targetIds: readonly ElementId[]): void;
+  /** The selection's inspector, for a page that shows the record in a column of its own: the technology landscape. */
+  record?: ReactNode;
+  /** The day it is looked at (ADR-0027), for a page that has the Day control in its own bar. */
+  onDay?(day: string | undefined): void;
+  /** The register's word for a picked person, for a page that may not read the register. */
+  ownerText?(owner: PersonRef): string;
   /**
    * The width of the outline a page docks on its left — the organisation
    * chart's (3.7.3) — kept with the editor's panel widths, per person, as the

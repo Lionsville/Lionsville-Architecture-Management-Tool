@@ -2129,32 +2129,29 @@ en uit welke scopes, en welke gebruikers er nog op zouden zitten op de dag dat
 hij verdwijnt. Geen van beide wordt getekend of gemaakt; beide worden elke
 keer dat je ze opent uit de rijen afgeleid.
 
-**Het technologielandschap** is het plaatje van dat alles: wie wat gebruikt,
-wat wordt aangeboden en wat het levert, in drie banden op één pagina.
-*Landschap* op de technologiekaart maakt er een in de scope waarvan het de
-diensten en platformen moet tekenen — meestal de platformscope — en het staat
-tussen de tabbladen zoals het blad en de kaart, en tussen de borden op de
-home van die scope. Het tabblad kiezen toont het op de plek van het canvas,
-zoals elk ander tabblad; een platformscope heeft geen bord nodig. Er wordt
-**op gewerkt**: het palet ernaast biedt een platform en een platformdienst,
-een `+` op een van beide banden voegt er een toe, een `+` in een groep zet
-hem onder die groep, en de inspector rechts bewerkt wat je kiest — naam,
-beschrijving, levenscyclus, *gedeeld*, wat het is, waar het deel van is, wat
-het realiseert, wie het onderhoudt. De bovenste band is elke
-applicatie die de regels aan die diensten en platformen verbinden, uit elk
-landschap in de organisatie, in een vak per domein; de middelste band zijn de
-diensten, genest waar ze nesten; de onderste band zijn de platformen, genest
-waar de boom nest, een buitenstaander gestippeld. Niets wordt getekend of
-gesleept: elke kaart en elke lijn wordt elke keer uit de regels gelezen. **In
-rust zijn er geen lijnen** — de kaarten dragen de aantallen — en over een
-kaart zweven toont haar lijnen, klikken zet ze vast, dempt alles wat ze niet
-raken en opent het record rechts, van waaruit de rapporten openen. *Diensten
-verbergen* vouwt de middelste band tot een strook en tekent waar elke
-applicatie werkelijk op steunt rechtstreeks naar de platformen, zoals de
-regel *Steunt op* op het record het leest; *Alle lijnen* is de nooduitgang.
-Boven de veertig applicaties beginnen de domeinen dichtgevouwen tot één vak
-elk met een aantal, en filteren op naam opent de treffers; een domeintitel
-vouwt met de hand open en dicht.
+**Het technologielandschap** beantwoordt één vraag: wat staat waarop, en wat valt
+er om als een stuk wegvalt. *Landschap* op de technologiekaart maakt er een in de
+scope waarvan het de diensten en platforms moet tonen, en het staat tussen de
+tabbladen. Het zijn drie kolommen met regels die je van links naar rechts leest:
+elke applicatie die de gegevens aan die diensten en platforms koppelen, uit elk
+landschap in de organisatie; de diensten; en de platforms, genest zoals de boom
+nest, een extern platform gestippeld. Niets wordt getekend of geplaatst: elke regel
+en lijn wordt uit de gegevens gelezen. **In rust zijn er geen lijnen.** Met de muis
+op een regel zie je de lijnen, een druk zet ze vast, en er verschuift niets.
+**Matrix** toont dezelfde regels als tabel, een gevuld teken voor gebruik en een hol
+voor wat met de hosting meekomt; een druk selecteert, Spatie wijzigt een teken, en
+een kop zegt wie erop staat. **Tonen** bevat de rest: de diensten, alle lijnen
+tegelijk, verbergen wat de keuze niet raakt, hosting opvouwen in dienstlijnen, de
+gedeelde rij, een regel per scope, en applicaties groeperen op scope of categorie.
+Boven de veertig applicaties beginnen de groepen opgevouwen, en *Filteren op naam*
+opent wat past. **Kleur** stelt één vraag tegelijk (waar het op staat, de eigen
+levenscyclus, de categorie, wie verantwoordelijk is), met een legenda van wat er
+staat, en schrijft niets tot *Bewaren bij de weergave*. **Dag** leest de hele pagina
+op een andere dag: wat weg is staat er niet, en de pagina is alleen-lezen tot je
+teruggaat. De lezer rechts zegt wat een regel is. *Als het wegviel…* opent het rapport,
+net als een dubbele druk, en *Gegevens bewerken* opent het record in dezelfde kolom.
+Het getal op de regel van een platform is het getal in het rapport: elke applicatie
+die erop staat of op iets eronder, elk één keer.
 
 **Gehost op een platform dat een andere scope definieert.** *Draait op*
 toont, onder *Elders in de organisatie*, elk platform dat de rest van de
@@ -2167,28 +2164,20 @@ Cloud steunt op de clouddienst die Azure Cloud realiseert, of iemand nu een
 hosting)*, het technologielandschap tekent het gestippeld en telt het mee,
 en een later geschreven *Gebruikt*-regel is hetzelfde feit hardop gezegd.
 
-**Vastleggen wat een applicatie gebruikt.** Het record van een applicatie
-heeft naast *Draait op* een kiezer **Gebruikt**: de regels die het heeft als
-labels, en een doorzoekbare lijst met eerst de diensten en dienstplatforms
-van deze scope en dan — onder *Elders in de organisatie* — elke dienst die
-een andere scope gedeeld noemt en elk dienstplatform dat de boom kent, elk
-met zijn scope. Vink er meerdere aan en sluit: één stap, één ongedaan
-maken, en een vinkje bij iets van elders schrijft de stand-in mee met de
-regel. Hetzelfde paneel staat naast het technologielandschap, en het
-landschap heeft één gebaar van zichzelf: **sleep een applicatiekaart op een
-kaart in de onderste banden**. Een plek neemt *Draait op*, een
-dienstplatform of een dienst neemt *Gebruikt*, een gedeelde dienst brengt
-haar stand-in mee; zolang een applicatie geselecteerd is tonen de doelen
-dezelfde twee werkwoorden als kleine knoppen. Hostinglijnen worden nu
-getekend, want in een scope zonder diensten is dat de enige lijn die een
-applicatie heeft; *Hosting samenvouwen met dienstlijnen* verbergt er een
-waar een gebruik hetzelfde platform al bereikt. Een rij **Gedeeld in de
-organisatie** binnen de dienstenband toont elke dienst die andere scopes
-gedeeld noemen, gedimd tot iets hier er een gebruikt; een scope zonder
-diensten toont de band als een strook en de platforms schuiven omhoog.
-Onder *Steunt op* op het record van een bord opent *Toon op
-technologielandschap* het landschap op die kaart. Het bord zelf tekent nog
-altijd alleen stromen.
+**Vastleggen wat een applicatie gebruikt.** Het record van een applicatie heeft een
+keuzelijst **Gebruikt** naast *Gehost op*, en de lezer van het landschap heeft dezelfde
+twee: *Draait op*, en *Gebruikt* met een ✕ bij elk en *Een dienst of platform
+toevoegen…*, met eerst wat deze scope heeft en dan wat de rest van de organisatie
+aanbiedt; kies je iets van elders, dan wordt de stand-in meegeschreven. **Gebruik
+bewerken** zet een vinkje op elke regel, een vakje voor gebruik, een rond teken voor
+waar het draait en een holle ring voor wat de hosting al meebrengt, en een druk schrijft
+of neemt terug, per keer één stap. Je kunt ook **een applicatieregel op een regel in een
+andere kolom slepen**, en de pagina zegt het werkwoord voor je loslaat: een plaats krijgt
+waar het draait, de rest krijgt gebruik. Een wijziging gaat naar de scope die de
+applicatie bijhoudt, de lezer zegt welke, en ze staat in de Activiteit daarvan. De `+` op
+een kolom vraagt een naam of biedt aan wat elders in de organisatie staat; het pictogram
+en de rest staan in het record. *Tonen op technologielandschap* op het record van een
+bord opent het landschap op die regel. Het bord zelf tekent nog steeds alleen stromen.
 
 Wat u kiest is van u en schrijft niets; **Bewaren bij de weergave**, in hetzelfde menu, maakt het tot wat iedereen opent.
 

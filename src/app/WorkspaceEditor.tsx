@@ -25,6 +25,9 @@ import { foldKey } from './sessionFolds'
 import { useTheme } from '@mui/material/styles'
 import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
+import { hostCommands, useCommands } from '../model/technologyWrites'
+import type { WrittenIn } from './units/writeIn'
+import type { StringKey } from '../i18n'
 
 /**
  * A drawing is a tab, never the first view: its picture and its editor arrive
@@ -316,8 +319,53 @@ function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView):
   )
 }
 
+/**
+ * A use or a hosting said on the landscape is a row of the scope that keeps
+ * the application (ADR-0012 §7): this scope's through the editor, so it is on
+ * this scope's undo, and another's as that scope's step under its rights. A row
+ * an earlier build wrote here about somebody else's application is taken off
+ * here as well, or it would go on being read.
+ */
+function technologyWrites(parts: WorkspaceParts, view: PageView) {
+  const { session, ownership, unitWrites } = parts
+  const here = parts.props.project.path
+  const masterOf = (id: string) => parts.readings.masterOf(id)
+  const rowId = () => session.ids.connection()
+  const usesHere = (app: string) => session.model.relations.filter((row) => row.type === 'uses' && row.sourceId === app).map((row) => row.targetId)
+  const refusal = (written: WrittenIn) => (written.ok || written.reason === 'unchanged' ? undefined : parts.props.shell.s(written.reason as StringKey))
+  return {
+    onSetUse: async (app: string, target: string, on: boolean) => {
+      const master = masterOf(app)
+      if (master === undefined || master === here) {
+        const before = usesHere(app)
+        view.onUse(app, on ? [...before, target] : before.filter((one) => one !== target))
+        return undefined
+      }
+      if (!on && usesHere(app).includes(target)) view.onUse(app, usesHere(app).filter((one) => one !== target))
+      const standIn = ownership.technology?.standInFor(target)
+      return refusal(await unitWrites.writeIn(master, (held) => useCommands(held.model, { rowId, ...(standIn ? { standIn } : {}) }, app, target, on)))
+    },
+    onSetHost: async (app: string, platform: string | undefined) => {
+      const master = masterOf(app)
+      if (master === undefined || master === here) {
+        if (platform !== undefined) view.onHost(app, platform)
+        else {
+          const row = session.model.relations.find((one) => one.type === 'hostedOn' && one.sourceId === app)
+          if (row) session.dispatch({ type: 'relation.delete', id: row.id })
+        }
+        return undefined
+      }
+      const standIn = platform !== undefined ? ownership.technology?.standInFor(platform) : undefined
+      return refusal(await unitWrites.writeIn(master, (held) => hostCommands(held.model, { rowId, ...(standIn ? { standIn } : {}) }, app, platform)))
+    },
+  }
+}
+
 function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {
-  const { session, ownership, readings, requests, renderer, landscapes, pages } = parts
+  const { session, ownership, readings, renderer, landscapes, pages } = parts
+  const here = parts.props.project.path
+  const held = (id: string) => session.model.elements.some((one) => one.id === id)
+  const container = (id: string) => session.model.diagrams.find((one) => one.kind === 'container' && one.applicationElementId === id)
   return (
     <TechnologyLandscapePage
       open inline
@@ -328,8 +376,31 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
       {...(landscapes.focus !== undefined ? { focus: landscapes.focus } : {})}
       onSelect={view.onSelect}
       onAdd={view.onAdd}
-      onHost={view.onHost}
-      onUse={view.onUse}
+      {...technologyWrites(parts, view)}
+      onBring={(id) => {
+        const standIn = ownership.technology?.standInFor(id)
+        if (standIn) session.dispatch({ type: 'element.create', element: standIn })
+      }}
+      {...(ownership.technology ? { technologyElsewhere: ownership.technology.elsewhere } : {})}
+      {...(view.record !== undefined ? { record: view.record } : {})}
+      {...(view.onDay ? { onDay: view.onDay } : {})}
+      {...(view.ownerText ? { ownerText: view.ownerText } : {})}
+      today={parts.todayDay}
+      {...(diagram.colourBy !== undefined ? { kept: diagram.colourBy } : {})}
+      onKeepColour={(colour) => session.dispatch({ type: 'diagram.update', id: diagram.id, patch: { colourBy: colour } })}
+      onOpenElsewhere={(id) => {
+        const master = parts.readings.masterOf(id)
+        if (master !== undefined) parts.show({ scope: master, page: 'element', id })
+      }}
+      hasContainers={(id) => container(id) !== undefined || (!held(id) && parts.readings.masterOf(id) !== undefined)}
+      onOpenContainers={(id) => {
+        const own = container(id)
+        if (own) { parts.show({ scope: here, page: 'board', id: own.id }); return true }
+        const master = parts.readings.masterOf(id)
+        if (held(id) || master === undefined) return false
+        parts.show({ scope: master, page: 'element', id })
+        return true
+      }}
       notify={parts.props.shell.notify}
       onClose={() => {}}
       onHandle={renderer.onSheetHandle}
@@ -337,7 +408,6 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
       sharedElsewhere={readings.sharedElsewhere}
       describe={readings.describeForMap}
       tree={ownership.platformTree}
-      onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       onOpenServiceReport={pages.openServiceReport}
       onOpenPlatformReport={pages.openPlatformReport}
     />

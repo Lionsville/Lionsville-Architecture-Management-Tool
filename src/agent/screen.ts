@@ -104,6 +104,7 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   /** A Conway map's two readings. */
   conway: ['grid', 'lines'],
   plan: ['changes', 'interfaces', 'units', 'milestones', 'restsOn', 'document', 'boards', 'principles', 'history', 'comments'],
+  technology: ['chain', 'matrix'],
 }
 
 /** Whether a page has this tab; a page with none has no tab at all. */

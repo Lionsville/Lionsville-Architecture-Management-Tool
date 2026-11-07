@@ -28,6 +28,9 @@ import type { HostModel } from './hostModel'
 import { isDay } from './lifecycle'
 import { livenessOf } from './liveness'
 import type { PlatformDescribe, PlatformEnd } from './platformReport'
+import { applicationList, technologyLandscape } from './technologyLandscape'
+import type { SharedElsewhere } from './technologyLandscape'
+import type { PlatformTree } from './hosting'
 import type { DesignElement, ElementId, Relation } from './types'
 
 export type ServiceConsumer = PlatformEnd & {
@@ -43,6 +46,9 @@ export type ServiceReportOptions = {
   describe?: PlatformDescribe
   /** The day it is read; absent counts every row. */
   today?: string
+  /** The shared offerings the rest of the tree defines, as the landscape is told them. */
+  sharedElsewhere?: readonly SharedElsewhere[]
+  tree?: PlatformTree
 }
 
 export type ServiceReport = {
@@ -53,11 +59,16 @@ export type ServiceReport = {
   realisedBy: PlatformEnd[]
   /** Everything that uses it, by application, with where it was written. */
   consumers: ServiceConsumer[]
+  /**
+   * The applications nobody wrote a use for that have it with where they run
+   * (ADR-0017): the rest of what the landscape's row for this service counts.
+   */
+  comesWithHosting: PlatformEnd[]
   /** The scopes the consumers were written in, where `describe` says so. */
   scopes: string[]
   /** The consumers still on it the day it goes — or all of them, where no day is set. */
   stranded: ServiceConsumer[]
-  counts: { maintainers: number; realisedBy: number; consumers: number; stranded: number }
+  counts: { maintainers: number; realisedBy: number; consumers: number; stranded: number; comesWithHosting: number }
 }
 
 export function serviceReport(
@@ -128,14 +139,24 @@ export function serviceReport(
   const realisedBy = sources('realises')
   const scopes = [...new Set(consumers.map((one) => one.where).filter((one): one is string => one !== undefined))].sort()
 
+  // The rest of the landscape's count for this service, read from its own sum.
+  const comesWithHosting = applicationList(technologyLandscape(model as Parameters<typeof technologyLandscape>[0], { id: '', name: '' }, {
+    ...(options.elsewhere ? { elsewhere: options.elsewhere } : {}),
+    ...(describe ? { describe } : {}),
+    ...(options.sharedElsewhere ? { sharedElsewhere: options.sharedElsewhere } : {}),
+    ...(options.tree ? { tree: options.tree } : {}),
+    ...(day !== undefined ? { day } : {}),
+  })).filter((app) => app.implied.includes(serviceId) && !using.has(app.id)).map((app) => end(app.id)).sort(byName)
+
   return {
     service: { ...end(serviceId), shared: service.shared === true, ...(goes !== undefined ? { retiredOn: goes } : {}) },
     maintainers,
     realisedBy,
     consumers,
+    comesWithHosting,
     scopes,
     stranded,
-    counts: { maintainers: maintainers.length, realisedBy: realisedBy.length, consumers: consumers.length, stranded: stranded.length },
+    counts: { maintainers: maintainers.length, realisedBy: realisedBy.length, consumers: consumers.length, stranded: stranded.length, comesWithHosting: comesWithHosting.length },
   }
 }
 

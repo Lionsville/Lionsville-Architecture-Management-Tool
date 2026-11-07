@@ -621,11 +621,12 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }]],
   [['the technology landscape, a card chosen', [
     'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',
+    'landscape.reading', 'landscape.show', 'landscape.colour', 'landscape.day', 'landscape.row', 'landscape.bar',
   ], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId('open-technology-landscape'))
     await screen.findByTestId('landscape-shared-row')
-    fireEvent.click(document.querySelector<HTMLElement>('[data-node]')!)
+    fireEvent.click(document.querySelector<HTMLElement>('[data-testid="landscape-shared-row"] [data-kit-row]')!)
   }]],
 ]
 

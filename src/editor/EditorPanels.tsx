@@ -20,6 +20,9 @@ import { CanvasForDiagram } from './CanvasForDiagram';
 import { EMPTY_SELECTION, defaultElementNames, selectElement } from './useEditorState';
 import { standInsFor, heldIdsOf } from './elementInspectorFacts';
 import type { EditorParts } from './editorParts';
+import { SelectionInspector } from './EditorInspectorDock';
+import { usePersonNames } from '../people/ui/names';
+import type { PersonRef } from '../model/person';
 
 /** The palette (D1) and the seam beside it, which only exists while the panel is open. */
 export function PaletteDock({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
@@ -72,12 +75,18 @@ export function PaletteDock({ parts, diagram }: { parts: EditorParts; diagram: D
 export function LaidOutView({ parts, diagram, pageBar }: { parts: EditorParts; diagram: DesignDiagram; pageBar: HTMLElement | null }) {
   const { props, state, readOnly, view } = parts;
   const technology = props.ownership?.technology;
+  const names = usePersonNames();
   return (
     <Box data-testid="laid-out-view" sx={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {props.pages?.render(diagram, {
         readOnly,
         pageBar,
         outline: { width: view.outlineWidth, onWidth: view.setOutlineWidth },
+        ...(diagram.kind === 'technology' ? {
+          record: <SelectionInspector parts={parts} diagram={diagram} />,
+          onDay: (day: string | undefined) => parts.board.viewing.show(diagram.id, day),
+          ownerText: (owner: PersonRef) => names.text(owner),
+        } : {}),
         ...(state.selectedElement ? { selectedId: state.selectedElement.id } : {}),
         onSelect: (elementId) => state.setSelection(elementId === undefined ? EMPTY_SELECTION : selectElement(elementId)),
         onAdd: (seed) => state.actions.addElement(seed),

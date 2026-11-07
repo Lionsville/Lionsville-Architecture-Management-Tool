@@ -61,6 +61,9 @@
  * tree, its one-line rows and its first-run pages come with their words in three
  * languages. Measured 10.089 MB and 3.093 MB when this was said.
  *
+ * **And for the technology landscape's words**, by 50 kB of the whole: its reader,
+ * reports and empty state in three languages are first-download.
+ *
  * The engine is counted by a name only the engine carries: the worker script
  * and the self-contained bundle both hold it, and the API that talks to either
  * does not. More than one file holding it is ELK shipped twice
@@ -76,8 +79,8 @@ export type Budget = {
 }
 
 // The file ceiling 3.19 MB: the plan and roadmap words, then a home's tree, rows and first-run pages, are first-download; measured 3.186.
-// 10.35 MB: the Conway map's 0.09 MB on top of the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
-export const WEB_BUDGET: Budget = { file: 3_190_000, total: 10_350_000 }
+// 10.40 MB: the technology landscape's 0.05 MB on the Conway map's 0.09 MB, the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
+export const WEB_BUDGET: Budget = { file: 3_190_000, total: 10_400_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's

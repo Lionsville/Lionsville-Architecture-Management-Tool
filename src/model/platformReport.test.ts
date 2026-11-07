@@ -13,6 +13,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import { platformReport } from './platformReport'
+import { serviceReport } from './serviceReport'
+import { platformList, serviceList, technologyLandscape } from './technologyLandscape'
 import { element } from './testFixtures'
 import type { DesignElement, Relation } from './types'
 
@@ -171,5 +173,46 @@ describe('the day it is read', () => {
     // With no day, every row counts.
     expect(platformReport({ elements: withGone, relations: dated }, 'cluster')!.hosted.map((e) => e.id))
       .toEqual(['portal', 'wms'])
+  })
+})
+
+describe('the report and the landscape answer one question', () => {
+  const held = {
+    elements: [
+      element('zone', { kind: 'platform', name: 'Zone', platformArchetype: 'place' }),
+      element('cluster', { kind: 'platform', name: 'Cluster', platformArchetype: 'place', parentId: 'zone' }),
+      element('broker', { kind: 'platform', name: 'Broker' }),
+      element('brokering', { kind: 'platformService', name: 'Brokering' }),
+      element('cloud', { kind: 'platformService', name: 'Cloud' }),
+      element('a', { name: 'A' }), element('b', { name: 'B' }),
+      element('b-api', { kind: 'component', parentId: 'b', name: 'B API' }),
+    ],
+    relations: [
+      { id: 'r1', type: 'realises', sourceId: 'broker', targetId: 'brokering' },
+      { id: 'r2', type: 'realises', sourceId: 'zone', targetId: 'cloud' },
+      { id: 'u1', type: 'uses', sourceId: 'a', targetId: 'brokering' },
+      { id: 'h1', type: 'hostedOn', sourceId: 'a', targetId: 'cluster' },
+      { id: 'h2', type: 'hostedOn', sourceId: 'b-api', targetId: 'cluster' },
+    ] as Relation[],
+  }
+  const rowOf = (id: string) => platformList(technologyLandscape(held, { id: 'v', name: 'v' })).find(({ node }) => node.id === id)!.node
+
+  it('finds who reaches a platform only through a service it delivers, where a direct count said nothing', () => {
+    const report = platformReport(held, 'broker')!
+    expect(report.counts).toMatchObject({ hosted: 0, users: 0, applications: 1 })
+    expect(report.standing.map((one) => [one.end.id, one.how, one.via?.id])).toEqual([['a', 'through', 'brokering']])
+    expect(rowOf('broker').applications).toBe(report.counts.applications)
+  })
+
+  it('counts applications on both, each once, though the report lists containers as things of their own', () => {
+    for (const id of ['zone', 'cluster', 'broker']) expect(rowOf(id).applications).toBe(platformReport(held, id)!.counts.applications)
+    expect(rowOf('zone').applications).toBe(2)
+    expect(platformReport(held, 'cluster')!.standing.map((one) => [one.end.id, one.how])).toEqual([['a', 'runs'], ['b-api', 'container']])
+  })
+
+  it('counts what comes with hosting on the service report as the landscape does', () => {
+    const service = serviceReport(held, 'cloud')!
+    expect(service.counts.consumers + service.counts.comesWithHosting).toBe(serviceList(technologyLandscape(held, { id: 'v', name: 'v' })).find(({ node }) => node.id === 'cloud')!.node.consumers)
+    expect(service.comesWithHosting.map((one) => one.id)).toEqual(['a', 'b'])
   })
 })

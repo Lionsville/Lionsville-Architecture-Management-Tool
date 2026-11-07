@@ -41,7 +41,7 @@ describe('the report on a service', () => {
     expect(report.maintainers.map((e) => e.id)).toEqual(['platform-team'])
     expect(report.realisedBy.map((e) => e.id)).toEqual(['openshift'])
     expect(report.consumers.map((one) => [one.id, one.via?.id])).toEqual([['billing', undefined], ['wms', 'wms-api']])
-    expect(report.counts).toEqual({ maintainers: 1, realisedBy: 1, consumers: 2, stranded: 2 })
+    expect(report.counts).toEqual({ maintainers: 1, realisedBy: 1, consumers: 2, stranded: 2, comesWithHosting: 0 })
   })
 
   it('says a gap as an empty list, and strands every consumer where no day is set', () => {

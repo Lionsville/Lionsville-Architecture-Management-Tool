@@ -81,14 +81,16 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   useRememberPlace(parts, screen)
   const lines = usePaletteLines(parts, at, go)
   const { lookAgain } = agent
+  const openView = screen.open?.view
+  const tabPage = page ?? (openView ? viewPage(openView.kind as DesignDiagram['kind']) : undefined)
   const tabs = useMemo(() => ({
-    tab: state.tabOf === page ? state.tab : undefined,
-    choose: (tab: string, of?: string) => { frame.set({ tab, tabOf: (of as Page | undefined) ?? page }); lookAgain() },
+    tab: state.tabOf === tabPage ? state.tab : undefined,
+    choose: (tab: string, of?: string) => { frame.set({ tab, tabOf: (of as Page | undefined) ?? tabPage }); lookAgain() },
     record: state.record,
     recordOf: state.recordOf,
     chooseRecord: (record: string | undefined, of: string) => { frame.set({ record, recordOf: of as Page }); lookAgain() },
     go: (to: PlaceTo) => go(to as Destination),
-  }), [state.tab, state.tabOf, state.record, state.recordOf, page, frame, lookAgain, go])
+  }), [state.tab, state.tabOf, state.record, state.recordOf, tabPage, frame, lookAgain, go])
   const lists = useMemo(() => ({
     list: state.listOf === page ? state.list : undefined,
     pick: state.listOf === page ? state.pick : undefined,

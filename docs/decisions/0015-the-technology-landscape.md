@@ -11,6 +11,7 @@
   and folds on request, the offerings other scopes mark shared join the
   services, and the landscape is written on — one drop gesture, the
   inspector's *Uses* picker docked beside it
+* Amended 7 November 2026 (4.0.0): three columns of rows and a matrix rather than three bands of cards; one reader, no palette; the technology landscape is read on a day and coloured by one question; a platform's number counts it and all under it, as its report does.
 
 ## Context and Problem Statement
 

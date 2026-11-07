@@ -17,7 +17,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import { viewFacetsOf } from '../agent/place'
 import type { Place } from '../agent/place'
-import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor } from '../agent/screen'
+import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor, viewPage } from '../agent/screen'
+import type { DesignDiagram } from '../model/types'
 import type { PeopleView } from '../agent/people'
 import type { ScopesView } from '../agent/scopeTree'
 import type { Destination, FramePanel, MovedBy, Page, Screen } from '../agent/screen'
@@ -462,6 +463,9 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const held = frame?.get()
   if (!held) return screen
   const page = screen.page
+  // A view may have readings as a page has tabs, and they go in its address the same way.
+  const view = screen.open?.view
+  const reading = !page && view && isPageTab(held.tabOf, held.tab) && held.tabOf === viewPage(view.kind as DesignDiagram['kind']) ? held.tab : undefined
   const tab = page && held.tabOf === page.page && !('tab' in page && page.tab !== undefined) && isPageTab(page.page, held.tab) ? held.tab : undefined
   const record = page?.page === 'people' && held.recordOf === 'people' ? held.record : undefined
   const listed = page && held.listOf === page.page
@@ -470,9 +474,10 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const looked = open?.view && held.lookOf === open.view.id && held.lookDay !== undefined
     ? { ...open, view: { ...open.view, day: held.lookDay } }
     : open
+  const opened = looked && (page ? looked : viewInFrame(looked, held))
   return {
     ...screen,
-    ...(looked ? { open: page ? looked : viewInFrame(looked, held) } : {}),
+    ...(opened ? { open: reading !== undefined && opened.view ? { ...opened, view: { ...opened.view, tab: reading } } : opened } : {}),
     ...(page && (tab !== undefined || pick !== undefined)
       ? { page: { ...page, ...(tab !== undefined ? { tab } : {}), ...(pick !== undefined ? { id: pick } : {}) } as Screen['page'] }
       : {}),

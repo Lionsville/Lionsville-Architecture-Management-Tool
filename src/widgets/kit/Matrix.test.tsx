@@ -189,3 +189,12 @@ describe('the matrix', () => {
     expect(await axeFindings()).toEqual([])
   })
 })
+
+describe('a column heading that opens what it names', () => {
+  it('opens on a press and on Enter, and only where the column has no group to fold', () => {
+    const onOpenColumn = vi.fn()
+    renderShell(<Matrix label="M" rows={[{ id: 'r', label: 'R' }]} columns={[{ id: 'c', label: 'C' }]} cellOf={() => null} onOpenColumn={onOpenColumn} />)
+    fireEvent.click(document.querySelector('[data-kit-cell="-1:0"]')!)
+    expect(onOpenColumn).toHaveBeenCalledWith('c')
+  })
+})

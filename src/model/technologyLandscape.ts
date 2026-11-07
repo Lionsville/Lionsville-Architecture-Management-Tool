@@ -47,6 +47,9 @@
 import { ancestorPlatforms, platformParentOf } from './hosting'
 import type { PlatformTree } from './hosting'
 import { narrowRealisers } from './leverage'
+import { phaseAt } from './lifecycle'
+import { livenessOf } from './liveness'
+import type { PersonRef } from './person'
 import type { PlatformDescribe } from './platformReport'
 import type { DesignDiagram, DesignElement, ElementId, ElementKind, Lifecycle, PlatformArchetype, Relation } from './types'
 
@@ -72,6 +75,12 @@ export type TechnologyLandscapeOptions = {
   describe?: PlatformDescribe
   /** The platform tree, where a stand-in carries no `parentId` of its own. */
   tree?: PlatformTree
+  /**
+   * The day it is read: a row counts only if it holds then, an end gone by
+   * then takes its rows with it and is not drawn, and every lifecycle is the
+   * phase on that day. Absent, every row counts and a lifecycle is as written.
+   */
+  day?: string
 }
 
 export type LandscapeApplication = {
@@ -89,6 +98,24 @@ export type LandscapeApplication = {
   binds: ElementId[]
   /** The platforms it or its containers are hosted on, that this scope holds. */
   hostedOn: ElementId[]
+  /** What the application's own rows name, not its containers': the uses a person can take off here. */
+  saysUses: ElementId[]
+  /** Where the application's own row says it runs. None, with `hostedOn`, is the roll-up over its containers. */
+  saysHosted?: ElementId
+  /** Its phase on the day read, off the record or as its master says. */
+  lifecycle: Lifecycle
+  category?: string
+  owner?: PersonRef
+}
+
+/** How one application stands on a platform: where it runs, what it binds to, or through a service it uses. */
+export type LandscapeStanding = {
+  applicationId: ElementId
+  how: 'runs' | 'binds' | 'through'
+  /** The platform it reaches: this one, or one filed under it. */
+  on: ElementId
+  /** For `through`: the service. */
+  via?: ElementId
 }
 
 /** The applications of one scope: a domain box on the page. */
@@ -111,8 +138,10 @@ export type LandscapeService = {
   where?: string
   /** This scope keeps a stand-in of it already. */
   standIn?: true
-  /** How many applications use it. */
+  /** How many applications use it, or have it come with where they run. The service report counts the same. */
   consumers: number
+  category?: string
+  owner?: PersonRef
   realisedBy: ElementId[]
   children: LandscapeService[]
 }
@@ -124,8 +153,16 @@ export type LandscapePlatform = {
   outside?: true
   lifecycle: Lifecycle
   realises: ElementId[]
-  /** How many applications stand on it: leveraging it, bound to it, or hosted on it. */
+  /**
+   * How many applications stand on it or on anything filed under it, each
+   * once. *If this went* is a question about all of it, and the platform
+   * report counts these very rows, so the row and the report cannot disagree.
+   */
   applications: number
+  /** Those applications, one row per way each stands on it. */
+  standing: LandscapeStanding[]
+  category?: string
+  owner?: PersonRef
   children: LandscapePlatform[]
 }
 
@@ -192,6 +229,55 @@ function rowsOf(model: Rows, elsewhere: readonly Relation[] | undefined): Relati
   return rows
 }
 
+const once = (list: ElementId[], id: ElementId) => { if (!list.includes(id)) list.push(id) }
+
+/** An application as a list starts it: what its own record says, or what the scope that keeps it says. */
+function newApplication(id: ElementId, own: DesignElement | undefined, told: ReturnType<PlatformDescribe>, day: string | undefined): LandscapeApplication {
+  const category = told?.category ?? own?.category
+  const owner = told?.owner ?? own?.owner
+  const phase = () => {
+    if (told?.lifecycleDates !== undefined && day !== undefined) return phaseAt({ lifecycle: told.lifecycle ?? 'live', lifecycleDates: told.lifecycleDates }, day)
+    if (told?.lifecycle) return told.lifecycle
+    if (!own) return 'live'
+    return day === undefined ? own.lifecycle : phaseAt(own, day)
+  }
+  return {
+    id,
+    name: own?.name ?? told?.name ?? id,
+    known: own !== undefined || told !== undefined,
+    ...(told?.where !== undefined ? { where: told.where } : {}),
+    uses: [], implied: [], binds: [], hostedOn: [], saysUses: [],
+    lifecycle: phase(),
+    ...(category ? { category } : {}),
+    ...(owner !== undefined ? { owner } : {}),
+  }
+}
+
+/** What one row says of the application it belongs to, itself or through a container. */
+function readRow(
+  row: Relation, owner: ElementId, serviceIds: ReadonlySet<ElementId>, platformIds: ReadonlySet<ElementId>,
+  application: (id: ElementId) => LandscapeApplication,
+) {
+  const own = owner === row.sourceId
+  if (row.type === 'uses' && (serviceIds.has(row.targetId) || platformIds.has(row.targetId))) {
+    const app = application(owner)
+    once(serviceIds.has(row.targetId) ? app.uses : app.binds, row.targetId)
+    if (own) once(app.saysUses, row.targetId)
+  } else if (row.type === 'hostedOn' && platformIds.has(row.targetId)) {
+    const app = application(owner)
+    once(app.hostedOn, row.targetId)
+    if (own) app.saysHosted = row.targetId
+  }
+}
+
+/** What a row may be coloured by off its own record, where the record says it. */
+function recordFacts(element: DesignElement): { category?: string; owner?: PersonRef } {
+  return {
+    ...(element.category ? { category: element.category } : {}),
+    ...(element.owner !== undefined ? { owner: element.owner } : {}),
+  }
+}
+
 function firstLine(text: string | undefined): string | undefined {
   const line = text?.split('\n').map((one) => one.replace(/^#+\s*/, '').trim()).find(Boolean)
   return line || undefined
@@ -206,16 +292,21 @@ export function technologyLandscape(
   diagram: Pick<DesignDiagram, 'id' | 'name'>,
   options: TechnologyLandscapeOptions = {},
 ): TechnologyLandscape {
-  const { describe, tree = {}, sharedElsewhere = [] } = options
-  const byId = new Map(model.elements.map((element) => [element.id, element]))
+  const { describe, tree = {}, sharedElsewhere = [], day } = options
+  const allRows = rowsOf(model, options.elsewhere)
+  const live = livenessOf({ elements: model.elements, relations: allRows }, { retiredOf: (id) => describe?.(id)?.retired })
+  const there = (id: ElementId) => day === undefined || !live.goneOn(id, day)
+  const held = model.elements.filter((element) => there(element.id))
+  const byId = new Map(held.map((element) => [element.id, element]))
+  const phaseOf = (element: DesignElement) => (day === undefined ? element.lifecycle : phaseAt(element, day))
   // A shared offering another scope answers for sits in the shared row,
   // whether or not this scope keeps a stand-in of it (ADR-0020).
   const sharedIds = new Set(sharedElsewhere.map((one) => one.id))
-  const services = model.elements.filter((element) => element.kind === 'platformService' && !sharedIds.has(element.id))
-  const platforms = model.elements.filter((element) => element.kind === 'platform')
+  const services = held.filter((element) => element.kind === 'platformService' && !sharedIds.has(element.id))
+  const platforms = held.filter((element) => element.kind === 'platform')
   const serviceIds = new Set([...services.map((one) => one.id), ...sharedIds])
   const platformIds = new Set(platforms.map((one) => one.id))
-  const rows = rowsOf(model, options.elsewhere)
+  const rows = day === undefined ? allRows : allRows.filter((row) => live.thereOn(row, day))
 
   // A container's row counts for its application: the scope that holds the
   // container says which, and the index says it for one held elsewhere.
@@ -229,28 +320,15 @@ export function technologyLandscape(
 
   const applications = new Map<ElementId, LandscapeApplication>()
   const application = (id: ElementId): LandscapeApplication => {
-    let held = applications.get(id)
-    if (!held) {
-      const own = byId.get(id)
-      const told = describe?.(id)
-      held = {
-        id,
-        name: own?.name ?? told?.name ?? id,
-        known: own !== undefined || told !== undefined,
-        ...(told?.where !== undefined ? { where: told.where } : {}),
-        uses: [], implied: [], binds: [], hostedOn: [],
-      }
-      applications.set(id, held)
-    }
-    return held
+    const made = applications.get(id) ?? newApplication(id, byId.get(id), describe?.(id), day)
+    applications.set(id, made)
+    return made
   }
-  const once = (list: ElementId[], id: ElementId) => { if (!list.includes(id)) list.push(id) }
 
-  for (const element of model.elements) if (element.kind === 'application') application(element.id)
+  for (const element of held) if (element.kind === 'application') application(element.id)
   for (const row of rows) {
-    if (row.type === 'uses' && serviceIds.has(row.targetId)) once(application(applicationOf(row.sourceId)).uses, row.targetId)
-    else if (row.type === 'uses' && platformIds.has(row.targetId)) once(application(applicationOf(row.sourceId)).binds, row.targetId)
-    else if (row.type === 'hostedOn' && platformIds.has(row.targetId)) once(application(applicationOf(row.sourceId)).hostedOn, row.targetId)
+    const owner = applicationOf(row.sourceId)
+    if (there(row.sourceId) && there(owner)) readRow(row, owner, serviceIds, platformIds, application)
   }
 
   const realisedBy = new Map<ElementId, ElementId[]>()
@@ -283,16 +361,17 @@ export function technologyLandscape(
   // Which platforms an application stands on: the leverage, narrowed by
   // where it runs when a service is delivered more than once, and beside it
   // what it binds to and what hosts it.
-  const standing = new Map<ElementId, Set<ElementId>>()
-  const stands = (platform: ElementId, app: ElementId) => {
-    const held = standing.get(platform) ?? (standing.set(platform, new Set()), standing.get(platform)!)
-    held.add(app)
+  const standing = new Map<ElementId, LandscapeStanding[]>()
+  const stands = (one: LandscapeStanding) => {
+    const list = standing.get(one.on) ?? (standing.set(one.on, []), standing.get(one.on)!)
+    list.push(one)
   }
   for (const app of applications.values()) {
     for (const service of app.uses) {
-      for (const platform of narrowRealisers(realisedBy.get(service) ?? [], app.hostedOn, chainOf)) stands(platform, app.id)
+      for (const on of narrowRealisers(realisedBy.get(service) ?? [], app.hostedOn, chainOf)) stands({ applicationId: app.id, how: 'through', on, via: service })
     }
-    for (const platform of [...app.binds, ...app.hostedOn]) stands(platform, app.id)
+    for (const on of app.binds) stands({ applicationId: app.id, how: 'binds', on })
+    for (const on of app.hostedOn) stands({ applicationId: app.id, how: 'runs', on })
   }
 
   const consumers = new Map<ElementId, number>()
@@ -315,8 +394,9 @@ export function technologyLandscape(
     id: element.id,
     name: element.name,
     ...(firstLine(element.description) !== undefined ? { summary: firstLine(element.description)! } : {}),
-    lifecycle: element.lifecycle,
+    lifecycle: phaseOf(element),
     ...(element.shared ? { shared: true } : {}),
+    ...recordFacts(element),
     consumers: consumers.get(element.id) ?? 0,
     realisedBy: realisedBy.get(element.id) ?? [],
     children: services
@@ -325,14 +405,14 @@ export function technologyLandscape(
   })
   const serviceRoots = services.filter((one) => one.parentId === undefined || !serviceIds.has(one.parentId)).map(serviceNode)
   const sharedRoots = sharedElsewhere.map((one): LandscapeService => {
-    const held = byId.get(one.id)
+    const standIn = byId.get(one.id)
     return {
       id: one.id,
-      name: held?.name ?? one.name,
-      lifecycle: held?.lifecycle ?? 'live',
+      name: standIn?.name ?? one.name,
+      lifecycle: standIn ? phaseOf(standIn) : 'live',
       shared: true,
       where: one.where,
-      ...(held !== undefined ? { standIn: true } : {}),
+      ...(standIn !== undefined ? { standIn: true } : {}),
       consumers: consumers.get(one.id) ?? 0,
       realisedBy: realisedBy.get(one.id) ?? [],
       children: [],
@@ -340,18 +420,24 @@ export function technologyLandscape(
   })
 
   const outside = (platform: DesignElement) => platform.outside === true || tree.outsideOf?.(platform.id) === true
-  const platformNode = (element: DesignElement, seen: Set<ElementId>): LandscapePlatform => ({
-    id: element.id,
-    name: element.name,
-    archetype: element.platformArchetype ?? tree.archetypeOf?.(element.id) ?? 'service',
-    ...(outside(element) ? { outside: true } : {}),
-    lifecycle: element.lifecycle,
-    realises: realises.get(element.id) ?? [],
-    applications: standing.get(element.id)?.size ?? 0,
-    children: platforms
+  const platformNode = (element: DesignElement, seen: Set<ElementId>): LandscapePlatform => {
+    const children = platforms
       .filter((child) => !seen.has(child.id) && platformParentOf(child, tree) === element.id)
-      .map((child) => platformNode(child, new Set([...seen, child.id]))),
-  })
+      .map((child) => platformNode(child, new Set([...seen, child.id])))
+    const all = [...(standing.get(element.id) ?? []), ...children.flatMap((child) => child.standing)]
+    return {
+      id: element.id,
+      name: element.name,
+      archetype: element.platformArchetype ?? tree.archetypeOf?.(element.id) ?? 'service',
+      ...(outside(element) ? { outside: true } : {}),
+      lifecycle: phaseOf(element),
+      realises: realises.get(element.id) ?? [],
+      applications: new Set(all.map((one) => one.applicationId)).size,
+      standing: all,
+      ...recordFacts(element),
+      children,
+    }
+  }
   const platformRoots = platforms
     .filter((one) => { const up = platformParentOf(one, tree); return up === undefined || !platformIds.has(up) })
     .map((one) => platformNode(one, new Set([one.id])))
@@ -510,4 +596,71 @@ export function touchedBy(landscape: TechnologyLandscape, key: NodeKey, view: La
     }
   }
   return touched
+}
+
+/** The question a list of rows may be coloured by: the board's words for the same four. */
+export type LandscapeColour = 'technologyLifecycle' | 'lifecycle' | 'category' | 'owner'
+
+export const LANDSCAPE_COLOURS: readonly LandscapeColour[] = ['technologyLifecycle', 'lifecycle', 'category', 'owner']
+
+const WORST_FIRST: readonly Lifecycle[] = ['retired', 'retiring', 'planned', 'live']
+
+/**
+ * What each row answers to one question: a phase, a category or a name. A row
+ * the record says nothing about is left out, and is drawn as saying nothing.
+ * `ownerText` is the register's word for a picked person, which the model may
+ * not read.
+ */
+export function landscapeColours(
+  landscape: TechnologyLandscape, question: LandscapeColour, ownerText: (owner: PersonRef) => string,
+): Map<NodeKey, string> {
+  const out = new Map<NodeKey, string>()
+  const platforms = platformList(landscape)
+  const services = serviceList(landscape)
+  const own = (key: NodeKey, row: { lifecycle: Lifecycle; category?: string; owner?: PersonRef }) => {
+    if (question === 'category' && row.category) out.set(key, row.category)
+    else if (question === 'owner' && row.owner !== undefined) {
+      const said = ownerText(row.owner)
+      if (said) out.set(key, said)
+    } else if (question === 'lifecycle') out.set(key, row.lifecycle)
+  }
+  if (question !== 'technologyLifecycle') {
+    for (const app of applicationList(landscape)) own(nodeKey.application(app.id), app)
+    for (const { node } of services) own(nodeKey.service(node.id), node)
+    for (const { node } of platforms) own(nodeKey.platform(node.id), node)
+    return out
+  }
+  const chain = new Map(platforms.map(({ node, above }) => [node.id, [node, ...above].map((one) => one.lifecycle)]))
+  const worst = (phases: readonly Lifecycle[]) => WORST_FIRST.find((phase) => phases.includes(phase))
+  const put = (key: NodeKey, phases: readonly Lifecycle[]) => { const phase = worst(phases); if (phase) out.set(key, phase) }
+  const realisers = new Map(services.map(({ node }) => [node.id, node.realisedBy]))
+  const through = (service: ElementId) => (realisers.get(service) ?? []).flatMap((id) => chain.get(id) ?? [])
+  for (const { node } of platforms) put(nodeKey.platform(node.id), chain.get(node.id) ?? [])
+  for (const { node } of services) put(nodeKey.service(node.id), through(node.id))
+  for (const app of applicationList(landscape)) {
+    put(nodeKey.application(app.id), [
+      ...[...app.hostedOn, ...app.binds].flatMap((id) => chain.get(id) ?? []),
+      ...[...app.uses, ...app.implied].flatMap(through),
+    ])
+  }
+  return out
+}
+
+/**
+ * The applications grouped by category rather than by scope. One scope often
+ * keeps nearly all of them, and a box per scope then is one box that reads as
+ * coverage the data lacks. Those with no category come last, under the empty key.
+ */
+export function regroupedBy(landscape: TechnologyLandscape, by: 'scope' | 'category'): TechnologyLandscape {
+  if (by === 'scope') return landscape
+  const groups = new Map<string, LandscapeApplication[]>()
+  for (const app of applicationList(landscape)) {
+    const key = app.category ?? ''
+    groups.set(key, [...(groups.get(key) ?? []), app])
+  }
+  return {
+    ...landscape,
+    groups: [...groups].sort(([a], [b]) => Number(a === '') - Number(b === '') || a.localeCompare(b))
+      .map(([key, applications]) => ({ key, ...(key ? { label: key } : {}), applications })),
+  }
 }

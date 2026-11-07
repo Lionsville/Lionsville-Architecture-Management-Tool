@@ -18,10 +18,12 @@
   column-gap: var(--s-3);
   min-height: var(--kit-list-row);
   padding: var(--kit-list-pad) var(--s-3);
+  padding-left: calc(var(--s-3) + var(--kit-list-depth, 0) * var(--s-4));
   border-bottom: 1px solid var(--line);
   cursor: default;
 }
 .kit-list__row:not(.kit-list__row--header):hover { background: var(--surface-2); }
+.kit-list__head[data-selected],
 .kit-list__row[data-selected] {
   background: var(--selected-soft);
   box-shadow: inset 2px 0 0 var(--selected-edge);

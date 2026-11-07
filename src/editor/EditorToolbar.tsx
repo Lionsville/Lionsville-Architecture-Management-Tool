@@ -234,6 +234,14 @@ export interface EditorToolbarProps {
  * diagram) and the tidy / fit / export actions.
  */
 /** The tab lists, in the order the strip shows them. */
+/**
+ * The technology landscape has a View bar of its own, and undo and find are the
+ * frame's: nothing is left for this bar to hold but the tabs, which are row two.
+ */
+function barDisplay(framed: boolean, kind: DesignDiagram['kind']): 'none' | 'flex' {
+  return framed && kind === 'technology' ? 'none' : 'flex';
+}
+
 const TAB_LISTS = ['board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway'] as const;
 type TabList = (typeof TAB_LISTS)[number];
 
@@ -397,7 +405,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
   return (
     <Box
       sx={{
-        display: 'flex',
+        display: barDisplay(framed !== null, props.activeDiagram.kind),
         alignItems: 'center',
         gap: 1,
         px: 1,

@@ -44,7 +44,10 @@ import type { PlatformTree } from './hosting'
 import { isGoneOn, relationLiveAt } from './lifecycle'
 import { platformArchetypeOf } from './relations'
 import { isContainerLine } from './refines'
-import type { DesignElement, ElementId, PlatformArchetype, Relation } from './types'
+import { platformList, technologyLandscape } from './technologyLandscape'
+import type { SharedElsewhere } from './technologyLandscape'
+import type { PersonRef } from './person'
+import type { DesignElement, ElementId, Lifecycle, LifecycleDates, PlatformArchetype, Relation } from './types'
 
 /** What the report is told about an id it may not hold: a name, and whose it is. */
 export type PlatformDescription = {
@@ -68,6 +71,11 @@ export type PlatformDescription = {
    * has none here at all (`liveness.ts`).
    */
   retired?: string
+  /** Its phase on the day read, as its master says; absent is live. */
+  lifecycle?: Lifecycle
+  lifecycleDates?: LifecycleDates
+  category?: string
+  owner?: PersonRef
 }
 
 export type PlatformDescribe = (id: ElementId) => PlatformDescription | undefined
@@ -111,6 +119,21 @@ export type PlatformReportOptions = {
   describe?: PlatformDescribe
   /** The day it is read; absent counts every row. */
   today?: string
+  /** The shared offerings the rest of the tree defines, as the landscape is told them. */
+  sharedElsewhere?: readonly SharedElsewhere[]
+  tree?: PlatformTree
+}
+
+/**
+ * One way one thing stands on the platform: an application or a container
+ * that runs here, one that binds to it, or an application that reaches it
+ * through a service it uses.
+ */
+export type PlatformStanding = {
+  end: PlatformEnd
+  how: 'runs' | 'container' | 'binds' | 'through'
+  /** For `through`: the service. */
+  via?: { id: ElementId; name: string }
 }
 
 export type PlatformReport = {
@@ -127,9 +150,13 @@ export type PlatformReport = {
   hosted: PlatformEnd[]
   /** What consumes it or anything under it, by `uses`. */
   users: PlatformEnd[]
+  /** Every thing standing on it, one row each: what `hosted` and `users` say, and the applications behind a service it delivers. */
+  standing: PlatformStanding[]
+  /** The applications among them, each once: what the landscape's row for this platform counts. */
+  applications: ElementId[]
   /** The container interfaces that cross it or anything under it, by the container they land on. */
   landings: PlatformLanding[]
-  counts: { hosted: number; users: number; landings: number }
+  counts: { hosted: number; users: number; landings: number; applications: number }
 }
 
 /**
@@ -147,7 +174,7 @@ export function platformReport(
   const day = options.today
   const describe = options.describe
   // The tree, where this scope holds a stand-in that carries no `parentId`.
-  const tree: PlatformTree = { parentOf: (id) => describe?.(id)?.parentId }
+  const tree: PlatformTree = options.tree ?? { parentOf: (id) => describe?.(id)?.parentId }
   // The platform and everything filed under it: what the report is about.
   const under = descendantPlatforms(model.elements, platformId, tree)
   const about = new Set<ElementId>([platformId, ...under.map((one) => one.id)])
@@ -237,6 +264,35 @@ export function platformReport(
     .sort((a, b) => byName(a.source, b.source) || byName(a.target, b.target)
       || a.relation.id.localeCompare(b.relation.id))
 
+  // Who stands on it is the landscape's sum, read here rather than worked out
+  // a second way: the row on the page and this report answer one question.
+  const landscape = technologyLandscape(model as Parameters<typeof technologyLandscape>[0], { id: '', name: '' }, {
+    ...(options.elsewhere ? { elsewhere: options.elsewhere } : {}),
+    ...(describe ? { describe } : {}),
+    ...(options.sharedElsewhere ? { sharedElsewhere: options.sharedElsewhere } : {}),
+    tree,
+    ...(day !== undefined ? { day } : {}),
+  })
+  const leaning = platformList(landscape).find(({ node }) => node.id === platformId)?.node.standing ?? []
+  const applications = [...new Set(leaning.map((one) => one.applicationId))]
+  const nameOf = (id: ElementId) => describe?.(id)?.name ?? byId.get(id)?.name ?? id
+  const said = new Set<string>()
+  const say = (one: PlatformStanding): PlatformStanding[] => {
+    const key = `${one.end.id}|${one.how}|${one.via?.id ?? ''}`
+    if (said.has(key)) return []
+    said.add(key)
+    return [one]
+  }
+  const standing: PlatformStanding[] = [
+    ...hosted.flatMap((one) => say({ end: one, how: one.application ? 'container' : 'runs' })),
+    ...users.flatMap((one) => say({ end: one, how: 'binds' })),
+    ...leaning.filter((one) => one.how !== 'runs' && one.how !== 'binds').flatMap((one) => say({
+      end: end(one.applicationId, one.on),
+      how: 'through',
+      ...(one.via !== undefined ? { via: { id: one.via, name: nameOf(one.via) } } : {}),
+    })),
+  ].sort((a, b) => byName(a.end, b.end))
+
   return {
     platform: {
       ...end(platformId),
@@ -252,7 +308,9 @@ export function platformReport(
     standsOn: ancestorPlatforms(model.elements, platformId, tree).map((e) => end(e.id)),
     hosted,
     users,
+    standing,
+    applications,
     landings,
-    counts: { hosted: hosted.length, users: users.length, landings: landings.length },
+    counts: { hosted: hosted.length, users: users.length, landings: landings.length, applications: applications.length },
   }
 }

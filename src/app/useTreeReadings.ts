@@ -72,6 +72,8 @@ export function useTreeReadings(deps: {
    * have drifted. `where` is the master's scope where that is not this one,
    * said the way the bar says it.
    */
+  /** The scope that keeps an id, where anybody does. */
+  const masterOf = useCallback((id: ElementId) => index.lookup(id)?.master, [index])
   const describeForMap = useCallback((id: ElementId): PlatformDescription | undefined => {
     const entry = index.lookup(id)
     if (!entry) return undefined
@@ -89,6 +91,10 @@ export function useTreeReadings(deps: {
       // When it goes, as its master says: a stand-in here carries no dates,
       // and the map and the service report judge what is there by this.
       ...(entry.retired !== undefined ? { retired: entry.retired } : {}),
+      ...(entry.lifecycle !== undefined ? { lifecycle: entry.lifecycle } : {}),
+      ...(entry.lifecycleDates !== undefined ? { lifecycleDates: entry.lifecycleDates } : {}),
+      ...(entry.category !== undefined ? { category: entry.category } : {}),
+      ...(entry.owner !== undefined ? { owner: entry.owner } : {}),
     }
   }, [index, scope, scopeLabel])
 
@@ -138,7 +144,7 @@ export function useTreeReadings(deps: {
   const explainedAboveOf = useCallback((path: ScopePath) => index.explainedFromAbove(path), [index])
 
   return {
-    scopeLabel, scopeTrail: scopeTrailLabel, rowsElsewhere, rowsThrough, rowsElsewhereRef, initiativesBelow, describeForMap,
+    masterOf, scopeLabel, scopeTrail: scopeTrailLabel, rowsElsewhere, rowsThrough, rowsElsewhereRef, initiativesBelow, describeForMap,
     sharedElsewhere, applicationsInTree, analysisBelow, analysisTree, scopePaths, absorbedAbove, explainedAbove, explainedAboveOf,
   }
 }

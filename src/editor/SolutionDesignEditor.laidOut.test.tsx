@@ -6,8 +6,8 @@
  * A laid-out view drawn in the tab (ADR-0016).
  *
  * What is pinned: the host's page takes the canvas's place when the active
- * view is laid out; the technology landscape keeps the palette and the
- * inspector docked and its palette offers the layer's two kinds, made
+ * view is laid out; the technology landscape has one reader of its own and
+ * takes the record into that column, and what it adds is the layer's two kinds, made
  * without a placement; the map takes the whole body; and the canvas's own
  * controls are not on the bar for either.
  */
@@ -64,26 +64,21 @@ function renderEditor(active: DesignDiagram, overrides: Partial<HostedEditorProp
 }
 
 describe('the technology landscape in the tab', () => {
-  it('draws the page where the canvas would be, with the palette and the inspector docked', () => {
-    renderEditor(TECHNOLOGY);
+  it('draws the page where the canvas would be, and hands it the record and the day: it has one reader, in its own column', () => {
+    const { last } = renderEditor(TECHNOLOGY);
     expect(screen.getByTestId('laid-out-view').textContent).toBe('Technology landscape');
-    expect(screen.getByRole('complementary', { name: 'Element palette' })).toBeDefined();
-    expect(screen.getByRole('complementary', { name: 'Inspector' })).toBeDefined();
+    expect(screen.queryByRole('complementary', { name: 'Element palette' })).toBeNull();
+    expect(screen.queryByRole('complementary', { name: 'Inspector' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Fit view' })).toBeNull();
-    expect(screen.queryByRole('button', { name: 'Tidy layout' })).toBeNull();
+    expect(last().record).toBeDefined();
+    expect(last().onDay).toBeDefined();
   });
 
-  it('offers the layer’s two kinds, and makes one with no placement, selected', () => {
+  it('makes one of the layer\'s two kinds by the name the page asked for, with no placement, selected', () => {
     const { host, last } = renderEditor(TECHNOLOGY);
-    expect(screen.queryByRole('button', { name: 'Application' })).toBeNull();
-    // The offering above what delivers it, as the bands are.
-    // By accessible name: the row's second line is its description, hidden from the name.
-    const rows = screen.getAllByRole('button', { name: /^Platform( service)?$/ }).map((row) => row.getAttribute('aria-label') ?? row.querySelector('p')?.textContent);
-    expect(rows).toEqual(['Platform service', 'Platform']);
-    fireEvent.click(screen.getByRole('button', { name: 'Platform service' }));
-    fireEvent.click(screen.getByRole('button', { name: /Add platform service/ }));
+    act(() => last().onAdd({ kind: 'platformService', name: 'Identity' }));
     const made = host.current.model.elements.find((element) => element.kind === 'platformService');
-    expect(made).toBeDefined();
+    expect(made?.name).toBe('Identity');
     expect(host.current.model.diagrams.every((diagram) => diagram.members.length === 0)).toBe(true);
     expect(last().selectedId).toBe(made!.id);
   });

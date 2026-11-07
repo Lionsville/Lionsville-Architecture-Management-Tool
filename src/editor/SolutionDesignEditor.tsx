@@ -275,24 +275,24 @@ function viewBody(kind: DesignDiagram['kind']): 'board' | 'laidOut' | 'drawing' 
 
 /**
  * What stays docked beside a view. A board keeps the palette and the
- * inspector. The technology landscape authors the layer's two kinds, so it
- * keeps both too. The organisation chart keeps the inspector — a unit or an
- * application chosen on it is edited there, its people assigned and its
- * interactions declared — and no palette, because nothing is placed on it. A
- * sheet, a map and a Conway map have their own panel, and a drawing is a
- * picture.
+ * inspector. The technology landscape has one reader of its own, and takes the
+ * inspector into that column for a record (`PageView.record`). The organisation
+ * chart keeps the inspector — a unit or an application chosen on it is edited
+ * there, its people assigned and its interactions declared — and no palette,
+ * because nothing is placed on it. A sheet, a map and a Conway map have their
+ * own panel, and a drawing is a picture.
  */
 function docksOf(kind: DesignDiagram['kind']): { palette: boolean; inspector: boolean } {
   switch (kind) {
     case 'layer7':
     case 'container':
-    case 'technology':
       return { palette: true, inspector: true }
     case 'chart':
       return { palette: false, inspector: true }
     case 'sheet':
     case 'map':
     case 'conway':
+    case 'technology':
     case 'drawing':
       return { palette: false, inspector: false }
     default: {

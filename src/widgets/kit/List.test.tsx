@@ -266,3 +266,32 @@ describe('a list row and a column say what points at them', () => {
     expect(screen.getByRole('columnheader', { name: 'A' }).getAttribute('data-guide')).toBe('x.colA')
   })
 })
+
+describe('a list a screen draws more on', () => {
+  const groups = [{ id: 'g', label: 'Group', rows: [{ id: 'a', text: 'A', depth: 2, state: 'outside' }, { id: 'b', text: 'B' }] }]
+  it('says how deep a row sits and what its stylesheet may read', () => {
+    renderShell(<List label="L" groups={groups} />)
+    const row = document.querySelector<HTMLElement>('[data-kit-row="row:a"]')!
+    expect(row.dataset.state).toBe('outside')
+    expect(row.getAttribute('style')).toContain('--kit-list-depth: 2')
+  })
+  it('opens a group from its head and folds it from its caret, where a group is a thing of its own', () => {
+    const onOpenGroup = vi.fn()
+    const onFold = vi.fn()
+    renderShell(<List label="L" groups={groups} onOpenGroup={onOpenGroup} onFold={onFold} folded={new Set()} />)
+    const head = document.querySelector<HTMLElement>('[data-kit-row="head:g"]')!
+    fireEvent.click(head.querySelector('.kit-list__headCell span:last-child')!)
+    expect(onOpenGroup).toHaveBeenCalledWith('g')
+    expect(onFold).not.toHaveBeenCalled()
+    fireEvent.click(head.querySelector('.kit-list__caret')!)
+    expect(onFold).toHaveBeenCalledWith('g', true)
+  })
+  it('folds what it is told is folded, and rows may be picked up', () => {
+    const onRowDragStart = vi.fn()
+    renderShell(<List label="L" groups={groups} folded={new Set()} onRowDragStart={onRowDragStart} />)
+    const row = document.querySelector<HTMLElement>('[data-kit-row="row:a"]')!
+    expect(row.draggable).toBe(true)
+    fireEvent.dragStart(row)
+    expect(onRowDragStart.mock.calls[0]![0]).toBe('a')
+  })
+})

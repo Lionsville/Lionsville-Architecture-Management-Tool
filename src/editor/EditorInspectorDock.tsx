@@ -39,7 +39,7 @@ export function InspectorDock({ parts, diagram }: { parts: EditorParts; diagram:
   );
 }
 
-function SelectionInspector({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
+export function SelectionInspector({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
   const { state, readOnly, view, layout, deletes } = parts;
   const writable = <T,>(handler: T) => (readOnly ? undefined : handler);
   if (state.selectedElement) return <SelectedElementInspector parts={parts} diagram={diagram} />;

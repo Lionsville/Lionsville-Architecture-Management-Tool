@@ -1947,30 +1947,28 @@ maintains it, what realises it, who leans on it and from which scopes, and
 which consumers would still be on it on the day it goes. Neither is drawn
 or created; both are worked out from the rows every time you open them.
 
-**The technology landscape** is the picture of all of it: who uses what,
-what is offered, and what delivers it, in three bands on one page. *Landscape*
-on the technology card makes one in the scope whose services and platforms
-it should draw — the platform scope, usually — and it is listed among the
-tabs like the sheet and the map, and among the boards on that scope's home.
-Choosing the tab shows it in place of the canvas, like every other tab; a
-platform scope needs no board at all. It is **authored on**: the palette
-beside it offers a platform and a platform service, a `+` on either band
-adds one, a `+` inside a group files it under that group, and the inspector
-on the right edits the one you choose — name, description, lifecycle,
-*shared*, what it is, what it is part of, what it realises, who maintains it. The top band is every application the
-rows connect to those services and platforms, from every landscape in the
-organisation, in a box per domain; the middle band is the services, nested
-where they nest; the bottom band is the platforms, nested where the tree
-nests, an outside one dashed. Nothing is drawn or dragged: every card and
-every line is read from the rows each time. **There are no lines at rest** —
-the cards carry the counts — and hovering a card previews its lines, clicking
-pins them, dims everything they do not touch and opens the record on the
-right, from which the reports open. *Hide services* folds the middle band to
-a strip and draws what each application actually leverages straight to the
-platforms, the way the record's *Leverages* line reads it; *All lines* is the
-escape hatch. Above forty applications the domains start folded into one box
-each with a count, and filtering by name opens the matches; a domain title
-folds and unfolds by hand.
+**The technology landscape** answers one question: what stands on what, and what
+falls if a piece goes. *Landscape* on the technology card makes one in the scope
+whose services and platforms it should draw, and it is listed among the tabs.
+It is three columns of one-line rows that read left to right: every application
+the rows connect to those services and platforms, from every landscape in the
+organisation; the services; and the platforms, nested where the tree nests, an
+outside one dashed. Nothing is drawn or placed: every row and line is read from
+the records. **There are no lines at rest.** Hovering a row previews its lines and
+pressing it pins them, and nothing moves when you do. **Matrix** shows the same rows
+as a table, a filled mark for a use and a hollow one for what comes with hosting;
+a press there selects, Space changes a mark, and a heading says who stands on it.
+**Show** holds the rest: the services, every line at once, hiding what the choice
+does not touch, folding hosting into service lines, the shared row, one line per
+scope, and grouping applications by scope or by category. Above forty applications
+the groups start folded, and *Filter by name* opens the matches. **Colour** asks one
+question at a time (what it stands on, its own lifecycle, its category, who answers)
+with a key made of what is drawn, and writes nothing until *Keep with the view*.
+**Day** reads the whole page on another day: what has gone is not drawn, and the page
+is read-only until you go back. The reader on the right says what a row is. *If it
+went…* opens its report, as a double press does, and *Edit record* opens the record in
+the same column. The number on a platform's row is the number in its report: every
+application standing on it or on anything filed under it, each once.
 
 **Hosted on a platform another scope defines.** *Hosted on* lists, under
 *Elsewhere in the organisation*, every platform the rest of the tree
@@ -1983,26 +1981,21 @@ the cloud service Azure Cloud realises, whether or not anybody wrote a
 landscape draws it dotted and counts it, and a *Uses* row written later is
 the same fact said out loud.
 
-**Writing what an application uses.** An application's record has a
-**Uses** picker beside *Hosted on*: the rows it has as pills, and a
-searchable list over this scope's offerings and service platforms first,
-then — under *Elsewhere in the organisation* — every offering another scope
-marks shared and every service platform the tree knows, each with its
-scope. Tick several and close: one step, one undo, and a tick on something
-from elsewhere writes its stand-in with the row. The same panel is docked
-on the technology landscape, and the landscape has one gesture of its own:
-**drag an application card onto a card in the lower bands**. A place takes
-*Hosted on*, a service platform or an offering takes *Uses*, a shared
-offering brings its stand-in; while an application is selected the targets
-show the same two verbs as small buttons. Hosting lines are drawn now,
-because on a scope with no offerings that is the only line an application
-has; *Fold hosting into service lines* hides one where a use already
-reaches the same platform. A **Shared in the organisation** row inside the
-services band lists every offering other scopes mark shared, dimmed until
-something here uses one; a scope with no offerings at all shows the band
-as a strip and the platforms move up. Under *Leverages* on a board's
-record, *Show on technology landscape* opens the landscape on that card.
-The board itself still draws flows only.
+**Writing what an application uses.** An application's record has a **Uses** picker
+beside *Hosted on*, and the landscape's reader has the same two: *Runs on*, and *Uses*
+with an ✕ on each and *Add a service or platform…*, which lists this scope's first and
+then what the rest of the organisation offers; choosing from elsewhere writes its
+stand-in. **Edit uses** puts a tick on every row, a box for a use, a round mark for where
+it runs and a hollow ring for what hosting already brings, and a press writes or takes
+back, one step each. You can also **drag an application row onto a row in the other
+columns**, and the page says the verb before you drop: a place takes where it runs,
+anything else takes a use. A change goes to the scope that keeps the application, the
+reader says which, and it shows in that scope's Activity. **Fold hosting into service
+lines**, under Show, hides a hosting line where a use already reaches the same platform.
+The `+` on a column asks a name or offers what is elsewhere in the organisation; the icon
+and the rest are in the record. Under *Leverages* on a board's record, *Show on
+technology landscape* opens the landscape on that row. The board itself still draws
+flows only.
 
 What you choose is yours and writes nothing; **Keep with the view**, in the same menu, makes it what everybody opens on.
 

@@ -101,6 +101,7 @@ export const CONTROL_NAMES = [
   'roadmap.newPlan', 'roadmap.findings', 'roadmap.axis', 'plan.addElement', 'plan.milestone', 'plan.addDecision', 'plan.page', 'plan.status', 'plan.move', 'plan.editText',
   // The technology landscape.
   'landscape.servicesBand', 'landscape.sharedRow', 'landscape.inspector',
+  'landscape.reading', 'landscape.show', 'landscape.colour', 'landscape.day', 'landscape.row', 'landscape.bar',
   // The operating model (ADR-0036): its three tabs, a new unit type, role and
   // responsibility, the rules, the matrix and each of its cells, bringing a
   // library in and comparing with the libraries.

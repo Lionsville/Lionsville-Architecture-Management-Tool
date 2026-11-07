@@ -2248,33 +2248,30 @@ sich darauf stützt und aus welchen Bereichen, und welche Nutzer am Tag seines
 Rückzugs noch darauf säßen. Keiner von beiden wird gezeichnet oder angelegt;
 beide werden bei jedem Öffnen aus den Zeilen abgeleitet.
 
-**Die Technologielandschaft** ist das Bild von alledem: wer was nutzt, was
-angeboten wird und was es liefert, in drei Bändern auf einer Seite.
-*Landschaft* auf der Technologiekarte legt eine im Bereich an, dessen Dienste
-und Plattformen sie zeichnen soll — meist dem Plattformbereich — und sie
-steht unter den Reitern wie das Blatt und die Karte, und unter den Tafeln auf
-der Startseite dieses Bereichs. Den Reiter zu wählen zeigt sie an der Stelle
-der Zeichenfläche, wie jeden anderen Reiter; ein Plattformbereich braucht
-keine Tafel. Auf ihr wird **gearbeitet**: die Palette daneben bietet eine
-Plattform und einen Plattformdienst, ein `+` auf einem der Bänder fügt eine
-hinzu, ein `+` in einer Gruppe legt sie unter diese Gruppe, und der Inspektor
-rechts bearbeitet, was Sie wählen — Name, Beschreibung, Lebenszyklus,
-*geteilt*, was es ist, wozu es gehört, was es realisiert, wer es pflegt. Das obere Band ist jede
-Anwendung, die die Zeilen mit diesen Diensten und Plattformen verbinden, aus
-jeder Landschaft der Organisation, in einem Kasten je Domäne; das mittlere
-Band sind die Dienste, verschachtelt, wo sie sich verschachteln; das untere
-Band sind die Plattformen, verschachtelt, wo der Baum es tut, eine äußere
-gestrichelt. Nichts wird gezeichnet oder gezogen: jede Karte und jede Linie
-wird jedes Mal aus den Zeilen gelesen. **In Ruhe gibt es keine Linien** — die
-Karten tragen die Zahlen — und das Überfahren einer Karte zeigt ihre Linien,
-ein Klick heftet sie an, dämpft alles, was sie nicht berühren, und öffnet
-rechts den Datensatz, aus dem die Berichte öffnen. *Dienste ausblenden* klappt
-das mittlere Band zu einem Streifen und zeichnet, worauf sich jede Anwendung
-tatsächlich stützt, direkt zu den Plattformen, so wie die Zeile *Stützt sich
-auf* am Datensatz es liest; *Alle Linien* ist der Notausgang. Über vierzig
-Anwendungen beginnen die Domänen eingeklappt zu je einem Kasten mit Zahl, und
-ein Filter nach Namen öffnet die Treffer; ein Domänentitel klappt von Hand
-auf und zu.
+**Die Technologielandschaft** beantwortet eine Frage: Was steht worauf, und was fällt,
+wenn ein Stück wegfällt. *Landschaft* auf der Technologiekarte legt eine in dem Bereich
+an, dessen Dienste und Plattformen sie zeigen soll, und sie steht unter den Tabs. Sie
+besteht aus drei Spalten einzeiliger Zeilen, die sich von links nach rechts lesen: jede
+Anwendung, die die Datensätze mit diesen Diensten und Plattformen verbinden, aus jeder
+Landschaft der Organisation; die Dienste; und die Plattformen, verschachtelt wie der
+Baum, eine externe gestrichelt. Nichts wird gezeichnet oder platziert: Jede Zeile und
+Linie wird aus den Datensätzen gelesen. **Im Ruhezustand gibt es keine Linien.** Der
+Mauszeiger auf einer Zeile zeigt ihre Linien, ein Druck hält sie fest, und nichts
+verschiebt sich dabei. **Matrix** zeigt dieselben Zeilen als Tabelle, ein gefülltes
+Zeichen für eine Nutzung und ein hohles für das, was mit dem Hosting kommt; ein Druck
+wählt aus, die Leertaste ändert ein Zeichen, und eine Überschrift sagt, wer darauf steht.
+**Anzeigen** enthält den Rest: die Dienste, alle Linien zugleich, Ausblenden, was die
+Auswahl nicht berührt, Hosting in Dienstlinien einklappen, die gemeinsame Zeile, eine
+Zeile je Bereich, und das Gruppieren der Anwendungen nach Bereich oder Kategorie. Ab
+vierzig Anwendungen beginnen die Gruppen eingeklappt, und *Nach Name filtern* öffnet die
+Treffer. **Farbe** stellt eine Frage zugleich (worauf es steht, der eigene Lebenszyklus,
+die Kategorie, wer verantwortlich ist), mit einem Schlüssel aus dem, was gezeichnet ist,
+und schreibt nichts bis *Mit der Ansicht speichern*. **Tag** liest die ganze Seite an einem
+anderen Tag: Was weg ist, steht nicht da, und die Seite ist schreibgeschützt, bis Sie
+zurückgehen. Der Leser rechts sagt, was eine Zeile ist. *Wenn es wegfiele…* öffnet den
+Bericht, wie ein Doppeldruck, und *Datensatz bearbeiten* öffnet den Datensatz in derselben
+Spalte. Die Zahl in der Zeile einer Plattform ist die Zahl in ihrem Bericht: jede Anwendung,
+die darauf oder auf etwas darunter steht, jede einmal.
 
 **Auf einer Plattform gehostet, die ein anderer Bereich definiert.** *Läuft
 auf* listet unter *Anderswo in der Organisation* jede Plattform, die der
@@ -2288,29 +2285,20 @@ sagt *(durch Hosting impliziert)*, die Technologielandschaft zeichnet es
 gepunktet und zählt es, und eine später geschriebene *Nutzt*-Zeile ist
 dieselbe Tatsache, laut gesagt.
 
-**Festhalten, was eine Anwendung nutzt.** Der Datensatz einer Anwendung hat
-neben *Läuft auf* eine Auswahl **Nutzt**: die Zeilen, die sie hat, als
-Marken, und eine durchsuchbare Liste mit zuerst den Diensten und
-Dienstplattformen dieses Bereichs und dann — unter *Anderswo in der
-Organisation* — jedem Dienst, den ein anderer Bereich als geteilt markiert,
-und jeder Dienstplattform, die der Baum kennt, jeweils mit ihrem Bereich.
-Mehrere ankreuzen und schließen: ein Schritt, ein Rückgängig, und ein Kreuz
-bei etwas von anderswo schreibt den Platzhalter mit der Zeile. Dasselbe
-Panel ist an der Technologielandschaft angedockt, und die Landschaft hat
-eine eigene Geste: **eine Anwendungskarte auf eine Karte in den unteren
-Bändern ziehen**. Ein Ort nimmt *Läuft auf*, eine Dienstplattform oder ein
-Dienst nimmt *Nutzt*, ein geteilter Dienst bringt seinen Platzhalter mit;
-solange eine Anwendung ausgewählt ist, zeigen die Ziele dieselben zwei
-Verben als kleine Knöpfe. Hosting-Linien werden jetzt gezeichnet, denn in
-einem Bereich ohne Dienste ist das die einzige Linie, die eine Anwendung
-hat; *Hosting in Dienstlinien einfalten* verbirgt eine, wo eine Nutzung
-dieselbe Plattform schon erreicht. Eine Zeile **In der Organisation
-geteilt** im Dienste-Band listet jeden Dienst, den andere Bereiche als
-geteilt markieren, gedimmt, bis hier etwas einen nutzt; ein Bereich ganz
-ohne Dienste zeigt das Band als Streifen, und die Plattformen rücken
-hoch. Unter *Stützt sich auf* im Datensatz einer Tafel öffnet *Auf der
-Technologielandschaft zeigen* die Landschaft auf dieser Karte. Die Tafel
-selbst zeichnet weiterhin nur Flüsse.
+**Festhalten, was eine Anwendung nutzt.** Der Datensatz einer Anwendung hat eine Auswahl
+**Nutzt** neben *Gehostet auf*, und der Leser der Landschaft hat dieselben zwei: *Läuft auf*
+und *Nutzt* mit einem ✕ bei jedem und *Einen Dienst oder eine Plattform hinzufügen…*, zuerst
+mit dem, was dieser Bereich hat, dann mit dem, was der Rest der Organisation anbietet; eine
+Wahl von anderswo schreibt ihren Stellvertreter mit. **Nutzung bearbeiten** setzt ein Häkchen
+auf jede Zeile, ein Kästchen für eine Nutzung, ein rundes Zeichen für den Betriebsort und
+einen hohlen Ring für das, was das Hosting schon mitbringt, und ein Druck schreibt oder nimmt
+zurück, je ein Schritt. Sie können auch **eine Anwendungszeile auf eine Zeile in einer anderen
+Spalte ziehen**, und die Seite nennt das Verb vor dem Loslassen: Ein Ort nimmt den Betriebsort,
+alles andere eine Nutzung. Eine Änderung geht in den Bereich, der die Anwendung führt, der Leser
+sagt welchen, und sie steht dort in der Aktivität. Das `+` an einer Spalte fragt nach einem Namen
+oder bietet an, was anderswo in der Organisation steht; das Symbol und der Rest stehen im
+Datensatz. *Auf der Technologielandschaft zeigen* im Datensatz eines Boards öffnet die Landschaft
+auf dieser Zeile. Das Board selbst zeichnet weiterhin nur Flüsse.
 
 Was Sie wählen, gehört Ihnen und schreibt nichts; **Mit der Ansicht behalten**, im selben Menü, macht es zu dem, was alle öffnen.
 

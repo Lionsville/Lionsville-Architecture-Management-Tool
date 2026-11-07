@@ -48,87 +48,63 @@ function model(over: Partial<DesignModel> = {}): DesignModel {
 
 function open(over: Partial<PlatformReportPageProps> = {}) {
   const onOpenDocumentation = vi.fn()
-  const result = renderShell(
-    <PlatformReportPage
-      open
-      model={model()}
-      platformId="esb"
-      onClose={() => {}}
-      onOpenDocumentation={onOpenDocumentation}
-      {...over}
-    />,
-  )
-  return { ...result, onOpenDocumentation }
+  renderShell(<PlatformReportPage open model={model()} platformId="esb" onClose={() => {}} onOpenDocumentation={onOpenDocumentation} {...over} />)
+  return { onOpenDocumentation }
 }
+const rowOf = (name: string) => [...document.querySelectorAll<HTMLElement>('[data-kit-row]')].find((one) => one.textContent?.startsWith(name))!
 
-describe('the report, as axe reads it', () => {
-  it('finds nothing', async () => {
+describe('a platform report', () => {
+  it('opens with the sentence a person came for', () => {
+    open()
+    expect(screen.getByTestId('technology-platform').textContent).toBe('If Enterprise bus went')
+    expect(screen.getByTestId('technology-summary').textContent).toBe('2 applications would lose it: 1 run here, 1 use it directly. Cluster would stay.')
+  })
+  it('gives each thing a row, a container named with its application', () => {
+    open()
+    const standing = within(screen.getByTestId('technology-standing'))
+    expect(standing.getByText('Orders API')).toBeDefined()
+    expect(rowOf('Orders API').textContent).toContain('container of Order management')
+    expect(rowOf('WMS').textContent).toContain('uses it directly')
+  })
+  it('says the platform reached through a service stands to lose those too: never Nothing yet beside a row that counts them', () => {
+    const held = model()
+    open({
+      platformId: 'broker',
+      model: {
+        ...held,
+        elements: [...held.elements, element('broker', { kind: 'platform', name: 'Broker' }), element('brokering', { kind: 'platformService', name: 'Brokering' })],
+        relations: [...held.relations, { id: 'x1', type: 'realises', sourceId: 'broker', targetId: 'brokering' }, { id: 'x2', type: 'uses', sourceId: 'wms', targetId: 'brokering' }] as Relation[],
+      },
+    })
+    expect(screen.getByTestId('technology-summary').textContent).toContain('1 application would lose it')
+    expect(rowOf('WMS').textContent).toContain('Brokering')
+  })
+  it('lists the interfaces across it, each with the one it is part of', () => {
+    open()
+    const landings = screen.getByTestId('technology-landings').textContent
+    expect(landings).toContain('Ledger → Orders API')
+    expect(landings).toContain('invoices')
+    expect(landings).toContain('An interface of its own')
+  })
+  it('opens what this scope holds', () => {
+    const { onOpenDocumentation } = open()
+    fireEvent.click(rowOf('WMS'))
+    expect(onOpenDocumentation).toHaveBeenCalledWith('wms')
+  })
+  it('says so for a platform this scope lacks', () => {
+    open({ platformId: 'nope' })
+    expect(screen.getByText('This scope does not hold that platform.')).toBeDefined()
+  })
+  it('keeps the long list behind a press', () => {
+    const held = model()
+    const many = Array.from({ length: 30 }, (_, at) => element(`app${at}`, { name: `App ${at}` }))
+    open({ model: { ...held, elements: [...held.elements, ...many], relations: [...held.relations, ...many.map((one) => ({ id: `h${one.id}`, type: 'hostedOn', sourceId: one.id, targetId: 'esb' }))] as Relation[] } })
+    expect(screen.getByTestId('technology-standing-more').textContent).toMatch(/Show the other \d+/)
+    fireEvent.click(screen.getByTestId('technology-standing-more'))
+    expect(screen.queryByTestId('technology-standing-more')).toBeNull()
+  })
+  it('finds nothing wrong, as axe reads it', async () => {
     open()
     expect(await axeFindings()).toEqual([])
-  })
-})
-
-describe('the report', () => {
-  it('names the platform and what it is, and counts what the rows say', () => {
-    open()
-    expect(screen.getByTestId('technology-platform').textContent).toContain('Enterprise bus')
-    // Unsaid is a service (ADR-0014).
-    expect(screen.getByText('Service')).toBeTruthy()
-    expect(screen.getByTestId('technology-summary').textContent)
-      .toContain('1 hosted · 1 using it · 2 interfaces across it')
-  })
-
-  it('lists what it stands on and what uses it, and says "nothing yet" where there is nothing', () => {
-    open()
-    expect(within(screen.getByTestId('technology-standsOn')).getByText('Cluster')).toBeTruthy()
-    expect(within(screen.getByTestId('technology-users')).getByText('WMS')).toBeTruthy()
-    expect(within(screen.getByTestId('technology-children')).getByText('Nothing yet')).toBeTruthy()
-  })
-
-  it('names a container beside the application it belongs to, and the place under it that it sits on', () => {
-    open()
-    expect(screen.getByTestId('technology-hosted').textContent).toContain('Orders API · Order management')
-    // The cluster's report gathers the bus filed under it (ADR-0014 §2.7).
-    cleanup()
-    open({ platformId: 'cluster' })
-    expect(screen.getByTestId('technology-hosted').textContent).toContain('Orders API · Order management · on Enterprise bus')
-    expect(screen.getByTestId('technology-summary').textContent).toContain('1 hosted · 1 using it · 2 interfaces across it')
-  })
-
-  it('draws a row per interface across it, with the interface it is part of', () => {
-    open()
-    const grid = screen.getByTestId('technology-grid')
-    expect(within(grid).getAllByTestId(/^technology-landing-/).map((row) => row.dataset.testid))
-      .toEqual(['technology-landing-r1', 'technology-landing-r2'])
-    const landed = within(grid).getByTestId('technology-landing-r1')
-    expect(landed.textContent).toContain('REST')
-    expect(landed.textContent).toContain('invoices')
-    // One that is part of nothing says so in words rather than by a blank.
-    expect(within(grid).getByTestId('technology-landing-r2').textContent)
-      .toContain('An interface of its own')
-  })
-
-  it('opens a thing\'s page from its name where this scope holds it, and leaves a stranger a word', () => {
-    const elsewhere: Relation[] = [{ id: 'x1', type: 'hostedOn', sourceId: 'crm', targetId: 'esb' } as Relation]
-    const { onOpenDocumentation } = open({
-      elsewhere,
-      describe: (id) => (id === 'crm' ? { name: 'CRM', kind: 'application', where: 'sales' } : undefined),
-    })
-    fireEvent.click(screen.getAllByRole('button', { name: 'Open WMS' })[0])
-    expect(onOpenDocumentation).toHaveBeenCalledWith('wms')
-    const crm = within(screen.getByTestId('technology-hosted')).getByTestId('technology-name-crm')
-    expect(crm.tagName).toBe('SPAN')
-    expect(crm.textContent).toContain('CRM')
-  })
-
-  it('says so when the platform is one this scope does not hold', () => {
-    open({ platformId: 'elsewhere' })
-    expect(screen.getByText('This scope does not hold that platform.')).toBeTruthy()
-    expect(screen.queryByTestId('technology-summary')).toBeNull()
-  })
-
-  it('says so when nothing crosses it yet', () => {
-    open({ model: model({ relations: [] }) })
-    expect(screen.getByText('No container interface crosses it yet.')).toBeTruthy()
   })
 })

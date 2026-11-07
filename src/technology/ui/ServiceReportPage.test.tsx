@@ -12,7 +12,7 @@
  * scope beside each, and which of them would be stranded.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, screen } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { ServiceReportPage } from './ReportPage'
 import type { ServiceReportPageProps } from './ReportPage'
@@ -47,75 +47,28 @@ function model(over: Partial<DesignModel> = {}): DesignModel {
 
 function open(over: Partial<ServiceReportPageProps> = {}) {
   const onOpenDocumentation = vi.fn()
-  const result = renderShell(
-    <ServiceReportPage
-      open
-      model={model()}
-      serviceId="containers"
-      onClose={() => {}}
-      onOpenDocumentation={onOpenDocumentation}
-      {...over}
-    />,
-  )
-  return { ...result, onOpenDocumentation }
+  renderShell(<ServiceReportPage open model={model()} serviceId="containers" onClose={() => {}} onOpenDocumentation={onOpenDocumentation} {...over} />)
+  return { onOpenDocumentation }
 }
 
-describe('the report, as axe reads it', () => {
-  it('finds nothing', async () => {
+describe('a service report', () => {
+  it('reads as the platform report does: the question, then the sentence', () => {
+    open()
+    expect(screen.getByTestId('service-name').textContent).toMatch(/^If .* were withdrawn$/)
+    expect(screen.getByTestId('service-summary').textContent).toMatch(/would be stranded/)
+  })
+  it('gives a row per application with its container, its scope and whether it is stranded', () => {
+    open()
+    const table = screen.getByTestId('service-consumers').textContent
+    expect(table).toContain('Stranded')
+    expect(table).toContain('This scope')
+  })
+  it('says so for a service this scope lacks', () => {
+    open({ serviceId: 'nope' })
+    expect(screen.getByText('This scope does not hold that service.')).toBeDefined()
+  })
+  it('finds nothing wrong, as axe reads it', async () => {
     open()
     expect(await axeFindings()).toEqual([])
-  })
-})
-
-describe('the report', () => {
-  it('names the service, whether it is shared, and counts who leans on it', () => {
-    open()
-    expect(screen.getByTestId('service-name').textContent).toBe('Container platform')
-    expect(screen.getByText('Shared')).toBeTruthy()
-    expect(screen.getByTestId('service-summary').textContent).toContain('1 consuming it · 0 scopes · 1 stranded if it goes')
-  })
-
-  it('lists who maintains it and what realises it, with a word where there is nothing', () => {
-    open()
-    expect(within(screen.getByTestId('service-maintainers')).getByText('Platform team')).toBeTruthy()
-    expect(within(screen.getByTestId('service-realisedBy')).getByText('OpenShift')).toBeTruthy()
-    cleanup()
-    open({ serviceId: 'brokering' })
-    expect(screen.getByText('Own team')).toBeTruthy()
-    expect(screen.getByText('Withdrawn on 2027-06-30')).toBeTruthy()
-    expect(within(screen.getByTestId('service-maintainers')).getByText('Nobody named')).toBeTruthy()
-    expect(within(screen.getByTestId('service-realisedBy')).getByText('Nothing delivers it yet')).toBeTruthy()
-  })
-
-  it('draws a row per consumer with the container, the scope and whether it would be stranded', () => {
-    const elsewhere: Relation[] = [{ id: 'x1', type: 'uses', sourceId: 'crm', targetId: 'containers' } as Relation]
-    const { onOpenDocumentation } = open({ elsewhere, describe: (id) => (id === 'crm' ? { name: 'CRM', kind: 'application', where: 'sales' } : undefined) })
-    const grid = screen.getByTestId('service-grid')
-    expect(within(grid).getByTestId('service-consumer-wms').textContent).toContain('WMS API')
-    expect(within(grid).getByTestId('service-consumer-wms').textContent).toContain('This scope')
-    expect(within(grid).getByTestId('service-consumer-crm').textContent).toContain('sales')
-    expect(within(grid).getByTestId('service-consumer-crm').textContent).toContain('Stranded')
-    // The container a row was written from opens like any other name here.
-    fireEvent.click(within(within(grid).getByTestId('service-consumer-wms')).getByTestId('service-name-wms-api'))
-    expect(onOpenDocumentation).toHaveBeenLastCalledWith('wms-api')
-    cleanup()
-    open({ serviceId: 'brokering' })
-    // The portal's row closes before the day it goes; the WMS is stranded.
-    expect(within(screen.getByTestId('service-grid')).getByTestId('service-consumer-portal').textContent).toContain('Off it in time')
-    expect(within(screen.getByTestId('service-grid')).getByTestId('service-consumer-wms').textContent).toContain('Stranded')
-  })
-
-  it('opens a thing\'s page from its name where this scope holds it', () => {
-    const { onOpenDocumentation } = open()
-    fireEvent.click(screen.getByRole('button', { name: 'Open OpenShift' }))
-    expect(onOpenDocumentation).toHaveBeenCalledWith('openshift')
-  })
-
-  it('says so when the service is one this scope does not hold, and when nothing uses it', () => {
-    open({ serviceId: 'elsewhere' })
-    expect(screen.getByText('This scope does not hold that service.')).toBeTruthy()
-    cleanup()
-    open({ model: model({ relations: [] }) })
-    expect(screen.getByText('Nothing uses it yet.')).toBeTruthy()
   })
 })

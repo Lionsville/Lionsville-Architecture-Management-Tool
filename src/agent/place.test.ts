@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import {
   PLACE_PATH_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readFinding, readPlace, samePlace, stepBetween, viewFacetsOf, writeFinding, writePlace, unknownPlace } from './place'
 import type { Place, PlaceFacts } from './place'
-import { PAGES } from './screen'
+import { isPageTab, PAGES } from './screen'
 
 const SCOPES = [
   '', 'acme', 'acme/rail', 'acme/rail/rolling-stock', 'board', 'acme/document/home', '-', 'a/-/b', '%2D',
@@ -407,5 +407,16 @@ describe('a look in the address (ADR-0027, amended)', () => {
   it('comes off the screen a view says', () => {
     expect(placeOf({ open: { path: 'acme', name: 'Acme', view: { id: 'd1', name: 'B', kind: 'layer7', day: '2027-06-01' } } }))
       .toEqual({ scope: 'acme', page: 'board', id: 'd1', day: '2027-06-01' })
+  })
+})
+
+describe('a view with readings', () => {
+  it('carries the reading in its address and reads it back', () => {
+    const place = placeOf({ open: { path: 'platforms', name: 'Platforms', view: { id: 'tl', name: 'Technology', kind: 'technology', tab: 'matrix' } } })
+    expect(place).toEqual({ scope: 'platforms', page: 'technology', id: 'tl', tab: 'matrix' })
+  })
+  it('refuses a reading the view does not have', () => {
+    expect(isPageTab('technology', 'matrix')).toBe(true)
+    expect(isPageTab('technology', 'nope')).toBe(false)
   })
 })

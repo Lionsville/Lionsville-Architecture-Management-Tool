@@ -19,7 +19,7 @@
  * register of a few hundred must not redraw whole for an arrow key.
  */
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react'
+import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon } from '../icons'
 import type { ListSort } from './listView'
@@ -53,6 +53,10 @@ export type ListRow = {
   /** A row's own stable name, where the rows of a list are different things. Defaults to the list's `rowGuide`. */
   readonly guide?: string
   readonly testId?: string
+  /** How deep it sits in a tree the list shows flat. */
+  readonly depth?: number
+  /** Words a screen's own stylesheet reads off the row (`data-state`): how it differs, never what it says. */
+  readonly state?: string
 }
 
 export type ListGroup = {
@@ -97,7 +101,13 @@ export type ListProps = {
   readonly onCheckedChange?: (checked: ReadonlySet<string>) => void
   readonly bulkActions?: ReactNode
   readonly defaultFolded?: readonly string[]
+  /** Which groups are folded, where the screen must know: what it draws depends on it. */
+  readonly folded?: ReadonlySet<string>
   readonly onFold?: (groupId: string, folded: boolean) => void
+  /** A group that is a thing of its own: a press on its head opens it, the caret and the arrows fold it. */
+  readonly onOpenGroup?: (groupId: string) => void
+  /** Rows may be picked up: dragged, with what the screen writes on the way. */
+  readonly onRowDragStart?: (id: string, event: DragEvent<HTMLDivElement>) => void
   /** Drawn in place of the rows when there are none: a `PageState`, or a no-match line. */
   readonly empty?: ReactNode
   readonly dataGuide?: string
@@ -121,9 +131,10 @@ type RowViewProps = {
   readonly ticked: boolean
   readonly guide?: string
   readonly words: { readonly tick: string; readonly unread: string }
+  readonly draggable?: boolean
 }
 
-const RowView = memo(function RowView({ row, groupId, level, columns, focusable, selected, ticks, ticked, guide, words }: RowViewProps) {
+const RowView = memo(function RowView({ row, groupId, level, columns, focusable, selected, ticks, ticked, guide, words, draggable }: RowViewProps) {
   return (
     <div
       role="row"
@@ -134,10 +145,13 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
       data-unread={row.unread || undefined}
       data-guide={row.guide ?? guide}
       data-testid={row.testId}
+      data-state={row.state}
+      draggable={draggable || undefined}
       aria-selected={selected}
-      aria-level={level}
+      aria-level={level ?? (row.depth !== undefined ? row.depth + 1 : undefined)}
       tabIndex={focusable ? 0 : -1}
       {...row.attributes}
+      style={row.depth ? ({ '--kit-list-depth': row.depth } as CSSProperties) : undefined}
     >
       {ticks && (
         <div role="gridcell" className="kit-list__tick">
@@ -197,8 +211,9 @@ function HeaderRow({ columns, itemLabel, itemSortable, sort, onSort, ticks, tick
   )
 }
 
-function useFolds(defaultFolded: readonly string[] | undefined, onFold: ListProps['onFold']) {
-  const [folded, setFolded] = useState<ReadonlySet<string>>(() => new Set(defaultFolded))
+function useFolds(defaultFolded: readonly string[] | undefined, onFold: ListProps['onFold'], told: ListProps['folded']) {
+  const [own, setFolded] = useState<ReadonlySet<string>>(() => new Set(defaultFolded))
+  const folded = told ?? own
   const fold = useCallback((groupId: string, to: boolean) => {
     setFolded((was) => {
       if (was.has(groupId) === to) return was
@@ -302,8 +317,9 @@ function useTicks(checked: ListProps['checked'], onCheckedChange: ListProps['onC
   return { anchor, change, toggleRow, toggleGroup }
 }
 
-function GroupHead({ group, folded, focusable, ticks, tickedHere, tickWord }: {
+function GroupHead({ group, folded, focusable, selected, ticks, tickedHere, tickWord }: {
   readonly group: ListGroup
+  readonly selected: boolean
   readonly folded: boolean
   readonly focusable: boolean
   readonly ticks: boolean
@@ -312,7 +328,7 @@ function GroupHead({ group, folded, focusable, ticks, tickedHere, tickWord }: {
 }) {
   return (
     <div
-      role="row" className="kit-list__head" data-kit-row={headKey(group.id)} aria-level={1} aria-expanded={!folded}
+      role="row" className="kit-list__head" data-kit-row={headKey(group.id)} data-selected={selected || undefined} aria-level={1} aria-expanded={!folded}
       tabIndex={focusable ? 0 : -1}
     >
       <div role="gridcell" className="kit-list__headCell">
@@ -335,11 +351,11 @@ const INTERACTIVE = 'button, a, input, select, textarea, [data-kit-actions]'
 
 export function List({
   label, groups, wrap, density = 'normal', columns, itemLabel, itemSortable, sort, onSort, selectedId, onOpen,
-  checked, onCheckedChange, bulkActions, defaultFolded, onFold, empty, dataGuide, rowGuide,
+  checked, onCheckedChange, bulkActions, defaultFolded, folded: foldedTold, onFold, onOpenGroup, onRowDragStart, empty, dataGuide, rowGuide,
 }: ListProps) {
   const { t } = useStrings()
   const root = useRef<HTMLDivElement>(null)
-  const [folded, fold] = useFolds(defaultFolded, onFold)
+  const [folded, fold] = useFolds(defaultFolded, onFold, foldedTold)
   const ticks = checked !== undefined && onCheckedChange !== undefined
   const hasRows = groups.some((group) => group.rows.length > 0)
 
@@ -379,7 +395,11 @@ export function List({
       ArrowUp: () => stepTo(index - 1),
       Home: () => move(0),
       End: () => move(keys.length - 1),
-      Enter: () => (head ? fold(id, !folded.has(id)) : onOpen?.(id)),
+      Enter: () => {
+        if (!head) onOpen?.(id)
+        else if (onOpenGroup) onOpenGroup(id)
+        else fold(id, !folded.has(id))
+      },
       ' ': () => {
         if (head) fold(id, !folded.has(id))
         else if (ticks) toggleRow(id, event.shiftKey)
@@ -421,8 +441,9 @@ export function List({
       return
     }
     if (target.closest(INTERACTIVE)) return
-    if (isHead(key)) fold(idOf(key), !folded.has(idOf(key)))
-    else onOpen?.(idOf(key))
+    if (!isHead(key)) onOpen?.(idOf(key))
+    else if (onOpenGroup && !target.closest('.kit-list__caret')) onOpenGroup(idOf(key))
+    else fold(idOf(key), !folded.has(idOf(key)))
   }
 
   const wordsForRow = useMemo(() => ({ tick: t('kit.list.tick'), unread: t('kit.list.unread') }), [t])
@@ -443,8 +464,12 @@ export function List({
       )}
       {!hasRows ? empty : (
         <div
-          ref={root} role={groups.some((group) => group.label) ? 'treegrid' : 'grid'} aria-label={label} aria-multiselectable={ticks || undefined}
+          ref={root} role={groups.some((group) => group.label || group.rows.some((row) => row.depth)) ? 'treegrid' : 'grid'} aria-label={label} aria-multiselectable={ticks || undefined}
           className="kit-list__grid" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocusIn} onBlur={onFocusOut}
+          onDragStart={onRowDragStart ? (event) => {
+            const key = (event.target as HTMLElement).closest<HTMLElement>('[data-kit-row]')?.dataset.kitRow
+            if (key && !isHead(key)) onRowDragStart(idOf(key), event)
+          } : undefined}
         >
           {columns && columns.length > 0 && (
             <div role="rowgroup">
@@ -458,7 +483,7 @@ export function List({
               <div role="rowgroup" key={group.id}>
                 {group.label && (
                   <GroupHead
-                    group={group} folded={isFolded} focusable={current === headKey(group.id)}
+                    group={group} folded={isFolded} focusable={current === headKey(group.id)} selected={selectedId === group.id}
                     ticks={ticks} tickedHere={tickedHere} tickWord={t('kit.list.tickGroup')}
                   />
                 )}
@@ -466,7 +491,7 @@ export function List({
                   <RowView
                     key={row.id} row={row} groupId={group.id} level={group.label ? 2 : undefined} columns={columns} guide={rowGuide}
                     focusable={current === rowKey(row.id)} selected={selectedId === row.id}
-                    ticks={ticks} ticked={ticks && checked.has(row.id)} words={wordsForRow}
+                    ticks={ticks} ticked={ticks && checked.has(row.id)} words={wordsForRow} draggable={onRowDragStart !== undefined}
                   />
                 ))}
               </div>

@@ -381,6 +381,8 @@ function ReportPages({ parts }: { parts: WorkspaceParts }) {
         onClose={close}
         elsewhere={readings.rowsThrough}
         describe={readings.describeForMap}
+        sharedElsewhere={readings.sharedElsewhere}
+        tree={parts.ownership.platformTree}
         today={todayDay}
         onOpenDocumentation={(id) => requests.openDocumentation(id)}
         windowChrome={pageChrome}
@@ -392,6 +394,8 @@ function ReportPages({ parts }: { parts: WorkspaceParts }) {
         onClose={close}
         elsewhere={readings.rowsThrough}
         describe={readings.describeForMap}
+        sharedElsewhere={readings.sharedElsewhere}
+        tree={parts.ownership.platformTree}
         today={todayDay}
         onOpenDocumentation={(id) => requests.openDocumentation(id)}
         windowChrome={pageChrome}

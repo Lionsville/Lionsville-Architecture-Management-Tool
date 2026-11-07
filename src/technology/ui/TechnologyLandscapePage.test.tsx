@@ -3,17 +3,16 @@
 
 // @vitest-environment jsdom
 /**
- * The technology landscape, on screen (ADR-0015).
+ * The technology landscape, on screen (ADR-0015; 4.0.0).
  *
  * The arithmetic is pinned in `model/technologyLandscape.test.ts`; what is
- * pinned here is what the page promises a reader — three bands, the
- * applications in a box per scope, no lines until a card is chosen, the
- * service band that folds and reroutes, the domains that fold above the
- * threshold and open under a filter, and the record on the right.
+ * pinned here is what the page promises a reader: three columns of one-line
+ * rows, no lines until a row is chosen and nothing moving when one is, one
+ * reader that writes, the ticks, the matrix, Day and Colour.
  */
-import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { axeFindings } from '../../app/testing/axe'
 import { TechnologyLandscapePage } from './TechnologyLandscapePage'
 import type { TechnologyLandscapePageProps } from './TechnologyLandscapePage'
 import { renderShell } from '../../app/testing/renderShell'
@@ -64,337 +63,380 @@ function open(over: Partial<TechnologyLandscapePageProps> = {}) {
   )
 }
 
-describe('the three bands', () => {
-  it('draws the applications in a box per scope, the services, and the platforms nested', () => {
+const rowOf = (name: string) => [...document.querySelectorAll<HTMLElement>('[data-kit-row]')].find((one) => (one.querySelector('.kit-list__text')?.textContent ?? one.textContent)?.startsWith(name))!
+const namesIn = (testId: string) => [...screen.getByTestId(testId).querySelectorAll('.kit-list__text')].map((one) => one.textContent)
+const noteOf = (name: string) => rowOf(name).querySelector('.kit-list__note')?.textContent
+
+describe('the three columns', () => {
+  it('asks its question and says what it read', () => {
     open()
-    expect(screen.getByTestId('landscape-summary').textContent).toBe('3 applications · 2 services · 3 platforms')
-    const apps = screen.getByTestId('landscape-applications')
-    expect(within(apps).getAllByTestId(/^landscape-group-/).map((box) => box.dataset.testid)).toEqual(['landscape-group-channels', 'landscape-group-logistics'])
-    // A platform bound to is said as one, not counted among the services (ADR-0020).
-    expect(within(screen.getByTestId('landscape-group-logistics')).getAllByTestId(/^landscape-application-/).map((card) => card.textContent)).toEqual([
-      'Rating (legacy)1 service · 1 platform', 'Warehouse Managementon OpenShift · 2 services',
-    ])
-    expect(screen.getByTestId('landscape-service-containers').textContent).toContain('A namespace on a managed cluster.')
-    expect(screen.getByTestId('landscape-service-containers').textContent).toContain('3 users')
-    // The cluster sits in the landing zone, so its card is inside the zone's box.
-    const zone = screen.getByTestId('landscape-platform-landing-zone')
-    expect(within(zone).getByTestId('landscape-platform-openshift').textContent).toContain('OpenShift')
-    expect(zone.textContent).toContain('outside')
+    expect(screen.getByText('What stands on what')).toBeDefined()
+    expect(screen.getByTestId('landscape-summary').textContent).toBe('3 applications · 2 services · 3 platforms · read from the records')
   })
-
-  it('draws no lines at rest, and the lines of the card that is chosen', () => {
+  it('draws one line a row, the groups heading the applications and the platforms nested', () => {
     open()
-    expect(screen.getByTestId('landscape-lines').querySelectorAll('path')).toHaveLength(0)
-    fireEvent.click(screen.getByTestId('landscape-service-containers'))
-    const titles = [...screen.getByTestId('landscape-lines').querySelectorAll('path title')].map((title) => title.textContent)
-    // The model's own word on the line, as the agent reads it; the legend
-    // says "delivers". The hosting of a consumer whose platform the service
-    // touches is drawn too: hosting is a line at rest (ADR-0020).
-    expect(titles).toEqual(['uses', 'uses', 'uses', 'hostedOn', 'realises'])
-    // What the selection does not touch is dimmed; what it does is not.
-    expect(screen.getByTestId('landscape-platform-kafka').dataset.dimmed).toBe('true')
-    expect(screen.getByTestId('landscape-application-wms').dataset.dimmed).toBeUndefined()
-    expect(screen.getByTestId('landscape-inspector-title').textContent).toBe('Container platform')
-    // Clicking the card again lets go.
-    fireEvent.click(screen.getByTestId('landscape-service-containers'))
-    expect(screen.queryByTestId('landscape-inspector')).toBeNull()
+    expect(namesIn('landscape-applications')).toEqual(['Customer portal', 'Rating (legacy)', 'Warehouse Management'])
+    expect(namesIn('landscape-band-services')).toEqual(['Container platform', 'Message brokering'])
+    expect(namesIn('landscape-band-platforms')).toEqual(['Landing zone', 'OpenShift', 'Event broker'])
+    expect(rowOf('OpenShift').getAttribute('aria-level')).toBe('2')
   })
-
-  it('draws every line when asked to', () => {
+  it('says a number for what stands on a row, the word place, and outside by word and dash', () => {
     open()
-    fireEvent.click(screen.getByTestId('landscape-lines-mode'))
-    expect(screen.getByTestId('landscape-lines').querySelectorAll('path')).toHaveLength(8)
+    expect(noteOf('Rating (legacy)')).toBe('2')
+    expect(noteOf('Message brokering')).toBe('1')
+    expect(noteOf('OpenShift')).toBe('place · 3')
+    expect(noteOf('Landing zone')).toBe('outside · place · 3')
+    expect(rowOf('Landing zone').dataset.state).toContain('outside')
   })
-})
-
-describe('the service band', () => {
-  it('folds to a strip and reroutes the lines straight to the platforms', () => {
-    open()
-    fireEvent.click(screen.getByTestId('landscape-services'))
-    expect(screen.queryByTestId('landscape-service-containers')).toBeNull()
-    expect(screen.getByTestId('landscape-band-services').textContent).toContain('2 services hidden')
-    fireEvent.click(screen.getByTestId('landscape-application-wms'))
-    const titles = [...screen.getByTestId('landscape-lines').querySelectorAll('path title')].map((title) => title.textContent)
-    expect(titles).toEqual(['leverages · containers', 'leverages · brokering', 'hostedOn'])
-    // The record says the same, and through which service.
-    expect(screen.getByTestId('landscape-inspector').textContent).toContain('OpenShift · for Container platform')
+  it('says no platform on a service nothing delivers, in words', () => {
+    const held = model()
+    open({ model: { ...held, relations: held.relations.filter((one) => one.id !== 'r2') } })
+    expect(noteOf('Message brokering')).toBe('no platform · 1')
+    expect(rowOf('Message brokering').dataset.state).toContain('attention')
+    expect(screen.getByTestId('landscape-rest').textContent).toContain('Message brokering has nothing delivering it.')
   })
-})
-
-describe('the domains', () => {
-  it('fold by hand into one box, and the lines merge with a count', () => {
-    open()
-    fireEvent.click(screen.getByTestId('landscape-fold-logistics'))
-    expect(screen.getByTestId('landscape-group-logistics').textContent).toContain('2 applications')
-    expect(screen.queryByTestId('landscape-application-wms')).toBeNull()
-    fireEvent.click(screen.getByTestId('landscape-lines-mode'))
-    const counts = [...screen.getByTestId('landscape-lines').querySelectorAll('text')].map((text) => text.textContent)
-    expect(counts).toEqual(['2'])
-    fireEvent.click(screen.getByTestId('landscape-unfold-logistics'))
-    expect(screen.getByTestId('landscape-application-wms')).toBeTruthy()
-  })
-
-  it('start folded above the threshold, and a filter that narrows the set opens them', () => {
-    const many: Relation[] = Array.from({ length: FOLD_ABOVE + 1 }, (_, at) => row(`m${at}`, 'uses', `app-${at}`, 'containers'))
-    open({ elsewhere: many, describe: (id) => ({ name: `Application ${id.slice(4)}`, kind: 'application' as const, where: `domain-${Number(id.slice(4)) % 3}` }) })
-    expect(screen.getByTestId('landscape-applications').textContent).toContain(`${FOLD_ABOVE + 1} applications: the domains start folded`)
-    expect(screen.queryByTestId('landscape-application-app-1')).toBeNull()
-    expect(screen.getByTestId('landscape-fold').textContent).toBe('Unfold domains')
-    fireEvent.change(screen.getByTestId('landscape-filter'), { target: { value: 'Application 1' } })
-    expect(screen.getByTestId('landscape-application-app-1')).toBeTruthy()
-  })
-
-  it('hide behind a chip when they are switched off', () => {
-    open()
-    fireEvent.click(screen.getByTestId('landscape-domain-chip-channels'))
-    expect(screen.queryByTestId('landscape-group-channels')).toBeNull()
-    expect(screen.getByTestId('landscape-group-logistics')).toBeTruthy()
-  })
-})
-
-describe('the record on the right', () => {
-  it('opens a service\'s report and a platform\'s, and an application\'s chain', () => {
-    const onOpenServiceReport = vi.fn()
-    const onOpenPlatformReport = vi.fn()
-    open({ onOpenServiceReport, onOpenPlatformReport })
-    fireEvent.click(screen.getByTestId('landscape-service-brokering'))
-    fireEvent.click(screen.getByTestId('landscape-report'))
-    expect(onOpenServiceReport).toHaveBeenCalledWith('brokering')
-    fireEvent.click(screen.getByTestId('landscape-platform-kafka'))
-    expect(screen.getByTestId('landscape-inspector').textContent).toContain('Rating (legacy) · logistics')
-    fireEvent.click(screen.getByTestId('landscape-report'))
-    expect(onOpenPlatformReport).toHaveBeenCalledWith('kafka')
-    fireEvent.click(screen.getByTestId('landscape-application-wms'))
-    const record = screen.getByTestId('landscape-inspector').textContent
-    expect(record).toContain('Hosted onOpenShift')
-    expect(record).toContain('UsesContainer platformMessage brokering')
-  })
-
-  it('hides what the selection does not touch when asked', () => {
-    open()
-    fireEvent.click(screen.getByTestId('landscape-platform-kafka'))
-    fireEvent.click(screen.getByTestId('landscape-only-touched'))
-    expect(screen.getByTestId('landscape-application-portal').hidden).toBe(true)
-    expect(screen.getByTestId('landscape-application-wms').hidden).toBe(false)
-  })
-})
-
-describe('in the tab (ADR-0016)', () => {
-  it('adds a service or a platform from the bands, filed under a group’s parent', () => {
+  it('explains itself and offers both first steps where there is nothing', () => {
     const onAdd = vi.fn()
-    open({ inline: true, onAdd })
-    fireEvent.click(screen.getByTestId('landscape-add-service'))
-    expect(onAdd).toHaveBeenLastCalledWith({ kind: 'platformService' })
-    fireEvent.click(screen.getByTestId('landscape-add-platform-landing-zone'))
-    expect(onAdd).toHaveBeenLastCalledWith({ kind: 'platform', parentId: 'landing-zone' })
-    expect(screen.queryByLabelText('Close the technology landscape')).toBeNull()
+    open({ model: { name: 'Empty', diagrams: [VIEW], elements: [], relations: [] }, elsewhere: [], onAdd })
+    expect(screen.getByText('Nothing to show yet')).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: 'Add a service' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add a platform' }))
+    expect(onAdd.mock.calls.map(([seed]) => seed.kind)).toEqual(['platformService', 'platform'])
   })
-
-  it('hands what this scope holds to the editor’s selection, and keeps its own record for the rest', () => {
-    const onSelect = vi.fn()
-    open({ inline: true, onSelect })
-    fireEvent.click(screen.getByTestId('landscape-service-containers'))
-    expect(onSelect).toHaveBeenLastCalledWith('containers')
-    expect(screen.queryByTestId('landscape-inspector')).toBeNull()
-    fireEvent.click(screen.getByTestId('landscape-application-wms'))
-    expect(onSelect).toHaveBeenLastCalledWith(undefined)
-    expect(screen.getByTestId('landscape-inspector-title').textContent).toBe('Warehouse Management')
+  it('says how to read it when nothing is chosen, with no palette and no canvas words', () => {
+    open()
+    expect(screen.getByTestId('landscape-rest').textContent).toContain('Left stands on right')
+    expect(document.body.textContent).not.toMatch(/canvas/i)
   })
-
-  it('chooses the card the editor selected', () => {
-    open({ inline: true, selectedId: 'kafka' })
-    expect(screen.getByTestId('landscape-lines').querySelectorAll('path').length).toBeGreaterThan(0)
-    expect(screen.getByTestId('landscape-application-portal').dataset.dimmed).toBe('true')
-  })
-
-  it('starts on the card a door led to, chosen as a click would choose it (ADR-0020)', () => {
-    const onSelect = vi.fn()
-    open({ inline: true, onSelect, focus: 'application:wms' })
-    expect(screen.getByTestId('landscape-inspector-title').textContent).toBe('Warehouse Management')
-    expect(screen.getByTestId('landscape-lines').querySelectorAll('path').length).toBeGreaterThan(0)
-    expect(screen.getByTestId('landscape-application-portal').dataset.dimmed).toBe('true')
-    // Not held here, so the page's own record shows and the editor is told nothing is its.
-    expect(onSelect).toHaveBeenLastCalledWith(undefined)
-  })
-
-  /** A card the landscape does not draw is chosen as nothing (ADR-0019, amended). */
-  it('chooses nothing for a card the landscape does not draw', () => {
-    const onSelect = vi.fn()
-    open({ inline: true, onSelect, focus: 'application:nowhere' })
-    expect(onSelect).not.toHaveBeenCalled()
-    expect(screen.queryByTestId('landscape-inspector-title')).toBeNull()
-  })
-
-  /**
-   * The door is where the page starts, not where it stays. The editor hands
-   * the page a new `onSelect` on each of its renders and a new model on each
-   * change, and a door honoured on every one of those took the person back
-   * to the application after each click and each edit.
-   */
-  it('lands on a door’s application once, and leaves a later click and a later edit where they are', () => {
-    const held = (): DesignModel => {
-      const base = model()
-      return {
-        ...base,
-        elements: [...base.elements, element('billing', { name: 'Billing' })],
-        relations: [...base.relations, row('r3', 'uses', 'billing', 'brokering')],
-      }
-    }
-    const told = vi.fn()
-    function Editor({ current }: { current: DesignModel }) {
-      const [selectedId, setSelectedId] = useState<string | undefined>(undefined)
-      return (
-        <TechnologyLandscapePage
-          open inline model={current} diagram={VIEW} readOnly={false} onClose={() => {}} elsewhere={elsewhere} describe={describe_}
-          focus="application:billing" {...(selectedId !== undefined ? { selectedId } : {})}
-          // A fresh callback on every render, as the editor's slot hands it over.
-          onSelect={(id) => { told(id); setSelectedId(id) }}
-        />
-      )
-    }
-    const { rerender } = renderShell(<Editor current={held()} />)
-    expect(told.mock.calls).toEqual([['billing']])
-    fireEvent.click(screen.getByTestId('landscape-platform-kafka'))
-    expect(told).toHaveBeenLastCalledWith('kafka')
-    rerender(<Editor current={held()} />)
-    expect(told.mock.calls).toEqual([['billing'], ['kafka']])
-    expect(screen.getByTestId('landscape-application-portal').dataset.dimmed).toBe('true')
-  })
-
-  it('offers nothing to add when read only', () => {
-    open({ inline: true, onAdd: vi.fn(), readOnly: true })
-    expect(screen.queryByTestId('landscape-add-service')).toBeNull()
+  it('finds nothing wrong, as axe reads it', async () => {
+    open()
+    fireEvent.click(rowOf('Warehouse Management'))
+    expect(await axeFindings()).toEqual([])
   })
 })
 
-/**
- * The landscape as the place technology use is written (ADR-0020): hosting
- * drawn at rest and folded on request, the band that degrades to a strip,
- * the shared row, and the one write gesture — a drop, or the button while an
- * application is chosen — calling the editor's own actions.
- */
-describe('a scope with places and no offerings (ADR-0020)', () => {
-  // The spreadsheet case: an application that only says where it runs.
-  function bare(): DesignModel {
-    return {
-      name: 'Finance',
-      diagrams: [VIEW],
-      elements: [
-        element('sheets', { name: 'Spreadsheets' }),
-        element('portal', { name: 'Order portal' }),
-        element('o365', { kind: 'platform', name: 'Office 365', platformArchetype: 'place', outside: true }),
-        element('k8s', { kind: 'platform', name: 'Cluster', platformArchetype: 'place' }),
-        element('bus', { kind: 'platform', name: 'Event bus' }),
-      ],
-      relations: [row('h1', 'hostedOn', 'sheets', 'o365'), row('h2', 'hostedOn', 'portal', 'k8s'), row('u1', 'uses', 'portal', 'k8s')],
-    }
+describe('choosing a row', () => {
+  it('reaches every row by the keyboard', () => {
+    open()
+    const row = rowOf('Rating (legacy)')
+    fireEvent.keyDown(row, { key: 'Enter' })
+    expect(screen.getByTestId('landscape-inspector').textContent).toContain('Rating (legacy)')
+  })
+  it('chooses on a press and lets go on the second, the others readable and in their place', () => {
+    open()
+    const order = namesIn('landscape-band-services')
+    fireEvent.click(rowOf('Warehouse Management'))
+    expect(screen.getByTestId('landscape-inspector')).toBeDefined()
+    expect(rowOf('Customer portal').dataset.state).toContain('dim')
+    expect(rowOf('Message brokering').dataset.state).toContain('strong')
+    expect(namesIn('landscape-band-services')).toEqual(order)
+    fireEvent.click(rowOf('Warehouse Management'))
+    expect(screen.queryByTestId('landscape-inspector')).toBeNull()
+  })
+  it('hides what the choice does not touch, from the Show menu', () => {
+    open()
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Hide what the choice does not touch' }))
+    fireEvent.click(rowOf('Customer portal'))
+    expect(namesIn('landscape-applications')).toEqual(['Customer portal'])
+  })
+  it('tells the host what this scope holds, and nothing it does not', () => {
+    const onSelect = vi.fn()
+    open({ onSelect })
+    fireEvent.click(rowOf('OpenShift'))
+    expect(onSelect).toHaveBeenLastCalledWith('openshift')
+    fireEvent.click(rowOf('Warehouse Management'))
+    expect(onSelect).toHaveBeenLastCalledWith(undefined)
+  })
+  it('lands on the row a door led to, once', () => {
+    open({ focus: 'application:wms' })
+    expect(screen.getByTestId('landscape-inspector').textContent).toContain('Warehouse Management')
+    fireEvent.click(rowOf('Warehouse Management'))
+    expect(screen.queryByTestId('landscape-inspector')).toBeNull()
+  })
+})
+
+describe('the Show menu', () => {
+  const show = (name: string) => {
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name }))
   }
-  const shared = [
-    { id: 'managed-db', name: 'Managed database', where: 'platforms', realisedBy: ['azure-sql'] },
-    { id: 'ent-bus', name: 'Enterprise bus', where: 'platforms', realisedBy: [] },
-  ]
-  const describeShared: PlatformDescribe = (id) => ({ 'azure-sql': { name: 'Azure SQL', kind: 'platform' as const, where: 'platforms' } }[id])
-  const titles = () => [...screen.getByTestId('landscape-lines').querySelectorAll('path title')].map((title) => title.textContent)
-
-  it('draws the hosting of a card that says nothing else, and folds it only into a line that reaches the same platform', () => {
-    open({ model: bare(), elsewhere: [], describe: () => undefined })
-    expect(screen.getByTestId('landscape-application-sheets').textContent).toBe('Spreadsheetson Office 365')
-    fireEvent.click(screen.getByTestId('landscape-application-sheets'))
-    expect(titles()).toEqual(['hostedOn'])
-    fireEvent.click(screen.getByTestId('landscape-fold-hosting'))
-    expect(titles()).toEqual(['hostedOn'])
-    fireEvent.click(screen.getByTestId('landscape-application-portal'))
-    // Bound to the cluster it runs on: the binding stands for both.
-    expect(titles()).toEqual(['binds'])
-    fireEvent.click(screen.getByTestId('landscape-fold-hosting'))
-    expect(titles()).toEqual(['binds', 'hostedOn'])
+  it('takes the services away and the column goes', () => {
+    open()
+    show('Services')
+    expect(screen.queryByTestId('landscape-band-services')).toBeNull()
   })
-
-  it('folds the services band to a strip when there is nothing to show in it', () => {
-    open({ model: bare(), elsewhere: [], describe: () => undefined })
-    const band = screen.getByTestId('landscape-band-services')
-    expect(band.dataset.strip).toBe('true')
-    expect(band.textContent).toContain('no offerings in this scope')
-    cleanup()
-    open({ model: bare(), elsewhere: [], describe: () => undefined, sharedElsewhere: shared })
-    expect(screen.getByTestId('landscape-band-services').dataset.strip).toBeUndefined()
-    fireEvent.click(screen.getByTestId('landscape-show-shared'))
-    expect(screen.getByTestId('landscape-band-services').dataset.strip).toBe('true')
+  it('hides one scope, a line per scope', () => {
+    open()
+    show('channels')
+    expect(namesIn('landscape-applications')).toEqual(['Rating (legacy)', 'Warehouse Management'])
   })
-
-  it('shows the shared offerings from elsewhere, dimmed until something here uses one', () => {
-    const model = bare()
-    model.relations.push(row('u2', 'uses', 'sheets', 'ent-bus'))
-    open({ model, elsewhere: [], describe: describeShared, sharedElsewhere: shared })
-    const row_ = screen.getByTestId('landscape-shared-row')
-    expect(row_.textContent).toContain('Shared in the organisation')
-    const db = within(row_).getByTestId('landscape-shared-managed-db')
-    expect(db.dataset.ghost).toBe('true')
-    expect(db.textContent).toContain('from platforms · realised by Azure SQL')
-    expect(db.textContent).toContain('shared')
-    const bus = within(row_).getByTestId('landscape-shared-ent-bus')
-    expect(bus.dataset.ghost).toBeUndefined()
-    expect(bus.textContent).toContain('1 user')
-    // A use of one is a line like any other.
-    fireEvent.click(screen.getByTestId('landscape-application-sheets'))
-    expect(titles()).toEqual(['uses', 'hostedOn'])
-    // And the row can be hidden.
-    fireEvent.click(screen.getByTestId('landscape-show-shared'))
+  it('groups by category where the record says one', () => {
+    const describing: PlatformDescribe = (id) => { const told = describe_(id); return told && id === 'wms' ? { ...told, category: 'Warehouse' } : told }
+    open({ describe: describing })
+    show('Category')
+    expect(document.querySelector('[data-kit-row="head:group:Warehouse"]')).not.toBeNull()
+  })
+  it('hides the shared row from there too', () => {
+    open({ sharedElsewhere: [{ id: 'idp', name: 'Identity', where: 'security', realisedBy: [] }] })
+    expect(screen.getByTestId('landscape-shared-row')).toBeDefined()
+    show('Shared in the organisation')
     expect(screen.queryByTestId('landscape-shared-row')).toBeNull()
   })
+})
 
-  it('writes the row a drop means: hosting on a place, a use on a service platform or an offering', () => {
-    const onHost = vi.fn()
-    const onUse = vi.fn()
+describe('above the threshold', () => {
+  const many = () => {
+    const rows: Relation[] = []
+    const told = new Map<string, { name: string; kind: 'application'; where: string }>()
+    for (let at = 0; at <= FOLD_ABOVE; at += 1) {
+      rows.push(row(`u${at}`, 'uses', `a${at}`, 'containers'))
+      told.set(`a${at}`, { name: `App ${at}`, kind: 'application', where: at % 2 ? 'one' : 'two' })
+    }
+    return { rows, told: ((id: string) => told.get(id)) as PlatformDescribe }
+  }
+  it('starts folded, opens a group by its caret, and a filter under it opens the matches', async () => {
+    const { rows, told } = many()
+    open({ elsewhere: rows, describe: told })
+    expect(namesIn('landscape-applications')).toEqual([])
+    fireEvent.click(document.querySelector('[data-kit-row="head:group:one"] .kit-list__caret')!)
+    expect(namesIn('landscape-applications').length).toBeGreaterThan(0)
+    fireEvent.change(screen.getByTestId('landscape-filter'), { target: { value: 'App 40' } })
+    await waitFor(() => expect(namesIn('landscape-applications')).toEqual(['App 40']))
+  })
+  it('reads a group when its head is chosen', () => {
+    const { rows, told } = many()
+    open({ elsewhere: rows, describe: told })
+    fireEvent.click(document.querySelector('[data-kit-row="head:group:one"] .kit-list__headCell span:last-child')!)
+    expect(screen.getByTestId('landscape-inspector').textContent).toContain('Group of applications')
+  })
+})
+
+describe('filtering by name', () => {
+  it('narrows the column that holds the word, and leaves the others whole', () => {
+    open()
+    fireEvent.change(screen.getByTestId('landscape-filter'), { target: { value: 'broker' } })
+    expect(namesIn('landscape-band-services')).toEqual(['Message brokering'])
+    expect(namesIn('landscape-band-platforms')).toEqual(['Event broker'])
+    expect(namesIn('landscape-applications')).toHaveLength(3)
+  })
+})
+
+describe('the reader', () => {
+  const writing = () => ({ onSetUse: vi.fn(), onSetHost: vi.fn() })
+  it('says where an application runs, what it uses, and so what it stands on', () => {
+    open()
+    fireEvent.click(rowOf('Warehouse Management'))
+    const reader = screen.getByTestId('landscape-inspector').textContent
+    expect(reader).toContain('Kept in logistics')
+    expect(reader).toContain('OpenShift')
+    expect(reader).toContain('Event broker')
+    expect(reader).toContain('Landing zone')
+  })
+  it('takes a use away as near as it adds one, and offers it back', async () => {
+    const held = model()
+    const writes = writing()
+    open({ ...writes, model: { ...held, relations: [...held.relations, row('o1', 'uses', 'wms', 'brokering')] } })
+    fireEvent.click(rowOf('Warehouse Management'))
+    fireEvent.click(screen.getByTestId('landscape-unuse-brokering'))
+    expect(writes.onSetUse).toHaveBeenCalledWith('wms', 'brokering', false)
+    await waitFor(() => expect(screen.getByTestId('landscape-inspector').textContent).toContain('no longer uses'))
+    await act(async () => { fireEvent.click(within(screen.getByTestId('landscape-inspector')).getByRole('button', { name: 'Undo' })) })
+    expect(writes.onSetUse).toHaveBeenLastCalledWith('wms', 'brokering', true)
+  })
+  it('says where a change goes, and nothing about changing to a reader', () => {
+    open({ ...writing() })
+    fireEvent.click(rowOf('Rating (legacy)'))
+    expect(screen.getByTestId('landscape-inspector').textContent).toContain('saved in logistics')
+    cleanup()
+    open({ ...writing(), readOnly: true })
+    fireEvent.click(rowOf('Rating (legacy)'))
+    expect(screen.queryByTestId('landscape-edit-uses')).toBeNull()
+    expect(screen.queryByTestId('landscape-add-use')).toBeNull()
+    expect(screen.queryByTestId('landscape-add-service')).toBeNull()
+  })
+  it('opens the report from If it went, and on a double press', () => {
+    const onOpenPlatformReport = vi.fn()
+    const onOpenServiceReport = vi.fn()
+    open({ onOpenPlatformReport, onOpenServiceReport })
+    fireEvent.click(rowOf('Event broker'))
+    fireEvent.click(screen.getByTestId('landscape-report'))
+    expect(onOpenPlatformReport).toHaveBeenCalledWith('kafka')
+    fireEvent.doubleClick(rowOf('Message brokering'))
+    expect(onOpenServiceReport).toHaveBeenCalledWith('brokering')
+  })
+  it('opens the record in its own column and comes back', () => {
+    open({ record: <div>the inspector</div> })
+    fireEvent.click(rowOf('Event broker'))
+    fireEvent.click(screen.getByTestId('landscape-edit-record'))
+    expect(screen.getByTestId('landscape-record').textContent).toContain('the inspector')
+    expect(screen.queryByTestId('landscape-inspector')).toBeNull()
+    fireEvent.click(screen.getByTestId('landscape-back-to-reader'))
+    expect(screen.getByTestId('landscape-inspector')).toBeDefined()
+  })
+  it('goes to a record another scope keeps, and into an application', () => {
+    const onOpenElsewhere = vi.fn()
+    const onOpenContainers = vi.fn(() => true)
+    open({ onOpenElsewhere, onOpenContainers, hasContainers: () => true })
+    fireEvent.click(rowOf('Warehouse Management'))
+    fireEvent.click(screen.getByTestId('landscape-open-record'))
+    expect(onOpenElsewhere).toHaveBeenCalledWith('wms')
+    fireEvent.click(screen.getByTestId('landscape-containers'))
+    expect(onOpenContainers).toHaveBeenCalledWith('wms')
+  })
+})
+
+describe('the one tick', () => {
+  const writing = () => ({ onSetUse: vi.fn(), onSetHost: vi.fn() })
+  it('puts a mark on every row that says what is so, and a press writes', () => {
+    const writes = writing()
+    open({ ...writes })
+    fireEvent.click(rowOf('Rating (legacy)'))
+    fireEvent.click(screen.getByTestId('landscape-edit-uses'))
+    expect(rowOf('Container platform').querySelector('.tl-tick')!.getAttribute('data-tick')).toBe('use')
+    expect(rowOf('Message brokering').querySelector('.tl-tick')!.getAttribute('data-tick')).toBe('none')
+    fireEvent.click(rowOf('Message brokering'))
+    expect(writes.onSetUse).toHaveBeenCalledWith('rater', 'brokering', true)
+    fireEvent.click(rowOf('OpenShift'))
+    expect(writes.onSetHost).toHaveBeenCalledWith('rater', 'openshift')
+  })
+  it('stops when Done is pressed', () => {
+    open({ ...writing() })
+    fireEvent.click(rowOf('Rating (legacy)'))
+    fireEvent.click(screen.getByTestId('landscape-edit-uses'))
+    fireEvent.click(screen.getByTestId('landscape-edit-uses'))
+    expect(document.querySelector('.tl-tick')).toBeNull()
+  })
+})
+
+describe('dragging an application', () => {
+  const dataTransfer = { setData: () => {} }
+  it('says the verb before the drop, and writes by what it landed on', () => {
+    const onSetUse = vi.fn()
+    open({ onSetUse, onSetHost: vi.fn() })
+    fireEvent.dragStart(rowOf('Customer portal'), { dataTransfer })
+    fireEvent.dragOver(rowOf('Message brokering'), { dataTransfer })
+    expect(screen.getByTestId('landscape-verb').textContent).toBe('Customer portal will use Message brokering')
+    fireEvent.drop(rowOf('Message brokering'), { dataTransfer })
+    expect(onSetUse).toHaveBeenCalledWith('portal', 'brokering', true)
+  })
+  it('tells rather than writes what is already said', () => {
     const notify = vi.fn()
-    open({ model: bare(), elsewhere: [], describe: describeShared, sharedElsewhere: shared, onHost, onUse, notify })
-    expect(screen.getByTestId('landscape-applications').textContent).toContain('drag a card onto a platform')
-    fireEvent.dragStart(screen.getByTestId('landscape-application-sheets'))
-    fireEvent.drop(screen.getByTestId('landscape-platform-k8s'))
-    expect(onHost).toHaveBeenCalledWith('sheets', 'k8s')
-    fireEvent.dragStart(screen.getByTestId('landscape-application-sheets'))
-    fireEvent.drop(screen.getByTestId('landscape-platform-bus'))
-    expect(onUse).toHaveBeenLastCalledWith('sheets', ['bus'])
-    // A shared offering: the same row, the stand-in being the editor's business.
-    fireEvent.dragStart(screen.getByTestId('landscape-application-portal'))
-    fireEvent.drop(screen.getByTestId('landscape-shared-managed-db'))
-    expect(onUse).toHaveBeenLastCalledWith('portal', ['k8s', 'managed-db'])
-    // What is already said is said, not written twice.
-    fireEvent.dragStart(screen.getByTestId('landscape-application-portal'))
-    fireEvent.drop(screen.getByTestId('landscape-platform-k8s'))
-    expect(notify).toHaveBeenLastCalledWith('Order portal is already hosted on Cluster.')
-    fireEvent.dragStart(screen.getByTestId('landscape-application-portal'))
-    fireEvent.drop(screen.getByTestId('landscape-platform-k8s'))
-    expect(onHost).toHaveBeenCalledTimes(1)
+    const onSetUse = vi.fn()
+    const held = model()
+    open({ onSetUse, onSetHost: vi.fn(), notify, model: { ...held, relations: [...held.relations, row('o2', 'uses', 'portal', 'brokering')] } })
+    fireEvent.dragStart(rowOf('Customer portal'), { dataTransfer })
+    fireEvent.drop(rowOf('Message brokering'), { dataTransfer })
+    expect(onSetUse).not.toHaveBeenCalled()
+    expect(notify).toHaveBeenCalledWith('Customer portal already uses Message brokering.')
   })
-
-  it('offers the same two verbs as buttons on the targets while an application is chosen', () => {
-    const onHost = vi.fn()
-    const onUse = vi.fn()
-    open({ model: bare(), elsewhere: [], describe: describeShared, sharedElsewhere: shared, onHost, onUse })
-    expect(screen.queryByTestId('landscape-host-k8s')).toBeNull()
-    fireEvent.click(screen.getByTestId('landscape-application-sheets'))
-    fireEvent.click(screen.getByTestId('landscape-host-k8s'))
-    expect(onHost).toHaveBeenCalledWith('sheets', 'k8s')
-    fireEvent.click(screen.getByTestId('landscape-use-bus'))
-    expect(onUse).toHaveBeenLastCalledWith('sheets', ['bus'])
-    fireEvent.click(screen.getByTestId('landscape-use-ent-bus'))
-    expect(onUse).toHaveBeenLastCalledWith('sheets', ['ent-bus'])
-    // Choosing a platform instead takes the buttons away.
-    fireEvent.click(screen.getByTestId('landscape-platform-bus'))
-    expect(screen.queryByTestId('landscape-host-k8s')).toBeNull()
+  it('does not lift for a reader', () => {
+    open({ onSetUse: vi.fn(), onSetHost: vi.fn(), readOnly: true })
+    expect(rowOf('Customer portal').draggable).toBe(false)
   })
+})
 
-  it('neither drags nor offers a button when read only', () => {
-    const onHost = vi.fn()
-    const onUse = vi.fn()
-    open({ model: bare(), elsewhere: [], describe: describeShared, sharedElsewhere: shared, onHost, onUse, readOnly: true })
-    expect(screen.getByTestId('landscape-application-sheets').getAttribute('draggable')).not.toBe('true')
-    fireEvent.click(screen.getByTestId('landscape-application-sheets'))
-    expect(screen.queryByTestId('landscape-host-k8s')).toBeNull()
-    fireEvent.dragStart(screen.getByTestId('landscape-application-sheets'))
-    fireEvent.drop(screen.getByTestId('landscape-platform-k8s'))
-    expect(onHost).not.toHaveBeenCalled()
-    expect(onUse).not.toHaveBeenCalled()
+describe('the + on a column', () => {
+  it('asks a name, or picks from elsewhere in the organisation', () => {
+    const onAdd = vi.fn()
+    const onBring = vi.fn()
+    open({ onAdd, onBring, technologyElsewhere: [{ id: 'hub', name: 'Telemetry hub', kind: 'platform', where: 'fleet' }] })
+    fireEvent.click(screen.getByTestId('landscape-add-platform'))
+    const field = screen.getByRole('combobox')
+    fireEvent.change(field, { target: { value: 'Vault' } })
+    fireEvent.click(screen.getByText('Add “Vault” here'))
+    expect(onAdd).toHaveBeenCalledWith({ kind: 'platform', name: 'Vault' })
+    fireEvent.click(screen.getByTestId('landscape-add-platform'))
+    fireEvent.click(screen.getByText('Telemetry hub'))
+    expect(onBring).toHaveBeenCalledWith('hub')
+  })
+  it('adds under a row from the selected row', () => {
+    const onAdd = vi.fn()
+    open({ onAdd })
+    fireEvent.click(rowOf('OpenShift'))
+    fireEvent.click(screen.getByTestId('landscape-add-under-openshift'))
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Namespace' } })
+    fireEvent.click(screen.getByText('Add “Namespace” here'))
+    expect(onAdd).toHaveBeenCalledWith({ kind: 'platform', name: 'Namespace', parentId: 'openshift' })
+  })
+})
+
+describe('the matrix', () => {
+  const matrix = () => {
+    fireEvent.click(screen.getByRole('radio', { name: 'Matrix' }))
+    return screen.getByTestId('landscape-matrix')
+  }
+  it('is one press away, the same rows, with what each runs on pinned beside them', () => {
+    open()
+    expect(matrix().textContent).toContain('Warehouse Management')
+    expect(screen.getByTestId('landscape-matrix').textContent).toContain('OpenShift')
+    expect(screen.queryByTestId('landscape-legend')).toBeNull()
+  })
+  it('a press selects and writes nothing; Space writes', () => {
+    const onSetUse = vi.fn()
+    open({ onSetUse, onSetHost: vi.fn() })
+    matrix()
+    const cell = document.querySelector<HTMLElement>('[data-kit-cell="0:1"]')!
+    fireEvent.click(cell)
+    expect(onSetUse).not.toHaveBeenCalled()
+    expect(screen.getByTestId('landscape-inspector').textContent).toContain('Customer portal')
+    fireEvent.keyDown(cell, { key: ' ' })
+    expect(onSetUse).toHaveBeenCalledWith('portal', 'brokering', true)
+  })
+  it('a heading says who stands on it', () => {
+    open()
+    matrix()
+    fireEvent.click(document.querySelector('[data-kit-cell="-1:1"]')!)
+    expect(screen.getByTestId('landscape-inspector').textContent).toContain('Message brokering')
+  })
+  it('writes nothing for a reader', () => {
+    const onSetUse = vi.fn()
+    open({ onSetUse, onSetHost: vi.fn(), readOnly: true })
+    matrix()
+    fireEvent.keyDown(document.querySelector('[data-kit-cell="0:1"]')!, { key: ' ' })
+    expect(onSetUse).not.toHaveBeenCalled()
+  })
+})
+
+describe('Day and Colour', () => {
+  const dated = (): DesignModel => {
+    const held = model()
+    return {
+      ...held,
+      elements: held.elements.map((one) => (one.id === 'kafka' ? { ...one, lifecycleDates: { retiring: '2027-01-01', retired: '2027-06-01' } } : one)),
+    }
+  }
+  it('reads the rows on the day looked at: what has gone is not drawn', () => {
+    open({ model: dated(), diagram: { ...VIEW, asOf: '2027-07-01' }, onDay: vi.fn() })
+    expect(namesIn('landscape-band-platforms')).not.toContain('Event broker')
+    expect(screen.getByRole('button', { name: /^Day: / })).toBeDefined()
+  })
+  it('asks for another day through the host', () => {
+    const onDay = vi.fn()
+    open({ model: dated(), onDay })
+    fireEvent.click(screen.getByRole('button', { name: 'Day' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: /Event broker goes/ }))
+    expect(onDay).toHaveBeenCalledWith('2027-06-01')
+  })
+  it('colours by one question, with a key made of what is drawn, and writes nothing until kept', () => {
+    const onKeepColour = vi.fn()
+    open({ model: dated(), today: '2027-02-01', onKeepColour })
+    fireEvent.click(screen.getByRole('button', { name: 'Colour' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'What it stands on' }))
+    expect(screen.getByRole('button', { name: /^Colour: / })).toBeDefined()
+    expect(rowOf('Event broker').querySelector('.tl-swatch')).not.toBeNull()
+    const key = screen.getByRole('group', { name: 'Key' })
+    expect(within(key).getByRole('button', { name: /retiring/ })).toBeDefined()
+    expect(onKeepColour).not.toHaveBeenCalled()
+    fireEvent.click(within(key).getByRole('button', { name: 'Keep with the view' }))
+    expect(onKeepColour).toHaveBeenCalledWith('technologyLifecycle')
+  })
+  it('a value pressed on the key quiets the rest', () => {
+    open({ model: dated(), today: '2027-02-01' })
+    fireEvent.click(screen.getByRole('button', { name: 'Colour' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Its own lifecycle' }))
+    fireEvent.click(within(screen.getByRole('group', { name: 'Key' })).getByRole('button', { name: /retiring/ }))
+    expect(rowOf('OpenShift').dataset.state).toContain('dim')
+    expect(rowOf('Event broker').dataset.state ?? '').not.toContain('dim')
   })
 })

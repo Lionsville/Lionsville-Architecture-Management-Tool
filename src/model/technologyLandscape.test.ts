@@ -13,7 +13,7 @@ import { describe, expect, it } from 'vitest'
 import { element } from './testFixtures'
 import {
   FOLD_ABOVE, applicationList, cardFor, drawsCard, landscapeEdges, nodeKey, platformList, serviceList, startsFolded,
-  technologyLandscape, touchedBy,
+  landscapeColours, regroupedBy, technologyLandscape, touchedBy,
 } from './technologyLandscape'
 import type { LandscapeView } from './technologyLandscape'
 import type { PlatformDescribe } from './platformReport'
@@ -311,5 +311,84 @@ describe('the card an element is', () => {
     expect(drawsCard(drawn, nodeKey.service('kafka'))).toBe(false)
     expect(drawsCard(drawn, nodeKey.platform('cloud'))).toBe(false)
     expect(drawsCard(drawn, nodeKey.group('no-such-group'))).toBe(false)
+  })
+})
+
+describe('a landscape read on a day', () => {
+  const held = {
+    elements: [
+      element('old', { kind: 'platform', name: 'Old', lifecycleDates: { retired: '2027-01-01' } }),
+      element('svc', { kind: 'platformService', name: 'Svc' }),
+      element('a', { name: 'A', lifecycle: 'live', lifecycleDates: { retiring: '2026-06-01' } }),
+    ],
+    relations: [
+      { id: 'r', type: 'realises', sourceId: 'old', targetId: 'svc' },
+      { id: 'u', type: 'uses', sourceId: 'a', targetId: 'svc', validUntil: '2026-03-01' },
+    ] as Relation[],
+  }
+  const on = (day?: string) => technologyLandscape(held, { id: 'v', name: 'v' }, day ? { day } : {})
+
+  it('counts every row without a day', () => {
+    expect(serviceList(on()).map(({ node }) => node.consumers)).toEqual([1])
+  })
+  it('drops a row whose window has closed, and says the phase on that day', () => {
+    const later = on('2026-07-01')
+    expect(serviceList(later)[0]!.node.consumers).toBe(0)
+    expect(applicationList(later)[0]).toMatchObject({ id: 'a', lifecycle: 'retiring', uses: [] })
+  })
+  it('does not draw what is gone by then', () => {
+    expect(platformList(on('2027-02-01')).map(({ node }) => node.id)).toEqual([])
+  })
+  it('says what the application itself says, apart from its containers', () => {
+    const page = technologyLandscape({
+      elements: [
+        element('p', { kind: 'platform', name: 'P', platformArchetype: 'place' }), element('s', { kind: 'platformService', name: 'S' }),
+        element('a', { name: 'A' }), element('c', { kind: 'component', parentId: 'a', name: 'C' }),
+      ],
+      relations: [
+        { id: 'h', type: 'hostedOn', sourceId: 'c', targetId: 'p' },
+        { id: 'u', type: 'uses', sourceId: 'c', targetId: 's' },
+      ] as Relation[],
+    }, { id: 'v', name: 'v' })
+    expect(applicationList(page)[0]).toMatchObject({ hostedOn: ['p'], uses: ['s'], saysUses: [] })
+    expect(applicationList(page)[0]!.saysHosted).toBeUndefined()
+  })
+})
+
+describe('applications grouped another way, and a row coloured by one question', () => {
+  const held = {
+    elements: [
+      element('p', { kind: 'platform', name: 'P', lifecycle: 'retiring' }), element('q', { kind: 'platform', name: 'Q', parentId: 'p', platformArchetype: 'place' }),
+      element('s', { kind: 'platformService', name: 'S' }),
+      element('a', { name: 'A', category: 'Finance', lifecycle: 'planned' }), element('b', { name: 'B' }),
+    ],
+    relations: [
+      { id: 'r', type: 'realises', sourceId: 'p', targetId: 's' },
+      { id: 'u', type: 'uses', sourceId: 'a', targetId: 's' },
+      { id: 'h', type: 'hostedOn', sourceId: 'b', targetId: 'q' },
+    ] as Relation[],
+  }
+  const page = technologyLandscape(held, { id: 'v', name: 'v' })
+
+  it('groups by category with the rest last, keeping every application', () => {
+    const by = regroupedBy(page, 'category')
+    expect(by.groups.map((group) => [group.key, group.applications.map((app) => app.id)])).toEqual([['Finance', ['a']], ['', ['b']]])
+  })
+  it('colours by the row\'s own phase', () => {
+    const colours = landscapeColours(page, 'lifecycle', () => '')
+    expect(colours.get(nodeKey.application('a'))).toBe('planned')
+    expect(colours.get(nodeKey.platform('p'))).toBe('retiring')
+  })
+  it('colours by the worst of what a row stands on, up the chain', () => {
+    const colours = landscapeColours(page, 'technologyLifecycle', () => '')
+    expect(colours.get(nodeKey.application('a'))).toBe('retiring')
+    expect(colours.get(nodeKey.application('b'))).toBe('retiring')
+    expect(colours.get(nodeKey.service('s'))).toBe('retiring')
+    expect(colours.get(nodeKey.platform('q'))).toBe('retiring')
+  })
+  it('leaves a row out where the record says nothing', () => {
+    const colours = landscapeColours(page, 'category', () => '')
+    expect(colours.get(nodeKey.application('a'))).toBe('Finance')
+    expect(colours.has(nodeKey.application('b'))).toBe(false)
   })
 })

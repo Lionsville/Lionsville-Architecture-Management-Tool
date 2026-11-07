@@ -487,8 +487,8 @@ describe('a domain’s home', () => {
     expect(row.textContent).toContain('Laid out from the rows')
     expect(row.textContent).not.toContain('on it')
     fireEvent.click(row)
-    await waitFor(() => expect(screen.getByTestId('landscape-topbar')).toBeDefined())
-    expect(screen.getByTestId('landscape-summary').textContent).toBe('0 applications · 0 services · 0 platforms')
+    await waitFor(() => expect(screen.getByText('What stands on what')).toBeDefined())
+    expect(screen.getByTestId('landscape-summary').textContent).toBe('0 applications · 0 services · 0 platforms · read from the records')
   })
 })
 
