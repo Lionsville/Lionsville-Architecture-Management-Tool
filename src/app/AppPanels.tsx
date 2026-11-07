@@ -289,6 +289,7 @@ function Home({ parts }: { parts: ShellParts }) {
           sourceSayings={props.provider?.sayings}
           sourceChip={parts.provider.chip}
           chipPanel={chipPanelFor(parts)}
+          sourcePage={sourcePageFor(parts)}
           chipFace={chipFaceFor(parts)}
           waysIn={parts.provider.offered}
           onGoHome={nav.goHome}
@@ -384,6 +385,24 @@ function chipPanelFor(parts: ShellParts): ((close: () => void) => ReactNode) | u
       </LanguageProvider>
     </ErrorBoundary>
   )
+}
+
+/** A page of the open source's provider's own, in the language and a boundary of its own. */
+function sourcePageFor(parts: ShellParts): ((page: string, onClose: () => void) => ReactNode) | undefined {
+  const { props, services: { prefs, s }, provider } = parts
+  const pages = props.provider?.pages
+  if (!pages) return undefined
+  return (page, onClose) => {
+    const Page = pages.find((one) => one.page === page)?.Page
+    if (!Page) return null
+    return (
+      <ErrorBoundary where="sourcePage" diagnostics={props.diagnostics} controls={props.hostControls} s={s}>
+        <LanguageProvider language={prefs.language}>
+          <Page {...chromeProps(parts, provider.openProvider)} page={page} onClose={onClose} />
+        </LanguageProvider>
+      </ErrorBoundary>
+    )
+  }
 }
 
 /**

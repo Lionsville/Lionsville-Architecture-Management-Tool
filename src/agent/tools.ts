@@ -27,7 +27,7 @@
  */
 import type { CommandRefusal } from '../model/reducer'
 import type { MergeLinkRefusal } from '../observations/merge'
-import { CHART_LINES, PAGE_TABS } from './screen'
+import { CHART_LINES, PAGE_TABS, pagesKnown } from './screen'
 import { isPersonRef } from '../model/person'
 import { PERSON_KINDS, PERSON_STATES } from '../people/person'
 import type { PeopleRefusal } from '../people/person'
@@ -3509,18 +3509,14 @@ const SPECS = [
         page: {
           type: 'string',
           description: 'What to show there. Default: the canvas, or the home of a scope with no views.',
-          enum: [
-            'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
-            'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
-            'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics', 'blocks',
-            'work', 'activity', 'settings', 'preferences', 'agents',
-          ],
+          // Read when the tools are listed: a source's own pages are registered after this table is built.
+          get enum() { return pagesKnown() },
         },
         id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution, experiment, unit type, role or responsibility the page is about, where it is about one; on checks, a check\'s key (check.roleVacant).' },
         tab: {
           type: 'string',
           description: 'Which tab of the page, on a page with tabs. Observations: register (Seen), analysis (Why), solutions (Solve), results (Did it work); analysis and solutions also as analysis-list, analysis-map, solutions-list, solutions-map. People: people, review, privacy. Register: applications, services, platforms. A Conway map: grid, lines. Any other tab is refused and the answer lists the page\'s own.',
-          enum: [...new Set(Object.values(PAGE_TABS).flat())],
+          get enum() { return [...new Set(Object.values(PAGE_TABS).flat())] },
         },
         look: { type: 'string', description: 'What the page looks at within its tab. Operating model, on responsibilities: part=<group name>, part=* for the whole organisation, unit=<unit id>; select=<id> opens an item.' },
         select: { type: 'string', description: 'An element to select on the board, sheet, map, technology landscape, organisation chart or Conway map being opened.' },

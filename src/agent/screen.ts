@@ -84,8 +84,10 @@ export function isFramePanel(value: unknown): value is FramePanel {
   return (FRAME_PANELS as readonly unknown[]).includes(value)
 }
 
-/** Pages that live on a scope's home rather than in the workspace. */
-export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks', 'settings', 'agents', ...FRAME_PAGES]
+const homePages: Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks', 'settings', 'agents', ...FRAME_PAGES]
+
+/** Pages that live on a scope's home rather than in the workspace. A source's own pages join when they are registered. */
+export const HOME_PAGES: readonly Page[] = homePages
 
 /**
  * Which pages have tabs, and the tabs each has: what `?tab=` may say
@@ -124,6 +126,36 @@ export type ChartLines = (typeof CHART_LINES)[number]
 
 export function isChartLines(said: unknown): said is ChartLines {
   return typeof said === 'string' && (CHART_LINES as readonly string[]).includes(said)
+}
+
+const sourcePages = new Set<string>()
+
+/**
+ * A page a source provider keeps of its own (ADR-0022, amended): it has an
+ * address, an agent's `app.open` and a home to be drawn over, as the core's own
+ * pages have, and core knows nothing else about it. Registered with the
+ * provider, before the first address is read. A name core uses already is
+ * refused, since it would change what an old link opens.
+ *
+ * The name then travels as a {@link Page}, which it is at run time and not in
+ * the type: the union stays the core's own list, so every switch over it still
+ * has to say something about each of them.
+ */
+export function registerSourcePage(page: string, tabs: readonly string[] = []): void {
+  if ((PAGES as readonly string[]).includes(page)) throw new Error(`a source's page may not be called ${page}`)
+  if (sourcePages.has(page)) return
+  sourcePages.add(page)
+  homePages.push(page as Page)
+  if (tabs.length > 0) PAGE_TABS[page as Page] = tabs
+}
+
+export function isSourcePage(value: unknown): boolean {
+  return typeof value === 'string' && sourcePages.has(value)
+}
+
+/** The pages that are anywhere to be asked for now: the core's own, and any source's. */
+export function pagesKnown(): readonly string[] {
+  return [...PAGES, ...sourcePages]
 }
 
 /** Whether a page has this tab; a page with none has no tab at all. */

@@ -11,7 +11,8 @@ import { describe, expect, it } from 'vitest'
 import {
   PLACE_PATH_PREFIX, PLACE_STATE_KEY, linkTo, oldPlaceForm, nearestPlace, placeInState, placeOf, readFinding, readPlace, samePlace, stepBetween, viewFacetsOf, writeFinding, writePlace, unknownPlace } from './place'
 import type { Place, PlaceFacts } from './place'
-import { isPageTab, PAGES } from './screen'
+import { arrived, HOME_PAGES, isPageTab, isSourcePage, PAGES, registerSourcePage } from './screen'
+import type { Page, Screen } from './screen'
 
 const SCOPES = [
   '', 'acme', 'acme/rail', 'acme/rail/rolling-stock', 'board', 'acme/document/home', '-', 'a/-/b', '%2D',
@@ -463,5 +464,26 @@ describe("a chart's reading in its address", () => {
   it('comes from the screen', () => {
     expect(placeOf({ open: { path: '', name: 'Acme', view: { id: 'oc', name: 'Chart', kind: 'chart', focus: 'warehouse' } } }))
       .toEqual({ scope: '', page: 'chart', id: 'oc', focus: 'warehouse' })
+  })
+})
+
+describe("a source's own page", () => {
+  it('has an address, its tabs and a home to be drawn over, once it is registered', () => {
+    expect(readPlace('#/-/ledger')).toBeUndefined()
+    registerSourcePage('ledger', ['open', 'closed'])
+    expect(readPlace('#/-/ledger')).toEqual({ scope: '', page: 'ledger' })
+    expect(readPlace('#/-/ledger?tab=closed')).toEqual({ scope: '', page: 'ledger', tab: 'closed' })
+    expect(readPlace('#/-/ledger?tab=nothing')).toBeUndefined()
+    expect(HOME_PAGES).toContain('ledger')
+    expect(isSourcePage('ledger')).toBe(true)
+    expect(writePlace({ scope: '', page: 'ledger' as Page, tab: 'open' })).toBe('#/-/ledger?tab=open')
+    const up: Screen = { home: { path: '', name: 'Org' }, page: { page: 'ledger', tab: 'open' } as unknown as Screen['page'] }
+    expect(placeOf(up)).toEqual({ scope: '', page: 'ledger', tab: 'open' })
+    expect(arrived(up, { page: 'ledger' as Page, tab: 'open' }, '')).toBe(true)
+  })
+
+  it('may not take a name the core uses', () => {
+    expect(() => registerSourcePage('people')).toThrow()
+    expect(isSourcePage('people')).toBe(false)
   })
 })

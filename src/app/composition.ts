@@ -66,6 +66,7 @@ import type {
 } from '../platform/sourceProvider'
 import type { StringKey } from '../i18n/strings'
 import type { ComponentType } from 'react'
+import { registerSourcePage } from '../agent/screen'
 import type {
   RegisteredChrome, RegisteredMenu, SourceAgentPanel, SourceBarButton, SourceChipFace, SourceChipPanel, SourceMenu,
   SourcePreferencesPanel,
@@ -74,6 +75,7 @@ import type {
   BarButtonProps, ProblemAction, ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceYourWorkProps, SourceDestination,
   SourcePreferencesPanelProps,
   SourceFrame,
+  SourcePageEntry,
 } from '../ports/ProviderParts'
 import type { Repositories } from '../ports/Repositories'
 import type { Interchange } from '../ports/Interchange'
@@ -242,6 +244,11 @@ export type RegisteredSourceProvider<Opening = never, Own = unknown> =
      */
     readonly barButton?: ComponentType<BarButtonProps<Own>>
     /**
+     * Pages of this provider's own, with an address (`SourcePageEntry`): what it
+     * has that is a place and not a menu or a strip. Core's three keep none.
+     */
+    readonly pages?: readonly SourcePageEntry<Own>[]
+    /**
      * What this provider offers the person on a problem the app ran into
      * (`ProblemAction`): drawn where the app already says something about
      * one, while its source is the one open, and handed the problem only when
@@ -289,6 +296,8 @@ export function registerSourceProvider<Opening, Own = unknown>(
   // And what it hands its own chrome is its own too: the chrome is only ever
   // handed the parts this same provider built (`App`'s `chromeProps`).
   SOURCE_PROVIDERS.set(provider.kind, provider as unknown as RegisteredSourceProvider)
+  // Before the first address is read: the boot lands on one of these from a link.
+  for (const one of provider.pages ?? []) registerSourcePage(one.page, one.tabs)
 }
 
 /** Who answers for a kind of source, or nobody. */
@@ -423,6 +432,10 @@ export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | unde
  * that source, so a panel from any other provider would be hanging from
  * somebody else's name. Nothing for the three that ship.
  */
+export function sourcePages(source: WorkingSource): readonly SourcePageEntry[] | undefined {
+  return sourceProvider(source.provider)?.pages
+}
+
 export function sourceChipPanel(source: WorkingSource): SourceChipPanel | undefined {
   return sourceProvider(source.provider)?.chipPanel
 }

@@ -413,6 +413,23 @@ export type ProblemAction = {
 /** What a provider's part of *Connect an agent* is handed. */
 export type SourceAgentPanelProps = { session?: ScopeSession }
 
+/**
+ * A page of a provider's own, over a home like the core's pages (`registerSourcePage`):
+ * what a chrome is handed, which page is asked for and how to leave it. It draws a
+ * `PageDialog`, which makes it a place in the frame.
+ */
+export type SourcePageProps<Own = unknown> = SourceChromeProps<Own> & {
+  page: string
+  onClose: () => void
+}
+
+/** A page the provider keeps: its name in the address, its tabs and what draws it. */
+export type SourcePageEntry<Own = unknown> = {
+  readonly page: string
+  readonly tabs?: readonly string[]
+  readonly Page: ComponentType<SourcePageProps<Own>>
+}
+
 /** What a provider's part of *Preferences* is handed: its own parts, and the app's way of saying something. */
 export type SourcePreferencesPanelProps<Own = unknown> = { own?: Own; notify: SourceNotify }
 

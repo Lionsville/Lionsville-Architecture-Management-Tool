@@ -41,7 +41,7 @@ import type { CommandStream } from './useHostCommands'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
-import type { SourceFrame, SourceYourWorkProps } from '../ports/ProviderParts'
+import type { SourceFrame, SourcePageEntry, SourceYourWorkProps } from '../ports/ProviderParts'
 import type { ComponentType } from 'react'
 import type { ProblemAction, SourceAttachments, SourceChanges, SourceComments, SourcePeople } from '../ports/ProviderParts'
 
@@ -263,6 +263,8 @@ export type AppProvider = {
    * every build in this repository. Read from the registration by the boot.
    */
   barButton?: SourceBarButton
+  /** Pages of the open source's provider's own (`SourcePageEntry`). Read from the registration by the boot. */
+  pages?: readonly SourcePageEntry[] | undefined
   /**
    * What the open source's provider offers the person on a problem
    * (`ProblemAction`): drawn on the crash screen and on the notices a

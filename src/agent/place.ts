@@ -73,7 +73,7 @@
  * the history (`app/placeHistory.ts`), and a test here says that every place
  * written is read back the same.
  */
-import { FRAME_PAGES, HOME_PAGES, isChartLines, isFramePanel, isPageTab, PAGE_TABS, PAGES, VIEW_PAGES, viewPage } from './screen'
+import { FRAME_PAGES, HOME_PAGES, isChartLines, isFramePanel, isPageTab, PAGE_TABS, pagesKnown, VIEW_PAGES, viewPage } from './screen'
 import type { DesignDiagram } from '../model/types'
 import type { ChartLines, Destination, Page, Screen } from './screen'
 
@@ -272,7 +272,7 @@ function anyPageHasTab(tab: string): boolean {
 }
 
 function isPage(value: string): value is Page {
-  return (PAGES as readonly string[]).includes(value)
+  return pagesKnown().includes(value)
 }
 
 /**

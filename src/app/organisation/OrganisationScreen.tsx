@@ -146,6 +146,8 @@ export type OrganisationScreenProps = {
    * chip is on every scope's home and not the organisation's alone.
    */
   chipPanel?: (close: () => void) => ReactNode
+  /** A page of the open source's provider's own, drawn over this home (`SourcePageEntry`). */
+  sourcePage?: ((page: string, onClose: () => void) => ReactNode) | undefined
   /**
    * What the chip looks like, where the provider drew it a face (`ToolbarChip`'s
    * `face`). Like a word or a panel of the provider's own, it puts the chip on
@@ -262,7 +264,7 @@ export type OrganisationScreenProps = {
 }
 
 export function OrganisationScreen({
-  organisation, examples, onVisitExample, onShareScope, order, sourceDescription, sourceSayings = {},
+  organisation, examples, onVisitExample, onShareScope, order, sourceDescription, sourceSayings = {}, sourcePage,
   waysIn,
   onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
@@ -449,7 +451,7 @@ export function OrganisationScreen({
         servedBy={<ServedBy scope={home.path} servedBy={servedBy} scopeName={scopeName} compact s={s} />}
       />
       <HomePages
-        pages={homePages} at={at} register={registerHere} technology={technologyHere} registerScopeName={registerScopeName} everyScope={everyScope} treeRead={treeRead} today={today} language={language} topics={topics}
+        sourcePage={sourcePage} pages={homePages} at={at} register={registerHere} technology={technologyHere} registerScopeName={registerScopeName} everyScope={everyScope} treeRead={treeRead} today={today} language={language} topics={topics}
         scopeName={scopeName} checks={checks} people={people} readOnly={!mayWrite} open={organisation.open} onHome={onGoHome}
         onOpenRow={onOpenRegisterRow} onOpenRowPage={onOpenRegisterPage} onLink={onLinkFromRegister} s={s} windowChrome={pageChrome} ready={ready}
       />

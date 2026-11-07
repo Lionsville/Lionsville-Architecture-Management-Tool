@@ -12,7 +12,8 @@
  * on the People page beside it — so it brings nothing with it.
  */
 import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
+import { isSourcePage } from '../../agent/screen'
 import type { Language, Translate } from '../../i18n'
 import type { ElementId } from '../../model'
 import type { PeoplePage as PeoplePageShape } from '../../people/ui/PeoplePage'
@@ -94,8 +95,10 @@ function PeopleDoor({ people, open, onClose, request, s, windowChrome }: {
   )
 }
 
-export function HomePages({ pages, at, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onOpenRow, onOpenRowPage, onLink, everyScope, treeRead, today, language, topics, s, windowChrome, ready = true }: {
+export function HomePages({ sourcePage, pages, at, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onOpenRow, onOpenRowPage, onLink, everyScope, treeRead, today, language, topics, s, windowChrome, ready = true }: {
   pages: HomePagesState
+  /** A page of the open source's provider's own, where one is asked for: drawn by the shell, which holds what it is handed. */
+  sourcePage?: ((page: string, onClose: () => void) => ReactNode) | undefined
   /** The tree's index has been read: until then a page that reads it is arriving, not empty. */
   ready?: boolean
   /** The home: what the Checks page keeps its weights under for the session. */
@@ -163,6 +166,7 @@ export function HomePages({ pages, at, register, technology, registerScopeName, 
         nonce={asked?.nonce ?? 0} windowChrome={windowChrome}
       />
       <BlocksDoors pages={pages} at={at} windowChrome={windowChrome} ready={ready} />
+      {openPage !== undefined && isSourcePage(openPage) ? sourcePage?.(openPage, close) : null}
       <ChecksPage
         open={openPage === 'checks'} onClose={close} rows={checks.rows} counts={checks.counts}
         request={asked?.page === 'checks' ? asked : undefined} remember={`checks\u0000${at}`} at={at} scopes={scopes}

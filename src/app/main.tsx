@@ -51,7 +51,7 @@ import RouterWorker from '../layout/routerWorker.ts?worker'
 import { detectBrowserLanguage, translator } from '../i18n'
 import {
   composeShell, desktopCommandChannel, EXAMPLE_OFFERS, INTERCHANGE, openSource, overSource, registeredChrome, registeredConnects,
-  registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel,
+  registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceBarButton, sourceChip, sourcePages, sourceChipFace, sourceChipPanel,
   sourceConnected, sourceDescription, sourceDestination, sourceFrameOf, sourcePreferencesPanel, sourceYourWork, sourceProblemAction, sourceRecentActivity,
   sourceSayings, withDesktopDrawing,
 } from './composition'
@@ -589,6 +589,7 @@ function renderApp(
           chipPanel: sourceChipPanel(shell.source),
           chipFace: sourceChipFace(shell.source),
           barButton: sourceBarButton(shell.source),
+          pages: sourcePages(shell.source),
           problemAction: sourceProblemAction(shell.source),
           menu: menus,
           onScopeSession: shell.onScopeSession,
