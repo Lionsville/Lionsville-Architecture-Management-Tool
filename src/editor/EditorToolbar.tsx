@@ -238,7 +238,8 @@ export interface EditorToolbarProps {
  * find are the frame's: nothing is left for this bar to hold but the tabs, which are row two.
  */
 function barDisplay(framed: boolean, kind: DesignDiagram['kind']): 'none' | 'flex' {
-  return framed && (kind === 'technology' || kind === 'chart' || kind === 'sheet') ? 'none' : 'flex';
+  // A map is the sheet's Coverage reading and draws the sheet's bar itself, find and ⋯ included: a board bar over it is a second copy.
+  return framed && (kind === 'technology' || kind === 'chart' || kind === 'sheet' || kind === 'map') ? 'none' : 'flex';
 }
 
 const TAB_LISTS = ['board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway'] as const;
