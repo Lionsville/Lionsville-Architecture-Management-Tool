@@ -179,7 +179,7 @@ describe('a field in a table row, committed when it is left', () => {
 })
 
 describe('a field among a kit form\'s fields', () => {
-  it('has its label above it on screen, its hint under it, and the register beside it', () => {
+  it('has its label above it on screen, its hint under it, and the register under the box, so that a name reads whole', () => {
     const said: (PersonRef | undefined)[] = []
     renderShell(
       <PersonRefField

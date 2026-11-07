@@ -141,8 +141,9 @@ export function PersonRefField(props: PersonRefFieldProps) {
       <Box data-testid={testId} sx={{ display: 'grid', gap: 0.5 }}>
         <Field label={label} {...(required ? { required } : {})} {...(props.error ? { error: props.helperText ?? '' } : props.helperText ? { hint: props.helperText } : {})}>
           {(ties) => (
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
-              <Box sx={{ flex: '1 1 8em', minWidth: 0 }}>
+            // Under the box and not beside it: a name is read whole at the width of the fields around it.
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'flex-start' }}>
+              <Box sx={{ alignSelf: 'stretch', minWidth: 0 }}>
                 <TextInput
                   {...ties} value={draft} disabled={disabled} placeholder={props.placeholder} autoComplete="off"
                   onChange={(event) => changed(event.target.value)} onBlur={left}
