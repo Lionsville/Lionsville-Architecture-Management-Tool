@@ -24,6 +24,16 @@ and behaves is said here, once.
 | `Segmented.tsx` | **Segmented switch**: a radio group, a menu when it runs out of room below 1024 px |
 | `Mark.tsx` | **Mark**: the closed set of sixteen, `MARK_KINDS` |
 | `roving.ts` | the arrows of a row of choices, shared by tabs and the switch |
+| `listView.ts` | what a list shows as data: find, filters, group, sort, columns, selection; read from and written to the address; the rows a view keeps; *Did you mean* |
+| `List.tsx` | **List**: a row is the item and nothing else, one line or wrapped; groups that fold; columns only when asked for; ticks and bulk; the keyboard; focus handed back to the row |
+| `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
+| `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address |
+| `Panel.tsx` | **Panel**: the one reader and inspector: identity, tabs, body, a foot that helps or undoes |
+| `Matrix.tsx` | **Matrix**: fixed headings, a press selects, a key writes, a crosshair and a line in words, rows and columns that fold |
+| `NextStep.tsx` | **Next step**: the stepper in words, one question and its verb, what holds it; a sentence once ended |
+| `PageState.tsx` | **Truthful page state**: loading, held, empty, offline, unreadable, told apart by type; `pageStateOf` says which is true |
+| `RecordPage.tsx` | **Record page**: one head, one scroll, an outline for a long one; edited in a `FocusedWindow` |
+| `Band.tsx` | **Band**: a state of the window in words with one way out; `BandStack` never shows two |
 
 What a control always says is in `widgets/strings/`, under `kit.*`.
 
@@ -74,6 +84,10 @@ it, under this name, so that the second screen finds it.
 - A main control still carries its `data-guide` name, passed in by the screen.
 - `readOnly` hides what writes: the screen decides, and the kit draws what it is
   given.
+
+A list is composed the same way every time: `readListView` from the address,
+`listed` for the rows, `FilterWords` and `List` over them, `Preview` over those
+with `ids` in the order drawn, and `writeListView` on every change.
 
 ## How a kit component is styled
 
