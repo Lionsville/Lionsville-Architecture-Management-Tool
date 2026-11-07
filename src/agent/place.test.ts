@@ -438,5 +438,31 @@ describe('how a sheet or a map is being read, in the address', () => {
     const screen = { open: { path: 'acme', name: 'Acme', view: { id: 's1', name: 'S', kind: 'sheet', tab: 'overview', colour: 'who' } } }
     expect(placeOf(screen)).toEqual({ scope: 'acme', page: 'sheet', id: 's1', tab: 'overview', colour: 'who' })
     expect(stepBetween({ scope: 'acme', page: 'sheet', id: 's1' }, { scope: 'acme', page: 'sheet', id: 's1', colour: 'who' })).toBe('replace')
+    })
+  })
+})
+
+describe("a chart's reading in its address", () => {
+  const focused: Place = { scope: '', page: 'chart', id: 'organisation-chart', focus: 'warehouse', lines: 'dotted' }
+
+  it('is written and read back whole', () => {
+    expect(writePlace(focused)).toBe('#/-/chart/organisation-chart?focus=warehouse&lines=dotted')
+    expect(readPlace(writePlace(focused))).toEqual(focused)
+  })
+
+  it('is said on a chart and nowhere else, and the lines only in the menu\'s words', () => {
+    expect(readPlace('#/-/board/landscape?focus=warehouse')).toBeUndefined()
+    expect(readPlace('#/-/chart/organisation-chart?lines=some')).toBeUndefined()
+  })
+
+  it('makes another focus a step Back comes out of, and other lines none', () => {
+    const plain: Place = { scope: '', page: 'chart', id: 'organisation-chart' }
+    expect(stepBetween(plain, { ...plain, focus: 'warehouse' })).toBe('push')
+    expect(stepBetween(plain, { ...plain, lines: 'exceptions' })).toBe('replace')
+  })
+
+  it('comes from the screen', () => {
+    expect(placeOf({ open: { path: '', name: 'Acme', view: { id: 'oc', name: 'Chart', kind: 'chart', focus: 'warehouse' } } }))
+      .toEqual({ scope: '', page: 'chart', id: 'oc', focus: 'warehouse' })
   })
 })

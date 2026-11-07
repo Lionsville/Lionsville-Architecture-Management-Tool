@@ -110,6 +110,18 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   sheet: ['names', 'overview'],
 }
 
+/**
+ * What an organisation chart's Lines menu draws: nothing, the lines of the
+ * person picked, every dotted line, every exception. Kept in the address with
+ * the unit a chart is focused on, so a link and an agent reach that reading.
+ */
+export const CHART_LINES = ['off', 'person', 'dotted', 'exceptions'] as const
+export type ChartLines = (typeof CHART_LINES)[number]
+
+export function isChartLines(said: unknown): said is ChartLines {
+  return typeof said === 'string' && (CHART_LINES as readonly string[]).includes(said)
+}
+
 /** Whether a page has this tab; a page with none has no tab at all. */
 export function isPageTab(page: Page | undefined, tab: unknown): tab is string {
   return page !== undefined && typeof tab === 'string' && (PAGE_TABS[page] ?? []).includes(tab)
@@ -164,6 +176,10 @@ export type Destination = {
   readonly pair?: string
   /** What a sheet is coloured by, the reader's until kept: one of its questions, `none` for none. */
   readonly colour?: string
+  /** The unit an organisation chart is focused on: the page draws it and what is under it, with one line for the way up. */
+  readonly focus?: string
+  /** Which lines an organisation chart draws. */
+  readonly lines?: ChartLines
 }
 
 /** What is up over a scope, or on its home. Absent on a Screen means the active view itself. */
@@ -207,6 +223,9 @@ export type ScreenView = {
   readonly pair?: string
   /** What a sheet or a map is coloured by, as a destination says it. */
   readonly colour?: string
+  /** On an organisation chart: the unit it is focused on, and the lines it draws, where somebody chose them. */
+  readonly focus?: string
+  readonly lines?: ChartLines
 }
 
 export type Screen = {

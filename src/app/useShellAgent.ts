@@ -21,7 +21,7 @@ import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scop
 import type { DesignDiagram } from '../model/types'
 import type { PeopleView } from '../agent/people'
 import type { ScopesView } from '../agent/scopeTree'
-import type { Destination, FramePanel, MovedBy, Page, Screen } from '../agent/screen'
+import type { ChartLines, Destination, FramePanel, MovedBy, Page, Screen } from '../agent/screen'
 import type { FrameState, FrameStore } from './frame/frameStore'
 import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
@@ -446,6 +446,7 @@ function viewInFrame(open: NonNullable<Screen['open']>, held: FrameState): NonNu
     view: {
       ...view,
       ...(said.tab !== undefined ? { tab: said.tab } : {}), ...(said.group !== undefined ? { group: said.group } : {}), ...(said.pair !== undefined ? { pair: said.pair } : {}),
+      ...(said.focus !== undefined ? { focus: said.focus } : {}), ...(said.lines !== undefined ? { lines: said.lines as ChartLines } : {}),
     },
   }
 }

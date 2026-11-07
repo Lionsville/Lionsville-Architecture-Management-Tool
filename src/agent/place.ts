@@ -59,6 +59,10 @@
  * A finding on its way to being fixed goes with the place, as `finding`, so that a
  * link reaches the same band and a reload keeps it ({@link writeFinding}).
  *
+ * An organisation chart may carry its reading (`focus`, a unit; `lines`, what
+ * the Lines menu draws), since a chart focused on one unit is somewhere a link
+ * and an agent go to: `#/-/chart/organisation-chart?focus=warehouse&lines=dotted`.
+ *
  * The leading `/` — `place?` in the old form — is what tells a place
  * from anything else a fragment may carry: a source provider reads the
  * address too (`SourceConnect.fromLocation`), and a fragment that is not a
@@ -69,9 +73,9 @@
  * the history (`app/placeHistory.ts`), and a test here says that every place
  * written is read back the same.
  */
-import { FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, PAGE_TABS, PAGES, VIEW_PAGES, viewPage } from './screen'
+import { FRAME_PAGES, HOME_PAGES, isChartLines, isFramePanel, isPageTab, PAGE_TABS, PAGES, VIEW_PAGES, viewPage } from './screen'
 import type { DesignDiagram } from '../model/types'
-import type { Destination, Page, Screen } from './screen'
+import type { ChartLines, Destination, Page, Screen } from './screen'
 
 /** A destination that names its scope: what the history holds, and what an address carries. */
 export type Place = Destination & { readonly scope: string }
@@ -91,7 +95,7 @@ export const PLACE_STATE_KEY = 'lvarch.place'
 /** The segment that ends a scope's path in a place's address. */
 const SCOPE_END = '-'
 
-const KEYS = new Set(['scope', 'page', 'id', 'tab', 'look', 'select', 'panel', 'colour', 'finding', 'day', 'group', 'pair'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab', 'look', 'select', 'panel', 'colour', 'finding', 'day', 'group', 'pair', 'focus', 'lines'])
 
 /**
  * What a list says about itself in the address (`widgets/kit/listView.ts`):
@@ -105,7 +109,7 @@ const isListKey = (key: string) => key === 'q' || key === 'group' || key === 'so
 const isListKeyOn = (page: string | undefined, key: string) => isListKey(key) && !(page === 'conway' && key === 'group')
 
 /** What may follow the path, as a query: everything a place says beyond its scope, page and record. */
-const QUERY_KEYS = new Set(['id', 'tab', 'look', 'select', 'panel', 'colour', 'finding', 'day', 'group', 'pair'])
+const QUERY_KEYS = new Set(['id', 'tab', 'look', 'select', 'panel', 'colour', 'finding', 'day', 'group', 'pair', 'focus', 'lines'])
 
 /** One segment of the path, escaped: a scope's own segment that is the scope's end is written so it cannot be read as one. */
 function segment(text: string): string {
@@ -133,6 +137,8 @@ export function writePlace(place: Place): string {
   if (place.day !== undefined) query.set('day', place.day)
   if (place.group !== undefined) query.set('group', place.group)
   if (place.pair !== undefined) query.set('pair', place.pair)
+  if (place.focus !== undefined) query.set('focus', place.focus)
+  if (place.lines !== undefined) query.set('lines', place.lines)
   const rest = [query.toString(), place.list ?? ''].filter(Boolean).join('&')
   return `#${PLACE_PATH_PREFIX}${path.join('/')}${rest === '' ? '' : `?${rest}`}`
 }
@@ -210,7 +216,7 @@ function readQueryForm(text: string): Place | undefined {
 }
 
 /** Every key of a query once, and only the ones allowed: or nothing. */
-function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'look' | 'select' | 'panel' | 'colour' | 'finding' | 'day' | 'group' | 'pair', string>> | undefined {
+function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'look' | 'select' | 'panel' | 'colour' | 'finding' | 'day' | 'group' | 'pair' | 'focus' | 'lines', string>> | undefined {
   const out: Record<string, string> = {}
   for (const [key, value] of query) {
     if (!allowed.has(key) || key in out) return undefined
@@ -221,9 +227,12 @@ function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<
 
 function placeFrom(
   scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined, panel?: string, day?: string,
-  onView: { readonly group?: string; readonly pair?: string; readonly look?: string; readonly colour?: string } = {},
+  onView: { readonly group?: string; readonly pair?: string; readonly look?: string; readonly colour?: string; readonly focus?: string; readonly lines?: string } = {},
 ): Place | undefined {
   if (page !== undefined && !isPage(page)) return undefined
+  // A chart's reading, on a chart's address and nowhere else; the Lines menu has its own words.
+  if ((onView.focus !== undefined || onView.lines !== undefined) && page !== 'chart') return undefined
+  if (onView.lines !== undefined && !isChartLines(onView.lines)) return undefined
   if (tab !== undefined && !(page === undefined ? anyPageHasTab(tab) : isPageTab(page, tab))) return undefined
   if (panel !== undefined && !isFramePanel(panel)) return undefined
   if (day !== undefined && !(isLookDay(day) && page !== undefined && VIEW_PAGES.includes(page))) return undefined
@@ -235,6 +244,8 @@ function placeFrom(
     // What a view is coloured by is a word the view itself judges.
     ...(onView.colour !== undefined && page !== undefined && READINGS.includes(page) ? { colour: onView.colour } : {}),
     ...(onView.group ? { group: onView.group } : {}), ...(onView.pair ? { pair: onView.pair } : {}),
+    ...(onView.focus ? { focus: onView.focus } : {}),
+    ...(onView.lines !== undefined ? { lines: onView.lines as ChartLines } : {}),
   }
 }
 
@@ -329,6 +340,7 @@ export function placeOf(screen: Screen): Place | undefined {
       ? {
           scope, page: viewPage(diagramKind(view.kind)), id: view.id, ...(view.day !== undefined ? { day: view.day } : {}), ...beside,
           ...(view.tab !== undefined ? { tab: view.tab } : {}), ...(view.colour !== undefined ? { colour: view.colour } : {}), ...(view.group !== undefined ? { group: view.group } : {}), ...(view.pair !== undefined ? { pair: view.pair } : {}),
+          ...(view.focus !== undefined ? { focus: view.focus } : {}), ...(view.lines !== undefined ? { lines: view.lines } : {}),
         }
       : undefined
   }
@@ -345,16 +357,19 @@ export function placeOf(screen: Screen): Place | undefined {
   return undefined
 }
 
-/** What a place says of the view it opens beyond which view: its reading, what it is grouped by, the pair chosen. */
-export function viewFacetsOf(to: Destination, of: string): { of: string; tab?: string; group?: string; pair?: string } | undefined {
-  if (to.tab === undefined && to.group === undefined && to.pair === undefined) return undefined
-  return { of, ...(to.tab !== undefined ? { tab: to.tab } : {}), ...(to.group !== undefined ? { group: to.group } : {}), ...(to.pair !== undefined ? { pair: to.pair } : {}) }
+/** What a place says of the view it opens beyond which view: its reading, what it is grouped by, the pair chosen, a chart's focus and lines. */
+export function viewFacetsOf(to: Destination, of: string): { of: string; tab?: string; group?: string; pair?: string; focus?: string; lines?: string } | undefined {
+  if (to.tab === undefined && to.group === undefined && to.pair === undefined && to.focus === undefined && to.lines === undefined) return undefined
+  return {
+    of, ...(to.tab !== undefined ? { tab: to.tab } : {}), ...(to.group !== undefined ? { group: to.group } : {}), ...(to.pair !== undefined ? { pair: to.pair } : {}),
+    ...(to.focus !== undefined ? { focus: to.focus } : {}), ...(to.lines !== undefined ? { lines: to.lines } : {}),
+  }
 }
 
-/** The same place: the same scope, page, id, tab, look, panel, colour, list and finding carried, day and what a view keeps. */
+/** The same place: the same scope, page, id, tab, look, panel, colour, list and finding carried, day, what a view keeps, and on a chart its focus and lines. */
 export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
   if (a === undefined || b === undefined) return a === b
-  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.look === b.look && a.panel === b.panel && a.colour === b.colour && a.list === b.list && a.finding === b.finding && a.day === b.day && a.group === b.group && a.pair === b.pair
+  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.look === b.look && a.panel === b.panel && a.colour === b.colour && a.list === b.list && a.finding === b.finding && a.day === b.day && a.group === b.group && a.pair === b.pair && a.focus === b.focus && a.lines === b.lines
 }
 
 /** The pages where moving from one record to the next is choosing, not going somewhere. */
@@ -377,6 +392,8 @@ export function stepBetween(from: Place | undefined, to: Place): 'push' | 'repla
   if (from === undefined) return 'replace'
   if (samePlace(from, to)) return 'none'
   if (from.scope === to.scope && from.page === to.page && to.page !== undefined && RECORD_PAGES.includes(to.page) && from.panel === to.panel) return 'replace'
+  // A focus is going somewhere: Back comes out of it. The lines drawn are not.
+  if (from.focus !== to.focus) return 'push'
   // Another tab on the same page is choosing as well, whichever page has tabs.
   if (from.scope === to.scope && from.page === to.page && from.id === to.id && from.panel === to.panel) return 'replace'
   return 'push'

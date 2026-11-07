@@ -27,7 +27,7 @@
  */
 import type { CommandRefusal } from '../model/reducer'
 import type { MergeLinkRefusal } from '../observations/merge'
-import { PAGE_TABS } from './screen'
+import { CHART_LINES, PAGE_TABS } from './screen'
 import { isPersonRef } from '../model/person'
 import { PERSON_KINDS, PERSON_STATES } from '../people/person'
 import type { PeopleRefusal } from '../people/person'
@@ -3528,6 +3528,8 @@ const SPECS = [
         group: { type: 'string', description: 'On a Conway map: the id of the unit type to group it by.' },
         pair: { type: 'string', description: 'On a Conway map: the pair to choose, its two unit ids with a comma between, the side nobody owns left empty.' },
         colour: { type: 'string', description: 'What a sheet is coloured by: coveredBy, who, domains, lifecycle, retiring, aspect:<key>, or none. The reader\'s own, written nowhere.' },
+        focus: { type: 'string', description: 'On an organisation chart: the unit to focus on, which draws it and what is under it.' },
+        lines: { type: 'string', enum: [...CHART_LINES], description: 'On an organisation chart: which lines to draw. off: none; person: the lines of the person picked; dotted: every dotted line; exceptions: every departure from the model.' },
       },
       additionalProperties: false,
     },

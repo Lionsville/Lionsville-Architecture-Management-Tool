@@ -114,11 +114,14 @@ export function usePlaceListView(of: string): readonly [ListView, (next: ListVie
   return [view, set]
 }
 
-/** What a view keeps in the address beside its id: its reading, what it is grouped by, the pair chosen. */
+/** What a view keeps in the address beside its id: its reading, what it is grouped by, the pair chosen, a chart's focus and lines. */
 export type ViewFacets = {
   readonly tab?: string | undefined
   readonly group?: string | undefined
   readonly pair?: string | undefined
+  /** An organisation chart: the unit it is focused on, and the lines it draws. */
+  readonly focus?: string | undefined
+  readonly lines?: string | undefined
 }
 
 export type PlaceFacets = {

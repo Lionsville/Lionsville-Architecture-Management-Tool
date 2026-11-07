@@ -18,7 +18,7 @@ import { isCheckKey } from '../model/checkCatalogue'
 import type { HostModel } from '../model/hostModel'
 import type { DesignDiagram } from '../model/types'
 import type { Driving } from './driving'
-import { arrived, HOME_PAGES, isPageTab, NEEDS_ID, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
+import { arrived, CHART_LINES, HOME_PAGES, isChartLines, isPageTab, NEEDS_ID, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
 import { isLookDay } from './place'
 import type { AgentAnswer } from './tools'
@@ -385,6 +385,12 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
       return refused('agent.unknownId', `element ${asked.select} in ${where}`)
     }
   }
+  if ((asked.focus !== undefined || asked.lines !== undefined) && target.page !== 'chart') {
+    return refused('agent.badArguments', '"focus" and "lines" are for page chart')
+  }
+  if (asked.lines !== undefined && !isChartLines(asked.lines)) {
+    return refused('agent.badArguments', `"lines" must be one of: ${CHART_LINES.join(', ')}`)
+  }
   return {
     ...target,
     ...(asked.tab !== undefined ? { tab: asked.tab } : {}),
@@ -394,6 +400,8 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     ...(target.page === 'conway' && asked.group !== undefined ? { group: asked.group } : {}),
     ...(target.page === 'conway' && asked.pair !== undefined ? { pair: asked.pair } : {}),
     ...(asked.colour !== undefined ? { colour: asked.colour } : {}),
+    ...(asked.focus !== undefined ? { focus: asked.focus } : {}),
+    ...(asked.lines !== undefined ? { lines: asked.lines } : {}),
   }
 }
 
