@@ -391,7 +391,7 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
       {gone < 3 && <HelpMenu parts={parts} />}
       {overflow && <BarEnd overflow={{ ...overflow, folded: foldedEntries }} s={s} />}
       {/* A host with a menu bar has no ⋯ of its own, and needs one only for what has folded. */}
-      {!overflow && foldedEntries.length > 0 && <MoreMenu items={foldedEntries} size="small" data-guide="frame.rowMore" />}
+      {!overflow && foldedEntries.length > 0 && <MoreMenu items={foldedEntries} size="small" />}
     </>
   )
 }

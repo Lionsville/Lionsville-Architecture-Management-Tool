@@ -32,7 +32,7 @@ export const CONTROL_NAMES = [
   'prefs.page', 'prefs.density', 'prefs.textSize', 'settings.page',
   // The frame: its two rows, whatever screen is up.
   'drawing.bar', 'drawing.links', 'drawing.export', 'drawing.edit', 'drawing.openPage', 'drawing.editorBar', 'drawing.save', 'drawing.done', 'drawing.shapeStrip', 'drawing.chooser',
-  'frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.textSize', 'frame.textSmaller', 'frame.textSizeNow', 'frame.textLarger', 'frame.textSizeReset', 'frame.rowMore', 'frame.tree', 'frame.switcher', 'frame.yourWork', 'frame.activity',
+  'frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.textSize', 'frame.textSmaller', 'frame.textSizeNow', 'frame.textLarger', 'frame.textSizeReset', 'frame.tree', 'frame.switcher', 'frame.yourWork', 'frame.activity',
   // Every page (ADR-0044): a column's seam, on each page that has one;
   // the product's site under Help in ⋯, and where the desktop app is had, said where an agent needs it.
   'page.seam', 'shell.website', 'agent.download',

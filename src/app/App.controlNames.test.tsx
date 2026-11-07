@@ -233,9 +233,11 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByTestId('topics-catalogue', {}, { timeout: 5000 })
   }]],
   // The overflow menu's Help, and Connect an agent from it, in a browser tab: where the desktop app is had (ADR-0044 §6).
-  [['the frame, on any screen', ['frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.tree', 'frame.switcher'], async () => {
+  [['the frame, on any screen', ['frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.tree', 'frame.switcher', 'frame.textSize', 'frame.textSmaller', 'frame.textSizeNow', 'frame.textLarger'], async () => {
     show(false)
     await screen.findByTestId('frame-places')
+  }], ['the text size, its steps', ['frame.textSizeReset'], async () => {
+    fireEvent.click(await screen.findByTestId('text-size-now'))
   }], ['Your work', ['frame.yourWork'], async () => {
     fireEvent.click(await screen.findByTestId('saved-indicator'))
   }], ['Activity', ['frame.activity'], async () => {
@@ -676,7 +678,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     renderApp({ repositories: heldRepositories(example), visiting: { name: 'One', onKeep: () => undefined, onLeave: () => undefined } })
     await screen.findByTestId('example-band')
   }]],
-  [['the preferences', ['prefs.page', 'prefs.density'], async () => {
+  [['the preferences', ['prefs.page', 'prefs.density', 'prefs.textSize'], async () => {
     renderApp({ repositories: heldRepositories(example), boot: { initialProject: undefined, initialFramePage: 'preferences' } })
     await screen.findByTestId('preferences-page')
   }]],

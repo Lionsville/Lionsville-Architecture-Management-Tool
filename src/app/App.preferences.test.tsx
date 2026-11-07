@@ -102,6 +102,27 @@ describe('the application scope', () => {
   })
 })
 
+describe('the text size', () => {
+  afterEach(() => { document.documentElement.style.fontSize = '' })
+
+  it('moves from the top row with nothing open, lands on the root and is remembered', async () => {
+    const view = show({ boot: { initialProject: undefined } })
+    fireEvent.click(await screen.findByTestId('text-larger'))
+    await waitFor(() => expect(document.documentElement.style.fontSize).toBe('112%'))
+    await waitFor(async () => expect(await view.preferences.read()).toMatchObject({ textSize: 112 }))
+    expect(screen.getByTestId('text-size-now').textContent).toContain('112%')
+  })
+
+  it('answers the command from the View menu, and goes back to the default', async () => {
+    const view = show({ boot: { initialProject: undefined } })
+    await screen.findByTestId('text-larger')
+    view.send({ type: 'textSize', how: 'larger' })
+    await waitFor(() => expect(document.documentElement.style.fontSize).toBe('112%'))
+    view.send({ type: 'textSize', how: 'default' })
+    await waitFor(() => expect(document.documentElement.style.fontSize).toBe(''))
+  })
+})
+
 describe('the update check', () => {
   it('is absent on a host with no store for it', async () => {
     const view = show()
