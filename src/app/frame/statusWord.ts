@@ -13,6 +13,7 @@
  */
 import type { Language, StringKey, Translate } from '../../i18n'
 import type { DocumentStatus } from '../../projects/documentSession'
+import type { SourceWord, StatusTone } from '../../ports/ProviderParts'
 import { clockTime } from '../clockTime'
 
 export type StatusFacts = {
@@ -30,30 +31,38 @@ export type StatusFacts = {
   readonly transient?: boolean | undefined
   /** ...which is nothing to worry about in the example, where nothing being kept is the point. */
   readonly visiting?: boolean | undefined
+  /** What the source says of itself, ahead of all this: it alone knows what a change has met on the way. */
+  readonly source?: SourceWord | undefined
 }
 
 const WORDS: Partial<Record<DocumentStatus, StringKey>> = {
   dirty: 'shell.unsaved', saving: 'shell.saving', 'external-changed': 'shell.changedElsewhere', conflict: 'shell.conflict',
 }
 
-export type StatusWord = { readonly text: string; readonly alarm: boolean }
+export type StatusWord = { readonly text: string; readonly alarm: boolean; readonly tone: StatusTone; readonly short?: string }
+
+const said = (text: string, tone: StatusTone): StatusWord => ({ text, tone, alarm: tone === 'problem' || tone === 'waiting' })
+
+/** A mark for each tone: the shape carries it, for a greyscale print and for anybody who cannot tell the colours apart. */
+export const TONE_MARK: Readonly<Record<StatusTone, string>> = { saved: '✓', busy: '◌', waiting: '▲', offline: '○', problem: '●', reading: '◉' }
 
 export function statusWord(facts: StatusFacts, language: Language, s: Translate): StatusWord {
-  const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected, place, transient } = facts
-  if (saveFailed) return { text: s('shell.saveRefused'), alarm: true }
-  if (status === 'conflict' || status === 'external-changed') return { text: s(WORDS[status]!), alarm: true }
+  const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected, place, transient, source } = facts
+  if (source) return { text: source.text, tone: source.tone, alarm: source.tone === 'problem' || source.tone === 'waiting', ...(source.short === undefined ? {} : { short: source.short }) }
+  if (saveFailed) return said(s('shell.saveRefused'), 'problem')
+  if (status === 'conflict' || status === 'external-changed') return said(s(WORDS[status]!), 'problem')
   if (connected === false) {
     const waiting = status === 'dirty' || status === 'saving'
-    return { text: s(waiting ? 'frame.offlineWaiting' : 'frame.offline'), alarm: waiting }
+    return waiting ? said(s('frame.offlineWaiting'), 'waiting') : said(s('frame.offline'), 'offline')
   }
   const at = (word: string) => (place ? `${word} · ${place}` : word)
-  if (transient && place && status !== 'dirty' && status !== 'saving') return { text: place, alarm: !facts.visiting }
-  if (status === undefined) return { text: place ?? s('frame.nothingWaiting'), alarm: false }
+  if (transient && place && status !== 'dirty' && status !== 'saving') return said(place, facts.visiting ? 'saved' : 'waiting')
+  if (status === undefined) return said(place ?? s('frame.nothingWaiting'), 'saved')
   if (publishesSteps) {
-    if (!sourceStatus) return { text: '', alarm: false }
-    return { text: s(status === 'dirty' || status === 'saving' ? 'shell.stepsSending' : 'shell.stepsSent'), alarm: false }
+    if (!sourceStatus) return { text: '', alarm: false, tone: 'saved' }
+    return status === 'dirty' || status === 'saving' ? said(s('shell.stepsSending'), 'busy') : said(s('shell.stepsSent'), 'saved')
   }
   const word = WORDS[status]
-  if (word) return { text: s(word), alarm: false }
-  return { text: at(savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')), alarm: false }
+  if (word) return said(s(word), 'busy')
+  return said(at(savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')), 'saved')
 }

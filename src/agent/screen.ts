@@ -30,7 +30,7 @@ export const PAGES = [
   'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
   'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics', 'blocks',
-  'work', 'activity', 'settings', 'preferences',
+  'work', 'activity', 'settings', 'preferences', 'agents',
 ] as const
 
 export type Page = (typeof PAGES)[number]
@@ -75,16 +75,17 @@ export function viewPage(kind: DesignDiagram['kind']): Page {
  * agent reaches them, and moving to one moves nothing else. A scope's settings are
  * a page of its home.
  */
-export const FRAME_PANELS = ['work', 'activity'] as const
+export const FRAME_PANELS = ['work', 'activity', 'settle'] as const
 export type FramePanel = (typeof FRAME_PANELS)[number]
-export const FRAME_PAGES: readonly Page[] = [...FRAME_PANELS, 'preferences']
+// Settling is a panel with no page of its own: it is reached only while something waits to be settled.
+export const FRAME_PAGES: readonly Page[] = ['work', 'activity', 'preferences']
 
 export function isFramePanel(value: unknown): value is FramePanel {
   return (FRAME_PANELS as readonly unknown[]).includes(value)
 }
 
 /** Pages that live on a scope's home rather than in the workspace. */
-export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks', 'settings', ...FRAME_PAGES]
+export const HOME_PAGES: readonly Page[] = ['home', 'register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks', 'settings', 'agents', ...FRAME_PAGES]
 
 /**
  * Which pages have tabs, and the tabs each has: what `?tab=` may say
@@ -104,6 +105,7 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   decisions: ['all', 'here', 'above'],
   roadmap: ['plans', 'findings'],
   settings: ['general', 'links', 'exports', 'landscapes'],
+  agents: ['changes', 'connect'],
   /** A Conway map's two readings. */
   conway: ['grid', 'lines'],
   plan: ['changes', 'interfaces', 'units', 'milestones', 'restsOn', 'document', 'boards', 'principles', 'history', 'comments'],
@@ -212,6 +214,8 @@ export type ScreenPage =
   | { readonly page: 'blocks'; readonly id?: string; readonly tab?: string }
   | { readonly page: 'settings'; readonly tab?: string }
   | { readonly page: 'preferences' }
+  /** What agents did, and how to connect one, where the source has a page for it. */
+  | { readonly page: 'agents'; readonly tab?: string }
 
 /** The active view of an open scope, named so a reader does not have to look it up. */
 export type ScreenView = {

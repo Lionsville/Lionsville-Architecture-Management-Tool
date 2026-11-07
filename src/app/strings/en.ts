@@ -1737,6 +1737,7 @@ export const EN = {
   'frame.newView': 'New view',
   'frame.help': 'Help',
   'frame.agent': 'Agent',
+  'frame.agents': 'Agents',
   'frame.findScope': 'Find a scope',
   'frame.treeMenu': 'Tree options',
   'frame.scopeMenu': 'More for {name}',

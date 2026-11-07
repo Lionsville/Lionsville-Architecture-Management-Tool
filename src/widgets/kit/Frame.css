@@ -40,6 +40,14 @@
   appearance: none; border: 0; background: none; font: inherit; cursor: pointer; color: var(--ink-2); white-space: nowrap;
   height: var(--ctl-h); padding-inline: var(--s-2); border-radius: var(--r-3); max-width: 240px; overflow: hidden; text-overflow: ellipsis;
 }
+.kit-frame__status { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--t-base); }
+.kit-frame__status-word { overflow: hidden; text-overflow: ellipsis; }
+.kit-frame__status-short { display: none; }
+.kit-frame__status-mark { flex: 0 0 auto; }
+.kit-frame__status[data-tone='saved'] .kit-frame__status-mark { color: var(--ok); }
+.kit-frame__status[data-tone='waiting'] .kit-frame__status-mark { color: var(--warn); }
+.kit-frame__status[data-tone='problem'] .kit-frame__status-mark { color: var(--bad); }
+.kit-frame__accent { flex: 0 0 auto; height: 4px; background: var(--accent); }
 .kit-frame__status:hover { background: var(--surface-2); color: var(--ink); }
 .kit-frame__status[data-alarm='true'] { color: var(--bad); font-weight: var(--fw-strong); }
 .kit-frame__kbd { font-family: var(--font-mono); font-size: var(--t-xs); color: var(--ink-2); border: 1px solid var(--line); border-radius: 3px; padding-inline: 4px; flex: 0 0 auto; }
@@ -88,4 +96,6 @@
   .kit-frame__find span { display: none; }
   .kit-frame__find { flex: 0 0 36px; justify-content: center; padding-inline: 0; }
   .kit-frame__status { max-width: 130px; min-width: 40px; flex-shrink: 1; }
+  .kit-frame__status:has(.kit-frame__status-short) .kit-frame__status-word { display: none; }
+  .kit-frame__status-short { display: inline; }
 }

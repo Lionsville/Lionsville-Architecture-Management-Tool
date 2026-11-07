@@ -52,7 +52,7 @@ import { detectBrowserLanguage, translator } from '../i18n'
 import {
   composeShell, desktopCommandChannel, EXAMPLE_OFFERS, INTERCHANGE, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceBarButton, sourceChip, sourceChipFace, sourceChipPanel,
-  sourceConnected, sourceDescription, sourceDestination, sourcePreferencesPanel, sourceYourWork, sourceProblemAction, sourceRecentActivity,
+  sourceConnected, sourceDescription, sourceDestination, sourceFrameOf, sourcePreferencesPanel, sourceYourWork, sourceProblemAction, sourceRecentActivity,
   sourceSayings, withDesktopDrawing,
 } from './composition'
 import type { RegisteredConnect } from './composition'
@@ -600,6 +600,7 @@ function renderApp(
           waysIn: waysIn(),
           preferencesPanel: sourcePreferencesPanel(shell.source),
           ...yourWorkPart(),
+          frame: sourceFrameOf(shell.source),
           own: shell.own,
           historyNoteKey: shell.historyNoteKey,
           historyKept: shell.historyKept,

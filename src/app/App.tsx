@@ -816,7 +816,10 @@ function useShellBase(props: AppProps) {
   })
   const commands = useShellCommands({
     commands: host.commands, hostMenu: host.hostMenu, onWindowZoom: host.onWindowZoom, onConnect: hostWay?.onConnect, onReopen: hostWay?.onReopen, prefs,
-    openPreferences: machine.setOpen, openAgent: agentServer.openDialog, share: share.share, hostControls,
+    openPreferences: machine.setOpen,
+    // A source with a page for agents answers the menu there, from wherever the app is; every other keeps the dialog.
+    openAgent: props.provider?.frame?.Agents ? () => shellAgent.openSomewhere({ scope: ROOT_SCOPE, page: 'agents', tab: 'connect' }) : agentServer.openDialog,
+    share: share.share, hostControls,
   })
   useOpeningFailures({ failure: boot.sourceFailure, failureKey: boot.sourceFailureKey, notify: toasts.notify, s })
   // The mouse's back and forward buttons, where the host asks for Back and Forward (ADR-0033).

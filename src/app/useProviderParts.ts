@@ -136,7 +136,7 @@ export function useProviderParts(deps: {
   const overflowSource = menus.length > 0 ? { sourceEntries, onSourceWork } : undefined
 
   return {
-    chromes, AgentPanel, ChipPanel, ChipFace, BarButton, PreferencesPanel, YourWork: deps.provider.yourWork, own, openScope, takeScopeSession, openProvider, chip,
+    chromes, AgentPanel, ChipPanel, ChipFace, BarButton, PreferencesPanel, YourWork: deps.provider.frame?.YourWork ?? deps.provider.yourWork, own, openScope, takeScopeSession, openProvider, chip,
     offered, overflowSource,
   }
 }

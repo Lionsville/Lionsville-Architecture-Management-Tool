@@ -1506,6 +1506,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.newView': 'Nieuwe weergave',
   'frame.help': 'Help',
   'frame.agent': 'Agent',
+  'frame.agents': 'Agents',
   'frame.findScope': 'Zoek een scope',
   'frame.treeMenu': 'Opties van de boom',
   'frame.scopeMenu': 'Meer voor {name}',

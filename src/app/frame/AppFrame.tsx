@@ -33,6 +33,7 @@ import type { MenuEntry } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
 import { PlaceFacetsContext, PlaceListContext, PlaceReadingContext, PlaceTabContext } from '../../widgets/placeTab'
 import type { PlaceReading, PlaceTo, ViewFacets } from '../../widgets/placeTab'
+import { PageDialog } from '../../widgets/PageDialog'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
 import { frameBarButton, frameChip, frameOverflow } from '../AppPanels'
@@ -56,6 +57,7 @@ import { newViewChoices } from '../organisation/newViewChoices'
 import { registerSummary } from '../organisation/register'
 import { plural } from '../../i18n/strings'
 import { ShortcutsSheet } from './ShortcutsSheet'
+import { TONE_MARK } from './statusWord'
 import { DESKTOP_APP_LINK, WEBSITE_LINK, HELP_MENU, offered } from '../../platform/menu'
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
@@ -110,7 +112,20 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
       : {},
     choose: (next: PlaceReading) => { frame.set({ colour: next.colour, day: next.day, readingOf: viewId }); lookAgain() },
   }), [state.colour, state.day, state.readingOf, viewId, frame, lookAgain])
-  const tree = (onHomeBare || state.pinned) && !facts?.bare && <TreeFor parts={parts} at={at} page={page} />
+  const sourceFrame = parts.props.provider?.frame
+  const holding = !parts.nav.project && (sourceFrame?.holding?.() ?? false)
+  const Hold = sourceFrame?.Hold
+  const Settle = sourceFrame?.Settle
+  const slot = { own: parts.provider.own, session: parts.provider.openScope, open: go }
+  // A source with no page of its own for agents keeps the dialog: the address lands there, on the home.
+  const noAgentsPage = page === 'agents' && sourceFrame?.Agents === undefined
+  const openAgentDialog = parts.agentServer.bar.onOpen
+  useEffect(() => {
+    if (!noAgentsPage) return
+    go({ scope: at, page: 'home' })
+    openAgentDialog()
+  }, [noAgentsPage, at, go, openAgentDialog])
+  const tree = (onHomeBare || state.pinned) && !facts?.bare && !holding && <TreeFor parts={parts} at={at} page={page} />
   return (
     <FrameCommandsContext.Provider value={lines}>
       <PlaceTabContext.Provider value={tabs}>
@@ -126,9 +141,13 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           rowTwoEnd={<RowTwoEnd parts={parts} at={at} page={page} />}
           band={<FrameBands parts={parts} facts={facts} />}
           tree={tree || undefined}
-          panel={state.panel === 'work' ? <YourWorkPanel parts={parts} facts={facts} /> : state.panel === 'activity' ? <ActivityPanel parts={parts} facts={facts} /> : undefined}
+          panel={state.panel === 'work' ? <YourWorkPanel parts={parts} facts={facts} />
+            : state.panel === 'activity' ? <ActivityPanel parts={parts} facts={facts} />
+              : state.panel === 'settle' && Settle ? <Settle {...slot} /> : undefined}
+          accented={Boolean(parts.props.provider?.accent)}
         >
-          {children}
+          {holding && Hold ? <Hold {...slot} /> : children}
+          {!holding && page === 'agents' && <AgentsPlace parts={parts} at={at} />}
         </Frame>
         <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} s={s} />
       </PlaceReadingContext.Provider>
@@ -212,6 +231,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
   const send = bus.send
   const can = canOf(parts, parts.frame.get().screen)
   const canKey = JSON.stringify(can)
+  const hasAgentsPage = parts.props.provider?.frame?.Agents !== undefined
   return useMemo(() => {
     const rows: PaletteLine[] = []
     const place = (one: FramePlace, scope: ScopePath) => rows.push({ id: `place:${one.page}`, group: s('frame.places'), label: s(one.label), run: () => go({ scope, page: one.page }) })
@@ -223,12 +243,25 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     rows.push({ id: 'place:work', group: s('frame.places'), label: s('frame.yourWork'), run: () => go({ scope: at, page: 'work' }) })
     rows.push({ id: 'place:activity', group: s('frame.places'), label: s('shell.activity'), run: () => go({ scope: at, page: 'activity' }) })
     rows.push({ id: 'place:settings', group: s('frame.places'), label: s('settings.title'), run: () => go({ scope: at, page: 'settings' }) })
+    if (hasAgentsPage) rows.push({ id: 'place:agents', group: s('frame.places'), label: s('frame.agents'), run: () => go({ scope: ROOT_SCOPE, page: 'agents' }) })
     const mac = isMac()
     commandsTable(JSON.parse(canKey), mac ? 'darwin' : 'other').forEach((row: CommandRow) => {
       rows.push({ id: row.id, group: s('frame.commands'), label: s(row.label), ...(row.keys ? { keys: keyCap(row.keys, mac) } : {}), run: () => send(row.command) })
     })
     return (asked: string) => (asked.trim() === '' ? rows : rows.filter((row) => matchesQuery(asked, [row.label])))
-  }, [s, at, go, send, canKey])
+  }, [s, at, go, send, canKey, hasAgentsPage])
+}
+
+/** The source's own page for agents: a place like any other, with an address and a way in with nothing open. */
+function AgentsPlace({ parts, at }: { parts: ShellParts; at: ScopePath }) {
+  const Agents = parts.props.provider?.frame?.Agents
+  const { agent, agentServer: { bar }, services: { s } } = parts
+  if (!Agents) return null
+  return (
+    <PageDialog open onClose={() => agent.openSomewhere({ scope: at, page: 'home' })} aria-label={s('frame.agents')}>
+      <Agents own={parts.provider.own} session={parts.provider.openScope} open={agent.openSomewhere} {...(parts.props.agent ? { localAgent: bar.onOpen } : {})} />
+    </PageDialog>
+  )
 }
 
 function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath; page: Page | undefined; onDone?: () => void }) {
@@ -389,10 +422,14 @@ function SafeWords({ parts, state }: { parts: ShellParts; state: FrameState }) {
     <>
       {word.text !== '' && (
         <button
-          type="button" className="kit-frame__status" data-testid="saved-indicator" data-guide="frame.status" data-alarm={word.alarm || undefined}
-          aria-expanded={state.panel === 'work'} title={word.text} onClick={() => togglePanel('work')}
+          type="button" className="kit-frame__status" data-testid="saved-indicator" data-guide="frame.status" data-alarm={word.alarm || undefined} data-tone={word.tone}
+          aria-expanded={state.panel === 'work'} aria-label={word.text} title={word.text} onClick={() => togglePanel('work')}
         >
-          {word.text}
+          <span className="kit-frame__status-mark" aria-hidden>{TONE_MARK[word.tone]}</span>
+          {/* Below 1100 px the word goes to icon and count, never to a bare dot. */}
+          <span className="kit-frame__status-word" aria-live="polite">{word.text}</span>
+          {word.short !== undefined && <span className="kit-frame__status-short" aria-hidden>{word.short}</span>}
+          <CaretIcon size={12} />
         </button>
       )}
       {here.length > 0 && <AlsoHere names={here} s={s} />}
@@ -406,8 +443,18 @@ function SafeWords({ parts, state }: { parts: ShellParts; state: FrameState }) {
 }
 
 function AgentButton({ parts }: { parts: ShellParts }) {
-  const { services: { s }, agentServer: { bar } } = parts
+  const { services: { s }, agentServer: { bar }, agent } = parts
   const connected = bar.status.kind === 'connected'
+  if (parts.props.provider?.frame?.Agents) {
+    return (
+      <Button
+        variant="quiet" size="small" onClick={() => agent.openSomewhere({ scope: ROOT_SCOPE, page: 'agents' })} data-testid="agent-glyph" data-guide="frame.agent" data-state={bar.status.kind}
+        icon={<AgentIcon size={14} filled={connected} />}
+      >
+        {s('frame.agents')}
+      </Button>
+    )
+  }
   return (
     <Tooltip title={agentTip(bar.status, s)}>
       <Button
@@ -487,6 +534,8 @@ function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page
   )
 }
 
+const NO_BANDS: readonly StackedBand[] = []
+
 /** Never two bands: the agent first, since it is changing what is on screen, then what the screen itself says. */
 /** Mounted only while a finding is being carried, and it reads every finding: not in the first download. */
 const FindingBandStack = lazyPart<ComponentProps<typeof FindingBandShape>>(() => import('./FindingBand').then((held) => held.FindingBandStack))
@@ -494,7 +543,9 @@ const FindingBandStack = lazyPart<ComponentProps<typeof FindingBandShape>>(() =>
 function FrameBands({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | undefined }) {
   const agent = useAgentBand(parts, facts)
   const visit = useVisitBand(parts)
-  const bands = useMemo<StackedBand[]>(() => [...(agent ? [agent] : []), ...(visit ? [visit] : []), ...(facts?.bands ?? [])], [agent, visit, facts?.bands])
+  const source = parts.props.provider?.frame?.bands?.(parts.agent.openSomewhere) ?? NO_BANDS
+  const sourceKey = source.map((band) => band.id).join()
+  const bands = useMemo<StackedBand[]>(() => [...(agent ? [agent] : []), ...(visit ? [visit] : []), ...source, ...(facts?.bands ?? [])], [agent, visit, sourceKey, facts?.bands]) // eslint-disable-line react-hooks/exhaustive-deps -- a band's identity is its id: the source answers afresh on every draw
   const { frame } = parts
   const walk = useFrameState(frame).finding
   if (walk) return <FindingBandStack walk={walk} frame={frame} parts={parts} others={bands} />

@@ -39,7 +39,7 @@ import { landingFor } from './placeLanding'
 import { usePlaceHistory } from './usePlaceHistory'
 import type { Notify } from './useToasts'
 
-export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' | 'settings'
+export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' | 'settings' | 'agents'
 
 /**
  * What the shell asks of the organisation screen: one of its pages, or the

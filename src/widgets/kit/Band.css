@@ -20,6 +20,7 @@
 .kit-band[data-tone='finding'] { --kit-band-ink: var(--warn); --kit-band-fill: var(--warn-soft); }
 .kit-band[data-tone='agent'] { --kit-band-ink: var(--agent); --kit-band-fill: var(--agent-soft); }
 .kit-band[data-tone='editing'] { --kit-band-ink: var(--accent); --kit-band-fill: var(--editing-bar); }
+.kit-band[data-tone='problem'] { --kit-band-ink: var(--bad); --kit-band-fill: var(--bad-soft); }
 .kit-band[data-tone='info'] { --kit-band-ink: var(--info); --kit-band-fill: var(--info-soft); }
 
 .kit-band__title { font-weight: var(--fw-strong); overflow-wrap: anywhere; }

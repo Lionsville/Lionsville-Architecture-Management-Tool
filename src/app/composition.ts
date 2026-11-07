@@ -73,6 +73,7 @@ import type {
 import type {
   BarButtonProps, ProblemAction, ProviderParts, SourceChipPanelProps, SourceChromeProps, SourceYourWorkProps, SourceDestination,
   SourcePreferencesPanelProps,
+  SourceFrame,
 } from '../ports/ProviderParts'
 import type { Repositories } from '../ports/Repositories'
 import type { Interchange } from '../ports/Interchange'
@@ -232,6 +233,8 @@ export type RegisteredSourceProvider<Opening = never, Own = unknown> =
      * three register none.
      */
     readonly chipFace?: SourceChipFace
+    /** What this provider says on the frame itself while its source is open ({@link SourceFrame}). Core's three register none. */
+    readonly frame?: SourceFrame<Own>
     /**
      * A button of this provider's own in the bar, drawn while its source is
      * the one open ({@link SourceBarButton}). A component, so here beside
@@ -422,6 +425,11 @@ export function sourceAgentPanel(source: WorkingSource): SourceAgentPanel | unde
  */
 export function sourceChipPanel(source: WorkingSource): SourceChipPanel | undefined {
   return sourceProvider(source.provider)?.chipPanel
+}
+
+/** What the open source says on the frame itself, or nothing: the open source's alone. */
+export function sourceFrameOf(source: WorkingSource): SourceFrame | undefined {
+  return sourceProvider(sourceProviderKind(source))?.frame as SourceFrame | undefined
 }
 
 /**

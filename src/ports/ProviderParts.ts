@@ -17,6 +17,7 @@
  * writes it, can name the same props. The component types themselves stay
  * where a component may be named.
  */
+import type { ComponentType, ReactNode } from 'react'
 import type { Destination, MovedBy, Screen } from '../agent/screen'
 import type { RecorderSource } from '../model/observation'
 import type { PersonId } from '../model/person'
@@ -435,4 +436,56 @@ export type SourceYourWorkProps<Own = unknown> = {
   notify?: SourceChromeProps<Own>['notify']
   reread?: SourceChromeProps<Own>['reread']
   flush?: SourceChromeProps<Own>['flush']
+}
+
+/** What the status word's mark says, shape first: the colour only repeats it. */
+export type StatusTone = 'saved' | 'busy' | 'waiting' | 'offline' | 'problem' | 'reading'
+
+/** A source's own status word: true now, and said in that source's terms. */
+export type SourceWord = {
+  readonly text: string
+  readonly tone: StatusTone
+  /** Icon and count, for a narrow window: *3*. Absent: the word itself, cut. */
+  readonly short?: string
+}
+
+/** A state of the window a source must not let anybody miss: words first, one way out. */
+export type SourceBand = {
+  readonly id: string
+  readonly tone: 'info' | 'problem'
+  readonly title: ReactNode
+  readonly detail?: ReactNode
+  readonly action?: ReactNode
+}
+
+/** What a page or panel a source draws in the frame is handed. */
+export type SourceSlotProps<Own = unknown> = SourceYourWorkProps<Own> & {
+  /** This computer's own way in for an agent, where the host has one. */
+  localAgent?: () => void
+}
+
+/**
+ * What a source with a far end says on the frame itself: a word of its own, a
+ * band, what stands in place of a home it cannot read yet, and the places only
+ * it has. Every part optional, and absent for the three that ship: the frame
+ * then says what the document's own machine says.
+ */
+export type SourceFrame<Own = unknown> = {
+  /** Asked again whenever `onWork` fires. Nothing: the frame's own word. */
+  readonly word?: () => SourceWord | undefined
+  /** Drawn under the agent's band, whichever screen is up. */
+  readonly bands?: (open: SourceOpen) => readonly SourceBand[]
+  /**
+   * In place of a home, while the source cannot yet say what is in it: nothing
+   * here means an empty place, and offering *New…* there invites somebody to
+   * start again on top of work they cannot see.
+   */
+  readonly holding?: () => boolean
+  readonly Hold?: ComponentType<SourceSlotProps<Own>>
+  /** At the head of *Your work*. */
+  readonly YourWork?: ComponentType<SourceSlotProps<Own>>
+  /** The frame's panel `settle`: which of two changes to one thing stays. */
+  readonly Settle?: ComponentType<SourceSlotProps<Own>>
+  /** The page `agents`. Without one, *Connect an agent* is the dialog. */
+  readonly Agents?: ComponentType<SourceSlotProps<Own>>
 }

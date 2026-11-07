@@ -347,7 +347,7 @@ export function placeOf(screen: Screen): Place | undefined {
   if (screen.home) {
     const up = screen.page
     // A panel over a bare home is the panel's own short address: `#/-/work`.
-    if (up === undefined && screen.panel !== undefined) return { scope: screen.home.path, page: screen.panel }
+    if (up === undefined && screen.panel !== undefined && screen.panel !== 'settle') return { scope: screen.home.path, page: screen.panel }
     return {
       scope: screen.home.path, page: up?.page ?? 'home',
       ...(up !== undefined && 'id' in up && up.id !== undefined ? { id: up.id } : {}),

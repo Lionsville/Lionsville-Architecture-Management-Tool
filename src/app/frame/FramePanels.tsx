@@ -32,7 +32,7 @@ export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, lang
   const named = provider.chip === undefined && !provider.ChipPanel && !provider.ChipFace && !facts?.publishesSteps
   return statusWord({
     status: facts?.status, saveFailed: facts?.saveFailed, savedAt: facts?.savedAt, publishesSteps: facts?.publishesSteps,
-    sourceStatus: facts?.sourceStatus, connected: props.provider?.connected?.(),
+    sourceStatus: facts?.sourceStatus, connected: props.provider?.connected?.(), source: props.provider?.frame?.word?.(),
     ...(named && !props.provider?.publishesSteps ? { place: sourceLabel(source, s, undefined, props.provider?.sayings?.labelKey), transient: source.transient, visiting: props.visiting !== undefined } : {}),
   }, language, s)
 }
@@ -80,7 +80,7 @@ function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: Screen
           {history && <Fact label={s('work.history')} value={s(scopeOpen || parts.home.history.keeping ? 'work.historyKept' : 'work.historyNot')} />}
         </PanelSection>
       )}
-      {facts?.activity && <p>{s('frame.sessionChanges', { count: facts.activity().length })}</p>}
+      {facts?.activity && !parts.provider.YourWork && <p>{s('frame.sessionChanges', { count: facts.activity().length })}</p>}
     </>
   )
 }
@@ -130,10 +130,10 @@ export function YourWorkPanel({ parts, facts }: { parts: ShellParts; facts: Scre
       facts={where !== undefined ? s(where as StringKey) : undefined} onClose={() => agent.setPanel(undefined)} help={s('frame.appliesToAll')}
       helpLink={{ label: s('work.manual'), onPress: () => props.hostControls.openExternal(manualUrl(prefs.language)) }}
     >
+      {/* What this host says of its own comes first: it is what a person opened this to read. */}
+      {Own && <Own {...workProps(parts)} />}
       <WorkFacts parts={parts} facts={facts} history={history} />
       <WorkActs parts={parts} facts={facts} history={history} />
-      {/* What this host says of its own about where work is kept. */}
-      {Own && <Own {...workProps(parts)} />}
     </Panel>
   )
 }

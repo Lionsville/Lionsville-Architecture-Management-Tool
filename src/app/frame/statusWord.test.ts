@@ -10,15 +10,20 @@ const s = translator('en')
 const word = (facts: StatusFacts) => statusWord(facts, 'en', s)
 
 describe('the status word', () => {
+  it('says the source’s own word ahead of the document’s, with its mark', () => {
+    expect(word({ status: 'clean', source: { text: '2 to settle', tone: 'waiting', short: '2' } })).toEqual({ text: '2 to settle', tone: 'waiting', alarm: true, short: '2' })
+    expect(word({ status: 'dirty', source: { text: 'Read only', tone: 'reading' } }).alarm).toBe(false)
+  })
+
   it('never says sent while there is nobody to send to', () => {
     const steps = { publishesSteps: true, sourceStatus: true }
     expect(word({ ...steps, status: 'clean', connected: true }).text).toBe(s('shell.stepsSent'))
     expect(word({ ...steps, status: 'clean', connected: false }).text).toBe(s('frame.offline'))
-    expect(word({ ...steps, status: 'dirty', connected: false })).toEqual({ text: s('frame.offlineWaiting'), alarm: true })
+    expect(word({ ...steps, status: 'dirty', connected: false })).toEqual({ text: s('frame.offlineWaiting'), alarm: true, tone: 'waiting' })
   })
 
   it('says a refused write first, whatever else is true', () => {
-    expect(word({ status: 'clean', saveFailed: true, savedAt: new Date(), connected: false })).toEqual({ text: s('shell.saveRefused'), alarm: true })
+    expect(word({ status: 'clean', saveFailed: true, savedAt: new Date(), connected: false })).toEqual({ text: s('shell.saveRefused'), alarm: true, tone: 'problem' })
   })
 
   it('keeps what a person has to act on ahead of being offline', () => {

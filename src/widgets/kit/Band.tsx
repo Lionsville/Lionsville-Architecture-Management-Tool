@@ -18,7 +18,7 @@ import { Mark } from './Mark'
 import type { MarkKind } from './Mark'
 import './Band.css'
 
-export type BandTone = 'looking' | 'finding' | 'agent' | 'readOnly' | 'editing' | 'info'
+export type BandTone = 'looking' | 'finding' | 'agent' | 'readOnly' | 'editing' | 'info' | 'problem'
 
 export type BandProps = {
   readonly tone: BandTone
@@ -40,7 +40,7 @@ export type BandProps = {
 }
 
 /** The kit's closed family, so the shape says which state it is in a greyscale print too. Read only has a word and no mark of its own. */
-const MARK_OF: Partial<Record<BandTone, MarkKind>> = { looking: 'look', finding: 'review', agent: 'agent', editing: 'partial', info: 'none' }
+const MARK_OF: Partial<Record<BandTone, MarkKind>> = { looking: 'look', finding: 'review', agent: 'agent', editing: 'partial', info: 'none', problem: 'fix' }
 
 export function Band({ tone, mark: said, title, detail, position, action, dataGuide }: BandProps) {
   const { t } = useStrings()

@@ -1507,6 +1507,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.newView': 'Neue Ansicht',
   'frame.help': 'Hilfe',
   'frame.agent': 'Agent',
+  'frame.agents': 'Agenten',
   'frame.findScope': 'Scope suchen',
   'frame.treeMenu': 'Optionen des Baums',
   'frame.scopeMenu': 'Mehr zu {name}',

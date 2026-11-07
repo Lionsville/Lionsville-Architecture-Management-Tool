@@ -41,7 +41,7 @@ import type { CommandStream } from './useHostCommands'
 import type { ProjectFileChannel } from './useProjectFiles'
 import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
-import type { SourceYourWorkProps } from '../ports/ProviderParts'
+import type { SourceFrame, SourceYourWorkProps } from '../ports/ProviderParts'
 import type { ComponentType } from 'react'
 import type { ProblemAction, SourceAttachments, SourceChanges, SourceComments, SourcePeople } from '../ports/ProviderParts'
 
@@ -248,6 +248,8 @@ export type AppProvider = {
   chipPanel?: SourceChipPanel
   /** What this provider says in *Your work* about its own source (`SourceYourWorkProps`). */
   yourWork?: ComponentType<SourceYourWorkProps>
+  /** What the open source says on the frame itself (`SourceFrame`). Read from the registration by the boot. */
+  frame?: SourceFrame
   /**
    * What the chip looks like, from the open source's provider
    * (`SourceChipFace`): drawn inside it in place of the label, which stays its
