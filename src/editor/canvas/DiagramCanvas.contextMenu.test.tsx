@@ -131,7 +131,7 @@ describe('DiagramCanvas — element menu', () => {
       expect(within(root).getByRole('menuitem', { name: new RegExp(label) }).getAttribute('aria-haspopup')).toBe('menu');
     }
     // Selected: the inspector now shows it.
-    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
   });
 
   it('"Open container diagram" takes the double-click path', () => {
@@ -229,7 +229,7 @@ describe('DiagramCanvas — element menu', () => {
     renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Rename'));
-    const name = screen.getByLabelText('Name') as HTMLInputElement;
+    const name = await screen.findByRole('textbox', { name: 'Change the name' }) as HTMLTextAreaElement;
     await waitFor(() => expect(document.activeElement).toBe(name));
     expect(name.selectionStart).toBe(0);
     expect(name.selectionEnd).toBe('Webshop'.length);
@@ -370,7 +370,8 @@ describe('DiagramCanvas — connection menu', () => {
       source: 'manual',
       pinned: true,
     });
-    // The inspector's Route section agrees.
+    // The panel's Route section agrees.
+    fireEvent.click(screen.getByRole('tab', { name: 'Appearance' }));
     expect(screen.getByTestId('route-badge').textContent).toBe('Hand-drawn');
 
     fireEvent.contextMenu(await screen.findByTestId('rf__edge-c1'));
@@ -524,7 +525,7 @@ describe('DiagramCanvas — keyboard', () => {
         </div>
       </ThemeProvider>,
     );
-    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
 
     const canvasTarget = screen.getByText('ACTORS');
     fireEvent.keyDown(canvasTarget, { key: 'F10', shiftKey: true });
@@ -533,7 +534,7 @@ describe('DiagramCanvas — keyboard', () => {
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull());
 
     fireEvent.keyDown(canvasTarget, { key: 'F2' });
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Name')));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Change the name' })));
   });
 
   it('Shift+F10 with nothing selected opens the canvas menu', () => {

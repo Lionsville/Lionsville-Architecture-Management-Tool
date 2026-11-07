@@ -133,8 +133,8 @@ describe.each(ways)('on %s', (_name, way) => {
     await open()
     const target = screen.getByText('ACTORS')
     act(() => { fireEvent.keyDown(target, { key: 'a', ctrlKey: true }) })
-    const name = await screen.findByLabelText('Name')
-    expect((name as HTMLInputElement).readOnly || (name as HTMLInputElement).disabled).toBe(true)
+    await screen.findByRole('heading', { level: 2, name: /./ })
+    expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull()
     // Nor a comment: nobody here said a reader may comment (ADR-0037 §5).
     expect(screen.queryByTestId('comment-new')).toBeNull()
   })
@@ -192,8 +192,9 @@ describe('a scope only read, where its source lets a reader comment (ADR-0037 §
     })
     const target = await screen.findByText('ACTORS')
     act(() => { fireEvent.keyDown(target, { key: 'a', ctrlKey: true }) })
-    const name = await screen.findByLabelText('Name')
-    expect((name as HTMLInputElement).readOnly || (name as HTMLInputElement).disabled).toBe(true)
+    await screen.findByRole('heading', { level: 2, name: /./ })
+    expect(screen.queryByRole('button', { name: /Change the name/ })).toBeNull()
+    fireEvent.click(screen.getByRole('tab', { name: /Comments/ }))
     expect(await screen.findByTestId('comment-new')).toBeDefined()
     // Written as somebody the register holds, asked once: the step goes through the session that refuses every other.
     fireEvent.change(screen.getByTestId('comment-new'), { target: { value: 'Who runs billing?' } })

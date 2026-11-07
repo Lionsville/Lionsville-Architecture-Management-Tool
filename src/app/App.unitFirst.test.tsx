@@ -98,11 +98,11 @@ describe('a unit\'s inspector, unit first', { timeout: 20_000 }, () => {
     // A unit now: its section under the name, the element's fields folded under Element below it.
     const fold = await within(inspector()).findByTestId('element-fold')
     const unit = within(inspector()).getByTestId('unit-section')
-    expect(before(within(inspector()).getByLabelText('Name'), unit)).toBe(true)
+    expect(before(within(inspector()).getByRole('heading', { level: 2 }), unit)).toBe(true)
     expect(before(unit, fold)).toBe(true)
     expect(fold.getAttribute('aria-expanded')).toBe('false')
     expect(within(unit).getByTestId('unit-filed-in').textContent).toBe('Filed in Acme Logistics')
-    // Create drawing, which the board offers, is in the ⋯ beside the name.
+    // Create drawing, which the board offers, is in the ⋯ with the rest of what is done to the record.
     fireEvent.click(within(inspector()).getByRole('button', { name: 'More' }))
     expect(within(await screen.findByRole('menu', { name: 'More' })).getByRole('menuitem', { name: 'Create drawing' })).toBeTruthy()
     fireEvent.keyDown(screen.getByRole('menu', { name: 'More' }), { key: 'Escape' })
@@ -115,8 +115,9 @@ describe('a unit\'s inspector, unit first', { timeout: 20_000 }, () => {
     renderApp({ agent: wire.gateway, repositories: heldRepositories([organisation]), today: () => TODAY, boot: { initialProject: organisation } })
     await waitFor(() => expect(wire.bound()).toBe(true))
     expect((await wire.ask('app.open', { scope: '', page: 'board', id: 'd1', select: 'dispatch' })).arrived).toBe(true)
+    await waitFor(() => expect(inspector()).not.toBeNull())
     const unit = await within(inspector()).findByTestId('unit-section')
-    expect((within(inspector()).getByLabelText('Name') as HTMLInputElement).value).toBe('Dispatch')
+    expect(within(inspector()).getByRole('heading', { level: 2 }).textContent).toBe('Dispatch')
     expect(before(unit, within(inspector()).getByTestId('element-fold'))).toBe(true)
     expect(within(unit).getByTestId('unit-slot-ro-lead')).toBeTruthy()
   })

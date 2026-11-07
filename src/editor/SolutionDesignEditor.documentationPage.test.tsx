@@ -11,7 +11,7 @@
  * the sheet, and the page lists the sheet's neighbours down its left.
  */
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { HostedEditor } from './testing/editorHost';
 import type { EditorHostState, HostedEditorProps } from './testing/editorHost';
@@ -56,8 +56,9 @@ describe('the documentation page where there is no board', () => {
     renderEditor({ documentationRequest: { elementId: 'rating', diagramId: 'sh-1', nonce: 1 } });
     expect(screen.getByRole('heading', { name: 'Rating' })).toBeTruthy();
     // The sheet's trees down the left, not a board's applications.
-    expect(screen.getByRole('button', { name: 'Billing' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Operations' })).toBeTruthy();
+    const nav = within(screen.getByTestId('doc-nav'));
+    expect(nav.getByText('Billing')).toBeTruthy();
+    expect(nav.getByText('Operations')).toBeTruthy();
   });
 
   it('draws nothing but the notice without a request', () => {

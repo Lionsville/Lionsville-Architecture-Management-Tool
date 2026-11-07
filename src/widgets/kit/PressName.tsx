@@ -31,7 +31,7 @@ export function PressName({ name, onRename, renameRequest, heading: Heading, cla
   const wasEditing = useRef(false)
 
   useEffect(() => {
-    if (editing && !wasEditing.current) field.current?.select()
+    if (editing && !wasEditing.current) { field.current?.focus(); field.current?.select() }
     if (!editing && wasEditing.current) pressed.current?.focus()
     wasEditing.current = editing
   }, [editing])
@@ -79,12 +79,12 @@ export function PressName({ name, onRename, renameRequest, heading: Heading, cla
     )
   }
   return (
-    <>
+    <div data-shortcuts-ignore="">
       <textarea
         ref={field} className={classes.field} aria-label={t('kit.panel.rename')} rows={Math.max(1, Math.ceil(typed.length / 28))}
         aria-invalid={refused !== null} value={typed} onChange={(event) => setTyped(event.target.value)} onKeyDown={onKeyDown} onBlur={commit}
       />
       {refused && <div className={classes.refused} role="alert">{refused}</div>}
-    </>
+    </div>
   )
 }

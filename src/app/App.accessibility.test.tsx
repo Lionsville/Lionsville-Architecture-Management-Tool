@@ -108,8 +108,8 @@ describe('the app, as axe reads it', { timeout: 20_000 }, () => {
     const node = document.querySelector<HTMLElement>('.react-flow__node')!
     node.focus()
     fireEvent.keyDown(node, { key: 'Enter' })
-    // The record of what was chosen: its name is a field to edit.
-    await screen.findByRole('textbox', { name: 'Name' })
+    // The panel of what was chosen: its name is pressed to edit.
+    await screen.findByRole('button', { name: /Change the name/ })
     expect(await axeFindings()).toEqual([])
   })
 

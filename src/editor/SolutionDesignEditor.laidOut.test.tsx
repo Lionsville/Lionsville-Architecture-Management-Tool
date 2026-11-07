@@ -154,10 +154,11 @@ describe('the organisation chart in the tab (ADR-0036 §7)', () => {
     expect(screen.getByRole('complementary', { name: 'Inspector' }).textContent).not.toMatch(/selected/);
   });
 
-  it('says what it says with nothing chosen where the page has no choice of its own', () => {
+  it('draws no panel with nothing chosen where the page has no choice of its own', () => {
     const { pages } = withChoice(() => undefined);
     renderEditor(CHART, { pages });
-    expect(screen.getByRole('complementary', { name: 'Inspector' }).textContent).toContain('Select an element');
+    // There is no panel at rest: the view has the width.
+    expect(screen.queryByRole('complementary', { name: 'Inspector' })).toBeNull();
   });
 });
 

@@ -46,7 +46,7 @@ describe('Replace…, from the workspace', { timeout: 40_000 }, () => {
     await recordOf('billing')
     expect(screen.queryByText(`Replace ${billing.name}`)).toBeNull()
     await waitFor(() => expect(document.querySelector(controlSelector('record.replace'))).not.toBeNull())
-    fireEvent.click(document.querySelector<HTMLElement>(controlSelector('record.replace'))!)
+    fireEvent.click(within(document.querySelector<HTMLElement>(controlSelector('record.replace'))!).getByRole('button', { name: 'Replace…' }))
     const dialog = (await screen.findByText(`Replace ${billing.name}`)).closest<HTMLElement>('[role="dialog"]')!
     // Its first question starts from the application it is about.
     expect(within(dialog).getByRole<HTMLInputElement>('textbox', { name: 'Name' }).value).toBe(`${billing.name} (new)`)

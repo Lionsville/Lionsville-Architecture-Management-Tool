@@ -216,7 +216,7 @@ describe('the links between a unit and the scopes it serves', { timeout: 20_000 
     fireEvent.click(screen.getByRole('button', { name: 'Parcel & Freight' }))
     await waitFor(() => expect(within(inspector()).queryByTestId('unit-section')).not.toBeNull())
     expect(screen.getByTestId('chart-page')).toBeTruthy()
-    expect(within(inspector()).getByDisplayValue('Parcel & Freight')).toBeTruthy()
+    expect(within(inspector()).getByRole('heading', { level: 2, name: 'Parcel & Freight' })).toBeTruthy()
     // From the other end: the domain it serves opens that domain's home.
     fireEvent.click(within(inspector()).getByRole('button', { name: 'Shipping' }))
     await waitFor(() => expect(screen.getAllByTestId('served-by-row')).toHaveLength(3))

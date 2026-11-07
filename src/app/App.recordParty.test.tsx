@@ -63,9 +63,9 @@ describe('whose an outside application is, from a scope below the party', { time
 
   it('shows the party the record names, and offers it under the scope that keeps it', async () => {
     const record = await recordOf('payments')
-    const field = within(record).getByLabelText('Belongs to')
-    expect(field.textContent).toBe(party.name)
-    fireEvent.mouseDown(field)
+    const field = within(record).getByTestId('record-owner')
+    expect(field.textContent).toContain(party.name)
+    fireEvent.click(within(field).getByRole('button'))
     const listbox = await screen.findByRole('listbox')
     const options = within(listbox).getAllByRole('option').map((one) => one.textContent)
     // The landscape's own actors, and the organisation's under its name.

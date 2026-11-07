@@ -90,10 +90,10 @@ describe('the board without a mouse', () => {
   it('selects a card with Enter, and another after it without opening the first one’s page', () => {
     const { card } = renderEditor();
     press(card('a1'), 'Enter');
-    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
 
     press(card('a2'), 'Enter');
-    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Billing');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Billing');
     expect(screen.queryByRole('button', { name: 'Close documentation' })).toBeNull();
 
     // Enter again on the card that is selected is the page.
@@ -129,7 +129,7 @@ describe('the board without a mouse', () => {
     const { line } = renderEditor();
     await waitFor(() => expect(line('c1')).not.toBeNull());
     press(line('c1'), 'Enter');
-    expect(screen.getByDisplayValue('Sends orders')).toBeDefined();
+    expect(screen.getByTestId('connection-label').textContent).toContain('Sends orders');
     await waitFor(() => expect(line('c1')).not.toBeNull());
     press(line('c1'), 'F10', { shiftKey: true });
     expect(screen.getByRole('menu', { name: 'Connection menu' })).toBeDefined();
@@ -148,7 +148,7 @@ describe('the board without a mouse', () => {
   it('reaches every control in the inspector by Tab, and its tabs by the arrows', () => {
     const { card } = renderEditor();
     press(card('a1'), 'Enter');
-    const inspector = screen.getByRole('complementary', { name: 'Inspector' });
+    const inspector = document.querySelector<HTMLElement>('[data-guide="board.inspector"]')!;
     const controls = [...inspector.querySelectorAll<HTMLElement>(
       'button, input, textarea, select, a[href], [role="combobox"], [role="tab"], [role="button"], [tabindex]',
     )].filter((one) => !one.closest('[aria-hidden="true"]') && !(one as HTMLButtonElement).disabled);

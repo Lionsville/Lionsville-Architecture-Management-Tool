@@ -346,9 +346,9 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await screen.findByTestId('people-answered-toggle').catch(() => screen.getByTestId('people-duplicates')))
   }]],
   [['a landscape open on its board', [
-    'shell.crumbs', 'shell.activity', 'board.canvas', 'board.palette', 'board.library', 'board.inspector',
+    'shell.crumbs', 'shell.activity', 'board.canvas', 'board.palette', 'board.library',
   ], onBoard],
-  ['a line being drawn', ['board.connect'], async () => {
+  ['a line being drawn', ['board.connect', 'board.inspector'], async () => {
     const card = await selectCard('billing')
     fireEvent.keyDown(card, { key: 'F10', shiftKey: true })
     const menu = await screen.findByRole('menu', { name: 'Element menu' })
@@ -599,7 +599,9 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     renderApp({ repositories: heldRepositories(boarded), boot: { initialProject: boarded.find((one) => one.path === '')! } })
     await waitFor(() => expect(document.querySelector('.react-flow__node[data-id="north"]')).not.toBeNull())
     await selectCard('north')
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove / delete…' }))
+    await waitFor(() => expect(document.querySelector(controlSelector('board.inspector'))).not.toBeNull())
+    fireEvent.click(within(document.querySelector<HTMLElement>(controlSelector('board.inspector'))!).getByRole('button', { name: 'More' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove / delete…' }))
     await screen.findByTestId('unit-deletion')
   }]],
   // A Conway map: the verdict and the grid, the panel on nothing, on a pair and on a unit, and the second reading.

@@ -53,7 +53,7 @@ describe('the inspector beside the organisation chart', () => {
     pressAction(within(summary).getByTestId('finding-explanation'), 'Open the unit')
     // The unit is selected, so the inspector is the unit's.
     await waitFor(() => expect(screen.queryByTestId('chart-summary')).toBeNull())
-    expect(screen.getByDisplayValue('Webshop')).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 2, name: 'Webshop' })).toBeTruthy()
   })
 
   it('puts a person\'s assignment in the summary\'s place when their chip is pressed', async () => {

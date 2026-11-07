@@ -8,6 +8,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import type { Selection } from './useEditorState';
+import type { DesignElement, DesignModel } from '../model/types';
 
 afterEach(() => cleanup());
 

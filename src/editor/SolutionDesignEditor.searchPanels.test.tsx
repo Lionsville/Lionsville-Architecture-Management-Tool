@@ -126,7 +126,7 @@ describe('SolutionDesignEditor — element search', () => {
     fireEvent.change(searchField(), { target: { value: 'webshop' } });
     fireEvent.keyDown(searchField(), { key: 'Enter' });
     // The element is now the selection, so the inspector shows its form.
-    expect(screen.getByLabelText('Name')).toBeDefined();
+    expect(document.querySelector('.kit-panel__name')).not.toBeNull();
     await waitFor(() => expect(screen.queryByLabelText('Search elements')).toBeNull());
   });
 
@@ -164,7 +164,7 @@ describe('SolutionDesignEditor — element search', () => {
     fireEvent.keyDown(searchField(), { key: 'ArrowDown' });
     fireEvent.keyDown(searchField(), { key: 'Enter' });
 
-    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
     await waitFor(() => expect(screen.queryByLabelText('Search elements')).toBeNull());
   });
 
@@ -279,7 +279,7 @@ describe('SolutionDesignEditor — panel seams', () => {
   const inspectorSeam = () => screen.getByRole('separator', { name: 'Resize inspector' });
 
   it('opens each panel at its stored width', () => {
-    renderEditor({ initialPreferences: { paletteWidth: 300, inspectorWidth: 400 } });
+    renderEditor({ focusElement: { id: 'a1', nonce: 1 }, initialPreferences: { paletteWidth: 300, inspectorWidth: 400 } });
     // The seam is the accessible face of the width, so it is what we read: MUI
     // compiles `sx` to a class, and asserting on a generated class name would
     // pin the styling engine rather than the behaviour.
@@ -295,7 +295,7 @@ describe('SolutionDesignEditor — panel seams', () => {
   });
 
   it('grows the inspector when its seam is dragged LEFT — it lives on the right', () => {
-    const { latest } = renderEditor({ initialPreferences: { inspectorWidth: 320 } });
+    const { latest } = renderEditor({ focusElement: { id: 'a1', nonce: 1 }, initialPreferences: { inspectorWidth: 320 } });
     fireEvent.keyDown(inspectorSeam(), { key: 'ArrowLeft' });
     expect(latest()?.inspectorWidth).toBe(328);
     fireEvent.keyDown(inspectorSeam(), { key: 'ArrowRight' });
@@ -321,7 +321,7 @@ describe('SolutionDesignEditor — panel seams', () => {
   });
 
   it('has no palette seam in read-only — there is no palette', () => {
-    renderEditor({ readOnly: true });
+    renderEditor({ readOnly: true, focusElement: { id: 'a1', nonce: 1 } });
     expect(screen.queryByRole('separator', { name: 'Resize palette' })).toBeNull();
     // The inspector is still there to read, and still resizable.
     expect(inspectorSeam()).toBeDefined();

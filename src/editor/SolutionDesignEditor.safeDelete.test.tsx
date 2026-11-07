@@ -128,12 +128,13 @@ describe('SolutionDesignEditor — confirming a connection delete', () => {
     expect(host.current.commands).toEqual([]);
   });
 
-  it("the inspector's Delete connection button asks too", async () => {
+  it("the panel's Delete connection asks too", async () => {
     renderEditor();
     await measured();
 
     fireEvent.click(screen.getByTestId('rf__edge-c1'));
-    fireEvent.click(screen.getByRole('button', { name: 'Delete connection' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete connection' }));
 
     expect(within(dialog()).getByText(/Sends orders/)).toBeDefined();
   });

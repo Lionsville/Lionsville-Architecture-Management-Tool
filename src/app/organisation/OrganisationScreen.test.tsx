@@ -352,9 +352,9 @@ describe('the organisation screen — its own pages', () => {
     fireEvent.click(await screen.findByTestId('register-page-post'))
     // The landscape opens, and on it the page — with the record's fields
     // there to be written, which is what the row was opened for.
-    const page = await screen.findByTestId('doc-content')
-    expect(page.textContent).toContain('Post office')
-    expect((screen.getByLabelText('Outside the organisation') as HTMLInputElement).checked).toBe(true)
+    await screen.findByTestId('doc-content')
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Post office')
+    expect(screen.getAllByTestId('record-outside').at(-1)?.textContent).toContain('Yes')
     // The whole app, a board and the page in one mount: a second alone, and
     // several under the full run, so it gets more than the default.
   }, 20_000)

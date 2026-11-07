@@ -91,7 +91,7 @@ export function pickEdit({ label, options, onCreate, createLabel, placeholder }:
 }): PropertyRowEdit {
   return (editor) => (
     <Picker
-      label={label} options={options} placeholder={placeholder} autoFocus posture="open" maxShown={12}
+      label={label} options={options} placeholder={placeholder} autoFocus posture="open"
       onPick={(option) => editor.commit(option.id)}
       {...(onCreate ? { onCreate: (name: string) => { editor.cancel(); onCreate(name); } } : {})}
       {...(createLabel ? { createLabel } : {})}

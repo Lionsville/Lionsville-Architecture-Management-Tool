@@ -99,9 +99,6 @@ describe('SolutionDesignEditor — language', () => {
 
   it('translates the inspector and a new domain group, and does not ask for the language it is in', () => {
     renderEditor({ language: 'nl' });
-    expect(screen.getByText(/Selecteer een element of koppeling/)).toBeDefined();
-    cleanup()
-    renderEditor({ language: 'nl' });
     fireEvent.click(screen.getByRole('button', { name: 'Domeingroep', expanded: false }));
     expect(screen.getByPlaceholderText('Nieuwe groep')).toBeDefined();
     cleanup()
@@ -148,7 +145,7 @@ describe('SolutionDesignEditor — language', () => {
     // …and that is exactly what lands in the model.
     expect(host.current.commands).toHaveLength(1);
     expect(host.current.model.elements.at(-1)?.name).toBe('Nieuwe applicatie');
-    expect((screen.getByLabelText('Naam') as HTMLInputElement).value).toBe('Nieuwe applicatie');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Nieuwe applicatie');
   });
 
   it('asks the host for the chosen language rather than switching itself', () => {

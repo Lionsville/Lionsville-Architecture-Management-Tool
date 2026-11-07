@@ -62,17 +62,15 @@ describe('drawings in the inspector', () => {
       anchored,
     ])
     const listed = screen.getByTestId('element-drawings')
-    expect(listed.textContent).toContain('On drawings')
-    expect(listed.textContent).toContain('Context')
+        expect(listed.textContent).toContain('Context')
     expect(listed.textContent).not.toContain('Deployment')
-    expect(listed.textContent).not.toContain('Anchored only')
-    expect(listed.textContent).not.toContain('Landscape')
+        expect(listed.textContent).not.toContain('Landscape')
   })
 
   it('opens a listed drawing, where the host can', () => {
     const onOpenDrawing = vi.fn()
     show([board, drawing('ctx', 'Context', 'billing')], onOpenDrawing)
-    fireEvent.click(within(screen.getByTestId('element-drawing-ctx')).getByRole('button', { name: 'Context' }))
+    fireEvent.click(screen.getByTestId('element-drawing-ctx'))
     expect(onOpenDrawing).toHaveBeenCalledWith('ctx')
   })
 

@@ -183,7 +183,7 @@ describe('DocumentationPage', () => {
   it('takes a dropped picture the same way', async () => {
     const onAddImage = vi.fn(async () => 'plan.png');
     setup({ element: element({ description: '' }), onAddImage });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Write text' }));
 
     await act(async () => {
       fireEvent.drop(source()!, { dataTransfer: transfer([imageFile('Plan.png')]) });
@@ -319,12 +319,13 @@ describe('DocumentationPage', () => {
   });
 
   it('Cancel takes the text back to what it was, asking first, and Escape is Cancel', () => {
-    const { updateElement, props } = setup();
+    const { props } = setup();
     fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     fireEvent.change(source()!, { target: { value: 'Rewritten.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     fireEvent.click(screen.getByRole('button', { name: /Leave and drop/ }));
-    expect(updateElement).not.toHaveBeenCalledWith('e1', { description: 'Rewritten.' }, expect.anything());
+    expect(source()).toBeNull();
+    expect(screen.getByTestId('source').textContent).toContain('Holds every order');
     expect(props.onClose).not.toHaveBeenCalled();
   });
 

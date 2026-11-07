@@ -109,31 +109,3 @@ export function ownerText(
   const who = worked.people.map((id) => names.text({ person: id })).join(', ');
   return t('record.ownerWorkedOut', { who, role: worked.role, unit: worked.unit });
 }
-
-/**
- * The record in one line, for the panel beside the canvas: "Owner · Vendor ·
- * Technology · Outside", whichever are set. Empty when none is, so the panel
- * can say so instead. The owner reads through the register, and where
- * nobody wrote one, it is whoever the rule works out (ADR-0036 §8); without
- * `people` a picked owner reads as nobody's name.
- */
-export function recordSummary(
-  element: DesignElement,
-  model: DesignModel,
-  t: Translate,
-  parties?: readonly PartyElsewhere[],
-  people?: { names: PersonNames; answeredBy?: AnsweredBy },
-): string[] {
-  const parts: string[] = [];
-  const owner = people ? ownerText(element, people.names, t, people.answeredBy) : typeof element.owner === 'string' ? element.owner : undefined;
-  if (owner) parts.push(`${t('field.owner')}: ${owner}`);
-  if (element.vendor) parts.push(`${t('field.vendor')}: ${element.vendor}`);
-  if (element.technology) parts.push(`${t('field.technology')}: ${element.technology}`);
-  if (element.outside) {
-    const party = partyName(element.partyId, model, parties);
-    parts.push(party ? t('record.outsideOf', { name: party }) : t('field.outside'));
-  }
-  const successor = model.elements.find((other) => other.id === element.successorId)?.name;
-  if (successor) parts.push(`${t('field.successor')}: ${successor}`);
-  return parts;
-}

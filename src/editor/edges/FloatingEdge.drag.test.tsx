@@ -266,6 +266,7 @@ describe('FloatingEdge — cancelled and aborted gestures commit nothing', () =>
     drag(screen.getByTestId('edge-label-c1'), FROM, { x: FROM.x + 1, y: FROM.y + 1 });
     expect(host.current.commands).toEqual([]);
     // Router output stays router output.
+    fireEvent.click(screen.getByRole('tab', { name: 'Appearance' }));
     expect(screen.getByTestId('route-badge').textContent).toBe('Automatic');
   });
 });

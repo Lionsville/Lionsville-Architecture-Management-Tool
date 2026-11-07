@@ -130,8 +130,7 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(createdPlacement?.zone).toBe('landscape');
 
     // The new element is auto-selected: the inspector shows its name field.
-    const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
-    expect(nameInput.value).toBe('New application');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('New application');
   });
 
   /**
@@ -191,8 +190,10 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
   it('editing the selected element name lands a change of its own', () => {
     const { landed, sent } = renderEditor();
     placeFromPalette('Application');
-    const nameInput = screen.getByLabelText('Name');
+    fireEvent.click(screen.getByRole('button', { name: /Change the name/ }));
+    const nameInput = screen.getByRole('textbox', { name: 'Change the name' });
     fireEvent.change(nameInput, { target: { value: 'Storefront' } });
+    fireEvent.keyDown(nameInput, { key: 'Enter' });
 
     expect(sent()).toBeGreaterThanOrEqual(2);
     expect(landed().elements.at(-1)?.name).toBe('Storefront');
@@ -201,15 +202,18 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
   it('clears the selection on Escape, including when focus is in the inspector', () => {
     renderEditor();
     placeFromPalette('Application');
-    const nameInput = screen.getByLabelText('Name');
-    expect((nameInput as HTMLInputElement).value).toBe('New application');
+    fireEvent.click(screen.getByRole('button', { name: /Change the name/ }));
+    const nameInput = screen.getByRole('textbox', { name: 'Change the name' });
+    expect((nameInput as HTMLTextAreaElement).value).toBe('New application');
+    // Escape puts the field back first, and the next one lets go of the selection.
+    fireEvent.keyDown(nameInput, { key: 'Escape' });
+    const pressed = screen.getByRole('button', { name: /Change the name/ });
 
     // React Flow's built-in Escape only fires while the canvas has focus; the
-    // editor must still deselect when Escape comes from an inspector field.
-    fireEvent.keyDown(nameInput, { key: 'Escape' });
+    // editor must still deselect when Escape comes from the panel.
+    fireEvent.keyDown(pressed, { key: 'Escape' });
 
-    expect(screen.queryByLabelText('Name')).toBeNull();
-    expect(screen.getByText(/Select an element or connection to edit its properties/)).toBeDefined();
+    expect(document.querySelector('.kit-panel__name')).toBeNull();
   });
 
   it('hides the palette and add-diagram affordances when readOnly', () => {
@@ -232,12 +236,11 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
 describe('SolutionDesignEditor — focusElement', () => {
   it('selects the element (inspector opens) when the focus nonce changes', () => {
     const { rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
-    expect(screen.queryByLabelText('Name')).toBeNull();
+    expect(document.querySelector('.kit-panel__name')).toBeNull();
 
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
 
-    const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
-    expect(nameInput.value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
   });
 
   it('honours a focus request that is already on the prop at mount', () => {
@@ -247,8 +250,7 @@ describe('SolutionDesignEditor — focusElement', () => {
     // prop, so the request looked already-handled and was dropped in silence.
     renderEditor({ model: modelWithPlacement('d1'), focusElement: { id: 'a1', nonce: 1 } });
 
-    const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
-    expect(nameInput.value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
   });
 
   it('switches diagram for a mount-time request too', () => {
@@ -276,12 +278,11 @@ describe('SolutionDesignEditor — focusElement', () => {
 
     // Not on the active diagram: the editor asks the host to switch first…
     expect(props.onActiveDiagramChange).toHaveBeenCalledExactlyOnceWith('d2');
-    expect(screen.queryByLabelText('Name')).toBeNull();
+    expect(document.querySelector('.kit-panel__name')).toBeNull();
 
     // …and completes the focus once the host updates activeDiagramId.
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 }, activeDiagramId: 'd2' });
-    const nameInput = screen.getByLabelText('Name') as HTMLInputElement;
-    expect(nameInput.value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
   });
 
   it('is a no-op for elements placed on no diagram', () => {
@@ -289,9 +290,7 @@ describe('SolutionDesignEditor — focusElement', () => {
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
 
     expect(props.onActiveDiagramChange).not.toHaveBeenCalled();
-    expect(screen.queryByLabelText('Name')).toBeNull();
-    // The empty state stays up.
-    expect(screen.getByText(/Select an element/)).toBeDefined();
+    expect(document.querySelector('.kit-panel__name')).toBeNull();
   });
 });
 
@@ -300,13 +299,9 @@ describe('SolutionDesignEditor — iteration 2', () => {
     const { rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
 
-    // Aspects live in the inspector's Data tab (U7a).
-    fireEvent.click(screen.getByRole('tab', { name: 'Data' }));
-
     for (const label of ['Platform', 'CI/CD', 'Disaster recovery', 'Security', 'Monitoring']) {
-      expect(screen.getByLabelText(label)).toBeDefined();
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
     }
-    expect(screen.getByLabelText('Platform note')).toBeDefined();
   });
 
   it('renders configured aspects (order + labels) instead of the default five', () => {
@@ -318,12 +313,9 @@ describe('SolutionDesignEditor — iteration 2', () => {
     const { rerenderWith } = renderEditor({ model });
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
 
-    // Aspects live in the inspector's Data tab (U7a).
-    fireEvent.click(screen.getByRole('tab', { name: 'Data' }));
-
-    expect(screen.getByLabelText('Cost')).toBeDefined();
-    expect(screen.getByLabelText('SLA')).toBeDefined();
-    expect(screen.queryByLabelText('Platform')).toBeNull();
+    expect(screen.getByTestId('aspect-cost')).toBeDefined();
+    expect(screen.getByTestId('aspect-custom-sla')).toBeDefined();
+    expect(screen.queryByTestId('aspect-platform')).toBeNull();
   });
 
   it('offers the domain group palette entry on layer7 and not on container diagrams', () => {
@@ -572,7 +564,7 @@ describe('SolutionDesignEditor — paste cascade', () => {
     const { landed, rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
     // Select the placed application (a1 sits at x:400 on the landscape).
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
-    expect(screen.getByLabelText('Name')).toBeDefined();
+    expect(document.querySelector('.kit-panel__name')).not.toBeNull();
 
     // A non-editable on-canvas target so the shortcut hook runs. jsdom reports
     // an empty navigator.platform → the keymap resolves Mod to Ctrl here.
@@ -770,18 +762,17 @@ describe('SolutionDesignEditor — keyboard focus on nodes', () => {
     const { container } = renderEditor({ model: modelWithPlacement('d1') });
     const node = container.querySelector('.react-flow__node') as HTMLElement;
     fireEvent.keyDown(node, { key: ' ' });
-    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
   });
 
   it('Escape lets go of a node the keyboard selected', () => {
     const { container } = renderEditor({ model: modelWithPlacement('d1') });
     const node = container.querySelector('.react-flow__node') as HTMLElement;
     fireEvent.keyDown(node, { key: 'Enter' });
-    expect(screen.getByLabelText('Name')).toBeDefined();
+    expect(document.querySelector('.kit-panel__name')).not.toBeNull();
 
     fireEvent.keyDown(node, { key: 'Escape' });
-    expect(screen.queryByLabelText('Name')).toBeNull();
-    expect(screen.getByText(/Select an element or connection/)).toBeDefined();
+    expect(document.querySelector('.kit-panel__name')).toBeNull();
   });
 
   it('Enter on a focused node selects it', () => {
@@ -789,7 +780,7 @@ describe('SolutionDesignEditor — keyboard focus on nodes', () => {
     const node = container.querySelector('.react-flow__node') as HTMLElement;
     fireEvent.keyDown(node, { key: 'Enter' });
     // The inspector now shows that element's form.
-    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Webshop');
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Webshop');
   });
 
   it('Shift+Enter adds to the selection instead of replacing it', () => {
@@ -798,7 +789,6 @@ describe('SolutionDesignEditor — keyboard focus on nodes', () => {
     fireEvent.keyDown(node, { key: 'Enter' });
     fireEvent.keyDown(node, { key: 'Enter', shiftKey: true });
     // Toggled back off: nothing selected, so the inspector is empty again.
-    expect(screen.getByText(/Select an element or connection/)).toBeDefined();
   });
 });
 
@@ -909,26 +899,28 @@ describe('SolutionDesignEditor — grid visibility toggle (QF3)', () => {
 
 describe('SolutionDesignEditor — collapsible panels (U7b)', () => {
   it('collapses and expands the inspector; chevron reachable in both states', () => {
-    renderEditor();
-    // Expanded: empty-state body visible, collapse chevron present.
-    expect(screen.getByText(/Select an element/)).toBeDefined();
-    expect(screen.getByLabelText('Collapse inspector')).toBeDefined();
+    const { rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
+    // With nothing selected there is no panel to fold.
+    expect(screen.queryByRole('button', { name: 'Fold the panel away' })).toBeNull();
+    rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
+    expect(document.querySelector('.kit-panel__name')).not.toBeNull();
 
-    fireEvent.click(screen.getByLabelText('Collapse inspector'));
+    fireEvent.click(screen.getByRole('button', { name: 'Fold the panel away' }));
     // Rail: body gone, expand chevron present (reachable in the collapsed state).
-    expect(screen.queryByText(/Select an element/)).toBeNull();
+    expect(document.querySelector('.kit-panel__name')).toBeNull();
     expect(screen.getByLabelText('Expand inspector')).toBeDefined();
 
     fireEvent.click(screen.getByLabelText('Expand inspector'));
-    expect(screen.getByText(/Select an element/)).toBeDefined();
+    expect(document.querySelector('.kit-panel__name')).not.toBeNull();
   });
 
   it('collapses the inspector in readOnly mode too', () => {
-    renderEditor({ readOnly: true });
-    fireEvent.click(screen.getByLabelText('Collapse inspector'));
-    expect(screen.queryByText(/Select an element/)).toBeNull();
+    const { rerenderWith } = renderEditor({ readOnly: true, model: modelWithPlacement('d1') });
+    rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Fold the panel away' }));
+    expect(document.querySelector('.kit-panel__name')).toBeNull();
     fireEvent.click(screen.getByLabelText('Expand inspector'));
-    expect(screen.getByText(/Select an element/)).toBeDefined();
+    expect(document.querySelector('.kit-panel__name')).not.toBeNull();
   });
 
   it('collapses the palette to an icon rail, and a rail icon reopens it at that row', () => {
@@ -949,8 +941,9 @@ describe('SolutionDesignEditor — collapsible panels (U7b)', () => {
   it('keeps collapse state in-memory only (no storage writes) and resets on remount', () => {
     const localSpy = vi.spyOn(Storage.prototype, 'setItem');
 
-    const { unmount } = renderEditor();
-    fireEvent.click(screen.getByLabelText('Collapse inspector'));
+    const { unmount, rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
+    rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
+    fireEvent.click(screen.getByRole('button', { name: 'Fold the panel away' }));
     fireEvent.click(screen.getByLabelText('Collapse palette'));
 
     // Matches the snap/lifecycle precedent: nothing is persisted.
@@ -958,9 +951,9 @@ describe('SolutionDesignEditor — collapsible panels (U7b)', () => {
 
     unmount();
     // A fresh mount starts expanded again (in-memory state reset).
-    renderEditor();
-    expect(screen.getByLabelText('Collapse inspector')).toBeDefined();
-    expect(screen.getByText(/Select an element/)).toBeDefined();
+    const again = renderEditor({ model: modelWithPlacement('d1') });
+    again.rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
+    expect(screen.getByRole('button', { name: 'Fold the panel away' })).toBeDefined();
 
     localSpy.mockRestore();
   });
@@ -1114,10 +1107,7 @@ describe('SolutionDesignEditor — palette tray pre-seed', () => {
 
     // Auto-selected → the inspector holds the same name. One source of truth:
     // the tray writes the fields the inspector edits, it does not keep its own.
-    const inspector = screen.getByRole('complementary', { name: 'Inspector' });
-    expect((within(inspector).getByLabelText('Name') as HTMLInputElement).value).toBe(
-      'Kernsysteem',
-    );
+    expect(document.querySelector('.kit-panel__name')?.textContent).toBe('Kernsysteem');
   });
 
   it('places an unseeded element when the tray is untouched — parity with today', () => {

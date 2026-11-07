@@ -15,14 +15,15 @@ import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { AdrPage } from '../decisions/ui/AdrPage'
 import { MarkdownView } from '../documentation/ui/MarkdownView'
-import { ElementRecord, recordSummary } from '../editor/ElementRecord'
+import { RecordSectionBody } from '../editor/inspector/elementRows'
+import type { ElementInspectorProps } from '../editor/ElementInspectorProps'
 import type { EditorActions } from '../editor/useEditorState'
 import { translator } from '../i18n'
 import type { Adr } from '../model/adr'
 import type { HostModel } from '../model/hostModel'
 import type { Experiment, Observation } from '../model/observation'
 import type { Transition } from '../model/transition'
-import type { DesignElement, DesignModel } from '../model/types'
+import type { DesignDiagram, DesignElement, DesignModel } from '../model/types'
 import { ObservationsPage } from '../observations/ui/ObservationsPage'
 import type { Person } from '../people/person'
 import { DEFAULT_POLICY } from '../people/policy'
@@ -61,38 +62,36 @@ const shop: DesignElement = {
 
 describe('an element’s owner', () => {
   const actions = { updateElement: vi.fn() } as unknown as EditorActions
+  const recordProps = (element: typeof shop, over: Partial<ElementInspectorProps> = {}): ElementInspectorProps => ({
+    element, actions, readOnly: false, onRequestDelete: () => {},
+    model: { elements: [element], relations: [], diagrams: [] } as unknown as DesignModel,
+    diagram: { id: '', kind: 'layer7', name: '', members: [] } as DesignDiagram,
+    ...over,
+  })
   const record = (people: readonly Person[]) => withRegister(people, (
-    <ElementRecord element={shop} model={{ elements: [shop], relations: [], diagrams: [] } as unknown as DesignModel} readOnly={false} actions={actions} owned={() => false} />
+    <RecordSectionBody section="record" props={recordProps(shop)} />
   ))
 
   it('reads through the register, a merged id as the entry it went into, and the pseudonym once forgotten', () => {
     const view = renderShell(record(BEFORE))
-    expect(screen.getByTestId('record-owner-field-picked').textContent).toBe('Eva Lind')
+    expect(screen.getByTestId('record-owner').textContent).toContain('Eva Lind')
     view.rerender(record(AFTER))
-    expect(screen.getByTestId('record-owner-field-picked').textContent).toBe('Former colleague BCDF')
+    expect(screen.getByTestId('record-owner').textContent).toContain('Former colleague BCDF')
   })
 
-  it('is said in the panel’s line, and where nobody wrote one, as the rule works it out today', () => {
-    const names = personNames(access(BEFORE), s)
-    expect(recordSummary(shop, { elements: [shop], relations: [], diagrams: [] } as unknown as DesignModel, s, [], { names })).toEqual(['Owner: Eva Lind'])
+  it('where nobody wrote one, is as the rule works it out today', () => {
     const unowned = { ...shop, owner: undefined }
     const workedOut = { people: ['pe-kim'], role: 'Product Owner', unit: 'Team Orders', day: '2026-10-11' }
-    expect(recordSummary(unowned, { elements: [], relations: [], diagrams: [] } as unknown as DesignModel, s, [], { names, answeredBy: { workedOut } }))
-      .toEqual(['Owner: Kim Bakker, the Product Owner of Team Orders: worked out from the role today, not stored'])
-    renderShell(withRegister(BEFORE, (
-      <ElementRecord element={unowned} model={{ elements: [unowned], relations: [], diagrams: [] } as unknown as DesignModel}
-        readOnly={false} actions={actions} owned={() => false} answeredBy={{ workedOut }} />
-    )))
-    expect(screen.getByTestId('record-owner-worked-out').textContent).toContain('Kim Bakker')
+    renderShell(withRegister(BEFORE, <RecordSectionBody section="record" props={recordProps(unowned, { answeredBy: { workedOut } })} />))
+    expect(screen.getByTestId('record-owner').textContent).toContain('Kim Bakker')
   })
 
   it('shows a stand-in’s owner as its master names it, by the same id', () => {
     const standIn = { ...shop, owner: undefined, ref: 'sales' }
     renderShell(withRegister(BEFORE, (
-      <ElementRecord element={standIn} model={{ elements: [standIn], relations: [], diagrams: [] } as unknown as DesignModel}
-        readOnly={false} actions={actions} owned={(field) => field === 'owner'} answeredBy={{ owner: { person: 'pe-kim' } }} />
+      <RecordSectionBody section="record" props={recordProps(standIn, { owned: { label: 'Sales', fields: ['owner', 'partyId'] }, answeredBy: { owner: { person: 'pe-kim' } } })} />
     )))
-    expect(screen.getByTestId('record-owner-field-picked').textContent).toBe('Kim Bakker')
+    expect(screen.getByTestId('record-owner').textContent).toContain('Kim Bakker')
   })
 })
 
