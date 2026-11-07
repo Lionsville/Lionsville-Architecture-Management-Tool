@@ -102,6 +102,9 @@ export function seedSheet(
     name: make.name,
     ...(journeys.length === 1 ? { journeyId: journeys[0].id } : {}),
     ...(areas.length > 0 ? { areas } : {}),
+    // A new sheet's poster fills a window (ADR-0048). One made before this says
+    // nothing, and keeps the A2 that means.
+    paper: 'wide',
     // Nothing is ON a sheet the way a card is on a board: what it draws is the
     // trees, and a member row would be a second place to keep the same fact.
     members: [],

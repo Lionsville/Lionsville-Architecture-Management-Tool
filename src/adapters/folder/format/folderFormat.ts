@@ -85,6 +85,7 @@ import type { Transition } from '../../../model/transition'
 import type { Cause, Experiment, Observation, Solution } from '../../../model/observation'
 import { WORKING_FILE_TYPE } from '../../../model/hostModel'
 import { SCOPE_FILE, SCOPE_FORMAT_VERSION } from './scopeHeader'
+import type { PosterCell, PosterItemPlace } from '../../../model/types'
 import { slug } from '../../../model/keys'
 import { adrFileText, adrFromFile, adrPath, DECISIONS_FOLDER } from './adrFile'
 import {
@@ -423,6 +424,8 @@ export function diagramFiles(diagram: DesignDiagram, name = diagram.id): FolderF
         nodes: byId(laid.nodes),
         ...(laid.groups !== undefined ? { groups: byId(laid.groups) } : {}),
         ...(laid.routes !== undefined ? { routes: byRelation(laid.routes) } : {}),
+        ...(laid.cells !== undefined ? { cells: byId(laid.cells) } : {}),
+        ...(laid.items !== undefined ? { items: byId(laid.items) } : {}),
       }),
     },
   ]
@@ -989,6 +992,9 @@ function readDiagram(folder: Folder, name: string): DesignDiagram | undefined {
     geometry.routes = listOf(laid.routes)
       .filter((row) => typeof row.relationId === 'string') as unknown as RouteGeometry[]
   }
+  // A sheet's hand-placed tiles and free items (ADR-0048): absent on every other view, and on a sheet nobody placed.
+  if (laid && 'cells' in laid) geometry.cells = listOf(laid.cells).filter((row) => typeof row.id === 'string') as unknown as PosterCell[]
+  if (laid && 'items' in laid) geometry.items = listOf(laid.items).filter((row) => typeof row.id === 'string') as unknown as PosterItemPlace[]
 
   return {
     ...(rest as unknown as Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geometry'>),

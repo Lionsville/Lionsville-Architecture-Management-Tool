@@ -15,6 +15,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { Command } from '../model/commands'
+import { toDiagram } from '../model/normalised'
+import type { DesignDiagram } from '../model/types'
 import type { ScopeNode } from './ScopeRepository'
 import { emptyContent } from '../projects/scopeState'
 import type { ScopeContent, ScopeId } from '../projects/scopeState'
@@ -409,6 +411,39 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect([state.kind, state.activeDiagramId]).toEqual(['landscape', 'l7'])
         expect(refusal(await repositories.apply([{ scope: acme, steps: [step({ type: 'image.add', image: { ...picture, name: 'a b.png' } })] }])))
           .toBe('shell.imageBadName')
+      })
+
+      it('keeps a sheet\'s places and what its poster says, through every step that writes them', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const before = await repositories.state(acme)
+        const sheet: DesignDiagram = { id: 'sheet', kind: 'sheet', name: 'Business', members: [], geometry: { nodes: [] } }
+        const place = { id: 'note-1', x: 10, y: 20, width: 90, height: 60 }
+        const commands: Command[] = [
+          addCrews,
+          { type: 'diagram.create', diagram: toDiagram(sheet) },
+          { type: 'diagram.update', id: 'sheet', patch: { paper: 'wide', labels: ['crews'], poster: { tile: 's', bandRows: 2, foot: 'Draft' } } },
+          { type: 'element.update', id: 'crews', patch: { icon: 'truck' } },
+          { type: 'node.set', diagramId: 'sheet', nodes: [{ id: 'crews', x: 188, y: 120, width: 400, height: 90 }] },
+          { type: 'box.set', diagramId: 'sheet', boxes: [{ id: 'rail', x: 0, y: 0, width: 176, height: 900 }] },
+          { type: 'cell.set', diagramId: 'sheet', cells: [{ id: 'crews', col: 1, row: 0 }] },
+          { type: 'poster.item.add', diagramId: 'sheet', item: { id: 'note-1', kind: 'note', text: 'Said here' }, place },
+          { type: 'poster.item.place', diagramId: 'sheet', place: { ...place, x: 40 } },
+        ]
+        await repositories.steps(acme, ...commands)
+        const after = await repositories.state(acme)
+        expect(after.model).toEqual(replayed(before.model, commands))
+        const held = after.model.diagrams.find((one) => one.id === 'sheet')
+        expect(held).toMatchObject({
+          paper: 'wide', labels: ['crews'], poster: { tile: 's', bandRows: 2, foot: 'Draft', items: [{ id: 'note-1', kind: 'note', text: 'Said here' }] },
+        })
+        expect(held?.geometry).toEqual({
+          nodes: [{ id: 'crews', x: 188, y: 120, width: 400, height: 90 }],
+          groups: [{ id: 'rail', x: 0, y: 0, width: 176, height: 900 }],
+          cells: [{ id: 'crews', col: 1, row: 0 }],
+          items: [{ ...place, x: 40 }],
+        })
+        expect(after.model.elements.find((one) => one.id === 'crews')?.icon).toBe('truck')
       })
 
       it('answers a state nobody else holds: changing what it answered changes nothing it keeps', async () => {
