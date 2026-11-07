@@ -220,7 +220,7 @@ describe('menuItemsFor — node', () => {
   it('read-only keeps only the navigation entries', () => {
     const withContainer = menuItemsFor(NODE, ctx({ readOnly: true, element: app() }));
     expect(ids(withContainer)).toEqual(['open-documentation', 'open-container']);
-    expect(withContainer[0].label).toBe('Open documentation');
+    expect(withContainer[0].label).toBe('Open the record');
     expect(withContainer[1].label).toBe('Open container diagram');
     // Creating a container diagram is a mutation, so a read-only viewer is not
     // offered it; reading documentation is not, so that stays.

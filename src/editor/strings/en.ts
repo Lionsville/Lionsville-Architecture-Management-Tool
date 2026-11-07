@@ -729,7 +729,7 @@ export const EN = {
   'c4.applicationTag': '{name} [Application]',
 
   // The documentation page and its doors.
-  'menu.openDocumentation': 'Open documentation',
-  'shortcut.open-documentation': 'Open documentation',
+  'menu.openDocumentation': 'Open the record',
+  'shortcut.open-documentation': 'Open the record',
   'node.hasDocumentation': 'Has documentation — right-click to open',
 } as const

@@ -51,6 +51,24 @@ function renderEditor(overrides: Partial<HostedEditorProps> = {}) {
   );
 }
 
+/** One move in one go, as an agent's `app.open` is: the page over this one left, and this one's opened. */
+describe('the documentation page, opened as another is left', () => {
+  it('stays open for an element drawn on no board', () => {
+    const view = renderEditor();
+    expect(screen.queryByTestId('doc-content')).toBeNull();
+    view.rerender(
+      <ThemeProvider theme={createTheme()}>
+        <HostedEditor
+          model={model()} activeDiagramId={undefined} onActiveDiagramChange={vi.fn()} onCreateContainerDiagram={vi.fn()} onCreateLayer7Diagram={vi.fn()}
+          hostRef={{ current: undefined as unknown as EditorHostState }}
+          documentationRequest={{ elementId: 'rating', diagramId: 'sh-1', nonce: 1 }} leaveDocumentation={{ nonce: 1 }}
+        />
+      </ThemeProvider>,
+    );
+    expect(screen.getByTestId('doc-content')).toBeTruthy();
+  });
+});
+
 describe('the documentation page where there is no board', () => {
   it('opens on the element the host named, listing the sheet’s own neighbours', () => {
     renderEditor({ documentationRequest: { elementId: 'rating', diagramId: 'sh-1', nonce: 1 } });

@@ -712,7 +712,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'c4.containerDescription': 'Das Container-Diagramm von {name}.',
   'c4.applicationTag': '{name} [Anwendung]',
 
-  'menu.openDocumentation': 'Dokumentation öffnen',
-  'shortcut.open-documentation': 'Dokumentation öffnen',
+  'menu.openDocumentation': 'Stammdaten öffnen',
+  'shortcut.open-documentation': 'Stammdaten öffnen',
   'node.hasDocumentation': 'Hat Dokumentation — Rechtsklick zum Öffnen',
 }

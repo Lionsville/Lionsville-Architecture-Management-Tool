@@ -27,7 +27,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'doc.data': 'Daten',
   'doc.operations': 'Betrieb',
   'doc.decisions': 'Entscheidungen und offene Punkte',
-  'field.openDocumentation': 'Als Seite öffnen',
+  'field.openDocumentation': 'Seite öffnen',
   'field.openDocumentationTip': 'Die ganze Beschreibung auf ihrer Seite schreiben und lesen, mit Platz und den Abschnitten der Vorlage',
   'doc.editText': 'Text bearbeiten',
   'doc.writeText': 'Text schreiben',

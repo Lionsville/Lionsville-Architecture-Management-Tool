@@ -120,10 +120,14 @@ export function useDocumentation(
   const [diagramId, setDiagramId] = useState<string | undefined>(undefined);
   const [fieldsWidth, setFieldsWidth] = useSeamWidth('documentation.fields', FIELDS_COLUMN.default);
   const { setSelection } = state;
+  // A move may leave one page and open another in one go, and the leaving is an
+  // effect, which runs after: it must not take away what that same go opened.
+  const openedNow = useRef(false);
   const open = useCallback((elementId: ElementId) => {
     const held = state.model.elements.find((e) => e.id === elementId);
     const away = held?.ref !== undefined ? props.ownership?.ownerOf(elementId)?.onDocument : undefined;
     if (away) { away(); return; }
+    openedNow.current = true;
     setSelection(selectElement(elementId));
     setDocumentationId(elementId);
   }, [setSelection, state.model.elements, props.ownership]);
@@ -131,8 +135,9 @@ export function useDocumentation(
   // By the number, so a host that hands the same request over again closes nothing twice.
   const leaveNonce = props.requests?.leaveDocumentation?.nonce;
   useEffect(() => {
-    if (leaveNonce !== undefined) { setDocumentationId(undefined); setDiagramId(undefined); }
+    if (leaveNonce !== undefined && !openedNow.current) { setDocumentationId(undefined); setDiagramId(undefined); }
   }, [leaveNonce]);
+  useEffect(() => { openedNow.current = false; });
 
   const close = () => { setDocumentationId(undefined); setDiagramId(undefined); };
   // An element deleted (or undone out of existence) while its page is open

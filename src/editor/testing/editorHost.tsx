@@ -55,6 +55,7 @@ export type HostedEditorProps = {
   onDescriptionHistory?(elementId: ElementId): void
   focusElement?: EditorRequests['focus']
   documentationRequest?: EditorRequests['documentation']
+  leaveDocumentation?: EditorRequests['leaveDocumentation']
   /** What the editor says about its documentation page, as it opens and closes. */
   onDocumentation?: EditorRequests['onDocumentation']
   onLayoutError?(message: string): void
@@ -201,7 +202,7 @@ export function hostedProps(
     history: o.onDiagramHistory || o.onDescriptionHistory
       ? { onDiagram: o.onDiagramHistory, onDescription: o.onDescriptionHistory }
       : undefined,
-    requests: { focus: o.focusElement, documentation: o.documentationRequest, ...(o.onDocumentation ? { onDocumentation: o.onDocumentation } : {}) },
+    requests: { focus: o.focusElement, documentation: o.documentationRequest, ...(o.leaveDocumentation ? { leaveDocumentation: o.leaveDocumentation } : {}), ...(o.onDocumentation ? { onDocumentation: o.onDocumentation } : {}) },
     layout: { onError: o.onLayoutError, onSettled: o.onLayoutSettled },
     preferences: { initial: o.initialPreferences, onChange: o.onPreferencesChange },
     language: { value: o.language, onChange: o.onLanguageChange },

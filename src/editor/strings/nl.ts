@@ -713,7 +713,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'c4.containerDescription': 'Het containerdiagram van {name}.',
   'c4.applicationTag': '{name} [Applicatie]',
 
-  'menu.openDocumentation': 'Documentatie openen',
-  'shortcut.open-documentation': 'Documentatie openen',
+  'menu.openDocumentation': 'Stamgegevens openen',
+  'shortcut.open-documentation': 'Stamgegevens openen',
   'node.hasDocumentation': 'Heeft documentatie — rechtsklik om te openen',
 }

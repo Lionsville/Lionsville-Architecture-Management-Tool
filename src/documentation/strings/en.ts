@@ -28,7 +28,7 @@ export const EN = {
   'doc.data': 'Data',
   'doc.operations': 'Operations',
   'doc.decisions': 'Decisions and open issues',
-  'field.openDocumentation': 'Open as a page',
+  'field.openDocumentation': 'Open the page',
   'field.openDocumentationTip': 'Write and read the whole description on its page, with room and the sections of the template',
   'doc.editText': 'Edit text',
   'doc.writeText': 'Write text',

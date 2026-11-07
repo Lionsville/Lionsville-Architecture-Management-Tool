@@ -419,6 +419,11 @@ src/editor/       The canvas and everything docked to it. React.
                                       is the slot a laid-out view is drawn through
                                       in place of the canvas (ADR-0016)
                     useEditorState    the selection, and gestures said as commands
+                    inspector/        an element's rows, said once for the panel and
+                                      the record (`elementRows`), which is shown where
+                                      (`rowTools`), the view's own panel
+                                      (`ThisViewPanel`), and what the canvas lends
+                                      the panel for a selection (`arrangeSeat`)
                     useShownDays      the day a board is looked at, which is a
                                       window's and never a command (ADR-0027);
                                       `dayShown`, the one day a panel beside a

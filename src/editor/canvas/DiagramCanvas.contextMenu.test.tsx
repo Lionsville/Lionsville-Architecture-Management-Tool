@@ -552,7 +552,7 @@ describe('DiagramCanvas — read-only', () => {
 
     fireEvent.contextMenu(nodeEl('a1'));
     const element = menu('Element menu');
-    expect(within(element).getAllByRole('menuitem').map(primary)).toEqual(['Open documentation', 'Open container diagram']);
+    expect(within(element).getAllByRole('menuitem').map(primary)).toEqual(['Open the record', 'Open container diagram']);
     fireEvent.keyDown(element, { key: 'Escape' });
 
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
@@ -566,6 +566,6 @@ describe('DiagramCanvas — read-only', () => {
     // A non-application has no container to open, but reading is still allowed.
     fireEvent.contextMenu(nodeEl('b1'));
     const other = menu('Element menu');
-    expect(within(other).getAllByRole('menuitem').map(primary)).toEqual(['Open documentation']);
+    expect(within(other).getAllByRole('menuitem').map(primary)).toEqual(['Open the record']);
   });
 });
