@@ -117,6 +117,8 @@ describe('Share with a Link…', () => {
     await waitFor(() => expect(app.bound()).toBe(true))
     await app.ask('app.open', { scope: '', page: 'decisions', id: 'adr-1' })
     await waitFor(() => expect(screen.getByText('Two depots')).toBeDefined())
+    // The page may be up before its move is written: counted once it has been.
+    await waitFor(() => expect(readPlace(window.location.hash)).toEqual({ scope: '', page: 'decisions', id: 'adr-1' }))
     const before = window.history.length
     fireEvent.click(screen.getByText('Two depots'))
     await waitFor(() => expect(readPlace(window.location.hash)).toEqual({ scope: '', page: 'decisions', id: 'adr-2' }))
