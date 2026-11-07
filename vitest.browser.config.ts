@@ -19,7 +19,9 @@ import { defineConfig } from 'vitest/config'
  * (`documentation/ui/Pictures.browser.test.tsx`). And the browser's own
  * ResizeObserver, whose timing against React's commits decides whether a card
  * is measured again, which the mock jsdom runs under cannot show: no commit
- * takes a line off a board (`editor/canvas/DiagramCanvas.lines.browser.test.tsx`).
+ * takes a line off a board (`editor/canvas/DiagramCanvas.lines.browser.test.tsx`;
+ * `DiagramCanvas.lines.test.tsx` holds the same order by hand in `npm run check`
+ * and on the runner, without the browser's timing).
  *
  * Not in `npm run check`: it starts two browsers, which is seconds the fast
  * loop should not pay. Run it with `npm run test:browser`, a gate of its own,
