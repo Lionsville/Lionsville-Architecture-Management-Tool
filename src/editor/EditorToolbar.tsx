@@ -241,7 +241,7 @@ export interface EditorToolbarProps {
  * frame's: nothing is left for this bar to hold but the tabs, which are row two.
  */
 function barDisplay(framed: boolean, kind: DesignDiagram['kind']): 'none' | 'flex' {
-  return framed && kind === 'technology' ? 'none' : 'flex';
+  return framed && (kind === 'technology' || kind === 'chart') ? 'none' : 'flex';
 }
 
 const TAB_LISTS = ['board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway'] as const;

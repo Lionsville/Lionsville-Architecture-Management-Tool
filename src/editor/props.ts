@@ -71,6 +71,18 @@ export interface PageView {
    * the day rather than in a second bar of their own. Null until it is drawn.
    */
   pageBar?: HTMLElement | null;
+  /** Whether the inspector docked beside the page is up, for a page that keeps its width until something is picked. */
+  onDock?: (shown: boolean) => void;
+  /** The day a dated page is drawn on (ADR-0027): a look at another, and keeping one with the view. */
+  day?: PageDay;
+}
+
+/** A dated page's hold on its day, for a page that draws its own bar. */
+export interface PageDay {
+  looking: boolean;
+  onChange(day: string | undefined): void;
+  /** Absent: nothing to keep, or a reader who may not. */
+  onKeep?: () => void;
 }
 
 /**

@@ -22,11 +22,15 @@ export type DayGroup = {
   days: readonly { day: string; label: string }[]
 }
 
-export function DayControl({ day, groups = [], onChange, outsideData, note, 'data-guide': guide }: {
+export function DayControl({ day, groups = [], onChange, onKeep, keepLabel, outsideData, note, 'data-guide': guide }: {
   /** The day looked at or saved on; nothing for today. */
   day: string | undefined
   groups?: readonly DayGroup[]
   onChange: (day: string | undefined) => void
+  /** Keep the day looked at with what is drawn, for whoever opens it. Absent: nothing to keep, or a reader who may not. */
+  onKeep?: () => void
+  /** What keeping it does, in this view's words. */
+  keepLabel?: string
   /** The day is past every date this view holds, which a person should not have to work out. */
   outsideData?: boolean
   /** Said where a day is typed: what a day is and is not, which only the screen knows. */
@@ -59,6 +63,7 @@ export function DayControl({ day, groups = [], onChange, outsideData, note, 'dat
           ]),
           { line: true },
           { label: t('kit.day.choose'), onSelect: choose },
+          ...(onKeep && keepLabel ? [{ line: true as const }, { label: keepLabel, onSelect: onKeep }] : []),
         ]}
       />
       {outsideData && <span className="kit-day__outside" role="note">{t('kit.day.outside')}</span>}

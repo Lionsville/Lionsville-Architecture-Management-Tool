@@ -72,8 +72,9 @@ export function PaletteDock({ parts, diagram }: { parts: EditorParts; diagram: D
  * actions the inspector calls, with the stand-in for a target another scope
  * defines resolved here, off the ownership seam.
  */
-export function LaidOutView({ parts, diagram, pageBar }: { parts: EditorParts; diagram: DesignDiagram; pageBar: HTMLElement | null }) {
-  const { props, state, readOnly, view } = parts;
+export function LaidOutView({ parts, diagram, pageBar, onDock }: { parts: EditorParts; diagram: DesignDiagram; pageBar: HTMLElement | null; onDock?: (shown: boolean) => void }) {
+  const { props, state, readOnly, view, board } = parts;
+  const looking = board.viewing.days[diagram.id] !== undefined;
   const technology = props.ownership?.technology;
   const names = usePersonNames();
   return (
@@ -87,6 +88,14 @@ export function LaidOutView({ parts, diagram, pageBar }: { parts: EditorParts; d
           onDay: (day: string | undefined) => parts.board.viewing.show(diagram.id, day),
           ownerText: (owner: PersonRef) => names.text(owner),
         } : {}),
+        ...(onDock ? { onDock } : {}),
+        day: {
+          looking,
+          onChange: (day) => board.viewing.show(diagram.id, day),
+          ...(!readOnly && looking ? {
+            onKeep: () => { state.actions.setAsOf(board.lookingAt); board.viewing.forget(diagram.id); },
+          } : {}),
+        },
         ...(state.selectedElement ? { selectedId: state.selectedElement.id } : {}),
         onSelect: (elementId) => state.setSelection(elementId === undefined ? EMPTY_SELECTION : selectElement(elementId)),
         onAdd: (seed) => state.actions.addElement(seed),

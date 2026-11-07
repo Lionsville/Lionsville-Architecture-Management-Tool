@@ -13,7 +13,7 @@ import type { Role, UnitType } from '../../model/operatingModel'
 import { orgChart } from '../../model/orgChart'
 import type { DesignElement } from '../../model/types'
 import type { Assignment, Organisation } from '../../model/units'
-import { holderLines } from './chartLines'
+import { chartExceptions, chartWideLines, holderLines } from './chartLines'
 
 const DAY = '2026-10-16'
 const division: UnitType = { id: 'ut-division', name: 'Division', top: true, within: [], slots: [{ role: 'ro-head', min: 1 }] }
@@ -85,5 +85,30 @@ describe('the lines the chart draws for the person picked', () => {
     const other = held('div', 'ro-head')
     const two: Organisation = { ...own, assignments: [...own.assignments, { ...other, id: 'div-2', person: { person: 'pe-two' } }] }
     expect(holderLines(two, orgChart(two, DAY), DAY, new Set(), two.assignments.find((one) => one.id === 'div-2'))).toEqual([])
+  })
+})
+
+describe('the lines of the whole chart', () => {
+  const crossed: Organisation = {
+    ...organisation,
+    units: organisation.units.map((one) => (one.id === 'team' ? { ...one, reportingLines: [{ role: 'ro-tl', kind: 'dotted' as const, to: { scope: '', unit: 'div', role: 'ro-head' } }] } : one)),
+  }
+  const chart = orgChart(crossed, DAY)
+
+  it('draws every dotted line from its holders, whoever is picked', () => {
+    const dotted = chartWideLines(crossed, chart, DAY, new Set(), 'dotted')
+    expect(dotted.length).toBeGreaterThan(0)
+    expect(dotted.every((line) => line.kind === 'dotted' && line.direction === 'up')).toBe(true)
+  })
+
+  it('draws only what departs from the model, and says where it was said', () => {
+    const exceptions = chartWideLines(crossed, chart, DAY, new Set(), 'exceptions')
+    expect(exceptions.map((line) => [line.override, line.source])).toEqual([[true, 'unit']])
+  })
+
+  it('lists a line and a role held outside the unit\'s slots as exceptions', () => {
+    const outside: Organisation = { ...crossed, assignments: [...crossed.assignments, { id: 'as-out', unitId: 'div', roleId: 'ro-dev', person: { person: 'pe-x' } }] }
+    const listed = chartExceptions(outside, orgChart(outside, DAY), DAY)
+    expect(listed.some((one) => one.kind === 'placement' && one.assignment.id === 'as-out')).toBe(true)
   })
 })

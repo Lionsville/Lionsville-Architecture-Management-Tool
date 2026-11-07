@@ -3,54 +3,45 @@
 
 /**
  * The organisation chart's outline (ADR-0036, amended 11 October 2026): the
- * units of the chart as a tree beside it, in the chart's own order, to find
- * a way about a large organisation. It replaces the *Show* select of the
- * first build, which narrowed the chart to one unit; the outline leaves the
- * chart whole and goes to the unit instead.
+ * units of the chart as a tree beside it, in the chart's own order, with the
+ * find on top of it and the unit's order at its foot, each in a place that does
+ * not move.
  *
- * **It leads the chart** (3.7.3). Unfolding a unit here, or picking it,
- * unfolds it on the chart too, with every unit above it, scrolls the chart to
- * it, rings it and picks it there — chosen where the open scope keeps it, as
- * pressing it on the chart does. Folding here folds the outline alone: the
- * two keep their folds apart, for the session (`useChartFolds`), and only
- * opening goes from here to the chart.
+ * **It leads the chart** (3.7.3). Unfolding a unit here, or picking it, unfolds
+ * it on the chart too, with every unit above it, scrolls the chart to it, rings
+ * it and picks it there. Folding here folds the outline alone: the two keep their
+ * folds apart, for the session (`useChartFolds`).
  *
- * **Its width is the person's** (3.7.3): a seam on its right drags it, or
- * the arrow keys on the seam, between a minimum and a maximum
- * (`editor/panels.OUTLINE_LIMITS`), kept with the editor's panel widths
- * where the workspace hands it one. On a narrow window the outline sits over
- * the chart, the window's width, and has no seam.
+ * **It is a tree to the keyboard as it is to the eye**: up and down walk the rows
+ * drawn, right opens or goes in, left closes or goes out, Home and End go to the
+ * ends and Enter picks. One row is in the tab order.
  *
- * **A type's long words are cut** (3.7.3, `TypeLabel`), the whole name on
- * hover and in each row's name.
+ * **Its width is the person's** (3.7.3): a seam on its right drags it, or the
+ * arrow keys on the seam, kept with the editor's panel widths where the workspace
+ * hands it one. On a narrow window the outline sits over the chart, the window's
+ * width, and has no seam.
  *
- * **Order among siblings** is moved here, under the tree: the unit picked, one
- * place up or down among the units of its type under the same parent
- * (`useSiblingOrder`) — buttons, so the keyboard has the same way as the
- * pointer. Every list of units follows it. Beside them, *Move to…* puts the
- * unit under another anywhere in the organisation (3.7.1, `useMoveUnit`).
- *
- * **A unit is made at the top from its header** (3.6.2): *+ Unit at the
- * top*, as on the chart's bar (`AddUnit.tsx`).
+ * **Order among siblings** is moved at its foot: the unit picked, one place up or
+ * down among the units of its type under the same parent (`useSiblingOrder`).
+ * Every list of units follows it. Beside them, *Move to…* puts it anywhere in the
+ * organisation (`useMoveUnit`).
  */
 import { useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import IconButton from '@mui/material/IconButton'
-import Typography from '@mui/material/Typography'
+import type { KeyboardEvent, ReactNode } from 'react'
 import type { Translate } from '../../i18n'
 import type { ChartUnit, OrgChart } from '../../model/orgChart'
 import type { ElementId } from '../../model/types'
 import { OUTLINE_LIMITS } from '../../editor/panels'
 import { CaretIcon } from '../../widgets/icons'
+import { Button } from '../../widgets/kit/Button'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { locatedSelector } from '../../widgets/useLocated'
-import { TypeLabel } from './TypeLabel'
 import type { SiblingOrder } from './useSiblingOrder'
 
 export type ChartOutlineProps = {
   chart: OrgChart
+  /** The units it lists: the chart's, or under a focus the one focused on. */
+  units: readonly ChartUnit[]
   /** The outline's own folds. */
   folded: ReadonlySet<ElementId>
   /** Fold or unfold a unit here; unfolding one also leads the chart to it (`onPick`). */
@@ -61,24 +52,43 @@ export type ChartOutlineProps = {
   onPick: (id: ElementId) => void
   /** Its width and where a new one goes; absent, it keeps its own while it is up. */
   width?: { width: number; onWidth(next: number): void } | undefined
-  typeName: (id: string | undefined) => string
+  /** The box that finds a unit or a person, on top of it. */
+  find?: ReactNode
   /** The current unit's place among its siblings; absent where it has none of its type or may not be moved here. */
   order: SiblingOrder | undefined
-  /** *+ Unit at the top*, in the header; absent where nothing is made from the chart. */
-  addAtTop?: ReactNode
-  /** *Move to…* the current unit, beside *Move up* and *Move down*; absent where nothing may be moved here or none is current. */
+  /** *Move to…* the current unit, beside *Up* and *Down*; absent where nothing may be moved here or none is current. */
   moveTo?: (() => void) | undefined
+  /** Whether the chart may be reordered at all: its foot stays in place while nothing is picked, so it moves nothing when something is. */
+  canMove?: boolean
   t: Translate
 }
 
 /** The attribute a row carries its unit's id in: not the chart's own, so a ring on the chart never lands here. */
 const ROW = 'data-outline-id'
 
-export function ChartOutline({ chart, folded, onToggle, current, onPick, typeName, order, addAtTop, moveTo, width, t }: ChartOutlineProps) {
+/** The rows drawn, top to bottom. */
+function rowsDrawn(units: readonly ChartUnit[], folded: ReadonlySet<ElementId>): ChartUnit[] {
+  return units.flatMap((unit) => [unit, ...(folded.has(unit.id) ? [] : rowsDrawn(unit.children, folded))])
+}
+
+/** The unit a row sits in, among those drawn. */
+function parentOf(units: readonly ChartUnit[], id: ElementId): ChartUnit | undefined {
+  for (const unit of units) {
+    if (unit.children.some((child) => child.id === id)) return unit
+    const found = parentOf(unit.children, id)
+    if (found) return found
+  }
+  return undefined
+}
+
+export function ChartOutline({ units, folded, onToggle, current, onPick, order, find, moveTo, canMove, width, t }: ChartOutlineProps) {
   const box = useRef<HTMLElement | null>(null)
   const [own, setOwn] = useState<number>(OUTLINE_LIMITS.default)
   const wide = width?.width ?? own
   const onWidth = width?.onWidth ?? setOwn
+  const [focusedRow, setFocusedRow] = useState<ElementId | undefined>(undefined)
+  const drawn = rowsDrawn(units, folded)
+  const rover = [focusedRow, current].find((id) => id !== undefined && drawn.some((row) => row.id === id)) ?? drawn[0]?.id
   // The unit gone to is brought on screen here too: the way to it is opened in
   // the same render, and a fold turned elsewhere in the outline leaves the
   // outline where the person put it.
@@ -86,110 +96,113 @@ export function ChartOutline({ chart, folded, onToggle, current, onPick, typeNam
     if (current === undefined) return
     box.current?.querySelector<HTMLElement>(locatedSelector(current, ROW))?.scrollIntoView?.({ block: 'nearest' })
   }, [current])
+  const focusRow = (id: ElementId | undefined) => {
+    if (id === undefined) return
+    setFocusedRow(id)
+    box.current?.querySelector<HTMLElement>(`${locatedSelector(id, ROW)} [data-testid="chart-outline-unit"]`)?.focus()
+  }
+  const onKeyDown = (event: KeyboardEvent, unit: ChartUnit) => {
+    const at = drawn.findIndex((row) => row.id === unit.id)
+    const hasUnits = unit.children.length > 0
+    const shut = folded.has(unit.id)
+    const moves: Record<string, () => void> = {
+      ArrowDown: () => focusRow(drawn[at + 1]?.id),
+      ArrowUp: () => focusRow(drawn[at - 1]?.id),
+      Home: () => focusRow(drawn[0]?.id),
+      End: () => focusRow(drawn.at(-1)?.id),
+      ArrowRight: () => { if (hasUnits && shut) onToggle(unit.id); else if (hasUnits) focusRow(unit.children[0]?.id) },
+      ArrowLeft: () => { if (hasUnits && !shut) onToggle(unit.id); else focusRow(parentOf(units, unit.id)?.id) },
+    }
+    const move = moves[event.key]
+    if (!move) return
+    event.preventDefault()
+    move()
+  }
   return (
     <>
-    <Box
-      component="nav" ref={box} aria-label={t('chart.outline')} data-testid="chart-outline" data-guide="chart.outline"
-      sx={{ width: { xs: 'auto', md: wide }, flex: '0 0 auto', maxHeight: { xs: 200, md: 'none' }, overflow: 'auto', p: 1, borderBottom: { xs: 1, md: 0 }, borderColor: 'divider', bgcolor: 'background.paper' }}
-    >
-      {addAtTop && <Box data-testid="chart-outline-header" sx={{ mb: 0.5 }}>{addAtTop}</Box>}
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', mb: 0.5 }}>{t('chart.outlineHint')}</Typography>
-      {chart.roots.length === 0
-        ? <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{t('chart.outlineEmpty')}</Typography>
-        : <Rows units={chart.roots} depth={0} folded={folded} onToggle={onToggle} current={current} onPick={onPick} typeName={typeName} t={t} />}
-      {(order || moveTo) && <OrderPanel order={order} moveTo={moveTo} t={t} />}
-    </Box>
-    <Box data-testid="chart-outline-seam" sx={{ display: { xs: 'none', md: 'flex' } }}>
-      <SeamResizer
-        orientation="vertical" region="before" value={wide} min={OUTLINE_LIMITS.min} max={OUTLINE_LIMITS.max}
-        defaultValue={OUTLINE_LIMITS.default} onChange={onWidth} label={t('chart.resizeOutline')}
-      />
-    </Box>
+      <nav ref={box} className="chart-outline" style={{ width: wide }} aria-label={t('chart.outline')} data-testid="chart-outline" data-guide="chart.outline">
+        {find}
+        {units.length === 0
+          ? <p className="chart-outline__empty">{t('chart.outlineEmpty')}</p>
+          : (
+            <ul className="chart-outline__tree" role="tree" aria-label={t('chart.outline')}>
+              <Rows units={units} depth={0} folded={folded} onToggle={onToggle} current={current} onPick={onPick} rover={rover} onKeyDown={onKeyDown} onFocusRow={setFocusedRow} t={t} />
+            </ul>
+          )}
+        {(canMove || order || moveTo) && <OrderFoot order={order} moveTo={moveTo} t={t} />}
+      </nav>
+      <div data-testid="chart-outline-seam" className="chart-outline__seam">
+        <SeamResizer
+          orientation="vertical" region="before" value={wide} min={OUTLINE_LIMITS.min} max={OUTLINE_LIMITS.max}
+          defaultValue={OUTLINE_LIMITS.default} onChange={onWidth} label={t('chart.resizeOutline')}
+        />
+      </div>
     </>
   )
 }
 
-function Rows({ units, depth, ...props }: Omit<ChartOutlineProps, 'chart' | 'order' | 'addAtTop' | 'moveTo' | 'width'> & { units: readonly ChartUnit[]; depth: number }) {
-  const { folded, onToggle, current, onPick, typeName, t } = props
+type RowsProps = Pick<ChartOutlineProps, 'folded' | 'onToggle' | 'current' | 'onPick' | 't'> & {
+  units: readonly ChartUnit[]; depth: number; rover: ElementId | undefined
+  onKeyDown: (event: KeyboardEvent, unit: ChartUnit) => void
+  onFocusRow: (id: ElementId) => void
+}
+
+function Rows({ units, depth, ...props }: RowsProps) {
+  const { folded, onToggle, current, onPick, rover, onKeyDown, onFocusRow, t } = props
   return (
-    <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+    <>
       {units.map((unit) => {
+        const hasUnits = unit.children.length > 0
         const shut = folded.has(unit.id)
         const on = current === unit.id
         return (
-          <li key={unit.id}>
-            <Box {...{ [ROW]: unit.id }} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, pl: depth * 1.5 }}>
-              {unit.children.length > 0 ? (
-                <IconButton
-                  size="small" aria-label={t(shut ? 'chart.unfold' : 'chart.fold', { name: unit.name })} aria-expanded={!shut}
+          <li key={unit.id} role="treeitem" aria-selected={on} {...(hasUnits ? { 'aria-expanded': !shut } : {})}>
+            <div className="chart-outline__row" data-on={on || undefined} {...{ [ROW]: unit.id }} style={{ paddingInlineStart: depth * 14 }}>
+              {hasUnits ? (
+                <button
+                  type="button" className="chart-outline__caret" data-shut={shut || undefined} tabIndex={-1} aria-label={t(shut ? 'chart.unfold' : 'chart.fold', { name: unit.name })}
                   onClick={() => { onToggle(unit.id); if (shut) onPick(unit.id) }} data-testid="chart-outline-fold"
-                  sx={{ width: 22, height: 22, color: 'text.secondary', transform: shut ? 'rotate(-90deg)' : undefined }}
                 >
                   <CaretIcon />
-                </IconButton>
-              ) : <Box sx={{ width: 22, flex: '0 0 auto' }} />}
-              <Button
-                size="small" color="inherit" onClick={() => onPick(unit.id)} aria-current={on ? 'true' : undefined}
+                </button>
+              ) : <span className="chart-outline__gap" />}
+              <button
+                type="button" className="chart-outline__name" onClick={() => onPick(unit.id)} onFocus={() => onFocusRow(unit.id)} onKeyDown={(event) => onKeyDown(event, unit)}
+                aria-current={on ? 'true' : undefined} tabIndex={rover === unit.id ? 0 : -1} title={unit.name}
                 data-testid="chart-outline-unit" data-unit-id={unit.id}
-                sx={{
-                  flex: 1, minWidth: 0, justifyContent: 'flex-start', textAlign: 'left', textTransform: 'none', fontSize: 12, fontWeight: on ? 700 : 400,
-                  px: 0.5, py: 0.125, bgcolor: on ? 'action.selected' : undefined,
-                }}
               >
-                <Box component="span" sx={{ fontSize: 9.5, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'text.secondary', mr: 0.5, flex: '0 0 auto' }}>
-                  <TypeLabel name={typeName(unit.unitTypeId)} />
-                </Box>
-                {' '}
-                <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{unit.name}</Box>
-              </Button>
-            </Box>
-            {unit.children.length > 0 && !shut && <Rows {...props} units={unit.children} depth={depth + 1} />}
+                {unit.name}
+              </button>
+              {hasUnits && shut && <span className="chart-outline__count" aria-hidden="true">{unit.children.length}</span>}
+            </div>
+            {hasUnits && !shut && <ul role="group"><Rows {...props} units={unit.children} depth={depth + 1} /></ul>}
           </li>
         )
       })}
-    </Box>
+    </>
   )
 }
 
 /**
- * The unit picked: one place up or down among the units of its type beside
- * it, one step in each scope that keeps one of them — and *Move to…*,
- * somewhere else in the organisation (3.7.1).
+ * The unit picked: one place up or down among the units of its type beside it,
+ * one step in each scope that keeps one of them, and *Move to…*. In a foot that
+ * does not appear and vanish with the pick, because that moved the rows above it.
  */
-function OrderPanel({ order, moveTo, t }: { order: SiblingOrder | undefined; moveTo: (() => void) | undefined; t: Translate }) {
+function OrderFoot({ order, moveTo, t }: { order: SiblingOrder | undefined; moveTo: (() => void) | undefined; t: Translate }) {
+  const none = t('chart.orderNone')
   return (
-    <Box data-testid="chart-order" sx={{ mt: 1.5, pt: 1, borderTop: 1, borderColor: 'divider' }}>
+    <div className="chart-outline__foot" data-testid="chart-order" title={t('chart.orderHint')}>
       {order && (
-        <>
-          <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{t('chart.orderHeading')}</Typography>
-          <Typography sx={{ fontSize: 11.5, color: 'text.secondary' }} data-testid="chart-order-of">
-            {order.parent !== undefined ? t('chart.orderIn', { type: order.type, unit: order.parent }) : t('chart.orderAtTop', { type: order.type })}
-          </Typography>
-        </>
+        <div className="chart-outline__of" data-testid="chart-order-of">
+          {order.parent !== undefined ? t('chart.orderIn', { type: order.type, unit: order.parent }) : t('chart.orderAtTop', { type: order.type })}
+        </div>
       )}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-        {order && (
-          <>
-            <Button size="small" variant="outlined" disabled={order.writing || order.at <= 0} onClick={() => order.move(-1)} data-testid="chart-order-up">
-              {t('chart.moveUp')}
-            </Button>
-            <Button size="small" variant="outlined" disabled={order.writing || order.at >= order.of - 1} onClick={() => order.move(1)} data-testid="chart-order-down">
-              {t('chart.moveDown')}
-            </Button>
-          </>
-        )}
-        {moveTo && (
-          <Button size="small" variant="outlined" onClick={moveTo} data-testid="chart-outline-move-to" data-guide="chart.outlineMoveTo">
-            {t('unitMove.open')}
-          </Button>
-        )}
-      </Box>
-      {order && <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }}>{t('chart.orderHint')}</Typography>}
-      {order?.said && (
-        <Typography role="status" data-testid="chart-order-said" sx={{ fontSize: 11.5, mt: 0.5, color: order.said.tone === 'error' ? 'error.main' : 'text.secondary' }}>
-          {order.said.text}
-        </Typography>
-      )}
-    </Box>
+      <div className="chart-outline__foot-row">
+        <Button size="small" reason={order ? (order.at <= 0 ? t('chart.orderFirst') : undefined) : none} working={order?.writing} onClick={() => order?.move(-1)} data-testid="chart-order-up">{t('chart.moveUp')}</Button>
+        <Button size="small" reason={order ? (order.at >= order.of - 1 ? t('chart.orderLast') : undefined) : none} working={order?.writing} onClick={() => order?.move(1)} data-testid="chart-order-down">{t('chart.moveDown')}</Button>
+        <Button size="small" reason={moveTo ? undefined : none} onClick={moveTo} data-testid="chart-outline-move-to" data-guide="chart.outlineMoveTo">{t('unitMove.open')}</Button>
+      </div>
+      {order?.said && <div role="status" className="chart-outline__said" data-tone={order.said.tone} data-testid="chart-order-said">{order.said.text}</div>}
+    </div>
   )
 }

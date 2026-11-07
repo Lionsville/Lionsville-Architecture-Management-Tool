@@ -23,7 +23,6 @@
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
@@ -50,6 +49,7 @@ import { foldKey } from '../sessionFolds'
 import { summaryWords } from './chartWords'
 import { useChartReading } from './chartReading'
 import { unitViewsHere } from './unitViewsHere'
+import './chart.css'
 
 export type ChartSummaryProps = {
   /** The chart, with the day it is looked at on (`asOf`; absent is today). */
@@ -142,11 +142,11 @@ function HowToRead({ t }: { t: Translate }) {
   const marks: { key: string; sample: ReactNode; text: string }[] = [
     {
       key: 'vacant', text: t('chart.readVacant'),
-      sample: <Chip size="small" variant="outlined" color="warning" label={t('unit.vacant')} sx={{ borderStyle: 'dashed', height: 22 }} />,
+      sample: <span className="org-vacant">{t('chart.vacant')}</span>,
     },
     {
       key: 'over', text: t('chart.readOver'),
-      sample: <Chip size="small" variant="outlined" label={t('chart.readName')} sx={{ height: 22, borderColor: 'error.main', borderWidth: 2, borderStyle: 'solid' }} />,
+      sample: <span className="org-person" data-over="">{t('chart.overWords', { share: 200 })}</span>,
     },
     {
       key: 'manages', text: t('chart.readManages'),
@@ -154,7 +154,7 @@ function HowToRead({ t }: { t: Translate }) {
     },
     {
       key: 'ended', text: t('chart.readEnded'),
-      sample: <Box component="span" sx={{ display: 'inline-block', width: 40, height: 18, border: 1, borderStyle: 'dashed', borderColor: 'text.secondary', borderRadius: 1, verticalAlign: 'middle' }} />,
+      sample: <span className="chart-read__box" />,
     },
   ]
   return (

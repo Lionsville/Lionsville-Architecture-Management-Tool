@@ -88,6 +88,12 @@ export type PickerProps = {
   onEscape?: () => void
   /** The focus left the field: a list that stands in a row goes back to being the row. */
   onLeave?: () => void
+  /** The one picked already: marked in the list, where the list stays up after a pick. */
+  selected?: string
+  /** A line under the list, for what the keys do here. */
+  hint?: string
+  /** The name a test finds the field by. */
+  inputTestId?: string
   'data-guide'?: string
 }
 
@@ -108,7 +114,10 @@ export function pickerRows({ options, recent, typed, didYouMean, canCreate, maxS
 }): { rows: Row[]; more: number; note?: string } {
   const listed = (found: readonly PickerOption[]): Row[] => {
     let group: string | undefined
-    return found.slice(0, maxShown).flatMap((option): Row[] => {
+    // What matches best comes first within a group, and a heading is said once.
+    const groups = [...new Set(found.map((option) => option.group))]
+    const ordered = groups.length > 1 ? groups.flatMap((held) => found.filter((option) => option.group === held)) : found
+    return ordered.slice(0, maxShown).flatMap((option): Row[] => {
       const heading = option.group !== undefined && option.group !== group
       group = option.group
       return heading ? [{ kind: 'heading', text: option.group as string }, { kind: 'option', option }] : [{ kind: 'option', option }]
@@ -131,7 +140,7 @@ export function pickerRows({ options, recent, typed, didYouMean, canCreate, maxS
 
 export function Picker({
   label, options, onPick, onCreate, createLabel, recent, didYouMean, refusal, placeholder, posture = 'open',
-  autoFocus = false, maxShown = 50, onEscape, onLeave, 'data-guide': guide,
+  autoFocus = false, maxShown = 50, onEscape, onLeave, selected, hint, inputTestId, 'data-guide': guide,
 }: PickerProps) {
   const { t } = useStrings()
   const base = useId()
@@ -209,7 +218,7 @@ export function Picker({
             return (
               <div
                 key={row.option.id} id={rowId(index)} role="option" aria-selected={isActive} aria-disabled={refused ? true : undefined}
-                className="kit-picker__row" data-active={isActive || undefined} data-refused={refused ? true : undefined}
+                className="kit-picker__row" data-active={isActive || undefined} data-refused={refused ? true : undefined} data-selected={row.option.id === selected || undefined}
                 onMouseDown={(event) => event.preventDefault()} onClick={() => choose(row)}
               >
                 <span className="kit-picker__name">{row.option.label}</span>
@@ -221,6 +230,7 @@ export function Picker({
       )}
       {note && <p className="kit-picker__note">{note}</p>}
       {more > 0 && <p className="kit-picker__note">{t('kit.picker.more', { count: more })}</p>}
+      {hint && <p className="kit-picker__note" data-hint>{hint}</p>}
     </div>
   )
 
@@ -230,6 +240,7 @@ export function Picker({
         <SearchIcon size={14} />
         <PickerInput
           aria-label={label}
+          data-testid={inputTestId}
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={showing && rows.length > 0}

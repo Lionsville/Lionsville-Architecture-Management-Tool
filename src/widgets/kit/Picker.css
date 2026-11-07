@@ -56,3 +56,5 @@
 .kit-picker__unchoose { display: inline-flex; padding: 2px; border: 0; background: none; color: var(--ink-3); cursor: pointer; }
 .kit-picker__unchoose:hover { color: var(--ink); }
 .kit-picker__unchoose:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.kit-picker__row[data-selected] { background: var(--selected-soft); }
+.kit-picker__note[data-hint] { border-top: 1px solid var(--line); }

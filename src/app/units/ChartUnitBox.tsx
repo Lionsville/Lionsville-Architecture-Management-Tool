@@ -2,63 +2,59 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * One unit of the organisation chart (ADR-0036 §7): its type and name, what
- * is worth saying beside them, a row per role with the people in it on the
- * chart's day, and the units under it, each a box of its own.
+ * The organisation chart's tree (ADR-0036 §7, drawn as a tree in 4.0.0): the
+ * organisation at the top, the units across, and units with nothing under them
+ * hanging in a column from their parent, a grid only where a focus has the room.
+ * Nothing is placed by hand. The connectors are measured from what this lays out
+ * (`ChartLinesOverlay`), so a word wrapping in German moves them with the box.
+ *
+ * **A box says who, in words.** The type's whole word, the name, one line per
+ * role, and what is worth saying beside them: `vacant` to press, *200% of their
+ * time*, *outside its roles*, each a fact of its own, so one mark never stands
+ * in for another. A fold says what it hides on one line, and the findings wait
+ * in the panel, because on a chart with dozens of empty roles a warning colour
+ * on every box stops meaning anything.
  *
  * **A click picks, a double-click opens** (17 October 2026), as on a board.
- * Pressing a person's chip chooses their assignment, wherever the unit is
- * kept, and the inspector beside the chart shows it; pressing a unit's name
- * picks the unit. Double-clicking either opens a unit kept in another scope
- * there; nothing leaves the chart on a single click. A vacancy assigns
- * someone. The chip says who — the register's name, *you* —
- * their share where it is not all of their time, *acting*, and *ext* for
- * someone from outside the organisation. A leaver's name stays plain: the
- * register says when a name goes (`people/shown.ts`).
+ * Pressing a person chooses their assignment, wherever the unit is kept, and
+ * the panel beside the chart shows it; pressing a unit's name picks the unit,
+ * or chooses it as the place a move lands. Double-clicking opens a unit kept in
+ * another scope there; nothing leaves the chart on a single click.
  *
- * **A unit with units under it folds** (3.6.1): the caret beside its name
- * hides the units under it, and the unit says what it hides — its units and
- * people, and its vacancies and findings where there are any. Its own roles
- * stay: a fold hides what is below a unit, never the unit.
- *
- * **The width is used, and only what needs attention is drawn** (3.6.1). A
- * unit's units share a grid of columns at least 220 pixels wide
- * (`UnitGrid`), so a cluster's teams fill the row instead of wrapping at a
- * third of it; one drawn with units under it takes a whole row, so its own
- * have the width in turn. A role nobody holds and nobody needs to — an
- * optional one — is not drawn until *Show optional roles* is on: it is a
- * choice, not a gap, and the unit's inspector always lists it. A vacancy is
- * always drawn.
- *
- * **A unit is made inside one from its name row** (3.6.2): a quiet *+* that
- * shows on hover, on focus and on the unit picked (`AddUnit.tsx`), never on a
- * chart that is only read. **And moved from there** (3.7.1): *Move to…*
- * beside it, as quiet, opens the dialog that puts the unit under another
- * anywhere in the organisation (`useMoveUnit`).
+ * **The picked box carries its verbs**, in words: *+ Unit inside*, *Move to…*
+ * and *Focus*, and none that write on a chart that is only read. The keyboard
+ * has them too (`chartKeys`).
  */
-import Box from '@mui/material/Box'
-import ButtonBase from '@mui/material/ButtonBase'
-import Chip from '@mui/material/Chip'
-import IconButton from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
+import type { DragEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import type { Language, Translate } from '../../i18n'
 import type { Role } from '../../model/operatingModel'
-import { drawsUnitsBelow, emptyOptional } from '../../model/orgChart'
-import type { ChartHolder, ChartRollUp, ChartSlot, ChartUnit, OrgChart } from '../../model/orgChart'
+import { drawsUnitsBelow, emptyOptional, shapeOf } from '../../model/orgChart'
+import type { ChartHolder, ChartOther, ChartRollUp, ChartShape, ChartSlot, ChartUnit, OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { ElementId } from '../../model/types'
 import type { PersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
-import { CaretIcon, MoveToIcon } from '../../widgets/icons'
-import { reportingLineColours } from '../theme'
-import { ADD_INSIDE, AddInside, showsAddInside } from './AddUnit'
+import { CaretIcon } from '../../widgets/icons'
+import { Card } from '../../widgets/kit/Card'
 import { rollUpWords, unitBadges } from './chartWords'
-import type { RollUpPart } from './chartWords'
 import type { UnitPlans } from './unitViewsHere'
+import type { ChartPeople } from './useChartFolds'
 import type { UnitOffer } from './useNewUnit'
-import { TypeLabel } from './TypeLabel'
+
+/** What a unit is to a move under way: the way it is drawn says so before it is pressed. */
+export type DropState = 'ok' | 'warn' | 'current' | 'none' | 'moving'
+
+/** A move under way, as the tree draws it. */
+export type TreeMove = {
+  stateOf: (id: ElementId) => DropState
+  /** The place chosen so far: a unit, {@link ORGANISATION} for the top, or none yet. */
+  target: string | undefined
+  /** The unit, or the organisation for the top, pressed as the place to land. */
+  choose: (id: ElementId | undefined) => void
+  atTop: DropState
+  words: { newPlace: string; sitsNow: string }
+}
 
 /** Everything the boxes read, worked out once per render of the page. */
 export type Drawing = {
@@ -79,21 +75,27 @@ export type Drawing = {
   chosen: string | undefined
   /** A unit's name pressed: the unit picked, on the chart. */
   pick: (id: ElementId) => void
-  /** A unit or a chip in it double-clicked: a unit kept in another scope opened there, one kept here picked. */
+  /** A unit or a person in it double-clicked: a unit kept in another scope opened there, one kept here picked. */
   open: (id: ElementId) => void
-  /** A holder's chip pressed: their assignment chosen. */
+  /** A holder pressed: their assignment chosen. */
   choose: (holder: ChartHolder, unit: ChartUnit) => void
-  vacancy: ((unit: ChartUnit, roleId: string) => void) | undefined
+  vacancy: ((unit: ChartUnit, roleId: string, at: HTMLElement) => void) | undefined
+  /** What a person holds across the organisation on the day, in per cent. */
+  loadOf: (person: PersonId) => number
   /** Whether a vacancy of this unit and role is one to press: every one where the scope may be written, a managed unit's where it is only read. */
   mayAssign: (unit: ChartUnit, roleId: string) => boolean
-  /** The chart's folds: absent, every unit is drawn open. */
-  folds?: ChartBoxFolds
-  /** Whether a role nobody holds and nobody needs to is drawn: *Show optional roles*. */
-  optional: boolean
-  /** *+ Unit* inside a unit: what it offers there, and the dialog it opens. Absent: nothing is made from the chart. */
+  folds: ChartBoxFolds
+  people: ChartPeople
+  /** *+ Unit inside*: what it offers there, and the dialog it opens. Absent: nothing is made from the chart. */
   add?: { offer: (unit: ChartUnit) => UnitOffer; open: (unit: ChartUnit) => void }
-  /** *Move to…* a unit: the dialog that puts it somewhere else in the organisation (3.7.1). Absent: nothing is moved from the chart. */
-  move?: (unit: ChartUnit) => void
+  /** *Move to…* a unit, onto a place where it was dragged there. Absent: nothing is moved from the chart. */
+  move?: (unit: ElementId, onto?: ElementId) => void
+  /** *Focus* on a unit. */
+  focus: (unit: ElementId) => void
+  /** The unit the arrows move from: the one box in the tab order. */
+  roving: ElementId | undefined
+  onKey: (unit: ChartUnit, event: KeyboardEvent) => void
+  moving?: TreeMove
 }
 
 /** What the boxes read of the chart's folds. */
@@ -104,180 +106,251 @@ export type ChartBoxFolds = {
   rollUp: (unit: ChartUnit) => ChartRollUp
 }
 
-const NONE_FOLDED: ReadonlySet<ElementId> = new Set()
+/** The key a dragged unit's id travels under: only this page reads it. */
+const DRAGGED = 'application/x-lvarch-unit'
 
-/**
- * Units beside each other — the chart's top units, or a unit's own — in a
- * grid that uses the width: as many columns of at least 220 pixels as fit,
- * each a unit drawn without units under it, and a whole row for each one
- * drawn with them. In the chart's order, read across.
- */
-export function UnitGrid({ units, depth, drawing }: { units: readonly ChartUnit[]; depth: number; drawing: Drawing }) {
-  const folded = drawing.folds?.folded ?? NONE_FOLDED
+/** The whole tree: the organisation over its top units, or the unit focused on over what is under it. */
+export function OrgTree({ organisation, focused, drawing }: { organisation: string; focused: ChartUnit | undefined; drawing: Drawing }) {
+  if (focused) {
+    return (
+      <div className="org-tree" data-focused="" data-testid="chart-units">
+        <Branch unit={focused} drawing={drawing} focus />
+      </div>
+    )
+  }
+  const { moving } = drawing
   return (
-    <Box
-      data-testid="chart-units"
-      sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: depth === 0 ? 1.5 : 1, alignItems: 'start', mt: depth === 0 ? 0 : 1 }}
-    >
-      {units.map((unit) => <UnitBox key={unit.id} unit={unit} depth={depth} drawing={drawing} wide={drawsUnitsBelow(unit, folded)} />)}
-    </Box>
+    <div className="org-tree" data-testid="chart-units">
+      <Card
+        className="org-node" name={organisation} data-organisation="" data-testid="chart-organisation" data-tree-box={ORGANISATION}
+        {...(moving ? { 'data-drop': moving.atTop, 'data-target': moving.target === ORGANISATION ? moving.atTop : undefined } : {})}
+        {...(moving && moving.atTop !== 'none' && moving.atTop !== 'current'
+          ? { nameAs: <button type="button" className="org-name" onClick={() => moving.choose(undefined)}>{organisation}</button> }
+          : {})}
+      />
+      <Under owner={ORGANISATION} units={drawing.chart.roots} shape="across" drawing={drawing} />
+    </div>
   )
 }
 
-/** One unit, its roles and the units under it; `wide` where it takes a whole row of its grid. */
-function UnitBox({ unit, depth, drawing, wide }: { unit: ChartUnit; depth: number; drawing: Drawing; wide: boolean }) {
-  const { t, folds } = drawing
+/** What the connectors call the organisation's box, which is no unit. */
+export const ORGANISATION = '\u0000organisation'
+
+function Under({ owner, units, shape, drawing }: { owner: string; units: readonly ChartUnit[]; shape: ChartShape; drawing: Drawing }) {
+  if (units.length === 0) return null
+  return (
+    <div className="org-under" data-shape={shape} data-tree-under={owner}>
+      {units.map((unit) => <Branch key={unit.id} unit={unit} drawing={drawing} />)}
+    </div>
+  )
+}
+
+/** A unit, and the units under it where it is not folded. */
+function Branch({ unit, drawing, focus = false }: { unit: ChartUnit; drawing: Drawing; focus?: boolean }) {
+  const { folded } = drawing.folds
+  const open = drawsUnitsBelow(unit, folded)
+  const shape = shapeOf(unit, folded, focus)
+  return (
+    <div className="org-branch" data-focus={focus || undefined} data-spreads={(open && shape === 'across') || undefined}>
+      <UnitBox unit={unit} drawing={drawing} />
+      {open && <Under owner={unit.id} units={unit.children} shape={shape} drawing={drawing} />}
+    </div>
+  )
+}
+
+/** One unit: its type, name, the people in it, and what is worth saying. */
+function UnitBox({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
+  const { t, folds, moving } = drawing
   const selected = drawing.selectedId === unit.id
-  const folded = folds !== undefined && unit.children.length > 0 && folds.folded.has(unit.id)
+  const shut = unit.children.length > 0 && folds.folded.has(unit.id)
+  const state = moving?.stateOf(unit.id)
+  const pressable = !moving || state === 'ok' || state === 'warn'
+  const press = () => { if (moving) moving.choose(unit.id); else drawing.pick(unit.id) }
+  const tabbable = drawing.roving === unit.id
   return (
-    <Box
-      data-testid="chart-unit" data-element-id={unit.id} data-unit-name={unit.name} data-ended={unit.ended ? 'true' : undefined} data-folded={folded ? 'true' : undefined}
-      data-wide={wide ? 'true' : undefined}
-      sx={{
-        border: 1, borderRadius: 1.5, p: 1, minWidth: 0, bgcolor: depth % 2 === 0 ? 'background.paper' : 'background.default',
-        borderColor: selected ? 'primary.main' : 'divider', borderStyle: unit.ended ? 'dashed' : 'solid',
-        boxShadow: selected ? 2 : 0, ...(wide ? { gridColumn: '1 / -1' } : {}),
-      }}
-    >
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 0.5, ...showsAddInside }}>
-        {folds && unit.children.length > 0 && (
-          <IconButton
-            size="small" aria-label={t(folded ? 'chart.unfold' : 'chart.fold', { name: unit.name })} aria-expanded={!folded}
-            onClick={() => folds.toggle(unit.id)} data-testid="chart-fold"
-            sx={{ width: 22, height: 22, mt: 0.25, color: 'text.secondary', transform: folded ? 'rotate(-90deg)' : undefined }}
+    <Card
+      className="org-node" name={unit.name} selected={selected && !moving} planned={unit.ended} dimmed={state === 'none'}
+      over={drawing.typeName(unit.unitTypeId)}
+      data-testid="chart-unit" data-element-id={unit.id} data-unit-name={unit.name} data-tree-box={unit.id}
+      data-ended={unit.ended ? 'true' : undefined} data-folded={shut ? 'true' : undefined}
+      data-drop={state} data-target={moving?.target === unit.id ? state : undefined}
+      {...dragging(unit, drawing)}
+      nameAs={(
+        <span className="org-head">
+          <button
+            type="button" className="org-name" onClick={press} onDoubleClick={() => { if (!moving) drawing.open(unit.id) }} onKeyDown={(event) => drawing.onKey(unit, event)}
+            data-testid="chart-unit-open" disabled={!pressable} tabIndex={tabbable ? 0 : -1}
           >
-            <CaretIcon />
-          </IconButton>
-        )}
-        <ButtonBase onClick={() => drawing.pick(unit.id)} onDoubleClick={() => drawing.open(unit.id)} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', flex: 1, borderRadius: 1 }} data-testid="chart-unit-open">
-          <Typography sx={{ fontSize: 9.5, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'text.secondary' }}><TypeLabel name={drawing.typeName(unit.unitTypeId)} /></Typography>
-          <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{unit.name}</Typography>
-        </ButtonBase>
-        {drawing.add && <AddInside name={unit.name} offer={drawing.add.offer(unit)} picked={selected} onAdd={() => drawing.add?.open(unit)} t={t} />}
-        {drawing.move && <MoveTo name={unit.name} picked={selected} onMove={() => drawing.move?.(unit)} t={t} />}
-      </Box>
-      {folded && <RollUp parts={rollUpWords(folds.rollUp(unit), t)} />}
-      <UnitBadges unit={unit} drawing={drawing} />
-      {unit.slots.map((slot) => <SlotRow key={slot.roleId} unit={unit} slot={slot} drawing={drawing} />)}
-      {unit.others.length > 0 && (
-        <Box data-testid="chart-others" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.5 }}>
-          {unit.others.map((other, at) => (
-            <HolderChip
-              key={`${other.assignment.id}/${at}`} holder={other} drawing={drawing} unit={unit}
-              prefix={`${drawing.roles.get(other.assignment.roleId)?.name ?? other.assignment.roleId}${other.endedRole ? ` (${t('chart.roleEnded')})` : ''}: `}
-              {...(other.exception ? { exception: t('unit.exceptionPlacement', { role: drawing.roles.get(other.assignment.roleId)?.name ?? other.assignment.roleId, unit: unit.name }) } : {})}
-            />
-          ))}
-        </Box>
+            {unit.name}
+          </button>
+          {unit.children.length > 0 && (
+            <button
+              type="button" className="org-caret" data-shut={shut || undefined} aria-label={t(shut ? 'chart.unfold' : 'chart.fold', { name: unit.name })} aria-expanded={!shut}
+              onClick={() => folds.toggle(unit.id)} data-testid="chart-fold" tabIndex={-1}
+            >
+              <CaretIcon />
+            </button>
+          )}
+        </span>
       )}
-      {unit.children.length > 0 && !folded && <UnitGrid units={unit.children} depth={depth + 1} drawing={drawing} />}
-    </Box>
+      body={(
+        <>
+          {unit.slots.map((slot) => <SlotRow key={slot.roleId} unit={unit} slot={slot} drawing={drawing} tabbable={tabbable} />)}
+          {unit.others.map((other, at) => <OtherRow key={`${other.assignment.id}/${at}`} other={other} unit={unit} drawing={drawing} tabbable={tabbable} />)}
+          {shut && <RollUp unit={unit} drawing={drawing} />}
+          <UnitBadges unit={unit} drawing={drawing} />
+          {moving?.target === unit.id && <span className="org-said">{moving.words.newPlace}</span>}
+          {state === 'current' && moving && <span className="org-said">{moving.words.sitsNow}</span>}
+          {selected && !moving && <Verbs unit={unit} drawing={drawing} />}
+        </>
+      )}
+    />
   )
 }
 
-/** A unit's own *Move to…*, quiet as its *+* is: shown on hover, on focus and on the unit picked. */
-function MoveTo({ name, picked, onMove, t }: { name: string; picked: boolean; onMove: () => void; t: Translate }) {
+/** Where a unit may be dragged to another: the same panel as *Move to…*, filled in, and nothing written until Move. */
+function dragging(unit: ChartUnit, drawing: Drawing): Record<string, unknown> {
+  const { move, moving } = drawing
+  if (!move || moving) return {}
+  return {
+    draggable: true,
+    onDragStart: (event: DragEvent) => { event.dataTransfer.setData(DRAGGED, unit.id); event.dataTransfer.effectAllowed = 'move' },
+    onDragOver: (event: DragEvent) => { if ([...event.dataTransfer.types].includes(DRAGGED)) event.preventDefault() },
+    onDrop: (event: DragEvent) => {
+      const dragged = event.dataTransfer.getData(DRAGGED)
+      if (dragged === '' || dragged === unit.id) return
+      event.preventDefault()
+      move(dragged, unit.id)
+    },
+  }
+}
+
+/** What a picked box offers, in words. */
+function Verbs({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
+  const { t, add, move } = drawing
+  const offer = add?.offer(unit)
   return (
-    <Tooltip title={t('unitMove.openNamed', { name })}>
-      <IconButton
-        size="small" aria-label={t('unitMove.openNamed', { name })} onClick={onMove}
-        data-guide="chart.moveTo" data-testid="chart-move-to" {...{ [ADD_INSIDE]: '', 'data-shown': picked ? 'true' : undefined }}
-        sx={{ width: 22, height: 22, mt: 0.25, color: 'text.secondary' }}
-      >
-        <MoveToIcon size={14} />
-      </IconButton>
-    </Tooltip>
+    <span className="org-actions" data-sheet-add="">
+      {add && offer && (
+        <button
+          type="button" className="org-link" onClick={() => add.open(unit)} title={offer.ok ? undefined : offer.reason} aria-disabled={offer.ok ? undefined : 'true'}
+          aria-label={t('chart.addInside', { name: unit.name })} data-guide="chart.addInside" data-testid="chart-add-inside"
+        >
+          {t('chart.addInsideShort')}
+        </button>
+      )}
+      {move && (
+        <button
+          type="button" className="org-link" onClick={() => move(unit.id)} aria-label={t('unitMove.openNamed', { name: unit.name })}
+          data-guide="chart.moveTo" data-testid="chart-move-to"
+        >
+          {t('unitMove.open')}
+        </button>
+      )}
+      <button type="button" className="org-link" onClick={() => drawing.focus(unit.id)} data-testid="chart-focus" data-guide="chart.focus">{t('chart.focusHere')}</button>
+    </span>
   )
 }
 
-/** What a folded unit hides, said where its units would be: the vacancies and findings in the warning colour. */
-function RollUp({ parts }: { parts: readonly RollUpPart[] }) {
+/** What a folded unit hides, on one line, pressed to unfold it. The findings stay in the panel, once. */
+function RollUp({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
+  const { t, folds } = drawing
+  const parts = rollUpWords({ ...folds.rollUp(unit), findings: 0 }, t).filter((part) => part.key !== 'people')
   return (
-    <Typography data-testid="chart-rollup" sx={{ fontSize: 11.5, color: 'text.secondary', mt: 0.25, ml: 3.5 }}>
-      {parts.map((part, at) => (
-        <Box component="span" key={part.key} data-part={part.key} sx={part.warn ? { color: 'warning.main', fontWeight: 600 } : undefined}>
-          {at > 0 ? ' · ' : ''}{part.text}
-        </Box>
-      ))}
-    </Typography>
+    <button type="button" className="org-rollup" data-testid="chart-rollup" tabIndex={-1} onClick={() => folds.toggle(unit.id)}>
+      {parts.map((part, at) => <span key={part.key} data-part={part.key}>{at > 0 ? ' · ' : ''}{part.text}</span>)}
+    </button>
   )
 }
 
-/** What is worth saying about a unit beside its name: the domains it serves, its days and the plans that set them, that it has ended. */
+/** What is worth saying beside a unit: the domains it serves, its days and the plans that set them, that it has ended. */
 function UnitBadges({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
   const badges = unitBadges(unit, { ...drawing, plans: drawing.plansOf(unit.id) })
   if (badges.length === 0) return null
   return (
-    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, my: 0.25 }}>
-      {badges.map((badge) => {
-        const chip = <Chip key={badge.key} size="small" variant="outlined" label={badge.text} data-testid={`chart-badge-${badge.key}`} sx={{ height: 18, fontSize: 10 }} />
-        return badge.full ? <Tooltip key={badge.key} title={badge.full}>{chip}</Tooltip> : chip
-      })}
-    </Box>
-  )
-}
-
-/** One role of a unit: who holds it, and what its slot still asks for. Nothing, for an empty optional one the chart is not showing. */
-function SlotRow({ unit, slot, drawing }: { unit: ChartUnit; slot: ChartSlot; drawing: Drawing }) {
-  const { t } = drawing
-  if (!drawing.optional && emptyOptional(slot)) return null
-  const role = drawing.roles.get(slot.roleId)
-  const vacancy = drawing.vacancy && drawing.mayAssign(unit, slot.roleId) ? drawing.vacancy : undefined
-  return (
-    <Box data-testid={`chart-slot-${slot.roleId}`} sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center', mt: 0.5 }}>
-      <Typography sx={{ fontSize: 11.5, minWidth: 110, color: 'text.secondary' }} data-testid="chart-role-name">
-        {role?.name ?? slot.roleId}
-        {role?.manages && <Box component="span" sx={{ ml: 0.5, fontSize: 9.5 }}>{t('unit.managesBadge')}</Box>}
-      </Typography>
-      {slot.holders.map((holder, at) => <HolderChip key={`${holder.assignment.id}/${at}`} holder={holder} drawing={drawing} unit={unit} />)}
-      {Array.from({ length: slot.vacant }, (_, at) => (
-        <Chip
-          key={`vacant-${at}`} size="small" variant="outlined" color="warning" label={t('unit.vacant')} data-testid="chart-vacant"
-          sx={{ borderStyle: 'dashed', height: 22 }} {...(vacancy ? { onClick: () => vacancy(unit, slot.roleId) } : {})}
-        />
+    <span className="org-said" data-testid="chart-badges" data-tone={unit.ended ? 'warn' : undefined}>
+      {badges.map((badge, at) => (
+        <span key={badge.key} data-testid={`chart-badge-${badge.key}`} title={badge.full}>{at > 0 ? ' · ' : ''}{badge.text}</span>
       ))}
-      {vacancy && slot.vacant === 0 && slot.room && slot.holders.length === 0 && (
-        <Chip size="small" variant="outlined" label={t('unit.assign')} sx={{ borderStyle: 'dashed', height: 22 }} onClick={() => vacancy(unit, slot.roleId)} data-testid="chart-assign" />
-      )}
-    </Box>
+    </span>
   )
 }
 
-/**
- * One person in a role: the register's name, their share, acting, *ext*,
- * *you*, a red edge when over all of their time, and the ring a chosen
- * assignment has — the one a chosen unit's box has.
- */
-function HolderChip({ holder, drawing, unit, prefix = '', exception }: {
-  holder: ChartHolder; drawing: Drawing; unit: ChartUnit; prefix?: string
-  /** An exception placement, said: the chip wears the override colour, and its tooltip and name say why. */
-  exception?: string
-}) {
+/** Whether a role is drawn at this level of the People menu: and always where it holds the person picked. */
+function slotDrawn(slot: ChartSlot, role: Role | undefined, drawing: Drawing): boolean {
+  if (drawing.people === 'all') return true
+  if (emptyOptional(slot)) return false
+  if (drawing.people === 'required') return true
+  return role?.manages === true || slot.holders.some((holder) => holder.assignment.id === drawing.chosen)
+}
+
+/** One role of a unit, on one line: who holds it, and what its slot still asks for. */
+function SlotRow({ unit, slot, drawing, tabbable }: { unit: ChartUnit; slot: ChartSlot; drawing: Drawing; tabbable: boolean }) {
   const { t } = drawing
-  const you = drawing.names.isMe(pickedPerson(holder.person))
+  const role = drawing.roles.get(slot.roleId)
+  if (!slotDrawn(slot, role, drawing)) return null
+  const vacancy = drawing.vacancy && drawing.mayAssign(unit, slot.roleId) ? drawing.vacancy : undefined
+  const parts: ReactNode[] = [
+    ...slot.holders.map((holder, at) => <Holder key={`${holder.assignment.id}/${at}`} holder={holder} drawing={drawing} unit={unit} tabbable={tabbable} />),
+    ...Array.from({ length: slot.vacant }, (_, at) => (vacancy
+      ? <button key={`vacant-${at}`} type="button" className="org-vacant" data-testid="chart-vacant" tabIndex={tabbable ? 0 : -1} onClick={(event) => vacancy(unit, slot.roleId, event.currentTarget)}>{t('chart.vacant')}</button>
+      : <span key={`vacant-${at}`} className="org-vacant" data-testid="chart-vacant">{t('chart.vacant')}</span>)),
+  ]
+  if (vacancy && slot.vacant === 0 && slot.room && slot.holders.length === 0) {
+    parts.push(<button key="assign" type="button" className="org-link" data-testid="chart-assign" tabIndex={tabbable ? 0 : -1} onClick={(event) => vacancy(unit, slot.roleId, event.currentTarget)}>{t('chart.assignWord')}</button>)
+  }
+  return (
+    <div className="org-row" data-testid={`chart-slot-${slot.roleId}`} title={role?.manages ? t('chart.readManages') : undefined}>
+      <span data-testid="chart-role-name">{role?.name ?? slot.roleId}</span>{': '}
+      {parts.map((part, at) => <span key={at}>{at > 0 ? ', ' : ''}{part}</span>)}
+      {slot.holders.filter((holder) => holder.overloaded).map((holder) => <Over key={holder.assignment.id} holder={holder} drawing={drawing} />)}
+    </div>
+  )
+}
+
+/** Somebody in a role the unit holds no slot for: said on a row of its own, what it departs from in words. */
+function OtherRow({ other, unit, drawing, tabbable }: { other: ChartOther; unit: ChartUnit; drawing: Drawing; tabbable: boolean }) {
+  const { t } = drawing
+  const role = drawing.roles.get(other.assignment.roleId)?.name ?? other.assignment.roleId
+  const said = other.exception ? t('unit.exceptionPlacement', { role, unit: unit.name }) : undefined
+  return (
+    <div className="org-row" data-testid="chart-others" data-exception={other.exception || undefined}>
+      {role}{other.endedRole ? ` (${t('chart.roleEnded')})` : ''}{': '}
+      <Holder holder={other} drawing={drawing} unit={unit} tabbable={tabbable} {...(said !== undefined ? { exception: said } : {})} />
+      {other.exception && <span className="org-row__said" data-testid="chart-outside">{t('chart.outsideRoles')}</span>}
+      {other.overloaded && <Over holder={other} drawing={drawing} />}
+    </div>
+  )
+}
+
+/** More than all of their time, in words on the line. */
+function Over({ holder, drawing }: { holder: ChartHolder; drawing: Drawing }) {
+  const { t } = drawing
+  return <span className="org-row__said" data-over="" data-testid="chart-over" title={t('chart.over')}>{t('chart.overWords', { share: drawing.loadOf(holder.person) })}</span>
+}
+
+/** One person in a role: the register's name, their share, acting, *ext* and *you*, and the ring a chosen assignment has. */
+function Holder({ holder, drawing, unit, exception, tabbable }: { holder: ChartHolder; drawing: Drawing; unit: ChartUnit; exception?: string; tabbable: boolean }) {
+  const { t } = drawing
+  const person = pickedPerson(holder.person)
+  const you = drawing.names.isMe(person)
   const chosen = drawing.chosen === holder.assignment.id && drawing.selectedId === undefined
   const label = [
-    `${prefix}${drawing.names.text(pickedPerson(holder.person))}`,
+    drawing.names.text(person),
     holder.share < 1 ? `${Math.round(holder.share * 100)}%` : undefined,
     holder.assignment.acting ? t('unit.acting') : undefined,
     drawing.external(holder.person) ? t('chart.external') : undefined,
     you ? t('unit.you') : undefined,
   ].filter(Boolean).join(' · ')
-  const chip = (
-    <Chip
-      size="small" label={label} color={you ? 'primary' : 'default'} variant={you ? 'filled' : 'outlined'}
-      data-testid="chart-holder" data-assignment-id={holder.assignment.id} data-role-id={holder.assignment.roleId} data-you={you ? 'true' : undefined}
-      data-over={holder.overloaded ? 'true' : undefined} data-chosen={chosen ? 'true' : undefined} aria-pressed={chosen}
-      data-exception={exception !== undefined ? 'true' : undefined} {...(exception !== undefined ? { 'aria-label': `${label}. ${exception}` } : {})}
-      onClick={() => drawing.choose(holder, unit)} onDoubleClick={() => drawing.open(unit.id)}
-      sx={{
-        height: 22,
-        ...(exception !== undefined && !holder.overloaded ? { borderColor: (theme) => reportingLineColours(theme).override, borderWidth: 2, borderStyle: 'dashed' } : {}),
-        ...(holder.overloaded ? { borderColor: 'error.main', borderWidth: 2, borderStyle: 'solid' } : {}),
-        ...(chosen ? { boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}` } : {}),
-      }}
-    />
+  return (
+    <button
+      type="button" className="org-person" data-testid="chart-holder" data-assignment-id={holder.assignment.id} data-role-id={holder.assignment.roleId}
+      data-you={you ? 'true' : undefined} data-over={holder.overloaded ? 'true' : undefined} data-chosen={chosen ? 'true' : undefined} aria-pressed={chosen}
+      data-exception={exception !== undefined ? 'true' : undefined} {...(exception !== undefined ? { 'aria-label': `${label}. ${exception}`, title: exception } : {})}
+      tabIndex={tabbable ? 0 : -1}
+      onClick={(event: MouseEvent) => { event.stopPropagation(); drawing.choose(holder, unit) }} onDoubleClick={() => drawing.open(unit.id)}
+    >
+      {label}
+    </button>
   )
-  const said = [holder.overloaded ? t('chart.over') : undefined, exception].filter(Boolean).join(' ')
-  return said ? <Tooltip title={said}>{chip}</Tooltip> : chip
 }

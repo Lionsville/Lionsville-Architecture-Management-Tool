@@ -7,12 +7,12 @@
  * and last day, the part of their time it takes, and a note where the person
  * holds more than all of their time on the chart's day.
  *
- * **Ended on a day the person chooses.** An assignment that runs on is ended
- * here by its last day, one step in the scope that keeps it — the chart's day
- * less one where that is still to come, today otherwise, and any day the
- * person picks instead, not before its first. An ended one stays: it is what
- * the person held. A correction, or a removal of one made by mistake, is the
- * unit's dialog (`AssignDialog`), opened from here.
+ * **Ended on a day the person chooses**, from a quiet action at the foot that
+ * asks for it: ending someone's assignment is not the page's strongest act. It
+ * is one step in the scope that keeps it, the day offered being the chart's less
+ * one where that is still to come and today otherwise, and never before its
+ * first. An ended one stays: it is what the person held. A correction, or a
+ * removal of one made by mistake, is the unit's dialog (`AssignDialog`).
  *
  * **Open in People** goes to the register with the person picked, where the
  * register is there: the People page is the organisation's, so it leaves this
@@ -30,12 +30,10 @@
  * correct it (ADR-0036 §12); everyone else reads it.
  */
 import { useMemo, useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
-import { SectionHeading } from '../../widgets/CompactForms'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { TextField } from '../../widgets/kit/Field'
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
@@ -78,10 +76,6 @@ export type AssignmentInspectorProps = {
   keptIn?: { name: string; open?: () => void }
 }
 
-const SECTION = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.25, mb: 0.25 } as const
-const LINE = { fontSize: 13 } as const
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
-
 export function AssignmentInspector(props: AssignmentInspectorProps) {
   const { t, language } = useStrings()
   const names = usePersonNames()
@@ -99,25 +93,24 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
   const mayWrite = mayWriteHere(props, held)
   const load = (person: PersonId) => loadOn(organisation.assignments, person, day, names.canonical)
   return (
-    <Box data-testid="assignment-inspector" sx={{ pt: 0.5 }}>
+    <div data-testid="assignment-inspector" className="chart-held">
       <Said held={held} unitName={unit?.name ?? held.unitId} roleName={roles.get(held.roleId)?.name ?? held.roleId}
         external={entry?.kind === 'external' && entry.state !== 'forgotten'} load={load(personOf(held))} day={day} names={names} language={language} t={t} />
       <HolderLines organisation={organisation} held={held} day={day} editable={mayWrite} scopeOf={(id) => at.unitAt(id)?.scope}
         names={names} dispatch={props.dispatch} s={t} />
-      {mayWrite && held.until === undefined && (
-        <EndOn key={held.id} held={held} day={day} today={props.today} language={language} t={t}
-          onEnd={(until) => props.dispatch({ type: 'assignment.update', id: held.id, patch: { until } })} />
-      )}
       {keptIn && <KeptIn keptIn={keptIn} t={t} />}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1.5 }}>
+      <div className="chart-held__acts">
         {mayWrite && people && unit && (
-          <Button size="small" variant="outlined" onClick={() => setCorrecting(true)} data-testid="assignment-correct">{t('chart.assignmentCorrect')}</Button>
+          <Button onClick={() => setCorrecting(true)} data-testid="assignment-correct">{t('chart.assignmentCorrect')}</Button>
         )}
         {props.onOpenPeople && people && entry && (
-          <Button size="small" variant="outlined" onClick={() => props.onOpenPeople?.(entry.id)} data-testid="assignment-people">{t('chart.assignmentPeople')}</Button>
+          <Button onClick={() => props.onOpenPeople?.(entry.id)} data-testid="assignment-people">{t('chart.assignmentPeople')}</Button>
         )}
-      </Box>
-      <Typography sx={{ ...QUIET, mt: 1.5 }}>{t('chart.assignmentHeld')}</Typography>
+      </div>
+      {mayWrite && held.until === undefined && (
+        <EndOn key={held.id} held={held} day={day} today={props.today} person={names.text(pickedPerson(personOf(held)))} role={roles.get(held.roleId)?.name ?? held.roleId} language={language} t={t}
+          onEnd={(until) => props.dispatch({ type: 'assignment.update', id: held.id, patch: { until } })} />
+      )}
       {correcting && people && unit && (
         <AssignDialog
           assigning={{ mode: 'edit', assignment: held }} unit={{ id: unit.id, name: unit.name }}
@@ -130,7 +123,7 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
           onClose={() => setCorrecting(false)} s={t}
         />
       )}
-    </Box>
+    </div>
   )
 }
 
@@ -144,12 +137,8 @@ function mayWriteHere(props: AssignmentInspectorProps, held: Assignment): boolea
 function KeptIn({ keptIn, t }: { keptIn: NonNullable<AssignmentInspectorProps['keptIn']>; t: Translate }) {
   return (
     <>
-      <Typography sx={{ ...QUIET, mt: 1 }} data-testid="assignment-kept-in">{t('chart.assignmentKeptIn', { scope: keptIn.name })}</Typography>
-      {keptIn.open && (
-        <Button size="small" variant="outlined" onClick={keptIn.open} data-testid="assignment-open-there" sx={{ mt: 1 }}>
-          {t('chart.assignmentOpenThere', { scope: keptIn.name })}
-        </Button>
-      )}
+      <p className="chart-held__quiet" data-testid="assignment-kept-in">{t('chart.assignmentKeptIn', { scope: keptIn.name })}</p>
+      {keptIn.open && <Button onClick={keptIn.open} data-testid="assignment-open-there">{t('chart.assignmentOpenThere', { scope: keptIn.name })}</Button>}
     </>
   )
 }
@@ -163,23 +152,18 @@ function Said({ held, unitName, roleName, external, load, day, names, language, 
   const share = shareOf(held)
   return (
     <>
-      <SectionHeading>{t('chart.assignment')}</SectionHeading>
-      <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700 }} data-testid="assignment-person">
+      <h2 className="chart-held__who" data-testid="assignment-person">
         {[names.text(person), external ? t('chart.external') : undefined, names.isMe(person) ? t('unit.you') : undefined].filter(Boolean).join(' · ')}
-      </Typography>
-      <Typography sx={LINE} data-testid="assignment-role">
+      </h2>
+      <p className="chart-held__line" data-testid="assignment-role">
         {[
           t('chart.assignmentIn', { role: roleName, unit: unitName }),
           share < 1 ? t('chart.assignmentShare', { share: Math.round(share * 100) }) : undefined,
           held.acting ? t('unit.acting') : undefined,
         ].filter(Boolean).join(' · ')}
-      </Typography>
-      <Typography sx={QUIET} data-testid="assignment-days">{daysText(held, language, t)}</Typography>
-      {overAllOfTheirTime(load) && (
-        <Typography sx={{ fontSize: 12, color: 'warning.main', mt: 0.5 }} data-testid="assignment-over">
-          {t('chart.assignmentOver', { share: Math.round(load * 100), day: formatDay(day, language) })}
-        </Typography>
-      )}
+      </p>
+      <p className="chart-held__quiet" data-testid="assignment-days">{daysText(held, language, t)}</p>
+      {overAllOfTheirTime(load) && <p className="chart-held__over" data-testid="assignment-over">{t('chart.assignmentOver', { share: Math.round(load * 100), day: formatDay(day, language) })}</p>}
     </>
   )
 }
@@ -204,25 +188,32 @@ export function endDay(held: Pick<Assignment, 'from'>, day: string, today: strin
   return held.from !== undefined && held.from > offered ? held.from : offered
 }
 
-/** *End it*: a last day, offered and changed, and the step that sets it. */
-function EndOn({ held, day, today, language, t, onEnd }: {
-  held: Assignment; day: string; today: string; language: Language; t: Translate; onEnd: (until: string) => void
+/** *End this assignment…*: quiet, at the foot, and it asks for its last day before the step that sets it. */
+function EndOn({ held, day, today, person, role, language, t, onEnd }: {
+  held: Assignment; day: string; today: string; person: string; role: string; language: Language; t: Translate; onEnd: (until: string) => void
 }) {
+  const [asking, setAsking] = useState(false)
   const [until, setUntil] = useState(() => endDay(held, day, today))
   const early = isDay(until) && held.from !== undefined && until < held.from
+  const ready = isDay(until) && !early
   return (
-    <Box data-testid="assignment-end">
-      <Typography sx={SECTION}>{t('chart.assignmentEnd')}</Typography>
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
-        <TextField type="date" label={t('chart.assignmentLastDay')} value={until} onChange={(event) => setUntil(event.target.value)}
-          slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'assignment-until' } }} />
-        <Button size="small" variant="contained" disabled={!isDay(until) || early} onClick={() => onEnd(until)} data-testid="assignment-end-on">
-          {t('chart.assignmentEndOn')}
-        </Button>
-      </Box>
-      {early && held.from !== undefined && (
-        <Typography sx={{ fontSize: 12, color: 'error.main', mt: 0.5 }}>{t('chart.assignmentEndEarly', { day: formatDay(held.from, language) })}</Typography>
-      )}
-    </Box>
+    <div data-testid="assignment-end" className="chart-end">
+      <Button variant="quiet" onClick={() => setAsking(true)} data-testid="assignment-end-ask">{t('chart.assignmentEndAsk')}</Button>
+      <Dialog
+        open={asking} size="s" title={t('chart.assignmentEndTitle', { person, role })} onClose={() => setAsking(false)}
+        onSubmit={() => { if (ready) { setAsking(false); onEnd(until) } }}
+        actions={(
+          <>
+            <Button onClick={() => setAsking(false)}>{t('assign.cancel')}</Button>
+            <Button type="submit" variant="primary" reason={ready ? undefined : t('chart.assignmentLastDay')} data-testid="assignment-end-on">{t('chart.assignmentEndOn')}</Button>
+          </>
+        )}
+      >
+        <TextField
+          type="date" label={t('chart.assignmentLastDay')} value={until} onChange={setUntil} data-testid="assignment-until" autoFocus
+          hint={t('chart.assignmentEndBody')} {...(early && held.from !== undefined ? { error: t('chart.assignmentEndEarly', { day: formatDay(held.from, language) }) } : {})}
+        />
+      </Dialog>
+    </div>
   )
 }

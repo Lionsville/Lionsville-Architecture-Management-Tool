@@ -18,19 +18,8 @@
  * an exception to the model before it is saved, and marked wherever the
  * holder is shown.
  */
-import { useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import { FieldLabel, FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import ListSubheader from '@mui/material/ListSubheader'
-import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
+import { useRef, useState } from 'react'
+import Popover from '@mui/material/Popover'
 import type { Translate } from '../../i18n'
 import type { Command } from '../../model/commands'
 import type { Role } from '../../model/operatingModel'
@@ -41,7 +30,10 @@ import type { Person } from '../../people/person'
 import { useSaying } from '../../people/ui/access'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { PersonPicker } from '../../people/ui/PersonPicker'
-import { reportingLineColours } from '../theme'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { SelectField, TextField } from '../../widgets/kit/Field'
+import './chart.css'
 
 /** What the dialog is asked to do: put someone in a role, or look again at an assignment. */
 export type Assigning =
@@ -65,6 +57,10 @@ export type AssignDialogProps = {
   dispatch: (command: Command) => unknown
   /** What each person holds on the day, said beside their name. */
   loadOf: (person: Person) => string | undefined
+  /** What a person holds on the day, in per cent, for the warning before they go over. Absent: no warning. */
+  shareOf?: (person: PersonId) => number
+  /** What to call a person in that warning. */
+  personName?: (person: PersonId) => string
   scopeName: string
   onClose: () => void
   s: Translate
@@ -111,17 +107,15 @@ export function assignmentOf(form: Form, id: string, unitId: string): Assignment
   }
 }
 
-export function AssignDialog(props: AssignDialogProps) {
-  const { assigning, unit, roles, register, today, makeId, dispatch, loadOf, scopeName, onClose, s } = props
-  const endOn = props.endOn ?? today
+/** What the form holds and what it does, for the dialog and the popover alike. */
+function useAssignForm(props: AssignDialogProps) {
+  const { assigning, unit, roles, today, makeId, dispatch, onClose } = props
   const held = assigning.mode === 'edit' ? assigning.assignment : undefined
-  const saying = useSaying(s)
   const [form, setForm] = useState<Form>(() => formOf(assigning, today))
   const set = (patch: Partial<Form>) => setForm((was) => ({ ...was, ...patch }))
-  const { roleId, person, share, from, until, acting } = form
   const others = (props.others ?? []).filter((one) => !roles.some((slot) => slot.id === one.id))
-  const role = roles.find((one) => one.id === roleId) ?? others.find((one) => one.id === roleId)
-  const exception = role !== undefined && !roles.some((one) => one.id === roleId)
+  const role = roles.find((one) => one.id === form.roleId) ?? others.find((one) => one.id === form.roleId)
+  const exception = role !== undefined && !roles.some((one) => one.id === form.roleId)
   const done = (command: Command | undefined) => {
     if (command && dispatch(command) !== undefined) onClose()
   }
@@ -133,57 +127,110 @@ export function AssignDialog(props: AssignDialogProps) {
     if (Object.keys(patch).length === 0) onClose()
     else done({ type: 'assignment.update', id: held.id, patch })
   }
+  return { held, form, set, others, role, exception, done, save }
+}
+
+/** How far over all of their time the person chosen would go, with this share: nothing where they stay within it. */
+export function shareAfter(already: number, share: string): number | undefined {
+  const adding = (shareFrom(share) ?? 1) * 100
+  const after = Math.round(already + adding)
+  return after > 100 ? after : undefined
+}
+
+/** The fields: which role, who, for how much of their time, from when. */
+function AssignFields({ props, state }: { props: AssignDialogProps; state: ReturnType<typeof useAssignForm> }) {
+  const { unit, roles, register, loadOf, s } = props
+  const { held, form, set, others, role, exception } = state
+  const saying = useSaying(s)
+  const share = useRef<HTMLInputElement>(null)
+  const { roleId, person, from, until, acting } = form
+  const over = person !== undefined && props.shareOf ? shareAfter(props.shareOf(person), form.share) : undefined
   return (
-    <FieldsDialog open onClose={onClose} maxWidth="xs" fullWidth data-testid="assign-dialog">
-      <DialogTitle sx={{ fontSize: 16 }}>
-        {s(held ? 'assign.editTitle' : 'assign.title', { role: role?.name ?? roleId, unit: unit.name })}
-      </DialogTitle>
-      <DialogContent sx={{ display: 'grid', gap: 1.25, pt: '8px !important' }}>
-        <TextField select label={s('assign.role')} value={roleId} onChange={(event) => set({ roleId: event.target.value })}
-          slotProps={{ htmlInput: { 'data-testid': 'assign-role' } }}>
-          {roles.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-          {others.length > 0 && <ListSubheader data-testid="assign-other-roles">{s('assign.otherRoles')}</ListSubheader>}
-          {others.map((one) => <MenuItem key={one.id} value={one.id} data-exception="true">{one.name}</MenuItem>)}
-        </TextField>
-        {exception && (
-          <Typography role="note" data-testid="assign-exception" sx={{ fontSize: 12, color: 'text.secondary', borderLeft: 3, borderColor: (theme) => reportingLineColours(theme).override, pl: 1 }}>
-            {s('assign.exception', { role: role.name, unit: unit.name })}
-          </Typography>
-        )}
-        <FieldLabel>{s('assign.person')}</FieldLabel>
-        <PersonPicker register={register} saying={saying} value={person} onChange={(id) => set({ person: id })} note={loadOf} s={s} />
-        {saying.said && <Typography sx={{ fontSize: 12, color: saying.said.tone === 'error' ? 'error.main' : 'text.secondary' }}>{saying.said.text}</Typography>}
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField type="number" label={s('assign.share')} value={share} onChange={(event) => set({ share: event.target.value })}
-            slotProps={{ htmlInput: { min: 1, max: 100, 'data-testid': 'assign-share' } }} sx={{ width: 110 }} />
-          <TextField type="date" label={s('assign.from')} value={from} onChange={(event) => set({ from: event.target.value })}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'assign-from' } }} />
-          {held && (
-            <TextField type="date" label={s('assign.until')} value={until} onChange={(event) => set({ until: event.target.value })}
-              slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'assign-until' } }} />
+    <>
+      <SelectField
+        label={s('assign.role')} value={roleId} onChange={(next) => set({ roleId: next })} data-testid="assign-role"
+        options={[
+          ...roles.map((one) => ({ value: one.id, label: one.name })),
+          ...others.map((one) => ({ value: one.id, label: s('assign.otherRole', { role: one.name }) })),
+        ]}
+      />
+      {exception && role && <p className="chart-assign__note" role="note" data-testid="assign-exception">{s('assign.exception', { role: role.name, unit: unit.name })}</p>}
+      <PersonPicker register={register} saying={saying} value={person} onChange={(id) => set({ person: id })} note={loadOf} s={s} />
+      {saying.said && <p className="chart-assign__said" data-tone={saying.said.tone}>{saying.said.text}</p>}
+      {over !== undefined && person !== undefined && (
+        <p className="chart-assign__over" role="note" data-testid="assign-over">
+          {s('assign.over', { person: props.personName?.(person) ?? '', share: over })}{' '}
+          <button type="button" className="chart-panel__link" onClick={() => share.current?.focus()} data-testid="assign-set-share">{s('assign.setShare')}</button>
+        </p>
+      )}
+      <div className="chart-assign__two">
+        <TextField ref={share} type="number" label={s('assign.share')} value={form.share} onChange={(next) => set({ share: next })} min={1} max={100} data-testid="assign-share" />
+        <TextField type="date" label={s('assign.from')} value={from} onChange={(next) => set({ from: next })} data-testid="assign-from" />
+        {held && <TextField type="date" label={s('assign.until')} value={until} onChange={(next) => set({ until: next })} data-testid="assign-until" />}
+      </div>
+      <label className="chart-assign__check">
+        <input type="checkbox" checked={acting} onChange={(event) => set({ acting: event.target.checked })} />
+        {s('assign.acting')}
+      </label>
+    </>
+  )
+}
+
+/** An assignment looked at again: a question over the page, with the two ways it can end besides being corrected. */
+export function AssignDialog(props: AssignDialogProps) {
+  const { unit, today, onClose, s } = props
+  const endOn = props.endOn ?? today
+  const state = useAssignForm(props)
+  const { held, form, role, done, save } = state
+  return (
+    <Dialog
+      open size="s" onClose={onClose} onSubmit={save}
+      title={s(held ? 'assign.editTitle' : 'assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}
+      actions={(
+        <>
+          {held && !held.until && !(held.from && held.from > endOn) && (
+            <Button size="small" onClick={() => done({ type: 'assignment.update', id: held.id, patch: { until: endOn } })} data-testid="assign-end">
+              {s('assign.endToday', { day: endOn })}
+            </Button>
           )}
-        </Box>
-        <FormControlLabel control={<Checkbox checked={acting} onChange={(event) => set({ acting: event.target.checked })} />}
-          label={s('assign.acting')} />
-        <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{s('assign.oneStep', { scope: scopeName })}</Typography>
-      </DialogContent>
-      <DialogActions sx={{ flexWrap: 'wrap', gap: 0.5 }}>
-        {held && !held.until && !(held.from && held.from > endOn) && (
-          <Button size="small" onClick={() => done({ type: 'assignment.update', id: held.id, patch: { until: endOn } })} data-testid="assign-end">
-            {s('assign.endToday', { day: endOn })}
+          {held && <Button size="small" variant="danger" onClick={() => done({ type: 'assignment.remove', id: held.id })} data-testid="assign-remove">{s('assign.remove')}</Button>}
+          <span className="chart-assign__grow" />
+          <Button onClick={onClose}>{s('assign.cancel')}</Button>
+          <Button type="submit" variant="primary" reason={form.person && form.roleId ? undefined : s('assign.pickFirst')} data-testid="assign-save">
+            {s(held ? 'assign.saveChange' : 'assign.save')}
           </Button>
-        )}
-        {held && (
-          <Button size="small" color="error" onClick={() => done({ type: 'assignment.remove', id: held.id })} data-testid="assign-remove">
-            {s('assign.remove')}
-          </Button>
-        )}
-        <Box sx={{ flex: 1 }} />
-        <Button size="small" onClick={onClose}>{s('assign.cancel')}</Button>
-        <Button size="small" variant="contained" disabled={!person || !roleId} onClick={save} data-testid="assign-save">
-          {s(held ? 'assign.saveChange' : 'assign.save')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+        </>
+      )}
+    >
+      <div className="chart-assign" data-testid="assign-dialog" data-flat=""><AssignFields props={props} state={state} /></div>
+    </Dialog>
+  )
+}
+
+/**
+ * Someone put in a vacancy, in a popover beside it: it is often one choice, and
+ * the chart is why a person is here, so it stays in view. Each person's share now
+ * is on their line, and going over is said before Assign, not found afterwards.
+ */
+export function AssignPopover({ at, ...props }: AssignDialogProps & { at: HTMLElement | null }) {
+  const { unit, onClose, s } = props
+  const state = useAssignForm(props)
+  const { form, role, save } = state
+  return (
+    <Popover
+      open anchorEl={at} onClose={onClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+      slotProps={{ backdrop: { invisible: true } }} aria-label={s('assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}
+    >
+      <form className="chart-assign" data-testid="assign-dialog" data-guide="chart.assign" onSubmit={(event) => { event.preventDefault(); save() }}>
+        <h2 className="chart-assign__title">{s('assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}</h2>
+        <AssignFields props={props} state={state} />
+        <div className="chart-assign__foot">
+          <p className="chart-assign__said">{s('assign.oneStepShort')}</p>
+          <span className="chart-assign__grow" />
+          <Button onClick={onClose}>{s('assign.cancel')}</Button>
+          <Button type="submit" variant="primary" reason={form.person && form.roleId ? undefined : s('assign.pickFirst')} data-testid="assign-save">{s('assign.save')}</Button>
+        </div>
+      </form>
+    </Popover>
   )
 }

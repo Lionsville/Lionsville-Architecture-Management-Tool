@@ -34,7 +34,9 @@ import type { Manager, Organisation } from '../../model/units'
 import type { ScopePath } from '../../projects/scopePath'
 import { FieldLabel, FieldsDialog, FieldText } from '../../widgets/CompactForms'
 import { GroupedPicker } from '../../widgets/PickToAdd'
+import type { PickOption } from '../../widgets/PickToAdd'
 import { AT_THE_TOP, parentChoices } from './choices'
+import { managedByWords } from './moveWords'
 
 export type MoveUnitDialogProps = {
   unitId: ElementId
@@ -52,9 +54,27 @@ export type MoveUnitDialogProps = {
   s: Translate
 }
 
-export function MoveUnitDialog(props: MoveUnitDialogProps) {
+export type MovePlanning = {
+  parent: string | null
+  setParent: (parent: string | null) => void
+  along: ReadonlySet<ElementId>
+  toggleAlong: (id: ElementId) => void
+  beside: readonly { id: ElementId; name: string }[]
+  /** Where it sits now: its parent on the day, absent at the top. */
+  current: ElementId | undefined
+  options: readonly PickOption[]
+  plan: UnitMovePlan | UnitMoveRefusal | undefined
+  parentId: ElementId | undefined
+  said: string | undefined
+  busy: boolean
+  ready: boolean
+  move: () => void
+}
+
+/** What a move is making up its mind about, whichever way it is drawn: the place, the units going with it, and what that does. */
+export function useMovePlan(props: Pick<MoveUnitDialogProps, 'unitId' | 'organisation' | 'today' | 'scopeOf' | 'scopeLabel' | 'onMove' | 'onClose' | 's'>, initialParent: string | null = null): MovePlanning {
   const { unitId, organisation, today, s, onClose } = props
-  const [parent, setParent] = useState<string | null>(null)
+  const [parent, setChosen] = useState<string | null>(initialParent)
   const [along, setAlong] = useState<ReadonlySet<ElementId>>(new Set())
   const [said, setSaid] = useState<string | undefined>(undefined)
   const [busy, setBusy] = useState(false)
@@ -84,12 +104,19 @@ export function MoveUnitDialog(props: MoveUnitDialogProps) {
       else setSaid(refused)
     })
   }
-  const toggle = (id: ElementId) => setAlong((held) => {
+  const toggleAlong = (id: ElementId) => setAlong((held) => {
     const next = new Set(held)
     if (next.has(id)) next.delete(id)
     else next.add(id)
     return next
   })
+  const setParent = (next: string | null) => { setChosen(next); setSaid(undefined) }
+  return { parent, setParent, along, toggleAlong, beside, current, options, plan, parentId, said, busy, ready, move }
+}
+
+export function MoveUnitDialog(props: MoveUnitDialogProps) {
+  const { unitId, s, onClose } = props
+  const { parent, setParent, along, toggleAlong, beside, current, options, plan, parentId, said, ready, move } = useMovePlan(props)
   return (
     <FieldsDialog open onClose={onClose} maxWidth="sm" fullWidth data-testid="move-unit-dialog" data-guide="chart.moveUnit">
       <DialogTitle sx={{ fontSize: 16 }}>{s('unitMove.title', { name: props.name(unitId) })}</DialogTitle>
@@ -98,8 +125,8 @@ export function MoveUnitDialog(props: MoveUnitDialogProps) {
           {current === undefined ? s('unitMove.atTopNow') : s('unitMove.sitsNow', { parent: props.name(current) })}
         </FieldText>
         <GroupedPicker
-          options={options} field={s('unitMove.parent')} nothing={s('unitMove.nothing')} value={parent}
-          onPick={(id) => { setParent(id); setSaid(undefined) }} testId="move-unit-parent"
+          options={[...options]} field={s('unitMove.parent')} nothing={s('unitMove.nothing')} value={parent}
+          onPick={setParent} testId="move-unit-parent"
         />
         {beside.length > 0 && (
           <Box data-testid="move-unit-along">
@@ -109,7 +136,7 @@ export function MoveUnitDialog(props: MoveUnitDialogProps) {
               {beside.map((one) => (
                 <FormControlLabel
                   key={one.id} label={<Typography sx={{ fontSize: 12.5 }}>{one.name}</Typography>}
-                  control={<Checkbox checked={along.has(one.id)} onChange={() => toggle(one.id)} slotProps={{ input: { 'aria-label': one.name } }} data-testid="move-unit-along-unit" data-unit-id={one.id} />}
+                  control={<Checkbox checked={along.has(one.id)} onChange={() => toggleAlong(one.id)} slotProps={{ input: { 'aria-label': one.name } }} data-testid="move-unit-along-unit" data-unit-id={one.id} />}
                 />
               ))}
             </Box>
@@ -128,7 +155,7 @@ export function MoveUnitDialog(props: MoveUnitDialogProps) {
 }
 
 /** Why a move is refused, said. */
-function refusalText(refusal: UnitMoveRefusal, name: (id: ElementId) => string, s: Translate, parentId: ElementId | undefined): string {
+export function refusalText(refusal: UnitMoveRefusal, name: (id: ElementId) => string, s: Translate, parentId: ElementId | undefined): string {
   if (refusal.reason === 'itself') return s('unitMove.refusedItself')
   if (refusal.reason === 'loop' && parentId !== undefined) return s('unitMove.refusedLoop', { parent: name(parentId), unit: name(refusal.unitId), day: refusal.day })
   return s('unitMove.refusedOther')
@@ -162,13 +189,10 @@ function WhatItDoes({ plan, parentId, name, organisation, s, ...props }: MoveUni
 }
 
 /** Who manages each unit moved from above it, today, before and after. */
-function ManagedBy({ managers, name, organisation, personName, s }: Pick<MoveUnitDialogProps, 'name' | 'organisation' | 'personName' | 's'> & {
+export function ManagedBy({ managers, name, organisation, personName, s }: Pick<MoveUnitDialogProps, 'name' | 'organisation' | 'personName' | 's'> & {
   managers: readonly ManagersMoved[]
 }) {
-  const roleName = (id: string) => organisation.roles.find((one) => one.id === id)?.name ?? id
-  const said = (list: readonly Manager[]) => (list.length === 0
-    ? s('unitMove.managedNobody')
-    : list.map((one) => `${s('unit.managedByLine', { person: personName(one.person), role: roleName(one.roleId), unit: name(one.unitId) })}${one.via === 'line' ? ` · ${s('unit.byLine')}` : one.via === 'override' ? ` · ${s('unit.byOverride')}` : ''}`).join('; '))
+  const said = managedByWords(organisation, name, personName, s)
   return (
     <Box data-testid="move-unit-managed">
       <FieldLabel>{s('unitMove.managedBy')}</FieldLabel>

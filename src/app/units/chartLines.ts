@@ -28,8 +28,8 @@ import type { LineKind } from '../../model/operatingModel'
 import type { ChartUnit, OrgChart } from '../../model/orgChart'
 import { reportingLoops } from '../../model/reporting'
 import type { ElementId } from '../../model/types'
-import { everyLineOn, holdersAt, holdersOn, linesOfHolder, personLinesOn, personOf, positionKey } from '../../model/units'
-import type { Assignment, Organisation, ReportingLineOn } from '../../model/units'
+import { everyLineOn, holdersAt, holdersOn, isExceptionPlacement, linesOfHolder, personLinesOn, personOf, positionKey } from '../../model/units'
+import type { Assignment, LineSource, Organisation, ReportingLineOn } from '../../model/units'
 
 /**
  * One end of a line on the chart: a unit's box, the row of a role where it is
@@ -58,6 +58,8 @@ export type ChartLine = {
   at: ChartPosition
   lands: ChartPosition
   tone: 'plain' | 'vacant' | 'loop'
+  /** On an exception: whose own line it is, which its tag says. */
+  source?: LineSource
   /** Both ends in one box: a line between two roles of the same unit (ADR-0039 §2, amended). */
   within?: true
 }
@@ -89,7 +91,7 @@ export function holderLines(
     drawn.push({
       key: `${direction}/${line.unitId}/${line.roleId}/${line.kind}/${line.assignmentId ?? ''}`, kind: line.kind, direction, override: line.override,
       from: start, to: end, at: { unitId: line.unitId, roleId: line.roleId }, lands: { unitId: target.unitId, roleId: target.roleId },
-      tone: loop ? 'loop' : vacant ? 'vacant' : 'plain', ...(within ? { within: true } : {}),
+      tone: loop ? 'loop' : vacant ? 'vacant' : 'plain', ...(line.override ? { source: line.source } : {}), ...(within ? { within: true } : {}),
     })
   }
   for (const line of linesOfHolder(organisation, picked, day)) {
@@ -118,6 +120,72 @@ export function holderLines(
     draw(line, 'into', along, [picked.id])
   }
   return drawn
+}
+
+/**
+ * The lines the Lines menu draws for the whole chart: every dotted line, or
+ * every exception to the model, each running up from whoever reports along it
+ * to whoever holds what it lands on. A role's line runs from its holders with
+ * no line of their own of that kind, and from its name where nobody holds it.
+ */
+export function chartWideLines(organisation: Organisation, chart: OrgChart, day: string, folded: ReadonlySet<ElementId>, which: 'dotted' | 'exceptions'): ChartLine[] {
+  const every = everyLineOn(organisation, day)
+  if (every.length === 0) return []
+  const shownAs = foldedInto(chart, folded)
+  const looped = new Set(reportingLoops(organisation, day).flat().map((at) => positionKey(at.unitId, at.roleId)))
+  const own = new Set(personLinesOn(organisation, day).map((line) => `${line.assignmentId}/${line.kind}`))
+  const drawn: ChartLine[] = []
+  for (const line of every) {
+    const target = line.to
+    if (line.state !== 'lands' || !target) continue
+    if (which === 'dotted' ? line.kind !== 'dotted' : !line.override) continue
+    const from = line.assignmentId !== undefined
+      ? [line.assignmentId]
+      : holdersOn(organisation.assignments, line.unitId, line.roleId, day).filter((one) => !own.has(`${one.id}/${line.kind}`)).map((one) => one.id)
+    const named = target.person === undefined ? undefined : holdersAt(organisation.assignments, target, day).map((one) => one.id)
+    const start = endOf(shownAs, line.unitId, line.roleId, from)
+    const end = endOf(shownAs, target.unitId, target.roleId, named)
+    if (!start || !end) continue
+    const within = start.unitId === end.unitId
+    if (within && (start.roleId === undefined || end.roleId === undefined)) continue
+    const loop = looped.has(positionKey(line.unitId, line.roleId)) && line.kind === 'solid'
+    const vacant = holdersAt(organisation.assignments, target, day).length === 0
+    drawn.push({
+      key: `up/${line.unitId}/${line.roleId}/${line.kind}/${line.assignmentId ?? ''}`, kind: line.kind, direction: 'up', override: line.override,
+      from: start, to: end, at: { unitId: line.unitId, roleId: line.roleId }, lands: { unitId: target.unitId, roleId: target.roleId },
+      tone: loop ? 'loop' : vacant ? 'vacant' : 'plain', ...(line.override ? { source: line.source } : {}), ...(within ? { within: true } : {}),
+    })
+  }
+  return drawn
+}
+
+/** A departure from the model, as the Exceptions list says it. */
+export type ChartException =
+  | { kind: 'line'; key: string; unitId: ElementId; roleId: string; lands: ChartPosition; lineKind: LineKind; source: LineSource; assignmentId?: string }
+  | { kind: 'placement'; key: string; unitId: ElementId; assignment: Assignment; overloaded: boolean }
+
+/** Every departure from the model on the day among the units drawn: the lines first, then the people in a role outside their unit's. */
+export function chartExceptions(organisation: Organisation, chart: OrgChart, day: string): ChartException[] {
+  const drawn = [...walkUnits(chart.roots)]
+  const here = new Set(drawn.map((unit) => unit.id))
+  const lines: ChartException[] = everyLineOn(organisation, day)
+    .filter((line) => line.override && line.state === 'lands' && line.to !== undefined && here.has(line.unitId))
+    .map((line) => ({
+      kind: 'line', key: `line/${line.unitId}/${line.roleId}/${line.kind}/${line.assignmentId ?? ''}`, unitId: line.unitId, roleId: line.roleId,
+      lands: { unitId: line.to!.unitId, roleId: line.to!.roleId }, lineKind: line.kind, source: line.source,
+      ...(line.assignmentId !== undefined ? { assignmentId: line.assignmentId } : {}),
+    }))
+  const placements: ChartException[] = drawn.flatMap((unit) => unit.others
+    .filter((other) => other.exception && isExceptionPlacement(organisation, other.assignment))
+    .map((other) => ({ kind: 'placement' as const, key: `placement/${other.assignment.id}`, unitId: unit.id, assignment: other.assignment, overloaded: other.overloaded })))
+  return [...lines, ...placements]
+}
+
+function* walkUnits(units: readonly ChartUnit[]): Generator<ChartUnit> {
+  for (const unit of units) {
+    yield unit
+    yield* walkUnits(unit.children)
+  }
 }
 
 /** Each unit drawn, by the box it is shown in: its own, or the topmost folded unit above it. */

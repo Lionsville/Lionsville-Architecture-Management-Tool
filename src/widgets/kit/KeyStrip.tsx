@@ -9,6 +9,7 @@
  * A swatch is a token's name or a colour somebody chose, and a value with neither
  * is drawn as an outline, which is how *Other* looks.
  */
+import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Mark } from './Mark'
 import type { MarkKind } from './Mark'
@@ -16,8 +17,18 @@ import { tokenVar } from './tokens'
 import type { ColourToken } from './tokens'
 import './KeyStrip.css'
 
-/** A mark where the rows draw one, so the key looks like what it explains. */
-export type KeyValue = { id: string; label: string; count: number; swatch?: ColourToken; colour?: string; mark?: MarkKind }
+export type KeyValue = {
+  id: string
+  label: string
+  /** How many are drawn. A key of what a line means has none to count. */
+  count?: number
+  swatch?: ColourToken
+  colour?: string
+  /** A mark where the rows draw one, so the key looks like what it explains. */
+  mark?: MarkKind
+  /** A sample of what it means, for what a patch of colour cannot show: a line and its head. */
+  sample?: ReactNode
+}
 
 /** Past six a key stops being read, so the smallest go together as *Other*. */
 const KEY_AT_MOST = 6
@@ -26,12 +37,12 @@ export const OTHER_VALUE = 'other'
 
 /** The values to show, largest first, the rest gathered up. `otherLabel` is the word for what was gathered. */
 export function keyValues(values: readonly KeyValue[], otherLabel: string): KeyValue[] {
-  const ordered = [...values].sort((a, b) => b.count - a.count)
+  const ordered = [...values].sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
   if (ordered.length <= KEY_AT_MOST) return ordered
   const rest = ordered.slice(KEY_AT_MOST - 1)
   return [
     ...ordered.slice(0, KEY_AT_MOST - 1),
-    { id: OTHER_VALUE, label: otherLabel, count: rest.reduce((sum, value) => sum + value.count, 0) },
+    { id: OTHER_VALUE, label: otherLabel, count: rest.reduce((sum, value) => sum + (value.count ?? 0), 0) },
   ]
 }
 
@@ -51,12 +62,12 @@ export function KeyStrip({ values, pressed, onPress, onKeep, note, 'data-guide':
     <div className="kit-key" role="group" aria-label={t('kit.key.label')} data-guide={guide}>
       <div className="kit-key__values">
         {shown.map((value) => {
-          const swatch = value.mark ? <Mark kind={value.mark} /> : <span
+          const swatch = value.sample ?? (value.mark ? <Mark kind={value.mark} /> : <span
             className="kit-key__swatch"
             style={value.swatch || value.colour ? { background: value.colour ?? tokenVar(value.swatch!) } : undefined}
             data-outline={value.swatch || value.colour ? undefined : true}
-          />
-          const words = <>{swatch}<span>{value.label}</span> <span className="kit-key__count">{value.count}</span></>
+          />)
+          const words = <>{swatch}<span>{value.label}</span> {value.count !== undefined && <span className="kit-key__count">{value.count}</span>}</>
           return onPress
             ? (
               <button

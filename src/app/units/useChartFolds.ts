@@ -21,21 +21,21 @@
  * **A first open shows two levels** (3.7.3). The first time a view is opened
  * with units on it, every unit below the second level is folded
  * (`model/orgChart.foldedOnFirstOpen`), in the chart and in the outline,
- * whatever the chart's size, and the page says so until a fold is changed.
- * From then on the person's own folds are what is kept. (Until 3.7.3 only a
- * chart of more than thirty units folded.)
+ * whatever the chart's size, and the Levels control says so. From then on the
+ * person's own folds are what is kept. (Until 3.7.3 only a chart of more than
+ * thirty units folded.)
  *
  * **Going somewhere unfolds the way.** *Find*, *Find me*, a finding, a pick in
  * the outline and a request from outside unfold every unit above the one they
  * go to, on both, so it is on screen when it is scrolled to.
  *
- * **Empty optional roles are folded away too** (3.6.1): a role nobody holds
- * and nobody needs to is a choice, not a gap, so the chart leaves it out
- * until *Show optional roles* is on — kept the way the folds are, for the
- * session and under the view's key, never as a preference.
+ * **How many people it draws** is kept the same way, for the session and
+ * under the view's key, never as a preference: the leaders, every role a unit
+ * must fill, or all of them — a role nobody holds and nobody needs to is a
+ * choice, not a gap, so it waits for the last (3.6.1).
  */
 import { useCallback, useEffect, useState } from 'react'
-import { foldable, foldedOnFirstOpen, unitsAboveIn } from '../../model/orgChart'
+import { foldedAtLevel, foldedOnFirstOpen, unitsAboveIn } from '../../model/orgChart'
 import type { OrgChart } from '../../model/orgChart'
 import type { ElementId } from '../../model/types'
 import { opened, toggled } from '../sessionFolds'
@@ -46,38 +46,42 @@ export type ChartFolds = {
   folded: ReadonlySet<ElementId>
   /** The units folded in the outline, which folds on its own. */
   outline: ReadonlySet<ElementId>
-  /** This open folded a large chart, and nobody has folded or unfolded since: the page says why. */
-  foldedOnOpen: boolean
   toggle: (id: ElementId) => void
   toggleOutline: (id: ElementId) => void
-  foldAll: () => void
-  unfoldAll: () => void
+  /** Fold the chart to show this many levels; `undefined` is every one. */
+  setLevels: (levels: number | undefined) => void
   /** Unfold every unit above this one, on the chart and in the outline. */
   reveal: (id: ElementId) => void
   /** Unfold this unit and every unit above it on the chart, and the way to it in the outline: what the outline asks of the chart. */
   expand: (id: ElementId) => void
-  /** Whether the chart draws the optional roles nobody holds. */
-  optional: boolean
-  toggleOptional: () => void
+  /** How many of a unit's roles the chart draws. */
+  people: ChartPeople
+  setPeople: (people: ChartPeople) => void
 }
 
-/** Where a view's two trees, and whether it shows its empty optional roles, are kept in the memory. */
+/** The People menu: who holds a managing role, every role a unit must fill, or every role it has. */
+export const CHART_PEOPLE = ['leaders', 'required', 'all'] as const
+export type ChartPeople = (typeof CHART_PEOPLE)[number]
+
+/** Where a view's two trees, and how many people it draws, are kept in the memory. */
 export type FoldKeys = { chart: string; outline: string; optional: string }
 
-/** What the memory holds under a view's `optional` key while the chart shows them: a set, as everything it keeps is. */
-const SHOWN = 'shown'
+type Held = { chart: ReadonlySet<ElementId>; outline: ReadonlySet<ElementId>; decided: boolean }
 
-type Held = { chart: ReadonlySet<ElementId>; outline: ReadonlySet<ElementId>; foldedOnOpen: boolean; decided: boolean }
+/** What the memory holds under a view's people key: a set, as everything it keeps is, of the one word. */
+function peopleKept(kept: ReadonlySet<string> | undefined): ChartPeople {
+  return CHART_PEOPLE.find((one) => kept?.has(one)) ?? 'leaders'
+}
 
 /** What a view opens with: what the memory kept, or — the first time it has units — the first open's folds. */
 function opening(chart: OrgChart, memory: SessionFolds, keys: FoldKeys): Held {
   const chartKept = memory.recall(keys.chart)
   const outlineKept = memory.recall(keys.outline)
-  if (chartKept && outlineKept) return { chart: chartKept, outline: outlineKept, foldedOnOpen: false, decided: true }
+  if (chartKept && outlineKept) return { chart: chartKept, outline: outlineKept, decided: true }
   // Nothing drawn yet — the organisation still being read — decides nothing.
-  if (chart.units === 0) return { chart: new Set(), outline: new Set(), foldedOnOpen: false, decided: false }
+  if (chart.units === 0) return { chart: new Set(), outline: new Set(), decided: false }
   const first = new Set(foldedOnFirstOpen(chart))
-  return { chart: chartKept ?? first, outline: outlineKept ?? first, foldedOnOpen: !chartKept && first.size > 0, decided: true }
+  return { chart: chartKept ?? first, outline: outlineKept ?? first, decided: true }
 }
 
 export function useChartFolds(chart: OrgChart, memory: SessionFolds, keys: FoldKeys): ChartFolds {
@@ -91,10 +95,9 @@ export function useChartFolds(chart: OrgChart, memory: SessionFolds, keys: FoldK
     memory.keep(keys.chart, held.chart)
     memory.keep(keys.outline, held.outline)
   }, [held, memory, keys])
-  const toggle = useCallback((id: ElementId) => setHeld((was) => ({ ...was, chart: toggled(was.chart, id), foldedOnOpen: false })), [])
+  const toggle = useCallback((id: ElementId) => setHeld((was) => ({ ...was, chart: toggled(was.chart, id) })), [])
   const toggleOutline = useCallback((id: ElementId) => setHeld((was) => ({ ...was, outline: toggled(was.outline, id) })), [])
-  const foldAll = useCallback(() => setHeld((was) => ({ ...was, chart: new Set(foldable(chart)), foldedOnOpen: false })), [chart])
-  const unfoldAll = useCallback(() => setHeld((was) => ({ ...was, chart: new Set(), foldedOnOpen: false })), [])
+  const setLevels = useCallback((levels: number | undefined) => setHeld((was) => ({ ...was, chart: new Set(foldedAtLevel(chart, levels)) })), [chart])
   const reveal = useCallback((id: ElementId) => {
     const above = unitsAboveIn(chart, id)
     setHeld((was) => {
@@ -106,16 +109,10 @@ export function useChartFolds(chart: OrgChart, memory: SessionFolds, keys: FoldK
     const above = unitsAboveIn(chart, id)
     setHeld((was) => {
       const next = { ...was, chart: opened(was.chart, [...above, id]), outline: opened(was.outline, above) }
-      if (next.chart === was.chart && next.outline === was.outline) return was
-      // A unit opened from the outline is the person's own fold: the page no longer says why it opened folded.
-      return { ...next, foldedOnOpen: next.chart === was.chart ? was.foldedOnOpen : false }
+      return next.chart === was.chart && next.outline === was.outline ? was : next
     })
   }, [chart])
-  const [optional, setOptional] = useState(() => memory.recall(keys.optional)?.has(SHOWN) ?? false)
-  useEffect(() => memory.keep(keys.optional, new Set(optional ? [SHOWN] : [])), [optional, memory, keys])
-  const toggleOptional = useCallback(() => setOptional((was) => !was), [])
-  return {
-    folded: held.chart, outline: held.outline, foldedOnOpen: held.foldedOnOpen, toggle, toggleOutline, foldAll, unfoldAll, reveal, expand,
-    optional, toggleOptional,
-  }
+  const [people, setPeople] = useState<ChartPeople>(() => peopleKept(memory.recall(keys.optional)))
+  useEffect(() => memory.keep(keys.optional, new Set([people])), [people, memory, keys])
+  return { folded: held.chart, outline: held.outline, toggle, toggleOutline, setLevels, reveal, expand, people, setPeople }
 }

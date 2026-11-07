@@ -18,10 +18,16 @@ import './Card.css'
 
 export type CardProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & {
   name: string
+  /** The name as something to press: drawn in the name's place, the name still being what it says. */
+  nameAs?: ReactNode
+  /** A word over the name, such as what kind of thing it is. Said from the middle distance in. */
+  over?: ReactNode
   /** What it is: said from the middle distance in. */
   sub?: ReactNode
   /** What it does: said only near. */
   about?: ReactNode
+  /** Rows of its own under the name, for a card that says more than a line. */
+  body?: ReactNode
   /** Marks are a state of the thing, so they stay at every distance. */
   marks?: ReactNode
   /** A hand-set colour, as a CSS value. */
@@ -38,7 +44,7 @@ export type CardProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & {
   nub?: ReactNode
 }
 
-export function Card({ name, sub, about, marks, rail, selected, neighbour, dimmed, planned, agentChanged, hoverWord, nub, className, style, ...rest }: CardProps) {
+export function Card({ name, nameAs, over, sub, about, body, marks, rail, selected, neighbour, dimmed, planned, agentChanged, hoverWord, nub, className, style, ...rest }: CardProps) {
   const { t } = useStrings()
   return (
     <div
@@ -52,10 +58,12 @@ export function Card({ name, sub, about, marks, rail, selected, neighbour, dimme
       data-rail={rail ? true : undefined}
     >
       <div className="kit-card__text">
-        <div className="kit-card__name">{name}</div>
+        {over && <div className="kit-card__over">{over}</div>}
+        <div className="kit-card__name">{nameAs ?? name}</div>
         {sub && <div className="kit-card__sub">{sub}</div>}
         {about && <div className="kit-card__about">{about}</div>}
       </div>
+      {body && <div className="kit-card__body">{body}</div>}
       {marks && <div className="kit-card__marks">{marks}</div>}
       {hoverWord && <div className="kit-card__word">{hoverWord}</div>}
       {agentChanged && <span className="kit-card__agent" role="img" aria-label={t('kit.card.agent')} />}

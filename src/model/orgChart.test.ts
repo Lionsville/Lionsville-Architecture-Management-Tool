@@ -9,8 +9,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { Role, UnitType } from './operatingModel'
-import { orgChart, overAllOfTheirTime, unitsHolding, walk } from './orgChart'
-import type { ChartUnit } from './orgChart'
+import { focusedOn, foldedAtLevel, levelOfFolds, orgChart, overAllOfTheirTime, shapeOf, unitsHolding, walk } from './orgChart'
+import type { ChartUnit, OrgChart } from './orgChart'
 import type { DesignElement } from './types'
 import type { Assignment, Organisation } from './units'
 
@@ -220,5 +220,37 @@ describe('the organisation chart', () => {
     const looped = [unit('a', 'A', 'ut-team', 'b'), unit('b', 'B', 'ut-team', 'a')]
     const chart = orgChart({ ...organisation, units: looped, assignments: [] }, TODAY)
     expect([...walk(chart.roots)].length).toBeLessThanOrEqual(2)
+  })
+})
+
+describe('the levels of a chart', () => {
+  const unit = (id: string, children: ChartUnit[] = []): ChartUnit => ({ id, name: id, serves: [], slots: [], others: [], children, ended: false })
+  const chart: OrgChart = { roots: [unit('a', [unit('b', [unit('c', [unit('d')])])]), unit('e')], units: 5, people: 0 }
+
+  it('folds what sits at the level and below, and nothing for all of them', () => {
+    expect(foldedAtLevel(chart, 1)).toEqual(['a', 'b', 'c'])
+    expect(foldedAtLevel(chart, 2)).toEqual(['b', 'c'])
+    expect(foldedAtLevel(chart, 3)).toEqual(['c'])
+    expect(foldedAtLevel(chart, undefined)).toEqual([])
+  })
+
+  it('reads the level back off the folds, and none where somebody folded their own', () => {
+    expect(levelOfFolds(chart, new Set())).toBe('all')
+    expect(levelOfFolds(chart, new Set(['b', 'c']))).toBe(2)
+    expect(levelOfFolds(chart, new Set(['a']))).toBeUndefined()
+  })
+
+  it('finds a unit to focus on, and nothing for one not drawn', () => {
+    expect(focusedOn(chart, 'c')?.id).toBe('c')
+    expect(focusedOn(chart, 'zz')).toBeUndefined()
+    expect(focusedOn(chart, undefined)).toBeUndefined()
+  })
+
+  it('draws units beside each other where one has units of its own, and hanging otherwise', () => {
+    const open = new Set<string>()
+    expect(shapeOf(unit('x', [unit('y', [unit('z')])]), open)).toBe('across')
+    expect(shapeOf(unit('x', [unit('y', [unit('z')])]), new Set(['y']))).toBe('hanging')
+    expect(shapeOf(unit('x', [unit('y'), unit('z')]), open)).toBe('hanging')
+    expect(shapeOf(unit('x', [unit('a'), unit('b'), unit('c'), unit('d')]), open, true)).toBe('grid')
   })
 })

@@ -75,6 +75,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
   const [pageBar, setPageBar] = useState<HTMLElement | null>(null);
   const arrangeSeat = useRef<ArrangeActs | null>(null);
   const { state, readOnly } = parts;
+  // A page that keeps its width until something is picked says when the inspector is up; every other view leaves it so.
+  const [dockShown, setDockShown] = useState(true);
   const documentationPage = (
     <EditorDocumentationPage
       props={props}
@@ -116,8 +118,8 @@ function EditorBody(props: SolutionDesignEditorProps) {
       {/* A look is a state of the window: nothing else about the board may read as the live one (decision 4). */}
       <Box data-look-edge={parts.looking ? '' : undefined} data-testid="look-edge" sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
         {!readOnly && docks.palette && <PaletteDock parts={parts} diagram={activeDiagram} />}
-        {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} pageBar={pageBar} />}
-        {docks.inspector && <InspectorDock parts={parts} diagram={activeDiagram} />}
+        {body === 'board' ? <BoardCanvas parts={parts} diagram={shown} /> : <LaidOutView parts={parts} diagram={shown} pageBar={pageBar} onDock={setDockShown} />}
+        {docks.inspector && dockShown && <InspectorDock parts={parts} diagram={activeDiagram} />}
       </Box>
       <EditorDialogs state={state} diagram={activeDiagram} deletes={parts.deletes} exports={parts.exports} dialogs={parts.dialogs} roles={props.ownership?.roles}
         unitDeletion={props.ownership?.unitDeletion} />

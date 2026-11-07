@@ -1,0 +1,172 @@
+/* The organisation chart: a tree on a canvas, an outline beside it, a panel where one is up. Colours are tokens only. */
+.chart-page { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; background: var(--canvas-ground); color: var(--ink); }
+.chart-page__main { flex: 1 1 auto; min-height: 0; display: flex; }
+.chart-page__work { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.chart-page__panel { flex: none; display: flex; min-height: 0; }
+@media (max-width: 899px) { .chart-page__main { flex-direction: column; } }
+
+.chart-bar__levels { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--ink-3); font-size: var(--t-sm); margin-inline-end: var(--s-2); }
+
+/* The canvas scrolls, and the zoom is the stage's: what is drawn is laid out again at the zoom, so a box's words wrap for it. */
+.chart-canvas { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.chart-stage { position: relative; box-sizing: border-box; width: max-content; min-width: 100%; padding: var(--s-3); }
+.chart-foot { flex: none; display: flex; align-items: center; min-height: var(--target-min); padding-inline: var(--s-3); border-top: 1px solid var(--line); background: var(--surface); color: var(--ink-3); font-size: var(--t-xs); }
+.chart-foot__line { padding: 2px var(--s-1); border: 0; background: transparent; color: var(--ink-2); font: inherit; cursor: pointer; }
+.chart-foot__line:hover { text-decoration: underline; }
+.chart-foot__line:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.chart-foot__part[data-warn] { color: var(--accent); }
+.chart-legend { position: absolute; right: var(--s-3); bottom: calc(var(--target-min) + var(--s-3)); z-index: 4; }
+.chart-legend .kit-key__values { flex-direction: column; align-items: flex-start; gap: 0; }
+.chart-legend .kit-key__value { min-height: 18px; font-size: var(--t-xs); gap: var(--s-2); }
+.chart-legend__sample { display: block; flex: none; overflow: visible; }
+@media (max-width: 899px) { .chart-legend { display: none; } }
+
+/* The tree. A branch is a box and what hangs from it. */
+.org-tree { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: var(--s-4); }
+.org-branch { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; }
+.org-under { display: flex; }
+.org-under[data-shape='across'] { align-items: flex-start; justify-content: center; gap: var(--s-2); width: 100%; }
+.org-under[data-shape='across'] > .org-branch { flex: 1 1 var(--org-box-w); width: var(--org-box-w); max-width: 280px; }
+.org-under[data-shape='across'] > .org-branch[data-spreads] { flex: 0 0 auto; width: auto; max-width: none; }
+.org-under[data-shape='across'] > .org-branch[data-spreads] > .org-node { align-self: center; width: var(--org-box-w); }
+.org-under[data-shape='hanging'] { flex-direction: column; gap: var(--s-1); margin-top: calc(var(--s-2) - var(--s-4)); padding-inline-start: 18px; }
+.org-under[data-shape='grid'] { display: grid; grid-template-columns: repeat(3, minmax(200px, 1fr)); gap: var(--s-2); width: 100%; }
+.org-tree { --org-box-w: 168px; }
+.org-tree[data-focused] { width: 100%; }
+.org-branch[data-focus] { width: 100%; }
+.org-node { width: 100%; min-height: 0; }
+.org-node .kit-card__name { -webkit-line-clamp: 4; }
+.org-node[data-organisation] { width: 180px; }
+.org-node[data-drop='ok'] { border-style: dashed; border-color: var(--line-focus); }
+.org-node[data-drop='warn'] { border-style: dashed; border-color: var(--warn); }
+.org-node[data-drop='current'] { border-style: dotted; border-color: var(--line-focus); }
+.org-node[data-drop='moving'] { border-style: dashed; border-color: var(--selected-edge); }
+.org-node[data-target] { background: var(--drop-ok); outline: var(--line-width-emphasis) solid var(--selected-edge); }
+.org-node[data-target='warn'] { background: var(--drop-warn); outline-color: var(--warn); }
+.org-node[draggable='true'] { cursor: grab; }
+
+.org-name { all: unset; display: block; box-sizing: border-box; width: 100%; font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.org-name:hover { text-decoration: underline; }
+.org-name:focus-visible,
+.org-person:focus-visible,
+.org-link:focus-visible,
+.org-caret:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.org-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-1); }
+.org-caret { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; padding: 0; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; }
+.org-caret[data-shut] svg { transform: rotate(-90deg); }
+
+/* One line per role: a press on a name picks the person, a press on vacant assigns. */
+.org-row { color: var(--ink-2); overflow-wrap: anywhere; }
+.org-row[data-exception] { margin-top: 2px; padding-inline-start: var(--s-1); border-inline-start: 3px solid var(--exception); }
+.org-row__said { display: block; color: var(--exception); }
+.org-row__said[data-over] { color: var(--bad); }
+.org-person { all: unset; cursor: pointer; }
+.org-person:hover { text-decoration: underline; }
+.org-person[data-chosen] { outline: var(--line-width-emphasis) solid var(--selected-edge); border-radius: var(--r-1); }
+.org-person[data-over] { color: var(--bad); }
+.org-vacant { color: var(--warn); }
+button.org-vacant { all: unset; color: var(--warn); cursor: pointer; }
+button.org-vacant:hover { text-decoration: underline; }
+button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.org-said { color: var(--ink-3); }
+.org-said[data-tone='warn'] { color: var(--warn); }
+.org-rollup { all: unset; display: block; color: var(--accent); cursor: pointer; }
+.org-rollup:hover { text-decoration: underline; }
+.org-rollup:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.org-actions { display: flex; flex-wrap: wrap; gap: 0 var(--s-2); margin-top: 2px; }
+.org-link { all: unset; color: var(--accent); cursor: pointer; }
+.org-link:hover { text-decoration: underline; }
+.org-link[aria-disabled='true'] { color: var(--ink-3); }
+/* From far, a box says its name and what it hides; closer, who is in it. */
+[data-distance='far'] .org-row:not([data-exception]),
+[data-distance='far'] .org-said,
+[data-distance='far'] .org-actions { display: none; }
+
+/* The lines. Under the boxes where a unit sits; over them what was asked for. */
+.org-connectors,
+.org-lines { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.org-connectors { z-index: 0; }
+.org-lines { z-index: 2; }
+.org-lines .kit-line__hit,
+.org-connectors .kit-line__hit { pointer-events: none; }
+.org-lines .kit-line__path { stroke-width: var(--line-width-emphasis); }
+.kit-line.org-line[data-direction='up'] { --kit-line-ink: var(--line-reports-to); }
+.kit-line.org-line[data-direction='into'] { --kit-line-ink: var(--line-reports-from); }
+.kit-line.org-line[data-override='true'] { --kit-line-ink: var(--line-exception); }
+.kit-line.org-line[data-tone='vacant'] { --kit-line-ink: var(--warn); }
+.kit-line.org-line[data-tone='loop'] { --kit-line-ink: var(--bad); }
+.org-line__tag { position: absolute; z-index: 3; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; }
+
+/* The outline: the units as a tree, with its find on top and its order at the foot. */
+.chart-outline { position: relative; flex: none; display: flex; flex-direction: column; min-height: 0; border-inline-end: 1px solid var(--line); background: var(--surface); }
+@media (max-width: 899px) { .chart-outline { max-height: 200px; width: auto !important; border-inline-end: 0; border-bottom: 1px solid var(--line); } }
+.chart-outline__find { flex: none; display: flex; gap: var(--s-2); padding: var(--s-2); position: relative; }
+.chart-outline__find .kit-picker { flex: 1 1 auto; }
+.chart-outline__note { position: absolute; inset-inline: var(--s-2); top: 100%; z-index: 6; margin: 0; padding: var(--s-1) var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--ink-2); font-size: var(--t-xs); }
+.chart-outline__tree { flex: 1 1 auto; min-height: 0; overflow: auto; margin: 0; padding: 0 var(--s-1) var(--s-2); list-style: none; }
+.chart-outline__tree ul { margin: 0; padding: 0; list-style: none; }
+.chart-outline__row { display: flex; align-items: center; gap: 2px; min-height: var(--row-h); border-radius: var(--r-2); }
+.chart-outline__row[data-on] { background: var(--selected-soft); }
+.chart-outline__row:hover:not([data-on]) { background: var(--surface-2); }
+.chart-outline__caret { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; }
+.chart-outline__caret[data-shut] svg { transform: rotate(-90deg); }
+.chart-outline__gap { flex: none; width: 20px; }
+.chart-outline__name { all: unset; flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink); font-size: var(--t-sm); text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.chart-outline__name:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.chart-outline__count { flex: none; padding-inline: var(--s-1); color: var(--ink-3); font-size: var(--t-xs); font-variant-numeric: tabular-nums; }
+.chart-outline__empty { padding: var(--s-2); color: var(--ink-3); font-size: var(--t-sm); }
+.chart-outline__foot { flex: none; display: grid; gap: var(--s-1); padding: var(--s-2); border-top: 1px solid var(--line); }
+.chart-outline__foot-row { display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.chart-outline__of { color: var(--ink-3); font-size: var(--t-xs); overflow-wrap: anywhere; }
+.chart-outline__said { font-size: var(--t-xs); color: var(--ink-2); }
+.chart-outline__said[data-tone='error'] { color: var(--bad); }
+
+/* Panels beside the chart. */
+.chart-panel__lead { margin: 0 0 var(--s-2); color: var(--ink-2); font-size: var(--t-sm); }
+.chart-panel__h { margin: var(--s-3) 0 var(--s-1); color: var(--ink-2); font-size: var(--t-sm); font-weight: var(--fw-strong); }
+.chart-panel__item { display: block; box-sizing: border-box; width: 100%; margin-bottom: var(--s-1); padding: 2px var(--s-2); border: 0; border-inline-start: 3px solid var(--exception); background: transparent; color: var(--ink); font: inherit; font-size: var(--t-sm); text-align: start; cursor: pointer; }
+.chart-panel__item:hover { background: var(--surface-2); }
+.chart-panel__item:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+.chart-panel__sub { display: block; color: var(--ink-3); font-size: var(--t-xs); }
+.chart-panel__link { all: unset; color: var(--accent); cursor: pointer; }
+.chart-panel__link:hover { text-decoration: underline; }
+.chart-move { display: flex; flex-direction: column; gap: var(--s-2); min-height: 100%; font-size: var(--t-sm); }
+.chart-move__quiet { margin: 0; color: var(--ink-3); font-size: var(--t-xs); }
+.chart-move__warn { margin: 0; padding: var(--s-1) var(--s-2); background: var(--warn-soft); color: var(--warn); }
+.chart-move__bad { margin: 0; color: var(--bad); }
+.chart-move__h { margin: 0; color: var(--ink-2); font-weight: var(--fw-strong); }
+.chart-move__p { margin: 0; }
+.chart-move__along summary { cursor: pointer; color: var(--ink-2); }
+.chart-move__along label { display: flex; align-items: center; gap: var(--s-1); padding-block: 2px; }
+.chart-move__grow { flex: 1 1 auto; }
+.chart-move__foot { flex: none; display: flex; justify-content: flex-end; gap: var(--s-2); padding-block-start: var(--s-2); }
+
+/* Assigning: a popover beside the vacancy, with the chart still to be seen. */
+.chart-assign { width: 320px; padding: var(--s-3); display: grid; gap: var(--s-2); font-size: var(--t-sm); color: var(--ink); }
+.chart-assign__title { margin: 0; font-size: var(--t-lg); font-weight: var(--fw-strong); }
+.chart-assign__note { margin: 0; padding-inline-start: var(--s-2); border-inline-start: 3px solid var(--exception); color: var(--ink-2); font-size: var(--t-xs); }
+.chart-assign__over { margin: 0; padding: var(--s-1) var(--s-2); border: 1px solid var(--warn); border-radius: var(--r-2); background: var(--warn-soft); color: var(--ink); }
+.chart-assign__two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
+.chart-assign__check { display: flex; align-items: center; gap: var(--s-1); }
+.chart-assign__said { margin: 0; color: var(--ink-3); font-size: var(--t-xs); }
+.chart-assign__said[data-tone='error'] { color: var(--bad); }
+.chart-assign__foot { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-2); }
+.chart-assign__grow { flex: 1 1 auto; }
+.chart-read__sample { display: inline-block; }
+.chart-read__box { display: inline-block; width: 40px; height: 18px; border: 1px dashed var(--ink-3); border-radius: var(--r-2); vertical-align: middle; }
+
+/* An assignment in the panel: facts, lines, and the quiet way to end it at the foot. */
+.chart-end { margin-top: var(--s-4); }
+.chart-empty { display: flex; flex-direction: column; align-items: center; gap: var(--s-2); padding-block: 15vh; }
+.chart-add-none { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-1); color: var(--ink-3); font-size: var(--t-xs); }
+.chart-outline__seam { display: flex; }
+@media (max-width: 899px) { .chart-outline__seam { display: none; } }
+
+.chart-held { font-size: var(--t-sm); }
+.chart-held__who { margin: 0; font-size: var(--t-xl); font-weight: var(--fw-strong); }
+.chart-held__line { margin: 0; }
+.chart-held__quiet { margin: 0; color: var(--ink-3); font-size: var(--t-xs); }
+.chart-held__over { margin: var(--s-1) 0 0; color: var(--bad); font-size: var(--t-xs); }
+.chart-held__acts { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
+/* The dock sits over the canvas, clear of the line under it. */
+.chart-page__work > .kit-dock[data-corner] { bottom: calc(var(--target-min) + var(--s-3)); }

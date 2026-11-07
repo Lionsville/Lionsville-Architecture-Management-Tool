@@ -93,6 +93,7 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
         assign={{ dispatch: session.dispatch, makeId: props.shell.makeId, scopeName }}
         scope={scope} {...(props.shell.folds ? { folds: props.shell.folds } : {})} reorder={parts.landMoves}
         make={make} {...(view.outline ? { outline: view.outline } : {})}
+        {...(view.onDock ? { onDock: view.onDock } : {})} {...(view.day ? { day: view.day } : {})}
       />
     )
   }

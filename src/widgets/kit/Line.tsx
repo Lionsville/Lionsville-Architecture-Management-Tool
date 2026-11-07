@@ -38,11 +38,14 @@ export type LineProps = Omit<ComponentPropsWithRef<'g'>, 'children'> & {
   state?: LineState
   /** The head at its end. Absent on a line with no direction. */
   arrow?: { x: number; y: number; angle: number }
+  /** What a hover says about it. */
+  title?: string
 }
 
-export function Line({ d, ink = 'quiet', pattern = 'solid', state = 'rest', arrow, className, ...rest }: LineProps) {
+export function Line({ d, ink = 'quiet', pattern = 'solid', state = 'rest', arrow, title, className, ...rest }: LineProps) {
   return (
     <g {...rest} className={className ? `kit-line ${className}` : 'kit-line'} data-ink={ink} data-state={state}>
+      {title !== undefined && <title>{title}</title>}
       <path className="kit-line__hit" d={d} vectorEffect="non-scaling-stroke" />
       <path className="kit-line__path" d={d} vectorEffect="non-scaling-stroke" strokeDasharray={DASH[pattern]} />
       {arrow && (

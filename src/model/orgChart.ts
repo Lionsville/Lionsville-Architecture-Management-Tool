@@ -445,3 +445,51 @@ function holderOf(assignment: Assignment, reading: Reading): ChartHolder {
   const person = reading.canonical(personOf(assignment))
   return { assignment, person, share: shareOf(assignment), overloaded: overAllOfTheirTime(reading.loads.get(person) ?? 0) }
 }
+
+/** A chart's levels: how many of them `folded` shows, whichever way that came about. */
+export const CHART_LEVELS = [1, 2, 3] as const
+
+/** The units that fold to show `levels` levels of a chart: every one with units under it at that depth or deeper. `undefined` is all of them shown. */
+export function foldedAtLevel(chart: OrgChart, levels: number | undefined): ElementId[] {
+  if (levels === undefined) return []
+  const folded: ElementId[] = []
+  const visit = (units: readonly ChartUnit[], depth: number) => {
+    for (const unit of units) {
+      if (unit.children.length > 0 && depth >= levels) folded.push(unit.id)
+      visit(unit.children, depth + 1)
+    }
+  }
+  visit(chart.roots, 1)
+  return folded
+}
+
+/**
+ * Which level a chart's folds are at, for the control that sets them: a number,
+ * `all` with nothing folded, and nothing where somebody's own folds match none.
+ */
+export function levelOfFolds(chart: OrgChart, folded: ReadonlySet<ElementId>): number | 'all' | undefined {
+  if (!foldable(chart).some((id) => folded.has(id))) return 'all'
+  // What sits under a fold is out of sight, whatever its own fold says.
+  const shows = (units: readonly ChartUnit[], depth: number, levels: number): boolean => units.every((unit) => {
+    if (unit.children.length === 0) return true
+    if (depth === levels) return folded.has(unit.id)
+    return !folded.has(unit.id) && shows(unit.children, depth + 1, levels)
+  })
+  return [...CHART_LEVELS].reverse().find((levels) => shows(chart.roots, 1, levels))
+}
+
+/** One unit of a chart and what is under it, as the chart is when it is focused on that unit. Nothing where it is not drawn. */
+export function focusedOn(chart: OrgChart, id: ElementId | undefined): ChartUnit | undefined {
+  return id === undefined ? undefined : [...walk(chart.roots)].find((unit) => unit.id === id)
+}
+
+/** How a unit's units are drawn under it: beside each other where any has units of its own, else hanging in a column; in a grid where a focus has room for one. */
+export type ChartShape = 'across' | 'hanging' | 'grid'
+
+/** How many units under a focused one it takes for a grid to read better than a column. */
+const GRID_FROM = 4
+
+export function shapeOf(unit: Pick<ChartUnit, 'children'>, folded: ReadonlySet<ElementId>, focused = false): ChartShape {
+  if (unit.children.some((child) => drawsUnitsBelow(child, folded))) return 'across'
+  return focused && unit.children.length >= GRID_FROM ? 'grid' : 'hanging'
+}

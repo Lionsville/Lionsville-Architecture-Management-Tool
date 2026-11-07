@@ -4,95 +4,57 @@
 /**
  * The organisation chart, drawn in its tab (ADR-0036 §7, ADR-0016).
  *
- * **Laid out from the units.** Every box is a unit, nested in the unit above
- * it; every row in a box is a role the unit holds, with the people who hold it
- * on the view's day, the vacancies its slot leaves, the people over all of
- * their time, and — on a unit that has ended — the people still assigned to
- * it. The arithmetic is `model/orgChart`; what is on the page is the register's
- * name for each person and *you* where the person is this install's own, read
- * through the names the shell provides (`usePersonNames`).
+ * **Laid out from the units, as a tree.** The organisation at the top, a box per
+ * unit with a line per role, connectors between them (`ChartUnitBox`,
+ * `ChartLinesOverlay`). The arithmetic is `model/orgChart`; what is on the page
+ * is the register's name for each person and *you* where the person is this
+ * install's own, read through the names the shell provides (`usePersonNames`).
  *
  * **On a day.** The day is the view's, as a board's is: today, or the day the
  * bar's control looks at or saves (ADR-0027). Looking at next year shows the
- * units a plan brings and the people a reorganisation leaves behind.
+ * units a plan brings and the people a reorganisation leaves behind, and a chart
+ * of another day says so over it.
  *
- * **A click picks, a double-click opens** (17 October 2026), as on a board.
- * Pressing a unit this scope holds selects it, and the inspector docked beside
- * the page edits it — its type, the people in its roles, the interactions it
- * declares. Pressing one kept in another scope goes to it on this chart;
- * double-clicking it opens it there, on that scope's chart, chosen, with the
- * same inspector. A vacancy in a unit kept here assigns someone at once.
+ * **A click picks, a double-click opens** (17 October 2026), as on a board. The
+ * panel beside the chart is up while something is picked or asked for, and gone
+ * otherwise, so a chart at rest has the window's width (`onDock`).
  *
- * **A person's chip chooses their assignment**, wherever the unit is kept,
- * and the inspector shows it (`AssignmentInspector`, through
- * `useChartChoice`), with the way to the scope that keeps it where that is
- * another. The editor selecting anything lets the choice go, so the inspector
- * shows one thing at a time. The boxes themselves are `ChartUnitBox`.
+ * **Overview.** Levels fold the whole chart, a caret one unit, and neither is
+ * saved (`useChartFolds`). The canvas zooms as every canvas does (`useCanvasZoom`,
+ * `CanvasDock`), and a focus draws one unit and what is under it, with one line
+ * for the way up, in the address so an agent opens it too (`usePlaceReading`).
+ * Going to a unit from anywhere unfolds the way to it and scrolls to it.
  *
- * **A large organisation folds** (ADR-0036, amended 11 October 2026). A unit
- * with units under it folds, and says what it hides; a first open folds
- * everything below the second level (3.7.3; until then only a chart of more
- * than thirty units did); *Fold all* and
- * *Unfold all* are on the bar. Folds are the screen's, for the session and
- * keyed by the view (`useChartFolds`), never the model's. Beside the chart,
- * the outline (`ChartOutline`) lists the same units as a tree that folds on
- * its own, and moves a unit among its siblings (`useSiblingOrder`). Going to
- * a unit — a pick in the outline, *Find*, *Find me*, a finding, a request
- * from outside — unfolds the way to it and scrolls to it.
+ * **Lines.** One menu, in the address: none, the person picked's, every dotted
+ * line, or every exception, which lists them in a panel as well
+ * (`ChartLinesOverlay`, `ExceptionsPanel`). It opens on the person picked where
+ * the organisation says any line at all.
  *
- * **Two levels, and the outline leads** (3.7.3): a first open shows the top
- * units and the units under them, whatever the chart's size, and a unit
- * unfolded or picked in the outline is unfolded on the chart as well, gone
- * to and picked there. The outline's width is dragged on its seam.
+ * **Writing with the chart in view.** *Move to…* is a panel beside it with its
+ * places lit, and a drag opens the same panel filled in (`MovePanel`); assigning
+ * is a popover beside the vacancy (`AssignPopover`). None of it on a chart that
+ * is only read, but for a vacancy in a unit the person manages (ADR-0036 §12).
  *
- * **Each thing in one place** (3.6.1). The chart draws the units, in a grid
- * that uses the width, and what needs attention in them; an optional role
- * nobody holds waits for *Show optional roles* on the bar. What the chart
- * says as a whole — the day, the counts, the findings and how to read it —
- * is the inspector's while nothing is picked (`ChartSummary`, through
- * `EditorPages.inspector`); a finding there goes to its unit here as any
- * request from outside does (`select`).
- *
- * **Reporting lines** (ADR-0039 §7, amended 17 October 2026): with a person
- * picked, the lines that apply to them — their own where they have one —
- * from their chip to whoever they report to, in the accent, and from the
- * chips of the people who report to them, in teal; an exception to the model
- * in magenta whichever way it runs; on the chart's day, ending at the fold
- * for a unit folded away (`holderLines`, `ChartLinesOverlay`), with a legend
- * over the chart while any are drawn. Nothing picked, or a unit, draws none. *Reporting
- * lines* on the bar turns them off altogether; it is on from the start where
- * the organisation says any line.
- *
- * **Units are made where they are seen** (3.6.2): *+ Unit at the top* on the
- * bar, in the outline's header and on an empty chart, and *+* on a unit's
- * name row for a unit inside it (`useNewUnit`, `AddUnit.tsx`). Only where
- * the workspace hands the chart a way to write (`make`), and never on a chart
- * that is only read.
- *
- * **And moved where they are seen** (3.7.1): *Move to…* on a unit's name row
- * and in the outline beside *Move up* and *Move down* puts it under another
- * unit anywhere in the organisation, or at the top (`useMoveUnit`), landed
- * the way a move among siblings is (`reorder`); the chart then goes to it in
- * its new place.
+ * **Finding** is one box for units and people, on the outline (`ChartFind`), and
+ * ⌘F comes to it, because on a chart of people the search of the design finds
+ * the wrong things.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import Switch from '@mui/material/Switch'
-import TextField from '@mui/material/TextField'
-import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
+import { isChartLines } from '../../agent/screen'
+import type { ChartLines } from '../../agent/screen'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
-import { rollUp, unitsHolding, unitsNamed, walk } from '../../model/orgChart'
+import { focusedOn, levelOfFolds, rollUp, unitsAboveIn, unitsHolding, vacanciesIn, walk } from '../../model/orgChart'
 import type { ChartHolder, ChartUnit, OrgChart } from '../../model/orgChart'
 import { pickedPerson } from '../../model/person'
 import type { PersonId } from '../../model/person'
 import type { DesignDiagram, ElementId } from '../../model/types'
+import { unitFits } from '../../model/unitMove'
 import { dayBefore, hasReportingLines, loadOn, roleOn } from '../../model/units'
 import { mayChangeIn } from '../../model/managing'
 import { meIn } from '../../people/me'
@@ -103,27 +65,43 @@ import type { PeopleRegisterAccess } from '../../people/ui/access'
 import type { ScopePath } from '../../projects/scopePath'
 import { captureSheet } from '../../widgets/capturePage'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
+import { Band } from '../../widgets/kit/Band'
+import { Button } from '../../widgets/kit/Button'
+import { CanvasDock } from '../../widgets/kit/CanvasDock'
+import { PageState } from '../../widgets/kit/PageState'
+import { usePlaceReading } from '../../widgets/placeReading'
 import { locatedRing, useLocated } from '../../widgets/useLocated'
 import { useSelectRequest } from '../../widgets/useSelectRequest'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { foldKey, SessionFolds } from '../sessionFolds'
 import { AddAtTop } from './AddUnit'
-import { AssignDialog } from './AssignDialog'
+import { AssignDialog, AssignPopover } from './AssignDialog'
 import type { Assigning } from './AssignDialog'
-import { holderLines } from './chartLines'
-import { ChartLinesLegend, ChartLinesOverlay } from './ChartLinesOverlay'
+import { ChartBar } from './ChartBar'
+import type { ChartDay } from './ChartBar'
+import { AT_THE_TOP } from './choices'
+import { ChartFind } from './ChartFind'
+import { chartKey, stepInTree } from './chartKeys'
+import { chartExceptions, chartWideLines, holderLines } from './chartLines'
+import { ChartConnectors, ChartLinesLegend, ChartLinesOverlay } from './ChartLinesOverlay'
 import { ChartOutline } from './ChartOutline'
-import { UnitGrid } from './ChartUnitBox'
-import type { Drawing } from './ChartUnitBox'
+import { ORGANISATION, OrgTree } from './ChartUnitBox'
+import type { Drawing, DropState, TreeMove } from './ChartUnitBox'
 import { useChartReading } from './chartReading'
+import { summaryWords } from './chartWords'
+import { ExceptionsPanel } from './ExceptionsPanel'
 import type { LandPeopleMoves } from './landPeopleMoves'
+import { MovePanel } from './MovePanel'
+import { useMovePlan } from './MoveUnitDialog'
 import type { UnitViewsHere } from './unitViewsHere'
 import { useChartFolds } from './useChartFolds'
 import type { ChartFolds } from './useChartFolds'
+import { useChartZoom } from './useChartZoom'
+import { movedText, UNIT_MOVE_BARRIER } from './useMoveUnit'
 import { useNewUnit } from './useNewUnit'
 import type { NewUnit, UnitMaking } from './useNewUnit'
 import { useSiblingOrder } from './useSiblingOrder'
-import { useMoveUnit } from './useMoveUnit'
+import './chart.css'
 
 export type ChartPageProps = {
   /** The view, with the day it is looked at on (`asOf`; absent is today). */
@@ -160,6 +138,12 @@ export type ChartPageProps = {
   make?: UnitMaking
   /** The outline's width, kept with the editor's panel widths (3.7.3). Absent: the outline keeps its own while it is up. */
   outline?: { width: number; onWidth(next: number): void }
+  /** Whether the inspector docked beside the chart is up. Absent: it is the host's to say. */
+  onDock?: (shown: boolean) => void
+  /** Looking at another day, and keeping one with the chart. Absent: no day control here. */
+  day?: ChartDay
+  /** A unit's *Sits under* in the inspector asks for a move here: the panel opens, with the chart in view. */
+  moveAsked?: { unitId: ElementId; nonce: number }
 }
 
 export function ChartPage(props: ChartPageProps) {
@@ -167,8 +151,9 @@ export function ChartPage(props: ChartPageProps) {
   const theme = useTheme()
   const { here, diagram, people, today } = props
   const day = diagram.asOf ?? today
-  const [assigning, setAssigning] = useState<{ unit: ChartUnit; assigning: Assigning } | undefined>(undefined)
+  const [assigning, setAssigning] = useState<{ unit: ChartUnit; assigning: Assigning; at: HTMLElement | null } | undefined>(undefined)
   const [note, setNote] = useState<string | undefined>(undefined)
+  const [summaryAsked, setSummaryAsked] = useState(false)
   const names = usePersonNames()
   const canonical = names.canonical
   const { chart, byUnit } = useChartReading(here, day, canonical)
@@ -176,62 +161,71 @@ export function ChartPage(props: ChartPageProps) {
   const me = useMemo(() => meIn(people?.me, register)?.id, [people?.me, register])
   const folds = useFoldsOf(chart, props.scope ?? '', diagram.id, props.folds)
   const page = useRef<HTMLDivElement | null>(null)
-  // The Reporting lines overlay (ADR-0039 §7, amended): on from the start where the organisation says any line, off where it
-  // says none; the switch lasts while the page is up.
   const stage = useRef<HTMLDivElement | null>(null)
-  const [showLines, setShowLines] = useState(() => hasReportingLines(here.at.organisation))
-  // Whenever the boxes may have moved, the lines are measured again from the chips.
-  const redraw = useMemo(() => ({ optional: folds.optional, folded: folds.folded }), [folds.optional, folds.folded])
-  // The person picked, whose lines alone are drawn — those that apply to them, their own included — while the editor selects nothing.
-  const chosenLines = useMemo(() => {
-    const held = showLines && props.selectedId === undefined && props.chosen !== undefined
-      ? here.at.organisation.assignments.find((one) => one.id === props.chosen) : undefined
-    return held ? holderLines(here.at.organisation, chart, day, folds.folded, held) : undefined
-  }, [showLines, props.selectedId, props.chosen, here, chart, day, folds.folded])
+  const zoom = useChartZoom(page, stage)
+  const [reading, setReading] = usePlaceReading(diagram.id)
+  const focused = useMemo(() => focusedOn(chart, reading.focus), [chart, reading.focus])
+  // The Lines menu: the person picked's from the start where the organisation says any line, none where it says none.
+  const asked = isChartLines(reading.lines) ? reading.lines : undefined
+  const lines: ChartLines = asked ?? (hasReportingLines(here.at.organisation) ? 'person' : 'off')
+  const { onChoose, chosen, onSelect } = props
+  const drawnLines = useMemo(() => {
+    if (lines === 'off') return []
+    if (lines !== 'person') return chartWideLines(here.at.organisation, chart, day, folds.folded, lines)
+    const held = props.selectedId === undefined && chosen !== undefined ? here.at.organisation.assignments.find((one) => one.id === chosen) : undefined
+    return held ? holderLines(here.at.organisation, chart, day, folds.folded, held) : []
+  }, [lines, props.selectedId, chosen, here, chart, day, folds.folded])
+  const exceptions = useMemo(() => (lines === 'exceptions' ? chartExceptions(here.at.organisation, chart, day) : []), [lines, here, chart, day])
+  // Whenever the boxes may have moved, the lines are measured again from them.
+  const redraw = useMemo(
+    () => ({ people: folds.people, folded: folds.folded, chart, selected: props.selectedId, chosen, focus: reading.focus }),
+    [folds.people, folds.folded, chart, props.selectedId, chosen, reading.focus],
+  )
   const open = useCallback((id: ElementId) => {
-    if (here.heldHere(id)) { props.onSelect(id); return }
+    if (here.heldHere(id)) { onSelect(id); return }
     const scope = here.scopeOf(id)
     if (scope !== undefined) props.onOpenElsewhere(scope, id)
-  }, [here, props.onSelect, props.onOpenElsewhere])
-  const { onChoose, chosen } = props
+  }, [here, onSelect, props.onOpenElsewhere])
   // The editor selecting anything — a unit pressed, a finding followed, a link — lets the assignment go.
   useEffect(() => { if (props.selectedId !== undefined && chosen !== undefined) onChoose?.(undefined) }, [props.selectedId, chosen, onChoose])
-  // A person's chip picks their assignment, wherever the unit is kept: nothing leaves the chart on a single click.
+  // A person pressed picks their assignment, wherever the unit is kept: nothing leaves the chart on a single click.
   const choose = useCallback((holder: ChartHolder, unit: ChartUnit) => {
-    if (!onChoose) { if (here.heldHere(unit.id)) props.onSelect(unit.id); return }
-    props.onSelect(undefined)
+    if (!onChoose) { if (here.heldHere(unit.id)) onSelect(unit.id); return }
+    onSelect(undefined)
     onChoose(holder.assignment.id)
-  }, [onChoose, here, props.onSelect])
-  const { locatedId, locate } = useLocated(page, (id) => { if (here.heldHere(id)) props.onSelect(id) })
-  const { current, goTo } = useGoTo(chart, folds, locate, props)
+  }, [onChoose, here, onSelect])
+  const { locatedId, locate } = useLocated(page, (id) => { if (here.heldHere(id)) onSelect(id) })
+  const { current, goTo: goToUnit } = useGoTo(chart, folds, locate, props)
+  // Going somewhere a focus does not draw lets the focus go, so the unit is on screen.
+  const goTo = useCallback((id: ElementId) => {
+    if (reading.focus !== undefined && id !== reading.focus && !unitsAboveIn(chart, id).includes(reading.focus)) setReading({ focus: undefined })
+    goToUnit(id)
+  }, [reading.focus, chart, goToUnit, setReading])
   // A unit's name picks it: selected where it is kept here, gone to on this chart where it is kept elsewhere.
   const pick = useCallback((id: ElementId) => {
-    if (here.heldHere(id)) { props.onSelect(id); return }
+    setSummaryAsked(false)
+    if (here.heldHere(id)) { onSelect(id); return }
     onChoose?.(undefined)
     goTo(id)
-  }, [here, props.onSelect, onChoose, goTo])
+  }, [here, onSelect, onChoose, goTo])
   useSelectRequest(props.select, (id) => [...walk(chart.roots)].some((unit) => unit.id === id), goTo)
   // What a link made here selects (ADR-0033, amended 17 October 2026): the unit gone to, kept here or elsewhere, while no person is chosen.
   usePageHandle(page, diagram.id, chosen === undefined ? current : props.selectedId, props.onHandle, theme.palette.background.default)
   const order = useSiblingOrder({
     here, day, scope: props.scope ?? '', unitId: current, land: props.readOnly ? undefined : props.reorder, t,
   })
-  const moving = useChartMove(props, names, goTo, current, t)
+  const moving = useChartMove(props, names, goTo, t)
 
   const findMe = () => {
     if (me === undefined) { setNote(t('chart.findMeWho')); return }
     const found = unitsHolding(chart, me)
-    if (found.length === 0) { setNote(t('chart.findMeNone', { day: formatDay(day, language) })); return }
+    const first = found[0]
+    if (first === undefined) { setNote(t('chart.findMeNone', { day: formatDay(day, language) })); return }
     setNote(undefined)
-    goTo(found[0])
+    goTo(first)
   }
-  const find = (query: string) => {
-    const found = unitsNamed(chart, query)
-    if (found.length === 0) { setNote(query.trim() ? t('chart.findNone') : undefined); return }
-    setNote(undefined)
-    goTo(found[0])
-  }
-  const roles = new Map(here.at.organisation.roles.map((role) => [role.id, role]))
+  const roles = useMemo(() => new Map(here.at.organisation.roles.map((role) => [role.id, role])), [here])
+  const roleName = useCallback((id: string) => roles.get(id)?.name ?? id, [roles])
   const typeName = useTypeName(here)
   const newUnit = useNewUnit({
     make: props.make, readOnly: props.readOnly, here, chart, day, scope: props.scope ?? '', scopeLabel: props.scopeLabel, typeName, goTo, t,
@@ -246,82 +240,259 @@ export function ChartPage(props: ChartPageProps) {
     const entry = resolvePerson(person, register)
     return entry?.kind === 'external' && entry.state !== 'forgotten'
   }
+  const pickedUnit = useMemo(() => (props.selectedId === undefined ? undefined : [...walk(chart.roots)].find((unit) => unit.id === props.selectedId)), [chart, props.selectedId])
+  const focus = useCallback((id: ElementId | undefined) => {
+    setReading({ focus: id })
+    if (id !== undefined) folds.expand(id)
+  }, [setReading, folds.expand])
+  const drawnTop = focused ? [focused] : chart.roots
+  const onKey = (unit: ChartUnit, event: KeyboardEvent) => {
+    const said = chartKey(event)
+    if (said === undefined || moving.up !== undefined) return
+    if (said === 'move') { if (moving.open) { event.preventDefault(); moving.open(unit.id) } return }
+    if (said === 'focus') { event.preventDefault(); focus(unit.id); return }
+    event.preventDefault()
+    const onward = said === 'pick'
+      ? (current === unit.id ? stepInTree(drawnTop, folds.folded, unit.id, 'down') : unit.id)
+      : stepInTree(drawnTop, folds.folded, unit.id, said)
+    if (onward === undefined) return
+    if (said === 'pick') pick(onward)
+    else setRoving(onward)
+    focusBox(stage.current, onward)
+  }
+  const [roving, setRoving] = useState<ElementId | undefined>(undefined)
   const drawing: Drawing = {
     chart, roles, typeName, names, external, scopeLabel: props.scopeLabel, plansOf: here.plansOf,
     day, today, language, t, selectedId: props.selectedId, chosen, pick, open, choose, mayAssign,
-    vacancy: editable ? (unit, roleId) => {
-      if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId } })
+    loadOf: (person) => Math.round(loadOn(here.at.organisation.assignments, person, day, canonical) * 100),
+    vacancy: editable ? (unit, roleId, at) => {
+      if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId }, at })
       else open(unit.id)
     } : undefined,
     folds: { folded: folds.folded, toggle: folds.toggle, rollUp: (unit) => rollUp(unit, byUnit) },
-    optional: folds.optional,
+    people: folds.people,
+    focus,
+    roving: roving ?? current ?? drawnTop[0]?.id,
+    onKey,
     ...(newUnit.offer ? { add: { offer: newUnit.offer, open: newUnit.open } } : {}),
-    ...moving.drawing,
+    ...(moving.open ? { move: moving.open } : {}),
+    ...(moving.tree ? { moving: moving.tree } : {}),
   }
-  const atTop = (guide: string, testId: string, variant?: 'outlined' | 'contained') => addAtTop(newUnit, props.make, guide, testId, t, variant)
+  useFindKey(stage)
+  // The panel docked beside the chart is up for what is picked and for the summary, and otherwise the chart has the width.
+  const ownPanel = moving.up !== undefined || (lines === 'exceptions' && props.selectedId === undefined && chosen === undefined)
+  const docked = !ownPanel && (props.selectedId !== undefined || chosen !== undefined || summaryAsked)
+  const { onDock } = props
+  useEffect(() => { onDock?.(docked) }, [onDock, docked])
+  useEffect(() => () => onDock?.(true), [onDock])
+  const organisationName = props.scopeLabel('')
+  const level = levelOfFolds(chart, folds.folded)
+  const unitName = useCallback((id: ElementId) => here.name(id), [here])
+  const empty = chart.roots.length === 0
   return (
-    <Box data-testid="chart-page" sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <ChartBar
-        chart={chart} folds={folds} onFind={find} onFindMe={findMe} note={note} add={atTop('chart.addAtTop', 'chart-add-top')}
-        lines={{ on: showLines, toggle: () => setShowLines((on) => !on) }} t={t}
-      />
-      <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
-        <ChartOutline
-          chart={chart} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={(id) => { folds.expand(id); goTo(id) }}
-          typeName={typeName} order={order} addAtTop={atTop('chart.outlineAdd', 'chart-outline-add')} moveTo={moving.outline} width={props.outline} t={t}
-        />
-        <Box ref={page} data-testid="chart-body" sx={{ flex: '1 1 auto', minWidth: 0, minHeight: 0, overflow: 'auto', p: 2, bgcolor: 'background.default', ...locatedRing(locatedId) }}>
-          {chart.roots.length === 0
-            ? (
-              <Box sx={{ py: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5 }}>
-                <Typography sx={{ fontSize: 12.5, color: 'text.secondary', textAlign: 'center' }}>{t('chart.empty', { day: formatDay(day, language) })}</Typography>
-                {atTop('chart.addFirst', 'chart-add-first', 'contained')}
-              </Box>
-            )
-            : (
-              <>
-                {chosenLines && chosenLines.length > 0 && <ChartLinesLegend t={t} />}
-                <Box ref={stage} sx={{ position: 'relative' }}>
-                  <UnitGrid units={chart.roots} depth={0} drawing={drawing} />
-                  {chosenLines && <ChartLinesOverlay stage={stage} lines={chosenLines} redraw={redraw} />}
-                </Box>
-              </>
-            )}
-        </Box>
-      </Box>
+    <div data-testid="chart-page" className="chart-page">
+      {moving.up !== undefined
+        ? <Band tone="editing" title={t('unitMove.bandTitle', { name: here.name(moving.up) })} detail={t('unitMove.bandDetail')} />
+        : !empty && (
+          <ChartBar
+            level={level} onLevel={folds.setLevels} people={folds.people} onPeople={folds.setPeople} lines={lines} onLines={(next) => setReading({ lines: next })}
+            add={addOnBar(newUnit, props.make, pickedUnit && here.heldHere(pickedUnit.id) ? pickedUnit : undefined, t)} day={props.day} shownDay={diagram.asOf} t={t}
+          />
+        )}
+      <ShownDayBand day={props.day} asOf={diagram.asOf} language={language} t={t} />
+      {focused && !moving.up && <FocusBand chart={chart} focused={focused} organisation={organisationName} onFocus={focus} t={t} />}
+      <div className="chart-page__main">
+        {!moving.up && !empty && (
+          <ChartOutline
+            chart={chart} units={drawnTop} folded={folds.outline} onToggle={folds.toggleOutline} current={current} onPick={(id) => { folds.expand(id); setSummaryAsked(false); goTo(id) }}
+            order={order} moveTo={moving.open && current !== undefined ? () => moving.open?.(current) : undefined} canMove={moving.open !== undefined} {...(props.outline ? { width: props.outline } : {})}
+            find={<ChartFind chart={chart} names={names} roleName={roleName} onUnit={(id) => { setSummaryAsked(false); goTo(id) }} onHolder={(holder, unit) => { goTo(unit.id); choose(holder, unit) }} onMe={findMe} note={note} t={t} />}
+            t={t}
+          />
+        )}
+        <div className="chart-page__work">
+          <Box ref={zoom.attach} {...(empty ? {} : zoom.canvas)} data-testid="chart-body" className="chart-canvas" sx={locatedRing(locatedId)}>
+            {empty
+              ? <EmptyChart day={day} language={language} add={newUnit.offer && props.make ? <AddAtTop offer={newUnit.offer()} onAdd={() => newUnit.open()} onLink={props.make.onOpenOperating} guide="chart.addFirst" testId="chart-add-first" primary t={t} /> : undefined} t={t} />
+              : (
+                <div ref={stage} className="chart-stage" style={{ zoom: zoom.zoom }}>
+                  <ChartConnectors stage={stage} zoom={zoom.zoom} redraw={redraw} />
+                  <OrgTree organisation={organisationName} focused={focused} drawing={drawing} />
+                  <ChartLinesOverlay stage={stage} lines={drawnLines} zoom={zoom.zoom} redraw={redraw} unitName={unitName} t={t} />
+                </div>
+              )}
+          </Box>
+          {!empty && <CanvasDock zoom={zoom.zoom} onZoomIn={() => zoom.target.go('in')} onZoomOut={() => zoom.target.go('out')} onFit={() => zoom.target.go('fit')} onHome={() => zoom.target.go('home')} data-testid="chart-dock" />}
+          {!empty && <ChartLinesLegend t={t} />}
+          {!empty && (
+            <div className="chart-foot">
+              <button type="button" className="chart-foot__line" data-testid="chart-count" data-guide="chart.summary" aria-expanded={summaryAsked} onClick={() => { onSelect(undefined); onChoose?.(undefined); setSummaryAsked((was) => !was) }}>
+                {summaryWords({ units: chart.units, people: chart.people, vacant: vacanciesIn(chart) }, t).map((part) => part.text).join(' · ')}
+                {byUnit.size > 0 ? <span className="chart-foot__part" data-warn=""> · {t('chart.rollFindingsOther', { count: [...byUnit.values()].reduce((sum, one) => sum + one, 0) })}</span> : null}
+              </button>
+            </div>
+          )}
+        </div>
+        {moving.panel && <div className="chart-page__panel">{moving.panel}</div>}
+        {!moving.panel && ownPanel && (
+          <div className="chart-page__panel">
+            <ExceptionsPanel
+              exceptions={exceptions} organisation={here.at.organisation} names={names} onGoTo={goTo} onOperating={props.make?.onOpenOperating}
+              onClose={() => setReading({ lines: 'person' })} t={t}
+            />
+          </div>
+        )}
+      </div>
       {assigning && people && props.assign && (
-        <AssignDialog
-          assigning={assigning.assigning} unit={{ id: assigning.unit.id, name: assigning.unit.name }}
+        <AssignPopover
+          at={assigning.at} assigning={assigning.assigning} unit={{ id: assigning.unit.id, name: assigning.unit.name }}
           roles={assigning.unit.slots.flatMap((slot) => roles.get(slot.roleId) ?? []).filter((role) => mayAssign(assigning.unit, role.id))}
           others={here.at.organisation.roles.filter((role) => roleOn(role, day) && mayAssign(assigning.unit, role.id))}
           register={people} today={day > today ? day : today} endOn={day > today ? dayBefore(day) : today}
           makeId={props.assign.makeId} dispatch={props.assign.dispatch} scopeName={props.assign.scopeName}
-          loadOf={(person) => t('assign.load', { share: Math.round(loadOn(here.at.organisation.assignments, person.id, day, canonical) * 100), day })}
+          loadOf={(person) => t('assign.loadNow', { share: Math.round(loadOn(here.at.organisation.assignments, person.id, day, canonical) * 100) })}
+          shareOf={(person) => Math.round(loadOn(here.at.organisation.assignments, person, day, canonical) * 100)} personName={(person) => names.text(pickedPerson(person))}
           onClose={() => setAssigning(undefined)} s={t}
         />
       )}
       {newUnit.dialog}
-      {moving.dialog}
-    </Box>
+    </div>
+  )
+}
+
+/** The box a key moved to takes the focus, on the render after the one that made it tabbable. */
+function focusBox(stage: HTMLElement | null, id: ElementId) {
+  const box = stage?.querySelector<HTMLElement>(`[data-tree-box="${id.replace(/["\\]/g, '\\$&')}"] [data-testid="chart-unit-open"]`)
+  box?.focus()
+  box?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+}
+
+/** ⌘F on a chart goes to its own box: the search of the design finds elements, and a chart is of units and people. */
+function useFindKey(stage: { current: HTMLElement | null }) {
+  useEffect(() => {
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.key.toLowerCase() !== 'f') return
+      if (document.activeElement?.closest('[aria-modal="true"]')) return
+      const box = stage.current?.closest('[data-testid="chart-page"]')?.querySelector<HTMLInputElement>('[data-testid="chart-find-input"]')
+      if (!box) return
+      event.preventDefault()
+      event.stopPropagation()
+      box.focus()
+    }
+    document.addEventListener('keydown', onKey, true)
+    return () => document.removeEventListener('keydown', onKey, true)
+  }, [stage])
+}
+
+/** A chart saved on a day says so while nobody is looking away from it; a look says so in the frame's own band. */
+function ShownDayBand({ day, asOf, language, t }: { day: ChartDay | undefined; asOf: string | undefined; language: string; t: Translate }) {
+  if (!day || asOf === undefined || day.looking) return null
+  return (
+    <Band
+      tone="looking" title={t('chart.dayShown', { day: formatDay(asOf, language as Parameters<typeof formatDay>[1]) })} dataGuide="chart.dayBand"
+      action={<Button size="small" onClick={() => day.onChange(undefined)} data-testid="chart-day-back">{t('chart.dayBack')}</Button>}
+    />
+  )
+}
+
+/** The way up from a focus, on one line, and the way out of it. */
+function FocusBand({ chart, focused, organisation, onFocus, t }: {
+  chart: OrgChart; focused: ChartUnit; organisation: string; onFocus: (id: ElementId | undefined) => void; t: Translate
+}) {
+  const units = [...walk(chart.roots)]
+  const above = unitsAboveIn(chart, focused.id).map((id) => units.find((unit) => unit.id === id)).filter((unit): unit is ChartUnit => unit !== undefined)
+  return (
+    <Band
+      tone="info" dataGuide="chart.focusBand"
+      title={(
+        <span data-testid="chart-focus-way">
+          {t('chart.focusLabel')}{' '}
+          <button type="button" className="chart-panel__link" onClick={() => onFocus(undefined)}>{organisation}</button>
+          {above.map((unit) => (
+            <span key={unit.id}> › <button type="button" className="chart-panel__link" onClick={() => onFocus(unit.id)}>{unit.name}</button></span>
+          ))}
+          {' › '}{focused.name}
+        </span>
+      )}
+      action={<Button size="small" onClick={() => onFocus(undefined)} data-testid="chart-focus-back">{t('chart.focusBack')}</Button>}
+    />
+  )
+}
+
+/** A chart with no units: what it is, and the first step, or why none can be taken yet. */
+function EmptyChart({ day, language, add, t }: { day: string; language: string; add: ReactNode; t: Translate }) {
+  return (
+    <div className="chart-empty" data-testid="chart-empty">
+      <PageState state="empty" title={t('chart.emptyTitle')} body={t('chart.emptyBody', { day: formatDay(day, language as Parameters<typeof formatDay>[1]) })} />
+      {add}
+    </div>
   )
 }
 
 /**
- * *Move to…* on the chart (3.7.1): on a unit's box, and in the outline for
- * the current unit, landed as a move among siblings is; nothing on a chart
- * that is only read. The chart goes to the unit in its new place.
+ * *Move to…* on the chart (3.7.1, a panel in 4.0.0): from a picked box, the
+ * outline, a drag, M and the inspector's *Sits under*; written as a move among
+ * siblings is, in one step per scope; nothing on a chart that is only read. The
+ * chart goes to the unit in its new place.
  */
-function useChartMove(props: ChartPageProps, names: PersonNames, goTo: (id: ElementId) => void, current: ElementId | undefined, t: Translate) {
+function useChartMove(props: ChartPageProps, names: PersonNames, goTo: (id: ElementId) => void, t: Translate) {
   const { here, today } = props
-  const moving = useMoveUnit({
-    organisation: here.at.organisation, scopeOf: here.scopeOf, scopeLabel: props.scopeLabel, name: here.name, today, t, onMoved: goTo,
-    personName: (person) => names.text(pickedPerson(person)), land: props.readOnly ? undefined : props.reorder,
-  })
-  const open = moving.open
+  const land = props.readOnly ? undefined : props.reorder
+  const [held, setHeld] = useState<{ unitId: ElementId; parent: string | null; nonce: number } | undefined>(undefined)
+  const open = useCallback((unitId: ElementId, onto?: ElementId) => {
+    setHeld((was) => ({ unitId, parent: onto ?? null, nonce: (was?.nonce ?? 0) + 1 }))
+  }, [])
+  const asked = props.moveAsked
+  useEffect(() => { if (asked && land) open(asked.unitId) }, [asked?.nonce, land !== undefined])
+  const close = useCallback(() => setHeld(undefined), [])
+  const moved = useCallback(async (steps: Parameters<LandPeopleMoves>[0]) => {
+    if (!land) return t('move.refused')
+    try {
+      const refused = movedText(await land(steps, UNIT_MOVE_BARRIER), t)
+      if (refused === undefined && held) goTo(held.unitId)
+      return refused
+    } catch {
+      return t('move.refused')
+    }
+  }, [land, held, goTo, t])
+  const planned = useMoving(held, { organisation: here.at.organisation, today, scopeOf: here.scopeOf, scopeLabel: props.scopeLabel, onMove: moved, onClose: close, s: t, name: here.name, personName: (person) => names.text(pickedPerson(person)) })
+  return { up: held?.unitId, open: land ? open : undefined, tree: planned?.tree, panel: planned?.panel }
+}
+
+type Moving = { organisation: UnitViewsHere['at']['organisation']; today: string; scopeOf: UnitViewsHere['scopeOf']; scopeLabel: (path: ScopePath) => string; onMove: (steps: Parameters<LandPeopleMoves>[0]) => Promise<string | undefined>; onClose: () => void; s: Translate; name: (id: ElementId) => string; personName: (person: PersonId) => string }
+
+/** The move under way, as the tree lights it and the panel says it. Its plan starts afresh with each one opened. */
+function useMoving(held: { unitId: ElementId; parent: string | null; nonce: number } | undefined, at: Moving): { tree: TreeMove; panel: ReactNode } | undefined {
+  const planning = useMovePlan({ ...at, unitId: held?.unitId ?? '' }, held?.parent ?? null)
+  const { setParent } = planning
+  useEffect(() => { setParent(held?.parent ?? null) }, [held?.nonce])
+  useEffect(() => {
+    if (!held) return undefined
+    const onKey = (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape') at.onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [held !== undefined, at.onClose])
+  if (!held) return undefined
+  const stateOf = (id: ElementId): DropState => {
+    if (id === held.unitId) return 'moving'
+    if (id === planning.current) return 'current'
+    const option = planning.options.find((one) => one.id === id)
+    if (!option || option.disabled) return 'none'
+    const unit = at.organisation.units.find((one) => one.id === held.unitId)
+    return unit === undefined || unitFits(at.organisation, unit, id) ? 'ok' : 'warn'
+  }
+  const top = planning.options.find((one) => one.id === AT_THE_TOP)
+  const unit = at.organisation.units.find((one) => one.id === held.unitId)
+  const tree: TreeMove = {
+    stateOf,
+    target: planning.parent === null ? undefined : planning.parent === AT_THE_TOP ? ORGANISATION : planning.parent,
+    choose: (id) => setParent(id ?? AT_THE_TOP),
+    atTop: !top || top.disabled ? 'current' : unit === undefined || unitFits(at.organisation, unit, undefined) ? 'ok' : 'warn',
+    words: { newPlace: at.s('unitMove.newPlace'), sitsNow: at.s('unitMove.sitsNowShort') },
+  }
   return {
-    dialog: moving.dialog,
-    drawing: open ? { move: (unit: ChartUnit) => open(unit.id) } : {},
-    outline: open && current !== undefined ? () => open(current) : undefined,
+    tree,
+    panel: <MovePanel key={held.nonce} unitId={held.unitId} organisation={at.organisation} name={at.name} personName={at.personName} planning={planning} onClose={at.onClose} s={at.s} />,
   }
 }
 
@@ -334,10 +505,14 @@ function useTypeName(here: UnitViewsHere): (id: string | undefined) => string {
   }, [unitTypes])
 }
 
-/** *+ Unit at the top* where the chart makes units, carrying its stable name; nothing where it makes none. */
-function addAtTop(newUnit: NewUnit, make: UnitMaking | undefined, guide: string, testId: string, t: Translate, variant?: 'outlined' | 'contained') {
+/** *+ Unit* on the bar: inside the unit picked where one is and it is kept here, else at the top. Nothing where the chart makes no units. */
+function addOnBar(newUnit: NewUnit, make: UnitMaking | undefined, inside: ChartUnit | undefined, t: Translate) {
   if (!newUnit.offer || !make) return undefined
-  return <AddAtTop offer={newUnit.offer()} onAdd={() => newUnit.open()} onLink={make.onOpenOperating} guide={guide} testId={testId} t={t} {...(variant ? { variant } : {})} />
+  const { offer, open } = newUnit
+  if (inside) {
+    return <Button variant="plain" onClick={() => open(inside)} title={t('chart.addInside', { name: inside.name })} data-guide="chart.addAtTop" data-testid="chart-add-top">{t('chart.addShort')}</Button>
+  }
+  return <AddAtTop offer={offer()} onAdd={() => open()} onLink={make.onOpenOperating} guide="chart.addAtTop" testId="chart-add-top" label={t('chart.addShort')} tip={t('chart.addAtTop')} t={t} />
 }
 
 /** The chart's folds, kept where the shell keeps them for the session, or — where it keeps none — for as long as the page is up. */
@@ -387,56 +562,4 @@ function usePageHandle(
     onHandle({ diagramId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
     return () => onHandle(undefined)
   }, [onHandle, diagramId, capture, selectedId])
-}
-
-/**
- * The bar over the chart: how much is on it, *Find* a unit by name, *Find me*,
- * *Show optional roles*, and *Fold all* and *Unfold all* — and, under it, why
- * a first open of a large chart is folded, until a fold is changed. How to
- * read the chart is said in its summary, beside it.
- */
-function ChartBar({ chart, folds, onFind, onFindMe, note, add, lines, t }: {
-  chart: OrgChart; folds: ChartFolds; onFind: (query: string) => void; onFindMe: () => void; note: string | undefined; add: ReactNode
-  lines: { on: boolean; toggle: () => void }; t: Translate
-}) {
-  const [query, setQuery] = useState('')
-  return (
-    <>
-      <Box data-testid="chart-bar" sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
-        <Typography data-testid="chart-count" sx={{ fontSize: 11.5, color: 'text.secondary' }}>
-          {t('chart.count', { units: chart.units, people: chart.people })}
-        </Typography>
-        <TextField
-          size="small" label={t('chart.findUnit')} value={query} onChange={(event) => setQuery(event.target.value)}
-          // Consumed: an Enter left to the browser becomes a press of whatever button takes the focus next.
-          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onFind(query) } }}
-          sx={{ width: 200 }} slotProps={{ htmlInput: { 'data-testid': 'chart-find-input' } }}
-        />
-        <Button size="small" variant="outlined" onClick={() => onFind(query)} data-testid="chart-find">{t('chart.find')}</Button>
-        <Button size="small" variant="outlined" onClick={onFindMe} data-testid="chart-find-me">{t('chart.findMe')}</Button>
-        {note && <Typography data-testid="chart-note" role="status" sx={{ fontSize: 11.5, color: 'warning.main' }}>{note}</Typography>}
-        <Box sx={{ flex: 1 }} />
-        {add}
-        <FormControlLabel
-          data-guide="chart.showOptional" data-testid="chart-show-optional"
-          control={<Switch size="small" checked={folds.optional} onChange={folds.toggleOptional} />}
-          label={<Typography sx={{ fontSize: 12 }}>{t('chart.showOptional')}</Typography>}
-          sx={{ mr: 0.5 }}
-        />
-        <FormControlLabel
-          data-guide="chart.showLines" data-testid="chart-show-lines"
-          control={<Switch size="small" checked={lines.on} onChange={lines.toggle} />}
-          label={<Typography sx={{ fontSize: 12 }}>{t('chart.showLines')}</Typography>}
-          sx={{ mr: 0.5 }}
-        />
-        <Button size="small" onClick={folds.foldAll} data-testid="chart-fold-all" data-guide="chart.foldAll">{t('chart.foldAll')}</Button>
-        <Button size="small" onClick={folds.unfoldAll} data-testid="chart-unfold-all" data-guide="chart.unfoldAll">{t('chart.unfoldAll')}</Button>
-      </Box>
-      {folds.foldedOnOpen && (
-        <Typography data-testid="chart-folded-note" sx={{ fontSize: 12, px: 1.5, py: 0.75, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', color: 'text.secondary' }}>
-          {t('chart.foldedOnOpen')}
-        </Typography>
-      )}
-    </>
-  )
 }

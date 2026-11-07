@@ -127,21 +127,28 @@ export const CONTROL_NAMES = [
   'operating.raciUnit', 'operating.raciExport', 'operating.arrange', 'operating.exceptions', 'operating.exceptionsBar',
   'operating.libraries', 'operating.libraryPreview', 'operating.typeLimit',
   'operating.fromLibrary', 'operating.startFromLibrary', 'operating.libraryList', 'operating.comingIn', 'operating.cameIn',
-  // The organisation chart (ADR-0036, amended): its outline, and folding every unit or none.
   // The Conway map: its bar, its two readings, the panel beside them.
   'conway.reading', 'conway.groupBy', 'conway.findMe', 'conway.verdict', 'conway.grid', 'conway.show', 'conway.showUnowned', 'conway.reader',
   'conway.finding', 'conway.owners', 'conway.sayHow', 'conway.planAway', 'conway.removeSaid', 'conway.modelInterface', 'conway.makeUnits', 'conway.addInteraction',
-  'chart.outline', 'chart.foldAll', 'chart.unfoldAll',
-  // …the switch that draws its empty optional roles, and its summary in the inspector while nothing is picked (3.6.1).
+  // The organisation chart (ADR-0036, amended): its outline; its View bar, Levels and the unit's way to fold them all or none.
+  'chart.outline', 'chart.bar', 'chart.foldAll',
+  // …its find, for units and people, and Me.
+  'chart.find', 'chart.findMe',
+  // …who it draws (the People menu), and the line under it that opens its summary (3.6.1).
   'chart.showOptional', 'chart.summary',
-  // …the switch that draws the reporting lines over it (ADR-0039 §7).
-  'chart.showLines',
-  // …and making a unit from it (3.6.2): + Unit at the top on the bar, in the outline's header and on an
-  // empty chart, a unit's own + for a unit inside it, and the dialog they open.
-  'chart.addAtTop', 'chart.outlineAdd', 'chart.addFirst', 'chart.addInside', 'chart.newUnit',
-  // …and moving a unit to another place in the organisation (3.7.1): Move to… on a unit's box and in the outline,
-  // the dialog they open, and Sits under in the unit's inspector, which opens it too.
+  // …which lines it draws (the Lines menu, ADR-0039 §7), and the list of its exceptions.
+  'chart.showLines', 'chart.exceptions',
+  // …its day, and the band while another is shown.
+  'chart.day', 'chart.dayBand',
+  // …a focus on one unit, from its box, and the band with the way up.
+  'chart.focus', 'chart.focusBand',
+  // …and making a unit from it (3.6.2): + Unit on the bar and on an empty chart, + Unit inside on a picked box, and the dialog they open.
+  'chart.addAtTop', 'chart.addFirst', 'chart.addInside', 'chart.newUnit',
+  // …and moving a unit to another place in the organisation (3.7.1): Move to… on a picked box and at the foot of the outline,
+  // the panel they open, and Sits under in the unit's inspector.
   'chart.moveTo', 'chart.outlineMoveTo', 'chart.moveUnit', 'unit.sitsUnder',
+  // …and someone put in a vacancy, in the popover beside it.
+  'chart.assign',
   // Deleting a unit (3.6.2): the confirmation's End on a day…, offered first, and where the units inside it go.
   'unitDelete.end', 'unitDelete.inside',
   // A list of findings, wherever it is drawn (ADR-0036, amended 11 October 2026):
