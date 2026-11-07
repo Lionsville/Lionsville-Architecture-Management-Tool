@@ -243,7 +243,10 @@ describe('what runs along it', () => {
     widen()
     const onOpen = vi.fn()
     render(<Axis><TimeAxisRow label="Plan"><TimeBar from="2026-09-01" to="2026-12-01" name="Agreed" tone="agreed" onOpen={onOpen} /></TimeAxisRow></Axis>)
-    fireEvent.click(screen.getByRole('button', { name: 'Agreed' }))
+    const bar = screen.getByRole('button', { name: 'Agreed' })
+    // The row's name is the keyboard's way to the same thing; the bar is for the pointer.
+    expect(bar.tabIndex).toBe(-1)
+    fireEvent.click(bar)
     expect(onOpen).toHaveBeenCalledOnce()
   })
 

@@ -431,8 +431,9 @@ export function TimeBar({ from, to, name, tone, onOpen, says, 'data-guide': guid
     </>
   )
   const shared = { className: 'kit-time__bar', 'data-tone': tone, 'data-guide': guide, title: says ?? said, style }
+  // A press for the pointer: the row's name is the keyboard's one way to the same reader, so a row is one Tab stop and not four.
   return onOpen
-    ? <button type="button" {...shared} aria-label={said} onClick={onOpen}>{inside}</button>
+    ? <button type="button" tabIndex={-1} {...shared} aria-label={said} onClick={onOpen}>{inside}</button>
     : <div {...shared} role="img" aria-label={said}>{inside}</div>
 }
 
@@ -451,7 +452,7 @@ export function TimeMilestones({ items, onOpen, 'data-guide': guide }: { items: 
         const shared = { className: 'kit-time__milestone', 'data-many': many || undefined, title: name, style: { left: `${cluster.left * 100}%` } }
         const inside = <>{many && <span className="kit-time__count">{cluster.items.length}</span>}</>
         return onOpen
-          ? <button key={cluster.day} type="button" {...shared} aria-label={name} onClick={() => onOpen(cluster.items[0].id)}>{inside}</button>
+          ? <button key={cluster.day} type="button" tabIndex={-1} {...shared} aria-label={name} onClick={() => onOpen(cluster.items[0].id)}>{inside}</button>
           : <span key={cluster.day} {...shared} role="img" aria-label={name}>{inside}</span>
       })}
     </div>
