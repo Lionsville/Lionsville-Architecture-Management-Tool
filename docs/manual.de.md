@@ -2768,163 +2768,121 @@ abgelehnt, und eine Stelle, an der ihr Typ nicht stehen darf, wird genannt
 
 ### Das Organigramm
 
-Ein **Organigramm** ist eine Ansicht: **+** bei den Reitern, dann
-**Organigramm**, legt eines an, mit eigenem Reiter. Es wird aus den Einheiten
-gesetzt — nichts darauf wird von Hand platziert — als verschachtelte Kästen:
-jede Einheit in der Einheit, in der sie am Tag des Organigramms sitzt, die
-Verschiebungen eines Plans eingerechnet, die Einheiten, die in diesem
-Bereich und darunter abgelegt sind, und die Einheiten, die ihn von oben
-bedienen, und bei der Organisation jede Einheit, die es gibt. Einheiten
-nebeneinander stehen in der Reihenfolge ihrer Typen — ein Typ ganz oben
-zuerst, dann die Typen, die zu ihm gehören — und Einheiten eines Typs in
-ihrer eigenen Reihenfolge, wo eine gesetzt ist, sonst nach Namen. Jede Liste
-von Einheiten hält diese Reihenfolge: die Gliederung, die Spalten der
-Conway-Karte und jede Stelle, an der eine Einheit gewählt wird.
+Ein **Organigramm** ist eine Ansicht: **+** in den Reitern, dann **Organigramm**,
+legt eines an, mit eigenem Reiter. Es ist ein Baum, aus den Einheiten aufgebaut — nichts
+darin wird von Hand platziert: die Organisation oben, ihre Einheiten daneben, und
+Einheiten ohne etwas darunter in einer Spalte unter ihrer übergeordneten, mit einer
+dünnen Verbindung, die zeigt, wo jede am Tag des Organigramms sitzt, die Verschiebungen
+eines Plans eingerechnet. Es enthält die Einheiten, die in diesem Bereich und darunter
+abgelegt sind, und die Einheiten, die ihn von oben bedienen, und bei der Organisation
+jede Einheit, die es gibt. Einheiten nebeneinander stehen in der Reihenfolge ihrer Typen
+und dann in ihrer eigenen, wo eine gesetzt ist, sonst nach Namen; jede Liste von
+Einheiten hält diese Reihenfolge ein.
 
-**Die Gliederung** neben dem Organigramm zeigt dieselben Einheiten als Baum
-und führt das Organigramm. Eine Einheit dort zu wählen oder mit ihrem Pfeil
-aufzuklappen, klappt sie auch im Organigramm auf, mit jeder Einheit darüber,
-scrollt das Organigramm zu ihr, umrandet sie und wählt sie — wo dieser Bereich
-sie führt. Eine Einheit in der Gliederung einzuklappen, klappt nur die
-Gliederung ein und lässt das Organigramm, wie es ist. Die Breite der
-Gliederung bestimmen Sie: Ziehen Sie die Naht an ihrer rechten Seite, oder
-geben Sie der Naht den Fokus und nutzen Sie die Pfeiltasten links und rechts
-(mit Umschalt für einen größeren Schritt, Pos1 für die Anfangsbreite); sie
-bleibt zwischen einem Minimum und einem Maximum und wird mit Ihren anderen
-Bereichsbreiten gespeichert. Unter der
-Gliederung verschieben **Nach oben** und **Nach unten** die gewählte Einheit
-unter den Einheiten ihres Typs in derselben Einheit: ein Schritt in jedem
-Bereich, der eine davon führt. Wo alle in diesem Bereich geführt werden, nimmt
-Rückgängig die Verschiebung zurück; wo einige in anderen Bereichen geführt
-werden, wird jeder Bereich für sich zurückgesetzt.
+**Die Leiste** sagt von links nach rechts: **Ebenen** 1, 2, 3 oder **Alle**, wie tief
+sich das ganze Organigramm öffnet; **Personen**, wer gezeichnet wird: die Führungskräfte,
+die erforderlichen Rollen oder alle Rollen; **Linien**, welche Berichtslinien gezeichnet
+werden; **+ Einheit**; und den **Tag**. Beim ersten Öffnen zeigt ein Organigramm zwei
+Ebenen. Ein Pfeil auf einem Kasten klappt nur diese Einheit ein, und eine eingeklappte
+Einheit sagt in einer Zeile, was sie verbirgt, *3 Einheiten · 3 unbesetzt*; ein Druck auf
+diese Zeile öffnet sie. **−**, **+**, **Einpassen** und **100%** stehen in der Ecke der
+Fläche, dazu ⌘ oder Strg mit + − 0 und das Rad, und Einpassen stoppt bei 60%, wo ein
+Kasten seinen Namen sagt und was er verbirgt und nichts weiter. Nichts davon wird je
+gespeichert.
 
-**Eine Einheit an eine andere Stelle verschieben.** Eine Einheit, die an der
-falschen Stelle eingeordnet ist, zieht um, ohne neu verknüpft zu werden:
-**Verschieben nach…** in ihrer Namenszeile (sichtbar beim Zeigen, mit dem Fokus
-und an der gewählten Einheit), neben **Nach oben** und **Nach unten** unter der
-Gliederung, oder **Steht unter** in ihrem Inspektor. Der Dialog sagt, wo sie
-jetzt steht, und fragt, wo sie stehen soll: jede Einheit der Organisation,
-gleich welcher Bereich sie führt, gefunden über ihren Namen oder die Einheiten,
-in denen sie steht — *Board Technology* findet die Einheiten unter Technology
-unter dem Board — oder **Ganz oben**. Die Stellen, an denen ihr Typ stehen
-darf, kommen zuerst; die anderen folgen unter einer eigenen Überschrift, und
-eine Verschiebung dorthin ist erlaubt, lässt die Einheit in den Prüfungen aber
-als falsch eingeordnet stehen, bis sie wieder verschoben wird oder das
-Betriebsmodell ihren Typ dort zulässt. Die Einheit selbst und die Einheiten in
-ihr werden gezeigt und nicht angeboten: eine Einheit unter sich selbst oder
-unter einer Einheit in ihr wäre eine Schleife, und ebenso eine Stelle, die eine
-spätere Verschiebung eines Plans zu einer macht — das wird abgelehnt, mit dem
-Grund. **Diese auch verschieben** nennt die Einheiten neben ihr unter derselben
-übergeordneten Einheit, keine angekreuzt, sodass eine ganze Reihe von Einheiten
-auf einmal umzieht. Bevor etwas geschrieben wird, sagt **Wer sie führt**, wer
-jede Einheit von oben führt, heute und nach der Verschiebung, über die
-Verschachtelung oder über eine Linie — eine Rolle, deren Linie zur nächsten
-Inhaberin einer Rolle darüber geht, kann bei jemand anderem landen — und eine
-Verschiebung der Einheit in einem Plan wird mit ihrem Tag genannt, denn ab
-diesem Tag steht die Einheit, wo der Plan sagt. **Verschieben** schreibt es:
-Die Einheit behält ihre ID, also bleiben ihre Personen, ihre Berichtslinien,
-die Bereiche, die sie bedient, und ihre Kommentare bei ihr, und die Einheiten
-in ihr kommen mit. Ihr Platz unter ihren neuen Geschwistern beginnt neu. Es ist
-ein Schritt in jedem Bereich, der eine verschobene Einheit führt, alle oder
-keiner; wo das nur dieser Bereich ist, nimmt ⌘Z ihn zurück, und wo auch andere
-Bereiche geschrieben wurden, wird jeder für sich zurückgesetzt. Eine
-Verschiebung ist eine Korrektur, ohne Tag: Eine Verschiebung ab einem Tag
-gehört in einen Plan (*Eine Umorganisation ist ein Plan*). Ein Organigramm, das
-nur gelesen wird, bietet nichts davon an.
+**Fokus** auf einem gewählten Kasten zeichnet diese Einheit und was darunter liegt, in
+einem Raster, wo es mehrere sind, mit dem Weg nach oben in einer Zeile darüber und
+**Zurück zum ganzen Organigramm**. Ein Fokus hat eine Adresse (`?focus=` die Id einer
+Einheit, wie `?lines=` das Menü Linien festhält), also erreichen ihn ein Link und ein
+Agent, und Zurück führt heraus.
 
-**Eine Einheit im Organigramm anlegen.** **+ Einheit oben** steht in der
-Leiste, im Kopf der Gliederung und auf einem leeren Organigramm; das eigene
-**+** einer Einheit, in ihrer Namenszeile, erscheint, wenn auf die Zeile
-gezeigt wird, sie den Fokus hat oder die Einheit gewählt ist, und legt eine
-Einheit darin an. Ein kleiner Dialog fragt nach vier Dingen. **Typ** bietet
-nur die Typen an, die dort sitzen dürfen: in einer Einheit die Typen, die in
-ihrem Typ sitzen dürfen, oben die Typen, die oben sitzen dürfen. **Name**.
-**Bedient**, nur oben gefragt oder für einen Typ, der mehrere Domänen
-bedient: die Domänen, die sie bedient, auch noch keine — eine Einheit in
-einer anderen bedient über diese. **Abgelegt unter**, der Bereich, der sie
-hält: standardmäßig der Bereich der Einheit, in der sie sitzt, damit ein
-Teilbaum unter denselben Rechten zusammenbleibt; oben die Domäne, die sie
-bedient, wenn sie eine bedient und ihr Typ nicht mehrere bedient, sonst der
-Bereich dieses Organigramms. Jeder Bereich, den Sie ändern dürfen, kann
-gewählt werden. **Anlegen** ist ein Schritt in diesem Bereich: hier
-rückgängig zu machen, wenn es dieser Bereich ist, und dort, wenn es ein
-anderer ist. Eine Einheit anzulegen ist Struktur, daher entscheiden die
-Rechte des Bereichs, und eine führende Rolle gibt dieses Recht nicht. Die
-neue Einheit wird gewählt — aufgeklappt und in den Blick gerückt — und die
-Pflichtrollen ihres Typs stehen als **+ vacant** darin, sodass das Zuweisen
-von Personen gleich folgt. Wo kein Typ sitzen darf, sagt das **+** es — *Kein
-Einheitstyp darf in einer Einheit vom Typ Team sitzen* — und führt zum
-**Betriebsmodell**; ohne Einheitstypen führt es zu **Mit einer Bibliothek
-beginnen**. Ein Organigramm, das nur gelesen wird, bietet nichts davon.
+**Die Gliederung** neben dem Organigramm listet dieselben Einheiten als Baum und führt
+das Organigramm. Eine Einheit dort zu wählen oder mit ihrem Pfeil aufzuklappen, klappt
+sie auch im Organigramm auf, mit jeder Einheit darüber, scrollt dorthin und wählt sie.
+Einklappen in der Gliederung klappt nur die Gliederung ein. Die Pfeiltasten gehen durch
+sie, rechts öffnet und links schließt. Die Breite gehört dir: Zieh die Naht rechts davon,
+oder gib der Naht den Fokus und nutze die Pfeiltasten. Unten verschieben **Hoch** und
+**Runter** die gewählte Einheit unter den Einheiten ihres Typs in derselben Einheit: ein
+Schritt in jedem Bereich, der eine davon führt. Wo alle in diesem Bereich liegen, nimmt
+Rückgängig die Verschiebung zurück; wo manche in anderen liegen, wird jeder Bereich für
+sich zurückgesetzt.
 
-**Eine große Organisation klappt ein.** Der Pfeil neben dem Namen einer
-Einheit klappt die Einheiten darunter ein, und die Einheit sagt dann, was sie
-verbirgt: ihre Einheiten und Personen, und die unbesetzten Rollen und Befunde
-darunter. Wird ein Organigramm zum ersten Mal geöffnet, zeigt es zwei
-Ebenen — die Einheiten oben und die Einheiten direkt darunter — und alles
-darunter ist eingeklappt, wie groß das Organigramm auch ist, und die Seite
-sagt es; danach gelten Ihre eigenen Faltungen. **Alle einklappen** und **Alle ausklappen** stehen in der Leiste; die
-Gliederung klappt für sich. **Eine Einheit finden** geht zur ersten Einheit,
-deren Name jedes eingegebene Wort enthält; das, **Mich finden** und **Einheit
-öffnen** bei einem Befund neben dem Organigramm klappen den Weg zu der Einheit
-aus, zu der sie gehen.
-Eine Faltung gilt, solange die App offen ist, und wird nie gespeichert.
+**Suchen.** Das Feld über der Gliederung nimmt Einheiten und Personen, mit Treffern beim
+Tippen, und ⌘F führt dorthin. Bei einer gefundenen Person geht das Organigramm zur Einheit
+und öffnet die Zuweisung. **Ich** geht zur Einheit, in der du eine Rolle hast; sag zuerst,
+wer du bist, mit **Das bin ich** auf der Seite Personen. Im Organigramm gehen die Pfeile
+durch die Kästen, Enter wählt und geht nach unten, Umschalt und Enter nach oben, M
+verschiebt die Einheit und F setzt den Fokus darauf.
 
-Jeder Kasten nennt Typ und Namen der Einheit — ein Wort im Namen des Typs, das
-länger als sieben Buchstaben ist, gekürzt auf seine ersten sechs und einen
-Punkt, *Geschäftsbereich* als *Geschä.*, mit dem ganzen Namen, wenn Sie darauf
-zeigen, und für einen Bildschirmleser — und jede Zeile eine Rolle, die
-sie hat, mit wem sie **am Tag des Organigramms** innehat: mit dem Namen aus
-dem Register, dem Anteil, wo es nicht die ganze Zeit ist, *vertretend*,
-*ext.* für jemanden von außerhalb der Organisation, und *Sie*. Ein roter Rand
-markiert jemanden, dessen Anteile zusammen mehr als die ganze Zeit in der
-Organisation ergeben. Eine Rolle mit zu wenigen Personen zeigt ein
-gestricheltes **+ unbesetzt**; in einer Einheit, die dieser Bereich führt,
-ordnet ein Klick sofort jemanden zu, als ein Schritt. Ein Etikett nennt die
-Domänen, die eine Einheit bedient, wo es mehr als eine ist — die ersten zwei
-und wie viele weitere, wo es viele sind —, und sagt den Tag, an dem sie
-beginnt, wo er nach heute liegt, und den Tag, an dem sie endet, jeweils mit dem
-Plan, der sie bringt oder beendet, wo ein Plan das tut: *ab 1. Jan. 2027 ·
-TR-0007*.
+**Ein Kasten** sagt Typ und Namen der Einheit und eine Zeile je Rolle: *Leitung: Anna de
+Vries*, mit dem Anteil, wo es nicht die ganze Zeit ist, *kommissarisch*, *ext* für jemanden
+von außerhalb der Organisation und *du*, oder **unbesetzt** in Worten, was mit einem Druck
+in einer Einheit dieses Bereichs zuweist. Wer über der ganzen Zeit liegt, hat *200% ihrer
+Zeit* in Worten in der Zeile; wer eine Rolle außerhalb der Einheit hat, eine eigene Zeile
+mit *außerhalb ihrer Rollen*. Das eine steht nie für das andere. Eine Zeile unter dem Namen
+nennt die Domänen, die eine Einheit bedient, wo es mehr als eine ist, und den Tag, an dem
+sie beginnt oder endet, mit dem Plan, der das tut. Eine Rolle, die der Typ nicht verlangt
+und die niemand innehat, steht nur unter **Personen: Alle Rollen**, und der Inspektor der
+Einheit nennt immer jede Rolle.
 
-Die Einheiten unter einer Einheit stehen nebeneinander in so vielen Spalten,
-wie die Breite fasst; eine mit eigenen Einheiten darunter nimmt eine ganze
-Zeile, damit diese wiederum die Breite haben. Eine Rolle, die der Typ der
-Einheit nicht verlangt und die niemand innehat — eine optionale —, wird nicht
-gezeichnet: Sie ist eine Wahl, keine Lücke. **Optionale Rollen zeigen** in der
-Leiste zeichnet sie, jede mit **+ zuordnen**, wo Sie jemanden zuordnen dürfen,
-und der Inspektor der Einheit führt immer jede Rolle. Wie eine Faltung gilt
-der Schalter, solange die App offen ist, und wird nie gespeichert.
+**Linien** zeichnet Berichtslinien auf vier Arten: **Aus**; **Gewählte Person**, die
+Linien, die für die gedrückte Person gelten, und die Linien zu ihr; **Gepunktet**, jede
+fachliche Linie im Organigramm; und **Ausnahmen**, jede Abweichung vom Modell, auch in
+einem Feld gelistet, aus dem jede Zeile zu ihrer Einheit führt. Es öffnet auf Gewählte
+Person, wo die Organisation Linien hat. Eine Pfeilspitze sagt immer, in welche Richtung
+eine Linie läuft: Die Akzentfarbe läuft hinauf zu dem, an den jemand berichtet, neutrale
+Tinte kommt von denen, die an ihn berichten, und eine Ausnahme ist magenta, mit ihren
+Worten auf der Linie. Durchgezogen ist die Linie der Führungskraft, gepunktet eine
+fachliche. Eine Linie zu einer Rolle, die niemand innehat, Teil einer Schleife, oder die in
+einer eingeklappten Einheit endet, sagt das auf der Linie, und die Legende steht immer in
+ihrer Ecke, sodass eine neue Linie nichts verschiebt.
 
-**Berichtslinien** werden für die Person gezeichnet, die Sie wählen, am Tag
-des Organigramms — die Linien, die für sie gelten, ihre eigene, wo sie eine
-hat: von ihrem Chip zum Chip derer, an die sie berichtet, in der Akzentfarbe,
-und von den Chips derer, die an sie berichten, zu ihrem, in Türkis —
-durchgezogen für die einer Führungskraft und gepunktet für eine fachliche. Eine
-Linie, die eine Ausnahme vom Modell ist — die eigene Linie einer Einheit oder
-einer Person —, ist magenta, in welche Richtung sie auch läuft; ihr Endpunkt
-sagt, wo sie ankommt. Eine Legende über dem Organigramm sagt, welche Farbe was
-ist, solange eine Linie gezeichnet ist. Eine Linie zu einer Person endet nur an
-deren Chip.
-Eine Linie zwischen zwei Rollen einer Einheit verbindet die beiden Chips in
-ihrem Kasten. Wo niemand die Rolle am anderen Ende innehat, endet die Linie
-am Namen der Rolle, in der Warnfarbe; eine, die Teil einer Schleife ist, steht
-in der Fehlerfarbe. Wo das andere Ende weggefaltet ist, endet die Linie am
-Namen der eingeklappten Einheit, und ihr Tooltip sagt es. Ist niemand gewählt,
-oder eine Einheit, wird keine Linie gezeichnet. **Berichtslinien** in der
-Leiste schaltet sie ganz ab; der Schalter ist von Anfang an an, wo die
-Organisation eine Linie hat, und aus, wo sie keine hat, und bleibt, solange
-die Seite offen ist.
+**Eine Einheit an einen anderen Platz verschieben.** Eine falsch abgelegte Einheit zieht
+um, ohne neu verknüpft zu werden: **Verschieben nach…** auf dem gewählten Kasten, unten in
+der Gliederung, **Sitzt unter** in ihrem Inspektor, M, oder durch Ziehen auf eine andere.
+Ein Feld öffnet sich neben dem Organigramm, das mit seinen hervorgehobenen Plätzen sichtbar
+bleibt: jede Einheit der Organisation, welcher Bereich sie auch führt, gewählt durch Druck
+im Organigramm oder in der Liste, oder **Ganz oben**. Die Plätze, an denen ihr Typ sitzen
+darf, kommen zuerst; die anderen folgen unter eigener Überschrift, und ein Umzug dorthin ist
+erlaubt, lässt die Einheit in den Prüfungen aber als falsch platziert stehen. Die Einheit
+selbst und die Einheiten darin werden nicht angeboten, und ein Platz, den eine spätere
+Verschiebung eines Plans zur Schleife machte, wird abgelehnt, mit Grund. **Diese auch
+verschieben** nennt die Einheiten daneben unter derselben übergeordneten, keine angehakt.
+Bevor etwas geschrieben wird, sagt **Wer sie führt**, wer jede Einheit von oben führt, heute
+und nach dem Umzug, und eine Verschiebung durch einen Plan wird mit ihrem Tag genannt. Nichts
+wird geschrieben bis **Verschieben**, und Esc verlässt es. Die Einheit behält ihre Id, also
+bleiben ihre Personen, Berichtslinien, bedienten Bereiche und Kommentare bei ihr, und die
+Einheiten darin kommen mit. Es ist ein Schritt in jedem Bereich, der eine verschobene Einheit
+führt, alle oder keiner; wo das nur dieser Bereich ist, nimmt ⌘Z es zurück, und wo auch andere
+geschrieben wurden, wird jeder für sich zurückgesetzt. Ein Umzug ist eine Korrektur, ohne Tag:
+Ein Umzug ab einem Tag gehört einem Plan. Ein nur gelesenes Organigramm bietet nichts davon.
 
-Das Organigramm wird an einem Tag gezeichnet, wie ein Board: die Tagesauswahl
-in der Leiste schaut auf jeden anderen Tag, und **Speichern** hält diesen Tag
-am Organigramm fest (siehe *Zeit, und der Tag, den ein Board zeigt*). An einem späteren
-Tag sind die Einheiten da, die ein Plan bringt, und eine aufgelöste Einheit
-wird weiter gezeichnet — gestrichelt, und das sagend —, solange ihr noch
-jemand zugeordnet ist, damit die Personen, die eine Reorganisation
-zurückgelassen hat, dort zu sehen sind, wo sie zurückblieben.
+**Eine Einheit im Organigramm anlegen.** **+ Einheit** auf der Leiste legt eine in der
+gewählten Einheit an, oder ganz oben, wenn keine gewählt ist; **+ Einheit darin** steht auf dem
+gewählten Kasten, und ein leeres Organigramm bietet **+ Einheit ganz oben**. Ein kleiner Dialog
+fragt vier Dinge. **Typ** bietet nur die Typen, die dort sitzen dürfen. **Name**. **Bedient**,
+nur ganz oben oder für einen Typ, der mehrere Domänen bedient. **Abgelegt in**, der Bereich, der
+sie führt: standardmäßig der der Einheit, in der sie sitzt, und ganz oben die bediente Domäne,
+sonst der Bereich dieses Organigramms. **Anlegen** ist ein Schritt in diesem Bereich. Die neue
+Einheit wird gewählt, und ihre erforderlichen Rollen stehen als **unbesetzt**, sodass das Zuweisen
+gleich folgt. Wo kein Typ sitzen darf, sagt es das und führt zum **Betriebsmodell**; ohne
+Einheitstypen zu **Aus einer Bibliothek beginnen**. Ein nur gelesenes Organigramm bietet nichts
+davon.
 
-**Ist nichts gewählt, ist der Inspektor neben dem Organigramm dessen
+**Zuweisen** öffnet ein Popover neben der unbesetzten Stelle, mit dem Organigramm weiter im Blick:
+die Rolle, wobei jede andere Rolle der Organisation als Ausnahme angeboten und so genannt wird;
+jede Person mit ihrem jetzigen Anteil; **Neue Person…**; und der Anteil, der erste Tag und
+*kommissarisch*. Wo die Wahl jemanden über die ganze Zeit bringt, sagt es das vor **Zuweisen**, mit
+**Anteil festlegen**.
+
+Das Organigramm wird an einem Tag gezeichnet, wie ein Board: **Tag** auf der Leiste schaut auf jeden
+anderen Tag, und **Dieses Organigramm immer an diesem Tag öffnen** behält ihn beim Organigramm. Ein
+Band sagt das, solange ein anderer Tag gezeigt wird, mit dem Weg zurück zu heute. An einem späteren
+Tag stehen die Einheiten, die ein Plan bringt, da, und eine beendete Einheit wird noch gezeichnet —
+gestrichelt und das sagend —, solange jemand ihr zugewiesen ist, sodass die Personen, die eine
+Reorganisation zurückließ, dort zu sehen sind, wo sie zurückblieben.
+
+**Die Zeile unter dem Organigramm öffnet dessen
 Zusammenfassung**: wessen Organigramm und an welchem Tag, wie viele Einheiten
 und Personen darauf stehen und wie viele Plätze unbesetzt sind; dann
 **Befunde**, was die Organisation über diese Einheiten und die Personen darin
@@ -2963,7 +2921,7 @@ Einheitstyps, der Einheit selbst, oder ihre eigene —, wo sie endet und ob sie
 die einer Führungskraft oder fachlich ist, *über die Verschachtelung*, wo keine
 Linie einer Führungskraft gilt, und wer sie führt, *über eine Linie* oder *per
 Ausnahme*. Die Linien des Modells sind die Vorgabe; eine Ausnahme für diese eine
-Person ist **Überschreiben …**: eine eigene Linie zu einer Rolle in irgendeiner
+Person ist **+ Eine Linie nur für diese Person**: eine eigene Linie zu einer Rolle in irgendeiner
 Einheit, zu einer Person in dieser Rolle, oder zu einer Person irgendwo,
 durchgezogen oder gepunktet, mit ihren Tagen. Eine eigene Linie einer
 Führungskraft ersetzt, nur für diese Person, was ihre Rolle, deren Typ, ihre

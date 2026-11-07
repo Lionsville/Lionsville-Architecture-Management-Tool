@@ -1031,8 +1031,13 @@ src/app/          The shell around the editor.
                                       lines (`ConwayLines`, `conwayRoutes`),
                                       panel (`ConwayReader`) and findings' words
                                       (`conwayWords`), drawn in the tab through
-                                      `UnitViewPages`, the chart's boxes in
-                                      their grid (`ChartUnitBox`) and what a
+                                      `UnitViewPages`, the chart's tree of
+                                      boxes (`ChartUnitBox`), its connectors
+                                      and lines at right angles
+                                      (`chartGeometry`, `ChartLinesOverlay`),
+                                      its bar, find and panels (`ChartBar`,
+                                      `ChartFind`, `MovePanel`,
+                                      `ExceptionsPanel`), and what a
                                       badge and a folded unit say, and a
                                       unit type's name with its long words
                                       cut (`chartWords`), drawn with the

@@ -259,6 +259,11 @@ A new name for a unit, a role or a unit type is an edit.
 
 ### 7. Two views, and a row between units
 
+*(amended, 7 November 2026)* The organisation chart is drawn as a tree with connectors,
+in place of nested boxes, with one menu for its reporting lines, levels, zoom, and a
+focus on one unit that has an address. A move and an assignment keep the chart in view.
+What it is of and how it is read off the model is as said here.
+
 Two new laid-out kinds, and every switch on a view's kind is made exhaustive,
 as ADR-0034 did for a drawing:
 

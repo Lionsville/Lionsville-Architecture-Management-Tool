@@ -2638,153 +2638,119 @@ en een plek waar haar type niet mag staan wordt gemeld (`misplaced`).
 ### Het organogram
 
 Een **organogram** is een weergave: **+** in de tabbladen, dan **Organogram**,
-maakt er een, met een eigen tabblad. Het wordt opgemaakt uit de eenheden —
-niets erop wordt met de hand geplaatst — als geneste vakken: elke eenheid in
-de eenheid waarin ze op de dag van het organogram zit, de verplaatsingen van
-een plan meegerekend, de eenheden die in deze scope en eronder zijn
-ingedeeld en de eenheden die haar van bovenaf bedienen, en bij de organisatie
-elke eenheid die er is. Eenheden naast elkaar staan in de volgorde van hun
-typen — een type bovenaan eerst, dan de typen die eronder vallen — en
-eenheden van één type in hun eigen volgorde waar die is gezet, anders op
-naam. Elke lijst van eenheden houdt die volgorde aan: het overzicht, de
-kolommen van de Conway-kaart en elke plek waar je een eenheid kiest.
+maakt er een, met een eigen tabblad. Het is een boom opgemaakt uit de eenheden —
+niets erop wordt met de hand geplaatst: de organisatie bovenaan, haar eenheden
+ernaast, en eenheden met niets eronder in een kolom onder hun ouder, met een dunne
+verbindingslijn die laat zien waar elke eenheid op de dag van het organogram zit, de
+verplaatsingen van een plan meegerekend. Het bevat de eenheden die in deze scope en
+eronder zijn ingedeeld en de eenheden die haar van bovenaf bedienen, en bij de
+organisatie elke eenheid die er is. Eenheden naast elkaar staan in de volgorde van
+hun typen en dan in hun eigen volgorde waar die is gezet, anders op naam; elke lijst
+van eenheden houdt die volgorde aan.
 
-**Het overzicht** naast het organogram toont dezelfde eenheden als een boom,
-en stuurt het organogram. Een eenheid daar kiezen, of openvouwen met haar
-pijltje, vouwt haar ook op het organogram open, met elke eenheid erboven,
-scrolt het organogram ernaartoe, omlijnt haar en kiest haar — waar deze scope
-haar bijhoudt. Een eenheid in het overzicht dichtvouwen vouwt alleen het
-overzicht en laat het organogram zoals het is. De breedte van het overzicht is
-van jou: sleep de naad aan de rechterkant, of geef de naad de focus en gebruik
-de pijltjestoetsen links en rechts (met Shift voor een grotere stap, Home voor
-de breedte waarmee het begon); het blijft tussen een minimum en een maximum en
-wordt bewaard met je andere paneelbreedtes. Onder het overzicht verplaatsen **Omhoog** en **Omlaag** de gekozen eenheid
-tussen de eenheden van haar type in dezelfde eenheid: één stap in elke scope
-die er een van bijhoudt. Waar ze allemaal in deze scope worden bijgehouden,
-neemt ongedaan maken de verplaatsing terug; waar sommige in andere scopes
-worden bijgehouden, zet je elke scope apart terug.
+**De balk** zegt van links naar rechts: **Niveaus** 1, 2, 3 of **Alle**, hoe diep
+het hele organogram opent; **Mensen**, wie er staat: de leidinggevenden, de vereiste
+rollen of alle rollen; **Lijnen**, welke rapportagelijnen er staan; **+ Eenheid**; en
+de **Dag**. De eerste keer opent een organogram op twee niveaus. Een pijltje op een
+vak klapt alleen die eenheid in, en een ingeklapte eenheid zegt op één regel wat ze
+verbergt, *3 eenheden · 3 vacant*; een druk op die regel klapt haar open. **−**,
+**+**, **Passend** en **100%** staan in de hoek van het canvas, met ⌘ of Ctrl en
++ − 0 en het wiel, en Passend stopt bij 60%, waar een vak zijn naam zegt en wat het
+verbergt en niets meer. Niets hiervan wordt ooit bewaard.
 
-**Een eenheid naar een andere plek verplaatsen.** Een eenheid die op de
-verkeerde plek staat, verhuist zonder dat je haar opnieuw koppelt:
-**Verplaatsen naar…** op haar naamregel (zichtbaar als je hem aanwijst, als hij
-de focus heeft en op de gekozen eenheid), naast **Omhoog** en **Omlaag** onder
-het overzicht, of **Valt onder** in haar inspector. Het venster zegt waar ze nu
-staat en vraagt waar ze moet komen: elke eenheid in de organisatie, welke scope
-haar ook bijhoudt, te vinden op haar naam of op de eenheden waaronder ze valt —
-*Board Technology* vindt de eenheden onder Technology onder de Board — of
-**Bovenaan**. De plekken waar haar type mag staan komen eerst; de andere volgen
-onder een eigen kop, en een verplaatsing daarheen mag, maar laat de eenheid in
-de controles als misplaatst staan, tot ze weer verplaatst wordt of het
-operating model haar type daar toelaat. De eenheid zelf en de eenheden eronder
-worden getoond en niet aangeboden: een eenheid onder zichzelf, of onder een
-eenheid eronder, is een kringloop, en een plek die door een latere verplaatsing
-in een plan een kringloop wordt ook — dat wordt geweigerd, met de reden.
-**Deze ook verplaatsen** noemt de eenheden ernaast onder dezelfde bovenliggende
-eenheid, geen ervan aangevinkt, zodat een hele rij eenheden in één keer
-verhuist. Voordat er iets wordt geschreven, zegt **Wie haar aanstuurt** wie
-elke eenheid van erboven aanstuurt, vandaag en na de verplaatsing, via de
-nesting of via een lijn — een rol waarvan de lijn naar de dichtstbijzijnde
-houder van een rol erboven gaat, kan bij iemand anders uitkomen — en wordt een
-verplaatsing van de eenheid in een plan genoemd met haar dag, omdat de eenheid
-vanaf die dag staat waar het plan zegt. **Verplaatsen** schrijft het: de
-eenheid houdt haar id, dus haar mensen, haar rapportagelijnen, de scopes die ze
-bedient en haar opmerkingen blijven bij haar, en de eenheden eronder gaan mee.
-Haar plek tussen haar nieuwe gelijken begint opnieuw. Het is één stap in elke
-scope die een verplaatste eenheid bijhoudt, allemaal of geen; waar dat alleen
-deze scope is, neemt ⌘Z hem terug, en waar ook andere scopes zijn geschreven,
-zet je elke scope apart terug. Een verplaatsing is een correctie, zonder dag:
-een verplaatsing vanaf een dag hoort in een plan (*Een reorganisatie is een
-plan*). Een organogram dat alleen gelezen wordt, biedt hiervan niets.
+**Focus** op een gekozen vak tekent die eenheid en wat eronder valt, in een raster
+waar het er meer zijn, met de weg omhoog op één regel erboven en **Terug naar het
+hele organogram**. Een focus heeft een adres (`?focus=` het id van een eenheid, zoals
+`?lines=` het menu Lijnen vasthoudt), dus een link en een agent komen er ook, en
+Terug komt eruit.
 
-**Een eenheid maken op het organogram.** **+ Eenheid bovenaan** staat op de
-balk, in de kop van het overzicht en op een leeg organogram; de eigen **+**
-van een eenheid, op haar naamregel, verschijnt als je de regel aanwijst, als
-de focus erop staat of als de eenheid gekozen is, en maakt een eenheid erin.
-Een klein venster vraagt vier dingen. **Type** biedt alleen de typen die daar
-mogen zitten: in een eenheid de typen die in haar type mogen zitten, bovenaan
-de typen die bovenaan mogen zitten. **Naam**. **Bedient**, alleen gevraagd
-bovenaan of voor een type dat meerdere domeinen bedient: de domeinen die ze
-bedient, eventueel nog geen — een eenheid in een andere bedient via die.
-**Ingedeeld in**, de scope die haar bewaart: standaard de scope van de eenheid
-waarin ze zit, zodat een deelboom bij elkaar blijft onder dezelfde rechten;
-bovenaan het domein dat ze bedient als ze er één bedient en haar type er niet
-meerdere bedient, en anders de scope van dit organogram. Elke scope die je
-mag wijzigen kan gekozen worden. **Maken** is één stap in die scope: hier
-ongedaan te maken als het deze scope is, en in die scope als het een andere
-is. Een eenheid maken is structuur, dus beslissen de rechten van de scope, en
-een rol die mensen aanstuurt geeft dat recht niet. De nieuwe eenheid wordt
-gekozen — opengevouwen en in beeld gebracht — en de verplichte rollen van haar
-type staan er als **+ vacant**, zodat mensen toewijzen meteen volgt. Waar geen
-type mag zitten, zegt de **+** dat — *Geen eenheidstype mag in een Team
-zitten* — en leidt naar het **Besturingsmodel**; zonder eenheidstypen leidt
-hij naar **Begin met een bibliotheek**. Een organogram dat alleen gelezen
-wordt, biedt niets hiervan.
+**Het overzicht** naast het organogram toont dezelfde eenheden als boom, en leidt
+het organogram. Een eenheid daar kiezen, of openklappen met haar pijltje, klapt haar
+ook op het organogram open, met elke eenheid erboven, scrollt ernaartoe en kiest
+haar. Inklappen in het overzicht klapt alleen het overzicht in. De pijltoetsen lopen
+erdoorheen, rechts opent en links sluit. De breedte is van jou: sleep de naad rechts
+ervan, of geef de naad de focus en gebruik de pijltoetsen. Onderaan verplaatsen
+**Omhoog** en **Omlaag** de gekozen eenheid onder de eenheden van haar type in
+dezelfde eenheid: één stap in elke scope die er een bewaart. Waar ze allemaal in
+deze scope staan, neemt ongedaan maken de verplaatsing terug; waar sommige in andere
+scopes staan, wordt elke scope op zichzelf teruggezet.
 
-**Een grote organisatie vouwt.** Het pijltje naast de naam van een eenheid
-vouwt de eenheden eronder dicht, en de eenheid zegt dan wat ze verbergt: haar
-eenheden en mensen, en de vacatures en bevindingen daaronder. De eerste keer
-dat een organogram wordt geopend, toont het twee niveaus — de eenheden
-bovenaan en de eenheden direct daaronder — en is alles daaronder
-dichtgevouwen, hoe groot het organogram ook is, en de pagina zegt dat; daarna
-houdt het je eigen vouwen aan. **Alles dichtvouwen** en
-**Alles openvouwen** staan in de balk; het overzicht vouwt los daarvan.
-**Zoek een eenheid** gaat naar de eerste eenheid waarvan de naam elk getypt
-woord bevat; dat, **Vind mij** en **Open de eenheid** bij een bevinding naast
-het organogram vouwen de weg open naar de eenheid waar ze naartoe gaan. Een vouw duurt zolang de app open
-is en wordt nooit bewaard.
+**Zoeken.** Het vak boven het overzicht neemt eenheden en mensen, met resultaten
+terwijl je typt, en ⌘F komt ernaartoe. Bij een gevonden persoon gaat het organogram
+naar de eenheid en opent de toewijzing. **Ik** gaat naar de eenheid waar jij een rol
+hebt; zeg eerst wie je bent, met **Dit ben ik** op de pagina Mensen. Op het organogram
+lopen de pijlen door de vakken, Enter kiest en gaat omlaag, Shift en Enter gaat
+omhoog, M verplaatst de eenheid en F zet de focus erop.
 
-Elk vak noemt het type en de naam van de eenheid — een woord in de naam van
-het type dat langer is dan zeven letters ingekort tot de eerste zes en een
-punt, *Organisatieonderdeel* als *Organi.*, met de hele naam als je ernaar
-wijst en voor een schermlezer — en elke regel een rol die ze heeft, met wie die vervult **op de dag van het organogram**: met de naam uit
-het register, het aandeel waar dat niet al iemands tijd is, *waarnemend*,
-*ext* voor iemand van buiten de organisatie, en *jij*. Een rode rand markeert
-iemand wiens aandelen samen meer zijn dan al zijn tijd in de hele organisatie.
-Een rol met te weinig mensen toont een gestreepte **+ vacant**; in een eenheid
-die deze scope bijhoudt wijst een klik meteen iemand toe, als één stap. Een
-label noemt de domeinen die een eenheid bedient waar ze er meer dan één bedient
-— de eerste twee en hoeveel nog, waar het er veel zijn — en zegt de dag waarop
-ze begint, waar die na vandaag ligt, en de dag waarop ze eindigt, elk met het
-plan dat haar brengt of beëindigt waar een plan dat doet: *vanaf 1 jan 2027 ·
-TR-0007*.
+**Een vak** zegt het type en de naam van de eenheid en één regel per rol: *Hoofd:
+Anna de Vries*, met het aandeel waar dat niet alle tijd is, *waarnemend*, *ext* voor
+iemand van buiten de organisatie en *jij*, of **vacant** in woorden, waarmee een druk
+toewijst in een eenheid die deze scope bewaart. Iemand boven al zijn tijd heeft *200%
+van hun tijd* in woorden op de regel; iemand in een rol buiten die van de eenheid
+heeft een eigen rij met *buiten haar rollen*. Het een staat nooit in de plaats van
+het ander. Een regel onder de naam noemt de domeinen die een eenheid bedient waar dat
+er meer dan één zijn, en de dag waarop ze begint of eindigt, met het plan dat dat
+doet. Een rol die het type niet vereist en die niemand vervult, staat alleen onder
+**Mensen: Alle rollen**, en de inspector van de eenheid noemt altijd elke rol.
 
-De eenheden onder een eenheid staan naast elkaar in zoveel kolommen als de
-breedte toelaat; een eenheid met eigen eenheden eronder krijgt een hele rij,
-zodat die op hun beurt de breedte hebben. Een rol die het type van de eenheid
-niet vraagt en die niemand vervult — een optionele — wordt niet getekend: het
-is een keuze, geen gat. **Optionele rollen tonen** in de balk tekent ze, elk
-met **+ toewijzen** waar je iemand mag toewijzen, en de inspector van de
-eenheid noemt altijd elke rol. Net als een vouw duurt de schakelaar zolang de
-app open is en wordt nooit bewaard.
+**Lijnen** tekent rapportagelijnen op vier manieren: **Uit**; **Gekozen persoon**, de
+lijnen die gelden voor de persoon die je indrukt en de lijnen naar die persoon toe;
+**Stippellijnen**, elke functionele lijn op het organogram; en **Uitzonderingen**, elke afwijking van het model, ook in een paneel, waar elke regel naar zijn eenheid
+gaat. Het opent op Gekozen persoon waar de organisatie lijnen heeft. Een pijlpunt zegt
+altijd welke kant een lijn opgaat: de accentkleur loopt omhoog naar wie iemand aan
+rapporteert, neutrale inkt komt binnen van wie aan hem rapporteert, en een uitzondering
+is magenta met haar woorden op de lijn. Doorgetrokken is een lijn van de lijnmanager
+en gestippeld een functionele. Een lijn naar een rol die niemand vervult, die deel is
+van een lus of eindigt in een ingeklapte eenheid, zegt dat op de lijn, en de legenda
+staat altijd in haar hoek, zodat een nieuwe lijn niets verschuift.
 
-**Rapportagelijnen** worden getekend voor de persoon die je kiest, op de dag
-van het organogram — de lijnen die voor die persoon gelden, een eigen lijn
-waar die er een heeft: van diens chip naar de chip van wie die persoon aan
-rapporteert, in de accentkleur, en van de chips van wie aan die persoon
-rapporteert naar de hare, in groenblauw — doorgetrokken voor die van een
-lijnmanager en gestippeld voor een functionele. Een lijn die een uitzondering
-op het model is — de eigen lijn van een eenheid, of iemands eigen lijn — is
-magenta, welke kant ze ook op loopt; haar eindpunt zegt waar ze uitkomt. Een
-legenda boven het organogram zegt welke kleur wat is zolang er een lijn
-getekend is. Een lijn naar één persoon eindigt alleen bij diens chip. Een lijn tussen twee rollen van één eenheid
-verbindt de twee chips binnen haar vak. Waar niemand de rol aan de andere kant
-vervult, eindigt de lijn bij de naam van de rol, in de waarschuwingskleur; een
-die deel is van een lus staat in de foutkleur. Waar de andere kant is
-weggevouwen, eindigt de lijn bij de naam van de ingeklapte eenheid, en haar
-tooltip zegt dat. Met niemand gekozen, of een eenheid, wordt geen lijn
-getekend. **Rapportagelijnen** in de balk zet ze helemaal uit; de schakelaar
-staat van begin af aan waar de organisatie een lijn heeft, en uit waar ze er
-geen heeft, en blijft staan zolang de pagina open is.
+**Een eenheid naar een andere plek verplaatsen.** Een eenheid op de verkeerde plek
+verhuist zonder opnieuw te koppelen: **Verplaatsen naar…** op het gekozen vak, onderaan
+het overzicht, **Valt onder** in haar inspector, M, of door haar op een andere te
+slepen. Er opent een paneel naast het organogram, dat in beeld blijft met zijn plekken
+opgelicht: elke eenheid in de organisatie, welke scope haar ook bewaart, te kiezen door
+erop te drukken op het organogram of in de lijst, of **Bovenaan**. De plekken waar haar
+type mag zitten komen eerst; de andere volgen onder een eigen kop, en een verplaatsing
+daarheen mag maar laat de eenheid als misplaatst staan in de controles. De eenheid zelf
+en de eenheden erin worden niet aangeboden, en een plek die door een latere verplaatsing
+van een plan een lus zou worden, wordt geweigerd, met de reden. **Deze ook verplaatsen**
+noemt de eenheden ernaast onder dezelfde ouder, geen aangevinkt. Voordat iets wordt
+geschreven, zegt **Wie haar leidt** wie elke eenheid van bovenaf leidt, vandaag en na
+de verplaatsing, en wordt een verplaatsing door een plan met haar dag genoemd. Niets
+wordt geschreven tot **Verplaatsen**, en Esc laat het. De eenheid houdt haar id, dus
+haar mensen, rapportagelijnen, bediende scopes en opmerkingen blijven bij haar, en de
+eenheden erin gaan mee. Het is één stap in elke scope die een verplaatste eenheid
+bewaart, allemaal of geen; waar dat alleen deze scope is, neemt ⌘Z het terug, en waar
+ook andere scopes zijn geschreven, wordt elke op zichzelf teruggezet. Een verplaatsing
+is een correctie, zonder dag: een verplaatsing vanaf een dag is van een plan. Een
+organogram dat alleen wordt gelezen, biedt niets hiervan.
 
-Het organogram wordt op een dag getekend, zoals een bord: de dagkeuze in de
-balk kijkt naar elke andere dag, en **Opslaan** houdt die dag vast op het
-organogram (zie *Tijd, en de dag die een bord toont*). Op een latere dag zijn de
-eenheden die een plan brengt er, en een eenheid die is opgeheven wordt nog
-getekend — gestreept, en dat zeggend — zolang er iemand aan is toegewezen,
-zodat de mensen die een reorganisatie achterliet te zien zijn waar ze zijn
-achtergelaten.
+**Een eenheid maken op het organogram.** **+ Eenheid** op de balk maakt er een in de
+gekozen eenheid, of bovenaan als er geen is gekozen; **+ Eenheid hierin** staat op het
+gekozen vak, en een leeg organogram biedt **+ Eenheid bovenaan**. Een kleine dialoog
+vraagt vier dingen. **Type** biedt alleen de typen die daar mogen zitten. **Naam**.
+**Bedient**, alleen bovenaan of voor een type dat meerdere domeinen bedient. **Bewaard
+in**, de scope die haar bewaart: standaard die van de eenheid waarin ze zit, en bovenaan
+het domein dat ze bedient, anders de scope van dit organogram. **Maken** is één stap in
+die scope. De nieuwe eenheid wordt gekozen en haar vereiste rollen staan als **vacant**,
+dus toewijzen volgt meteen. Waar geen type mag zitten, zegt het dat en leidt het naar
+het **Operating model**; zonder unittypen naar **Beginnen vanuit een bibliotheek**. Een
+organogram dat alleen wordt gelezen, biedt niets hiervan.
 
-**Met niets gekozen is de inspector naast het organogram de samenvatting
+**Toewijzen** opent een popover naast de vacature, met het organogram nog in beeld: de
+rol, met elke andere rol van de organisatie aangeboden als uitzondering en zo genoemd;
+elke persoon met het aandeel nu; **Nieuwe persoon…**; en het aandeel, de eerste dag en
+*waarnemend*. Waar de keuze iemand boven al zijn tijd brengt, zegt het dat vóór
+**Toewijzen**, met **Stel een aandeel in**.
+
+Het organogram wordt op een dag getekend, zoals een bord: **Dag** op de balk kijkt naar
+elke andere dag, en **Dit organogram altijd op deze dag openen** bewaart die bij het
+organogram. Een band zegt dat zolang een andere dag staat, met de weg terug naar vandaag.
+Op een latere dag staan de eenheden die een plan brengt er, en een eenheid die is
+geëindigd staat er nog — gestippeld, en dat zeggend — zolang iemand eraan is toegewezen,
+zodat de mensen die een reorganisatie achterliet te zien zijn waar ze zijn achtergelaten.
+
+**De regel onder het organogram opent de samenvatting
 ervan**: wiens organogram en op welke dag, hoeveel eenheden en mensen erop
 staan en hoeveel plaatsen vacant zijn; dan **Bevindingen**, wat de
 organisatie over deze eenheden en de mensen erin tegenspreekt, in de lijst
@@ -2821,7 +2787,7 @@ rol, van het eenheidstype, van de eenheid zelf, of een eigen lijn — waar ze
 uitkomt en of ze van een lijnmanager is of functioneel, *via de nesting* waar
 geen lijn van een lijnmanager dat doet, en wie die persoon aanstuurt, *via een
 lijn* of *via een uitzondering*. De lijnen van het model zijn de standaard; een
-uitzondering voor deze ene persoon is **Overschrijven…**: een eigen lijn naar
+uitzondering voor deze ene persoon is **+ Een lijn voor alleen deze persoon**: een eigen lijn naar
 een rol in welke eenheid ook, naar één bekleder ervan, of naar één persoon waar
 ook, doorgetrokken of gestippeld, met haar dagen. Een eigen lijn van een
 lijnmanager vervangt, voor deze persoon alleen, wat de rol, haar type, de

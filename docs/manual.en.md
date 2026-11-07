@@ -2445,158 +2445,137 @@ type may not sit in is said (`misplaced`).
 ### The organisation chart
 
 An **organisation chart** is a view: **+** in the diagram tabs, then
-**Organisation chart**, makes one, with a tab of its own. It is laid out from
-the units — nothing on it is placed by hand — as nested boxes: each unit inside
-the unit it sits in on the chart's day, a plan's moves included, the units filed in this scope and below it and the units
-that serve it from above, and at the organisation every unit there is. Units
-beside each other stand in the order of their types — a type at the top first,
-then the types that sit in it — and units of one type in their own order where
-one is set, otherwise by name. Every list of units keeps that order: the
-outline, the Conway map's columns and every place a unit is picked.
+**Organisation chart**, makes one, with a tab of its own. It is a tree laid out
+from the units — nothing on it is placed by hand: the organisation at the top,
+its units across, and units with nothing under them hanging in a column from
+their parent, with a thin connector showing where each sits on the chart's day,
+a plan's moves included. It holds the units filed in this scope and below it and
+the units that serve it from above, and at the organisation every unit there is.
+Units beside each other stand in the order of their types and then in their own
+order where one is set, otherwise by name; every list of units keeps that order.
 
-**The outline** beside the chart lists the same units as a tree, and leads
-the chart. Picking a unit there, or unfolding it by its caret, unfolds it on
-the chart too, with every unit above it, scrolls the chart to it, rings it and
-picks it — chosen where this scope keeps it. Folding a unit in the outline
-folds the outline alone and leaves the chart as it is. The outline's width is
-yours: drag the seam on its right, or give the seam the focus and use the
-left and right arrow keys (with Shift for a larger step, Home for the width it
-started at); it stays between a minimum and a maximum and is kept with your
-other panel widths. Under the outline, **Move up** and **Move down**
-move the unit picked among the units of its type in the same unit: one step in
-each scope that keeps one of them. Where they are all kept in this scope, undo
-takes the move back; where some are kept in other scopes, each scope is put
-back on its own.
+**The bar** says, left to right: **Levels** 1, 2, 3 or **All**, how deep the whole
+chart opens; **People**, who is drawn: the leaders, the required roles, or all
+roles; **Lines**, which reporting lines are drawn; **+ Unit**; and the **Day**.
+The first time a chart is opened it shows two levels. A caret on a box folds that
+unit alone, and a folded unit says what it hides on one line, *3 units · 3
+vacant*; pressing that line opens it. **−**, **+**, **Fit** and **100%** are in
+the corner of the canvas, with ⌘ or Ctrl and + − 0 and the wheel, and Fit stops at
+60%, where a box says its name and what it hides and no more. None of this is ever
+saved.
 
-**Moving a unit to another place.** A unit filed in the wrong place moves
-without being linked again: **Move to…** on its name row (shown on hover, on
-focus and on the unit picked), beside **Move up** and **Move down** under the
-outline, or **Sits under** in its inspector. The dialog says where it sits
-now and asks where it is to sit: any unit in the organisation, whatever scope
-keeps it, found by its name or by the units it sits in — *Board Technology*
-finds the units under Technology under the Board — or **At the top**. The
-places where its type may sit come first; the others follow under their own
-heading, and a move there is allowed but leaves the unit showing as misplaced
-in the checks, until it moves again or the operating model lets its type sit
-there. The unit itself and the units inside it are shown and not offered: a
-unit under itself, or under a unit inside it, would be a loop, and so would a
-place a plan's later move makes into one — that is refused, with why.
-**Move these too** lists the units beside it under the same parent, none
-ticked, so a whole row of units moves in one go. Before anything is written,
-**Who manages it** says who manages each unit from above, today and after
-the move, by nesting or by a line — a role whose line goes to the nearest
-holder of a role above may land on someone else — and a plan's move of the
-unit is named with its day, since from that day the unit sits where the plan
-says. **Move** writes it: the unit keeps its id, so its people, its reporting
-lines, the scopes it serves and its comments stay with it, and the units
-inside it come along. Its place among its new siblings starts afresh. It is
-one step in each scope that keeps a unit moved, all of them or none; where
-that is only this scope, ⌘Z takes it back, and where other scopes were
-written too, each is put back on its own. A move is a correction, with no
-day: a move from a day on is a plan's (*A reorganisation is a plan*). A chart
+**Focus** on a picked box draws that unit and what is under it, in a grid where it
+holds several, with the way up on one line over it and **Back to the whole chart**.
+A focus has an address (`?focus=` a unit's id, as `?lines=` holds the Lines menu),
+so a link and an agent reach it, and Back comes out of it.
+
+**The outline** beside the chart lists the same units as a tree, and leads the
+chart. Picking a unit there, or unfolding it by its caret, unfolds it on the chart
+too, with every unit above it, scrolls the chart to it and picks it. Folding in the
+outline folds the outline alone. The arrow keys walk it, right opening and left
+closing. Its width is yours: drag the seam on its right, or give the seam the focus
+and use the arrow keys. At its foot, **Up** and **Down** move the unit picked among
+the units of its type in the same unit: one step in each scope that keeps one of
+them. Where they are all kept in this scope, undo takes the move back; where some
+are kept in other scopes, each scope is put back on its own.
+
+**Finding.** The box on top of the outline takes units and people, with results as
+you type, and ⌘F comes to it. A person found has their unit gone to and their
+assignment opened. **Me** goes to the unit where you hold a role; say who you are
+first, with **This is me** on the People page. On the chart, the arrows walk the
+boxes, Enter picks and goes down, Shift and Enter goes up, M moves the unit and F
+focuses on it.
+
+**A box** says the unit's type and name and one line per role: *Head: Anna de
+Vries*, with their share where it is not all of their time, *acting*, *ext* for
+someone from outside the organisation, and *you*, or **vacant** in words, which a
+press assigns in a unit this scope keeps. Someone over all of their time has *200%
+of their time* in words on the line; someone in a role outside the unit's has a row
+of their own with *outside its roles*. Neither mark ever stands in for the other. A
+line under the name names the domains a unit serves where it serves more than one
+and says the day it starts or ends, with the plan that does it: *from 1 Jan 2027 ·
+TR-0007*. A role the unit's type does not require and nobody holds is drawn only
+under **People: All roles**, and the unit's inspector always lists every role.
+
+**Lines** draws reporting lines four ways: **Off**; **Person picked**, the lines
+that apply to the person you press and the lines into them; **Dotted**, every
+functional line on the chart; and **Exceptions**, every departure from the model,
+listed in a panel as well, each going to its unit when pressed. It opens on Person
+picked where the organisation has any line. An arrowhead always says which way a
+line runs: the accent runs up to whoever they report to, neutral ink runs in from
+whoever reports to them, and an exception is magenta with its words on the line.
+Solid is a line manager's and dotted a functional one. A line to a role nobody
+holds, part of a loop, or ending in a folded unit says so on the line, and the key
+is always in its corner, so a line appearing moves nothing.
+
+**Moving a unit to another place.** A unit filed in the wrong place moves without
+being linked again: **Move to…** on the picked box, at the foot of the outline,
+**Sits under** in its inspector, M, or dragging it onto another. A panel opens
+beside the chart, which stays in view with its places lit: any unit in the
+organisation, whatever scope keeps it, chosen by pressing it on the chart or in the
+list, or **At the top**. The places where its type may sit come first; the others
+follow under their own heading, and a move there is allowed but leaves the unit
+showing as misplaced in the checks, until it moves again or the operating model lets
+its type sit there. The unit itself and the units inside it are not offered, and a
+place a plan's later move would make into a loop is refused, with why. **Move these
+too** lists the units beside it under the same parent, none ticked. Before anything
+is written, **Who manages it** says who manages each unit from above, today and
+after the move, and a plan's move of the unit is named with its day. Nothing is
+written until **Move**, and Esc leaves it. The unit keeps its id, so its people, its
+reporting lines, the scopes it serves and its comments stay with it, and the units
+inside it come along. It is one step in each scope that keeps a unit moved, all of
+them or none; where that is only this scope, ⌘Z takes it back, and where other
+scopes were written too, each is put back on its own. A move is a correction, with
+no day: a move from a day on is a plan's (*A reorganisation is a plan*). A chart
 that is only read offers none of it.
 
-**Making a unit on the chart.** **+ Unit at the top** is on the bar, in the
-outline's header and on an empty chart; a unit's own **+**, on its name row,
-shows when the row is pointed at, holds the focus or the unit is picked, and
-makes a unit inside it. A small dialog asks for four things. **Type** offers
-only the types that may sit there: inside a unit, the types that may sit in
-its type; at the top, the types that may sit at the top. **Name**. **Serves**,
-asked only at the top or for a type that serves several domains: the domains
-it serves, which may be none yet — a unit inside another serves through it.
-**Filed in**, the scope that keeps it: by default the scope of the unit it
-sits in, so a subtree stays together under the same rights; at the top, the
-domain it serves where it serves one and its type does not serve several, and
-otherwise this chart's scope. Any scope you may change can be chosen.
-**Create** is one step in that scope: undone here where it is this scope,
-and in that scope where it is another. Making a unit is structure, so the
-scope's rights decide, and a role that manages people does not give the
-right. The new unit is picked — unfolded and scrolled to — and its type's
-required roles show as **+ vacant**, so assigning people follows straight
-on. Where no type may sit, **+** says so — *No unit type may sit in a Team* —
-and leads to the **Operating model**; with no unit types at all, it leads to
-**Start from a library**. A chart that is only read offers none of it.
+**Making a unit on the chart.** **+ Unit** on the bar makes one inside the unit
+picked, or at the top with none picked; **+ Unit inside** is on the picked box, and
+an empty chart offers **+ Unit at the top**. A small dialog asks for four things.
+**Type** offers only the types that may sit there. **Name**. **Serves**, asked only
+at the top or for a type that serves several domains. **Filed in**, the scope that
+keeps it: by default the scope of the unit it sits in, and at the top the domain it
+serves, or else this chart's scope. **Create** is one step in that scope. The new
+unit is picked and its required roles show as **vacant**, so assigning people follows
+straight on. Where no type may sit, it says so and leads to the **Operating model**;
+with no unit types at all, to **Start from a library**. A chart that is only read
+offers none of it.
 
-**A large organisation folds.** The caret beside a unit's name folds the units
-under it, and the unit then says what it hides: its units and people, and the
-vacancies and findings among them. The first time a chart is opened it shows
-two levels — the units at the top and the units directly under them — and
-everything below them is folded, whatever the chart's size, and the page says
-so; from then on your own folds are what it keeps. **Fold all** and **Unfold
-all** are on the bar; the outline folds on its own. **Find a unit** goes to the first unit whose name holds every word
-typed; it, **Find me** and **Open the unit** on a finding beside the chart
-unfold the way to the unit they go to. A fold lasts while the app is open and is never saved.
+**Assigning** opens a popover beside the vacancy, with the chart still in view: the
+role, with any other role of the organisation offered as an exception and said to be
+one; each person with their share now; **New person…**; and the share, the first day
+and *acting*. Where the choice takes someone over all of their time it says so before
+**Assign**, with **Set a share**.
 
-Each box says the unit's type and name — a word of the type's name longer than
-seven letters cut to its first six and a full stop, *Organisational unit* as
-*Organi. unit*, with the whole name shown when you point at it and read out by
-a screen reader — and each row a role it holds, with who
-holds it **on the chart's day**: by name from the register, their share where it
-is not all of their time, *acting*, *ext* for someone from outside the
-organisation, and *you*. A red edge marks someone whose shares add up to more
-than all of their time across the organisation. A role short of people shows a
-dashed **+ vacant**; in a unit this scope keeps, a press assigns someone at once,
-as one step. A badge names the domains a unit serves where it serves more than
-one — the first two and how many more, where there are many — and says the day
-it starts, where that is after today, and the day it ends, each with the plan
-that brings or ends it where a plan does: *from 1 Jan 2027 · TR-0007*.
+The chart is drawn on a day, as a board is: **Day** on the bar looks at any other
+day, and **Always open this chart on this day** keeps it with the chart (see *Time,
+and the day a board shows*). A band says so while another day is shown, with the way
+back to today. On a later day the units a plan brings are there, and a unit that has
+ended is still drawn — dashed, and saying so — while anybody is still assigned to it,
+so the people a reorganisation left behind are seen where they were left.
 
-The units under a unit stand side by side in as many columns as the width
-holds; one with units of its own under it takes a whole row, so they have the
-width in turn. A role the unit's type does not require and nobody holds — an
-optional one — is not drawn: it is a choice, not a gap. **Show optional
-roles** on the bar draws them, each with **+ assign** where you may assign
-someone, and the unit's inspector always lists every role. Like a fold, the
-switch lasts while the app is open and is never saved.
-
-**Reporting lines** are drawn for the person you pick, on the chart's day —
-the lines that apply to them, their own where they have one: from their chip
-to the chip of whoever they report to, in the accent colour, and from the
-chips of the people who report to them to theirs, in teal — solid for a line
-manager's and dotted for a functional one. A line that is an exception to the
-model — a unit's own line, or a person's own — is magenta whichever way it
-runs; its end dot says where it lands. A legend over the chart says which
-colour is which while any line is drawn. A line to one person ends at that
-person's chip only. A line between two roles of one
-unit joins the two chips inside its box. Where nobody holds the role at the
-far end, the line ends at the role's name, in the warning colour; one that is
-part of a loop is in the error colour. Where the far end is folded away, the
-line ends at the folded unit's name, and its tooltip says so. With nobody
-picked, or a unit, no line is drawn. **Reporting lines** on the bar turns them
-off altogether; it is on from the start where the organisation has any line,
-and off where it has none, and lasts while the page is up.
-
-The chart is drawn on a day, as a board is: the day control on the bar looks at
-any other day, and **Save** keeps that day on the chart (see *Time, and the day
-a board shows*). On a later day the units a plan brings are there, and a unit
-that has ended is still drawn — dashed, and saying so — while anybody is still
-assigned to it, so the people a reorganisation left behind are seen where they
-were left.
-
-**With nothing picked, the inspector beside the chart is its summary**: whose
+**The line under the chart opens its summary** beside it: whose
 chart and on which day, how many units and people are on it and how many
 places are vacant; then **Findings**, what the organisation contradicts about
 these units and the people in them, in the list of findings — **Open the
 unit** goes to the unit it is about, and **Open in People** to a person over
 all of their time;
-and **How to read it** — a dashed **+ vacant** is a role the unit's type
-requires and nobody holds, a red edge is someone over all of their time,
-*manages* marks a role whose holder manages the unit's people, and a dashed
-box is a unit that has ended with people still in it.
+and **How to read it** — **vacant** is a role the unit's type requires and
+nobody holds, a share over 100% in words is someone over all of their time,
+and a dashed box is a unit that has ended with people still in it.
 
 A click picks and a double-click opens, as on a board. Clicking a unit this
 scope keeps opens it in the inspector beside the chart — its people, its
 roles, who manages it and the units it works with. Clicking a unit kept in
 another scope goes to it on this chart; double-click it to open it there, on
 that scope's chart, chosen, with the same inspector beside it — or on its
-record where that scope has no chart. **Find
-me** goes to the unit where you hold a role; say who you are first, with **This
-is me** on the People page.
+record where that scope has no chart. 
 
 Clicking a person opens their assignment in the inspector instead: who holds
 it, the role and the unit, its first and last day, the part of their time it
 takes, and a note where they hold more than all of their time on the chart's
-day. **End on this day** ends it, as one step, on the last day you choose — the
+day, who reports to them and how much of their time it is. **End this
+assignment…**, at the foot, asks for its last day and ends it as one step — the
 day before the chart's day where you are looking ahead, today otherwise, and
 never before its first. An ended assignment stays: it is what the person held.
 **Correct…** opens the unit's dialog for everything else, and **Open in
@@ -2607,7 +2586,7 @@ chart's day: each line that holds for them — their role's, their unit type's,
 their unit's own, or their own — where it lands and whether it is a line
 manager's or functional, *by nesting* where no line manager's line does, and
 who manages them, *by line* or *by override*. The model's lines are the
-default; an exception for this one person is **Override…**: a line of their
+default; an exception for this one person is **+ A line for this person alone**: a line of their
 own to a role in any unit, to one holder of it, or to one person anywhere,
 solid or dotted, with its days. A line manager's line of their own replaces,
 for them alone, whatever their role, its type, their unit and nesting say; a
