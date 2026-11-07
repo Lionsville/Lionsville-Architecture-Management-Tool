@@ -44,6 +44,7 @@ import { offersUpdateCheck } from '../../src/platform/updates'
 import { registerFolderSettingsChannel } from './folderSettings'
 import { useHooksFolder } from '../../src/platform/node/git'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
+import { showsWindow } from './smokeWindow'
 
 /**
  * A throw nobody caught. Logged rather than left to Electron's default, which
@@ -213,7 +214,11 @@ function createWindow(): BrowserWindow {
     },
   })
 
-  window.once('ready-to-show', () => window.show())
+  // Off the screen under `--smoke`, and only there (`smokeWindow.ts`).
+  window.once('ready-to-show', () => {
+    if (showsWindow(UNATTENDED, process.env)) window.show()
+    else readyToShow = true
+  })
   // Nothing in a new window listens yet, nor after its page navigates or its renderer goes.
   holdUntilHeard(window.webContents)
   // A window made after the agent server came up inherits its rule (ADR-0007).
@@ -259,6 +264,9 @@ const RENDERER_URL = process.env['ELECTRON_RENDERER_URL'] ?? `${APP_ORIGIN}/`
  * gate reports a timeout instead of the failure it actually found.
  */
 const UNATTENDED = process.argv.includes('--smoke')
+
+/** The first paint a window is shown on, heard for a smoke run whose window is not. */
+let readyToShow = false
 
 /**
  * `userData` is pinned, so that renaming the product does not move it.
@@ -325,6 +333,9 @@ if (UNATTENDED) {
   mkdirSync(own, { recursive: true })
   app.setPath('userData', own)
   app.setAppLogsPath(join(own, 'logs'))
+  // No Dock icon and no turn at the front: a run in a window nobody sees stays
+  // out of the way of whoever is working at the machine.
+  if (process.platform === 'darwin' && !showsWindow(UNATTENDED, process.env)) app.setActivationPolicy('accessory')
 }
 
 
@@ -489,7 +500,7 @@ void app.whenReady().then(() => {
   void mainWindow.loadURL(RENDERER_URL).then(async () => {
     if (!UNATTENDED) return
     const { runSmoke } = await import('./smoke')
-    await runSmoke(mainWindow)
+    await runSmoke(mainWindow, { readyToShow: () => readyToShow })
   }).catch((error: unknown) => fatal('loading the app', error))
 })
   .catch((error: unknown) => fatal('starting up', error))

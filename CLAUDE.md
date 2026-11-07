@@ -99,6 +99,9 @@ build and the desktop smoke run — every step run to the end, one table, one ex
 code. This is the gate before a push, and it is written so an agent can run it
 without deciding anything: no flags, no reading of scrollback. `npm run smoke` is
 the last two steps on their own; `npm run test:perf` is the perf step alone.
+The smoke's window is never shown, so it runs behind whatever you are doing and
+takes nothing from you; `LVARCH_SMOKE_SHOWN=1` runs it in a shown window. A step
+that fails says how the window stood.
 
 The perf step times a generated landscape of a few thousand elements against a
 written-down budget per operation (`model/testing/`, ADR-0004). It is

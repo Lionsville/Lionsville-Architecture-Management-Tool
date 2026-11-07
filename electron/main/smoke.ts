@@ -19,10 +19,12 @@
  * a folder is opened *after* the boot, and no unit test can mount the
  * composition root twice.
  *
- * **A real window, visible, on purpose.** A hidden or offscreen pane never fires
- * `requestAnimationFrame`, and `html-to-image` waits on one — an export check in
- * a hidden window hangs for reasons that have nothing to do with Electron. That
- * trap cost a day once; it is written down here so it does not cost another.
+ * **A real window, never shown, on purpose.** A window that was shown and is
+ * then covered or hidden never fires `requestAnimationFrame`, and `html-to-image`
+ * waits on one — an export check there hangs for reasons that have nothing to do
+ * with Electron. That trap cost a day twice. A window never shown has never been
+ * hidden, so it draws whatever the person at the machine is doing, and nobody is
+ * interrupted (`smokeWindow.ts`). `LVARCH_SMOKE_SHOWN=1` runs it in a shown window.
  *
  * **The renderer is not modified to be testable.** Everything below is what a
  * person would do — press the button, read the screen — or what an agent would
@@ -44,6 +46,7 @@ import { productName } from '../../package.json'
 import { sendCommand } from './appMenu'
 import { grantDirectory } from './files'
 import { logFilePath } from './log'
+import { PAGE_STATE_SCRIPT, showsWindow, windowSays, type PageState } from './smokeWindow'
 import { SCOPE_FORMAT_VERSION } from '../../src/adapters/folder/format/scopeHeader'
 import { writePlace } from '../../src/agent/place'
 import { USER_DATA_NAME } from '../../src/platform/userData'
@@ -94,6 +97,20 @@ function section(title: string): void {
   process.stdout.write(`\n· ${title}\n`)
 }
 
+/** The window under test, so a step that failed can say how it stood. */
+let underTest: BrowserWindow | undefined
+
+/** A failure's own words, then what the window was doing; a stuck renderer is said, never waited for. */
+async function failure(error: unknown): Promise<string> {
+  const said = error instanceof Error ? error.message : String(error)
+  const asked = underTest?.webContents.executeJavaScript(PAGE_STATE_SCRIPT, true) as Promise<PageState> | undefined
+  const state = await Promise.race([
+    asked?.catch(() => undefined),
+    new Promise<undefined>((resolve) => setTimeout(() => resolve(undefined), 2000)),
+  ])
+  return `${said}\n        ${windowSays(state)}`
+}
+
 async function check(
   window: BrowserWindow,
   name: string,
@@ -108,7 +125,7 @@ async function check(
     ])
     return report({ name, ok: true, detail: String(detail) })
   } catch (error) {
-    return report({ name, ok: false, detail: error instanceof Error ? error.message : String(error) })
+    return report({ name, ok: false, detail: await failure(error) })
   }
 }
 
@@ -128,7 +145,7 @@ async function checkHere(
   try {
     return report({ name, ok: true, detail: await Promise.race([run(), timeout]) })
   } catch (error) {
-    return report({ name, ok: false, detail: error instanceof Error ? error.message : String(error) })
+    return report({ name, ok: false, detail: await failure(error) })
   }
 }
 
@@ -615,7 +632,8 @@ async function drawingsSecondHalf(run: DrawingRun, drawn: Drawn | undefined, res
   }))
 }
 
-export async function runSmoke(window: BrowserWindow): Promise<void> {
+export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): boolean }): Promise<void> {
+  underTest = window
   const results: SmokeResult[] = []
   process.stdout.write('\n--- smoke ---\n')
   const complaints = await listenTo(window)
@@ -703,6 +721,20 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
 
   // --- the platform: what app:// has to give the renderer ---------------------
   section('the platform')
+
+  // The window a person gets is shown on this event, and a run whose window is
+  // not shown still has to reach it: a page that never paints shows nothing.
+  results.push(await checkHere('the window reaches its first paint, the one a person\'s is shown on', async () => {
+    const onScreen = showsWindow(true, process.env)
+    const deadline = Date.now() + STEP_TIMEOUT_MS
+    while (!(onScreen ? window.isVisible() : shown.readyToShow())) {
+      if (Date.now() > deadline) throw new Error(onScreen ? 'a shown run\'s window never came onto the screen' : 'ready-to-show never came')
+      await new Promise((r) => setTimeout(r, 100))
+    }
+    if (onScreen) return 'shown, and on the screen'
+    if (window.isVisible()) throw new Error('the window came onto the screen, where it would interrupt somebody')
+    return 'ready to show, and kept off the screen'
+  }))
 
   // The menu bar, as a person reads it: the app menu named after the product
   // rather than the package, a Help menu with the manual, the shortcuts and
@@ -970,7 +1002,19 @@ export async function runSmoke(window: BrowserWindow): Promise<void> {
       if (Math.max(bitmap.width, bitmap.height) < 3000) {
         throw new Error('only ' + bitmap.width + 'x' + bitmap.height + ' px: too coarse to print')
       }
-      return png.size + ' bytes, ' + bitmap.width + 'x' + bitmap.height + ' px in ' + elapsed + ' ms'
+      ${'' /* The size proves a bitmap, not a drawing: a capture that painted nothing
+              comes out just as large. A board has a background, boxes, ink and
+              lines, so its picture has many colours in it. */}
+      const sample = document.createElement('canvas')
+      sample.width = 200
+      sample.height = 134
+      const inked = sample.getContext('2d', { willReadFrequently: true })
+      inked.drawImage(bitmap, 0, 0, sample.width, sample.height)
+      const { data } = inked.getImageData(0, 0, sample.width, sample.height)
+      const colours = new Set()
+      for (let at = 0; at < data.length; at += 4) colours.add((data[at] << 16) | (data[at + 1] << 8) | data[at + 2])
+      if (colours.size < 32) throw new Error('only ' + colours.size + ' colours in the picture: nothing was drawn')
+      return colours.size + ' colours, ' + png.size + ' bytes, ' + bitmap.width + 'x' + bitmap.height + ' px in ' + elapsed + ' ms'
     })()`))
 
   // --- an agent as a peer of the menu (ADR-0007) ------------------------------
