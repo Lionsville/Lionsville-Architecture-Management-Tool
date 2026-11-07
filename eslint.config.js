@@ -450,7 +450,7 @@ export const GROWN = {
   'src/agent/tools.ts': { complexity: 33 },
   'src/app/organisation/OrganisationScreen.tsx': { complexity: 48, lines: 162 },
   'src/app/organisation/organisationPages.ts': { complexity: 30 },
-  'src/app/organisation/useOrganisation.ts': { lines: 180 },
+  'src/app/organisation/useOrganisation.ts': { lines: 172 },
   'src/app/useModelSession.ts': { lines: 364 },
   'src/documentation/bpmn.ts': { complexity: 31 },
   'src/documentation/ui/BpmnBlock.tsx': { complexity: 41 },

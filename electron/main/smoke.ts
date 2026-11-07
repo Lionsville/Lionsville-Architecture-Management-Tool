@@ -847,7 +847,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     const shown = JSON.parse(await page(`JSON.stringify({
       name: (document.querySelector('[data-testid="organisation-name"]') || {}).textContent || '',
       example: Boolean(document.querySelector('[data-testid="open-example"]')),
-      rows: document.querySelectorAll('[data-guide="org.tree.row"]').length - 1,
+      rows: document.querySelectorAll('[data-guide="org.tree.row"]').length,
     })`)) as { name: string; example: boolean; rows: number }
     if (shown.name !== first.name) throw new Error(`the root is called ${JSON.stringify(shown.name)}`)
     if (!shown.example) throw new Error('the example is not on offer')
@@ -1252,7 +1252,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     if (listing.length) throw new Error(`the new folder already holds ${listing.join(', ')}`)
     const shown = JSON.parse(await page(`JSON.stringify({
       name: (document.querySelector('[data-testid="organisation-name"]') || {}).textContent || '',
-      rows: document.querySelectorAll('[data-guide="org.tree.row"]').length - 1,
+      rows: document.querySelectorAll('[data-guide="org.tree.row"]').length,
     })`)) as { name: string; rows: number }
     if (shown.name !== second.name) throw new Error(`the root is called ${JSON.stringify(shown.name)}`)
     if (shown.rows) throw new Error(`${shown.rows} scopes shown under a root that has none: the old tree is still up`)
