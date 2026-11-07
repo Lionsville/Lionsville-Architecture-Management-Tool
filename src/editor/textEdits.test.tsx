@@ -89,7 +89,7 @@ function rename(to: string) {
   fireEvent.keyDown(field, { key: 'Enter' });
 }
 const writing = () => {
-  fireEvent.click(within(inspector()).getByRole('button', { name: 'Write the description' }));
+  fireEvent.click(within(inspector()).getByRole('button', { name: /^(Write the description|Add a description)/ }));
   return within(inspector()).getByLabelText('Description');
 };
 

@@ -159,7 +159,7 @@ describe('pictures, through the app', { timeout: 20_000 }, () => {
     node.focus()
     fireEvent.keyDown(node, { key: 'Enter' })
     // Pressed open: at rest the panel shows its first lines and no picture at all.
-    fireEvent.click(await screen.findByRole('button', { name: 'Write the description' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Write the description:/ }))
     const [description] = await screen.findAllByTestId('markdown-field')
     fireEvent.click(within(description!).getByRole('button', { name: 'Preview' }))
     await waitFor(() => onScreen('yard.png'))
