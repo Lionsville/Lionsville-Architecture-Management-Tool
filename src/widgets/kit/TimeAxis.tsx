@@ -349,7 +349,16 @@ export function TimeAxisGroup({ label, count, folded, onToggle, level = 0, switc
     <div className="kit-time__group" data-level={level || undefined}>
       <div className="kit-time__groupname">
         {onToggle
-          ? <button type="button" className="kit-time__groupfold" aria-expanded={!folded} onClick={onToggle}>{words}<span className="kit-time__groupcaret" data-folded={folded || undefined} aria-hidden>▸</span></button>
+          ? (
+            <button type="button" className="kit-time__groupfold" aria-expanded={!folded} onClick={onToggle}>
+              {label}{' '}
+              {/* The caret stays with the count, so a narrow column folds the name and never leaves the caret on a line of its own. */}
+              <span className="kit-time__groupnowrap">
+                {count !== undefined && <span className="kit-time__groupcount">{count}</span>}
+                <span className="kit-time__groupcaret" data-folded={folded || undefined} aria-hidden>▸</span>
+              </span>
+            </button>
+          )
           : words}
         {aside && <span className="kit-time__aside">{aside}</span>}
       </div>

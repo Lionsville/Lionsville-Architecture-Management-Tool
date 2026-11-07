@@ -271,6 +271,9 @@ describe('what runs along it', () => {
     render(<Axis><TimeAxisGroup label="Connections" count="3, folded" folded onToggle={onToggle} /></Axis>)
     const fold = screen.getByRole('button', { name: /Connections/ })
     expect(fold.getAttribute('aria-expanded')).toBe('false')
+    expect(fold.textContent).toBe('Connections 3, folded▸')
+    // The caret is held to the count, so a narrow column never leaves it on a line by itself.
+    expect(fold.querySelector('.kit-time__groupnowrap .kit-time__groupcaret')).toBeTruthy()
     fireEvent.click(fold)
     expect(onToggle).toHaveBeenCalledOnce()
   })

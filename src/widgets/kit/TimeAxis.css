@@ -114,7 +114,8 @@
 .kit-time__groupswitch { display: inline-flex; align-items: center; gap: var(--s-1); padding-inline: var(--s-3); color: var(--ink-2); font-size: var(--t-small); cursor: pointer; }
 .kit-time__groupswitch input { margin: 0; accent-color: var(--accent); }
 .kit-time__groupcount { font-weight: var(--fw-regular); }
-.kit-time__groupfold { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.kit-time__groupfold { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
+.kit-time__groupnowrap { white-space: nowrap; }
 .kit-time__groupfold:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .kit-time__groupcaret { display: inline-block; margin-left: var(--s-1); transform: rotate(90deg); }
 .kit-time__groupcaret[data-folded] { transform: none; }
