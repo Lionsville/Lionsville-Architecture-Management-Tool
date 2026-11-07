@@ -63,7 +63,7 @@ export function NewViewDialog({ open, naming, about, elements, canDraw, make, on
     setElement(about)
     setName(about ? s('shell.drawingOf', { name: elements?.find((one) => one.id === about)?.name ?? '' }) : '')
     // On opening only: what is typed afterwards is the person's.
-  }, [open, naming, about]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, naming, about])
   const options: PickerOption[] = useMemo(() => (elements ?? []).map((one) => ({ id: one.id, label: one.name })), [elements])
   const submit = () => { if (name.trim()) onMakeDrawing(name.trim(), element) }
   return (

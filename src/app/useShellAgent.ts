@@ -22,6 +22,7 @@ import type { DesignDiagram } from '../model/types'
 import type { PeopleView } from '../agent/people'
 import type { ScopesView } from '../agent/scopeTree'
 import type { ChartLines, Destination, FramePanel, MovedBy, Page, Screen } from '../agent/screen'
+import { throughGuard } from './frame/frameStore'
 import type { FrameState, FrameStore } from './frame/frameStore'
 import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
@@ -159,12 +160,8 @@ export function useShellAgent(deps: {
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
     if (to.page !== 'preferences' && frame?.get().preferences) preferences.current.closePreferences?.()
     // A panel beside the work moves nothing; every other way to go is asked here, whoever is going.
-    if (to.page !== undefined && FRAME_PAGES.includes(to.page)) {
-      openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, preferences.current.openPreferences)
-      return
-    }
-    if (frame?.get().guard?.(to, () => moved.current(to, nothing))) return
-    moved.current(to, nothing)
+    if (to.page !== undefined && FRAME_PAGES.includes(to.page)) { openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, preferences.current.openPreferences); return }
+    throughGuard(frame, to, () => moved.current(to, nothing))
   }, [homeAt, project, home, frame])
   moved.current = (to, nothing) => {
     const listPage = holdInFrame(frame, to)

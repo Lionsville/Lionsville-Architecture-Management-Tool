@@ -9,6 +9,7 @@
 import { slug } from '../model/keys'
 import type { PictureFrame } from '../model/drawing'
 import type { SavedDocument } from '../ports/DocumentGateway'
+import { coloursOf } from '../widgets/kit/tokens'
 
 /** Pixels per picture unit. */
 const PNG_SCALE = 2
@@ -36,7 +37,7 @@ async function pngOf(svg: Uint8Array, frame: PictureFrame | undefined): Promise<
     canvas.height = Math.ceil((frame?.height ?? image.naturalHeight) * PNG_SCALE)
     const context = canvas.getContext('2d')
     if (!context) throw new Error('no canvas')
-    context.fillStyle = 'white'
+    context.fillStyle = coloursOf('light')['surface-raised']
     context.fillRect(0, 0, canvas.width, canvas.height)
     context.drawImage(image, 0, 0, canvas.width, canvas.height)
     const blob = await new Promise<Blob | null>((resolve) => { canvas.toBlob(resolve, 'image/png') })
