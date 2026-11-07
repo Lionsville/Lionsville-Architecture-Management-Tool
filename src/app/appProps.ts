@@ -396,7 +396,7 @@ export type AppProps = {
    */
   interchange: Interchange
   diagnostics: ShellDiagnostics
-  /** The host's three: reload and the clipboard for the crash page, and a way out to the manual. */
+  /** The host's three: reload and the clipboard for the crash page, and a way out to the help. */
   hostControls: HostControls
   boot: AppBoot
   /**

@@ -1,5 +1,5 @@
 name: Bug report
-description: Something does not do what the manual or the screen says it does.
+description: Something does not do what the help or the screen says it does.
 labels: ["bug"]
 body:
   - type: markdown

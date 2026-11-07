@@ -20,6 +20,8 @@
   "routes": [
     { "route": "/assets/*", "headers": { "Cache-Control": "public, max-age=31536000, immutable" } },
     { "route": "/index.html", "headers": { "Cache-Control": "no-cache" } },
+    { "route": "/help/index.html", "headers": { "Cache-Control": "no-cache" } },
+    { "route": "/help/", "headers": { "Cache-Control": "no-cache" } },
     { "route": "/version.json", "headers": { "Cache-Control": "no-cache" } }
   ]
 }

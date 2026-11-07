@@ -126,7 +126,7 @@ function titleOf(entry: HistoryEntry, s: Translate): string {
   return entry.moved ? s('activity.scopeMoved', { from: entry.moved.from, to: entry.moved.to }) : entry.subject ?? ''
 }
 
-/** The counts in words: four glyphs with no words need the manual. */
+/** The counts in words: four glyphs with no words need the help. */
 export function changesInWords(changes: readonly ModelChange[], s: Translate): string {
   const counts = countChanges(changes)
   const said = [

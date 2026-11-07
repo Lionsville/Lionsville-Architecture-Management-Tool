@@ -53,7 +53,7 @@ export interface ElementPaletteProps {
 /**
  * The kinds as a labelled rail, kept open by whoever keeps it open (Add → Keep open):
  * reading comes first, so it is closed unless somebody asks. Drag a kind onto the
- * board, or press it to name it. What a kind is sits in its tooltip and the manual,
+ * board, or press it to name it. What a kind is sits in its tooltip and the help,
  * not on a screen somebody has read a hundred times.
  */
 export function ElementPalette({ kinds, onPress, onAddExisting }: ElementPaletteProps) {

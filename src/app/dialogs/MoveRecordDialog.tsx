@@ -13,7 +13,7 @@
  * shared `ConfirmDialog`.
  *
  * The order of the list is the order of ADR-0012's own table, so a person who
- * has read the manual meets the same four words in the same order.
+ * has read the help meets the same four words in the same order.
  */
 import { useEffect, useState } from 'react'
 import Button from '@mui/material/Button'

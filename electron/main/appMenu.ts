@@ -38,7 +38,7 @@
  * Edit and Help are ours as well as File. Electron's Edit menu binds Undo to
  * the DOM, which the app's one undo stack is not in, so its four that are the
  * app's send commands and the clipboard roles stay; its Help menu links to
- * Electron's own pages, so ours has the manual, the shortcut overlay and
+ * Electron's own pages, so ours has the help, the shortcut overlay and
  * Check for Updates… — one place for it on every platform. A packaged build
  * loses the developer items from View.
  *

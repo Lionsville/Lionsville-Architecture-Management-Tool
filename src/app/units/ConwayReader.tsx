@@ -10,7 +10,7 @@
  * unit and on an application, what the map knows of it.
  *
  * Why it matters is one line here. The full text of a check stays on the Checks
- * page, and the formal names stay in the catalogue, the manual and for an agent.
+ * page, and the formal names stay in the catalogue, the help and for an agent.
  */
 import { useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'

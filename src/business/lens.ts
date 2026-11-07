@@ -12,7 +12,7 @@
  *
  * **Covered by** is the default, and says four things where the coverage rows
  * say three: *moving* is a covered function one of whose applications is on its
- * way out, which the manual promises can be seen and the rows alone do not say.
+ * way out, which the help promises can be seen and the rows alone do not say.
  * *People* is a complete answer and *nothing yet* the gap (ADR-0012 §9).
  *
  * **Who answers** is the only reading that names a unit on every row (decision

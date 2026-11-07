@@ -3,7 +3,9 @@
 **Questions** go to the repository's
 [Discussions](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/discussions):
 how something works, whether something is possible, how you would do a thing.
-The manual is in `docs/`, in three languages, and answers most of them.
+The help, in the app under **Help** and at
+[app.architecture.lionsville.nl/help/](https://app.architecture.lionsville.nl/help/),
+in three languages, answers most of them.
 
 **Bugs** go to the
 [issues](https://github.com/Lionsville/Lionsville-Architecture-Management-Tool/issues),

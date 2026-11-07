@@ -3,6 +3,13 @@
 *What has landed since 3.8.2 that a user would notice, in the user's
 words. Pasted into the GitHub release when it is cut, and emptied then.*
 
+## Help
+
+- The manual lives in the app now: one document in English, Dutch and German, with a section for every function the app offers, a worked example and a small picture of the screen per chapter, and a search over all of it (`/` to search, Enter to go). It follows light and dark and the language you read in, and needs no network.
+- On the desktop, **Help › Open the help** opens it in a window of its own, also with nothing open; in a browser, **Help › Open the help** in the top row or **⋯ › Open the help** opens it beside the app. Places that explain more open it at their own section.
+- It is at [app.architecture.lionsville.nl/help/](https://app.architecture.lionsville.nl/help/) for anyone, with nothing installed and nothing signed in. Every section has an address, `help/#frame.back` or `help/?lang=de#board`, for a link, a bookmark or an agent.
+- The markdown manuals (`docs/manual.en.md`, `.nl.md`, `.de.md`) are gone; what they said is in the help. *User Manual* in the Help menu is **Open the help**.
+
 ## First run, files and settings
 
 - An organisation nobody has started opens on a first page: name yours, look around the example, or carry on with what you have, with where work will be kept said before any exists. The language is on it. The desktop's first screen says an empty folder is fine, and has the language too.

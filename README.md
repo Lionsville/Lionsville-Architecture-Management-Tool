@@ -48,8 +48,9 @@ app from it — see [Running from source](#running-from-source) and
 [`docs/release.md`](docs/release.md). The releases on this repository carry the
 source and the web build, not installers.
 
-New here? The **[user manual](docs/manual.en.md)** (also in
-[Dutch](docs/manual.nl.md) and [German](docs/manual.de.md)) is the place to start.
+New here? **[The help](https://app.architecture.lionsville.nl/help/)** is the
+place to start: in English, Dutch and German, in the app under **Help**, and in
+any browser at that address with nothing installed and nothing signed in.
 
 Prefer a browser? [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
 is the newest release, with nothing installed — your work stays in that browser,
@@ -447,13 +448,16 @@ A rename edits the scope and leaves its address alone. A move changes the
 address of the scope and of everything under it, and carries every reference
 pointing into it.
 
-## The user manual
+## The help
 
-In three languages, one file each: [docs/manual.en.md](docs/manual.en.md),
-[docs/manual.nl.md](docs/manual.nl.md) and [docs/manual.de.md](docs/manual.de.md). It covers the organisation and its
-scopes, the workspace, drawing, elements, connections, layout, the
-documentation page, decisions, the roadmap, the business architecture and the
-map, diagram settings, saving and sharing, and the shortcuts worth knowing.
+The manual lives in the app: **Help › Open the help** on the desktop, **Help › Open the
+help** in the top row or **⋯ › Open the help** in a browser, and
+[app.architecture.lionsville.nl/help/](https://app.architecture.lionsville.nl/help/)
+for anyone, with nothing open. It is one document in English, Dutch and German,
+with a section for every function the app offers, a worked example and a picture
+of the screen per chapter, and a search over all of it. Every section has an
+address — `help/#frame.back`, `help/?lang=de#board` — so a link, an agent and a
+place in the app open it where it is needed. Its source is `src/help/`.
 
 ## Files worth knowing
 
@@ -469,7 +473,7 @@ map, diagram settings, saving and sharing, and the shortcuts worth knowing.
 | `src/ports/*.contract.ts` | The behaviour every place that keeps work must show |
 | `electron/main/index.ts` | The desktop main process; its header states what is load-bearing |
 | `build/libavoidWasm.ts` | Publishes the router's wasm; fails a build, not a shipped app |
-| `docs/manual.{en,nl,de}.md` | The user manual, in English, Dutch and German |
+| `src/help/` | The help, in English, Dutch and German: its outline, its words and its page |
 | `LICENSE` | The licence |
 
 ## Licence
