@@ -174,7 +174,7 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
         reading={<Statement name={diagram.name} shapes={shapes.length} links={links.length} pages={pageCount(xml)} readOnly={readOnly} noEditor={noEditor} s={s} />}
         show={links.length > 0 ? (
           <ViewBarButton on={linksOpen} aria-pressed={linksOpen} onClick={() => { setReading(undefined); setLinksOpen(!linksOpen) }} data-testid="drawing-links" data-guide="drawing.links">
-            {trouble > 0 ? s('drawing.linksTrouble', { count: links.length, trouble }) : s('drawing.links', { count: links.length })}
+            {linksWords(links.length, trouble, s)}
           </ViewBarButton>
         ) : undefined}
         exportAs={pictured && documents ? (
@@ -193,7 +193,7 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
               <div className="drawing-view__sheet" style={frame ? { width: `${frame.width * zoom.value}px` } : { width: '100%' }}>
                 <DrawingPicture
                   url={shown.url} picture={shown.frame} xml={xml} links={links} alt={diagram.name} fill
-                  label={(elementId) => s('shell.drawingOpenElement', { name: elements.find((one) => one.id === elementId)?.name || elementId })}
+                  label={(elementId) => s('shell.drawingOpenElement', { name: facts.find((fact) => fact.link.elementId === elementId)?.name || elementId })}
                   markAll={linksOpen} chosen={reading} stateOf={(link) => facts.find((fact) => fact.link.shapeId === link.shapeId)?.state}
                   onOpen={openArea}
                   testIds={{ frame: 'drawing-picture-frame', picture: 'drawing-picture', area: (link) => `drawing-area-${link.shapeId}` }}
@@ -374,4 +374,11 @@ function keeperFor(
     },
     xml: () => diagram.drawing?.xml,
   }
+}
+
+/** How many links, and how many need a look, with one said as one. */
+function linksWords(count: number, trouble: number, s: Translate): string {
+  const links = count === 1 ? s('drawing.oneLink') : s('drawing.links', { count })
+  if (trouble === 0) return links
+  return trouble === 1 ? s('drawing.linksTroubleOne', { links }) : s('drawing.linksTrouble', { links, trouble })
 }

@@ -190,16 +190,23 @@ describe('reading a linked shape', () => {
     },
   } as unknown as DesignDiagram
   const images = { bytesAt: () => Promise.resolve({ mediaType: 'image/svg+xml', bytes: svg }) }
-  const elements = [{ id: 'fleet', name: 'Vehicle Register', kind: 'application' }, { id: 'billing', name: 'Billing', kind: 'application', description: 'Turns orders into invoices.' }]
+  const elements = [{ id: 'fleet', name: 'Vehicle Register', kind: 'application' }, { id: 'billing', name: 'Billing', kind: 'application', description: 'Turns orders into **invoices** with [the tariff](attachment:x1).\n\n## More' }]
 
   it('opens the element in the panel beside the picture, and its page from there', async () => {
     const onOpen = vi.fn()
     renderShell(<DrawingView diagram={held} scope="acme" images={images} elements={elements} onOpen={onOpen} s={s} />)
     fireEvent.click(await screen.findByTestId('drawing-area-b'))
     expect(onOpen).not.toHaveBeenCalled()
-    expect(screen.getByTestId('drawing-reader-description').textContent).toContain('invoices')
+    // Read out of the markdown, as the inspector shows it: no link syntax in a glance.
+    expect(screen.getByTestId('drawing-reader-description').textContent).toBe('Turns orders into invoices with the tariff.')
     fireEvent.click(screen.getByTestId('drawing-reader-open'))
     expect(onOpen).toHaveBeenCalledWith({ page: 'element', id: 'billing' })
+  })
+
+  it('says one link needing a look in the singular', async () => {
+    const one = { ...held, drawing: { ...(held as unknown as { drawing: { links: unknown[] } }).drawing, links: [{ shapeId: 'b', elementId: 'billing', area }, { shapeId: 'c', elementId: 'gone', area }] } } as unknown as DesignDiagram
+    renderShell(<DrawingView diagram={one} scope="acme" images={images} elements={elements} s={s} />)
+    expect((await screen.findByTestId('drawing-links')).textContent).toBe('2 links · 1 needs a look')
   })
 
   it('says which links have gone wrong, by name, and how many, on the bar and in the list', async () => {
@@ -212,6 +219,8 @@ describe('reading a linked shape', () => {
     expect(screen.getByTestId('drawing-link-b').textContent).toBe('Billing')
     expect(screen.getByTestId('drawing-area-b').getAttribute('data-marked')).not.toBeNull()
     expect(screen.getByTestId('drawing-area-a').getAttribute('data-state')).toBe('stale')
+    // A shape whose element is gone is named by the words on it, not by an id nobody reads.
+    expect(screen.getByTestId('drawing-area-c').getAttribute('aria-label')).toBe('Open Old tool')
   })
 
   it('a pressed shape whose element is gone opens the list, which says so', async () => {

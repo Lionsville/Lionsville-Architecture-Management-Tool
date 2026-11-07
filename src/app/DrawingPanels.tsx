@@ -10,6 +10,7 @@
  * are, so a picture falling behind a rename is something this can see and say.
  */
 import type { Translate } from '../i18n'
+import { shortDescription } from '../documentation/documentation'
 import { drawingsAnchoredTo, drawingsPointingAt } from '../model/drawing'
 import type { DrawnShape } from '../model/drawing'
 import type { DesignDiagram, DrawingLink } from '../model'
@@ -107,7 +108,8 @@ export function ElementReader({ element, diagrams, kindWord, onClose, onOpenPage
         kind={kindWord?.(element.kind) ?? s('drawing.linksKind')} name={element.name} onClose={onClose} help={s('drawing.readerNote')}
         actions={<Button variant="plain" size="small" onClick={() => onOpenPage(element.id)} data-testid="drawing-reader-open" data-guide="drawing.openPage">{s('drawing.openPage')}</Button>}
       >
-        {element.description && <p data-testid="drawing-reader-description">{element.description}</p>}
+        {/* The line the inspector shows, read out of the markdown: the reader is a glance, and its page has the rest. */}
+        {shortDescription(element.description) && <p data-testid="drawing-reader-description">{shortDescription(element.description)}</p>}
         {list(s('drawing.shownOn'), on)}
         {list(s('drawing.aboutThis'), about)}
       </Panel>
