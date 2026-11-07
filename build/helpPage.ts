@@ -18,9 +18,15 @@ import { resolve } from 'node:path'
 /** Where the help's own files land in the build. */
 export const HELP_ASSETS = 'assets/help/'
 
-const isHelp = (id: string) => /[\\/]src[\\/]help[\\/]/.test(id)
+const CORE_HELP = /[\\/]src[\\/]help[\\/]/
 
-export function helpPage(root: string, main = resolve(root, 'index.html')) {
+/**
+ * `also`: folders outside the root whose modules are the help's too — a build
+ * composed from this one keeps its own chapters there, and they are counted
+ * with the help rather than with the app.
+ */
+export function helpPage(root: string, main = resolve(root, 'index.html'), also: readonly string[] = []) {
+  const isHelp = (id: string) => CORE_HELP.test(id) || also.some((folder) => id.startsWith(folder))
   return {
     input: { main, help: resolve(root, 'help/index.html') },
     output: {
