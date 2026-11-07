@@ -21,6 +21,8 @@ import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { ObservationsPage } from './ObservationsPage'
 import type { ObservationWork, ObservationsPageProps } from './ObservationsPage'
 import { renderShell } from '../../app/testing/renderShell'
+import { SeamWidthsProvider } from '../../widgets/useSeamWidth'
+import type { SeamWidths } from '../../widgets/useSeamWidth'
 
 afterEach(() => cleanup())
 
@@ -479,5 +481,63 @@ describe('a link to a record, from its reader', () => {
     mount(base, { initialId: 'o1' })
     more()
     expect(screen.queryByTestId('reader-copy-link')).toBeNull()
+  })
+})
+
+describe('which view a stage opens on', () => {
+  /** As the shell keeps a seam: a positive number, and anything else is nothing kept. */
+  const shellSeams = (start: Record<string, number> = {}): SeamWidths => {
+    const held = { ...start }
+    return { widthOf: (seam) => (held[seam] && held[seam] > 0 ? held[seam] : undefined), keep: (seam, width) => { held[seam] = width } }
+  }
+  const mountKept = (seams: SeamWidths, over: Partial<ObservationsPageProps> = {}) => {
+    cleanup()
+    return renderShell(
+      <SeamWidthsProvider value={seams}>
+        <ObservationsPage
+          open onClose={() => {}} model={base} groupName="Acme" onChange={() => {}} s={translator('en')} language="en"
+          makeId={(prefix) => prefix} today={() => '2026-09-24'} renderMarkdown={(md) => <MarkdownView markdown={md} />} {...over}
+        />
+      </SeamWidthsProvider>,
+    )
+  }
+  const lensIs = (name: string) => expect(screen.getByRole('radio', { name }).getAttribute('aria-checked')).toBe('true')
+  const toSolve = () => fireEvent.click(screen.getByTestId('observation-tab-solutions'))
+  const toWhy = () => fireEvent.click(screen.getByTestId('observation-tab-analysis'))
+
+  it('opens Solve on its list the first time, whatever an earlier build kept', () => {
+    mountKept(shellSeams({ 'observations.lens.solutions': 1 }))
+    toSolve()
+    lensIs('List')
+    expect(screen.queryByTestId('solution-picture')).toBeNull()
+  })
+
+  it('keeps the lens a person pressed, the list as well as the map', () => {
+    const seams = shellSeams()
+    mountKept(seams)
+    toSolve()
+    fireEvent.click(screen.getByRole('radio', { name: 'Map' }))
+    mountKept(seams)
+    toSolve()
+    lensIs('Map')
+    fireEvent.click(screen.getByRole('radio', { name: 'List' }))
+    mountKept(seams)
+    toSolve()
+    lensIs('List')
+    toWhy()
+    lensIs('Map')
+    fireEvent.click(screen.getByRole('radio', { name: 'List' }))
+    mountKept(seams)
+    toWhy()
+    lensIs('List')
+  })
+
+  it('opens the lens an address names for that visit, and keeps nothing of it', () => {
+    const seams = shellSeams()
+    mountKept(seams, { initialTab: 'solutions-map', initialNonce: 1 })
+    lensIs('Map')
+    mountKept(seams)
+    toSolve()
+    lensIs('List')
   })
 })

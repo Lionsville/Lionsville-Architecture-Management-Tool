@@ -9,6 +9,7 @@
  * another, and the map drawn from the same lists. Writes are handlers: the page proposes both lists, the caller keeps
  * them.
  */
+import type { ReactElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, waitForElementToBeRemoved, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
@@ -20,6 +21,8 @@ import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { ObservationsPage } from './ObservationsPage'
 import type { ChangeAcross, ObservationsPageProps } from './ObservationsPage'
 import { renderShell } from '../../app/testing/renderShell'
+import { SeamWidthsProvider } from '../../widgets/useSeamWidth'
+import type { SeamWidths } from '../../widgets/useSeamWidth'
 
 afterEach(() => cleanup())
 
@@ -47,10 +50,11 @@ const below: ScopeAnalysis[] = [{
 }]
 
 let ids = 0
-function mount(over: Partial<ObservationsPageProps> = {}) {
+function mount({ wrap, ...over }: Partial<ObservationsPageProps> & { wrap?: SeamWidths } = {}) {
   const onChange = vi.fn()
   const onOpenScope = vi.fn()
-  const utils = renderShell(
+  const seamed = (page: ReactElement) => (wrap ? <SeamWidthsProvider value={wrap}>{page}</SeamWidthsProvider> : page)
+  const utils = renderShell(seamed(
     <ObservationsPage
       open
       onClose={() => {}}
@@ -67,7 +71,7 @@ function mount(over: Partial<ObservationsPageProps> = {}) {
       renderMarkdown={(md) => <MarkdownView markdown={md} />}
       {...over}
     />,
-  )
+  ))
   return { ...utils, onChange, onOpenScope }
 }
 
@@ -856,6 +860,23 @@ describe('a map opens readable', () => {
     expect(drawn()).toBe(20)
     fireEvent.click(screen.getByTestId('map-top'))
     expect(drawn()).toBe(6)
+  })
+
+  it('offers Show all under the map, says how many are hidden, and keeps the choice past a reopening', () => {
+    const held: Record<string, number> = {}
+    const seams = { widthOf: (seam: string) => (held[seam] && held[seam] > 0 ? held[seam] : undefined), keep: (seam: string, width: number) => { held[seam] = width } }
+    const open = () => mount({ model: { ...model, ...chains(20) }, below: [], initialTab: 'analysis-map', initialNonce: 1, wrap: seams })
+    open()
+    const bar = screen.getByTestId('map-window')
+    expect(bar.textContent).toContain('14 hidden')
+    expect(screen.getByTestId('observation-body').contains(bar)).toBe(true)
+    const frame = screen.getByTestId('analysis-frame')
+    expect(frame.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    fireEvent.click(screen.getByTestId('map-all'))
+    cleanup()
+    open()
+    expect(within(screen.getByTestId('analysis-picture')).getAllByTestId('analysis-observation')).toHaveLength(20)
+    expect(screen.getByTestId('map-top')).toBeTruthy()
   })
 
   it('folds a long list into a card that opens it, and puts what has no chain on a pile that lists it', () => {

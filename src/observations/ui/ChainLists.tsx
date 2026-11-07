@@ -26,6 +26,7 @@ import { IMPACT_LABEL, OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
 import { formatExperimentNumber, formatSolutionNumber, isLive, rootsWithoutSolution, solutionPhase } from '../solution'
 import type { Experiment, Solution, SolutionPlan } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
+import type { ObservationStage } from '../tabs'
 import { recordedByText } from './Readers'
 import type { MergedInto } from './Readers'
 
@@ -183,6 +184,26 @@ export function resultGroups(d: StageData): ListGroup[] {
     ...group('quiet', s('solution.groupQuiet'), split.quiet.map(({ solution, since }) => built(solution, since))),
     ...group('building', s('solution.groupBuilding'), split.waiting.map((one) => solutionRow(one, solutionKey(one.id), d))),
   ]
+}
+
+/** What a stage lists. */
+export function stageGroups(stage: ObservationStage, d: StageData): ListGroup[] {
+  return stage === 'register' ? seenGroups(d) : stage === 'analysis' ? whyGroups(d) : stage === 'solutions' ? solveGroups(d) : resultGroups(d)
+}
+
+const rowsIn = (groups: readonly ListGroup[]) => groups.reduce((sum, one) => sum + one.rows.length, 0)
+
+/**
+ * How many rows the filters and the scopes below being off keep from this stage's
+ * list: the list itself drawn with neither, less the list as it stands, so the
+ * number is rows a person would get back and never the page's count of records.
+ * What *View* chose to leave out, merged and archived, stays left out on both sides.
+ */
+export function hiddenRows(
+  stage: ObservationStage, d: StageData, allBelow: StageData['below'], allAnalysisBelow: StageData['analysisBelow'],
+): number {
+  const everything: StageData = { ...d, shows: () => true, below: allBelow, analysisBelow: allAnalysisBelow }
+  return rowsIn(stageGroups(stage, everything)) - rowsIn(stageGroups(stage, d))
 }
 
 /**

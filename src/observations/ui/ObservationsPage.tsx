@@ -62,7 +62,7 @@ import type {
 import type { SavedFilters } from '../filter'
 import { FAR_BELOW, nodeKey, openEnds, pictureLinks } from '../graph'
 import type { PictureCounts } from '../graph'
-import { CHAINS_FIRST, chainsOf, mapWindow } from '../chain'
+import { CHAINS_ALL, CHAINS_FIRST, chainsOf, mapWindow } from '../chain'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { useMerge } from './useMerge'
 import { usePageMove } from './useMove'
@@ -73,9 +73,9 @@ import { plural } from '../../i18n/strings'
 import { preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
-import { BulkActions, ChainEmpty, ChainFilter, MapWindowBar, ResultsSaid } from './ChainBars'
+import { BulkActions, ChainEmpty, ChainFilter, HiddenBar, MapWindowBar, ResultsSaid } from './ChainBars'
 import { RecordDialogs, pictureMenuActions, useSolveMap } from './ChainWiring'
-import { observationColumns, recordsBelow, resultGroups, seenGroups, solveGroups, whyGroups } from './ChainLists'
+import { hiddenRows, observationColumns, recordsBelow, stageGroups } from './ChainLists'
 import type { StageData } from './ChainLists'
 import type { MergedInto, CausePanel } from './Readers'
 import { crossScope, resolveSelected } from './PageReaders'
@@ -294,8 +294,30 @@ const READER = { default: 480, min: 320, max: 900 } as const
 /** Each map's panel at its own width until it is dragged. */
 const READER_WIDTHS = { analysis: READER.default, solutions: READER.default }
 
-/** 1 is the map. Why opens as its map, since that is where a chain is seen; Solve as its list, since it starts at what has no answer. */
-const LENS_FIRST = { analysis: 1, solutions: 0 } as const
+/** A lens as the number it is kept by: a seam keeps a positive number and reads anything else as nothing kept. */
+const LENS_KEPT = { map: 1, list: 2 } as const
+
+/**
+ * List or map, per stage. Why opens as its map, since that is where a chain is seen;
+ * Solve as its list, the plain menu of what has no answer and what is being done.
+ * A press is the person's and is kept. An address that names a lens opens it for this
+ * visit and keeps nothing: following one link to a map must not change how the tab
+ * opens from then on. Solve's seam is named anew in 4.0.0, because the one before it
+ * could hold a lens no person chose.
+ */
+function useChainLens(stage: Tab) {
+  const [whyKept, keepWhy] = useSeamWidth('observations.lens.analysis', LENS_KEPT.map)
+  const [solveKept, keepSolve] = useSeamWidth('observations.lens.solve', LENS_KEPT.list)
+  const [named, setNamed] = useState<{ stage: Tab; lens: ChainLens } | undefined>(undefined)
+  const kept: ChainLens = (stage === 'analysis' ? whyKept : solveKept) === LENS_KEPT.map ? 'map' : 'list'
+  const lens: ChainLens = !hasMap(stage) ? 'list' : named?.stage === stage ? named.lens : kept
+  const press = (next: ChainLens) => {
+    setNamed(undefined)
+    if (stage === 'analysis') keepWhy(LENS_KEPT[next])
+    else keepSolve(LENS_KEPT[next])
+  }
+  return { lens, press, name: setNamed }
+}
 
 /**
  * The id a selection is told by: a record's own, as the lists and the agent
@@ -552,12 +574,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [stage, setStageRaw] = useState<Tab>('register')
   const [readerWidth, setReaderWidth] = useSeamWidthsOf<'analysis' | 'solutions'>('observations.reader', READER_WIDTHS)
   // The person's own choices, kept with their other preferences through the seam a width is kept by: a number per name.
-  const [whyLensKept, keepWhyLens] = useSeamWidth('observations.lens.analysis', LENS_FIRST.analysis)
-  const [solveLensKept, keepSolveLens] = useSeamWidth('observations.lens.solutions', LENS_FIRST.solutions)
-  const lensOf = (of: 'analysis' | 'solutions'): ChainLens => ((of === 'analysis' ? whyLensKept : solveLensKept) === 1 ? 'map' : 'list')
-  const setLens = useCallback((of: 'analysis' | 'solutions', lens: ChainLens) => (of === 'analysis' ? keepWhyLens : keepSolveLens)(lens === 'map' ? 1 : 0), [keepWhyLens, keepSolveLens])
-  const lens: ChainLens = stage === 'analysis' || stage === 'solutions' ? lensOf(stage) : 'list'
-  // How many chains the map shows is kept per person and scope: 0 is all of them.
+  const { lens, press: pressLens, name: nameLens } = useChainLens(stage)
+  // How many chains the map shows is kept per person and scope.
   const [chainsKept, keepChains] = useSeamWidth(`observations.chains.${here.scope}`, CHAINS_FIRST)
   const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set())
   const [wholeChain, setWholeChain] = useState(false)
@@ -647,7 +665,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       if (to) setStageRaw(to)
       setFull(false)
       const named = props.initialTab ? stageOfTab(props.initialTab) : undefined
-      if (named?.lens && hasMap(named.stage)) setLens(named.stage as 'analysis' | 'solutions', named.lens)
+      nameLens(named?.lens && hasMap(named.stage) ? { stage: named.stage, lens: named.lens } : undefined)
       setSelectedKey(key)
     },
   })
@@ -754,9 +772,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     analysedInto, mergedInto: mergedLabel, causeMergedInto: mergedCause, isOpenEnd: (key) => openEndKeys.has(key), shows,
     showMerged, showArchived, scopeLabel, names, language: props.language, s,
   }
-  const groups: ListGroup[] = stage === 'register' ? seenGroups(stageData)
-    : stage === 'analysis' ? whyGroups(stageData)
-      : stage === 'solutions' ? solveGroups(stageData) : resultGroups(stageData)
+  const groups: ListGroup[] = stageGroups(stage, stageData)
   const columns = stage === 'register' ? observationColumns(s).filter((one) => shownColumns.includes(one.id)) : []
 
   /** What the readers read and ask, and the right-click on a record below, which offers what its reader does. */
@@ -800,7 +816,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const links = useMemo(() => pictureLinks(f.inView, here.scope), [f.inView, here.scope])
   const filteredKeys = f.result.filtering ? f.result.visible : undefined
   const chainWindow = useMemo(
-    () => mapWindow(records, here.scope, { limit: chainsKept === 0 ? 'all' : chainsKept, opened }, links, filteredKeys),
+    () => mapWindow(records, here.scope, { limit: chainsKept === CHAINS_ALL ? 'all' : chainsKept, opened }, links, filteredKeys),
     [records, here.scope, chainsKept, opened, links, filteredKeys],
   )
   const counted = f.counts(aboveOf)
@@ -839,7 +855,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       onSelect={setSelectedKey}
       onMenu={openMenu}
       window={chainWindow}
-      showOverview={chainsKept === 0}
+      showOverview={chainsKept === CHAINS_ALL}
       onMore={(card) => {
         if (card.more === 'pile') { setStage('register'); return }
         const { chain } = card
@@ -908,17 +924,17 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const actions = (
     <span className="chain-page__actions">
       <span className="chain-page__said" data-testid="picture-count">
-        {stageSaid[stage]}{f.hiddenLocal > 0 ? ` · ${s('observation.localHidden', { count: f.hiddenLocal })}` : ''}
+        {stageSaid[stage]}
       </span>
       <Button
-        variant={f.viewLocal ? 'primary' : 'quiet'} size="small" aria-pressed={f.viewLocal} {...(f.hasBelow ? { title: s('observation.viewLocalTip') } : { reason: s('observation.viewLocalNone') })}
+        variant="quiet" size="small" aria-pressed={f.viewLocal} {...(f.hasBelow ? { title: s('observation.viewLocalTip') } : { reason: s('observation.viewLocalNone') })}
         onClick={() => f.setViewLocal(!f.viewLocal)} data-testid="view-local" data-guide="observations.viewLocal"
       >
         {f.viewLocal ? s('observation.scopesBelowOn') : s('observation.scopesBelowOff')}
       </Button>
       {hasMap(stage) && (
         <Segmented
-          label={s('observation.lens')} value={lens} onChange={(next) => { setLens(stage as 'analysis' | 'solutions', next); setSelectedKey(undefined) }}
+          label={s('observation.lens')} value={lens} onChange={(next) => { pressLens(next); setSelectedKey(undefined) }}
           data-guide="observations.lens"
           options={[{ value: 'list', label: s('observation.lensList') }, { value: 'map', label: s('observation.lensMap') }]}
         />
@@ -935,6 +951,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // The merge and move screens are places under the frame: a modal over them would hide them from everybody.
   const showPreview = !onMap && !full && selected !== undefined && selectedKey !== undefined && !merging.state && !moving.state
 
+  const listHidden = () => hiddenRows(stage, stageData, belowByScope, recordsBelow(below, here.scope, true, () => true, showArchived, showMerged))
+  const hidden = <HiddenBar f={f} onMap={onMap} listHidden={listHidden} s={s} />
   const list = (
     <List
       label={s(STAGE_WORD[stage])}
@@ -947,6 +965,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       {...(tickable ? { checked: ticked, onCheckedChange: setTicked, bulkActions: bulk } : {})}
       dataGuide="observations.register"
       rowGuide="observations.row"
+      more={hidden}
       empty={<EmptyStage stage={stage} f={f} observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} s={s} />}
     />
   )
@@ -997,12 +1016,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
                   actions={actions} s={s}
                 />
               </div>
-              {onMap && stage === 'analysis' && !f.result.filtering && (
-                <MapWindowBar window={chainWindow} kept={chainsKept} loose={records.loose.length} onKeep={keepChains} s={s} />
-              )}
               <div className="chain-page__work" data-testid="observation-body" data-map={onMap || undefined}>
                 <div className="chain-page__main">
                   {!onMap ? list : stage === 'analysis' ? picture : solutionsMap}
+                  {onMap && stage === 'analysis' && !f.result.filtering && (
+                    <MapWindowBar window={chainWindow} kept={chainsKept} loose={records.loose.length} belowInView={f.viewLocal} onKeep={keepChains} s={s} />
+                  )}
+                  {onMap && hidden}
                 </div>
                 {side}
               </div>

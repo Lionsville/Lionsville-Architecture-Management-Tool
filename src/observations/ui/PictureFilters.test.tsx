@@ -79,7 +79,6 @@ function mount() {
 
 const picture = () => screen.getByTestId('analysis-picture')
 const drawn = () => [...picture().querySelectorAll('[data-key]')].map((node) => node.getAttribute('data-key')).sort()
-const count = () => screen.getByTestId('picture-count').textContent
 const shown = () => document.querySelector('.kit-filter__shown')?.textContent
 /** Every filter stands in one panel that closes: open it to set one. */
 const openFilter = () => fireEvent.click(screen.getByRole('button', { name: /^Filter/ }))
@@ -91,6 +90,76 @@ const closeFilter = async () => {
 const tick = (name: string) => fireEvent.click(screen.getByRole('checkbox', { name }))
 const howToRead = () => fireEvent.click(screen.getByTestId('how-to-read'))
 const toList = () => fireEvent.click(screen.getByRole('radio', { name: 'List' }))
+
+describe('what is kept back', () => {
+  const toSeen = () => fireEvent.click(screen.getByTestId('observation-tab-register'))
+  const search = (value: string) => fireEvent.change(screen.getByRole('searchbox', { name: 'Search every record' }), { target: { value } })
+
+  it('leads the list with this scope’s own observations, whatever filter is on', () => {
+    mount()
+    toSeen()
+    const order = () => [...document.querySelectorAll('[data-testid^="observation-row-"]')].map((row) => row.getAttribute('data-testid'))
+    expect(order().at(-1)).toBe('observation-row-acme/claims/intake#in1')
+    expect(order()).toHaveLength(3)
+    // A word in both scopes: what is here still leads, and what is below still follows.
+    search('batch')
+    expect(order()).toEqual(['observation-row-o1', 'observation-row-acme/claims/intake#in1'])
+  })
+
+  it('says at the end of the list how many rows a filter keeps back, and one press brings them all', () => {
+    mount()
+    toSeen()
+    expect(screen.queryByTestId('observation-hidden')).toBeNull()
+    search('policyholder')
+    const bar = screen.getByTestId('observation-hidden')
+    expect(bar.textContent).toContain('hidden by the filter')
+    const left = document.querySelectorAll('[data-testid^="observation-row-"]').length
+    expect(bar.textContent).toContain(`${3 - left} hidden`)
+    // After the list in the document, and a plain button: Tab reaches it.
+    const grid = screen.getByRole('treegrid')
+    expect(grid.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    const all = screen.getByTestId('observation-show-all')
+    all.focus()
+    expect(document.activeElement).toBe(all)
+    fireEvent.click(all)
+    expect(document.querySelectorAll('[data-testid^="observation-row-"]')).toHaveLength(3)
+    expect(screen.queryByTestId('observation-hidden')).toBeNull()
+  })
+
+  it('still offers it when the filter leaves nothing, and when the scopes below are off', () => {
+    mount()
+    toSeen()
+    search('nothing has these words')
+    expect(screen.getByTestId('observation-hidden').textContent).toContain('3 hidden by the filter')
+    fireEvent.click(screen.getByTestId('observation-show-all'))
+    fireEvent.click(screen.getByTestId('view-local'))
+    expect(screen.getByTestId('observation-hidden').textContent).toContain('1 hidden: the scopes below are off')
+    fireEvent.click(screen.getByTestId('observation-show-all'))
+    expect(screen.getByTestId('view-local').getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('offers it under a map a filter has narrowed', () => {
+    mount()
+    search('batch')
+    expect(screen.getByTestId('observation-hidden').textContent).toContain('hidden by the filter')
+    fireEvent.click(screen.getByTestId('observation-show-all'))
+    expect(screen.queryByTestId('observation-hidden')).toBeNull()
+  })
+
+  it('opens the map on this scope’s lanes, with the scopes below to the left of them', () => {
+    mount()
+    expect(screen.getByTestId('analysis-frame').scrollLeft).toBeGreaterThan(0)
+    fireEvent.click(screen.getByTestId('view-local'))
+    expect(within(picture()).queryByTestId('picture-boundary')).toBeNull()
+  })
+
+  it('draws the toggle in the pressed look, never as the primary action', () => {
+    mount()
+    const toggle = screen.getByTestId('view-local')
+    expect(toggle.getAttribute('aria-pressed')).toBe('true')
+    expect(toggle.dataset.variant).toBe('quiet')
+  })
+})
 
 describe('the scopes below', () => {
   it('draws the scope below in a boundary of its own, and counts what it hides when switched off', () => {
@@ -105,7 +174,7 @@ describe('the scopes below', () => {
     fireEvent.click(local())
     expect(within(picture()).queryByTestId('picture-boundary')).toBeNull()
     expect(drawn()).not.toContain('acme/claims/intake#b1')
-    expect(count()).toContain('2 local records hidden')
+    expect(screen.getByTestId('observation-hidden').textContent).toContain('2 hidden: the scopes below are off')
     // The cause whose link now leads out of the picture says so.
     expect(picture().querySelector('[data-key="r1"]')?.textContent).toContain('↙ 1 local')
 

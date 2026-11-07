@@ -14,8 +14,9 @@ import type { Translate } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
 import { TextField } from '../../widgets/kit/Field'
 import { FilterWords } from '../../widgets/kit/FilterWords'
+import { ListMore } from '../../widgets/kit/ListMore'
 import type { FilterField, FilterWord } from '../../widgets/kit/FilterWords'
-import { CHAINS_FIRST, CHAINS_MORE } from '../chain'
+import { CHAINS_ALL, CHAINS_FIRST, CHAINS_MORE } from '../chain'
 import type { MapWindow } from '../chain'
 import { OBSERVATION_TONES } from '../observation'
 import type { Analysis, ObservationBelow } from '../observation'
@@ -192,33 +193,66 @@ export function BulkActions({ ticked, stage, here, onClear, onAsk, onMerge, s }:
   )
 }
 
-/** How much of a large scope's map is drawn, and the way to the rest: the choice is the person's, and kept. */
-export function MapWindowBar({ window: drawn, kept, loose, onKeep, s }: {
+/**
+ * How much of a large scope's map is drawn, and the way to the rest, under the map
+ * where a person arrives having read it: the choice is the person's, and kept.
+ */
+export function MapWindowBar({ window: drawn, kept, loose, belowInView, onKeep, s }: {
   window: MapWindow
   kept: number
   loose: number
+  /** Scopes below are drawn too, so the first chains are this scope's rather than simply the heaviest. */
+  belowInView: boolean
   onKeep: (chains: number) => void
   s: Translate
 }) {
   const { shownChains, totalChains } = drawn
   if (totalChains === 0) return null
+  const name = { 'data-testid': 'map-window', 'data-guide': 'observations.mapWindow' }
+  const showAll = <Button size="small" onClick={() => onKeep(CHAINS_ALL)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
+  if (shownChains < totalChains) {
+    const top = s(belowInView ? 'observation.mapTopHere' : 'observation.mapTop', { shown: shownChains, total: totalChains })
+    return (
+      <ListMore {...name} said={`${top} · ${s('observation.mapHidden', { count: totalChains - shownChains })}`}>
+        {showAll}
+        <Button variant="quiet" size="small" onClick={() => onKeep(shownChains + CHAINS_MORE)} data-testid="map-more">{s('observation.mapShowMore', { count: CHAINS_MORE })}</Button>
+      </ListMore>
+    )
+  }
+  if (kept === CHAINS_ALL) {
+    return (
+      <ListMore {...name} said={s('observation.mapAll', { total: totalChains })}>
+        <Button variant="quiet" size="small" onClick={() => onKeep(CHAINS_FIRST)} data-testid="map-top">{s('observation.mapBackTop', { count: CHAINS_FIRST })}</Button>
+      </ListMore>
+    )
+  }
+  return loose > 0
+    ? <ListMore {...name} said={s('observation.mapPileHidden', { count: loose })}>{showAll}</ListMore>
+    : <ListMore {...name} said={s('observation.mapAll', { total: totalChains })} />
+}
+
+/**
+ * What a filter or the scopes below being off keep back of what is on screen, said
+ * at the end of it. *Show all* takes both away, since that is what the words offer.
+ */
+export function HiddenBar({ f, onMap, listHidden, s }: {
+  f: PictureFilters
+  onMap: boolean
+  /** What this stage's list would draw and does not. Asked only where something can be kept back: it draws the list twice. */
+  listHidden: () => number
+  s: Translate
+}) {
+  const filtering = f.result.filtering
+  const belowOff = f.hasBelow && !f.viewLocal
+  // On a map what is kept back is counted over all its records; a list says what it would itself have drawn.
+  const count = onMap ? f.result.total - f.result.shown + f.hiddenLocal : filtering || belowOff ? listHidden() : 0
+  if (count === 0) return null
+  const said = filtering && belowOff ? 'observation.hiddenBoth' : filtering ? 'observation.hiddenByFilter' : 'observation.hiddenBelow'
+  const onShowAll = () => { f.clear(); f.setViewLocal(true) }
   return (
-    <div className="chain-page__window" data-testid="map-window" data-guide="observations.mapWindow">
-      {shownChains < totalChains ? (
-        <>
-          <span>{s('observation.mapTop', { shown: shownChains, total: totalChains })}</span>
-          <Button size="small" onClick={() => onKeep(shownChains + CHAINS_MORE)} data-testid="map-more">{s('observation.mapShowMore', { count: CHAINS_MORE })}</Button>
-          <Button variant="quiet" size="small" onClick={() => onKeep(0)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
-        </>
-      ) : kept === 0 ? (
-        <>
-          <span>{s('observation.mapAll', { total: totalChains })}</span>
-          <Button variant="quiet" size="small" onClick={() => onKeep(CHAINS_FIRST)} data-testid="map-top">{s('observation.mapBackTop', { count: CHAINS_FIRST })}</Button>
-        </>
-      ) : loose > 0 ? (
-        <Button variant="quiet" size="small" onClick={() => onKeep(0)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
-      ) : <span>{s('observation.mapAll', { total: totalChains })}</span>}
-    </div>
+    <ListMore said={s(said, { count })} data-testid="observation-hidden">
+      <Button size="small" onClick={onShowAll} data-testid="observation-show-all">{s('observation.mapShowAll')}</Button>
+    </ListMore>
   )
 }
 
