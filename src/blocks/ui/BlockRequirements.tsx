@@ -39,11 +39,8 @@ export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter
   const dropCapability = (id: string) => access.update(block.id, { capabilities: capabilities.filter((one) => one.id !== id), contexts: withoutCapability(contexts, id) })
   const dropContext = (id: string) => access.update(block.id, { contexts: contexts.filter((one) => one.id !== id) })
   const rowEnd = (one: BlockCapability) => (may ? (
-    <span className="guidance-record__line">
-      <label className="guidance-form__tick">
-        <input type="checkbox" checked={one.must === true} onChange={(event) => setMust(one, event.target.checked)} aria-label={t('blocks.mustOf', { name: one.text })} />
-        {t('blocks.must')}
-      </label>
+    <span className="guidance-record__rowEnd">
+      <input type="checkbox" checked={one.must === true} onChange={(event) => setMust(one, event.target.checked)} aria-label={t('blocks.mustOf', { name: one.text })} />
       <MoreMenu label={t('blocks.moreOf', { name: one.text })} items={[{ label: t('blocks.remove'), final: true, onSelect: () => dropCapability(one.id) }]} />
     </span>
   ) : (one.must ? t('blocks.must') : null))
@@ -58,7 +55,7 @@ export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter
           <span className="guidance-read__quiet">{t('blocks.usageContexts')}</span>
           {contexts.map((one) => (
             <MenuButton
-              key={one.id} label={one.name} variant="quiet" size="small" data-guide={undefined}
+              key={one.id} label={one.name} variant="quiet" size="small"
               items={[
                 { label: t('blocks.chapterOf', { name: one.name }), onSelect: () => onChapter(one.id) },
                 ...(may ? [{ label: t('blocks.remove'), final: true, onSelect: () => dropContext(one.id) }] : []),

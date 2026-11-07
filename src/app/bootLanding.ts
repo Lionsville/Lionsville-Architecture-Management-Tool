@@ -198,7 +198,8 @@ function homePageLanding(place: Place): Pick<BootLanding, 'initialHomePage' | 'i
   const merged = place.page === 'technologyRegister'
   const page = (merged ? 'register' : place.page) as NonNullable<BootLanding['initialHomePage']>
   const tab = merged ? place.tab ?? 'services' : place.tab
-  const pick = page === 'register' ? place.id ?? place.select : page === 'checks' ? place.id : undefined
+  // A block's or a topic's page, reloaded, is still that block's or topic's.
+  const pick = page === 'register' ? place.id ?? place.select : page === 'checks' || page === 'blocks' || page === 'topics' ? place.id : undefined
   const initialList = { ...(tab !== undefined ? { tab } : {}), ...(place.list !== undefined ? { list: place.list } : {}), ...(pick !== undefined ? { pick } : {}) }
   const record = page === 'people' ? place.id ?? place.select : undefined
   return { initialHomePage: page, ...(Object.keys(initialList).length > 0 ? { initialList } : {}), ...(record !== undefined ? { initialHomeRecord: record } : {}) }

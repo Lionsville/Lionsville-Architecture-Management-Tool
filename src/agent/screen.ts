@@ -185,7 +185,7 @@ export type ScreenPage =
   /** The topics catalogue (ADR-0042 §3), over a home, on a topic where one is picked. */
   | { readonly page: 'topics' }
   /** The register of building blocks (ADR-0043 §8), over a home, or a block's page where one is picked. */
-  | { readonly page: 'blocks' }
+  | { readonly page: 'blocks'; readonly id?: string; readonly tab?: string }
 
 /** The active view of an open scope, named so a reader does not have to look it up. */
 export type ScreenView = {

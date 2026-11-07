@@ -185,4 +185,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'principles.sharpenNeeds': 'Zeg eerst wat is aangescherpt.',
   'principles.from': 'Uit {scope}',
   'principles.fromTopic': 'Uit {scope}, een hier relevant onderwerp',
+  'principles.regimeFixedEffect': 'Een besluit mag er niet van afwijken.',
+  'principles.regimeFlexibleEffect': 'Een besluit mag ervan afwijken, met reden.',
 }

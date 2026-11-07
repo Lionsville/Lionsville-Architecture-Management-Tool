@@ -1711,7 +1711,7 @@ export const EN = {
   'blockDecision.driver': '{capability}: needed at {level} of 4 here',
   'blockDecision.context': 'Which solution {scope} uses as its {block}, weighed in its evaluation of the block: what each usage context that applies here needs, and how far each option covers it.',
   'blockDecision.failsMust': 'fails a must',
-  'topics.openHome': 'Home',
+  'topics.openHome': 'Open its home',
   'topics.openInCatalogue': 'Open in Topics',
   'topics.thisIsTopic': 'This scope is a topic: where it is relevant is said in the catalogue.',
   'topics.removeBody': 'The topic goes, with its links. Scopes it was relevant to no longer read its principles.',
@@ -1895,4 +1895,6 @@ export const EN = {
   'topics.isScope': 'A topic is a scope: its history is on its home.',
   'topics.removeRefusedShort': 'It still keeps a principle, a building block or a subtopic: move or remove those first.',
   'topics.linkMore': 'More for {scope}',
+  'topics.factKeeps': 'It keeps',
+  'topics.keepsWords': '{principles} principles, {blocks} building blocks, {subtopics} subtopics',
 } as const

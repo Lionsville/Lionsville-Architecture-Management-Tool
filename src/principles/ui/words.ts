@@ -38,6 +38,12 @@ export const STATUS_WORD: Record<PrincipleStatus, StringKey> = {
   retired: 'principles.statusRetired',
 }
 
+/** What a regime does, beside its word, where it is chosen. */
+export const REGIME_EFFECT: Record<PrincipleRegime, StringKey> = {
+  fixed: 'principles.regimeFixedEffect',
+  flexible: 'principles.regimeFlexibleEffect',
+}
+
 /** Where a principle stands, said once, where it is written. */
 export const STATUS_SENTENCE: Record<PrincipleStatus, StringKey> = {
   candidate: 'principles.statusCandidateSentence',

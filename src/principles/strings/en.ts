@@ -183,4 +183,6 @@ export const EN = {
   'principles.sharpenNeeds': 'Say what was sharpened first.',
   'principles.from': 'From {scope}',
   'principles.fromTopic': 'From {scope}, a topic relevant here',
+  'principles.regimeFixedEffect': 'A decision may not depart from it.',
+  'principles.regimeFlexibleEffect': 'A decision may depart from it, with its reason.',
 } as const

@@ -106,7 +106,9 @@ export function useShellAgent(deps: {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
   const watchScreen = deps.watchScreen ?? false
   const report = deps.report ?? NOBODY
-  const [orgPage, setOrgPage] = useState<OrgPage | undefined>(undefined)
+  const [orgPage, setOrgPageNow] = useState<OrgPage | undefined>(undefined)
+  const [orgRecord, setOrgRecord] = useState<string | undefined>(undefined)
+  const setOrgPage = useCallback((page: OrgPage | undefined, record?: string) => { setOrgPageNow(page); setOrgRecord(record) }, [])
   const [orgPageRequest, setOrgPageRequest] = useState<OrgPageRequest | undefined>(
     () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1, ...(deps.initialPick !== undefined ? { select: deps.initialPick } : {}) } : undefined),
   )
@@ -137,8 +139,8 @@ export function useShellAgent(deps: {
   const lastLook = useRef<Screen | undefined>(undefined)
   const { frame } = deps
   const screenNow = useCallback(
-    (): Screen => inFrame(screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage }), frame),
-    [project, home, homeName, organisationName, orgPage, frame],
+    (): Screen => inFrame(screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage, orgRecord }), frame),
+    [project, home, homeName, organisationName, orgPage, orgRecord, frame],
   )
   /** The element selected on the view on screen, where one is: what a link selects again (ADR-0033, amended). */
   const selectedNow = useCallback(() => agentSessionRef.current?.renderer?.selected?.(), [])
@@ -491,9 +493,9 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
 function screenOf(
   held: WorkspaceAgentView | undefined,
   project: ScopeSnapshot | undefined,
-  at: { home: ScopePath; homeName: string | undefined; organisationName: string; orgPage: OrgPage | undefined },
+  at: { home: ScopePath; homeName: string | undefined; organisationName: string; orgPage: OrgPage | undefined; orgRecord: string | undefined },
 ): Screen {
-  const { home, homeName, organisationName, orgPage } = at
+  const { home, homeName, organisationName, orgPage, orgRecord } = at
   if (project && held) {
     const model = held.current()
     const active = model.diagrams.find((diagram) => diagram.id === held.activeDiagramId())
@@ -506,6 +508,6 @@ function screenOf(
   if (project) return { open: { path: project.path, name: project.model.name } }
   return {
     home: { path: home, name: home === ROOT_SCOPE ? organisationName : (homeName ?? scopePathLabel(home)) },
-    ...(orgPage ? { page: { page: orgPage } } : {}),
+    ...(orgPage ? { page: (orgPage === 'blocks' && orgRecord !== undefined ? { page: orgPage, id: orgRecord } : { page: orgPage }) as Screen['page'] } : {}),
   }
 }

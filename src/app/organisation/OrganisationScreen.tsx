@@ -214,7 +214,7 @@ export type OrganisationScreenProps = {
    */
   pageRequest?: { page: OrgPage | 'home'; nonce: number; select?: string }
   /** Which of the pages is up, whenever that changes — so the shell can say where the app is. */
-  onPageChange?: (page: OrgPage | undefined) => void
+  onPageChange?: (page: OrgPage | undefined, record?: string) => void
   /**
    * The people register (ADR-0036): its card on the root's home and its page
    * over any home, where the source keeps one.

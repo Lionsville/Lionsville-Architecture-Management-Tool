@@ -31,7 +31,7 @@ function landsOn(request: OrgPageRequest): OrgPageRequest {
 }
 
 export function useHomePages(
-  request: OrgPageRequest | undefined, onPageChange: ((page: OrgPage | undefined) => void) | undefined,
+  request: OrgPageRequest | undefined, onPageChange: ((page: OrgPage | undefined, record?: string) => void) | undefined,
 ): HomePagesState {
   const [openPage, setOpenPage] = useState<OrgPage | undefined>(undefined)
   const [asked, setAsked] = useState<OrgPageRequest | undefined>(request && landsOn(request))
@@ -43,7 +43,9 @@ export function useHomePages(
     setOpenPage(held.page === 'home' ? undefined : held.page)
     setAsked(held)
   }, [request])
-  useEffect(() => { onPageChange?.(openPage) }, [onPageChange, openPage])
+  // The block on screen is part of the place, so a reload stays on it.
+  const record = openPage === 'blocks' && asked?.page === 'blocks' ? asked.select : undefined
+  useEffect(() => { onPageChange?.(openPage, record) }, [onPageChange, openPage, record])
   useEffect(() => () => onPageChange?.(undefined), [onPageChange])
   const open = useCallback((page: OrgPage, select?: string, evaluation?: string, finding?: string) => {
     const held = landsOn({ page, nonce: 0, ...(select !== undefined ? { select } : {}), ...(evaluation !== undefined ? { evaluation } : {}), ...(finding !== undefined ? { finding } : {}) })

@@ -21,11 +21,12 @@ import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogChoices } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
+import { PanelSection } from '../../widgets/kit/Panel'
 import { draftOf, draftReady, draftSharpens, withNewAspect } from '../draft'
 import type { PrincipleDraft } from '../draft'
 import { AspectList, GroupPicker } from './editorParts'
 import { usePrinciples } from './PrinciplesContext'
-import { REGIME_SENTENCE, REGIME_WORD, STATUS_SENTENCE, STATUS_WORD } from './words'
+import { REGIME_EFFECT, REGIME_WORD, STATUS_SENTENCE, STATUS_WORD } from './words'
 
 let made = 0
 
@@ -104,14 +105,18 @@ function DraftFields({ draft, change, scope, number }: {
     <div className="guidance-form">
       <TextField autoFocus required label={t('principles.titleField')} value={draft.title} onChange={(title) => change({ title })} data-testid="principle-title" />
       <div data-testid="principle-statement"><MarkdownEditor label={t('principles.statementField')} value={draft.statement} onChange={(statement) => change({ statement })} minRows={2} required helper={t('principles.statementHelp')} renderPreview={preview} /></div>
-      <DialogChoices
-        label={t('principles.regimeField')} value={draft.regime} onChange={(regime) => change({ regime })}
-        options={PRINCIPLE_REGIMES.map((one) => ({ value: one, label: t(REGIME_WORD[one]), effect: t(REGIME_SENTENCE[one]) }))}
-      />
-      <DialogChoices
-        label={t('principles.statusField')} value={draft.status} onChange={(status) => change({ status })}
-        options={PRINCIPLE_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]), effect: t(STATUS_SENTENCE[one]) }))}
-      />
+      <PanelSection title={t('principles.regimeField')}>
+        <DialogChoices
+          label={t('principles.regimeField')} value={draft.regime} onChange={(regime) => change({ regime })}
+          options={PRINCIPLE_REGIMES.map((one) => ({ value: one, label: t(REGIME_WORD[one]), effect: t(REGIME_EFFECT[one]) }))}
+        />
+      </PanelSection>
+      <PanelSection title={t('principles.statusField')}>
+        <DialogChoices
+          label={t('principles.statusField')} value={draft.status} onChange={(status) => change({ status })}
+          options={PRINCIPLE_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]), effect: t(STATUS_SENTENCE[one]) }))}
+        />
+      </PanelSection>
       {draft.status === 'candidate' && <TextField label={t('principles.questionField')} hint={t('principles.questionHelp')} value={draft.question} onChange={(question) => change({ question })} />}
       <GroupPicker groups={groups} picked={draft.groups} made={draft.newGroups} onChange={(picked, names) => change({ groups: picked, newGroups: names })} t={t} />
       <AspectList

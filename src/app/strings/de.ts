@@ -1481,7 +1481,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'blockDecision.driver': '{capability}: hier gebraucht auf {level} von 4',
   'blockDecision.context': 'Welche Lösung {scope} als {block} nutzt, abgewogen in seiner Bewertung des Bausteins: was jeder hier geltende Nutzungskontext braucht und wie weit jede Option es abdeckt.',
   'blockDecision.failsMust': 'scheitert an einem Muss',
-  'topics.openHome': 'Startseite',
+  'topics.openHome': 'Seine Startseite öffnen',
   'topics.openInCatalogue': 'In Themen öffnen',
   'topics.thisIsTopic': 'Dieser Bereich ist ein Thema: Wofür es relevant ist, steht im Katalog.',
   'topics.removeBody': 'Das Thema geht, mit seinen Verknüpfungen. Bereiche, für die es relevant war, lesen seine Prinzipien nicht mehr.',
@@ -1665,4 +1665,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'topics.isScope': 'Ein Thema ist ein Bereich: sein Verlauf steht auf seiner Startseite.',
   'topics.removeRefusedShort': 'Es hält noch ein Prinzip, einen Baustein oder ein Unterthema: verschieben oder entfernen Sie diese zuerst.',
   'topics.linkMore': 'Mehr zu {scope}',
+  'topics.factKeeps': 'Es hält',
+  'topics.keepsWords': '{principles} Prinzipien, {blocks} Bausteine, {subtopics} Unterthemen',
 }

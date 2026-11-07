@@ -12,6 +12,7 @@
 import { useState } from 'react'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n/LanguageContext'
+import { plural } from '../../i18n/strings'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { useBlocks } from '../../blocks/ui/BlocksContext'
 import { Button } from '../../widgets/kit/Button'
@@ -20,7 +21,7 @@ import { TextField } from '../../widgets/kit/Field'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { Picker } from '../../widgets/kit/Picker'
-import { Preview } from '../../widgets/kit/Preview'
+import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { linkHolds } from './TopicsContext'
 import type { TopicLink, TopicSummary, TopicsAccess } from './TopicsContext'
 import { EditTopicDialog } from './TopicEditDialog'
@@ -194,6 +195,12 @@ export function TopicDetail({ topic, access, ids, onSelect, onSubtopic }: {
       <Preview
         ids={ids} currentId={topic.id} onSelect={onSelect} title={topic.name} listWord={t('topics.listWord')}
         {...(parent ? { code: t('topics.subtopicOf', { name: parent.name }) } : {})}
+        facts={(
+          <>
+            <PreviewFact label={t('topics.relevantTo')}>{plural(t, { one: 'topics.scopesOne', other: 'topics.scopesOther' }, access.relevantPlaces(topic.id).length)}</PreviewFact>
+            <PreviewFact label={t('topics.factKeeps')}>{t('topics.keepsWords', { principles: keeps.principles, blocks: keeps.blocks, subtopics: keeps.subtopics })}</PreviewFact>
+          </>
+        )}
         foot={(
           <div className="guidance-read__foot">
             <span className="guidance-read__quiet">{t('topics.isScope')}</span>
@@ -202,7 +209,7 @@ export function TopicDetail({ topic, access, ids, onSelect, onSubtopic }: {
             {may && <Button variant="plain" onClick={() => setEditing(true)} data-testid="topic-edit">{t('topics.edit')}</Button>}
             {may && (
               <MoreMenu items={[{
-                label: t('topics.remove'), final: true, 'data-guide': undefined, onSelect: () => setRemoving(true),
+                label: t('topics.remove'), final: true, onSelect: () => setRemoving(true),
                 ...(refused ? { refused: t('topics.removeRefusedShort') } : {}),
               }]} />
             )}

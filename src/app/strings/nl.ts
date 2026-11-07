@@ -1480,7 +1480,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'blockDecision.driver': '{capability}: hier nodig op {level} van 4',
   'blockDecision.context': 'Welke oplossing {scope} gebruikt als {block}, gewogen in haar beoordeling van de bouwsteen: wat elke gebruikscontext die hier geldt nodig heeft, en hoe ver elke optie dat dekt.',
   'blockDecision.failsMust': 'valt af op een must',
-  'topics.openHome': 'Startpagina',
+  'topics.openHome': 'Open zijn startpagina',
   'topics.openInCatalogue': 'Openen in Onderwerpen',
   'topics.thisIsTopic': 'Deze scope is een onderwerp: waarvoor het relevant is, staat in de catalogus.',
   'topics.removeBody': 'Het onderwerp gaat weg, met zijn koppelingen. Scopes waarvoor het relevant was, lezen zijn principes niet meer.',
@@ -1664,4 +1664,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'topics.isScope': 'Een onderwerp is een scope: de geschiedenis staat op zijn startpagina.',
   'topics.removeRefusedShort': 'Het bewaart nog een principe, bouwsteen of subonderwerp: verplaats of verwijder die eerst.',
   'topics.linkMore': 'Meer voor {scope}',
+  'topics.factKeeps': 'Het bewaart',
+  'topics.keepsWords': '{principles} principes, {blocks} bouwstenen, {subtopics} subonderwerpen',
 }

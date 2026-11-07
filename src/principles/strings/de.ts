@@ -185,4 +185,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'principles.sharpenNeeds': 'Sagen Sie zuerst, was geschärft wurde.',
   'principles.from': 'Aus {scope}',
   'principles.fromTopic': 'Aus {scope}, einem hier relevanten Thema',
+  'principles.regimeFixedEffect': 'Eine Entscheidung darf nicht davon abweichen.',
+  'principles.regimeFlexibleEffect': 'Eine Entscheidung darf davon abweichen, mit Begründung.',
 }
