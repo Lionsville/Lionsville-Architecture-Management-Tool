@@ -153,7 +153,8 @@ describe('the filters', () => {
     open()
     fireEvent.click(screen.getByRole('radio', { name: 'Gaps 1' }))
     expect(screen.queryByTestId('map-grid')).toBeNull()
-    expect(screen.getByRole('row', { name: /Chase a late payment/ })).toBeTruthy()
+    // A gap says where it sits, not the word the filter already said.
+    expect(screen.getByRole('row', { name: /Chase a late payment/ }).textContent).toContain('Billing › Invoicing')
     fireEvent.click(screen.getByRole('radio', { name: 'Overlaps 1' }))
     expect(screen.getByRole('row', { name: /Picking/ })).toBeTruthy()
   })

@@ -22,7 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
-import type { DesignDiagram, DesignModel, ElementId, Relation } from '../../model'
+import type { DesignDiagram, DesignElement, DesignModel, ElementId, Relation } from '../../model'
 import type { AspectScale } from '../../model/aspectScale'
 import { useStrings } from '../../i18n'
 import { plural } from '../../i18n/strings'
@@ -367,13 +367,20 @@ function MapBody({ laidOut, props, readOnly, firstLeaf, matched, title, pick, on
     )
   }
   if (!matched) return matrix
+  const byId = new Map(props.model.elements.map((one) => [one.id, one]))
+  const whereOf = (element: DesignElement) => {
+    const names: string[] = []
+    for (let at = element.parentId === undefined ? undefined : byId.get(element.parentId); at && names.length < 8; at = at.parentId === undefined ? undefined : byId.get(at.parentId)) names.unshift(at.name)
+    return names.join(' › ')
+  }
   return (
     <div className="map-list">
       <List
         label={title}
         groups={[{ id: 'rows', label: '', rows: matched.map((row) => ({
           id: row.element.id, text: row.element.name,
-          note: row.supportedBy.length > 0 ? row.supportedBy.map((id) => laidOut.columns.find((one) => one.id === id)?.name ?? id).join(', ') : t('map.nothing'),
+          // What answers it, or, where nothing does, where it sits: the word nothing on every row of Gaps says what the filter already said.
+          note: row.supportedBy.length > 0 ? row.supportedBy.map((id) => laidOut.columns.find((one) => one.id === id)?.name ?? id).join(', ') : whereOf(row.element),
         })) }]}
         selectedId={pick?.kind === 'row' ? pick.id : null} onOpen={onPick}
         empty={<PageState compact state="empty" title={t('sheet.findNone')} />}
