@@ -214,6 +214,9 @@ export function shellTheme(mode: 'light' | 'dark', language: Language = 'en', op
           ':root': { ...tokenVariables(mode, shades), colorScheme: mode },
           body: { fontSize: size('t-md'), lineHeight: line.body },
           'code, kbd, pre, samp': { fontFamily: SCALE['font-mono'] },
+          // A bare `button` is the one element that does not inherit the page's
+          // typeface: a link drawn as one came out in the system's.
+          'button, input, select, textarea': { fontFamily: 'inherit' },
         },
       },
       MuiPaper: { styleOverrides: { root: { backgroundImage: 'none' } } },
