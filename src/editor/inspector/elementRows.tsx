@@ -52,6 +52,7 @@ import type { ElementInspectorProps } from '../ElementInspectorProps';
 import { ICON_SIZE_OPTIONS, LIFECYCLES, heldIdsOf, hostingChoices, inspectorField, leverageFor, leverageText, offersContainer, runsSomewhere, shapeOptionsFor, sharedNote, technologyChoices, usesChoices } from '../elementInspectorFacts';
 import type { InspectorField } from '../elementInspectorFacts';
 import { LogoGrid } from '../nodes/LogoGrid';
+import { useResolvedLogo } from '../nodes/logoRegistry';
 import { useUsesPicker } from '../useInspectorState';
 import { DASH, RowSet, pickEdit } from './rowTools';
 import type { RowSpec, Surface } from './rowTools';
@@ -71,6 +72,12 @@ const STATUSES: readonly { value: AspectStatus; labelKey: StringKey }[] = [
   { value: 'atRisk', labelKey: 'aspect.atRisk' },
   { value: 'none', labelKey: 'aspect.none' },
 ];
+
+/** A zone's name in a sentence: the board prints it in capitals, as a caption over the band. */
+export function zoneWords(zone: Parameters<typeof zoneLabel>[0], t: Translate): string {
+  const word = zoneLabel(zone, t);
+  return word.charAt(0) + word.slice(1).toLocaleLowerCase();
+}
 
 type Ctx = {
   readonly props: ElementInspectorProps;
@@ -97,7 +104,7 @@ const whenFilled = (key: string, label: string, filled: boolean, node: RowSpec['
 // --- what it is ------------------------------------------------------------
 
 function technologyRows(ctx: Ctx): RowSpec[] {
-  const { field: { element, model, actions, owned, update, readOnly }, t, props } = ctx;
+  const { field: { element, model, actions, owned, update }, t, props } = ctx;
   const choices = technologyChoices(element, model);
   const rows: RowSpec[] = [];
   if (element.kind === 'platform') {
@@ -639,7 +646,13 @@ function ElementRows({ ctx, onHelp }: { ctx: Ctx; onHelp(help: string | undefine
       {element.kind === 'application' && (
         <RowSet
           rows={aspectRows(ctx)} surface="panel" title={t('section.operationalAspects')} onHelp={onHelp} readOnly={readOnly}
-          aside={aspectCount(element, props, t)} after={<DerivedPlatform ctx={ctx} />}
+          aside={(
+            <>
+              {aspectCount(element, props, t)}
+              {props.onOpenViewSettings && !readOnly && <>{' · '}<PanelLink onPress={props.onOpenViewSettings}>{t('inspector.columns')}</PanelLink></>}
+            </>
+          )}
+          after={<DerivedPlatform ctx={ctx} />}
         />
       )}
       <RowSet rows={insideRows(ctx)} surface="panel" title={t('inspector.insideIt')} readOnly={readOnly} />
@@ -662,6 +675,7 @@ export function PanelAppearance({ props, onHelp }: { props: ElementInspectorProp
   const sizeLabel = t('field.iconSize');
   const size = ICON_SIZE_OPTIONS.find((one) => one.value === (element.iconSize ?? ''));
   const colourLabel = t('field.accentColour');
+  const logo = useResolvedLogo(element.iconKey);
   return (
     <>
       <PropertyRows readOnly={readOnly} onHelp={onHelp}>
@@ -678,7 +692,7 @@ export function PanelAppearance({ props, onHelp }: { props: ElementInspectorProp
           onCommit={(value) => update({ shapeVariant: value === '' ? undefined : value as NodeShapeVariant })}
         />
         <PropertyRow
-          label={iconLabel} data-testid="element-icon" value={element.iconKey ?? ''} empty={t('common.none')}
+          label={iconLabel} data-testid="element-icon" value={(logo?.source === 'builtin' ? logo.entry.label : logo?.entry.name) ?? element.iconKey ?? ''} empty={t('common.none')}
           edit={(editor) => (
             <div className="inspector-icons" onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); editor.cancel(); } }}>
               <LogoGrid label={iconLabel} value={element.iconKey} onChange={(iconKey) => update({ iconKey })} onRequestUpload={onRequestLogoUpload} maxHeight={220} />
@@ -699,7 +713,7 @@ export function PanelAppearance({ props, onHelp }: { props: ElementInspectorProp
       {placement && (
         <PanelSection title={t('inspector.onThisView')}>
           <PropertyRows readOnly={readOnly} onHelp={onHelp}>
-            <PropertyRow label={t('inspector.zone')} data-testid="element-zone" readOnly value={placement.zone ? zoneLabel(placement.zone, t) : DASH} />
+            <PropertyRow label={t('inspector.zone')} data-testid="element-zone" readOnly value={placement.zone ? zoneWords(placement.zone, t) : DASH} />
             {placement.zone === 'landscape' && (
               <PropertyRow
                 label={t('field.domainGroup')} data-testid="element-group" value={group} empty={DASH}
@@ -737,7 +751,7 @@ export function recordSectionsOf(element: DesignElement, t: Translate): { id: Re
 /** One section of the record page. The same rows as the panel, every field shown. */
 export function RecordSectionBody({ props, section, unit }: { props: ElementInspectorProps; section: RecordSectionId; unit?: ReactNode }) {
   const ctx = useCtx(props, 'record');
-  const { t, field: { element, readOnly } } = ctx;
+  const { field: { element, readOnly } } = ctx;
   switch (section) {
     case 'properties':
       return (
@@ -771,7 +785,7 @@ function placedRows(ctx: Ctx): RowSpec[] {
   if (!placement) return [];
   const group = diagram.groups?.find((one) => one.id === placement.group)?.name;
   const label = t('inspector.placedIn');
-  const words = [placement.zone ? zoneLabel(placement.zone, t) : undefined, group].filter(Boolean).join(', ');
+  const words = [placement.zone ? zoneWords(placement.zone, t) : undefined, group].filter(Boolean).join(', ');
   return [always('placed', label, () => <PropertyRow label={label} data-testid="record-placed" readOnly value={words} />)];
 }
 

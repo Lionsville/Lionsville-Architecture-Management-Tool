@@ -42,9 +42,14 @@ export function rowsShown(rows: readonly RowSpec[], surface: Surface, added: Rea
 
 /** *Owner, vendor, technology…*: the first few of what is left out, and that there is more. */
 export function addLabel(held: readonly { readonly label: string }[]): string {
-  const [first, ...rest] = held.slice(0, 3).map((row) => row.label);
-  const words = [first, ...rest.map((word) => word.toLocaleLowerCase())].join(', ');
-  return held.length > 3 ? `${words}…` : words;
+  // As many as fit on the panel's one line.
+  const said: string[] = [];
+  for (const { label } of held.slice(0, 3)) {
+    const word = said.length === 0 ? label : label.toLocaleLowerCase();
+    if (said.length > 0 && [...said, word].join(', ').length > 28) break;
+    said.push(word);
+  }
+  return said.length < held.length ? `${said.join(', ')}…` : said.join(', ');
 }
 
 export function RowSet({ rows, surface, title, aside, readOnly, onHelp, after }: {

@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
-import { Panel, PanelSection } from './Panel'
+import { Panel, PanelDockProvider, PanelName, PanelSection } from './Panel'
 
 afterEach(() => cleanup())
 
@@ -150,5 +150,34 @@ describe('as a whole', () => {
     expect(screen.getByRole('heading', { name: 'Runs on' })).toBeTruthy()
     expect(screen.getByText('4 of 4')).toBeTruthy()
     expect(await axeFindings()).toEqual([])
+  })
+})
+
+describe('in a dock', () => {
+  const dock = (claim = vi.fn(() => () => {})) => ({ width: 444, onCollapse: vi.fn(), dataGuide: 'board.inspector', claim })
+
+  it('takes its width, its fold and its name from the column, and says it is there', () => {
+    const held = dock()
+    renderShell(<PanelDockProvider value={held}><Panel kind="Application" name="Billing" /></PanelDockProvider>)
+    expect(held.claim).toHaveBeenCalledTimes(1)
+    const aside = screen.getByRole('complementary', { name: 'Billing' })
+    expect(aside.getAttribute('data-guide')).toBe('board.inspector')
+    expect(aside.style.getPropertyValue('--kit-panel-w')).toBe('444px')
+    fireEvent.click(screen.getByRole('button', { name: 'Fold the panel away' }))
+    expect(held.onCollapse).toHaveBeenCalledWith(true)
+  })
+
+  it('opens its name for typing on a new request, and none on the first or read-only', () => {
+    const view = renderShell(<Panel kind="Application" name="Billing" onRename={vi.fn()} renameRequest={1} />)
+    expect(screen.queryByRole('textbox')).toBeNull()
+    view.rerender(<Panel kind="Application" name="Billing" onRename={vi.fn()} renameRequest={2} />)
+    expect(screen.getByRole('textbox', { name: 'Change the name' })).toBe(document.activeElement)
+    view.rerender(<Panel kind="Application" name="Other" renameRequest={3} />)
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('reads as a word inside a heading of its own, unheaded', () => {
+    renderShell(<h1><PanelName name="Billing" unheaded /></h1>)
+    expect(screen.getAllByRole('heading')).toHaveLength(1)
   })
 })

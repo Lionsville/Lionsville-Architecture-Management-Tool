@@ -112,7 +112,7 @@ export function ElementInspector(props: ElementInspectorProps) {
       tabs={[
         { value: 'properties', label: t('inspector.properties') },
         { value: 'appearance', label: t('tab.appearance') },
-        { value: 'comments', label: t('inspector.comments'), count: comments, hidden: access === undefined },
+        { value: 'comments', label: t('inspector.comments'), ...(comments > 0 ? { count: comments } : {}), hidden: access === undefined },
       ]}
       tab={tab}
       onTab={(next) => setTab(next as Tab)}

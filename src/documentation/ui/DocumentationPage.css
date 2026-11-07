@@ -5,7 +5,7 @@
 .doc-record__rail { display: flex; flex-direction: column; min-height: 0; border-inline-end: 1px solid var(--line); overflow: auto; }
 .doc-record__find { flex: none; padding: var(--s-2); }
 .doc-record__none { margin: 0; padding: var(--s-2); color: var(--ink-3); }
-.doc-record__text { --doc-measure: 860px; }
+.doc-record__text { --doc-measure: 100%; }
 .doc-record__acts { display: flex; flex-wrap: wrap; gap: var(--s-1); margin-block-end: var(--s-2); }
 .doc-record__blank p { margin: 0 0 var(--s-2); color: var(--ink-2); }
 .doc-record__plain { margin: 0; white-space: pre-wrap; font: inherit; }

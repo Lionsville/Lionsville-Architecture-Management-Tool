@@ -21,7 +21,7 @@
  * closes or moves to another element. Under one key, so a page's worth of writing
  * is one undo step rather than one per pause.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
 import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
@@ -106,6 +106,52 @@ export interface DocumentationPageProps {
   windowChrome?: WindowChrome;
 }
 
+/** The text as it reads: *Edit text* above it, its contents, and calm words where nothing is written yet. */
+function RecordText({ rendered, readOnly, headings, template, onWrite, onHeading, ref }: {
+  rendered: ReactNode;
+  readOnly: boolean;
+  headings: ReturnType<typeof outline>;
+  template: { label: string; text: string };
+  onWrite(from?: string): void;
+  onHeading(text: string): void;
+  ref: RefObject<HTMLDivElement | null>;
+}) {
+  const { t } = useStrings();
+  if (rendered === null) {
+    return (
+      <div ref={ref} data-testid="doc-content" className="doc-record__text">
+        <div className="doc-record__blank">
+          <p>{t('doc.noPage')}</p>
+          {!readOnly && (
+            <div className="doc-record__acts">
+              <Button size="small" onClick={() => onWrite()}>{t('doc.writeText')}</Button>
+              <Button size="small" variant="quiet" onClick={() => onWrite(template.text)}>{template.label}</Button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div ref={ref} data-testid="doc-content" className="doc-record__text">
+      {!readOnly && (
+        <div className="doc-record__acts">
+          <Button size="small" onClick={() => onWrite()}>{t('doc.editText')}</Button>
+        </div>
+      )}
+      {headings.length > 0 && (
+        <nav className="doc-record__contents" aria-label={t('doc.contents')}>
+          <span>{t('doc.contents')}</span>
+          {headings.map((h, index) => (
+            <button key={`${h.id}-${index}`} type="button" data-sub={h.level === 3 || undefined} onClick={() => onHeading(h.text)}>{h.text}</button>
+          ))}
+        </nav>
+      )}
+      <div data-document>{rendered}</div>
+    </div>
+  );
+}
+
 /** The view's other elements: filtered by what is typed, since a real list runs to two hundred. */
 function RecordRail({ groups, current, onOpen }: {
   groups: ReturnType<typeof documentedElements>;
@@ -140,13 +186,13 @@ function RecordRail({ groups, current, onOpen }: {
   );
 }
 
-export function DocumentationPage(props: DocumentationPageProps) {
-  const { element, model, diagram, readOnly, actions, onNavigate, onClose } = props;
-  const { t } = useStrings();
+/**
+ * The text and its commits: a local draft, written when it has been quiet, when the
+ * writing ends and when the page closes or moves on.
+ */
+function useRecordText(element: DesignElement, actions: DocumentationActions) {
   const [mode, setMode] = useState<DocumentationMode>('read');
   const [draft, setDraft] = useState(element.description ?? '');
-  const [fieldsOut, setFieldsOut] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
   // What Cancel goes back to, since the text reached the model while it was written.
   const opened = useRef(element.description ?? '');
 
@@ -216,6 +262,17 @@ export function DocumentationPage(props: DocumentationPageProps) {
     commit();
     setMode('read');
   };
+  return { mode, draft, setDraft, commit, startWriting, doneWriting, cancelWriting, changed: draft !== opened.current };
+}
+
+export function DocumentationPage(props: DocumentationPageProps) {
+  const { element, model, diagram, readOnly, actions, onNavigate, onClose } = props;
+  const { t } = useStrings();
+  const writing = useRecordText(element, actions);
+  const { mode, draft, setDraft, commit, startWriting, doneWriting, cancelWriting, changed } = writing;
+  const [fieldsOut, setFieldsOut] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const close = () => {
     commit();
     onClose();
@@ -264,38 +321,10 @@ export function DocumentationPage(props: DocumentationPageProps) {
     id: 'text',
     heading: t('doc.text'),
     children: (
-      <div ref={contentRef} data-testid="doc-content" className="doc-record__text">
-        {rendered === null
-          ? (
-            <div className="doc-record__blank">
-              <p>{t('doc.noPage')}</p>
-              {!readOnly && (
-                <div className="doc-record__acts">
-                  <Button size="small" onClick={() => startWriting()}>{t('doc.writeText')}</Button>
-                  <Button size="small" variant="quiet" onClick={() => startWriting(template.text)}>{template.label}</Button>
-                </div>
-              )}
-            </div>
-          )
-          : (
-            <>
-              {!readOnly && (
-                <div className="doc-record__acts">
-                  <Button size="small" onClick={() => startWriting()}>{t('doc.editText')}</Button>
-                </div>
-              )}
-              {headings.length > 0 && (
-                <nav className="doc-record__contents" aria-label={t('doc.contents')}>
-                  <span>{t('doc.contents')}</span>
-                  {headings.map((h, index) => (
-                    <button key={`${h.id}-${index}`} type="button" data-sub={h.level === 3 || undefined} onClick={() => scrollToHeading(h.text)}>{h.text}</button>
-                  ))}
-                </nav>
-              )}
-              <div data-document>{rendered}</div>
-            </>
-          )}
-      </div>
+      <RecordText
+        ref={contentRef} rendered={rendered} readOnly={readOnly} headings={headings} template={template}
+        onWrite={startWriting} onHeading={scrollToHeading}
+      />
     ),
   };
 
@@ -331,7 +360,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
         open
         title={t('doc.editing', { name: element.name })}
         windowChrome={bar}
-        changed={draft !== opened.current}
+        changed={changed}
         saveLabel={t('doc.done')}
         onSave={doneWriting}
         onCancel={cancelWriting}

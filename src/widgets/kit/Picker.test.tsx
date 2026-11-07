@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
-import { matching, Picker, PickerAt } from './Picker'
+import { matching, Picker, PickerAt, PickerMany } from './Picker'
 import type { PickerOption } from './Picker'
 
 afterEach(cleanup)
@@ -219,5 +219,30 @@ describe('PickerAt', () => {
     closed.mockClear()
     fireEvent.keyDown(field(), { key: 'Escape' })
     expect(closed).toHaveBeenCalledOnce()
+  })
+})
+
+describe('several, in a row', () => {
+  const options = [{ id: 'a', label: 'Apple' }, { id: 'b', label: 'Banana' }]
+
+  it('lists what is chosen with its ×, offers the rest, and ends on Escape', () => {
+    const onAdd = vi.fn()
+    const onRemove = vi.fn()
+    const onDone = vi.fn()
+    renderShell(<PickerMany label="Fruit" chosen={[{ id: 'a', label: 'Apple' }]} options={options} onAdd={onAdd} onRemove={onRemove} onDone={onDone} />)
+    expect(screen.queryByRole('option', { name: 'Apple' })).toBeNull()
+    fireEvent.click(screen.getByRole('option', { name: 'Banana' }))
+    expect(onAdd).toHaveBeenCalledWith('b')
+    fireEvent.click(screen.getByRole('button', { name: 'Take out Apple' }))
+    expect(onRemove).toHaveBeenCalledWith('a')
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' })
+    expect(onDone).toHaveBeenCalled()
+  })
+
+  it('says when the focus leaves a picker that stands in a row', () => {
+    const onLeave = vi.fn()
+    renderShell(<Picker label="Fruit" options={options} onPick={vi.fn()} onLeave={onLeave} />)
+    fireEvent.blur(screen.getByRole('combobox'))
+    expect(onLeave).toHaveBeenCalled()
   })
 })

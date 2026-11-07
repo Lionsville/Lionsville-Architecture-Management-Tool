@@ -73,7 +73,8 @@
   padding: var(--s-2) var(--s-3);
   overflow: auto;
 }
-.kit-panel__section + .kit-panel__section { margin-top: var(--s-3); }
+.kit-panel__section + .kit-panel__section,
+.kit-props + .kit-panel__section { margin-top: var(--s-3); }
 .kit-panel__sectionHead { display: flex; align-items: baseline; gap: var(--s-2); margin-bottom: var(--s-1); }
 .kit-panel__sectionHead h3 { margin: 0; font-size: var(--t-md); font-weight: var(--fw-strong); }
 .kit-panel__sectionAside { margin-inline-start: auto; color: var(--ink-3); font-size: var(--t-sm); }

@@ -19,8 +19,8 @@ and behaves is said here, once.
 | `Dialog.tsx` | **Dialog** in S, M, L; `DialogChoices`, `DialogFacts`, `DialogDanger` |
 | `FocusedWindow.tsx` | the dialog family's full-window member: window chrome, Cancel that asks, Save |
 | `Toast.tsx` | **Toast**: one, six seconds, Undo or Put back; goes when any dialog opens |
-| `Field.tsx` | **Field** with the label above (`TextField`, `SelectField`, `TextInput`, `TextArea`, `Select`) and **PropertyRow** in `PropertyRows`: 24 px, press to edit, one at a time |
-| `Picker.tsx` | **Picker**, in a panel or a form, and `PickerAt` where a canvas landed; `matching` is its search |
+| `Field.tsx` | **Field** with the label above (`TextField`, `SelectField`, `TextInput`, `TextArea`, `Select`) and **PropertyRow** in `PropertyRows`: 24 px, press to edit, one at a time, a date as a kind of edit, `help` said while edited (`onHelp`), `startOpen` for a row just asked for |
+| `Picker.tsx` | **Picker**, in a panel or a form, `PickerAt` where a canvas landed and `PickerMany` for several in a row; `matching` is its search |
 | `Segmented.tsx` | **Segmented switch**: a radio group, a menu when it runs out of room below 1024 px |
 | `Mark.tsx` | **Mark**: the closed set of sixteen, `MARK_KINDS` |
 | `roving.ts` | the arrows of a row of choices, shared by tabs and the switch |
@@ -30,7 +30,7 @@ and behaves is said here, once.
 | `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
 | `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address |
 | `TreeList.tsx` | **Tree list**: a short tree to choose a part by: nodes that fold and can be picked, a note and a count, one tab stop |
-| `Panel.tsx` | **Panel**: the one reader and inspector: identity, tabs, body, a foot that helps or undoes |
+| `Panel.tsx` | **Panel**: the one reader and inspector: identity, tabs, body, a foot that helps or undoes. `PanelDockProvider`: the column holding it says its width and its fold, so a screen hands a panel in without knowing it is docked. `PanelName`, a name pressed to edit, for a record's title too; `PanelLink`, a word that goes somewhere |
 | `Matrix.tsx` | **Matrix**: fixed headings, a press selects, a key writes, a crosshair and a line in words, rows and columns that fold |
 | `NextStep.tsx` | **Next step**: the stepper in words, one question and its verb, what holds it; a sentence once ended |
 | `PageState.tsx` | **Truthful page state**: loading, held, empty, offline, unreadable, told apart by type; `pageStateOf` says which is true |

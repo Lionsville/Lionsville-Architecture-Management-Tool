@@ -88,6 +88,8 @@ export function NodeShell({
             selected && selectionRing ? `0 0 0 2px ${tokens.card.selectedRing}` : restingShadow,
           opacity: dim ? 0.55 : 1,
           ...sx,
+          // Nobody checked this one (ADR-0047): said on the card by its edge, whatever its colour says.
+          ...(element.certainty === 'assumed' ? { outline: '1.5px dashed', outlineColor: 'text.secondary', outlineOffset: '1px' } : {}),
           /**
            * The pointer over a card that is not selected: a thin ring in the
            * selection's hue, so a board of forty cards says which one a click

@@ -162,11 +162,37 @@ export function ConnectionInspector({
     >
       <div key={connection.id}>
         {tab === 'properties' && (
-          <RowSet rows={propertyRows()} surface="panel" readOnly={readOnly} onHelp={setHelp} />
+          <RowSet rows={connectionRows({ connection, model, name, update, onOpenLanding, language, t })} surface="panel" readOnly={readOnly} onHelp={setHelp} />
         )}
         {tab === 'appearance' && (
-          <>
-            <PropertyRows readOnly={readOnly} onHelp={setHelp}>
+          <ConnectionAppearance
+            connection={connection} route={route} routeStatus={routeStatus} badge={badge} bends={bends} readOnly={readOnly} actions={actions} update={update}
+            onHelp={setHelp} onResetRoute={onResetRoute} onSetRouteSides={onSetRouteSides}
+          />
+        )}
+      </div>
+    </Panel>
+  );
+}
+
+/** How it is drawn, and its Route, said once. */
+function ConnectionAppearance({ connection, route, routeStatus, badge, bends, readOnly, actions, update, onHelp, onResetRoute, onSetRouteSides }: {
+  connection: DesignConnection;
+  route: ReturnType<typeof routeFor>;
+  routeStatus: 'none' | 'auto' | 'manual';
+  badge: string;
+  bends: string;
+  readOnly: boolean;
+  actions: EditorActions;
+  update(patch: Partial<Omit<DesignConnection, 'id'>>): void;
+  onHelp(help: string | undefined): void;
+  onResetRoute: ((connectionId: string) => void) | undefined;
+  onSetRouteSides: ((connectionId: string, sides: AttachSidesPatch) => void) | undefined;
+}) {
+  const { t } = useStrings();
+  return (
+<>
+            <PropertyRows readOnly={readOnly} onHelp={onHelp}>
               <PropertyRow
                 label={t('field.colour')} data-testid="connection-colour" value={connection.color ?? ''} empty={t('option.default')}
                 edit={() => <ColorField label={t('field.colour')} ariaLabel={t('field.edgeColour')} value={connection.color} readOnly={false} onChange={(value) => update({ color: value })} />}
@@ -206,7 +232,7 @@ export function ConnectionInspector({
                   <span data-testid="route-bends">{bends}{route?.pinned ? ` · ${t('route.pinned')}` : ''}</span>.{' '}
                   {{ none: t('route.noteNone'), auto: t('route.noteAuto'), manual: t('route.noteManual') }[routeStatus]}
                 </p>
-                <PropertyRows readOnly={readOnly} onHelp={setHelp}>
+                <PropertyRows readOnly={readOnly} onHelp={onHelp}>
                   <PropertyRow
                     label={t('field.routing')} data-testid="connection-routing" help={t('field.routingHelp')} value={said(ROUTING_OPTIONS, connection.routing, t)}
                     edit={{ options: options(ROUTING_OPTIONS, t) }}
@@ -234,12 +260,18 @@ export function ConnectionInspector({
               </PanelSection>
             </div>
           </>
-        )}
-      </div>
-    </Panel>
   );
+}
 
-  function propertyRows(): RowSpec[] {
+function connectionRows({ connection, model, name, update, onOpenLanding, language, t }: {
+  connection: DesignConnection;
+  model: DesignModel;
+  name(id: string): string;
+  update(patch: Partial<Omit<DesignConnection, 'id'>>): void;
+  onOpenLanding: ((connectionId: string) => void) | undefined;
+  language: Language;
+  t: Translate;
+}): RowSpec[] {
     const always = (key: string, label: string, node: RowSpec['node']): RowSpec => ({ key, label, rule: 'always', filled: true, node });
     const held = (id: string) => model.elements.find((e) => e.id === id);
     // Only a flow is drawn on a canvas (ADR-0012 §5), so the line this panel is about is one.
@@ -309,4 +341,3 @@ export function ConnectionInspector({
       certaintyRow(t, 'panel', connection.certainty, false, (certainty) => update({ certainty })),
     ];
   }
-}

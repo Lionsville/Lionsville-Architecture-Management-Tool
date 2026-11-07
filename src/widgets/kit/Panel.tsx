@@ -112,12 +112,6 @@ export function Panel({
       </aside>
     )
   }
-  const footSays = help ?? (undo && (
-    <>
-      {undo.word}{' '}
-      <button type="button" className="kit-panel__link" onClick={undo.onUndo}>{t('kit.panel.undo')}</button>
-    </>
-  ))
   return (
     <aside className="kit-panel" data-wide={wide || undefined} style={style} aria-label={name} data-guide={dataGuide}>
       <div className="kit-panel__identity">
@@ -142,13 +136,25 @@ export function Panel({
       <div className="kit-panel__body" tabIndex={0} role="region" aria-label={name} aria-busy={loading || undefined}>
         {loading ? <div className="kit-panel__skeleton" aria-hidden="true"><span /><span /><span /></div> : children}
       </div>
-      {(footSays || helpLink) && (
-        <div className="kit-panel__foot">
-          <div className="kit-panel__footSays" aria-live="polite">{footSays}</div>
-          {helpLink && <button type="button" className="kit-panel__link" onClick={helpLink.onPress}>{helpLink.label}</button>}
-        </div>
-      )}
+      <PanelFoot help={help} undo={undo} helpLink={helpLink} />
     </aside>
+  )
+}
+
+function PanelFoot({ help, undo, helpLink }: Pick<PanelProps, 'help' | 'undo' | 'helpLink'>) {
+  const { t } = useStrings()
+  const says = help ?? (undo && (
+    <>
+      {undo.word}{' '}
+      <button type="button" className="kit-panel__link" onClick={undo.onUndo}>{t('kit.panel.undo')}</button>
+    </>
+  ))
+  if (!says && !helpLink) return null
+  return (
+    <div className="kit-panel__foot">
+      <div className="kit-panel__footSays" aria-live="polite">{says}</div>
+      {helpLink && <button type="button" className="kit-panel__link" onClick={helpLink.onPress}>{helpLink.label}</button>}
+    </div>
   )
 }
 

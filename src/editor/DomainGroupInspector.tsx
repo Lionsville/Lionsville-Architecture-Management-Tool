@@ -10,12 +10,12 @@ import { useState } from 'react';
 import type { TidyOptions } from '../layout/tidy';
 import { placedNodes } from '../model/placement';
 import type { DesignDiagram, DesignElement } from '../model/types';
-import { zoneLabel } from '../model/zones';
 import { useStrings } from '../i18n/LanguageContext';
 import { Button } from '../widgets/kit/Button';
 import { PropertyRow, PropertyRows } from '../widgets/kit/Field';
 import { MoreMenu } from '../widgets/kit/Menu';
 import { Panel } from '../widgets/kit/Panel';
+import { zoneWords } from './inspector/elementRows';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { EditorActions } from './useEditorState';
 import './inspector/inspector.css';
@@ -76,7 +76,7 @@ export function DomainGroupInspector(props: DomainGroupInspectorProps) {
         : (
           <>
             <PropertyRows readOnly>
-              {zone && <PropertyRow label={t('inspector.zone')} data-testid="group-zone" value={zoneLabel(zone, t)} />}
+              {zone && <PropertyRow label={t('inspector.zone')} data-testid="group-zone" value={zoneWords(zone, t)} />}
               {inside && <PropertyRow label={t('inspector.inside')} data-testid="group-inside" value={inside} />}
             </PropertyRows>
             {!readOnly && (

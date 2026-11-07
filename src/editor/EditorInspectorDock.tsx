@@ -150,6 +150,7 @@ function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diag
       onOpenDrawing={props.diagrams.onOpenDrawing}
       plans={props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined}
       onOpenView={props.document.onActiveDiagramChange}
+      onOpenViewSettings={!readOnly && props.diagrams.onSettingsChange ? () => parts.dialogs.setSettingsDiagramId(diagram.id) : undefined}
     />
   );
 }

@@ -304,3 +304,40 @@ describe('a row told from outside', () => {
   })
 })
 
+describe('a row, for a panel', () => {
+  it('says its help while it is edited, and takes it back', () => {
+    const onHelp = vi.fn()
+    renderShell(<PropertyRows onHelp={onHelp}><PropertyRow label="Vendor" value="Acme" edit="text" help="Who sells it" /></PropertyRows>)
+    expect(onHelp).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button'))
+    expect(onHelp).toHaveBeenLastCalledWith('Who sells it')
+    fireEvent.keyDown(screen.getByLabelText('Vendor'), { key: 'Escape' })
+    expect(onHelp).toHaveBeenLastCalledWith(undefined)
+  })
+
+  it('arrives as a field where it was just asked for, and stays closed once closed', () => {
+    renderShell(<PropertyRows><PropertyRow label="Vendor" value="" edit="text" startOpen /></PropertyRows>)
+    const field = screen.getByLabelText('Vendor')
+    fireEvent.keyDown(field, { key: 'Escape' })
+    expect(screen.queryByLabelText('Vendor')).toBeNull()
+  })
+
+  it('takes a day, and keeps its keys from whatever is beside it', () => {
+    const onCommit = vi.fn()
+    renderShell(<PropertyRows><PropertyRow label="Live from" value="" edit="date" onCommit={onCommit} /></PropertyRows>)
+    fireEvent.click(screen.getByRole('button'))
+    const field = screen.getByLabelText('Live from')
+    expect(field.getAttribute('type')).toBe('date')
+    expect(field.closest('[data-shortcuts-ignore]')).not.toBeNull()
+    fireEvent.change(field, { target: { value: '2027-03-01' } })
+    fireEvent.keyDown(field, { key: 'Enter' })
+    expect(onCommit).toHaveBeenCalledWith('2027-03-01')
+  })
+
+  it('keeps an act beside a value where it is to stay', () => {
+    const onPress = vi.fn()
+    renderShell(<PropertyRows><PropertyRow label="Replaced by" value="Next" action={{ label: 'Replace…', always: true, onPress }} /></PropertyRows>)
+    fireEvent.click(screen.getByRole('button', { name: 'Replace…' }))
+    expect(onPress).toHaveBeenCalled()
+  })
+})

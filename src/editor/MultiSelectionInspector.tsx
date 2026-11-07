@@ -67,6 +67,29 @@ export function selectionWords(count: number, selected: readonly DesignElement[]
   return parts.join(', ');
 }
 
+const isOnlyElements = (selection: Selection) => selection.elementIds.length > 0 && selection.connectionIds.length === 0 && selection.domainGroups.length === 0;
+
+/** What is selected, each by name, and the selection without it. */
+function selectionItems(selection: Selection, model: DesignModel | undefined, diagram: DesignDiagram | undefined, lines: readonly DesignConnection[]) {
+  const { elementIds } = selection;
+  const nameOf = (id: string) => model?.elements.find((one) => one.id === id)?.name ?? id;
+  return [
+    ...elementIds.map((id) => ({ id, label: nameOf(id), without: { ...selection, elementIds: elementIds.filter((one) => one !== id) } })),
+    ...selection.connectionIds.map((id) => {
+      const line = lines.find((one) => one.id === id);
+      return {
+        id, label: line ? `${nameOf(line.sourceId)} ${line.isBidirectional ? '↔' : '→'} ${nameOf(line.targetId)}` : id,
+        without: { ...selection, connectionIds: selection.connectionIds.filter((one) => one !== id) },
+      };
+    }),
+    ...selection.domainGroups.map((id) => ({
+      id, label: diagram?.groups?.find((one) => one.id === id)?.name ?? id,
+      without: { ...selection, domainGroups: selection.domainGroups.filter((one) => one !== id) },
+    })),
+  ];
+
+}
+
 export function MultiSelectionInspector({
   selection,
   model,
@@ -97,30 +120,16 @@ export function MultiSelectionInspector({
   const total = elementIds.length + selection.connectionIds.length + selection.domainGroups.length;
   const canEdit = Boolean(actions) && !readOnly;
 
-  const nameOf = (id: string) => model?.elements.find((one) => one.id === id)?.name ?? id;
-  const items: { id: string; label: string; without: Selection }[] = [
-    ...elementIds.map((id) => ({ id, label: nameOf(id), without: { ...selection, elementIds: elementIds.filter((one) => one !== id) } })),
-    ...selection.connectionIds.map((id) => {
-      const line = lines.find((one) => one.id === id);
-      return {
-        id, label: line ? `${nameOf(line.sourceId)} ${line.isBidirectional ? '↔' : '→'} ${nameOf(line.targetId)}` : id,
-        without: { ...selection, connectionIds: selection.connectionIds.filter((one) => one !== id) },
-      };
-    }),
-    ...selection.domainGroups.map((id) => ({
-      id, label: diagram?.groups?.find((one) => one.id === id)?.name ?? id,
-      without: { ...selection, domainGroups: selection.domainGroups.filter((one) => one !== id) },
-    })),
-  ];
+  const items = selectionItems(selection, model, diagram, lines);
 
   const deleteAll = onRequestDelete && canEdit ? () => onRequestDelete(selection) : undefined;
-  const removeFromView = canEdit && actions && elementIds.length > 0 && selection.connectionIds.length === 0 && selection.domainGroups.length === 0 && diagram !== undefined
+  const removeFromView = canEdit && actions && diagram && isOnlyElements(selection)
     ? () => { for (const id of elementIds) actions.removeFromDiagram(id); }
     : undefined;
 
   return (
     <Panel
-      kind={selectionWords(elementIds.length, elements, selection.connectionIds.length, selection.domainGroups.length, t) || t('inspector.selected', { count: total })}
+      kind={selectionWords(elementIds.length, elements, selection.connectionIds.length, selection.domainGroups.length, t)}
       name={t('inspector.selected', { count: total })}
       facts={canEdit ? t('inspector.bulkNote') : undefined}
       actions={deleteAll && <MoreMenu label={t('inspector.more')} size="small" items={[{ label: t('inspector.deleteCount', { count: total }), final: true, onSelect: deleteAll }]} />}
@@ -136,22 +145,27 @@ export function MultiSelectionInspector({
           </li>
         ))}
       </ul>
-      {canEdit && actions && elementIds.length > 0 && (
-        <ElementRows elementIds={elementIds} elements={elements} diagram={diagram} actions={actions} onRequestLogoUpload={onRequestLogoUpload} onHelp={setHelp} mixedKinds={selection.connectionIds.length > 0} t={t} />
-      )}
-      {canEdit && actions && lines.length > 0 && (
-        <LineRows lines={lines} actions={actions} onHelp={setHelp} mixedKinds={elementIds.length > 0} language={language} t={t} />
+      {canEdit && actions && (
+        <>
+          {elementIds.length > 0 && <ElementRows elementIds={elementIds} elements={elements} diagram={diagram} actions={actions} onRequestLogoUpload={onRequestLogoUpload} onHelp={setHelp} mixedKinds={selection.connectionIds.length > 0} t={t} />}
+          {lines.length > 0 && <LineRows lines={lines} actions={actions} onHelp={setHelp} mixedKinds={elementIds.length > 0} language={language} t={t} />}
+        </>
       )}
       {canEdit && elementIds.length > 1 && <Arrange count={elementIds.length} landscape={diagram?.kind === 'layer7'} t={t} />}
-      {(removeFromView || deleteAll) && (
-        <PanelSection title={t('inspector.remove')}>
-          <div className="inspector-actions">
-            {removeFromView && <Button size="small" onClick={removeFromView}>{t('inspector.fromThisView')}</Button>}
-            {deleteAll && <Button size="small" variant="danger" onClick={deleteAll}>{t('inspector.deleteCount', { count: total })}</Button>}
-          </div>
-        </PanelSection>
-      )}
+      <RemoveActs removeFromView={removeFromView} deleteAll={deleteAll} count={total} t={t} />
     </Panel>
+  );
+}
+
+function RemoveActs({ removeFromView, deleteAll, count, t }: { removeFromView: (() => void) | undefined; deleteAll: (() => void) | undefined; count: number; t: Translate }) {
+  if (!removeFromView && !deleteAll) return null;
+  return (
+    <PanelSection title={t('inspector.remove')}>
+      <div className="inspector-actions">
+        {removeFromView && <Button size="small" onClick={removeFromView}>{t('inspector.fromThisView')}</Button>}
+        {deleteAll && <Button size="small" variant="danger" onClick={deleteAll}>{t('inspector.deleteCount', { count })}</Button>}
+      </div>
+    </PanelSection>
   );
 }
 
