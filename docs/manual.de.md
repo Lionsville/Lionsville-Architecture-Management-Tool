@@ -2351,7 +2351,7 @@ Verantwortung hat einen eigenen Verlauf.
 ### Struktur
 
 Die Seite hat fünf Reiter, nach der Frage, die jeder beantwortet: **Struktur**, **Rollen**,
-**Verantwortlichkeiten**, **Ausnahmen** und **Bibliotheken**. Welcher Reiter, Teil und welche
+**Verantwortungen**, **Ausnahmen** und **Bibliotheken**. Welcher Reiter, Teil und welche
 Einheit offen ist, steht in der Adresse der Seite, sodass ein Link und ein Agent denselben
 Bildschirm erreichen.
 
@@ -2387,16 +2387,16 @@ Die zwei Eigentümerregeln stehen über der Liste. Eine nicht festgelegte Regel 
 folgt. Eine Rolle entfernen nimmt sie aus den Typen und Regeln, in einem Schritt; haben Menschen
 sie noch, sagt die Frage, wie viele und wo.
 
-### Verantwortlichkeiten
+### Verantwortungen
 
-**Verantwortlichkeiten** öffnet auf einem Teil: links ein Baum der Gruppen, rechts ein Raster mit
+**Verantwortungen** öffnet auf einem Teil: links ein Baum der Gruppen, rechts ein Raster mit
 den Rollen, die dort einen Anteil haben. Die anderen Rollen sind in einer Spalte **+N** gefaltet.
 **Ganze Organisation** zeigt alles, für Audits und Export. **Einheit** beschränkt das Raster auf die
 Rollen einer Einheit und sagt, wer sie hat; eine Zeile mit dem A außerhalb sagt, wo es ist. Der
 Leser einer Einheit im Organigramm führt hierher.
 
 Eine Zelle drücken wählt sie und schreibt nichts. R, A, C, I oder – auf der Tastatur oder die
-Knöpfe unter dem Raster setzen den Buchstaben als einen Schritt. Jede Verantwortlichkeit will genau
+Knöpfe unter dem Raster setzen den Buchstaben als einen Schritt. Jede Verantwortung will genau
 ein A: Eine Zeile ohne oder mit mehreren sagt das unter **Fehlt**, der Baum zählt, was darunter ist,
 und die Zahl über dem Raster gilt immer der ganzen Organisation. **Filter** behält Rollen und
 Gruppen, **Ordnen** enthält die Reihenfolge, **Exportieren** speichert CSV.

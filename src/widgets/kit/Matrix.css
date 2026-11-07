@@ -59,6 +59,7 @@
 .kit-matrix[data-wrap] { --kit-matrix-head: 320px; }
 .kit-matrix[data-wrap] .kit-matrix__rowHead { white-space: normal; padding-block: 2px; }
 .kit-matrix[data-wrap] .kit-matrix__rowName { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; }
+.kit-matrix[data-wrap] .kit-matrix__caret + .kit-matrix__rowName { display: inline; }
 .kit-matrix tr[data-heading] > .kit-matrix__rowHead,
 .kit-matrix tr[data-heading] > td { background: var(--surface-2); font-weight: var(--fw-strong); }
 

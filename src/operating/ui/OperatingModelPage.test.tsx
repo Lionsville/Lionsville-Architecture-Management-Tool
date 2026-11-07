@@ -195,12 +195,12 @@ describe('the operating model\'s page', () => {
   it('keeps the count whole through a part, and shows only what needs one A', () => {
     show(MODEL())
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
-    expect(screen.getByTestId('operating-needs-count').textContent).toContain('1 rows need one A in all')
+    expect(screen.getByTestId('operating-needs-count').textContent).toContain('1 row needs one A in all')
     fireEvent.click(screen.getByRole('treeitem', { name: /Bill/ }))
     expect(screen.getByTestId('operating-grid-title').textContent).toBe('Bill')
-    expect(screen.getByTestId('operating-needs-count').textContent).toContain('1 rows need one A in all')
+    expect(screen.getByTestId('operating-needs-count').textContent).toContain('1 row needs one A in all')
     // The group is marked by what is below it, closed or not.
-    expect(screen.getByRole('treeitem', { name: /Move/ }).textContent).toContain('1 needs one A')
+    expect(screen.getByRole('treeitem', { name: /Move/ }).textContent).toContain('1 need one A')
     fireEvent.click(screen.getByTestId('operating-only-needs'))
     expect(screen.getByRole('rowheader', { name: /Keep it safe/ })).toBeTruthy()
     expect(screen.queryByRole('rowheader', { name: /Send the bill/ })).toBeNull()
@@ -246,7 +246,7 @@ describe('the operating model\'s page', () => {
     expect(screen.getByTestId('operating-needs-count').textContent).toContain('in all')
     // The role reader lists its units and who holds each.
     fireEvent.click(screen.getByRole('columnheader', { name: /Planner/ }))
-    expect(screen.getByTestId('operating-holders').textContent).toBe('Holders: 1 people, 0 places vacant')
+    expect(screen.getByTestId('operating-holders').textContent).toBe('Holders: 1 · vacant: 0')
     expect(screen.getByTestId('operating-role-place').textContent).toContain('Depot North')
     expect(screen.getByTestId('operating-role-place').textContent).toContain('Anna')
   })

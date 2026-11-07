@@ -17,7 +17,7 @@ import type { MakeId } from '../../model/keys'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
-import { Field, Select, TextInput } from '../../widgets/kit/Field'
+import { Select, TextInput } from '../../widgets/kit/Field'
 import { FilterWords } from '../../widgets/kit/FilterWords'
 import type { MatrixPick } from '../../widgets/kit/Matrix'
 import { MenuButton } from '../../widgets/kit/Menu'
@@ -106,7 +106,7 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
         {noRoles
           ? <p className="op-quiet">{t('operating.noRolesForMatrix')}</p>
           : grid.rows.length === 0 && model.responsibilities.length > 0
-            ? <p className="op-quiet">{t('operating.filterEmpty')}</p>
+            ? <p className="op-quiet">{t(unit && view.roles.length === 0 && view.groups.length === 0 ? 'operating.unitNoPart' : 'operating.filterEmpty')}</p>
             : (
               <RaciGrid
                 grid={grid} allRoles={model.roles} readOnly={readOnly} dispatch={dispatch} pick={pick} onPick={setPick}
@@ -117,7 +117,7 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
             )}
         {grid.folded.length > 0 && (
           <div className="op-actions op-small" data-testid="operating-folded">
-            <span>{t('operating.noPartLine', {
+            <span>{t(grid.folded.length === 1 ? 'operating.noPartLineOne' : 'operating.noPartLine', {
               count: grid.folded.length,
               names: grid.folded.slice(0, 3).map((role) => role.name).join(', '),
               more: grid.folded.length > 3 ? t('operating.andMore', { count: grid.folded.length - 3 }) : '',
@@ -160,9 +160,7 @@ function RaciTree({ model, parts, unitName, readOnly, selectedNode, onPick, onNe
   const nodes = useMemo(() => treeNodes(model, parts, unitName, folks, t), [model, parts, unitName, folks, t])
   return (
     <div className="op-tree" data-testid="operating-tree">
-      <Field label={t('operating.findResponsibility')}>
-        {(ties) => <TextInput {...ties} value={find} onChange={(event) => setFind(event.target.value)} />}
-      </Field>
+      <TextInput type="search" aria-label={t('operating.findResponsibility')} placeholder={t('operating.findResponsibility')} value={find} onChange={(event) => setFind(event.target.value)} />
       {!readOnly && <div className="op-actions"><Button variant="plain" data-guide="operating.newResponsibility" onClick={onNew}>{t('operating.newResponsibility')}</Button></div>}
       <TreeList
         label={t('operating.partsLabel')} nodes={nodes} selectedId={selectedNode} onSelect={onPick} open={folks ? new Set(nodes.map((one) => one.id)) : opened} dataGuide="operating.raciTree"
@@ -259,8 +257,8 @@ function GridHead({ title, grid, all, unit, onOpenUnit, needing, needingHere, lo
           {unit && onOpenUnit && <button type="button" className="op-link" data-testid="operating-unit-open" onClick={() => onOpenUnit(unit)}>{t('operating.openInOrganisation')}</button>}
           <span className="op-grow" />
           <span className="op-need" data-testid="operating-needs-count">
-            {needingHere !== undefined && t('operating.needsHere', { count: needingHere })}{needingHere !== undefined && ' · '}
-            {t('operating.needsInAll', { count: needing })}
+            {needing > 0 && needingHere !== undefined && `${t('operating.needsHere', { count: needingHere })} · `}
+            {needing > 0 && t(needing === 1 ? 'operating.needsInAllOne' : 'operating.needsInAll', { count: needing })}
           </span>
           {needing > 0 && (
             <Button variant="plain" size="small" aria-pressed={look.needs === true} data-testid="operating-only-needs" onClick={() => { const { needs: _was, ...rest } = look; onLook(look.needs ? rest : { ...rest, needs: true }) }}>
