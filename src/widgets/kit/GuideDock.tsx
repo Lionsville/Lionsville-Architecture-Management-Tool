@@ -61,6 +61,8 @@ export type GuideDockProps = {
   readonly small?: boolean
   readonly onGrow?: () => void
   readonly dataTestid?: string
+  /** What a screen says of the step for whoever reads the page: data attributes, as they are. */
+  readonly data?: Readonly<Record<`data-${string}`, string | undefined>>
   readonly dataGuide?: string
 }
 
@@ -70,7 +72,7 @@ const NUDGES: Readonly<Record<string, readonly [number, number]>> = {
 }
 
 export function GuideDock(props: GuideDockProps) {
-  const { name, position, title, why, act, note, done, more, picture, children, onBack, onSkip, onPause, onNext, nextWord, other, menu, menuLabel, said, offset = { x: 0, y: 0 }, onMoved, small, onGrow, dataTestid, dataGuide } = props
+  const { name, position, title, why, act, note, done, more, picture, children, onBack, onSkip, onPause, onNext, nextWord, other, menu, menuLabel, said, offset = { x: 0, y: 0 }, onMoved, small, onGrow, dataTestid, data, dataGuide } = props
   const { t } = useStrings()
   const titled = useId()
   const [open, setOpen] = useState(false)
@@ -102,7 +104,7 @@ export function GuideDock(props: GuideDockProps) {
   return (
     <section
       className="kit-guide" role="dialog" aria-modal="false" aria-label={small ? `${head}: ${title}` : undefined} aria-labelledby={small ? undefined : titled}
-      data-learn-card="" data-small={small ? '' : undefined} data-testid={dataTestid} data-guide={dataGuide} style={place}
+      data-learn-card="" data-small={small ? '' : undefined} data-testid={dataTestid} data-guide={dataGuide} style={place} {...data}
     >
       {/* First, and whichever the dock is: a live region is never taken away and put back. */}
       <div className="kit-guide__said" role="status" aria-live="polite">{said ?? title}</div>
@@ -141,7 +143,7 @@ export function GuideDock(props: GuideDockProps) {
                 <span className="kit-guide__grow" />
                 {onPause && <Button variant="quiet" size="small" onClick={onPause} data-testid="learn-pause">{t('kit.guide.pause')}</Button>}
                 {other && <Button variant="plain" size="small" onClick={other.onPress} data-testid="learn-other">{other.word}</Button>}
-                {onNext && <Button variant="primary" size="small" onClick={onNext} data-testid="learn-next" autoFocus>{nextWord ?? t('kit.guide.next')}</Button>}
+                {onNext && <Button variant="primary" size="small" onClick={onNext} data-testid="learn-next">{nextWord ?? t('kit.guide.next')}</Button>}
               </div>
             </>
           )}
