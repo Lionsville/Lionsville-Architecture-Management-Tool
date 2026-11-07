@@ -415,7 +415,7 @@ function TreeToggle({ parts, pinned }: { parts: ShellParts; pinned: boolean }) {
 function FindField({ openSearch, s }: { openSearch: (() => void) | undefined; s: Translate }) {
   return (
     <Tooltip title={s('frame.findTip')}>
-      <button type="button" className="kit-frame__find" aria-label={s('frame.find')} data-testid="frame-find" data-guide="frame.find" onClick={() => openSearch?.()}>
+      <button type="button" className="kit-frame__find" data-testid="frame-find" data-guide="frame.find" onClick={() => openSearch?.()}>
         <SearchIcon size={14} />
         <span>{s('frame.find')}</span>
         <span className="kit-frame__kbd">{isMac() ? '⌘K' : 'Ctrl K'}</span>
