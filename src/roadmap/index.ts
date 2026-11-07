@@ -7,7 +7,7 @@
  * One module for the axis and for a plan's page: a plan IS a band on the axis,
  * and reading one always means asking what else is happening that month.
  */
-export { fractionOf, monthsFrom, rangeOf, roadmapOf, spansFor, within } from './timeline'
+export { monthsFrom, rangeOf, roadmapOf, spansFor } from './timeline'
 export type { ElementTrack, InitiativeBelow, PhaseSpan, Roadmap } from './timeline'
 export { planBodyTemplate } from './planTemplate'
 export { PLAN_STATUS_LABEL } from './labels'

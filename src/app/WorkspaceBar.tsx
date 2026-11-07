@@ -81,6 +81,9 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
   const looking = active !== undefined && isLookingAway(active, parts.viewing.days)
   const bands = useLookBand(parts, active, looking)
   useLookInAddress(parts, active, looking)
+  // The look ended, by the band or by the Day control: the board no longer carries the plan.
+  const { carried, letGo } = pages.plans
+  useEffect(() => { if (!looking && carried) letGo() }, [looking, carried, letGo])
   const publishes = props.source.publishesSteps
   useFrameFacts({
     kind: 'workspace', path: props.project.path, name: session.model.name,

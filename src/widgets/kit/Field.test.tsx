@@ -293,3 +293,14 @@ describe('PropertyRow', () => {
     expect(await axeFindings()).toEqual([])
   })
 })
+
+describe('a row told from outside', () => {
+  it('says a word at its end, and opens the row a screen names', () => {
+    const { rerender } = renderShell(<PropertyRows editing={undefined} onEditing={() => undefined}><PropertyRow rowId="one" label="Day" value="Monday" aside="after the end" edit="text" /></PropertyRows>)
+    expect(screen.getByText('after the end')).toBeTruthy()
+    rerender(<PropertyRows editing="one" onEditing={() => undefined}><PropertyRow rowId="one" label="Day" value="Monday" aside="after the end" edit="text" /></PropertyRows>)
+    expect(screen.getByRole('textbox', { name: 'Day' })).toBeTruthy()
+    expect(screen.queryByText('after the end')).toBeNull()
+  })
+})
+

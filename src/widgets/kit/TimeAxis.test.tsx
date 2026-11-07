@@ -295,3 +295,22 @@ describe('to a screen reader', () => {
     within(document.body).getByRole('slider')
   })
 })
+
+describe('a row and its group', () => {
+  it('opens from its name, says it is the one read, and a group carries one switch', () => {
+    const onOpen = vi.fn()
+    const onChange = vi.fn()
+    render(
+      <TimeAxis view={{ start: '2026-01-01', days: 365 }} onViewChange={() => undefined} today="2026-06-01" names={{ width: 240, onWidth: () => undefined }}>
+        <TimeAxisGroup label="Plans" count="2" switched={{ label: 'Hide', on: false, onChange }} />
+        <TimeAxisRow label="A plan" onOpen={onOpen} picked="self" />
+      </TimeAxis>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'A plan' }))
+    expect(onOpen).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Hide' }))
+    expect(onChange).toHaveBeenCalledWith(true)
+    expect(screen.getByRole('separator')).toBeTruthy()
+  })
+})
+

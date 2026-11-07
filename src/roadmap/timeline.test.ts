@@ -9,7 +9,7 @@
  * without a browser.
  */
 import { describe, expect, it } from 'vitest'
-import { fractionOf, monthsFrom, rangeOf, roadmapOf, shadowRunOf, spansFor, within } from './timeline'
+import { monthsFrom, rangeOf, roadmapOf, shadowRunOf, spansFor } from './timeline'
 import type { DesignElement, Relation } from '../model/types'
 
 const TODAY = '2026-09-08'
@@ -72,19 +72,6 @@ describe('rangeOf', () => {
 
 })
 
-describe('fractionOf', () => {
-  it('puts a day where it belongs in the window', () => {
-    expect(fractionOf('2026-01-01', '2027-01-01', '2026-01-01')).toBe(0)
-    expect(fractionOf('2026-01-01', '2027-01-01', '2027-01-01')).toBe(1)
-    expect(fractionOf('2026-01-01', '2027-01-01', '2026-07-02')).toBeCloseTo(0.5, 2)
-  })
-
-  it('clamps rather than drawing off the end', () => {
-    expect(fractionOf('2026-01-01', '2027-01-01', '2020-01-01')).toBe(0)
-    expect(fractionOf('2026-01-01', '2027-01-01', '2030-01-01')).toBe(1)
-    expect(fractionOf('2026-01-01', '2026-01-01', '2026-01-01')).toBe(0)
-  })
-})
 
 describe('monthsFrom', () => {
   it('moves whole months, and lands inside the month it reaches', () => {
@@ -179,12 +166,6 @@ describe('roadmapOf — the initiatives from below', () => {
     expect(other).toHaveLength(1)
     expect(other[0].below?.planId).toBe('tr-r')
   })
-
-  it('survives a window cut with its origin intact', () => {
-    const cut = within(roadmapOf(own, TODAY, [retail]), '2029-01-01', '2029-12-31')
-    expect(cut.tracks.map((t) => [t.element.id, t.below?.scope]))
-      .toEqual([['wms-old', undefined], ['wms-r', 'acme/retail']])
-  })
 })
 
 /**
@@ -221,54 +202,6 @@ describe('roadmapOf — the relations with a window', () => {
   })
 })
 
-describe('within', () => {
-  const model = {
-    elements: [
-      element('early', { lifecycleDates: { retired: '2026-01-01' } }),
-      element('late', { lifecycle: 'planned', lifecycleDates: { live: '2029-06-01' } }),
-      element('long', { lifecycleDates: { retiring: '2025-01-01', retired: '2030-01-01' } }),
-    ],
-    relations: [],
-    transitions: [
-      { id: 'a', number: 1, title: 'Before', status: 'done' as const, from: '2025-01-01', to: '2025-12-31', elements: [], decisions: [], milestones: [], body: '' },
-      { id: 'b', number: 2, title: 'During', status: 'agreed' as const, from: '2027-01-01', to: '2027-12-31', elements: [], decisions: [], milestones: [], body: '' },
-      { id: 'c', number: 3, title: 'Undated', status: 'draft' as const, elements: [], decisions: [], milestones: [], body: '' },
-      { id: 'd', number: 4, title: 'Only a milestone', status: 'draft' as const, elements: [], decisions: [], milestones: [{ date: '2027-06-01', name: 'x' }], body: '' },
-    ],
-  }
-  const cut = within(roadmapOf(model, TODAY), '2027-01-01', '2028-12-31')
-
-  it('becomes the window, keeping what is there in it and the plans that touch it', () => {
-    expect([cut.from, cut.to]).toEqual(['2027-01-01', '2028-12-31'])
-    // `early` was retired a year before the window opens; `late` does not go
-    // live until after it closes. Neither has anything to say about 2027.
-    expect(cut.tracks.map((t) => t.element.id)).toEqual(['long'])
-    expect(cut.transitions.map((p) => p.id)).toEqual(['b', 'c', 'd'])
-  })
-
-  it('keeps a track for a change inside the window even if the element is planned before it', () => {
-    const arriving = within(roadmapOf(model, TODAY), '2029-01-01', '2029-12-31')
-    expect(arriving.tracks.map((t) => t.element.id).sort()).toEqual(['late', 'long'])
-    // And its spans start at the frame, not at the natural axis start.
-    const late = arriving.tracks.find((t) => t.element.id === 'late')!
-    expect(late.spans[0]).toEqual({ phase: 'planned', from: '2029-01-01', to: '2029-06-01' })
-  })
-
-  it('keeps a relation whose window overlaps, and an open end is open', () => {
-    const model_ = {
-      elements: [],
-      relations: [
-        { id: 'before', type: 'flow' as const, sourceId: 'a', targetId: 'b', validFrom: '2025-01-01', validUntil: '2025-12-31' },
-        { id: 'during', type: 'supports' as const, sourceId: 'a', targetId: 'b', validFrom: '2027-06-01', validUntil: '2027-12-31' },
-        { id: 'onwards', type: 'supports' as const, sourceId: 'a', targetId: 'b', validFrom: '2026-01-01' },
-        { id: 'after', type: 'flow' as const, sourceId: 'a', targetId: 'b', validFrom: '2030-01-01' },
-      ],
-    }
-    const window_ = within(roadmapOf(model_, TODAY), '2027-01-01', '2028-12-31')
-    expect(window_.relations.map((r) => r.relation.id)).toEqual(['onwards', 'during'])
-  })
-
-})
 
 describe('shadowRunOf', () => {
   const plan = (elements: { elementId: string; role: 'introduces' | 'retires' | 'changes' }[]) => ({

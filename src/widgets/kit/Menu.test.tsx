@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
-import { MenuButton, MoreMenu, orderedEntries } from './Menu'
+import { Menu, MenuButton, MoreMenu, orderedEntries } from './Menu'
 import type { MenuEntry } from './Menu'
 
 afterEach(cleanup)
@@ -139,3 +139,16 @@ describe('Menu', () => {
     expect(screen.getByRole('button', { name: 'Meer' })).toBeTruthy()
   })
 })
+
+describe('what holds a refused choice', () => {
+  it('is listed under it, each a way to what clears it', () => {
+    const onSelect = vi.fn()
+    renderShell(<Menu open anchorEl={document.body} label="Status" onClose={() => undefined} items={[
+      { label: 'Done', refused: 'Not yet', onSelect: () => undefined, holds: [{ label: 'Give it an owner', onSelect }, { label: 'Has a window', ok: true }] },
+    ]} />)
+    fireEvent.click(screen.getByRole('menuitem', { name: /Give it an owner/ }))
+    expect(onSelect).toHaveBeenCalled()
+    expect(screen.getByRole('menuitem', { name: /Has a window/ }).getAttribute('aria-disabled')).toBe('true')
+  })
+})
+

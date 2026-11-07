@@ -4,6 +4,16 @@
 * Date: 2026-09-08
 * Deciders: Wouter Simons
 
+**Amended, 7 November 2026 (as built).** A plan's page is one document with one
+scroll: a head, a strip of its milestones that stays, its moves one line each, its
+text, and what is around it. There is no Read and Edit: a fact reads as words and a
+press makes that row a form, and *Edit text* is the prose alone in a focused window,
+saved as one step. The interface table became a list with a filter and a large preview,
+and *Port all remaining* is *Give the rest a day…*. *Move by…* says what will move before
+it does; days already set on interfaces still stay on theirs. The boards a plan changes
+are derived from what it names, and stored nowhere. A board opened from there only looks,
+and its band names the plan and goes back to it.
+
 **Built, 8 September 2026**, in the five steps of the last section, with these
 departures from the text below:
 

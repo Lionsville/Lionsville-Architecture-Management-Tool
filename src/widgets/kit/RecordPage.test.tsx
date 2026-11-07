@@ -58,3 +58,41 @@ describe('the record page', () => {
     expect(await axeFindings()).toEqual([])
   })
 })
+
+describe('a record with a long outline', () => {
+  const sections = [
+    { id: 'a', heading: 'First', group: 'Moves', count: 3, children: 'one' },
+    { id: 'b', heading: 'Second', group: 'Moves', folded: true, children: 'two' },
+    { id: 'c', heading: 'Text', group: 'Document', within: [{ id: 'goal', label: 'Goal', onPress: () => undefined }], children: 'three' },
+    { id: 'd', heading: 'Comments', group: 'Around', headless: true, children: 'four' },
+  ]
+
+  it('groups its lines, counts them, leaves a folded section out until it is asked for', () => {
+    const onSection = vi.fn()
+    renderShell(<RecordPage title="A record" sections={sections} onSection={onSection} />)
+    const outline = screen.getByRole('navigation')
+    expect(within(outline).getByText('Moves')).toBeTruthy()
+    expect(within(outline).getByRole('button', { name: 'First3' })).toBeTruthy()
+    expect(within(outline).getByRole('button', { name: 'Goal' })).toBeTruthy()
+    expect(within(outline).queryByRole('button', { name: 'Text' })).toBeNull()
+    expect(screen.queryByRole('region', { name: 'Second' })).toBeNull()
+    fireEvent.click(within(outline).getByRole('button', { name: 'Second' }))
+    expect(onSection).toHaveBeenCalledWith('b')
+  })
+
+  it('does not say a heading a section says itself', () => {
+    renderShell(<RecordPage title="A record" sections={sections} />)
+    expect(screen.getByRole('region', { name: 'Comments' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Comments' })).toBeNull()
+  })
+
+  it('renames on a press where it may, and is only a heading where it may not', () => {
+    const onRename = vi.fn()
+    renderShell(<RecordPage title="A record" sections={sections} onRename={onRename} />)
+    fireEvent.click(screen.getByRole('button', { name: /A record/ }))
+    const field = screen.getByRole('textbox')
+    fireEvent.change(field, { target: { value: 'Another' } })
+    fireEvent.keyDown(field, { key: 'Enter' })
+    expect(onRename).toHaveBeenCalledWith('Another')
+  })
+})

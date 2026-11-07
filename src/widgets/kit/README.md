@@ -49,6 +49,8 @@ and behaves is said here, once.
 
 What a control always says is in `widgets/strings/`, under `kit.*`.
 
+`Menu`'s `holds` lists what holds a refused choice under it, each line a way to what clears it. `RecordPage`'s sections may carry a `group`, a `count`, an `aside`, and be `folded` until asked for; `section` and `onSection` tie them to the address.
+
 A component arrives with its own file, a test beside it, and a line in this
 table.
 
