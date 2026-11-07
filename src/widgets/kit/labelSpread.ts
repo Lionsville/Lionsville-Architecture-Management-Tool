@@ -17,8 +17,11 @@ const TRIES = 24
 const overlaps = (a: LabelBox, b: LabelBox) =>
   a.x < b.x + b.width + GAP && b.x < a.x + a.width + GAP && a.y < b.y + b.height + GAP && b.y < a.y + a.height + GAP
 
-/** How far each label has to move, by id; a label that stays where it is has no entry. */
-export function spreadLabels(boxes: readonly LabelBox[], keepOff: readonly LabelBox[] = []): ReadonlyMap<string, number> {
+/**
+ * How far each label has to move, by id; a label that stays where it is has no entry.
+ * Past `maxMove` a label would say nothing about its line, so it stays and overlaps.
+ */
+export function spreadLabels(boxes: readonly LabelBox[], keepOff: readonly LabelBox[] = [], maxMove = Number.POSITIVE_INFINITY): ReadonlyMap<string, number> {
   const placed: LabelBox[] = [...keepOff]
   const moved = new Map<string, number>()
   const ordered = [...boxes].sort((a, b) => a.y - b.y || a.x - b.x || a.id.localeCompare(b.id))
@@ -31,6 +34,7 @@ export function spreadLabels(boxes: readonly LabelBox[], keepOff: readonly Label
       const up = hit.y - GAP - (at.y + at.height)
       at = { ...at, y: at.y + (tries === 0 && Math.abs(up) < down ? up : down) }
     }
+    if (Math.abs(at.y - box.y) > maxMove) at = box
     if (at.y !== box.y) moved.set(box.id, at.y - box.y)
     placed.push(at)
   }

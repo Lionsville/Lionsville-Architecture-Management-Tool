@@ -732,6 +732,29 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     expect(chipAt().y).toBeCloseTo(expected.y - 18 / expected.k, 5);
   });
 
+  it('lights a selected card\'s lines without showing their labels while the setting says on hover', async () => {
+    renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: false } });
+    const path = await linePath();
+
+    fireEvent.click(await screen.findByTestId('rf__node-a1'));
+
+    await waitFor(() => expect(document.querySelector('style[data-lv-focus]')).not.toBeNull());
+    expect(screen.queryByTestId('edge-label-c1')).toBeNull();
+
+    fireEvent.mouseEnter(path);
+    expect(await screen.findByTestId('edge-label-c1')).toBeDefined();
+  });
+
+  it('keeps every label up on a selected card when the setting says always', async () => {
+    renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: true } });
+    await screen.findByTestId('edge-label-c1');
+
+    fireEvent.click(await screen.findByTestId('rf__node-a1'));
+
+    await waitFor(() => expect(document.querySelector('style[data-lv-focus]')).not.toBeNull());
+    expect(screen.getByTestId('edge-label-c1').dataset.up).toBe('true');
+  });
+
   it('keeps a hidden label on a selected line, so it can still be edited in place', async () => {
     renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: false } });
     const edge = await screen.findByTestId('rf__edge-c1');

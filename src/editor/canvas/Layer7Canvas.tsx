@@ -18,6 +18,7 @@ import type { DomainGroupSeed } from './ElementPalette';
 import { DomainGroupLayer } from './DomainGroupLayer';
 import type { MenuItem, MenuTarget } from './menuItems';
 import type { ContextMenuState } from './useContextMenu';
+import { LabelSpread } from './LabelSpread';
 import { ZoneLayer } from './ZoneLayer';
 
 type SharedProps = Omit<
@@ -31,6 +32,9 @@ type SharedProps = Omit<
   | 'canTidyGroup'
   | 'children'
 >;
+
+/** A label further than this from its line no longer says which line it is of. */
+const LABEL_MOVE_AT_MOST = 64;
 
 /**
  * Layer 7 landscape: resizable zone bands + explicit domain-group rects.
@@ -209,6 +213,7 @@ export function Layer7Canvas(
       resolvePaneClick={resolvePaneClick}
       emptyFrame={canvasRect(geometry)}
     >
+      <LabelSpread maxMove={LABEL_MOVE_AT_MOST} />
       <ZoneLayer
         geometry={geometry}
         readOnly={props.readOnly}

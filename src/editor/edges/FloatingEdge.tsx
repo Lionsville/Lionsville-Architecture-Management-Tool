@@ -502,15 +502,17 @@ export const FloatingEdge = memo(function FloatingEdge({
   // A chip up only because the line is under the pointer follows the pointer
   // instead, lifted clear of the cursor; the moment the line is selected or the
   // label edited it goes back to where it lives, so it can be dragged from there.
-  const hoverOnly = !routeEditing.showLabels && !selected && !inFocus && !editing && !dragLabel;
+  const hoverOnly = !routeEditing.showLabels && !selected && !editing && !dragLabel;
   const anchor = hoverOnly && pointerAt
     ? { x: pointerAt.x, y: pointerAt.y - HOVER_LIFT_PX * handleScale }
     : (dragLabel ?? data?.labelPosition ?? { x: labelX, y: labelY });
   // An empty selected edge still shows a ghost chip so the text is addable in place.
   // With labels hidden board-wide, a chip is shown only while the line is under
-  // the pointer, selected, or being edited — a busy board reads its lines bare.
+  // the pointer, selected, or being edited — a busy board reads its lines bare, and
+  // a card in focus lights its lines without overruling that. Where labels are on,
+  // the focus brings its lines' labels back from a distance that hides the rest.
   const chipWanted = hasLabel || editing || (selected && !routeEditing.readOnly);
-  const up = Boolean(hovered || selected || inFocus || editing);
+  const up = Boolean(hovered || selected || editing || (inFocus && routeEditing.showLabels));
   const showChip = chipWanted && (routeEditing.showLabels || up);
   // The chip's own segment handle collision check needs to know whether a chip is
   // actually drawn there.

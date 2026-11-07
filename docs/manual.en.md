@@ -917,8 +917,8 @@ their ground, and colour is status, or the one lens that is up. A colour set by 
 on an element stays as the thin rail at its left. What a card says follows how close
 you are, while its name holds its size: below 70% its name and status marks, from
 70% the column codes and its description, above 120% its vendor as well. Pointing at
-a card or selecting it keeps its lines and its neighbours and lets the rest recede,
-with the lines' labels up. The key on the canvas says what the marks mean; **Show**
+a card or selecting it keeps its lines and its neighbours and lets the rest recede;
+the lines' labels stay as **Show** has them, on hover or always. The key on the canvas says what the marks mean; **Show**
 takes it away, along with the status marks, the lifecycle word, descriptions, the
 line labels and the map.
 

@@ -4,6 +4,7 @@
 import { useEffect } from 'react';
 import { useStore, useStoreApi } from '@xyflow/react';
 import { spreadLabels } from '../../widgets/kit/labelSpread';
+import { useRouteEditing } from './RouteEditingContext';
 
 /** After the zoom has settled, not at each step of it. */
 const SETTLE_MS = 80;
@@ -14,15 +15,18 @@ const SETTLE_MS = 80;
  * on the label, so that moving them renders no line. A label a person placed is one
  * like any other: it moves off another only as far as it must.
  */
-export function LabelSpread() {
+export function LabelSpread({ maxMove }: { /** On screen: how far from its line a label may go. */ maxMove?: number } = {}) {
   const flow = useStoreApi();
   const edges = useStore((state) => state.edges);
+  // Turning the labels on adds them all with no line changing.
+  const { showLabels } = useRouteEditing();
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const spread = () => {
       const root = flow.getState().domNode;
       if (!root) return;
-      const labels = [...root.querySelectorAll<HTMLElement>('.lv-edge-chip')];
+      // One the distance hides has no box to keep clear.
+      const labels = [...root.querySelectorAll<HTMLElement>('.lv-edge-chip')].filter((label) => label.getClientRects().length > 0);
       const zoom = flow.getState().transform[2] || 1;
       const nudged = (label: HTMLElement) => Number.parseFloat(label.style.getPropertyValue('--lv-nudge-y')) || 0;
       const boxes = labels.map((label, index) => {
@@ -33,7 +37,7 @@ export function LabelSpread() {
         const box = card.getBoundingClientRect();
         return { id: `card${index}`, x: box.x, y: box.y, width: box.width, height: box.height };
       });
-      const moved = spreadLabels(boxes, cards);
+      const moved = spreadLabels(boxes, cards, maxMove);
       labels.forEach((label, index) => {
         const by = moved.get(String(index));
         if (by === undefined) label.style.removeProperty('--lv-nudge-y');
@@ -50,6 +54,6 @@ export function LabelSpread() {
       if (state.transform[2] !== zoom) { zoom = state.transform[2]; soon(); }
     });
     return () => { clearTimeout(timer); unsubscribe(); };
-  }, [flow, edges]);
+  }, [flow, edges, showLabels, maxMove]);
   return null;
 }

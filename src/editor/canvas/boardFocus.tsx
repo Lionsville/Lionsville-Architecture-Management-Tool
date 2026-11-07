@@ -58,7 +58,7 @@ const noFocus = new BoardFocus();
 export const BoardFocusContext = createContext<BoardFocus>(noFocus);
 export const BoardFocusProvider = BoardFocusContext.Provider;
 
-/** Whether this line stays under the focus. A label comes up for one that does. */
+/** Whether this line stays under the focus. Where labels are on, its label comes up from a distance that hides the rest. */
 export function useLineInFocus(id: string): boolean {
   const focus = useContext(BoardFocusContext);
   return useSyncExternalStore(focus.subscribe, () => focus.get()?.lines.has(id) ?? false);

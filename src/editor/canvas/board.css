@@ -38,7 +38,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  color: var(--ink-3);
+  color: var(--ink-2);
   zoom: calc(1 / var(--canvas-zoom, 1));
 }
 .lv-tile .kit-card__name { padding-right: calc(var(--lv-corner, 0) * 18px / var(--canvas-zoom, 1)); }
@@ -154,7 +154,7 @@
   gap: calc(3px / var(--canvas-zoom, 1));
   padding: 0 calc(5px / var(--canvas-zoom, 1));
   border-radius: var(--r-1);
-  color: var(--ink-2);
+  color: var(--ink);
   font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1));
   font-weight: var(--fw-strong);
   letter-spacing: .02em;
@@ -168,7 +168,7 @@
 .lv-status[data-status='managed'] { background: var(--ok-soft); }
 .lv-status[data-status='partial'] { background: var(--warn-soft); }
 .lv-status[data-status='risk'] { background: var(--bad-soft); }
-.lv-status[data-status='unset'] { color: var(--ink-3); }
+.lv-status[data-status='unset'] { color: var(--ink-2); }
 [data-distance='far'] .lv-status { padding: 0; background: none; }
 [data-distance='far'] .lv-status__code { display: none; }
 
@@ -182,7 +182,7 @@
 }
 .lv-life[data-phase='planned'] { color: var(--life-planned); }
 .lv-life[data-phase='retiring'] { color: var(--life-retiring); }
-.lv-life[data-phase='retired'] { color: var(--ink-3); }
+.lv-life[data-phase='retired'] { color: var(--ink-2); }
 
 /* One nub on the card under the pointer; the rest of the handles are there, and quiet. */
 .lv-board .react-flow__handle {
@@ -232,10 +232,15 @@
 .lv-edge-chip { transform-origin: center; }
 .lv-board:not([data-kind='container'])[data-distance='far'] .lv-edge-chip:not([data-up]) { display: none; }
 .lv-edge-chip { z-index: 9; }
+/* On a board of many lines a label is a quiet note on the ground, one step under a card's own small text, and
+   what it runs over stops at its edge. Its words and how it is carried run on as one, so it stays two lines. */
+.lv-board[data-kind='layer7'] .kit-linelabel { max-width: 170px; padding: 0 var(--s-1); background: var(--canvas-ground); font-size: var(--canvas-t-label); }
+.lv-board[data-kind='layer7'] .kit-linelabel:not([data-picked]) { border-color: transparent; }
+.lv-board[data-kind='layer7'] .kit-linelabel__how { display: inline; margin-inline-start: .5em; }
 
 /* The credit, on the board's ground and out of the way. */
-.lv-board .react-flow__attribution { background: transparent; color: var(--ink-3); }
-.lv-board .react-flow__attribution a { color: var(--ink-3); }
+.lv-board .react-flow__attribution { background: transparent; color: var(--ink-2); font-size: var(--canvas-t-xs); }
+.lv-board .react-flow__attribution a { color: var(--ink-2); }
 .lv-board .react-flow__minimap { opacity: .9; }
 
 .lv-connecting { pointer-events: none; }

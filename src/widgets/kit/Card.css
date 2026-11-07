@@ -39,7 +39,7 @@
 .kit-card__sub,
 .kit-card__about,
 .kit-card__word {
-  color: var(--ink-3);
+  color: var(--ink-2);
   font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1));
   line-height: var(--lh-tight);
 }

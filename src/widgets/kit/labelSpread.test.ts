@@ -28,4 +28,11 @@ describe('spreadLabels', () => {
     const ys = boxes.map((one) => one.y + (moved.get(one.id) ?? 0)).sort((a, b) => a - b)
     for (let index = 1; index < ys.length; index += 1) expect(ys[index]! - ys[index - 1]!).toBeGreaterThanOrEqual(30)
   })
+
+  it('leaves a label where it is rather than move it further than it may go', () => {
+    const pile = Array.from({ length: 6 }, (_, n) => ({ id: `l${n}`, x: 0, y: 0, width: 100, height: 20 }))
+    const moved = spreadLabels(pile, [], 50)
+    for (const by of moved.values()) expect(Math.abs(by)).toBeLessThanOrEqual(50)
+    expect(moved.size).toBeLessThan(5)
+  })
 })

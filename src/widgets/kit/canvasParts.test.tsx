@@ -77,6 +77,12 @@ describe('a card', () => {
   })
 })
 
+describe('a card\'s small text', () => {
+  it('is in the second ink, so it reads at its size on a painted pixel', () => {
+    expect(css('./Card.css')).toMatch(/\.kit-card__word \{\s*color: var\(--ink-2\)/)
+  })
+})
+
 describe('a zone', () => {
   it('names a region, and is named by it', () => {
     render(<Zone name="Warehouse" aside="4"><p>inside</p></Zone>)
