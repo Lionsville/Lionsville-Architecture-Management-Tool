@@ -3,8 +3,23 @@
 *What has landed on `main` since 3.8.1 that a user would notice, in the user's
 words. Pasted into the GitHub release when it is cut, and emptied then.*
 
+## Changed
+
+- **Mine finds what you wrote before.** On the observations page, *Mine* also
+  counts an observation with your full name typed in *Observed by*, in any word
+  order, and one logged under your name, as well as those you recorded or were
+  picked for. It follows people merged in the register, and when it finds nothing
+  it says what it counts. A first name alone does not count, and a typed name can
+  match a namesake.
+
 ## Fixed
 
+- **Lines stay on a board.** All the lines on a board could disappear while its
+  boxes stayed, on screen and in a picture of the board, and sometimes come back
+  while it was edited. Lines were being dropped when two changes reached the board
+  in quick succession.
+- **A refusal on the move or merge screen can be read.** The message appeared
+  behind the screen, so pressing *Move* or *Merge* seemed to do nothing.
 - **Resizing a board no longer stacks a band's cards.** Making the board smaller
   sent every card past its edge to the same spot, and a taller board flattened the
   bottom band's rows onto one line. A card that still fits now stays where it is,
