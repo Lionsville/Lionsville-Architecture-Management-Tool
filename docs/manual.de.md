@@ -3354,8 +3354,9 @@ Zwei Wege hinaus, für zwei Zwecke.
 
   Die Datei nimmt auch das **Personenregister** mit. Kreuzen Sie beim
   Festlegen des Passworts **Ohne Namen** an, und alle Personen gehen als ihr
-  Pseudonym in die Kopie, ohne Adresse, und eine unterzeichnete Entscheidung
-  ohne die Namen, mit denen sie unterzeichnet wurde — für eine Kopie, die
+  Pseudonym in die Kopie, ohne Adresse, eine unterzeichnete Entscheidung
+  ohne die Namen, mit denen sie unterzeichnet wurde, und eine Beobachtung ohne
+  den Namen dessen, der sie erfasst hat — für eine Kopie, die
   die Organisation verlässt. Das Öffnen einer Datei gibt jemandem, der hier vergessen ist, nie
   einen Namen zurück, bringt niemanden zurück, der hier entfernt wurde, und
   eine Datei ohne Namen nimmt keinen Namen weg. Wer dort, wo die Datei
