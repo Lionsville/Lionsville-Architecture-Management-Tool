@@ -110,7 +110,7 @@ describe('the register of building blocks', () => {
 describe('a building block\'s page', () => {
   /** The Requirements tab's cell, the matrix's way: selected by a press, written by a key. */
   const onRequirements = () => fireEvent.click(screen.getByRole('tab', { name: s('blocks.requirements') }))
-  const cellOf = (text: RegExp) => within(screen.getByRole('row', { name: text })).getAllByRole('gridcell').filter((cell) => cell.tabIndex >= -1 && cell.querySelector('svg'))
+  const cellOf = (text: RegExp) => screen.getByRole('gridcell', { name: text })
 
   it('opens on About', () => {
     page(accessOver())
@@ -123,9 +123,10 @@ describe('a building block\'s page', () => {
     page(access)
     onRequirements()
     expect(screen.getByText(s('blocks.level3'))).toBeTruthy()
-    const cell = cellOf(/Routes by content/)[0]!
+    const cell = cellOf(/Routes by content, Many partners/)
     fireEvent.click(cell)
     expect(access.update).not.toHaveBeenCalled()
+    fireEvent.focus(cell)
     fireEvent.keyDown(cell, { key: ' ' })
     expect(access.update).toHaveBeenCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, GATEWAY.contexts![1]] })
     expect(await axeFindings()).toEqual([])
@@ -135,7 +136,7 @@ describe('a building block\'s page', () => {
     const access = accessOver()
     page(access)
     onRequirements()
-    const cell = cellOf(/Keeps an audit trail/)[0]!
+    const cell = cellOf(/Keeps an audit trail, Many partners/)
     fireEvent.focus(cell)
     fireEvent.keyDown(cell, { key: ' ' })
     fireEvent.keyDown(cell, { key: ' ' })

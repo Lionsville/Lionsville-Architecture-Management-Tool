@@ -10,6 +10,7 @@
  * where it is kept.
  */
 import { useMemo, useState } from 'react'
+import type { Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import { useStrings } from '../../i18n/LanguageContext'
 import { formatDay } from '../../i18n/dates'
@@ -48,7 +49,7 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
   const [merging, setMerging] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [talking, setTalking] = useState(false)
-  const { principle, scope, groups } = found
+  const { principle, scope } = found
   const version = access?.version ?? 0
   const citations = useMemo(() => access?.citationsTo({ scope, id: principle.id }) ?? [], [access, scope, principle.id, version])
   if (!access) return null
@@ -56,7 +57,6 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
   const may = access.mayWrite(scope)
   const number = formatPrincipleNumber(principle.number)
   const setStatus = (status: 'candidate' | 'accepted' | 'retired') => access.setStatus(scope, principle.id, status)
-  const groupNames = groups.filter((group) => principle.groups.includes(group.id)).map((group) => group.name)
   const status = principle.status === 'accepted' && principle.acceptedOn
     ? t('principles.acceptedOn', { date: formatDay(principle.acceptedOn, language) })
     : t(STATUS_WORD[principle.status])
@@ -64,23 +64,14 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
     ...(principle.status === 'accepted' ? [{ label: t('principles.retire'), onSelect: () => setStatus('retired') }] : []),
     ...(principle.status === 'retired' ? [{ label: t('principles.restore'), onSelect: () => setStatus('accepted') }] : []),
     { label: t('principles.merge'), onSelect: () => setMerging(true) },
-    {
-      label: t('principles.remove'), final: true, onSelect: () => setRemoving(true),
-      ...(mayRemove(principle, scope, citations) ? {} : { refused: plural(t, { one: 'principles.removeRefusedOne', other: 'principles.removeRefused' }, citations.length) }),
-    },
+    { label: t('principles.remove'), final: true, onSelect: () => setRemoving(true), ...removalRefused(mayRemove(principle, scope, citations), citations.length, t) },
   ]
   return (
     <>
       <Preview
         ids={ids} currentId={currentId} onSelect={onSelect} title={principle.title} listWord={t('principles.listWord')}
         code={from.kind === 'here' ? number : t('principles.numberIn', { number, scope: access.scopeLabel(scope) })}
-        facts={(
-          <>
-            <PreviewFact label={t('principles.factKept')}>{access.scopeLabel(scope)}</PreviewFact>
-            {groupNames.length > 0 && <PreviewFact label={t('principles.factGroups')}>{groupNames.join(', ')}</PreviewFact>}
-            {(principle.keywords ?? []).length > 0 && <PreviewFact label={t('principles.keywords')}>{principle.keywords!.join(', ')}</PreviewFact>}
-          </>
-        )}
+        facts={<Facts found={found} />}
         foot={may ? (
           <div className="guidance-read__foot">
             <span className="guidance-read__spring" />
@@ -95,35 +86,9 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
           <p className="guidance-read__status" data-testid="principle-status">{status}. {t(REGIME_SENTENCE[principle.regime])}</p>
           {principle.status === 'candidate' && principle.question && <Band tone="info" title={t('principles.question', { question: principle.question })} />}
           <div className="guidance-read__statement" data-document><MarkdownView markdown={principle.statement} /></div>
-          {principle.aspects.length > 0 && (
-            <PanelSection title={t('principles.aspects')}>
-              <div data-testid="principle-aspects">
-                {principle.aspects.map((aspect) => (
-                  <div className="guidance-read__line" key={aspect.id}>
-                    <span className="guidance-read__code">{formatAspectNumber(principle.number, aspect.number)}</span>
-                    <span className="guidance-read__grow">{aspect.text}</span>
-                    <span className="guidance-read__quiet">
-                      {[t(NATURE_WORD[aspect.nature]), aspect.signal && t('principles.signal', { signal: aspect.signal }), aspect.steering && t('principles.steering', { steering: aspect.steering })].filter(Boolean).join(' · ')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </PanelSection>
-          )}
-          {principle.rationale?.trim() && <PanelSection title={t('principles.rationale')}><MarkdownView markdown={principle.rationale} /></PanelSection>}
-          {principle.implications?.trim() && <PanelSection title={t('principles.implications')}><MarkdownView markdown={principle.implications} /></PanelSection>}
+          <Written found={found} />
           <Use found={found} citations={citations} />
           <Relations found={found} onPick={onPick} />
-          {(principle.sharpened ?? []).length > 0 && (
-            <PanelSection title={t('principles.sharpenedHeading')}>
-              {principle.sharpened!.map((one, index) => (
-                <div className="guidance-read__line" key={index}>
-                  <span className="guidance-read__quiet">{formatDay(one.on, language)}</span>
-                  <span className="guidance-read__grow">{one.note}</span>
-                </div>
-              ))}
-            </PanelSection>
-          )}
           {/* Its thread where it is kept; a principle from elsewhere is commented on there (ADR-0037). */}
           {from.kind === 'here' && (talking
             ? <CommentThread about={{ kind: 'principle', id: principle.id }} />
@@ -143,6 +108,63 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
       >
         <p>{t('principles.removeBody')}</p>
       </Dialog>
+    </>
+  )
+}
+
+/** Why a principle cannot go, said in the menu before the press. */
+function removalRefused(may: boolean, cited: number, t: Translate) {
+  return may ? {} : { refused: plural(t, { one: 'principles.removeRefusedOne', other: 'principles.removeRefused' }, cited) }
+}
+
+/** The facts beside the text. */
+function Facts({ found }: { found: PrincipleInForce }) {
+  const access = usePrinciples()
+  const { t } = useStrings()
+  const { principle, scope, groups } = found
+  const groupNames = groups.filter((group) => principle.groups.includes(group.id)).map((group) => group.name)
+  return (
+    <>
+      <PreviewFact label={t('principles.factKept')}>{access?.scopeLabel(scope) ?? scope}</PreviewFact>
+      {groupNames.length > 0 && <PreviewFact label={t('principles.factGroups')}>{groupNames.join(', ')}</PreviewFact>}
+      {(principle.keywords ?? []).length > 0 && <PreviewFact label={t('principles.keywords')}>{principle.keywords!.join(', ')}</PreviewFact>}
+    </>
+  )
+}
+
+/** What is written about it, and only that: empty fields get no air in reading. */
+function Written({ found }: { found: PrincipleInForce }) {
+  const { t, language } = useStrings()
+  const { principle } = found
+  return (
+    <>
+      {principle.aspects.length > 0 && (
+        <PanelSection title={t('principles.aspects')}>
+          <div data-testid="principle-aspects">
+            {principle.aspects.map((aspect) => (
+              <div className="guidance-read__line" key={aspect.id}>
+                <span className="guidance-read__code">{formatAspectNumber(principle.number, aspect.number)}</span>
+                <span className="guidance-read__grow">{aspect.text}</span>
+                <span className="guidance-read__quiet">
+                  {[t(NATURE_WORD[aspect.nature]), aspect.signal && t('principles.signal', { signal: aspect.signal }), aspect.steering && t('principles.steering', { steering: aspect.steering })].filter(Boolean).join(' · ')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </PanelSection>
+      )}
+      {principle.rationale?.trim() && <PanelSection title={t('principles.rationale')}><MarkdownView markdown={principle.rationale} /></PanelSection>}
+      {principle.implications?.trim() && <PanelSection title={t('principles.implications')}><MarkdownView markdown={principle.implications} /></PanelSection>}
+      {(principle.sharpened ?? []).length > 0 && (
+        <PanelSection title={t('principles.sharpenedHeading')}>
+          {principle.sharpened!.map((one, index) => (
+            <div className="guidance-read__line" key={index}>
+              <span className="guidance-read__quiet">{formatDay(one.on, language)}</span>
+              <span className="guidance-read__grow">{one.note}</span>
+            </div>
+          ))}
+        </PanelSection>
+      )}
     </>
   )
 }
