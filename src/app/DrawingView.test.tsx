@@ -203,6 +203,14 @@ describe('reading a linked shape', () => {
     expect(onOpen).toHaveBeenCalledWith({ page: 'element', id: 'billing' })
   })
 
+  it('puts the reader away on Escape from the picture', async () => {
+    renderShell(<DrawingView diagram={held} scope="acme" images={images} elements={elements} s={s} />)
+    fireEvent.click(await screen.findByTestId('drawing-area-b'))
+    expect(screen.getByTestId('drawing-reader')).toBeTruthy()
+    fireEvent.keyDown(screen.getByTestId('drawing-area-b'), { key: 'Escape' })
+    expect(screen.queryByTestId('drawing-reader')).toBeNull()
+  })
+
   it('says one link needing a look in the singular', async () => {
     const one = { ...held, drawing: { ...(held as unknown as { drawing: { links: unknown[] } }).drawing, links: [{ shapeId: 'b', elementId: 'billing', area }, { shapeId: 'c', elementId: 'gone', area }] } } as unknown as DesignDiagram
     renderShell(<DrawingView diagram={one} scope="acme" images={images} elements={elements} s={s} />)

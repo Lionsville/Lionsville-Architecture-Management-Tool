@@ -185,7 +185,16 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
         ) : undefined}
         more={<EditWay canEdit={canEdit} noEditor={noEditor} readOnly={readOnly} pictured={pictured} onEdit={onEdit} onGetDesktop={props.onGetDesktop} s={s} />}
       />
-      <div className="drawing-view__body">
+      {/* Esc puts away what a press beside the picture opened, as it does beside a board. */}
+      <div
+        className="drawing-view__body"
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape' || (!element && !linksOpen)) return
+          event.stopPropagation()
+          setReading(undefined)
+          setLinksOpen(false)
+        }}
+      >
         <div className="drawing-view__canvas" ref={zoom.ref} tabIndex={pictured ? 0 : undefined} data-testid="drawing-canvas">
           {pictured ? (
             <>
