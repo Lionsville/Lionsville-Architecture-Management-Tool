@@ -153,6 +153,12 @@ export function GuideDock(props: GuideDockProps) {
 
 export type GuideBox = { readonly left: number; readonly top: number; readonly width: number; readonly height: number }
 
+/** How much room the tag needs at the edge of the screen. */
+const TAG_ROOM = 96
+
+/** The point of a side nearest to a place: a line to a tall control ends where it is seen, not below the screen. */
+const nearest = (at: number, from: number, length: number): number => Math.min(from + length, Math.max(from, at))
+
 /** One ring on one target, with its tag and a thin line from the dock where the dock is known. */
 export function GuideRing({ target, dock, tag = true }: { target: GuideBox; dock?: GuideBox | undefined; tag?: boolean }) {
   const { t } = useStrings()
@@ -162,10 +168,10 @@ export function GuideRing({ target, dock, tag = true }: { target: GuideBox; dock
         className="kit-guide-ring" aria-hidden="true" data-testid="learn-spotlight"
         style={{ left: target.left - 4, top: target.top - 4, width: target.width + 8, height: target.height + 8 }}
       />
-      {tag && <div className="kit-guide-tag" aria-hidden="true" style={{ left: target.left + target.width + 8, top: target.top + target.height / 2 }}>{t('kit.guide.pressHere')}</div>}
+      {tag && <div className="kit-guide-tag" aria-hidden="true" style={{ left: Math.min(target.left + target.width + 8, window.innerWidth - TAG_ROOM), top: Math.min(target.top + target.height / 2, window.innerHeight - 16) }}>{t('kit.guide.pressHere')}</div>}
       {dock && (
         <svg className="kit-guide-line" aria-hidden="true" focusable="false">
-          <line x1={dock.left} y1={dock.top + 24} x2={target.left + target.width / 2} y2={target.top + target.height} />
+          <line x1={dock.left} y1={dock.top + 24} x2={nearest(dock.left, target.left, target.width)} y2={nearest(dock.top + 24, target.top, target.height)} />
         </svg>
       )}
     </>
