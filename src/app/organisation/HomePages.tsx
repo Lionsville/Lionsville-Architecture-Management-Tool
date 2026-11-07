@@ -29,7 +29,6 @@ import type { ChecksPage as ChecksPageShape } from './ChecksPage'
 import type { TopicsPage as TopicsPageShape } from './TopicsPage'
 import type { BlocksRegisterPage as BlocksRegisterPageShape } from '../../blocks/ui/BlocksRegisterPage'
 import type { BlockPage as BlockPageShape } from '../../blocks/ui/BlockPage'
-import { OnePage } from './OnePage'
 import type { RegisterRow } from './register'
 import type { RegisterPage as RegisterPageShape } from './RegisterPage'
 import { FrameStoreContext } from '../frame/frameStore'
@@ -200,27 +199,5 @@ export function BlocksDoors({ pages, at, windowChrome, ready, back = () => windo
         nonce={asked?.nonce ?? 0} onClose={asked?.returns ? back : () => pages.open('blocks')} windowChrome={windowChrome}
       />
     </>
-  )
-}
-
-/**
- * The Checks card on every home: what the page behind it is, how many checks
- * there are and how many find something here, and the way in — whether or not
- * anything is found, because the checks are worth reading either way.
- */
-export function ChecksCard({ checks, onOpen, s }: { checks: HomeChecks; onOpen: () => void; s: Translate }) {
-  const every = checks.rows.flatMap((one) => one.rows)
-  const finding = every.filter((row) => row.shown.length > 0).length
-  return (
-    <OnePage
-      icon={<RegisterIcon />}
-      title={s('org.checks')}
-      description={s('org.describeChecks')}
-      count={[
-        plural(s, { one: 'org.checksOne', other: 'org.checksOther' }, every.length),
-        plural(s, { one: 'org.checksFoundOne', other: 'org.checksFoundOther' }, finding),
-      ].join(' · ')}
-      actions={[{ label: s('picker.open'), onClick: onOpen, testId: 'open-checks', guide: 'org.card.checks', ariaLabel: s('picker.openNamed', { name: s('org.checks') }) }]}
-    />
   )
 }

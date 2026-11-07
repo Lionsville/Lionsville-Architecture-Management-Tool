@@ -25,6 +25,8 @@ import { FirstRun } from './organisation/FirstRun'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import { flattenScopes } from '../projects/scope'
+import { sourceKey } from '../platform/workingSource'
+import { recentFrom, RECENT_KEY, stillThere } from './frame/recentPlaces'
 import type { ScopeSnapshot } from '../projects/scope'
 import { scopeDisplayName } from '../projects/scopeLabel'
 import { ROOT_SCOPE } from '../projects/scopePath'
@@ -261,6 +263,10 @@ function Home({ parts }: { parts: ShellParts }) {
   const marking = useHomeMarking(parts)
   const { index, models } = parts.tree
   const treeRead = useMemo(() => ({ index, models }), [index, models])
+  const recentHere = stillThere(
+    recentFrom(prefs.readPreferences()[RECENT_KEY], sourceKey(parts.source)),
+    (path) => path === ROOT_SCOPE || flattenScopes(organisation.tree).some((one) => one.path === path),
+  )
   // The home's own document shows the home scope's pictures, as a workspace
   // shows its scope's.
   return (
@@ -303,6 +309,9 @@ function Home({ parts }: { parts: ShellParts }) {
           writable={writableFor(parts)}
           principlesAt={index.principlesAt}
           topics={topics}
+          recent={recentHere}
+          onContinue={(place) => parts.agent.openSomewhere({ scope: place.scope, page: place.page, ...(place.id !== undefined ? { id: place.id } : {}) })}
+          onOpenFile={() => parts.commands.bus.send({ type: 'open' })}
           today={parts.todayDay}
           language={prefs.language}
           s={s}

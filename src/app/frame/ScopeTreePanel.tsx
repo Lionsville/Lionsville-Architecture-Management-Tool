@@ -6,22 +6,43 @@
  * conflict): docked where the tree is the content, on a home or pinned by ⌘\,
  * and over the work from the trail's chevron, with the width left to the work.
  * The same find, the same rows and the same foot either way.
+ *
+ * Three ways through a thin tree. *All* keeps every scope, the empty ones in a
+ * quieter ink, so the structure stays true. *With work* takes them out and
+ * keeps the path down to what is left. Typing searches every scope by name and
+ * by the topics relevant to it, and shows each match flat with its path, so
+ * nothing needs unfolding.
  */
 import { useEffect, useMemo, useState } from 'react'
 import type { Language, Translate } from '../../i18n'
 import type { Destination, Page } from '../../agent/screen'
 import { flattenScopes, sortScopes } from '../../projects/scope'
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
-import { ancestorScopes, ROOT_SCOPE } from '../../projects/scopePath'
+import { ancestorScopes, parentScope, ROOT_SCOPE, scopePathLabel } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
+import { linkHolds } from '../../projects/topics'
+import type { TypeLink } from '../../projects/scopeType'
 import { matchesQuery } from '../../model/textSearch'
 import { MoreMenu } from '../../widgets/kit/Menu'
+import type { MenuEntry } from '../../widgets/kit/Menu'
 import { TextInput } from '../../widgets/kit/Field'
-import { ScopeTree } from '../organisation/ScopeTree'
+import { Tabs } from '../../widgets/kit/Tabs'
+import { heldInWords, RootRow, ScopeTree } from '../organisation/ScopeTree'
+import type { Holdings } from '../organisation/holdings'
 import type { ScopeFolds } from '../organisation/useScopeFolds'
 import { ORGANISATION_PLACES } from './places'
 
-export type ScopeTreePanelProps = {
+/** What a row's ⋯ can do, each its own question on the home that answers it. */
+export type TreeActs = {
+  onSettings: (scope: ScopeSummary) => void
+  onMove: (scope: ScopeSummary) => void
+  onDelete: (scope: ScopeSummary) => void
+  onNewScopeUnder: (path: ScopePath) => void
+  /** The kinds of view a scope can be given, each one a press. */
+  newViewItems: (path: ScopePath) => readonly { label: string; onSelect: () => void }[]
+}
+
+export type ScopeTreePanelProps = TreeActs & {
   tree: ScopeSummary
   at: ScopePath
   /** The page that is up, for the foot to mark. */
@@ -29,90 +50,142 @@ export type ScopeTreePanelProps = {
   order: ProjectOrder
   onOrderChange: (order: ProjectOrder) => void
   folds: ScopeFolds
+  holdings: Holdings
   onHome: (path: ScopePath) => void
   go: (to: Destination & { scope: string }) => void
-  onSettings: (scope: ScopeSummary) => void
-  onDelete: (scope: ScopeSummary) => void
-  onNewScope?: (() => void) | undefined
   writable: (path: ScopePath) => boolean
-  typeLink?: Parameters<typeof ScopeTree>[0]['typeLink']
+  typeLink?: ((path: ScopePath) => TypeLink | undefined) | undefined
+  /** What the foot says of a place beside its name, and on hover, where it is known. */
+  placeFact?: ((page: Page) => { count: string; words: string } | undefined) | undefined
+  today: string
   language: Language
   s: Translate
 }
 
-export function ScopeTreePanel({ tree, at, page, order, onOrderChange, folds, onHome, go, onSettings, onDelete, onNewScope, writable, typeLink, language, s }: ScopeTreePanelProps) {
+type Show = 'all' | 'work'
+
+/** A path the listing could not read, drawn under what it is filed in with the name its address gives, so it is not created again. */
+function withUnread(tree: ScopeSummary): { tree: ScopeSummary; unread: ReadonlySet<ScopePath> } {
+  const unread = new Set((tree.unreadable ?? []).filter((path) => path !== ROOT_SCOPE))
+  if (unread.size === 0) return { tree, unread }
+  const place = (scope: ScopeSummary): ScopeSummary => ({
+    ...scope,
+    children: [
+      ...scope.children.map(place),
+      ...[...unread].filter((path) => parentScope(path) === scope.path).map((path) => ({ path, name: scopePathLabel(path), diagrams: 0, children: [] })),
+    ],
+  })
+  return { tree: place(tree), unread }
+}
+
+function sortTree(tree: ScopeSummary, order: ProjectOrder): ScopeSummary {
+  return { ...tree, children: sortScopes(tree.children, order).map((child) => sortTree(child, order)) }
+}
+
+/** Every scope a find keeps: by its name, and by the name of a topic relevant to it today. */
+export function scopesFound(tree: ScopeSummary, asked: string, today: string): ScopePath[] {
+  const every = flattenScopes(tree)
+  const byTopic = new Set(every
+    .filter((topic) => (topic.relevantTo?.length ?? 0) > 0 && matchesQuery(asked, [topic.name]))
+    .flatMap((topic) => (topic.relevantTo ?? []).filter((link) => linkHolds(link, today)).map((link) => link.path)))
+  return every.filter((scope) => scope.path !== ROOT_SCOPE && (byTopic.has(scope.path) || matchesQuery(asked, [scope.name]))).map((scope) => scope.path)
+}
+
+function menuFor(scope: ScopeSummary, acts: TreeActs, onHome: (path: ScopePath) => void, writable: (path: ScopePath) => boolean, s: Translate): readonly MenuEntry[] {
+  if (!writable(scope.path)) return []
+  const movable = scope.path !== ROOT_SCOPE
+  return [
+    { label: s('org.rowOpen'), onSelect: () => onHome(scope.path) },
+    { label: s('org.rowNewScope'), onSelect: () => acts.onNewScopeUnder(scope.path) },
+    { label: s('org.rowNewView'), items: acts.newViewItems(scope.path) },
+    { label: s('org.rowSettings'), onSelect: () => acts.onSettings(scope) },
+    ...(movable ? [
+      { label: s('org.rowMove'), onSelect: () => acts.onMove(scope) },
+      // Never the root. Its confirm says what goes with it.
+      { label: s('org.rowDelete'), final: true, onSelect: () => acts.onDelete(scope) },
+    ] : []),
+  ]
+}
+
+export function ScopeTreePanel({
+  tree, at, page, order, onOrderChange, folds, holdings, onHome, go, writable, typeLink, placeFact, today, language, s, ...acts
+}: ScopeTreePanelProps) {
   const [find, setFind] = useState('')
+  const [show, setShow] = useState<Show>('all')
   // The path to where you are, and what is filed under it, stands open, whichever way you arrived.
   const { collapsed, toggleCollapsed } = folds
   useEffect(() => {
     for (const above of [at, ...ancestorScopes(at)]) if (collapsed.has(above)) toggleCollapsed(above)
     // On arrival only: a person may fold what they like after it.
   }, [at])
-  const ordered = useMemo(() => sortTree(tree, order), [tree, order])
-  const matching = useMemo(() => {
-    const asked = find.trim()
-    if (asked === '') return undefined
-    return new Set(flattenScopes(tree).filter((scope) => matchesQuery(asked, [scope.name])).map((scope) => scope.path))
-  }, [tree, find])
+  const { tree: listed, unread } = useMemo(() => withUnread(sortTree(tree, order)), [tree, order])
+  const asked = find.trim()
+  const matching = useMemo(() => (asked === '' ? undefined : scopesFound(listed, asked, today)), [listed, asked, today])
   const name = tree.name.trim() || s('common.organisation')
+  const menuOf = (scope: ScopeSummary) => menuFor(scope, acts, onHome, writable, s)
   return (
     <div className="kit-tree" data-testid="scope-tree-panel">
       <div className="kit-tree__find">
         <TextInput
           aria-label={s('frame.findScope')} placeholder={s('frame.findScope')} value={find} data-testid="tree-find"
           onChange={(event) => setFind(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Escape' && find !== '') { event.stopPropagation(); event.preventDefault(); setFind('') } }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape' && find !== '') { event.stopPropagation(); event.preventDefault(); setFind('') }
+            const first = matching?.[0]
+            if (event.key === 'Enter' && first !== undefined) { event.preventDefault(); onHome(first) }
+          }}
+        />
+      </div>
+      <div className="kit-tree__show">
+        <Tabs
+          label={s('org.treeShow')} value={show} onChange={setShow}
+          items={[
+            { value: 'all', label: s('org.treeAll'), count: flattenScopes(tree).length },
+            { value: 'work', label: s('org.treeWithWork'), count: holdings.withWork.size },
+          ]}
         />
         <MoreMenu
           size="small" label={s('frame.treeMenu')}
           items={[
-            { label: s('org.openAll'), onSelect: folds.openAll },
-            { label: s('org.foldAll'), onSelect: folds.foldAll },
-            { line: true },
             { label: s('picker.orderName'), checked: order === 'name', onSelect: () => onOrderChange('name') },
             { label: s('picker.orderUpdated'), checked: order === 'updated', onSelect: () => onOrderChange('updated') },
-            ...(onNewScope ? [{ line: true } as const, { label: s('picker.newScope'), onSelect: onNewScope, 'data-guide': 'org.newScope' }] : []),
+            { line: true },
+            { label: s('org.openAll'), onSelect: folds.openAll },
+            { label: s('org.foldAll'), onSelect: folds.foldAll },
           ]}
         />
       </div>
+      <div className="kit-tree__head" aria-hidden="true"><span>{s('org.treeScopes')}</span><span>{s('org.treeHolds')}</span></div>
       <div className="kit-tree__rows">
         {matching === undefined && (
-          <div
-            className="kit-tree__row" data-testid="scope-root" aria-current={at === ROOT_SCOPE ? 'page' : undefined}
-            onClick={() => onHome(ROOT_SCOPE)}
-          >
-            <span className="kit-tree__fold" aria-hidden />
-            <button type="button" className="kit-tree__name">{name}</button>
-            {writable(ROOT_SCOPE) && (
-              <span className="kit-tree__menu" onClick={(event) => event.stopPropagation()}>
-                <MoreMenu size="small" label={s('frame.scopeMenu', { name })} items={[{ label: s('group.openFor', { name }), onSelect: () => onSettings(tree) }]} />
-              </span>
-            )}
-          </div>
+          <RootRow
+            tree={tree} name={name} current={at === ROOT_SCOPE} count={holdings.count(ROOT_SCOPE)} words={heldInWords(holdings.all(ROOT_SCOPE), s)}
+            onHome={onHome} menuOf={menuOf} s={s}
+          />
         )}
         <ScopeTree
-          tree={ordered} name={name} folds={folds} onHome={onHome} onSettings={onSettings} onDelete={onDelete} writable={writable}
-          current={at} language={language} s={s}
+          tree={listed} folds={folds} onHome={onHome} menuOf={menuOf} holdings={holdings} current={at} language={language} s={s} unread={unread}
+          onlyWork={show === 'work'}
           {...(matching ? { matching } : {})}
           {...(typeLink ? { typeLink } : {})}
         />
       </div>
       <div className="kit-tree__foot" data-testid="tree-foot">
         <div className="kit-tree__heading">{s('frame.acrossOrganisation')}</div>
-        {ORGANISATION_PLACES.map((place) => (
-          <button
-            key={place.page} type="button" className="kit-tree__place" data-testid={`tree-place-${place.page}`}
-            aria-current={page === place.page ? 'page' : undefined}
-            onClick={() => go({ scope: ROOT_SCOPE, page: place.page })}
-          >
-            {s(place.label)}
-          </button>
-        ))}
+        {ORGANISATION_PLACES.map((place) => {
+          const fact = placeFact?.(place.page)
+          return (
+            <button
+              key={place.page} type="button" className="kit-tree__place" data-testid={`tree-place-${place.page}`} data-guide={place.guide}
+              aria-current={page === place.page ? 'page' : undefined} title={fact?.words}
+              onClick={() => go({ scope: ROOT_SCOPE, page: place.page })}
+            >
+              <span>{s(place.label)}</span>
+              {fact && <span className="kit-tree__holds">{fact.count}</span>}
+            </button>
+          )
+        })}
       </div>
     </div>
   )
-}
-
-function sortTree(tree: ScopeSummary, order: ProjectOrder): ScopeSummary {
-  return { ...tree, children: sortScopes(tree.children, order).map((child) => sortTree(child, order)) }
 }

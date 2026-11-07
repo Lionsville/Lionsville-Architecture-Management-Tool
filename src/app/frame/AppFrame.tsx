@@ -15,7 +15,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import Popover from '@mui/material/Popover'
 import type { Translate } from '../../i18n'
-import type { Destination, Page } from '../../agent/screen'
+import type { Destination, Page, Screen } from '../../agent/screen'
 import { HOME_PAGES, viewPage } from '../../agent/screen'
 import type { DesignDiagram } from '../../model/types'
 import { matchesQuery } from '../../model/textSearch'
@@ -49,6 +49,12 @@ import { MORE_PLACES, ORGANISATION_PLACES, SCOPE_PLACES } from './places'
 import type { FramePlace } from './places'
 import { ActivityPanel, YourWorkPanel } from './FramePanels'
 import { ScopeTreePanel } from './ScopeTreePanel'
+import { recentFrom, recentOf, RECENT_KEY, remembered } from './recentPlaces'
+import { sourceKey } from '../../platform/workingSource'
+import { holdingsOf } from '../organisation/holdings'
+import { newViewChoices } from '../organisation/newViewChoices'
+import { registerSummary } from '../organisation/register'
+import { plural } from '../../i18n/strings'
 import { ShortcutsSheet } from './ShortcutsSheet'
 import { statusWord } from './statusWord'
 import { DESKTOP_APP_LINK, WEBSITE_LINK, HELP_MENU, offered } from '../../platform/menu'
@@ -72,6 +78,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const onHomeBare = !parts.nav.project && !pageUp
   const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts, facts)
   useFrameKeys(parts, state)
+  useRememberPlace(parts, screen)
   const lines = usePaletteLines(parts, at, go)
   const { lookAgain } = agent
   const tabs = useMemo(() => ({
@@ -97,7 +104,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     frame.set({ asks: undefined })
     facts.openSettings()
   }, [state.asks, facts, frame])
-  const tree = (onHomeBare || state.pinned) && <TreeFor parts={parts} at={at} page={page} />
+  const tree = (onHomeBare || state.pinned) && !facts?.bare && <TreeFor parts={parts} at={at} page={page} />
   return (
     <FrameCommandsContext.Provider value={lines}>
       <PlaceTabContext.Provider value={tabs}>
@@ -122,6 +129,23 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
       </PlaceTabContext.Provider>
     </FrameCommandsContext.Provider>
   )
+}
+
+/** A place worth coming back to is written down as it is arrived at, for *Continue*: a preference of this computer's. */
+function useRememberPlace(parts: ShellParts, screen: Screen) {
+  const { services: { prefs }, source } = parts
+  const place = recentOf(screen, new Date().toISOString())
+  const key = place && `${place.scope}|${place.page}|${place.id ?? ''}`
+  const latest = useRef(place)
+  latest.current = place
+  useEffect(() => {
+    const here = latest.current
+    if (!here) return
+    const by = sourceKey(source)
+    const stored = prefs.readPreferences()[RECENT_KEY] as Record<string, unknown> | undefined
+    prefs.writePreference({ [RECENT_KEY]: { ...stored, [by]: remembered(recentFrom(stored, by), here) } })
+    // Once per arrival, whatever else moves on the screen.
+  }, [key])
 }
 
 export function canOf(parts: ShellParts, facts: ScreenFacts | undefined) {
@@ -210,16 +234,38 @@ function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath
     if (nav.project) nav.goHome(at)
     then(scope)
   }
+  const { models } = parts.tree
+  const holdings = useMemo(() => holdingsOf(organisation.tree, models), [organisation.tree, models])
+  const atHome = (then: () => void) => { onDone?.(); if (nav.project) nav.goHome(at); then() }
   return (
     <ScopeTreePanel
       tree={organisation.tree} at={at} page={page} order={order.order} onOrderChange={order.chooseOrder} folds={organisation}
+      holdings={holdings} today={parts.todayDay}
       onHome={onHome} go={(to) => { onDone?.(); agent.openSomewhere(to) }}
-      onSettings={fromHome(organisation.editScope)} onDelete={fromHome(organisation.askDelete)}
-      onNewScope={writable(at) ? () => { onDone?.(); if (nav.project) nav.goHome(at); organisation.addUnder(at) } : undefined}
+      onSettings={fromHome(organisation.editScope)} onDelete={fromHome(organisation.askDelete)} onMove={fromHome(organisation.moveScope)}
+      onNewScopeUnder={(path) => atHome(() => organisation.addUnder(path))}
+      newViewItems={(path) => newViewChoices(s, () => atHome(() => organisation.addBoard(path)), (kind) => { onDone?.(); organisation.open(path, { page: 'make', kind }) })}
+      placeFact={(place) => placeFact(place, parts)}
       writable={writable} language={prefs.language} s={s}
       {...(parts.frame.get().screen?.typeLink ? { typeLink: parts.frame.get().screen?.typeLink } : {})}
     />
   )
+}
+
+/** What the foot says beside a place: the register's counts, as its card used to say them, on hover. */
+function placeFact(place: Page, parts: ShellParts): { count: string; words: string } | undefined {
+  const { findings, services: { s } } = parts
+  if (place !== 'register') return undefined
+  const counts = registerSummary(findings.register)
+  if (counts.applications === 0) return undefined
+  return {
+    count: String(counts.applications),
+    words: [
+      plural(s, { one: 'register.applicationsOne', other: 'register.applicationsOther' }, counts.applications),
+      plural(s, { one: 'register.ownedOne', other: 'register.ownedOther' }, counts.owned),
+      plural(s, { one: 'register.outsideOne', other: 'register.outsideOther' }, counts.outside),
+    ].join(' · '),
+  }
 }
 
 function Trail({ parts, facts, at, name }: { parts: ShellParts; facts: ScreenFacts | undefined; at: ScopePath; name: string }) {

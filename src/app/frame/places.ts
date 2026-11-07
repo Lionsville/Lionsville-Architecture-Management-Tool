@@ -26,11 +26,11 @@ export const SCOPE_PLACES: readonly FramePlace[] = [
 
 /** The organisation's: the foot of the tree, and the top of More. */
 export const ORGANISATION_PLACES: readonly FramePlace[] = [
-  { page: 'register', label: 'frame.place.register' },
-  { page: 'people', label: 'frame.place.people' },
-  { page: 'operating', label: 'frame.place.operating' },
+  { page: 'register', label: 'frame.place.register', guide: 'org.card.register' },
+  { page: 'people', label: 'frame.place.people', guide: 'org.card.people' },
+  { page: 'operating', label: 'frame.place.operating', guide: 'org.card.operating' },
   { page: 'principles', label: 'frame.place.principles' },
-  { page: 'checks', label: 'frame.place.checks' },
+  { page: 'checks', label: 'frame.place.checks', guide: 'org.card.checks' },
 ]
 
 /** The rest of More, until their pages have merged into the ones above. */

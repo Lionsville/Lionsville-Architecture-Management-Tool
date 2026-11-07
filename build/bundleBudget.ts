@@ -57,6 +57,10 @@
  * 80 kB and 20 kB: the merged register's and the work list's words are in the
  * first download in three languages, as every module's are.
  *
+ * **Raised again for 4.0.0**, by 40 kB each: a home is the first paint, and its
+ * tree, its one-line rows and its first-run pages come with their words in three
+ * languages. Measured 10.089 MB and 3.093 MB when this was said.
+ *
  * The engine is counted by a name only the engine carries: the worker script
  * and the self-contained bundle both hold it, and the API that talks to either
  * does not. More than one file holding it is ELK shipped twice

@@ -76,7 +76,7 @@ function sequenceOf(revision: string, nonce: string): number | undefined {
  */
 async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> {
   const {
-    elements, relations, transitions, observations, causes, solutions, experiments,
+    decisions, elements, relations, transitions, observations, causes, solutions, experiments,
     unitTypes, roles, responsibilities, operatingRules, assignments, checkMarks, principles, principleGroups, aspectScales, citations, evaluations,
   } = (await readModel(tx, kept)).content.model
   return {
@@ -86,6 +86,8 @@ async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> 
     model: {
       elements: elements.map(({ description: _prose, ...element }) => element),
       relations,
+      // How many records, for what a row of the tree says it holds: the records themselves are read where they are shown.
+      ...(decisions?.length ? { decisionCount: decisions.length } : {}),
       ...(transitions ? { transitions } : {}),
       // A scope's analysis, which every scope above reads (ADR-0032 §1).
       ...(observations ? { observations } : {}),

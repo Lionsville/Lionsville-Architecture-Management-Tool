@@ -30,23 +30,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Card from '@mui/material/Card'
-import Chip from '@mui/material/Chip'
-import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import Divider from '@mui/material/Divider'
-import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import { LOCALE } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import type { Language, StringKey, Translate } from '../../i18n'
 import { countScopeKinds, countScopeTypes, flattenScopes, isOpenableScope, newestChange, sortScopes } from '../../projects/scope'
-
 import type { ProjectOrder, ScopeSummary } from '../../projects/scope'
 import type { ElementId } from '../../model'
 import type { PlatformTree } from '../../model/hosting'
@@ -58,48 +44,50 @@ import type { ScopePath } from '../../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import type { WorkingSource } from '../../platform/workingSource'
+import type { Page } from '../../agent/screen'
 import type { InitialPage } from '../App'
 import type { SourceSayings } from '../appProps'
 import type { SourceChip, SourceWayIn } from '../../platform/sourceProvider'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import Link from '@mui/material/Link'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { TextField, TextInput } from '../../widgets/kit/Field'
+import { MenuButton } from '../../widgets/kit/Menu'
+import { PageHead } from '../../widgets/kit/Section'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
 import { useFrameFacts } from '../frame/frameStore'
 import type { ScreenFacts } from '../frame/frameStore'
-import { QUIET, SourceChipView } from '../ShellToolbar'
+import { MORE_PLACES, ORGANISATION_PLACES, SCOPE_PLACES } from '../frame/places'
+import type { RecentPlace } from '../frame/recentPlaces'
+import { SourceChipView } from '../ShellToolbar'
 import { NewScopeDialog } from './NewScopeDialog'
 import type { NewScopeDialogProps } from './NewScopeDialog'
 import { registerSummary, registerWithin } from './register'
 import type { RegisterRow } from './register'
-import { PrinciplesCard } from './PrinciplesCard'
 import { HomeRecords } from './HomeRecords'
 import type { HomeStore } from './HomeRecords'
-import { BlocksCard } from './BlocksCard'
 import { RelevantTopics } from './RelevantTopics'
-import { TopicsCard } from './TopicsCard'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
-import { PeopleCard } from './PeopleCard'
 import type { PeopleAccess } from './usePeopleRegister'
 import type { OrgPage } from '../useShellAgent'
 import { technologySummary, technologyWithin } from '../../projects/technologyRegister'
 import type { TechnologyRow } from '../../projects/technologyRegister'
-import { OrganisationCards } from './OrganisationCards'
-import type { OrganisationCardsProps } from './OrganisationCards'
-import type { FindingTarget } from '../../roadmap'
-import { BoardsTable } from './BoardsTable'
-import { NeedsAttention } from './NeedsAttention'
-import { ChecksCard, HomePages } from './HomePages'
+import { ChecksLine } from './NeedsAttention'
+import { HomePages } from './HomePages'
 import { firstOfWeight } from './treeChecks'
 import { useHomeChecks } from './useHomeChecks'
 import type { TreeRead } from './useHomeChecks'
 import { useHomePages } from './useHomePages'
 import { organisationPages } from './organisationPages'
-import type { OrganisationPages } from './organisationPages'
 import { ScopeSettingsDialog, SCOPE_KIND_COUNT, scopeTypeLabel } from './ScopeSettingsDialog'
 import { HomeSearch } from './HomeSearch'
 import { ServedBy } from './ServedBy'
 import type { ServedByAccess } from './useServedBy'
 import type { Organisation } from './useOrganisation'
+import { holdingsOf } from './holdings'
+import { newViewChoices } from './newViewChoices'
+import { homeMeta, ScopeHome } from './ScopeHome'
+import { FirstChoices, NamedNothingYet } from './HomeFirstRun'
 
 export type OrganisationScreenProps = {
   organisation: Organisation
@@ -250,72 +238,16 @@ export type OrganisationScreenProps = {
   principlesAt?: (path: ScopePath) => ScopePrinciples
   /** Where the topics are written (ADR-0042): the card, the catalogue and *Relevant topics*, where the shell keeps one. */
   topics?: HomeStore
+  /** Where this person worked last, on this computer, for *Continue*; and going back there. */
+  recent?: readonly RecentPlace[]
+  onContinue?: (place: RecentPlace) => void
+  /** Open a working file somebody gave you, the File menu's way. Absent: not offered. */
+  onOpenFile?: () => void
   /** The day, injected so a card's finding is not at the mercy of the clock. */
   today: string
   language: Language
   s: Translate
   windowChrome?: WindowChrome
-}
-
-/**
- * Whether the row of cards is drawn: at the root once the listing has
- * answered, which is where the root's name comes from; below it once the
- * level's own document is read.
- */
-function cardsDrawn(atRoot: boolean, listed: boolean, ready: boolean): boolean {
-  return atRoot ? listed : ready
-}
-
-/**
- * Where each card's doors go: a page of the scope whose home this is, opened
- * the way the workspace opens it — the sheet, the map and the technology
- * landscape on the one the scope has, and made where it has none, which is
- * what the card's *Make…* says (`make`: an open itself never makes a view);
- * the decisions page on the record a card names, the roadmap card's finding
- * on what it is about.
- */
-function cardDoors(open: Organisation['open'], at: ScopePath, pages: OrganisationPages) {
-  const viewOr = (page: 'sheet' | 'map' | 'technology', id: string | undefined): InitialPage => (
-    id !== undefined ? { page, id } : { page: 'make', kind: page }
-  )
-  return {
-    onOpenBusiness: () => open(at, viewOr('sheet', pages.business.sheetId)),
-    onOpenMap: () => open(at, viewOr('map', pages.business.mapId)),
-    onOpenDecisions: () => open(at, { page: 'decisions' }),
-    onOpenDecision: (id: string) => open(at, { page: 'decisions', id }),
-    onOpenObservations: () => open(at, { page: 'observations' }),
-    onOpenRoadmap: () => open(at, { page: 'roadmap' }),
-    onOpenFinding: (target: FindingTarget) => open(at, target),
-    onOpenTechnologyLandscape: () => open(at, viewOr('technology', pages.technology.landscapeId)),
-    onOpenDocumentation: () => open(at, { page: 'documentation' }),
-    // Kept at the organisation (ADR-0036), whichever home the card is on.
-    onOpenOperating: () => open(ROOT_SCOPE, { page: 'operating' }),
-  } satisfies Partial<OrganisationCardsProps>
-}
-
-/** The line under a home's heading: who it is for, what type it is, and when it last changed. */
-function HomeMeta({ home, typeLines, changed, language, s }: {
-  home: ScopeSummary; typeLines: readonly string[]; changed: string | undefined; language: Language; s: Translate
-}) {
-  return (
-    <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.5 }} data-testid="organisation-meta">
-      {[
-        // The client only where it differs: "For Acme Logistics" under
-        // the heading "Acme Logistics" says nothing twice.
-        home.client?.trim() && home.client.trim() !== home.name.trim()
-          ? s('org.forClient', { name: home.client.trim() })
-          : '',
-        ...typeLines,
-        changed
-          ? s('org.lastChanged', {
-            when: new Date(changed).toLocaleString(LOCALE[language], {
-              day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-            }),
-          })
-          : s('picker.never'),
-      ].filter(Boolean).join(' · ')}
-    </Typography>
-  )
 }
 
 export function OrganisationScreen({
@@ -324,10 +256,11 @@ export function OrganisationScreen({
   onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead, principlesAt, topics,
+  recent, onContinue, onOpenFile,
 }: OrganisationScreenProps) {
   const { tree, at, root, ready, dialog } = organisation
   const mayWrite = writable(at)
-  /** Which of this screen's pages is up over its cards, one at a time, and what it was asked to pick (`useHomePages`). */
+  /** Which of this screen's pages is up over its home, one at a time, and what it was asked to pick (`useHomePages`). */
   const homePages = useHomePages(pageRequest, onPageChange)
   const searchDoor = useRef<() => void>(() => undefined)
   const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, controlsInset: 0, draggable: false, topInset: 0 }), [windowChrome])
@@ -356,6 +289,7 @@ export function OrganisationScreen({
   const technologyCounts = useMemo(() => technologySummary(technologyHere), [technologyHere])
   const { typeLines, unitTypes, typeName, typeLink } = useScopeTypes(home, servedBy, s)
   const changed = useMemo(() => newestChange(home), [home])
+  const holdings = useMemo(() => holdingsOf(tree, treeRead?.models ?? []), [tree, treeRead])
   /**
    * What to call a scope a finding names: its name where the tree has one,
    * the word for the organisation at the root. The screen's vocabulary, so
@@ -371,38 +305,16 @@ export function OrganisationScreen({
   /**
    * What the checks find at or under this home (ADR-0012 §9; ADR-0036, amended): off what the shell already holds —
    * the tree's findings, the technology rows, every scope's dates, the Conway map over the home and, at the organisation,
-   * the operating model's own — counted under the cards and listed on the Checks page.
+   * the operating model's own — counted on the home's Checks line and listed on the Checks page.
    */
   const checks = useHomeChecks({ findings, register, technology, at, root, tree: treeRead, marks: checkMarks, people, platformTree, today, scopeName, s })
 
   /**
-   * Does this scope have a canvas? Off its own document, which is read for
-   * the cards anyway: the listing counts views, and a sheet is a view that
-   * is laid out rather than drawn (§6), so a root with a business sheet and
-   * no board would otherwise be offered a canvas with nothing on it.
+   * Does this scope have a canvas? Off its own document, which is read for the
+   * rows anyway: the listing counts views, and a sheet is a view that is laid
+   * out rather than drawn (§6).
    */
   const draws = ready && isOpenableScope(root) && root.path === at
-  /**
-   * Which cards: by shape, not by the label a scope gives itself. The root is
-   * the organisation whatever it says; a scope that draws is a landscape; and
-   * anything else beneath the root is a domain — a folder that holds scopes,
-   * or nothing yet.
-   */
-  const level = atRoot ? 'organisation' : draws ? 'landscape' : 'domain'
-  /**
-   * Which cards, additively: a scope can honestly be a domain that also draws
-   * (`countScopes`), and taking its register away the day it gains a board
-   * would be the label deciding after all. The business layer is the root's
-   * (§4); the documentation is about the records on a scope's own boards; the
-   * register is over what is beneath, so a leaf that draws has no use for it.
-   */
-  const shows = {
-    business: atRoot, operating: atRoot,
-    documentation: draws,
-    register: atRoot || home.children.length > 0,
-    // The technology is over the tree like the register, and beside it.
-    technology: atRoot || home.children.length > 0,
-  }
   const named = home.name.trim().length > 0
   const heading = home.name.trim() || (atRoot ? s('picker.organisation') : scopePathLabel(home.path))
   /**
@@ -413,17 +325,25 @@ export function OrganisationScreen({
   const rootName = tree.name.trim() || s('picker.organisation')
   const registerScopeName = useCallback((path: ScopePath) => scopeDisplayName(path, everyScope, rootName), [everyScope, rootName])
   const closePagesAndGoHome = (path: ScopePath) => { homePages.close(); onGoHome(path) }
+  const typeWord = scopeTypeLabel({ kind: home.kind ?? (atRoot ? 'organisation' : draws ? 'landscape' : 'domain'), unitTypeId: home.unitTypeId }, typeName, s)
+  const newView = newViewChoices(s, () => organisation.addBoard(at), (kind) => organisation.open(at, { page: 'make', kind }))
+  const unread = (tree.unreadable ?? []).filter((path) => isWithinScope(path, at) && (path !== at || at === ROOT_SCOPE))
+  // Nothing kept, nothing filed and nothing unread: the first screen a new place opens on.
+  const empty = atRoot && organisation.listed && holdsNothing(tree) && ready && pages.empty && holdings.count(ROOT_SCOPE) === 0
+  const firstRun = empty && !named && mayWrite
+  const goPlace = (page: Page) => {
+    if (isHomePage(page)) homePages.open(page)
+    else organisation.open(ROOT_SCOPE, { page } as InitialPage)
+  }
   return (
     <HomeRecords
       store={topics} tree={tree} principlesAt={principlesAt} writable={writable} today={today} open={organisation.open} goHome={closePagesAndGoHome}
       openCatalogue={(topic) => homePages.open('topics', topic)} openBlock={(block, evaluation) => homePages.open('blocks', block, evaluation)} s={s}
     >
-    <Box sx={{
-      flex: '1 1 auto', minHeight: 0, minWidth: 0, overflowY: 'auto',
-      bgcolor: 'background.default', display: 'flex', flexDirection: 'column',
-    }}>
+    <Box sx={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       <HomeFacts
-        kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()} typeLink={typeLink}
+        kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()} typeLink={typeLink} bare={firstRun}
+        bands={unread.length > 0 ? [unreadBand(unread, organisation.refresh, s)] : []}
         {...(writable(home.path) ? { openSettings: () => organisation.editScope(home), onNewView: () => organisation.addBoard(at) } : {})}
         {...(root && root.path === at ? { views: root.model.diagrams } : {})}
       />
@@ -431,140 +351,70 @@ export function OrganisationScreen({
         at={home.path} tree={tree} root={root} treeRead={treeRead} onOpen={organisation.open} onOpenPerson={(person) => homePages.open('people', person)}
         searchRef={(open) => { searchDoor.current = open }} s={s}
       />
-      <Box inert={homePages.openPage !== undefined} sx={{ flex: 1, overflowY: 'auto', px: 3, py: 4 }}>
-        {/* Wider on a wide screen, where the cards and the tables have use
-            for the room; the sentences keep their own measure (720). From
-            1200 px the cards stand five across, so ten of them are two rows
-            and not three with one alone on the last. */}
-        <Box sx={{ maxWidth: { xs: 980, lg: 1180, xl: 1280 }, mx: 'auto' }}>
-          {/* Identity. A folder nobody has named asks for a name where the
-              heading would be, rather than showing a blank one. */}
-          {named || !atRoot || !mayWrite ? (
-            <Typography sx={{ fontSize: 28, fontWeight: 500 }} data-testid="organisation-name">
-              {heading}
-            </Typography>
-          ) : (
-            <NameTheOrganisation onName={organisation.nameOrganisation} s={s} />
-          )}
-
-          <HomeMeta home={home} typeLines={typeLines} changed={changed} language={language} s={s} />
-
-          <HomeTools
-            home={home} heading={heading} level={level} typeName={typeName}
-            source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined}
-            sourceDescription={sourceDescription} sourceLabelKey={sourceSayings.labelKey} sourceChip={sourceChip} chipPanel={chipPanel} chipFace={chipFace}
-            waysIn={atRoot ? waysIn : undefined}
-            onSettings={writable(home.path) ? () => organisation.editScope(home) : undefined}
-            onNewScope={mayWrite ? () => organisation.addUnder(at) : undefined}
-            s={s}
-          />
-
-          {/* What this screen is, and where things live: the first sentence
-              every desktop session reads, so it says it plainly. At the root
-              only — a domain's home is reached from here and needs no second
-              explanation. */}
-          {atRoot && (
-            <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 1, maxWidth: 720 }} data-testid="organisation-subtitle">
-              {[whereSaid(sourceSayings, sourceDescription, s), s('org.subtitle')].filter(Boolean).join(' ')}
-            </Typography>
-          )}
-
-          {home.description && (
-            <Typography sx={{ fontSize: 13, mt: 1.5, maxWidth: 720 }}>
-              {home.description}
-            </Typography>
-          )}
-
-          {home.links && home.links.length > 0 && (
-            <Stack direction="row" spacing={0.75} sx={{ mt: 1.5, flexWrap: 'wrap', gap: 0.75 }}>
-              {home.links.map((link) => (
-                <Chip
-                  key={link.url}
-                  size="small"
-                  component={Link}
-                  clickable
-                  href={link.url}
-                  target="_blank"
-                  // `noopener` because the opened page gets a handle on this
-                  // window otherwise, and the address came from a file that may
-                  // have been written by somebody else.
-                  rel="noopener noreferrer"
-                  label={link.label}
-                  sx={{ height: 20, fontSize: 11 }}
-                />
-              ))}
-            </Stack>
-          )}
-
-          {/* What the checks find here, counted by weight, each count a way to
-              the Checks page on the first check of its weight. Above the
-              cards: what needs attention is read first, and under three rows
-              of cards it was below the fold of a laptop screen. */}
-          <NeedsAttention counts={checks.counts} onOpen={(weight) => homePages.open('checks', firstOfWeight(checks.rows, weight))} s={s} />
-
-          {/* Not before the document is read at a level below the root: the
-              row of cards is the level's shape, and drawing a domain's row and
-              then a landscape's is a flicker on every step down. At the root,
-              not before the listing has answered: the root's name is the
-              listing's, and cards under a nameless root are a folder that
-              looks empty when it has not been read yet. */}
-          <Box sx={{ mt: 3, minHeight: 120 }}>
-            {cardsDrawn(atRoot, organisation.listed, ready) && <OrganisationCards
-              pages={pages}
-              ready={ready}
-              {...cardDoors(organisation.open, at, pages)}
-              localObservations={localObservations}
-              register={registerCounts}
-              technology={technologyCounts}
-              initiatives={initiatives}
-              shows={shows}
-              onOpenRegister={() => homePages.open('register')}
-              onOpenTechnology={() => homePages.open('technologyRegister')}
-              writable={mayWrite}
-              extra={<><PrinciplesCard at={at} principlesAt={principlesAt} onOpen={() => organisation.open(at, { page: 'principles' })} s={s} />{atRoot && <TopicsCard onOpen={() => homePages.open('topics')} s={s} />}<BlocksCard at={at} onOpen={() => homePages.open('blocks')} s={s} /><PeopleCard people={people} atRoot={atRoot} onOpen={() => homePages.open('people')} s={s} /><ChecksCard checks={checks} onOpen={() => homePages.open('checks')} s={s} /></>}
-              s={s}
-            />}
-          </Box>
-
-          {/* Who serves this scope (ADR-0036, amended): the units whose
-              domains name it, written where each unit is kept. */}
-          <ServedBy scope={at} servedBy={servedBy} scopeName={scopeName} s={s} />
-          <RelevantTopics at={at} />
-
-          {/* The boards, one row each: a scope that draws is a stop on the way
-              to its canvas, and the way on is the row of the board you want —
-              a future version of the landscape sits beside the current one
-              here rather than behind it on a tab. On every home, empty or
-              not, because the way to a scope's FIRST board is here too: the
-              canvas's own button is behind a canvas a scope with no board is
-              never given (§1). */}
-          {root && root.path === at && (
-            <BoardsTable
-              // Every view, the laid-out ones too: since ADR-0016 each is a
-              // tab the editor draws, so each row opens the scope on it.
-              boards={root.model.diagrams}
-              onOpen={(id) => organisation.open(at, { page: 'board', id })}
-              onAdd={() => organisation.addBoard(at)}
-              // The same kinds the editor's + tab offers (ADR-0016), made the
-              // moment the scope opens: the one door onto a view that writes one.
-              onMake={(kind) => organisation.open(at, { page: 'make', kind })}
-              onDelete={(board) => organisation.askDeleteBoard(at, board)}
-              readOnly={!mayWrite}
-              language={language}
-              s={s}
+      <Box inert={homePages.openPage !== undefined} sx={{ flex: 1, overflowY: 'auto' }}>
+        {firstRun
+          ? (
+            <FirstChoices
+              examples={examples} waysIn={waysIn ?? []} onName={organisation.nameOrganisation} onCopy={organisation.copyExample}
+              onOpenFile={onOpenFile} where={whereSaid(sourceSayings, sourceDescription, s)}
+              places={[...SCOPE_PLACES, ...ORGANISATION_PLACES, ...MORE_PLACES]} goPlace={goPlace} s={s}
             />
+          )
+          : (
+            <div className="kit-page">
+              <PageHead
+                title={named || !atRoot || !mayWrite ? heading : <NameTheOrganisation onName={organisation.nameOrganisation} s={s} />}
+                titleTestId="organisation-name" metaTestId="organisation-meta" metaTitle={typeLines.join(' · ')}
+                meta={[homeMeta(home, tree, typeWord, changed, language, s), mayWrite ? '' : s('org.readOnlyHere')].filter(Boolean).join('. ')}
+                actions={(
+                  <HomeActions
+                    empty={empty} writable={mayWrite} settingsAllowed={writable(home.path)} newView={newView}
+                    onNewScope={() => organisation.addUnder(at)} onSettings={() => organisation.editScope(home)}
+                    bareAtRoot={ready && !holdsAnyAt(root, at, tree)}
+                    source={chipHere(atRoot, sourceChip, chipPanel, chipFace) ? source : undefined} sourceDescription={sourceDescription}
+                    sourceLabelKey={sourceSayings.labelKey} atTheEnd={sourceChip !== undefined || chipPanel !== undefined || chipFace !== undefined}
+                    waysIn={atRoot ? waysIn : undefined} s={s}
+                  />
+                )}
+              >
+                {home.description && <p className="kit-pageline">{home.description}</p>}
+              </PageHead>
+              {home.links && home.links.length > 0 && (
+                <p className="kit-factline">
+                  {home.links.map((link) => (
+                    // `noopener` because the opened page gets a handle on this window otherwise, and the address came from a file that may have been written by somebody else.
+                    <a key={link.url} href={link.url} target="_blank" rel="noopener noreferrer" className="kit-linkline__link">{link.label}</a>
+                  ))}
+                </p>
+              )}
+              {/* Who serves this scope (ADR-0036, amended): the units whose domains name it, written where each unit is kept. */}
+              <ServedBy scope={at} servedBy={servedBy} scopeName={scopeName} s={s} />
+              <RelevantTopics at={at} />
+              <ChecksLine
+                counts={checks.counts} shown={checks.split.shown} onOpen={(weight) => homePages.open('checks', firstOfWeight(checks.rows, weight))}
+                onPage={() => homePages.open('checks')} s={s}
+              />
+              {empty && named
+                ? (
+                  <NamedNothingYet
+                    writable={mayWrite} newView={newView} onNewScope={() => organisation.addUnder(at)} where={whereSaid(sourceSayings, sourceDescription, s)}
+                    onObservation={() => organisation.open(at, { page: 'observations' })} onOperating={() => organisation.open(ROOT_SCOPE, { page: 'operating' })}
+                    s={s}
+                  />
+                )
+                : (
+                  <ScopeHome
+                    at={at} atRoot={atRoot} home={home} tree={tree} views={root && root.path === at ? root.model.diagrams : []} pages={pages}
+                    ready={atRoot ? organisation.listed && ready : ready} draws={draws} writable={mayWrite} localObservations={localObservations} initiatives={initiatives}
+                    register={registerCounts} technology={technologyCounts} principlesAt={principlesAt} holdings={holdings}
+                    open={organisation.open} onGoHome={onGoHome} onHomePage={(page) => homePages.open(page)} onFinding={(target) => organisation.open(at, target)}
+                    onDeleteView={(view) => organisation.askDeleteBoard(at, view)} onNewView={newView}
+                    {...(mayWrite ? { onNewScope: () => organisation.addUnder(at) } : {})}
+                    {...(recent ? { recent } : {})} onContinue={onContinue} today={today} language={language} s={s}
+                  />
+                )}
+            </div>
           )}
-
-          <UnreadableScopes tree={tree} at={at} s={s} />
-
-          {/* The examples are for a folder with nothing in it yet. Once the
-              organisation holds a view or a scope, an offer to copy one in
-              beside the real work is a way to file an example under it by
-              accident, so the section goes. */}
-          {atRoot && mayWrite && examples.length > 0 && holdsNothing(tree) && (
-            <Examples examples={examples} onCopy={organisation.copyExample} s={s} />
-          )}
-        </Box>
       </Box>
 
       <HomePages
@@ -577,10 +427,13 @@ export function OrganisationScreen({
         tree={orderedTree}
         parent={dialog.kind === 'newScope' ? dialog.parent : at}
         name={dialog.kind === 'newScope' ? dialog.name : ''}
-        withBoard={dialog.kind === 'newScope' ? dialog.withBoard : true}
+        withBoard={dialog.kind === 'newScope' ? dialog.withBoard : false}
+        type={dialog.kind === 'newScope' ? dialog.type : ''}
+        unitTypes={unitTypes}
         onParentChange={organisation.setNewScopeParent}
         onNameChange={organisation.setNewScopeName}
         onWithBoardChange={organisation.setNewScopeWithBoard}
+        onTypeChange={organisation.setNewScopeType}
         onCancel={organisation.closeDialog}
         {...newScopeServing(organisation, servedBy)}
         s={s}
@@ -595,6 +448,7 @@ export function OrganisationScreen({
       />
       <ScopeSettingsDialog
         target={dialog.kind === 'settings' ? dialog.target : undefined}
+        moving={dialog.kind === 'settings' && dialog.moving === true}
         tree={orderedTree} servedBy={(path) => <ServedBy scope={path} servedBy={servedBy} scopeName={scopeName} compact onLeave={organisation.closeDialog} s={s} />}
         unitTypes={unitTypes} onCancel={organisation.closeDialog}
         onSave={(path, patch) => { organisation.closeDialog(); organisation.applySettings(path, patch) }}
@@ -624,44 +478,13 @@ export function OrganisationScreen({
   )
 }
 
+/** Whether a place of the frame is one this screen draws over its home, rather than a scope's own page. */
+function isHomePage(page: Page): page is OrgPage {
+  return ['register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks'].includes(page)
+}
+
 /** Every scope may be written: what a screen is told by every source that ships. */
 const ANYWHERE = () => true
-
-const QUIET_BUTTON = { fontSize: 11, minWidth: 0, px: 1, color: 'text.secondary' } as const
-
-/** The examples, for a folder with nothing in it yet: each copied in here on its button. */
-function Examples({ examples, onCopy, s }: { examples: readonly ExampleOffer[]; onCopy: (example: ExampleOffer) => void; s: Translate }) {
-  return (
-    <>
-      <Divider sx={{ my: 3 }} />
-      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 1, textTransform: 'uppercase' }}>
-        {s('picker.examples')}
-      </Typography>
-      <Stack spacing={0.75}>
-        {examples.map((example) => (
-          <Card key={example.key} variant="outlined">
-            <Stack direction="row" sx={{ alignItems: 'center', px: 1.5, py: 1 }} spacing={2}>
-              <Box sx={{ flex: 1 }}>
-                <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{example.label}</Typography>
-                <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                  {example.description}
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                data-testid="copy-example"
-                onClick={() => onCopy(example)}
-                sx={QUIET_BUTTON}
-              >
-                {s('org.copyHere')}
-              </Button>
-            </Stack>
-          </Card>
-        ))}
-      </Stack>
-    </>
-  )
-}
 
 /**
  * What to call the board. One field, filled in with the usual name, so Enter
@@ -678,26 +501,17 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
 }) {
   const ready = name.trim().length > 0
   return (
-    <FieldsDialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
-      <DialogTitle>{s('org.newBoard')}</DialogTitle>
-      <DialogContent>
-        <TextField
-          autoFocus
-          fullWidth
-          margin="dense"
-          label={s('org.boardName')}
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && ready) { e.preventDefault(); onCreate() } }}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={!ready} onClick={onCreate}>
-          {s('picker.create')}
-        </Button>
-      </DialogActions>
-    </FieldsDialog>
+    <Dialog
+      open={open} title={s('org.newLandscapeTitle')} onClose={onCancel} onSubmit={() => { if (ready) onCreate() }}
+      actions={(
+        <>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button variant="primary" reason={ready ? undefined : s('picker.nameFirst')} onClick={onCreate}>{s('picker.create')}</Button>
+        </>
+      )}
+    >
+      {open && <TextField autoFocus label={s('org.boardName')} value={name} onChange={onNameChange} />}
+    </Dialog>
   )
 }
 
@@ -738,21 +552,19 @@ function holdsNothing(tree: ScopeSummary): boolean {
 }
 
 /**
- * What the listing could not read under this home, said in a sentence
- * (`ScopeSummary.unreadable`, ADR-0028 amended). Not shown in the tree, which
- * has nothing to draw it from; said here because a scope that is missing
- * without a word is one a person goes looking for, or creates again.
+ * What the listing could not read under this home, as a band with a way to try
+ * again (`ScopeSummary.unreadable`, ADR-0028 amended). A scope that is missing
+ * without a word is one a person goes looking for, or creates again; the tree
+ * shows each as a row that says *not read*.
  */
-function UnreadableScopes({ tree, at, s }: { tree: ScopeSummary; at: ScopePath; s: Translate }) {
-  const here = (tree.unreadable ?? []).filter((path) => isWithinScope(path, at) && (path !== at || at === ROOT_SCOPE))
-  if (here.length === 0) return null
-  return (
-    <Typography sx={{ fontSize: 13, color: 'warning.main', mb: 2, maxWidth: 720 }} data-testid="organisation-unreadable">
-      {here.includes(ROOT_SCOPE)
-        ? s('org.unreadableRoot')
-        : plural(s, { one: 'org.unreadableOne', other: 'org.unreadableOther' }, here.length, { paths: here.join(', ') })}
-    </Typography>
-  )
+function unreadBand(here: readonly ScopePath[], tryAgain: () => void, s: Translate) {
+  return {
+    id: 'unreadable', tone: 'finding' as const,
+    title: <span data-testid="organisation-unreadable">{here.includes(ROOT_SCOPE)
+      ? s('org.unreadableRoot')
+      : plural(s, { one: 'org.unreadableOne', other: 'org.unreadableOther' }, here.length, { paths: here.join(', ') })}</span>,
+    action: <Button size="small" onClick={tryAgain}>{s('common.tryAgain')}</Button>,
+  }
 }
 
 /** A home's facts for the frame, as a component so the hook sits beside the rest of this screen's drawing. */
@@ -762,57 +574,51 @@ function HomeFacts(facts: ScreenFacts) {
 }
 
 /**
- * What the frame's rows do not say about a home: what it is, its settings, where
- * a new scope is filed, and — at the root — where work is kept and the ways to
- * work from somewhere else.
+ * A home's acts: a new view, a new scope filed here and its settings, and at the
+ * root where work is kept and the ways to work from somewhere else. A scope
+ * holding nothing has its first steps on its page, so only its settings stay
+ * up here; each is simply not there for somebody who may only read.
  */
-function HomeTools({
-  home, heading, level, typeName, source, sourceDescription, sourceLabelKey, sourceChip, chipPanel, chipFace, waysIn = [], onSettings, onNewScope, s,
+function HomeActions({
+  writable, settingsAllowed, newView, onNewScope, onSettings, bareAtRoot, empty, source, sourceDescription, sourceLabelKey, atTheEnd, waysIn = [], s,
 }: {
-  home: ScopeSummary
-  heading: string
-  level: 'organisation' | 'domain' | 'landscape'
-  typeName: (unitTypeId: string) => string | undefined
+  writable: boolean
+  settingsAllowed: boolean
+  newView: Parameters<typeof MenuButton>[0]['items']
+  onNewScope: () => void
+  onSettings: () => void
+  bareAtRoot: boolean
+  empty: boolean
   source?: WorkingSource | undefined
   sourceDescription?: StringKey | (string & {}) | undefined
   sourceLabelKey?: StringKey | (string & {}) | undefined
-  sourceChip?: SourceChip | undefined
-  chipPanel?: ((close: () => void) => ReactNode) | undefined
-  chipFace?: ((open: boolean, fallback: ReactNode) => ReactNode) | undefined
+  atTheEnd: boolean
   waysIn?: readonly SourceWayIn[] | undefined
-  onSettings?: (() => void) | undefined
-  onNewScope?: (() => void) | undefined
   s: Translate
 }) {
-  // A chip the provider gave a word, a panel or a face of its own sits in row
-  // one, on every screen. The word a built-in source is said with stays beside
-  // the button that changes it, where it always was.
-  const atTheEnd = sourceChip !== undefined || chipPanel !== undefined || chipFace !== undefined
+  const steps = writable && !bareAtRoot && !empty
   return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'center', flexWrap: 'wrap', mt: 1 }}>
-      <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
-        {scopeTypeLabel({ kind: home.kind ?? level, unitTypeId: home.unitTypeId }, typeName, s)}
-      </Typography>
-      {onSettings && (
-        <Tooltip title={s('group.openFor', { name: heading })}>
-          <Button size="small" color="inherit" onClick={onSettings} sx={QUIET}>{s('group.open')}</Button>
-        </Tooltip>
-      )}
-      {source && !atTheEnd && (
-        <SourceChipView source={source} describeKey={sourceDescription} labelKey={sourceLabelKey} s={s} />
-      )}
+    <>
+      {source && !atTheEnd && <SourceChipView source={source} describeKey={sourceDescription} labelKey={sourceLabelKey} s={s} />}
       {waysIn.map((way) => (
-        <Button key={way.kind} size="small" color="inherit" data-testid={`connect-source-${way.kind}`} onClick={way.onConnect} sx={QUIET}>
-          {/* The provider's key, from its own table or from this one's (`i18n/registerStrings`); the shell only renders it. */}
-          {s(way.labelKey as StringKey)}
-        </Button>
+        // The provider's key, from its own table or from this one's (`i18n/registerStrings`); the shell only renders it.
+        <Button key={way.kind} variant="quiet" size="small" data-testid={`connect-source-${way.kind}`} onClick={way.onConnect}>{s(way.labelKey as StringKey)}</Button>
       ))}
-      {/* The one way to a new scope, on the home it is filed under — for somebody who may write here. */}
-      {onNewScope && (
-        <Button size="small" variant="contained" onClick={onNewScope} data-testid="new-scope" data-guide="org.newScope">{s('picker.newScope')}</Button>
-      )}
-    </Stack>
+      {steps && <MenuButton label={s('org.newBoard')} items={newView} data-guide="org.newBoard" data-testid="new-board" />}
+      {/* The one way to a new scope from a home that has something to show, filed where it is. */}
+      {steps && <Button data-testid="new-scope" data-guide="org.newScope" onClick={onNewScope}>{s('picker.newScope')}</Button>}
+      {settingsAllowed && <Button variant="quiet" data-testid="scope-settings" onClick={onSettings}>{s('group.open')}</Button>}
+    </>
   )
+}
+
+/** Does this scope's own document or the tree under it hold anything: whether the home's page offers first steps instead of its head. */
+function holdsAnyAt(root: Organisation['root'], at: ScopePath, tree: ScopeSummary): boolean {
+  if (root?.path !== at) return true
+  const model = root.model
+  const here = flattenScopes(tree).find((one) => one.path === at)
+  return model.diagrams.length > 0 || (model.decisions?.length ?? 0) > 0 || (model.observations?.length ?? 0) > 0 || (model.transitions?.length ?? 0) > 0
+    || (model.principles?.length ?? 0) > 0 || (here?.children.length ?? 0) > 0
 }
 
 /**
@@ -828,21 +634,15 @@ function NameTheOrganisation({ onName, s }: { onName: (name: string) => void; s:
   // leave a stale draft sitting in this field.
   useEffect(() => () => setName(''), [])
   return (
-    <Stack direction="row" spacing={1} sx={{ alignItems: 'flex-end', maxWidth: 480 }}>
-      <TextField
-        fullWidth
-        variant="standard"
-        label={s('org.nameThis')}
-        value={name}
-        slotProps={{ htmlInput: { 'data-testid': 'organisation-name-field' } }}
+    <span className="kit-factline">
+      <TextInput
+        aria-label={s('org.nameThis')} placeholder={s('org.nameThis')} value={name} data-testid="organisation-name-field"
         onChange={(e) => setName(e.target.value)}
         // The Enter it acts on is consumed, so it cannot go on to press whatever button takes the focus next.
         onKeyDown={(e) => { if (e.key === 'Enter' && name.trim()) { e.preventDefault(); onName(name) } }}
       />
-      <Button size="small" variant="contained" disabled={!name.trim()} onClick={() => onName(name)}>
-        {s('settings.save')}
-      </Button>
-    </Stack>
+      <Button variant="primary" size="small" reason={name.trim() ? undefined : s('picker.nameFirst')} onClick={() => onName(name)}>{s('settings.save')}</Button>
+    </span>
   )
 }
 

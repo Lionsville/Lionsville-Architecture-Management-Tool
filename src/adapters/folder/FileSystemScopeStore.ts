@@ -407,6 +407,7 @@ export class FileSystemScopeStore implements ScopeStore {
       found.push({ path, model: {
         ...lists,
         transitions: await this.transitionsIn(folder),
+        ...await this.decisionCountIn(folder),
         ...analysis,
         ...await this.organisationIn(folder),
         ...await this.principlesIn(folder),
@@ -451,6 +452,20 @@ export class FileSystemScopeStore implements ScopeStore {
   }
 
   /** The plans filed in one scope's folder, by number. A file that will not read is left out. */
+  /** How many records a scope keeps: its files counted and none read, since a row of the tree only asks how many. A record about one element sits a folder deeper. */
+  private async decisionCountIn(folder: DirectoryHandleLike): Promise<{ decisionCount?: number }> {
+    const records = await folder.getDirectoryHandle(DECISIONS_FOLDER).catch(this.orAbsent('the decisions folder'))
+    if (!records) return {}
+    let count = 0
+    const walk = async (at: DirectoryHandleLike): Promise<void> => {
+      for await (const entry of at.values()) {
+        if (entry.kind === 'file') { if (entry.name.endsWith('.md')) count += 1 } else await walk(entry)
+      }
+    }
+    await walk(records)
+    return count > 0 ? { decisionCount: count } : {}
+  }
+
   private async transitionsIn(folder: DirectoryHandleLike): Promise<Transition[]> {
     const plans = await folder.getDirectoryHandle(TRANSITIONS_FOLDER).catch(this.orAbsent('the plans folder'))
     if (!plans) return []

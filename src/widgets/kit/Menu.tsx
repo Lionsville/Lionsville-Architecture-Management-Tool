@@ -37,6 +37,7 @@ type Act = {
   /** An act with no way back: drawn in the danger ink, and placed last after a line. */
   final?: boolean
   'data-guide'?: string
+  'data-testid'?: string
 }
 
 export type MenuAct = Act & {
@@ -107,6 +108,7 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
         data-final={entry.final || undefined}
         data-refused={refused || undefined}
         data-guide={entry['data-guide']}
+        data-testid={entry['data-testid']}
         disableRipple
         role={checkable ? 'menuitemcheckbox' : 'menuitem'}
         aria-checked={checkable ? act.checked : undefined}
@@ -210,15 +212,16 @@ export type MenuButtonProps = {
   variant?: ButtonVariant
   size?: 'normal' | 'small'
   'data-guide'?: string
+  'data-testid'?: string
 }
 
 /** A word that opens a menu. */
-export function MenuButton({ label, menuLabel, items, variant = 'plain', size, 'data-guide': guide }: MenuButtonProps) {
+export function MenuButton({ label, menuLabel, items, variant = 'plain', size, 'data-guide': guide, 'data-testid': testId }: MenuButtonProps) {
   const { anchor, open, toggle, close } = useAnchored()
   return (
     <>
       <Button
-        ref={anchor} variant={variant} size={size} data-guide={guide} aria-haspopup="menu" aria-expanded={open}
+        ref={anchor} variant={variant} size={size} data-guide={guide} data-testid={testId} aria-haspopup="menu" aria-expanded={open}
         onClick={toggle}
       >
         {label}

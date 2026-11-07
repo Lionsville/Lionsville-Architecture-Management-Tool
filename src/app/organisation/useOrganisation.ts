@@ -49,6 +49,7 @@ import type { ExampleOffer } from '../../projects/examples/catalogue'
 import { exampleCopyOver, placeCopy } from '../../projects/examples/copy'
 import type { InitialPage, ScopeSettingsPatch } from '../App'
 import { isTopic, TOPICS_PLACE, topicFiledUnder } from '../../projects/topics'
+import { typeChosen } from '../../projects/scopeType'
 
 /** Which dialog is up. One at a time, because they all ask about one scope. */
 export type OrganisationDialog =
@@ -58,10 +59,10 @@ export type OrganisationDialog =
    * draws nothing itself. `servedBy`, the unit picked to serve it, linked once
    * it is made (ADR-0036, amended 13 October 2026).
    */
-  | { kind: 'newScope'; parent: ScopePath; name: string; withBoard: boolean; servedBy?: ElementId }
+  | { kind: 'newScope'; parent: ScopePath; name: string; withBoard: boolean; type: string; servedBy?: ElementId }
   /** A landscape for a scope that is already there, at any level (ADR-0012 §1). */
   | { kind: 'newBoard'; path: ScopePath; name: string }
-  | { kind: 'settings'; target: ScopeSummary }
+  | { kind: 'settings'; target: ScopeSummary; moving?: boolean }
   | { kind: 'delete'; target: ScopeSummary }
   /** One board of a scope, from the table on its home. */
   | { kind: 'deleteBoard'; path: ScopePath; board: { id: string; name: string } }
@@ -102,6 +103,8 @@ export type UseOrganisationInput = {
    * shell's.
    */
   onEnter: (scope: ScopeSnapshot, page?: InitialPage) => void
+  /** To a scope's home: where a scope just filed is arrived at. */
+  onHome?: (path: ScopePath) => void
   notify: (message: string, severity: 'success' | 'error' | 'warning') => void
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Latched storage notice: a store that refuses says so once, standing. */
@@ -147,11 +150,14 @@ export type Organisation = {
   foldAll: () => void
   addUnder: (parent: ScopePath) => void
   editScope: (target: ScopeSummary) => void
+  /** The same settings, opened at *Filed under*. */
+  moveScope: (target: ScopeSummary) => void
   askDelete: (target: ScopeSummary) => void
   closeDialog: () => void
   setNewScopeName: (name: string) => void
   setNewScopeParent: (parent: ScopePath) => void
   setNewScopeWithBoard: (withBoard: boolean) => void
+  setNewScopeType: (type: string) => void
   setNewScopeServedBy: (unitId: ElementId | undefined) => void
   /**
    * Make the scope the dialog asks for. `link` writes the unit picked to
@@ -293,7 +299,7 @@ async function moveFiled(scopes: Repositories['scopes'], index: Repositories['in
 const ANYWHERE = () => true
 
 export function useOrganisation({
-  repositories, active, at, onEnter, notify, onFailure, onKeptResult, s, onTreeChanged, writable = ANYWHERE,
+  repositories, active, at, onEnter, onHome, notify, onFailure, onKeptResult, s, onTreeChanged, writable = ANYWHERE,
 }: UseOrganisationInput): Organisation {
   const { scopes } = repositories
   const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
@@ -306,9 +312,11 @@ export function useOrganisation({
   const folds = useScopeFolds(tree)
 
   const addUnder = useCallback((parent: ScopePath) => {
-    setDialog({ kind: 'newScope', parent, name: '', withBoard: true })
+    setDialog({ kind: 'newScope', parent, name: '', withBoard: false, type: '' })
   }, [])
   const editScope = useCallback((target: ScopeSummary) => setDialog({ kind: 'settings', target }), [])
+  const moveScope = useCallback((target: ScopeSummary) => setDialog({ kind: 'settings', target, moving: true }), [])
+  const setNewScopeType = useCallback((type: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, type } : held)), [])
   const askDelete = useCallback((target: ScopeSummary) => setDialog({ kind: 'delete', target }), [])
   const closeDialog = useCallback(() => setDialog({ kind: 'none' }), [])
   const setNewScopeName = useCallback((name: string) => {
@@ -348,7 +356,7 @@ export function useOrganisation({
    */
   const create = useCallback((link?: (path: ScopePath, unitId: ElementId, name: string) => Promise<void>) => {
     if (dialog.kind !== 'newScope') return
-    const wanted = { parent: dialog.parent, name: dialog.name.trim(), withBoard: dialog.withBoard, servedBy: dialog.servedBy }
+    const wanted = { parent: dialog.parent, name: dialog.name.trim(), withBoard: dialog.withBoard, type: dialog.type, servedBy: dialog.servedBy }
     if (!wanted.name) return
     setDialog({ kind: 'none' })
     void (async () => {
@@ -358,7 +366,12 @@ export function useOrganisation({
         parent: wanted.parent, name: wanted.name, withBoard: wanted.withBoard, boardName: s('shell.newDiagram'), ancestors: 'make',
       })
       if ('refused' in made) return refuseInTheWay(onFailure)
-      await entered(made.path, s('shell.scopeCreated', { name: wanted.name }))
+      if (wanted.type) await changeScope(scopes, made.path, () => [{ type: 'scope.describe', patch: typeChosen(wanted.type) }])
+      // On its home, where its first step is offered: a new scope is not a blank canvas to be left on.
+      refresh()
+      onTreeChanged?.()
+      onHome?.(made.path)
+      notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
       if (wanted.servedBy !== undefined && link) await link(made.path, wanted.servedBy, wanted.name)
     })().catch((cause: unknown) => {
       // Where work is kept refusing is what the standing notice says, and it
@@ -366,7 +379,7 @@ export function useOrganisation({
       onFailure('organisation.create', cause)
       onKeptResult(false)
     })
-  }, [dialog, scopes, entered, onFailure, onKeptResult, s])
+  }, [dialog, scopes, refresh, onTreeChanged, onHome, notify, onFailure, onKeptResult, s])
 
   /**
    * Add a board to a scope that is already there, and land on it.
@@ -610,14 +623,14 @@ export function useOrganisation({
 
   return useMemo(() => ({
     tree, listed, listedNow, at, root, ready, refresh, dialog, ...folds,
-    addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
-    setNewScopeWithBoard, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
+    addUnder, editScope, moveScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
+    setNewScopeWithBoard, setNewScopeType, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   }), [
     tree, listed, listedNow, at, root, ready, refresh, dialog, folds,
-    addUnder, editScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
-    setNewScopeWithBoard, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
+    addUnder, editScope, moveScope, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
+    setNewScopeWithBoard, setNewScopeType, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
     askDeleteBoard, confirmDeleteBoard,
     applySettings, confirmDelete, open, copyExample, nameOrganisation,
   ])
@@ -626,5 +639,5 @@ export function useOrganisation({
 /** The new-scope dialog with the unit picked to serve it, or none. Any other dialog stays as it is. */
 export function servedByPicked(held: OrganisationDialog, unitId: ElementId | undefined): OrganisationDialog {
   if (held.kind !== 'newScope') return held
-  return { kind: 'newScope', parent: held.parent, name: held.name, withBoard: held.withBoard, ...(unitId !== undefined ? { servedBy: unitId } : {}) }
+  return { kind: 'newScope', parent: held.parent, name: held.name, withBoard: held.withBoard, type: held.type, ...(unitId !== undefined ? { servedBy: unitId } : {}) }
 }

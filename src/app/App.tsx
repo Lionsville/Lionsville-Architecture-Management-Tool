@@ -840,6 +840,7 @@ function useShellBase(props: AppProps) {
     active: project === undefined,
     at: nav.home,
     onEnter: enter,
+    onHome: nav.goHome,
     onTreeChanged: tree.refresh,
     notify: toasts.notify,
     onFailure: failed,

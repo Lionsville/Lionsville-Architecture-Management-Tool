@@ -2,30 +2,18 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The line under the cards: how much the checks find at or under this home,
- * by weight — so many to fix, so many to review, so many notes — each a way
- * to the Checks page on the first check of its weight (ADR-0036, amended 11
- * October 2026).
- *
- * It used to list every finding, and a home of a large organisation was a
- * page of sentences, the notes among them, that read like faults and pointed
- * at no check. The findings are listed on the Checks page now, by check and
- * by category, with why each check matters and how to fix it; here they are
- * counted, in the marks the lists use, and what was marked as intended is not
- * among them.
- *
- * Not shown at all when nothing is found — a heading over nothing would be a
- * warning about nothing, and a "no problems" line would be saying so before
- * the index has been read. The Checks card is the way in either way.
+ * The Checks line under a home's head: what is found here and below, by weight,
+ * each count a way to the page on the first of its weight. Only *to fix* takes
+ * colour, with a shape as well as a hue; the notes stay quiet. Findings repeat a
+ * few checks, and a permanent alarm is soon ignored, so a sentence says what
+ * most of them are. With nothing found, the page is still one press away.
  */
-import Box from '@mui/material/Box'
-import ButtonBase from '@mui/material/ButtonBase'
-import Typography from '@mui/material/Typography'
+import { CHECK_CATALOGUE, CHECK_WEIGHTS } from '../../model/checkCatalogue'
+import type { CheckKey, CheckWeight } from '../../model/checkCatalogue'
 import type { StringKey, Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
-import { CHECK_WEIGHTS } from '../../model/checkCatalogue'
-import type { CheckWeight } from '../../model/checkCatalogue'
-import { WEIGHT_MARK } from '../../widgets/weightMark'
+import { Mark } from '../../widgets/kit/Mark'
+import { LinkLine } from '../../widgets/kit/Section'
 
 /** What each weight's count says. */
 const SAID: Record<CheckWeight, { one: StringKey; other: StringKey }> = {
@@ -39,32 +27,45 @@ export function weightCount(weight: CheckWeight, count: number, s: Translate): s
   return plural(s, SAID[weight], count)
 }
 
-export function NeedsAttention({ counts, onOpen, s }: {
+/** *Most are one thing: 116 not drawn*, where one or two checks are over half of a list worth summing up. */
+export function mostlySaid(shown: readonly { readonly key: CheckKey }[], s: Translate): string {
+  if (shown.length < 10) return ''
+  const counted = new Map<CheckKey, number>()
+  for (const one of shown) counted.set(one.key, (counted.get(one.key) ?? 0) + 1)
+  const top = [...counted].sort((a, b) => b[1] - a[1]).slice(0, 2)
+  if (top.reduce((sum, [, count]) => sum + count, 0) * 2 < shown.length) return ''
+  return s('org.checksMostly', { what: top.map(([key, count]) => `${count} ${s(CHECK_CATALOGUE[key].name)}`).join(', ') })
+}
+
+export function ChecksLine({ counts, shown = [], onOpen, onPage, s }: {
   counts: Readonly<Record<CheckWeight, number>>
+  /** The findings themselves, for the sentence. */
+  shown?: readonly { readonly key: CheckKey }[]
   /** Open the Checks page on the first check of this weight. */
   onOpen: (weight: CheckWeight) => void
+  /** Open it as it is. */
+  onPage?: () => void
   s: Translate
 }) {
   const weights = CHECK_WEIGHTS.filter((weight) => counts[weight] > 0)
-  if (weights.length === 0) return null
+  if (weights.length === 0) {
+    return onPage
+      ? <LinkLine label={s('org.checksNone')} links={[{ label: s('checks.title'), onPress: onPage, 'data-testid': 'open-checks' }]} />
+      : null
+  }
   return (
-    <Box sx={{ mt: 3, maxWidth: 760 }} data-testid="needs-attention" data-guide="org.attention">
-      <Typography sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, mb: 0.5, textTransform: 'uppercase', color: 'warning.main' }}>
-        {s('org.attention')}
-      </Typography>
-      <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, display: 'flex', flexWrap: 'wrap', columnGap: 2, rowGap: 0.5 }}>
-        {weights.map((weight) => (
-          <Box component="li" key={weight}>
-            <ButtonBase
-              onClick={() => onOpen(weight)} data-guide="org.attentionCount" data-testid={`attention-count-${weight}`} data-weight={weight}
-              sx={{ fontSize: 13, gap: 0.75, alignItems: 'baseline', '&:hover .attention-count': { textDecoration: 'underline' } }}
-            >
-              <Box component="span" aria-hidden sx={{ fontSize: 11, ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
-              <Box component="span" className="attention-count" sx={{ color: 'primary.main' }}>{weightCount(weight, counts[weight], s)}</Box>
-            </ButtonBase>
-          </Box>
-        ))}
-      </Box>
-    </Box>
+    <p className="kit-factline" data-testid="needs-attention" data-guide="org.attention">
+      <button type="button" className="kit-linkline__link" data-testid="open-checks" onClick={onPage}>{s('checks.title')}</button>
+      {weights.map((weight) => (
+        <button
+          key={weight} type="button" className="kit-checkcount" data-guide="org.attentionCount" data-testid={`attention-count-${weight}`} data-weight={weight}
+          onClick={() => onOpen(weight)}
+        >
+          <Mark kind={weight} size={12} />
+          <span>{weightCount(weight, counts[weight], s)}</span>
+        </button>
+      ))}
+      <span>{mostlySaid(shown, s)}</span>
+    </p>
   )
 }

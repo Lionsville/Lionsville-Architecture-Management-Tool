@@ -23,6 +23,30 @@ export function Section({ title, children, 'data-guide': guide, 'data-testid': t
   )
 }
 
+/** A page's own head: its name, one or two quiet lines under it, and its acts at the right. */
+export function PageHead({ title, meta, children, actions, titleTestId, metaTestId, metaTitle }: {
+  readonly title: ReactNode
+  readonly meta?: ReactNode
+  /** Under the meta line: a description, what else the page says of itself. */
+  readonly children?: ReactNode
+  readonly actions?: ReactNode
+  readonly titleTestId?: string
+  readonly metaTestId?: string
+  /** What a hover adds to the meta line. */
+  readonly metaTitle?: string
+}) {
+  return (
+    <header className="kit-pagehead">
+      <div className="kit-pagehead__main">
+        <h1 className="kit-pagehead__title" data-testid={titleTestId}>{title}</h1>
+        {meta && <p className="kit-pagehead__meta" data-testid={metaTestId} title={metaTitle}>{meta}</p>}
+        {children}
+      </div>
+      {actions && <div className="kit-pagehead__actions">{actions}</div>}
+    </header>
+  )
+}
+
 export type LineLink = {
   readonly label: string
   readonly onPress: () => void

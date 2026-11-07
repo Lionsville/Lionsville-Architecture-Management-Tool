@@ -25,11 +25,11 @@ import { pickedPerson } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
 import { PickToAdd } from '../../widgets/PickToAdd'
+import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { pickableBy } from './servedByView'
 import type { ScopeTypeLink } from './servedByView'
 import type { ServedByAccess } from './useServedBy'
 
-const HEADING = { fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase' } as const
 const QUIET = { fontSize: 12, color: 'text.secondary' } as const
 
 export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
@@ -50,14 +50,12 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
   const person = (id: string) => names.text(pickedPerson(id))
   // A unit kept where the person may only read is offered, and said so: adding it would be a step there.
   const choices = pickableBy(view.choices, servedBy.mayChange, { s })
-  return (
-    <Box data-testid="served-by" data-guide="org.servedBy" sx={compact ? undefined : { mb: 3, maxWidth: 720 }}>
-      <Typography component="h2" sx={compact ? { fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary' } : HEADING}>
-        {s('org.servedBy')}
-      </Typography>
-      <Typography sx={{ ...QUIET, mb: 0.75 }}>{s('org.servedByHint', { scope: here })}</Typography>
+  const none = view.rows.length === 0 && (
+    <Typography component="span" sx={QUIET} data-testid="served-by-none">{compact ? s('org.servedByNone', { scope: here }) : s('org.servedByNobody')}</Typography>
+  )
+  const body = (
+    <>
       <TypeLine type={view.type} s={s} />
-      {view.rows.length === 0 && <Typography sx={QUIET} data-testid="served-by-none">{s('org.servedByNone', { scope: here })}</Typography>}
       {view.rows.map((row) => (
         <Box key={row.id} data-testid="served-by-row" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', my: 0.25 }}>
           <Typography sx={{ fontSize: 13 }}>
@@ -88,12 +86,15 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
       {view.through > 0 && (
         <Typography sx={QUIET}>{plural(s, { one: 'org.servedByThroughOne', other: 'org.servedByThroughOther' }, view.through)}</Typography>
       )}
-      <PickToAdd
-        options={choices} label={s('org.servedByAdd')} field={s('pick.findUnit')} nothing={s('pick.noUnit')}
-        onPick={(unitId) => servedBy.add(scope, unitId)} testId="served-by-add"
-        // Open even where nothing may be picked: the list says why each may not.
-        disabled={choices.length === 0}
-      />
+      <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+        {none}
+        <PickToAdd
+          options={choices} label={s('org.servedByAdd')} field={s('pick.findUnit')} nothing={s('pick.noUnit')}
+          onPick={(unitId) => servedBy.add(scope, unitId)} testId="served-by-add"
+          // Open even where nothing may be picked: the list says why each may not.
+          disabled={choices.length === 0}
+        />
+      </Box>
       {view.owner && (
         <Typography sx={{ fontSize: 13, mt: 0.75 }} data-testid="served-by-owner">
           {view.owner.unit === undefined
@@ -103,6 +104,21 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
               : s('org.domainOwner', { people: view.owner.people.map(person).join(', '), role: view.owner.role, unit: view.owner.unit })}
         </Typography>
       )}
+    </>
+  )
+  // On a home, one labelled line that grows to a short list: the explanation is on hover, since it is the same on every home.
+  if (!compact) {
+    return (
+      <div data-testid="served-by" data-guide="org.servedBy" title={s('org.servedByHint', { scope: here })}>
+        <PropertyRows><PropertyRow label={s('org.servedBy')} display={body} /></PropertyRows>
+      </div>
+    )
+  }
+  return (
+    <Box data-testid="served-by" data-guide="org.servedBy">
+      <Typography component="h2" sx={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.6, color: 'text.secondary' }}>{s('org.servedBy')}</Typography>
+      <Typography sx={{ ...QUIET, mb: 0.75 }}>{s('org.servedByHint', { scope: here })}</Typography>
+      {body}
     </Box>
   )
 }

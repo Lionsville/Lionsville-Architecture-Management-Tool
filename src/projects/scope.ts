@@ -327,6 +327,8 @@ export type ScopeModel = {
     citations?: readonly Citation[]
     /** The scope's evaluations of building blocks (ADR-0043 §4): where each block is weighed and chosen. */
     evaluations?: readonly Evaluation[]
+    /** How many decision records it keeps, for what a tree's row says it holds; absent where a store has not counted them. */
+    decisionCount?: number
   }
 }
 

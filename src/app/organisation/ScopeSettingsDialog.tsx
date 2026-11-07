@@ -110,13 +110,15 @@ export type ScopeSettingsDialogProps = {
    * Absent or empty — no operating model — the kinds alone, as before.
    */
   unitTypes?: readonly { id: string; name: string }[]
+  /** Asked as *Move to…*: the same dialog, with the person at *Filed under*. */
+  moving?: boolean
   s: Translate
 }
 
 type LinkDraft = RecordLink
 
 export function ScopeSettingsDialog({
-  target, tree, onSave, onCancel, servedBy, unitTypes = [], s,
+  target, tree, onSave, onCancel, servedBy, unitTypes = [], moving = false, s,
 }: ScopeSettingsDialogProps) {
   const [name, setName] = useState('')
   const [client, setClient] = useState('')
@@ -174,6 +176,7 @@ export function ScopeSettingsDialog({
           <TypeField type={type} unitTypes={unitTypes} onChange={setType} s={s} {...(becomesTopic(type, target, tree) ? { help: s('org.kindTopicMoves') } : {})} />
           {canMove && (
             <ScopeField
+              autoFocus={moving}
               tree={tree}
               value={parent}
               onChange={setParent}
@@ -233,7 +236,7 @@ function becomesTopic(type: TypeChoice, target: ScopeSummary | undefined, tree: 
   return type === 'kind:topic' && target !== undefined && target.kind !== 'topic' && !isTopic(target.path, tree ? flattenScopes(tree) : [])
 }
 
-function TypeField({ type, unitTypes, onChange, help, s }: {
+export function TypeField({ type, unitTypes, onChange, help, s }: {
   type: TypeChoice; unitTypes: readonly { id: string; name: string }[]; onChange: (type: TypeChoice) => void; help?: string; s: Translate
 }) {
   const grouped = unitTypes.length > 0

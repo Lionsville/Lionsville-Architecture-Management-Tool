@@ -38,6 +38,8 @@ export type ScreenFacts = {
   /** A home's views, and how to file another. A workspace's tabs come from the editor. */
   readonly views?: readonly FrameView[]
   readonly onNewView?: () => void
+  /** A page that is the whole window's: a first run, with no tree yet worth docking beside it. */
+  readonly bare?: boolean
   readonly undo?: FrameStep
   readonly redo?: FrameStep
   /** The document's state, where a scope is open. */
