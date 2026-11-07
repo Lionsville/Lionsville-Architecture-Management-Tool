@@ -8,7 +8,7 @@
  * scope of its own — as the desktop's smoke run finds it on a real disk.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { FakeDirectory } from '../adapters/folder/fakeDirectory'
 import { textAt } from '../adapters/folder/handles'
 import { RecordingDiagnostics } from '../adapters/memory/RecordingDiagnostics'
@@ -47,7 +47,7 @@ describe('the example, copied into an empty folder', () => {
    * the copy decides is decided on the tree as it is kept then, not on the
    * screen's tree before it was read, which is empty and nameless.
    */
-  it('lands under a scope of its own when pressed before the listing has answered', async () => {
+  it('offers nothing to press before the listing has answered, and then lands under a scope of its own', async () => {
     const handle = new FakeDirectory('Architecture')
     const { repositories } = await openFolder({ handle, name: 'Architecture', root: 'Architecture' }, { diagnostics: new RecordingDiagnostics() })
     let answer!: () => void
@@ -70,9 +70,12 @@ describe('the example, copied into an empty folder', () => {
     }
     renderApp({ repositories: slow, examples: EXAMPLE_OFFERS })
 
+    // Nothing to press until the listing has said what is here: what a copy lands on depends on it.
+    await act(() => new Promise((resolve) => { setTimeout(resolve, 50) }))
+    expect(screen.queryByTestId('copy-example')).toBeNull()
+    answer()
     fireEvent.click(await screen.findByTestId('copy-example'))
     await waitFor(async () => expect(await textAt(handle, 'acme-logistics/scope.json')).toBeDefined(), { timeout: 5_000 })
-    answer()
     expect(await textAt(handle, 'scope.json')).toBeUndefined()
   })
 })

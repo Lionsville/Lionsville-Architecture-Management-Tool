@@ -418,7 +418,7 @@ export function OrganisationScreen({
                   />
                 )}
               {/* For a place with nothing filed in it. Once the organisation holds a view or a scope, an offer to copy one in beside the real work is a way to file an example under it by accident. */}
-              {atRoot && mayWrite && holdsNothing(tree) && (
+              {atRoot && mayWrite && organisation.listed && ready && holdsNothing(tree) && (
                 <LinkLine
                   label={s('org.firstExample')}
                   links={examples.map((one) => ({ label: one.label, title: one.description, onPress: () => organisation.copyExample(one), 'data-testid': 'copy-example' }))}

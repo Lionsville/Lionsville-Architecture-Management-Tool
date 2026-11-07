@@ -342,6 +342,7 @@ export function ScopeHome(props: ScopeHomeProps) {
       <>
         {head(true)}
         <div data-testid="organisation-cards" data-guide="org.cards">
+          {atRoot && onContinue && <Continue recent={recent} at={at} onContinue={onContinue} language={language} s={s} />}
           <EmptyScope at={at} tree={tree} kept={kept} holdings={holdings} doors={doors} writable={writable} principles={principles} s={s} />
         </div>
       </>
