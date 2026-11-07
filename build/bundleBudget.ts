@@ -108,8 +108,11 @@ export const WEB_BUDGET: Budget = { file: 5_100_000, total: 11_000_000 }
  * 1.7 times its 5.6 MB, with the web build's. The whole to 19.6 MB the same
  * day, measured: the redesign's kit, frame and pages took it to 19.514 MB, and
  * the desktop's whole had not followed the web build's on the way.
+ *
+ * **The whole to 25 MB on 8 November 2026, on the owner's decision**: the
+ * in-app help, a window of its own on the desktop, took it to 19.782 MB.
  */
-export const DESKTOP_BUDGET: Budget = { file: 9_520_000, total: 19_600_000 }
+export const DESKTOP_BUDGET: Budget = { file: 9_520_000, total: 25_000_000 }
 
 /**
  * **The help, apart** (4.0.0): a page of its own beside the app, fetched when
