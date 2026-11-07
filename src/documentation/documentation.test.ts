@@ -134,6 +134,12 @@ describe('documentedElements', () => {
     expect(documentedElements(model, map).map((group) => group.kind)).toEqual(['function']);
   });
 
+  it('lists the platforms and services a technology landscape lays out, since it places none', () => {
+    const tech = { id: 't', kind: 'technology' as const, name: 't', members: [], geometry: { nodes: [] } };
+    const held = { ...model, elements: [...model.elements, { ...element('bus', 'actor'), kind: 'platform' as const }, { ...element('db', 'actor'), kind: 'platformService' as const }] };
+    expect(documentedElements(held, tech).map((group) => group.kind)).toEqual(['platform', 'platformService']);
+  });
+
   it('lists what the scope keeps itself where there is no view, and leaves a stand-in out', () => {
     const kept = { ...model, elements: [...model.elements, { ...element('far', 'application'), ref: 'elsewhere' }] };
     const listed = documentedElements(kept, undefined).flatMap((group) => group.elements.map((one) => one.id));

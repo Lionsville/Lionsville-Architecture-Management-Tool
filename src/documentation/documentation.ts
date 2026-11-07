@@ -279,6 +279,9 @@ const KIND_ORDER: readonly ElementKind[] = [
   'function',
   'process',
   'step',
+  // A board draws platforms and services as well, and a technology landscape nothing else.
+  'platform',
+  'platformService',
 ];
 
 export interface DocumentedGroup {
@@ -302,7 +305,9 @@ function laidOutKinds(kind: DesignDiagram['kind']): readonly ElementKind[] | und
       return ['actor']
     case 'conway':
       return ['actor', 'application']
+    // A technology landscape places nothing either: it lays out the platforms and their services.
     case 'technology':
+      return ['platform', 'platformService']
     case 'layer7':
     case 'container':
     case 'drawing':
