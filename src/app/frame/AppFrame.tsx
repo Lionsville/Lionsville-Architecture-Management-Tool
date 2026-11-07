@@ -12,7 +12,7 @@
  * places. How a screen plugs in is written down in `widgets/kit/README.md`.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import Popover from '@mui/material/Popover'
 import type { Translate } from '../../i18n'
 import type { Destination, Page } from '../../agent/screen'
@@ -31,7 +31,7 @@ import { Frame } from '../../widgets/kit/Frame'
 import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
-import { PlaceTabContext } from '../../widgets/placeTab'
+import { PlaceListContext, PlaceTabContext } from '../../widgets/placeTab'
 import type { PlaceTo } from '../../widgets/placeTab'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
@@ -39,6 +39,8 @@ import { frameBarButton, frameChip, frameOverflow } from '../AppPanels'
 import { Crumbs, crumbsFor, SourceChipView } from '../ShellToolbar'
 import type { ShellParts } from '../shellParts'
 import { agentTip } from '../BarEnd'
+import { lazyPart } from '../../widgets/lazyPart'
+import type { FindingBandStack as FindingBandShape } from './FindingBand'
 import { commandsTable, keyCap } from './commandsTable'
 import type { CommandRow } from './commandsTable'
 import { FrameCommandsContext, useFrameState } from './frameStore'
@@ -80,6 +82,11 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     chooseRecord: (record: string | undefined, of: string) => { frame.set({ record, recordOf: of as Page }); lookAgain() },
     go: (to: PlaceTo) => go(to as Destination),
   }), [state.tab, state.tabOf, state.record, state.recordOf, page, frame, lookAgain, go])
+  const lists = useMemo(() => ({
+    list: state.listOf === page ? state.list : undefined,
+    pick: state.listOf === page ? state.pick : undefined,
+    choose: (list: string, pick: string | undefined, of: string) => { frame.set({ list: list || undefined, pick, listOf: of as Page }); lookAgain() },
+  }), [state.list, state.pick, state.listOf, page, frame, lookAgain])
   // Settings asked for by an address or an agent: answered by the screen of that scope, once it is up.
   useEffect(() => {
     if (state.asks !== 'settings' || facts?.openSettings === undefined) return
@@ -90,6 +97,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   return (
     <FrameCommandsContext.Provider value={lines}>
       <PlaceTabContext.Provider value={tabs}>
+        <PlaceListContext.Provider value={lists}>
         <Frame
           pageUp={pageUp}
           controlsInset={windowChrome.controlsInset}
@@ -104,6 +112,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           {children}
         </Frame>
         <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} s={s} />
+        </PlaceListContext.Provider>
       </PlaceTabContext.Provider>
     </FrameCommandsContext.Provider>
   )
@@ -419,9 +428,15 @@ function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page
 }
 
 /** Never two bands: the agent first, since it is changing what is on screen, then what the screen itself says. */
+/** Mounted only while a finding is being carried, and it reads every finding: not in the first download. */
+const FindingBandStack = lazyPart<ComponentProps<typeof FindingBandShape>>(() => import('./FindingBand').then((held) => held.FindingBandStack))
+
 function FrameBands({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | undefined }) {
   const agent = useAgentBand(parts, facts)
   const bands = useMemo<StackedBand[]>(() => [...(agent ? [agent] : []), ...(facts?.bands ?? [])], [agent, facts?.bands])
+  const { frame } = parts
+  const walk = useFrameState(frame).finding
+  if (walk) return <FindingBandStack walk={walk} frame={frame} parts={parts} others={bands} />
   return <BandStack bands={bands} />
 }
 

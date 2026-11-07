@@ -82,6 +82,7 @@ function ServiceSharedField({ field, offeredBeyond }: { field: InspectorField; o
             checked={element.shared === true}
             disabled={field.readOnly || field.owned('shared')}
             onChange={(e) => field.update({ shared: e.target.checked ? true : undefined })}
+            slotProps={{ input: { 'data-field': 'shared' } as object }}
           />
         }
         label={<Typography variant="caption">{t('field.shared')}</Typography>}

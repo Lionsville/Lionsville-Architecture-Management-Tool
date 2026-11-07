@@ -51,7 +51,9 @@
  *
  * **Both raised for 4.0.0**, by 80 kB each: one frame stands over every screen,
  * so its rows, its tree and ⌘K are in the first download. The whole measured
- * 10.046 MB and the largest file 3.059 MB when this was said.
+ * 10.046 MB and the largest file 3.059 MB when this was said. **And again**, by
+ * 80 kB and 20 kB: the merged register's and the work list's words are in the
+ * first download in three languages, as every module's are.
  *
  * The engine is counted by a name only the engine carries: the worker script
  * and the self-contained bundle both hold it, and the API that talks to either
@@ -67,7 +69,7 @@ export type Budget = {
   total: number
 }
 
-export const WEB_BUDGET: Budget = { file: 3_080_000, total: 10_080_000 }
+export const WEB_BUDGET: Budget = { file: 3_100_000, total: 10_160_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's

@@ -38,8 +38,11 @@ export type BoardChoice = {
   boards: readonly DesignDiagram[]
 }
 
+/** A line of the element to select instead, and the field to give the focus to. */
+type FocusMore = { line?: string; field?: string }
+
 export type ShowElement = {
-  show(id: ElementId, leave?: () => void): void
+  show(id: ElementId, leave?: () => void, more?: FocusMore): void
   /** More than one board draws it and none is up: the boards, for a dialog to offer. */
   choice: BoardChoice | undefined
   choose(boardId: string): void
@@ -52,7 +55,7 @@ export function useShowElement(deps: {
   notify: Notify
   s: Translate
   /** Select it on the active board and bring it into view. */
-  focus(id: ElementId): void
+  focus(id: ElementId, more?: FocusMore): void
   /** Its page, for a thing drawn nowhere here. */
   toDocumentation(id: ElementId): void
   /** The scope that answers for an id this scope does not hold, where the tree knows one. */
@@ -62,16 +65,16 @@ export function useShowElement(deps: {
   const { session, scope, notify, s, focus, toDocumentation, masterOf, onOpenScope } = deps
   const [pending, setPending] = useState<(BoardChoice & { leave?: () => void }) | undefined>(undefined)
 
-  const land = useCallback((id: ElementId, board: DesignDiagram, leave?: () => void) => {
+  const land = useCallback((id: ElementId, board: DesignDiagram, leave?: () => void, more?: FocusMore) => {
     leave?.()
     if (board.id !== session.currentActiveId()) {
       session.setActiveDiagramId(board.id)
       notify(s('sheet.switchedBoard', { name: board.name }), 'info')
     }
-    focus(id)
+    focus(id, more)
   }, [session, notify, s, focus])
 
-  const show = useCallback((id: ElementId, leave?: () => void) => {
+  const show = useCallback((id: ElementId, leave?: () => void, more?: FocusMore) => {
     const model = session.current()
     const held = model.elements.find((element) => element.id === id)
     const boards = boardsDrawing(model, id)
@@ -79,15 +82,15 @@ export function useShowElement(deps: {
       const master = held ? undefined : masterOf?.(id)
       if (master !== undefined && master !== scope && onOpenScope) {
         leave?.()
-        onOpenScope(master, { page: 'element', id })
+        onOpenScope(master, { page: 'element', id, ...more })
         return
       }
       toDocumentation(id)
       return
     }
     const active = boards.find((board) => board.id === session.currentActiveId())
-    if (active) { land(id, active, leave); return }
-    if (boards.length === 1) { land(id, boards[0], leave); return }
+    if (active) { land(id, active, leave, more); return }
+    if (boards.length === 1) { land(id, boards[0], leave, more); return }
     setPending({ id, name: held?.name ?? id, boards, ...(leave ? { leave } : {}) })
   }, [session, scope, masterOf, onOpenScope, toDocumentation, land])
 

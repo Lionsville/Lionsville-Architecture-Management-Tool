@@ -1,0 +1,21 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.checks-page__work { display: flex; flex: 1; min-height: 0; }
+.checks-page__list { flex: 0 1 380px; min-width: 260px; overflow-y: auto; border-inline-end: 1px solid var(--line); }
+.checks-page__reader { display: flex; flex: 1 1 480px; min-width: 0; }
+.checks-page__reader .kit-panel { flex: 1; width: auto; border-inline-start: 0; }
+.checks-page__scope { display: inline-flex; }
+.checks-page__text { margin: 0 0 var(--s-2); }
+.checks-page__label { font-weight: var(--fw-strong); }
+.checks-page__quiet { color: var(--ink-2); }
+.checks-mark { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.checks-mark__reason { flex: 1 1 220px; min-width: 160px; }
+.checks-mark__returns { flex-basis: 100%; color: var(--ink-2); font-size: var(--t-sm); }
+.checks-clear { display: flex; align-items: baseline; gap: var(--s-2); padding: var(--s-2) var(--s-3); color: var(--ink-2); }
+
+@media (max-width: 860px) {
+  .checks-page__work { flex-direction: column; overflow-y: auto; }
+  .checks-page__list { flex: none; border-inline-end: 0; border-block-end: 1px solid var(--line); }
+  .checks-page__reader { flex: none; }
+}

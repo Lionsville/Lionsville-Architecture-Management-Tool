@@ -70,6 +70,15 @@ export type CheckMarking = {
    * which no screen of the unit can reach any more.
    */
   removeAssignment: (scope: ScopePath, id: string) => void
+  /**
+   * Several findings marked with one reason: one step in each scope that keeps
+   * them, and each mark made, so the marks can be taken back as they were made.
+   */
+  markAll: (findings: readonly { finding: AnyFinding; checkedIn?: ScopePath | undefined }[], reason: string) => Promise<readonly KeptCheckMark[]>
+  /** Those marks taken back: one step in each scope. */
+  takeBackAll: (kept: readonly KeptCheckMark[]) => Promise<void>
+  /** A fix of one field, written as that scope's one step; false where it did not land, which has been said. */
+  write: (scope: ScopePath, commands: readonly Command[]) => Promise<boolean>
 }
 
 /** The scope that is open, as marking reads and writes it: through its session. */
@@ -134,6 +143,21 @@ export function checkMarking(deps: {
       () => onRefused?.('pick.notWritten'),
     )
   }
+  /** Several commands as one step on the scope that keeps them: nothing written where there was nothing to do. */
+  const writeMany = async (scope: ScopePath, commands: readonly Command[]): Promise<boolean> => {
+    if (!mayWrite(scope) || commands.length === 0) return false
+    if (here(scope)) { for (const command of commands) open?.dispatch(command); return true }
+    if (!writeIn) return false
+    try {
+      const written = await writeIn(scope, () => commands)
+      const key = refusalKey(written)
+      if (key) onRefused?.(key)
+      return written.ok
+    } catch {
+      onRefused?.('pick.notWritten')
+      return false
+    }
+  }
   return {
     marks: open ? checkMarksHere(index, open.scope, open.model) : index.checkMarks(),
     markableIn: (finding, checkedIn) => {
@@ -155,6 +179,27 @@ export function checkMarking(deps: {
       write(scope, { type: 'checkMark.remove', id }, (model) => !holds(model.checkMarks, id))
     },
     mayChange: mayWrite,
+    write: writeMany,
+    markAll: async (findings, reason) => {
+      const byScope = new Map<ScopePath, CheckMark[]>()
+      for (const { finding, checkedIn } of findings) {
+        if (!isMarkable(findingCheck(finding))) continue
+        const scope = keptAt(finding, checkedIn)
+        if (scope === undefined || !mayWrite(scope)) continue
+        byScope.set(scope, [...byScope.get(scope) ?? [], checkMarkFor(finding, { on: today, reason })])
+      }
+      const made: KeptCheckMark[] = []
+      for (const [scope, marks] of byScope) {
+        const landed = await writeMany(scope, marks.map((mark): Command => ({ type: 'checkMark.add', mark })))
+        if (landed) made.push(...marks.map((mark) => ({ scope, mark })))
+      }
+      return made
+    },
+    takeBackAll: async (kept) => {
+      const byScope = new Map<ScopePath, CheckMark[]>()
+      for (const { scope, mark } of kept) byScope.set(scope, [...byScope.get(scope) ?? [], mark])
+      for (const [scope, marks] of byScope) await writeMany(scope, marks.map((mark): Command => ({ type: 'checkMark.remove', id: checkMarkId(mark) })))
+    },
     removeAssignment: (scope, id) => {
       if (!mayWrite(scope)) return
       // Gone already — removed elsewhere since the list was read — is nothing to write.

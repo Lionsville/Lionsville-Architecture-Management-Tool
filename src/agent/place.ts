@@ -51,6 +51,14 @@
  * `placeOf` and the history's state never hold it, and choosing another
  * element is never a step.
  *
+ * A list keeps what it is showing the same way, as `q`, `group`, `sort`,
+ * `cols` and `f.<field>` beside the rest (`widgets/kit/listView.ts`): a link and
+ * an agent reach the same list, and choosing a filter replaces the entry rather
+ * than adding a Back.
+ *
+ * A finding on its way to being fixed goes with the place, as `finding`, so that a
+ * link reaches the same band and a reload keeps it ({@link writeFinding}).
+ *
  * The leading `/` — `place?` in the old form — is what tells a place
  * from anything else a fragment may carry: a source provider reads the
  * address too (`SourceConnect.fromLocation`), and a fragment that is not a
@@ -83,10 +91,18 @@ export const PLACE_STATE_KEY = 'lvarch.place'
 /** The segment that ends a scope's path in a place's address. */
 const SCOPE_END = '-'
 
-const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select', 'panel'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab', 'select', 'panel', 'finding'])
+
+/**
+ * What a list says about itself in the address (`widgets/kit/listView.ts`):
+ * what was typed, what is filtered, how it is grouped and sorted, the columns.
+ * Carried whole as one string, because what they mean is the list's and a place
+ * only keeps them with it. A filter's key may be said twice.
+ */
+const isListKey = (key: string) => key === 'q' || key === 'group' || key === 'sort' || key === 'cols' || key.startsWith('f.')
 
 /** What may follow the path, as a query: everything a place says beyond its scope, page and record. */
-const QUERY_KEYS = new Set(['id', 'tab', 'select', 'panel'])
+const QUERY_KEYS = new Set(['id', 'tab', 'select', 'panel', 'finding'])
 
 /** One segment of the path, escaped: a scope's own segment that is the scope's end is written so it cannot be read as one. */
 function segment(text: string): string {
@@ -108,7 +124,8 @@ export function writePlace(place: Place): string {
   if (place.tab !== undefined) query.set('tab', place.tab)
   if (place.select !== undefined) query.set('select', place.select)
   if (place.panel !== undefined) query.set('panel', place.panel)
-  const rest = query.toString()
+  if (place.finding !== undefined) query.set('finding', place.finding)
+  const rest = [query.toString(), place.list ?? ''].filter(Boolean).join('&')
   return `#${PLACE_PATH_PREFIX}${path.join('/')}${rest === '' ? '' : `?${rest}`}`
 }
 
@@ -162,14 +179,18 @@ function readPath(text: string): Place | undefined {
   if (after.length > 2) return undefined
   const [page, id] = after
   if (page !== undefined && !isPage(page)) return undefined
-  const query = new URLSearchParams(mark < 0 ? '' : text.slice(mark + 1))
+  const whole = new URLSearchParams(mark < 0 ? '' : text.slice(mark + 1))
+  const query = new URLSearchParams([...whole].filter(([key]) => !isListKey(key)))
+  const list = new URLSearchParams([...whole].filter(([key]) => isListKey(key))).toString()
   const said = queryOf(query, QUERY_KEYS)
   if (said === undefined) return undefined
   // A record said twice, or a record with no page that is said in the query
   // and on the path at once, is not a place.
   if (said.id !== undefined && page !== undefined) return undefined
   const scope = scopeParts.join('/')
-  return placeFrom(scope, page, id ?? said.id, said.tab, said.select, said.panel)
+  const place = placeFrom(scope, page, id ?? said.id, said.tab, said.select, said.panel)
+  if (!place) return undefined
+  return { ...place, ...(list !== '' ? { list } : {}), ...(said.finding !== undefined ? { finding: said.finding } : {}) }
 }
 
 /** `#place?scope=…&page=…&id=…`, the form before 3.7.0, after its prefix. */
@@ -181,7 +202,7 @@ function readQueryForm(text: string): Place | undefined {
 }
 
 /** Every key of a query once, and only the ones allowed: or nothing. */
-function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'select' | 'panel', string>> | undefined {
+function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'select' | 'panel' | 'finding', string>> | undefined {
   const out: Record<string, string> = {}
   for (const [key, value] of query) {
     if (!allowed.has(key) || key in out) return undefined
@@ -241,7 +262,7 @@ export function placeInState(state: unknown): Place | undefined {
   if (typeof state !== 'object' || state === null) return undefined
   const held = (state as Record<string, unknown>)[PLACE_STATE_KEY]
   if (typeof held !== 'object' || held === null) return undefined
-  const { scope, page, id, tab, panel } = held as Record<string, unknown>
+  const { scope, page, id, tab, panel, list, finding } = held as Record<string, unknown>
   if (typeof scope !== 'string') return undefined
   if (page !== undefined && (typeof page !== 'string' || !isPage(page))) return undefined
   if (id !== undefined && typeof id !== 'string') return undefined
@@ -249,6 +270,8 @@ export function placeInState(state: unknown): Place | undefined {
   return {
     scope, ...(page !== undefined ? { page } : {}), ...(id !== undefined ? { id } : {}), ...(tab !== undefined ? { tab: tab as string } : {}),
     ...(isFramePanel(panel) ? { panel } : {}),
+    ...(typeof list === 'string' && list !== '' ? { list } : {}),
+    ...(typeof finding === 'string' && finding !== '' ? { finding } : {}),
   }
 }
 
@@ -262,7 +285,7 @@ export function placeInState(state: unknown): Place | undefined {
  * screen that says nothing at all.
  */
 export function placeOf(screen: Screen): Place | undefined {
-  const beside = screen.panel !== undefined ? { panel: screen.panel } : {}
+  const beside = { ...(screen.panel !== undefined ? { panel: screen.panel } : {}), ...(screen.list !== undefined ? { list: screen.list } : {}), ...(screen.finding !== undefined ? { finding: screen.finding } : {}) }
   if (screen.open) {
     const scope = screen.open.path
     if (screen.page) {
@@ -288,14 +311,14 @@ export function placeOf(screen: Screen): Place | undefined {
   return undefined
 }
 
-/** The same place: the same scope, page, id, tab and panel. */
+/** The same place: the same scope, page, id, tab, panel, list and finding carried. */
 export function samePlace(a: Place | undefined, b: Place | undefined): boolean {
   if (a === undefined || b === undefined) return a === b
-  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.panel === b.panel
+  return a.scope === b.scope && a.page === b.page && a.id === b.id && a.tab === b.tab && a.panel === b.panel && a.list === b.list && a.finding === b.finding
 }
 
-/** The two pages where moving from one record to the next is choosing, not going somewhere. */
-const RECORD_PAGES: readonly Page[] = ['decisions', 'observations']
+/** The pages where moving from one record to the next is choosing, not going somewhere. */
+const RECORD_PAGES: readonly Page[] = ['decisions', 'observations', 'register', 'checks']
 
 /**
  * What a move from one place to another does to the history.
@@ -402,4 +425,19 @@ function diagramKind(kind: string): DesignDiagram['kind'] {
     default:
       return 'layer7'
   }
+}
+
+/** A finding carried by a band, in an address: the check, the home whose Checks it is from, and the finding. */
+export type CarriedFinding = { readonly check: string; readonly home: string; readonly id: string }
+
+/** Spaces between, since neither a check's key nor a scope's path holds one, and the finding's id may hold anything. */
+export function writeFinding({ check, home, id }: CarriedFinding): string {
+  return `${check} ${home} ${id}`
+}
+
+export function readFinding(text: string): CarriedFinding | undefined {
+  const first = text.indexOf(' ')
+  const second = first < 0 ? -1 : text.indexOf(' ', first + 1)
+  if (second < 0) return undefined
+  return { check: text.slice(0, first), home: text.slice(first + 1, second), id: text.slice(second + 1) }
 }

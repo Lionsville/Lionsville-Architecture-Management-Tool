@@ -14,6 +14,7 @@
 import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { TypeLink } from '../../projects/scopeType'
 import type { FramePanel, Page } from '../../agent/screen'
+import type { CheckKey } from '../../model/checkCatalogue'
 import type { DocumentStatus } from '../../projects/documentSession'
 import type { ScopePath } from '../../projects/scopePath'
 import type { PaletteLine } from '../../search/ui/GlobalSearchDialog'
@@ -59,6 +60,9 @@ export type ScreenFacts = {
   readonly typeLink?: (path: ScopePath) => TypeLink | undefined
 }
 
+/** Where a walk through a check is: the rest is read afresh, so the band can see the finding clear. */
+export type FindingWalk = { readonly home: ScopePath; readonly check: CheckKey; readonly id: string }
+
 export type FrameState = {
   readonly screen?: ScreenFacts
   readonly panel?: FramePanel
@@ -68,6 +72,12 @@ export type FrameState = {
   /** The record of the page that is up, where its page keeps it here (`usePlaceRecord`), and which page it is of. */
   readonly record?: string
   readonly recordOf?: Page
+  /** What a list on the page that is up is showing, and the record picked on it, where its page keeps them here (`usePlaceList`). */
+  readonly list?: string
+  readonly pick?: string
+  readonly listOf?: Page
+  /** The finding a band is carrying to where it is fixed, and which home's Checks it came from (`FindingBand`). */
+  readonly finding?: FindingWalk
   /** A scope's settings, asked for by an address or an agent: the screen of that scope answers once it is up. */
   readonly asks?: 'settings'
   /** ⌘\: the tree docked on every screen, by this person's choice. */

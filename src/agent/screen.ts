@@ -98,7 +98,7 @@ export const PAGE_TABS: Partial<Record<Page, readonly string[]>> = {
   technologyRegister: ['services', 'platforms'],
   operating: ['structure', 'rules', 'responsibilities', 'libraries'],
   principles: ['principles', 'topics', 'blocks'],
-  checks: ['fix', 'review', 'notes', 'marked'],
+  checks: ['found', 'accepted'],
   decisions: ['all', 'here', 'above'],
   roadmap: ['plans', 'findings'],
 }
@@ -128,6 +128,13 @@ export type Destination = {
   readonly tab?: string
   /** A frame panel open beside the place (`FRAME_PANELS`); a page of `work` or `activity` says the same over a home. */
   readonly panel?: FramePanel
+  /** What a list on the page is showing, as its own query (`widgets/kit/listView.ts`). */
+  readonly list?: string
+  /** A finding carried by the band to where it is fixed (`place.ts`'s `writeFinding`). */
+  readonly finding?: string
+  /** On an element's page, a line of it to select instead, and the field that puts a finding right to give the focus to. */
+  readonly line?: string
+  readonly field?: string
   /**
    * An element to select on the board, sheet, map or technology landscape
    * being opened. Not part of the place: where it is not drawn there, the
@@ -152,12 +159,14 @@ export type ScreenPage =
   | { readonly page: 'plan'; readonly id: string }
   | { readonly page: 'platform'; readonly id: string }
   | { readonly page: 'service'; readonly id: string }
-  | { readonly page: 'register'; readonly tab?: string }
+  /** The register: applications, services and platforms, on one record where one is picked. */
+  | { readonly page: 'register'; readonly id?: string; readonly tab?: string }
+  /** Where the technology register was: a page of its own until 4.0.0, and an address that still lands on the register. */
   | { readonly page: 'technologyRegister'; readonly tab?: string }
   /** The people register (ADR-0036), on the organisation's home. */
   | { readonly page: 'people'; readonly id?: string; readonly tab?: string }
   /** Every check, by category, over a home (ADR-0036, amended 11 October 2026). */
-  | { readonly page: 'checks'; readonly tab?: string }
+  | { readonly page: 'checks'; readonly id?: string; readonly tab?: string }
   /** The topics catalogue (ADR-0042 §3), over a home, on a topic where one is picked. */
   | { readonly page: 'topics' }
   /** The register of building blocks (ADR-0043 §8), over a home, or a block's page where one is picked. */
@@ -186,6 +195,10 @@ export type Screen = {
   readonly page?: ScreenPage
   /** The frame's panel open beside it, where one is. */
   readonly panel?: FramePanel
+  /** What a list on the page is showing, as its own query, where a page keeps one. */
+  readonly list?: string
+  /** A finding the band is carrying, where one is. */
+  readonly finding?: string
 }
 
 /**
@@ -236,7 +249,9 @@ function onPerson(screen: Screen, to: Destination): boolean {
 /** A page of a scope's home, with nothing open over it: the home asked for, and the page on it. */
 function onHome(screen: Screen, page: Page, scope: string): boolean {
   if (!screen.home || screen.home.path !== scope || screen.open) return false
-  return page === 'home' ? screen.page === undefined : screen.page?.page === page
+  if (page === 'home') return screen.page === undefined
+  // The technology register's address lands on the register, on its tab.
+  return screen.page?.page === (page === 'technologyRegister' ? 'register' : page)
 }
 
 /**

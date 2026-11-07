@@ -17,7 +17,7 @@
  * from being a load per card (ADR-0004).
  */
 import { matchesQuery } from '../../model'
-import type { ElementId } from '../../model'
+import type { ElementId, Lifecycle, LifecycleDates } from '../../model'
 import { applicationOwner } from '../../model/ownerField'
 import type { ApplicationOwner } from '../../model/ownerField'
 import type { Finding } from '../../projects/checks'
@@ -44,10 +44,22 @@ export type RegisterRow = {
    * name, which is flagged as not being a unit.
    */
   owner: ApplicationOwner
+  /** The unit's name where a unit owns it: the field's answer in words. */
+  ownerUnit?: string
   /** Every scope holding a stand-in: who else draws it. */
   drawnIn: readonly ScopePath[]
   /** The findings that concern this application, in the order they were found. */
   findings: readonly Finding[]
+  /** What the record says of itself, as the master says it. */
+  category?: string
+  vendor?: string
+  technology?: string
+  /** Its phase where that is not live, and the day it reached or reaches its dated phases. */
+  lifecycle?: Lifecycle
+  lifecycleDates?: LifecycleDates
+  /** Where it runs and what it leans on, read off the rows. */
+  hostedOn?: readonly string[]
+  uses?: readonly string[]
 }
 
 /** The line the card says, and the line under the page's heading. */
@@ -102,15 +114,28 @@ export function registerRows(
   }
   return index.register().map((entry) => {
     const party = entry.partyId !== undefined ? index.lookup(entry.partyId)?.name : undefined
+    const owner = applicationOwner(entry)
+    const ownerUnit = owner.kind === 'unit' ? index.lookup(owner.unitId)?.name : undefined
+    const rowsTo = (type: 'hostedOn' | 'uses') => [...new Set(index.rowsOf(entry.id)
+      .filter(({ relation }) => relation.type === type && relation.sourceId === entry.id)
+      .map(({ relation }) => index.lookup(relation.targetId)?.name ?? relation.targetId))]
     return {
       id: entry.id,
       name: entry.name,
       ...(entry.master !== undefined ? { master: entry.master } : {}),
       ...(entry.outside ? { outside: entry.outside } : {}),
       ...(party !== undefined ? { party } : {}),
-      owner: applicationOwner(entry),
+      owner,
+      ...(ownerUnit !== undefined ? { ownerUnit } : {}),
       drawnIn: entry.drawnIn,
       findings: about.get(entry.id) ?? [],
+      ...(entry.category !== undefined ? { category: entry.category } : {}),
+      ...(entry.vendor !== undefined ? { vendor: entry.vendor } : {}),
+      ...(entry.technology !== undefined ? { technology: entry.technology } : {}),
+      ...(entry.lifecycle !== undefined ? { lifecycle: entry.lifecycle } : {}),
+      ...(entry.lifecycleDates !== undefined ? { lifecycleDates: entry.lifecycleDates } : {}),
+      hostedOn: rowsTo('hostedOn'),
+      uses: rowsTo('uses'),
     }
   })
 }

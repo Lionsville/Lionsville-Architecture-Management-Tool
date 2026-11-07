@@ -38,6 +38,8 @@ export type FilterWordsProps = {
   readonly find: string
   readonly onFind: (find: string) => void
   readonly findLabel?: string
+  /** A bar over a short fixed list: no Find, only what else it offers. */
+  readonly noFind?: boolean
   readonly fields?: readonly FilterField[]
   readonly filters?: Readonly<Record<string, readonly string[]>>
   readonly onFilters?: (filters: Readonly<Record<string, readonly string[]>>) => void
@@ -161,7 +163,7 @@ function ViewPop({ columns, shownColumns, onColumns, density, onDensity, onReset
 }
 
 export function FilterWords({
-  find, onFind, findLabel, fields = [], filters = {}, onFilters, filterExtra, groups, group, onGroup,
+  find, onFind, findLabel, noFind, fields = [], filters = {}, onFilters, filterExtra, groups, group, onGroup,
   columns, shownColumns = [], onColumns, density, onDensity, onReset, shown, actions, dataGuide,
 }: FilterWordsProps) {
   const { t } = useStrings()
@@ -184,10 +186,12 @@ export function FilterWords({
   return (
     <div className="kit-filter" data-guide={dataGuide}>
       <div className="kit-filter__bar">
-        <input
-          type="search" className="kit-filter__find" aria-label={label} placeholder={label}
-          value={find} onChange={(event) => onFind(event.target.value)} onKeyDown={onFindKey}
-        />
+        {!noFind && (
+          <input
+            type="search" className="kit-filter__find" aria-label={label} placeholder={label}
+            value={find} onChange={(event) => onFind(event.target.value)} onKeyDown={onFindKey}
+          />
+        )}
         {(fields.length > 0 || filterExtra) && (
           <Pop label={t('kit.filter.filter')} active={on.length > 0} face={on.length ? `${t('kit.filter.filter')} · ${on.length}` : t('kit.filter.filter')}>
             {fields.map((field) => (

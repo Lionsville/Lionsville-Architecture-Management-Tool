@@ -336,7 +336,7 @@ export function ConnectionInspector({
               value={connection.validUntil ?? ''}
               sx={{ flex: 1 }}
               disabled={readOnly}
-              slotProps={{ inputLabel: { shrink: true } }}
+              slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-field': 'validUntil' } }}
               onChange={(e) => update({ validUntil: e.target.value || undefined })}
             />
           </Box>

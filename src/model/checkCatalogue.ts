@@ -428,6 +428,22 @@ export const CHECK_CATEGORY_LABEL: Record<CheckCategory, StringKey> = {
   principles: 'check.category.principles',
 }
 
+/**
+ * The field on a record's panel that puts a finding right, where it is one
+ * field: what arriving from the finding gives the focus to, so the person does
+ * not have to look for it in a long panel. A name, and no words: a panel carries
+ * it as `data-field`.
+ */
+export const CHECK_FIELD: Partial<Record<CheckKey, string>> = {
+  'check.lineOutlivesEnd': 'validUntil',
+  'check.applicationUnowned': 'owner',
+  'check.applicationOwnerNamed': 'owner',
+  'check.unattributed': 'owner',
+  'check.offeredNotShared': 'shared',
+  'check.successorMissing': 'successor',
+  'check.successorTooLate': 'successor',
+}
+
 /** What each action's button says. */
 export const CHECK_ACTION_LABEL: Record<CheckAction, StringKey> = {
   openElement: 'check.action.openElement',

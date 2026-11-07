@@ -30,9 +30,12 @@ export type BootLanding = {
   initialPage?: InitialPage
   /** The organisation screen's page over the home, likewise. */
   initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
-  /** What the address says of that page beyond its name: the tab up, and the person on the People page. */
-  initialHomeTab?: string
+  /** What the address said of that page: its tab, what its list shows, and the record picked on it. */
+  initialList?: { readonly tab?: string; readonly list?: string; readonly pick?: string }
+  /** The person on the People page the address names. */
   initialHomeRecord?: string
+  /** A finding the address says a band is carrying. */
+  initialFinding?: string
   /** One of the frame's own places the address named, opened over the home (`FRAME_PAGES`). */
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
   /**
@@ -150,13 +153,7 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
   const { scope, page } = place
   if (page !== undefined && FRAME_PAGES.includes(page)) return { ...homeOf(scope), initialFramePage: page as 'work' | 'activity' | 'settings' | 'preferences' }
   if (page !== undefined && HOME_PAGES.includes(page)) {
-    const record = page === 'people' ? place.id ?? place.select : undefined
-    return {
-      ...homeOf(scope),
-      ...(page === 'home' ? {} : { initialHomePage: page as 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' }),
-      ...(place.tab !== undefined ? { initialHomeTab: place.tab } : {}),
-      ...(record !== undefined ? { initialHomeRecord: record } : {}),
-    }
+    return { ...homeOf(scope), ...(page === 'home' ? {} : homePageLanding(place)) }
   }
   // A scope that is not there lands on the organisation's home, and says so
   // where the address pointed at something in it.
@@ -184,6 +181,20 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
   return { initialProject: snapshot, ...(opened ? { initialPage: opened } : {}), ...gone }
 }
 
+/**
+ * A home's page as an address names it. The technology register's address lands
+ * on the register, on its services; a list's state and a picked record go with it.
+ */
+function homePageLanding(place: Place): Pick<BootLanding, 'initialHomePage' | 'initialList' | 'initialHomeRecord'> {
+  const merged = place.page === 'technologyRegister'
+  const page = (merged ? 'register' : place.page) as NonNullable<BootLanding['initialHomePage']>
+  const tab = merged ? place.tab ?? 'services' : place.tab
+  const pick = page === 'register' ? place.id ?? place.select : page === 'checks' ? place.id : undefined
+  const initialList = { ...(tab !== undefined ? { tab } : {}), ...(place.list !== undefined ? { list: place.list } : {}), ...(pick !== undefined ? { pick } : {}) }
+  const record = page === 'people' ? place.id ?? place.select : undefined
+  return { initialHomePage: page, ...(Object.keys(initialList).length > 0 ? { initialList } : {}), ...(record !== undefined ? { initialHomeRecord: record } : {}) }
+}
+
 /** A scope as a place in it is landed by: its snapshot, and the records it reads from above. */
 export type PlaceScope = HeldScope & { snapshot: ScopeSnapshot }
 
@@ -208,7 +219,8 @@ export async function landedAt(
   reading: Promise<PlaceScope | undefined>, place: Place, ms = BOOT_READ_MS,
 ): Promise<BootLanding> {
   const read = await inTime(reading, ms)
-  return read === 'late' ? homeOf(place.scope) : placeLanding(read.held, place)
+  const finding = place.finding !== undefined ? { initialFinding: place.finding } : {}
+  return { ...(read === 'late' ? homeOf(place.scope) : placeLanding(read.held, place)), ...finding }
 }
 
 /**
@@ -228,7 +240,7 @@ export function initialPageFor(to: Destination): InitialPage | undefined {
     case 'operating': return { page: 'operating', ...id }
     case 'principles': return { page: 'principles', ...id }
     case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
-    case 'element': return to.id !== undefined ? { page: 'element', id: to.id } : undefined
+    case 'element': return to.id !== undefined ? { page: 'element', id: to.id, ...(to.line !== undefined ? { line: to.line } : {}), ...(to.field !== undefined ? { field: to.field } : {}) } : undefined
     case 'document': return to.id !== undefined ? { page: 'document', id: to.id } : { page: 'documentation' }
     case 'documentation': return { page: 'documentation' }
     case 'platform': return to.id !== undefined ? { page: 'platform', id: to.id } : undefined

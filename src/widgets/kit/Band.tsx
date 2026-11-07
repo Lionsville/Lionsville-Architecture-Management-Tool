@@ -22,6 +22,8 @@ export type BandTone = 'looking' | 'finding' | 'agent' | 'readOnly' | 'editing' 
 
 export type BandProps = {
   readonly tone: BandTone
+  /** A mark other than the state's own: the weight of the finding a band carries. */
+  readonly mark?: MarkKind
   /** What is true, in a short sentence. */
   readonly title: ReactNode
   readonly detail?: ReactNode
@@ -40,9 +42,9 @@ export type BandProps = {
 /** The kit's closed family, so the shape says which state it is in a greyscale print too. Read only has a word and no mark of its own. */
 const MARK_OF: Partial<Record<BandTone, MarkKind>> = { looking: 'look', finding: 'review', agent: 'agent', editing: 'partial', info: 'none' }
 
-export function Band({ tone, title, detail, position, action, dataGuide }: BandProps) {
+export function Band({ tone, mark: said, title, detail, position, action, dataGuide }: BandProps) {
   const { t } = useStrings()
-  const mark = MARK_OF[tone]
+  const mark = said ?? MARK_OF[tone]
   return (
     <div className="kit-band" data-tone={tone} role="status" data-guide={dataGuide}>
       {mark && <Mark kind={mark} size={12} />}

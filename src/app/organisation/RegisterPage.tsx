@@ -2,623 +2,429 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The registers: every application in the organisation on one page (ADR-0012
- * §2, §9), and every platform service and platform on another (ADR-0014
- * §2.6). One page, drawn twice — what differs between them is a small
- * configuration each (`APPLICATIONS`, `TECHNOLOGY`), and the rest is written
- * once.
+ * The register: every application, service and platform in the organisation on
+ * one page, a tab each (ADR-0012 §2, §9; ADR-0014 §2.6). The technology register
+ * was a page of its own that shared this table, and a column cannot be read down
+ * when it means two things; its old address lands on the Services tab.
  *
- * **Derived, and nothing commits them.** There is no register file and no
- * owner field: every row is a definition somewhere in the tree, keyed by id,
- * and every finding and number beside it — who maintains a service, who
- * consumes it and from how many scopes, what realises it, what a platform
- * hosts with everything filed under it — is computed from the same index.
- * What that buys is the property a materialised list cannot have — the page
+ * **Derived, and nothing commits it.** Every row is a definition somewhere in the
+ * tree, every number beside it is computed from the same index, and the findings
+ * column reads what the Checks page lists, so the two cannot disagree. The page
  * cannot disagree with the folders, because it is the folders.
  *
- * The technology register answers a platform organisation's own questions:
- * what does the platform team offer, what can my team leverage, who else uses
- * this, and which service is being offered without anybody having said so.
- * The services come first when ordered by kind, because they are what a team
- * asks for; the platforms are what delivers them this year.
+ * **Composed as every list is** (`widgets/kit/README.md`): what it shows is in the
+ * address, `listed` keeps the rows, `FilterWords` and `List` draw them, and pressing
+ * a row opens the `Preview`, which says what opening does in words. There is no
+ * button on a row, because twenty repeated buttons are noise and two ways to open
+ * told apart only by a tooltip are a trap.
  *
- * **It lives in `app/organisation/` and not in `projects/ui/`.** The index it
- * reads belongs to `projects`, and a page under `projects/ui/` would be the
- * first React in a module the import matrix keeps clear of it — `projects` may
- * not import React at all, which is what lets `scopeIndex`, `checks` and
- * `gestures` be tested in node with plain objects. The arithmetic is
- * `register.ts` beside this file and `projects/technologyRegister.ts`, pure
- * and tested the same way; this draws it.
- *
- * A full-window page like the others: it takes the window chrome, works in
- * both themes, and `readOnly` hides the one thing on it that writes — the
- * application register's *link*; the technology register has nothing that
- * writes at all.
+ * It lives in `app/organisation/` and not in `projects/ui/`: the index belongs to
+ * `projects`, which may not import React. The arithmetic is `register.ts`,
+ * `registerView.ts` and `projects/technologyRegister.ts`, pure and tested in node.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import IconButton from '@mui/material/IconButton'
-import TextField from '@mui/material/TextField'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import { plural } from '../../i18n/strings'
-import type { StringKey, Translate } from '../../i18n'
-import { PLATFORM_ARCHETYPE_LABEL } from '../../model'
+import type { Language, Translate } from '../../i18n'
 import type { ElementId } from '../../model'
-import { KIND_LABEL_KEYS } from '../../model/kinds'
-import { CHECK_LABEL } from '../../projects/checks'
-import type { Finding } from '../../projects/checks'
+import type { PersonRef } from '../../model/person'
+import { CHECK_LIST_WORDS, CHECK_CATALOGUE } from '../../model/checkCatalogue'
+import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
-import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
+import type { TechnologyRow } from '../../projects/technologyRegister'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
-import { PageClose } from '../../widgets/PageClose'
-import { NothingDash } from '../../widgets/NothingDash'
-import { matchingTechnology, sortTechnology, technologySummary } from '../../projects/technologyRegister'
-import type { TechnologyOrder, TechnologyRow, TechnologySummary } from '../../projects/technologyRegister'
-import { isUnattributed, matchingRows, registerSummary, sortRows } from './register'
-import type { RegisterRow, RegisterSummary } from './register'
+import { usePlaceListView, usePlaceTab } from '../../widgets/placeTab'
+import { Button } from '../../widgets/kit/Button'
+import { FilterWords } from '../../widgets/kit/FilterWords'
+import type { FilterChoice, FilterField } from '../../widgets/kit/FilterWords'
+import { List } from '../../widgets/kit/List'
+import type { ListColumn, ListGroup } from '../../widgets/kit/List'
+import { useListDensity } from '../../widgets/kit/listDensity'
+import { didYouMean, FRESH_VIEW, listed } from '../../widgets/kit/listView'
+import type { ListHow, ListView } from '../../widgets/kit/listView'
+import { Mark } from '../../widgets/kit/Mark'
+import { PageState } from '../../widgets/kit/PageState'
+import { Preview, PreviewFact } from '../../widgets/kit/Preview'
+import { Tabs } from '../../widgets/kit/Tabs'
+import { Toast } from '../../widgets/kit/Toast'
+import type { ToastWords } from '../../widgets/kit/Toast'
+
+import { useCheckMarking } from '../checkMarking'
+import { FindingActions } from './FindingActions'
+import type { RegisterRow } from './register'
+import { applicationHow, findingsByRecord, isRegisterTab, platformHow, platformsOf, serviceHow, servicesOf, weightsOf } from './registerView'
+import type { RegisterTab, RegisterWords } from './registerView'
+import { coverageSentence, registerWords } from './registerWords'
+import type { CheckInstance } from './treeChecks'
+import './RegisterPage.css'
 
 type Open = (scope: ScopePath, id: ElementId) => void
 
-/** What both pages are handed. */
-type PageProps<R> = {
+export type RegisterPageProps = {
   open: boolean
   onClose: () => void
-  /** Every row in the tree, with its findings. */
-  rows: readonly R[]
-  /** What the root is called on screen, since its path is the empty string. */
-  organisation: string
-  /**
-   * What any scope is called on screen — *Kept in*, the scopes a row is drawn
-   * in, the scope a finding names. Its own name out of the listing
-   * (`scopeDisplayName`); where the caller gives none, the path, and the
-   * organisation's name for the root.
-   */
-  scopeName?: (path: ScopePath) => string
-  /**
-   * Open the scope that answers for a row, with the element selected. Through
-   * the shell's own open, never through the store: entering a scope is the
-   * shell's act.
-   */
+  rows: readonly RegisterRow[]
+  technology: readonly TechnologyRow[]
+  /** Every finding the Checks page lists here: what the Findings column counts. */
+  instances: readonly CheckInstance[]
+  /** How many scopes are at or under this home: what the sentence over the list is out of. */
+  scopes: number
+  index: Pick<ScopeIndex, 'lookup' | 'assignments' | 'rowsOf' | 'units'> | undefined
+  today: string
+  language: Language
+  scopeName: (path: ScopePath) => string
+  /** What the address or a way in asked for: a tab, a record. */
+  request?: { readonly tab?: string; readonly select?: string; readonly nonce: number } | undefined
+  /** Open the scope that answers for a row, with the element selected: *Open on its board*. */
   onOpen?: Open
-  /**
-   * Open the row's page — its record and its document — in the scope that
-   * answers for it. The name is the way in, because a register is a list of
-   * things to read about; *Open* beside it lands on the board instead.
-   */
+  /** Open the row's page, its record and its document: *Record page*. */
   onOpenPage?: Open
+  /** A row two scopes both define: open the scope that should yield, with *Link* pending (ADR-0012 §10). */
+  onLink?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
+  /** Who would be stranded if this went: the service's report, or the platform's. */
+  onReport?: (kind: 'service' | 'platform', scope: ScopePath, id: ElementId) => void
+  /** The check in Checks, on this finding. */
+  onSeeInChecks?: (instance: CheckInstance) => void
+  /** Nothing yet: where a first step is. */
+  onHome?: () => void
+  readOnly?: boolean
+  personName?: (ref: PersonRef) => string
   s: Translate
   windowChrome?: WindowChrome
 }
 
-export type RegisterPageProps = PageProps<RegisterRow> & {
-  /**
-   * Resolve a conflict: open the scope that should yield, with *link* pending
-   * (ADR-0012 §10). A gesture is applied by the session that holds the scope,
-   * so asking for one from here is asking that session to ask.
-   */
-  onLink?: (scope: ScopePath, id: ElementId, to: ScopePath) => void
-  readOnly?: boolean
+/** A column with what its cell draws. */
+type Drawn<R> = ListColumn & { readonly cell: (row: R) => ReactNode; readonly startsHidden?: boolean }
+
+type Shown = RegisterRow | TechnologyRow
+
+/** The mark and the count of each weight on a row; notes stay in the preview, since they may well be intended. */
+function Weights({ held, s }: { held: readonly CheckInstance[] | undefined; s: Translate }) {
+  const { fix, review } = weightsOf(held)
+  return (
+    <span className="org-weights">
+      {fix > 0 && <span className="org-weights__one"><Mark kind="fix" label={s('check.weight.fix')} />{fix}</span>}
+      {review > 0 && <span className="org-weights__one"><Mark kind="review" label={s('check.weight.review')} />{review}</span>}
+    </span>
+  )
 }
 
-export type TechnologyPageProps = PageProps<TechnologyRow>
-
-/** Every application in the tree, with its findings (`register.ts`). */
-export function RegisterPage(props: RegisterPageProps) {
-  return <Register {...props} config={APPLICATIONS} />
+function applicationColumns(words: RegisterWords, found: ReadonlyMap<string, readonly CheckInstance[]>, s: Translate): readonly Drawn<RegisterRow>[] {
+  const keptIn = (row: RegisterRow) => (row.master !== undefined ? words.scopeName(row.master) : words.nobody)
+  return [
+    { id: 'master', label: s('register.colMaster'), sortable: true, guide: 'register.colMaster', cell: keptIn },
+    { id: 'category', label: s('register.colCategory'), sortable: true, cell: (row) => row.category },
+    { id: 'lifecycle', label: s('register.colLifecycle'), sortable: true, cell: (row) => words.lifecycle(row) },
+    { id: 'owner', label: s('register.colOwner'), sortable: true, cell: (row) => words.owner(row) },
+    { id: 'vendor', label: s('register.colVendor'), sortable: true, startsHidden: true, cell: (row) => row.vendor },
+    { id: 'technology', label: s('register.colTechnology'), sortable: true, startsHidden: true, cell: (row) => row.technology },
+    { id: 'drawn', label: s('register.colDrawn'), sortable: true, startsHidden: true, guide: 'register.colDrawn', cell: (row) => (row.drawnIn.length > 0 ? row.drawnIn.map(words.scopeName).join(', ') : s('register.drawnNowhere')) },
+    { id: 'findings', label: s('register.colFindings'), sortable: true, width: 'minmax(64px, 96px)', guide: 'register.colFindings', cell: (row) => <Weights held={found.get(row.id)} s={s} /> },
+  ]
 }
 
-/** Every service and platform in the tree, with its findings (`technologyRegister.ts`). */
-export function TechnologyPage(props: TechnologyPageProps) {
-  return <Register {...props} config={TECHNOLOGY} />
+function serviceColumns(words: RegisterWords, found: ReadonlyMap<string, readonly CheckInstance[]>, s: Translate): readonly Drawn<TechnologyRow>[] {
+  const offered = (row: TechnologyRow) => (found.get(row.id) ?? []).some((one) => one.key === 'check.offeredNotShared')
+  const keptIn = (row: TechnologyRow) => (row.master !== undefined ? words.scopeName(row.master) : words.nobody)
+  return [
+    { id: 'master', label: s('register.colMaster'), sortable: true, startsHidden: true, guide: 'technologyRegister.colMaster', cell: keptIn },
+    { id: 'maintained', label: s('register.colMaintained'), sortable: true, cell: words.maintainedBy },
+    { id: 'shared', label: s('techRegister.colShared'), sortable: true, cell: (row) => words.shared(row, offered(row)) },
+    { id: 'used', label: s('register.colUsed'), sortable: true, startsHidden: true, cell: (row) => usedBy(row, s) },
+    { id: 'delivered', label: s('register.colDelivered'), sortable: true, cell: words.deliveredBy },
+    { id: 'findings', label: s('register.colFindings'), sortable: true, width: 'minmax(64px, 96px)', guide: 'technologyRegister.colFindings', cell: (row) => <Weights held={found.get(row.id)} s={s} /> },
+  ]
 }
 
-/** What every register row carries, whatever it lists. */
-type Listed = {
-  id: ElementId
-  name: string
-  master?: ScopePath
-  outside?: true
-  party?: string
-  findings: readonly Finding[]
+function platformColumns(words: RegisterWords, found: ReadonlyMap<string, readonly CheckInstance[]>, s: Translate): readonly Drawn<TechnologyRow>[] {
+  const keptIn = (row: TechnologyRow) => (row.master !== undefined ? words.scopeName(row.master) : words.nobody)
+  return [
+    { id: 'archetype', label: s('register.colArchetype'), sortable: true, cell: words.archetype },
+    { id: 'partOf', label: s('register.colPartOf'), sortable: true, cell: words.partOf },
+    { id: 'hosts', label: s('register.colHosts'), sortable: true, width: 'minmax(64px, 120px)', cell: (row) => row.hosts },
+    { id: 'delivers', label: s('register.colDelivers'), sortable: true, cell: words.delivers },
+    { id: 'master', label: s('register.colMaster'), sortable: true, startsHidden: true, guide: 'technologyRegister.colMaster', cell: keptIn },
+    { id: 'findings', label: s('register.colFindings'), sortable: true, width: 'minmax(64px, 96px)', guide: 'technologyRegister.colFindings', cell: (row) => <Weights held={found.get(row.id)} s={s} /> },
+  ]
 }
 
-/** A number the page says, as its two plural keys and where it is read from. */
-type Counted<Summary> = { one: StringKey; other: StringKey; of: (summary: Summary) => number }
-
-type ChipLine = { key: string; text: string }
-
-/**
- * What one register is: its words, its orders, its arithmetic, and the
- * columns between *answered for by* and *findings*, which are the only ones
- * that differ.
- */
-type RegisterConfig<R extends Listed, Order extends string, Summary> = {
-  /** The test-id prefix of the page's parts (`<page>-topbar`), and of a row's (`<row>-row-<id>`). */
-  page: string
-  row: string
-  /**
-   * The prefix of the stable names its row, its columns and its open button
-   * carry (`<named>.row`, `data-guide`): a contract a build composed from this
-   * one may read, so it changes only as a breaking change (`CONTROL_NAMES`).
-   */
-  named: string
-  title: StringKey
-  what: StringKey
-  empty: StringKey
-  noMatch: StringKey
-  /** What the findings line says when there are none. */
-  settled: StringKey
-  nameColumn: StringKey
-  maxWidth: number
-  /** Set where the table is wide enough to scroll sideways rather than squeeze its findings off the page. */
-  minWidth?: number
-  /** Room after each cell, where the columns are many. */
-  gutter?: number
-  orders: readonly { value: Order; label: StringKey }[]
-  order: Order
-  summarise(rows: readonly R[]): Summary
-  matching(rows: readonly R[], query: string): R[]
-  sort(rows: readonly R[], order: Order): R[]
-  /** The counts beside the title, always said. */
-  counts: readonly Counted<Summary>[]
-  /** The findings under the introduction, said where there are any. */
-  findings: readonly Counted<Summary>[]
-  columns: readonly {
-    header: StringKey
-    /** The column's stable name, where it has one (`CONTROL_NAMES`). */
-    named?: string
-    cell(row: R, s: Translate, scopeName: (path: ScopePath) => string): ReactNode
-  }[]
-  /** Beside the name, where the row says what sort of thing it is. */
-  badge?(row: R, s: Translate): ReactNode
-  /** Under the name, after who it belongs to. */
-  note?(row: R, s: Translate): ReactNode
-  /** Chips derived from the row rather than from a finding. */
-  chips?(row: R, s: Translate): ChipLine[]
-  /** The finding keys whose chip is a warning. */
-  warning: ReadonlySet<string>
+function usedBy(row: TechnologyRow, s: Translate): string {
+  const { applications, scopes } = row.consumers
+  return s('register.usedBy', { applications, scopes })
 }
 
-const APPLICATIONS: RegisterConfig<RegisterRow, 'name' | 'scope', RegisterSummary> = {
-  page: 'register',
-  row: 'register',
-  named: 'register',
-  title: 'register.title',
-  what: 'register.what',
-  empty: 'register.empty',
-  noMatch: 'register.noMatch',
-  settled: 'register.settled',
-  nameColumn: 'register.colName',
-  maxWidth: 1080,
-  orders: [
-    { value: 'name', label: 'register.byName' },
-    { value: 'scope', label: 'register.byScope' },
-  ],
-  order: 'name',
-  summarise: registerSummary,
-  matching: matchingRows,
-  sort: sortRows,
-  counts: [
-    { one: 'register.applicationsOne', other: 'register.applicationsOther', of: (summary) => summary.applications },
-    { one: 'register.ownedOne', other: 'register.ownedOther', of: (summary) => summary.owned },
-    { one: 'register.ownerNamedOne', other: 'register.ownerNamedOther', of: (summary) => summary.ownerNamed },
-    { one: 'register.keptOne', other: 'register.keptOther', of: (summary) => summary.keptInADomain },
-    { one: 'register.outsideOne', other: 'register.outsideOther', of: (summary) => summary.outside },
-  ],
-  findings: [
-    { one: 'register.definedTwiceOne', other: 'register.definedTwiceOther', of: (summary) => summary.definedTwice },
-    { one: 'register.unattributedOne', other: 'register.unattributedOther', of: (summary) => summary.unattributed },
-    { one: 'register.staleOne', other: 'register.staleOther', of: (summary) => summary.stale },
-  ],
-  columns: [
-    {
-      header: 'register.colDrawn',
-      named: 'register.colDrawn',
-      cell: (row, s, scopeName) => (row.drawnIn.length === 0 ? (
-        <NothingDash says={s('register.drawnNowhere')} />
-      ) : (
-        <Tooltip title={row.drawnIn.map(scopeName).join(' · ')}>
-          <Typography sx={{ fontSize: 12, cursor: 'default' }}>
-            {plural(s, { one: 'register.drawnOne', other: 'register.drawnOther' }, row.drawnIn.length)}
-          </Typography>
-        </Tooltip>
-      )),
-    },
-  ],
-  // Derived from the record rather than from a scope's document findings: the
-  // register is about the whole tree, and the index carries both halves (§9).
-  chips: (row, s) => (isUnattributed(row)
-    ? [{ key: 'check.unattributed', text: s(CHECK_LABEL['check.unattributed'], { name: row.name, scope: '', count: 0 }) }]
-    : []),
-  warning: new Set(['check.conflict']),
+function filterFields(tab: RegisterTab, rows: readonly Shown[], words: RegisterWords, s: Translate): readonly FilterField[] {
+  const findings: FilterField = {
+    id: 'findings', label: s('register.colFindings'),
+    options: [{ value: 'yes', label: s('register.withFindings') }, { value: 'no', label: s('register.withoutFindings') }],
+  }
+  if (tab === 'applications') {
+    const apps = rows as readonly RegisterRow[]
+    const distinct = (read: (row: RegisterRow) => string | undefined) => [...new Set(apps.map(read).filter((one): one is string => Boolean(one)))].sort()
+    return [
+      { id: 'lifecycle', label: s('register.colLifecycle'), options: (['planned', 'live', 'retiring', 'retired'] as const).map((value) => ({ value, label: s(`lifecycle.${value}`) })) },
+      {
+        id: 'owner', label: s('register.colOwner'), options: [
+          { value: 'nobody', label: s('register.nobody') }, { value: 'unit', label: s('register.ownerIsUnit') },
+          { value: 'named', label: s('register.ownerIsName') }, { value: 'outside', label: s('register.ownerIsOutside') },
+        ],
+      },
+      { id: 'category', label: s('register.colCategory'), options: distinct((row) => row.category).map((value) => ({ value, label: value })) },
+      { id: 'master', label: s('register.colMaster'), options: distinct((row) => row.master).map((value) => ({ value, label: words.scopeName(value) })) },
+      findings,
+    ]
+  }
+  if (tab === 'services') {
+    return [
+      { id: 'shared', label: s('techRegister.colShared'), options: [
+        { value: 'shared', label: s('techRegister.shared') }, { value: 'offered', label: s('register.notMarkedShared') }, { value: 'own', label: s('techRegister.ownTeam') },
+      ] },
+      { id: 'delivered', label: s('register.colDelivered'), options: [{ value: 'yes', label: s('register.deliveredYes') }, { value: 'no', label: s('register.nothing') }] },
+      findings,
+    ]
+  }
+  return [
+    { id: 'archetype', label: s('register.colArchetype'), options: (['place', 'service', 'network'] as const).map((value) => ({ value, label: s(`platformArchetype.${value}`) })) },
+    findings,
+  ]
 }
 
-const quiet = { fontSize: 12, color: 'text.secondary' } as const
-/** The findings column's width at most, in pixels: its chips wrap inside it rather than widen the table. */
-const FINDINGS_CELL_MAX = 220
-const names = (held: readonly { name: string }[]) => held.map((one) => one.name).join(', ')
-const isService = (row: TechnologyRow) => row.kind === 'platformService'
-
-const TECHNOLOGY: RegisterConfig<TechnologyRow, TechnologyOrder, TechnologySummary> = {
-  page: 'technology-register',
-  row: 'technology',
-  named: 'technologyRegister',
-  title: 'techRegister.title',
-  what: 'techRegister.what',
-  empty: 'techRegister.empty',
-  noMatch: 'techRegister.noMatch',
-  settled: 'techRegister.settled',
-  nameColumn: 'techRegister.colName',
-  maxWidth: 1180,
-  // Eight columns: at half a screen the table scrolls sideways rather than
-  // pushing its findings column off the page.
-  minWidth: 960,
-  gutter: 1.5,
-  orders: [
-    { value: 'kind', label: 'techRegister.byKind' },
-    { value: 'name', label: 'register.byName' },
-    { value: 'scope', label: 'register.byScope' },
-  ],
-  order: 'kind',
-  summarise: technologySummary,
-  matching: matchingTechnology,
-  sort: sortTechnology,
-  counts: [
-    { one: 'techRegister.servicesOne', other: 'techRegister.servicesOther', of: (summary) => summary.services },
-    { one: 'techRegister.platformsOne', other: 'techRegister.platformsOther', of: (summary) => summary.platforms },
-    { one: 'techRegister.sharedOne', other: 'techRegister.sharedOther', of: (summary) => summary.shared },
-  ],
-  findings: [
-    { one: 'techRegister.offeredOne', other: 'techRegister.offeredOther', of: (summary) => summary.offeredNotShared },
-    { one: 'techRegister.unrealisedOne', other: 'techRegister.unrealisedOther', of: (summary) => summary.unrealised },
-    { one: 'register.definedTwiceOne', other: 'register.definedTwiceOther', of: (summary) => summary.definedTwice },
-    { one: 'register.staleOne', other: 'register.staleOther', of: (summary) => summary.stale },
-  ],
-  columns: [
-    {
-      header: 'techRegister.colWho',
-      cell: (row, s) => (
-        <Typography sx={quiet} data-testid={`technology-who-${row.id}`}>
-          {isService(row)
-            ? (row.maintainers.length ? names(row.maintainers) : s('techRegister.nobodyMaintains'))
-            : [
-              row.maintainers.length ? names(row.maintainers) : '',
-              row.partOf ? s('techRegister.partOf', { name: row.partOf.name }) : '',
-            ].filter(Boolean).join(' · ')}
-        </Typography>
-      ),
-    },
-    {
-      header: 'techRegister.colShared',
-      cell: (row, s) => isService(row) && (
-        <Typography sx={quiet} data-testid={`technology-shared-${row.id}`}>
-          {row.shared ? s('techRegister.shared') : s('techRegister.ownTeam')}
-        </Typography>
-      ),
-    },
-    {
-      header: 'techRegister.colUse',
-      cell: (row, s) => (
-        <Typography sx={quiet} data-testid={`technology-use-${row.id}`}>
-          {isService(row)
-            ? [
-              plural(s, { one: 'register.applicationsOne', other: 'register.applicationsOther' }, row.consumers.applications),
-              plural(s, { one: 'register.drawnOne', other: 'register.drawnOther' }, row.consumers.scopes),
-            ].join(' · ')
-            : plural(s, { one: 'techRegister.hostsOne', other: 'techRegister.hostsOther' }, row.hosts)}
-        </Typography>
-      ),
-    },
-    {
-      header: 'techRegister.colRealised',
-      cell: (row, s) => (
-        <Typography sx={quiet} data-testid={`technology-realised-${row.id}`}>
-          {isService(row)
-            ? (row.realisedBy.length ? names(row.realisedBy) : s('techRegister.unrealised'))
-            : (row.realises.length ? names(row.realises) : s('techRegister.realisesNothing'))}
-        </Typography>
-      ),
-    },
-  ],
-  badge: (row, s) => (
-    <Chip
-      size="small"
-      variant={isService(row) ? 'filled' : 'outlined'}
-      label={isService(row) ? s(KIND_LABEL_KEYS.platformService) : s(PLATFORM_ARCHETYPE_LABEL[row.platformArchetype ?? 'service'])}
-      sx={{ height: 18, fontSize: 10 }}
-    />
-  ),
-  note: (row, s) => !isService(row) && row.service && (
-    <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('techRegister.forService', { name: row.service.name })}</Typography>
-  ),
-  warning: new Set(['check.conflict', 'check.offeredNotShared']),
+function groupChoices(tab: RegisterTab, s: Translate): readonly FilterChoice[] {
+  const master = { id: 'master', label: s('register.colMaster') }
+  const findings = { id: 'findings', label: s('register.colFindings') }
+  if (tab === 'applications') return [master, { id: 'category', label: s('register.colCategory') }, { id: 'lifecycle', label: s('register.colLifecycle') }, { id: 'owner', label: s('register.colOwner') }, findings]
+  if (tab === 'services') return [master, { id: 'maintained', label: s('register.colMaintained') }, findings]
+  return [{ id: 'archetype', label: s('register.colArchetype') }, master, { id: 'partOf', label: s('register.colPartOf') }, findings]
 }
 
-function Register<R extends Listed, Order extends string, Summary>(props: PageProps<R> & {
-  config: RegisterConfig<R, Order, Summary>
-  onLink?: RegisterPageProps['onLink']
-  readOnly?: boolean
+const ITEM_LABEL = { applications: 'register.colName', services: 'register.colService', platforms: 'register.colPlatform' } as const
+/** Under twelve rows the bar is only Find: there is nothing to narrow. */
+const FEW = 12
+
+function RegisterList<R extends Shown>({ tab, rows, how, columns, view, setView, words, s }: {
+  tab: RegisterTab; rows: readonly R[]; how: ListHow<R>; columns: readonly Drawn<R>[]; view: ListView; setView: (next: ListView) => void
+  words: RegisterWords; s: Translate
 }) {
-  const { config, open, onClose, rows, organisation, scopeName, onOpen, onOpenPage, onLink, readOnly = false, s } = props
-  const chrome = props.windowChrome ?? NO_WINDOW_CHROME
-  const bar = barChromeFor(chrome)
-  const [query, setQuery] = useState('')
-  const [order, setOrder] = useState<Order>(config.order)
-
-  const shown = useMemo(
-    () => config.sort(config.matching(rows, query), order),
-    [config, rows, query, order],
+  const [density, setDensity] = useListDensity()
+  const shownIds = view.columns ?? columns.filter((column) => !column.startsHidden).map((column) => column.id)
+  const shownColumns = columns.filter((column) => shownIds.includes(column.id))
+  // Find covers every shown column, the hidden ones too since what they hold can be asked for.
+  const groups = useMemo(() => listed(rows, view, how), [rows, view, how])
+  const drawn = useMemo<readonly ListGroup[]>(() => groups.map((group) => ({
+    id: group.id, label: group.label,
+    rows: group.rows.map((row) => ({
+      id: row.id, text: row.name,
+      cells: Object.fromEntries(shownColumns.map((column) => [column.id, <span key={column.id} className="org-cell">{column.cell(row)}</span>])),
+    })),
+  })), [groups, shownColumns])
+  const count = groups.reduce((sum, group) => sum + group.rows.length, 0)
+  const few = rows.length < FEW && Object.keys(view.filters).length === 0 && !view.group
+  const named = tab === 'applications' ? 'register' : 'technologyRegister'
+  const nearest = view.find && count === 0 ? didYouMean(view.find, rows.flatMap((row) => how.words(row))) : null
+  return (
+    <>
+      <FilterWords
+        dataGuide={`${named}.list`} find={view.find} onFind={(find) => setView({ ...view, find })} findLabel={s('register.find')}
+        {...(few ? {} : {
+          fields: filterFields(tab, rows, words, s), filters: view.filters, onFilters: (filters: ListView['filters']) => setView({ ...view, filters }),
+          groups: groupChoices(tab, s), group: view.group, onGroup: (group: string | null) => setView({ ...view, group }),
+          columns: columns.map(({ id, label }) => ({ id, label })), shownColumns: shownIds, onColumns: (next: readonly string[]) => setView({ ...view, columns: next }),
+          density, onDensity: setDensity, onReset: () => setView(FRESH_VIEW),
+        })}
+        shown={{ count, total: rows.length }}
+      />
+      <div data-testid={tab === 'applications' ? 'register-table' : 'technology-register-table'}>
+        <List
+          label={s(ITEM_LABEL[tab])} groups={drawn} density={density} columns={shownColumns} itemLabel={s(ITEM_LABEL[tab])} itemSortable
+          sort={view.sort ?? { column: '', descending: false }} onSort={(sort) => setView({ ...view, sort: sort.column === '' && !sort.descending ? null : sort })}
+          selectedId={view.select} onOpen={(id) => setView({ ...view, select: id })}
+          rowGuide={`${named}.row`}
+          empty={(
+            <p className="org-page__nomatch" role="status">
+              {s('register.noMatchAll', { query: view.find.trim() })}{' '}
+              {nearest && <Button variant="quiet" onClick={() => setView({ ...view, find: nearest })}>{s('register.didYouMean', { word: nearest })}</Button>}
+              <Button variant="quiet" onClick={() => setView({ ...view, find: '', filters: {} })}>{s('register.clearFind')}</Button>
+            </p>
+          )}
+        />
+      </div>
+    </>
   )
-  const summary = useMemo(() => config.summarise(rows), [config, rows])
-  const named = (path: ScopePath) => (scopeName ? scopeName(path) : path || organisation)
-  const label = (path: ScopePath | undefined) => (
-    path === undefined ? s('register.nobody') : named(path)
-  )
+}
 
-  const counts = config.counts.map((count) => plural(s, count, count.of(summary))).join(' · ')
-
-  const table = (
-    <Box
-      component="table"
-      data-testid={`${config.page}-table`}
-      sx={{ width: '100%', minWidth: config.minWidth, borderCollapse: 'collapse', fontSize: 13 }}
-    >
-      <Box component="thead">
-        <Box component="tr" sx={{ '& th': { textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'text.secondary', borderBottom: 1, borderColor: 'divider', py: 0.75, textTransform: 'uppercase', letterSpacing: 0.6 } }}>
-          <Box component="th">{s(config.nameColumn)}</Box>
-          <Box component="th" data-guide={`${config.named}.colMaster`}>{s('register.colMaster')}</Box>
-          {config.columns.map((column) => (
-            <Box component="th" key={column.header} data-guide={column.named}>{s(column.header)}</Box>
-          ))}
-          <Box component="th" data-guide={`${config.named}.colFindings`}>{s('register.colFindings')}</Box>
-          <Box component="th" />
-        </Box>
-      </Box>
-      <Box component="tbody">
-        {shown.map((row) => (
-          <Row
-            key={row.id}
-            config={config}
-            row={row}
-            label={label}
-            scopeName={named}
-            onOpen={onOpen}
-            onOpenPage={onOpenPage}
-            onLink={readOnly ? undefined : onLink}
-            s={s}
-          />
-        ))}
-      </Box>
-    </Box>
+/** What is known of a record, beside its findings. */
+function factsOf(tab: RegisterTab, row: Shown, words: RegisterWords, s: Translate): ReactNode {
+  const fact = (label: string, value: ReactNode) => (value === undefined || value === '' ? null : <PreviewFact key={label} label={label}>{value}</PreviewFact>)
+  const kept = fact(s('register.colMaster'), row.master !== undefined ? words.scopeName(row.master) : words.nobody)
+  const drawn = fact(s('register.colDrawn'), row.drawnIn.length > 0 ? row.drawnIn.map(words.scopeName).join(', ') : s('register.drawnNowhere'))
+  if (tab === 'applications') {
+    const app = row as RegisterRow
+    return (
+      <>
+        {kept}
+        {fact(s('register.colOwner'), words.owner(app))}
+        {fact(s('register.colCategory'), app.category)}
+        {fact(s('register.colLifecycle'), words.lifecycle(app))}
+        {fact(s('register.colVendor'), app.vendor)}
+        {fact(s('register.colTechnology'), app.technology)}
+        {fact(s('register.colHostedOn'), app.hostedOn?.join(', '))}
+        {fact(s('register.colUses'), app.uses?.join(', '))}
+        {drawn}
+      </>
+    )
+  }
+  const tech = row as TechnologyRow
+  if (tab === 'services') {
+    return (
+      <>
+        {kept}
+        {fact(s('register.colMaintained'), words.maintainedBy(tech))}
+        {fact(s('register.colUsed'), usedBy(tech, s))}
+        {fact(s('register.colDelivered'), words.deliveredBy(tech))}
+        {drawn}
+      </>
+    )
+  }
+  return (
+    <>
+      {kept}
+      {fact(s('register.colArchetype'), words.archetype(tech))}
+      {fact(s('register.colPartOf'), words.partOf(tech))}
+      {fact(s('register.colHosts'), tech.hosts)}
+      {fact(s('register.colDelivers'), words.delivers(tech))}
+      {tech.service && fact(s('register.colForService'), tech.service.name)}
+      {tech.maintainers.length > 0 && fact(s('register.colMaintained'), words.maintainedBy(tech))}
+      {drawn}
+    </>
   )
+}
+
+export function RegisterPage(props: RegisterPageProps) {
+  const { open, onClose, rows, technology, instances, scopes, index, today, language, scopeName, request, onOpen, onOpenPage, onLink, onReport, onSeeInChecks, onHome, readOnly = false, s } = props
+  const [rawTab, setRawTab] = usePlaceTab('applications')
+  const tab: RegisterTab = isRegisterTab(rawTab) ? rawTab : 'applications'
+  const [view, setView] = usePlaceListView('register')
+  const marking = useCheckMarking()
+  const [toast, setToast] = useState<ToastWords | null>(null)
+
+  // A way in to a tab or a record: asked once per request.
+  useEffect(() => {
+    if (!request) return
+    if (request.tab) setRawTab(request.tab)
+    if (request.select !== undefined) setView({ ...view, select: request.select })
+    // Only on a request: the view changing must not ask again.
+  }, [request?.nonce])
+
+  const found = useMemo(() => findingsByRecord(instances), [instances])
+  const words = useMemo(() => registerWords(s, language, scopeName, props.personName), [s, language, scopeName, props.personName])
+  const applicationsHow = useMemo(() => applicationHow(words, found, language), [words, found, language])
+  const servicesHow = useMemo(() => serviceHow(words, found, language), [words, found, language])
+  const platformsHow = useMemo(() => platformHow(words, found, language), [words, found, language])
+  const services = useMemo(() => servicesOf(technology), [technology])
+  const platforms = useMemo(() => platformsOf(technology), [technology])
+  const shown: readonly Shown[] = tab === 'applications' ? rows : tab === 'services' ? services : platforms
+
+  const ids = useMemo(() => {
+    const how = (tab === 'applications' ? applicationsHow : tab === 'services' ? servicesHow : platformsHow) as ListHow<Shown>
+    return listed(shown, view, how).flatMap((group) => group.rows.map((row) => row.id))
+  }, [shown, view, tab, applicationsHow, servicesHow, platformsHow])
+  const current = view.select !== null ? shown.find((row) => row.id === view.select) : undefined
+  const nothingAtAll = rows.length === 0 && technology.length === 0
+  const chooseTab = (next: string) => {
+    setRawTab(next)
+    // Another list: what narrowed this one means nothing there.
+    setView(FRESH_VIEW)
+  }
 
   return (
-    <PageDialog open={open} topInset={chrome.topInset} onClose={onClose} aria-label={s(config.title)}>
-      <Box
-        data-testid={`${config.page}-topbar`}
-        sx={{
-          display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5,
-          pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
-          '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-          minHeight: 48, borderBottom: 1, borderColor: 'divider',
-          bgcolor: 'background.paper', flexShrink: 0,
-        }}
+    <PageDialog open={open} onClose={onClose} aria-label={s('register.title')}>
+      <div className="org-page" data-testid="register-page">
+        <div className="org-page__head" data-testid={tab === 'applications' ? 'register-topbar' : 'technology-register-topbar'}>
+          <div className="org-page__title">
+            <h1 className="org-page__name">{s('register.title')}</h1>
+            <span className="org-page__covers" data-testid="register-findings">{coverageSentence(tab, rows, technology, scopes, s)}</span>
+          </div>
+          {!nothingAtAll && (
+            <Tabs
+              label={s('register.title')} value={tab} onChange={chooseTab} data-guide="register.tabs"
+              items={[
+                { value: 'applications', label: s('register.tabApplications'), count: rows.length },
+                { value: 'services', label: s('register.tabServices'), count: services.length },
+                { value: 'platforms', label: s('register.tabPlatforms'), count: platforms.length },
+              ]}
+            />
+          )}
+        </div>
+        <div className="org-page__body">
+          {nothingAtAll || shown.length === 0 ? (
+            <PageState
+              state="empty"
+              title={s(tab === 'applications' ? 'register.emptyTitle' : tab === 'services' ? 'register.emptyServices' : 'register.emptyPlatforms')}
+              body={s('register.emptyBody')}
+              {...(onHome ? { action: { label: s('register.emptyGo'), onPress: onHome } } : {})}
+            />
+          ) : tab === 'applications' ? (
+            <RegisterList tab={tab} rows={rows} how={applicationsHow} columns={applicationColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
+          ) : tab === 'services' ? (
+            <RegisterList tab={tab} rows={services} how={servicesHow} columns={serviceColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
+          ) : (
+            <RegisterList tab={tab} rows={platforms} how={platformsHow} columns={platformColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
+          )}
+        </div>
+      </div>
+      <Preview
+        ids={ids} currentId={current ? current.id : null} onSelect={(id) => setView({ ...view, select: id })}
+        title={current?.name ?? ''} code={current?.id}
+        listWord={s(tab === 'applications' ? 'register.listApplications' : tab === 'services' ? 'register.listServices' : 'register.listPlatforms')}
+        dataGuide="register.preview"
+        facts={current ? factsOf(tab, current, words, s) : undefined}
+        foot={current && current.master !== undefined ? (
+          <span className="org-preview__foot">
+            {tab !== 'applications' && onReport && (
+              <Button variant="primary" onClick={() => onReport(tab === 'services' ? 'service' : 'platform', current.master as ScopePath, current.id)} data-testid="register-report">
+                {s(tab === 'services' ? 'register.serviceReport' : 'register.platformReport')}
+              </Button>
+            )}
+            {onOpen && <Button data-guide={tab === 'applications' ? 'register.openRow' : 'technologyRegister.openRow'} data-testid={`register-open-${current.id}`} onClick={() => onOpen(current.master as ScopePath, current.id)}>{s('register.openOnBoard')}</Button>}
+            {onOpenPage && <Button data-testid={`register-page-${current.id}`} onClick={() => onOpenPage(current.master as ScopePath, current.id)}>{s('register.recordPage')}</Button>}
+          </span>
+        ) : undefined}
       >
-        <Tooltip title={s('common.close')}>
-          <IconButton size="small" aria-label={s('common.close')} onClick={onClose}>
-            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>
-              ‹
-            </Box>
-          </IconButton>
-        </Tooltip>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>{s(config.title)}</Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{counts}</Typography>
-        <Box sx={{ flex: 1 }} />
-        <TextField
-          size="small"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={s('register.filter')}
-          slotProps={{ htmlInput: { 'aria-label': s('register.filter'), autoComplete: 'off' } }}
-          sx={{ width: 220 }}
-        />
-        <ToggleButtonGroup
-          size="small"
-          exclusive
-          value={order}
-          onChange={(_e, next: Order | null) => { if (next) setOrder(next) }}
-          aria-label={s('register.order')}
-        >
-          {config.orders.map((one) => (
-            <ToggleButton key={one.value} value={one.value} sx={{ fontSize: 11, py: 0.25, px: 1 }}>
-              {s(one.label)}
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-        <PageClose onClose={onClose} />
-      </Box>
-
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: 3, py: 2 }}>
-        <Box sx={{ maxWidth: config.maxWidth, mx: 'auto' }}>
-          <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 0.5 }}>
-            {s(config.what)}
-          </Typography>
-          <Typography sx={{ fontSize: 12, color: 'text.secondary', mb: 2 }} data-testid={`${config.page}-findings`}>
-            {findingLine(config, summary, s)}
-          </Typography>
-
-          {rows.length === 0 && (
-            <Typography sx={{ fontSize: 13 }}>{s(config.empty)}</Typography>
-          )}
-          {rows.length > 0 && shown.length === 0 && (
-            <Typography sx={{ fontSize: 13 }}>{s(config.noMatch, { query: query.trim() })}</Typography>
-          )}
-
-          {shown.length > 0 && (config.minWidth === undefined ? table : <Box sx={{ overflowX: 'auto' }}>{table}</Box>)}
-        </Box>
-      </Box>
+        {current && (
+          <RecordFindings
+            held={found.get(current.id) ?? []} index={index} marking={readOnly ? undefined : marking} today={today}
+            onLink={readOnly ? undefined : onLink} onSeeInChecks={onSeeInChecks} onFixed={(done) => setToast({ key: Date.now(), message: done.message, undo: { onPress: done.back, shared: true } })} s={s}
+          />
+        )}
+      </Preview>
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </PageDialog>
   )
 }
 
-/** "1 defined twice · 2 outside and unattributed", or that there is nothing. */
-function findingLine<Summary>(
-  config: { findings: readonly Counted<Summary>[]; settled: StringKey },
-  summary: Summary,
-  s: Translate,
-): string {
-  const parts = config.findings
-    .map((finding) => {
-      const count = finding.of(summary)
-      return count > 0 ? plural(s, finding, count) : ''
-    })
-    .filter(Boolean)
-  return parts.length ? parts.join(' · ') : s(config.settled)
-}
-
-function Row<R extends Listed, Order extends string, Summary>({ config, row, label, scopeName, onOpen, onOpenPage, onLink, s }: {
-  config: RegisterConfig<R, Order, Summary>
-  row: R
-  label: (path: ScopePath | undefined) => string
-  scopeName: (path: ScopePath) => string
-  onOpen?: Open
-  onOpenPage?: Open
-  onLink?: RegisterPageProps['onLink']
-  s: Translate
+/** What the checks say about one record, each with what puts it right and the way to its check. */
+function RecordFindings({ held, index, marking, today, onLink, onSeeInChecks, onFixed, s }: {
+  held: readonly CheckInstance[]; index: RegisterPageProps['index']; marking: ReturnType<typeof useCheckMarking>; today: string
+  onLink: RegisterPageProps['onLink']; onSeeInChecks: RegisterPageProps['onSeeInChecks']; onFixed: Parameters<typeof FindingActions>[0]['onFixed']; s: Translate
 }) {
-  const prefix = config.row
-  const conflict = row.findings.find((finding) => finding.key === 'check.conflict')
-  const chips: ChipLine[] = row.findings.map((finding) => ({
-    key: finding.key,
-    text: s(CHECK_LABEL[finding.key], {
-      name: finding.name,
-      scope: label(finding.scopes?.[0]),
-      detail: finding.detail ?? '',
-      count: 0,
-    }),
-  }))
-  if (config.chips) chips.push(...config.chips(row, s))
-
-  const name = onOpenPage && row.master !== undefined ? (
-    <Tooltip title={s('register.pageRow', { name: row.name })}>
-      <Typography
-        component="button"
-        type="button"
-        data-testid={`${prefix}-page-${row.id}`}
-        onClick={() => onOpenPage(row.master!, row.id)}
-        sx={{
-          // `font` first: the shorthand resets the size and the weight, so
-          // said after them it undid both.
-          font: 'inherit', fontSize: 13, fontWeight: 600, p: 0, border: 0, bgcolor: 'transparent',
-          color: 'text.primary', cursor: 'pointer', textAlign: 'left',
-          '&:hover': { color: 'primary.main', textDecoration: 'underline' },
-        }}
-      >
-        {row.name}
-      </Typography>
-    </Tooltip>
-  ) : (
-    <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{row.name}</Typography>
-  )
-
+  if (held.length === 0) return <p className="org-cell-quiet">{s('register.noFindings')}</p>
   return (
-    <Box
-      component="tr"
-      data-testid={`${prefix}-row-${row.id}`}
-      data-guide={`${config.named}.row`}
-      sx={{
-        '& td': {
-          borderBottom: 1, borderColor: 'divider', py: 0.75, verticalAlign: 'top',
-          ...(config.gutter !== undefined ? { pr: config.gutter } : {}),
-        },
-      }}
-    >
-      <Box component="td">
-        {config.badge ? (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-            {name}
-            {config.badge(row, s)}
-          </Box>
-        ) : name}
-        {row.outside && (
-          <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-            {row.party !== undefined
-              ? s('register.outsideParty', { name: row.party })
-              : s('register.outsideUnattributed')}
-          </Typography>
-        )}
-        {config.note?.(row, s)}
-      </Box>
-      <Box component="td">
-        <Typography sx={{ fontSize: 12 }} data-testid={`${prefix}-master-${row.id}`}>
-          {label(row.master)}
-        </Typography>
-      </Box>
-      {config.columns.map((column) => (
-        <Box component="td" key={column.header}>{column.cell(row, s, scopeName)}</Box>
-      ))}
-      {/* Capped, and each chip's words wrap inside it: a finding is a
-          sentence, and a chip that would not wrap pushed the table past its
-          page. */}
-      <Box component="td" sx={{ maxWidth: FINDINGS_CELL_MAX }}>
-        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-          {chips.map((chip) => (
-            <Chip
-              key={chip.key}
-              size="small"
-              color={config.warning.has(chip.key) ? 'warning' : 'default'}
-              variant="outlined"
-              label={chip.text}
-              sx={{
-                height: 'auto', minHeight: 20, maxWidth: '100%', fontSize: 10,
-                '& .MuiChip-label': { whiteSpace: 'normal', overflowWrap: 'anywhere', py: 0.25 },
-              }}
-            />
-          ))}
-        </Box>
-      </Box>
-      <Box component="td" sx={{ whiteSpace: 'nowrap' }}>
-        {onOpen && row.master !== undefined && (
-          <Tooltip title={s('register.openRow', { name: row.name })}>
-            <Button
-              size="small"
-              color="inherit"
-              sx={{ fontSize: 11, minWidth: 0, px: 1 }}
-              data-testid={`${prefix}-open-${row.id}`}
-              data-guide={`${config.named}.openRow`}
-              aria-label={s('picker.openNamed', { name: row.name })}
-              onClick={() => onOpen(row.master!, row.id)}
-            >
-              {s('picker.open')}
-            </Button>
-          </Tooltip>
-        )}
-        {/* A conflict is two definitions at the same depth, and *link* is how
-            one of them stops being one. Offered on the OTHER scope — the one
-            the index did not make the master — because that is the record
-            that yields. */}
-        {onLink && conflict && conflict.scopes?.[0] !== undefined && (
-          <Tooltip title={s('register.linkRowTip', { scope: label(conflict.scopes[0]) })}>
-            <Button
-              size="small"
-              color="inherit"
-              sx={{ fontSize: 11, minWidth: 0, px: 1 }}
-              data-testid={`${prefix}-link-${row.id}`}
-              onClick={() => onLink(conflict.scopes![0], row.id, conflict.scope)}
-            >
-              {s('register.linkRow')}
-            </Button>
-          </Tooltip>
-        )}
-      </Box>
-    </Box>
+    <>
+      {held.map((one) => {
+        const entry = CHECK_CATALOGUE[one.key]
+        return (
+          <div className="org-finding" key={one.id} data-finding={one.attributes['data-finding']}>
+            <div className="org-finding__line"><Mark kind={entry.weight} label={s(CHECK_LIST_WORDS.weight[entry.weight].name)} /><span>{one.text}</span></div>
+            <p className="org-finding__why">{s(entry.why)}</p>
+            <span className="org-finding__acts">
+              {index && (
+                <FindingActions instance={one} index={index} marking={marking} today={today} {...(onLink ? { onLink } : {})} onFixed={onFixed} s={s} />
+              )}
+              {onSeeInChecks && <Button variant="quiet" onClick={() => onSeeInChecks(one)}>{s('register.seeInChecks')}</Button>}
+            </span>
+          </div>
+        )
+      })}
+    </>
   )
 }

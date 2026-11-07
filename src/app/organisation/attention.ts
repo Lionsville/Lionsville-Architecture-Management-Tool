@@ -74,6 +74,10 @@ export type AttentionItem = {
    */
   page?: 'operating' | 'home' | 'principles' | 'record' | 'topics'
   text: string
+  /** What the sentence is about, named: a list under a check's name says only this. */
+  subject?: string
+  /** The other thing the finding names, as it says it: a role, a unit type. */
+  detail?: string
 }
 
 /** The findings about a principle (ADR-0041 §10): opened on the principles page of its scope, the principle picked there. */
@@ -137,6 +141,8 @@ export function attentionItems(
         ...(finding.person !== undefined ? { person: finding.person } : {}),
         ...pageOf(finding.key),
         text: findingSentence(finding, s, scopeName, personName),
+        subject: finding.person !== undefined ? personName(finding.person) : finding.name,
+        ...(finding.detail !== undefined ? { detail: finding.detail } : {}),
       })
     }
   }
@@ -144,7 +150,7 @@ export function attentionItems(
     const scope = row.master ?? row.drawnIn[0]
     if (!isUnattributed(row) || scope === undefined || !within(scope)) continue
     add({
-      key: 'check.unattributed', scope, id: row.id,
+      key: 'check.unattributed', scope, id: row.id, subject: row.name,
       text: findingSentence({ key: 'check.unattributed', scope, id: row.id, name: row.name }, s, scopeName),
     })
   }
@@ -153,7 +159,7 @@ export function attentionItems(
     if (!within(row.master)) continue
     // A check of the catalogue's like the others (`check.unrealised`), said in the register's own words.
     add({
-      key: 'check.unrealised', scope: row.master, id: row.id,
+      key: 'check.unrealised', scope: row.master, id: row.id, subject: row.name,
       text: s('techRegister.unrealisedSentence', { name: row.name }),
     })
   }

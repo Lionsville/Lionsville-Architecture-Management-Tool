@@ -8,7 +8,9 @@
  * segment). A page asks here instead of holding a `useState`. With no frame above
  * it, as in a page's own test, it behaves as that `useState` would.
  */
-import { createContext, useCallback, useContext, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { readListView, writeListView } from './kit/listView'
+import type { ListView } from './kit/listView'
 
 /** Somewhere to go, in the three words of an address: strings only, since a widget knows no page names. */
 export type PlaceTo = { readonly scope: string; readonly page?: string; readonly id?: string; readonly select?: string }
@@ -23,6 +25,16 @@ export type PlaceTabs = {
   /** Go to another place, the way `app.open` goes. */
   readonly go?: (to: PlaceTo) => void
 }
+
+/** What a list keeps in the address, handed down beside the tab. */
+export type PlaceLists = {
+  readonly list: string | undefined
+  readonly pick: string | undefined
+  /** `of` is the page asking: while a page is arriving, the frame cannot yet tell whose this is. */
+  readonly choose: (list: string, pick: string | undefined, of: string) => void
+}
+
+export const PlaceListContext = createContext<PlaceLists | undefined>(undefined)
 
 export const PlaceTabContext = createContext<PlaceTabs | undefined>(undefined)
 
@@ -51,4 +63,32 @@ export function usePlaceRecord(of: string, first?: string): readonly [string | u
 /** The way to another place, where a frame stands above the page; none in a page's own test. */
 export function usePlaceGo(): ((to: PlaceTo) => void) | undefined {
   return useContext(PlaceTabContext)?.go
+}
+
+/**
+ * What a list is showing and the record picked on it, in the address: a screen's
+ * `readListView`/`writeListView` over this, instead of a `useState`. With no
+ * frame above it, it is that `useState`.
+ */
+export function usePlaceList(of: string): readonly [string, string | undefined, (list: string, pick: string | undefined) => void] {
+  const held = useContext(PlaceListContext)
+  const [own, setOwn] = useState<{ list: string; pick: string | undefined }>({ list: '', pick: undefined })
+  const choose = useCallback((list: string, pick: string | undefined) => {
+    setOwn({ list, pick })
+    held?.choose(list, pick, of)
+  }, [held, of])
+  return held ? [held.list ?? '', held.pick, choose] : [own.list, own.pick, choose]
+}
+
+/**
+ * {@link usePlaceList} as the kit's `ListView`: what `FilterWords`, `List` and
+ * `Preview` are composed over, with the record picked said beside the rest.
+ */
+export function usePlaceListView(of: string): readonly [ListView, (next: ListView) => void] {
+  const [list, pick, choose] = usePlaceList(of)
+  const view = useMemo(() => ({ ...readListView(new URLSearchParams(list)), select: pick ?? null }), [list, pick])
+  const set = useCallback((next: ListView) => {
+    choose(writeListView({ ...next, select: null }).toString(), next.select ?? undefined)
+  }, [choose])
+  return [view, set]
 }

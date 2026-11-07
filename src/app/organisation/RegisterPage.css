@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* The head of a list page: its name, what it covers in one sentence, and its tabs. */
+.org-page { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--surface); }
+.org-page__head { flex: none; padding: var(--s-3) var(--s-4) 0; }
+.org-page__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); margin: 0; }
+.org-page__name { margin: 0; font-size: var(--t-lg); font-weight: var(--fw-strong); color: var(--ink); }
+.org-page__covers { font-size: var(--t-md); color: var(--ink-2); }
+.org-page__body { flex: 1; min-height: 0; overflow-y: auto; }
+.org-page__nomatch { padding: var(--s-3) var(--s-4); font-size: var(--t-md); color: var(--ink-2); }
+.org-weights { display: inline-flex; align-items: center; gap: var(--s-2); }
+.org-weights__one { display: inline-flex; align-items: center; gap: var(--s-1); font-variant-numeric: tabular-nums; }
+.org-cell-quiet { color: var(--ink-2); }
+
+/* A finding in a record's preview: its sentence, why and how, and what puts it right. */
+.org-finding { padding: var(--s-2) 0; border-top: 1px solid var(--line); }
+.org-finding__line { display: flex; align-items: baseline; gap: var(--s-2); font-weight: var(--fw-strong); }
+.org-finding__why { margin: var(--s-1) 0 var(--s-2); color: var(--ink-2); }
+.org-finding__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.org-preview__foot { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+.org-fix { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); min-width: 200px; }
+.org-fix__picker { flex: 1 1 200px; min-width: 160px; }

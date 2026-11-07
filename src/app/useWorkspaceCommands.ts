@@ -81,7 +81,7 @@ export function useInitialPage(deps: {
   initialPage: InitialPage | undefined
   pages: WorkspacePages
   createSheet: Sheets['create']
-  showElement: (id: string) => void
+  showElement: (id: string, leave?: () => void, more?: { line?: string; field?: string }) => void
   openDocumentation: (elementId?: string, diagramId?: string) => void
   gestures: Gestures
   /** The scope's model as it is now: a unit it keeps lands on its chart (`unitLanding`). */
@@ -131,7 +131,7 @@ function isScopePage(page: InitialPage): page is Extract<InitialPage, { page: ke
 function showInitialPage(page: InitialPage, by: {
   pages: WorkspacePages
   createSheet: Sheets['create']
-  showElement: (id: string) => void
+  showElement: (id: string, leave?: () => void, more?: { line?: string; field?: string }) => void
   openDocumentation: (elementId?: string, diagramId?: string) => void
   gestures: Gestures
   model: () => HostModel
@@ -159,7 +159,7 @@ function showInitialPage(page: InitialPage, by: {
     case 'element': {
       const landing = unitLanding(by.model(), page)
       if (landing.page === 'chart') { pages.openView(landing.id); pages.selectOn(landing.id, landing.select) }
-      else by.showElement(page.id)
+      else by.showElement(page.id, undefined, { ...(page.line !== undefined ? { line: page.line } : {}), ...(page.field !== undefined ? { field: page.field } : {}) })
       break
     }
     // A report, reached by an agent or a link (ADR-0019): derived, so opening it is the whole of it.

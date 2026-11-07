@@ -45,7 +45,7 @@ export function useCanvasRequests(
   const [menuRequest, setMenuRequest] = useState<{ kind: 'open' | 'rename'; nonce: number } | undefined>(undefined);
   const menuNonce = useRef(0);
   const [renameRequest, setRenameRequest] = useState<{ id: ElementId; nonce: number } | undefined>(undefined);
-  const [focusRequest, setFocusRequest] = useState<{ id: ElementId; nonce: number } | undefined>(undefined);
+  const [focusRequest, setFocusRequest] = useState<EditorRequests['focus']>(undefined);
   const focusNonce = useRef(0);
   // Starts EMPTY, not at the prop: an editor mounted with a request already on
   // it must adopt that request rather than take it for one already seen.
@@ -70,16 +70,21 @@ export function useCanvasRequests(
     menuNonce.current += 1;
     setMenuRequest({ kind, nonce: menuNonce.current });
   }, []);
-  const requestFocus = useCallback((elementId: ElementId) => {
+  const requestFocus = useCallback((elementId: ElementId, more?: { line?: string; field?: string }) => {
     focusNonce.current += 1;
-    setFocusRequest({ id: elementId, nonce: focusNonce.current });
-  }, []);
+    setFocusRequest({ id: elementId, nonce: focusNonce.current, ...more });
+    // A field to give the focus to is on the inspector, so the inspector is open.
+    if (more?.field !== undefined) setInspectorCollapsed(false);
+  }, [setInspectorCollapsed]);
 
   const hostFocus = props.requests?.focus;
   useEffect(() => {
     if (!isNewRequest(hostFocusRef.current, hostFocus)) return;
     hostFocusRef.current = hostFocus;
-    requestFocus(hostFocus.id);
+    requestFocus(hostFocus.id, {
+      ...(hostFocus.line !== undefined ? { line: hostFocus.line } : {}),
+      ...(hostFocus.field !== undefined ? { field: hostFocus.field } : {}),
+    });
   }, [hostFocus, requestFocus]);
 
   useFocusElement({

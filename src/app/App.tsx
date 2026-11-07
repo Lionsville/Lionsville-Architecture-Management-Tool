@@ -61,6 +61,8 @@ import { useAgentServer } from './useAgentServer'
 import { AppDialogs, AppNotices, AppScreen, HomeHistoryDialogs } from './AppPanels'
 import { AppFrame } from './frame/AppFrame'
 import { frameStore, FrameStoreContext } from './frame/frameStore'
+import { readFinding } from '../agent/place'
+import type { CheckKey } from '../model/checkCatalogue'
 import type { AppHost, AppProps } from './appProps'
 import type { AdoptScopes } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
@@ -327,6 +329,25 @@ export type RegisteredMenu = {
   readonly menu: SourceMenu
 }
 
+/** What the address said of the home's page it landed on, held by the frame as a press there would be. */
+function frameFromAddress(boot: AppProps['boot']) {
+  const said = boot.initialList
+  const page = boot.initialHomePage
+  const carried = boot.initialFinding !== undefined ? readFinding(boot.initialFinding) : undefined
+  const finding = carried ? { finding: { home: carried.home, check: carried.check as CheckKey, id: carried.id } } : {}
+  if (!page) return finding
+  const record = boot.initialHomeRecord !== undefined ? { record: boot.initialHomeRecord, recordOf: page } : {}
+  if (!said) return { ...finding, ...record }
+  return {
+    ...finding,
+    ...record,
+    ...(said.tab !== undefined ? { tab: said.tab, tabOf: page } : {}),
+    ...(said.list !== undefined ? { list: said.list } : {}),
+    ...(said.pick !== undefined ? { pick: said.pick } : {}),
+    listOf: page,
+  }
+}
+
 /** The pages that are a view's tab: a board, and each laid-out kind and a drawing (`agent/screen`'s `VIEW_PAGES`). */
 export type ViewPageName = 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'
 
@@ -381,7 +402,7 @@ export type InitialPage =
    * A record, selected on the board that draws it — a row of the register,
    * opened where it is answered for.
    */
-  | { page: 'element'; id: ElementId }
+  | { page: 'element'; id: ElementId; line?: string; field?: string }
   /**
    * A record's page — the document and the record's fields — opened in the
    * scope that answers for it, which is where the fields may be written.
@@ -638,7 +659,7 @@ function useShellParts(props: AppProps): ShellParts {
   const shellAgent = useShellAgent({
     gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,
-    openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage, people: people.agent, scopes,
+    openScopeAt: nav.openScopeAt, notify: toasts.notify, s, initialHomePage: props.boot.initialHomePage, ...(props.boot.initialList?.pick !== undefined ? { initialPick: props.boot.initialList.pick } : {}), people: people.agent, scopes,
     report: (cause) => diagnostics.report({ level: 'warn', where: 'history', message: 'where a place lands could not be read', cause }),
     // The frame's rows say where the app is, so the screen is watched on every build.
     watchScreen: true,
@@ -726,14 +747,7 @@ function useShellBase(props: AppProps) {
   })
   const { toasts, prefs, s, reportKept, failed, failedRef } = services
   // ⌘\ is this person's on this computer, and read once as the app comes up.
-  const [frame] = useState(() => {
-    const { initialHomePage: page, initialHomeTab: tab, initialHomeRecord: record } = props.boot
-    return frameStore({
-      pinned: prefs.readPreferences().treePinned === true,
-      ...(page && tab !== undefined ? { tab, tabOf: page } : {}),
-      ...(page && record !== undefined ? { record, recordOf: page } : {}),
-    })
-  })
+  const [frame] = useState(() => frameStore({ pinned: prefs.readPreferences().treePinned === true, ...frameFromAddress(props.boot) }))
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])

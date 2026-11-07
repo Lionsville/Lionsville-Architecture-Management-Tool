@@ -2,232 +2,263 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The Checks page: every check the app makes, over a home (ADR-0036,
- * amended 11 October 2026; scene 9 of the operating model's structure).
+ * The Checks page: a work list over a home (ADR-0036, amended 11 October 2026 and
+ * for 4.0.0). What was found comes first, fixes before reviews before notes, and
+ * it opens on the first fix. Found nothing folds into one line, and grouped by
+ * category every check is there, because a check that finds nothing is still worth
+ * knowing about. The notes fold, remembered for the session, as in every list.
  *
- * Each list of findings in the app shows what is found where a person is; this
- * page shows the checks themselves. **Every check, by category** — the
- * landscape, plans and dates, the organisation, teams and systems, analysis —
- * with its weight's mark, its name and how many are found, none included,
- * because a check that finds nothing is still worth knowing about. Fix before
- * review before note within a category; the notes hidden until asked for, as
- * in every list (`sessionMemory.ts`: for the session, under the home).
+ * **Picking a check** shows what the catalogue says of it and what is found of it:
+ * Found, one line per finding, naming the subject alone since the check names the
+ * problem, grouped by what the check knows; and Accepted, what was marked, each with
+ * its reason, its day and *Take back*. Pressing a finding shows what puts it right
+ * in the row: its one-field fix where it has one, and the way to where it is fixed,
+ * with a band that carries the finding along (`FindingBand`).
  *
- * **Picking a check** shows what the catalogue says of it — why it matters and
- * how to fix it — then every instance found at or under this home, each in its
- * scope and opening where it is fixed, and the ones marked as intended, each
- * with its reason, its day and *Take back*. A review or a note may be marked
- * from here as from any list; a fix may not, and the page says why.
+ * **Marking is ticks and one reason**, with the explanation still in view, one step
+ * in each scope that keeps them. One dialog per finding is why none was ever marked
+ * at the size findings come in. A fix has no box: a contradiction cannot be accepted.
+ * A reader sees no boxes, and an agent reads marks and makes none.
  *
  * What only an open scope can work out is not counted here
- * (`treeChecks.FOUND_WHERE_OPEN`): the check is listed with its explanation
- * and a line saying where it is found.
- *
- * A full-window page over the home, as the registers are: below the home's bar,
- * window chrome on its own bar, both themes, and nothing on it that writes but
- * a mark — which the marking handed down decides (`checkMarking.tsx`) — and
- * *Remove the assignment* on one whose unit is not there: no screen of the
- * unit is left to fix it from (ADR-0036, amended 12 October 2026).
+ * (`treeChecks.FOUND_WHERE_OPEN`), and the page says so in words with a way there.
  */
-import { useEffect, useMemo, useState } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import ButtonBase from '@mui/material/ButtonBase'
-import IconButton from '@mui/material/IconButton'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Tooltip from '@mui/material/Tooltip'
-import Typography from '@mui/material/Typography'
-import type { Translate } from '../../i18n'
-import { CHECK_ACTION_LABEL, CHECK_CATEGORY_LABEL, CHECK_LIST_WORDS, CHECK_WEIGHT_LABEL, CHECK_WEIGHTS } from '../../model/checkCatalogue'
-import type { CheckCategory, CheckKey, CheckWeight } from '../../model/checkCatalogue'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { StringKey, Translate } from '../../i18n'
+import { CHECK_CATEGORY_LABEL, CHECK_LIST_WORDS, CHECK_WEIGHT_LABEL, CHECK_WEIGHTS } from '../../model/checkCatalogue'
+import type { CheckKey, CheckWeight } from '../../model/checkCatalogue'
 import { CHECK_MARK_WORDS, checkMarkId } from '../../model/checkMarks'
+import type { KeptCheckMark } from '../../model/checkMarks'
+import type { ScopeIndex } from '../../projects/scopeIndex'
+import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { AcceptedFindings, MarkAsIntended } from '../../widgets/FindingMarks'
-import { WEIGHT_MARK } from '../../widgets/weightMark'
+import { AcceptedFindings } from '../../widgets/FindingMarks'
 import { PageDialog } from '../../widgets/PageDialog'
-import { PageClose } from '../../widgets/PageClose'
+import { usePlaceListView, usePlaceTab } from '../../widgets/placeTab'
 import { useSessionSet } from '../../widgets/sessionMemory'
+import { Button } from '../../widgets/kit/Button'
+import { FilterWords } from '../../widgets/kit/FilterWords'
+import { TextInput } from '../../widgets/kit/Field'
+import { List } from '../../widgets/kit/List'
+import type { ListColumn, ListGroup, ListRow } from '../../widgets/kit/List'
+import { useListDensity } from '../../widgets/kit/listDensity'
+import { listed } from '../../widgets/kit/listView'
+import type { ListView } from '../../widgets/kit/listView'
+import { Mark } from '../../widgets/kit/Mark'
+import { MenuButton } from '../../widgets/kit/Menu'
+import { PageState } from '../../widgets/kit/PageState'
+import { Panel, PanelSection } from '../../widgets/kit/Panel'
+import { Toast } from '../../widgets/kit/Toast'
+import type { ToastWords } from '../../widgets/kit/Toast'
 import { useCheckMarking } from '../checkMarking'
 import type { CheckMarking } from '../checkMarking'
+import { firstCheck, foundGroups, heldByTwo, WORK_GROUPS, workSections } from './checksView'
+import type { WorkGroup, WorkSection } from './checksView'
+import { FindingActions } from './FindingActions'
+import type { FixDone } from './FindingActions'
 import { weightCount } from './NeedsAttention'
 import type { CheckInstance, CheckPlace, CheckRow } from './treeChecks'
+import './RegisterPage.css'
+import './ChecksPage.css'
 
 export type ChecksPageProps = {
   open: boolean
   onClose: () => void
   /** Every check by category, with what is found of it and what was marked (`treeChecks.checksByCategory`). */
-  rows: readonly { category: CheckCategory; rows: readonly CheckRow[] }[]
-  /** What is found, by weight: the bar's line. */
+  rows: readonly { category: CheckRow['entry']['category']; rows: readonly CheckRow[] }[]
+  /** What is found, by weight: the sentence in the head. */
   counts: Readonly<Record<CheckWeight, number>>
-  /** What the page was asked to pick — a check's key — by a count on the home or by an agent. */
-  request?: { readonly select?: string } | undefined
-  /** Where the session keeps the weights shown: the home's. */
+  /** What the page was asked to pick — a check's key — by a count on the home, a link or an agent, and the finding to come back to. */
+  request?: { readonly select?: string; readonly finding?: string; readonly nonce?: number } | undefined
+  /** Where the session keeps whether the notes are unfolded: the home's. */
   remember: string
+  /** The home this page is over, and every scope it could be over instead. */
+  at?: ScopePath
+  scopes?: readonly { readonly path: ScopePath; readonly name: string; readonly depth: number }[]
+  onScope?: (path: ScopePath) => void
   scopeName: (path: ScopePath) => string
-  /** Go where an instance is fixed. */
-  onGo: (place: CheckPlace) => void
+  index?: Pick<ScopeIndex, 'lookup' | 'assignments' | 'rowsOf' | 'units'> | undefined
+  today?: string
+  /** Go where an instance is fixed. The check and the instance start the walk through it. */
+  onGo: (place: CheckPlace, row?: CheckRow, instance?: CheckInstance) => void
+  onLink?: ((scope: ScopePath, id: string, to: ScopePath) => void) | undefined
+  /** Open this home's scope: where the checks only it can work out are counted. */
+  onOpenScope?: (() => void) | undefined
   s: Translate
-  windowChrome: WindowChrome
+  windowChrome?: WindowChrome
 }
 
-/** The set's own word that the person chose the weights: until then, fix and review. */
-const CHOSEN = 'chosen'
-const SHOWN_FIRST: readonly CheckWeight[] = ['fix', 'review']
+const SECTION_FOLDED: ReadonlySet<WorkSection['kind']> = new Set(['note', 'nothing', 'notCounted'])
+/** The set's word that the person unfolded the notes for this session. */
+const NOTES_OPEN = 'notesOpen'
+const WORK_FIELD = 'by'
 
-const QUIET = { fontSize: 12, color: 'text.secondary' } as const
-/** Read by a screen reader and nobody else; in pixels, because a width of 1 is all of it to the theme. */
-const HIDDEN = {
-  border: 0, clip: 'rect(0 0 0 0)', height: '1px', margin: '-1px', overflow: 'hidden', padding: 0, position: 'absolute', whiteSpace: 'nowrap', width: '1px',
-} as const
-const HEADING = { fontSize: 12, fontWeight: 700, color: 'text.secondary', mt: 1.5, mb: 0.25 } as const
+const toWeight = (key: WorkGroup, s: Translate) => s(`checks.group.${key}`)
 
-/** The weights shown, kept for the session: fix and review until the person chooses. */
-function useWeightsShown(remember: string): [readonly CheckWeight[], (next: readonly CheckWeight[]) => void] {
-  const [held, setHeld] = useSessionSet(remember)
-  const shown = held.has(CHOSEN) ? CHECK_WEIGHTS.filter((weight) => held.has(weight)) : SHOWN_FIRST
-  return [shown, (next) => setHeld(new Set([CHOSEN, ...next]))]
+function sectionLabel(section: WorkSection, scopeName: (path: ScopePath) => string, s: Translate): string {
+  switch (section.kind) {
+    case 'fix': case 'review': case 'note': return s(`checks.section.${section.kind}`)
+    case 'nothing': return s('checks.section.nothing')
+    case 'notCounted': return s('checks.section.notCounted')
+    case 'category': return s(CHECK_CATEGORY_LABEL[section.category ?? 'landscape'])
+    case 'scope': return scopeName(section.scope ?? ROOT_SCOPE)
+    case 'all': return ''
+  }
 }
 
-export function ChecksPage(props: ChecksPageProps) {
-  const { rows, counts, request, s } = props
-  const marking = useCheckMarking()
-  const [shown, setShown] = useWeightsShown(props.remember)
-  const every = useMemo(() => rows.flatMap((one) => one.rows), [rows])
-  const [picked, setPicked] = useState<CheckKey | undefined>(undefined)
-  // Asked for a check: that one, with its weight shown.
-  useEffect(() => {
-    const asked = every.find((row) => row.key === request?.select)
-    if (!asked) return
-    setPicked(asked.key)
-    if (!shown.includes(asked.entry.weight)) setShown([...shown, asked.entry.weight])
-    // Only on a request: the weights changing must not pick the asked one again.
-  }, [request, every])
-  const visible = every.filter((row) => shown.includes(row.entry.weight))
-  const current = every.find((row) => row.key === picked) ?? visible.find((row) => row.shown.length > 0) ?? visible[0]
-  const chrome = props.windowChrome
-  const bar = barChromeFor(chrome)
+/** The sentence in the head: what there is to do, and where most of it is. */
+function workSentence(counts: Readonly<Record<CheckWeight, number>>, reviews: readonly CheckRow[], s: Translate): string {
+  const parts = CHECK_WEIGHTS.filter((weight) => counts[weight] > 0).map((weight) => {
+    const said = weightCount(weight, counts[weight], s)
+    const held = weight === 'review' ? heldByTwo(reviews) : undefined
+    return held !== undefined ? s('checks.heldByTwo', { said, held }) : said
+  })
+  return parts.length > 0 ? `${parts.join('. ')}.` : s('checks.nothing')
+}
+
+/** A reason, and the press that marks: the explanation stays in view while deciding. */
+function MarkForm({ count, onMark, onCancel, s }: { count: number; onMark: (reason: string) => void; onCancel?: () => void; s: Translate }) {
+  const [reason, setReason] = useState('')
   return (
-    <PageDialog open={props.open} topInset={chrome.topInset} onClose={props.onClose} aria-label={s('checks.title')}>
-      <Box
-        data-testid="checks-topbar"
-        sx={{
-          display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5, pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined, '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-          minHeight: 48, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
-        }}
-      >
-        <Tooltip title={s('common.close')}>
-          <IconButton size="small" aria-label={s('common.close')} onClick={props.onClose}>
-            <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 16, lineHeight: 1 }}>‹</Box>
-          </IconButton>
-        </Tooltip>
-        <Typography variant="body2" sx={{ fontWeight: 600 }}>{s('checks.title')}</Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary' }} data-testid="checks-counts">{countsLine(counts, s)}</Typography>
-        <Box sx={{ flex: 1 }} />
-        <ToggleButtonGroup size="small" value={shown} onChange={(_event, next: CheckWeight[]) => setShown(next)} aria-label={s('checks.show')}>
-          {CHECK_WEIGHTS.map((weight) => (
-            <ToggleButton key={weight} value={weight} data-guide="checks.weight" data-testid={`checks-weight-${weight}`} sx={{ fontSize: 11, py: 0.25, px: 1, gap: 0.5, textTransform: 'none' }}>
-              <Box component="span" aria-hidden sx={{ fontSize: 10, ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
-              {s(CHECK_WEIGHT_LABEL[weight].name)} ({counts[weight]})
-            </ToggleButton>
-          ))}
-        </ToggleButtonGroup>
-        <PageClose onClose={props.onClose} />
-      </Box>
-      <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 2, sm: 3 }, py: 2 }}>
-        <Box sx={{ maxWidth: 1180, mx: 'auto', display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'flex-start' }}>
-          <Box component="section" aria-label={s('checks.title')} sx={{ flex: '1 1 420px', minWidth: 0 }}>
-            <Typography sx={{ ...QUIET, mb: 1 }}>{s('checks.what')}</Typography>
-            {visible.length === 0 && <Typography sx={{ fontSize: 13 }}>{s('checks.noneShown')}</Typography>}
-            {rows.map(({ category, rows: some }) => {
-              const here = some.filter((row) => shown.includes(row.entry.weight))
-              return here.length === 0 ? null : (
-                <Box key={category} sx={{ mb: 2 }}>
-                  <Typography component="h2" sx={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, textTransform: 'uppercase', mb: 0.5 }}>
-                    {s(CHECK_CATEGORY_LABEL[category])}
-                  </Typography>
-                  <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0 }}>
-                    {here.map((row) => <CheckLine key={row.key} row={row} picked={row.key === current?.key} onPick={() => setPicked(row.key)} s={s} />)}
-                  </Box>
-                </Box>
-              )
-            })}
-          </Box>
-          <Box component="aside" aria-live="polite" sx={{ flex: '1 1 340px', maxWidth: { md: 480 }, minWidth: 0, position: { md: 'sticky' }, top: 0 }}>
-            {current && <CheckDetail row={current} marking={marking} scopeName={props.scopeName} onGo={props.onGo} s={s} />}
-          </Box>
-        </Box>
-      </Box>
-    </PageDialog>
+    <span className="checks-mark" data-testid="checks-mark-form">
+      <span className="checks-mark__reason">
+        <TextInput aria-label={s(CHECK_MARK_WORDS.reason)} placeholder={s(CHECK_MARK_WORDS.reason)} value={reason} onChange={(event) => setReason(event.target.value)} />
+      </span>
+      <Button variant="primary" data-guide="findings.markIntended" data-testid="checks-mark" onClick={() => onMark(reason)}>{s('checks.markN', { count })}</Button>
+      {onCancel && <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>}
+      <span className="checks-mark__returns">{s('checks.markReturns')}</span>
+    </span>
   )
 }
 
-/** "3 to fix · 31 to review · 44 notes", or that nothing is found. */
-function countsLine(counts: Readonly<Record<CheckWeight, number>>, s: Translate): string {
-  const parts = CHECK_WEIGHTS.filter((weight) => counts[weight] > 0).map((weight) => weightCount(weight, counts[weight], s))
-  return parts.length > 0 ? parts.join(' · ') : s('checks.nothing')
+/** What the rows of a found list name, for the heading over them. */
+function subjectWord(row: CheckRow, index: ChecksPageProps['index']): StringKey {
+  const about = row.shown[0]?.about
+  switch (about !== undefined ? index?.lookup(about)?.kind : undefined) {
+    case 'application': return 'register.colName'
+    case 'actor': return 'checks.colUnit'
+    case 'platform': return 'register.colPlatform'
+    case 'platformService': return 'register.colService'
+    default: return 'checks.colSubject'
+  }
 }
 
-/** One check's row: its weight's mark, its name and how many are found — or that it is not counted here. */
-function CheckLine({ row, picked, onPick, s }: { row: CheckRow; picked: boolean; onPick: () => void; s: Translate }) {
-  const { weight } = row.entry
+/** Everything found of one check, as the shared list. */
+function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLink, onFixed, onMarked, scopeName, s }: {
+  row: CheckRow; view: ListView; setView: (next: ListView) => void; ask: string | undefined; marking: CheckMarking | undefined
+  index: ChecksPageProps['index']; today: string; onGo: ChecksPageProps['onGo']; onLink: ChecksPageProps['onLink']
+  onFixed: (done: FixDone) => void; onMarked: (marks: readonly KeptCheckMark[]) => void; scopeName: (path: ScopePath) => string; s: Translate
+}) {
+  const [density] = useListDensity()
+  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
+  const [pressed, setPressed] = useState<string | null>(ask ?? null)
+  const [marking1, setMarking1] = useState(false)
+  useEffect(() => { setTicked(new Set()); setPressed(ask ?? null) }, [row.key, ask])
+  useEffect(() => setMarking1(false), [pressed])
+  const fix = row.entry.weight === 'fix'
+  const markable = (one: CheckInstance) => !fix && marking?.markableIn(one.finding, one.checkedIn) !== undefined
+  const canTick = row.shown.some(markable)
+  const how = useMemo(() => ({
+    words: (one: CheckInstance) => [one.subject ?? one.text, one.text, one.under ?? '', one.scope !== undefined ? scopeName(one.scope) : '', one.role ?? '', one.unitType ?? ''],
+    groupBy: {
+      role: (one: CheckInstance) => ({ id: one.role ?? '', label: one.role ?? '' }),
+      unitType: (one: CheckInstance) => ({ id: one.unitType ?? '', label: one.unitType ?? '' }),
+      master: (one: CheckInstance) => ({ id: one.scope ?? '', label: one.scope !== undefined ? scopeName(one.scope) : '' }),
+    },
+    sortBy: { '': (one: CheckInstance) => one.subject ?? one.text, under: (one: CheckInstance) => one.under ?? null, master: (one: CheckInstance) => (one.scope !== undefined ? scopeName(one.scope) : null) },
+  }), [scopeName])
+  const groups = useMemo(() => listed(row.shown, view, how), [row.shown, view, how])
+  const hasUnder = row.shown.some((one) => one.under !== undefined)
+  const columns: readonly ListColumn[] = [
+    ...(hasUnder ? [{ id: 'under', label: s('checks.colUnder'), sortable: true }] : []),
+    { id: 'master', label: s('register.colMaster'), sortable: true },
+  ]
+  const anyWithoutSubject = row.shown.some((one) => one.subject === undefined)
+  const mark = (some: readonly CheckInstance[], reason: string) => {
+    if (!marking) return
+    void marking.markAll(some.map(({ finding, checkedIn }) => ({ finding, checkedIn })), reason).then((made) => {
+      setTicked(new Set())
+      setMarking1(false)
+      if (made.length > 0) onMarked(made)
+      return undefined
+    })
+  }
+  const drawn: readonly ListGroup[] = groups.map((group) => ({
+    id: group.id, label: group.label,
+    rows: group.rows.map((one): ListRow => ({
+      id: one.id, text: one.subject ?? one.text,
+      cells: { under: one.under, master: one.scope !== undefined ? scopeName(one.scope) : undefined },
+      actions: (
+        <span className="org-finding" data-testid="checks-row-actions">
+          <p className="checks-page__text">{one.text}</p>
+          <span className="org-finding__acts">
+            {index && (
+              <FindingActions
+                instance={one} index={index} marking={marking} today={today} onOpen={(held) => held.opens && onGo(held.opens, row, held)}
+                {...(onLink ? { onLink } : {})} onFixed={onFixed} s={s}
+              />
+            )}
+            {markable(one) && !marking1 && <Button data-guide="findings.markIntended" onClick={() => setMarking1(true)}>{s(CHECK_MARK_WORDS.open)}</Button>}
+          </span>
+          {markable(one) && marking1 && <MarkForm count={1} onMark={(reason) => mark([one], reason)} onCancel={() => setMarking1(false)} s={s} />}
+        </span>
+      ),
+    })),
+  }))
+  const choices = foundGroups(row.shown).map((id) => ({ id, label: s(`checks.foundBy.${id}`) }))
+  const count = groups.reduce((sum, group) => sum + group.rows.length, 0)
   return (
-    <Box component="li" sx={{ borderBottom: 1, borderColor: 'divider' }}>
-      <ButtonBase
-        onClick={onPick} aria-pressed={picked} data-guide="checks.row" data-testid={`checks-row-${row.key}`} data-check={row.key}
-        sx={{
-          display: 'flex', alignItems: 'baseline', gap: 0.75, width: '100%', justifyContent: 'flex-start', textAlign: 'left', py: 0.75, px: 0.75,
-          fontSize: 13, borderRadius: 1, bgcolor: picked ? 'action.selected' : undefined, '&:hover': { bgcolor: 'action.hover' },
-        }}
-      >
-        <Box component="span" aria-hidden sx={{ width: 14, textAlign: 'center', fontSize: 11, flex: 'none', ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
-        <Box component="span" sx={HIDDEN}>{s(CHECK_WEIGHT_LABEL[weight].name)}</Box>
-        <Box component="span" sx={{ flex: 1, minWidth: 0 }}>{s(row.entry.name)}</Box>
-        {row.counted
-          ? <Box component="span" sx={{ flex: 'none', color: row.shown.length > 0 ? 'text.primary' : 'text.secondary' }}>{row.shown.length}</Box>
-          : <Box component="span" title={s('checks.notCounted')} sx={{ flex: 'none', color: 'text.secondary' }}><span aria-hidden>–</span><Box component="span" sx={HIDDEN}>{s('checks.notCounted')}</Box></Box>}
-      </ButtonBase>
-    </Box>
+    <div data-testid="checks-instances">
+      <FilterWords
+        dataGuide="checks.found" find={view.find} onFind={(find) => setView({ ...view, find })} findLabel={s('checks.findIn', { count: row.shown.length })}
+        {...(choices.length > 0 ? { groups: choices, group: view.group, onGroup: (group: string | null) => setView({ ...view, group }) } : {})}
+        shown={{ count, total: row.shown.length }}
+      />
+      <List
+        label={s('checks.foundLabel')} groups={drawn} wrap={anyWithoutSubject} density={density} columns={columns} itemLabel={s(subjectWord(row, index))} itemSortable
+        sort={view.sort} onSort={(sort) => setView({ ...view, sort })} selectedId={pressed} onOpen={(id) => setPressed((was) => (was === id ? null : id))}
+        rowGuide="checks.instance"
+        {...(canTick ? {
+          checked: ticked, onCheckedChange: setTicked,
+          bulkActions: <MarkForm count={ticked.size} onMark={(reason) => mark(row.shown.filter((one) => ticked.has(one.id) && markable(one)), reason)} s={s} />,
+        } : {})}
+        empty={<p className="org-page__nomatch" role="status">{s('checks.noneMatch')}</p>}
+      />
+    </div>
   )
 }
 
-/** The check picked: what the catalogue says of it, where it is found, and what was marked as intended. */
-function CheckDetail({ row, marking, scopeName, onGo, s }: {
-  row: CheckRow; marking: CheckMarking | undefined; scopeName: (path: ScopePath) => string; onGo: (place: CheckPlace) => void; s: Translate
+/** The check picked: what the catalogue says of it, what is found, and what was marked as intended. */
+function CheckReader({ row, tab, setTab, view, setView, finding, marking, index, today, onGo, onLink, onOpenScope, onFixed, onMarked, scopeName, s }: {
+  row: CheckRow; tab: string; setTab: (tab: string) => void; view: ListView; setView: (next: ListView) => void; finding: string | undefined
+  marking: CheckMarking | undefined; index: ChecksPageProps['index']; today: string; onGo: ChecksPageProps['onGo']; onLink: ChecksPageProps['onLink']; onOpenScope: ChecksPageProps['onOpenScope']
+  onFixed: (done: FixDone) => void; onMarked: (marks: readonly KeptCheckMark[]) => void; scopeName: (path: ScopePath) => string; s: Translate
 }) {
   const { entry } = row
+  const fix = entry.weight === 'fix'
+  const accepted = !fix && tab === 'accepted'
+  const tabs = [
+    { value: 'found', label: s('checks.tabFound'), count: row.shown.length },
+    ...(fix ? [] : [{ value: 'accepted', label: s('checks.tabAccepted'), count: row.marked.length }]),
+  ]
   return (
-    <Box data-testid="checks-detail" data-check={row.key} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 2, bgcolor: 'background.paper' }}>
-      <Typography sx={{ ...QUIET, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
-        <Box component="span" aria-hidden sx={{ fontSize: 11, ...WEIGHT_MARK[entry.weight].sx }}>{WEIGHT_MARK[entry.weight].glyph}</Box>
-        {s(CHECK_WEIGHT_LABEL[entry.weight].name)} · {s(CHECK_CATEGORY_LABEL[entry.category])}
-      </Typography>
-      <Typography component="h2" sx={{ fontSize: 16, fontWeight: 700 }} data-testid="checks-name">{s(entry.name)}</Typography>
-      <Typography component="h3" sx={HEADING}>{s(CHECK_LIST_WORDS.why)}</Typography>
-      <Typography sx={{ fontSize: 12.5 }} data-testid="checks-why">{s(entry.why)}</Typography>
-      <Typography component="h3" sx={HEADING}>{s(CHECK_LIST_WORDS.how)}</Typography>
-      <Typography sx={{ fontSize: 12.5 }} data-testid="checks-how">{s(entry.how)}</Typography>
-      <Typography component="h3" sx={HEADING}>{s('checks.found', { count: row.shown.length })}</Typography>
-      {!row.counted
-        ? <Typography sx={QUIET} data-testid="checks-where-open">{s('checks.whereOpen')}</Typography>
-        : row.shown.length === 0
-          ? <Typography sx={QUIET}>{s('checks.none')}</Typography>
-          : (
-            <>
-              <Box component="ul" data-testid="checks-instances" sx={{ listStyle: 'none', p: 0, m: 0 }}>
-                {row.shown.map((instance) => (
-                  <Instance key={instance.id} instance={instance} marking={entry.weight === 'fix' ? undefined : marking} fixing={marking} scopeName={scopeName} onGo={onGo} s={s} />
-                ))}
-              </Box>
-              <Typography sx={{ ...QUIET, mt: 0.5 }}>{s('checks.opens')}</Typography>
-            </>
-          )}
-      {entry.weight === 'fix'
-        ? <Typography sx={{ ...QUIET, mt: 1.5 }} data-testid="checks-never">{s(CHECK_MARK_WORDS.never)}</Typography>
-        : (
+    <div className="checks-page__reader" data-testid="checks-detail" data-check={row.key} aria-live="polite">
+      <Panel
+        kind={`${s(CHECK_WEIGHT_LABEL[entry.weight].name)} · ${s(CHECK_CATEGORY_LABEL[entry.category])}`} kindIcon={<Mark kind={entry.weight} />} name={s(entry.name)}
+        tabs={tabs} tab={accepted ? 'accepted' : 'found'} onTab={setTab} dataGuide="checks.reader"
+      >
+        <PanelSection>
+          <p className="checks-page__text" data-testid="checks-why">{s(entry.why)}</p>
+          <p className="checks-page__text" data-testid="checks-how"><span className="checks-page__label">{s(CHECK_LIST_WORDS.how)}: </span>{s(entry.how)}</p>
+          {fix && <p className="checks-page__text checks-page__quiet" data-testid="checks-never">{s(CHECK_MARK_WORDS.never)}</p>}
+        </PanelSection>
+        {!row.counted ? (
+          <PanelSection>
+            <p className="checks-page__text" data-testid="checks-where-open">{s('checks.whereOpen')}</p>
+            {onOpenScope && <Button onClick={onOpenScope}>{s('checks.openToCount')}</Button>}
+          </PanelSection>
+        ) : accepted ? (
           <AcceptedFindings
             unfolded words={CHECK_MARK_WORDS} testId="checks-accepted"
             items={row.marked.map(({ instance, mark, keptIn }) => ({
@@ -237,59 +268,136 @@ function CheckDetail({ row, marking, scopeName, onGo, s }: {
               onTakeBack: marking?.mayTakeBack(keptIn) ? () => marking.takeBack({ scope: keptIn, mark }) : undefined,
             }))}
           />
+        ) : row.shown.length === 0 ? (
+          <PanelSection><p className="checks-page__text checks-page__quiet">{s('checks.none')}</p></PanelSection>
+        ) : (
+          <FoundList
+            row={row} view={view} setView={setView} ask={finding} marking={marking} index={index} today={today}
+            onGo={onGo} onLink={onLink} onFixed={onFixed} onMarked={onMarked} scopeName={scopeName} s={s}
+          />
         )}
-    </Box>
+      </Panel>
+    </div>
   )
 }
 
-/**
- * The assignment an instance would remove, and the scope that keeps it: one
- * whose unit is not there, where the person may change that scope.
- */
-function removable(instance: CheckInstance, marking: CheckMarking | undefined): { scope: ScopePath; id: string } | undefined {
-  if (instance.key !== 'check.assignmentOrphaned' || instance.scope === undefined || !marking?.mayChange(instance.scope)) return undefined
-  const id = 'fields' in instance.finding ? instance.finding.fields?.[0] : undefined
-  return id !== undefined ? { scope: instance.scope, id } : undefined
-}
+export function ChecksPage(props: ChecksPageProps) {
+  const { rows, counts, request, s, at = ROOT_SCOPE, scopes, onScope, scopeName, index, today = '', onGo, onLink, onOpenScope } = props
+  const marking = useCheckMarking()
+  const [density, setDensity] = useListDensity()
+  const [view, setView] = usePlaceListView('checks')
+  const [tab, setTab] = usePlaceTab('found')
+  const [toast, setToast] = useState<ToastWords | null>(null)
+  const [session, setSession] = useSessionSet(props.remember)
+  const [unfolded, setUnfolded] = useState(0)
+  const every = useMemo(() => rows.flatMap((one) => one.rows), [rows])
+  const by = (view.filters[WORK_FIELD]?.[0] ?? 'weight') as WorkGroup
+  const sections = useMemo(() => workSections(rows, by), [rows, by])
 
-/**
- * One instance: its sentence, opening where it is fixed; the scope it is in;
- * *Remove the assignment* where that fixes it; and *Mark as intended…* where
- * it may be — never for a fix.
- */
-function Instance({ instance, marking, fixing, scopeName, onGo, s }: {
-  /** `marking` for a mark, where one may be made; `fixing` for the fix, whatever the weight. */
-  instance: CheckInstance; marking: CheckMarking | undefined; fixing: CheckMarking | undefined; scopeName: (path: ScopePath) => string; onGo: (place: CheckPlace) => void; s: Translate
-}) {
-  const { opens } = instance
-  const markable = marking?.markableIn(instance.finding, instance.checkedIn) !== undefined
-  const remove = removable(instance, fixing)
+  const asked = every.find((row) => row.key === request?.select)
+  // Asked for a check: that one. A note's section unfolds to show it.
+  const lastAsked = useRef<unknown>(undefined)
+  useEffect(() => {
+    if (!asked || lastAsked.current === request) return
+    lastAsked.current = request
+    if (view.select !== asked.key) setView({ ...view, select: asked.key })
+    if (SECTION_FOLDED.has(sectionKindOf(asked)) && !session.has(asked.key)) {
+      setSession(new Set([...session, NOTES_OPEN]))
+      setUnfolded((was) => was + 1)
+    }
+  }, [request, asked])
+
+  const picked = every.find((row) => row.key === view.select)
+  const firstKey = useMemo(() => firstCheck(rows), [rows])
+  const current = picked ?? every.find((row) => row.key === firstKey)
+  const reviews = useMemo(() => every.filter((row) => row.entry.weight === 'review' && row.shown.length > 0), [every])
+
+  const groups: readonly ListGroup[] = sections.map((section) => ({
+    id: section.id, label: sectionLabel(section, scopeName, s), count: section.count,
+    rows: section.rows.map((row): ListRow => ({
+      id: section.kind === 'scope' ? `${row.key}@${section.scope ?? ''}` : row.key,
+      text: s(row.entry.name), mark: <Mark kind={row.entry.weight} label={s(CHECK_WEIGHT_LABEL[row.entry.weight].name)} />,
+      note: row.counted ? String(row.shown.length) : s('checks.openToCount'),
+    })),
+  }))
+  const selectedId = current && by === 'scope'
+    ? groups.flatMap((group) => group.rows).find((row) => row.id.startsWith(`${current.key}@`))?.id ?? null
+    : current?.key ?? null
+  const notesOpen = session.has(NOTES_OPEN)
+  // Said of every section there could be: the list reads this once, and the checks may still be being read then.
+  const folded = [...SECTION_FOLDED].filter((kind) => !(kind === 'note' && notesOpen))
+  const scopeMenu = scopes?.map((one) => ({
+    label: `${' '.repeat(one.depth)}${one.path === ROOT_SCOPE ? s('checks.wholeOrganisation') : one.name}`,
+    checked: one.path === at, onSelect: () => onScope?.(one.path),
+  }))
+  const onFixed = (done: FixDone) => setToast({ key: Date.now(), message: done.message, undo: { onPress: done.back, shared: true } })
+  const onMarked = (made: readonly KeptCheckMark[]) => {
+    // Stay on the check: the result of the act does not leave the screen.
+    if (current && view.select !== current.key) setView({ ...view, select: current.key })
+    setToast({ key: Date.now(), message: s('checks.marked', { count: made.length }), undo: { onPress: () => { void marking?.takeBackAll(made) }, shared: true } })
+  }
+  const chooseCheck = (id: string) => {
+    const key = id.includes('@') ? id.slice(0, id.indexOf('@')) as CheckKey : id as CheckKey
+    // What narrowed one check's list means nothing on the next.
+    setView({ ...view, select: key, find: '', group: null, sort: null })
+    setTab('found')
+  }
+  const total = counts.fix + counts.review + counts.note
   return (
-    <Box component="li" sx={{ display: 'flex', alignItems: 'baseline', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-        {opens
-          ? (
-            <ButtonBase
-              {...instance.attributes} data-guide="checks.instance" onClick={() => onGo(opens)}
-              sx={{ fontSize: 12.5, display: 'block', textAlign: 'left', color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
-            >
-              {instance.text}
-            </ButtonBase>
-          )
-          : <Typography {...instance.attributes} sx={{ fontSize: 12.5 }}>{instance.text}</Typography>}
-        {instance.scope !== undefined && <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>{s('checks.in', { scope: scopeName(instance.scope) })}</Typography>}
-      </Box>
-      {remove && fixing && (
-        <Button
-          size="small" color="error" sx={{ flex: 'none', textTransform: 'none' }} data-testid="checks-remove-assignment"
-          onClick={() => fixing.removeAssignment(remove.scope, remove.id)}
-        >
-          {s(CHECK_ACTION_LABEL.removeAssignment)}
-        </Button>
-      )}
-      {markable && marking && (
-        <MarkAsIntended inline words={CHECK_MARK_WORDS} sentence={instance.text} onMark={(reason) => marking.mark(instance.finding, reason, instance.checkedIn)} />
-      )}
-    </Box>
+    <PageDialog open={props.open} onClose={props.onClose} aria-label={s('checks.title')}>
+      <div className="org-page">
+        <div className="org-page__head" data-testid="checks-topbar">
+          <div className="org-page__title">
+            <h1 className="org-page__name">{s('checks.title')}</h1>
+            {scopeMenu && scopeMenu.length > 1 ? (
+              <span className="checks-page__scope">
+                <MenuButton label={at === ROOT_SCOPE ? s('checks.wholeOrganisation') : s('checks.andBelow', { scope: scopeName(at) })} items={scopeMenu} data-guide="checks.scope" />
+              </span>
+            ) : <span className="org-page__covers">{at === ROOT_SCOPE ? s('checks.wholeOrganisation') : s('checks.andBelow', { scope: scopeName(at) })}</span>}
+            <span className="org-page__covers" data-testid="checks-counts">{workSentence(counts, reviews, s)}</span>
+          </div>
+        </div>
+        <FilterWords
+          noFind dataGuide="checks.weight" find="" onFind={() => {}}
+          groups={WORK_GROUPS.map((id) => ({ id, label: toWeight(id, s) }))} group={by === 'none' ? null : by}
+          onGroup={(group) => setView({ ...view, filters: { ...view.filters, [WORK_FIELD]: [group ?? 'none'] } })}
+          density={density} onDensity={setDensity}
+        />
+        <div className="checks-page__work">
+          <section className="checks-page__list" aria-label={s('checks.title')} data-guide="checks.list">
+            {counts.fix === 0 && total > 0 && (
+              <p className="checks-clear" data-testid="checks-no-fix"><Mark kind="agree" /><span><strong>{s('checks.noFixTitle')}</strong> {s('checks.noFixBody')}</span></p>
+            )}
+            <List
+              key={`${by}-${unfolded}`} label={s('checks.title')} groups={groups} density={density} selectedId={selectedId} onOpen={chooseCheck}
+              defaultFolded={folded} rowGuide="checks.row"
+              onFold={(id, isFolded) => { if (id === 'note') setSession(new Set(isFolded ? [...session].filter((one) => one !== NOTES_OPEN) : [...session, NOTES_OPEN])) }}
+            />
+          </section>
+          {current ? (
+            <CheckReader
+              row={current} tab={tab} setTab={setTab} view={view} setView={setView} finding={request?.finding}
+              marking={marking} index={index} today={today} onGo={onGo} onLink={onLink} onOpenScope={onOpenScope}
+              onFixed={onFixed} onMarked={onMarked} scopeName={scopeName} s={s}
+            />
+          ) : (
+            <div className="checks-page__reader">
+              <PageState
+                state="empty" title={s('checks.clearTitle', { scope: at === ROOT_SCOPE ? s('checks.wholeOrganisation') : scopeName(at) })}
+                body={s('checks.clearBody', { ran: every.filter((row) => row.counted).length, only: every.filter((row) => !row.counted).length })}
+                {...(onOpenScope ? { action: { label: s('checks.openToCount'), onPress: onOpenScope } } : {})}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      <Toast toast={toast} onClose={() => setToast(null)} />
+    </PageDialog>
   )
 }
+
+function sectionKindOf(row: CheckRow): WorkSection['kind'] {
+  if (!row.counted) return 'notCounted'
+  return row.shown.length === 0 ? 'nothing' : row.entry.weight
+}
+

@@ -11,6 +11,8 @@
  * things: the look at the screen after every move, and `openFor`, the one way
  * a destination is opened — by an agent, by a provider's chrome, and by Back.
  */
+import { readFinding, writeFinding } from '../agent/place'
+import type { CheckKey } from '../model/checkCatalogue'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import type { Place } from '../agent/place'
@@ -46,6 +48,10 @@ export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 
  */
 export type OrgPageRequest = {
   page: OrgPage | 'home'; nonce: number; select?: string
+  /** On the Checks page, the finding to come back to under the check picked. */
+  finding?: string
+  /** The tab a request lands on, where a page with tabs is asked for by a way in to one of them. */
+  tab?: string
   /** On a block's page, the scope whose evaluation to open on (ADR-0043). */
   evaluation?: string
   /** Opened from another screen — a reader, a reference — so closing it goes back there (ADR-0033), not to the register. */
@@ -80,6 +86,8 @@ export function useShellAgent(deps: {
   watchScreen?: boolean
   /** The organisation screen's page the first paint opens over the home, where the address named one. */
   initialHomePage?: OrgPage
+  /** The record the address picked on that page. */
+  initialPick?: string
   /** Somewhere to say that where a place in the history lands could not be worked out. */
   report?: (cause: unknown) => void
   /** The people register, lent to the agent (ADR-0036 §13). */
@@ -98,7 +106,7 @@ export function useShellAgent(deps: {
   const report = deps.report ?? NOBODY
   const [orgPage, setOrgPage] = useState<OrgPage | undefined>(undefined)
   const [orgPageRequest, setOrgPageRequest] = useState<OrgPageRequest | undefined>(
-    () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1 } : undefined),
+    () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1, ...(deps.initialPick !== undefined ? { select: deps.initialPick } : {}) } : undefined),
   )
   /**
    * A home is opened as itself: the home asked for, and the page over it said
@@ -106,13 +114,14 @@ export function useShellAgent(deps: {
    * open over its cards, and a move to the home that left that page up would
    * not have arrived where it was sent.
    */
-  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string, evaluation?: string, returns?: true) => {
+  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string, evaluation?: string, returns?: true, finding?: string) => {
     goHome(scope)
-    const picks = page === 'people' || page === 'checks' || page === 'topics' || page === 'blocks'
+    const picks = page === 'people' || page === 'checks' || page === 'topics' || page === 'blocks' || page === 'register'
     setOrgPageRequest((prev) => ({
       page, nonce: (prev?.nonce ?? 0) + 1, ...(picks && select !== undefined ? { select } : {}),
       ...(page === 'blocks' && evaluation !== undefined ? { evaluation } : {}),
       ...(returns ? { returns } : {}),
+      ...(finding !== undefined ? { finding } : {}),
     }))
   }, [goHome])
   /** A building block's page over the organisation's home, on a scope's evaluation where one is named (ADR-0043 §8). */
@@ -145,12 +154,23 @@ export function useShellAgent(deps: {
       openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, openPreferences.current)
       return
     }
+    // The technology register's address is the register, on its tab.
+    const merged = to.page === 'technologyRegister'
+    const listPage = merged ? 'register' : to.page
+    const tab = merged ? to.tab ?? 'services' : to.tab
+    const pick = (to.page === 'register' || merged) ? to.id ?? to.select : to.page === 'checks' ? to.id : undefined
     // A person is the People page's record, by the path or by the shell's own *Open in People*.
     const record = to.page === 'people' ? to.id ?? to.select : undefined
-    frame?.set({ panel: to.panel, tab: to.tab, tabOf: to.tab === undefined ? undefined : to.page, record, recordOf: record === undefined ? undefined : 'people' })
+    const carried = to.finding !== undefined ? readFinding(to.finding) : undefined
+    if (carried) frame?.set({ finding: { home: carried.home, check: carried.check as CheckKey, id: carried.id } })
+    frame?.set({
+      panel: to.panel, tab, tabOf: tab === undefined ? undefined : listPage,
+      record, recordOf: record === undefined ? undefined : 'people',
+      list: to.list, pick, listOf: to.list !== undefined || pick !== undefined ? listPage : undefined,
+    })
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
       // The Checks page picks the check its id names; the People page the person in the frame, set above.
-      homeAt(to.scope, to.page as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.page === 'people' ? to.id ?? to.select : to.select)
+      homeAt(to.scope, listPage as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.page === 'people' ? record : to.select, undefined, undefined, to.page === 'checks' ? to.select : undefined)
       return
     }
     const open = agentSessionRef.current
@@ -393,11 +413,11 @@ function useFrameMoves(
   }, [openFor, here])
   useEffect(() => {
     if (!frame) return undefined
-    let { panel, tab } = frame.get()
+    let { panel, tab, list, pick, finding } = frame.get()
     return frame.subscribe(() => {
       const now = frame.get()
-      if (now.panel === panel && now.tab === tab) return
-      ({ panel, tab } = now)
+      if (now.panel === panel && now.tab === tab && now.list === list && now.pick === pick && now.finding === finding) return
+      ({ panel, tab, list, pick, finding } = now)
       lookAgain.current()
     })
   }, [frame, lookAgain])
@@ -411,10 +431,16 @@ function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const page = screen.page
   const tab = page && held.tabOf === page.page && !('tab' in page && page.tab !== undefined) && isPageTab(page.page, held.tab) ? held.tab : undefined
   const record = page?.page === 'people' && held.recordOf === 'people' ? held.record : undefined
+  const listed = page && held.listOf === page.page
+  const pick = listed && held.pick !== undefined ? held.pick : record
   return {
     ...screen,
-    ...(page && (tab !== undefined || record !== undefined) ? { page: { ...page, ...(tab !== undefined ? { tab } : {}), ...(record !== undefined ? { id: record } : {}) } as Screen['page'] } : {}),
+    ...(page && (tab !== undefined || pick !== undefined)
+      ? { page: { ...page, ...(tab !== undefined ? { tab } : {}), ...(pick !== undefined ? { id: pick } : {}) } as Screen['page'] }
+      : {}),
     ...(held.panel !== undefined ? { panel: held.panel } : {}),
+    ...(listed && held.list ? { list: held.list } : {}),
+    ...(held.finding ? { finding: writeFinding({ check: held.finding.check, home: held.finding.home, id: held.finding.id }) } : {}),
   }
 }
 

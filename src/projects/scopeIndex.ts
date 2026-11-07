@@ -186,6 +186,10 @@ export type IndexEntry = {
    */
   lifecycle?: Exclude<Lifecycle, 'live'>
   lifecycleDates?: LifecycleDates
+  /** What the register says of it beside the rest, as its master says: a stand-in carries none of these (§3). */
+  category?: string
+  vendor?: string
+  technology?: string
   /**
    * Where the stand-ins say the definition was last seen — kept ONLY where
    * nobody defines it (§3).
@@ -439,7 +443,7 @@ export type ScopeIndex = {
  * stand-in may not carry and every scope drawing the thing reads from here.
  */
 type MasterDetail = Pick<
-  IndexEntry, 'parentId' | 'outside' | 'partyId' | 'owner' | 'platformArchetype' | 'shared' | 'retired' | 'lifecycle' | 'lifecycleDates'
+  IndexEntry, 'parentId' | 'outside' | 'partyId' | 'owner' | 'platformArchetype' | 'shared' | 'retired' | 'lifecycle' | 'lifecycleDates' | 'category' | 'vendor' | 'technology'
 >
 
 /**
@@ -451,6 +455,7 @@ type MasterDetail = Pick<
 function masterDetailOf(held: {
   parentId?: ElementId; outside?: boolean; partyId?: ElementId; owner?: PersonRef; platformArchetype?: PlatformArchetype
   shared?: boolean; retired?: string; lifecycle?: Lifecycle; lifecycleDates?: LifecycleDates
+  category?: string; vendor?: string; technology?: string
 }): MasterDetail {
   const retired = held.retired ?? held.lifecycleDates?.retired
   const dated = DATED_PHASES.filter((phase) => isDay(held.lifecycleDates?.[phase]))
@@ -462,6 +467,9 @@ function masterDetailOf(held: {
     ...(held.platformArchetype !== undefined ? { platformArchetype: held.platformArchetype } : {}),
     ...(held.shared ? { shared: true as const } : {}),
     ...(isDay(retired) ? { retired } : {}),
+    ...(held.category ? { category: held.category } : {}),
+    ...(held.vendor ? { vendor: held.vendor } : {}),
+    ...(held.technology ? { technology: held.technology } : {}),
     ...(held.lifecycle !== undefined && held.lifecycle !== 'live' ? { lifecycle: held.lifecycle } : {}),
     ...(dated.length ? { lifecycleDates: Object.fromEntries(dated.map((phase) => [phase, held.lifecycleDates![phase]])) } : {}),
   }

@@ -35,7 +35,6 @@ export const ORGANISATION_PLACES: readonly FramePlace[] = [
 
 /** The rest of More, until their pages have merged into the ones above. */
 export const MORE_PLACES: readonly FramePlace[] = [
-  { page: 'technologyRegister', label: 'frame.place.technology' },
   { page: 'topics', label: 'frame.place.topics' },
   { page: 'blocks', label: 'frame.place.blocks' },
 ]

@@ -59,6 +59,8 @@ export type ListColumn = {
   readonly sortable?: boolean
   /** A track of the row's grid. Defaults to a share of what is left. */
   readonly width?: string
+  /** A stable name for the heading, where the screen's column has one. */
+  readonly guide?: string
 }
 
 export type ListDensity = 'compact' | 'normal' | 'comfortable'
@@ -158,11 +160,11 @@ function HeaderRow({ columns, itemLabel, itemSortable, sort, onSort, ticks, tick
   readonly ticks: boolean
   readonly tickLabel: string
 }) {
-  const head = (id: string, label: string, sortable: boolean | undefined) => {
+  const head = (id: string, label: string, sortable: boolean | undefined, guide?: string) => {
     const on = sort?.column === id
     const ariaSort = on ? (sort.descending ? 'descending' : 'ascending') : 'none'
     return (
-      <div role="columnheader" className="kit-list__colhead" key={id} aria-sort={sortable ? ariaSort : undefined}>
+      <div role="columnheader" className="kit-list__colhead" key={id} aria-sort={sortable ? ariaSort : undefined} data-guide={guide}>
         {sortable && onSort ? (
           <button type="button" className="kit-list__sort" onClick={() => onSort({ column: id, descending: on && !sort.descending })}>
             {label}{on && <span aria-hidden="true"> {sort.descending ? '↓' : '↑'}</span>}
@@ -175,7 +177,7 @@ function HeaderRow({ columns, itemLabel, itemSortable, sort, onSort, ticks, tick
     <div role="row" className="kit-list__row kit-list__row--header">
       {ticks && <div role="columnheader" className="kit-list__tick"><span className="kit-hidden">{tickLabel}</span></div>}
       {head('', itemLabel ?? '', itemSortable)}
-      {columns.map((column) => head(column.id, column.label, column.sortable))}
+      {columns.map((column) => head(column.id, column.label, column.sortable, column.guide))}
     </div>
   )
 }

@@ -68,8 +68,12 @@ export type AppBoot = {
    */
   initialPage?: InitialPage
   initialHomePage?: 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks'
-  initialHomeTab?: string
+  /** What the address said of that page: its tab, what its list shows, the record picked on it. */
+  initialList?: { readonly tab?: string; readonly list?: string; readonly pick?: string }
+  /** The person on the People page the address names. */
   initialHomeRecord?: string
+  /** A finding the address says a band is carrying. */
+  initialFinding?: string
   /** One of the frame's own places the address named (`FRAME_PAGES`). */
   initialFramePage?: 'work' | 'activity' | 'settings' | 'preferences'
   /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */

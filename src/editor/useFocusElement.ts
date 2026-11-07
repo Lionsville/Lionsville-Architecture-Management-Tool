@@ -6,7 +6,24 @@ import { placedNode } from '../model/placement';
 import { useReactFlow } from '@xyflow/react';
 import type { DesignModel } from '../model/types';
 import type { EditorRequests } from './props';
-import { selectElement, type Selection } from './useEditorState';
+import { selectConnection, selectElement, type Selection } from './useEditorState';
+
+/** How many frames a panel gets to draw the field asked for: it follows the selection, and it may be asked of a panel that has none. */
+const FIELD_FRAMES = 30;
+
+/**
+ * The focus on the field that puts a finding right, once the panel has drawn it,
+ * so the person does not have to look for it. A panel names its fields with
+ * `data-field`; a field no panel draws gets no focus and is no error.
+ */
+function focusFieldWhenDrawn(field: string, frames = FIELD_FRAMES): void {
+  const held = document.querySelector<HTMLElement>(`[data-field="${field}"]`);
+  if (held) {
+    held.focus();
+    return;
+  }
+  if (frames > 0) requestAnimationFrame(() => focusFieldWhenDrawn(field, frames - 1));
+}
 
 /**
  * Handles the `focusElement` prop (host click-to-focus, e.g. the coverage
@@ -42,7 +59,8 @@ export function useFocusElement(args: {
 
     if (isPlacedOn(activeDiagramId)) {
       handledNonceRef.current = focusElement.nonce;
-      setSelection(selectElement(focusElement.id));
+      setSelection(focusElement.line !== undefined ? selectConnection(focusElement.line) : selectElement(focusElement.id));
+      if (focusElement.field !== undefined) focusFieldWhenDrawn(focusElement.field);
       // Pan/zoom on the next frame so React Flow has the (possibly just
       // switched) diagram's nodes in its store before fitting.
       const frame = requestAnimationFrame(() => {

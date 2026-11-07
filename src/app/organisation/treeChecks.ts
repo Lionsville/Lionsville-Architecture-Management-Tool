@@ -27,7 +27,7 @@
  * which a mark as intended is made from and split by.
  */
 import type { Translate } from '../../i18n'
-import { CHECK_CATALOGUE, CHECK_CATEGORIES, CHECK_KEYS, CONWAY_CHECK, DATE_CHECK } from '../../model/checkCatalogue'
+import { CHECK_CATALOGUE, CHECK_CATEGORIES, CHECK_FIELD, CHECK_KEYS, CONWAY_CHECK, DATE_CHECK } from '../../model/checkCatalogue'
 import type { CheckCategory, CheckEntry, CheckKey, CheckWeight } from '../../model/checkCatalogue'
 import { splitMarked } from '../../model/checkMarks'
 import type { AnyFinding, CheckMark, KeptCheckMark } from '../../model/checkMarks'
@@ -81,6 +81,15 @@ export type CheckInstance = {
   readonly opens?: CheckPlace
   /** What something outside points at it by: the kind's word (`data-finding`), and a test id. */
   readonly attributes: Readonly<Record<string, string>>
+  /** The record it is about: what a register's row counts it under. */
+  readonly about?: string
+  /** The subject alone, since the check names the problem: what a row of the found list says. */
+  readonly subject?: string
+  /** The role or the unit type the finding is of, where it says: what a large check groups by. */
+  readonly role?: string
+  readonly unitType?: string
+  /** What the subject sits under, where the tree knows. */
+  readonly under?: string
 }
 
 /** What the tree holds that the instances are worked out from. */
@@ -120,8 +129,16 @@ function pageOfItem(item: AttentionItem): InitialPage {
   return { page: 'element', id }
 }
 
+/** An element's page, with the field that fixes this finding, where the catalogue names one. */
+function withField(page: InitialPage, key: CheckKey): InitialPage {
+  return page.page === 'element' && CHECK_FIELD[key] ? { ...page, field: CHECK_FIELD[key] } : page
+}
+
+const OF_A_ROLE: ReadonlySet<CheckKey> = new Set<CheckKey>(['check.roleVacant', 'check.roleOverMax', 'check.assignmentEnded', 'check.assignmentOrphaned'])
+const OF_A_TYPE: ReadonlySet<CheckKey> = new Set<CheckKey>(['check.unitMisplaced', 'check.unitSpans', 'check.unitOverLimit', 'check.unitTypeEnded'])
+
 /** The tree's findings, where *Needs attention* opened each: the record, its view, the operating model, or the person. */
-function fromTree(item: AttentionItem): CheckInstance {
+function fromTree(item: AttentionItem, index: ScopeIndex | undefined): CheckInstance {
   const opens: CheckPlace = ABOUT_A_PERSON.has(item.key) && item.person !== undefined
     ? { person: item.person }
     : item.view !== undefined
@@ -132,12 +149,23 @@ function fromTree(item: AttentionItem): CheckInstance {
           ? { home: item.scope }
           : item.page === 'topics'
             ? { topic: item.scope }
-            : { scope: item.scope, page: pageOfItem(item) }
+            : { scope: item.scope, page: withField(pageOfItem(item), item.key) }
   return {
     key: item.key, scope: item.scope, text: item.text, finding: item, id: `${item.key}|${item.scope}|${item.id}`, opens,
+    about: item.id, ...(item.subject !== undefined ? { subject: item.subject } : {}),
+    ...(OF_A_ROLE.has(item.key) && item.detail !== undefined ? { role: item.detail } : {}),
+    ...(OF_A_TYPE.has(item.key) && item.detail !== undefined ? { unitType: item.detail } : {}),
+    ...underOf(item.id, index),
     // The home's own row id and kind word, so whatever pointed at a row of Needs attention finds it here.
     attributes: { 'data-testid': `attention-${item.scope}-${item.id}`, 'data-finding': item.kind },
   }
+}
+
+/** What a record sits under, by name, where the tree says. */
+function underOf(id: string, index: ScopeIndex | undefined): { under?: string } {
+  const parent = index?.lookup(id)?.parentId
+  const name = parent !== undefined ? index?.lookup(parent)?.name : undefined
+  return name !== undefined ? { under: name } : {}
 }
 
 /** Each scope's dates, checked as its roadmap checks them, opened where its roadmap opens them. */
@@ -149,9 +177,12 @@ function fromDates({ models, at, today, platformTree, t }: TreeChecksInput): Che
     })
     return checked.map((problem): CheckInstance => {
       const target = findingTarget(problem, model.relations)
+      const about = problem.subject === 'relation' ? model.relations.find((one) => one.id === problem.id)?.sourceId : problem.subject === 'element' ? problem.id : undefined
+      const field = CHECK_FIELD[DATE_CHECK[problem.kind]]
       return {
         key: DATE_CHECK[problem.kind], scope: path, checkedIn: path, text: findingWords(problem, t), finding: problem,
-        id: `${problem.kind}|${path}|${problem.id}`, ...(target ? { opens: { scope: path, page: target } } : {}),
+        id: `${problem.kind}|${path}|${problem.id}`, ...(target ? { opens: { scope: path, page: target && field && target.page === 'element' ? { ...target, field } : target } } : {}),
+        subject: problem.name, ...(about !== undefined ? { about } : {}),
         attributes: { 'data-testid': `checks-${path}-${problem.id}`, 'data-finding': problem.kind },
       }
     })
@@ -183,7 +214,8 @@ function fromConway(input: TreeChecksInput): CheckInstance[] {
     return {
       key, scope: checkMarkScope(index, finding) ?? opensIn, text: findingText(finding, here, t), finding,
       id: `${key}|${subject}|${finding.kind === 'undeclared' ? finding.flow.id : finding.kind === 'unused' ? finding.interaction.id : ''}`,
-      ...(opensIn !== undefined ? { opens: { scope: opensIn, page: { page: 'element', id: subject } } } : {}),
+      ...(opensIn !== undefined ? { opens: { scope: opensIn, page: { page: 'element', id: subject, ...(CHECK_FIELD[key] ? { field: CHECK_FIELD[key] } : {}) } } } : {}),
+      about: subject, ...(index.lookup(subject) ? { subject: index.lookup(subject)?.name ?? subject } : {}), ...underOf(subject, index),
       attributes: { 'data-testid': `checks-conway-${subject}`, 'data-finding': findingKind(key) },
     }
   })
@@ -191,7 +223,7 @@ function fromConway(input: TreeChecksInput): CheckInstance[] {
 
 /** Every finding at or under the home, the tree's first, then the dates', then the Conway map's. */
 export function treeInstances(input: TreeChecksInput): CheckInstance[] {
-  return [...input.attention.map(fromTree), ...fromDates(input), ...fromConway(input)]
+  return [...input.attention.map((item) => fromTree(item, input.index)), ...fromDates(input), ...fromConway(input)]
 }
 
 /** An instance marked as intended, its mark, and the scope that keeps it. */

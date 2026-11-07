@@ -36,7 +36,7 @@ export type WorkspaceRequests = {
   /** What the editor says about its page, as it opens and closes. */
   shownDocumentation: (elementId: string | undefined) => void
   /** Select an element on the board that draws it. */
-  focusElement: (id: string) => void
+  focusElement: (id: string, more?: { line?: string; field?: string }) => void
   /** `diagramId` is the view the reader came from — a sheet, whose neighbours the page then lists. */
   openDocumentation: (elementId?: string, diagramId?: string) => void
   /**
@@ -58,8 +58,8 @@ export function useWorkspaceRequests(deps: {
 }): WorkspaceRequests {
   const { session, scope, indexRef, onOpenScope, notify, s } = deps
   const [focus, setFocus] = useState<FocusRequest | undefined>(undefined)
-  const focusElement = useCallback((id: string) => {
-    setFocus((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1 }))
+  const focusElement = useCallback((id: string, more?: { line?: string; field?: string }) => {
+    setFocus((prev) => ({ id, nonce: (prev?.nonce ?? 0) + 1, ...more }))
   }, [])
   const [documentation, setDocumentation] = useState<DocumentationRequest | undefined>(undefined)
   const openDocumentation = useCallback((elementId?: string, diagramId?: string) => {

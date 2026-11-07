@@ -221,7 +221,11 @@ export interface EditorRequests {
      * via onActiveDiagramChange and completes the focus once the host updates
      * activeDiagramId. Elements placed on no diagram are a no-op.
      */
-    focus?: { id: ElementId; nonce: number };
+    focus?: {
+      id: ElementId; nonce: number;
+      /** A line of the element to select instead, and the field on the panel to give the focus to (`data-field`). */
+      line?: string; field?: string;
+    };
     /**
      * Open the documentation page from outside the editor — a host's own menu
      * bar, or its search. Without `elementId` the page opens on the selected

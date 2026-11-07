@@ -68,7 +68,7 @@ export function useWorkspaceAgentView(deps: {
   /** Put a picture's bytes where the scope is kept, and answer its library entry (`ScopeWriter.put`). */
   putPicture: (name: ImageName, bytes: Uint8Array) => Promise<ImageEntry>
   pages: WorkspacePages
-  showElement: (id: string) => void
+  showElement: (id: string, leave?: () => void, more?: { line?: string; field?: string }) => void
   openDocumentation: (elementId?: string, diagramId?: string) => void
   /** Close the documentation page over the board, where one is (`useWorkspaceRequests`). */
   leaveDocumentation: () => void
@@ -197,7 +197,7 @@ export function useWorkspaceAgentView(deps: {
  */
 export function showOn(
   pages: WorkspacePages,
-  showElement: (id: string) => void,
+  showElement: (id: string, leave?: () => void, more?: { line?: string; field?: string }) => void,
   openDocumentation: (elementId?: string, diagramId?: string) => void,
   leaveDocumentation: () => void,
 ): WorkspaceAgentView['show'] {
@@ -221,7 +221,7 @@ export function showOn(
       case 'operating': pages.openOperating(to.id); break
       case 'principles': pages.openPrinciples(to.id); break
       case 'plan': openRoadmap(); if (to.id !== undefined) openPlan(to.id); break
-      case 'element': closePages(); if (to.id !== undefined) showElement(to.id); break
+      case 'element': closePages(); if (to.id !== undefined) showElement(to.id, undefined, { ...(to.line !== undefined ? { line: to.line } : {}), ...(to.field !== undefined ? { field: to.field } : {}) }); break
       case 'document': closePages(); openDocumentation(to.id); break
       case 'documentation': closePages(); openDocumentation(); break
       case 'platform': if (to.id !== undefined) openPlatformReport(to.id); break
