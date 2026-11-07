@@ -10,16 +10,18 @@ newest release is always at **[app.architecture.lionsville.nl](https://app.archi
 or run it from source.
 
 ![The Acme Logistics example open: an application landscape in Layer-7 bands,
-with domain groups, lifecycle badges, routed connections, the right-click menu
-of an application open and the inspector beside it](docs/screenshot-landscape.png)
+drawn neutral, with domain groups, routed connections and each card's
+operational marks; one application picked with its lines lit, its right-click
+menu open and the panel beside it](docs/screenshot-landscape.png)
 
 *The shipped example, `Acme Logistics` — a fictional landscape you can open,
 copy and take apart.*
 
-![The same example's business architecture: stakeholders down the side, the
-journey a consignment takes as a band of phases over three lanes, the
-responsibility areas with their capabilities and how each is covered, and the
-band of what nobody has claimed yet](docs/screenshot-sheet.png)
+![The same example's business architecture as a poster: stakeholders down the
+side, the journey a consignment takes as a band of phases over three lanes, and
+the responsibility areas with their capabilities, coloured by what covers each,
+with a key along the foot and a count of the areas not yet mapped to a
+domain](docs/screenshot-sheet.png)
 
 *Its business architecture — the journey with a key account's lane and a
 marketplace partner's beside the common path, and the areas that serve it.*
@@ -61,8 +63,10 @@ or in a folder it opens for you. Want to change something? See
 - **The Layer-7 landscape.** Five bands — actors, input channels, external
   systems, the application landscape, the management layer — with elements
   placed in them and **domain groups** boxing the ones that belong together.
-  Bands and groups resize; groups have their own colour and can be tidied on
-  their own.
+  The board is drawn neutral, so that colour answers one question at a time
+  (*Colour* over the board), and it reads at three distances: far off a name,
+  closer what an element does, close up what it is made of. Bands and groups
+  resize; groups can be tidied on their own.
 - **C4 container diagrams.** Double-click an application to open the container
   view underneath it, or to create one. The application becomes the boundary of
   that view and its components sit inside. Each landscape keeps a list of the
@@ -72,11 +76,13 @@ or in a folder it opens for you. Want to change something? See
 
 Seven kinds: application, component, external system, input channel, management
 tool, actor, and the domain group that holds them. Each carries a name,
-category, vendor, technology, a markdown description, an accent colour, an icon
-and a **lifecycle** — planned, live, retiring, retired — which shows as a badge
+category, vendor, technology, a markdown description, an accent colour drawn
+as a thin rail, an icon and a **lifecycle** — planned, live, retiring, retired — which shows as a badge
 on the card (retired elements are dimmed, and the badges can be switched off for
 a clean export). Elements also carry **operational aspects** — managed, partial,
-at risk — for the parts of a landscape that are about who runs what.
+at risk — for the parts of a landscape that are about who runs what, and can
+be marked **confirmed** or **assumed**, which draws them dashed: an element and a
+connection alike.
 
 Elements are model-level: an element exists whether or not it is placed on a
 diagram, one element can appear on more than one, and removing it from a diagram
@@ -134,15 +140,16 @@ run per list and are never reused.
 ### Observations, and what lies behind them
 
 Every scope keeps a register of **observations** — what a team saw, where,
-how often and how much it matters — and analyses them, as a team, into
-**causes** and causes of causes until a **root cause** stands at the end —
-one the team says is one, `RC-` on the cause's own number, and what a
-solution addresses. The analysis is drawn: observations on the left, causes
-in lanes, roots and then solutions on the right, with the weight of each line
-saying how firmly one explains the other, and filters, two sizes and a trace
-to find a way through it. Two observations that turn out to be the same are
-merged with the history kept, and one that was fixed is archived rather than
-deleted. Every scope reads the analysis of every scope below it, with nothing
+how often and how much it matters — and works them through as a chain:
+**Seen**, **Why**, **Solve** and **Did it work**. *Why* asks its way down from
+an observation to **causes** and causes of causes until a **root cause** stands
+at the end — one the team says is one, `RC-` on the cause's own number, and
+what a solution addresses. Each stage is a quiet list with a large preview of
+the record picked, and a map that opens readable, with the weight of each line
+saying how firmly one explains the other. Two observations that turn out to be
+the same are merged with the history kept, one that was fixed is archived
+rather than deleted, and one that needs nothing done leaves the waiting list as
+**Noted**, with its reason kept. Every scope reads the analysis of every scope below it, with nothing
 shared first: local there, global here, each scope below in a boundary of its
 own, and a cause above may explain a cause below (`docs/decisions/0021`,
 `0032`).
@@ -163,16 +170,22 @@ vendor or technology, including boxes not on the diagram you are looking at.
 Right-click menus on everything — element, connection, canvas, domain group,
 selection, diagram tab — each offering what that thing can actually do.
 Multi-select with a rubber band or Shift-click, then edit lifecycle, colour,
-icon or domain group for all of it in one undo step.
+icon or domain group for all of it in one undo step. Over a board, the View bar
+says the rest in words: **Add** and connect where you are looking, **Arrange**,
+**Show**, **Colour**, **Day** to look at another day (read-only, one press back),
+**Find** and **Export**.
 
 **One undo stack over everything**: a node dragged, a diagram renamed, a
 decision accepted and a project setting cleared are the same kind of change and
 come back in the order you made them. Typing a name is one step, not eleven; a
 drag and the routing that follows it are one step. An **Activity** menu lists
-what has happened since you opened the project, with names and times.
+what has happened since you opened the project, with names and times. Every
+change an agent made in one session can be taken back as one step while its
+steps are the newest.
 
-Rename in place with F2. Copy, cut, paste, duplicate. Resizable
-palette and inspector panels. A keyboard-shortcut overlay that is generated from
+Rename in place with F2. Copy, cut, paste, duplicate. One panel beside
+the board for whatever is picked — an element, a line, a group or several — whose
+rows are pressed to edit, and a record opened whole as a document. A keyboard-shortcut overlay that is generated from
 the same table that dispatches the keys, so it cannot drift.
 
 There is a **read-only** mode that hides every mutating control rather than
@@ -180,24 +193,37 @@ disabling it.
 
 ### The organisation, and the scopes in it
 
+Every screen sits in one frame of two rows: the first says where you are and
+whether your work is safe, in one word that opens **Your work**, with ⌘K to find
+anything or run any command; the second lists the places in the scope you are
+in. Pages are places with an address, so Back, Forward and a link reach them.
+
+![The organisation's home: the tree of scopes docked on the left with how much
+each holds, the organisation's views and what it keeps as one line each, its
+checks counted, and the places across the organisation at the foot of the
+tree](docs/screenshot-organisation.png)
+
 The app opens on the **organisation**, the root of everything you keep.
 Everything in it is a **scope**: one document with a name, its boards, decisions, plans and
 business architecture — and scopes nest, the organisation at the top, a
 **domain** or a **team** under it, a **landscape scope** under that, as deep as
 the work needs. The first screen is the organisation's home: its name and
-links, its own pages, its boards, the scopes within it, sorted by name or by
-what changed most recently, and the examples last. A scope's name, its kind and where it is filed
+links, the views here and what is kept here one line each, the tree of scopes
+docked beside it, and *Continue* to the places you last worked in. An
+organisation nobody has started opens on a first page instead: name yours, look
+around the example, or carry on with what you have. A scope's name, its kind and where it is filed
 can all be changed afterwards.
 
-Examples are **copied** in when you open one — into an empty, unnamed
-organisation as the organisation itself, otherwise under a scope of their own. Nothing you do
-runs against an example in place.
+An example is **a place you visit**: anything can be tried there, nothing is
+kept, and your own work is untouched. **Keep this as my start** copies it in —
+into an empty, unnamed organisation as the organisation itself, otherwise under
+a scope of its own.
 
 ### Saving, exporting, sharing
 
 Three ways out, for three different purposes:
 
-- **The working file (`.lvarch`)** — everything: every scope, topology,
+- **A saved copy (`.lvarch`)** — everything: every scope, topology,
   geometry, styling, pictures, uploaded logos, pinned routes and attach sides,
   sealed under a password. This is the file to hand to someone who will edit
   it, and the way to move your work between the desktop and a browser.
@@ -228,11 +254,13 @@ for one channel — where it leaves your stored routes exactly as they are. A ve
 large **PNG export** asks first, with the size of the image, before it starts
 drawing.
 
-### Three languages, three themes
+### Three languages, three themes, five text sizes
 
 Dutch, German and English, switchable at any moment, covering menus,
 dialogs, band names, errors and the export title block — not a partial
-translation. Light, dark and system themes.
+translation. Light, dark and system themes, in one design system with Source
+Sans 3 and Source Code Pro bundled. The text size is set in the top row, from
+90 to 150 percent, and a browser's own text size reaches the same sizes.
 
 ## Where your work is kept
 
@@ -273,14 +301,14 @@ diagram, a page or the whole scope, and labels a version. A folder keeps its
 history in git on your machine, and a browser keeps it in the browser.
 Pictures in a description are fetched only when they scroll into view.
 
-**The working file (`.lvarch`)** is the whole organisation in one file, sealed
-under a password. It opens in any of the three places, so it is how work moves
+**A saved copy (`.lvarch`)** is the whole organisation in one file, under a
+password. It opens in any of the three places, so it is how work moves
 from a browser to the desktop and back. A file saved from one opens byte for
 byte the same in another, pictures included. Files written by older builds
 keep opening, and a browser's work from older builds is brought along.
 
-On boot the app reopens the scope you had open, or shows the organisation
-screen.
+Opened with no address, the app lands on the organisation's home, where
+*Continue* leads back to the places you last worked in.
 
 ## Running from source
 
@@ -297,7 +325,7 @@ have to change again.
 
 For the desktop app: `npm run dev:desktop` runs it against the Vite dev server,
 `npm run smoke:desktop` builds it and drives the real production bundle through
-thirteen checks in a real window, and `npm run dist:desktop` packages it (unsigned,
+its checks in a real window, and `npm run dist:desktop` packages it (unsigned,
 locally).
 
 ## The loop
@@ -306,7 +334,7 @@ locally).
 npm run check
 ```
 
-A few seconds: typecheck and lint of everything, plus all 9756 tests. Run it
+A few seconds: typecheck and lint of everything, plus every test. Run it
 after every change; it is fast on purpose.
 
 ```bash
@@ -350,7 +378,12 @@ src/search/         one search over elements, documentation and decisions
 src/i18n/           the registry; each module keeps its own strings/ slice
 src/projects/       what a scope is, where it is filed, the tree and its index
 src/platform/       a refusal, a diagnostic, the log's name, the window's chrome
-src/widgets/        icons and one dialog — presentation with no opinions
+src/widgets/        the kit (one design system: tokens, fonts and the components
+                    every screen is composed from) and presentation with no opinions
+src/business/ · src/technology/ · src/roadmap/ · src/observations/
+src/operating/ · src/people/ · src/principles/ · src/blocks/ · src/comments/
+                    the pages for each kind of record, pure at the root, React in ui/
+src/agent/          the agent's tools, and the app as a screen it can move
 src/ports/          the seams: ScopeRepository · OrganisationIndex
                     HistoryRepository · ImageRepository · SettingsRepository
                     Interchange · CommandChannel · PreferencesStore
@@ -358,7 +391,7 @@ src/ports/          the seams: ScopeRepository · OrganisationIndex
 src/adapters/       the outside world: the folder and its format, this
                     browser's database, memory, the desktop's channel
 src/providers/      each place work is kept, whole: its way in and its chrome
-src/app/            the shell: the organisation screen, workspace, toolbar, dialogs
+src/app/            the shell: the frame, the organisation's home, the workspace, dialogs
 electron/           the desktop main process and preload
 ```
 
