@@ -128,7 +128,7 @@ function RecordText({ rendered, readOnly, headings, template, onWrite, onHeading
           <p>{t('doc.noPage')}</p>
           {!readOnly && (
             <div className="doc-record__acts">
-              <Button size="small" onClick={() => onWrite()}>{t('doc.writeText')}</Button>
+              <Button size="small" onClick={() => onWrite()} data-guide="record.editText">{t('doc.writeText')}</Button>
               <Button size="small" variant="quiet" onClick={() => onWrite(template.text)}>{template.label}</Button>
             </div>
           )}
@@ -140,7 +140,7 @@ function RecordText({ rendered, readOnly, headings, template, onWrite, onHeading
     <div ref={ref} data-testid="doc-content" className="doc-record__text">
       {!readOnly && (
         <div className="doc-record__acts">
-          <Button size="small" onClick={() => onWrite()}>{t('doc.editText')}</Button>
+          <Button size="small" onClick={() => onWrite()} data-guide="record.editText">{t('doc.editText')}</Button>
         </div>
       )}
       {headings.length > 0 && (
@@ -369,6 +369,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
       {mode === 'edit' && (
       <FocusedWindow
         open
+        data-guide="record.writing"
         title={t('doc.editing', { name: element.name })}
         windowChrome={bar}
         changed={changed}
