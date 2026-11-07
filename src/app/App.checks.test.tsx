@@ -21,7 +21,6 @@ import type { AgentGateway } from '../ports/AgentGateway'
 import type { HostCommand } from '../platform/hostCommands'
 import type { ScopeSnapshot } from '../projects/scope'
 import { axeFindings } from './testing/axe'
-import { unfoldFindings } from './testing/findings'
 import { heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
 
@@ -72,7 +71,6 @@ function show(scopes: ScopeSnapshot[], opened?: ScopeSnapshot, agent?: AgentGate
   return { held, send: (command: HostCommand) => act(() => { for (const one of [...listeners]) one(command) }) }
 }
 
-const unused = () => document.querySelector<HTMLElement>('[data-check="check.interactionUnused"]')
 
 describe('a finding marked as intended where its scope is open', { timeout: 20_000 }, () => {
   it('is a step of the session: listed under Accepted, back with one undo, and taken back from Accepted', async () => {
