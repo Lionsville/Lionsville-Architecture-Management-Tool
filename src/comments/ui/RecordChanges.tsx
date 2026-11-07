@@ -111,7 +111,7 @@ export function RecordChanges({ about, scope, first = 'recorded', defaultOpen = 
     <Box data-testid="record-changes" sx={{ mt: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, flexWrap: 'wrap' }}>
         <Typography variant="caption" color="text.secondary" data-testid="record-changes-line">{line}</Typography>
-        <Button size="small" onClick={() => setOpen((was) => !was)} aria-expanded={open} sx={{ fontSize: 'var(--t-small)', minWidth: 0, px: 0.75, py: 0 }}>
+        <Button size="small" onClick={() => setOpen((was) => !was)} aria-expanded={open} sx={{ fontSize: 'var(--t-small)', minWidth: 0, minHeight: 'var(--target-min)', px: 0.75, py: 0 }}>
           {open ? t('changes.hide') : t('changes.show')}
         </Button>
       </Box>

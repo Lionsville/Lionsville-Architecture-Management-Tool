@@ -7,6 +7,8 @@
  * before any work exists, with what can lose it. The address stays the home's,
  * so an agent reaches it, and the first step taken leaves it for good.
  */
+import { TextSizeControl } from '../../widgets/kit/TextSizeControl'
+import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from '../../platform/textSize'
 import { useState } from 'react'
 import { LANGUAGES, LANGUAGE_NAME } from '../../i18n'
 import type { Language, StringKey } from '../../i18n'
@@ -55,6 +57,7 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
       data-testid="first-run-page"
       tools={(
         <>
+          <TextSizeControl size={prefs.textSize} steps={TEXT_SIZES} normal={DEFAULT_TEXT_SIZE} onChoose={prefs.chooseTextSize} />
           <Select
             aria-label={s('prefs.language')} value={prefs.language} onChange={(event) => prefs.chooseLanguage(event.target.value as Language)}
             options={LANGUAGES.map((held) => ({ value: held, label: s(LANGUAGE_NAME[held]) }))} data-guide="first.language"

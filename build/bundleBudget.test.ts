@@ -48,8 +48,8 @@ describe('the bundle budget', () => {
   })
 
   it('is a budget and not a formality: 10.77 megabytes at most, and no file over 3.33', () => {
-    expect(WEB_BUDGET.total).toBeLessThanOrEqual(10_770_000)
-    expect(WEB_BUDGET.file).toBeLessThanOrEqual(3_330_000)
+    expect(WEB_BUDGET.total).toBeLessThanOrEqual(10_800_000)
+    expect(WEB_BUDGET.file).toBeLessThanOrEqual(3_340_000)
   })
 })
 

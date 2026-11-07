@@ -6,7 +6,7 @@
 .checks-page__reader { display: flex; flex: 1 1 480px; min-width: 0; }
 .checks-page__reader .kit-panel { flex: 1; width: auto; border-inline-start: 0; }
 .checks-page__scope { display: inline-flex; }
-.checks-page__text { margin: 0 0 var(--s-2); }
+.checks-page__text { margin: 0 0 var(--s-2); max-width: var(--measure-reader); }
 .checks-page__label { font-weight: var(--fw-strong); }
 .checks-page__quiet { color: var(--ink-2); }
 .checks-mark { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }

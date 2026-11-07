@@ -53,7 +53,7 @@ export function AppScreen({ parts }: { parts: ShellParts }) {
        first. Not the picker: there is nowhere for a scope to be until this is
        answered, and offering a list of scopes kept inside the app is offering
        the thing ADR-0003 removed. */
-    return <FirstRun waysIn={parts.provider.offered ?? []} language={parts.services.prefs.language} onLanguageChange={parts.services.prefs.chooseLanguage} s={parts.services.s} windowChrome={parts.windowChrome} />
+    return <FirstRun waysIn={parts.provider.offered ?? []} textSize={parts.services.prefs.textSize} onTextSizeChange={parts.services.prefs.chooseTextSize} language={parts.services.prefs.language} onLanguageChange={parts.services.prefs.chooseLanguage} s={parts.services.s} windowChrome={parts.windowChrome} />
   }
   if (nav.project) return <OpenWorkspace parts={parts} project={nav.project} />
   return <Home parts={parts} />

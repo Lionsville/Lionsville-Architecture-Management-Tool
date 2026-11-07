@@ -27,9 +27,13 @@ export function movedTextSize(from: TextSize, how: TextSizeMove): TextSize {
   return TEXT_SIZES[Math.min(Math.max(at, 0), TEXT_SIZES.length - 1)] ?? from
 }
 
+type Root = { style: { fontSize: string }; dataset: Record<string, string | undefined> }
+/** Read off the global: `electron/main` compiles this file too, for its types, with no page to hold a root. */
+const rootElement = () => (globalThis as { document?: { documentElement: Root } }).document?.documentElement
+
 /** On the root, so that everything drawn outside the app's own tree, a menu or a dialog in its portal, has it too. */
 export function applyTextSize(size: TextSize): void {
-  const root = globalThis.document?.documentElement
+  const root = rootElement()
   if (!root) return
   root.style.fontSize = size === DEFAULT_TEXT_SIZE ? '' : `${size}%`
   root.dataset.textSize = String(size)
@@ -37,7 +41,6 @@ export function applyTextSize(size: TextSize): void {
 
 /** How many times the browser's own rem this step is: for the few widths a script has to work out. */
 export function textScale(): number {
-  const root = globalThis.document?.documentElement
-  const raw = root ? Number(root.dataset.textSize) : Number.NaN
+  const raw = Number(rootElement()?.dataset.textSize)
   return Number.isFinite(raw) && raw > 0 ? raw / 100 : 1
 }

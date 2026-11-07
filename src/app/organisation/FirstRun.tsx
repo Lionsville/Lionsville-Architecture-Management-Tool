@@ -16,6 +16,9 @@
  * Not a dialog over the picker. There is nothing behind it to look at, and a
  * dialog would imply there is something to dismiss it back to.
  */
+import { TextSizeControl } from '../../widgets/kit/TextSizeControl'
+import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from '../../platform/textSize'
+import type { TextSize } from '../../platform/textSize'
 import { LANGUAGES, LANGUAGE_NAME } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import type { SourceWayIn } from '../../platform/sourceProvider'
@@ -36,11 +39,14 @@ export type FirstRunProps = {
   /** The language, on the first screen, because nothing else can be read until it is right. */
   language?: Language
   onLanguageChange?: (next: Language) => void
+  /** How large this person reads, on a screen with no frame around it. */
+  textSize?: TextSize
+  onTextSizeChange?: (next: TextSize) => void
   s: Translate
   windowChrome?: WindowChrome
 }
 
-export function FirstRun({ waysIn, language, onLanguageChange, s, windowChrome = NO_WINDOW_CHROME }: FirstRunProps) {
+export function FirstRun({ waysIn, language, onLanguageChange, textSize, onTextSizeChange, s, windowChrome = NO_WINDOW_CHROME }: FirstRunProps) {
   const asked = waysIn.find((way) => way.required)
   const others = waysIn.filter((way) => way !== asked)
   const recent = asked?.recent ?? []
@@ -54,10 +60,13 @@ export function FirstRun({ waysIn, language, onLanguageChange, s, windowChrome =
       {...(asked?.introKey ? { intro: said(asked.introKey) } : {})}
       {...(language && onLanguageChange ? {
         tools: (
+          <>
+          {textSize !== undefined && onTextSizeChange && <TextSizeControl size={textSize} steps={TEXT_SIZES} normal={DEFAULT_TEXT_SIZE} onChoose={onTextSizeChange} />}
           <Select
             aria-label={s('prefs.language')} value={language} onChange={(event) => onLanguageChange(event.target.value as Language)}
             options={LANGUAGES.map((held) => ({ value: held, label: s(LANGUAGE_NAME[held]) }))} data-guide="first.language"
           />
+          </>
         ),
       } : {})}
       foot={<p>{s('first.emptyFine')}</p>}

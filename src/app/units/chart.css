@@ -112,7 +112,7 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .chart-outline__caret { flex: none; display: inline-flex; align-items: center; justify-content: center; width: var(--target-min); height: var(--target-min); padding: 0; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; }
 .chart-outline__caret[data-shut] svg { transform: rotate(-90deg); }
 .chart-outline__gap { flex: none; width: 20px; }
-.chart-outline__name { min-height: var(--target-min);  all: unset; flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink); font-size: var(--t-body); text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.chart-outline__name { all: unset; min-height: var(--target-min); flex: 1 1 auto; min-width: 0; overflow: hidden; color: var(--ink); font-size: var(--t-body); text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
 .chart-outline__name:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .chart-outline__count { flex: none; padding-inline: var(--s-1); color: var(--ink-3); font-size: var(--t-small); font-variant-numeric: tabular-nums; }
 .chart-outline__empty { padding: var(--s-2); color: var(--ink-3); font-size: var(--t-small); }

@@ -221,3 +221,21 @@ not include `sx`.
 - Use the accent for anything but the accent's job: where you are, what is
   picked, what the main action is. No status wears it, and no accent may look
   like a status (`accent.ts`).
+
+## Type
+
+Five sizes and no others: `--t-small` (0.8125rem), `--t-body` (0.9375rem),
+`--t-large` (1.0625rem), `--t-title` (1.25rem), `--t-page` (1.625rem), at 13, 15,
+17, 20 and 26 px at a browser's default. Hints, captions, table heads, counts,
+status lines and tips are small; what is read is body. Code takes the size of what
+it stands in. They are in rem, and so is every measure that holds text, so a
+browser's text size and `TextSizeControl` reach them: the row grows with its words.
+`build/literalFontSizes.test.ts` fails a size written out anywhere else.
+
+A canvas keeps its own type in px (`--canvas-t-*`, `--t-canvas-name`), because the
+canvas's zoom is what makes it larger and a card's reading distances depend on it.
+
+A row that runs out of room folds into its More (`useRowFold`), measured and not
+at a breakpoint, since what a row needs moves with the language and the text size.
+A layout that follows the text is a container query on the frame in rem: a media
+query's rem is the browser's and knows nothing of the text size.
