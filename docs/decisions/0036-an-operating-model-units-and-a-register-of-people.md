@@ -61,6 +61,10 @@ the open item a `scope.describe` tool is closed by `scope.update`, on every
 host; a unit's and a function's `scopes` are checked against the tree, and
 `""` is dropped for a function as for a unit.*
 
+*Extended by ADR-0048 (§3), 7 November 2026; not yet built: the unit is named always
+on an area, and on a tile under its lens or where a poster's `labels` place it. A typed
+team is an actor without a unit type, and one `assigned` row, as ever.*
+
 ## Context and Problem Statement
 
 The model already holds half of an organisation. An actor is "a party,

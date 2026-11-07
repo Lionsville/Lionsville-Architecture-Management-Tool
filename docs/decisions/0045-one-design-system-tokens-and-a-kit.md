@@ -7,6 +7,10 @@
 * Deciders: Wouter Simons
 * Extends: ADR-0022 (source providers), ADR-0044 (one way every page behaves)
 
+*Extended by ADR-0048 (§5), 7 November 2026: the zoom floor of 60% becomes each
+canvas's own, a poster going lower by dropping names rather than shrinking them, and
+three tokens join: `--poster-title`, `--on-poster-title`, `--canvas-t-near`.*
+
 ## Context and Problem Statement
 
 The screens were written one at a time, on Material UI with its default look and

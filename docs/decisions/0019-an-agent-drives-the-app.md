@@ -14,6 +14,10 @@
 open, as the register's do; with a scope open, the desktop refuses changing
 that scope's place in the tree (`scope.isOpen`).*
 
+*Extended by ADR-0048 (§7), 7 November 2026: on a sheet, placing is arithmetic and no
+see-tier call: a host with no screen offers those tools there, and a board keeps the
+tier it has.*
+
 ## Context and Problem Statement
 
 ADR-0007 made an agent a peer of the menu: it reads the landscape on screen,

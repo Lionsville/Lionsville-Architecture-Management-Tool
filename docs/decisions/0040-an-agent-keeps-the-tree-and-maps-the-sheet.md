@@ -13,6 +13,9 @@
   function's domains checked against the tree; the `scope.describe` tool its
   *Open here* named)
 
+*Extended by ADR-0048 (§7), 7 November 2026: an agent places and labels a sheet's
+poster as well as mapping it, with no screen.*
+
 ## Context and Problem Statement
 
 ADR-0011 settled what an agent may do: everything a person can do on a page,

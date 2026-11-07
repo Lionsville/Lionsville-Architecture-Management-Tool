@@ -125,3 +125,4 @@ now, with their words unchanged.
 | [0045](0045-one-design-system-tokens-and-a-kit.md) | One design system: tokens as the source, a kit the screens are composed from | 2026-11-07 | — |
 | [0046](0046-a-numeric-scale-on-an-aspect.md) | A numeric scale on an aspect, and a function rated on it | 2026-11-07 | — |
 | [0047](0047-a-confirmed-or-assumed-mark.md) | A confirmed or assumed mark on elements and lines | 2026-11-07 | — |
+| [0048](0048-a-sheet-can-be-placed.md) | A sheet can be placed, and read as a poster | 2026-11-07 | — |
