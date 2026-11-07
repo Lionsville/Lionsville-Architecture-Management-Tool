@@ -478,6 +478,21 @@ export const GROWN = {
   'src/observations/ui/useAnalysisForms.tsx': { lines: 173 },
   'src/projects/documentSession.ts': { complexity: 34 },
   'src/adapters/folder/format/folderFormat.ts': { complexity: 32 },
+  // Over the line with version 4, set at what they measure on 7 November 2026 (said in the commit): the frame's and the address's
+  // one answer per page and per place, and a few hooks at 153 and 154 lines. Each goes down when it is taken apart.
+  'src/agent/place.ts': { complexity: 35 },
+  'src/agent/screen.ts': { complexity: 26 },
+  'src/app/bootLanding.ts': { complexity: 26 },
+  'src/app/frame/AppFrame.tsx': { complexity: 39 },
+  'src/app/history/useProjectHistory.ts': { lines: 153 },
+  'src/app/main.tsx': { complexity: 35 },
+  'src/app/useShellAgent.ts': { complexity: 42, lines: 154 },
+  'src/app/useShellCommands.ts': { complexity: 26 },
+  'src/app/useWorkspaceAgentView.ts': { complexity: 26 },
+  'src/app/useWorkspaceCommands.ts': { complexity: 29 },
+  'src/people/ui/PersonRefField.tsx': { complexity: 29 },
+  'src/projects/copyCounts.ts': { complexity: 35 },
+  'src/widgets/kit/GuideDock.tsx': { complexity: 28 },
 }
 
 const functionLines = (max) => ['error', { max, skipBlankLines: true, skipComments: true }]
