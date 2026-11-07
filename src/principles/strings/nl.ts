@@ -114,7 +114,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'principles.predates': 'Aangehaald voordat het principe werd aangescherpt',
   'principles.uncite': 'Deze aanhaling weghalen',
   'principles.mayApply': 'Kan van toepassing zijn',
-  'principles.whyWords': 'deelt: {words}',
   'principles.whySubject': 'aangehaald door andere vastleggingen over hetzelfde onderwerp',
   'principles.citeTitle': 'Een principe aanhalen',
   'principles.principleField': 'Principe',

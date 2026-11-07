@@ -28,3 +28,6 @@
 .plan-boardrow { display: inline-flex; align-items: center; gap: var(--s-2); }
 .plan-document { font-size: var(--t-md); }
 .plan-add { margin-top: var(--s-2); }
+.roadmap-findingsTitle { margin: 0 0 var(--s-1); font-size: var(--t-lg); font-weight: var(--fw-strong); }
+.plan-preview { padding: var(--s-3) var(--s-4); }
+.plan-form > .kit-input, .plan-window .kit-input { flex: none; width: auto; }

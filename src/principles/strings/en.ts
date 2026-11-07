@@ -112,7 +112,6 @@ export const EN = {
   'principles.predates': 'Cited before the principle was sharpened',
   'principles.uncite': 'Take this citation off',
   'principles.mayApply': 'May apply',
-  'principles.whyWords': 'shares: {words}',
   'principles.whySubject': 'cited by other records about the same subject',
   'principles.citeTitle': 'Cite a principle',
   'principles.principleField': 'Principle',

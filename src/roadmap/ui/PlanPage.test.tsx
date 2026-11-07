@@ -107,7 +107,7 @@ describe('one document', () => {
   it('holds an outline of its moves, its text and what is around it, the text\'s own headings among them', () => {
     setup()
     const outline = screen.getByRole('navigation')
-    for (const name of [/What it changes/, /Interfaces/, /Milestones/, /Decisions it rests on/, /Document/, /Goal/, /Boards/, /Principles/, /Changes/, /Comments/]) {
+    for (const name of [/What it changes/, /Interfaces/, /Milestones/, /Decisions it rests on/, /Goal/, /Boards/, /Principles/, /Changes/, /Comments/]) {
       expect(within(outline).getByRole('button', { name })).toBeTruthy()
     }
     expect(section('Document').textContent).toContain('One warehouse system.')

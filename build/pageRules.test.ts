@@ -37,7 +37,6 @@ const BAR_IN = {} as Record<string, string>
 /** The pages with a column beside another (§4), and how many seams each has. */
 const SEAMS: Record<string, number> = {
   'operating/ui/OperatingModelPage.tsx': 1,
-  'roadmap/ui/RoadmapPage.tsx': 1,
   'principles/ui/PrinciplesPage.tsx': 1,
   'app/organisation/TopicsPage.tsx': 1,
   'observations/ui/ObservationsPage.tsx': 1,

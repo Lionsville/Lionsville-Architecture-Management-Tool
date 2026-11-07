@@ -54,7 +54,6 @@
 .kit-record__outlineGroup + .kit-record__outlineGroup { margin-top: var(--s-3); }
 .kit-record__outlineHead { padding: var(--s-1) var(--s-2); color: var(--ink-3); font-size: var(--t-sm); font-weight: var(--fw-strong); }
 .kit-record__outlineCount { flex: none; color: var(--ink-3); font-variant-numeric: tabular-nums; }
-.kit-record__outlineItem[data-within] { padding-inline-start: var(--s-4); }
 .kit-record__outlineItem {
   display: flex;
   justify-content: space-between;
@@ -87,3 +86,5 @@
   .kit-record__outline { position: static; }
 }
 .kit-record__section > p { max-width: var(--measure-reader); }
+.kit-record__section { outline: none; scroll-margin-top: var(--s-2); }
+.kit-record__sectionHead h2 { scroll-margin-top: var(--s-2); }

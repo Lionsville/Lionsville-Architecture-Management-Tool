@@ -32,6 +32,7 @@ import type { AxisView } from '../../widgets/kit/timeScale'
 import { useSeamWidth } from '../../widgets/useSeamWidth'
 import { usePlaceTab } from '../../widgets/placeTab'
 import { useViewerKeep } from '../../widgets/useViewerKeep'
+import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { findings } from '../../model/checks'
 import type { Finding } from '../../model/checks'
@@ -201,7 +202,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
   const asOf = isDay(props.asOf) && dayNumber(props.asOf) !== dayNumber(today) ? props.asOf : undefined
 
   return (
-    <PageDialog open={props.open} {...(props.windowChrome?.topInset !== undefined ? { topInset: props.windowChrome.topInset } : {})} onClose={props.onClose} aria-label={t('roadmap.title')}>
+    <PageDialog open={props.open} topInset={(props.windowChrome ?? NO_WINDOW_CHROME).topInset} onClose={props.onClose} aria-label={t('roadmap.title')}>
       <div className="roadmap-page">
         <header className="roadmap-head">
           <h1 className="roadmap-title">{t('roadmap.title')}</h1>
@@ -214,7 +215,6 @@ export function RoadmapPage(props: RoadmapPageProps) {
               <PageState
                 state="empty" title={t('roadmap.empty')}
                 body={<><p>{t('roadmap.emptyBody')}</p><p className="roadmap-quiet">{t('roadmap.emptyBelow')}</p></>}
-                {...(readOnly ? {} : { action: { label: t('roadmap.newPlan'), onPress: () => setNewTitle('') } })}
               />
             ) : (
               <>

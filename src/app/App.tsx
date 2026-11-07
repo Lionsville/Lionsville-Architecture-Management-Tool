@@ -70,6 +70,7 @@ import type { AdoptScopes } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
 import { useMachineSettings } from './useMachineSettings'
 import { useSeamWidths, useViewerKeeps } from './useShellServices'
+import { readPlace } from '../agent/place'
 import { SeamWidthsProvider } from '../widgets/useSeamWidth'
 import { ViewerKeepProvider } from '../widgets/useViewerKeep'
 import { useProviderParts } from './useProviderParts'
@@ -763,7 +764,17 @@ function useShellBase(props: AppProps) {
   })
   const { toasts, prefs, s, reportKept, failed, failedRef } = services
   // ⌘\ is this person's on this computer, and read once as the app comes up.
-  const [frame] = useState(() => frameStore({ pinned: prefs.readPreferences().treePinned === true, ...frameFromAddress(props.boot), ...(props.boot.initialLook ? { asksLook: props.boot.initialLook } : {}), ...(props.boot.initialFacets ? { facets: props.boot.initialFacets } : {}) }))
+  // A tab said by the address the window opened on: a link and a reload arrive on it.
+  const [frame] = useState(() => {
+    const first = readPlace(window.location.hash)
+    return frameStore({
+      pinned: prefs.readPreferences().treePinned === true,
+      ...(first?.tab !== undefined && first.page !== undefined ? { tab: first.tab, tabOf: first.page } : {}),
+      ...frameFromAddress(props.boot),
+      ...(props.boot.initialLook ? { asksLook: props.boot.initialLook } : {}),
+      ...(props.boot.initialFacets ? { facets: props.boot.initialFacets } : {}),
+    })
+  })
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])

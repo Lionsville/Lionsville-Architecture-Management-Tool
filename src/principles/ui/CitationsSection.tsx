@@ -136,11 +136,10 @@ function SuggestionLine({ suggestion, access, quickStance, onQuick, onCite }: {
   suggestion: Suggestion; access: PrinciplesAccess; quickStance: CitationStance; onQuick: () => void; onCite: () => void
 }) {
   const { t } = useStrings()
-  const { principle, aspect, matched, why } = suggestion
+  const { principle, aspect, why } = suggestion
   const number = aspect ? formatAspectNumber(principle.number, aspect.number) : formatPrincipleNumber(principle.number)
-  const reason = why === 'subject'
-    ? t('principles.whySubject')
-    : t('principles.whyWords', { words: matched.slice(0, 4).join(', ') })
+  // A few shared words are no evidence, and shown as evidence they teach people to ignore the suggestion.
+  const reason = why === 'subject' ? t('principles.whySubject') : undefined
   return (
     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, py: 0.25, fontSize: 13 }} data-testid={`may-apply-${principle.id}`}>
       <Box component="span" sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 12, color: 'text.secondary' }}>{number}</Box>
@@ -148,7 +147,7 @@ function SuggestionLine({ suggestion, access, quickStance, onQuick, onCite }: {
         {access.open
           ? <Link component="button" type="button" underline="hover" onClick={() => access.open?.(suggestion.ref)} sx={{ textAlign: 'left', fontSize: 13 }}>{principle.title}</Link>
           : principle.title}
-        <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>{reason}</Typography>
+        {reason && <Typography component="span" sx={{ fontSize: 11, color: 'text.secondary', ml: 1 }}>{reason}</Typography>}
       </Box>
       <Button size="small" onClick={onQuick} sx={{ fontSize: 11, minWidth: 0, px: 0.75 }}>{t(STANCE_WORD[quickStance])}</Button>
       <Button size="small" onClick={onCite} sx={{ fontSize: 11, minWidth: 0, px: 0.75 }}>{t('principles.citeMore')}</Button>

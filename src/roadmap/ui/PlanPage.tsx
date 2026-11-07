@@ -30,8 +30,10 @@ import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import { planBodyTemplate } from '../planTemplate'
 import { useStrings } from '../../i18n'
+import type { Language, StringKey, Translate } from '../../i18n'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
+import { PageClose } from '../../widgets/PageClose'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceTab } from '../../widgets/placeTab'
 import { Button } from '../../widgets/kit/Button'
@@ -46,6 +48,7 @@ import type { RecordSection } from '../../widgets/kit/RecordPage'
 import { TimeStrip } from '../../widgets/kit/TimeStrip'
 import type { DescribeElsewhere } from '../planGateHints'
 import { boardsOfPlan, dayToShow } from '../planReading'
+import type { PlanBoard } from '../planReading'
 import { DeleteActions, PlanStatusLine } from './PlanFacts'
 import type { GateWay } from './PlanFacts'
 import { PlanInterfaces } from './PlanInterfaces'
@@ -126,15 +129,174 @@ export function PlanPage(props: PlanPageProps) {
   const { plan, open, onClose } = props
   const { t } = useStrings()
   return (
-    <PageDialog
-      open={open} {...(props.windowChrome?.topInset !== undefined ? { topInset: props.windowChrome.topInset } : {})}
-      onClose={onClose} aria-label={t('plan.page')}
-    >
+    <PageDialog open={open} topInset={(props.windowChrome ?? NO_WINDOW_CHROME).topInset} onClose={onClose} aria-label={t('plan.page')}>
       {plan
         ? <PlanRecord {...props} plan={plan} />
         : open && <PageState state="empty" title={t('plan.gone')} action={{ label: t('plan.close'), onPress: onClose }} />}
     </PageDialog>
   )
+}
+
+/** What the sections of a plan are drawn from. */
+type Sections = {
+  props: PlanPageProps & { plan: Transition }
+  t: Translate
+  language: Language
+  set: (patch: Partial<Transition>) => void
+  isOpen: (id: string) => boolean
+  goTo: (id: string) => void
+  milestone: string | undefined
+  setMilestone: (id: string | undefined) => void
+  adding: Adding | undefined
+  setAdding: (word: Adding | undefined) => void
+  setWriting: (on: boolean) => void
+  boards: readonly PlanBoard[]
+  showDay: string | undefined
+}
+
+type Adding = 'element' | 'milestone' | 'decision'
+
+/** A + to add a row: nothing for a reader. */
+function addButton({ props, setAdding }: Sections, word: Adding, label: string, guide?: string) {
+  return props.readOnly ? undefined : <Button size="small" variant="quiet" data-guide={guide} onClick={() => setAdding(word)}>+ {label}</Button>
+}
+
+/** What it changes, with a line each for what waits to be asked for: the long ones, so the document is near the top. */
+function changesSection(on: Sections): RecordSection {
+  const { props: { plan, model, readOnly, describe, actions, organisation }, t, set, isOpen, goTo, adding, setAdding } = on
+  const progress = portProgress(model, plan)
+  const way = (id: string, word: StringKey) => <button type="button" className="roadmap-link" onClick={() => goTo(id)}>{t(readOnly ? 'plan.openBoard' : word)} ▸</button>
+  const units = plan.moves?.length ?? 0
+  return {
+    id: 'changes', heading: t('roadmap.touches'), group: t('plan.groupMoves'), count: plan.elements.length,
+    aside: addButton(on, 'element', t('plan.addElement'), 'plan.addElement'),
+    children: (
+      <>
+        <ChangesRows
+          plan={plan} model={model} readOnly={readOnly} describe={describe} set={set}
+          onOpen={actions.onOpenElement} onDates={actions.updateElementDates}
+          adding={adding === 'element'} onAdding={(open) => setAdding(open ? 'element' : undefined)}
+        />
+        <PropertyRows readOnly>
+          {!isOpen('interfaces') && progress.total > 0 && (
+            <PropertyRow label={t('plan.interfaces')} value={t('plan.interfacesRow', { done: progress.done, total: progress.total })} aside={way('interfaces', 'plan.setDays')} />
+          )}
+          {!isOpen('units') && organisation?.facts !== undefined && (
+            <PropertyRow label={t('plan.units')} value={units === 0 ? t('plan.unitsNone') : t('plan.unitsSome', { count: units })} aside={way('units', 'plan.moveAUnit')} />
+          )}
+        </PropertyRows>
+      </>
+    ),
+  }
+}
+
+function movesSections(on: Sections): RecordSection[] {
+  const { props: { plan, model, readOnly, today, actions, organisation, decisions = [], ancestorDecisions = [] }, t, set, isOpen, milestone, setMilestone, adding, setAdding, boards } = on
+  const progress = portProgress(model, plan)
+  const openBoard = actions.onOpenBoard
+  const first = boards[0]
+  const lookOn = openBoard && first ? (day: string) => openBoard(plan.id, first.diagram.id, day) : undefined
+  return [
+    changesSection(on),
+    {
+      id: 'interfaces', heading: t('plan.interfaces'), group: t('plan.groupMoves'), count: t('roadmap.countOf', { count: progress.done, total: progress.total }), folded: !isOpen('interfaces'),
+      children: <PlanInterfaces plan={plan} model={model} today={today} readOnly={readOnly} actions={actions} />,
+    },
+    ...(organisation?.facts !== undefined ? [{
+      id: 'units', heading: t('plan.units'), group: t('plan.groupMoves'), count: plan.moves?.length ?? 0, folded: !isOpen('units'),
+      children: <>{organisation.facts}{organisation.main}</>,
+    }] : []),
+    {
+      id: 'milestones', heading: t('roadmap.milestones'), group: t('plan.groupMoves'), count: plan.milestones.length,
+      // The way in for a guide where no row carries the name yet.
+      aside: addButton(on, 'milestone', t('plan.milestoneName'), plan.milestones.length === 0 ? 'plan.milestone' : undefined),
+      children: (
+        <MilestoneRows
+          plan={plan} readOnly={readOnly} set={set} picked={milestone} onPicked={setMilestone}
+          adding={adding === 'milestone'} onAdding={(open) => setAdding(open ? 'milestone' : undefined)}
+          {...(lookOn ? { onLook: lookOn } : {})}
+        />
+      ),
+    },
+    {
+      id: 'restsOn', heading: t('roadmap.restsOn'), group: t('plan.groupMoves'), count: plan.decisions.length,
+      aside: decisions.some((adr) => !plan.decisions.includes(adr.id)) ? addButton(on, 'decision', t('plan.decision'), 'plan.addDecision') : undefined,
+      children: (
+        <RestsOnRows
+          plan={plan} decisions={decisions} decidedAbove={ancestorDecisions} readOnly={readOnly} set={set} onOpen={actions.onOpenDecision}
+          adding={adding === 'decision'} onAdding={(open) => setAdding(open ? 'decision' : undefined)}
+        />
+      ),
+    },
+  ]
+}
+
+function documentSection({ props: { plan, model, readOnly, actions, renderMarkdown }, t, setWriting }: Sections): RecordSection {
+  return {
+    id: 'document', heading: t('plan.document'), group: t('plan.document'),
+    aside: !readOnly ? <Button size="small" onClick={() => setWriting(true)} data-guide="plan.editText">{t('plan.editText')}</Button> : undefined,
+    within: outline(plan.body).filter((entry) => entry.level <= 2).map((entry) => ({
+      id: entry.id, label: entry.text,
+      onPress: () => {
+        const found = [...document.querySelectorAll<HTMLElement>('[data-document] [role="heading"]')].find((one) => one.textContent?.trim() === entry.text)
+        found?.scrollIntoView?.({ block: 'start' })
+      },
+    })),
+    children: <PlanBody plan={plan} model={model} onOpenElement={actions.onOpenElement} renderMarkdown={renderMarkdown} />,
+  }
+}
+
+function BoardRow({ board: { diagram, draws, total }, on }: { board: PlanBoard; on: Sections }) {
+  const { props: { plan, readOnly, actions }, t, language, showDay } = on
+  const openBoard = actions.onOpenBoard
+  const fixed = isDay(diagram.asOf)
+  const duplicate = !readOnly && actions.onDuplicateBoard && isDay(plan.to) && diagram.kind === 'layer7' ? plan.to : undefined
+  return (
+    <PropertyRow
+      label={draws === total ? t('plan.boardDrawsAll', { count: total }) : t('plan.boardDraws', { count: draws, total })} value={diagram.name}
+      aside={openBoard && (
+        <span className="plan-boardrow">
+          {fixed && t('plan.boardFixed')}
+          <Button size="small" onClick={() => openBoard(plan.id, diagram.id, fixed ? undefined : showDay)}>
+            {!fixed && showDay ? t('plan.openOn', { day: formatDay(showDay, language) }) : t('plan.openBoard')}
+          </Button>
+          {duplicate && (
+            <Button size="small" variant="quiet" onClick={() => actions.onDuplicateBoard?.(diagram.id, duplicate)}>
+              {t('plan.duplicateAsOf', { day: formatDay(duplicate, language) })}
+            </Button>
+          )}
+        </span>
+      )}
+    />
+  )
+}
+
+function aroundSections(on: Sections): RecordSection[] {
+  const { props: { plan }, t, boards } = on
+  const about = { kind: 'transition' as const, id: plan.id }
+  return [
+    {
+      id: 'boards', heading: t('plan.boards'), group: t('plan.groupAround'), count: boards.length,
+      children: boards.length === 0 ? <p className="plan-sentence">{t('plan.noBoards')}</p> : (
+        <>
+          <PropertyRows readOnly>{boards.map((board) => <BoardRow key={board.diagram.id} board={board} on={on} />)}</PropertyRows>
+          <p className="plan-note">{t('plan.boardsHelp')}</p>
+        </>
+      ),
+    },
+    {
+      id: 'principles', heading: t('plan.principles'), group: t('plan.groupAround'), headless: true,
+      children: <CitationsSection about={about} subject={`${plan.title}\n${plan.body}`} />,
+    },
+    {
+      id: 'history', heading: t('plan.changesLog'), group: t('plan.groupAround'),
+      children: <RecordChanges about={about} first="proposed" />,
+    },
+    {
+      id: 'comments', heading: t('plan.comments'), group: t('plan.groupAround'), headless: true,
+      children: <CommentThread about={about} />,
+    },
+  ]
 }
 
 function PlanRecord(props: PlanPageProps & { plan: Transition }) {
@@ -144,152 +306,29 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
   const [section, setSection] = usePlaceTab('changes')
   const [headRow, setHeadRow] = useState<string>()
   const [milestone, setMilestone] = useState<string>()
-  const [adding, setAdding] = useState<'element' | 'milestone' | 'decision'>()
+  const [adding, setAdding] = useState<Adding>()
   const [writing, setWriting] = useState(false)
   const [moving, setMoving] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  // The long ones wait to be asked for, so the document is near the top; the address and the outline ask.
   const [unfolded, setUnfolded] = useState<ReadonlySet<string>>(new Set())
-  const isOpen = (id: string) => unfolded.has(id) || section === id
   const goTo = (id: string) => {
     setUnfolded((was) => new Set(was).add(id))
     setSection(id)
   }
-  const goToWay = (way: GateWay) => { if (way === 'window' || way === 'owner') setHeadRow(way); else goTo(way) }
-
-  const progress = portProgress(model, plan)
-  const decisions = props.decisions ?? []
-  const decidedAbove = props.ancestorDecisions ?? []
-  const pickedDay = milestone !== undefined ? plan.milestones[Number(milestone)]?.date : undefined
-  const unitCount = plan.moves?.length ?? 0
-  const openBoard = props.actions.onOpenBoard
   const boards = useMemo(() => boardsOfPlan(model, plan, today), [model, plan, today])
-  const showDay = dayToShow(plan, today, pickedDay)
-  const lookOn = openBoard && boards[0] ? (day: string) => openBoard(plan.id, boards[0].diagram.id, day) : undefined
-
-  const more: MenuEntry[] = [
-    ...(props.initiativeToggle === true && !readOnly ? [{
+  const on: Sections = {
+    props, t, language, set, goTo, milestone, setMilestone, adding, setAdding, setWriting, boards,
+    isOpen: (id) => unfolded.has(id) || section === id,
+    showDay: dayToShow(plan, today, milestone !== undefined ? plan.milestones[Number(milestone)]?.date : undefined),
+  }
+  const more: MenuEntry[] = readOnly ? [] : [
+    ...(props.initiativeToggle === true ? [{
       label: t(plan.initiative ? 'plan.initiativeTurnOff' : 'plan.initiativeTurnOn'), checked: plan.initiative === true,
       onSelect: () => set({ initiative: plan.initiative ? undefined : true }),
     }] : []),
-    ...(!readOnly ? [{ label: t('roadmap.delete'), final: true, onSelect: () => setDeleting(true) }] : []),
+    { label: t('roadmap.delete'), final: true, onSelect: () => setDeleting(true) },
   ]
-  const moreFor = (word: 'element' | 'milestone' | 'decision', label: string, guide: string) => (!readOnly
-    ? <Button size="small" variant="quiet" data-guide={guide} onClick={() => setAdding(word)}>+ {label}</Button>
-    : undefined)
-  const body = useMemo(() => outline(plan.body).filter((entry) => entry.level <= 2), [plan.body])
-  const sections: RecordSection[] = [
-    {
-      id: 'changes', heading: t('roadmap.touches'), group: t('plan.groupMoves'), count: plan.elements.length,
-      aside: moreFor('element', t('plan.addElement'), 'plan.addElement'),
-      children: (
-        <>
-          <ChangesRows
-            plan={plan} model={model} readOnly={readOnly} describe={props.describe} set={set}
-            onOpen={actions.onOpenElement} onDates={actions.updateElementDates}
-            adding={adding === 'element'} onAdding={(on) => setAdding(on ? 'element' : undefined)}
-          />
-          <PropertyRows readOnly>
-            {!isOpen('interfaces') && progress.total > 0 && (
-              <PropertyRow
-                label={t('plan.interfaces')} value={t('plan.interfacesRow', { done: progress.done, total: progress.total })}
-                aside={<button type="button" className="roadmap-link" onClick={() => goTo('interfaces')}>{t(readOnly ? 'plan.openBoard' : 'plan.setDays')} ▸</button>}
-              />
-            )}
-            {!isOpen('units') && props.organisation?.facts !== undefined && (
-              <PropertyRow
-                label={t('plan.units')} value={unitCount === 0 ? t('plan.unitsNone') : t('plan.unitsSome', { count: unitCount })}
-                aside={<button type="button" className="roadmap-link" onClick={() => goTo('units')}>{t(readOnly ? 'plan.openBoard' : 'plan.moveAUnit')} ▸</button>}
-              />
-            )}
-          </PropertyRows>
-        </>
-      ),
-    },
-    {
-      id: 'interfaces', heading: t('plan.interfaces'), group: t('plan.groupMoves'), count: t('roadmap.countOf', { count: progress.done, total: progress.total }), folded: !isOpen('interfaces'),
-      children: <PlanInterfaces plan={plan} model={model} today={today} readOnly={readOnly} actions={actions} />,
-    },
-    ...(props.organisation?.facts !== undefined ? [{
-      id: 'units', heading: t('plan.units'), group: t('plan.groupMoves'), count: unitCount, folded: !isOpen('units'),
-      children: <>{props.organisation.facts}{props.organisation.main}</>,
-    }] : []),
-    {
-      id: 'milestones', heading: t('roadmap.milestones'), group: t('plan.groupMoves'), count: plan.milestones.length,
-      aside: !readOnly && plan.milestones.length === 0
-        ? moreFor('milestone', t('plan.milestoneName'), 'plan.milestone')
-        : !readOnly && <Button size="small" variant="quiet" onClick={() => setAdding('milestone')}>+ {t('plan.milestoneName')}</Button>,
-      children: (
-        <MilestoneRows
-          plan={plan} readOnly={readOnly} set={set} picked={milestone} onPicked={setMilestone}
-          adding={adding === 'milestone'} onAdding={(on) => setAdding(on ? 'milestone' : undefined)}
-          {...(lookOn ? { onLook: lookOn } : {})}
-        />
-      ),
-    },
-    {
-      id: 'restsOn', heading: t('roadmap.restsOn'), group: t('plan.groupMoves'), count: plan.decisions.length,
-      aside: decisions.some((adr) => !plan.decisions.includes(adr.id)) ? moreFor('decision', t('plan.decision'), 'plan.addDecision') : undefined,
-      children: (
-        <RestsOnRows
-          plan={plan} decisions={decisions} decidedAbove={decidedAbove} readOnly={readOnly} set={set} onOpen={actions.onOpenDecision}
-          adding={adding === 'decision'} onAdding={(on) => setAdding(on ? 'decision' : undefined)}
-        />
-      ),
-    },
-    {
-      id: 'document', heading: t('plan.document'), group: t('plan.document'),
-      aside: !readOnly ? <Button size="small" onClick={() => setWriting(true)} data-guide="plan.editText">{t('plan.editText')}</Button> : undefined,
-      within: body.map((entry) => ({
-        id: entry.id, label: entry.text,
-        onPress: () => {
-          const found = [...document.querySelectorAll<HTMLElement>('[data-document] [role="heading"]')].find((one) => one.textContent?.trim() === entry.text)
-          found?.scrollIntoView?.({ block: 'start' })
-        },
-      })),
-      children: <PlanBody plan={plan} model={model} onOpenElement={actions.onOpenElement} renderMarkdown={props.renderMarkdown} />,
-    },
-    {
-      id: 'boards', heading: t('plan.boards'), group: t('plan.groupAround'), count: boards.length,
-      children: boards.length === 0 ? <p className="plan-sentence">{t('plan.noBoards')}</p> : (
-        <>
-          <PropertyRows readOnly>
-            {boards.map(({ diagram, draws, total }) => (
-              <PropertyRow
-                key={diagram.id} label={draws === total ? t('plan.boardDrawsAll', { count: total }) : t('plan.boardDraws', { count: draws, total })} value={diagram.name}
-                aside={openBoard && (
-                  <span className="plan-boardrow">
-                    {isDay(diagram.asOf) && t('plan.boardFixed')}
-                    <Button size="small" onClick={() => openBoard(plan.id, diagram.id, isDay(diagram.asOf) ? undefined : showDay)}>
-                      {!isDay(diagram.asOf) && showDay ? t('plan.openOn', { day: formatDay(showDay, language) }) : t('plan.openBoard')}
-                    </Button>
-                    {!readOnly && actions.onDuplicateBoard && isDay(plan.to) && (
-                      <Button size="small" variant="quiet" onClick={() => actions.onDuplicateBoard?.(diagram.id, plan.to!)}>
-                        {t('plan.duplicateAsOf', { day: formatDay(plan.to, language) })}
-                      </Button>
-                    )}
-                  </span>
-                )}
-              />
-            ))}
-          </PropertyRows>
-          <p className="plan-note">{t('plan.boardsHelp')}</p>
-        </>
-      ),
-    },
-    {
-      id: 'principles', heading: t('plan.principles'), group: t('plan.groupAround'),
-      children: <CitationsSection about={{ kind: 'transition', id: plan.id }} subject={`${plan.title}\n${plan.body}`} />,
-    },
-    {
-      id: 'history', heading: t('plan.changesLog'), group: t('plan.groupAround'),
-      children: <RecordChanges about={{ kind: 'transition', id: plan.id }} first="proposed" />,
-    },
-    {
-      id: 'comments', heading: t('plan.comments'), group: t('plan.groupAround'),
-      children: <CommentThread about={{ kind: 'transition', id: plan.id }} />,
-    },
-  ]
+  const decided = [...(props.decisions ?? []), ...(props.ancestorDecisions ?? [])]
   return (
     <>
       <RecordPage
@@ -300,8 +339,9 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
         {...(readOnly ? {} : { onRename: (title: string) => set({ title }) })}
         status={(
           <PlanStatusLine
-            plan={plan} model={model} decisions={[...decisions, ...decidedAbove]} today={today} readOnly={readOnly}
-            describe={props.describe} set={set} goTo={goToWay} editing={headRow} onEditing={setHeadRow} initiative={props.initiativeToggle === true}
+            plan={plan} model={model} decisions={decided} today={today} readOnly={readOnly}
+            describe={props.describe} set={set} editing={headRow} onEditing={setHeadRow} initiative={props.initiativeToggle === true}
+            goTo={(way: GateWay) => { if (way === 'window' || way === 'owner') setHeadRow(way); else goTo(way) }}
           />
         )}
         actions={(
@@ -309,6 +349,7 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
             {!readOnly && <Button size="small" onClick={() => setMoving(true)} data-guide="plan.move">{t('roadmap.shift')}</Button>}
             {props.onCopyLink && <Button size="small" onClick={props.onCopyLink} data-testid="plan-copy-link">{t('common.copyLink')}</Button>}
             {more.length > 0 && <MoreMenu items={more} label={t('plan.page')} />}
+            <PageClose onClose={props.onClose} />
           </>
         )}
         band={(
@@ -322,7 +363,7 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
         )}
         {...(section !== 'changes' ? { section } : {})}
         onSection={goTo}
-        sections={sections}
+        sections={[...movesSections(on), documentSection(on), ...aroundSections(on)]}
       />
       {writing && <WritePlan plan={plan} model={model} chrome={props.windowChrome ?? NO_WINDOW_CHROME} {...writeProps(props)} onDone={() => setWriting(false)} onSave={(text) => set({ body: text })} />}
       {moving && <PlanMoveDialog plan={plan} model={model} onClose={() => setMoving(false)} onMove={(days) => { actions.shiftTransition(plan.id, days); setMoving(false) }} />}
@@ -377,7 +418,7 @@ function WritePlan({ plan, model, chrome, renderMarkdown, onAddImage, images, on
         variant="pane" autoFocus value={draft} onChange={setDraft} label={t('plan.source')} attachable
         {...(onAddImage ? { onAddImage } : {})} {...(images ? { images } : {})}
         template={{ label: t('md.fromTemplate'), text: planBodyTemplate(t) }}
-        renderPreview={(text) => <div className="plan-document" data-document=""><PlanText text={text} model={model} onOpenElement={() => undefined} renderMarkdown={renderMarkdown} /></div>}
+        renderPreview={(text) => <div className="plan-document plan-preview" data-document=""><PlanText text={text} model={model} onOpenElement={() => undefined} renderMarkdown={renderMarkdown} /></div>}
       />
     </FocusedWindow>
   )

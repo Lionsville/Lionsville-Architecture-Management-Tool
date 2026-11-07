@@ -94,7 +94,11 @@
 .kit-time__line[data-pinned='after'] { right: 0; }
 .kit-time__line[data-pinned='before'] { left: 1px; }
 
-.kit-time__seam { position: absolute; top: 0; bottom: 0; left: var(--kit-time-names); display: flex; z-index: 1; margin-left: -1px; }
+.kit-time__seam { position: absolute; top: 0; bottom: 0; left: var(--kit-time-names); display: flex; z-index: 1; margin-left: -3px; }
+/* The names' own edge is the line to see; the seam shows when it is reached for. */
+.kit-time__seam [role='separator'] { background-color: transparent; }
+.kit-time__seam [role='separator']:hover,
+.kit-time__seam [role='separator']:focus-visible { background-color: var(--line-strong); }
 
 .kit-time__group {
   display: grid;

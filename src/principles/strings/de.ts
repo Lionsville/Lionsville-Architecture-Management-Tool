@@ -114,7 +114,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'principles.predates': 'Zitiert, bevor das Prinzip geschärft wurde',
   'principles.uncite': 'Dieses Zitat entfernen',
   'principles.mayApply': 'Könnte gelten',
-  'principles.whyWords': 'teilt: {words}',
   'principles.whySubject': 'von anderen Einträgen zum selben Gegenstand zitiert',
   'principles.citeTitle': 'Ein Prinzip zitieren',
   'principles.principleField': 'Prinzip',

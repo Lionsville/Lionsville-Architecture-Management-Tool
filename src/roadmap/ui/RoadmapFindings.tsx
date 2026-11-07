@@ -19,6 +19,7 @@ import { useMemo } from 'react'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
+import './Roadmap.css'
 import { CHECK_LIST_WORDS, DATE_CHECK, groupByCheck } from '../../model/checkCatalogue'
 import type { CheckAction } from '../../model/checkCatalogue'
 import { CHECK_MARK_WORDS, checkMarkId, isMarkable, splitMarked } from '../../model/checkMarks'
@@ -78,9 +79,7 @@ export function RoadmapFindings({ problems, marks, relations, readOnly, actions,
   if (!saysNone && problems.length === 0) return null
   return (
     <Box sx={{ mt: 3, mx: 2, mb: 2, maxWidth: 760 }} data-guide="roadmap.findings">
-      <Typography sx={{ fontSize: 11, fontWeight: 700, color: 'text.secondary', mb: 0.5 }}>
-        {t('check.title')}
-      </Typography>
+      <h2 className="roadmap-findingsTitle">{t('check.title')}</h2>
       <FindingsList
         groups={groups} words={CHECK_LIST_WORDS} sentence={(problem) => findingWords(problem, t, language)} keyOf={(problem) => `${problem.kind}-${problem.id}`}
         actions={doing} attributesOf={(problem) => ({ 'data-testid': `finding-${problem.kind}-${problem.id}` })} more={more}

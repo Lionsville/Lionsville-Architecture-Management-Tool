@@ -160,80 +160,7 @@ export function usePlans(deps: {
     takeBackMark(id) { session.dispatch({ type: 'checkMark.remove', id }) },
   }), [session, makeId, s, navigate, leaveFor, look])
 
-  /**
-   * What a plan's page may do (ADR-0010). The dates on an element the plan
-   * introduces or retires are written to the element, not to the plan — the
-   * page is where they are set together, the element is where they live.
-   */
-  const planActions = useMemo<PlanActions>(() => ({
-    updateTransition(id, patch) {
-      session.dispatch({ type: 'transition.update', id, patch, coalesce: `plan:${id}` })
-    },
-    removeTransition(id) {
-      session.dispatch({ type: 'transition.remove', id })
-    },
-    // The shift moves the plan's own window and the dates on the elements it
-    // introduces and retires, in one transaction, because a plan slipping is
-    // one thing that happened.
-    shiftTransition(id, days) {
-      const model = session.indexed()
-      const plan = transitionsOf(model)[id]
-      if (!plan || !days) return
-      const moved = shiftDays(plan, days)
-      const commands: Command[] = [{ type: 'transition.update', id, patch: moved }]
-      for (const one of plan.elements) {
-        if (one.role === 'changes') continue
-        const element = model.elements[one.elementId]
-        const dates = element?.lifecycleDates
-        if (!element || !dates) continue
-        const shifted = Object.fromEntries(
-          Object.entries(dates).map(([phase, day]) => [phase, isDay(day) ? addDays(day, days) : day]),
-        )
-        commands.push({ type: 'element.update', id: one.elementId, patch: { lifecycleDates: shifted } })
-      }
-      session.dispatch(transaction(commands))
-    },
-    updateElementDates(id, lifecycleDates) {
-      session.dispatch({ type: 'element.update', id, patch: { lifecycleDates }, coalesce: `dates:${id}` })
-    },
-    // A port is read off the live model at the moment it is written, so a
-    // twin drawn since — by the agent, by hand — is re-dated rather than
-    // doubled. Each is one transaction: the twin and the closed original.
-    port(planId, connectionId, toId, on) {
-      const plan = transitionsOf(session.indexed())[planId]
-      const port = plan && portsOf(session.current(), plan).find((one) => one.from.id === connectionId)
-      if (!port) return
-      session.dispatch(transaction(portCommands(port, toId, on, () => session.ids.connection())))
-    },
-    portAll(planId, toId, on) {
-      const plan = transitionsOf(session.indexed())[planId]
-      if (!plan) return
-      // Not dated by this plan, and not closed by another one either: a
-      // line some other plan already moved is that plan's, and stays.
-      const remaining = unplannedPorts(portsOf(session.current(), plan))
-      if (remaining.length === 0) return
-      session.dispatch(transaction(remaining.flatMap((port) => portCommands(port, toId, on, () => session.ids.connection()))))
-    },
-    unport(planId, connectionId) {
-      const plan = transitionsOf(session.indexed())[planId]
-      const port = plan && portsOf(session.current(), plan).find((one) => one.from.id === connectionId)
-      if (!port) return
-      session.dispatch(transaction(unportCommands(port)))
-    },
-    onOpenElement(id) { leaveFor(() => navigate.toElement(id)) },
-    onOpenDecision(adrId) { leaveFor(() => navigate.toDecision(adrId)) },
-    /** A board opened from a plan carries it: it only looks (ADR-0027), and its band goes back. */
-    onOpenBoard(id, boardId, day) {
-      leaveFor(() => {
-        navigate.toBoard(boardId)
-        if (day !== undefined) look(boardId, day)
-        setCarriedId(id)
-      })
-    },
-    ...(navigate.duplicateBoard ? {
-      onDuplicateBoard(boardId, day) { leaveFor(() => navigate.duplicateBoard?.(boardId, day)) },
-    } : {}),
-  }), [session, navigate, leaveFor, look])
+  const planActions = usePlanActions({ session, navigate, leaveFor, look, carry: setCarriedId })
 
   /**
    * Replace… answered (ADR-0010): the new element, the dates, the successor,
@@ -296,4 +223,87 @@ export function usePlans(deps: {
     roadmapActions,
     planActions,
   }
+}
+
+/**
+ * What a plan's page may do (ADR-0010). The dates on an element the plan
+ * introduces or retires are written to the element, not to the plan: the
+ * page is where they are set together, the element is where they live.
+ */
+function usePlanActions({ session, navigate, leaveFor, look, carry }: {
+  session: ModelSession
+  navigate: PlanNavigation
+  leaveFor: (go: () => void) => void
+  look: ShownDays['show']
+  carry: (planId: string) => void
+}): PlanActions {
+  return useMemo<PlanActions>(() => ({
+    updateTransition(id, patch) {
+      session.dispatch({ type: 'transition.update', id, patch, coalesce: `plan:${id}` })
+    },
+    removeTransition(id) {
+      session.dispatch({ type: 'transition.remove', id })
+    },
+    // The shift moves the plan's own window and the dates on the elements it
+    // introduces and retires, in one transaction, because a plan slipping is
+    // one thing that happened.
+    shiftTransition(id, days) {
+      const model = session.indexed()
+      const plan = transitionsOf(model)[id]
+      if (!plan || !days) return
+      const moved = shiftDays(plan, days)
+      const commands: Command[] = [{ type: 'transition.update', id, patch: moved }]
+      for (const one of plan.elements) {
+        if (one.role === 'changes') continue
+        const element = model.elements[one.elementId]
+        const dates = element?.lifecycleDates
+        if (!element || !dates) continue
+        const shifted = Object.fromEntries(
+          Object.entries(dates).map(([phase, day]) => [phase, isDay(day) ? addDays(day, days) : day]),
+        )
+        commands.push({ type: 'element.update', id: one.elementId, patch: { lifecycleDates: shifted } })
+      }
+      session.dispatch(transaction(commands))
+    },
+    updateElementDates(id, lifecycleDates) {
+      session.dispatch({ type: 'element.update', id, patch: { lifecycleDates }, coalesce: `dates:${id}` })
+    },
+    // A port is read off the live model at the moment it is written, so a
+    // twin drawn since — by the agent, by hand — is re-dated rather than
+    // doubled. Each is one transaction: the twin and the closed original.
+    port(planId, connectionId, toId, on) {
+      const plan = transitionsOf(session.indexed())[planId]
+      const port = plan && portsOf(session.current(), plan).find((one) => one.from.id === connectionId)
+      if (!port) return
+      session.dispatch(transaction(portCommands(port, toId, on, () => session.ids.connection())))
+    },
+    portAll(planId, toId, on) {
+      const plan = transitionsOf(session.indexed())[planId]
+      if (!plan) return
+      // Not dated by this plan, and not closed by another one either: a
+      // line some other plan already moved is that plan's, and stays.
+      const remaining = unplannedPorts(portsOf(session.current(), plan))
+      if (remaining.length === 0) return
+      session.dispatch(transaction(remaining.flatMap((port) => portCommands(port, toId, on, () => session.ids.connection()))))
+    },
+    unport(planId, connectionId) {
+      const plan = transitionsOf(session.indexed())[planId]
+      const port = plan && portsOf(session.current(), plan).find((one) => one.from.id === connectionId)
+      if (!port) return
+      session.dispatch(transaction(unportCommands(port)))
+    },
+    onOpenElement(id) { leaveFor(() => navigate.toElement(id)) },
+    onOpenDecision(adrId) { leaveFor(() => navigate.toDecision(adrId)) },
+    /** A board opened from a plan carries it: it only looks (ADR-0027), and its band goes back. */
+    onOpenBoard(id, boardId, day) {
+      leaveFor(() => {
+        navigate.toBoard(boardId)
+        if (day !== undefined) look(boardId, day)
+        carry(id)
+      })
+    },
+    ...(navigate.duplicateBoard ? {
+      onDuplicateBoard(boardId, day) { leaveFor(() => navigate.duplicateBoard?.(boardId, day)) },
+    } : {}),
+  }), [session, navigate, leaveFor, look, carry])
 }

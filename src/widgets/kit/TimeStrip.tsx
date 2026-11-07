@@ -68,10 +68,10 @@ export function TimeStrip({ label, today, from, to, items, pickedId, onPick, 'da
         const many = cluster.items.length > 1
         const first = cluster.items[0]
         const said = cluster.items.map((item) => `${formatDay(item.day, language)} ${item.label}`).join('; ')
-        const next = clusters[at + 2]?.left ?? 1
-        const room = (next - cluster.left) * width >= ROOM_FOR_A_WORD
-        const words = many ? t('kit.axis.together', { count: cluster.items.length }) : `${formatDay(first.day, language)} ${first.label}`
+        // A word runs towards the middle, and shares its line with every other cluster.
         const flip = cluster.left > 0.75
+        const room = (flip ? cluster.left - (clusters[at - 2]?.left ?? 0) : (clusters[at + 2]?.left ?? 1) - cluster.left) * width >= ROOM_FOR_A_WORD
+        const words = many ? t('kit.axis.together', { count: cluster.items.length }) : `${formatDay(first.day, language)} ${first.label}`
         const inside = (
           <>
             <span className="kit-strip__diamond" aria-hidden="true" />

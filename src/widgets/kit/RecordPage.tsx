@@ -27,9 +27,11 @@ export type RecordSection = {
   readonly count?: ReactNode
   /** At the end of the heading: *+ Milestone*, *Edit text*. */
   readonly aside?: ReactNode
+  /** It says its own heading (a thread, a list that names itself), so the page does not say it too. */
+  readonly headless?: boolean
   /** In the outline and not yet on the page: pressing its line is what asks for it (`onSection`). */
   readonly folded?: boolean
-  /** Lines under this one in the outline: a document's own headings. */
+  /** Lines in the outline in place of this one's own: a document's headings. */
   readonly within?: readonly RecordOutlineLine[]
 }
 
@@ -88,7 +90,8 @@ export function RecordPage({ back, code, title, onRename, status, actions, band,
   const stableIds = useStable(ids)
   const [current, setCurrent] = useCurrentSection(scroller, stableIds)
   const scrollTo = (id: string) => {
-    const heading = document.getElementById(sectionDom(id))?.querySelector<HTMLElement>('h2')
+    const section = document.getElementById(sectionDom(id))
+    const heading = section?.querySelector<HTMLElement>('h2') ?? section
     heading?.scrollIntoView?.({ block: 'start' })
     heading?.focus()
   }
@@ -138,31 +141,37 @@ export function RecordPage({ back, code, title, onRename, status, actions, band,
               {groups.map((group, at) => (
                 <div key={group.name ?? at} className="kit-record__outlineGroup">
                   {group.name && <div className="kit-record__outlineHead">{group.name}</div>}
-                  {group.lines.flatMap((one) => [
-                    <button
-                      type="button" key={one.id} className="kit-record__outlineItem"
-                      aria-current={current === one.id ? 'location' : undefined} onClick={() => goTo(one.id)}
-                    >
-                      <span>{one.heading}</span>
-                      {one.count !== undefined && <span className="kit-record__outlineCount">{one.count}</span>}
-                    </button>,
-                    ...(one.within ?? []).map((line) => (
-                      <button type="button" key={`${one.id}/${line.id}`} className="kit-record__outlineItem" data-within="" onClick={line.onPress}>
+                  {group.lines.flatMap((one) => (one.within && one.within.length > 0
+                    ? one.within.map((line) => (
+                      <button type="button" key={`${one.id}/${line.id}`} className="kit-record__outlineItem" onClick={line.onPress}>
                         <span>{line.label}</span>
                       </button>
-                    )),
-                  ])}
+                    ))
+                    : [(
+                      <button
+                        type="button" key={one.id} className="kit-record__outlineItem"
+                        aria-current={current === one.id ? 'location' : undefined} onClick={() => goTo(one.id)}
+                      >
+                        <span>{one.heading}</span>
+                        {one.count !== undefined && <span className="kit-record__outlineCount">{one.count}</span>}
+                      </button>
+                    )]))}
                 </div>
               ))}
             </nav>
           )}
           <div className="kit-record__sections">
             {sections.filter((one) => !one.folded).map((one) => (
-              <section key={one.id} id={sectionDom(one.id)} className="kit-record__section" aria-labelledby={`${sectionDom(one.id)}-h`}>
-                <div className="kit-record__sectionHead">
-                  <h2 id={`${sectionDom(one.id)}-h`} tabIndex={-1}>{one.heading}</h2>
-                  {one.aside && <span className="kit-record__sectionAside">{one.aside}</span>}
-                </div>
+              <section
+                key={one.id} id={sectionDom(one.id)} className="kit-record__section" tabIndex={one.headless ? -1 : undefined}
+                {...(one.headless ? { 'aria-label': one.heading } : { 'aria-labelledby': `${sectionDom(one.id)}-h` })}
+              >
+                {!one.headless && (
+                  <div className="kit-record__sectionHead">
+                    <h2 id={`${sectionDom(one.id)}-h`} tabIndex={-1}>{one.heading}</h2>
+                    {one.aside && <span className="kit-record__sectionAside">{one.aside}</span>}
+                  </div>
+                )}
                 {one.children}
               </section>
             ))}
