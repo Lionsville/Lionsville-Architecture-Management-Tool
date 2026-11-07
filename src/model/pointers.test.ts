@@ -40,3 +40,21 @@ describe('the records that point at a person', () => {
     expect(pointersIn({}, new Set(['pe-eva']))).toEqual([])
   })
 })
+
+describe('who recorded an observation', () => {
+  const observation = (recordedBy: NonNullable<PointedModel['observations']>[number]['recordedBy'], by?: { person: string }) => ({
+    id: 'ob-9', number: 9, title: 'Orders arrive twice', date: '2026-10-01', impact: 'minor' as const, seen: 1, body: '',
+    history: [], ...(recordedBy ? { recordedBy } : {}), ...(by ? { by } : {}),
+  })
+
+  it('points at them as a field of its own, beside who saw it', () => {
+    expect(pointersIn({ observations: [observation({ name: 'Eva', account: 'sub-1', person: 'pe-eva' }, { person: 'pe-eva' })] }, new Set(['pe-eva']))).toEqual([
+      { kind: 'observation', id: 'ob-9', label: 'OB-0009', title: 'Orders arrive twice', field: 'seenBy', person: 'pe-eva' },
+      { kind: 'observation', id: 'ob-9', label: 'OB-0009', title: 'Orders arrive twice', field: 'recordedBy', person: 'pe-eva' },
+    ])
+  })
+
+  it('points at nobody for a name or an account alone', () => {
+    expect(pointersIn({ observations: [observation({ name: 'pe-eva', account: 'pe-eva' })] }, new Set(['pe-eva']))).toEqual([])
+  })
+})

@@ -186,6 +186,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.pointedOwnerOf': 'Eigenaar van {name}',
   'people.pointedPlanOwner': '{label} {name}: eigenaar',
   'people.pointedSeenBy': '{label} {name}: gezien door',
+  'people.pointedRecordedBy': '{label} {name}: vastgelegd door',
   'people.pointedRunBy': '{label} {name}: uitgevoerd door',
   'people.pointedProposed': '{label} {name}: voorgesteld',
   'people.pointedSigner': '{label} {name}: ondertekenaar',

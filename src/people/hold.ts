@@ -103,7 +103,7 @@ export type OwnedByRule = { kind: 'application' | 'domain'; scope: string; id: s
 export type PointsAt = { pointers: readonly PointedAt[]; byRule: readonly OwnedByRule[] }
 
 const FIELD_WORDS: Record<PointerField, string> = {
-  owner: 'owner', seenBy: 'seen by', runBy: 'run by', proposed: 'proposed', signer: 'signer',
+  owner: 'owner', seenBy: 'seen by', recordedBy: 'recorded by', runBy: 'run by', proposed: 'proposed', signer: 'signer',
 }
 
 /** Whether a pointer is a signature that kept its name: the one place a name stays (ADR-0036 §8). */

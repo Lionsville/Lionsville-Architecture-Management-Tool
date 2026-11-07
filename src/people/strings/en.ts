@@ -199,6 +199,7 @@ export const EN = {
   'people.pointedOwnerOf': 'Owner of {name}',
   'people.pointedPlanOwner': '{label} {name}: owner',
   'people.pointedSeenBy': '{label} {name}: seen by',
+  'people.pointedRecordedBy': '{label} {name}: recorded by',
   'people.pointedRunBy': '{label} {name}: run by',
   'people.pointedProposed': '{label} {name}: proposed',
   'people.pointedSigner': '{label} {name}: signer',

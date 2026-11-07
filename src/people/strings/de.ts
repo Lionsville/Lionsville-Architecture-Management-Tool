@@ -186,6 +186,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.pointedOwnerOf': 'Verantwortlich für {name}',
   'people.pointedPlanOwner': '{label} {name}: verantwortlich',
   'people.pointedSeenBy': '{label} {name}: gesehen von',
+  'people.pointedRecordedBy': '{label} {name}: erfasst von',
   'people.pointedRunBy': '{label} {name}: durchgeführt von',
   'people.pointedProposed': '{label} {name}: vorgeschlagen',
   'people.pointedSigner': '{label} {name}: unterzeichnet von',

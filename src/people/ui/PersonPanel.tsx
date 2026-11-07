@@ -146,6 +146,7 @@ function usePointsAt(person: Person, register: PeopleRegisterAccess): PointsAt |
 const POINTED: Record<PointedAt['field'], StringKey> = {
   owner: 'people.pointedOwnerOf',
   seenBy: 'people.pointedSeenBy',
+  recordedBy: 'people.pointedRecordedBy',
   runBy: 'people.pointedRunBy',
   proposed: 'people.pointedProposed',
   signer: 'people.pointedSigner',

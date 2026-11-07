@@ -4,23 +4,23 @@
 /**
  * The records that point at a person (ADR-0036 §8, §10): every name field
  * that holds the person's register id — an element's owner, a plan's, who saw
- * an observation, who runs an experiment, who proposed and who signed a
- * decision — and, for a signature, the name it kept.
+ * an observation, who recorded it, who runs an experiment, who proposed and who
+ * signed a decision — and, for a signature, the name it kept.
  *
  * What the People page's *Points at them* lists and *What we hold* answers a
  * request for access with. Read by field, not by shape, because what is said
- * is which field: *owner*, *seen by*, *signed as*. Text typed into a field is
+ * is which field: *owner*, *seen by*, *recorded by*, *signed as*. Text typed into a field is
  * not here — it points at nobody; a search for the name finds it.
  */
 import type { Adr } from './adr'
 import type { Experiment, Observation } from './observation'
 import type { PersonId, PersonRef } from './person'
-import { personIdOf } from './person'
+import { personIdOf, pickedPerson } from './person'
 import type { Transition } from './transition'
 import type { DesignElement } from './types'
 
 /** Which field of a record points at the person. */
-export type PointerField = 'owner' | 'seenBy' | 'runBy' | 'proposed' | 'signer'
+export type PointerField = 'owner' | 'seenBy' | 'recordedBy' | 'runBy' | 'proposed' | 'signer'
 
 /** One record that points at a person, by the field that does. */
 export type Pointer = {
@@ -72,7 +72,9 @@ export function pointersIn(model: PointedModel, ids: ReadonlySet<PersonId>): Poi
     push({ kind: 'plan', id: plan.id, label: numbered('TR', plan.number), title: plan.title, field: 'owner' }, plan.owner)
   }
   for (const one of model.observations ?? []) {
-    push({ kind: 'observation', id: one.id, label: numbered('OB', one.number), title: one.title, field: 'seenBy' }, one.by)
+    const seen = { kind: 'observation' as const, id: one.id, label: numbered('OB', one.number), title: one.title }
+    push({ ...seen, field: 'seenBy' }, one.by)
+    if (one.recordedBy?.person) push({ ...seen, field: 'recordedBy' }, pickedPerson(one.recordedBy.person))
   }
   for (const one of model.experiments ?? []) {
     push({ kind: 'experiment', id: one.id, label: numbered('EX', one.number), title: one.title, field: 'runBy' }, one.by)

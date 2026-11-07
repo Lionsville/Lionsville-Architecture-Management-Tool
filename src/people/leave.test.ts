@@ -156,6 +156,7 @@ describe('what points at a person, as lines of what we hold', () => {
     expect(pointerLine({ scope: 'retail', kind: 'plan', id: 'tr-1', label: 'TR-0001', title: 'Replace', field: 'owner', person: 'pe-ada' }))
       .toBe('TR-0001 Replace (retail): owner')
     expect(pointerLine({ scope: '', kind: 'element', id: 'crm', title: 'CRM', field: 'owner', person: 'pe-ada' })).toBe('CRM (the organisation): owner')
+    expect(pointerLine({ scope: 'retail', kind: 'observation', id: 'ob-1', label: 'OB-0001', title: 'Seen', field: 'recordedBy', person: 'pe-ada' })).toBe('OB-0001 Seen (retail): recorded by')
     expect(pointerLine({ scope: '', kind: 'decision', id: 'ad-1', label: 'ADR-0001', title: 'One store', field: 'proposed', person: 'pe-ada', signedAs: 'Ada Verbeek' }))
       .toBe('ADR-0001 One store (the organisation), proposed as Ada Verbeek')
     expect(keptName({ signedAs: 'Ada' })).toBe(true)
