@@ -16,12 +16,14 @@ import type { ComponentPropsWithRef, ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import './Card.css'
 
-export type CardProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & {
+export type CardProps = Omit<ComponentPropsWithRef<'div'>, 'children' | 'about'> & {
   name: string
   /** The name as something to press: drawn in the name's place, the name still being what it says. */
   nameAs?: ReactNode
   /** A word over the name, such as what kind of thing it is. Said from the middle distance in. */
   over?: ReactNode
+  /** A mark before the name, such as a logo somebody chose. */
+  lead?: ReactNode
   /** What it is: said from the middle distance in. */
   sub?: ReactNode
   /** What it does: said only near. */
@@ -44,7 +46,7 @@ export type CardProps = Omit<ComponentPropsWithRef<'div'>, 'children'> & {
   nub?: ReactNode
 }
 
-export function Card({ name, nameAs, over, sub, about, body, marks, rail, selected, neighbour, dimmed, planned, agentChanged, hoverWord, nub, className, style, ...rest }: CardProps) {
+export function Card({ name, nameAs, over, lead, sub, about, body, marks, rail, selected, neighbour, dimmed, planned, agentChanged, hoverWord, nub, className, style, ...rest }: CardProps) {
   const { t } = useStrings()
   return (
     <div
@@ -57,11 +59,14 @@ export function Card({ name, nameAs, over, sub, about, body, marks, rail, select
       data-planned={planned || undefined}
       data-rail={rail ? true : undefined}
     >
-      <div className="kit-card__text">
-        {over && <div className="kit-card__over">{over}</div>}
-        <div className="kit-card__name">{nameAs ?? name}</div>
-        {sub && <div className="kit-card__sub">{sub}</div>}
-        {about && <div className="kit-card__about">{about}</div>}
+      <div className="kit-card__head">
+        {lead && <div className="kit-card__lead">{lead}</div>}
+        <div className="kit-card__text">
+          {over && <div className="kit-card__over">{over}</div>}
+          <div className="kit-card__name">{nameAs ?? name}</div>
+          {sub && <div className="kit-card__sub">{sub}</div>}
+          {about && <div className="kit-card__about">{about}</div>}
+        </div>
       </div>
       {body && <div className="kit-card__body">{body}</div>}
       {marks && <div className="kit-card__marks">{marks}</div>}

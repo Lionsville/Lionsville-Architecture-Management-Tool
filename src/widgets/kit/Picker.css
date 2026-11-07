@@ -58,3 +58,4 @@
 .kit-picker__unchoose:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .kit-picker__row[data-selected] { background: var(--selected-soft); }
 .kit-picker__note[data-hint] { border-top: 1px solid var(--line); }
+.kit-picker__foot { padding: var(--s-1) var(--s-2) var(--s-2); color: var(--ink-3); font-size: var(--t-xs); }

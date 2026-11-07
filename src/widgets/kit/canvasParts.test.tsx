@@ -15,6 +15,11 @@ afterEach(cleanup)
 const css = (file: string) => readFileSync(new URL(file, import.meta.url), 'utf8')
 
 describe('a card', () => {
+  it('leads with a mark where it is handed one', () => {
+    const { container } = render(<Card name="X" lead={<i>logo</i>} />)
+    expect(container.querySelector('.kit-card__lead')?.textContent).toBe('logo')
+  })
+
   it('says its name, what it is and what it does', () => {
     render(<Card name="Warehouse Management" sub="WMS · Application" about="Stock, slots and picking." />)
     expect(screen.getByText('Warehouse Management')).toBeTruthy()

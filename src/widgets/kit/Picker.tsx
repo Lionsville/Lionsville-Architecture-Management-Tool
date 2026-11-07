@@ -84,6 +84,10 @@ export type PickerProps = {
   autoFocus?: boolean
   /** How many rows before it asks for more typing. */
   maxShown?: number
+  /** Stands under the list, such as what a new one would be. */
+  foot?: ReactNode
+  /** Tab, where it moves that and not the focus. Shift says back. */
+  onTab?: (back: boolean) => void
   /** Escape with nothing left for the field to put away. */
   onEscape?: () => void
   /** The focus left the field: a list that stands in a row goes back to being the row. */
@@ -140,7 +144,7 @@ export function pickerRows({ options, recent, typed, didYouMean, canCreate, maxS
 
 export function Picker({
   label, options, onPick, onCreate, createLabel, recent, didYouMean, refusal, placeholder, posture = 'open',
-  autoFocus = false, maxShown = 50, onEscape, onLeave, selected, hint, inputTestId, 'data-guide': guide,
+  autoFocus = false, maxShown = 50, onEscape, onLeave, selected, hint, inputTestId, foot, onTab, 'data-guide': guide,
 }: PickerProps) {
   const { t } = useStrings()
   const base = useId()
@@ -188,6 +192,11 @@ export function Picker({
       if (!showing) { setPopped(true); return }
       const step = event.key === 'ArrowDown' ? 1 : -1
       if (pickable.length > 0) setActive((Math.min(active, pickable.length - 1) + step + pickable.length) % pickable.length)
+      return
+    }
+    if (event.key === 'Tab' && onTab) {
+      event.preventDefault()
+      onTab(event.shiftKey)
       return
     }
     if (event.key === 'Enter' && showing && activeRow !== undefined) {
@@ -269,6 +278,7 @@ export function Picker({
           {list}
         </Popper>
       )}
+      {foot && <div className="kit-picker__foot">{foot}</div>}
     </div>
   )
 }

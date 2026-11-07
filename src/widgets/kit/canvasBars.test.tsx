@@ -9,7 +9,7 @@ import { CanvasDock } from './CanvasDock'
 import { ColourMenu } from './ColourMenu'
 import { DayControl } from './DayControl'
 import { keyValues, KeyStrip, OTHER_VALUE } from './KeyStrip'
-import { ViewBar, ViewBarButton, ViewBarMenu } from './ViewBar'
+import { ViewBar, ViewBarAct, ViewBarButton, ViewBarCheck, ViewBarHeading, ViewBarMenu, ViewBarPanel } from './ViewBar'
 
 afterEach(cleanup)
 
@@ -204,6 +204,88 @@ describe('the canvas dock', () => {
     expect(out.disabled).toBe(false)
     expect(out.dataset.limit).toBeDefined()
     expect(screen.getByRole('button', { name: 'Zoom in' }).dataset.limit).toBeUndefined()
+  })
+})
+
+describe('a panel on the bar', () => {
+  it('opens from its word, an act can close it, and a setting leaves it up', () => {
+    const act = vi.fn()
+    const checked = vi.fn()
+    render(
+      <ViewBarPanel label="Arrange">
+        {(close) => (
+          <>
+            <ViewBarHeading>Spacing</ViewBarHeading>
+            <ViewBarCheck label="Pins" checked={false} onChange={checked} />
+            <ViewBarAct label="Tidy" says="Moves cards" onClick={() => { close(); act() }} />
+          </>
+        )}
+      </ViewBarPanel>,
+    )
+    expect(screen.queryByRole('dialog', { name: 'Arrange' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Arrange' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Pins' }))
+    expect(checked).toHaveBeenCalledWith(true)
+    expect(screen.getByRole('dialog', { name: 'Arrange' })).toBeDefined()
+    fireEvent.click(screen.getByRole('button', { name: /^Tidy/ }))
+    expect(act).toHaveBeenCalledTimes(1)
+  })
+
+  it('is the Cancel while a pass runs, and says so where there is nothing to cancel', () => {
+    const cancel = vi.fn()
+    const { rerender } = render(<ViewBarPanel label="Arrange" busy={{ label: 'Cancel', onPress: cancel }}>{() => null}</ViewBarPanel>)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(cancel).toHaveBeenCalledTimes(1)
+    rerender(<ViewBarPanel label="Arrange" busy={{ label: 'Working' }}>{() => null}</ViewBarPanel>)
+    expect((screen.getByRole('button', { name: 'Working' }) as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
+describe('what a canvas added to the parts', () => {
+  it('lists questions under their headings, with a long list one level down', () => {
+    const onChange = vi.fn()
+    render(
+      <ColourMenu
+        questions={[{ id: 'a', label: 'Alpha', group: 'Letters' }]}
+        more={{ label: 'One thing', questions: [{ id: 'one', label: 'Cluster' }] }}
+        value={undefined}
+        onChange={onChange}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Colour/ }))
+    expect(screen.getByText('Letters')).toBeDefined()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'One thing' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Cluster' }))
+    expect(onChange).toHaveBeenCalledWith('one')
+  })
+
+  it('says a question up that is not among those listed', () => {
+    render(<ColourMenu questions={[]} value="x" upLabel="Cluster" onChange={() => {}} />)
+    expect(screen.getByRole('button', { name: /Cluster/ })).toBeDefined()
+  })
+
+  it('titles a key, draws what it was handed for a swatch, leaves out a count it has none of, and can take it down', () => {
+    const press = vi.fn()
+    render(<KeyStrip title="Coloured by phase" values={[{ id: 'a', label: 'Live', shown: <i>1</i> }]} onClose={{ label: 'Off', press }} />)
+    expect(screen.getByRole('group', { name: 'Coloured by phase' })).toBeDefined()
+    expect(screen.getByText('Live').parentElement?.textContent).toBe('1Live')
+    fireEvent.click(screen.getByRole('button', { name: 'Off' }))
+    expect(press).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens what goes with the grid, and says what the canvas has to say', () => {
+    const snap = vi.fn()
+    render(
+      <CanvasDock
+        zoom={1} onZoomIn={vi.fn()} onZoomOut={vi.fn()} onFit={vi.fn()} onHome={vi.fn()}
+        gridItems={[{ label: 'Snap', checked: false, onSelect: snap }]}
+        note="The router declined"
+      />,
+    )
+    expect(screen.getByRole('note').textContent).toBe('The router declined')
+    fireEvent.click(screen.getByRole('button', { name: 'Grid' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Snap' }))
+    expect(snap).toHaveBeenCalledTimes(1)
   })
 })
 

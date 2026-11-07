@@ -18,7 +18,9 @@
 /* Dimmed changes the ink. Opacity on text would drop a name below what can be read. */
 .kit-card[data-dimmed] { border-color: var(--line); color: var(--ink-dim); }
 
-.kit-card__text { display: grid; gap: 1px; min-width: 0; }
+.kit-card__head { display: flex; align-items: flex-start; gap: calc(var(--s-1) / var(--canvas-zoom, 1)); min-width: 0; }
+.kit-card__lead { flex: none; display: flex; align-items: flex-start; }
+.kit-card__text { display: grid; gap: 1px; min-width: 0; flex: 1; }
 .kit-card__name {
   display: -webkit-box;
   overflow: hidden;

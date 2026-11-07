@@ -48,3 +48,17 @@ button.kit-key__value:focus-visible,
 }
 .kit-key__keep:hover { text-decoration: underline; }
 .kit-key__note { padding-inline: var(--s-1); color: var(--ink-3); font-size: var(--t-xs); }
+
+.kit-key__title { font-weight: var(--fw-strong); }
+.kit-key__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.kit-key__close:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }

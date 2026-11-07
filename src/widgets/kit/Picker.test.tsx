@@ -246,3 +246,13 @@ describe('several, in a row', () => {
     expect(onLeave).toHaveBeenCalled()
   })
 })
+
+describe('what stands under the list', () => {
+  it('draws a foot, and Tab moves it rather than the focus', () => {
+    const onTab = vi.fn()
+    renderShell(<Picker label="Add" options={[]} onPick={() => {}} onTab={onTab} foot={<span>Kind</span>} />)
+    expect(screen.getByText('Kind')).toBeDefined()
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Tab', shiftKey: true })
+    expect(onTab).toHaveBeenCalledWith(true)
+  })
+})

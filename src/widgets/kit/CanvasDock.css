@@ -19,3 +19,5 @@
 }
 .kit-dock__rule { align-self: stretch; width: 1px; margin-inline: var(--s-1); background: var(--line); }
 .kit-dock .kit-button[data-limit] { color: var(--ink-3); }
+
+.kit-dock__note { max-width: 260px; margin-inline: var(--s-1); color: var(--ink-2); font-size: var(--t-xs); line-height: var(--lh-tight); }

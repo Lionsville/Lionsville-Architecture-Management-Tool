@@ -16,6 +16,8 @@
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Button } from './Button'
+import { MenuButton } from './Menu'
+import type { MenuEntry } from './Menu'
 import { Tooltip } from './Tooltip'
 import { ZOOM_CEILING, ZOOM_FLOOR } from './zoom'
 import './CanvasDock.css'
@@ -29,8 +31,12 @@ export type CanvasDockProps = {
   onFit: () => void
   onHome: () => void
   grid?: Toggle
+  /** Grid opens what goes with it, where the canvas also snaps to it. */
+  gridItems?: readonly MenuEntry[]
   map?: Toggle
   extra?: ReactNode
+  /** What the canvas has to say for itself, such as a router that declined. */
+  note?: ReactNode
   /** In a corner of the nearest positioned ancestor, or wherever the caller's panel is. */
   corner?: boolean
   'data-testid'?: string
@@ -38,7 +44,7 @@ export type CanvasDockProps = {
 
 const isMac = () => typeof navigator !== 'undefined' && /mac/i.test(navigator.platform ?? '')
 
-export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, map, extra, corner = true, 'data-testid': testId }: CanvasDockProps) {
+export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gridItems, map, extra, note, corner = true, 'data-testid': testId }: CanvasDockProps) {
   const { t } = useStrings()
   const mod = isMac() ? '⌘' : 'Ctrl+'
   const shift = isMac() ? '⇧' : 'Shift+'
@@ -65,10 +71,12 @@ export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, map
       <Tooltip title={hint(t('kit.dock.homeHint'), `${mod}0`)} placement="top">
         <Button variant="quiet" size="small" onClick={onHome} data-testid="zoom-home">{t('kit.dock.home')}</Button>
       </Tooltip>
-      {(grid || map) && <span className="kit-dock__rule" />}
-      {grid && toggle(t('kit.dock.grid'), grid)}
+      {(grid || gridItems || map) && <span className="kit-dock__rule" />}
+      {gridItems && <MenuButton variant="quiet" size="small" label={t('kit.dock.grid')} items={gridItems} />}
+      {grid && !gridItems && toggle(t('kit.dock.grid'), grid)}
       {map && toggle(t('kit.dock.map'), map, t('kit.dock.mapHint'))}
       {extra && <><span className="kit-dock__rule" />{extra}</>}
+      {note && <span className="kit-dock__note" role="note">{note}</span>}
     </div>
   )
 }

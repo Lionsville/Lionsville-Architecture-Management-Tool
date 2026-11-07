@@ -10,9 +10,12 @@
  * Each slot takes a control already made; `ViewBarMenu` and `ViewBarButton` are
  * the two it is made of. What a reader may not change a screen does not pass in.
  */
+import { useRef, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
+import Popover from '@mui/material/Popover'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Button } from './Button'
+import { CaretIcon } from '../icons'
 import { MenuButton } from './Menu'
 import type { MenuEntry } from './Menu'
 import './ViewBar.css'
@@ -65,5 +68,76 @@ export function ViewBarButton({ on, children, ...rest }: Omit<ComponentProps<typ
     <span className="kit-viewbar__item" data-on={on || undefined}>
       <Button variant="quiet" {...rest}>{children}</Button>
     </span>
+  )
+}
+
+/**
+ * A word on the bar that opens a panel: acts with what each moves, and the settings
+ * they run under, together in one place where a menu's rows would not hold them.
+ * A press inside leaves it up, since a setting is rarely changed alone; an act closes it.
+ */
+export function ViewBarPanel({ label, on, busy, 'data-guide': guide, children }: {
+  label: string
+  on?: boolean
+  /** The word acts at once while a pass is running, and the panel stays shut: it is the Cancel. */
+  busy?: { label: string; onPress?: () => void }
+  'data-guide'?: string
+  children: (close: () => void) => ReactNode
+}) {
+  const anchor = useRef<HTMLSpanElement>(null)
+  const [open, setOpen] = useState(false)
+  return (
+    <span ref={anchor} className="kit-viewbar__item" data-on={on || undefined}>
+      <Button
+        variant="quiet"
+        aria-haspopup={busy ? undefined : 'dialog'}
+        aria-expanded={busy ? undefined : open}
+        aria-busy={busy ? true : undefined}
+        disabled={busy !== undefined && busy.onPress === undefined}
+        data-guide={guide}
+        onClick={() => { if (busy) busy.onPress?.(); else setOpen(true) }}
+      >
+        {busy ? busy.label : label}{!busy && <CaretIcon size={10} />}
+      </Button>
+      <Popover
+        open={open && !busy}
+        anchorEl={anchor.current}
+        onClose={() => setOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        slotProps={{ paper: { className: 'kit-viewbar__panel', role: 'dialog', 'aria-label': label } as never }}
+      >
+        {children(() => setOpen(false))}
+      </Popover>
+    </span>
+  )
+}
+
+/** A heading over a group of a panel's rows. */
+export function ViewBarHeading({ children }: { children: ReactNode }) {
+  return <div className="kit-viewbar__heading">{children}</div>
+}
+
+/** An act in a panel, saying at its end what it moves. */
+export function ViewBarAct({ label, says, ...rest }: { label: string; says?: ReactNode } & Omit<ComponentProps<'button'>, 'type' | 'children'>) {
+  return (
+    <button type="button" className="kit-viewbar__act" {...rest}>
+      <span>{label}</span>
+      {says && <span className="kit-viewbar__says">{says}</span>}
+    </button>
+  )
+}
+
+/** A setting that is on or off, in words. */
+export function ViewBarCheck({ label, checked, onChange, 'data-guide': guide }: {
+  label: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  'data-guide'?: string
+}) {
+  return (
+    <label className="kit-viewbar__check" data-guide={guide}>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+      <span>{label}</span>
+    </label>
   )
 }

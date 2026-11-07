@@ -44,10 +44,10 @@ and behaves is said here, once.
 | `Band.tsx` | **Band**: a state of the window in words with one way out; `BandStack` never shows two |
 | `zoom.ts` | how far a canvas zooms and what each input means; `canvasZoomProps`, the seam for the three reading distances |
 | `useCanvasZoom.ts` | one zoom behaviour for every canvas: ⌘ or Ctrl with + − 0, the wheel, a pinch, ⇧ 1, a board's = − and ⇧ 2 |
-| `ViewBar.tsx` | the View bar and its two kinds of word; the order is here and not in the screens |
-| `ColourMenu.tsx`, `KeyStrip.tsx` | the one Colour menu, and the key strip made from what is drawn |
+| `ViewBar.tsx` | the View bar and its words: one that opens a menu, one that acts, one that opens a panel of acts and settings (`ViewBarPanel`, with `ViewBarAct`, `ViewBarCheck`, `ViewBarHeading`); the order is here and not in the screens |
+| `ColourMenu.tsx`, `KeyStrip.tsx` | the one Colour menu, its questions under headings with a long list one level down, and the key strip made from what is drawn, saying what it is of, with Keep and the way to take it down |
 | `DayControl.tsx` | the one Day control |
-| `CanvasDock.tsx` | − n% + Fit 100% Grid Map, bottom left on every zoomable canvas |
+| `CanvasDock.tsx` | − n% + Fit 100% Grid Map, bottom left on every zoomable canvas; Grid may open what goes with it, and a note says what the canvas has to say |
 | `Card.tsx`, `Zone.tsx`, `Line.tsx` | Card; Zone and boundary; Line and label. Each holds its size on screen through `--canvas-zoom` |
 | `GuideDock.tsx`, `guidePlace.ts` | **Guide dock**: one card in one place, why, what to do, *Tell me more*, Back, Skip, Pause, Next; `GuideRing`, one ring on one target, with no scrim |
 | `TimeAxis.tsx`, `timeScale.ts` | the ruler, its rows, bars and milestones; the sums, with the window as plain data |

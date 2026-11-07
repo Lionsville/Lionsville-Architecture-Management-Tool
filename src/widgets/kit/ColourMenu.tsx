@@ -7,33 +7,54 @@
  * on the key strip beside what it keeps.
  */
 import { useStrings } from '../../i18n/LanguageContext'
+import type { MenuEntry } from './Menu'
 import { ViewBarMenu } from './ViewBar'
 
-export type ColourQuestion = { id: string; label: string }
+export type ColourQuestion = {
+  id: string
+  label: string
+  /** A heading the menu lists it under. */
+  group?: string
+}
 
-export function ColourMenu({ questions, value, onChange, 'data-guide': guide }: {
+/** Questions too many to list: one line that opens them. */
+export type ColourQuestionsMore = { label: string; questions: readonly ColourQuestion[] }
+
+export function ColourMenu({ questions, more, value, upLabel, onChange, 'data-guide': guide }: {
   questions: readonly ColourQuestion[]
+  more?: ColourQuestionsMore
   /** The question up, or nothing for None. */
   value: string | undefined
+  /** How the question up is called, where it is not among those listed. */
+  upLabel?: string
   onChange: (question: string | undefined) => void
   'data-guide'?: string
 }) {
   const { t } = useStrings()
-  const up = questions.find((question) => question.id === value)
+  const up = [...questions, ...(more?.questions ?? [])].find((question) => question.id === value)
+  const said = up?.label ?? (value !== undefined ? upLabel : undefined)
+  const entry = (question: ColourQuestion) => ({
+    label: question.label,
+    checked: question.id === value,
+    onSelect: () => onChange(question.id),
+  })
+  let group: string | undefined
+  const listed = questions.flatMap((question): MenuEntry[] => {
+    const heading = question.group !== undefined && question.group !== group
+    group = question.group
+    return heading ? [{ heading: question.group as string }, entry(question)] : [entry(question)]
+  })
   return (
     <ViewBarMenu
-      label={up ? t('kit.colour.on', { question: up.label }) : t('kit.colour')}
+      label={said ? t('kit.colour.on', { question: said }) : t('kit.colour')}
       menuLabel={t('kit.colour')}
-      on={up !== undefined}
+      on={said !== undefined}
       data-guide={guide}
       items={[
-        { label: t('kit.colour.none'), checked: up === undefined, onSelect: () => onChange(undefined) },
+        { label: t('kit.colour.none'), checked: value === undefined, onSelect: () => onChange(undefined) },
         { line: true },
-        ...questions.map((question) => ({
-          label: question.label,
-          checked: question.id === value,
-          onSelect: () => onChange(question.id),
-        })),
+        ...listed,
+        ...(more && more.questions.length > 0 ? [{ line: true } as const, { label: more.label, items: more.questions.map(entry) }] : []),
       ]}
     />
   )
