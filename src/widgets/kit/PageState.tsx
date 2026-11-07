@@ -66,6 +66,8 @@ export type PageStateProps = Common & (
       readonly body?: ReactNode
       /** The address of what is being waited for, said because a person may need to pass it on. */
       readonly address?: string
+      /** What a person can do about it, where it is theirs to do: then nothing is arriving, and no skeleton says so. */
+      readonly actions?: ReactNode
     }
   | {
       readonly state: 'empty'
@@ -83,6 +85,8 @@ export type PageStateProps = Common & (
       readonly where?: string
       readonly retryIn?: number
       readonly onRetry?: () => void
+      /** Beside the retry: a way to report it, say. */
+      readonly actions?: ReactNode
     }
   | {
       readonly state: 'unreadable'
@@ -146,7 +150,7 @@ export function PageState(props: PageStateProps) {
       return (
         <Card state="held" role="status" title={props.title} body={props.body} compact={compact} guide={dataGuide}>
           {props.address && <code className="kit-state__address">{props.address}</code>}
-          <div className="kit-state__skeleton" aria-hidden="true"><span /><span /></div>
+          {props.actions ? <div>{props.actions}</div> : <div className="kit-state__skeleton" aria-hidden="true"><span /><span /></div>}
         </Card>
       )
     case 'empty':
@@ -166,7 +170,12 @@ export function PageState(props: PageStateProps) {
             props.retryIn !== undefined ? t('kit.state.retryIn', { seconds: props.retryIn }) : undefined,
           ].filter(Boolean).join(' ')}
         >
-          {props.onRetry && <div><Button variant="plain" onClick={props.onRetry}>{t('kit.state.tryNow')}</Button></div>}
+          {(props.onRetry || props.actions) && (
+            <div>
+              {props.onRetry && <Button variant="plain" onClick={props.onRetry}>{t('kit.state.tryNow')}</Button>}
+              {props.actions}
+            </div>
+          )}
         </Card>
       )
     case 'unreadable':
