@@ -361,6 +361,15 @@ function technologyWrites(parts: WorkspaceParts, view: PageView) {
   }
 }
 
+/** Keep the picture where a person says; a failure is said, and goes on the trail. */
+function saveLandscapePicture(parts: WorkspaceParts, name: string, png: Uint8Array) {
+  const { files: { documents }, shell: { notify, s }, host: { diagnostics } } = parts.props
+  Promise.resolve().then(() => documents.save({ name, mediaType: 'image/png', bytes: png })).catch((cause: unknown) => {
+    diagnostics.report({ level: 'error', where: 'landscapeExport', message: 'shell.saveFileFailed', cause })
+    notify(s('shell.saveFileFailed', { message: cause instanceof Error ? cause.message : String(cause) }), 'error')
+  })
+}
+
 function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {
   const { session, ownership, readings, renderer, landscapes, pages } = parts
   const here = parts.props.project.path
@@ -385,6 +394,7 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
       {...(view.record !== undefined ? { record: view.record } : {})}
       {...(view.onDay ? { onDay: view.onDay } : {})}
       {...(view.ownerText ? { ownerText: view.ownerText } : {})}
+      onExport={(name, png) => saveLandscapePicture(parts, name, png)}
       today={parts.todayDay}
       {...(diagram.colourBy !== undefined ? { kept: diagram.colourBy } : {})}
       onKeepColour={(colour) => session.dispatch({ type: 'diagram.update', id: diagram.id, patch: { colourBy: colour } })}

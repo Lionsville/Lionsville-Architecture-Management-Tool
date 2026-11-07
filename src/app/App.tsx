@@ -22,7 +22,8 @@ import { ThemeProvider } from '@mui/material/styles'
 import { LanguageProvider } from '../i18n'
 import '../widgets/kit/fonts/fonts.css'
 import type { Command, ElementId } from '../model'
-import type { ObservationTab, Screen } from '../agent/screen'
+import type { ObservationTab, Page, Screen } from '../agent/screen'
+import { isViewPageName } from './pageLanding'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf, ShellError } from '../platform/errors'
 import { messageFor } from './messageFor'
@@ -396,9 +397,10 @@ export type InitialPage =
    * A view on its tab, by id — or, with none, the one on the scope's tab where
    * it is of that kind and else the first; a scope with none of that kind
    * lands on its home, because an open never makes a view (ADR-0019, amended).
-   * `select` is an element selected there where it is drawn there.
+   * `select` is an element selected there where it is drawn there, and `tab`
+   * the reading it opens on, where it has more than one.
    */
-  | { page: ViewPageName; id?: string; select?: ElementId }
+  | { page: ViewPageName; id?: string; select?: ElementId; tab?: string }
   /**
    * A new sheet, enterprise map or technology landscape, made the moment the
    * scope opens: the person's own *Make…* and *New board…* on a home, which is
@@ -464,6 +466,11 @@ function localToday(): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+/** The reading a view's address asks for, which the frame keeps as it keeps a page's tab. */
+function readingOf(page: InitialPage | undefined): { tab?: string; tabOf?: Page } {
+  return page && isViewPageName(page.page) && 'tab' in page && page.tab !== undefined ? { tab: page.tab, tabOf: page.page as Page } : {}
 }
 
 export function App(props: AppProps) {
@@ -770,6 +777,7 @@ function useShellBase(props: AppProps) {
     return frameStore({
       pinned: prefs.readPreferences().treePinned === true,
       ...(first?.tab !== undefined && first.page !== undefined ? { tab: first.tab, tabOf: first.page } : {}),
+      ...readingOf(boot.initialPage),
       ...frameFromAddress(props.boot),
       ...(props.boot.initialLook ? { asksLook: props.boot.initialLook } : {}),
       ...(props.boot.initialFacets ? { facets: props.boot.initialFacets } : {}),

@@ -72,6 +72,9 @@
 .tl-empty { padding: var(--s-6) var(--s-3); max-width: var(--measure-reader); margin: 0 auto; }
 
 /* Under the frame's minimum width the columns take turns rather than running off the side. */
+@media (max-width: 1199px) {
+  .tl-board[data-columns] { gap: 0 var(--s-5); }
+}
 @media (max-width: 899px) {
   .tl-board[data-columns] { grid-template-columns: 1fr; gap: var(--s-4); }
   .tl-lines { display: none; }

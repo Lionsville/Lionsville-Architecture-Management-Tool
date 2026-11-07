@@ -179,7 +179,7 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
     if (view === undefined) return { ...homeOf(scope), notice: 'shell.placeGone' }
     // A link's element, selected and marked on the view it opens (ADR-0033,
     // amended 11 October 2026): on arrival only, where the view draws it.
-    const select = near.select === undefined ? undefined : initialPageFor({ ...near, id: view })
+    const select = near.select === undefined && near.tab === undefined ? undefined : initialPageFor({ ...near, id: view })
     const facets = viewFacetsOf(near, view)
     return {
       initialProject: onView(snapshot, view), ...(select ? { initialPage: select } : {}), ...(facets ? { initialFacets: facets } : {}), ...gone,
@@ -241,7 +241,7 @@ export async function landedAt(
  */
 export function initialPageFor(to: Destination): InitialPage | undefined {
   const id = to.id !== undefined ? { id: to.id } : {}
-  if (isViewPageName(to.page)) return { page: to.page, ...id, ...(to.select !== undefined ? { select: to.select } : {}) }
+  if (isViewPageName(to.page)) return { page: to.page, ...id, ...(to.select !== undefined ? { select: to.select } : {}), ...(to.tab !== undefined ? { tab: to.tab } : {}) }
   switch (to.page) {
     case 'decisions': return { page: 'decisions', ...id }
     case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab as ObservationTab } : {}) }

@@ -43,7 +43,7 @@ import { PickerAt } from '../../widgets/kit/Picker'
 import type { PickerOption } from '../../widgets/kit/Picker'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { tokenVar } from '../../widgets/kit/tokens'
-import { ViewBar, ViewBarMenu } from '../../widgets/kit/ViewBar'
+import { ViewBar, ViewBarButton, ViewBarMenu } from '../../widgets/kit/ViewBar'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceTab } from '../../widgets/placeTab'
@@ -59,7 +59,7 @@ import './TechnologyLandscapePage.css'
 /** A change the host could not land says why; nothing is a change that landed. */
 export type LandscapeWritten = string | undefined | void | Promise<string | undefined | void>
 
-export type TechnologyElsewhere = { id: ElementId; name: string; kind: 'platform' | 'platformService'; where: string }
+export type TechnologyElsewhere = { id: ElementId; name: string; kind: 'platform' | 'platformService'; where: string; place?: boolean }
 
 export type TechnologyLandscapePageProps = {
   open: boolean
@@ -116,6 +116,8 @@ export type TechnologyLandscapePageProps = {
   /** What a lens kept with the view is, and keeping one. */
   kept?: string
   onKeepColour?(colour: LandscapeColour): void
+  /** Hand over the page as a picture, to be kept where a person says. Absent = no Export. */
+  onExport?(name: string, png: Uint8Array): void
   /** The register's word for a picked person, which this module may not read. Absent: the text as typed. */
   ownerText?(owner: PersonRef): string
 }
@@ -132,11 +134,18 @@ function useDoorFocus(focus: NodeKey | undefined, landscape: TechnologyLandscape
 }
 
 const NOTES = (t: Translate) => ({
-  application: (app: LandscapeApplication) => String(app.uses.length + app.implied.length + app.binds.length),
-  service: (service: LandscapeService) => (service.realisedBy.length === 0 && service.where === undefined
-    ? { note: `${t('landscape.noPlatform')} · ${service.consumers}`, attention: true }
-    : { note: service.where ?? String(service.consumers), attention: false }),
+  application: (app: LandscapeApplication) => [
+    app.assumed ? t('landscape.assumed') : '',
+    String(app.uses.length + app.implied.length + app.binds.length),
+  ].filter(Boolean).join(' · '),
+  service: (service: LandscapeService) => {
+    const assumed = service.assumed ? `${t('landscape.assumed')} · ` : ''
+    return service.realisedBy.length === 0 && service.where === undefined
+      ? { note: `${assumed}${t('landscape.noPlatform')} · ${service.consumers}`, attention: true }
+      : { note: `${assumed}${service.where ?? String(service.consumers)}`, attention: false }
+  },
   platform: (platform: LandscapePlatform) => [
+    platform.assumed ? t('landscape.assumed') : '',
     platform.outside ? t('landscape.outside') : '',
     platform.archetype === 'place' ? t('landscape.place') : '',
     String(platform.applications),
@@ -192,7 +201,7 @@ function useColouring(landscape: TechnologyLandscape | undefined, lens: Landscap
   const { t } = useStrings()
   const [pressed, setPressed] = useState<string | undefined>(undefined)
   useEffect(() => setPressed(undefined), [lens])
-  const owner = useCallback((ref: PersonRef) => ownerText?.(ref) ?? refText(ref), [ownerText])
+  const owner = useCallback((ref: PersonRef) => ownerText?.(ref) ?? refText(ref) ?? '', [ownerText])
   const colours = useMemo(() => (landscape && lens ? landscapeColours(landscape, lens, owner) : undefined), [landscape, lens, owner])
   const phases = lens === 'lifecycle' || lens === 'technologyLifecycle'
   const values = useMemo<KeyValue[]>(() => {
@@ -311,6 +320,9 @@ function useGestures(props: TechnologyLandscapePageProps, landscape: TechnologyL
   return { ticking, setTicking, recordUp, setRecordUp, setDragging, dropTarget, setDropTarget, nameOf, writes, appOf, press, dropWord, drop }
 }
 
+/** Most of a sheet of A3 at a good resolution: the whole page, and small enough to send to somebody. */
+const EXPORT_PIXELS = 16_000_000
+
 function useHandle(props: TechnologyLandscapePageProps, page: React.RefObject<HTMLDivElement | null>, selected: NodeKey | undefined) {
   const { onHandle } = props
   const diagramId = props.diagram?.id
@@ -324,11 +336,22 @@ function useHandle(props: TechnologyLandscapePageProps, page: React.RefObject<HT
     onHandle({ diagramId, capture, ...(selected !== undefined && !selected.startsWith('group:') ? { selectedId: idOf(selected) } : {}) })
     return () => onHandle(undefined)
   }, [onHandle, props.open, diagramId, capture, selected])
+  return capture
 }
 
-function LandscapeBar({ props, showing, landscape, groupLabel, reading, setReading }: {
+function useExport(props: TechnologyLandscapePageProps, capture: PageHandle['capture']) {
+  const { t } = useStrings()
+  const { onExport, notify } = props
+  const name = props.diagram?.name ?? t('landscape.page')
+  if (!onExport) return undefined
+  return () => {
+    capture({ maxPixels: EXPORT_PIXELS }).then((shot) => onExport(`${name}.png`, shot.png), () => notify?.(t('landscape.exportFailed')))
+  }
+}
+
+function LandscapeBar({ props, showing, landscape, groupLabel, reading, setReading, onExport }: {
   props: TechnologyLandscapePageProps; showing: ReturnType<typeof useLandscapeShowing>; landscape: TechnologyLandscape
-  groupLabel(key: string, label?: string): string; reading: string; setReading(tab: string): void
+  groupLabel(key: string, label?: string): string; reading: string; setReading(tab: string): void; onExport: (() => void) | undefined
 }) {
   const { t } = useStrings()
   const days = useMemo<DayGroup[]>(() => {
@@ -349,8 +372,15 @@ function LandscapeBar({ props, showing, landscape, groupLabel, reading, setReadi
       colour={<ColourMenu questions={LANDSCAPE_COLOURS.map((id) => ({ id, label: t(COLOUR_WORD[id]) }))} value={showing.lens} onChange={(id) => showing.setLens(id as LandscapeColour | undefined)} data-guide="landscape.colour" />}
       {...(props.onDay ? { day: <DayControl day={props.diagram?.asOf} groups={days} onChange={props.onDay} data-guide="landscape.day" /> } : {})}
       find={<span className="tl-find"><TextInput aria-label={t('landscape.filter')} placeholder={t('landscape.filter')} value={showing.query} onChange={(event) => showing.setQuery(event.target.value)} data-testid="landscape-filter" /></span>}
+      {...(onExport ? { exportAs: <ViewBarButton data-testid="landscape-export" onClick={onExport}>{t('landscape.export')}</ViewBarButton> } : {})}
     />
   )
+}
+
+/** Keeping is offered to whoever may write, and only for a lens that is not the one kept. */
+function keepOf(props: TechnologyLandscapePageProps, lens: LandscapeColour | undefined) {
+  const { onKeepColour, readOnly, kept } = props
+  return onKeepColour && !readOnly && lens && kept !== lens ? () => onKeepColour(lens) : undefined
 }
 
 function LandscapeFoot({ dropWord, lens, colouring, onKeep, chain }: {
@@ -386,9 +416,10 @@ function EmptyLandscape({ add }: { add: TechnologyLandscapePageProps['onAdd'] })
   )
 }
 
-function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onLetGo }: {
+function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onLetGo, onAddUnder }: {
   props: TechnologyLandscapePageProps; landscape: TechnologyLandscape; grouped: TechnologyLandscape; selected: NodeKey | undefined
   gestures: ReturnType<typeof useGestures>; undo: PanelUndo | undefined; onLetGo(): void
+  onAddUnder: ReaderDoors['onAddUnder']
 }) {
   const { t } = useStrings()
   const { writes, ticking, setTicking, appOf, nameOf } = gestures
@@ -397,6 +428,7 @@ function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onL
     ...platformList(landscape).filter(({ node }) => node.archetype !== 'place').map(({ node }) => ({ id: node.id, label: node.name })),
     ...(props.technologyElsewhere ?? []).map((one) => ({ id: one.id, label: one.name, detail: one.where, group: t('landscape.addElsewhere') })),
   ], [landscape, props.technologyElsewhere, t])
+  const placesElsewhere = useMemo(() => (props.technologyElsewhere ?? []).filter((one) => one.place), [props.technologyElsewhere])
   const doors: ReaderDoors = {
     onEditRecord: props.record !== undefined ? () => gestures.setRecordUp(true) : undefined,
     onOpenElsewhere: props.onOpenElsewhere,
@@ -404,6 +436,7 @@ function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onL
     hasContainers: props.hasContainers,
     onServiceReport: props.onOpenServiceReport,
     onPlatformReport: props.onOpenPlatformReport,
+    onAddUnder,
   }
   const scopes = new Set(applicationList(landscape).map((app) => app.where ?? '')).size
   const looks = worthALook(landscape, t)
@@ -422,7 +455,7 @@ function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onL
       landscape={grouped} model={props.model} selected={selected} doors={doors} undo={undo} rest={rest} nameOf={nameOf} savedIn={savedIn}
       restFoot={scopes > 0 ? t('landscape.fromScopes', { scopes: t(scopes === 1 ? 'landscape.scopesOne' : 'landscape.scopesOther', { count: scopes }) }) : undefined}
       onClose={onLetGo}
-      writes={writes ? { setUse: writes.setUse, setHost: (app, platform) => writes.setHost(app, platform, appOf(app)?.saysHosted), usable, ticking, onTicking: setTicking } : undefined}
+      writes={writes ? { setUse: writes.setUse, setHost: (app, platform) => writes.setHost(app, platform, appOf(app)?.saysHosted), usable, placesElsewhere, ticking, onTicking: setTicking } : undefined}
     />
   )
 }
@@ -470,7 +503,8 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const [adding, setAdding] = useState<Adding | undefined>(undefined)
   const gestures = useGestures(props, landscape, selected, choose, setUndo)
   const { ticking, setTicking, recordUp, setRecordUp, writes, appOf } = gestures
-  useHandle(props, page, selected)
+  const capture = useHandle(props, page, selected)
+  const exportPicture = useExport(props, capture)
 
   const { onOpenServiceReport, onOpenPlatformReport, onOpenContainers, onOpenElsewhere } = props
   const open = useCallback((key: NodeKey) => {
@@ -502,16 +536,16 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const chain = reading !== 'matrix'
   return (
     <Frame open={props.open} onClose={props.onClose} aria-label={t('landscape.page')}>
-      <div className="tl-page" ref={page}>
+      <div className="tl-page">
         <div className="tl-first">
           <h2>{t('landscape.question')}</h2>
           <span data-testid="landscape-summary">{t('landscape.summary', landscape.counts)}</span>
         </div>
-        <LandscapeBar props={props} showing={showing} landscape={landscape} groupLabel={groupLabel} reading={reading} setReading={setReading} />
+        <LandscapeBar props={props} showing={showing} landscape={landscape} groupLabel={groupLabel} reading={reading} setReading={setReading} onExport={exportPicture} />
         <div className="tl-work">
           <div className="tl-main">
             {isEmpty ? <EmptyLandscape add={add} /> : (
-              <div className="tl-scroll" data-testid="landscape-body">
+              <div className="tl-scroll" data-testid="landscape-body" ref={page}>
                 {chain ? (
                   <LandscapeChain
                     showing={showing} landscape={shown} markOf={markOf} quiet={colouring.quiet} dropTarget={gestures.dropTarget} groupLabel={groupLabel}
@@ -532,7 +566,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
             {!isEmpty && (
               <LandscapeFoot
                 dropWord={gestures.dropWord} lens={lens} colouring={colouring} chain={chain}
-                onKeep={props.onKeepColour && !readOnly && lens && kept !== lens ? () => props.onKeepColour!(lens) : undefined}
+                onKeep={keepOf(props, lens)}
               />
             )}
           </div>
@@ -542,7 +576,8 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
               <div className="tl-recordBody">{props.record}</div>
             </div>
           ) : !isEmpty && (
-            <ReaderColumn props={props} landscape={landscape} grouped={grouped} selected={selected} gestures={gestures} undo={undo} onLetGo={() => { setTicking(undefined); choose(undefined) }} />
+            <ReaderColumn props={props} landscape={landscape} grouped={grouped} selected={selected} gestures={gestures} undo={undo} onLetGo={() => { setTicking(undefined); choose(undefined) }}
+              onAddUnder={add ? (kind, parentId, at) => setAdding({ kind, parentId, at }) : undefined} />
           )}
         </div>
         {adding && <AddPicker adding={adding} onClose={() => setAdding(undefined)} add={add} onBring={props.onBring} elsewhere={props.technologyElsewhere} />}

@@ -107,7 +107,7 @@ export function LandscapeChain(props: ChainProps) {
   }, [showing.touched, showing.selected, props.quiet, props.dropTarget])
   const hides = useCallback((key: NodeKey) => showing.onlyTouched && showing.selected !== undefined && !showing.touched?.has(key), [showing.onlyTouched, showing.selected, showing.touched])
 
-  const row = (key: NodeKey, text: string, note: string | undefined, depth: number, state: string | undefined, actions?: ReactNode): ListRow => {
+  const row = (key: NodeKey, text: string, note: string | undefined, depth: number, state: string | undefined): ListRow => {
     const mark = props.markOf(key)
     return {
       id: key, text,
@@ -115,18 +115,8 @@ export function LandscapeChain(props: ChainProps) {
       ...(mark ? { mark } : {}),
       ...(depth ? { depth } : {}),
       ...(state ? { state } : {}),
-      ...(actions ? { actions } : {}),
     }
   }
-  const addUnder = (kind: 'platform' | 'platformService', id: ElementId, name: string) => (onAdd ? (
-    <IconButton
-      size="small"
-      label={t(kind === 'platform' ? 'landscape.addPlatformUnder' : 'landscape.addServiceUnder', { name })}
-      data-testid={`landscape-add-under-${id}`}
-      onClick={(event) => { const box = event.currentTarget.getBoundingClientRect(); onAdd(kind, id, { x: box.left, y: box.bottom }) }}
-    ><AddIcon /></IconButton>
-  ) : null)
-
   const applicationGroups = useMemo<ListGroup[]>(() => {
     const heads = landscape.groups.length > 1
     return landscape.groups.map((group) => ({
@@ -144,12 +134,11 @@ export function LandscapeChain(props: ChainProps) {
   const serviceRow = ({ node, depth }: Flat<LandscapeService>): ListRow => {
     const key = nodeKey.service(node.id)
     const said = props.noteOfService(node)
-    return row(key, node.name, said.note, depth, stateOf(key, [said.attention && 'attention', node.where !== undefined && node.consumers === 0 && 'ghost']),
-      node.where === undefined ? addUnder('platformService', node.id, node.name) : undefined)
+    return row(key, node.name, said.note, depth, stateOf(key, [said.attention && 'attention', node.where !== undefined && node.consumers === 0 && 'ghost']))
   }
   const platformRows = flatten(landscape.platforms).filter(({ node }) => !hides(nodeKey.platform(node.id))).map(({ node, depth }) => {
     const key = nodeKey.platform(node.id)
-    return row(key, node.name, props.noteOfPlatform(node), depth, stateOf(key, [node.outside && 'outside']), addUnder('platform', node.id, node.name))
+    return row(key, node.name, props.noteOfPlatform(node), depth, stateOf(key, [node.outside && 'outside']))
   })
 
   const onHover = (event: MouseEvent) => {
@@ -168,7 +157,7 @@ export function LandscapeChain(props: ChainProps) {
   const selectedId = showing.selected ?? null
   const press = (id: string) => props.onPress(id as NodeKey)
   const addButton = (kind: 'platform' | 'platformService', label: string, testId: string) => (onAdd ? (
-    <IconButton size="small" label={label} data-testid={testId} onClick={(event) => { const box = event.currentTarget.getBoundingClientRect(); onAdd(kind, undefined, { x: box.left, y: box.bottom }) }}><AddIcon /></IconButton>
+    <IconButton size="small" label={label} data-testid={testId} data-sheet-add onClick={(event) => { const box = event.currentTarget.getBoundingClientRect(); onAdd(kind, undefined, { x: box.left, y: box.bottom }) }}><AddIcon /></IconButton>
   ) : null)
   return (
     <div

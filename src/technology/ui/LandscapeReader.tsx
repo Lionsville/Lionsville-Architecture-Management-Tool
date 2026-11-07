@@ -30,6 +30,7 @@ export type ReaderDoors = {
   hasContainers?: ((id: ElementId) => boolean) | undefined
   onServiceReport?: ((id: ElementId) => void) | undefined
   onPlatformReport?: ((id: ElementId) => void) | undefined
+  onAddUnder?: ((kind: 'platform' | 'platformService', id: ElementId, at: { x: number; y: number }) => void) | undefined
 }
 
 export type ReaderWrites = {
@@ -37,6 +38,8 @@ export type ReaderWrites = {
   setHost(applicationId: ElementId, platformId: ElementId | undefined): void
   /** What may be picked to use, this scope's and the organisation's. */
   usable: readonly PickerOption[]
+  /** The places another scope defines, for *Runs on*; choosing one writes its stand-in. */
+  placesElsewhere: readonly { id: ElementId; name: string; where: string }[]
   /** Which ticks are up, and the way to bring them up. */
   ticking: ElementId | undefined
   onTicking(id: ElementId | undefined): void
@@ -86,7 +89,11 @@ function ApplicationBody({ app, landscape, writes, nameOf, t }: {
             data-testid="landscape-runs-on"
             value={app.saysHosted ?? ''}
             onChange={(event) => writes.setHost(app.id, event.target.value || undefined)}
-            options={[{ value: '', label: t('landscape.runsNowhere') }, ...places.map(({ node }) => ({ value: node.id, label: node.name }))]}
+            options={[
+              { value: '', label: t('landscape.runsNowhere') },
+              ...places.map(({ node }) => ({ value: node.id, label: node.name })),
+              ...writes.placesElsewhere.map((one) => ({ value: one.id, label: `${one.name} · ${one.where}` })),
+            ]}
           />
         ) : (
           <>
@@ -224,6 +231,16 @@ function shownApplication(props: Props, id: ElementId, held: boolean, t: Transla
   }
 }
 
+function addDoor(doors: ReaderDoors, kind: 'platform' | 'platformService', id: ElementId, name: string, t: Translate) {
+  const add = doors.onAddUnder
+  return add ? (
+    <Button
+      variant="plain" size="small" data-testid={`landscape-add-under-${id}`}
+      onClick={(event) => { const box = event.currentTarget.getBoundingClientRect(); add(kind, id, { x: box.left, y: box.bottom }) }}
+    >{t(kind === 'platform' ? 'landscape.addPlatformUnder' : 'landscape.addServiceUnder', { name })}</Button>
+  ) : null
+}
+
 function reportDoor(open: ((id: ElementId) => void) | undefined, id: ElementId, held: boolean, t: Translate) {
   return held && open ? <Button variant="plain" size="small" data-testid="landscape-report" onClick={() => open(id)}>{t('landscape.ifItWent')}</Button> : null
 }
@@ -236,7 +253,7 @@ function shownService(props: Props, id: ElementId, held: boolean, t: Translate):
     kind: service.shared ? t('landscape.kindServiceShared') : t('landscape.kindService'), name: service.name,
     ...(service.where ? { status: t('landscape.keptIn', { scope: service.where }) } : {}),
     body: <ServiceBody service={service} landscape={landscape} maintainers={maintainersOf(model, id, nameOf)} nameOf={nameOf} t={t} />,
-    doors: <>{reportDoor(doors.onServiceReport, id, held, t)}{recordDoor(doors, id, held, t)}</>,
+    doors: <>{reportDoor(doors.onServiceReport, id, held, t)}{recordDoor(doors, id, held, t)}{service.where === undefined && addDoor(doors, 'platformService', id, service.name, t)}</>,
   }
 }
 
@@ -247,7 +264,7 @@ function shownPlatform(props: Props, id: ElementId, held: boolean, t: Translate)
   return {
     kind: t('landscape.kindPlatform'), name: found.node.name,
     body: <PlatformBody platform={found.node} above={found.above} landscape={landscape} maintainers={maintainersOf(model, id, nameOf)} nameOf={nameOf} t={t} />,
-    doors: <>{reportDoor(doors.onPlatformReport, id, held, t)}{recordDoor(doors, id, held, t)}</>,
+    doors: <>{reportDoor(doors.onPlatformReport, id, held, t)}{recordDoor(doors, id, held, t)}{addDoor(doors, 'platform', id, found.node.name, t)}</>,
   }
 }
 
@@ -271,7 +288,7 @@ export function LandscapeReader(props: Props) {
   if (!shown) {
     return (
       <div className="tl-reader" data-testid="landscape-rest">
-        <Panel kind="" name={t('landscape.helpTitle')} {...(props.restFoot ? { help: props.restFoot } : {})} {...(props.undo ? { undo: props.undo } : {})}>
+        <Panel kind={t('landscape.page')} name={t('landscape.helpTitle')} {...(props.restFoot ? { help: props.restFoot } : {})} {...(props.undo ? { undo: props.undo } : {})}>
           {props.rest}
         </Panel>
       </div>

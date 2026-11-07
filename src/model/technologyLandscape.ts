@@ -106,6 +106,8 @@ export type LandscapeApplication = {
   lifecycle: Lifecycle
   category?: string
   owner?: PersonRef
+  /** Its record says nobody has checked it (ADR-0047). */
+  assumed?: true
 }
 
 /** How one application stands on a platform: where it runs, what it binds to, or through a service it uses. */
@@ -142,6 +144,7 @@ export type LandscapeService = {
   consumers: number
   category?: string
   owner?: PersonRef
+  assumed?: true
   realisedBy: ElementId[]
   children: LandscapeService[]
 }
@@ -163,6 +166,7 @@ export type LandscapePlatform = {
   standing: LandscapeStanding[]
   category?: string
   owner?: PersonRef
+  assumed?: true
   children: LandscapePlatform[]
 }
 
@@ -250,6 +254,7 @@ function newApplication(id: ElementId, own: DesignElement | undefined, told: Ret
     lifecycle: phase(),
     ...(category ? { category } : {}),
     ...(owner !== undefined ? { owner } : {}),
+    ...(own?.certainty === 'assumed' ? { assumed: true as const } : {}),
   }
 }
 
@@ -271,8 +276,9 @@ function readRow(
 }
 
 /** What a row may be coloured by off its own record, where the record says it. */
-function recordFacts(element: DesignElement): { category?: string; owner?: PersonRef } {
+function recordFacts(element: DesignElement): { category?: string; owner?: PersonRef; assumed?: true } {
   return {
+    ...(element.certainty === 'assumed' ? { assumed: true } : {}),
     ...(element.category ? { category: element.category } : {}),
     ...(element.owner !== undefined ? { owner: element.owner } : {}),
   }

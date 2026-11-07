@@ -115,6 +115,24 @@ describe('the three columns', () => {
   })
 })
 
+describe('what a row says beside its name', () => {
+  it('says assumed in a word where nobody has checked the record', () => {
+    const held = model()
+    open({ model: { ...held, elements: held.elements.map((one) => (one.id === 'kafka' ? { ...one, certainty: 'assumed' as const } : one)) } })
+    expect(noteOf('Event broker')).toContain('assumed')
+  })
+})
+
+describe('Export', () => {
+  it('is offered only where a picture can be kept', () => {
+    open()
+    expect(screen.queryByTestId('landscape-export')).toBeNull()
+    cleanup()
+    open({ onExport: vi.fn() })
+    expect(screen.getByTestId('landscape-export').textContent).toBe('Export…')
+  })
+})
+
 describe('choosing a row', () => {
   it('reaches every row by the keyboard', () => {
     open()
