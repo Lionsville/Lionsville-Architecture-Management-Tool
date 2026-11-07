@@ -462,6 +462,8 @@ export type SourceBand = {
 export type SourceSlotProps<Own = unknown> = SourceYourWorkProps<Own> & {
   /** This computer's own way in for an agent, where the host has one. */
   localAgent?: () => void
+  /** Through the host, so an address can be copied wherever this is running. */
+  copyText?: (text: string) => Promise<void>
 }
 
 /**

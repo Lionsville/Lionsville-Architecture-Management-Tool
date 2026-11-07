@@ -116,7 +116,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const holding = !parts.nav.project && (sourceFrame?.holding?.() ?? false)
   const Hold = sourceFrame?.Hold
   const Settle = sourceFrame?.Settle
-  const slot = { own: parts.provider.own, session: parts.provider.openScope, open: go }
+  const slot = { own: parts.provider.own, session: parts.provider.openScope, open: go, copyText: parts.props.hostControls.copyText }
   // A source with no page of its own for agents keeps the dialog: the address lands there, on the home.
   const noAgentsPage = page === 'agents' && sourceFrame?.Agents === undefined
   const openAgentDialog = parts.agentServer.bar.onOpen
@@ -259,7 +259,7 @@ function AgentsPlace({ parts, at }: { parts: ShellParts; at: ScopePath }) {
   if (!Agents) return null
   return (
     <PageDialog open onClose={() => agent.openSomewhere({ scope: at, page: 'home' })} aria-label={s('frame.agents')}>
-      <Agents own={parts.provider.own} session={parts.provider.openScope} open={agent.openSomewhere} {...(parts.props.agent ? { localAgent: bar.onOpen } : {})} />
+      <Agents own={parts.provider.own} session={parts.provider.openScope} open={agent.openSomewhere} copyText={parts.props.hostControls.copyText} {...(parts.props.agent ? { localAgent: bar.onOpen } : {})} />
     </PageDialog>
   )
 }

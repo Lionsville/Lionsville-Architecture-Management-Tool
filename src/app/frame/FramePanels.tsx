@@ -52,7 +52,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 /** What a provider's own part of the panel is handed. */
 function workProps(parts: ShellParts) {
   const { own, session, open, notify, reread, flush } = chromeProps(parts, parts.provider.openProvider)
-  return { own, session, open, notify, reread, flush }
+  return { own, session, open, notify, reread, flush, copyText: parts.props.hostControls.copyText }
 }
 
 /** What is wrong here, what could lose the work, and when it was last kept. */
