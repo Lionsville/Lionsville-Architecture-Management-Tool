@@ -2,6 +2,13 @@
 
 /* What recedes under the focus. A line only: what is written recedes by its ink. */
 .lv-board { --focus-fade: .25; }
+/*
+ * Whatever stands on a board stays in it. A page is drawn over the view in the main
+ * column (`.kit-place`, z-index 3) while the board stays mounted under it; without a
+ * stacking context of its own, the empty board's note and the connect hint, which sit
+ * outside React Flow's, were stacked against the page and drawn over it.
+ */
+.lv-board { isolation: isolate; }
 
 /* Decided before it is shown (`useBoardFrame`). */
 .lv-board[data-unframed] .react-flow__viewport { visibility: hidden; }
