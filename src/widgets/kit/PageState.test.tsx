@@ -116,13 +116,13 @@ describe('the others', () => {
 
 describe('what a person can do about a held or offline page', () => {
   it('stands in place of the skeleton, since nothing is arriving', () => {
-    const { container } = render(<PageState state="held" title="Signed out" actions={<button type="button">Sign in</button>} />)
+    const { container } = renderShell(<PageState state="held" title="Signed out" actions={<button type="button">Sign in</button>} />)
     expect(screen.getByRole('button', { name: 'Sign in' })).toBeTruthy()
     expect(container.querySelector('.kit-state__skeleton')).toBeNull()
   })
 
   it('stands beside the retry', () => {
-    render(<PageState state="offline" onRetry={() => undefined} actions={<button type="button">Report</button>} />)
+    renderShell(<PageState state="offline" onRetry={() => undefined} actions={<button type="button">Report</button>} />)
     expect(screen.getByRole('button', { name: 'Report' })).toBeTruthy()
   })
 })
