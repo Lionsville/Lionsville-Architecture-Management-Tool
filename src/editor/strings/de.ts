@@ -215,7 +215,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'overlay.noCards': 'Keine Anwendungskarten auf dieser Tafel.',
   'node.overlayBand': 'Band {index} der Legende',
   'toolbar.dayHere': 'Tage in dieser Landschaft',
-  'toolbar.dayNote': 'Aus dem heutigen Modell mit seinen Daten gezeichnet. Um zu sehen, was an einem Tag wirklich gespeichert war, öffne den Verlauf.',
+  'toolbar.dayNote': 'Aus dem heutigen Modell mit seinen Daten gezeichnet. Um zu sehen, was an einem Tag wirklich gespeichert war, öffnen Sie den Verlauf.',
   'toolbar.dayPlan': '{plan}: {milestone}',
   'toolbar.dayLive': '{name} geht live',
   'toolbar.dayRetiring': '{name} wird abgelöst',
