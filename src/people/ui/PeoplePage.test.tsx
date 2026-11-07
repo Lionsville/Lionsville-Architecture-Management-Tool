@@ -407,6 +407,18 @@ describe('a person', () => {
     expect(row('pe-eva').textContent).toContain('you')
   })
 
+  it('offers This is me on nobody who has left', async () => {
+    renderShell(<Harness />)
+    pick('pe-gijs')
+    expect(await menuWords()).not.toContain('This is me')
+  })
+
+  it('still offers This is not me to a leaver who already is you', async () => {
+    renderShell(<Harness me="pe-gijs" />)
+    pick('pe-gijs')
+    expect(await menuWords()).toContain('This is not me')
+  })
+
   it('says This is you on the entry a merge kept, where This is me named the one merged into it', () => {
     renderShell(<Harness me="pe-lindt" start={[...START, { id: 'pe-lindt', pseudonym: 'GHJK', kind: 'internal', state: 'active', mergedInto: 'pe-pia' }]} />)
     pick('pe-pia')

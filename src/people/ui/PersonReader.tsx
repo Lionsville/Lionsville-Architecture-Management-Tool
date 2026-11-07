@@ -166,10 +166,9 @@ function NamedOn({ found, apart, go, s }: { found: PointsAt; apart: boolean; go:
     )),
   ]
   return (
-    <div className="people-lines" data-testid="people-points-at">
+    <div className="people-lines">
       {lines}
-      {lines.length === 0 && <span className="people-quiet">{s('people.pointsAtNothing')}</span>}
-      {lines.length > 0 && <span className="people-quiet">{s(apart ? 'people.pointsAtApartNote' : 'people.pointsAtNote')}</span>}
+      <span className="people-quiet">{s(apart ? 'people.pointsAtApartNote' : 'people.pointsAtNote')}</span>
     </div>
   )
 }
@@ -264,7 +263,13 @@ export function PersonReader({ person, register, day, go, onPerson, onForget, s 
             empty={s('people.managesNobody')}
           />
         )}
-        {found && <PropertyRow label={s('people.pointsAt')} display={<NamedOn found={found} apart={person.state === 'forgotten'} go={go} s={s} />} />}
+        {/* Nothing is said as every other row says it, in the row's own quiet words, not a smaller line of its own. */}
+        {found && (
+          <PropertyRow
+            label={s('people.pointsAt')} data-testid="people-points-at" empty={s('people.pointsAtNothing')}
+            display={found.pointers.length + found.byRule.length > 0 ? <NamedOn found={found} apart={person.state === 'forgotten'} go={go} s={s} /> : undefined}
+          />
+        )}
         <PropertyRow
           label={s('people.beforeAndLater')}
           display={others === 0 ? undefined : (

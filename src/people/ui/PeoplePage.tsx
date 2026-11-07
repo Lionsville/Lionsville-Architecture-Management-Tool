@@ -142,8 +142,10 @@ function personMenu(person: Person, register: PeopleRegisterAccess, acts: {
   const isMe = meIdIn(register.me, register.people) === person.id
   const may = (action: Parameters<typeof mayDo>[1]) => mayDo(register, action, person.id)
   const can = (on: boolean, entry: MenuEntry): MenuEntry[] => (on ? [entry] : [])
+  // Nobody who has left is newly *you*; whoever already is may still say they are not.
+  const mayBeMe = isMe || person.state === 'active'
   return [
-    ...can(named && !register.readOnly && !register.meSaid, { label: s(isMe ? 'people.notMe' : 'people.thisIsMe'), onSelect: () => acts.setMe(isMe ? undefined : person.id), 'data-guide': 'people.thisIsMe' }),
+    ...can(named && mayBeMe && !register.readOnly && !register.meSaid, { label: s(isMe ? 'people.notMe' : 'people.thisIsMe'), onSelect: () => acts.setMe(isMe ? undefined : person.id), 'data-guide': 'people.thisIsMe' }),
     ...can(acts.copyAddress !== undefined, { label: s('people.copyAddress'), onSelect: () => acts.copyAddress?.() }),
     { label: s('people.holdAsk'), onSelect: acts.hold, 'data-guide': 'people.hold' },
     { line: true },
