@@ -58,7 +58,9 @@ text below:
 * **The register is a page of `app/organisation/`**, because `projects` may
   not import React; the arithmetic is `register.ts` beside it, and
   `outside` and `partyId` ride on the index's entry so a row needs no second
-  read. It is counted on the organisation screen's fourth card.
+  read. It is counted on the organisation screen's fourth card. (4.0.0: reached
+  from the foot of the tree, More and ⌘K, one page with the technology register
+  as its tabs; ADR-0036, *As built, 4.0.0: the register as one page*.)
 * **A move re-addresses first.** A `ref` is an address, so moving a scope
   carries every ref pointing into the subtree: the other scopes, then the
   subtree at its new addresses, then the removal (`projects/readdress.ts`,

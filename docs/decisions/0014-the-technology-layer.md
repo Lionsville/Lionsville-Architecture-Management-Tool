@@ -217,7 +217,9 @@ platform is, what it realises, what it hosts with everything under it, and
 the service it belongs to — with the findings that concern it. Nothing is
 materialised, for the reason the register gives: a materialised list is a
 merge conflict every domain touches. It is a card on the organisation screen
-and a page behind it, and the agent reads it as `technology.list`.
+and a page behind it, and the agent reads it as `technology.list`. (4.0.0: the
+register's Services and Platforms tabs, its old address landing on Services;
+ADR-0036, *As built, 4.0.0: the register as one page*.)
 
 ### 8. Authoring, and the service's report
 

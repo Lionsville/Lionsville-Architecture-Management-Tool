@@ -2658,3 +2658,47 @@ units, so a pair with an element marked `outside` says why and offers a mark as
 intended or a plan.
 
 `app/units/ConwayTable.tsx` is gone, and its section above stands as what it was.
+
+## As built, 4.0.0: the register as one page, and Checks as a work list
+
+The 3.6.1 sections above say the Checks page and the lists of findings as they were
+built then; what follows is what replaced them on the screens.
+
+**The register is one page with three tabs**, Applications, Services and Platforms
+(`app/organisation/RegisterPage`), so a column means one thing: the technology
+register shared a table whose columns changed meaning by the row. Its old address,
+`#/-/technologyRegister`, lands on the Services tab, and `?tab=` names a tab for a
+link and for `app.open`. It is reached from the foot of the tree, from More and from
+⌘K, where *Technology register* is still found by its own name. A sentence beside
+the title says what a tab covers and what it disagrees about; a row is one line,
+with the kit's find, filter, group, sort and columns, each in the address (`q`,
+`f.<field>`, `group`, `sort`, `cols`) and the record picked as the path's id. A row
+carries no button: pressing it opens the preview, which says *Open on its board* and
+*Record page* in words, *Service report* or *Platform report* on the two technology
+tabs, its findings, and *See in Checks*. The Findings column counts what the Checks
+page lists about the row, so the two cannot disagree; *Kept in* is where a record is
+filed and *Owner* who answers for it, never the same word.
+
+**Checks is a work list** (`app/organisation/ChecksPage`): what was found first,
+fixes before reviews before notes, opening on the first fix; *Group* also offers
+category, which lists every check including those that found nothing, and scope. The
+notes, the checks that found nothing and those counted only where a scope is open
+each fold into one line; the last say so in words, with a way to open the scope
+where there is one, and no count. A picker beside the title says the level, the
+whole organisation or a scope and below. A check picked says why and how, and its
+findings are the kit's List, one line each naming the subject, with find and the
+groupings the check knows. A finding pressed says its sentence and offers its fix in
+the row where it is one field or one press — *Set an owner…*, *Mark it shared*,
+*Assign…*, *Declare an interaction…*, *Accept*, *End the assignment…*, *Remove the
+assignment*, *Remove the declaration* and *Link…* — each landing as a
+step in the scope that keeps the record, named in Activity, with *Put back* in the
+toast, since nothing is open on a home for ⌘Z to reach. Reviews and notes are
+marked as intended by ticking and one reason, in bulk, with the explanation in
+view; Accepted is a tab of the check, the same list, with *Take back* on the line
+pressed. A fix offers no tick, and a reader sees none.
+
+**A finding travels** (`app/frame/FindingBand`): *Open on its board* or *Open where
+it is fixed* opens the scope with the record — a line is selected as a line — and a
+band over it says the finding's sentence and how to fix it, *1 of N* with the next
+one, and *Back to Checks*, which comes back to the same check. The finding is in the
+address (`finding=`), so a reload keeps the band.
