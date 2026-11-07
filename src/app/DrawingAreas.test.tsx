@@ -94,7 +94,7 @@ describe('areas on the picture', () => {
 
   it('says a drawing with no picture is not drawn yet, and lays no areas', () => {
     renderShell(<DrawingView diagram={drawing()} scope="acme" images={undefined} readOnly s={s} />)
-    expect(screen.getByTestId('drawing-not-drawn').textContent).toContain('Not drawn yet')
+    expect(screen.getByTestId('drawing-not-drawn').textContent).toContain('Nothing drawn yet')
     expect(screen.queryByTestId('drawing-picture')).toBeNull()
     expect(screen.queryByTestId('drawing-area-2')).toBeNull()
   })

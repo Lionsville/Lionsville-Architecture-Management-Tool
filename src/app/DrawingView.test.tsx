@@ -29,7 +29,7 @@ describe('DrawingView', () => {
   it('says a drawing with no picture is not drawn yet, what one is, and offers to start', () => {
     const images = { bytesAt: () => Promise.resolve(undefined), put: vi.fn() }
     renderShell(<DrawingView diagram={drawing()} scope="acme" images={images} origin={() => 'drawing://local'} dispatch={vi.fn()} documents={files} diagnostics={trail} notify={vi.fn()} onNewView={vi.fn()} s={s} />)
-    expect(screen.getByTestId('drawing-not-drawn').textContent).toContain('Not drawn yet')
+    expect(screen.getByTestId('drawing-not-drawn').textContent).toContain('Nothing drawn yet')
     expect(screen.queryByTestId('drawing-picture')).toBeNull()
     expect(screen.getByRole('button', { name: 'Start drawing' })).toBeTruthy()
     expect(screen.getByTestId('drawing-new-board')).toBeTruthy()

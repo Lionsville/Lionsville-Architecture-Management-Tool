@@ -49,7 +49,7 @@ export const EN = {
   'doc.drawings': 'Drawings',
   'doc.viewMissing': 'This view is missing.',
   'doc.viewNoPicture': 'No picture yet.',
-  'doc.viewNotDrawn': 'Not drawn yet.',
+  'doc.viewNotDrawn': 'Nothing drawn yet.',
   'doc.openShape': 'Open {name}',
   'doc.read': 'Read',
   'doc.edit': 'Edit',

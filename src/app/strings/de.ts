@@ -113,7 +113,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.newChart': 'Organigramm',
   'shell.newConway': 'Conway-Karte',
   'shell.drawingOf': '{name} · Zeichnung',
-  'shell.drawingNotDrawn': 'Noch nicht gezeichnet',
+  'shell.drawingNotDrawn': 'Noch nichts gezeichnet',
   'shell.drawingElements': 'Elemente',
   'shell.drawingExported': '{name} gespeichert.',
   'shell.drawingPrintFailed': 'Diese Zeichnung konnte nicht gedruckt werden.',

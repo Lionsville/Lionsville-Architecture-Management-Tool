@@ -112,7 +112,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.newChart': 'Organogram',
   'shell.newConway': 'Conway-kaart',
   'shell.drawingOf': '{name} · tekening',
-  'shell.drawingNotDrawn': 'Nog niet getekend',
+  'shell.drawingNotDrawn': 'Nog niets getekend',
   'shell.drawingElements': 'Elementen',
   'shell.drawingExported': '{name} bewaard.',
   'shell.drawingPrintFailed': 'Deze tekening kon niet worden afgedrukt.',

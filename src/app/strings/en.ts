@@ -201,7 +201,7 @@ export const EN = {
   'shell.newChart': 'Organisation chart',
   'shell.newConway': 'Conway map',
   'shell.drawingOf': '{name} · drawing',
-  'shell.drawingNotDrawn': 'Not drawn yet',
+  'shell.drawingNotDrawn': 'Nothing drawn yet',
   /** The palette the editor opens with: the scope's elements. */
   'shell.drawingElements': 'Elements',
   /** A file exported from the editor, once it is where the person said. */

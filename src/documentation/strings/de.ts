@@ -48,7 +48,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'doc.drawings': 'Zeichnungen',
   'doc.viewMissing': 'Diese Ansicht fehlt.',
   'doc.viewNoPicture': 'Noch kein Bild.',
-  'doc.viewNotDrawn': 'Noch nicht gezeichnet.',
+  'doc.viewNotDrawn': 'Noch nichts gezeichnet.',
   'doc.openShape': '{name} öffnen',
   'doc.read': 'Lesen',
   'doc.edit': 'Bearbeiten',
