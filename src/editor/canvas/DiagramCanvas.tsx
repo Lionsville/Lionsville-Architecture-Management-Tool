@@ -75,7 +75,6 @@ import { ViewportMemory, type Viewport } from './viewportMemory';
 import { useBoardZoom } from './ZoomControls';
 import type { OverlayLegendProps } from './OverlayLegend';
 import { BoardChrome, BoardConnectionLine, boardAttributes, EmptyBoard, useAskAdd } from './BoardOverlays';
-import { groupIntoNewDomainGroup } from './menuActions/selection';
 import type { AddRequest } from '../AddPicker';
 import type { OverlayMark } from '../theme/overlayColors';
 import { FIT_ALL, MAX_ZOOM, MIN_ZOOM } from './fitAll';

@@ -291,7 +291,7 @@ export const EN = {
   'bar.map': 'Map of the board',
   'bar.find': 'Find',
   'bar.export': 'Export',
-  'bar.more': 'More',
+  'bar.more': 'More on this view',
   'add.label': 'Add to the board',
   'add.placeholder': 'Find what exists, or name something new',
   'add.new': 'New {kind} “{name}”',

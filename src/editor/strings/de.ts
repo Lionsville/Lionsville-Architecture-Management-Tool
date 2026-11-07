@@ -280,7 +280,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'bar.map': 'Übersichtskarte',
   'bar.find': 'Suchen',
   'bar.export': 'Exportieren',
-  'bar.more': 'Mehr',
+  'bar.more': 'Mehr zu dieser Ansicht',
   'add.label': 'Zum Board hinzufügen',
   'add.placeholder': 'Vorhandenes suchen oder Neues benennen',
   'add.new': 'Neu: {kind} „{name}“',

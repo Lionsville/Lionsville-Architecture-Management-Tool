@@ -280,7 +280,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'bar.map': 'Kaart van het bord',
   'bar.find': 'Zoeken',
   'bar.export': 'Exporteren',
-  'bar.more': 'Meer',
+  'bar.more': 'Meer over deze weergave',
   'add.label': 'Aan het bord toevoegen',
   'add.placeholder': 'Zoek wat bestaat, of geef iets nieuws een naam',
   'add.new': 'Nieuw: {kind} “{name}”',

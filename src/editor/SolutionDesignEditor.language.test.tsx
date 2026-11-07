@@ -96,7 +96,7 @@ describe('SolutionDesignEditor — language', () => {
     expect(screen.getByRole('menuitem', { name: 'Domeingroep' })).toBeDefined();
     cleanup()
     const { onLanguageChange } = renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByRole('button', { name: 'Meer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Meer over deze weergave' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Taal' }));
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Nederlands' }));
     expect(onLanguageChange).not.toHaveBeenCalled();
@@ -113,7 +113,7 @@ describe('SolutionDesignEditor — language', () => {
 
   it('translates the keyboard-shortcuts dialog', () => {
     renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByRole('button', { name: 'Meer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Meer over deze weergave' }));
     fireEvent.click(screen.getByRole('menuitem', { name: /Sneltoetsen/ }));
     expect(screen.getByRole('heading', { name: 'Sneltoetsen' })).toBeDefined();
     expect(screen.getByText('Alles selecteren')).toBeDefined();
@@ -141,7 +141,7 @@ describe('SolutionDesignEditor — language', () => {
 
   it('asks the host for the chosen language rather than switching itself', () => {
     const { onLanguageChange } = renderEditor({ language: 'nl' });
-    fireEvent.click(screen.getByRole('button', { name: 'Meer' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Meer over deze weergave' }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Taal' }));
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'English' }));
     expect(onLanguageChange).toHaveBeenCalledWith('en');
@@ -151,11 +151,11 @@ describe('SolutionDesignEditor — language', () => {
 
   it('offers no language where the host owns it, and keeps it in read-only mode', () => {
     renderEditor({ onLanguageChange: undefined });
-    fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More on this view' }));
     expect(screen.queryByRole('menuitem', { name: 'Language' })).toBeNull();
     cleanup()
     renderEditor({ readOnly: true });
-    fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    fireEvent.click(screen.getByRole('button', { name: 'More on this view' }));
     expect(screen.getByRole('menuitem', { name: 'Language' })).toBeDefined();
   });
 
