@@ -104,9 +104,11 @@ export const WEB_BUDGET: Budget = { file: 5_100_000, total: 10_820_000 }
  * 16 kB over the 16 MB before.
  *
  * **The largest file raised on 7 November 2026, on the owner's decision**, to
- * 1.7 times its 5.6 MB, with the web build's.
+ * 1.7 times its 5.6 MB, with the web build's. The whole to 19.6 MB the same
+ * day, measured: the redesign's kit, frame and pages took it to 19.514 MB, and
+ * the desktop's whole had not followed the web build's on the way.
  */
-export const DESKTOP_BUDGET: Budget = { file: 9_520_000, total: 19_000_000 }
+export const DESKTOP_BUDGET: Budget = { file: 9_520_000, total: 19_600_000 }
 
 /** What only ELK's engine says, and neither its API nor anything else here. */
 export const ELK_ENGINE_MARK = 'RecursiveGraphLayoutEngine'
