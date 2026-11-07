@@ -661,7 +661,7 @@ src/help/         The help (the manual, in the app): its own page and entry
                     registry          a host's own chapters added
                                       (`registerHelpChapters`), never one of
                                       core's ids
-                    search · markdown   the one search, and the little markdown
+                    helpSearch · markdown   the one search, and the little markdown
                                       a section's words may carry
                     ui/               the document, its nav, and the small
                                       screens drawn with the kit's parts
