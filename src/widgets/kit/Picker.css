@@ -1,0 +1,51 @@
+.kit-picker { min-width: 0; font-size: var(--t-md); line-height: var(--lh-tight); color: var(--ink); }
+.kit-picker__field {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: var(--ctl-h);
+  padding-inline: var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface);
+  color: var(--ink-3);
+}
+.kit-picker__field:focus-within { outline: var(--focus-ring-width) solid var(--field-focus); outline-offset: var(--focus-ring-offset); border-color: var(--field-focus); }
+.kit-picker[data-posture='open'] .kit-picker__field { border-color: var(--line); border-radius: var(--r-2) var(--r-2) 0 0; }
+.kit-picker__input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; }
+.kit-picker__input::placeholder { color: var(--ink-3); opacity: 1; }
+.kit-picker__input:disabled { color: var(--ink-3); }
+
+.kit-picker__results { background: var(--surface-raised); }
+.kit-picker__results:empty { display: none; }
+.kit-picker__list { max-height: 280px; overflow-y: auto; }
+.kit-picker__popup { z-index: 1500; }
+.kit-picker__popup .kit-picker__results { margin-top: 2px; border: 1px solid var(--line-strong); border-radius: var(--r-2); box-shadow: var(--shadow); font-size: var(--t-md); line-height: var(--lh-tight); color: var(--ink); }
+/* The open list hangs from the field as one box. */
+.kit-picker[data-posture='open'] .kit-picker__results { border: 1px solid var(--line); border-top: 0; border-radius: 0 0 var(--r-2) var(--r-2); }
+
+.kit-picker__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  min-height: var(--row-h);
+  padding: var(--s-1) var(--s-2);
+  border-inline-start: 2px solid transparent;
+  cursor: pointer;
+}
+.kit-picker__row:hover { background: var(--surface-2); }
+.kit-picker__row[data-active] { background: var(--selected-soft); border-inline-start-color: var(--selected-edge); }
+.kit-picker__row[data-create] { justify-content: flex-start; align-items: center; gap: var(--s-1); color: var(--accent); }
+.kit-picker__row[data-refused] { color: var(--ink-3); cursor: not-allowed; }
+.kit-picker__name { min-width: 0; overflow-wrap: anywhere; }
+.kit-picker__detail { flex: 0 1 auto; min-width: 0; color: var(--ink-2); font-size: var(--t-sm); text-align: end; }
+.kit-picker__heading { padding: var(--s-1) var(--s-2) 2px; color: var(--ink-3); font-size: var(--t-sm); }
+.kit-picker__note { margin: 0; padding: var(--s-1) var(--s-2); color: var(--ink-3); font-size: var(--t-sm); }
+
+.MuiPaper-root.kit-picker__over { width: 340px; max-width: calc(100vw - var(--s-5)); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); }
+.kit-picker__over .kit-picker__field,
+.kit-picker__over .kit-picker__results { border-inline: 0; border-radius: 0; }
+.kit-picker__over .kit-picker__field { border-top: 0; }
+.kit-picker__over .kit-picker__field:focus-within { outline: none; border-color: var(--line); }
+.kit-picker__over .kit-picker__results { border-bottom: 0; }

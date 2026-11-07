@@ -35,6 +35,7 @@ import { EN as people } from '../people/strings/en'
 import { EN as comments } from '../comments/strings/en'
 import { EN as principles } from '../principles/strings/en'
 import { EN as blocks } from '../blocks/strings/en'
+import { EN as widgets } from '../widgets/strings/en'
 
 export const EN = {
   ...adapters,
@@ -57,4 +58,5 @@ export const EN = {
   ...comments,
   ...principles,
   ...blocks,
+  ...widgets,
 } as const

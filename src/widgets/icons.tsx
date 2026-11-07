@@ -739,6 +739,15 @@ export function CopyIcon({ size = 16 }: IconProps) {
   );
 }
 
+/** The one ⋯ on an item: rare acts behind it. */
+export function MoreIcon({ size = 16 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M3 8h.1M8 8h.1M13 8h.1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** A cross: take this off, or refuted. */
 export function CloseIcon({ size = 16 }: IconProps) {
   return (

@@ -51,6 +51,7 @@ import { EN as peopleEn } from '../people/strings/en';
 import { EN as commentsEn } from '../comments/strings/en';
 import { EN as principlesEn } from '../principles/strings/en';
 import { EN as blocksEn } from '../blocks/strings/en';
+import { EN as widgetsEn } from '../widgets/strings/en';
 import { EN as commonEn } from './strings/en';
 
 /** Every slice, by the module that owns it — the composition, spelled out once. */
@@ -58,7 +59,7 @@ const SLICES: Record<string, Record<string, string>> = {
   adapters: adaptersEn, app: appEn, common: commonEn, decisions: decisionsEn,
   documentation: documentationEn, editor: editorEn, model: modelEn, platform: platformEn,
   scopes: projectsEn, roadmap: roadmapEn, search: searchEn, business: businessEn,
-  technology: technologyEn, observations: observationsEn, providers: providersEn, people: peopleEn, comments: commentsEn, principles: principlesEn, blocks: blocksEn, operating: operatingEn,
+  technology: technologyEn, observations: observationsEn, providers: providersEn, people: peopleEn, comments: commentsEn, principles: principlesEn, blocks: blocksEn, widgets: widgetsEn, operating: operatingEn,
 };
 
 /** English is the schema, so its keys are THE keys. */

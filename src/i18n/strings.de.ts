@@ -27,6 +27,7 @@ import { DE as people } from '../people/strings/de'
 import { DE as comments } from '../comments/strings/de'
 import { DE as principles } from '../principles/strings/de'
 import { DE as blocks } from '../blocks/strings/de'
+import { DE as widgets } from '../widgets/strings/de'
 
 export const DE = {
   ...adapters,
@@ -49,4 +50,5 @@ export const DE = {
   ...comments,
   ...principles,
   ...blocks,
+  ...widgets,
 } as const

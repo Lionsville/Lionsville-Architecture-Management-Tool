@@ -1,0 +1,2 @@
+.kit-mark { flex: none; width: var(--mark-size); height: var(--mark-size); vertical-align: -1px; }
+.kit-mark[data-size='12'] { width: 12px; height: 12px; }
