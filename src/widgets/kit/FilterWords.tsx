@@ -42,6 +42,9 @@ export type FilterField = {
 
 export type FilterChoice = { readonly id: string; readonly label: string }
 
+/** A filter that is on and is not a value of a list, such as text typed in `filterExtra`: said on the line all the same. */
+export type FilterWord = { readonly id: string; readonly word: string; readonly label: string; readonly onRemove: () => void }
+
 export type FilterWordsProps = {
   readonly find: string
   readonly onFind: (find: string) => void
@@ -53,6 +56,11 @@ export type FilterWordsProps = {
   readonly onFilters?: (filters: Readonly<Record<string, readonly string[]>>) => void
   /** What else belongs in the Filter panel and is not a list of values: saved filters, say. */
   readonly filterExtra?: ReactNode
+  /** What else is on, said on the line with what `fields` says. */
+  readonly words?: readonly FilterWord[]
+  /** *Clear* lets go of those as well. */
+  readonly onClear?: () => void
+  readonly filterGuide?: string
   readonly groups?: readonly FilterChoice[]
   readonly group?: string | null
   readonly onGroup?: (group: string | null) => void
@@ -209,7 +217,7 @@ function FieldPart({ field, values, onValues }: {
 }
 
 export function FilterWords({
-  find, onFind, findLabel, noFind, fields = [], filters = {}, onFilters, filterExtra, groups, group, onGroup,
+  find, onFind, findLabel, noFind, fields = [], filters = {}, onFilters, filterExtra, words = [], onClear, filterGuide, groups, group, onGroup,
   columns, shownColumns = [], onColumns, density, onDensity, onReset, shown, actions, dataGuide,
 }: FilterWordsProps) {
   const { t } = useStrings()
@@ -222,6 +230,7 @@ export function FilterWords({
     onFilters?.(values.length ? { ...rest, [id]: values } : rest)
   }
   const label = findLabel ?? t('kit.filter.find')
+  const saidOn = on.length + words.length
   const onFindKey = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape' && find) {
       event.stopPropagation()
@@ -239,7 +248,7 @@ export function FilterWords({
           />
         )}
         {(fields.length > 0 || filterExtra) && (
-          <Pop label={t('kit.filter.filter')} active={on.length > 0} face={on.length ? `${t('kit.filter.filter')} · ${on.length}` : t('kit.filter.filter')}>
+          <Pop label={t('kit.filter.filter')} active={saidOn > 0} guide={filterGuide} face={saidOn ? `${t('kit.filter.filter')} · ${saidOn}` : t('kit.filter.filter')}>
             {fields.map((field) => (
               <FieldPart key={field.id} field={field} values={filters[field.id] ?? []} onValues={(values) => setField(field.id, values)} />
             ))}
@@ -258,7 +267,7 @@ export function FilterWords({
         )}
         {actions && <span className="kit-filter__actions">{actions}</span>}
       </div>
-      {on.length > 0 && (
+      {saidOn > 0 && (
         <div className="kit-filter__line">
           <span className="kit-filter__showing">{t('kit.filter.showing')}</span>
           {on.map(({ field, value, word }) => (
@@ -273,7 +282,15 @@ export function FilterWords({
               </button>
             </span>
           ))}
-          <button type="button" className="kit-filter__link" onClick={() => onFilters?.({})}>{t('kit.filter.clear')}</button>
+          {words.map((one) => (
+            <span className="kit-filter__word" key={one.id}>
+              {one.word}
+              <button type="button" className="kit-filter__remove" aria-label={t('kit.filter.remove', { field: one.label, value: one.word })} onClick={one.onRemove}>
+                <CloseIcon size={12} />
+              </button>
+            </span>
+          ))}
+          <button type="button" className="kit-filter__link" onClick={() => { onFilters?.({}); onClear?.() }}>{t('kit.filter.clear')}</button>
         </div>
       )}
     </div>

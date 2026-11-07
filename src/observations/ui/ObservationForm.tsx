@@ -2,30 +2,26 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The form that records an observation (ADR-0032 §6): one dialog, two
- * columns over a table.
+ * The form that records an observation (ADR-0032 §6), as a panel and not a modal:
+ * the list stays in view beside it, which is what a repeat is checked against.
  *
- * First, what it is: a problem, chosen, or a bright spot — something that
- * works, analysed the same way (ADR-0038 §6). On the left the facts — title,
- * where seen, observed by and date seen, all four required, and the impact — each with an example under it that a refusal
- * replaces with what is missing. On the right the three questions a sighting
- * answers, a field each — what was seen, the evidence, and who or what it
- * affected, the last required — which make the body under the template's
- * headings, with Edit and Preview over the whole. Under the
- * title two hints that never block: *Seen before?*, the observations of the
- * chosen scope whose titles share words with this one, each with *Seen
- * again* — a sighting on that one, and nothing new recorded — and a wording
- * hint when the title reads as a cause, a fix or blame.
+ * What it is first, then four facts: what was seen, where, by whom, and who or what
+ * it affected. The title grows as it is typed, so a person can read what they wrote;
+ * a long one is told so once, with one press to move the rest down, and nothing
+ * refuses it. Under the title two hints that never block: *Seen before?*, the
+ * observations of the chosen scope whose titles share words with this one, each with
+ * *Seen again* — a sighting on that one, and nothing new recorded — and a wording
+ * hint when the title reads as a cause, a fix or blame. The day, the impact, what
+ * was seen and the evidence wait behind *More*, with the text's Preview.
  *
- * Below, the causes: new ones written in place, and existing ones picked from
- * the chosen scope. Nothing is made until the form is recorded, and then the
- * observation, the new causes and the links are one step, which the button
- * says. A scope below may be chosen where the page offers one, and the causes
- * of the scope before are taken off the list, since a cause is linked in its
- * own scope.
+ * *I already know why* holds the causes: new ones written in place, and existing
+ * ones picked from the chosen scope. Nothing is made until the form is recorded, and
+ * then the observation, the new causes and the links are one step, which the button
+ * says. A scope below may be chosen where the page offers one, and the causes of the
+ * scope before are taken off the list, since a cause is linked in its own scope.
  *
- * The form says what it wants and the page performs it: the page owns the
- * lists, the numbering and where the step lands.
+ * The form says what it wants and the page performs it: the page owns the lists,
+ * the numbering and where the step lands.
  */
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
@@ -52,7 +48,11 @@ import { IMPACT_LABEL, TONE_TIP, TONE_WORD } from '../observationScope'
 import { ToneBar } from './ToneBar'
 import { CauseDraftFields, CausePicker, ExampleField, LinkRowsTable, LookAlikes, SectionsField, SubPanel } from './FormParts'
 import type { LinkRow } from './FormParts'
-import { FormDialog, problemsLine } from './FormDialog'
+import { problemsLine } from './FormDialog'
+import { Button as KitButton } from '../../widgets/kit/Button'
+import { Panel } from '../../widgets/kit/Panel'
+import { Dialog as KitDialog } from '../../widgets/kit/Dialog'
+import { NextStep } from '../../widgets/kit/NextStep'
 import { isBlankRef, personRefOf } from '../../model/person'
 import type { PersonRef } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
@@ -72,8 +72,10 @@ export type FormScope = {
 
 export type RecordRequest = { scope?: string; fields: ObservationFields; causes: CauseChoice[] }
 
-export type NewObservationDialogProps = {
-  open: boolean
+/** Past this a title no longer reads whole on a map's card. A hint, in the language it was written in; nothing refuses it. */
+export const TITLE_HINT_FROM = 80
+
+export type NewObservationPanelProps = {
   /** The scopes it may be made in, this one first; a select is drawn where there is more than one. */
   scopes: readonly FormScope[]
   /** `yyyy-mm-dd`. */
@@ -119,6 +121,15 @@ const SECTIONS = [
 
 const blankSections = (): ObservationSections => ({ saw: '', evidence: '', affected: '' })
 
+/** Where a long title breaks into its first sentence or clause, for *Move the rest*. */
+export function splitLongTitle(title: string): { title: string; rest: string } {
+  const text = title.trim()
+  const cut = /^(.{20,80}?)([.;:,])\s+(.+)$/su.exec(text)
+  if (cut) return { title: cut[1].trim(), rest: cut[3].trim() }
+  const space = text.lastIndexOf(' ', TITLE_HINT_FROM)
+  return space < 20 ? { title: text, rest: '' } : { title: text.slice(0, space).trim(), rest: text.slice(space + 1).trim() }
+}
+
 /** What the Record button says it will make: *Record observation with 1 new cause and 1 link*. */
 export function recordLabel(rows: readonly CauseChoice[], s: Translate): string {
   const made = rows.filter((one) => one.kind === 'new').length
@@ -132,18 +143,17 @@ export function recordLabel(rows: readonly CauseChoice[], s: Translate): string 
   return s('observation.formRecordWith', { what })
 }
 
-export function NewObservationDialog(props: NewObservationDialogProps) {
-  const { open, scopes, today, s } = props
+export function NewObservationPanel(props: NewObservationPanelProps) {
+  const { scopes, today, s } = props
   const [scopeIndex, setScopeIndex] = useState(0)
   const [fields, setFields] = useState<ObservationFields>(() => freshFields(today))
   const [sections, setSections] = useState<ObservationSections>(blankSections)
   const [shown, setShown] = useState<Partial<Record<Refused, 'missing' | 'future'>>>({})
   const [rows, setRows] = useState<Row[]>([])
   const [dropped, setDropped] = useState(false)
-  useEffect(() => {
-    if (!open) return
-    setScopeIndex(0); setFields(freshFields(today)); setSections(blankSections()); setShown({}); setRows([]); setDropped(false)
-  }, [open, today, s])
+  const [asking, setAsking] = useState(false)
+  const [more, setMore] = useState(false)
+  const [knowing, setKnowing] = useState(false)
 
   const scope = scopes[scopeIndex] ?? scopes[0]
   const alike = useMemo(
@@ -184,55 +194,76 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
       causes: rows.map(({ key: _key, ...choice }) => { void _key; return choice }),
     })
   }
+  const moveRest = () => {
+    const split = splitLongTitle(fields.title)
+    set('title', split.title)
+    setSection('saw', [split.rest, sections.saw].filter(Boolean).join('\n\n'))
+    setMore(true)
+  }
   const dirty = rows.length > 0 || !isBlankRef(fields.by)
     || [fields.title, fields.where, ...Object.values(sections)].some((one) => one.trim() !== '')
+  const cancel = () => { if (dirty) setAsking(true); else props.onCancel() }
+  const affected = SECTIONS[2]
+  const refused = problemsLine(Object.keys(shown).length, s)
 
   return (
-    <FormDialog
-      open={open} size="lg" title={s('observation.new')} intro={s('observation.formIntro')} dirty={dirty}
-      onCancel={props.onCancel} onSubmit={record} submitLabel={recordLabel(rows, s)} submitTestId="form-record" submitGuide="observationForm.record"
-      problem={problemsLine(Object.keys(shown).length, s)} problemTestId="form-problems" s={s}
-    >
-      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: 'minmax(0, 1fr) minmax(0, 1fr)' }, gap: 3 }}>
-        <Box sx={{ display: 'grid', gap: 2, alignContent: 'start' }}>
-          {scopes.length > 1 && (
-            <ExampleField
-              select label={s('observation.formScope')} value={String(scopeIndex)} onChange={(value) => changeScope(Number(value))}
-              example={s('observation.formScopeHelp')} testId="form-scope"
-            >
-              {scopes.map((one, index) => <MenuItem key={one.scope ?? ''} value={String(index)}>{one.label}</MenuItem>)}
-            </ExampleField>
-          )}
-          <ToneChoice tone={fields.tone ?? 'neutral'} onChange={(tone) => setFields((held) => ({ ...held, tone }))} s={s} />
+    <Panel kind={s('observation.formKind')} name={s('observation.new')} wide onClose={cancel}>
+      <form
+        className="chain-form"
+        aria-label={s('observation.new')}
+        onSubmit={(event) => { event.preventDefault(); record() }}
+        onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); cancel() } }}
+      >
+        {scopes.length > 1 && (
           <ExampleField
-            required autoFocus label={s('observation.titleField')} value={fields.title} onChange={(value) => set('title', value)}
-            example={exampleFor('title', s)} problem={problemText('title', shown.title, s)} testId="form-title"
-          />
-          <LookAlikes
-            testId="form-seen-before"
-            title={s('observation.formSeenBefore')}
-            action={{ label: s('observation.seenAgain'), icon: <EyeIcon size={14} /> }}
-            rows={alike.map((one) => ({
-              id: one.id, label: `${formatObservationNumber(one.number)} ${one.title}`, note: s('observation.seenTimes', { count: one.seen }),
-              tip: s('observation.formSeenAgainTip', { name: formatObservationNumber(one.number) }),
-              onUse: () => props.onSeenAgain(scope?.scope, one.id),
-            }))}
-          />
-          {hint && (
-            <Alert severity="warning" variant="outlined" data-testid="form-wording-hint" sx={{ py: 0, fontSize: 13 }}>
-              {s('observation.formWordingHint', { word: hint })}
-            </Alert>
-          )}
-          <ExampleField
-            required label={s('observation.whereField')} value={fields.where} onChange={(value) => set('where', value)}
-            example={exampleFor('where', s)} problem={problemText('where', shown.where, s)} testId="form-where"
-          />
-          <PersonRefField
-            required label={s('observation.byField')} value={fields.by} onChange={(value) => set('by', value)} names={names}
-            error={shown.by !== undefined} helperText={problemText('by', shown.by, s) ?? exampleFor('by', s)}
-            testId="form-by-field" inputTestId="form-by" s={s}
-          />
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 1.5 }}>
+            select label={s('observation.formScope')} value={String(scopeIndex)} onChange={(value) => changeScope(Number(value))}
+            example={s('observation.formScopeHelp')} testId="form-scope"
+          >
+            {scopes.map((one, index) => <MenuItem key={one.scope ?? ''} value={String(index)}>{one.label}</MenuItem>)}
+          </ExampleField>
+        )}
+        <ToneChoice tone={fields.tone ?? 'neutral'} onChange={(tone) => setFields((held) => ({ ...held, tone }))} s={s} />
+        <ExampleField
+          required autoFocus multiline label={s('observation.titleField')} value={fields.title} onChange={(value) => set('title', value)}
+          example={exampleFor('title', s)} problem={problemText('title', shown.title, s)} testId="form-title"
+        />
+        {fields.title.trim().length > TITLE_HINT_FROM && (
+          <div className="chain-form__hint" data-testid="form-title-long">
+            <span>{s('observation.formTitleLong', { count: fields.title.trim().length })}</span>
+            <KitButton variant="quiet" size="small" onClick={moveRest} data-testid="form-title-move">{s('observation.formTitleMove')}</KitButton>
+          </div>
+        )}
+        <LookAlikes
+          testId="form-seen-before"
+          title={s('observation.formSeenBefore')}
+          action={{ label: s('observation.seenAgain'), icon: <EyeIcon size={14} /> }}
+          rows={alike.map((one) => ({
+            id: one.id, label: `${formatObservationNumber(one.number)} ${one.title}`, note: s('observation.seenTimes', { count: one.seen }),
+            tip: s('observation.formSeenAgainTip', { name: formatObservationNumber(one.number) }),
+            onUse: () => props.onSeenAgain(scope?.scope, one.id),
+          }))}
+        />
+        {hint && (
+          <Alert severity="warning" variant="outlined" data-testid="form-wording-hint" sx={{ py: 0, fontSize: 13 }}>
+            {s('observation.formWordingHint', { word: hint })}
+          </Alert>
+        )}
+        <ExampleField
+          required label={s('observation.whereField')} value={fields.where} onChange={(value) => set('where', value)}
+          example={exampleFor('where', s)} problem={problemText('where', shown.where, s)} testId="form-where"
+        />
+        <PersonRefField
+          required label={s('observation.byField')} value={fields.by} onChange={(value) => set('by', value)} names={names}
+          error={shown.by !== undefined} helperText={problemText('by', shown.by, s) ?? exampleFor('by', s)}
+          testId="form-by-field" inputTestId="form-by" s={s}
+        />
+        <ExampleField
+          required label={s(affected.label)} value={sections.affected} onChange={(value) => setSection('affected', value)}
+          example={s(affected.example)} problem={shown.affected ? s('observation.formAffectedMissing') : undefined} testId="form-section-affected"
+        />
+        <details className="chain-more" open={more || Boolean(shown.date)} onToggle={(event) => setMore(event.currentTarget.open)}>
+          <summary data-testid="form-more">{s('observation.formMore')}</summary>
+          <div className="chain-form">
             <ExampleField
               required type="date" max={today} label={s('observation.dateField')} value={fields.date} onChange={(value) => set('date', value)}
               example={exampleFor('date', s)} problem={problemText('date', shown.date, s)} testId="form-date"
@@ -243,27 +274,61 @@ export function NewObservationDialog(props: NewObservationDialogProps) {
             >
               {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
             </ExampleField>
-          </Box>
-        </Box>
-        <SectionsField
-          label={s('observation.formDescription')} body={body} renderMarkdown={props.renderMarkdown} s={s}
-          sections={SECTIONS.map((one) => ({
-            key: one.key, label: s(one.label), value: sections[one.key], onChange: (value: string) => setSection(one.key, value),
-            example: s(one.example),
-            ...(one.key === 'affected'
-              ? { required: true, ...(shown.affected ? { problem: s('observation.formAffectedMissing') } : {}) }
-              : {}),
-          }))}
-        />
-      </Box>
+            <SectionsField
+              label={s('observation.formDescription')} body={body} renderMarkdown={props.renderMarkdown} s={s}
+              sections={SECTIONS.filter((one) => one.key !== 'affected').map((one) => ({
+                key: one.key, label: s(one.label), value: sections[one.key], onChange: (value: string) => setSection(one.key, value),
+                example: s(one.example),
+              }))}
+            />
+          </div>
+        </details>
+        {scope && (
+          <details className="chain-more" open={knowing || rows.length > 0} onToggle={(event) => setKnowing(event.currentTarget.open)}>
+            <summary data-testid="form-know-why">{s('observation.formKnowWhy')}</summary>
+            <CausesSection
+              key={scopeIndex} scope={scope} rows={rows} onRows={setRows} s={s}
+              dropped={dropped} onDismissDropped={() => setDropped(false)}
+            />
+          </details>
+        )}
+        {refused && <p className="chain-form__refused" role="alert" data-testid="form-problems">{refused}</p>}
+        <div className="chain-form__foot">
+          <KitButton variant="primary" type="submit" data-testid="form-record" data-guide="observationForm.record">{recordLabel(rows, s)}</KitButton>
+          <KitButton variant="quiet" onClick={cancel}>{s('common.cancel')}</KitButton>
+          <span className="chain-form__said">{s('observation.formOneStep')}</span>
+        </div>
+      </form>
+      <KitDialog
+        open={asking} title={s('observation.formDiscardTitle')} onClose={() => setAsking(false)}
+        actions={(
+          <>
+            <KitButton variant="quiet" onClick={() => setAsking(false)}>{s('observation.formKeep')}</KitButton>
+            <KitButton variant="danger" onClick={() => { setAsking(false); props.onCancel() }}>{s('observation.formDiscard')}</KitButton>
+          </>
+        )}
+      >
+        <p>{s('observation.formDiscardBody')}</p>
+      </KitDialog>
+    </Panel>
+  )
+}
 
-      {scope && (
-        <CausesSection
-          key={scopeIndex} scope={scope} rows={rows} onRows={setRows} s={s}
-          dropped={dropped} onDismissDropped={() => setDropped(false)}
-        />
-      )}
-    </FormDialog>
+/** After recording, the panel asks once and takes no for an answer: *Not now* leaves it on the waiting list, where it is found again. */
+export function RecordedPanel({ label, title, bright, onAsk, onDone, s }: {
+  label: string; title: string; bright: boolean; onAsk: () => void; onDone: () => void; s: Translate
+}) {
+  return (
+    <Panel kind={label} name={title} wide onClose={onDone}>
+      <p className="chain-note" data-testid="form-recorded">{s('observation.formRecorded', { label })}</p>
+      <NextStep
+        question={bright ? s('observation.askWhyBright') : s('observation.askWhy')}
+        actions={[
+          { label: s('observation.actAskWhy'), primary: true, onPress: onAsk, testId: 'form-ask-why' },
+          { label: s('observation.formNotNow'), onPress: onDone, testId: 'form-not-now' },
+        ]}
+      />
+    </Panel>
   )
 }
 
@@ -339,7 +404,7 @@ function CausesSection({ scope, rows, onRows, dropped, onDismissDropped, s }: {
   // The number it is made as: after the scope's own causes and the new ones already on the list.
   const nextNumber = nextCauseNumber(scope.causes) + rows.filter((one) => one.kind === 'new').length
   return (
-    <Box component="section" aria-labelledby="new-observation-causes" sx={{ borderTop: 1, borderColor: 'divider', pt: 1.5 }}>
+    <Box component="section" aria-labelledby="new-observation-causes" sx={{ pt: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap' }}>
         <Typography id="new-observation-causes" component="h3" sx={{ fontSize: 15, fontWeight: 600 }}>{s('observation.formCauses')}</Typography>
         <Typography variant="caption" color="text.secondary" sx={{ flex: 1 }}>{s('observation.formCausesNote')}</Typography>

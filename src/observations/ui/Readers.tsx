@@ -2,34 +2,26 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The reading pane of the observations page: one observation, or one cause,
- * read first and edited on request (ADR-0021).
+ * One observation, or one cause, read (ADR-0021). What is on screen around it is
+ * the page's: the large preview over a list, the panel beside a map, or the whole
+ * record on a page of its own (`RecordViews`), and being edited it is a full window
+ * (`RecordEditor`). So these say what the record holds and nothing about where.
  *
- * The header — number, title, date, where, who, impact, seen, scope — is
- * fields, not text, drawn above the body so it cannot drift from it. The body
- * is markdown through the same renderer as documentation. The history at the
- * end is the dated ledger: recorded, seen again, absorbed, merged, archived —
- * and shared, in a record from before nothing was shared (ADR-0032). An
- * archived record reads, and offers Restore and nothing else: closed is closed
- * until somebody says otherwise.
+ * `part` says how much. The preview reads the text at full measure with the facts
+ * beside it, and *Open full record* adds what a reader who came to look does not
+ * need first: its links, history and comments.
  *
- * The actions are buttons (ADR-0032 §7, `ActionButton`): an icon, a word or
- * two, and a tooltip that says in full what each does. A record of a scope
- * below says so in a strip, and what is added to it here is made there. Make
- * root and Make cause ask first, and where the chain says otherwise the
- * reader says why, naming the records in the way.
- *
- * Editing follows the decisions reader: a local draft, committed when it has
- * been quiet for a moment, when the mode switches back to read, and when the
- * pane closes or moves to another record. The fields are the form's, with the
- * same examples, and the facts an observation needs are never blanked.
+ * The body is markdown through the same renderer as documentation. The history at
+ * the end is the dated ledger: recorded, seen again, absorbed, merged, archived,
+ * noted, and shared, in a record from before nothing was shared (ADR-0032). A
+ * record of a scope below says so in a strip, and what is added to it here is
+ * made there. Make root and Make cause ask first, and where the chain says
+ * otherwise the reader says why, naming the records in the way.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
-import MenuItem from '@mui/material/MenuItem'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
@@ -37,31 +29,23 @@ import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { fillEmptySections } from '../../documentation/documentation'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
-import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
-import { WritingPane } from '../../documentation/ui/MarkdownEditor'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import { ScopeIcon, UnlinkIcon } from '../../widgets/icons'
 import { CompactForms, Term, Value } from '../../widgets/CompactForms'
 
 export { Term, Value }
 import {
-  causeTemplate, observationTemplate,
-  causeLabel, formatCauseNumber, formatObservationNumber, isRootCause, OBSERVATION_IMPACTS, toneOf,
+  causeLabel, formatCauseNumber, formatObservationNumber, isNoted, isRootCause, toneOf,
 } from '../observation'
 import type {
-  Cause, CauseLink, CausePatch, Observation, ObservationEvent, ObservationImpact, ObservationPatch, ObservationTone, RecordedBy,
+  Cause, CauseLink, CausePatch, Observation, ObservationEvent, ObservationPatch, ObservationTone, RecordedBy,
 } from '../observation'
-import { observationProblems } from '../form'
-import type { PersonRef } from '../../model/person'
 import type { PersonNames } from '../../people/ui/names'
 import { recorderEntry, recorderShown } from '../recordedBy'
 import { NOT_READ, usePersonNames } from '../../people/ui/names'
-import { PersonRefField } from '../../people/ui/PersonRefField'
-import { EVENT_LABEL, TONE_WORD, IMPACT_COLOR, IMPACT_LABEL, STATE_COLOR, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
-import { BarActions, COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
+import { EVENT_LABEL, TONE_WORD, IMPACT_LABEL, STATE_LABEL, STRENGTH_LABEL } from '../observationScope'
+import { COMPACT, ReaderActions, ReaderNotice } from './ActionButton'
 import type { ReaderAction } from './ActionButton'
-import { ExampleField, TitleField } from './FormParts'
-import { exampleFor, problemText, ToneChoice } from './ObservationForm'
 import {
   causeActions, modeAction, observationActions, openScopeAction, restoreAction,
 } from './readerActions'
@@ -114,9 +98,6 @@ function keyOfFrom(from: CommentFrom): string {
   return nodeKey(from.id, from.scope)
 }
 
-/** How long the text must be quiet before a draft becomes a commit. */
-const COMMIT_DELAY_MS = 1200
-
 /** A name for whatever a link or an event points at, resolved by the page. */
 export type NameOf = (id: string, scope?: string) => string
 
@@ -133,11 +114,6 @@ export function ReaderRoot({ testId, children }: { testId: string; children: Rea
 
 /** A record's title: a size smaller where the reader is narrow, so it does not take four lines. */
 export const TITLE_SX = { fontWeight: 600, lineHeight: 1.2, [COMPACT]: { fontSize: '1.5rem' } } as const
-
-/** The bar over a record: what it is, then what can be done with it. */
-export const BAR_SX = {
-  display: 'grid', gap: 0.75, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper',
-} as const
 
 /**
  * The strip that says a record lives in a scope below (ADR-0032 §2): read
@@ -161,56 +137,8 @@ export function ScopeStrip({ text, action, testId }: { text: string; action?: Re
   )
 }
 
-/**
- * Whether the reader on show is being edited, held by the page rather than
- * the reader, so the page can give an edit the whole width — the picture
- * steps aside — and a right-click can open a record straight into it. A
- * reader with no page around it keeps the mode itself.
- */
-export const ReaderModeContext = createContext<{ mode: Mode; setMode: (mode: Mode) => void } | undefined>(undefined)
-
-/** The draft-and-commit cycle every reader shares. */
-export function useDraft<T extends { title: string; body: string }>(
-  stored: T, onUpdate: (patch: Partial<T>) => void, canEdit: boolean,
-) {
-  const held = useContext(ReaderModeContext)
-  const [own, setOwn] = useState<Mode>('read')
-  const mode = held?.mode ?? own
-  const setMode = held?.setMode ?? setOwn
-  const [draft, setDraft] = useState<T>(stored)
-  const latest = useRef({ draft, stored, onUpdate })
-  latest.current = { draft, stored, onUpdate }
-
-  const commit = useCallback(() => {
-    const { draft: d, stored: held, onUpdate: update } = latest.current
-    const patch: Partial<T> = {}
-    for (const key of Object.keys(d) as (keyof T)[]) if (d[key] !== held[key]) patch[key] = d[key]
-    if (Object.keys(patch).length) update(patch)
-  }, [])
-
-  useEffect(() => {
-    if (mode !== 'edit') return
-    const timer = setTimeout(commit, COMMIT_DELAY_MS)
-    return () => clearTimeout(timer)
-  }, [draft, mode, commit])
-  useEffect(() => commit, [commit])
-  // Leaving the edit commits it, whoever ended it: the toggle, the page, or
-  // the record becoming one this reader may no longer change.
-  const wasEditing = useRef(mode === 'edit')
-  useEffect(() => {
-    if (wasEditing.current && mode === 'read') commit()
-    wasEditing.current = mode === 'edit'
-  }, [mode, commit])
-  useEffect(() => { if (mode === 'read') setDraft(stored) }, [stored, mode])
-  useEffect(() => { if (!canEdit && mode === 'edit') setMode('read') }, [canEdit, mode, setMode])
-
-  const switchMode = (next: Mode | null) => {
-    if (!next || next === mode) return
-    setMode(next)
-  }
-  return { mode, draft, setDraft, commit, switchMode }
-}
-
+/** How much of a record is read: what a preview shows, or all of it. */
+export type ReaderPart = 'preview' | 'full'
 
 export function LinkList({ links, onOpen }: {
   links: readonly { key: string; label: string; note?: string; onRemove?: () => void; removeLabel?: string }[]
@@ -283,6 +211,8 @@ function movedWords(event: ObservationEvent, s: Translate, scopeLabel: ((path: s
 
 export type ObservationReaderProps = {
   observation: Observation
+  /** How much of it is read. All of it where the page does not say. */
+  part?: ReaderPart
   /** What a scope is called, for a move in its history; the path where absent. */
   scopeLabel?: (path: string) => string
   /** Present for an observation of a scope below: read here, added to there, changed there. */
@@ -301,6 +231,9 @@ export type ObservationReaderProps = {
   nameOf: NameOf
   onUpdate: (patch: ObservationPatch) => void
   onSeenAgain: () => void
+  /** Take it off the waiting list with no cause (a dialog asks why, and takes no answer), or put it back. */
+  onNote?: () => void
+  onUnnote?: () => void
   /** Close it (a dialog asks why), or bring it back. */
   onArchive: () => void
   onRestore: () => void
@@ -320,20 +253,6 @@ export type ObservationReaderProps = {
 }
 
 /**
- * A patch as the reader may hand it on: the four facts an observation needs
- * are never blanked, and the day is never after today (ADR-0032 §6, §10).
- * What was refused stays in the draft, with what is wrong under it.
- */
-function keepFacts(patch: ObservationPatch, today: string): ObservationPatch {
-  const problems = observationProblems({
-    title: patch.title ?? 'x', where: patch.where ?? 'x', by: patch.by ?? 'x', date: patch.date ?? today,
-  }, today)
-  const kept = { ...patch }
-  for (const key of Object.keys(problems) as (keyof typeof problems)[]) delete kept[key]
-  return kept
-}
-
-/**
  * What an observation's reader offers, read off the same props it is drawn
  * from: its bar, and the right-click on it, which passes how Edit is reached.
  */
@@ -348,6 +267,8 @@ export function observationBar(props: ObservationReaderProps, mode: Mode, switch
       scope: fromScope ? fromScope.label : s('observation.thisScope'), mayMerge: standing,
       onSeenAgain: props.onSeenAgain, onLink: props.onLink, onMerge: props.onMerge, onArchive: props.onArchive, onDelete: props.onDelete,
       onMove: props.onMove,
+      noted: isNoted(observation), explained: props.explainedBy.length > 0,
+      ...(props.onNote ? { onNote: props.onNote } : {}), ...(props.onUnnote ? { onUnnote: props.onUnnote } : {}),
     }),
     ...(canEdit ? [modeAction(mode, switchMode, s('observation.tipEdit'), s)] : []),
     ...(archived && !readOnly && !fromScope ? [restoreAction(s('observation.tipRestore'), props.onRestore, 'observation-restore', s)] : []),
@@ -355,40 +276,22 @@ export function observationBar(props: ObservationReaderProps, mode: Mode, switch
 }
 
 export function ObservationReader(props: ObservationReaderProps) {
-  const { observation, s, renderMarkdown, nameOf, readOnly, fromScope, mergedInto } = props
+  const { observation, s, renderMarkdown, nameOf, readOnly, fromScope, mergedInto, part = 'full' } = props
   const archived = observation.archived === true
   const archivedOn = archived ? [...observation.history].reverse().find((event) => event.kind === 'archived')?.date : undefined
+  const notedEvent = isNoted(observation) ? [...observation.history].reverse().find((event) => event.kind === 'noted') : undefined
   const canEdit = !readOnly && !fromScope && !mergedInto && !archived
-  const stored = useMemo(() => ({
-    title: observation.title, body: observation.body, where: observation.where ?? '', by: observation.by ?? '',
-    date: observation.date, impact: observation.impact, tone: toneOf(observation),
-  }), [observation])
-  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepFacts(patch, props.today)), canEdit)
   // Who saw it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
   const names = usePersonNames()
-  const text = mode === 'edit' ? draft.body : observation.body
   // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
-  const rendered = text.trim() ? renderMarkdown(fillEmptySections(text, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
+  const rendered = observation.body.trim() ? renderMarkdown(fillEmptySections(observation.body, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const label = formatObservationNumber(observation.number)
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
   const standing = !readOnly && !mergedInto && !archived
-  const actions = observationBar(props, mode, switchMode)
 
   return (
     <ReaderRoot testId="observation-reader">
-      <Box sx={BAR_SX}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
-          <Chip color={IMPACT_COLOR[observation.impact]} label={s(IMPACT_LABEL[observation.impact])} data-testid="observation-impact" />
-          <ToneChip tone={toneOf(observation)} s={s} />
-          <Chip variant="outlined" label={s('observation.seenTimes', { count: observation.seen })} data-testid="observation-seen" />
-          {archived && <Chip variant="outlined" label={s('observation.archivedMark')} data-testid="observation-archived" />}
-          <Typography variant="caption" color="text.secondary">{day(observation.date)}</Typography>
-        </Box>
-        <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
-      </Box>
-
       {fromScope && (
         <ScopeStrip
           testId="observation-from-below"
@@ -396,55 +299,48 @@ export function ObservationReader(props: ObservationReaderProps) {
           action={props.onOpenScope ? <ReaderActions actions={[openScopeAction(fromScope.label, props.onOpenScope, s)]} label={s('observation.fromScopeActions')} moreLabel={s('observation.more')} /> : undefined}
         />
       )}
-      {archived && (
-        <Typography variant="caption" color="text.secondary" data-testid="observation-archived-note" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-          {s('observation.archivedOn', { date: archivedOn ? day(archivedOn) : '' })}
-        </Typography>
+      {archived && <p className="chain-note" data-testid="observation-archived-note">{s('observation.archivedOn', { date: archivedOn ? day(archivedOn) : '' })}</p>}
+      {mergedInto && <p className="chain-note" data-testid="observation-merged"><MergedNote merged={mergedInto} s={s} day={day} /></p>}
+      {notedEvent && (
+        <p className="chain-note" data-testid="observation-noted-note">
+          {notedEvent.note ? s('observation.notedOnWhy', { date: day(notedEvent.date), reason: notedEvent.note }) : s('observation.notedOn', { date: day(notedEvent.date) })}
+        </p>
       )}
-      {mergedInto && (
-        <Typography variant="caption" color="text.secondary" data-testid="observation-merged" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-          <MergedNote merged={mergedInto} s={s} day={day} />
-        </Typography>
+      {part === 'full' && (
+        <ObservationFacts
+          observation={observation} names={names} s={s} day={day} fromScope={fromScope} label={label}
+          explainedBy={props.explainedBy} onOpen={props.onOpen}
+          unlink={(causeId, scope) => (!standing || (scope !== undefined && !props.mayChangeBelow) ? undefined : () => props.onUnlink(causeId, scope))}
+        />
       )}
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        <WritingPane
-          writing={mode === 'edit'}
-          value={draft.body}
-          onChange={(body) => setDraft((d) => ({ ...d, body }))}
-          onBlur={commit}
-          label={s('observation.source')}
-          onAddImage={props.onAddImage}
-          images={props.images}
-          template={{ label: s('md.fromTemplate'), text: observationTemplate(s) }}
-          above={(
-            <>
-              <ObservationFields draft={draft} onChange={(patch) => setDraft((d) => ({ ...d, ...patch }))} onBlur={commit} today={props.today} names={names} s={s} />
-            </>
-          )}
-        >
-          <DocumentSheet dense={mode === 'edit'}>
-            <Typography variant="overline" color="text.secondary">{label}</Typography>
-            <Typography variant="h4" component="h1" sx={TITLE_SX}>
-              {mode === 'edit' ? draft.title : observation.title}
-            </Typography>
-            <ObservationFacts
-              observation={observation} names={names} s={s} day={day} fromScope={fromScope} label={label}
-              explainedBy={props.explainedBy} onOpen={props.onOpen}
-              unlink={(causeId, scope) => (!standing || (scope !== undefined && !props.mayChangeBelow) ? undefined : () => props.onUnlink(causeId, scope))}
-            />
-            <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
-
-            {!fromScope && <CitationsSection about={{ kind: 'observation', id: observation.id }} subject={`${observation.title}\n${observation.body}`} readOnly={!canEdit} />}
-            <RecordChanges about={{ kind: 'observation', id: observation.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
-
-            <ObservationHistory history={observation.history} s={s} day={day} nameOf={nameOf} scopeLabel={props.scopeLabel} />
-            <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf, props.onOpen, { id: observation.id, history: observation.history, scopeLabel: props.scopeLabel }, props.onOpenScope)} />
-          </DocumentSheet>
-        </WritingPane>
-      </Box>
+      <div className="chain-body" data-document>{rendered}</div>
+      {part === 'full' && (
+        <>
+          {!fromScope && <CitationsSection about={{ kind: 'observation', id: observation.id }} subject={`${observation.title}\n${observation.body}`} readOnly={!canEdit} />}
+          <RecordChanges about={{ kind: 'observation', id: observation.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
+          <ObservationHistory history={observation.history} s={s} day={day} nameOf={nameOf} scopeLabel={props.scopeLabel} />
+          <CommentThread about={{ kind: 'observation', id: observation.id }} {...threadPlace(fromScope, nameOf, props.onOpen, { id: observation.id, history: observation.history, scopeLabel: props.scopeLabel }, props.onOpenScope)} />
+        </>
+      )}
     </ReaderRoot>
   )
+}
+
+/** What an observation's preview says beside its text, each a label over a value that wraps. */
+export function observationFacts(one: Observation, facts: { names: PersonNames; day: (date: string) => string; s: Translate; fromScope?: string | undefined }) {
+  const { names, day, s } = facts
+  const lastSeen = [...one.history].reverse().find((event) => event.kind === 'seen')?.date
+  const seen = s('observation.seenTimes', { count: one.seen })
+  return [
+    { label: s('observation.toneField'), value: s(TONE_WORD[toneOf(one)]), testId: `observation-tone-${toneOf(one)}` },
+    { label: s('observation.impactField'), value: s(IMPACT_LABEL[one.impact]), testId: 'observation-impact' },
+    { label: s('observation.colSeen'), value: lastSeen ? s('observation.seenLast', { times: seen, date: day(lastSeen) }) : seen, testId: 'observation-seen' },
+    { label: s('observation.dateField'), value: day(one.date) },
+    { label: s('observation.whereField'), value: one.where || '—' },
+    { label: s('observation.byField'), value: names.text(one.by) || '—', testId: 'observation-by' },
+    ...(one.recordedBy ? [{ label: s('observation.colRecordedBy'), value: recordedByText(one.recordedBy, names, s) || s('observation.recordedByUnknown'), testId: 'observation-recorded-by' }] : []),
+    ...(facts.fromScope ? [{ label: s('observation.colScope'), value: facts.fromScope }] : []),
+  ]
 }
 
 /** The facts of an observation as its reader lists them: when, where, who, how much, who recorded it, and what explains it. */
@@ -462,19 +358,20 @@ function ObservationFacts({ observation, names, s, day, fromScope, label, explai
   const quiet = (shown: boolean) => ({ color: shown ? 'inherit' : 'text.secondary' })
   return (
     <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
+      <Term>{s('observation.toneField')}</Term><Value testId={`observation-tone-${toneOf(observation)}`}><ToneWord tone={toneOf(observation)} s={s} /></Value>
       <Term>{s('observation.dateField')}</Term><Value>{day(observation.date)}</Value>
       <Term>{s('observation.whereField')}</Term>
       <Value><Box component="span" sx={quiet(Boolean(observation.where))}>{observation.where || '—'}</Box></Value>
       <Term>{s('observation.byField')}</Term>
       <Value testId="observation-by"><Box component="span" sx={quiet(Boolean(observation.by))}>{names.text(observation.by) || '—'}</Box></Value>
-      <Term>{s('observation.impactField')}</Term><Value>{s(IMPACT_LABEL[observation.impact])}</Value>
+      <Term>{s('observation.impactField')}</Term><Value testId="observation-impact">{s(IMPACT_LABEL[observation.impact])}</Value>
       <Term>{s('observation.colRecordedBy')}</Term>
       <Value testId="observation-recorded-by">
         <Box component="span" sx={quiet(Boolean(observation.recordedBy))}>
           {(observation.recordedBy && recordedByText(observation.recordedBy, names, s)) || s('observation.recordedByUnknown')}
         </Box>
       </Value>
-      <Term>{s('observation.colSeen')}</Term><Value>{s('observation.seenTimes', { count: observation.seen })}</Value>
+      <Term>{s('observation.colSeen')}</Term><Value testId="observation-seen">{s('observation.seenTimes', { count: observation.seen })}</Value>
       <Term>{s('observation.colScope')}</Term>
       <Value>{fromScope ? fromScope.label : s('observation.local')}</Value>
       <Term>{s('observation.explainedBy')}</Term>
@@ -532,54 +429,9 @@ function recorderWords(by: RecordedBy, names: PersonNames): string {
   return shown === undefined || shown.as === 'nameWithheld' ? '' : names.words(shown)
 }
 
-/** The tone, said with its bar (ADR-0038, amended): the same bar the register's stripe and the form's buttons carry. */
-function ToneChip({ tone, s }: { tone: ObservationTone; s: Translate }) {
-  return (
-    <Chip variant="outlined" icon={<Box sx={{ display: 'flex', pl: 1 }}><ToneBar tone={tone} /></Box>} label={s(TONE_WORD[tone])} data-testid={`observation-tone-${tone}`} />
-  )
-}
-
-/** The four facts and the impact, as the form asks them: an example under each, and what is wrong in its place. */
-function ObservationFields({ draft, onChange, onBlur, today, names, s }: {
-  draft: { title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact; tone: ObservationTone }
-  onChange: (patch: Partial<{ title: string; where: string; by: PersonRef; date: string; impact: ObservationImpact; tone: ObservationTone }>) => void
-  onBlur: () => void
-  today: string
-  names: PersonNames
-  s: Translate
-}) {
-  const problems = observationProblems(draft, today)
-  const field = (key: 'title' | 'where', labelKey: 'observation.titleField' | 'observation.whereField', wide?: boolean) => (
-    <Box sx={wide ? { gridColumn: '1 / -1' } : undefined}>
-      <ExampleField
-        required label={s(labelKey)} value={draft[key]} onChange={(value) => onChange({ [key]: value })} onBlur={onBlur}
-        example={exampleFor(key, s)} problem={problemText(key, problems[key], s)}
-      />
-    </Box>
-  )
-  return (
-    <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1.5, gridTemplateColumns: '1fr 1fr' }}>
-      <Box sx={{ gridColumn: '1 / -1' }}><ToneChoice tone={draft.tone} onChange={(tone) => onChange({ tone })} s={s} /></Box>
-      {field('title', 'observation.titleField', true)}
-      {field('where', 'observation.whereField')}
-      <PersonRefField
-        required label={s('observation.byField')} value={draft.by} onChange={(by) => onChange({ by: by ?? '' })} onBlur={onBlur}
-        names={names} error={problems.by !== undefined} helperText={problemText('by', problems.by, s) ?? exampleFor('by', s)}
-        testId="observation-by-field" s={s}
-      />
-      <ExampleField
-        required type="date" max={today} label={s('observation.dateField')} value={draft.date}
-        onChange={(date) => onChange({ date })} onBlur={onBlur}
-        example={exampleFor('date', s)} problem={problemText('date', problems.date, s)}
-      />
-      <ExampleField
-        select label={s('observation.impactField')} value={draft.impact} example={s('observation.formImpactExample')}
-        onChange={(value) => onChange({ impact: value as ObservationImpact })} onBlur={onBlur}
-      >
-        {OBSERVATION_IMPACTS.map((one) => <MenuItem key={one} value={one}>{s(IMPACT_LABEL[one])}</MenuItem>)}
-      </ExampleField>
-    </Box>
-  )
+/** The tone, said with its bar (ADR-0038, amended): the same bar the form's buttons carry. */
+function ToneWord({ tone, s }: { tone: ObservationTone; s: Translate }) {
+  return <span className="chain-tone"><ToneBar tone={tone} /> {s(TONE_WORD[tone])}</span>
 }
 
 /** The causes that explain an observation, each a way to it and, where it may be, unlinked. */
@@ -612,6 +464,7 @@ function ExplainedBy({ links, label, s, onOpen, onUnlink }: {
 
 export type CauseReaderProps = {
   cause: Cause
+  part?: ReaderPart
   /** The causes of its own scope: those that explain it are read off these. */
   causes: readonly Cause[]
   /** Present for a cause of a scope below: read here, added to there (ADR-0032 §2). */
@@ -710,42 +563,26 @@ export function causeBar(props: CauseReaderProps, mode: Mode, switchMode: (next:
 }
 
 export function CauseReader(props: CauseReaderProps) {
-  const { cause, causes, s, renderMarkdown, readOnly, fromScope, mergedInto } = props
+  const { cause, causes, s, renderMarkdown, readOnly, fromScope, mergedInto, part = 'full' } = props
   const { language } = useStrings()
   const standing = !readOnly && !mergedInto
   const canEdit = standing && !fromScope
   const mayAdd = canEdit || (standing && Boolean(fromScope) && props.mayChangeBelow === true)
-  const stored = useMemo(() => ({ title: cause.title, body: cause.body }), [cause])
-  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => {
-    // A title is never blanked: what was refused stays in the draft.
-    const { title, ...rest } = patch
-    props.onUpdate(title !== undefined && !title.trim() ? rest : patch)
-  }, canEdit)
   const [panel, setPanel] = useState<CausePanel | undefined>(undefined)
-  // A question asked from the right-click opens here, once per ask.
+  // A question asked from the right-click or a press opens here, once per ask.
   const [answered, setAnswered] = useState(props.asked)
   if (props.asked !== answered) {
     setAnswered(props.asked)
     if (props.asked) setPanel(props.asked.panel)
   }
-  const text = mode === 'edit' ? draft.body : cause.body
   // A heading the template left and nobody filled says *Nothing yet* under it, as the rows above do.
-  const rendered = text.trim() ? renderMarkdown(fillEmptySections(text, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
+  const rendered = cause.body.trim() ? renderMarkdown(fillEmptySections(cause.body, s('observation.noLinks'))) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const root = isRootCause(cause)
   const label = causeLabel(cause)
   const flipped = formatCauseNumber(cause.number, !root)
   const explainedBy = causes.filter((other) => other.explains.some((link) => link.id === cause.id && link.scope === undefined))
-  const actions = causeBar(props, mode, switchMode, setPanel)
   return (
     <ReaderRoot testId="cause-reader">
-      <Box sx={BAR_SX}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
-          {root && <Chip color="secondary" variant="outlined" label={s('observation.rootCause')} data-testid="cause-root" />}
-          <Chip color={STATE_COLOR[cause.state]} label={s(STATE_LABEL[cause.state])} data-testid="cause-state" />
-        </Box>
-        <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
-      </Box>
       {panel === 'root' && props.onRoot && (
         <RootPanel
           refused={props.rootRefused} root={root} label={label} flipped={flipped} s={s}
@@ -755,11 +592,7 @@ export function CauseReader(props: CauseReaderProps) {
       {panel === 'org' && props.orgRefused && (
         <ReaderNotice refused lines={[props.orgRefused]} onClose={() => setPanel(undefined)} closeLabel={s('observation.ok')} testId="cause-org-refused" />
       )}
-      {mergedInto && (
-        <Typography variant="caption" color="text.secondary" data-testid="cause-merged" sx={{ px: 2, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
-          <MergedNote merged={mergedInto} s={s} day={(date) => formatDay(date, language)} />
-        </Typography>
-      )}
+      {mergedInto && <p className="chain-note" data-testid="cause-merged"><MergedNote merged={mergedInto} s={s} day={(date) => formatDay(date, language)} /></p>}
       {fromScope && (
         <ScopeStrip
           testId="cause-from-below"
@@ -767,40 +600,18 @@ export function CauseReader(props: CauseReaderProps) {
           action={fromScope.onOpenScope ? <ReaderActions actions={[openScopeAction(fromScope.label, fromScope.onOpenScope, s)]} label={s('observation.fromScopeActions')} moreLabel={s('observation.more')} /> : undefined}
         />
       )}
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        <WritingPane
-          writing={mode === 'edit'}
-          value={draft.body}
-          onChange={(body) => setDraft((d) => ({ ...d, body }))}
-          onBlur={commit}
-          label={s('observation.causeSource')}
-          onAddImage={props.onAddImage}
-          images={props.images}
-          template={{ label: s('md.fromTemplate'), text: causeTemplate(s) }}
-          above={(
-            <>
-              <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider' }}>
-                <TitleField
-                  label={s('observation.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit}
-                  example={s('observation.causeTitleExample')} missing={s('observation.causeTitleMissing')}
-                />
-              </Box>
-            </>
-          )}
-        >
-          <DocumentSheet dense={mode === 'edit'}>
-            <Typography variant="overline" color="text.secondary">{label}</Typography>
-            <Typography variant="h4" component="h1" sx={TITLE_SX}>
-              {mode === 'edit' ? draft.title : cause.title}
-            </Typography>
-            <CauseLinks cause={cause} explainedBy={explainedBy} mayAdd={mayAdd} props={props} />
-            <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
-            <RecordChanges about={{ kind: 'cause', id: cause.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
-            <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf, props.onOpen)} />
-          </DocumentSheet>
-        </WritingPane>
+      <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mb: 0, fontSize: 14 }}>
+        <Term>{s('observation.colState')}</Term>
+        <Value testId="cause-state">{s(STATE_LABEL[cause.state])}{root && <span data-testid="cause-root"> · {s('observation.rootCause')}</span>}</Value>
       </Box>
+      <CauseLinks cause={cause} explainedBy={explainedBy} mayAdd={mayAdd} props={props} />
+      <div className="chain-body" data-document>{rendered}</div>
+      {part === 'full' && (
+        <>
+          <RecordChanges about={{ kind: 'cause', id: cause.id }} {...(fromScope ? { scope: fromScope.path } : {})} />
+          <CommentThread about={{ kind: 'cause', id: cause.id }} {...threadPlace(fromScope, props.nameOf, props.onOpen)} />
+        </>
+      )}
     </ReaderRoot>
   )
 }

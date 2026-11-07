@@ -18,12 +18,14 @@
  * An experiment's reader moves it as `experimentMovesFrom` allows, one button
  * per move; concluding and reopening ask first, through the page.
  *
- * Title and body follow the other readers: a local draft, committed when it
- * has been quiet for a moment and when the mode switches back to read.
+ * Being edited it is a full window (`RecordEditor`). A size or a *why now* that is
+ * answered reads as text and is changed there, so a record does not look like an
+ * empty form; what the gate still waits for keeps its control where it is asked.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
+import { Button as KitButton } from '../../widgets/kit/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -37,12 +39,9 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
-import { DocumentSheet } from '../../documentation/ui/DocumentSheet'
-import { WritingPane } from '../../documentation/ui/MarkdownEditor'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import {
-  SOLUTION_SIZES, experimentMovesFrom, experimentTemplate, solutionTemplate, formatExperimentNumber, formatSolutionNumber, mayAddress,
-  mayPlanExperiment, previousState,
+  SOLUTION_PHASES, SOLUTION_SIZES, experimentMovesFrom, formatSolutionNumber, mayAddress, mayPlanExperiment, previousState,
 } from '../solution'
 import type {
   EarlierAttempt, Experiment, ExperimentOutcome, ExperimentPatch, Gate, GateItem, Solution, SolutionPatch, SolutionPhase,
@@ -50,18 +49,17 @@ import type {
 } from '../solution'
 import type { CauseStrength } from '../observation'
 import {
-  GATE_HINT, GATE_LABEL, OUTCOME_COLOR, OUTCOME_LABEL, PHASE_COLOR, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
+  GATE_HINT, GATE_LABEL, OUTCOME_LABEL, PHASE_LABEL, QUESTION_LABEL, SIZE_LABEL, STRENGTH_LABEL,
 } from '../observationScope'
-import { BAR_SX, LinkList, ReaderRoot, TITLE_SX, Term, Value, useDraft } from './Readers'
+import { LinkList, ReaderRoot, Term, Value } from './Readers'
+import type { ReaderPart } from './Readers'
+import { StepLadder } from '../../widgets/kit/NextStep'
 import { SectionHeading } from '../../widgets/CompactForms'
-import { BarActions, ReaderActions } from './ActionButton'
 import type { ReaderAction } from './ActionButton'
-import { TitleField } from './FormParts'
 import { deleteAction, experimentMoveButtons, modeAction, restoreAction, solutionActions } from './readerActions'
 import type { Mode } from './readerActions'
 import { experimentMoveLabel } from './ObservationLifecycle'
 import { usePersonNames } from '../../people/ui/names'
-import { PersonRefField } from '../../people/ui/PersonRefField'
 import { CommentThread } from '../../comments/ui/threadPart'
 import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { RecordChanges } from '../../comments/ui/RecordChanges'
@@ -101,16 +99,9 @@ function AnswerField(props: { label: string; value: string; onSave: (value: stri
 
 // --- one solution -------------------------------------------------------------------------
 
-/** A patch that never blanks a title: what was refused stays in the draft, with what is wrong under it. */
-function keepTitle<T extends { title?: string }>(patch: T): T {
-  if (patch.title === undefined || patch.title.trim()) return patch
-  const { title: _title, ...rest } = patch
-  void _title
-  return rest as T
-}
-
 export type SolutionReaderProps = {
   solution: Solution
+  part?: ReaderPart
   phase: SolutionPhase
   gate?: Gate
   questions: readonly SolutionQuestion[]
@@ -172,18 +163,14 @@ export function solutionBar(props: SolutionReaderProps, mode: Mode, switchMode: 
 }
 
 export function SolutionReader(props: SolutionReaderProps) {
-  const { solution, phase, gate, s, renderMarkdown, readOnly } = props
+  const { solution, phase, gate, s, renderMarkdown, readOnly, part = 'full' } = props
   const dropped = solution.state === 'dropped'
   const canEdit = !readOnly && !dropped
-  const stored = useMemo(() => ({ title: solution.title, body: solution.body }), [solution])
-  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepTitle(patch)), canEdit)
-  const text = mode === 'edit' ? draft.body : solution.body
-  const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
+  const rendered = solution.body.trim() ? renderMarkdown(solution.body) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const label = formatSolutionNumber(solution.number)
   const back = props.mayGoBack ? previousState(solution.state) : undefined
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
-  const actions = solutionBar(props, mode, switchMode)
 
   const [name, setName] = useState('')
   const [attempt, setAttempt] = useState<EarlierAttempt>({ when: '', what: '', why: '' })
@@ -198,8 +185,9 @@ export function SolutionReader(props: SolutionReaderProps) {
     setAttempt({ when: '', what: '', why: '' })
   }
 
+  // Answered, it reads as text and is changed on Edit; unanswered, it is asked here.
   const sizePicker = (field: 'benefit' | 'cost', value: SolutionSize | undefined) => (
-    canEdit ? (
+    canEdit && !value ? (
       <ToggleButtonGroup
         exclusive value={value ?? null}
         onChange={(_e, next: SolutionSize | null) => props.onUpdate({ [field]: next ?? undefined })}
@@ -213,38 +201,23 @@ export function SolutionReader(props: SolutionReaderProps) {
 
   return (
     <ReaderRoot testId="solution-reader">
-      <Box sx={BAR_SX}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
-          <Chip color={PHASE_COLOR[phase]} label={s(PHASE_LABEL[phase])} data-testid="solution-phase" />
-        </Box>
-        <BarActions actions={actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
-      </Box>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        <WritingPane
-          writing={mode === 'edit'}
-          value={draft.body}
-          onChange={(body) => setDraft((d) => ({ ...d, body }))}
-          onBlur={commit}
-          label={s('solution.source')}
-          onAddImage={props.onAddImage}
-          images={props.images}
-          template={{ label: s('md.fromTemplate'), text: solutionTemplate(s) }}
-          above={(
-            <>
-              <Box sx={{ px: 1.5, py: 1.25, borderBottom: 1, borderColor: 'divider' }}>
-                <TitleField label={s('solution.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit} example={s('solution.newTitleHelp')} missing={s('solution.formTitleMissing')} />
+            <div data-testid="solution-phase"><SolutionLadder phase={phase} s={s} /></div>
+            {gate && !dropped && (
+              <SolutionGate
+                gate={gate} solution={solution} canEdit={canEdit} back={back} s={s}
+                onPlanExperiment={props.onPlanExperiment} onDecide={props.onDecide} onWaive={props.onWaive} onMove={props.onMove}
+              />
+            )}
+            {!gate && solution.state === 'adopted' && canEdit && back && (
+              <Box sx={{ mt: 2 }}>
+                <KitButton variant="quiet" size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</KitButton>
               </Box>
-            </>
-          )}
-        >
-          <DocumentSheet dense={mode === 'edit'}>
-            <Typography variant="overline" color="text.secondary">{label}</Typography>
-            <Typography variant="h4" component="h1" sx={TITLE_SX}>
-              {mode === 'edit' ? draft.title : solution.title}
-            </Typography>
-
+            )}
+            {!back && props.reopenBy && !dropped && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} data-testid="solution-reopen-hint">
+                {s('solution.reopenBySuperseding', { label: props.reopenBy })}
+              </Typography>
+            )}
             {dropped && (
               <Typography data-testid="solution-dropped-note" color="text.secondary" sx={{ mt: 1 }}>
                 {s('solution.droppedNote', { note: solution.dropNote ?? '' })}
@@ -336,7 +309,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 <>
                   <Term>{s('solution.whyNow')}</Term>
                   <Value>
-                    {canEdit
+                    {canEdit && !solution.whyNow
                       ? <AnswerField label={s('solution.whyNowField')} value={solution.whyNow ?? ''} onSave={(whyNow) => props.onUpdate({ whyNow })} disabled={false} testId="solution-why-now" multiline />
                       : solution.whyNow ?? <Muted>{s('solution.notAnswered')}</Muted>}
                   </Value>
@@ -360,7 +333,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                 {props.plan
                   ? <>{props.onOpenPlan ? <Link component="button" type="button" onClick={props.onOpenPlan}>{props.plan.label}</Link> : props.plan.label} <Muted>· {props.plan.status}</Muted></>
                   : solution.state === 'adopted' && canEdit && props.onStartPlan
-                    ? <Button sx={{ textTransform: 'none' }} size="small" variant="outlined" onClick={props.onStartPlan} data-testid="solution-start-plan">{s('solution.startPlan')}</Button>
+                    ? <KitButton size="small" onClick={props.onStartPlan} data-testid="solution-start-plan">{s('solution.startPlan')}</KitButton>
                     : <Muted>{s('solution.noPlan')}</Muted>}
               </Value>
               <Term>{s('solution.alternatives')}</Term>
@@ -370,23 +343,6 @@ export function SolutionReader(props: SolutionReaderProps) {
                   : <LinkList onOpen={props.onOpen} links={props.alternatives.map((one) => ({ key: one.key, label: one.label, note: s(PHASE_LABEL[one.phase]).toLowerCase() }))} />}
               </Value>
             </Box>
-
-            {gate && !dropped && (
-              <SolutionGate
-                gate={gate} solution={solution} canEdit={canEdit} back={back} s={s}
-                onPlanExperiment={props.onPlanExperiment} onDecide={props.onDecide} onWaive={props.onWaive} onMove={props.onMove}
-              />
-            )}
-            {!gate && solution.state === 'adopted' && canEdit && back && (
-              <Box sx={{ mt: 2 }}>
-                <Button sx={{ textTransform: 'none' }} size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>
-              </Box>
-            )}
-            {!back && props.reopenBy && !dropped && (
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} data-testid="solution-reopen-hint">
-                {s('solution.reopenBySuperseding', { label: props.reopenBy })}
-              </Typography>
-            )}
 
             {props.implemented && (
               <Section title={s('solution.didItWork')} testId="solution-did-it-work">
@@ -408,8 +364,9 @@ export function SolutionReader(props: SolutionReaderProps) {
               </Section>
             )}
 
-            <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
+            <div className="chain-body" data-document>{rendered}</div>
 
+            {part === 'full' && (<>
             <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 4 }}>{s('observation.history')}</Typography>
             <Box component="ol" data-testid="solution-history" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 13 }}>
               {solution.history.map((event, index) => (
@@ -426,9 +383,8 @@ export function SolutionReader(props: SolutionReaderProps) {
                 </Box>
               ))}
             </Box>
-            <SolutionFooter id={solution.id} subject={`${solution.title}\n${solution.body}`} nameOf={props.nameOf} onOpen={props.onOpen} /></DocumentSheet>
-</WritingPane>
-      </Box>
+            <SolutionFooter id={solution.id} subject={`${solution.title}\n${solution.body}`} nameOf={props.nameOf} onOpen={props.onOpen} />
+            </>)}
     </ReaderRoot>
   )
 }
@@ -443,6 +399,15 @@ export function SolutionReader(props: SolutionReaderProps) {
  * on the page until an attempt is. So the second line says, in its own words
  * and not only on hover, that the same tick answers it.
  */
+/** Where a solution stands, in words: *Idea › Shaped › Testing*. */
+function SolutionLadder({ phase, s }: { phase: SolutionPhase; s: Translate }) {
+  const at = SOLUTION_PHASES.indexOf(phase)
+  const steps = SOLUTION_PHASES.map((one, index) => ({
+    id: one, label: s(PHASE_LABEL[one]), state: index < at ? 'done' as const : index === at ? 'current' as const : 'todo' as const,
+  }))
+  return <StepLadder steps={steps} />
+}
+
 function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDecide, onWaive, onMove }: {
   gate: Gate
   solution: Solution
@@ -470,9 +435,9 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
             <Tooltip describeChild title={s(GATE_HINT[one.item])}>
               <Box component="span" tabIndex={0} data-gate-line sx={{ flex: 1, cursor: 'help' }}>{label(one.item)}</Box>
             </Tooltip>
-            {!one.ok && canEdit && one.item === 'experimentPlanned' && <Button sx={{ textTransform: 'none' }} size="small" onClick={onPlanExperiment}>{s('solution.planExperiment')}</Button>}
+            {!one.ok && canEdit && one.item === 'experimentPlanned' && <KitButton size="small" onClick={onPlanExperiment}>{s('solution.planExperiment')}</KitButton>}
             {!one.ok && canEdit && one.item === 'decisionAccepted' && !solution.decision && onDecide && (
-              <Button sx={{ textTransform: 'none' }} size="small" onClick={onDecide} data-testid="solution-decide" data-guide="solution.decide">{s('solution.proposeDecision')}</Button>
+              <KitButton size="small" onClick={onDecide} data-testid="solution-decide" data-guide="solution.decide">{s('solution.proposeDecision')}</KitButton>
             )}
           </Box>
         ))}
@@ -480,17 +445,16 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
       {canEdit && gate.items.some((one) => one.item === 'experimentConfirmed' && !one.ok) && (
         <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
           <TextField fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
-          <Button sx={{ textTransform: 'none' }} size="small" disabled={!waiver.trim()} onClick={() => { onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</Button>
+          <KitButton size="small" reason={waiver.trim() ? undefined : s('solution.waiveField')} onClick={() => { onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</KitButton>
         </Box>
       )}
       {canEdit && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
-          <Button sx={{ textTransform: 'none' }} variant="contained" size="small" disabled={open.length > 0} onClick={() => onMove(gate.to)} data-testid="solution-move" data-guide="solution.move">
+          <KitButton variant="primary" reason={open.length > 0 ? s('solution.toGo', { count: open.length }) : undefined} reasonAt="beside" onClick={() => onMove(gate.to)} data-testid="solution-move" data-guide="solution.move">
             {s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })}
-          </Button>
-          {open.length > 0 && <Typography variant="caption" color="text.secondary">{s('solution.toGo', { count: open.length })}</Typography>}
+          </KitButton>
           <Box sx={{ flex: 1 }} />
-          {back && <Button sx={{ textTransform: 'none' }} size="small" onClick={() => onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</Button>}
+          {back && <KitButton variant="quiet" onClick={() => onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</KitButton>}
         </Box>
       )}
     </Section>
@@ -510,6 +474,7 @@ const EVENT_KEY = {
 
 export type ExperimentReaderProps = {
   experiment: Experiment
+  part?: ReaderPart
   /** The solutions it tests, resolved by the page. */
   tests: readonly { key: string; label: string }[]
   readOnly: boolean
@@ -544,108 +509,37 @@ export function experimentBar(props: ExperimentReaderProps, mode: Mode, switchMo
 }
 
 export function ExperimentReader(props: ExperimentReaderProps) {
-  const { experiment, s, renderMarkdown, readOnly } = props
-  const canEdit = !readOnly
-  const stored = useMemo(() => ({
-    title: experiment.title, body: experiment.body, hypothesis: experiment.hypothesis, measure: experiment.measure ?? '',
-    where: experiment.where ?? '', by: experiment.by ?? '', from: experiment.from ?? '', to: experiment.to ?? '',
-    result: experiment.result ?? '',
-  }), [experiment])
-  const { mode, draft, setDraft, commit, switchMode } = useDraft(stored, (patch) => props.onUpdate(keepTitle(patch)), canEdit)
+  const { experiment, s, renderMarkdown, part = 'full' } = props
   // Who runs it, by the register's name or pseudonym, or the text typed (ADR-0036 §8).
   const names = usePersonNames()
-  const bar = experimentBar(props, mode, switchMode)
-  const text = mode === 'edit' ? draft.body : experiment.body
-  const rendered = text.trim() ? renderMarkdown(text) : <Typography color="text.secondary">{s('common.empty')}</Typography>
-  type Field = 'hypothesis' | 'measure' | 'where' | 'from' | 'to' | 'result'
-  const field = (key: Field, label: string, extra: { type?: string; wide?: boolean } = {}) => (
-    <TextField
-      label={label} value={draft[key]} type={extra.type}
-      onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))} onBlur={commit}
-      multiline={extra.wide} sx={extra.wide ? { gridColumn: '1 / -1' } : undefined}
-      slotProps={extra.type === 'date' ? { inputLabel: { shrink: true } } : undefined}
-    />
-  )
+  const rendered = experiment.body.trim() ? renderMarkdown(experiment.body) : <Typography color="text.secondary">{s('common.empty')}</Typography>
   const shown = (value: string | undefined) => (value ? value : <Muted>—</Muted>)
-  const label = formatExperimentNumber(experiment.number)
   const { language } = useStrings()
   const shownDay = (value: string | undefined) => (value ? formatDay(value, language) : <Muted>—</Muted>)
-
   return (
     <ReaderRoot testId="experiment-reader">
-      <Box sx={BAR_SX}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-          <Chip variant="outlined" label={label} sx={{ fontFamily: 'ui-monospace, Menlo, monospace' }} />
-          <Chip color={OUTCOME_COLOR[experiment.outcome]} label={s(OUTCOME_LABEL[experiment.outcome])} data-testid="experiment-outcome" />
-        </Box>
-        {(canEdit || props.onCopyLink) && (
-          <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap', alignItems: 'center' }}>
-            {/* The moves from here, and only those: planned starts, running
-                goes back or is concluded, a concluded one is reopened. */}
-            {canEdit && <ReaderActions label={s('solution.experimentMoves')} moreLabel={s('observation.more')} actions={bar.moves} />}
-            <BarActions actions={bar.actions} label={s('observation.actions', { name: label })} s={s} onCopyLink={props.onCopyLink} />
-          </Box>
-        )}
+      <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mb: 0, fontSize: 14 }}>
+        <Term>{s('solution.outcomeField')}</Term><Value testId="experiment-outcome">{s(OUTCOME_LABEL[experiment.outcome])}</Value>
+        <Term>{s('solution.tests')}</Term>
+        <Value testId="experiment-tests">
+          {props.tests.length === 0 ? <Muted>{s('solution.none')}</Muted> : <LinkList onOpen={props.onOpen} links={props.tests} />}
+        </Value>
+        <Term>{s('solution.hypothesis')}</Term><Value testId="experiment-hypothesis">{shown(experiment.hypothesis)}</Value>
+        <Term>{s('solution.measure')}</Term><Value>{shown(experiment.measure)}</Value>
+        <Term>{s('solution.whereField')}</Term><Value>{shown(experiment.where)}</Value>
+        <Term>{s('solution.byField')}</Term><Value testId="experiment-by">{shown(names.text(experiment.by))}</Value>
+        <Term>{s('solution.fromField')}</Term><Value>{shownDay(experiment.from)}</Value>
+        <Term>{s('solution.toField')}</Term><Value>{shownDay(experiment.to)}</Value>
+        <Term>{s('solution.result')}</Term><Value testId="experiment-result">{shown(experiment.result)}</Value>
       </Box>
-
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', flex: 1, minHeight: 0 }}>
-        <WritingPane
-          writing={mode === 'edit'}
-          value={draft.body}
-          onChange={(body) => setDraft((d) => ({ ...d, body }))}
-          onBlur={commit}
-          label={s('solution.experimentSource')}
-          onAddImage={props.onAddImage}
-          images={props.images}
-          template={{ label: s('md.fromTemplate'), text: experimentTemplate(s) }}
-          above={(
-            <>
-              <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider', display: 'grid', gap: 1, gridTemplateColumns: '1fr 1fr' }}>
-                <Box sx={{ gridColumn: '1 / -1' }}>
-                  <TitleField
-                    label={s('solution.titleField')} value={draft.title} onChange={(title) => setDraft((d) => ({ ...d, title }))} onBlur={commit}
-                    example={s('solution.experimentTitleExample')} missing={s('solution.experimentTitleMissing')}
-                  />
-                </Box>
-                {field('hypothesis', s('solution.hypothesis'), { wide: true })}
-                {field('measure', s('solution.measure'), { wide: true })}
-                {field('where', s('solution.whereField'))}
-                <PersonRefField
-                  label={s('solution.byField')} value={draft.by} names={names} onBlur={commit}
-                  onChange={(by) => setDraft((d) => ({ ...d, by: by ?? '' }))} testId="experiment-by-field" s={s}
-                />
-                {field('from', s('solution.fromField'), { type: 'date' })}
-                {field('to', s('solution.toField'), { type: 'date' })}
-                {field('result', s('solution.result'), { wide: true })}
-              </Box>
-            </>
-          )}
-        >
-          <DocumentSheet dense={mode === 'edit'}>
-            <Typography variant="overline" color="text.secondary">{formatExperimentNumber(experiment.number)}</Typography>
-            <Typography variant="h4" component="h1" sx={TITLE_SX}>
-              {mode === 'edit' ? draft.title : experiment.title}
-            </Typography>
-            <Box component="dl" sx={{ display: 'grid', gridTemplateColumns: 'max-content 1fr', columnGap: 3, rowGap: 0.5, mt: 2, mb: 0, fontSize: 14 }}>
-              <Term>{s('solution.tests')}</Term>
-              <Value testId="experiment-tests">
-                {props.tests.length === 0 ? <Muted>{s('solution.none')}</Muted> : <LinkList onOpen={props.onOpen} links={props.tests} />}
-              </Value>
-              <Term>{s('solution.hypothesis')}</Term><Value testId="experiment-hypothesis">{shown(experiment.hypothesis)}</Value>
-              <Term>{s('solution.measure')}</Term><Value>{shown(experiment.measure)}</Value>
-              <Term>{s('solution.whereField')}</Term><Value>{shown(experiment.where)}</Value>
-              <Term>{s('solution.byField')}</Term><Value testId="experiment-by">{shown(names.text(experiment.by))}</Value>
-              <Term>{s('solution.fromField')}</Term><Value>{shownDay(experiment.from)}</Value>
-              <Term>{s('solution.toField')}</Term><Value>{shownDay(experiment.to)}</Value>
-              <Term>{s('solution.result')}</Term><Value testId="experiment-result">{shown(experiment.result)}</Value>
-            </Box>
-            {experiment.outcome === 'refuted' && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{s('solution.refutedNote')}</Typography>}
-            <Box sx={{ fontSize: 15, mt: 3 }} data-document>{rendered}</Box>
-            <RecordChanges about={{ kind: 'experiment', id: experiment.id }} first="proposed" />
-            <CommentThread about={{ kind: 'experiment', id: experiment.id }} />
-          </DocumentSheet>
-        </WritingPane>
-      </Box>
+      {experiment.outcome === 'refuted' && <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>{s('solution.refutedNote')}</Typography>}
+      <div className="chain-body" data-document>{rendered}</div>
+      {part === 'full' && (
+        <>
+          <RecordChanges about={{ kind: 'experiment', id: experiment.id }} first="proposed" />
+          <CommentThread about={{ kind: 'experiment', id: experiment.id }} />
+        </>
+      )}
     </ReaderRoot>
   )
 }

@@ -34,6 +34,7 @@ import {
 } from './observation'
 import type { Analysis, Cause, CauseStrength, Observation, ObservationBelow, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
+import { ZOOM_FLOOR } from '../widgets/kit/zoom'
 
 export type GraphNode =
   | {
@@ -399,16 +400,22 @@ export function pictureCounts(
   return counts
 }
 
-export type PictureSize = 'large' | 'small'
+export type PictureSize = 'large' | 'small' | 'far'
 
 /**
- * A record's slot and the pitch between lanes and rows, in pixels, per size:
- * a card with its label and title, or a circle with its label under it.
+ * A record's slot and the pitch between lanes and rows, in pixels, per size: a
+ * card with its label and three lines of its title; a circle with its label
+ * under it; and the card far out, under 80%, one line that holds its size on
+ * screen, because below that three lines could no longer be read.
  */
 export const PICTURE_SIZE: Record<PictureSize, { width: number; height: number; lane: number; row: number }> = {
-  large: { width: 196, height: 52, lane: 232, row: 66 },
+  large: { width: 228, height: 84, lane: 276, row: 98 },
   small: { width: 126, height: 74, lane: 146, row: 92 },
+  far: { width: 300, height: 40, lane: 360, row: 52 },
 }
+
+/** The zoom under which a card drops to its one line. */
+export const FAR_BELOW = 0.8
 
 /** What a lane of this scope's holds, for its heading. */
 export type PictureLane = 'observations' | 'causes' | 'deeper' | 'roots' | 'solutions'
@@ -419,6 +426,8 @@ export type PictureNode = Placing & (
   | { kind: 'observation'; observation: Observation }
   | { kind: 'cause'; cause: Cause; root: boolean }
   | { kind: 'solution'; solution: Solution }
+  /** Records not drawn: a chain's *and 11 more*, or the pile with no chain (`chain.ts`). */
+  | { kind: 'more'; more: 'fold' | 'pile'; count: number; chain?: string }
 )
 
 /** A line drawn: `crossing` where it runs between two scopes, which is a cause above explaining a cause below. */
@@ -457,8 +466,12 @@ export type PictureOptions = {
   /** The path of the scope being read; the first of the scopes handed in is expected to be it. */
   here: string
   size: PictureSize
-  /** What the filters left (`filter.ts`); absent, everything live is drawn. */
+  /** What the filters left (`filter.ts`) or what a large scope opens on (`chain.ts`); absent, everything live is drawn. */
   visible?: ReadonlySet<string>
+  /** Cards standing for what is not drawn, in the first lane of their scope. */
+  cards?: readonly { key: string; kind: 'fold' | 'pile'; count: number; scope: string; to: readonly string[]; chain?: string }[]
+  /** The order down the first lane, where it is not the scope's own. */
+  order?: ReadonlyMap<string, number>
 }
 
 const MARGIN = 24
@@ -497,11 +510,15 @@ export function analysisPicture(scopes: readonly ScopeAnalysis[], options: Pictu
   const slot = PICTURE_SIZE[size]
   const ordered = [...scopes].sort((a, b) => byPath(a.scope, b.scope))
   const gone = absorbedKeys(ordered, here)
-  const links = pictureLinks(ordered, here)
+  const cards = options.cards ?? []
+  const links: PictureLink[] = [
+    ...pictureLinks(ordered, here),
+    ...cards.flatMap((card) => card.to.map((to): PictureLink => ({ from: card.key, to, kind: 'explains', strength: 'normal' }))),
+  ]
   const shown = (key: string) => !gone.has(key) && (options.visible === undefined || options.visible.has(key))
   const sections = new Map<string, Section>()
-  for (const one of ordered) sections.set(one.scope, sectionOf(one, here, shown, links))
-  const root = sections.get(here) ?? sectionOf({ scope: here, observations: [], causes: [], solutions: [], experiments: [] }, here, shown, links)
+  for (const one of ordered) sections.set(one.scope, sectionOf(one, here, shown, links, options))
+  const root = sections.get(here) ?? sectionOf({ scope: here, observations: [], causes: [], solutions: [], experiments: [] }, here, shown, links, options)
   nest(root, [...sections.values()].filter((one) => one.scope !== here))
 
   const boundaries: PictureBoundary[] = []
@@ -542,7 +559,7 @@ export function analysisPicture(scopes: readonly ScopeAnalysis[], options: Pictu
  * below has the lanes it uses.
  */
 function sectionOf(
-  one: ScopeAnalysis, here: string, shown: (key: string) => boolean, links: readonly PictureLink[],
+  one: ScopeAnalysis, here: string, shown: (key: string) => boolean, links: readonly PictureLink[], options: Pick<PictureOptions, 'cards' | 'order'> = {},
 ): Section {
   const key = (id: string) => pictureKey(here, one.scope, id)
   const observations = one.observations.filter((held) => !isArchived(held) && shown(key(held.id)))
@@ -553,12 +570,18 @@ function sectionOf(
   const base = { scope: one.scope, row: 0, x: 0, y: 0 }
   const nodes: PictureNode[] = [
     ...observations.map((observation): PictureNode => ({ ...base, key: key(observation.id), kind: 'observation', observation, lane: 0 })),
+    ...(options.cards ?? []).filter((card) => card.scope === one.scope).map((card): PictureNode => ({
+      ...base, key: card.key, kind: 'more', more: card.kind, count: card.count, lane: 0, ...(card.chain !== undefined ? { chain: card.chain } : {}),
+    })),
     ...causes.map((cause): PictureNode => ({
       ...base, key: key(cause.id), kind: 'cause', cause, root: isRootCause(cause),
       lane: isRootCause(cause) ? causeLanes + 1 : depths.get(cause.id)!,
     })),
     ...solutions.map((solution): PictureNode => ({ ...base, key: key(solutionKey(solution.id)), kind: 'solution', solution, lane: causeLanes + 2 })),
   ]
+  // Stable: whatever the order does not name stays where the scope's own list had it.
+  const { order } = options
+  if (order) nodes.sort((a, b) => (a.lane === 0 && b.lane === 0 ? (order.get(a.key) ?? order.size) - (order.get(b.key) ?? order.size) : 0))
   const lanes = one.scope === here ? causeLanes + 3 : Math.max(0, ...nodes.map((node) => node.lane + 1))
   const inside = new Set(nodes.map((node) => node.key))
   assignRows(nodes, links.filter((link) => inside.has(link.from) && inside.has(link.to)), lanes)
@@ -664,19 +687,17 @@ function collect(section: Section): PictureNode[] {
 }
 
 /**
- * The zoom that fits a picture of `content` into `viewport`, the start of
- * every picture: the whole of it where that reads — no larger than 110 % — and
- * where fitting both ways would go below 75 %, the height only, so it scrolls
- * sideways rather than shrinking past reading. Never below 40 %. A viewport
- * not measured yet is 100 %.
+ * What *Fit* comes to: the whole of a picture of `content` in `viewport`, never
+ * larger than it is, and never below the floor, under which a name can no longer
+ * be read: a picture that does not fit by then scrolls. A map opens at 100%, so
+ * this is only what somebody asks for, or what a map whose whole point is to be
+ * seen together opens on. A viewport not measured yet is 100%.
  */
 export function fitZoom(content: { width: number; height: number }, viewport: { width: number; height: number }): number {
   if (viewport.width <= 0 || viewport.height <= 0 || content.width <= 0 || content.height <= 0) return 1
   const wide = (viewport.width - 8) / content.width
   const tall = (viewport.height - 8) / content.height
-  let zoom = Math.min(1.1, wide, tall)
-  if (zoom < 0.75) zoom = Math.min(0.75, tall)
-  return Math.max(0.4, Math.round(zoom * 100) / 100)
+  return Math.max(ZOOM_FLOOR, Math.round(Math.min(1, wide, tall) * 100) / 100)
 }
 
 /**

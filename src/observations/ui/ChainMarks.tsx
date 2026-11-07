@@ -144,3 +144,23 @@ export function Flag({ x, y, title, strong = false }: { x: number; y: number; ti
 export function shorten(text: string, max: number): string {
   return text.length > max ? `${text.slice(0, max - 1)}…` : text
 }
+
+/**
+ * A title in lines for a card: words kept whole where they fit, the last line
+ * cut with an ellipsis. A median title is a sentence of a hundred characters, so a
+ * card that cuts it to twenty-five says nothing.
+ */
+export function wrapTitle(title: string, perLine: number, lines: number): string[] {
+  const out: string[] = []
+  let line = ''
+  const words = title.trim().split(/\s+/)
+  for (let at = 0; at < words.length; at += 1) {
+    const word = words[at]
+    const next = line ? `${line} ${word}` : word
+    if (next.length <= perLine) { line = next; continue }
+    if (out.length === lines - 1) return [...out, shorten(next, perLine)]
+    if (line) out.push(line)
+    line = word.length > perLine ? shorten(word, perLine) : word
+  }
+  return line ? [...out, line] : out
+}

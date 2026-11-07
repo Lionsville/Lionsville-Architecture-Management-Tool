@@ -4,15 +4,17 @@
 /**
  * The analysis drawn (ADR-0021, ADR-0032 §8): observations on the left, the
  * causes they were analysed into in the lanes to the right, root causes, and
- * the solutions that address them last — and, with *View local* on, each
+ * the solutions that address them last — and, with the scopes below on, each
  * scope below in a boundary of its own to the left, nested as the tree
  * nests, with the lines that cross a boundary drawn apart.
  *
  * Plain SVG over `analysisPicture` (`graph.ts`): no canvas library, nothing
  * dragged, the same records in the same place every time. Each record is one
- * of two sizes (`PictureMarks`). The picture starts fitted to its window;
- * the zoom buttons and ⌘ or Ctrl with the scroll wheel zoom it, and a drag on
- * the background pans it. Hovering a record — or focusing it from the
+ * of two sizes (`PictureMarks`), and a card drops to one line of the same size on
+ * screen under 80%. **It opens readable**: at 100%, on what `chain.ts` says weighs
+ * most, and offers the rest, instead of fitting everything until nothing can be
+ * read. The dock and ⌘ or Ctrl with + − 0, the wheel or a pinch zoom it, down to
+ * the floor (`widgets/kit/zoom`), and a drag on the background pans it. Hovering a record — or focusing it from the
  * keyboard — traces its chain both ways and dims the rest, and shows its full
  * title, label and scope beside it, so a title cut short on a card is always
  * one hover from whole.
@@ -22,23 +24,28 @@
  * done with it (`PictureMenu`); a line offers its menu only where the link is
  * this scope's to change.
  */
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
+import { useStrings } from '../../i18n'
+import { stepZoom } from '../../widgets/kit/zoom'
 import { toneOf } from '../observation'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import { useTheme } from '@mui/material/styles'
 import type { Translate } from '../../i18n'
-import { analysisPicture, brightChains, fitZoom, openEnds, pictureKey, traceChain, PICTURE_SIZE } from '../graph'
-import type { PictureEdge, PictureLane, PictureNode, SectionedPicture } from '../graph'
+import { analysisPicture, brightChains, FAR_BELOW, fitZoom, openEnds, pictureKey, traceChain, PICTURE_SIZE } from '../graph'
+import type { PictureEdge, PictureLane, PictureNode, PictureSize, SectionedPicture } from '../graph'
 import { causeLabel } from '../observation'
 import type { CauseAbove, ScopeAnalysis } from '../observation'
 import type { FilterResult } from '../filter'
+import type { MapWindow } from '../chain'
 import { LINE_HIT_WIDTH, STROKE, seenTint } from './ChainMarks'
 import type { PictureMenuHandler } from './PictureMenu'
 import { RecordMark, anchorOf, recordLabel, recordState, recordTitle } from './PictureMarks'
 import { clampZoom } from './usePictureFilters'
 import type { PictureView } from './usePictureFilters'
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom'
+import { CanvasDock } from '../../widgets/kit/CanvasDock'
+import { PageState } from '../../widgets/kit/PageState'
 
 export type AnalysisPictureProps = {
   /** The scopes in view: this one first, then those below while View local is on. */
@@ -61,6 +68,18 @@ export type AnalysisPictureProps = {
   onSelect: (key: string) => void
   /** A right-click on a record or a line; absent, the browser's own menu. */
   onMenu?: PictureMenuHandler
+  /** What is drawn of a large scope, and the cards for the rest; absent, everything. */
+  window?: MapWindow
+  /** A press on a card that stands for what is not drawn. */
+  onMore?: (card: Extract<PictureNode, { kind: 'more' }>) => void
+  /**
+   * The + on a card: a press asks why of it, a drag to another card links the two.
+   * Absent where nothing may be written.
+   */
+  onAsk?: (key: string) => void
+  onDragLink?: (from: string, to: string) => void
+  /** What the dock holds beyond the zoom. */
+  dockExtra?: ReactNode
   s: Translate
 }
 
@@ -74,15 +93,22 @@ const LANE_KEY: Record<PictureLane, 'observation.laneObservations' | 'observatio
 
 /** A record's own id, as the lists and the page's menus name it. */
 export function recordId(node: PictureNode): string {
+  if (node.kind === 'more') return node.key
   return node.kind === 'observation' ? node.observation.id : node.kind === 'cause' ? node.cause.id : node.solution.id
 }
 
 export function AnalysisPicture(props: AnalysisPictureProps) {
-  const { scopes, here, view, s } = props
-  const visible = props.filter?.filtering ? props.filter.visible : undefined
+  const { scopes, here, view, s, window: drawnWindow } = props
+  const filtered = props.filter?.filtering ? props.filter.visible : undefined
+  const visible = drawnWindow?.drawn ?? filtered
+  // Far out a card is one line, laid out for that: three lines at 60% could not be read.
+  const size = view.size === 'large' && view.zoom < FAR_BELOW ? 'far' : view.size
   const picture = useMemo(
-    () => analysisPicture(scopes, { here, size: view.size, ...(visible ? { visible } : {}) }),
-    [scopes, here, view.size, visible],
+    () => analysisPicture(scopes, {
+      here, size, ...(visible ? { visible } : {}),
+      ...(drawnWindow ? { cards: drawnWindow.cards, order: drawnWindow.order } : {}),
+    }),
+    [scopes, here, size, visible, drawnWindow],
   )
   const open = useMemo(() => openEnds(scopes, here, props.explainedAbove), [scopes, here, props.explainedAbove])
   // The chains behind bright spots only are drawn in the success colour (ADR-0038 §6).
@@ -93,14 +119,13 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
   }, [scopes, here, picture.nodes])
   const [hot, setHot] = useState<string | undefined>(undefined)
   const traced = useMemo(() => (hot ? traceChain(hot, picture.edges) : undefined), [hot, picture.edges])
-  const hotNode = hot ? picture.nodes.find((node) => node.key === hot) : undefined
+  const hotNode = hot ? picture.nodes.find((node) => node.key === hot && node.kind !== 'more') : undefined
+  const large = size !== 'small'
 
   return (
-    <PictureFrame picture={picture} view={view} label={s('observation.tabAnalysis')}>
+    <PictureFrame content={picture} view={view} label={s('observation.tabAnalysis')} dockExtra={props.dockExtra} overview={drawnWindow !== undefined && drawnWindow.shownChains === drawnWindow.totalChains ? { nodes: picture.nodes, slot: PICTURE_SIZE[size] } : undefined}>
       {picture.nodes.length === 0 ? (
-        <Box sx={{ p: 5, color: 'text.secondary' }}>
-          <Typography>{visible ? s('observation.filterNothing') : s('observation.graphEmpty')}</Typography>
-        </Box>
+        <PageState compact state="empty" title={filtered ? s('observation.filterNothing') : s('observation.graphEmpty')} />
       ) : (
         <Box sx={{ position: 'relative', width: picture.width * view.zoom, height: picture.height * view.zoom }}>
           <svg
@@ -114,30 +139,75 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
             data-size={view.size}
             style={{ display: 'block' }}
           >
-            <Headings picture={picture} hereLabel={props.hereLabel} s={s} large={view.size === 'large'} />
+            <Headings picture={picture} hereLabel={props.hereLabel} s={s} large={large} />
             <Boundaries picture={picture} scopeLabel={props.scopeLabel} s={s} />
-            <Edges picture={picture} here={here} large={view.size === 'large'} traced={traced} bright={bright} onMenu={props.onMenu} />
-            <Nodes {...props} picture={picture} open={open} traced={traced} hot={hot} onHot={setHot} />
+            <Edges picture={picture} here={here} size={size} traced={traced} bright={bright} onMenu={props.onMenu} />
+            <Nodes {...props} picture={picture} size={size} open={open} traced={traced} hot={hot} onHot={setHot} />
           </svg>
-          {hotNode && <HoverCard node={hotNode} picture={picture} zoom={view.zoom} large={view.size === 'large'} scopeLabel={props.scopeLabel} s={s} />}
+          {hotNode && <HoverCard node={hotNode} picture={picture} zoom={view.zoom} size={size} scopeLabel={props.scopeLabel} s={s} />}
         </Box>
       )}
     </PictureFrame>
   )
 }
 
+/** Where the window stands over a map that does not fit: a drag on it moves the window, so a far card is a press away. */
+function Overview({ frame, content, nodes, slot, zoom, s }: {
+  frame: RefObject<HTMLDivElement | null>
+  content: { width: number; height: number }
+  nodes: readonly { x: number; y: number }[]
+  slot: { width: number; height: number }
+  zoom: number
+  s: Translate
+}) {
+  const scale = 180 / Math.max(content.width, 1)
+  const height = Math.min(120, content.height * scale)
+  const element = frame.current
+  const goTo = (event: PointerEvent<SVGSVGElement>) => {
+    if (event.buttons !== 1 || !element) return
+    const box = event.currentTarget.getBoundingClientRect()
+    element.scrollLeft = ((event.clientX - box.left) / scale) * zoom - element.clientWidth / 2
+    element.scrollTop = ((event.clientY - box.top) / scale) * zoom - element.clientHeight / 2
+  }
+  return (
+    <div className="chain-overview" data-testid="picture-overview">
+      <svg width={180} height={height} viewBox={`0 0 180 ${height}`} onPointerDown={goTo} onPointerMove={goTo} aria-hidden="true">
+        {nodes.map((node, index) => <rect key={index} x={node.x * scale} y={node.y * scale} width={slot.width * scale} height={Math.max(1, slot.height * scale)} fill="var(--ink-3)" />)}
+        {element && (
+          <rect
+            x={(element.scrollLeft / zoom) * scale} y={(element.scrollTop / zoom) * scale}
+            width={(element.clientWidth / zoom) * scale} height={(element.clientHeight / zoom) * scale} fill="none" stroke="var(--accent)" strokeWidth={1.5}
+          />
+        )}
+      </svg>
+      <div className="chain-overview__said">{s('observation.mapOverview')}</div>
+    </div>
+  )
+}
+
 /**
- * The window the picture is looked at through: it measures itself to fit,
- * zooms with ⌘ or Ctrl and the scroll wheel, and pans with a drag on the
- * background. Scrollable, so it takes the keyboard's arrows as well.
+ * The window a map is looked at through, the same for both: it zooms the one way
+ * every canvas does, pans with a drag on the background, and has the dock. Scrollable,
+ * so it takes the keyboard's arrows as well. A map that does not fit says where the
+ * window stands.
  */
-function PictureFrame({ picture, view, label, children }: { picture: SectionedPicture; view: PictureView; label: string; children: ReactNode }) {
+export function PictureFrame({ content, view, label, children, dockExtra, overview, s }: {
+  content: { width: number; height: number }
+  view: PictureView
+  label: string
+  children: ReactNode
+  dockExtra?: ReactNode
+  overview?: { nodes: readonly { x: number; y: number }[]; slot: { width: number; height: number } } | undefined
+  s?: Translate
+}) {
   const theme = useTheme()
+  const said = useStrings().t
   const frame = useRef<HTMLDivElement>(null)
   const latest = useRef(view)
   latest.current = view
   const [viewport, setViewport] = useState({ width: 0, height: 0 })
   const [pan, setPan] = useState<{ x: number; y: number; left: number; top: number } | undefined>(undefined)
+  const [, moved] = useState(0)
 
   useEffect(() => {
     const element = frame.current
@@ -150,19 +220,20 @@ function PictureFrame({ picture, view, label, children }: { picture: SectionedPi
     return () => observer?.disconnect()
   }, [])
 
+  const zoomTo = useCallback((zoom: number, at?: { x: number; y: number }) => {
+    const element = frame.current
+    const ratio = clampZoom(zoom) / latest.current.zoom
+    latest.current.zoomTo(zoom)
+    if (!element || !at) return
+    // The picture has its new size on the next frame, and the record under the pointer stays under it.
+    requestAnimationFrame(() => {
+      element.scrollLeft = (element.scrollLeft + at.x) * ratio - at.x
+      element.scrollTop = (element.scrollTop + at.y) * ratio - at.y
+    })
+  }, [])
   const zoomRef = useCanvasZoom(steppedZoomTarget({
     zoom: () => latest.current.zoom,
-    to: (zoom, at) => {
-      const element = frame.current
-      const ratio = clampZoom(zoom) / latest.current.zoom
-      latest.current.zoomTo(zoom)
-      if (!element || !at) return
-      // The picture has its new size on the next frame, and the record under the pointer stays under it.
-      requestAnimationFrame(() => {
-        element.scrollLeft = (element.scrollLeft + at.x) * ratio - at.x
-        element.scrollTop = (element.scrollTop + at.y) * ratio - at.y
-      })
-    },
+    to: zoomTo,
     fit: () => latest.current.fitNow(),
   }))
   const frameRef = useCallback((element: HTMLDivElement | null) => {
@@ -172,8 +243,8 @@ function PictureFrame({ picture, view, label, children }: { picture: SectionedPi
 
   const { fit, fitted } = view
   useEffect(() => {
-    if (fit) fitted(fitZoom(picture, viewport))
-  }, [fit, fitted, picture, viewport])
+    if (fit) fitted(fitZoom(content, viewport))
+  }, [fit, fitted, content, viewport])
 
   const start = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 || (event.target as Element).closest('[data-key]')) return
@@ -186,26 +257,41 @@ function PictureFrame({ picture, view, label, children }: { picture: SectionedPi
     event.currentTarget.scrollLeft = pan.left - (event.clientX - pan.x)
     event.currentTarget.scrollTop = pan.top - (event.clientY - pan.y)
   }
+  const overflows = viewport.width > 0 && (content.width * view.zoom > viewport.width || content.height * view.zoom > viewport.height)
+  const [mapOn, setMapOn] = useState(true)
   return (
-    <Box
-      ref={frameRef}
-      role="region"
-      aria-label={label}
-      tabIndex={0}
-      data-testid="analysis-frame"
-      onPointerDown={start}
-      onPointerMove={move}
-      onPointerUp={() => setPan(undefined)}
-      onPointerCancel={() => setPan(undefined)}
-      sx={{
-        flex: 1, minHeight: 0, overflow: 'auto', position: 'relative', cursor: pan ? 'grabbing' : 'grab',
-        bgcolor: 'background.default', fontFamily: theme.typography.fontFamily,
-        backgroundImage: `radial-gradient(${theme.palette.divider} 1px, transparent 1px)`, backgroundSize: '18px 18px',
-        '&:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: -2 },
-      }}
-    >
-      {children}
-    </Box>
+    <div className="chain-map">
+      <Box
+        ref={frameRef}
+        role="region"
+        aria-label={label}
+        tabIndex={0}
+        data-testid="analysis-frame"
+        onPointerDown={start}
+        onPointerMove={move}
+        onPointerUp={() => setPan(undefined)}
+        onPointerCancel={() => setPan(undefined)}
+        onScroll={() => moved((tick) => tick + 1)}
+        sx={{
+          flex: 1, minHeight: 0, overflow: 'auto', position: 'relative', cursor: pan ? 'grabbing' : 'grab',
+          bgcolor: 'background.default', fontFamily: theme.typography.fontFamily,
+          '&:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: -2 },
+        }}
+      >
+        {children}
+      </Box>
+      <CanvasDock
+        zoom={view.zoom}
+        onZoomIn={() => zoomTo(stepZoom(view.zoom, 'in'))}
+        onZoomOut={() => zoomTo(stepZoom(view.zoom, 'out'))}
+        onFit={view.fitNow}
+        onHome={() => zoomTo(1)}
+        {...(overview && overflows ? { map: { on: mapOn, onToggle: () => setMapOn((on) => !on) } } : {})}
+        extra={dockExtra}
+        data-testid="picture-dock"
+      />
+      {overview && overflows && mapOn && <Overview frame={frame} content={content} nodes={overview.nodes} slot={overview.slot} zoom={view.zoom} s={s ?? said} />}
+    </div>
   )
 }
 
@@ -247,12 +333,11 @@ function Boundaries({ picture, scopeLabel, s }: { picture: SectionedPicture; sco
   )
 }
 
-function Edges({ picture, here, large, traced, bright, onMenu }: {
-  picture: SectionedPicture; here: string; large: boolean; traced?: ReadonlySet<string>; bright: ReadonlySet<string>; onMenu?: PictureMenuHandler
+function Edges({ picture, here, size, traced, bright, onMenu }: {
+  picture: SectionedPicture; here: string; size: PictureSize; traced?: ReadonlySet<string>; bright: ReadonlySet<string>; onMenu?: PictureMenuHandler
 }) {
   const theme = useTheme()
   const byKey = useMemo(() => new Map(picture.nodes.map((node) => [node.key, node])), [picture.nodes])
-  const size = large ? 'large' : 'small'
   return (
     <g>
       {picture.edges.map((edge) => {
@@ -266,7 +351,8 @@ function Edges({ picture, here, large, traced, bright, onMenu }: {
         const plain = STROKE[edge.strength]
         const colour = on ? theme.palette.primary.main : edge.crossing ? theme.palette.info.main
           : bright.has(edge.from) && bright.has(edge.to) ? theme.palette.success.main : theme.palette.text.secondary
-        const menu = onMenu && to.scope === here ? edgeTarget(edge, from, to, here) : undefined
+        // A card's line stands for lines not drawn, and has no link of its own to change.
+        const menu = onMenu && to.scope === here && from.kind !== 'more' ? edgeTarget(edge, from, to, here) : undefined
         return (
           <g key={`${edge.from}->${edge.to}`}>
             <path
@@ -307,6 +393,7 @@ function edgeTarget(edge: PictureEdge, from: PictureNode, to: PictureNode, here:
 
 type NodesProps = AnalysisPictureProps & {
   picture: SectionedPicture
+  size: PictureSize
   open: ReadonlySet<string>
   traced?: ReadonlySet<string>
   hot?: string
@@ -326,15 +413,25 @@ function markerOf(node: PictureNode, props: NodesProps, drawn: ReadonlySet<strin
   return away > 0 ? props.s('observation.pictureToBelow', { count: away }) : undefined
 }
 
+/** A card a line may be drawn from: what can be asked why of. A root cause ends the chain, and a solution has none behind it. */
+const asksWhy = (node: PictureNode) => node.kind === 'observation' || (node.kind === 'cause' && !node.root)
+
 function Nodes(props: NodesProps) {
   const theme = useTheme()
-  const { picture, view, traced, onSelect, onMenu, onHot } = props
+  const { picture, view, traced, onSelect, onMenu, onHot, size, onAsk, onDragLink, onMore } = props
   const drawn = useMemo(() => new Set(picture.nodes.map((node) => node.key)), [picture.nodes])
   const maxSeen = Math.max(1, ...picture.nodes.map((node) => (node.kind === 'observation' ? node.observation.seen : 1)))
-  const keyDown = (key: string) => (event: KeyboardEvent) => {
+  const [drag, setDrag] = useState<{ from: PictureNode; x: number; y: number } | undefined>(undefined)
+  const slot = PICTURE_SIZE[size]
+  const press = (node: PictureNode) => (node.kind === 'more' ? onMore?.(node) : onSelect(node.key))
+  const keyDown = (node: PictureNode) => (event: KeyboardEvent) => {
     if (event.key !== 'Enter' && event.key !== ' ') return
     event.preventDefault()
-    onSelect(key)
+    press(node)
+  }
+  const inPicture = (event: PointerEvent<Element>) => {
+    const box = event.currentTarget.closest('svg')?.getBoundingClientRect()
+    return { x: (event.clientX - (box?.left ?? 0)) / view.zoom, y: (event.clientY - (box?.top ?? 0)) / view.zoom }
   }
   return (
     <g>
@@ -344,27 +441,30 @@ function Nodes(props: NodesProps) {
           transform={`translate(${node.x},${node.y})`}
           role="button"
           tabIndex={0}
-          aria-label={`${recordLabel(node)} ${recordTitle(node)}`}
+          aria-label={node.kind === 'more'
+            ? (node.more === 'fold' ? props.s('observation.mapMore', { count: node.count }) : props.s('observation.mapPile', { count: node.count }))
+            : `${recordLabel(node)} ${recordTitle(node)}`}
           aria-describedby={props.hot === node.key ? 'analysis-hover' : undefined}
           data-testid={`analysis-${node.kind}`}
           data-key={node.key}
           data-root={node.kind === 'cause' && node.root ? 'true' : undefined}
-          opacity={traced && !traced.has(node.key) ? 0.16 : 1}
+          opacity={traced && !traced.has(node.key) ? 0.25 : 1}
           style={{ cursor: 'pointer' }}
-          onClick={() => onSelect(node.key)}
-          onKeyDown={keyDown(node.key)}
+          onClick={() => press(node)}
+          onKeyDown={keyDown(node)}
           onMouseEnter={() => onHot(node.key)}
           onMouseLeave={() => onHot(undefined)}
           onFocus={() => onHot(node.key)}
           onBlur={() => onHot(undefined)}
-          onContextMenu={onMenu ? (event) => {
+          onContextMenu={onMenu && node.kind !== 'more' ? (event) => {
             event.preventDefault()
             onMenu({ kind: 'node', key: node.key }, { x: event.clientX, y: event.clientY })
           } : undefined}
         >
           <RecordMark
             node={node}
-            size={view.size}
+            size={size}
+            zoom={view.zoom}
             selected={node.key === props.selectedKey}
             matched={(props.filter?.filtering ?? false) && (props.filter?.matched.has(node.key) ?? false)}
             openEnd={props.open.has(node.key)}
@@ -372,17 +472,48 @@ function Nodes(props: NodesProps) {
             fill={node.kind === 'observation' ? seenTint(theme, node.observation.seen, maxSeen, toneOf(node.observation)) : theme.palette.background.paper}
             s={props.s}
           />
+          {size !== 'small' && onAsk && asksWhy(node) && (props.hot === node.key || node.key === props.selectedKey) && (
+            <g
+              role="button" tabIndex={0} aria-label={props.s('observation.mapHandle')} data-testid="analysis-handle"
+              transform={`translate(${slot.width},${slot.height / 2})`} style={{ cursor: 'crosshair' }}
+              onClick={(event) => { event.stopPropagation(); onAsk(node.key) }}
+              onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); onAsk(node.key) } }}
+              onPointerDown={(event) => {
+                if (!onDragLink) return
+                event.stopPropagation()
+                event.currentTarget.setPointerCapture?.(event.pointerId)
+                setDrag({ from: node, ...inPicture(event) })
+              }}
+              onPointerMove={(event) => { if (drag) setDrag({ from: drag.from, ...inPicture(event) }) }}
+              onPointerUp={(event) => {
+                if (!drag) return
+                setDrag(undefined)
+                const hit = document.elementsFromPoint?.(event.clientX, event.clientY)
+                  .map((one) => one.closest('[data-key]')?.getAttribute('data-key')).find((key) => key && key !== node.key)
+                if (hit) onDragLink?.(node.key, hit)
+              }}
+            >
+              <circle r={9} fill={theme.palette.primary.main} />
+              <path d="M-4 0H4M0 -4V4" stroke={theme.palette.primary.contrastText} strokeWidth={1.6} />
+            </g>
+          )}
         </g>
       ))}
+      {drag && (
+        <line
+          x1={drag.from.x + slot.width} y1={drag.from.y + slot.height / 2} x2={drag.x} y2={drag.y}
+          stroke={theme.palette.primary.main} strokeWidth={1.6} strokeDasharray="4 3" pointerEvents="none"
+        />
+      )}
     </g>
   )
 }
 
 /** The full title, the label, what it is and the scope, under the record hovered or focused. */
-function HoverCard({ node, picture, zoom, large, scopeLabel, s }: {
-  node: PictureNode; picture: SectionedPicture; zoom: number; large: boolean; scopeLabel: (path: string) => string; s: Translate
+function HoverCard({ node, picture, zoom, size, scopeLabel, s }: {
+  node: PictureNode; picture: SectionedPicture; zoom: number; size: PictureSize; scopeLabel: (path: string) => string; s: Translate
 }) {
-  const slot = PICTURE_SIZE[large ? 'large' : 'small']
+  const slot = PICTURE_SIZE[size]
   const left = Math.min(Math.max(0, (node.x + slot.width / 2) * zoom - 150), Math.max(0, picture.width * zoom - 300))
   return (
     <Box
@@ -401,7 +532,7 @@ function HoverCard({ node, picture, zoom, large, scopeLabel, s }: {
 }
 
 /** What the marks mean, said once under the picture, for the size it is drawn in. */
-export function PictureLegend({ size, local, s }: { size: 'large' | 'small'; local: boolean; s: Translate }) {
+export function PictureLegend({ size, local, s }: { size: PictureSize; local: boolean; s: Translate }) {
   const theme = useTheme()
   const { palette } = theme
   const row = (glyph: ReactNode, text: string) => (
@@ -420,7 +551,7 @@ export function PictureLegend({ size, local, s }: { size: 'large' | 'small'; loc
     </>
   )
   const solutionFill = palette.background.paper
-  const rows = size === 'large' ? [
+  const rows = size !== 'small' ? [
     row(<><rect x={2} y={2} width={22} height={10} rx={3} fill="none" stroke={palette.text.secondary} /><rect x={2} y={2} width={4} height={10} fill={palette.error.main} /></>, s('observation.legendStripe')),
     row(box(palette.success.main, { width: 1.8 }), s('observation.legendBright')),
     row(box(palette.warning.main, { dash: '3 2' }), s('observation.legendAssumed')),
@@ -437,7 +568,7 @@ export function PictureLegend({ size, local, s }: { size: 'large' | 'small'; loc
     row(<rect x={8} y={2} width={10} height={10} rx={2} fill={solutionFill} stroke={palette.primary.main} />, s('observation.legendSquare')),
   ]
   return (
-    <Box data-testid="analysis-legend" data-size={size} sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+    <Box data-testid="analysis-legend" data-size={size} sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
       {rows}
       {row(<><circle cx={13} cy={7} r={6} fill={palette.background.paper} stroke={palette.warning.main} /><text x={13} y={7} dy="0.35em" textAnchor="middle" fontSize={9} fontWeight={700} fill={palette.warning.main}>?</text></>, s('observation.legendOpenEnd'))}
       {row(<><line x1={1} y1={3} x2={25} y2={3} stroke={palette.text.secondary} strokeWidth={3} /><line x1={1} y1={7} x2={25} y2={7} stroke={palette.text.secondary} strokeWidth={1.5} /><line x1={1} y1={11} x2={25} y2={11} stroke={palette.text.secondary} strokeDasharray="3 3" /></>, s('observation.legendStrength'))}

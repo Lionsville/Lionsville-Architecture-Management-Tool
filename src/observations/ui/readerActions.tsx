@@ -72,14 +72,23 @@ export function observationActions(o: {
   onMove?: (() => void) | undefined
   onArchive: () => void
   onDelete: () => void
+  /** Noted (decision 13): read, and nobody is asked to explain it. Offered while it waits, and taken back. */
+  noted?: boolean
+  explained?: boolean
+  onNote?: () => void
+  onUnnote?: () => void
 }): ReaderAction[] {
   const { s } = o
+  const noted: ReaderAction[] = !o.mayAdd ? []
+    : o.noted && o.onUnnote ? [{ key: 'unnote', icon: <UndoIcon size={14} />, label: s('observation.actUnnote'), tip: s('observation.tipUnnote'), onClick: o.onUnnote, occasional: true, testId: 'observation-unnote' }]
+      : !o.noted && !o.explained && o.onNote ? [{ key: 'note', icon: <CheckIcon size={14} />, label: s('observation.actNote'), tip: s('observation.tipNote'), onClick: o.onNote, occasional: true, opensDialog: true, testId: 'observation-note' }]
+        : []
   const seen: ReaderAction = {
     key: 'seen', icon: <EyeIcon size={14} />, label: s('observation.seenAgain'), tip: s('observation.tipSeen'),
     onClick: o.onSeenAgain, opensDialog: true, testId: 'observation-seen-again', guide: 'observation.seenAgain',
   }
   const cause: ReaderAction = {
-    key: 'cause', icon: <LinkIcon size={14} />, label: s('observation.actCause'), tip: s('observation.tipCause', { scope: o.scope }),
+    key: 'cause', icon: <LinkIcon size={14} />, label: s('observation.actAskWhy'), tip: s('observation.tipCause', { scope: o.scope }),
     onClick: o.onLink, primary: true, opensDialog: true, testId: 'observation-cause', guide: 'observation.cause',
   }
   const merge: ReaderAction = {
@@ -96,6 +105,7 @@ export function observationActions(o: {
   }
   return [
     ...(o.mayAdd ? [seen, cause] : []),
+    ...noted,
     ...(o.mayMerge ? [merge] : []),
     ...(o.own && move ? [move] : []),
     ...(o.own ? [archive, deleteAction(s('observation.tipDelete'), o.onDelete, s)] : []),
@@ -127,8 +137,12 @@ export function openScopeAction(scope: string, onClick: () => void, s: Translate
 /** The links a cause may be given from its reader (ADR-0032 §4). */
 export type LinkMode = 'cause' | 'deeper' | 'root' | 'org' | 'local'
 
-/** What the reader asked a link for: the mode, and the record, with its scope where it is not this one. */
-export type LinkTarget = { mode: LinkMode; id: string; scope?: string }
+/**
+ * What the reader asked a link for: the mode, and the record, with its scope where
+ * it is not this one. `existing` opens on what is already written down, for *Link an
+ * existing cause*.
+ */
+export type LinkTarget = { mode: LinkMode; id: string; scope?: string; existing?: true }
 
 export function causeActions(o: {
   s: Translate
@@ -156,8 +170,7 @@ export function causeActions(o: {
 }): ReaderAction[] {
   const { s } = o
   const chain: ReaderAction[] = o.root ? [] : [
-    { key: 'deeper', icon: <DeeperIcon size={14} />, label: s('observation.actDeeper'), tip: s('observation.tipDeeper'), onClick: () => o.onLink('deeper'), primary: true, opensDialog: true, testId: 'cause-deeper' },
-    { key: 'root', icon: <RootCauseIcon size={14} />, label: s('observation.rootCause'), tip: s('observation.tipRoot'), onClick: () => o.onLink('root'), opensDialog: true, testId: 'cause-root-link' },
+    { key: 'deeper', icon: <DeeperIcon size={14} />, label: s('observation.actAskWhy'), tip: s('observation.tipDeeper'), onClick: () => o.onLink('deeper'), primary: true, opensDialog: true, testId: 'cause-deeper' },
   ]
   const solution: ReaderAction[] = o.root && o.mayPropose
     ? [{ key: 'solution', icon: <SolutionIcon size={14} />, label: s('observation.actSolution'), tip: s('observation.tipSolution'), onClick: o.onPropose, primary: true, opensDialog: true, testId: 'cause-solution' }]
@@ -165,7 +178,7 @@ export function causeActions(o: {
   const onRoot = o.onRoot
   const rootStep: ReaderAction[] = onRoot ? [{
     key: 'root-toggle', icon: o.root ? <MakeCauseIcon size={14} /> : <MakeRootIcon size={14} />,
-    label: o.root ? s('observation.makeCause') : s('observation.makeRoot'),
+    label: o.root ? s('observation.notRootAfterAll') : s('observation.thisIsRoot'),
     tip: s(o.root ? 'observation.tipMakeCause' : 'observation.tipMakeRoot', { label: o.label, next: o.flipped }),
     // It asks first, or says why it is refused.
     onClick: onRoot, opensDialog: true, testId: 'cause-root-toggle', guide: 'cause.root',

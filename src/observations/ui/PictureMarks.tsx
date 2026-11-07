@@ -4,8 +4,8 @@
 /**
  * One record on the analysis picture, in either of its two sizes (ADR-0032 §8).
  *
- * **Large** is a card for every kind, with its label and title: an
- * observation with its impact as a stripe down the left and its count, a
+ * **Large** is a card for every kind, with its label and three lines of its
+ * title: an observation with its impact as a stripe down the left and its count, a
  * cause dashed while assumed and solid once verified, a root cause with the
  * heavier, rounder outline, a solution filled. **Small** is a circle for every
  * kind with the label and a short title under it: an observation filled and
@@ -32,7 +32,7 @@ import { causeLabel, formatObservationNumber } from '../observation'
 import type { ObservationImpact } from '../observation'
 import { PHASE_LABEL, STATE_LABEL } from '../observationScope'
 import { formatSolutionNumber } from '../solution'
-import { shorten } from './ChainMarks'
+import { shorten, wrapTitle } from './ChainMarks'
 
 /** A small mark's radius per impact: the size of an observation is how much it hurts. */
 export const DOT: Record<ObservationImpact, number> = { minor: 10, major: 13, critical: 16 }
@@ -42,15 +42,17 @@ export const SMALL_CENTRE = 20
 export function recordLabel(node: PictureNode): string {
   if (node.kind === 'observation') return formatObservationNumber(node.observation.number)
   if (node.kind === 'cause') return causeLabel(node.cause)
-  return formatSolutionNumber(node.solution.number)
+  return node.kind === 'solution' ? formatSolutionNumber(node.solution.number) : ''
 }
 
 export function recordTitle(node: PictureNode): string {
+  if (node.kind === 'more') return ''
   return node.kind === 'observation' ? node.observation.title : node.kind === 'cause' ? node.cause.title : node.solution.title
 }
 
 /** What kind of record it is and where it stands, in the words the reader uses. */
 export function recordState(node: PictureNode, s: Translate): string {
+  if (node.kind === 'more') return ''
   if (node.kind === 'observation') return s('observation.seenTimes', { count: node.observation.seen })
   if (node.kind === 'solution') return s(PHASE_LABEL[node.solution.state]).toLowerCase()
   const state = s(STATE_LABEL[node.cause.state]).toLowerCase()
@@ -61,13 +63,14 @@ export function recordState(node: PictureNode, s: Translate): string {
 function smallReach(node: PictureNode): number {
   if (node.kind === 'observation') return DOT[node.observation.impact]
   if (node.kind === 'solution') return 11
+  if (node.kind === 'more') return 12
   return node.root ? 14 : 12
 }
 
 /** Where a line leaves a record (`right`) or arrives at one, in the picture's pixels. */
 export function anchorOf(node: PictureNode, side: 'left' | 'right', size: PictureSize): { x: number; y: number } {
   const slot = PICTURE_SIZE[size]
-  if (size === 'large') return { x: node.x + (side === 'right' ? slot.width : 0), y: node.y + slot.height / 2 }
+  if (size !== 'small') return { x: node.x + (side === 'right' ? slot.width : 0), y: node.y + slot.height / 2 }
   const reach = smallReach(node)
   return { x: node.x + slot.width / 2 + (side === 'right' ? reach : -reach), y: node.y + SMALL_CENTRE }
 }
@@ -75,6 +78,7 @@ export function anchorOf(node: PictureNode, side: 'left' | 'right', size: Pictur
 /** The outline a record is drawn with: its colour, its weight, and a dash while it is assumed. */
 function outline(theme: Theme, node: PictureNode): { stroke: string; width: number; dash?: string } {
   const { palette } = theme
+  if (node.kind === 'more') return { stroke: palette.text.secondary, width: 1, dash: '3 3' }
   if (node.kind === 'observation') return toneOf(node.observation) === 'neutral' ? { stroke: palette.text.secondary, width: 1.2 } : { stroke: toneColor(theme, toneOf(node.observation)), width: 1.8 }
   if (node.kind === 'solution') return { stroke: palette.primary.main, width: 1.4 }
   const dash = node.cause.state === 'assumed' ? '5 4' : undefined
@@ -89,6 +93,8 @@ function impactColour(theme: Theme, impact: ObservationImpact): string {
 export type RecordMarkProps = {
   node: PictureNode
   size: PictureSize
+  /** The map's zoom: a card far out holds its text's size on screen through it. */
+  zoom?: number
   selected: boolean
   matched: boolean
   openEnd: boolean
@@ -100,7 +106,52 @@ export type RecordMarkProps = {
 }
 
 export function RecordMark(props: RecordMarkProps) {
-  return props.size === 'large' ? <LargeMark {...props} /> : <SmallMark {...props} />
+  if (props.node.kind === 'more') return <MoreMark {...props} />
+  return props.size === 'large' ? <LargeMark {...props} /> : props.size === 'far' ? <FarMark {...props} /> : <SmallMark {...props} />
+}
+
+/** How many characters a card's line holds: its width less the margins, over what a character takes at the card's type. */
+const LARGE_LINE = 32
+
+/** Records not drawn, said as a card: pressing it opens them where they are, or lists them. */
+function MoreMark({ node, size, s }: RecordMarkProps) {
+  const theme = useTheme()
+  if (node.kind !== 'more') return null
+  const slot = PICTURE_SIZE[size]
+  const fold = node.more === 'fold'
+  return (
+    <>
+      <rect width={slot.width} height={slot.height} rx={6} fill={theme.palette.background.paper} stroke={theme.palette.text.secondary} strokeWidth={1} strokeDasharray="3 3" />
+      <text x={12} y={size === 'far' ? slot.height / 2 + 4 : 24} fontSize={size === 'far' ? 14 : 12.5} fontWeight={600} fill={theme.palette.text.primary}>
+        {fold ? s('observation.mapMore', { count: node.count }) : s('observation.mapPile', { count: node.count })}
+      </text>
+      {size !== 'far' && (
+        <text x={12} y={42} fontSize={11.5} fill={theme.palette.text.secondary}>
+          {fold ? s('observation.mapMoreHint') : s('observation.mapPileHint')}
+        </text>
+      )}
+    </>
+  )
+}
+
+/** A card far out: one line, the text the size it is at 100% however far out the map is, so it is still read. */
+function FarMark({ node, selected, matched, openEnd, zoom = 1, s }: RecordMarkProps) {
+  const theme = useTheme()
+  const { width, height } = PICTURE_SIZE.far
+  const line = outline(theme, node)
+  const root = node.kind === 'cause' && node.root
+  const fill = node.kind === 'solution' ? mix(theme.palette.primary.main, 0.12, theme.palette.background.paper) : theme.palette.background.paper
+  const size = 12.5 / zoom
+  return (
+    <>
+      {(selected || matched) && (
+        <rect x={-4} y={-4} width={width + 8} height={height + 8} rx={10} fill="none" stroke={theme.palette.primary.main} strokeWidth={selected ? 2.6 : 2} strokeDasharray={selected ? undefined : '3 3'} data-testid={selected ? undefined : 'picture-match'} />
+      )}
+      <rect width={width} height={height} rx={root ? 16 : 6} fill={fill} stroke={line.stroke} strokeWidth={root ? line.width * 1.6 : line.width} strokeDasharray={line.dash} />
+      <text x={12} y={height / 2 + size / 3} fontSize={size} fill={theme.palette.text.primary}>{shorten(recordTitle(node), Math.floor((width - 24) / (size * 0.5)))}</text>
+      {openEnd && <OpenEnd x={width} y={height / 2} r={9} s={s} />}
+    </>
+  )
 }
 
 function OpenEnd({ x, y, r, s }: { x: number; y: number; r: number; s: Translate }) {
@@ -123,24 +174,21 @@ function LargeMark({ node, selected, matched, openEnd, marker, s }: RecordMarkPr
   const left = root ? 16 : 13
   // The state only: a root cause says it is one by its outline, and the hover says it in words.
   const state = node.kind === 'cause' ? s(STATE_LABEL[node.cause.state]).toLowerCase() : recordState(node, s)
-  const meta = node.kind === 'observation' ? recordLabel(node) : `${recordLabel(node)} · ${state}`
+  const meta = `${recordLabel(node)} · ${state}`
+  // A link that leaves the picture takes a title line of its own: on the label's line the two overprinted.
+  const title = wrapTitle(recordTitle(node), LARGE_LINE, marker ? 2 : 3)
   return (
     <>
       {(selected || matched) && (
         <rect x={-5} y={-5} width={width + 10} height={height + 10} rx={12} fill="none" stroke={theme.palette.primary.main} strokeWidth={selected ? 2.6 : 2} strokeDasharray={selected ? undefined : '3 3'} data-testid={selected ? undefined : 'picture-match'} />
       )}
-      <rect width={width} height={height} rx={root ? 18 : 8} fill={fill} stroke={line.stroke} strokeWidth={line.width} strokeDasharray={line.dash} />
-      {node.kind === 'observation' && (
-        <>
-          <rect x={0} y={0} width={5} height={height} rx={2} fill={impactColour(theme, node.observation.impact)} />
-          <text x={width - 10} y={18} textAnchor="end" fontSize={10.5} fontWeight={700} fill={theme.palette.text.secondary}>
-            {s('observation.seenTimes', { count: node.observation.seen })}
-          </text>
-        </>
-      )}
-      <text x={left} y={19} fontSize={10.5} fontFamily="ui-monospace, Menlo, monospace" fill={theme.palette.text.secondary}>{meta}</text>
-      <text x={left} y={38} fontSize={12.5} fontWeight={500} fill={theme.palette.text.primary}>{shorten(recordTitle(node), 26)}</text>
-      {marker && <text x={width - 10} y={19} textAnchor="end" fontSize={10} fontWeight={500} fill={theme.palette.info.main}>{marker}</text>}
+      <rect width={width} height={height} rx={root ? 18 : 6} fill={fill} stroke={line.stroke} strokeWidth={line.width} strokeDasharray={line.dash} />
+      {node.kind === 'observation' && <rect x={0} y={0} width={4} height={height} rx={2} fill={impactColour(theme, node.observation.impact)} />}
+      <text x={left} y={19} fontSize={11} fontFamily="var(--font-mono, ui-monospace, monospace)" fill={theme.palette.text.secondary}>{meta}</text>
+      {title.map((text, index) => (
+        <text key={index} x={left} y={37 + index * 16} fontSize={12.5} fill={theme.palette.text.primary}>{text}</text>
+      ))}
+      {marker && <text x={left} y={height - 9} fontSize={10.5} fill={theme.palette.info.main} data-testid="picture-marker">{shorten(marker, LARGE_LINE + 2)}</text>}
       {openEnd && <OpenEnd x={width} y={height / 2} r={8} s={s} />}
     </>
   )

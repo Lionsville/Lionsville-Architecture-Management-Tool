@@ -177,8 +177,9 @@ function useMergeChoices() {
   const [choices, setChoices] = useState<Record<string, LinkChoice>>({})
   const [added, setAdded] = useState(false)
   const [busy, setBusy] = useState(false)
-  const open = useCallback((kind: MergeKind, at: RecordAt) => {
-    setOpened({ kind, picked: [at], survivor: at })
+  /** On one record, or on several ticked in a list: the first is the survivor until somebody says otherwise. */
+  const open = useCallback((kind: MergeKind, at: RecordAt, others: readonly RecordAt[] = []) => {
+    setOpened({ kind, picked: [at, ...others], survivor: at })
     setQuery('')
     setAcross(false)
     setChosen({})

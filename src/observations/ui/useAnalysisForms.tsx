@@ -3,9 +3,9 @@
 
 /**
  * The observations page's forms, and where what they make lands (ADR-0032
- * §2, §4, §6): the new observation with its causes, and the link dialog the
- * readers open for a cause, a deeper cause, a root cause, and a cause across
- * a scope boundary.
+ * §2, §4, §6): the new observation with its causes, written in a panel beside the
+ * list; the ladder that asks why (`WhyLadder`), one question at a time, for one
+ * record or a group; and the link dialog for a cause across a scope boundary.
  *
  * **One submit is one step.** What a form makes goes back through the page's
  * one whole-lists path, which the workspace turns into one transaction, so ⌘Z
@@ -26,8 +26,8 @@ import Snackbar from '@mui/material/Snackbar'
 import type { Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { MakeId } from '../../model/keys'
-import { causeLabel, linkCause, linkRefusal, liveCauses, nextCauseNumber, seenAgain } from '../observation'
-import type { Cause, CauseLink, LinkContext, ScopeAnalysis } from '../observation'
+import { causeLabel, formatObservationNumber, linkCause, linkRefusal, liveCauses, nextCauseNumber, seenAgain, toneOf } from '../observation'
+import type { Cause, CauseLink, LinkContext, Observation, ScopeAnalysis } from '../observation'
 import { addCauseLinked, recordObservation } from '../form'
 import { usePersonNames } from '../../people/ui/names'
 import { meIn } from '../../people/me'
@@ -36,8 +36,9 @@ import type { RecordedBy } from '../observation'
 import { whoRecords } from '../recordedBy'
 import { nodeKey } from '../graph'
 import { LinkDialog } from './LinkForm'
+import { WhyLadder } from './WhyLadder'
 import type { LinkCandidate, LinkSpec } from './LinkForm'
-import { NewObservationDialog } from './ObservationForm'
+import { NewObservationPanel, RecordedPanel } from './ObservationForm'
 import { SeenDialog } from './ObservationDialogs'
 import type { FormScope, RecordRequest } from './ObservationForm'
 import type { LinkTarget } from './readerActions'
@@ -51,9 +52,16 @@ export function splitKey(key: string): { id: string; scope?: string } {
   return at < 0 ? { id: key } : { scope: key.slice(0, at), id: key.slice(at + 1) }
 }
 
+/** What the ladder is asking about: one record or a group of one scope, and whether it opened on what is already written down. */
+export type LadderAsk = { mode: 'cause' | 'deeper'; ids: readonly string[]; scope?: string; existing?: true }
+
 export type AnalysisForms = {
   openNew: () => void
   openLink: (target: LinkTarget) => void
+  /** Ask why of several records at once: the ladder, for a group. */
+  askGroup: (ids: readonly string[], scope: string | undefined) => void
+  /** What stands beside the list: the form, what it asks after recording, or the ladder. Absent, nothing does. */
+  panel: ReactNode
   /** Always: the link dialog takes a cause across a scope boundary, both ways. */
   across: true
   /** Land a change on a scope below and say where it went; absent where nothing below may be written. */
@@ -88,10 +96,17 @@ export function useAnalysisForms(deps: {
   nameOf: (id: string, scope?: string) => string
   select: (key: string) => void
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
+  /** *This is the root cause*, with what stands in the way: read through the page, which knows what explains a cause from above. */
+  rootStep: (id: string, scope?: string) => { onRoot?: () => void; rootRefused?: string }
+  /** Propose a solution for a root the ladder reached. */
+  onPropose?: ((causeId: string) => void) | undefined
 }): AnalysisForms {
   const { work, below, commit, makeId, today, s, scopeLabel, nameOf, select } = deps
   const [creating, setCreating] = useState(false)
   const [linking, setLinking] = useState<LinkTarget | undefined>(undefined)
+  const [asking, setAsking] = useState<LadderAsk | undefined>(undefined)
+  /** What was just recorded, for the one question after it. */
+  const [recorded, setRecorded] = useState<{ id: string; scope?: string } | undefined>(undefined)
   /** An observation the form found written down already, being seen again: asked over the form, which stays open behind it. */
   const [seeing, setSeeing] = useState<{ id: string; scope?: string } | undefined>(undefined)
   const [notice, setNotice] = useState<string | undefined>(undefined)
@@ -116,10 +131,12 @@ export function useAnalysisForms(deps: {
   const record = (request: RecordRequest) => {
     setCreating(false)
     const args = { fields: { ...request.fields, ...(recordedBy ? { recordedBy } : {}) }, causes: request.causes, makeId, t: s }
+    // With a cause written beside it, the question after recording has been answered.
+    const ask = (id: string, scope?: string) => { if (request.causes.length === 0) setRecorded({ id, ...(scope !== undefined ? { scope } : {}) }) }
     if (request.scope === undefined) {
       const made = recordObservation(work, args)
       commit(made.analysis)
-      select(made.id)
+      ask(made.id)
       return
     }
     const scope = request.scope
@@ -128,7 +145,7 @@ export function useAnalysisForms(deps: {
       const made = recordObservation(held, args)
       id = made.id
       return { ...held, ...made.analysis }
-    }, () => select(nodeKey(id, scope)))
+    }, () => ask(id, scope))
   }
   const seenFromForm = ({ date, note }: { date: string; note: string }) => {
     if (!seeing) return
@@ -147,11 +164,16 @@ export function useAnalysisForms(deps: {
     : undefined
 
   const context: LinkContext = { here: deps.path ?? '', below }
+  const listsOf = (scope: string | undefined): { observations: readonly Observation[]; causes: readonly Cause[] } => (
+    scope === undefined ? work : below.find((one) => one.scope === scope) ?? { observations: [], causes: [] }
+  )
+  const justRecorded = recorded && listsOf(recorded.scope).observations.find((one) => one.id === recorded.id)
   const spec = linking ? linkSpec(linking, { work, below, context, s, scopeLabel, nameOf, scopeName: deps.scopeName }) : undefined
   const createLinked: Parameters<typeof LinkDialog>[0]['onCreate'] = (draft, behind) => {
     if (!linking) return
     const target = linking
     const fresh = makeId('ca')
+    // The dialog is what a link across a boundary is written in: a new cause here for one below.
     const madeIn = target.mode === 'org' ? undefined : target.scope
     const explains = target.mode === 'org' ? { id: target.id, ...(target.scope !== undefined ? { scope: target.scope } : {}) } : { id: target.id }
     setLinking(undefined)
@@ -186,11 +208,6 @@ export function useAnalysisForms(deps: {
 
   const dialogs = (
     <>
-      <NewObservationDialog
-        open={creating} scopes={scopes} today={today()} onCancel={() => setCreating(false)}
-        onRecord={record} onSeenAgain={(scope, id) => setSeeing({ id, ...(scope !== undefined ? { scope } : {}) })}
-        renderMarkdown={deps.renderMarkdown} s={s}
-      />
       <SeenDialog
         subject={seeing && seenObservation ? { id: nodeKey(seeing.id, seeing.scope), label: nameOf(seeing.id, seeing.scope), firstSeen: seenObservation.date } : undefined}
         today={today()} onCancel={() => setSeeing(undefined)} onConfirm={seenFromForm} s={s}
@@ -205,9 +222,44 @@ export function useAnalysisForms(deps: {
       />
     </>
   )
+  const panel = creating ? (
+    <NewObservationPanel
+      scopes={scopes} today={today()} onCancel={() => setCreating(false)}
+      onRecord={record} onSeenAgain={(scope, id) => setSeeing({ id, ...(scope !== undefined ? { scope } : {}) })}
+      renderMarkdown={deps.renderMarkdown} s={s}
+    />
+  ) : justRecorded && recorded ? (
+    <RecordedPanel
+      label={formatObservationNumber(justRecorded.number)} title={justRecorded.title} bright={toneOf(justRecorded) === 'bright'} s={s}
+      onDone={() => setRecorded(undefined)}
+      onAsk={() => { setRecorded(undefined); setAsking({ mode: 'cause', ids: [recorded.id], ...(recorded.scope !== undefined ? { scope: recorded.scope } : {}) }) }}
+    />
+  ) : asking ? (
+    <WhyLadder
+      key={`${asking.mode}:${asking.ids.join(',')}`}
+      ask={asking} work={work} below={below} context={context} scopeName={deps.scopeName} scopeLabel={scopeLabel} makeId={makeId} s={s}
+      {...(deps.readOnly ? {} : { write: onCauses })}
+      rootStep={deps.rootStep}
+      nameOf={nameOf}
+      onPropose={deps.onPropose}
+      onNext={setAsking}
+      onSelect={select}
+      onClose={() => setAsking(undefined)}
+    />
+  ) : undefined
   return {
-    openNew: () => setCreating(true),
-    openLink: setLinking,
+    openNew: () => { setRecorded(undefined); setAsking(undefined); setCreating(true) },
+    // The ladder asks what a dialog with two tabs asked; a link across a scope boundary is still that dialog's.
+    openLink: (target) => {
+      if (target.mode === 'org' || target.mode === 'local') { setLinking(target); return }
+      setCreating(false); setRecorded(undefined)
+      setAsking({
+        mode: target.mode === 'cause' ? 'cause' : 'deeper', ids: [target.id],
+        ...(target.scope !== undefined ? { scope: target.scope } : {}), ...(target.existing ? { existing: true as const } : {}),
+      })
+    },
+    askGroup: (ids, scope) => { setCreating(false); setRecorded(undefined); setAsking({ mode: 'cause', ids, ...(scope !== undefined ? { scope } : {}) }) },
+    panel,
     across: true,
     ...(onChangeBelow ? { changeBelow } : {}),
     scopes,
@@ -270,26 +322,7 @@ function linkSpec(target: LinkTarget, o: {
       candidates, create: { madeIn: o.scopeName, nextNumber: nextCauseNumber(work.causes), rootDefault: true, behind: here.map((cause) => candidate(cause)) },
     }
   }
-  const list = causesIn(scope)
-  const allowed = list
-    .filter((cause) => !cause.explains.some((link) => link.id === id && link.scope === undefined))
-    .filter((cause) => mode === 'cause' || linkRefusal(list, cause.id, { id }) === undefined)
-    .filter((cause) => (mode === 'deeper' ? !cause.root : mode === 'root' ? cause.root === true : true))
-  const words = {
-    cause: ['observation.linkCauseTitle', 'observation.linkCauseIntro'],
-    deeper: ['observation.linkDeeperTitle', 'observation.linkDeeperIntro'],
-    root: ['observation.linkRootTitle', 'observation.linkRootIntro'],
-  } as const
-  const [title, intro] = words[mode]
-  return {
-    ...base, title: s(title, { name: subject }), intro: s(intro),
-    candidates: allowed.map((cause) => ({ ...candidate(cause), key: cause.id })),
-    create: {
-      madeIn: scope === undefined ? o.scopeName : o.scopeLabel(scope), nextNumber: nextCauseNumber(everyCause(scope)),
-      rootFixed: mode === 'root', rootDefault: false,
-      behind: list.filter((cause) => cause.id !== id).map((cause) => ({ ...candidate(cause), key: cause.id })),
-    },
-  }
+  throw new Error(`The ladder asks ${mode}, not this dialog`)
 }
 
 /**

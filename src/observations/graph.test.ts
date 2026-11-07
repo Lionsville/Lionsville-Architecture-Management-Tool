@@ -375,15 +375,14 @@ describe('pictureLinks and openEnds', () => {
 })
 
 describe('fitZoom', () => {
-  it('fits the whole picture, no larger than 110 %', () => {
-    expect(fitZoom({ width: 400, height: 300 }, { width: 2000, height: 2000 })).toBe(1.1)
+  it('fits the whole picture, and never makes it larger than it is', () => {
+    expect(fitZoom({ width: 400, height: 300 }, { width: 2000, height: 2000 })).toBe(1)
     expect(fitZoom({ width: 1000, height: 500 }, { width: 908, height: 908 })).toBe(0.9)
   })
 
-  it('fits the height instead where fitting both would go below 75 %, and never below 40 %', () => {
-    expect(fitZoom({ width: 4000, height: 500 }, { width: 1008, height: 808 })).toBe(0.75)
-    expect(fitZoom({ width: 4000, height: 2000 }, { width: 1008, height: 1008 })).toBe(0.5)
-    expect(fitZoom({ width: 4000, height: 8000 }, { width: 1008, height: 1008 })).toBe(0.4)
+  it('stops at the floor, where a name can still be read: what does not fit by then scrolls', () => {
+    expect(fitZoom({ width: 4000, height: 500 }, { width: 1008, height: 808 })).toBe(0.6)
+    expect(fitZoom({ width: 4000, height: 8000 }, { width: 1008, height: 1008 })).toBe(0.6)
   })
 
   it('is 100 % while the window has not been measured', () => {

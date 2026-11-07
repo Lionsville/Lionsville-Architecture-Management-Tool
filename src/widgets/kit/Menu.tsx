@@ -36,6 +36,8 @@ type Act = {
   refused?: string
   /** An act with no way back: drawn in the danger ink, and placed last after a line. */
   final?: boolean
+  /** What it does in full, said on hover: the label stays its name. */
+  hint?: string
   'data-guide'?: string
   'data-testid'?: string
 }
@@ -109,6 +111,7 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
         data-refused={refused || undefined}
         data-guide={entry['data-guide']}
         data-testid={entry['data-testid']}
+        title={entry.hint}
         disableRipple
         role={checkable ? 'menuitemcheckbox' : 'menuitem'}
         aria-checked={checkable ? act.checked : undefined}

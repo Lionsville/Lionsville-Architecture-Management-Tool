@@ -24,6 +24,9 @@ export type TabItem<V extends string = string> = {
   /** Only where the number matters. */
   count?: number
   hidden?: boolean
+  /** Where a screen's tabs each have a stable name of their own. */
+  guide?: string
+  testId?: string
 }
 
 export type TabsProps<V extends string = string> = {
@@ -67,6 +70,8 @@ export function Tabs<V extends string = string>({ label, items, value, onChange,
           aria-selected={index === on}
           tabIndex={index === on ? 0 : -1}
           className="kit-tabs__tab"
+          data-guide={item.guide}
+          data-testid={item.testId}
           onClick={() => { if (item.value !== value) onChange(item.value) }}
           onKeyDown={(event) => onKeyDown(event, index)}
         >

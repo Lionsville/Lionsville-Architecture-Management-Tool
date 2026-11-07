@@ -51,6 +51,9 @@
  *
  * **And for the Conway map's verdict and panel**, by 20 kB and 90 kB: its words in three languages are first-download, and the kit's list, panel and matrix came along in its chunk; measured 3.085 MB and 10.146 MB.
  *
+ * **And again for 4.0.0's observations**, 10 kB and 60 kB: the chain's words in three languages are in the first
+ * download with every other module's, and its list, preview, editor and ladder come with the page.
+ *
  * **Both raised for 4.0.0**, by 80 kB each: one frame stands over every screen,
  * so its rows, its tree and ⌘K are in the first download. The whole measured
  * 10.046 MB and the largest file 3.059 MB when this was said. **And again**, by
@@ -78,9 +81,9 @@ export type Budget = {
   total: number
 }
 
-// The file ceiling 3.23 MB: the plan and roadmap words, a home's tree, rows and first-run pages, then Guidance's words and frame, are first-download; measured 3.221.
-// 10.40 MB: the technology landscape's 0.05 MB on the Conway map's 0.09 MB, the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
-export const WEB_BUDGET: Budget = { file: 3_230_000, total: 10_400_000 }
+// The file ceiling 3.24 MB: the plan and roadmap words, a home's tree, rows and first-run pages, then Guidance's words and frame, are first-download; measured 3.221; then the observation chain's words, 10 kB.
+// 10.46 MB: the observation chain's 0.06 MB, the technology landscape's 0.05 MB on the Conway map's 0.09 MB, the decisions page's 0.10 MB (its reader and writing window on the kit) and what the areas before it took.
+export const WEB_BUDGET: Budget = { file: 3_240_000, total: 10_460_000 }
 
 /**
  * The desktop's renderer is the same bundle unminified — electron-vite's

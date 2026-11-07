@@ -16,15 +16,15 @@
  * back through it; a saved filter names its scopes by path, and one no longer
  * in view is left out when it is put back on.
  *
- * **Size and zoom** belong to the look, not the record. The picture starts
- * fitted, and fits again whenever what it draws changes — a filter, the size,
- * the scopes — until the person zooms, which holds the zoom they chose.
+ * **Size and zoom** belong to the look, not the record. A map opens at 100%, so
+ * it can be read, and offers the rest; *Fit* is a press, down to the floor, and
+ * holds until the person zooms. A filter or the scopes changing moves no zoom.
  */
 import { useCallback, useMemo, useState } from 'react'
 import { NO_FILTERS, activeFilters, applyFilters, filterRecords, recallFilter, saveFilter } from '../filter'
 import type { FilterResult, Filters, SavedFilter, SavedFilters } from '../filter'
 import { nodeKey, pictureCounts, pictureLinks } from '../graph'
-import type { PictureCounts, PictureSize } from '../graph'
+import type { PictureCounts } from '../graph'
 import type { Observation, ObservationBelow, ScopeAnalysis } from '../observation'
 import { isMine, mineCaption, mineOf } from '../recordedBy'
 import type { Mine, MineCaption } from '../recordedBy'
@@ -35,10 +35,10 @@ import { usePersonNames } from '../../people/ui/names'
 
 /** How the picture is looked at: the size of its marks, the zoom, and whether the zoom is the fitted one. */
 export type PictureView = {
-  size: PictureSize
+  size: 'large' | 'small'
   zoom: number
   fit: boolean
-  setSize: (size: PictureSize) => void
+  setSize: (size: 'large' | 'small') => void
   /** Back to the fitted zoom. */
   fitNow: () => void
   /** What fitting came to, from the picture that measured its window. */
@@ -57,9 +57,6 @@ export type PictureFilters = {
   filters: Filters
   setFilters: (next: Filters) => void
   clear: () => void
-  /** Whether the filter row is shown. */
-  rowOpen: boolean
-  toggleRow: () => void
   /** How many filters are on, for the count on *Filters*. */
   active: number
   result: FilterResult
@@ -100,6 +97,19 @@ function recordsIn(one: ScopeAnalysis): number {
     + one.solutions.filter((held) => held.state !== 'dropped').length
 }
 
+/** One map's zoom and size. The Why map opens at 100%; the Solve map asks to fit, since its lanes are read together. */
+export function usePictureView(opensFitted = false): PictureView {
+  const [size, setSize] = useState<'large' | 'small'>('large')
+  const [zoom, setZoom] = useState(1)
+  const [fit, setFit] = useState(opensFitted)
+  return useMemo<PictureView>(() => ({
+    size, zoom, fit, setSize,
+    fitNow: () => setFit(true),
+    fitted: (next) => setZoom(clampZoom(next)),
+    zoomTo: (next) => { setFit(false); setZoom(clampZoom(next)) },
+  }), [size, zoom, fit])
+}
+
 export function usePictureFilters(deps: {
   here: ScopeAnalysis
   below: readonly ScopeAnalysis[]
@@ -113,10 +123,7 @@ export function usePictureFilters(deps: {
   const [localWanted, setLocalWanted] = useState(true)
   const viewLocal = hasBelow && localWanted
   const [filters, setFiltersRaw] = useState<Filters>(NO_FILTERS)
-  const [rowOpen, setRowOpen] = useState(true)
-  const [size, setSizeRaw] = useState<PictureSize>('large')
-  const [zoom, setZoom] = useState(1)
-  const [fit, setFit] = useState(true)
+  const view = usePictureView()
 
   const inView = useMemo(() => (viewLocal ? [here, ...below] : [here]), [viewLocal, here, below])
   const paths = useMemo(() => inView.map((one) => one.scope), [inView])
@@ -129,28 +136,21 @@ export function usePictureFilters(deps: {
   const result = useMemo(() => applyFilters(records, links, filters), [records, links, filters])
   const hiddenLocal = useMemo(() => (viewLocal ? 0 : below.reduce((sum, one) => sum + recordsIn(one), 0)), [viewLocal, below])
 
-  const setFilters = useCallback((next: Filters) => { setFiltersRaw(next); setFit(true) }, [])
+  const setFilters = useCallback((next: Filters) => setFiltersRaw(next), [])
   const clear = useCallback(() => setFilters(NO_FILTERS), [setFilters])
-  const setViewLocal = useCallback((on: boolean) => { setLocalWanted(on); setFit(true) }, [])
-  const view = useMemo<PictureView>(() => ({
-    size, zoom, fit,
-    setSize: (next) => { setSizeRaw(next); setFit(true) },
-    fitNow: () => setFit(true),
-    fitted: (next) => setZoom(clampZoom(next)),
-    zoomTo: (next) => { setFit(false); setZoom(clampZoom(next)) },
-  }), [size, zoom, fit])
+  const setViewLocal = useCallback((on: boolean) => setLocalWanted(on), [])
 
   const list = useMemo(() => saved?.list ?? [], [saved])
   const savedApi = useMemo(() => ({
     list,
     save: (name: string) => saved?.onChange(saveFilter(list, name, filters)),
-    recall: (one: SavedFilter) => { setFilters(recallFilter(one, paths)); setRowOpen(true) },
+    recall: (one: SavedFilter) => setFilters(recallFilter(one, paths)),
     remove: (name: string) => saved?.onChange(list.filter((one) => one.name !== name)),
   }), [list, saved, filters, paths, setFilters])
 
   const shows = (key: string) => !result.filtering || result.visible.has(key)
   return {
-    filters, setFilters, clear, rowOpen, toggleRow: () => setRowOpen((open) => !open),
+    filters, setFilters, clear,
     active: activeFilters(filters, paths), result, inView, hasBelow, viewLocal, setViewLocal, hiddenLocal,
     saved: savedApi, view, shows, mineSays,
     counts: (above) => pictureCounts(inView, here.scope, { ...(above ? { above } : {}), ...(result.filtering ? { visible: result.visible } : {}) }),

@@ -2,14 +2,17 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Everything a scope observed in one place, and the analysis the team makes
- * of it (ADR-0021): a register of the observations — this scope's own and
- * those of the scopes below — with the record beside it, and a second tab
- * that draws the observations analysed into causes and causes into root
- * causes, with the same reading pane for whatever is clicked. A third tab
- * (ADR-0026) takes the causes on: solutions proposed for them, vetted through
- * their gates, tested, decided and built, and asked afterwards whether the
- * sightings stopped.
+ * Everything a scope observed in one place, and the analysis the team makes of it
+ * (ADR-0021), as the chain it is: Seen, Why, Solve, Did it work. The analysis went
+ * unused while the screens followed how it was stored: recording ended the journey,
+ * what waited was off screen, and asking why was a dialog that wanted the ending
+ * first. So what waits is first, each record says its next question, and a group can
+ * be asked about at once.
+ *
+ * A row is the item and nothing else. Selecting one opens the large preview over the
+ * list, by the record's own address; a new observation and the ladder are panels
+ * beside the list, which stays in view; Why and Solve are also maps, with the record
+ * in a panel beside them; a record is edited in a full window (`RecordEditor`).
  *
  * **One list per scope, read upward.** This scope's observations and causes
  * are two arrays on its model and go back whole (`onChange`), so the caller
@@ -20,56 +23,48 @@
  * below made from here is that scope's step (`onChangeBelow`).
  *
  * The page never writes anywhere itself.
- *
- * A fullscreen dialog for the same reasons as the decisions page: it portals
- * out of the editor's DOM so the canvas's shortcuts cannot reach a reader, and
- * its top bar takes over the window's two jobs — keep clear of the traffic
- * lights, and be the surface the window is dragged by.
  */
 import type { Citation } from '../../model/citable'
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Checkbox from '@mui/material/Checkbox'
-import Chip from '@mui/material/Chip'
-import FormControlLabel from '@mui/material/FormControlLabel'
-import List from '@mui/material/List'
-import ListItemButton from '@mui/material/ListItemButton'
-import ListItemText from '@mui/material/ListItemText'
-import ListSubheader from '@mui/material/ListSubheader'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
-import Typography from '@mui/material/Typography'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { LanguageProvider } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { HostModel } from '../../model/hostModel'
 import type { Comment } from '../../model/comment'
-import type { ObservationTab } from '../tabs'
+import { hasMap, stageOfTab } from '../tabs'
+import type { ChainLens, ObservationStage, ObservationTab } from '../tabs'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { AddIcon } from '../../widgets/icons'
+import { Button } from '../../widgets/kit/Button'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { TextField } from '../../widgets/kit/Field'
+import { List } from '../../widgets/kit/List'
+import type { ListGroup } from '../../widgets/kit/List'
+import { Segmented } from '../../widgets/kit/Segmented'
+import { Tabs } from '../../widgets/kit/Tabs'
 import { PageBack, PageClose, useBackToReading } from '../../widgets/PageClose'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
-import { useSeamWidthsOf } from '../../widgets/useSeamWidth'
+import { useSeamWidth, useSeamWidthsOf } from '../../widgets/useSeamWidth'
 import { useLocatedIn } from '../../widgets/useLocated'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import type { MakeId } from '../../model/keys'
 import type { CommandRefusal } from '../../model/reducer'
+import { usePersonNames } from '../../people/ui/names'
 import {
-  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged, isMoved, movedTo,
-  isScopeBelow, linkCause, liveObservations, waitingObservations, observationsBelow, removeCause, removeObservation,
-  rootCauses, setArchived, sortCauses, sortObservations, unlinkCause,
+  absorbedBy, causeLabel, explainedBy, formatObservationNumber, isArchived, isCauseMerged, isMerged, isMoved, isRootCause, movedTo,
+  isScopeBelow, linkCause, linkRefusal, liveObservations, observationsBelow, removeCause, removeObservation,
+  rootCauses, setArchived, setNoted, updateCause, updateObservation, unlinkCause,
 } from '../observation'
 import type {
   Analysis, Cause, CauseAbove, CauseLink, Observation, ObservationBelow, ScopeAnalysis,
 } from '../observation'
 import type { SavedFilters } from '../filter'
-import { nodeKey } from '../graph'
+import { FAR_BELOW, nodeKey, openEnds, pictureLinks } from '../graph'
 import type { PictureCounts } from '../graph'
-import { IMPACT_COLOR, IMPACT_LABEL, STRENGTH_LABEL } from '../observationScope'
+import { CHAINS_FIRST, CHAINS_MORE, chainsOf, mapWindow } from '../chain'
+import { STRENGTH_LABEL } from '../observationScope'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { ArchiveDialog } from './ObservationDialogs'
 import { MergePage } from './MergePage'
@@ -80,20 +75,24 @@ import { mergedTo, recordName } from '../mergeScreen'
 import type { MergeKind } from '../merge'
 import { formatDay } from '../../i18n/dates'
 import { plural } from '../../i18n/strings'
-import { EmptyRegister, crumbTrail, preselectedCause, useLifecycle } from './ObservationLifecycle'
+import { preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
-import { ReaderModeContext } from './Readers'
-import { ObservationRegister, recordsBelow } from './ObservationRegister'
-import { PictureToolbar } from './PictureToolbar'
-import type { CausePanel, MergedInto } from './Readers'
-import { RecordReader, recordMenu, resolveSelected } from './PageReaders'
+import { ChainEmpty, ChainFilter } from './ChainBars'
+import { observationColumns, recordsBelow, resultGroups, seenGroups, solveGroups, whyGroups } from './ChainLists'
+import type { StageData } from './ChainLists'
+import type { MergedInto, CausePanel } from './Readers'
+import { crossScope, recordMenu, resolveSelected } from './PageReaders'
 import type { DeleteKind, ReaderContext, Selected } from './PageReaders'
+import { RecordFull, RecordPanel, RecordPreview } from './RecordViews'
+import { RecordEditor } from './RecordEditor'
+import type { RecordEditing } from './RecordEditor'
 import { useAnalysisForms } from './useAnalysisForms'
 import {
-  addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, isLive, newExperiment,
+  addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, newExperiment,
   newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution, setTestStrength,
   rootsWithoutSolution, seenSinceImplemented, solutionPhase, solutionPlanOf, solutionQuestions, unaddressCause, untestSolution,
+  updateExperiment, updateSolution,
 } from '../solution'
 import type { Solution, SolutionContext, SolutionPhase, SolutionPlan, SolutionWork } from '../solution'
 import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '../solutionGraph'
@@ -101,7 +100,8 @@ import { PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
 import { SolutionLegend, SolutionPicture } from './SolutionPicture'
 import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
 import type { NewSolution } from './SolutionDialogs'
-import { usePictureFilters } from './usePictureFilters'
+import { usePictureFilters, usePictureView } from './usePictureFilters'
+import './Chain.css'
 
 /** Everything the page hands back: the analysis and what is being done about it. */
 export type ObservationWork = Analysis & SolutionWork & {
@@ -253,15 +253,16 @@ export type ObservationsPageProps = {
   onOpenDecision?: (adrId: string) => void
   onOpenPlan?: (planId: string) => void
   /**
-   * Open straight onto this observation or cause, brought on screen and
-   * ringed for a moment in the list or the picture (ADR-0033, amended).
+   * Open straight onto this record: its preview over the list, or brought on screen
+   * and ringed for a moment in the map, with its panel (ADR-0033, amended).
    */
   initialId?: string
   /**
-   * Open on this tab: with `initialId` too, the tab named wins over the one
-   * the record would open on, and the record is selected there.
+   * Open on this stage, and on this lens where the tab names one: with `initialId`
+   * too, the tab named wins over the one the record would open on, and the record is
+   * selected there.
    */
-  initialTab?: Tab
+  initialTab?: ObservationTab
   /** The request's own number: the same record asked for again is a new one, and lands again. */
   initialNonce?: number
   /**
@@ -289,22 +290,17 @@ export type ObservationsPageProps = {
   windowChrome?: WindowChrome
 }
 
-/** The page's three tabs, in the words a destination names them by (`agent/screen.ts`). */
-type Tab = ObservationTab
+/** The page's stages, in the words a destination names them by (`agent/screen.ts`). */
+type Tab = ObservationStage
 
-/**
- * How wide the reading pane is, in pixels, per tab: the register wants room
- * for its columns and the picture wants room for its lanes, so each keeps a
- * width of its own. Dragged at the seam, put back with a double-click.
- */
-const READER = {
-  register: { default: 640, min: 360, max: 1200 },
-  analysis: { default: 420, min: 320, max: 900 },
-  solutions: { default: 640, min: 380, max: 1000 },
-} as const
+/** How wide the panel beside a map is, in pixels: dragged at the seam, put back with a double-click. */
+const READER = { default: 480, min: 320, max: 900 } as const
 
-/** Each tab's reader at its own width until it is dragged. */
-const READER_WIDTHS = { register: READER.register.default, analysis: READER.analysis.default, solutions: READER.solutions.default }
+/** Each map's panel at its own width until it is dragged. */
+const READER_WIDTHS = { analysis: READER.default, solutions: READER.default }
+
+/** 1 is the map. Why opens as its map, since that is where a chain is seen; Solve as its list, since it starts at what has no answer. */
+const LENS_FIRST = { analysis: 1, solutions: 0 } as const
 
 const DELETE_TITLE = {
   observation: 'observation.deleteTitle', cause: 'observation.deleteCauseTitle',
@@ -327,19 +323,20 @@ function recordIdOf(selected: Selected | undefined, key: string | undefined): st
 }
 
 /**
- * Where an opening lands: on the newest standing observation — unless asked
- * for a record, which the id names. A solution or an experiment opens on its
- * own tab, by its key or its bare id (ADR-0026); an observation or a cause
- * leaves the tab as it was. A tab asked for wins over all of that, and the
- * record is selected on it.
+ * Where an opening lands: on nothing, unless asked for a record, since a preview
+ * opens only by selecting a row. A record names the stage it belongs to, by its key
+ * or its bare id (ADR-0026). A tab asked for wins over all of that, and the record is
+ * selected on it.
  */
-function landingFor(id: string | undefined, work: ObservationWork, asked?: Tab): { tab?: Tab; key: string | undefined } {
+function landingFor(id: string | undefined, work: ObservationWork, asked?: Tab, below: readonly ScopeAnalysis[] = []): { tab?: Tab; key: string | undefined } {
   const on = (tab: Tab | undefined, key: string | undefined) => ({ ...((asked ?? tab) ? { tab: asked ?? tab } : {}), key })
-  if (!id) return on('register', sortObservations(liveObservations(work.observations))[0]?.id)
+  if (!id) return on(undefined, undefined)
   const solution = work.solutions.find((one) => id === one.id || id === solutionKey(one.id))
   if (solution) return on('solutions', solutionKey(solution.id))
   const experiment = work.experiments.find((one) => id === one.id || id === experimentKey(one.id))
-  return experiment ? on('solutions', experimentKey(experiment.id)) : on(undefined, id)
+  if (experiment) return on('solutions', experimentKey(experiment.id))
+  const held = resolveSelected(id, work, below)
+  return on(held?.kind === 'cause' || held?.kind === 'causeBelow' ? 'analysis' : held?.kind === 'solutionBelow' || held?.kind === 'experimentBelow' ? 'solutions' : 'register', id)
 }
 
 /**
@@ -359,6 +356,7 @@ function useOpening(deps: {
   open: boolean
   request: { id: string | undefined; nonce: number | undefined; tab: Tab | undefined }
   work: ObservationWork
+  below: readonly ScopeAnalysis[]
   shown: string | undefined
   /** The tab that is up, said with what is on show. */
   tab: Tab
@@ -375,7 +373,7 @@ function useOpening(deps: {
   latest.current = { ...deps, locate: located.locate }
   useEffect(() => {
     if (!open) return
-    const at = landingFor(id, latest.current.work, tab)
+    const at = landingFor(id, latest.current.work, tab, latest.current.below)
     latest.current.land(at)
     if (id !== undefined && at.key !== undefined) latest.current.locate(at.key)
     setLanded(nonce)
@@ -387,7 +385,7 @@ function useOpening(deps: {
 }
 
 /** A record a link names: its own id, the scope below that keeps it where it is not this one's, and the tab. */
-export type RecordLink = { readonly id: string; readonly scope?: string; readonly tab?: Tab }
+export type RecordLink = { readonly id: string; readonly scope?: string; readonly tab?: ObservationTab }
 
 /**
  * The link to a record on show: an observation or a cause on the tab it was
@@ -533,7 +531,7 @@ function phaseRows(counted: PictureCounts): PhaseRow[] {
 
 export function ObservationsPage(props: ObservationsPageProps) {
   const {
-    open, onClose, model, groupName, below = [], onChange, initialId, initialNonce, readOnly = false, s, today, makeId,
+    open, onClose, model, below = [], onChange, initialId, initialNonce, readOnly = false, s, today, makeId,
     absorbedAbove,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
@@ -554,8 +552,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** Every scope read, this one as it stands here: what a merge searches and plans over (ADR-0035). */
   const everywhere = useMemo(
     () => [here, ...(props.tree ?? below).filter((one) => one.scope !== here.scope)], [here, props.tree, below])
-  /** The filters, View local and the look of the picture (ADR-0032 §8), over all three tabs. */
+  /** The filters, the scopes in view and the look of the picture (ADR-0032 §8), over every stage. */
   const f = usePictureFilters({ here, below, saved: props.savedFilters, name: model.name, scopeLabel })
+  const solveView = usePictureView(true)
   const { labelOf } = f
   const { explainedAbove, explainedAboveOf } = props
   /** What the scopes over a scope explain of it: this one's handed in, one below's asked of the tree. */
@@ -564,8 +563,17 @@ export function ObservationsPage(props: ObservationsPageProps) {
     [here.scope, explainedAbove, explainedAboveOf],
   )
 
-  const [tab, setTab] = useState<Tab>('register')
-  const [readerWidth, setReaderWidth] = useSeamWidthsOf<Tab>('observations.reader', READER_WIDTHS)
+  const [stage, setStageRaw] = useState<Tab>('register')
+  const [readerWidth, setReaderWidth] = useSeamWidthsOf<'analysis' | 'solutions'>('observations.reader', READER_WIDTHS)
+  // The person's own choices, kept with their other preferences through the seam a width is kept by: a number per name.
+  const [whyLensKept, keepWhyLens] = useSeamWidth('observations.lens.analysis', LENS_FIRST.analysis)
+  const [solveLensKept, keepSolveLens] = useSeamWidth('observations.lens.solutions', LENS_FIRST.solutions)
+  const lensOf = (of: 'analysis' | 'solutions'): ChainLens => ((of === 'analysis' ? whyLensKept : solveLensKept) === 1 ? 'map' : 'list')
+  const setLens = useCallback((of: 'analysis' | 'solutions', lens: ChainLens) => (of === 'analysis' ? keepWhyLens : keepSolveLens)(lens === 'map' ? 1 : 0), [keepWhyLens, keepSolveLens])
+  const lens: ChainLens = stage === 'analysis' || stage === 'solutions' ? lensOf(stage) : 'list'
+  // How many chains the map shows is kept per person and scope: 0 is all of them.
+  const [chainsKept, keepChains] = useSeamWidth(`observations.chains.${here.scope}`, CHAINS_FIRST)
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set())
   const [wholeChain, setWholeChain] = useState(false)
   const [showDropped, setShowDropped] = useState(false)
   /** A solution being proposed, from a cause or from the bar. */
@@ -573,22 +581,27 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [addressing, setAddressing] = useState<Solution | undefined>(undefined)
   const [planning, setPlanning] = useState<Solution | undefined>(undefined)
   const [dropping, setDropping] = useState<Solution | undefined>(undefined)
-  const [selectedKey, setSelectedKey] = useState<string | undefined>(undefined)
-  /**
-   * The record being edited, by key. Edit mode is the selection's, so choosing
-   * anything else reads it; while it holds, the picture steps aside and the
-   * editor and its preview take the whole width.
-   */
+  const [selectedKey, setSelectedKeyRaw] = useState<string | undefined>(undefined)
+  /** The whole record is up, of what is selected: links, history, comments. */
+  const [full, setFull] = useState(false)
+  const setSelectedKey = useCallback((key: string | undefined) => { setSelectedKeyRaw(key); if (key === undefined) setFull(false) }, [])
+  /** The record in the full-window editor, by key. */
   const [editingKey, setEditingKey] = useState<string | undefined>(undefined)
   /** A right-click on a picture: what it landed on, and where. */
   const [menu, setMenu] = useState<{ target: PictureTarget; at: { x: number; y: number } } | undefined>(undefined)
-  /** A cause's question the menu asked, shown in its reader: a new object each time it is asked. */
+  /** A cause's question asked of it, shown in its reader: a new object each time it is asked. */
   const [asked, setAsked] = useState<{ key: string; panel: CausePanel } | undefined>(undefined)
   const [showMerged, setShowMerged] = useState(false)
   const [showArchived, setShowArchived] = useState(false)
+  const [ticked, setTicked] = useState<ReadonlySet<string>>(() => new Set())
+  const [shownColumns, setShownColumns] = useState<readonly string[]>([])
+  const [reading, setReading] = useState(false)
   /** What is being archived: a dialog asks why first. */
   const [archiving, setArchiving] = useState<Observation | undefined>(undefined)
+  /** What is being noted: a dialog asks why, and takes no answer. */
+  const [noting, setNoting] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
   const [deleting, setDeleting] = useState<{ kind: DeleteKind; id: string; label: string } | undefined>(undefined)
+  const setStage = useCallback((next: Tab) => { setStageRaw(next); setSelectedKey(undefined); setEditingKey(undefined); setTicked(new Set()) }, [setSelectedKey])
 
   // --- what is where ------------------------------------------------------------------
 
@@ -639,16 +652,18 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** What a key names: the reader it opens and the menu it gets are both read off this. */
   const resolve = useCallback((key: string) => resolveSelected(key, work, below), [work, below])
   const selected = useMemo(() => (selectedKey ? resolve(selectedKey) : undefined), [selectedKey, resolve])
-  const editing = selected !== undefined && editingKey !== undefined && editingKey === selectedKey
-  const readerMode = useMemo(() => ({
-    mode: editing ? 'edit' as const : 'read' as const,
-    setMode: (next: 'read' | 'edit') => setEditingKey(next === 'edit' ? selectedKey : undefined),
-  }), [editing, selectedKey])
 
   const located = useOpening({
-    open, request: { id: initialId, nonce: initialNonce, tab: props.initialTab }, work, shown: recordIdOf(selected, selectedKey), tab,
+    open, request: { id: initialId, nonce: initialNonce, tab: props.initialTab ? stageOfTab(props.initialTab).stage : undefined }, work, below, shown: recordIdOf(selected, selectedKey), tab: stage,
     onShown: props.onShown, select: setSelectedKey,
-    land: ({ tab: to, key }) => { f.clear(); if (to) setTab(to); setSelectedKey(key) },
+    land: ({ tab: to, key }) => {
+      f.clear()
+      if (to) setStageRaw(to)
+      setFull(false)
+      const named = props.initialTab ? stageOfTab(props.initialTab) : undefined
+      if (named?.lens && hasMap(named.stage)) setLens(named.stage as 'analysis' | 'solutions', named.lens)
+      setSelectedKey(key)
+    },
   })
 
   // --- changes ---------------------------------------------------------------------------
@@ -657,10 +672,19 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const commit = useCallback((next: Partial<ObservationWork>) => {
     if (!readOnly) onChange({ ...work, ...next })
   }, [onChange, readOnly, work])
-  /** The new observation and the link dialog, and where what they make lands (ADR-0032 §2, §6). */
+  /** The readers' context, read by the ladder after the forms are made: what explains a cause from above is the page's to say. */
+  const readerRef = useRef<ReaderContext | undefined>(undefined)
+  /** The new observation, the ladder and the link dialog, and where what they make lands (ADR-0032 §2, §6). */
   const forms = useAnalysisForms({
     work, below, local: f.viewLocal, path: props.path, scopeName: model.name, commit, readOnly, onChangeBelow: props.onChangeBelow,
     makeId, today, s, scopeLabel, scopeTrail: props.scopeTrail, nameOf, select: setSelectedKey, renderMarkdown: props.renderMarkdown,
+    rootStep: (id, scope) => {
+      const ctx = readerRef.current
+      const list = scope === undefined ? causes : below.find((one) => one.scope === scope)?.causes ?? []
+      const cause = list.find((one) => one.id === id)
+      return ctx && cause ? crossScope(cause, scope, ctx).toggle : {}
+    },
+    onPropose: (causeId) => setProposing({ causeId }),
   })
   /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
   const lifecycle = useLifecycle({ lists: work, commit, today, nameOf, s, changeBelow: forms.changeBelow })
@@ -669,6 +693,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const archive = (id: string, note: string) => {
     commit({ ...analysis, observations: setArchived(observations, id, true, today(), note) })
     setArchiving(undefined)
+  }
+  const note = (reason: string) => {
+    if (!noting) return
+    const { observation, scope } = noting
+    setNoting(undefined)
+    if (scope === undefined) commit({ observations: setNoted(observations, observation.id, true, today(), reason) })
+    else forms.changeBelow?.(scope, (held) => ({ ...held, observations: setNoted(held.observations, observation.id, true, today(), reason) }))
   }
   /** The merge screen (ADR-0035): over this page, planned over every scope read, landed here or across. */
   const merging = useMerge({
@@ -703,7 +734,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     })
     commit({ solutions: [...solutions, fresh] })
     setProposing(undefined)
-    setTab('solutions')
+    setStageRaw('solutions')
     setSelectedKey(solutionKey(fresh.id))
   }
   const addExperiment = (solution: Solution, fields: { title: string; hypothesis: string; measure: string }) => {
@@ -718,16 +749,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const phaseOf = (one: Solution): SolutionPhase => solutionPhase(one, plans)
   const orphanRoots = rootsWithoutSolution(causes, solutions)
 
-  // --- the register --------------------------------------------------------------------
+  // --- the lists -----------------------------------------------------------------------
 
   const { shows } = f
-  const ownRows = sortObservations(observations)
-    .filter((one) => (showMerged || !isMerged(observations, one.id)) && (showArchived || !isArchived(one)) && shows(one.id))
-  const causeRows = sortCauses(causes).filter((one) => (showMerged || !isCauseMerged(causes, one.id)) && shows(one.id))
-  const solutionRows = [...solutions].sort((a, b) => b.number - a.number)
-    .filter((one) => (showArchived || isLive(one)) && shows(solutionKey(one.id)))
-  const experimentRows = [...experiments].sort((a, b) => b.number - a.number).filter((one) => shows(experimentKey(one.id)))
-
   const analysedInto = analysedIntoOf(causes, below)
   const away: Away = {
     everywhere, here: here.scope, scopeLabel, select: setSelectedKey,
@@ -735,34 +759,21 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }
   const mergedLabel = (one: Observation) => mergedIntoOf(one, { ...away, absorbedAbove })
   const mergedCause = (cause: Cause, scope?: string) => mergedAway('cause', cause.id, scope ?? here.scope, away)
+  const names = usePersonNames()
+  const openEndKeys = useMemo(() => openEnds(f.inView, here.scope, aboveOf), [f.inView, here.scope, aboveOf])
+  const stageData: StageData = {
+    here: here.scope, observations, causes, solutions, experiments, plans,
+    below: f.rowsBelow(belowByScope), belowAll,
+    analysisBelow: recordsBelow(below, here.scope, f.viewLocal, shows, showArchived, showMerged),
+    analysedInto, mergedInto: mergedLabel, causeMergedInto: mergedCause, isOpenEnd: (key) => openEndKeys.has(key), shows,
+    showMerged, showArchived, scopeLabel, names, language: props.language, s,
+  }
+  const groups: ListGroup[] = stage === 'register' ? seenGroups(stageData)
+    : stage === 'analysis' ? whyGroups(stageData)
+      : stage === 'solutions' ? solveGroups(stageData) : resultGroups(stageData)
+  const columns = stage === 'register' ? observationColumns(s).filter((one) => shownColumns.includes(one.id)) : []
 
-  const register = (
-    <ObservationRegister
-      own={ownRows}
-      below={f.rowsBelow(belowByScope)}
-      causes={causeRows}
-      solutions={solutionRows}
-      experiments={experimentRows}
-      analysisBelow={recordsBelow(below, here.scope, f.viewLocal, shows, showArchived, showMerged)}
-      empty={<EmptyRegister observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} onNew={forms.openNew} readOnly={readOnly} filtering={f.result.filtering} s={s} />}
-      selectedKey={selectedKey}
-      onSelect={setSelectedKey}
-      analysedInto={analysedInto}
-      mergedInto={mergedLabel}
-      causeMergedInto={mergedCause}
-      phaseOf={(one) => phaseOf(one)}
-      nameOf={nameOf}
-      scopeLabel={scopeLabel}
-      showMerged={showMerged}
-      onShowMerged={setShowMerged}
-      showArchived={showArchived}
-      onShowArchived={setShowArchived}
-      language={props.language}
-      s={s}
-    />
-  )
-
-  /** What the reading pane reads and asks — and the right-click on a record below, which offers what its reader does. */
+  /** What the readers read and ask, and the right-click on a record below, which offers what its reader does. */
   const { onOpenScope } = props
   const readerCtx: ReaderContext = {
     here: here.scope, work, below, plans, context, decisions: model.decisions ?? [], transitions: model.transitions ?? [],
@@ -772,6 +783,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       archive: setArchiving, merge: (observation, scope) => mergeAt('observation', observation.id, scope),
       mergeCause: (cause, scope) => mergeAt('cause', cause.id, scope),
       move: moving.ask,
+      note: (observation, scope) => setNoting({ observation, ...(scope !== undefined ? { scope } : {}) }),
       remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
       address: setAddressing, plan: setPlanning, drop: setDropping,
     },
@@ -779,15 +791,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
     ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
     onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
     renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
-    copyLink: copyLinkOf(props, tab),
+    copyLink: copyLinkOf(props, stage),
   }
-
-  // --- the analysis ----------------------------------------------------------------------
-
-  const queue = waitingObservations(observations, (id) => analysedInto(id).length > 0)
-  /** The counts over the picture are the picture's: the scopes below while View local is on, less what the filters hid. */
-  const counted = f.counts(aboveOf)
-  const phases = phaseRows(counted)
+  readerRef.current = readerCtx
+  const pageWrites = { edit: (key: string) => setEditingKey(key), ask: (key: string, panel: CausePanel) => setAsked({ key, panel }) }
 
   // --- the right-click ------------------------------------------------------------------
 
@@ -796,7 +803,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
     if (target.kind === 'node') setSelectedKey(target.key)
     setMenu({ target, at })
   }
-  const editRecord = (key: string) => { setSelectedKey(key); setEditingKey(key) }
   const strengths = (current: CauseLink['strength'], choose: (strength: CauseLink['strength']) => void): MenuAction[] => (
     (['strong', 'normal', 'weak'] as const).map((strength) => ({
       key: `strength-${strength}`, label: s(STRENGTH_LABEL[strength]), checked: strength === current,
@@ -838,37 +844,74 @@ export function ObservationsPage(props: ObservationsPageProps) {
     const key = target.key
     const held = resolve(key)
     if (!held) return []
-    return recordMenu(held, key, readerCtx, { edit: () => editRecord(key), ask: (panel) => setAsked({ key, panel }) })
+    return recordMenu(held, key, readerCtx, { edit: () => setEditingKey(key), ask: (panel) => setAsked({ key, panel }) })
   }
 
-  const picture = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-      <Box data-testid="analysis-phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap' }}>
-        {phases.map(({ keys, count, color }) => (
-          <Typography key={keys.other} variant="body2" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-            <Box component="b" sx={{ fontSize: 18, fontVariantNumeric: 'tabular-nums', color }}>{count}</Box>
-            <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>{plural(s, keys, count)}</Box>
-          </Typography>
-        ))}
-      </Box>
-      <AnalysisPicture
-        scopes={f.inView}
-        here={here.scope}
-        filter={f.result}
-        explainedAbove={aboveOf}
-        view={f.view}
-        scopeLabel={labelOf}
-        hereLabel={f.hereLabel(s)}
-        selectedKey={selectedKey}
-        onSelect={setSelectedKey}
-        onMenu={openMenu}
-        s={s}
-      />
-      <PictureLegend size={f.view.size} local={f.viewLocal} s={s} />
-    </Box>
-  )
+  // --- the maps -------------------------------------------------------------------------
 
-  /** The Solutions tab draws what the filters left, as the picture does. */
+  const records = useMemo(() => chainsOf(f.inView, here.scope), [f.inView, here.scope])
+  const links = useMemo(() => pictureLinks(f.inView, here.scope), [f.inView, here.scope])
+  const filteredKeys = f.result.filtering ? f.result.visible : undefined
+  const chainWindow = useMemo(
+    () => mapWindow(records, here.scope, { limit: chainsKept === 0 ? 'all' : chainsKept, opened }, links, filteredKeys),
+    [records, here.scope, chainsKept, opened, links, filteredKeys],
+  )
+  const counted = f.counts(aboveOf)
+  const phases = phaseRows(counted)
+  /** A line drawn from one card to another: what is explained to what explains it, or a root to what addresses it. */
+  const dragLink = (from: string, to: string) => {
+    const left = resolve(from)
+    const right = resolve(to)
+    if (!left || !right) return
+    const seen = left.kind === 'observation' ? left.observation.id : left.kind === 'cause' ? left.cause.id : undefined
+    if (right.kind === 'cause' && seen !== undefined) {
+      if (linkRefusal(causes, right.cause.id, { id: seen }) === undefined) commit({ causes: linkCause(causes, right.cause.id, { id: seen, strength: 'normal' }) })
+      return
+    }
+    if (right.kind === 'solution' && left.kind === 'cause' && isRootCause(left.cause)) {
+      commit({ solutions: addressCause(solutions, right.solution.id, { id: left.cause.id, strength: 'normal' }) })
+    }
+  }
+  const sizeSwitch = (
+    <Segmented
+      label={s('observation.size')} value={f.view.size} onChange={f.view.setSize} data-guide="observations.size"
+      options={[{ value: 'large', label: s('observation.sizeLarge') }, { value: 'small', label: s('observation.sizeSmall') }]}
+    />
+  )
+  const howToRead = <Button variant="quiet" size="small" onClick={() => setReading(true)} data-testid="how-to-read">{s('observation.howToRead')}</Button>
+  const picture = (
+    <AnalysisPicture
+      scopes={f.inView}
+      here={here.scope}
+      filter={f.result}
+      explainedAbove={aboveOf}
+      view={f.view}
+      scopeLabel={labelOf}
+      hereLabel={f.hereLabel(s)}
+      selectedKey={selectedKey}
+      onSelect={setSelectedKey}
+      onMenu={openMenu}
+      window={chainWindow}
+      onMore={(card) => {
+        if (card.more === 'pile') { setStage('register'); return }
+        const { chain } = card
+        if (chain) setOpened((held) => new Set(held).add(chain))
+      }}
+      {...(readOnly ? {} : {
+        onAsk: (key: string) => {
+          const held = resolve(key)
+          if (held?.kind === 'observation') forms.openLink({ mode: 'cause', id: held.observation.id })
+          else if (held?.kind === 'below') forms.openLink({ mode: 'cause', id: held.observation.id, scope: held.scope })
+          else if (held?.kind === 'cause') forms.openLink({ mode: 'deeper', id: held.cause.id })
+          else if (held?.kind === 'causeBelow') forms.openLink({ mode: 'deeper', id: held.cause.id, scope: held.scope })
+        },
+        onDragLink: dragLink,
+      })}
+      dockExtra={<>{sizeSwitch}{howToRead}</>}
+      s={s}
+    />
+  )
+  /** Solve draws what the filters left, as Why does. */
   const { visible, filtering } = f.result
   const graph = useMemo(() => {
     const keep = <T,>(list: readonly T[], key: (one: T) => string) => (filtering ? list.filter((one) => visible.has(key(one))) : [...list])
@@ -893,126 +936,218 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const rootCount = rootCauses(causes).length
   const phaseCounts = (['idea', 'shaped', 'testing', 'proven', 'adopted', 'implemented'] as const)
     .map((phase) => [phase, solutions.filter((one) => phaseOf(one) === phase).length] as const)
+  const solutionsMap = (
+    <SolutionPicture
+      graph={graph} selectedKey={selectedKey} onSelect={setSelectedKey} flags={flags} onMenu={openMenu} view={solveView} s={s}
+      dockExtra={(
+        <>
+          <Button variant="quiet" size="small" aria-pressed={wholeChain} onClick={() => setWholeChain((on) => !on)} data-testid="solution-whole-chain">{s('solution.wholeChain')}</Button>
+          <Button variant="quiet" size="small" aria-pressed={showDropped} onClick={() => setShowDropped((on) => !on)} data-testid="solution-show-dropped">{s('solution.showDropped')}</Button>
+          {howToRead}
+        </>
+      )}
+    />
+  )
 
-  const solutionsView = (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-      <Box data-testid="solution-phases" data-guide="solutions.phases" sx={{ display: 'flex', gap: 3, px: 2, py: 1, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexWrap: 'wrap', alignItems: 'center' }}>
-        {phaseCounts.map(([phase, count]) => (
-          <Typography key={phase} variant="body2" sx={{ display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
-            <Box component="b" sx={{ fontSize: 18, fontVariantNumeric: 'tabular-nums' }}>{count}</Box>
-            <Box component="span" sx={{ color: 'text.secondary', fontSize: 12 }}>{s(PHASE_LABEL[phase]).toLowerCase()}</Box>
-          </Typography>
-        ))}
-        <Typography variant="caption" color="text.secondary" data-testid="solution-coverage">
+  // --- what stands on the page ----------------------------------------------------------
+
+  const liveCount = liveObservations(observations).length
+  const waitingCount = liveObservations(observations).filter((one) => !one.noted && analysedInto(one.id).length === 0).length
+  const openEndCount = counted.openEnds
+  const builtCount = solutions.filter((one) => isLive(one) && implementedOn(one, plans) !== undefined).length
+  const backCount = solutions.filter((one) => seenSinceImplemented(one, analysis, belowAll, plans).length > 0).length
+  const stageSaid: Record<Tab, ReactNode> = {
+    register: <span data-testid="stage-said">{s('observation.saidSeen', { seen: liveCount, waiting: waitingCount })}</span>,
+    analysis: <span data-testid="stage-said">{s('observation.saidWhy', { causes: causes.filter((one) => !isCauseMerged(causes, one.id)).length, open: openEndCount })}</span>,
+    solutions: (
+      <span data-testid="solution-phases" data-guide="solutions.phases">
+        <span data-testid="solution-coverage">
           {plural(s, { one: 'solution.coverageOne', other: 'solution.coverageOther' }, rootCount, { count: rootCount - orphanRoots.length, total: rootCount })}
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <FormControlLabel
-          control={<Checkbox size="small" checked={wholeChain} onChange={(event) => setWholeChain(event.target.checked)} data-testid="solution-whole-chain" />}
-          label={<Typography sx={{ fontSize: 12 }}>{s('solution.wholeChain')}</Typography>}
-        />
-        <FormControlLabel
-          control={<Checkbox size="small" checked={showDropped} onChange={(event) => setShowDropped(event.target.checked)} />}
-          label={<Typography sx={{ fontSize: 12 }}>{s('solution.showDropped')}</Typography>}
-        />
-      </Box>
-      <SolutionPicture graph={graph} selectedKey={selectedKey} onSelect={setSelectedKey} flags={flags} onMenu={openMenu} s={s} />
-      <SolutionLegend s={s} />
-    </Box>
+        </span>
+      </span>
+    ),
+    results: <span data-testid="stage-said">{builtCount === 0 ? s('solution.saidNothingBuilt') : s('solution.saidBuilt', { built: builtCount, back: backCount })}</span>,
+  }
+  const nothingYet = !f.result.filtering && liveCount === 0 && causes.length === 0 && solutions.length === 0 && experiments.length === 0
+    && f.inView.every((one) => one.observations.length === 0 && one.causes.length === 0 && one.solutions.length === 0)
+    && !observations.some((one) => isArchived(one) || isMerged(observations, one.id))
+
+  const tickable = !readOnly && (stage === 'register' || (stage === 'analysis' && lens === 'list'))
+  const tickedAt = [...ticked].map((key) => {
+    const at = key.lastIndexOf('#')
+    return at < 0 ? { key, id: key, scope: undefined } : { key, id: key.slice(at + 1), scope: key.slice(0, at) }
+  })
+  const oneScope = tickedAt.every((one) => one.scope === tickedAt[0]?.scope)
+  const bulk = (
+    <>
+      {stage === 'register' && (
+        <Button
+          variant="primary" size="small" reason={oneScope ? undefined : s('observation.bulkOneScope')} data-testid="bulk-ask-why"
+          onClick={() => { forms.askGroup(tickedAt.map((one) => one.id), tickedAt[0]?.scope); setTicked(new Set()) }}
+        >
+          {s('observation.bulkAskWhy', { count: ticked.size })}
+        </Button>
+      )}
+      <Button
+        size="small" reason={ticked.size < 2 ? s('observation.bulkMergeTwo') : undefined} data-testid="bulk-merge"
+        onClick={() => {
+          const [first, ...rest] = tickedAt.map((one) => ({ scope: one.scope ?? here.scope, id: one.id }))
+          if (first) merging.open(stage === 'register' ? 'observation' : 'cause', first, rest)
+          setTicked(new Set())
+        }}
+      >
+        {s('observation.bulkMerge')}
+      </Button>
+    </>
   )
 
-  const toAnalyse = queue.length > 0 && (
-    <Box data-testid="analysis-queue" sx={{ borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', maxHeight: '40%', overflow: 'auto' }}>
-      <ListSubheader component="div" disableSticky sx={{ lineHeight: '32px', bgcolor: 'transparent' }}>{s('observation.toAnalyse')}</ListSubheader>
-      <List component="div" dense disablePadding>
-        {queue.map((one) => (
-          <ListItemButton key={one.id} selected={one.id === selectedKey} onClick={() => setSelectedKey(one.id)} sx={{ py: 0.25 }}>
-            <ListItemText primary={`${formatObservationNumber(one.number)} ${one.title}`} slotProps={{ primary: { noWrap: true, sx: { fontSize: 12 } } }} />
-            <Chip size="small" color={IMPACT_COLOR[one.impact]} label={s(IMPACT_LABEL[one.impact])} sx={{ height: 18, fontSize: 10 }} />
-          </ListItemButton>
-        ))}
-      </List>
-    </Box>
+  const newButton = readOnly ? undefined : stage === 'solutions' || stage === 'results'
+    ? <Button variant="primary" onClick={() => setProposing(preselectedCause(causes, selected))} data-testid="solution-new" data-guide="solutions.new">{s('solution.new')}</Button>
+    : <Button variant="primary" onClick={forms.openNew} data-testid="observation-new" data-guide="observations.new">{s('observation.new')}</Button>
+  const lensSwitch = hasMap(stage) && (
+    <Segmented
+      label={s('observation.lens')} value={lens} onChange={(next) => { setLens(stage as 'analysis' | 'solutions', next); setSelectedKey(undefined) }}
+      data-guide="observations.lens"
+      options={[{ value: 'list', label: s('observation.lensList') }, { value: 'map', label: s('observation.lensMap') }]}
+    />
+  )
+  const actions = (
+    <span className="chain-page__actions">
+      <span className="chain-page__said" data-testid="picture-count">
+        {stageSaid[stage]}{f.hiddenLocal > 0 ? ` · ${s('observation.localHidden', { count: f.hiddenLocal })}` : ''}
+      </span>
+      {f.hasBelow && (
+        <Button variant={f.viewLocal ? 'primary' : 'plain'} size="small" aria-pressed={f.viewLocal} title={s('observation.viewLocalTip')} onClick={() => f.setViewLocal(!f.viewLocal)} data-testid="view-local" data-guide="observations.viewLocal">
+          {f.viewLocal ? s('observation.scopesBelowOn') : s('observation.scopesBelowOff')}
+        </Button>
+      )}
+      {lensSwitch}
+      {newButton}
+    </span>
   )
 
-  // --- the reading pane ---------------------------------------------------------------------
+  const onMap = lens === 'map' && hasMap(stage)
+  const chainsShown = chainWindow.shownChains
+  const chainsTotal = chainWindow.totalChains
+  const windowBar = onMap && stage === 'analysis' && !f.result.filtering && chainsTotal > 0 && (
+    <div className="chain-page__window" data-testid="map-window" data-guide="observations.mapWindow">
+      {chainsShown < chainsTotal ? (
+        <>
+          <span>{s('observation.mapTop', { shown: chainsShown, total: chainsTotal })}</span>
+          <Button size="small" onClick={() => keepChains(chainsShown + CHAINS_MORE)} data-testid="map-more">{s('observation.mapShowMore', { count: CHAINS_MORE })}</Button>
+          <Button variant="quiet" size="small" onClick={() => keepChains(0)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
+        </>
+      ) : chainsKept === 0 ? (
+        <>
+          <span>{s('observation.mapAll', { total: chainsTotal })}</span>
+          <Button variant="quiet" size="small" onClick={() => keepChains(CHAINS_FIRST)} data-testid="map-top">{s('observation.mapBackTop', { count: CHAINS_FIRST })}</Button>
+        </>
+      ) : records.loose.length > 0 ? (
+        <Button variant="quiet" size="small" onClick={() => keepChains(0)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
+      ) : <span>{s('observation.mapAll', { total: chainsTotal })}</span>}
+    </div>
+  )
 
-  const reader = <RecordReader selected={selected} selectedKey={selectedKey} ctx={readerCtx} />
+  const groupOf = selectedKey ? groups.find((one) => one.rows.some((row) => row.id === selectedKey)) : undefined
+  const previewIds = groupOf ? groupOf.rows.map((row) => row.id) : []
+  const listWord = groupOf?.label.toLowerCase()
+  const showPreview = !onMap && !full && selected !== undefined && selectedKey !== undefined
 
-  const crumbNames = crumbTrail(props.crumbs, groupName, model.name)
-  const leaving = useBackToReading(editing, () => setEditingKey(undefined), onClose, s('observation.close'))
+  const list = (
+    <List
+      label={s(STAGE_WORD[stage])}
+      groups={groups}
+      wrap
+      columns={columns}
+      {...(columns.length ? { itemLabel: s('observation.colTitle') } : {})}
+      selectedId={selectedKey ?? null}
+      onOpen={setSelectedKey}
+      {...(tickable ? { checked: ticked, onCheckedChange: setTicked, bulkActions: bulk } : {})}
+      dataGuide="observations.register"
+      rowGuide="observations.row"
+      empty={<EmptyStage stage={stage} f={f} observations={observations} showArchived={showArchived} onShowArchived={() => setShowArchived(true)} s={s} />}
+    />
+  )
+  const leaving = useBackToReading(full, () => setFull(false), onClose, s('observation.close'))
+  const side = forms.panel ?? (onMap && selected && selectedKey ? (
+    <>
+      <SeamResizer
+        orientation="vertical" region="after" value={readerWidth[stage as 'analysis' | 'solutions']} min={READER.min} max={READER.max} defaultValue={READER.default}
+        onChange={(next) => setReaderWidth(stage as 'analysis' | 'solutions', next)} label={s('observation.resizeReader')}
+      />
+      <RecordPanel held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} width={readerWidth[stage as 'analysis' | 'solutions']} onClose={() => setSelectedKey(undefined)} />
+    </>
+  ) : undefined)
+
+  const editing = editingKey ? editingOf(resolve(editingKey), readerCtx) : undefined
 
   return (
     <PageDialog open={open} topInset={chrome.topInset} onClose={leaving.leave} aria-label={s('observation.title')}>
       <LanguageProvider language={props.language}>
-        <Box
-          data-testid="observation-topbar"
-          sx={{
-            display: 'flex', flexWrap: 'wrap', rowGap: 0.5, alignItems: 'center', gap: 1, px: 1.5,
-            pl: `${12 + bar.controlsInset}px`,
-            WebkitAppRegion: bar.draggable ? 'drag' : undefined,
-            '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
-            minHeight: 48, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
-          }}
-        >
-          <PageBack onBack={leaving.leave} label={leaving.said} />
-          <Typography variant="body2" color="text.secondary" data-testid="observation-crumbs" sx={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {crumbNames.map((name, index) => <Fragment key={index}>{name} &nbsp;/&nbsp; </Fragment>)}
-            <Box component="span" sx={{ color: 'text.primary', fontWeight: 600 }}>{s('observation.title')}</Box>
-          </Typography>
-          <ToggleButtonGroup exclusive size="small" value={tab} onChange={(_e, value: Tab | null) => { if (value) { setTab(value); setEditingKey(undefined) } }} sx={{ ml: 2 }}>
-            <ToggleButton value="register" data-testid="observation-tab-register" data-guide="observations.tabRegister">{s('observation.tabRegister')}</ToggleButton>
-            <ToggleButton value="analysis" data-testid="observation-tab-analysis" data-guide="observations.tabAnalysis">{s('observation.tabAnalysis')}</ToggleButton>
-            <ToggleButton value="solutions" data-testid="observation-tab-solutions" data-guide="observations.tabSolutions">{s('solution.tab')}</ToggleButton>
-          </ToggleButtonGroup>
-          <Box sx={{ flex: 1 }} />
-          {!readOnly && (
+        <div className="chain-page" ref={located.ref}>
+          <div className="chain-page__tabs" data-testid="observation-topbar" style={bar.controlsInset > 0 ? { paddingInlineStart: 12 + bar.controlsInset } : undefined} data-draggable={bar.draggable || undefined}>
+            <PageBack onBack={leaving.leave} label={leaving.said} />
+            <Tabs<Tab>
+              label={s('observation.title')} value={stage} onChange={setStage}
+              items={[
+                { value: 'register', label: s('observation.stageSeen'), guide: 'observations.tabRegister', testId: 'observation-tab-register' },
+                { value: 'analysis', label: s('observation.stageWhy'), guide: 'observations.tabAnalysis', testId: 'observation-tab-analysis' },
+                { value: 'solutions', label: s('observation.stageSolve'), guide: 'observations.tabSolutions', testId: 'observation-tab-solutions' },
+                { value: 'results', label: s('observation.stageResults'), guide: 'observations.tabResults', testId: 'observation-tab-results' },
+              ]}
+            />
+            <span className="chain-page__tabsGrow" />
+            <PageClose onClose={leaving.leave} label={leaving.closeSaid} />
+          </div>
+          {full && selected && selectedKey ? (
+            <RecordFull held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} backLabel={s(STAGE_WORD[stage])} onBack={() => setFull(false)} />
+          ) : nothingYet && !forms.panel ? (
+            <ChainEmpty {...(readOnly ? {} : { onNew: forms.openNew })} s={s} />
+          ) : (
             <>
-              {tab === 'solutions'
-                ? <Button size="small" variant="contained" onClick={() => setProposing(preselectedCause(causes, selected))} startIcon={<AddIcon size={14} />} sx={{ textTransform: 'none' }} data-testid="solution-new" data-guide="solutions.new">{s('solution.new')}</Button>
-                : <Button size="small" variant="contained" onClick={forms.openNew} startIcon={<AddIcon size={14} />} sx={{ textTransform: 'none' }} data-guide="observations.new">{s('observation.new')}</Button>}
+              <div className="chain-page__tools">
+                <ChainFilter
+                  f={f} scopeLabel={labelOf} showMerged={showMerged} onShowMerged={setShowMerged} showArchived={showArchived} onShowArchived={setShowArchived}
+                  {...(stage === 'register' ? { columns: { choices: observationColumns(s), shown: shownColumns, onChange: setShownColumns } } : {})}
+                  actions={actions} s={s}
+                />
+              </div>
+              {windowBar}
+              <div className="chain-page__work" data-testid="observation-body" data-map={onMap || undefined}>
+                <div className="chain-page__main">
+                  {!onMap ? list : stage === 'analysis' ? picture : solutionsMap}
+                </div>
+                {side}
+              </div>
             </>
           )}
-          <PageClose onClose={leaving.leave} label={leaving.closeSaid} />
-        </Box>
-        {!editing && <PictureToolbar f={f} tab={tab} scopeLabel={labelOf} s={s} />}
-
-        {/* Editing gives the record the whole width — the editor on the left, its
-            preview on the right — and reading puts the picture back beside it. */}
-        <Box
-          ref={located.ref} data-testid="observation-body"
-          data-editing={editing ? 'true' : undefined}
-          sx={{ display: 'grid', gridTemplateColumns: editing ? 'minmax(0, 1fr)' : `minmax(0, 1fr) auto ${readerWidth[tab]}px`, flex: 1, minHeight: 0, ...located.ring }}
-        >
-          {!editing && (tab === 'register' ? register : tab === 'analysis' ? picture : solutionsView)}
-          {!editing && (
-            <SeamResizer
-              orientation="vertical"
-              region="after"
-              value={readerWidth[tab]}
-              min={READER[tab].min}
-              max={READER[tab].max}
-              defaultValue={READER[tab].default}
-              onChange={(next) => setReaderWidth(tab, next)}
-              label={s('observation.resizeReader')}
-            />
-          )}
-          <Box sx={{ minHeight: 0, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
-            <ReaderModeContext.Provider value={readerMode}>
-              <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>{reader}</Box>
-            </ReaderModeContext.Provider>
-            {tab === 'analysis' && !editing && toAnalyse}
-          </Box>
-        </Box>
-        <PictureMenu at={menu?.at} actions={menu ? withCopyLink(menuActions(menu.target), menu.target, resolve, copyLinkOf(props, tab), s) : []} onClose={() => setMenu(undefined)} />
-
+        </div>
+        {showPreview && (
+          <RecordPreview
+            held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} ids={previewIds} {...(listWord ? { listWord } : {})}
+            onSelect={(key) => setSelectedKey(key ?? undefined)} onFull={() => setFull(true)}
+          />
+        )}
+        <RecordEditor
+          editing={editing} onClose={() => setEditingKey(undefined)} today={today()} windowChrome={chrome}
+          renderMarkdown={props.renderMarkdown} onAddImage={props.onAddImage} images={props.images} s={s}
+        />
+        <PictureMenu at={menu?.at} actions={menu ? withCopyLink(menuActions(menu.target), menu.target, resolve, copyLinkOf(props, stage), s) : []} onClose={() => setMenu(undefined)} />
+        <HowToRead
+          open={reading} onClose={() => setReading(false)} stage={stage} size={f.view.size === 'large' && f.view.zoom < FAR_BELOW ? 'far' : f.view.size} local={f.viewLocal}
+          phases={phases} phaseCounts={phaseCounts} s={s}
+        />
         {forms.dialogs}
         {dialogs}
         <ArchiveDialog
           subject={archiving ? { id: archiving.id, label: nameOf(archiving.id) } : undefined}
           onCancel={() => setArchiving(undefined)}
-          onConfirm={(note) => { if (archiving) archive(archiving.id, note) }}
+          onConfirm={(reason) => { if (archiving) archive(archiving.id, reason) }}
           s={s}
+        />
+        <NotedDialog
+          label={noting ? nameOf(noting.observation.id, noting.scope) : undefined}
+          onCancel={() => setNoting(undefined)} onConfirm={note} s={s}
         />
         <MergePage state={merging.state} note={merging.note} onNoteClose={merging.clearNote} s={s} renderMarkdown={props.renderMarkdown} windowChrome={props.windowChrome} />
         <MovePage state={moving.state} note={moving.note} onNoteClose={moving.clearNote} s={s} windowChrome={props.windowChrome} />
@@ -1044,8 +1179,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
         <DropDialog
           subject={dropping ? { id: dropping.id, label: nameOf(dropping.id) } : undefined}
           onCancel={() => setDropping(undefined)}
-          onConfirm={(note) => {
-            if (dropping) commit({ solutions: dropSolution(solutions, dropping.id, note, today()) })
+          onConfirm={(reason) => {
+            if (dropping) commit({ solutions: dropSolution(solutions, dropping.id, reason, today()) })
             setDropping(undefined)
           }}
           s={s}
@@ -1061,5 +1196,119 @@ export function ObservationsPage(props: ObservationsPageProps) {
         />
       </LanguageProvider>
     </PageDialog>
+  )
+}
+
+const STAGE_WORD = { register: 'observation.stageSeen', analysis: 'observation.stageWhy', solutions: 'observation.stageSolve', results: 'observation.stageResults' } as const
+
+/** What the full window edits, wired to the rules; only what lives in this scope is edited from here (ADR-0032 §2). */
+function editingOf(held: Selected | undefined, ctx: ReaderContext): RecordEditing | undefined {
+  const { work, commit } = ctx
+  switch (held?.kind) {
+    case 'observation': return { kind: 'observation', record: held.observation, onSave: (patch) => commit({ observations: updateObservation(work.observations, held.observation.id, patch) }) }
+    case 'cause': return { kind: 'cause', record: held.cause, onSave: (patch) => commit({ causes: updateCause(work.causes, held.cause.id, patch) }) }
+    case 'solution': return { kind: 'solution', record: held.solution, onSave: (patch) => commit({ solutions: updateSolution(work.solutions, held.solution.id, patch) }) }
+    case 'experiment': return { kind: 'experiment', record: held.experiment, onSave: (patch) => commit({ experiments: updateExperiment(work.experiments, held.experiment.id, patch) }) }
+    default: return undefined
+  }
+}
+
+/** Noted (decision 13): it leaves the waiting list with a mark, and the reason, where there is one, stays in its history. */
+function NotedDialog({ label, onCancel, onConfirm, s }: { label: string | undefined; onCancel: () => void; onConfirm: (reason: string) => void; s: Translate }) {
+  const [reason, setReason] = useState('')
+  useEffect(() => { if (label) setReason('') }, [label])
+  return (
+    <Dialog
+      open={label !== undefined} title={s('observation.notedTitle')} onClose={onCancel}
+      actions={(
+        <>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button variant="primary" onClick={() => onConfirm(reason.trim())} data-testid="noted-confirm">{s('observation.notedConfirm')}</Button>
+        </>
+      )}
+    >
+      <p>{s('observation.notedBody', { name: label ?? '' })}</p>
+      <TextField label={s('observation.notedReason')} value={reason} onChange={setReason} autoFocus data-testid="noted-reason" />
+    </Dialog>
+  )
+}
+
+/** What a stage says with nothing in it, and it says which it is: filtered away is not nothing there. */
+function EmptyStage({ stage, f, observations, showArchived, onShowArchived, s }: {
+  stage: Tab
+  f: ReturnType<typeof usePictureFilters>
+  observations: readonly Observation[]
+  showArchived: boolean
+  onShowArchived: () => void
+  s: Translate
+}) {
+  if (f.result.filtering) return <p className="chain-note chain-empty__line" data-testid="observation-register-empty">{s('observation.filterNothing')}</p>
+  const archived = observations.filter((one) => isArchived(one) && !isMerged(observations, one.id)).length
+  if (stage === 'register' && archived > 0 && !showArchived) {
+    return (
+      <div className="chain-empty__do chain-empty__line" data-testid="observation-register-empty">
+        <span className="chain-note">{s('observation.listArchivedOnly', { count: archived })}</span>
+        <Button size="small" onClick={onShowArchived} data-testid="observation-show-archived">{s('observation.showArchived')}</Button>
+      </div>
+    )
+  }
+  return <p className="chain-note chain-empty__line" data-testid="observation-register-empty">{s(EMPTY_WORD[stage])}</p>
+}
+
+const EMPTY_WORD = {
+  register: 'observation.listEmpty', analysis: 'observation.emptyStageWhy', solutions: 'solution.emptyStageSolve', results: 'solution.emptyStageResults',
+} as const
+
+/** The legend and the full counts, said when asked: what was always on screen says nothing to somebody who has read it. */
+function HowToRead({ open, onClose, stage, size, local, phases, phaseCounts, s }: {
+  open: boolean
+  onClose: () => void
+  stage: Tab
+  size: 'large' | 'small' | 'far'
+  local: boolean
+  phases: readonly PhaseRow[]
+  phaseCounts: readonly (readonly [SolutionPhase, number])[]
+  s: Translate
+}) {
+  const mac = typeof navigator !== 'undefined' && /mac/i.test(navigator.platform ?? '')
+  const mod = mac ? '⌘' : 'Ctrl'
+  const shift = mac ? '⇧' : 'Shift'
+  return (
+    <Dialog
+      open={open} size="m" title={s('observation.howToRead')} onClose={onClose}
+      actions={<Button variant="primary" onClick={onClose}>{s('common.close')}</Button>}
+    >
+      <div className="chain-read" data-testid="how-to-read-body">
+        {stage === 'solutions' ? (
+          <>
+            <p className="chain-counts">
+              {phaseCounts.map(([phase, count]) => <span key={phase}><b>{count}</b> {s(PHASE_LABEL[phase]).toLowerCase()}</span>)}
+            </p>
+            <SolutionLegend s={s} />
+          </>
+        ) : (
+          <>
+            <p className="chain-counts" data-testid="analysis-phases">
+              {phases.map(({ keys, count }) => <span key={keys.other}><b>{count}</b> {plural(s, keys, count)}</span>)}
+            </p>
+            <PictureLegend size={size} local={local} s={s} />
+          </>
+        )}
+        <section>
+          <h3>{s('observation.zoomTitle')}</h3>
+          <table>
+            <tbody>
+              <tr><th scope="row">{s('observation.zoomIn')}</th><td>{mod} +</td></tr>
+              <tr><th scope="row">{s('observation.zoomOut')}</th><td>{mod} −</td></tr>
+              <tr><th scope="row">{s('observation.zoomWheel')}</th><td>{s('observation.zoomWheelKeys', { mod })}</td></tr>
+              <tr><th scope="row">{s('observation.zoomHome')}</th><td>{mod} 0</td></tr>
+              <tr><th scope="row">{s('observation.zoomFit')}</th><td>{shift} 1</td></tr>
+              <tr><th scope="row">{s('observation.zoomMove')}</th><td>{s('observation.zoomMoveKeys')}</td></tr>
+            </tbody>
+          </table>
+          <p className="chain-note">{s('observation.zoomSaid')}</p>
+        </section>
+      </div>
+    </Dialog>
   )
 }

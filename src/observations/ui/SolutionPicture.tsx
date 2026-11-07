@@ -32,6 +32,8 @@ import type { CauseStrength } from '../observation'
 import { solutionKey } from '../solutionGraph'
 import type { SolutionGraph, SolutionGraphEdge, SolutionGraphNode, SolutionLane } from '../solutionGraph'
 import { OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
+import { PictureFrame } from './AnalysisPicture'
+import type { PictureView } from './usePictureFilters'
 import { BOX, CauseMark, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, seenTint, shorten } from './ChainMarks'
 import type { PictureMenuHandler, PictureTarget } from './PictureMenu'
 
@@ -61,6 +63,9 @@ const LANE_TITLE: Record<SolutionLane, Parameters<Translate>[0]> = {
 }
 
 export type SolutionPictureProps = {
+  /** All four lanes fit on opening, down to the floor: they are read together. */
+  view: PictureView
+  dockExtra?: ReactNode
   graph: SolutionGraph
   selectedKey?: string
   onSelect: (key: string) => void
@@ -91,7 +96,7 @@ function reach(graph: SolutionGraph, from: string): Set<string> {
   return found
 }
 
-export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s }: SolutionPictureProps) {
+export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, view, dockExtra, s }: SolutionPictureProps) {
   const theme = useTheme()
   const placed = useMemo(() => placeGraph(graph, { laneWidth: LANE_WIDTH, rowHeight: ROW_HEIGHT, top: 36, left: 0 }), [graph])
   const at = useMemo(() => new Map(placed.map((one) => [one.key, one])), [placed])
@@ -182,10 +187,11 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
   }
 
   return (
-    <Box sx={{ overflow: 'auto', flex: 1, minHeight: 0, bgcolor: 'background.default' }}>
+    <PictureFrame content={{ width: Math.max(width, 4 * LANE_WIDTH), height }} view={view} label={s('solution.tab')} dockExtra={dockExtra}>
       <svg
-        width={Math.max(width, 4 * LANE_WIDTH)}
-        height={height}
+        width={Math.max(width, 4 * LANE_WIDTH) * view.zoom}
+        height={height * view.zoom}
+        viewBox={`0 0 ${Math.max(width, 4 * LANE_WIDTH)} ${height}`}
         role="img"
         aria-label={s('solution.tab')}
         data-testid="solution-picture"
@@ -320,7 +326,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, s
           )
         })}
       </svg>
-    </Box>
+    </PictureFrame>
   )
 }
 
@@ -335,7 +341,7 @@ export function SolutionLegend({ s }: { s: Translate }) {
   )
   const paper = theme.palette.background.paper
   return (
-    <Box data-testid="solution-legend" sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, px: 2, py: 1, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper' }}>
+    <Box data-testid="solution-legend" sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
       {row(<><rect x={1} y={3} width={12} height={8} rx={3} fill="none" stroke={theme.palette.text.primary} /><rect x={16} y={2} width={17} height={10} rx={3} fill="none" stroke={theme.palette.text.primary} /></>, s('solution.legendWidth'))}
       {row(<><rect x={1} y={3} width={9} height={8} rx={3} fill={paper} stroke={theme.palette.text.primary} strokeDasharray="2 2" /><rect x={12} y={3} width={9} height={8} rx={3} fill={`color-mix(in srgb, ${theme.palette.warning.main} 22%, ${paper})`} stroke={theme.palette.text.primary} /><rect x={23} y={3} width={10} height={8} rx={3} fill={theme.palette.success.main} stroke={theme.palette.text.primary} /></>, s('solution.legendFill'))}
       {row(<line x1={2} y1={7} x2={32} y2={7} stroke={theme.palette.primary.main} strokeWidth={2.5} />, s('solution.legendAddresses'))}

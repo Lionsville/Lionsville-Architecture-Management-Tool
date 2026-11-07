@@ -70,7 +70,8 @@ export const CONTROL_NAMES = [
   'sheet.allUnits',
   'map.grid', 'map.summary',
   // The observations page: its three tabs, one observation, the form, and the solutions.
-  'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions',
+  'observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.tabResults',
+  'observations.lens', 'observations.mapWindow', 'observations.preview', 'observations.ladder',
   'observations.register', 'observations.row', 'observations.picture', 'observations.new', 'observations.newCause',
   'observation.seenAgain', 'observation.merge', 'observation.cause',
   // The merge screen (ADR-0035): the search, across scopes, the survivor of
