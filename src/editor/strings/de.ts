@@ -407,6 +407,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.groupsOther': '{count} Domänengruppen',
   'inspector.multiHint':
     'Ziehen Sie ein ausgewähltes Element, um alle gemeinsam zu verschieben. Umschalt-Klick fügt hinzu oder entfernt; Escape hebt die Auswahl auf.',
+  'inspector.multiHintLines': 'Umschalt-Klick fügt hinzu oder entfernt; Escape hebt die Auswahl auf.',
   'inspector.bulkTitle': 'AUF ALLE ANWENDEN',
   'inspector.bulkLifecycle': 'Lebenszyklus',
   'inspector.bulkColour': 'Akzentfarbe',

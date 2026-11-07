@@ -133,7 +133,8 @@ export function MultiSelectionInspector({
       name={t('inspector.selected', { count: total })}
       facts={canEdit ? t('inspector.bulkNote') : undefined}
       actions={deleteAll && <MoreMenu label={t('inspector.more')} size="small" items={[{ label: t('inspector.deleteCount', { count: total }), final: true, onSelect: deleteAll }]} />}
-      help={help ?? t('inspector.multiHint')}
+      // Only lines cannot be dragged together, so the hint says only what they can do.
+      help={help ?? t(elementIds.length > 0 || selection.domainGroups.length > 0 ? 'inspector.multiHint' : 'inspector.multiHintLines')}
     >
       <ul className="inspector-list" data-testid="selection-list">
         {items.map((item) => (

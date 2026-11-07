@@ -419,6 +419,7 @@ export const EN = {
   'inspector.groupsOther': '{count} domain groups',
   'inspector.multiHint':
     'Drag any selected node to move them together. Shift-click to add or remove items; Escape to clear.',
+  'inspector.multiHintLines': 'Shift-click to add or remove items; Escape to clear.',
   'inspector.bulkTitle': 'APPLY TO ALL',
   'inspector.bulkLifecycle': 'Lifecycle',
   'inspector.bulkColour': 'Accent colour',

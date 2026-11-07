@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { laidOut } from '../model/testFixtures';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { EN as en } from './strings/en';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import type { Selection } from './useEditorState';
 import type { DesignElement, DesignModel } from '../model/types';
@@ -164,6 +165,15 @@ describe('MultiSelectionInspector: it says what is selected, and what each field
     fireEvent.keyDown(field, { key: 'Enter' });
     expect(actions.updateConnections).toHaveBeenCalledWith(['c1', 'c2'], { technology: 'REST' });
     expect(actions.updateElements).not.toHaveBeenCalled();
+  });
+
+  it('speaks of dragging only where something selected can be dragged', () => {
+    renderFull({ ...none, connectionIds: ['c1', 'c2'] });
+    expect(screen.queryByText(/Drag any selected node/)).toBeNull();
+    expect(screen.getByText(en['inspector.multiHintLines'])).toBeDefined();
+    cleanup();
+    renderFull({ ...none, elementIds: ['a1'], connectionIds: ['c1'] });
+    expect(screen.getByText(/Drag any selected node/)).toBeDefined();
   });
 
   it('heads each part with what it changes when both kinds are selected', () => {

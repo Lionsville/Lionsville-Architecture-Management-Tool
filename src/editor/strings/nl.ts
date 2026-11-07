@@ -407,6 +407,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.groupsOther': '{count} domeingroepen',
   'inspector.multiHint':
     'Sleep een geselecteerd element om ze samen te verplaatsen. Shift-klik voegt toe of haalt weg; Escape maakt de selectie leeg.',
+  'inspector.multiHintLines': 'Shift-klik voegt toe of haalt weg; Escape maakt de selectie leeg.',
   'inspector.bulkTitle': 'OP ALLES TOEPASSEN',
   'inspector.bulkLifecycle': 'Levenscyclus',
   'inspector.bulkColour': 'Accentkleur',
