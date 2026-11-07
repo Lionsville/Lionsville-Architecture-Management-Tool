@@ -155,12 +155,18 @@ export function useShellAgent(deps: {
    */
   const preferences = useRef(deps)
   preferences.current = deps
+  const moved = useRef<(to: Destination & { scope: string }, nothing: () => void) => void>(NOBODY)
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
     if (to.page !== 'preferences' && frame?.get().preferences) preferences.current.closePreferences?.()
+    // A panel beside the work moves nothing; every other way to go is asked here, whoever is going.
     if (to.page !== undefined && FRAME_PAGES.includes(to.page)) {
       openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, preferences.current.openPreferences)
       return
     }
+    if (frame?.get().guard?.(to, () => moved.current(to, nothing))) return
+    moved.current(to, nothing)
+  }, [homeAt, project, home, frame])
+  moved.current = (to, nothing) => {
     const listPage = holdInFrame(frame, to)
     const record = to.page === 'people' ? to.id ?? to.select : undefined
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
@@ -190,7 +196,7 @@ export function useShellAgent(deps: {
       },
       nothing,
     })
-  }, [homeAt, project, home, openScopeAt, frame])
+  }
   /**
    * The window's history (ADR-0033): every look below is handed to it, so a
    * move to another place is a step whoever made it, and Back opens the place
@@ -530,7 +536,10 @@ function screenOf(
     const active = model.diagrams.find((diagram) => diagram.id === held.activeDiagramId())
     const page = held.page()
     return {
-      open: { path: project.path, name: model.name, ...(active ? { view: { id: active.id, name: active.name, kind: active.kind } } : {}) },
+      open: {
+        path: project.path, name: model.name,
+        ...(active ? { view: { id: active.id, name: active.name, kind: active.kind, ...(held.editingDrawing?.() === active.id ? { editing: true } : {}) } } : {}),
+      },
       ...(page ? { page } : {}),
     }
   }

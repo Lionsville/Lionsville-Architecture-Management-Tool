@@ -462,7 +462,7 @@ export const EN = {
   'field.iconFirst': 'Pick an icon first',
   'field.placement': 'Placement',
   /** Drawings in this scope whose shapes point at the element. */
-  'field.onDrawings': 'On drawings',
+  'field.onDrawings': 'Shown on',
   'field.zone': 'Zone: {name}',
   'field.note': 'Note',
   'field.notePlaceholder': 'e.g. AKS, GitHub Actions',
@@ -481,7 +481,7 @@ export const EN = {
   'field.detailOther': 'Detail: {count} interfaces on the container diagram · {protocols}',
   'field.detailOpen': 'Open',
   'field.noContainer': 'Nothing is drawn inside it yet. A container diagram is where its components go.',
-  'field.anchoredDrawing': 'A drawing anchored to this element.',
+  'field.anchoredDrawing': 'Drawings about this',
   'field.newInterface': 'New interface',
   'field.detachFrom': 'Detach from “{label}”',
   'field.technologyHelp': 'What it is built out of: OpenAPI 3, a Kafka topic, an SFTP drop',

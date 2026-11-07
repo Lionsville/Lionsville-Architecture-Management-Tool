@@ -312,14 +312,6 @@ async function untilInFrame(window: BrowserWindow, what: string, script: string)
   }
 }
 
-/** Press one of the editor's own buttons, by its words, as a person would. */
-const pressInEditor = (words: string) => `(() => {
-  const button = [...document.querySelectorAll('button, a, div')].find((one) => one.children.length === 0 && one.textContent.trim() === ${JSON.stringify(words)})
-  if (!button) return null
-  button.click()
-  return 'pressed'
-})()`
-
 /**
  * Move over a row of the menu that is open, or press it, as the mouse would:
  * draw.io's rows listen for the mouse events themselves, and a `click` is not one.
@@ -392,14 +384,14 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
     drawn.id = made.id
     await agent('app.open', { scope, page: 'drawing', id: made.id })
     return page(waitFor(`document.querySelector('[data-testid="drawing-view"]') && document.querySelector('[data-testid="drawing-not-drawn"]')
-      && document.querySelector('[data-testid="drawing-edit"]') && !document.querySelector('[data-testid="drawing-edit"]').disabled && 'its tab, Edit on offer'`, 'the drawing tab'))
+      && document.querySelector('[data-guide="drawing.edit"]') && 'its tab, Edit on offer'`, 'the drawing tab'))
   }))
 
   results.push(await checkHere('Edit opens the real draw.io on drawing://local, sandboxed, in the app\'s dark theme', async () => {
     sendCommand({ type: 'theme', mode: 'dark' })
     // The theme is a command the renderer takes on its next render.
     await new Promise((resolve) => setTimeout(resolve, 500))
-    await page(`(() => { document.querySelector('[data-testid="drawing-edit"]').click(); return 'pressed' })()`)
+    await page(`(() => { document.querySelector('[data-guide="drawing.edit"]').click(); return 'pressed' })()`)
     const frame = JSON.parse(await page(waitFor(`(() => {
       const frame = document.querySelector('[data-testid="drawing-frame"]')
       return frame && JSON.stringify({ src: frame.getAttribute('src'), sandbox: frame.getAttribute('sandbox') })
@@ -407,7 +399,7 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
     if (!frame.src.startsWith('drawing://local/?') || !frame.src.includes('dark=1')) throw new Error(`the frame is ${frame.src}`)
     if (frame.sandbox !== 'allow-scripts allow-same-origin') throw new Error(`the frame's sandbox is "${frame.sandbox}"`)
     const loaded = await untilInFrame(window, 'the editor loaded the empty drawing',
-      "document.querySelector('.geDiagramContainer') && !document.body.innerText.includes('Error loading resource files') && document.body.innerText.includes('Save') && 'loaded'")
+      "document.querySelector('.geDiagramContainer') && !document.body.innerText.includes('Error loading resource files') && 'loaded'")
     const dark = await untilInFrame(window, 'the editor in dark mode', "Editor.isDarkMode() && 'dark'")
     return `${frame.src.split('?')[0]}, ${loaded}, ${dark}, sandbox "${frame.sandbox}"`
   }))
@@ -426,7 +418,8 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
       return 'loaded'
     })()`)
     await untilInFrame(window, 'the shape on the page', `document.querySelector('.geDiagramContainer').innerText.includes(${JSON.stringify(run.elementName)}) && 'drawn'`)
-    await untilInFrame(window, 'the Save button pressed', pressInEditor('Save'))
+    // Save is the app's, in its own bar: the frame has none.
+    await page(`(() => { document.querySelector('[data-testid="drawing-save"]').click(); return 'pressed' })()`)
     const listed = await untilRead('the drawing saved with its link', () => agent<{ diagrams: { id: string; pointsAt?: string[] }[] }>('diagrams.list'),
       (held) => held.diagrams.some((one) => one.id === drawn.id && (one.pointsAt ?? []).includes(run.elementId)))
     await agent('project.save')
@@ -497,8 +490,8 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
     }
   }))
 
-  results.push(await checkHere('Exit leaves the editor; the picture shows, its area on the shape draw.io drew', async () => {
-    await untilInFrame(window, 'the Exit button pressed', pressInEditor('Exit'))
+  results.push(await checkHere('Done leaves the editor; the picture shows, its area on the shape draw.io drew', async () => {
+    await page(`(() => { document.querySelector('[data-testid="drawing-done"]').click(); return 'pressed' })()`)
     const shown = JSON.parse(await page(waitFor(`(() => {
       const img = document.querySelector('[data-testid="drawing-picture"]')
       const area = document.querySelector('[data-testid="drawing-area-smoke-a"]')
@@ -623,7 +616,7 @@ async function drawingsSecondHalf(run: DrawingRun, drawn: Drawn | undefined, res
       await agent('app.open', { scope: LATER, page: 'drawing', id: 'later' })
       return await page(waitFor(`(() => {
         const view = document.querySelector('[data-testid="drawing-view"]')
-        return view && !document.querySelector('[data-testid="drawing-edit"]') && 'shown, and no Edit'
+        return view && !document.querySelector('[data-guide="drawing.edit"]') && 'shown, and no Edit'
       })()`, 'the read-only drawing'))
     } finally {
       // Back on the board, where the run expects to end.

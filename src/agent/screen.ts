@@ -216,6 +216,8 @@ export type Destination = {
   readonly focus?: string
   /** Which lines an organisation chart draws. */
   readonly lines?: ChartLines
+  /** A drawing's page only: in its editor, which `?edit` says in the address. */
+  readonly edit?: boolean
 }
 
 /** What is up over a scope, or on its home. Absent on a Screen means the active view itself. */
@@ -266,6 +268,8 @@ export type ScreenView = {
   /** On an organisation chart: the unit it is focused on, and the lines it draws, where somebody chose them. */
   readonly focus?: string
   readonly lines?: ChartLines
+  /** A drawing with its editor open. */
+  readonly editing?: boolean
 }
 
 export type Screen = {

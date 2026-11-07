@@ -38,6 +38,8 @@ import { useAgentGateway } from './useAgentGateway'
  * another.
  */
 export type WorkspaceAgentView = SessionView & {
+  /** The drawing whose editor is open, which the address says. */
+  editingDrawing?: () => string | undefined
   page(): ScreenPage | undefined
   /**
    * Has the page over the canvas answered the latest request for it? A

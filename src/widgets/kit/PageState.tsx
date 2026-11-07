@@ -87,6 +87,12 @@ export type PageStateProps = Common & (
       readonly onRetry?: () => void
       /** Beside the retry: a way to report it, say. */
       readonly actions?: ReactNode
+      /** The title, where what did not answer is not the server. */
+      readonly title?: string
+      /** Somewhere else to go meanwhile. */
+      readonly wayOut?: PageAction
+      /** Who to ask, if it goes on. */
+      readonly note?: string
     }
   | {
       readonly state: 'unreadable'
@@ -163,19 +169,21 @@ export function PageState(props: PageStateProps) {
     case 'offline':
       return (
         <Card
-          state="offline" role="alert" title={t('kit.state.offline')} compact={compact} guide={dataGuide}
+          state="offline" role="alert" title={props.title ?? t('kit.state.offline')} compact={compact} guide={dataGuide}
           body={[
             props.where ? t('kit.state.noAnswer', { where: props.where }) : undefined,
             t('kit.state.nothingLost'),
             props.retryIn !== undefined ? t('kit.state.retryIn', { seconds: props.retryIn }) : undefined,
           ].filter(Boolean).join(' ')}
         >
-          {(props.onRetry || props.actions) && (
+          {(props.onRetry || props.actions || props.wayOut) && (
             <div>
               {props.onRetry && <Button variant="plain" onClick={props.onRetry}>{t('kit.state.tryNow')}</Button>}
               {props.actions}
+              {props.wayOut && <Button variant="quiet" onClick={props.wayOut.onPress} data-guide={props.wayOut.dataGuide}>{props.wayOut.label}</Button>}
             </div>
           )}
+          {props.note && <div className="kit-state__body">{props.note}</div>}
         </Card>
       )
     case 'unreadable':

@@ -556,3 +556,26 @@ configuration reaches the second.
 
 The smoke run presses each format on the menu, closes the dialog once, and reads
 each file back off the disk.
+
+## Amended for 4.0.0: the app owns the editor's edges
+
+As built. draw.io's own Save and Exit are off (`noSaveBtn`, `saveAndExit=0`,
+`noExitBtn`) and the app's bar holds the name, Save and Done; the state of the work
+goes through the frame's one status word. A frame that has not said `init` within
+15 seconds is said to have not answered, because the only Exit used to be inside
+the frame that did not arrive. Every change is heard through `autosave` on the
+`load` message, which saves nothing, so unsaved work is known; while there is any,
+a guard in the frame's store stands in every way out.
+
+A little of this runs inside the frame, at the end of `PostConfig.js`
+(`build/drawioBridge.ts`), because the JSON protocol says nothing about what is
+selected and cannot set a link. It tells the page the selected shape, takes where a
+shape points, hides the `element:<id>` hint, and shows the format panel on selection.
+`link="element:<id>"` stays what is stored, for the agent and for files.
+
+draw.io is sent the tokens as `customCss`, in both modes through `light-dark()`.
+Its class names may move with a new pin; the worst that does is a seam showing.
+
+A press on a shape opens the element in a panel beside the picture and its page from
+there, and an element drawn on no board opens its page: a move out of a page and into
+one no longer closes the second.

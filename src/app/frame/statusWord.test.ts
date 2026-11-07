@@ -46,3 +46,12 @@ describe('the status word', () => {
     expect(word({}).text).toBe(s('frame.nothingWaiting'))
   })
 })
+
+describe('an editor\'s work', () => {
+  it('is what the word says while it is up, whatever the document has sent', () => {
+    expect(word({ status: 'idle', publishesSteps: true, sourceStatus: true, own: { state: 'dirty' } }).text).toBe(s('shell.notSaved'))
+    expect(word({ status: 'idle', own: { state: 'saving' } }).text).toBe(s('shell.saving'))
+    expect(word({ status: 'idle', own: { state: 'failed' } })).toEqual({ text: s('frame.ownFailed'), alarm: true })
+    expect(word({ status: 'idle', own: { state: 'clean' } }).text).toBe(s('frame.ownClean'))
+  })
+})

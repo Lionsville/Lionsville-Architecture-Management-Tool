@@ -1,0 +1,12 @@
+/* A shape that points at the model. It holds its line at any zoom, since it is a line round a box and not part of the picture. */
+.drawing-area { position: absolute; padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 2px; }
+.drawing-area:hover, .drawing-area:focus-visible { outline: 2px solid var(--selected-edge); outline-offset: 1px; background: color-mix(in srgb, var(--selected-soft) 30%, transparent); }
+.drawing-area[data-marked] { outline: 1px dashed var(--selected-edge); outline-offset: 1px; }
+.drawing-area[data-chosen] { outline: 2px solid var(--selected-edge); outline-offset: 1px; background: color-mix(in srgb, var(--selected-soft) 45%, transparent); }
+.drawing-area[data-state='stale'], .drawing-area[data-state='missing'] { outline: 2px dashed var(--warn); outline-offset: 1px; }
+.drawing-area[data-state='stale']::after, .drawing-area[data-state='missing']::after {
+  position: absolute; top: -9px; right: -9px; width: 18px; height: 18px; border-radius: 50%; line-height: 18px; text-align: center;
+  background: var(--warn); color: var(--surface); font: 700 12px/18px var(--font-ui);
+}
+.drawing-area[data-state='stale']::after { content: '!'; }
+.drawing-area[data-state='missing']::after { content: '\00d7'; }

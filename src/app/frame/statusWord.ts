@@ -15,6 +15,7 @@ import type { Language, StringKey, Translate } from '../../i18n'
 import type { DocumentStatus } from '../../projects/documentSession'
 import type { SourceWord, StatusTone } from '../../ports/ProviderParts'
 import { clockTime } from '../clockTime'
+import type { OwnWork } from './frameStore'
 
 export type StatusFacts = {
   /** Absent: nothing is open, so nothing is waiting here. */
@@ -33,6 +34,8 @@ export type StatusFacts = {
   readonly visiting?: boolean | undefined
   /** What the source says of itself, ahead of all this: it alone knows what a change has met on the way. */
   readonly source?: SourceWord | undefined
+  /** An editor's work, which the model does not hold yet: what is true of the screen while it is up. */
+  readonly own?: OwnWork | undefined
 }
 
 const WORDS: Partial<Record<DocumentStatus, StringKey>> = {
@@ -46,8 +49,19 @@ const said = (text: string, tone: StatusTone): StatusWord => ({ text, tone, alar
 /** A mark for each tone: the shape carries it, for a greyscale print and for anybody who cannot tell the colours apart. */
 export const TONE_MARK: Readonly<Record<StatusTone, string>> = { saved: '✓', busy: '◌', waiting: '▲', offline: '○', problem: '●', reading: '◉' }
 
+function ownWord(own: OwnWork, language: Language, s: Translate): StatusWord {
+  switch (own.state) {
+    case 'clean': return said(s('frame.ownClean'), 'saved')
+    case 'dirty': return said(s('shell.notSaved'), 'busy')
+    case 'saving': return said(s('shell.saving'), 'busy')
+    case 'failed': return said(s('frame.ownFailed'), 'problem')
+    case 'saved': return said(own.savedAt ? s('shell.saved', { time: clockTime(own.savedAt, language) }) : s('frame.ownClean'), 'saved')
+  }
+}
+
 export function statusWord(facts: StatusFacts, language: Language, s: Translate): StatusWord {
-  const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected, place, transient, source } = facts
+  const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected, place, transient, source, own } = facts
+  if (own) return ownWord(own, language, s)
   if (source) return { text: source.text, tone: source.tone, alarm: source.tone === 'problem' || source.tone === 'waiting', ...(source.short === undefined ? {} : { short: source.short }) }
   if (saveFailed) return said(s('shell.saveRefused'), 'problem')
   if (status === 'conflict' || status === 'external-changed') return said(s(WORDS[status]!), 'problem')

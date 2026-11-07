@@ -3120,46 +3120,64 @@ Bereich gewählt wurden.
 
 ## Eine Zeichnung
 
-Eine **Zeichnung** ist eine Ansicht. **+** in den Diagrammreitern, dann
-**Zeichnung**, legt eine an, und die Startseite eines Bereichs bietet dasselbe
-unter **Neue Tafel…**. Sie hat einen eigenen Reiter, wie eine Landschaft oder
-ein Blatt.
+Eine **Zeichnung** ist die eine Ansicht, die Sie zeichnen und nicht das Modell.
+**+** in den Diagramm-Tabs fragt, welche Art Ansicht es sein soll, geteilt danach,
+wer sie zeichnet: unter **Diese zeichnen Sie selbst** fragt **Zeichnung** nach einem
+Namen und, wenn Sie möchten, dem Element, um das es geht. Die Startseite eines
+Bereichs bietet dasselbe. Sie hat einen eigenen Tab, wie eine Landschaft oder ein Sheet.
 
-Eine Zeichnung wird als ihr Bild gezeigt. Eine Zeichnung ohne Bild sagt **Noch
-nicht gezeichnet**, und hat keine Flächen.
+Eine Zeichnung wird als ihr Bild gezeigt, mit einer Leiste wie jede Ansicht: was sie
+ist, wie viele Formen auf das Modell zeigen, und was Sie damit tun können. Eine
+spätere Seite einer Datei wird im Editor gezeichnet und nicht abgebildet; die Leiste
+sagt das. Ohne Bild sagt sie, warum: **Noch nicht gezeichnet**, mit **Mit dem Zeichnen
+beginnen**; **Geschrieben, aber noch ohne Bild** für eine Zeichnung, die ein Agent
+schrieb, mit dem, worauf sie zeigt; oder, wo kein Editor ist, warum nicht und woher
+einer kommt.
 
-Auf dem Bild ist jede Form, die auf ein Element zeigt, eine durchsichtige
-Fläche. Die Fläche wählen öffnet dieses Element. Der Inspektor des Elements
-nennt die Zeichnungen in diesem Bereich, die darauf zeigen; eine auswählen
-öffnet sie. Eine Form, die auf
-ein Element zeigt, das dieser Bereich nicht hält, ist ein Befund.
+Auf dem Bild erhält jede Form, die auf ein Element zeigt, beim Überfahren oder im
+Fokus einen Rahmen und einen Namen. Ein Druck öffnet das Element im Panel neben dem
+Bild, mit **Seite öffnen**; das Bild bewegt sich nicht. **n Verknüpfungen** markiert
+alle und listet sie auf: welche im Gleichschritt sind, welche **zu prüfen** sind (das
+Element ist nicht mehr in diesem Bereich, oder das Bild sagt noch einen alten Namen),
+und welche Formen nur gezeichnet sind. Eine Form, die auf ein Element zeigt, das
+dieser Bereich nicht hat, ist auch ein Befund in den Prüfungen. **Einpassen**, der Zoom
+und **Exportieren…**, als SVG oder PNG aus dem gespeicherten Bild, sind für alle da,
+die lesen.
 
-**Bearbeiten** öffnet den Editor, in der Sprache der App. Die Palette enthält
-die Elemente des Bereichs — jedes eine Form, die auf dieses Element zeigt —
-und die C4-Formen. Wenn der Editor öffnet, trägt jede Form, die auf ein
-Element zeigt, den Namen, den dieses Element jetzt hat. Speichern hält die
-Zeichnung als eines: das XML, das Bild und die Verweise, die die Formen
-setzen. **Beenden** verlässt den Editor und fragt vorher, wenn es Änderungen
-gibt, die noch nicht gespeichert sind; **Speichern & Beenden** verlässt ihn,
-sobald das Speichern gelungen ist. Speichert jemand anderes dieselbe Zeichnung,
-während der Editor offen ist, wird deren Fassung mit dem Offenen
-zusammengeführt.
+**Zeichnung bearbeiten** öffnet den Editor in der Sprache der App; die Adresse sagt
+`?edit`, also kann auch ein Link oder ein Agent ihn öffnen. Die Palette enthält die
+Elemente des Bereichs mit Namen, nach Art gruppiert, jedes eine Form, die auf dieses
+Element zeigt, und die C4-Formen. Beim Öffnen erhält jede solche Form den Namen des
+Elements, wie er jetzt ist. Die Leiste darüber gehört der App: was bearbeitet wird,
+**Speichern** und **Fertig**. Das Statuswort sagt **Noch nicht gespeichert**, **Speichern**,
+**Gespeichert** mit der Zeit oder **Speichern fehlgeschlagen**, und ein fehlgeschlagenes
+Speichern bleibt dort stehen, mit **Erneut speichern**. Speichern hält die Zeichnung als
+Ganzes: ihr XML, ihr Bild und die Verknüpfungen der Formen. Speichert jemand anderes
+dieselbe Zeichnung, während der Editor offen ist, wird das mit dem Offenen
+zusammengeführt, und die Leiste sagt es einmal.
 
-**Diagramm › Exportieren als** im Editor macht aus der Zeichnung eine Datei: PNG, JPEG,
-WebP, eine Animation als GIF, SVG, XML oder JSON. Sie trägt den Namen der
-Zeichnung, und die App sagt es, sobald sie gespeichert ist. Der Desktop fragt,
-wohin; ein Browser legt sie zu seinen Downloads. Exportieren ändert nichts an der
-Zeichnung und ist kein Speichern.
+Eine Form auszuwählen sagt unter der Fläche, worauf sie zeigt, mit **Seite öffnen**,
+**Auf ein anderes zeigen…** und **Lösen**. Die Adressform bleibt darunter für einen
+Agenten und für Dateien.
 
-Editor und Bild folgen dem Thema der App: hell, dunkel oder dem des Systems.
-Ein Wechsel, während der Editor offen ist, behält, was gezeichnet wird.
+Gehen mit ungespeicherter Arbeit fragt zuerst, welchen Weg Sie auch nehmen: ein Tab,
+eine Seite, der Baum, Zurück oder das Fenster. **Speichern und gehen** behält sie,
+**Bleiben** geht zurück, **Ohne Speichern gehen** verwirft sie. Der Editor ist ein
+eigener Dienst; hat er 15 Sekunden nicht geantwortet, sagt die Seite das, mit **Jetzt
+versuchen** und **Zurück zum Bild**, und **Fertig** ist immer da.
 
-Eine Ansicht, die nicht geändert werden darf, bietet kein **Bearbeiten**. Ein
-Element zu löschen behält die daran verankerten Zeichnungen, ohne den Anker;
-Rückgängig setzt ihn zurück.
+**Diagram › Exportieren als** im Editor erzeugt eine Datei der Zeichnung: PNG, JPEG,
+WebP, eine Animation als GIF, SVG, XML oder JSON. Sie ist nach der Zeichnung benannt,
+und die App sagt es, sobald sie gespeichert ist. Der Desktop fragt wo; ein Browser
+legt sie zu den Downloads. Exportieren ändert nichts an der Zeichnung und ist kein
+Speichern.
 
-Wo keine Adresse für den Editor angegeben wurde, wird die Zeichnung weiterhin
-gezeigt, und **Bearbeiten** sagt, dass der Editor nicht verfügbar ist.
+Der Editor und das Bild folgen dem Thema der App: hell, dunkel oder dem des Systems.
+Es zu wechseln, während der Editor offen ist, behält, was gezeichnet wird.
+
+Eine Ansicht, die nicht geändert werden darf, bietet kein **Zeichnung bearbeiten** und
+sagt das einmal. Ein Element zu löschen behält die daran verankerten Zeichnungen, ohne
+den Anker; Rückgängig stellt es wieder her.
 
 Eine Zeichnung kann an einem Element verankert sein. Das Menü des Elements
 bietet **Zeichnung erstellen** neben **Container-Diagramm erstellen** oder

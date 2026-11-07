@@ -172,11 +172,12 @@ export function useWorkspaceAgentView(deps: {
     ...(changeAcross ? { changeAcross } : {}),
     ...(landSteps ? { landSteps } : {}),
     ...(followScopeTypes ? { followScopeTypes } : {}),
+    editingDrawing: () => pages.drawings.editing,
   }), [
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
     openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross, landSteps, peopleNow,
-    followScopeTypes, comments, changesOf,
+    followScopeTypes, comments, changesOf, pages.drawings.editing,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)
@@ -208,6 +209,7 @@ export function showOn(
     if (isViewPageName(to.page)) {
       if (to.id === undefined) return
       openView(to.id)
+      pages.drawings.setEditing(to.page === 'drawing' && to.edit ? to.id : undefined)
       // A drawing does not select an element. selectOn no-ops there.
       if (to.select !== undefined && to.page !== 'drawing') pages.selectOn(to.id, to.select)
       return

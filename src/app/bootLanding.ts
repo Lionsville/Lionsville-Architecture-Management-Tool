@@ -242,7 +242,7 @@ export async function landedAt(
  */
 export function initialPageFor(to: Destination): InitialPage | undefined {
   const id = to.id !== undefined ? { id: to.id } : {}
-  if (isViewPageName(to.page)) return { page: to.page, ...id, ...(to.select !== undefined ? { select: to.select } : {}), ...(to.tab !== undefined ? { tab: to.tab } : {}) }
+  if (isViewPageName(to.page)) return { page: to.page, ...id, ...(to.select !== undefined ? { select: to.select } : {}), ...(to.tab !== undefined ? { tab: to.tab } : {}), ...(to.edit ? { edit: true } : {}) }
   switch (to.page) {
     case 'decisions': return { page: 'decisions', ...id }
     case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab as ObservationTab } : {}) }

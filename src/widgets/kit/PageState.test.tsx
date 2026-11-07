@@ -112,6 +112,15 @@ describe('the others', () => {
     )
     expect(await axeFindings()).toEqual([])
   })
+
+  it('an offline state may name what did not answer, and offer somewhere else to go', () => {
+    const away = vi.fn()
+    renderShell(<PageState state="offline" title="The editor did not answer" where="The editor" wayOut={{ label: 'Back', onPress: away }} note="Ask whoever runs it." />)
+    expect(screen.getByText('The editor did not answer')).toBeTruthy()
+    expect(screen.getByText('Ask whoever runs it.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Back' }))
+    expect(away).toHaveBeenCalled()
+  })
 })
 
 describe('what a person can do about a held or offline page', () => {

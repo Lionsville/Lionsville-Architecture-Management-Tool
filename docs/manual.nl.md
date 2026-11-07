@@ -2979,44 +2979,62 @@ dat ze voor die scope gekozen zijn.
 
 ## Een tekening
 
-Een **tekening** is een aanzicht. **+** in de diagramtabbladen, dan **Tekening**,
-maakt er een, en de startpagina van een scope biedt hetzelfde onder **Nieuw
-bord…**. Hij heeft een eigen tabblad, zoals een landschap of een sheet.
+Een **tekening** is het ene aanzicht dat jij tekent en het model niet. **+** in de
+diagramtabbladen vraagt welk soort aanzicht je wilt, gesplitst naar wie het
+tekent: onder **Deze teken je zelf** vraagt **Tekening** om een naam en, als je
+wilt, het element waarover hij gaat. De startpagina van een scope biedt hetzelfde.
+Hij heeft een eigen tabblad, zoals een landschap of een sheet.
 
-Een tekening wordt getoond als zijn afbeelding. Een tekening zonder afbeelding
-zegt **Nog niet getekend**, en heeft geen vlakken.
+Een tekening wordt getoond als zijn afbeelding, met één balk zoals elk aanzicht:
+wat het is, hoeveel vormen naar het model wijzen, en wat je ermee kunt. Een latere
+pagina van een bestand wordt in de editor getekend en niet afgebeeld; de balk zegt
+dat. Zonder afbeelding zegt hij waarom: **Nog niet getekend**, met **Beginnen met
+tekenen**; **Geschreven, maar nog geen afbeelding** voor een tekening die een agent
+schreef, met waar hij naar wijst; of, waar geen editor is, waarom niet en waar je
+er een haalt.
 
-Op de afbeelding is elke vorm die naar een element wijst een doorzichtig vlak.
-Het vlak kiezen opent dat element. De inspector van het element noemt de
-tekeningen in deze scope die ernaar wijzen; er een kiezen opent haar. Een vorm die naar een element wijst
-dat deze scope niet heeft, is een bevinding.
+Op de afbeelding krijgt elke vorm die naar een element wijst bij aanwijzen of focus
+een lijn en een naam. Erop drukken opent het element in het paneel naast de
+afbeelding, met **Pagina openen**; de afbeelding beweegt niet. **n koppelingen**
+markeert ze allemaal en somt ze op: welke in de pas lopen, welke **om na te kijken**
+zijn (het element staat niet meer in deze scope, of de afbeelding zegt nog een oude
+naam), en welke vormen alleen getekend zijn. Een vorm die wijst naar een element
+dat deze scope niet heeft is ook een bevinding in Controles. **Passend**, de zoom en
+**Exporteren…**, als SVG of PNG uit de bewaarde afbeelding, zijn er voor iedere lezer.
 
-**Bewerken** opent de editor, in de taal van de app. Het palet bevat de
-elementen van de scope — elk een vorm die naar dat element wijst — en de
-C4-vormen. Als de editor opent, krijgt elke vorm die naar een element wijst
-de naam die dat element nu heeft. Bewaren houdt de tekening als één: de XML,
-de afbeelding en de koppelingen die de vormen maken. **Afsluiten** verlaat de
-editor, en vraagt het eerst als er wijzigingen zijn die nog niet bewaard
-zijn; **Opslaan & afsluiten** verlaat hem zodra het bewaren gelukt is. Bewaart
-iemand anders dezelfde tekening terwijl de editor open is, dan wordt die van
-hen samengevoegd met wat open staat.
+**Tekening bewerken** opent de editor, in de taal van de app; het adres zegt
+`?edit`, dus een link of een agent kan hem ook openen. Het palet bevat de elementen
+van de scope op naam, gegroepeerd naar soort, elk een vorm die naar dat element
+wijst, en de C4-vormen. Bij het openen krijgt elke zulke vorm de naam van het
+element zoals die nu is. De balk erboven is van de app: wat er bewerkt wordt,
+**Bewaren** en **Klaar**. Het statuswoord zegt **Nog niet bewaard**, **Bewaren**, **Bewaard**
+met de tijd, of **Bewaren niet gelukt**, en een mislukte bewaring blijft daar staan
+met **Opnieuw bewaren**. Bewaren houdt de tekening als één geheel: de XML, de
+afbeelding en de koppelingen die de vormen maken. Bewaart iemand anders dezelfde
+tekening terwijl de editor open is, dan wordt dat samengevoegd met wat open is, en
+de balk zegt dat één keer.
 
-**Diagram › Exporteren als** in de editor maakt een bestand van de tekening: PNG, JPEG,
-WebP, een animatie als GIF, SVG, XML of JSON. Het krijgt de naam van de tekening,
-en de app zegt het zodra het bewaard is. De desktop vraagt waar; een browser zet
-het bij zijn downloads. Exporteren verandert niets aan de tekening en is geen
-bewaren.
+Een vorm selecteren zegt onder het canvas waar hij naar wijst, met **Pagina
+openen**, **Naar een ander wijzen…** en **Ontkoppelen**. De adresvorm blijft eronder
+voor een agent en voor bestanden.
 
-De editor en de afbeelding volgen het thema van de app: licht, donker of dat
-van het systeem. Het wisselen terwijl de editor open is, houdt wat getekend
-wordt.
+Weggaan met onbewaard werk vraagt eerst, welke weg je ook neemt: een tabblad, een
+pagina, de boom, Terug of het venster. **Bewaren en weggaan** houdt het, **Blijven**
+gaat terug, **Weggaan zonder bewaren** laat het vallen. De editor is een aparte
+dienst; heeft die 15 seconden niet geantwoord, dan zegt de pagina dat, met **Nu
+proberen** en **Terug naar de afbeelding**, en **Klaar** is er altijd.
 
-Een aanzicht dat niet gewijzigd mag worden, biedt geen **Bewerken**. Een
-element verwijderen houdt de tekeningen die eraan verankerd zijn, zonder het
-anker; ongedaan maken zet het terug.
+**Diagram › Exporteren als** in de editor maakt een bestand van de tekening: PNG,
+JPEG, WebP, een animatie als GIF, SVG, XML of JSON. Het is genoemd naar de tekening,
+en de app zegt het zodra het bewaard is. De desktop vraagt waar; een browser zet het
+bij de downloads. Exporteren verandert niets aan de tekening, en het is geen bewaren.
 
-Waar geen adres voor de editor is gegeven, wordt de tekening nog steeds
-getoond, en **Bewerken** zegt dat de editor niet beschikbaar is.
+De editor en de afbeelding volgen het thema van de app: licht, donker, of dat van
+het systeem. Het wijzigen terwijl de editor open is houdt wat getekend wordt.
+
+Een aanzicht dat niet gewijzigd mag worden biedt geen **Tekening bewerken**, en zegt
+dat één keer. Een element verwijderen houdt de tekeningen die eraan verankerd zijn,
+zonder het anker; ongedaan maken zet het terug.
 
 Een tekening kan aan een element verankerd zijn. Het menu van het element
 biedt **Tekening maken** naast **Containeraanzicht maken** of

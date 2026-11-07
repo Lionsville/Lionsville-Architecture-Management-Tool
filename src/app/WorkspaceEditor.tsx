@@ -5,7 +5,7 @@
  * The editor, inside the boundary that keeps the bar and the pages alive when
  * it throws, and the laid-out views it draws in the tab.
  */
-import { useCallback, useMemo } from 'react'
+import { useCallback, useContext, useMemo } from 'react'
 import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { SolutionDesignEditor } from '../editor'
@@ -23,6 +23,8 @@ import type { TechnologyLandscapePage as TechnologyLandscapePageShape } from '..
 import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
 import { unitLanding } from './units/unitViewsHere'
 import { ErrorBoundary } from './ErrorBoundary'
+import { FrameStoreContext, throughGuard } from './frame/frameStore'
+import { drawingViewProps, NewViewFor } from './DrawingPage'
 import { foldKey } from './sessionFolds'
 import { useTheme } from '@mui/material/styles'
 import { shellTheme } from './theme'
@@ -61,6 +63,9 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
   const { s, language } = props.shell
   const { groupName, groupClient } = props.tree
   const seams = useEditorSeams(parts)
+  const frame = useContext(FrameStoreContext)
+  /** A tab is the most ordinary press on the screen, and it is asked about like every other way out. */
+  const tabMove = (id: string, go: () => void) => throughGuard(frame, { page: 'board', id }, go)
   return (
     <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <ErrorBoundary where="editor" diagnostics={props.host.diagnostics} controls={props.host.controls} s={s}>
@@ -70,12 +75,12 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
           model: session.model,
           activeDiagramId: session.activeDiagramId,
           // A view's tab is also the way out of a page: the view comes up, and the page goes.
-          onActiveDiagramChange: (id) => { parts.pages.closePages(); session.setActiveDiagramId(id) },
+          onActiveDiagramChange: (id) => tabMove(id, () => { parts.pages.closePages(); session.setActiveDiagramId(id) }),
           viewing: parts.viewing,
         }}
         editing={{ dispatch: session.dispatch, history: seams.history, ids: session.ids, readOnly: session.readOnly }}
         pages={{ render: (diagram, view) => laidOutPage(parts, diagram, view), inspector: (diagram) => unitViewInspector(parts, diagram) }}
-        diagrams={diagramCalls(parts)}
+        diagrams={diagramCalls(parts, tabMove)}
         history={seams.historyRequests}
         requests={{
           focus: requests.focus, documentation: requests.documentation, onDocumentation: requests.shownDocumentation,
@@ -116,6 +121,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
         onHandle={renderer.onEditorHandle}
       />
       </ErrorBoundary>
+      <NewViewFor parts={parts} />
     </Box>
   )
 }
@@ -176,7 +182,8 @@ function useEditorSeams(parts: WorkspaceParts) {
 }
 
 /** The tab strip's calls: a board made, renamed or removed, and a view of each kind opened or made. */
-function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts) {
+function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts, tabMove: (id: string, go: () => void) => void) {
+  const opening = (open: (id: string) => void) => (id: string) => tabMove(id, () => open(id))
   return {
     onCreateContainer: diagrams.onCreateContainerDiagram,
     onCreateLayer7: diagrams.onCreateLayer7Diagram,
@@ -184,17 +191,18 @@ function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts) {
     onDuplicate: diagrams.onDuplicateDiagram,
     onDelete: diagrams.requestDeleteDiagram,
     onSettingsChange: diagrams.onDiagramSettingsChange,
-    onOpenSheet: pages.openView,
+    onOpenSheet: opening(pages.openView),
     onCreateSheet: sheets.create,
-    onOpenMap: pages.openView,
+    onOpenMap: opening(pages.openView),
     onCreateMap: pages.createMap,
-    onOpenTechnology: pages.openTechnology,
+    onOpenTechnology: opening(pages.openTechnology),
     onCreateTechnology: pages.createTechnology,
-    onOpenDrawing: pages.openView,
+    onOpenDrawing: opening(pages.openView),
     onCreateDrawing: pages.createDrawing,
-    onOpenChart: pages.openView,
+    onNewView: pages.drawings.chooseView,
+    onOpenChart: opening(pages.openView),
     onCreateChart: () => pages.createUnitView('chart'),
-    onOpenConway: pages.openView,
+    onOpenConway: opening(pages.openView),
     onCreateConway: () => pages.createUnitView('conway'),
     onCreateDrawingFor: pages.createDrawingFor,
     onOpenTechnologyFor: pages.openTechnologyFor,
@@ -512,27 +520,10 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
  * next save cannot write into that one.
  */
 export function drawingPage(
-  parts: Pick<WorkspaceParts, 'props' | 'session' | 'show'>,
+  parts: Pick<WorkspaceParts, 'props' | 'session' | 'show'> & Partial<Pick<WorkspaceParts, 'pages'>>,
   diagram: DesignDiagram,
   view: Pick<PageView, 'readOnly'>,
 ): ReactElement {
-  return (
-    <DrawingView
-      key={diagram.id}
-      diagram={diagram}
-      scope={parts.props.project.id}
-      images={parts.props.source.repositories.images}
-      elements={parts.session.model.elements.map((element) => ({ id: element.id, name: element.name }))}
-      origin={parts.props.shell.drawingOrigin}
-      language={parts.props.shell.language}
-      readOnly={view.readOnly}
-      dispatch={parts.session.dispatch}
-      documents={parts.props.files.documents}
-      diagnostics={parts.props.host.diagnostics}
-      notify={parts.props.shell.notify}
-      // A box that points at a unit opens it on the scope's chart, where there is one (ADR-0036 §7).
-      onOpen={(to) => parts.show({ ...to, ...unitLanding(parts.session.model, to), scope: parts.props.project.path })}
-      s={parts.props.shell.s}
-    />
-  )
+  return <DrawingView key={diagram.id} {...drawingViewProps(parts, diagram, view)} />
 }
+

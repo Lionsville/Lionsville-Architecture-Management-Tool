@@ -18,14 +18,20 @@
  * image resolves them by the image element's own `color-scheme`. That is set
  * from the MUI theme's mode — the one value the app resolves from its setting
  * and, for *system*, the media query — so the picture follows the app.
+ *
+ * **A link can be seen.** Hover and focus outline an area and name it, here as in
+ * a document. A view may also ask for all of them marked, and say which of them
+ * has fallen behind the model; those stay marked whatever else is going on.
  */
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
 import { areaOnPicture, pictureFrame } from '../../model/drawing'
 import type { PictureFrame } from '../../model/drawing'
 import type { DrawingLink } from '../../model/types'
+import { Tooltip } from '../../widgets/kit/Tooltip'
+import './DrawingPicture.css'
 
-export function DrawingPicture({ url, picture, xml, links, alt, label, onOpen, testIds }: {
+export function DrawingPicture({ url, picture, xml, links, alt, label, onOpen, testIds, fill, markAll, chosen, stateOf }: {
   url: string
   /** The export's own box, read off the SVG; absent where it names none. */
   picture: PictureFrame | undefined
@@ -36,6 +42,14 @@ export function DrawingPicture({ url, picture, xml, links, alt, label, onOpen, t
   label: (elementId: string) => string
   onOpen?: (elementId: string) => void
   testIds: { frame: string; picture: string; area: (link: DrawingLink) => string }
+  /** Fill the box it is put in, at any size, rather than stopping at the picture's own: a view with a zoom of its own. */
+  fill?: boolean
+  /** Show every link, not only the one under the pointer. */
+  markAll?: boolean
+  /** The element whose shapes are the ones being read. */
+  chosen?: string
+  /** How a link stands to the model, where a reader should be told. */
+  stateOf?: (link: DrawingLink) => 'inStep' | 'stale' | 'missing' | undefined
 }) {
   const mode = useTheme().palette.mode
   const frame = pictureFrame(xml, picture)
@@ -47,7 +61,7 @@ export function DrawingPicture({ url, picture, xml, links, alt, label, onOpen, t
         display: 'block',
         position: 'relative',
         width: '100%',
-        maxWidth: frame ? `${frame.width}px` : '100%',
+        maxWidth: frame && !fill ? `${frame.width}px` : '100%',
         ...(frame ? { aspectRatio: `${frame.width} / ${frame.height}` } : {}),
       }}
     >
@@ -68,26 +82,25 @@ export function DrawingPicture({ url, picture, xml, links, alt, label, onOpen, t
         const place = areaOnPicture(link.area, frame)
         if (!place) return null
         return (
-          <Box
-            key={link.shapeId}
-            component="button"
-            type="button"
-            data-testid={testIds.area(link)}
-            data-element={link.elementId}
-            aria-label={label(link.elementId)}
-            onClick={() => onOpen?.(link.elementId)}
-            style={{
-              position: 'absolute',
-              left: `${place.left * 100}%`,
-              top: `${place.top * 100}%`,
-              width: `${place.width * 100}%`,
-              height: `${place.height * 100}%`,
-              padding: 0,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
-            }}
-          />
+          <Tooltip key={link.shapeId} title={label(link.elementId)} placement="top">
+            <button
+              type="button"
+              className="drawing-area"
+              data-testid={testIds.area(link)}
+              data-element={link.elementId}
+              data-marked={markAll || undefined}
+              data-chosen={chosen === link.elementId || undefined}
+              data-state={stateOf?.(link)}
+              aria-label={label(link.elementId)}
+              onClick={() => onOpen?.(link.elementId)}
+              style={{
+                left: `${place.left * 100}%`,
+                top: `${place.top * 100}%`,
+                width: `${place.width * 100}%`,
+                height: `${place.height * 100}%`,
+              }}
+            />
+          </Tooltip>
         )
       })}
     </Box>

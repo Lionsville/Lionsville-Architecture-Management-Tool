@@ -487,3 +487,20 @@ describe("a source's own page", () => {
     expect(isSourcePage('people')).toBe(false)
   })
 })
+
+describe('a drawing in its editor', () => {
+  it('says so in the address, as a word with no value, and reads it back', () => {
+    const place = { scope: 'acme', page: 'drawing', id: 'sketch', edit: true } as const
+    expect(writePlace(place)).toBe('#/acme/-/drawing/sketch?edit')
+    expect(readPlace('#/acme/-/drawing/sketch?edit')).toEqual(place)
+    expect(readPlace('#/acme/-/board/x?edit')).toEqual({ scope: 'acme', page: 'board', id: 'x' })
+  })
+
+  it('is another place, a step of its own, so Back goes back to reading', () => {
+    const reading = { scope: 'acme', page: 'drawing', id: 'sketch' } as const
+    const editing = { ...reading, edit: true } as const
+    expect(samePlace(reading, editing)).toBe(false)
+    expect(stepBetween(reading, editing)).toBe('push')
+    expect(placeOf({ open: { path: 'acme', name: 'Acme', view: { id: 'sketch', name: 'S', kind: 'drawing', editing: true } } })).toEqual(editing)
+  })
+})

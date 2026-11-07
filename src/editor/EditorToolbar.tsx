@@ -89,6 +89,8 @@ export interface EditorToolbarProps {
   /** A drawing, listed on its own and made from the same menu. */
   onOpenDrawing?(diagramId: string): void;
   onCreateDrawing?(): void;
+  /** Ask which kind of view to make. Handed how to make a landscape, which is the editor's. */
+  onNewView?(landscape: () => void): void;
   /**
    * The organisation chart and the Conway map (ADR-0036 §7): laid out, each
    * listed on its own, and made from the same menu.
@@ -799,6 +801,17 @@ function NewViewMenu({ props }: { props: EditorToolbarProps }) {
       </Tooltip>
     );
   }
+  // The host asks in its own words, who draws it first; the menu is for one that does not.
+  if (props.onNewView) {
+    const landscape = props.onCreateLayer7Diagram;
+    return (
+      <Tooltip title={t('toolbar.newDiagram')}>
+        <IconButton size="small" aria-label={t('toolbar.newDiagram')} aria-haspopup="dialog" data-testid="tab-new-view" onClick={() => props.onNewView?.(landscape)}>
+          <AddIcon />
+        </IconButton>
+      </Tooltip>
+    );
+  }
   const make = (create: (() => void) | undefined) => () => { setAnchor(null); create?.(); };
   const kinds: { key: StringKey; create: (() => void) | undefined }[] = [
     { key: 'toolbar.newLandscape', create: props.onCreateLayer7Diagram },
@@ -837,7 +850,8 @@ function NewViewMenu({ props }: { props: EditorToolbarProps }) {
  */
 /** A sheet and its Coverage have a View bar of their own, and row two holds the tabs: this bar would be an empty row. */
 function emptyInFrame(framed: HTMLElement | null, kind: DesignDiagram['kind']) {
-  return framed && (kind === 'sheet' || kind === 'map') ? { display: 'none' } : {}
+  // A drawing has its own bar too.
+  return framed && (kind === 'sheet' || kind === 'map' || kind === 'drawing') ? { display: 'none' } : {}
 }
 
 function activeTabOf(props: EditorToolbarProps): string {

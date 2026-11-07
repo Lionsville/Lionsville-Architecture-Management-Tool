@@ -7,6 +7,7 @@ import { cleanup, fireEvent, screen } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { translator } from '../i18n'
 import type { DesignDiagram } from '../model'
+import { axeFindings } from './testing/axe'
 import { renderShell } from './testing/renderShell'
 import { DrawingView } from './DrawingView'
 import { drawingPage } from './WorkspaceEditor'
@@ -25,12 +26,34 @@ const drawing = (picture?: string): DesignDiagram => ({
 const svg = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg"/>')
 
 describe('DrawingView', () => {
-  it('says a drawing with no picture is not drawn yet', () => {
-    renderShell(<DrawingView diagram={drawing()} scope="acme" images={undefined} s={s} />)
-    expect(screen.getByTestId('drawing-not-drawn').textContent).toBe('Not drawn yet')
+  it('says a drawing with no picture is not drawn yet, what one is, and offers to start', () => {
+    const images = { bytesAt: () => Promise.resolve(undefined), put: vi.fn() }
+    renderShell(<DrawingView diagram={drawing()} scope="acme" images={images} origin={() => 'drawing://local'} dispatch={vi.fn()} documents={files} diagnostics={trail} notify={vi.fn()} onNewView={vi.fn()} s={s} />)
+    expect(screen.getByTestId('drawing-not-drawn').textContent).toContain('Not drawn yet')
     expect(screen.queryByTestId('drawing-picture')).toBeNull()
-    expect(screen.getByTestId('drawing-edit').textContent).toBe('Edit')
-    expect(screen.getByTestId('drawing-editor-unavailable').textContent).toBe('The editor is not available')
+    expect(screen.getByRole('button', { name: 'Start drawing' })).toBeTruthy()
+    expect(screen.getByTestId('drawing-new-board')).toBeTruthy()
+  })
+
+  it('says why there is no editor here and the way on, with no disabled button', () => {
+    const get = vi.fn()
+    renderShell(<DrawingView diagram={drawing()} scope="acme" images={undefined} onGetDesktop={get} s={s} />)
+    expect(screen.getByTestId('drawing-editor-unavailable').textContent).toContain('cannot be edited in this browser')
+    expect(screen.queryByTestId('drawing-edit')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Get the desktop app' }))
+    expect(get).toHaveBeenCalled()
+  })
+
+  it('says a drawing written without its editor holds shapes, and its links can still be read', () => {
+    const xml = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+      + '<UserObject id="s" label="Billing" link="element:billing"><mxCell parent="1" vertex="1"><mxGeometry width="3" height="4" as="geometry"/></mxCell></UserObject>'
+      + '<mxCell id="n" value="A note" parent="1" vertex="1"><mxGeometry width="3" height="4" as="geometry"/></mxCell></root></mxGraphModel>'
+    const held = { ...drawing(), drawing: { xml, links: [{ shapeId: 's', elementId: 'billing', area: { x: 0, y: 0, width: 3, height: 4 } }] } } as unknown as DesignDiagram
+    renderShell(<DrawingView diagram={held} scope="acme" images={undefined} elements={[{ id: 'billing', name: 'Billing' }]} readOnly s={s} />)
+    expect(screen.getByTestId('drawing-not-pictured').textContent).toContain('Written, but not pictured yet')
+    expect(screen.getByTestId('drawing-statement').textContent).toContain('1 of 2 shapes point at the model')
+    fireEvent.click(screen.getByTestId('drawing-points-s'))
+    expect(screen.getByTestId('drawing-reader').textContent).toContain('Billing')
   })
 
   it('shows the picture when the bytes are there, and the same words when they are not', async () => {
@@ -43,7 +66,7 @@ describe('DrawingView', () => {
     expect(await screen.findByTestId('drawing-picture')).toBeTruthy()
 
     cleanup()
-    renderShell(<DrawingView diagram={drawing('sha256:gone')} scope="acme" images={images} s={s} />)
+    renderShell(<DrawingView diagram={drawing('sha256:gone')} scope="acme" images={images} readOnly s={s} />)
     expect(await screen.findByTestId('drawing-not-drawn')).toBeTruthy()
   })
 
@@ -81,7 +104,7 @@ describe('saving a drawing', () => {
         origin={() => 'drawing://local'} dispatch={dispatch} documents={files} diagnostics={trail} notify={vi.fn()} s={s}
       />,
     )
-    fireEvent.click(screen.getByTestId('drawing-edit'))
+    fireEvent.click(screen.getByRole('button', { name: 'Start drawing' }))
     const frame = screen.getByTestId('drawing-frame') as HTMLIFrameElement
     const win = frame.contentWindow!
     win.postMessage = (() => {}) as Window['postMessage']
@@ -146,9 +169,69 @@ describe('one drawing per mount', () => {
       />
     )
     const shown = renderShell(page('one'))
-    fireEvent.click(screen.getByTestId('drawing-edit'))
+    fireEvent.click(screen.getByRole('button', { name: 'Start drawing' }))
     expect(screen.getByTestId('drawing-frame')).toBeTruthy()
     shown.rerender(page('other'))
     expect(screen.queryByTestId('drawing-frame')).toBeNull()
+  })
+})
+
+describe('reading a linked shape', () => {
+  const xml = '<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>'
+    + '<UserObject id="a" label="Fleet Register" link="element:fleet"><mxCell parent="1" vertex="1"><mxGeometry width="30" height="40" as="geometry"/></mxCell></UserObject>'
+    + '<UserObject id="b" label="Billing" link="element:billing"><mxCell parent="1" vertex="1"><mxGeometry x="40" width="30" height="40" as="geometry"/></mxCell></UserObject>'
+    + '<UserObject id="c" label="Old tool" link="element:gone"><mxCell parent="1" vertex="1"><mxGeometry x="80" width="30" height="40" as="geometry"/></mxCell></UserObject>'
+    + '</root></mxGraphModel>'
+  const area = { x: 0, y: 0, width: 30, height: 40 }
+  const held = {
+    ...drawing(), drawing: {
+      xml, picture: 'sha256:aa',
+      links: [{ shapeId: 'a', elementId: 'fleet', area }, { shapeId: 'b', elementId: 'billing', area }, { shapeId: 'c', elementId: 'gone', area }],
+    },
+  } as unknown as DesignDiagram
+  const images = { bytesAt: () => Promise.resolve({ mediaType: 'image/svg+xml', bytes: svg }) }
+  const elements = [{ id: 'fleet', name: 'Vehicle Register', kind: 'application' }, { id: 'billing', name: 'Billing', kind: 'application', description: 'Turns orders into invoices.' }]
+
+  it('opens the element in the panel beside the picture, and its page from there', async () => {
+    const onOpen = vi.fn()
+    renderShell(<DrawingView diagram={held} scope="acme" images={images} elements={elements} onOpen={onOpen} s={s} />)
+    fireEvent.click(await screen.findByTestId('drawing-area-b'))
+    expect(onOpen).not.toHaveBeenCalled()
+    expect(screen.getByTestId('drawing-reader-description').textContent).toContain('invoices')
+    fireEvent.click(screen.getByTestId('drawing-reader-open'))
+    expect(onOpen).toHaveBeenCalledWith({ page: 'element', id: 'billing' })
+  })
+
+  it('says which links have gone wrong, by name, and how many, on the bar and in the list', async () => {
+    renderShell(<DrawingView diagram={held} scope="acme" images={images} elements={elements} s={s} />)
+    const links = await screen.findByTestId('drawing-links')
+    expect(links.textContent).toBe('3 links · 2 need a look')
+    fireEvent.click(links)
+    expect(screen.getByTestId('drawing-trouble-a').textContent).toContain('The picture still says Fleet Register')
+    expect(screen.getByTestId('drawing-trouble-c').textContent).toContain('No longer in this scope')
+    expect(screen.getByTestId('drawing-link-b').textContent).toBe('Billing')
+    expect(screen.getByTestId('drawing-area-b').getAttribute('data-marked')).not.toBeNull()
+    expect(screen.getByTestId('drawing-area-a').getAttribute('data-state')).toBe('stale')
+  })
+
+  it('a pressed shape whose element is gone opens the list, which says so', async () => {
+    renderShell(<DrawingView diagram={held} scope="acme" images={images} elements={elements} s={s} />)
+    fireEvent.click(await screen.findByTestId('drawing-area-c'))
+    expect(screen.getByTestId('drawing-links-panel')).toBeTruthy()
+    expect(screen.queryByTestId('drawing-reader')).toBeNull()
+  })
+
+  it('has nothing axe finds on the picture with its list open', async () => {
+    const { container } = renderShell(<DrawingView diagram={held} scope="acme" images={images} elements={elements} s={s} />)
+    fireEvent.click(await screen.findByTestId('drawing-links'))
+    expect(await axeFindings(container)).toEqual([])
+  })
+
+  it('offers no Edit to a reader, and says it once; export stays', async () => {
+    renderShell(<DrawingView diagram={held} scope="acme" images={images} elements={elements} readOnly documents={files} s={s} />)
+    await screen.findByTestId('drawing-picture')
+    expect(screen.getByTestId('drawing-statement').textContent).toContain('You may read this.')
+    expect(screen.queryByTestId('drawing-edit')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Export…' })).toBeTruthy()
   })
 })

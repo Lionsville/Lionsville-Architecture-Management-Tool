@@ -69,6 +69,7 @@ import { readFinding } from '../agent/place'
 import { ListDensityContext } from '../widgets/kit/listDensity'
 import type { ListDensity } from '../widgets/kit/List'
 import type { CheckKey } from '../model/checkCatalogue'
+import { useHostWithOwnWork } from './frame/unsavedTogether'
 import type { AppHost, AppProps } from './appProps'
 import type { AdoptScopes } from './workingFileFlows'
 import { useHomeParts } from './useHomeParts'
@@ -83,7 +84,7 @@ import { useScopeAncestry } from './useScopeAncestry'
 import { useShellAgent } from './useShellAgent'
 import { useHostFacts, useShellCommands, useWindowTitle } from './useShellCommands'
 import { useShareLink } from './useShareLink'
-import { useShellNavigation } from './useShellNavigation'
+import { useGuardedNavigation, useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices } from './useShellServices'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
@@ -403,13 +404,13 @@ export type InitialPage =
    * `select` is an element selected there where it is drawn there, and `tab`
    * the reading it opens on, where it has more than one.
    */
-  | { page: ViewPageName; id?: string; select?: ElementId; tab?: string }
+  | { page: ViewPageName; id?: string; select?: ElementId; tab?: string; edit?: boolean }
   /**
    * A new sheet, enterprise map or technology landscape, made the moment the
    * scope opens: the person's own *Make…* and *New board…* on a home, which is
    * the one way onto a view that writes one.
    */
-  | { page: 'make'; kind: 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway' }
+  | { page: 'make'; kind: 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'; name?: string }
   /** One plan, on its page over the roadmap — an initiative opened where it lives (ADR-0012 §7). */
   | { page: 'plan'; id: string }
   /**
@@ -753,7 +754,7 @@ function useShellBase(props: AppProps) {
   const changes = props.provider?.changes
   // The way in the host names: *Open…* in its menu, and its Recent list.
   const hostWay = props.provider?.waysIn?.find((way) => way.hostMenu)
-  const host: AppHost = props.host ?? NOTHING
+  const given: AppHost = props.host ?? NOTHING
   /** Where the app is, once the agent's half of the shell below can say it: what a problem says it happened on. */
   const screenRef = useRef<() => Screen | undefined>(() => undefined)
   /** The element selected on the view on screen, likewise: what a link selects again (ADR-0033, amended). */
@@ -778,6 +779,7 @@ function useShellBase(props: AppProps) {
       ...(props.boot.initialFacets ? { facets: props.boot.initialFacets } : {}),
     })
   })
+  const host = useHostWithOwnWork(given, frame)
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])
@@ -795,10 +797,10 @@ function useShellBase(props: AppProps) {
     (path: ScopePath) => !(sourceIsReadOnly(source) || (readOnlyAt?.(path) ?? false)),
     [source, readOnlyAt],
   )
-  const nav = useShellNavigation({
+  const nav = useGuardedNavigation(useShellNavigation({
     initialProject: boot.initialProject, initialHome: boot.initialHome, initialPage: boot.initialPage, scopes: repositories.scopes,
     changes, prefs, failedRef, refreshTree, refreshIndex, writable,
-  })
+  }), frame)
   const { project, enter } = nav
   const tree = useTreeIndex(repositories.index, changes, failed)
   refreshIndex.current = tree.refresh

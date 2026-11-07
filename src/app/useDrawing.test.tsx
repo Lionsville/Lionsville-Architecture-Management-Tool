@@ -47,6 +47,11 @@ describe('making a drawing', () => {
   it('adds one, opens it, and undoing takes it off', () => {
     const host = mount()
     act(() => host.drawings().create())
+    // A name first: three tabs called Drawing cannot be told apart.
+    expect(host.drawings().asking).toEqual({ naming: true })
+    expect(host.model().diagrams.some((diagram) => diagram.kind === 'drawing')).toBe(false)
+    act(() => host.drawings().make('Drawing'))
+    expect(host.drawings().asking).toBeUndefined()
     const made = host.model().diagrams.find((diagram) => diagram.kind === 'drawing')
     expect(made).toMatchObject({ id: 'dr-1', name: 'Drawing', kind: 'drawing' })
     expect(made?.geometry).toBeUndefined()
@@ -63,6 +68,8 @@ describe('making a drawing', () => {
     ]
     const host = mount(held)
     act(() => host.drawings().createFor('billing'))
+    expect(host.drawings().asking).toEqual({ naming: true, about: 'billing' })
+    act(() => host.drawings().make('Billing · drawing', 'billing'))
     const made = host.model().diagrams.find((diagram) => diagram.kind === 'drawing')
     expect(made).toMatchObject({ id: 'dr-1', kind: 'drawing', name: 'Billing · drawing', elementId: 'billing' })
     expect(made?.geometry).toBeUndefined()

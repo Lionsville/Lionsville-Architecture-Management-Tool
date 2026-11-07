@@ -5,7 +5,7 @@
  * The doors the host comes in by: the menu's commands, and the page a scope
  * was opened for.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useContext } from 'react'
 import type { RefObject } from 'react'
 import type { EditorHandle } from '../editor'
 import type { HostCommand } from '../platform/hostCommands'
@@ -15,6 +15,7 @@ import type { ProjectHistoryState } from './history/useProjectHistory'
 import type { FilePicker } from './useFilePicker'
 import type { Gestures } from './useGestures'
 import type { HostModel } from '../model/hostModel'
+import { FrameStoreContext } from './frame/frameStore'
 import type { ModelSession } from './useModelSession'
 import type { ProjectFiles } from './useProjectFiles'
 import type { Sheets } from './useSheet'
@@ -42,6 +43,7 @@ export function useWorkspaceCommands(deps: {
   editorHandle: RefObject<EditorHandle | undefined>
 }): void {
   const { commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle } = deps
+  const frame = useContext(FrameStoreContext)
   useEffect(() => commands?.((command) => {
     switch (command.type) {
       // A save answers its own failure — the bar's status and the refusal's
@@ -58,12 +60,13 @@ export function useWorkspaceCommands(deps: {
       // canvas handles never reaches the menu, so these fire from the menu
       // item and from the key with nothing focused, and never twice.
       // A text field that has focus keeps its own undo, as the role gave it.
-      case 'undo': if (!hostControls.editInField('undo')) session.undo(); break
-      case 'redo': if (!hostControls.editInField('redo')) session.redo(); break
+      // And an editor in a frame has its own: the model's stack would take back the wrong thing.
+      case 'undo': if (!frame?.get().work && !hostControls.editInField('undo')) session.undo(); break
+      case 'redo': if (!frame?.get().work && !hostControls.editInField('redo')) session.redo(); break
       case 'deleteSelection': editorHandle.current?.deleteSelection(); break
       case 'selectAll': editorHandle.current?.selectAll(); break
     }
-  }), [commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle])
+  }), [commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle, frame])
 }
 
 /**
@@ -102,11 +105,13 @@ export function useInitialPage(deps: {
 }
 
 /** A new view of a kind the home's *Make…* names, made the moment the scope opens. */
-function make(kind: Extract<InitialPage, { page: 'make' }>['kind'], by: { pages: WorkspacePages; createSheet: Sheets['create'] }): void {
+function make(asked: Extract<InitialPage, { page: 'make' }>, by: { pages: WorkspacePages; createSheet: Sheets['create'] }): void {
+  const { kind } = asked
   switch (kind) {
     case 'sheet': by.createSheet(); return
     case 'map': by.pages.createMap(); return
-    case 'drawing': by.pages.createDrawing(); return
+    // Named on the home that asked, or asked here: a drawing is never made as *Drawing*.
+    case 'drawing': if (asked.name) by.pages.drawings.make(asked.name); else by.pages.createDrawing(); return
     case 'technology': by.pages.createTechnology(); return
     case 'chart':
     case 'conway':
@@ -138,7 +143,7 @@ function showInitialPage(page: InitialPage, by: {
   model: () => HostModel
 }): void {
   const { pages } = by
-  if (page.page === 'make') { make(page.kind, by); return }
+  if (page.page === 'make') { make(page, by); return }
   // The scope's own pages besides its records (ADR-0036, ADR-0041), on an item where one is named.
   if (isScopePage(page)) { SCOPE_PAGE[page.page](pages)(page.id); return }
   switch (page.page) {
@@ -149,6 +154,7 @@ function showInitialPage(page: InitialPage, by: {
       if (page.id === undefined) break
       if (page.page === 'technology') pages.openTechnology(page.id)
       else pages.openView(page.id)
+      if (page.page === 'drawing' && page.edit) pages.drawings.setEditing(page.id)
       if (page.select !== undefined && page.page !== 'drawing') pages.selectOn(page.id, page.select)
       break
     // Over the roadmap, so closing the plan lands on the roadmap and closing

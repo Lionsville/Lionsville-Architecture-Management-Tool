@@ -14,7 +14,7 @@
 import type { ViewFacets } from '../../widgets/placeTab'
 import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { TypeLink } from '../../projects/scopeType'
-import type { FramePanel, Page } from '../../agent/screen'
+import type { Destination, FramePanel, Page } from '../../agent/screen'
 import type { CheckKey } from '../../model/checkCatalogue'
 import type { DocumentStatus } from '../../projects/documentSession'
 import type { ScopePath } from '../../projects/scopePath'
@@ -74,7 +74,22 @@ export type ScreenFacts = {
 /** Where a walk through a check is: the rest is read afresh, so the band can see the finding clear. */
 export type FindingWalk = { readonly home: ScopePath; readonly check: CheckKey; readonly id: string }
 
+/**
+ * Work on screen that the model does not hold yet, and that the status word
+ * says for as long as it is up: an editor's. Saved means saved at `savedAt`.
+ */
+export type OwnWork = { readonly state: 'clean' | 'dirty' | 'saving' | 'saved' | 'failed'; readonly savedAt?: Date }
+
+/**
+ * What stands between a move and work a move would lose. Handed the move and how
+ * to make it, it answers true where it has taken the move over, and makes it or
+ * not once the person has said; false where the move goes ahead as if unasked.
+ */
+export type LeaveGuard = (to: Destination, go: () => void) => boolean
+
 export type FrameState = {
+  readonly work?: OwnWork
+  readonly guard?: LeaveGuard
   readonly screen?: ScreenFacts
   readonly panel?: FramePanel
   /** The tab of the page that is up, where its page keeps it here (`usePlaceTab`), and which page it is of. */
@@ -166,4 +181,9 @@ export function useFrameFacts(facts: ScreenFacts): void {
   useEffect(() => () => {
     if (store?.get().screen?.kind === held.current.kind) store.set({ screen: undefined })
   }, [store])
+}
+
+/** A move asked of whatever guards it, and made here where nothing does. */
+export function throughGuard(store: FrameStore | undefined, to: Destination, go: () => void): void {
+  if (!store?.get().guard?.(to, go)) go()
 }

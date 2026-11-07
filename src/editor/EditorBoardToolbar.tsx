@@ -73,7 +73,7 @@ function diagramMenus(
   dialogs: EditorDialogState,
 ): Pick<EditorToolbarProps,
   | 'onActiveDiagramChange' | 'onCreateLayer7Diagram' | 'onOpenSheet' | 'onCreateSheet' | 'onOpenMap' | 'onCreateMap'
-  | 'onOpenTechnology' | 'onCreateTechnology' | 'onOpenDrawing' | 'onCreateDrawing'
+  | 'onOpenTechnology' | 'onCreateTechnology' | 'onOpenDrawing' | 'onCreateDrawing' | 'onNewView'
   | 'onOpenChart' | 'onCreateChart' | 'onOpenConway' | 'onCreateConway' | 'onRenameDiagram' | 'onOpenDiagramSettings' | 'onDuplicateDiagram'
   | 'onDeleteDiagram' | 'onDiagramHistory'> {
   const { diagrams } = props;
@@ -88,6 +88,7 @@ function diagramMenus(
     onCreateTechnology: diagrams.onCreateTechnology,
     onOpenDrawing: diagrams.onOpenDrawing,
     onCreateDrawing: diagrams.onCreateDrawing,
+    onNewView: diagrams.onNewView,
     onOpenChart: diagrams.onOpenChart,
     onCreateChart: diagrams.onCreateChart,
     onOpenConway: diagrams.onOpenConway,

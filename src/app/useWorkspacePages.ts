@@ -116,7 +116,7 @@ export function useWorkspacePages(deps: {
   }, [adrPage, obsPage, adrShown, obsShown])
 
   return {
-    adrPage, obsPage, plans, platformReading, page, settled, leaveIfNothingToDraw, chartChoice,
+    adrPage, obsPage, plans, platformReading, page, settled, leaveIfNothingToDraw, chartChoice, drawings,
     operatingPage: operating.page, closeOperating: operating.close,
     principlesPage, closePrinciples: scopePages.close,
     selectOn: viewSelect.select, selectRequestFor: viewSelect.requestFor,

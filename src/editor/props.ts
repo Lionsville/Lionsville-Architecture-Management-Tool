@@ -182,6 +182,12 @@ export interface EditorDiagramActions {
     onOpenDrawing?(diagramId: string): void;
     onCreateDrawing?(): void;
     /**
+     * Ask which kind of view to make, where the host has its own question for
+     * that: the tabs' + then opens it rather than a menu. Handed how to make a
+     * landscape, which is the editor's own.
+     */
+    onNewView?(landscape: () => void): void;
+    /**
      * The organisation chart and the Conway map (ADR-0036 §7), laid out from
      * the units: open one, and make one. As the map's.
      */

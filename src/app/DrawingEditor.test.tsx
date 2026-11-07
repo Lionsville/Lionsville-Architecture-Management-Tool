@@ -8,12 +8,13 @@
  * the ones draw.io's JSON protocol uses.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import type { ReactElement } from 'react'
 import { translator } from '../i18n'
 import { linksFromXml } from '../model/drawing'
 import { renderShell } from './testing/renderShell'
-import { DrawingEditor } from './DrawingEditor'
+import { DrawingEditor, FRAME_SILENCE_MS } from './DrawingEditor'
+import { frameStore, FrameStoreContext } from './frame/frameStore'
 import type { DrawingKeeper } from './DrawingEditor'
 import {
   drawingConfig, drawingFrameQuery, drawingFrameSrc, DRAWING_FRAME_SANDBOX, elementShapeXml, exportedFile, exportRoute, frameEvent, frameTarget, loadMessage,
@@ -73,13 +74,13 @@ function keeper(update: DrawingKeeper['update'], xml: () => string | undefined =
 
 describe('the frame query and the palette', () => {
   it('opens embedded, in the app language and look, keeping changes until a save lands, and does not name libs', () => {
-    expect(drawingFrameQuery('nl')).toBe('embed=1&proto=json&configure=1&stealth=1&suppressNewWindows=1&keepmodified=1&ui=min&lang=nl&dark=0')
+    expect(drawingFrameQuery('nl')).toBe('embed=1&proto=json&configure=1&stealth=1&suppressNewWindows=1&keepmodified=1&noSaveBtn=1&saveAndExit=0&noExitBtn=1&ui=min&lang=nl&dark=0')
     expect(drawingFrameQuery('nl', 'dark')).toContain('&dark=1')
     expect(drawingFrameQuery('nl')).not.toContain('libs=')
     expect(frameTarget('drawing://local')).toBe('drawing://local')
     expect(frameTarget('https://draw.example/editor')).toBe('https://draw.example')
     expect(drawingFrameSrc('drawing://local', 'de')).toBe(
-      'drawing://local/?embed=1&proto=json&configure=1&stealth=1&suppressNewWindows=1&keepmodified=1&ui=min&lang=de&dark=0',
+      'drawing://local/?embed=1&proto=json&configure=1&stealth=1&suppressNewWindows=1&keepmodified=1&noSaveBtn=1&saveAndExit=0&noExitBtn=1&ui=min&lang=de&dark=0',
     )
   })
 
@@ -363,7 +364,7 @@ describe('DrawingEditor', () => {
     const edited = XML.replace('label="Billing"', 'label="Edited"')
     hear(frame.win, { event: 'export', format: 'xml', message: { action: 'export', format: 'xml' }, xml: edited })
     expect(frame.actions().slice(-2)).toEqual([
-      { action: 'load', xml: edited, dark: true, exportProtocol: 1 },
+      { action: 'load', xml: edited, dark: true, exportProtocol: 1, autosave: 1 },
       { action: 'status', modified: true },
     ])
   })
@@ -467,5 +468,126 @@ describe('DrawingEditor', () => {
       expect(report).not.toHaveBeenCalled()
       expect(frame.actions()).toHaveLength(asked)
     })
+  })
+})
+
+describe('the edges of the editor are the app\'s', () => {
+  const held = () => keeper(async () => ({ ok: true })).keeper
+  const shown = (over: Partial<Parameters<typeof DrawingEditor>[0]> = {}) => {
+    const store = frameStore()
+    const props = {
+      origin: ORIGIN, language: 'en' as const, mode: 'light' as const, xml: XML, elements: [{ id: 'billing', name: 'Billing' }], paletteTitle: 'Elements',
+      keeper: held(), name: 'Sketch', documents: { save: () => Promise.resolve() }, diagnostics: { report: () => {} }, notify: vi.fn(), s, ...over,
+    }
+    renderShell(<FrameStoreContext.Provider value={store}><DrawingEditor {...props} /></FrameStoreContext.Provider>)
+    return { store, ...frameWindow() }
+  }
+
+  it('has draw.io drop its own Save and Exit, and asks to hear of every change', () => {
+    const query = drawingFrameQuery('en')
+    for (const word of ['noSaveBtn=1', 'saveAndExit=0', 'noExitBtn=1']) expect(query).toContain(word)
+    expect(loadMessage(XML)).toMatchObject({ autosave: 1 })
+  })
+
+  it('says the state of the work to the frame, and takes it away on leaving', async () => {
+    const { store, win } = shown()
+    expect(store.get().work?.state).toBe('clean')
+    act(() => { hear(win, { event: 'init' }); hear(win, { event: 'autosave', xml: `${XML} ` }) })
+    expect(store.get().work?.state).toBe('dirty')
+    fireEvent.click(screen.getByTestId('drawing-save'))
+    expect(store.get().work?.state).toBe('saving')
+    act(() => hear(win, { event: 'export', format: 'xml', message: { action: 'export', format: 'xml' }, xml: XML }))
+    act(() => hear(win, { ...SAVE_ANSWER, data: dataUri(SVG) }))
+    await waitFor(() => expect(store.get().work?.state).toBe('saved'))
+    cleanup()
+    expect(store.get().work).toBeUndefined()
+  })
+
+  it('holds a move while there is unsaved work, and asks: going to where, stay, leave, save and leave', async () => {
+    const { store, win } = shown({ whereTo: () => 'Organisation chart' })
+    const go = vi.fn()
+    expect(store.get().guard).toBeUndefined()
+    act(() => { hear(win, { event: 'init' }); hear(win, { event: 'autosave', xml: `${XML} ` }) })
+    act(() => { expect(store.get().guard?.({ page: 'board', id: 'chart' }, go)).toBe(true) })
+    expect((await screen.findByTestId('drawing-leave-body')).textContent).toContain('You are going to Organisation chart.')
+    fireEvent.click(screen.getByTestId('drawing-leave-stay'))
+    expect(go).not.toHaveBeenCalled()
+    act(() => { store.get().guard?.({ page: 'board', id: 'chart' }, go) })
+    fireEvent.click(await screen.findByTestId('drawing-leave-save'))
+    act(() => hear(win, { event: 'export', format: 'xml', message: { action: 'export', format: 'xml' }, xml: XML }))
+    act(() => hear(win, { ...SAVE_ANSWER, data: dataUri(SVG) }))
+    await waitFor(() => expect(go).toHaveBeenCalledTimes(1))
+    expect(store.get().guard).toBeUndefined()
+  })
+
+  it('leaves without saving when told to, and the move goes on', async () => {
+    const { store, win } = shown()
+    const go = vi.fn()
+    act(() => { hear(win, { event: 'init' }); hear(win, { event: 'autosave', xml: `${XML} ` }) })
+    act(() => { store.get().guard?.({ page: 'home' }, go) })
+    fireEvent.click(await screen.findByTestId('drawing-leave-unsaved'))
+    expect(go).toHaveBeenCalled()
+  })
+
+  it('Done closes at once with nothing to lose, and asks with something', async () => {
+    const onClose = vi.fn()
+    const { win } = shown({ onClose })
+    act(() => hear(win, { event: 'init' }))
+    fireEvent.click(screen.getByTestId('drawing-done'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    act(() => hear(win, { event: 'autosave', xml: `${XML} ` }))
+    fireEvent.click(screen.getByTestId('drawing-done'))
+    expect(onClose).toHaveBeenCalledTimes(1)
+    fireEvent.click(await screen.findByTestId('drawing-leave-unsaved'))
+    expect(onClose).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a failed save in the bar, with Save again, and the work still guarded', async () => {
+    const { store, win } = shown({ keeper: keeper(async () => ({ refused: 'command.gone' })).keeper })
+    act(() => hear(win, { event: 'init' }))
+    act(() => { hear(win, { event: 'save', xml: XML }); hear(win, { ...SAVE_ANSWER, data: dataUri(SVG) }) })
+    await screen.findByTestId('drawing-save-failed')
+    expect(store.get().work?.state).toBe('failed')
+    expect(screen.getByTestId('drawing-save').textContent).toBe('Save again')
+    expect(store.get().guard).toBeDefined()
+  })
+
+  it('says when the frame never answers, with a way back, and tries again', () => {
+    vi.useFakeTimers()
+    try {
+      const onClose = vi.fn()
+      shown({ onClose })
+      act(() => { vi.advanceTimersByTime(FRAME_SILENCE_MS) })
+      expect(screen.getByTestId('drawing-editor-silent').textContent).toContain('The drawing editor did not answer')
+      expect(screen.queryByTestId('drawing-frame')).toBeNull()
+      fireEvent.click(screen.getByRole('button', { name: 'Back to the picture' }))
+      expect(onClose).toHaveBeenCalled()
+      fireEvent.click(screen.getByRole('button', { name: 'Try now' }))
+      expect(screen.getByTestId('drawing-frame')).toBeTruthy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('shows what a selected shape points at in words, and points it through the bridge', async () => {
+    const onOpenElement = vi.fn()
+    const { win, actions } = shown({ onOpenElement })
+    act(() => hear(win, { event: 'init' }))
+    act(() => hear(win, { event: 'lvSelection', shape: 's', element: 'billing' }))
+    expect(screen.getByTestId('drawing-shape-strip').textContent).toContain('This shape points at Billing')
+    fireEvent.click(screen.getByTestId('drawing-strip-open'))
+    expect(onOpenElement).toHaveBeenCalledWith('billing')
+    fireEvent.click(screen.getByTestId('drawing-strip-unlink'))
+    expect(actions().at(-1)).toMatchObject({ action: 'lvPoint', shape: 's', element: null })
+    act(() => hear(win, { event: 'lvSelection', shape: null }))
+    expect(screen.queryByTestId('drawing-shape-strip')).toBeNull()
+  })
+
+  it('says a colleague\'s save once, and that the work is unsaved again', () => {
+    const live = { xml: XML }
+    const { store, win } = shown({ keeper: keeper(async () => ({ ok: true }), () => live.xml).keeper })
+    act(() => hear(win, { event: 'init' }))
+    expect(screen.queryByTestId('drawing-merged')).toBeNull()
+    expect(store.get().work?.state).toBe('clean')
   })
 })

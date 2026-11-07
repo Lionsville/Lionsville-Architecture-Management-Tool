@@ -58,6 +58,7 @@ import { registerSummary } from '../organisation/register'
 import { plural } from '../../i18n/strings'
 import { ShortcutsSheet } from './ShortcutsSheet'
 import { TONE_MARK } from './statusWord'
+import { NewViewDialog } from '../NewViewDialog'
 import { DESKTOP_APP_LINK, WEBSITE_LINK, HELP_MENU, offered } from '../../platform/menu'
 
 const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
@@ -363,7 +364,8 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
       <div className="kit-frame__grow" />
       <FindField openSearch={facts?.openSearch} s={s} />
       <div className="kit-frame__grow" />
-      <UndoRedo facts={facts} s={s} />
+      {/* An editor has an undo of its own, for shapes; the model's here would take back the wrong thing. */}
+      {!state.work && <UndoRedo facts={facts} s={s} />}
       <SafeWords parts={parts} state={state} />
       <AgentButton parts={parts} />
       <BarEnd button={frameBarButton(parts, scopeOpen ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
@@ -416,7 +418,7 @@ function UndoRedo({ facts, s }: { facts: ScreenFacts | undefined; s: Translate }
 function SafeWords({ parts, state }: { parts: ShellParts; state: FrameState }) {
   const { services: { s, prefs } } = parts
   const facts = state.screen
-  const word = statusOf(parts, facts, prefs.language, s)
+  const word = statusOf(parts, facts, prefs.language, s, state.work)
   const togglePanel = (panel: 'work' | 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
   const here = facts?.alsoHere ?? []
   return (
@@ -505,8 +507,25 @@ function RowTwoStart({ parts, facts, at, pageUp }: { parts: ShellParts; facts: S
         </button>
       ))}
       {facts?.kind === 'home' && facts.onNewView && (
-        <IconButton label={s('frame.newView')} size="small" data-testid="frame-new-view" onClick={facts.onNewView}>+</IconButton>
+        <HomeNewView parts={parts} at={at} onLandscape={facts.onNewView} />
       )}
+    </>
+  )
+}
+
+/** A home's +: the same question a scope's tabs ask, with the view then made as the scope opens on it. */
+function HomeNewView({ parts, at, onLandscape }: { parts: ShellParts; at: ScopePath; onLandscape: () => void }) {
+  const { services: { s }, organisation } = parts
+  const [open, setOpen] = useState(false)
+  const made = (kind: 'sheet' | 'map' | 'technology' | 'chart' | 'conway') => () => organisation.open(at, { page: 'make', kind })
+  return (
+    <>
+      <IconButton label={s('frame.newView')} size="small" data-testid="frame-new-view" onClick={() => setOpen(true)}>+</IconButton>
+      <NewViewDialog
+        open={open} canDraw={Boolean(parts.props.provider?.drawingOrigin?.())} onClose={() => setOpen(false)}
+        make={{ landscape: onLandscape, sheet: made('sheet'), map: made('map'), technology: made('technology'), chart: made('chart'), conway: made('conway') }}
+        onMakeDrawing={(name) => { setOpen(false); organisation.open(at, { page: 'make', kind: 'drawing', name }) }} s={s}
+      />
     </>
   )
 }

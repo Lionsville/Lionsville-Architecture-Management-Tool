@@ -18,6 +18,8 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import type { SourceChanges } from '../ports/ProviderParts'
 import type { Failed } from './useShellServices'
+import { throughGuard } from './frame/frameStore'
+import type { FrameStore } from './frame/frameStore'
 import type { ShellPreferences } from './useShellPreferences'
 
 export type ShellNavigation = ReturnType<typeof useShellNavigation>
@@ -228,4 +230,21 @@ export function useShellNavigation(deps: {
   return {
     project, watchOpenProject, reloadKey, reloadOpenProject, initialPage, enter, home, setHome, openScopeAt, goHome,
   }
+}
+
+/**
+ * Leaving the scope that is open, past whatever guards the work on screen.
+ *
+ * `useShellAgent`'s `openFor` asks for every move it makes, but the tree, the
+ * organisation's dialogs and a workspace's own *go home* come straight here, and
+ * each of them ends the workspace, and an editor's work with it.
+ */
+export function useGuardedNavigation<N extends Pick<ReturnType<typeof useShellNavigation>, 'goHome' | 'enter' | 'openScopeAt'>>(nav: N, frame: FrameStore | undefined): N {
+  const { goHome, enter, openScopeAt } = nav
+  const moves = useMemo(() => ({
+    goHome: (to: ScopePath) => throughGuard(frame, { scope: to, page: 'home' }, () => goHome(to)),
+    enter: (next: ScopeSnapshot, page?: InitialPage, ends?: OpenEnds) => throughGuard(frame, { scope: next.path }, () => enter(next, page, ends)),
+    openScopeAt: (path: ScopePath, page?: InitialPage, ends?: OpenEnds) => throughGuard(frame, { scope: path }, () => openScopeAt(path, page, ends)),
+  }), [frame, goHome, enter, openScopeAt])
+  return { ...nav, ...moves }
 }

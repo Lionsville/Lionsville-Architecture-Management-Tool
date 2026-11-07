@@ -34,7 +34,7 @@ and behaves is said here, once.
 | `Matrix.tsx` | **Matrix**: fixed headings, a press selects, a key writes, a crosshair and a line in words, rows and columns that fold |
 | `NextStep.tsx` | **Next step**: the stepper in words, one question and its verb, what holds it; a sentence once ended |
 | `SettleRow.tsx` | **Settle row**: one value two people left differently, a pair of choices in words, neither the default |
-| `PageState.tsx` | **Truthful page state**: loading, held, empty, offline, unreadable, told apart by type; `pageStateOf` says which is true |
+| `PageState.tsx` | **Truthful page state**: loading, held, empty, offline, unreadable, told apart by type; `pageStateOf` says which is true. Offline may name what did not answer and offer somewhere else to go |
 | `RecordPage.tsx` | **Record page**: one head, one scroll, an outline for a long one; edited in a `FocusedWindow` |
 | `Section.tsx` | **Section**: a heading over part of a page, and **LinkLine**: what a place does not hold, folded into one line of names |
 | `FirstRun.tsx` | **First-run page**: what this is, a small picture (`StructurePicture`), the real choices side by side |

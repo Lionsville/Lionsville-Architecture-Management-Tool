@@ -2772,26 +2772,48 @@ for that scope.
 
 ## A drawing
 
-A **drawing** is a view. **+** in the diagram tabs, then **Drawing**, makes one,
-and a scope's home offers the same under **New view…**. It has a tab of its
-own, like a landscape or a sheet.
+A **drawing** is the one view you draw and the model does not. **+** in the
+diagram tabs asks which kind of view to make, split by who draws it: under **You
+draw this one**, **Drawing** asks for a name and, if you like, the element it is
+about. A scope's home offers the same. It has a tab of its own, like a landscape
+or a sheet.
 
-A drawing is shown as its picture. A drawing that has no picture says **Not
-drawn yet**, and has no areas.
+A drawing is shown as its picture, with one bar like every other view: what it
+is, how many of its shapes point at the model, and what you can do with it. A
+later page of a file is drawn in the editor and not pictured; the bar says so.
+With no picture it says why: **Not drawn yet**, with **Start drawing**; **Written,
+but not pictured yet** for a drawing an agent wrote, listing what it points at;
+or, where there is no editor, why not and where to get one.
 
-On the picture, each shape that points at an element is a transparent area.
-Choosing the area opens that element. The element's inspector lists the
-drawings in this scope that point at it; choosing one opens it. A shape that points at an element
-this scope does not hold is a finding.
+On the picture, each shape that points at an element is outlined and named on
+hover or focus. Pressing it opens the element in the panel beside the picture,
+with **Open page**; the picture does not move. **n links** marks them all and
+lists them: which are in step, which **need a look** (the element is no longer in
+this scope, or the picture still says an old name), and which shapes are only
+drawn. A shape pointing at an element this scope does not hold is also a finding
+in Checks. **Fit**, the zoom and **Export…**, as SVG or PNG from the kept picture,
+are there for anyone reading.
 
-**Edit** opens the editor, in the language the app is using. The palette holds
-the scope's elements — each a shape that points at that element — and the C4
-shapes. When the editor opens, each shape that points at an element is
-labelled with that element's name as it is now. Saving keeps the drawing as
-one: its XML, its picture, and the links the shapes make. **Exit** leaves the
-editor, and asks first when there are changes no save has kept; **Save &
-Exit** leaves once the save has landed. When somebody else saves the same
-drawing while the editor is open, theirs is merged into what is open.
+**Edit drawing** opens the editor, in the language the app is using; the address
+says `?edit`, so a link or an agent can open it too. The palette holds the scope's
+elements by name, grouped by kind, each a shape that points at that element, and
+the C4 shapes. When the editor opens, each such shape is labelled with that
+element's name as it is now. The bar above is the app's: what is being edited,
+**Save** and **Done**. The status word says **Not saved yet**, **Saving**, **Saved**
+with the time, or **Could not save**, and a failed save stays there with **Save
+again**. Saving keeps the drawing as one: its XML, its picture, and the links the
+shapes make. When somebody else saves the same drawing while the editor is open,
+theirs is merged into what is open, and the bar says so once.
+
+Selecting a shape says under the canvas what it points at, with **Open page**,
+**Point at another…** and **Unlink**. The address form stays underneath for an
+agent and for files.
+
+Leaving with unsaved work asks first, whichever way you go: a tab, a page, the
+tree, Back or the window. **Save and leave** keeps it, **Stay** goes back, and
+**Leave without saving** drops it. The editor is a separate service; when it has
+not answered for 15 seconds the page says so, with **Try now** and **Back to the
+picture**, and **Done** is always there.
 
 **Diagram › Export as** in the editor makes a file of the drawing: PNG, JPEG,
 WebP, an animation as a GIF, SVG, XML or JSON. It is named after the drawing, and
@@ -2801,11 +2823,9 @@ its downloads. Exporting changes nothing in the drawing, and it is not a save.
 The editor and the picture follow the app's theme: light, dark, or the
 system's. Changing it while the editor is open keeps what is being drawn.
 
-A view that may not be changed offers no **Edit**. Deleting an element keeps
-the drawings anchored to it, without the anchor; undo puts it back.
-
-Where no address for the editor was given, the drawing is still shown, and
-**Edit** says the editor is not available.
+A view that may not be changed offers no **Edit drawing**, and says so once.
+Deleting an element keeps the drawings anchored to it, without the anchor; undo
+puts it back.
 
 A drawing may be anchored to an element. The element's menu offers **Create
 drawing** beside **Create container diagram** or **Open container diagram**,

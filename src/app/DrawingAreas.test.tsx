@@ -69,7 +69,9 @@ describe('areas on the picture', () => {
     expect((area as HTMLButtonElement).style.top).toBe('0%')
     expect((area as HTMLButtonElement).style.width).toBe('100%')
     expect((area as HTMLButtonElement).style.height).toBe('100%')
+    // In the panel beside the picture first, and its page from there.
     fireEvent.click(area)
+    fireEvent.click(screen.getByTestId('drawing-reader-open'))
     expect(onOpen).toHaveBeenCalledWith({ page: 'element', id: 'billing' })
   })
 
@@ -91,8 +93,8 @@ describe('areas on the picture', () => {
   })
 
   it('says a drawing with no picture is not drawn yet, and lays no areas', () => {
-    renderShell(<DrawingView diagram={drawing()} scope="acme" images={undefined} s={s} />)
-    expect(screen.getByTestId('drawing-not-drawn').textContent).toBe('Not drawn yet')
+    renderShell(<DrawingView diagram={drawing()} scope="acme" images={undefined} readOnly s={s} />)
+    expect(screen.getByTestId('drawing-not-drawn').textContent).toContain('Not drawn yet')
     expect(screen.queryByTestId('drawing-picture')).toBeNull()
     expect(screen.queryByTestId('drawing-area-2')).toBeNull()
   })

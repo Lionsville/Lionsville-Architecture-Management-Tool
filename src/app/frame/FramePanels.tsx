@@ -23,16 +23,17 @@ import { clockTime } from '../clockTime'
 import type { ShellParts } from '../shellParts'
 import { sourceLabel } from '../ShellToolbar'
 import { statusWord } from './statusWord'
-import type { ScreenFacts } from './frameStore'
+import { useFrameState } from './frameStore'
+import type { OwnWork, ScreenFacts } from './frameStore'
 
 /** The word on row one: the work's state and, where the source has a word for it, its place. */
-export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, language: Language, s: Translate) {
+export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, language: Language, s: Translate, own?: OwnWork) {
   const { props, provider, source } = parts
   // A source of the provider's own says its own place, on its own chip: the word is for the three that have none.
   const named = provider.chip === undefined && !provider.ChipPanel && !provider.ChipFace && !facts?.publishesSteps
   return statusWord({
     status: facts?.status, saveFailed: facts?.saveFailed, savedAt: facts?.savedAt, publishesSteps: facts?.publishesSteps,
-    sourceStatus: facts?.sourceStatus, connected: props.provider?.connected?.(), source: props.provider?.frame?.word?.(),
+    sourceStatus: facts?.sourceStatus, connected: props.provider?.connected?.(), source: props.provider?.frame?.word?.(), own,
     ...(named && !props.provider?.publishesSteps ? { place: sourceLabel(source, s, undefined, props.provider?.sayings?.labelKey), transient: source.transient, visiting: props.visiting !== undefined } : {}),
   }, language, s)
 }
@@ -120,13 +121,14 @@ function WorkActs({ parts, facts, history }: { parts: ShellParts; facts: ScreenF
 }
 
 export function YourWorkPanel({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | undefined }) {
+  const own = useFrameState(parts.frame).work
   const { services: { s, prefs }, agent, props, provider } = parts
   const history = facts?.kind === 'workspace' ? props.repositories.history !== undefined : parts.home.history.available
   const Own = provider.YourWork
   const where = props.provider?.sayings?.whereKey ?? props.provider?.description
   return (
     <Panel
-      kind={s('frame.yourWork')} name={statusOf(parts, facts, prefs.language, s).text || s('frame.yourWork')} dataGuide="frame.yourWork"
+      kind={s('frame.yourWork')} name={statusOf(parts, facts, prefs.language, s, own).text || s('frame.yourWork')} dataGuide="frame.yourWork"
       facts={where !== undefined ? s(where as StringKey) : undefined} onClose={() => agent.setPanel(undefined)} help={s('frame.appliesToAll')}
       helpLink={{ label: s('work.manual'), onPress: () => props.hostControls.openExternal(manualUrl(prefs.language)) }}
     >
