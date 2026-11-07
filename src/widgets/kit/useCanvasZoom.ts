@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { useCallback, useEffect, useRef } from 'react'
-import { clampZoom, modZoomKey, plainZoomKey, stepZoom, wheelFactor, ZOOM_HOME } from './zoom'
-import type { Point, ZoomHow } from './zoom'
+import { clampZoom, clampZoomTo, modZoomKey, plainZoomKey, stepZoom, stepZoomAlong, wheelFactor, ZOOM_HOME } from './zoom'
+import type { Point, ZoomHow, ZoomRange } from './zoom'
 
 /**
  * What a canvas does when it is told to zoom. `at` is where the pointer is, in
@@ -21,14 +21,16 @@ export function steppedZoomTarget(canvas: {
   zoom(): number
   to(zoom: number, at?: Point): void
   fit(): void
-}): ZoomTarget {
+}, range?: ZoomRange): ZoomTarget {
   return {
     go(how, at) {
       if (how === 'fit') canvas.fit()
-      else canvas.to(how === 'home' ? ZOOM_HOME : stepZoom(canvas.zoom(), how), at)
+      else if (how === 'home') canvas.to(ZOOM_HOME, at)
+      else canvas.to(range ? stepZoomAlong(canvas.zoom(), how, range) : stepZoom(canvas.zoom(), how), at)
     },
     by(factor, at) {
-      canvas.to(clampZoom(canvas.zoom() * factor), at)
+      const zoom = canvas.zoom() * factor
+      canvas.to(range ? clampZoomTo(zoom, range) : clampZoom(zoom), at)
     },
   }
 }

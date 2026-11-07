@@ -39,12 +39,15 @@ export type CanvasDockProps = {
   note?: ReactNode
   /** In a corner of the nearest positioned ancestor, or wherever the caller's panel is. */
   corner?: boolean
+  /** Where − and + stop, for a canvas with a range of its own. */
+  floor?: number
+  ceiling?: number
   'data-testid'?: string
 }
 
 const isMac = () => typeof navigator !== 'undefined' && /mac/i.test(navigator.platform ?? '')
 
-export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gridItems, map, extra, note, corner = true, 'data-testid': testId }: CanvasDockProps) {
+export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gridItems, map, extra, note, corner = true, floor = ZOOM_FLOOR, ceiling = ZOOM_CEILING, 'data-testid': testId }: CanvasDockProps) {
   const { t } = useStrings()
   const mod = isMac() ? '⌘' : 'Ctrl+'
   const shift = isMac() ? '⇧' : 'Shift+'
@@ -57,12 +60,12 @@ export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gri
   )
   return (
     <div className="kit-dock" data-corner={corner || undefined} role="group" aria-label={t('kit.dock.label')} data-testid={testId}>
-      <Tooltip title={zoom <= ZOOM_FLOOR ? t('kit.dock.atFloor') : hint(t('kit.dock.zoomOut'), `${mod}−`)} placement="top">
-        <Button variant="quiet" size="small" aria-label={t('kit.dock.zoomOut')} data-limit={zoom <= ZOOM_FLOOR || undefined} onClick={onZoomOut} data-testid="zoom-out">−</Button>
+      <Tooltip title={zoom <= floor ? t('kit.dock.atFloor') : hint(t('kit.dock.zoomOut'), `${mod}−`)} placement="top">
+        <Button variant="quiet" size="small" aria-label={t('kit.dock.zoomOut')} data-limit={zoom <= floor || undefined} onClick={onZoomOut} data-testid="zoom-out">−</Button>
       </Tooltip>
       <output className="kit-dock__value" aria-label={t('kit.dock.value', { percent })} data-testid="zoom-value">{percent}%</output>
-      <Tooltip title={zoom >= ZOOM_CEILING ? t('kit.dock.atCeiling') : hint(t('kit.dock.zoomIn'), `${mod}+`)} placement="top">
-        <Button variant="quiet" size="small" aria-label={t('kit.dock.zoomIn')} data-limit={zoom >= ZOOM_CEILING || undefined} onClick={onZoomIn} data-testid="zoom-in">+</Button>
+      <Tooltip title={zoom >= ceiling ? t('kit.dock.atCeiling') : hint(t('kit.dock.zoomIn'), `${mod}+`)} placement="top">
+        <Button variant="quiet" size="small" aria-label={t('kit.dock.zoomIn')} data-limit={zoom >= ceiling || undefined} onClick={onZoomIn} data-testid="zoom-in">+</Button>
       </Tooltip>
       <span className="kit-dock__rule" />
       <Tooltip title={hint(t('kit.dock.fitHint'), `${shift}1`)} placement="top">

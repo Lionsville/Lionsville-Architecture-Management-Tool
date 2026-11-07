@@ -26,6 +26,25 @@ export function clampZoom(zoom: number): number {
   return Math.min(ZOOM_CEILING, Math.max(ZOOM_FLOOR, Math.round(zoom * 1000) / 1000))
 }
 
+/**
+ * A canvas whose own range is not the rest's: a page read whole from far off and
+ * close up, say. The floor of the others stays where it is, since it is a promise
+ * about their names; a canvas that says otherwise has said how it keeps its own.
+ */
+export type ZoomRange = { readonly floor: number; readonly ceiling: number; readonly stops: readonly number[] }
+
+export function clampZoomTo(zoom: number, range: ZoomRange): number {
+  return Math.min(range.ceiling, Math.max(range.floor, Math.round(zoom * 1000) / 1000))
+}
+
+/** The next stop of the range that way, from wherever the zoom is now. At either end, that end. */
+export function stepZoomAlong(zoom: number, way: 'in' | 'out', range: ZoomRange): number {
+  const next = way === 'in'
+    ? range.stops.find((stop) => stop > zoom + 0.001)
+    : [...range.stops].reverse().find((stop) => stop < zoom - 0.001)
+  return next ?? (way === 'in' ? range.ceiling : range.floor)
+}
+
 /** The next stop that way: 72% goes to 80% in and 70% out, and 70% to 80% and 60%. */
 export function stepZoom(zoom: number, way: 'in' | 'out'): number {
   const stops = zoom / ZOOM_STOP

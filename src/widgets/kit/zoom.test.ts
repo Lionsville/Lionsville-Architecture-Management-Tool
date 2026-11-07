@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { canvasZoomProps, clampZoom, modZoomKey, plainZoomKey, readingDistance, stepZoom, wheelFactor, zoomAbout, ZOOM_CEILING, ZOOM_FLOOR } from './zoom'
+import { canvasZoomProps, clampZoom, clampZoomTo, modZoomKey, plainZoomKey, readingDistance, stepZoom, stepZoomAlong, wheelFactor, zoomAbout, ZOOM_CEILING, ZOOM_FLOOR } from './zoom'
 import type { ZoomChord } from './zoom'
 
 const chord = (over: Partial<ZoomChord>): ZoomChord => ({ key: '', code: '', metaKey: false, ctrlKey: false, shiftKey: false, altKey: false, ...over })
@@ -86,5 +86,27 @@ describe('the seam for the reading distances', () => {
   it('hands the canvas what the kit reads', () => {
     expect(canvasZoomProps(0.8)).toEqual({ 'data-distance': 'middle', 'data-labels': 'words', style: { '--canvas-zoom': '0.8' } })
     expect(canvasZoomProps(0.8, 0.9)['data-labels']).toBe('numbers')
+  })
+})
+
+describe('a canvas with a range of its own', () => {
+  const range = { floor: 0.2, ceiling: 3, stops: [0.2, 0.5, 1, 2, 3] }
+
+  it('stops at its own floor and ceiling, and the others keep theirs', () => {
+    expect(clampZoomTo(0.1, range)).toBe(0.2)
+    expect(clampZoomTo(9, range)).toBe(3)
+    expect(clampZoom(0.1)).toBe(ZOOM_FLOOR)
+  })
+
+  it('steps along its stops, from wherever it is', () => {
+    expect(stepZoomAlong(1, 'in', range)).toBe(2)
+    expect(stepZoomAlong(1, 'out', range)).toBe(0.5)
+    expect(stepZoomAlong(0.7, 'in', range)).toBe(1)
+    expect(stepZoomAlong(0.7, 'out', range)).toBe(0.5)
+  })
+
+  it('stays at an end', () => {
+    expect(stepZoomAlong(3, 'in', range)).toBe(3)
+    expect(stepZoomAlong(0.2, 'out', range)).toBe(0.2)
   })
 })
