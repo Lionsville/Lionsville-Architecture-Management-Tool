@@ -148,7 +148,7 @@ export function PrinciplesPage({ open, onClose, scope, select, nonce, onSelect, 
                 fields={[
                   { id: 'status', label: t('principles.statusFilter'), options: PRINCIPLE_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]), count: count((held) => held.principle.status === one) })) },
                   { id: 'regime', label: t('principles.regimeFilter'), options: PRINCIPLE_REGIMES.map((one) => ({ value: one, label: t(REGIME_WORD[one]), count: count((held) => held.principle.regime === one) })) },
-                  ...(own.groups.length ? [{ id: 'group', label: t('principles.groupFilter'), options: own.groups.map((one) => ({ value: one.id, label: one.name })) }] : []),
+                  ...(own.groups.length ? [{ id: 'group', label: t('principles.groupFilter'), options: own.groups.map((one) => ({ value: one.id, label: one.name, count: count((held) => held.scope === scope && held.principle.groups.includes(one.id)) })) }] : []),
                 ]}
                 actions={mayWrite && (
                   <>
