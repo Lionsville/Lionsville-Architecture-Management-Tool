@@ -46,7 +46,7 @@ export function GuidanceFrame({ tab, children }: { tab: GuidanceTab; children: R
     <div className="guidance">
       <div className="guidance__head">
         <Tabs<GuidanceTab>
-          label={t('guidance.title')} value={tab} onChange={(next) => { if (next !== tab) go?.(next) }}
+          label={t('guidance.title')} value={tab} onChange={(next) => { if (next !== tab) go?.({ scope: '', page: next }) }}
           items={[
             { value: 'principles', label: t('guidance.tab.principles') },
             { value: 'topics', label: t('guidance.tab.topics') },

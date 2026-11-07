@@ -55,8 +55,6 @@ export type ListRow = {
   /** A row's own stable name, where the rows of a list are different things. Defaults to the list's `rowGuide`. */
   readonly guide?: string
   readonly testId?: string
-  /** How deep it sits in a tree the list shows flat. */
-  readonly depth?: number
   /** Words a screen's own stylesheet reads off the row (`data-state`): how it differs, never what it says. */
   readonly state?: string
 }

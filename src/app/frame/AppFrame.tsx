@@ -11,7 +11,7 @@
  * `openSomewhere`, so a person's press and `app.open` cannot land in different
  * places. How a screen plugs in is written down in `widgets/kit/README.md`.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import Popover from '@mui/material/Popover'
 import type { Translate } from '../../i18n'
@@ -31,7 +31,7 @@ import { Frame } from '../../widgets/kit/Frame'
 import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
-import { PlaceFacetsContext, PlaceGoContext, PlaceListContext, PlaceTabContext } from '../../widgets/placeTab'
+import { PlaceFacetsContext, PlaceListContext, PlaceTabContext } from '../../widgets/placeTab'
 import type { PlaceTo, ViewFacets } from '../../widgets/placeTab'
 import { BackForward } from '../BackForward'
 import { BarEnd } from '../BarEnd'
@@ -100,7 +100,6 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     of: (viewId: string) => (state.facets?.of === viewId ? state.facets : undefined),
     choose: (viewId: string, chosen: ViewFacets) => { frame.set({ facets: { ...chosen, of: viewId } }); lookAgain() },
   }), [state.facets, frame, lookAgain])
-  const goToPage = useCallback((to: string) => go({ scope: at, page: to as Page }), [go, at])
   // Settings asked for by an address or an agent: answered by the screen of that scope, once it is up.
   useEffect(() => {
     if (state.asks !== 'settings' || facts?.openSettings === undefined) return
@@ -113,7 +112,6 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
       <PlaceTabContext.Provider value={tabs}>
         <PlaceListContext.Provider value={lists}>
         <PlaceFacetsContext.Provider value={facets}>
-        <PlaceGoContext.Provider value={goToPage}>
         <Frame
           pageUp={pageUp}
           controlsInset={windowChrome.controlsInset}
@@ -128,7 +126,6 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           {children}
         </Frame>
         <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} s={s} />
-        </PlaceGoContext.Provider>
         </PlaceFacetsContext.Provider>
         </PlaceListContext.Provider>
       </PlaceTabContext.Provider>
