@@ -134,13 +134,16 @@ export function paperOfWidth(width: number): PaperSize | undefined {
 }
 
 /** What a sheet is laid out on when it does not say: a wall's worth, not a window's. */
-export const DEFAULT_PAPER: SheetPaper = 'A2'
+export const DEFAULT_PAPER: LaidOutPaper = 'A2'
+
+/** What a sheet's Names reading and its picture are laid out on. `wide` is the poster's own page, and reads as the default here, as an unknown value does. */
+export type LaidOutPaper = Exclude<SheetPaper, 'wide'>
 
 export function isPaperSize(value: unknown): value is PaperSize {
   return typeof value === 'string' && (PAPER_SIZES as readonly string[]).includes(value)
 }
 
-export function isSheetPaper(value: unknown): value is SheetPaper {
+export function isSheetPaper(value: unknown): value is LaidOutPaper {
   return value === 'fit' || isPaperSize(value)
 }
 

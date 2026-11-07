@@ -86,12 +86,29 @@ function someModel(r: Random): Model {
         ? { edgeRoutes: [{ relationId: relations[0].id, waypoints: [{ x: 1, y: 2 }] }] } : {}),
     })
   }
+  // A sheet, placed or not (ADR-0048): no members, and blocks all the same.
+  const sheet = () => {
+    // Its own generator, so the models the other commands are counted over stay the ones they were.
+    const own = random(ids.length * 31 + relations.length)
+    const placed = own.chance(0.85)
+    return {
+      id: 's1', kind: 'sheet' as const, name: 'Sheet', members: [],
+      ...(placed && own.chance(0.5) ? { labels: own.some(ids), poster: { tile: 'l' as const } } : {}),
+      ...(placed ? { poster: { bandRows: 2 as const, items: [{ id: 'it-1', kind: 'note' as const, text: 'Said here' }] } } : {}),
+      geometry: placed ? {
+        nodes: own.some(ids).map((one) => ({ id: one, x: own.int(900), y: own.int(900), width: 200, height: 100 })),
+        groups: [{ id: 'rail', x: 0, y: 0, width: 176, height: 900 }],
+        cells: own.some(ids).map((one) => ({ id: one, col: own.int(4), row: own.int(4) })),
+        items: [{ id: 'it-1', x: 10, y: 20, width: 90, height: 60 }],
+      } : { nodes: [] },
+    }
+  }
   const observed = r.chance(0.6)
   const held = fromArrays({
     name: 'Design',
     elements,
     relations,
-    diagrams: [view('d1', 'layer7'), view('d2', r.chance(0.5) ? 'layer7' : 'container')],
+    diagrams: [view('d1', 'layer7'), view('d2', r.chance(0.5) ? 'layer7' : 'container'), sheet()],
     ...(r.chance(0.6) ? { decisions: [adr(r, 'adr-1', 1)] } : {}),
     ...(r.chance(0.6) ? { transitions: [plan(r, 'tr-1', 1)] } : {}),
     ...(observed ? { observations: [observation(r, 'ob-1', 1)] } : {}),
@@ -188,6 +205,11 @@ function principle(r: Random, id: string): Principle {
   }
 }
 
+/** The sheet, where a command means something on one alone; now and then another view, where it is nothing. */
+function mostlySheet(r: Random, m: Model): string {
+  return r.chance(0.9) && m.diagrams.s1 ? 's1' : held(r, m.order.diagrams, 'd')
+}
+
 function held(r: Random, ids: readonly string[], prefix: string): string {
   return ids.length && r.chance(0.9) ? r.pick(ids) : `${prefix}-missing`
 }
@@ -257,9 +279,33 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
   'group.remove': (r, m) => ({ type: 'group.remove', diagramId: held(r, m.order.diagrams, 'd'), groupIds: [r.pick(['d1-g', 'd2-g', 'nope'])] }),
   'box.set': (r, m) => ({
     type: 'box.set', diagramId: held(r, m.order.diagrams, 'd'),
-    boxes: [{ id: r.pick(['d1-g', 'd2-g']), x: r.int(100), y: r.int(100), width: 50 + r.int(100), height: 50 + r.int(100) }],
+    boxes: [{ id: r.pick(['d1-g', 'd2-g', 'rail']), x: r.int(100), y: r.int(100), width: 50 + r.int(100), height: 50 + r.int(100) }],
   }),
-  'box.remove': (r, m) => ({ type: 'box.remove', diagramId: held(r, m.order.diagrams, 'd'), groupIds: [r.pick(['d1-g', 'd2-g'])] }),
+  'box.remove': (r, m) => ({ type: 'box.remove', diagramId: held(r, m.order.diagrams, 'd'), groupIds: [r.pick(['d1-g', 'd2-g', 'rail'])] }),
+  // A sheet's blocks and tiles, about the elements it holds; on a board they are nothing or dropped.
+  'cell.set': (r, m) => ({
+    type: 'cell.set', diagramId: mostlySheet(r, m),
+    cells: r.some(m.order.elements).map((id) => ({ id, col: r.int(5), row: r.int(5), ...(r.chance(0.3) ? { span: 2 } : {}) })),
+  }),
+  'cell.remove': (r, m) => ({ type: 'cell.remove', diagramId: held(r, m.order.diagrams, 'd'), elementIds: r.some(m.order.elements) }),
+  'poster.item.add': (r, m) => {
+    const id = r.pick(['it-1', 'it-2', `it-${3 + r.int(50)}`])
+    return {
+      type: 'poster.item.add', diagramId: mostlySheet(r, m),
+      item: r.chance(0.5) ? { id, kind: 'note', text: r.pick(WORDS) } : { id, kind: 'picture', image: 'sha256:abc', alt: 'A picture' },
+      place: { id, x: r.int(900), y: r.int(900), width: 50 + r.int(90), height: 50 + r.int(90) },
+      ...(r.chance(0.3) ? { at: 0 } : {}),
+    }
+  },
+  'poster.item.update': (r, m) => ({
+    type: 'poster.item.update', diagramId: mostlySheet(r, m), id: r.chance(0.9) ? 'it-1' : 'nope',
+    patch: { ...(r.chance(0.6) ? { text: either(r, r.pick(WORDS)) } : {}), ...(r.chance(0.4) ? { alt: either(r, 'Said in words') } : {}) },
+  }),
+  'poster.item.place': (r, m) => {
+    const id = r.chance(0.9) ? 'it-1' : 'nope'
+    return { type: 'poster.item.place', diagramId: mostlySheet(r, m), place: { id, x: r.int(900), y: r.int(900), width: 90, height: 60 } }
+  },
+  'poster.item.remove': (r, m) => ({ type: 'poster.item.remove', diagramId: mostlySheet(r, m), id: r.chance(0.9) ? 'it-1' : 'nope' }),
   'route.set': (r, m) => ({
     type: 'route.set', diagramId: held(r, m.order.diagrams, 'd'),
     routes: r.some(m.order.relations).map((relationId) => ({ relationId, waypoints: [{ x: r.int(50), y: r.int(50) }] })),
@@ -287,6 +333,8 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
     patch: {
       ...(r.chance(0.5) ? { autoRoute: either(r, r.chance(0.5)) } : {}),
       ...(r.chance(0.5) ? { asOf: either(r, r.pick(DAYS)) } : {}),
+      ...(r.chance(0.3) ? { labels: either(r, r.some(m.order.elements)) } : {}),
+      ...(r.chance(0.3) ? { paper: either(r, r.pick(['wide', 'A2', 'fit'] as const)) } : {}),
     },
   }),
   'diagram.delete': (r, m) => ({ type: 'diagram.delete', id: held(r, m.order.diagrams, 'd') }),

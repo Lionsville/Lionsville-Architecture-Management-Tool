@@ -15,6 +15,7 @@ import { DIAGRAM_COMMANDS } from './diagrams'
 import { ELEMENT_COMMANDS } from './elements'
 import { GROUP_COMMANDS } from './groups'
 import { MEMBER_COMMANDS } from './members'
+import { POSTER_COMMANDS } from './poster'
 import { ASSIGNMENT_COMMANDS } from './assignments'
 import { CHECK_MARK_COMMANDS } from './checkMarks'
 import { PRINCIPLE_COMMANDS } from './principleRecords'
@@ -42,6 +43,7 @@ const ENTRIES: CommandTable = {
   ...RELATION_COMMANDS,
   ...MEMBER_COMMANDS,
   ...GROUP_COMMANDS,
+  ...POSTER_COMMANDS,
   ...ROUTE_COMMANDS,
   ...DIAGRAM_COMMANDS,
   ...DECISION_COMMANDS,

@@ -49,7 +49,7 @@ import type {
 import { causesOf, citationsOf, commentsOf, decisionsOf, evaluationsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect,
-  EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
+  EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, PosterCell, PosterItem, PosterItemPlace, Relation,
 } from './types'
 import { memberOf, nodeGeometryOf } from './placement'
 
@@ -77,6 +77,9 @@ export type DiagramPatch = Partial<Pick<Diagram,
   // its coordinates (ADR-0012 §6): they say what the page is OF, so they are
   // the sheet's equivalent of a drag and belong on the same patch.
   | 'journeyId' | 'lanes' | 'areas' | 'showActors' | 'areaSpans' | 'columns' | 'paper'
+  // What a sheet's poster says of its own (ADR-0048): both are presentation, and
+  // a patch of `poster` keeps the items it does not mean to change.
+  | 'labels' | 'poster'
   // A drawing's XML, picture and links, replaced together. The anchor and
   // the level sit beside that content, each their own field.
   | 'drawing' | 'elementId' | 'c4Level'>>
@@ -154,14 +157,29 @@ export type CommandBody =
   | { type: 'route.clear'; diagramId: DiagramId; relationIds: RelationId[] }
 
   // --- where it ended up, per diagram (ADR-0012 §6) -------------------------
-  /** Upsert by element id. A node that is not a member is ignored. */
+  /**
+   * Upsert by element id. A node that is not a member is ignored, except on a
+   * sheet, which has no members: there it is a block, about an element the
+   * scope holds (ADR-0048).
+   */
   | { type: 'node.set'; diagramId: DiagramId; nodes: NodeGeometry[] }
   /** Back to "on the view, not laid out". The inverse of setting a node that had none. */
   | { type: 'node.remove'; diagramId: DiagramId; elementIds: ElementId[] }
-  /** Upsert by group id. A box whose group is not on the view is ignored. */
+  /** Upsert by group id. A box whose group is not on the view is ignored, but for a sheet's stakeholder column (`SHEET_COLUMN_BOX`). */
   | { type: 'box.set'; diagramId: DiagramId; boxes: DomainGroupRect[] }
   | { type: 'box.remove'; diagramId: DiagramId; groupIds: GroupId[] }
   | { type: 'board.set'; diagramId: DiagramId; patch: BoardPatch }
+
+  // --- a sheet's poster (ADR-0048) -----------------------------------------
+  /** A tile placed by hand inside its block, upserted by element id. Elsewhere than on a sheet it is nothing. */
+  | { type: 'cell.set'; diagramId: DiagramId; cells: PosterCell[] }
+  /** Back to flowing. Reset tiles is this with every cell. */
+  | { type: 'cell.remove'; diagramId: DiagramId; elementIds: ElementId[] }
+  /** A free note or picture, and where it is: the definition's half and the geometry's. */
+  | { type: 'poster.item.add'; diagramId: DiagramId; item: PosterItem; place: PosterItemPlace; at?: number }
+  | { type: 'poster.item.update'; diagramId: DiagramId; id: string; patch: Partial<Omit<PosterItem, 'id'>> }
+  | { type: 'poster.item.place'; diagramId: DiagramId; place: PosterItemPlace }
+  | { type: 'poster.item.remove'; diagramId: DiagramId; id: string }
 
   // --- diagrams ------------------------------------------------------------
   | { type: 'diagram.create'; diagram: Diagram; at?: number }
@@ -412,6 +430,35 @@ export function placeOn(
     },
     { type: 'node.set', diagramId, nodes: placed.map(nodeGeometryOf) },
   ], meta)
+}
+
+/**
+ * What a tile moved to another block leaves behind: the place it had in the old
+ * one means nothing in the new one, on any sheet that placed it (ADR-0048). The
+ * caller puts this in the step that writes the new `parentId`.
+ */
+export function tileLeft(model: Model, id: ElementId): Command[] {
+  return model.order.diagrams.flatMap((diagramId) => (
+    model.diagrams[diagramId].cells?.[id] ? [{ type: 'cell.remove' as const, diagramId, elementIds: [id] }] : []
+  ))
+}
+
+/**
+ * First layout on a sheet: nothing placed, so it computes again and follows the
+ * model again. Free items stay where they are, being nobody's first layout.
+ * Reset tiles is the `cell.remove` of this alone.
+ */
+export function clearPlaces(model: Model, diagramId: DiagramId): Command[] {
+  const diagram = model.diagrams[diagramId]
+  if (!diagram) return []
+  const nodes = Object.keys(diagram.nodes)
+  const boxes = Object.keys(diagram.boxes)
+  const cells = Object.keys(diagram.cells ?? {})
+  return [
+    ...(nodes.length ? [{ type: 'node.remove' as const, diagramId, elementIds: nodes }] : []),
+    ...(boxes.length ? [{ type: 'box.remove' as const, diagramId, groupIds: boxes }] : []),
+    ...(cells.length ? [{ type: 'cell.remove' as const, diagramId, elementIds: cells }] : []),
+  ]
 }
 
 /** A command that changed nothing — what the reducer returns as the inverse of one. */

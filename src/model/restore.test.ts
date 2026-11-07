@@ -243,3 +243,52 @@ describe('restoring the whole project', () => {
 /** Guard: the reducer is what these run through, so an indexed model must survive it. */
 function indexedOnly(model: Model): Model { return model }
 void indexedOnly
+
+describe('a sheet\'s places (ADR-0048)', () => {
+  const function_ = (id: string, parentId?: string) => ({
+    id, name: id, kind: 'function' as const, lifecycle: 'live' as const, isManaged: true, aspects: {}, ...(parentId ? { parentId } : {}),
+  })
+  const host = (over: Record<string, unknown>, nodes: { id: string; x: number; y: number }[]): HostModel => ({
+    name: 'Scope',
+    elements: [function_('area'), function_('tile', 'area')],
+    relations: [],
+    diagrams: [{ id: 's', kind: 'sheet', name: 'Sheet', members: [], geometry: { nodes, ...(over.geometry as object) }, ...(over.definition as object) }],
+  })
+  const note = { id: 'n1', kind: 'note' as const, text: 'Then' }
+  const then = fromArrays(host({
+    geometry: { cells: [{ id: 'tile', col: 1, row: 0 }], groups: [{ id: 'rail', x: 0, y: 0, width: 176, height: 900 }], items: [{ id: 'n1', x: 1, y: 2, width: 90, height: 60 }] },
+    definition: { labels: ['tile'], paper: 'wide', poster: { tile: 's', items: [note] } },
+  }, [{ id: 'area', x: 188, y: 0 }]))
+
+  it('brings them back, on a sheet that has since been reset, as one step that undoes', () => {
+    const now = fromArrays(host({}, []))
+    const result = restoreCommand(then, now, { what: 'diagram', id: 's' }, '2026-11-01')
+    if (!result.ok) throw new Error(result.reason)
+    const landed = apply(now, result.command)
+    if (!landed.ok) throw new Error(landed.reason)
+    expect(toArrays(landed.model).diagrams[0]).toEqual(toArrays(then).diagrams[0])
+    const undone = apply(landed.model, landed.inverse)
+    expect(undone.ok && undone.model).toStrictEqual(now)
+  })
+
+  it('takes away what was not there then, and puts a moved item back', () => {
+    const now = fromArrays(host({
+      geometry: { cells: [{ id: 'area', col: 0, row: 0 }], items: [{ id: 'n1', x: 400, y: 2, width: 90, height: 60 }, { id: 'n2', x: 9, y: 9, width: 90, height: 60 }] },
+      definition: { poster: { tile: 'l', items: [{ ...note, text: 'Now' }, { id: 'n2', kind: 'note', text: 'Later' }] } },
+    }, [{ id: 'tile', x: 1, y: 1 }]))
+    const result = restoreCommand(then, now, { what: 'diagram', id: 's' }, '2026-11-01')
+    if (!result.ok) throw new Error(result.reason)
+    const landed = apply(now, result.command)
+    if (!landed.ok) throw new Error(landed.reason)
+    expect(toArrays(landed.model).diagrams[0]).toEqual(toArrays(then).diagrams[0])
+  })
+
+  it('brings a sheet back whole when it is gone, with its blocks and its cells', () => {
+    const now = fromArrays({ ...host({}, []), diagrams: [] })
+    const result = restoreCommand(then, now, { what: 'diagram', id: 's' }, '2026-11-01')
+    if (!result.ok) throw new Error(result.reason)
+    const landed = apply(now, result.command)
+    expect(landed.ok && toArrays(landed.model).diagrams[0].geometry?.nodes).toEqual([{ id: 'area', x: 188, y: 0 }])
+    expect(landed.ok && toArrays(landed.model).diagrams[0].geometry?.cells).toEqual([{ id: 'tile', col: 1, row: 0 }])
+  })
+})

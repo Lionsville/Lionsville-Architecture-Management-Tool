@@ -14,6 +14,7 @@ import { patchWrites } from './writes'
 const DIAGRAM_FIELDS: PatchKeys<'diagram.update'> = {
   autoRoute: true, applicationElementId: true, asOf: true, showDeployment: true, colourBy: true,
   journeyId: true, lanes: true, areas: true, showActors: true, areaSpans: true, columns: true, paper: true,
+  labels: true, poster: true,
   // The XML, the picture and the links are one field. The anchor and the level
   // are their own, beside it.
   drawing: true, elementId: true, c4Level: true,

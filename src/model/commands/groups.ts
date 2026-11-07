@@ -5,7 +5,7 @@
 import { NOTHING, transaction } from '../commands'
 import type { Command } from '../commands'
 import type { GroupId } from '../normalised'
-import { boxesOf, groupsOf } from '../normalised'
+import { boxesOf, groupsOf, SHEET_COLUMN_BOX } from '../normalised'
 import type { DiagramGroup, DomainGroupRect } from '../types'
 import { gone, ok } from './handler'
 import type { CommandTable } from './handler'
@@ -26,7 +26,7 @@ export const GROUP_COMMANDS = {
       for (const box of command.boxes) {
         // A box is about a group the view holds; one for a group nobody names
         // has no label to draw and no way to be renamed or recoloured.
-        if (!groupsOf(diagram)[box.id]) continue
+        if (!groupsOf(diagram)[box.id] && !(diagram.kind === 'sheet' && box.id === SHEET_COLUMN_BOX)) continue
         const held = boxes[box.id]
         if (held && same(held, box)) continue
         if (held) restore.push(held)

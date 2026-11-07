@@ -26,7 +26,7 @@ const ELEMENT_FIELDS: PatchKeys<'element.update'> = {
   description: true, outside: true, partyId: true, scopes: true, unitTypeId: true, extraSlots: true, reportingLines: true,
   lifecycle: true, lifecycleDates: true, successorId: true, owner: true, isManaged: true, aspects: true,
   ratings: true, certainty: true,
-  accentColor: true, shapeVariant: true, iconKey: true, iconSize: true,
+  accentColor: true, shapeVariant: true, iconKey: true, iconSize: true, icon: true,
   capabilities: true, contexts: true, sbbs: true,
 }
 
@@ -228,6 +228,20 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
       ...withMembers(diagram, drop(diagram.members, diagram.order.members, id)),
       nodes,
     })
+  }
+
+  // A sheet has no members: the element's block and its tile's cell go by their
+  // own rows (ADR-0048). A `labels` entry stays, as an `areas` one does: a view
+  // names what it draws, and a name nobody holds draws nothing.
+  for (const diagramId of next.order.diagrams) {
+    const diagram = next.diagrams[diagramId]
+    if (diagram.kind !== 'sheet' || !(diagram.nodes[id] || diagram.cells?.[id])) continue
+    const { [id]: node, ...nodes } = diagram.nodes
+    const { [id]: cell, ...cells } = diagram.cells ?? {}
+    if (node) undo.push({ type: 'node.set', diagramId, nodes: [node] })
+    if (cell) undo.push({ type: 'cell.set', diagramId, cells: [cell] })
+    const { cells: _held, ...rest } = diagram
+    next = setDiagram(next, diagramId, { ...rest, nodes, ...(Object.keys(cells).length ? { cells } : {}) })
   }
 
   // A drawing anchored to the element stays: it is a picture somebody drew,

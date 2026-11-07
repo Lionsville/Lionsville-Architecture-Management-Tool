@@ -132,6 +132,15 @@ function relationName(relation: Relation, model: HostModel): string {
  * counted at all — it is a note to the router, not a change to the picture.
  */
 function geometryChange(before: DesignDiagram, after: DesignDiagram): number {
+  // A sheet has no members to say that a block arrived or left (ADR-0048), so
+  // on one that counts here too; and its hand-placed tiles and free items are
+  // places like any other.
+  if (after.kind === 'sheet') {
+    return rowsThatDiffer(before.geometry?.nodes, after.geometry?.nodes)
+      + rowsThatDiffer(before.geometry?.groups, after.geometry?.groups)
+      + rowsThatDiffer(before.geometry?.cells, after.geometry?.cells)
+      + rowsThatDiffer(before.geometry?.items, after.geometry?.items)
+  }
   return rowsThatMoved(before.geometry?.nodes, after.geometry?.nodes)
     + rowsThatMoved(before.geometry?.groups, after.geometry?.groups)
     + differs(before.geometry?.canvas, after.geometry?.canvas)
@@ -149,6 +158,19 @@ function rowsThatMoved<T extends { id: string }>(
     if (was) moved += differs(was, one)
   }
   return moved
+}
+
+/** Rows that say something different in each version, or are in only one. */
+function rowsThatDiffer<T extends { id: string }>(
+  before: readonly T[] | undefined, after: readonly T[] | undefined,
+): number {
+  const held = new Map((before ?? []).map((one) => [one.id, one]))
+  let changed = 0
+  for (const one of after ?? []) {
+    changed += differs(held.get(one.id), one)
+    held.delete(one.id)
+  }
+  return changed + held.size
 }
 
 function differs(before: unknown, after: unknown): number {

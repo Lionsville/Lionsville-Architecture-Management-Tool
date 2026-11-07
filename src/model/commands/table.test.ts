@@ -17,6 +17,7 @@ import { DIAGRAM_COMMANDS } from './diagrams'
 import { ELEMENT_COMMANDS } from './elements'
 import { GROUP_COMMANDS } from './groups'
 import { MEMBER_COMMANDS } from './members'
+import { POSTER_COMMANDS } from './poster'
 import { CAUSE_COMMANDS, EXPERIMENT_COMMANDS, OBSERVATION_COMMANDS, SOLUTION_COMMANDS } from './analysis'
 import { OPERATING_RULE_COMMANDS, RESPONSIBILITY_COMMANDS, ROLE_COMMANDS, UNIT_TYPE_COMMANDS } from './operatingModel'
 import { ASSIGNMENT_COMMANDS } from './assignments'
@@ -42,6 +43,8 @@ const EVERY_TYPE: Record<CommandType, true> = {
   'member.set': true, 'member.remove': true, 'node.set': true, 'node.remove': true,
   'group.set': true, 'group.remove': true, 'box.set': true, 'box.remove': true,
   'route.set': true, 'route.clear': true, 'board.set': true,
+  'cell.set': true, 'cell.remove': true,
+  'poster.item.add': true, 'poster.item.update': true, 'poster.item.place': true, 'poster.item.remove': true,
   'diagram.create': true, 'diagram.rename': true, 'diagram.settings': true,
   'diagram.update': true, 'diagram.delete': true,
   'decision.add': true, 'decision.update': true, 'decision.remove': true,
@@ -64,7 +67,7 @@ const EVERY_TYPE: Record<CommandType, true> = {
 }
 
 const FAMILIES = [
-  ELEMENT_COMMANDS, RELATION_COMMANDS, MEMBER_COMMANDS, GROUP_COMMANDS, ROUTE_COMMANDS,
+  ELEMENT_COMMANDS, RELATION_COMMANDS, MEMBER_COMMANDS, GROUP_COMMANDS, POSTER_COMMANDS, ROUTE_COMMANDS,
   DIAGRAM_COMMANDS, DECISION_COMMANDS, TRANSITION_COMMANDS, OBSERVATION_COMMANDS,
   CAUSE_COMMANDS, SOLUTION_COMMANDS, EXPERIMENT_COMMANDS, UNIT_TYPE_COMMANDS, ROLE_COMMANDS,
   RESPONSIBILITY_COMMANDS, OPERATING_RULE_COMMANDS, ASSIGNMENT_COMMANDS, CHECK_MARK_COMMANDS, COMMENT_COMMANDS, PRINCIPLE_COMMANDS, CITATION_COMMANDS, EVALUATION_COMMANDS, PROJECT_COMMANDS,

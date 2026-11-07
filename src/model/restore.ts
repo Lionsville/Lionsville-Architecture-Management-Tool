@@ -340,6 +340,48 @@ function marksBack(then: Model, now: Model): Command[] {
 
 // --- a diagram, as commands ----------------------------------------------------
 
+/**
+ * A sheet's places (ADR-0048), which no member row brings along: its blocks and
+ * tiles, by the elements the model still holds. And its free items, each by the
+ * commands that say it, because a `poster` patch alone would leave their places
+ * behind: what the poster says of its own first, with the items it now holds.
+ */
+function sheetPlaces(target: Diagram, current: Diagram, against: Model): Command[] {
+  const diagramId = target.id
+  const commands: Command[] = []
+  const { items: wantedItems = [], ...wanted } = target.poster ?? {}
+  const { items: heldItems = [], ...held } = current.poster ?? {}
+  if (!same(wanted, held)) {
+    const poster = { ...wanted, ...(heldItems.length ? { items: heldItems } : {}) }
+    commands.push({ type: 'diagram.update', id: diagramId, patch: { poster: Object.keys(poster).length ? poster : undefined } })
+  }
+  for (const item of heldItems) {
+    if (!wantedItems.some((one) => one.id === item.id)) commands.push({ type: 'poster.item.remove', diagramId, id: item.id })
+  }
+  wantedItems.forEach((item, at) => {
+    const place = target.itemPlaces?.[item.id] ?? { id: item.id, x: 0, y: 0, width: 0, height: 0 }
+    const was = heldItems.find((one) => one.id === item.id)
+    if (!was) {
+      commands.push({ type: 'poster.item.add', diagramId, item, place, at })
+      return
+    }
+    const { id: _id, ...fields } = item
+    const { id: _same, ...before } = was
+    const patch = differing(before, fields)
+    if (Object.keys(patch).length) commands.push({ type: 'poster.item.update', diagramId, id: item.id, patch })
+    if (!same(current.itemPlaces?.[item.id], place)) commands.push({ type: 'poster.item.place', diagramId, place })
+  })
+  const nodes = Object.values(target.nodes).filter((node) => against.elements[node.id] && !same(current.nodes[node.id], node))
+  const goneNodes = Object.keys(current.nodes).filter((id) => !target.nodes[id])
+  if (goneNodes.length) commands.push({ type: 'node.remove', diagramId, elementIds: goneNodes })
+  if (nodes.length) commands.push({ type: 'node.set', diagramId, nodes })
+  const cells = Object.values(target.cells ?? {}).filter((cell) => against.elements[cell.id] && !same(current.cells?.[cell.id], cell))
+  const goneCells = Object.keys(current.cells ?? {}).filter((id) => !target.cells?.[id])
+  if (goneCells.length) commands.push({ type: 'cell.remove', diagramId, elementIds: goneCells })
+  if (cells.length) commands.push({ type: 'cell.set', diagramId, cells })
+  return commands
+}
+
 const SETTING_FIELDS = [
   'name', 'author', 'client', 'documentDate', 'showTitleBlock', 'aspectConfig', 'showAspects',
 ] as const satisfies readonly (keyof DiagramSettings)[]
@@ -348,6 +390,8 @@ const PATCH_FIELDS = [
   'autoRoute', 'applicationElementId', 'asOf',
   // A drawing's content, its anchor and its level travel with the view.
   'drawing', 'elementId', 'c4Level',
+  // What a sheet is of, and what its poster says of its own.
+  'journeyId', 'lanes', 'areas', 'showActors', 'areaSpans', 'columns', 'paper', 'labels',
 ] as const satisfies readonly (keyof DiagramPatch)[]
 
 /** The board's own numbers — the geometry file's, minus the per-thing rows. */
@@ -377,7 +421,11 @@ function diagramCommands(
       ...(geometry ? {
         geometry: {
           ...geometry,
-          nodes: placed.map(nodeGeometryOf),
+          // A sheet's blocks are no members' (ADR-0048).
+          nodes: target.kind === 'sheet'
+            ? geometry.nodes.filter((node) => against.elements[node.id])
+            : placed.map(nodeGeometryOf),
+          ...(geometry.cells ? { cells: geometry.cells.filter((cell) => against.elements[cell.id]) } : {}),
           ...(geometry.routes !== undefined || wanted.lines !== undefined
             ? splitRoutes(routes)
             : {}),
@@ -401,6 +449,8 @@ function diagramCommands(
 
   const board = differing(pick(current, BOARD_FIELDS), pick(target, BOARD_FIELDS)) as BoardPatch
   if (Object.keys(board).length) commands.push({ type: 'board.set', diagramId: id, patch: board })
+
+  if (target.kind === 'sheet') commands.push(...sheetPlaces(target, current, against))
 
   const goneGroups = current.order.groups.filter((groupId) => !groupsOf(target)[groupId])
   if (goneGroups.length) commands.push({ type: 'group.remove', diagramId: id, groupIds: goneGroups })

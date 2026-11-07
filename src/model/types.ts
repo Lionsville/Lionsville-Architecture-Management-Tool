@@ -383,6 +383,13 @@ export interface DesignElement {
   iconKey?: string;
   /** See {@link NodeIconSize}; absent = `small` (the header mark). */
   iconSize?: NodeIconSize;
+  /**
+   * A step's or an actor's picture on a sheet's poster (ADR-0048): a shipped
+   * icon's name, or a content address (`sha256:` and the digest) in the scope's
+   * images. Beside `iconKey`, which is a mark on a board's card and names a
+   * registry only.
+   */
+  icon?: string;
   /** A building block's capabilities: what it must provide (ADR-0043 §2). On a `buildingBlock` only. */
   capabilities?: BlockCapability[];
   /** A building block's usage contexts: the uses it serves, said in words, each with what it needs (ADR-0043 §2). */
@@ -768,10 +775,54 @@ export interface Geometry {
   nodes: NodeGeometry[];
   groups?: DomainGroupRect[];
   routes?: RouteGeometry[];
+  /** A sheet: the tiles placed by hand inside their block (ADR-0048). Only the exceptions; the rest flow. */
+  cells?: PosterCell[];
+  /** A sheet: where its free notes and pictures are ({@link PosterSettings.items}). */
+  items?: PosterItemPlace[];
 }
 
-/** The widths a sheet is laid out at: ISO 216 landscape, or the window. */
-export type SheetPaper = 'fit' | 'A4' | 'A3' | 'A2' | 'A1' | 'A0';
+/** The widths a sheet is laid out at: ISO 216 landscape, the window, or the wide page a poster starts on. */
+export type SheetPaper = 'wide' | 'fit' | 'A4' | 'A3' | 'A2' | 'A1' | 'A0';
+
+/** A tile placed by hand, in tiles from its block's top left, and how many columns it takes. */
+export interface PosterCell {
+  id: ElementId;
+  col: number;
+  row: number;
+  span?: number;
+}
+
+/** A free note or picture on one poster: on this view only, and no fact about the model. */
+export interface PosterItem {
+  id: string;
+  kind: 'note' | 'picture';
+  /** A note's words. */
+  text?: string;
+  /** A picture's content address in the scope's images. */
+  image?: string;
+  /** What a picture shows, in words: required of one. */
+  alt?: string;
+}
+
+/** Where a free item is. */
+export interface PosterItemPlace {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+/** A sheet's poster, where it says anything of its own (ADR-0048). */
+export interface PosterSettings {
+  /** How big its tiles are. Absent = `m`. */
+  tile?: 's' | 'm' | 'l';
+  /** How many rows its journey takes. Absent = what `business/posterLayout` works out. */
+  bandRows?: 1 | 2;
+  /** The free line at the foot of its print. */
+  foot?: string;
+  items?: PosterItem[];
+}
 
 export interface DesignDiagram {
   id: string;
@@ -781,10 +832,11 @@ export interface DesignDiagram {
    * `layer7` and `container` are drawn on a canvas and have geometry. A
    * `sheet` and a `map` are **laid out**: the business architecture on one
    * page, and functions against the applications that support them, each
-   * computed from the trees and the rows, so neither has coordinates at all
-   * and {@link DesignDiagram.geometry} stays empty on both. Nothing drags,
-   * nothing routes, and a deleted geometry file would change nothing about
-   * either of them.
+   * computed from the trees and the rows. A map has no coordinates at all, and
+   * neither has a sheet until somebody places a block on its poster (ADR-0048):
+   * a sheet is computed unless it has a geometry, whose node ids are functions
+   * and steps and not members, and a deleted geometry file gives the computed
+   * sheet back. Nothing routes on either.
    *
    * A `technology` view is laid out too (ADR-0015): the applications, the
    * services they use and the platforms that deliver them, in three bands,
@@ -900,8 +952,18 @@ export interface DesignDiagram {
    * a laptop window is a viewport onto it rather than its size. The long
    * side is the width; the short side is what the areas are widened to fit
    * under, so the page comes out landscape rather than a tall column of it.
+   *
+   * `wide` is what a new sheet starts on (ADR-0048): a poster that fills a
+   * window. Its Names reading and its picture take it as the default.
    */
   paper?: SheetPaper;
+  /**
+   * A sheet: the functions whose `assigned` row this poster shows at reading
+   * distance (ADR-0048). A display choice, per view; the fact stays the row.
+   */
+  labels?: ElementId[];
+  /** A sheet: what its poster says of its own. Absent says nothing. */
+  poster?: PosterSettings;
   /**
    * What is ON this view (ADR-0012 §6), and what that means from here: which
    * band an element sits in, and which dashed group it belongs to.

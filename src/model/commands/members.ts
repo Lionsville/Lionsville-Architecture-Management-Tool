@@ -18,6 +18,9 @@ export const MEMBER_COMMANDS = {
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.diagramId]
       if (!diagram) return gone
+      // A sheet has no members, and a member row would be a second place to keep
+      // what its trees say (`canPlaceKind`); its blocks are `node.set`'s.
+      if (diagram.kind === 'sheet') return ok(model, NOTHING, meta)
       // Built in one pass rather than one `put` per row: a whole-board set —
       // a tidy pass, a restore — carries thousands, and a record copied per
       // row is quadratic. The order array keeps its identity when nothing
@@ -109,8 +112,9 @@ export const MEMBER_COMMANDS = {
       const clear: ElementId[] = []
       for (const node of command.nodes) {
         // A node is on a view because a MEMBER row says so; a coordinate for
-        // something that is not on it has nothing to be about.
-        if (!diagram.members[node.id]) continue
+        // something that is not on it has nothing to be about. A sheet has no
+        // members (ADR-0048): what it draws is the scope's own trees.
+        if (diagram.kind === 'sheet' ? !model.elements[node.id] : !diagram.members[node.id]) continue
         const held = nodes[node.id]
         if (held && same(held, node)) continue
         if (held) restore.push(held)

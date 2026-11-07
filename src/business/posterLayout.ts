@@ -14,6 +14,8 @@
  * it and stand as tall as its tallest, which gives aligned rows. It never writes.
  */
 
+import { SHEET_COLUMN_BOX } from '../model/normalised'
+
 export const POSTER_WIDTH = 1860
 export const POSTER_TILE = { width: 110, minWidth: 98, height: 46, gap: 6 } as const
 export const POSTER_GAP = 10
@@ -47,7 +49,7 @@ export type PosterColumn = { groups: number; rows: number }
 export type PosterBlock = { id: string; x: number; y: number; width: number; height: number }
 
 /** The blocks' own names beside the areas', which are element ids. */
-export const POSTER_COLUMN_ID = 'rail'
+export const POSTER_COLUMN_ID = SHEET_COLUMN_BOX
 
 const rowsOf = (tiles: number, cols: number) => Math.ceil(tiles / cols)
 const tilesHeight = (tiles: number, cols: number) => rowsOf(tiles, cols) * (POSTER_TILE.height + POSTER_TILE.gap) - POSTER_TILE.gap

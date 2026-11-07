@@ -198,6 +198,12 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
     case 'box.set':
     case 'box.remove':
     case 'board.set':
+    case 'cell.set':
+    case 'cell.remove':
+    case 'poster.item.add':
+    case 'poster.item.update':
+    case 'poster.item.place':
+    case 'poster.item.remove':
       return { key: 'activity.layoutChanged' }
     case 'group.set':
       return { key: 'activity.groupChanged', name: lead.groups[0]?.name }

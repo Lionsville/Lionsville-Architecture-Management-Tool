@@ -236,3 +236,29 @@ describe('countChanges', () => {
       .toEqual({ added: 1, removed: 1, changed: 0, moved: 1 })
   })
 })
+
+describe('a sheet\'s places (ADR-0048)', () => {
+  const host = (geometry: object, over: object = {}): HostModel => ({
+    name: 'Scope', elements: [], relations: [],
+    diagrams: [{ id: 's', kind: 'sheet', name: 'Sheet', members: [], geometry: { nodes: [], ...geometry }, ...over }],
+  })
+
+  it('counts as how much moved, blocks that arrived included, there being no member to say so', () => {
+    const before = host({})
+    const after = host({ nodes: [{ id: 'a', x: 1, y: 1 }, { id: 'b', x: 2, y: 2 }], groups: [{ id: 'rail', x: 0, y: 0, width: 176, height: 900 }], cells: [{ id: 't', col: 0, row: 0 }] })
+    expect(countChanges(diffModels(before, after)).moved).toBe(4)
+    expect(countChanges(diffModels(after, before)).moved).toBe(4)
+  })
+
+  it('counts a tile moved and an item moved, and nothing when nothing did', () => {
+    const before = host({ cells: [{ id: 't', col: 0, row: 0 }], items: [{ id: 'n', x: 1, y: 1, width: 9, height: 9 }] })
+    const after = host({ cells: [{ id: 't', col: 1, row: 0 }], items: [{ id: 'n', x: 2, y: 1, width: 9, height: 9 }] })
+    expect(countChanges(diffModels(before, after)).moved).toBe(2)
+    expect(isUnchanged(diffModels(before, before))).toBe(true)
+  })
+
+  it('says a label or a tile size as a field of the view', () => {
+    const changes = diffModels(host({}), host({}, { labels: ['t'], poster: { tile: 's' } }))
+    expect(changes.find((change) => change.id === 's')?.fields).toEqual(expect.arrayContaining(['labels', 'poster']))
+  })
+})

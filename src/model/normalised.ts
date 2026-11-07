@@ -33,7 +33,7 @@
  */
 import type {
   DesignDiagram, DesignElement, DiagramGroup, DiagramMember, DomainGroupRect, EdgeRoute,
-  ElementId, Geometry, NodeGeometry, PlacedNode, Relation,
+  ElementId, Geometry, NodeGeometry, PlacedNode, PosterCell, PosterItemPlace, Relation,
 } from './types'
 import { edgeRouteRows, splitRoutes } from './routes'
 import type { Adr } from './adr'
@@ -130,6 +130,10 @@ export type Diagram = Omit<DesignDiagram, 'members' | 'groups' | 'lines' | 'geom
   // --- the geometry file, indexed --------------------------------------------
   nodes: Record<ElementId, NodeGeometry>
   boxes: Record<GroupId, DomainGroupRect>
+  /** A sheet's hand-placed tiles. Absent when there are none, so one placed and taken back leaves no key. */
+  cells?: Record<ElementId, PosterCell>
+  /** Where a sheet's free items are, likewise. */
+  itemPlaces?: Record<string, PosterItemPlace>
   canvas?: Geometry['canvas']
   zones?: Geometry['zones']
   needsLayout?: boolean
@@ -437,21 +441,37 @@ function unindex<T>(by: Record<string, T>, order: readonly string[]): T[] {
   return order.map((id) => by[id])
 }
 
+/** Rows no order array keeps, in one order however they arrived: two equal models write one file. */
+function byIds<T>(by: Record<string, T>): T[] {
+  return Object.keys(by).sort().map((id) => by[id])
+}
+
+/**
+ * A sheet's stakeholder column keeps its place among the group boxes under this
+ * id (ADR-0048), and no group names it: a sheet draws no dashed groups. The
+ * column is no element, so it has no node row to be.
+ */
+export const SHEET_COLUMN_BOX = 'rail'
+
 /** One diagram, indexed. Exported because a command carries whole diagrams. */
 export function toDiagram(diagram: DesignDiagram): Diagram {
   const { members, groups, lines, geometry, ...definition } = diagram
   const [byMember, memberOrder] = index(members ?? [], (m) => m.id)
   const out = { ...definition } as unknown as Diagram
   out.members = byMember
-  const [nodes] = index((geometry?.nodes ?? []).filter((node) => byMember[node.id]), (n) => n.id)
+  // A sheet has no members: its node ids are the functions and steps it draws (ADR-0048).
+  const sheet = diagram.kind === 'sheet'
+  const [nodes] = index((geometry?.nodes ?? []).filter((node) => sheet || byMember[node.id]), (n) => n.id)
   out.nodes = nodes
+  if (geometry?.cells?.length) out.cells = index(geometry.cells, (cell) => cell.id)[0]
+  if (geometry?.items?.length) out.itemPlaces = index(geometry.items, (place) => place.id)[0]
   if (geometry?.canvas !== undefined) out.canvas = geometry.canvas
   if (geometry?.zones !== undefined) out.zones = geometry.zones
   if (geometry?.needsLayout !== undefined) out.needsLayout = geometry.needsLayout
 
   const [byGroup, groupOrder] = index(groups ?? [], (g) => g.id)
   out.groups = byGroup
-  const [boxes] = index((geometry?.groups ?? []).filter((box) => byGroup[box.id]), (b) => b.id)
+  const [boxes] = index((geometry?.groups ?? []).filter((box) => byGroup[box.id] || (sheet && box.id === SHEET_COLUMN_BOX)), (b) => b.id)
   out.boxes = boxes
 
   let routeOrder: RelationId[] = []
@@ -484,7 +504,7 @@ export function fromDiagram(diagram: Diagram): DesignDiagram {
   const held = converted.get(diagram)
   if (held) return held
   const {
-    members, nodes, groups, boxes, edgeRoutes, canvas, zones, needsLayout, order, ...definition
+    members, nodes, groups, boxes, cells, itemPlaces, edgeRoutes, canvas, zones, needsLayout, order, ...definition
   } = diagram
   const out = { ...definition } as unknown as DesignDiagram
   out.members = unindex(members, order.members)
@@ -492,11 +512,17 @@ export function fromDiagram(diagram: Diagram): DesignDiagram {
   // nothing rather than saying nothing twice.
   const groupList = unindex(groups, order.groups)
   if (groupList.length) out.groups = groupList
-  const geometry: Geometry = { nodes: order.members.flatMap((id) => (nodes[id] ? [nodes[id]] : [])) }
+  const sheet = diagram.kind === 'sheet'
+  const geometry: Geometry = { nodes: sheet ? byIds(nodes) : order.members.flatMap((id) => (nodes[id] ? [nodes[id]] : [])) }
+  if (cells) geometry.cells = byIds(cells)
+  if (itemPlaces) geometry.items = byIds(itemPlaces)
   if (needsLayout !== undefined) geometry.needsLayout = needsLayout
   if (canvas !== undefined) geometry.canvas = canvas
   if (zones !== undefined) geometry.zones = zones
-  const boxList = order.groups.flatMap((id) => (boxes[id] ? [boxes[id]] : []))
+  const boxList = [
+    ...order.groups.flatMap((id) => (boxes[id] ? [boxes[id]] : [])),
+    ...(sheet && boxes[SHEET_COLUMN_BOX] ? [boxes[SHEET_COLUMN_BOX]] : []),
+  ]
   if (boxList.length) geometry.groups = boxList
   if (edgeRoutes !== undefined) {
     const split = splitRoutes(unindex(edgeRoutes, order.routes))
