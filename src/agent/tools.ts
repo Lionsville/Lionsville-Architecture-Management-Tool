@@ -3519,7 +3519,7 @@ const SPECS = [
         id: { type: 'string', description: 'The view, element, plan, decision, observation, cause, solution, experiment, unit type, role or responsibility the page is about, where it is about one; on checks, a check\'s key (check.roleVacant).' },
         tab: {
           type: 'string',
-          description: 'Which tab of the page, on a page with tabs. Observations: register, analysis, solutions. People: people, review, privacy. Register: applications, services, platforms. A Conway map: grid, lines. Any other tab is refused and the answer lists the page\'s own.',
+          description: 'Which tab of the page, on a page with tabs. Observations: register (Seen), analysis (Why), solutions (Solve), results (Did it work); analysis and solutions also as analysis-list, analysis-map, solutions-list, solutions-map. People: people, review, privacy. Register: applications, services, platforms. A Conway map: grid, lines. Any other tab is refused and the answer lists the page\'s own.',
           enum: [...new Set(Object.values(PAGE_TABS).flat())],
         },
         select: { type: 'string', description: 'An element to select on the board, sheet, map, technology landscape, organisation chart or Conway map being opened.' },

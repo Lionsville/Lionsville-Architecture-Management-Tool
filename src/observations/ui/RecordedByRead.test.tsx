@@ -9,7 +9,7 @@
  * answers a record with no entry; and a record with no name reads as what it
  * has, never as the word undefined.
  */
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { translator } from '../../i18n'
 import type { HostModel } from '../../model/hostModel'

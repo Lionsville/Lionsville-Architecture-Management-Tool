@@ -137,6 +137,19 @@ describe('filter words', () => {
     fireEvent.click(screen.getByRole('button', { name: /Filter/ }))
     expect(await axeFindings()).toEqual([])
   })
+
+  it('says on the line what is on and is no value of a list, each with its own way off, and Clear lets go of those too', () => {
+    const onRemove = vi.fn()
+    const onClear = vi.fn()
+    renderShell(<FilterWords find="" onFind={() => {}} fields={FIELDS} onFilters={() => {}} filterGuide="x.filter" words={[{ id: 'text', word: 'Cause: batch', label: 'Cause', onRemove }]} onClear={onClear} />)
+    expect(screen.getByRole('button', { name: /^Filter/ }).textContent).toContain('1')
+    expect(screen.getByRole('button', { name: /^Filter/ }).getAttribute('data-guide')).toBe('x.filter')
+    expect(screen.getByText('Cause: batch')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Stop filtering on Cause: Cause: batch' }))
+    expect(onRemove).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+    expect(onClear).toHaveBeenCalled()
+  })
 })
 
 describe('a bar over a short fixed list', () => {

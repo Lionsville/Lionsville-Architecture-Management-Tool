@@ -453,8 +453,12 @@ src/observations/ What was seen, what lies behind it (ADR-0021), and what is
                                       to the left, the solutions last; open ends,
                                       the counts over it, fit and trace. The sweep
                                       is shared with solutionGraph
-                    tabs              the page's three tabs, said once: a
-                                      destination names one (ADR-0019)
+                    tabs              the page's stages, said once: Seen, Why,
+                                      Solve, Did it work, and a stage with its
+                                      lens; a destination names one (ADR-0019)
+                    chain             what waits and in which order, where a
+                                      chain stands, and how much of a large
+                                      scope's map is drawn when it opens
                     filter            the one filter model the three tabs share —
                                       scopes, Obs, Cause, RC, search, and the
                                       chains they keep — and saved filters
@@ -466,9 +470,13 @@ src/observations/ What was seen, what lies behind it (ADR-0021), and what is
                                       `shared` is dropped — the one rule every
                                       place work is kept reads its older data
                                       by (ADR-0032 §9)
-                    ui/ObservationsPage  the register, the analysis, the solutions,
-                                      the readers; View local, the filter row and
-                                      the forms beside it (`ui/`)
+                    ui/ObservationsPage  the chain on the kit: the stages'
+                                      lists (`ChainLists`) under one bar
+                                      (`ChainBars`), a record in the large preview,
+                                      a panel or whole (`RecordViews`), edited in a
+                                      full window (`RecordEditor`), the ladder that
+                                      asks why (`WhyLadder`), and two maps that open
+                                      readable
 src/operating/    The operating model (ADR-0036): what is done with the records
                   `model/operatingModel.ts` defines.
                     library · libraries/   what a library is, and the four that
@@ -1510,7 +1518,7 @@ identifiers is still a list of a customer's identifiers.
 | Agent server settings (ADR-0007) | `mcp.json` in `userData`, mode 0600: `enabled`, the kept `port` and `token` |
 | Agent endpoint | `http://127.0.0.1:<port>/mcp`, bearer token, streamable HTTP |
 | Agent tools, read | `project.current` `elements.list` `element.describe` `connections.list` `diagrams.list` `decisions.list` `decision.read` `search` `activity.list` `images.list` `project.export` `platform.report` `service.report` — and, over the whole tree, `scopes.list` `views.list` `register.list` `technology.list` `checks.list` |
-| Agent tools, drive (ADR-0019) | `app.current` `app.open` `session.start` `session.end` — where the app is (a **screen**: the open scope, its view, the page over it, or the home that is up), moving it to a **destination** (`scope` · `page` · `id`, the same three words an `InitialPage` says, and — amended — `tab`, one of the observations page's `register` · `analysis` · `solutions` or a Conway map's `grid` · `lines`, `group` and `pair` on a Conway map, and `select`, an element selected on the board, sheet, map or technology landscape opened where that view draws it), and the **driving session** the banner shows and the person's Stop ends; a driving call after a Stop is refused `agent.stopped` until `session.start` |
+| Agent tools, drive (ADR-0019) | `app.current` `app.open` `session.start` `session.end` — where the app is (a **screen**: the open scope, its view, the page over it, or the home that is up), moving it to a **destination** (`scope` · `page` · `id`, the same three words an `InitialPage` says, and — amended — `tab`, one of the observations page's stages `register` · `analysis` · `solutions` · `results`, or `analysis-list` · `analysis-map` · `solutions-list` · `solutions-map`, or a Conway map's `grid` · `lines`, `group` and `pair` on a Conway map, and `select`, an element selected on the board, sheet, map or technology landscape opened where that view draws it), and the **driving session** the banner shows and the person's Stop ends; a driving call after a Stop is refused `agent.stopped` until `session.start` |
 | Fields that name a person (ADR-0036 §8) | `owner` on an element and a plan, `by` on an observation and an experiment, a decision's `proposedBy` and each signer's `name` take a `PersonRef`: `{ "person": "pe-…" }` picked from the register, or text; `validatedWith` and a view's `author` stay text. Who recorded an observation is `recordedBy`, `{ name?, account?, person?, via? }`, no reference: it holds an entry's id where there is one and then no name, a record of 3.8.0 or 3.8.1 the name too, which nothing reads where an entry answers (`observations/recordedBy`, `recorderShown`, `recorderInCopy`; `SourcePeople.recorder` for an account; on disk `recordedBy:`, `recordedByAccount:`, `recordedByPerson:`, `recordedByVia:`, each only where held); `personIdsIn` reads it by its field, an agent is told `{ person, name, via }` or `{ name, via }` or `{ nameWithheld, via }` and never the account, and a copy never carries the account. A verdict given to a picked signer writes `signedAs` beside the id, and once anybody has signed the proposer's is fixed as `proposedAs` (`decisions/withSignedNames`) — the one register name in the history, on purpose. On disk an id is written under the field's key with `Person` after it (`ownerPerson:`, `byPerson:`, `proposedByPerson:`; a signer row's `person:` with `signedAs:`), text under the key as before (`fileText.personFrontMatter`), all at format 11. A search record carries `people` (ids) and folds only text (`refText`); `searchAll`'s `people` is the register's half (`PeopleMatch`). A signature that kept a name is apart from the rest: its id is in `signed`, found through the register only while the entry has a name (`PeopleMatch.apart`, `signatureApart`), and once its signer is forgotten or gone every screen and every agent answer says the name as signed alone, with no id and no pseudonym. An index entry carries its master's `owner` as a reference |
 | Agent tools, people (ADR-0036 §13) | `people.list` (with possible duplicates, but the pairs a person answered as not the same person) `person.add` (refused `agent.possibleDuplicate` unless `addAnyway`) `person.leave` `person.takeBackLeaving` — no `scope` and no `ifRevision` (`ON_THE_REGISTER`), answered with nothing open; names or pseudonyms as the policy says, never an address. **No tool forgets, removes or merges a person**, none answers or takes back that two are not the same person, and none changes the policy |
 | Agent tools, the tree (ADR-0040) | `scope.create` (`parent`, `name`, `withBoard`, `servedBy`, `topic` — under the topics place unless `parent` is a topic, ADR-0042) `scope.update` (`path`, `name`, `description`, `kind` or `unitTypeId`, `client`, `links`, `relevantTo` — a topic's links, whole) `scope.move` (`path`, `parent`) `scope.remove` (`path`; `removeContents` with `personSaid`, the person's own words) — no `scope` and no `ifRevision` (`ON_THE_TREE`), answered with or without a scope open over `ShellView.scopes` (`agent/scopeTree.ts`'s `ScopesView`), each its scope's own step through `projects/scopeTree.ts`, never in a `batch`; one scope per removal, never one with scopes under it (`scope.scopesBelow`), one holding work refused `scope.notEmpty` unless the person said so; the open scope's place in the tree is its session's (`scope.isOpen`) |

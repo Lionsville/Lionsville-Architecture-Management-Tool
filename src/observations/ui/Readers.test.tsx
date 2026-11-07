@@ -11,7 +11,7 @@
  * lists, and a change below is handed to the host as that scope's.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
 import type { HostModel } from '../../model/hostModel'

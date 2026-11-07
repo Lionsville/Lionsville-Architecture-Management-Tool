@@ -269,3 +269,16 @@ last open observation was archived.
   the reader shrinks the title and moves the occasional actions — verify,
   link deeper, share, archive, delete — into a `⋯` menu, and a link row wraps
   instead of running its note into its button.
+
+## Amended for 4.0.0: the page is the chain
+
+The screens followed how the work is stored, so recording ended the journey and few
+records reached a cause. The page is now the chain: *Seen*, *Why*, *Solve* and *Did it
+work*, addressed as `register`, `analysis`, `solutions` and `results`, so an address or
+an agent's call written earlier still lands. What waits comes first, heaviest first. A
+row is the item; selecting it opens a large preview over the list, by the record's own
+address; a record is edited in a full window, one save being one step. *Ask why* is a
+ladder in a panel beside the list, one question at a time, for one record or a group,
+with the root cause decided at the end. A map opens at 100% on the chains that weigh
+most and offers the rest, with a floor of 60% on *Fit*. No command, no format and no
+agent tool changes for any of this but `results` and the lens among the tabs.

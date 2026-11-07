@@ -70,7 +70,8 @@ export function useLocated(
     const until = Date.now() + LOCATED_FOR_MS
     const find = () => {
       const node = page.current?.querySelector<HTMLElement>(locatedSelector(id, attribute))
-      if (node) node.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' })
+      // Sideways only as far as it takes: centring a row of a wide list threw its first column off screen.
+      if (node) node.scrollIntoView?.({ block: 'center', inline: 'nearest', behavior: 'smooth' })
       else if (Date.now() < until) requestAnimationFrame(find)
     }
     requestAnimationFrame(find)

@@ -15,7 +15,13 @@ import { Button } from '../../widgets/kit/Button'
 import { TextField } from '../../widgets/kit/Field'
 import { FilterWords } from '../../widgets/kit/FilterWords'
 import type { FilterField, FilterWord } from '../../widgets/kit/FilterWords'
+import { CHAINS_FIRST, CHAINS_MORE } from '../chain'
+import type { MapWindow } from '../chain'
 import { OBSERVATION_TONES } from '../observation'
+import type { Analysis, ObservationBelow } from '../observation'
+import { implementedOn, isLive, seenSinceImplemented } from '../solution'
+import type { Solution, SolutionPlan } from '../solution'
+import type { ObservationStage } from '../tabs'
 import { TONE_WORD } from '../observationScope'
 import type { Filters } from '../filter'
 import { SavedPopover, ScopesPopover } from './FilterPopovers'
@@ -145,4 +151,82 @@ export function ChainEmpty({ onNew, s }: { onNew?: (() => void) | undefined; s: 
       )}
     </div>
   )
+}
+
+/** What can be done with what is ticked: one question for a group, or one merge. A cause explains its own scope, so a group is of one. */
+export function BulkActions({ ticked, stage, here, onClear, onAsk, onMerge, s }: {
+  ticked: ReadonlySet<string>
+  stage: ObservationStage
+  here: string
+  onClear: () => void
+  onAsk: (ids: readonly string[], scope: string | undefined) => void
+  onMerge: (kind: 'observation' | 'cause', at: { scope: string; id: string }, others: readonly { scope: string; id: string }[]) => void
+  s: Translate
+}) {
+  const at = [...ticked].map((key) => {
+    const hash = key.lastIndexOf('#')
+    return hash < 0 ? { id: key, scope: undefined } : { id: key.slice(hash + 1), scope: key.slice(0, hash) }
+  })
+  const oneScope = at.every((one) => one.scope === at[0]?.scope)
+  return (
+    <>
+      {stage === 'register' && (
+        <Button
+          variant="primary" size="small" reason={oneScope ? undefined : s('observation.bulkOneScope')} data-testid="bulk-ask-why"
+          onClick={() => { onAsk(at.map((one) => one.id), at[0]?.scope); onClear() }}
+        >
+          {s('observation.bulkAskWhy', { count: ticked.size })}
+        </Button>
+      )}
+      <Button
+        size="small" reason={ticked.size < 2 ? s('observation.bulkMergeTwo') : undefined} data-testid="bulk-merge"
+        onClick={() => {
+          const [first, ...rest] = at.map((one) => ({ scope: one.scope ?? here, id: one.id }))
+          if (first) onMerge(stage === 'register' ? 'observation' : 'cause', first, rest)
+          onClear()
+        }}
+      >
+        {s('observation.bulkMerge')}
+      </Button>
+    </>
+  )
+}
+
+/** How much of a large scope's map is drawn, and the way to the rest: the choice is the person's, and kept. */
+export function MapWindowBar({ window: drawn, kept, loose, onKeep, s }: {
+  window: MapWindow
+  kept: number
+  loose: number
+  onKeep: (chains: number) => void
+  s: Translate
+}) {
+  const { shownChains, totalChains } = drawn
+  if (totalChains === 0) return null
+  return (
+    <div className="chain-page__window" data-testid="map-window" data-guide="observations.mapWindow">
+      {shownChains < totalChains ? (
+        <>
+          <span>{s('observation.mapTop', { shown: shownChains, total: totalChains })}</span>
+          <Button size="small" onClick={() => onKeep(shownChains + CHAINS_MORE)} data-testid="map-more">{s('observation.mapShowMore', { count: CHAINS_MORE })}</Button>
+          <Button variant="quiet" size="small" onClick={() => onKeep(0)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
+        </>
+      ) : kept === 0 ? (
+        <>
+          <span>{s('observation.mapAll', { total: totalChains })}</span>
+          <Button variant="quiet" size="small" onClick={() => onKeep(CHAINS_FIRST)} data-testid="map-top">{s('observation.mapBackTop', { count: CHAINS_FIRST })}</Button>
+        </>
+      ) : loose > 0 ? (
+        <Button variant="quiet" size="small" onClick={() => onKeep(0)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
+      ) : <span>{s('observation.mapAll', { total: totalChains })}</span>}
+    </div>
+  )
+}
+
+/** What Did it work says it holds. */
+export function ResultsSaid({ solutions, plans, analysis, belowAll, s }: {
+  solutions: readonly Solution[]; plans: readonly SolutionPlan[]; analysis: Analysis; belowAll: readonly ObservationBelow[]; s: Translate
+}) {
+  const built = solutions.filter((one) => isLive(one) && implementedOn(one, plans) !== undefined).length
+  const back = solutions.filter((one) => seenSinceImplemented(one, analysis, belowAll, plans).length > 0).length
+  return <span data-testid="stage-said">{built === 0 ? s('solution.saidNothingBuilt') : s('solution.saidBuilt', { built, back })}</span>
 }

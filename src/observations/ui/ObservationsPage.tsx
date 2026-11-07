@@ -36,10 +36,8 @@ import { hasMap, stageOfTab } from '../tabs'
 import type { ChainLens, ObservationStage, ObservationTab } from '../tabs'
 import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { TextField } from '../../widgets/kit/Field'
 import { List } from '../../widgets/kit/List'
 import type { ListGroup } from '../../widgets/kit/List'
 import { Segmented } from '../../widgets/kit/Segmented'
@@ -64,13 +62,9 @@ import type {
 import type { SavedFilters } from '../filter'
 import { FAR_BELOW, nodeKey, openEnds, pictureLinks } from '../graph'
 import type { PictureCounts } from '../graph'
-import { CHAINS_FIRST, CHAINS_MORE, chainsOf, mapWindow } from '../chain'
-import { STRENGTH_LABEL } from '../observationScope'
+import { CHAINS_FIRST, chainsOf, mapWindow } from '../chain'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
-import { ArchiveDialog } from './ObservationDialogs'
-import { MergePage } from './MergePage'
 import { useMerge } from './useMerge'
-import { MovePage } from './MovePage'
 import { usePageMove } from './useMove'
 import { mergedTo, recordName } from '../mergeScreen'
 import type { MergeKind } from '../merge'
@@ -79,27 +73,27 @@ import { plural } from '../../i18n/strings'
 import { preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
-import { ChainEmpty, ChainFilter } from './ChainBars'
+import { BulkActions, ChainEmpty, ChainFilter, MapWindowBar, ResultsSaid } from './ChainBars'
+import { RecordDialogs, pictureMenuActions, useSolveMap } from './ChainWiring'
 import { observationColumns, recordsBelow, resultGroups, seenGroups, solveGroups, whyGroups } from './ChainLists'
 import type { StageData } from './ChainLists'
 import type { MergedInto, CausePanel } from './Readers'
-import { crossScope, recordMenu, resolveSelected } from './PageReaders'
+import { crossScope, resolveSelected } from './PageReaders'
 import type { DeleteKind, ReaderContext, Selected } from './PageReaders'
 import { RecordFull, RecordPanel, RecordPreview } from './RecordViews'
 import { RecordEditor } from './RecordEditor'
 import type { RecordEditing } from './RecordEditor'
 import { useAnalysisForms } from './useAnalysisForms'
 import {
-  addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, implementedOn, isLive, newExperiment,
-  newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution, setTestStrength,
-  rootsWithoutSolution, seenSinceImplemented, solutionPhase, solutionPlanOf, solutionQuestions, unaddressCause, untestSolution,
+  addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, newExperiment,
+  newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution,
+  rootsWithoutSolution, solutionPhase, solutionPlanOf,
   updateExperiment, updateSolution,
 } from '../solution'
 import type { Solution, SolutionContext, SolutionPhase, SolutionPlan, SolutionWork } from '../solution'
-import { causesForProposal, experimentKey, solutionGraph, solutionKey } from '../solutionGraph'
-import { PHASE_LABEL, QUESTION_LABEL } from '../observationScope'
+import { causesForProposal, experimentKey, solutionKey } from '../solutionGraph'
+import { PHASE_LABEL } from '../observationScope'
 import { SolutionLegend, SolutionPicture } from './SolutionPicture'
-import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
 import type { NewSolution } from './SolutionDialogs'
 import { usePictureFilters, usePictureView } from './usePictureFilters'
 import './Chain.css'
@@ -302,15 +296,6 @@ const READER_WIDTHS = { analysis: READER.default, solutions: READER.default }
 
 /** 1 is the map. Why opens as its map, since that is where a chain is seen; Solve as its list, since it starts at what has no answer. */
 const LENS_FIRST = { analysis: 1, solutions: 0 } as const
-
-const DELETE_TITLE = {
-  observation: 'observation.deleteTitle', cause: 'observation.deleteCauseTitle',
-  solution: 'solution.deleteTitle', experiment: 'solution.deleteTitle',
-} as const
-const DELETE_BODY = {
-  observation: 'observation.deleteBody', cause: 'observation.deleteCauseBody',
-  solution: 'solution.deleteBody', experiment: 'solution.deleteExperimentBody',
-} as const
 
 /**
  * The id a selection is told by: a record's own, as the lists and the agent
@@ -804,49 +789,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
     if (target.kind === 'node') setSelectedKey(target.key)
     setMenu({ target, at })
   }
-  const strengths = (current: CauseLink['strength'], choose: (strength: CauseLink['strength']) => void): MenuAction[] => (
-    (['strong', 'normal', 'weak'] as const).map((strength) => ({
-      key: `strength-${strength}`, label: s(STRENGTH_LABEL[strength]), checked: strength === current,
-      onClick: () => { if (strength !== current) choose(strength) },
-    }))
-  )
-  /**
-   * What the menu offers: the reader's own actions for a record, in its own
-   * words, and for a line the one thing a line is — how strong the link is,
-   * or no link at all. Read-only offers nothing, so the menu does not open.
-   */
-  const menuActions = (target: PictureTarget): MenuAction[] => {
-    if (readOnly) return []
-    if (target.kind === 'explains') {
-      const link = { id: target.id, ...(target.scope !== undefined ? { scope: target.scope } : {}) }
-      return [
-        ...strengths(target.strength, (strength) => commit({ ...analysis, causes: linkCause(causes, target.causeId, { ...link, strength }) })),
-        { key: 'unlink', label: s('observation.unlink'), divider: true, danger: true, onClick: () => unlink(target.causeId, link) },
-      ]
-    }
-    if (target.kind === 'addresses') {
-      return [
-        ...strengths(target.strength, (strength) => commit({ solutions: addressCause(solutions, target.solutionId, { id: target.causeId, strength }) })),
-        {
-          key: 'unlink', label: s('observation.unlink'), divider: true, danger: true,
-          onClick: () => commit({ solutions: unaddressCause(solutions, target.solutionId, target.causeId) }),
-        },
-      ]
-    }
-    if (target.kind === 'tests') {
-      return [
-        ...strengths(target.strength, (strength) => commit({ experiments: setTestStrength(experiments, target.experimentId, target.solutionId, strength) })),
-        {
-          key: 'unlink', label: s('observation.unlink'), divider: true, danger: true,
-          onClick: () => commit({ experiments: untestSolution(experiments, target.experimentId, target.solutionId) }),
-        },
-      ]
-    }
-    const key = target.key
-    const held = resolve(key)
-    if (!held) return []
-    return recordMenu(held, key, readerCtx, { edit: () => setEditingKey(key), ask: (panel) => setAsked({ key, panel }) })
-  }
+  const menuActions = (target: PictureTarget): MenuAction[] => pictureMenuActions(target, {
+    readOnly, s, commit, analysis, causes, solutions, experiments, resolve, readerCtx,
+    edit: (key) => setEditingKey(key), ask: (key, panel) => setAsked({ key, panel }), unlink,
+  })
 
   // --- the maps -------------------------------------------------------------------------
 
@@ -893,6 +839,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       onSelect={setSelectedKey}
       onMenu={openMenu}
       window={chainWindow}
+      showOverview={chainsKept === 0}
       onMore={(card) => {
         if (card.more === 'pile') { setStage('register'); return }
         const { chain } = card
@@ -912,29 +859,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
       s={s}
     />
   )
-  /** Solve draws what the filters left, as Why does. */
-  const { visible, filtering } = f.result
-  const graph = useMemo(() => {
-    const keep = <T,>(list: readonly T[], key: (one: T) => string) => (filtering ? list.filter((one) => visible.has(key(one))) : [...list])
-    return solutionGraph(
-      { observations: keep(observations, (one) => one.id), causes: keep(causes, (one) => one.id) },
-      { solutions: keep(solutions, (one) => solutionKey(one.id)), experiments: keep(experiments, (one) => experimentKey(one.id)) },
-      plans,
-      { below: keep(belowLinked, (one) => nodeKey(one.observation.id, one.scope)), wholeChain, showDropped },
-    )
-  }, [observations, causes, solutions, experiments, plans, belowLinked, wholeChain, showDropped, visible, filtering])
-  const flags = useMemo(() => {
-    const found = new Map<string, { text: string; strong?: boolean }>()
-    for (const cause of orphanRoots) found.set(cause.id, { text: s('solution.flagNoSolution') })
-    for (const one of solutions) {
-      const seenAgain = seenSinceImplemented(one, analysis, belowAll, plans)
-      const questions = solutionQuestions(one, context)
-      if (seenAgain.length) found.set(solutionKey(one.id), { text: s('solution.findingSeenAgain', { names: seenAgain.map((held) => nameOf(held.id, held.scope)).join(', ') }), strong: true })
-      else if (questions.length) found.set(solutionKey(one.id), { text: questions.map((question) => s(QUESTION_LABEL[question])).join(' ') })
-    }
-    return found
-  }, [orphanRoots, solutions, analysis, belowAll, plans, context, s, nameOf])
-  const rootCount = rootCauses(causes).length
+  const { graph, flags } = useSolveMap({
+    observations, causes, solutions, experiments, plans, belowLinked, belowAll, analysis, context, orphanRoots, wholeChain, showDropped, result: f.result, nameOf, s,
+  })
   const phaseCounts = (['idea', 'shaped', 'testing', 'proven', 'adopted', 'implemented'] as const)
     .map((phase) => [phase, solutions.filter((one) => phaseOf(one) === phase).length] as const)
   const solutionsMap = (
@@ -953,13 +880,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // --- what stands on the page ----------------------------------------------------------
 
   const liveCount = liveObservations(observations).length
-  const waitingCount = liveObservations(observations).filter((one) => !one.noted && analysedInto(one.id).length === 0).length
-  const openEndCount = counted.openEnds
-  const builtCount = solutions.filter((one) => isLive(one) && implementedOn(one, plans) !== undefined).length
-  const backCount = solutions.filter((one) => seenSinceImplemented(one, analysis, belowAll, plans).length > 0).length
+  const rootCount = rootCauses(causes).length
   const stageSaid: Record<Tab, ReactNode> = {
-    register: <span data-testid="stage-said">{s('observation.saidSeen', { seen: liveCount, waiting: waitingCount })}</span>,
-    analysis: <span data-testid="stage-said">{s('observation.saidWhy', { causes: causes.filter((one) => !isCauseMerged(causes, one.id)).length, open: openEndCount })}</span>,
+    register: <span data-testid="stage-said">{s('observation.saidSeen', { seen: liveCount, waiting: liveObservations(observations).filter((one) => !one.noted && analysedInto(one.id).length === 0).length })}</span>,
+    analysis: <span data-testid="stage-said">{s('observation.saidWhy', { causes: causes.filter((one) => !isCauseMerged(causes, one.id)).length, open: counted.openEnds })}</span>,
     solutions: (
       <span data-testid="solution-phases" data-guide="solutions.phases">
         <span data-testid="solution-coverage">
@@ -967,49 +891,18 @@ export function ObservationsPage(props: ObservationsPageProps) {
         </span>
       </span>
     ),
-    results: <span data-testid="stage-said">{builtCount === 0 ? s('solution.saidNothingBuilt') : s('solution.saidBuilt', { built: builtCount, back: backCount })}</span>,
+    results: <ResultsSaid solutions={solutions} plans={plans} analysis={analysis} belowAll={belowAll} s={s} />,
   }
   const nothingYet = !f.result.filtering && liveCount === 0 && causes.length === 0 && solutions.length === 0 && experiments.length === 0
     && f.inView.every((one) => one.observations.length === 0 && one.causes.length === 0 && one.solutions.length === 0)
     && !observations.some((one) => isArchived(one) || isMerged(observations, one.id))
 
+  const onMap = lens === 'map' && hasMap(stage)
   const tickable = !readOnly && (stage === 'register' || (stage === 'analysis' && lens === 'list'))
-  const tickedAt = [...ticked].map((key) => {
-    const at = key.lastIndexOf('#')
-    return at < 0 ? { key, id: key, scope: undefined } : { key, id: key.slice(at + 1), scope: key.slice(0, at) }
-  })
-  const oneScope = tickedAt.every((one) => one.scope === tickedAt[0]?.scope)
   const bulk = (
-    <>
-      {stage === 'register' && (
-        <Button
-          variant="primary" size="small" reason={oneScope ? undefined : s('observation.bulkOneScope')} data-testid="bulk-ask-why"
-          onClick={() => { forms.askGroup(tickedAt.map((one) => one.id), tickedAt[0]?.scope); setTicked(new Set()) }}
-        >
-          {s('observation.bulkAskWhy', { count: ticked.size })}
-        </Button>
-      )}
-      <Button
-        size="small" reason={ticked.size < 2 ? s('observation.bulkMergeTwo') : undefined} data-testid="bulk-merge"
-        onClick={() => {
-          const [first, ...rest] = tickedAt.map((one) => ({ scope: one.scope ?? here.scope, id: one.id }))
-          if (first) merging.open(stage === 'register' ? 'observation' : 'cause', first, rest)
-          setTicked(new Set())
-        }}
-      >
-        {s('observation.bulkMerge')}
-      </Button>
-    </>
-  )
-
-  const newButton = readOnly ? undefined : stage === 'solutions' || stage === 'results'
-    ? <Button variant="primary" onClick={() => setProposing(preselectedCause(causes, selected))} data-testid="solution-new" data-guide="solutions.new">{s('solution.new')}</Button>
-    : <Button variant="primary" onClick={forms.openNew} data-testid="observation-new" data-guide="observations.new">{s('observation.new')}</Button>
-  const lensSwitch = hasMap(stage) && (
-    <Segmented
-      label={s('observation.lens')} value={lens} onChange={(next) => { setLens(stage as 'analysis' | 'solutions', next); setSelectedKey(undefined) }}
-      data-guide="observations.lens"
-      options={[{ value: 'list', label: s('observation.lensList') }, { value: 'map', label: s('observation.lensMap') }]}
+    <BulkActions
+      ticked={ticked} stage={stage} here={here.scope} s={s} onClear={() => setTicked(new Set())}
+      onAsk={forms.askGroup} onMerge={merging.open}
     />
   )
   const actions = (
@@ -1023,31 +916,17 @@ export function ObservationsPage(props: ObservationsPageProps) {
       >
         {f.viewLocal ? s('observation.scopesBelowOn') : s('observation.scopesBelowOff')}
       </Button>
-      {lensSwitch}
-      {newButton}
+      {hasMap(stage) && (
+        <Segmented
+          label={s('observation.lens')} value={lens} onChange={(next) => { setLens(stage as 'analysis' | 'solutions', next); setSelectedKey(undefined) }}
+          data-guide="observations.lens"
+          options={[{ value: 'list', label: s('observation.lensList') }, { value: 'map', label: s('observation.lensMap') }]}
+        />
+      )}
+      {!readOnly && (stage === 'solutions' || stage === 'results'
+        ? <Button variant="primary" onClick={() => setProposing(preselectedCause(causes, selected))} data-testid="solution-new" data-guide="solutions.new">{s('solution.new')}</Button>
+        : <Button variant="primary" onClick={forms.openNew} data-testid="observation-new" data-guide="observations.new">{s('observation.new')}</Button>)}
     </span>
-  )
-
-  const onMap = lens === 'map' && hasMap(stage)
-  const chainsShown = chainWindow.shownChains
-  const chainsTotal = chainWindow.totalChains
-  const windowBar = onMap && stage === 'analysis' && !f.result.filtering && chainsTotal > 0 && (
-    <div className="chain-page__window" data-testid="map-window" data-guide="observations.mapWindow">
-      {chainsShown < chainsTotal ? (
-        <>
-          <span>{s('observation.mapTop', { shown: chainsShown, total: chainsTotal })}</span>
-          <Button size="small" onClick={() => keepChains(chainsShown + CHAINS_MORE)} data-testid="map-more">{s('observation.mapShowMore', { count: CHAINS_MORE })}</Button>
-          <Button variant="quiet" size="small" onClick={() => keepChains(0)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
-        </>
-      ) : chainsKept === 0 ? (
-        <>
-          <span>{s('observation.mapAll', { total: chainsTotal })}</span>
-          <Button variant="quiet" size="small" onClick={() => keepChains(CHAINS_FIRST)} data-testid="map-top">{s('observation.mapBackTop', { count: CHAINS_FIRST })}</Button>
-        </>
-      ) : records.loose.length > 0 ? (
-        <Button variant="quiet" size="small" onClick={() => keepChains(0)} data-testid="map-all">{s('observation.mapShowAll')}</Button>
-      ) : <span>{s('observation.mapAll', { total: chainsTotal })}</span>}
-    </div>
   )
 
   const groupOf = selectedKey ? groups.find((one) => one.rows.some((row) => row.id === selectedKey)) : undefined
@@ -1118,7 +997,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
                   actions={actions} s={s}
                 />
               </div>
-              {windowBar}
+              {onMap && stage === 'analysis' && !f.result.filtering && (
+                <MapWindowBar window={chainWindow} kept={chainsKept} loose={records.loose.length} onKeep={keepChains} s={s} />
+              )}
               <div className="chain-page__work" data-testid="observation-body" data-map={onMap || undefined}>
                 <div className="chain-page__main">
                   {!onMap ? list : stage === 'analysis' ? picture : solutionsMap}
@@ -1145,60 +1026,25 @@ export function ObservationsPage(props: ObservationsPageProps) {
         />
         {forms.dialogs}
         {dialogs}
-        <ArchiveDialog
-          subject={archiving ? { id: archiving.id, label: nameOf(archiving.id) } : undefined}
-          onCancel={() => setArchiving(undefined)}
-          onConfirm={(reason) => { if (archiving) archive(archiving.id, reason) }}
-          s={s}
-        />
-        <NotedDialog
-          label={noting ? nameOf(noting.observation.id, noting.scope) : undefined}
-          onCancel={() => setNoting(undefined)} onConfirm={note} s={s}
-        />
-        <MergePage state={merging.state} note={merging.note} onNoteClose={merging.clearNote} s={s} renderMarkdown={props.renderMarkdown} windowChrome={props.windowChrome} />
-        <MovePage state={moving.state} note={moving.note} onNoteClose={moving.clearNote} s={s} windowChrome={props.windowChrome} />
-        <NewSolutionDialog
-          open={Boolean(proposing)}
-          causes={causesForProposal(causes)}
-          causeId={proposing?.causeId}
-          onCancel={() => setProposing(undefined)}
-          onCreate={proposeSolution}
-          renderMarkdown={props.renderMarkdown}
-          s={s}
-        />
-        <AddressDialog
-          subject={addressing ? { id: addressing.id, label: nameOf(addressing.id) } : undefined}
-          candidates={causesForProposal(causes).filter((one) => !addressing?.addresses.some((address) => address.id === one.id))}
-          onCancel={() => setAddressing(undefined)}
-          onConfirm={({ causeId, strength }) => {
+        <RecordDialogs
+          noteLabel={noting ? nameOf(noting.observation.id, noting.scope) : undefined} onNoteCancel={() => setNoting(undefined)} onNote={note}
+          archiving={archiving ? { id: archiving.id, label: nameOf(archiving.id) } : undefined} onArchiveCancel={() => setArchiving(undefined)} onArchive={(reason) => { if (archiving) archive(archiving.id, reason) }}
+          merging={merging} moving={moving} windowChrome={props.windowChrome} renderMarkdown={props.renderMarkdown}
+          proposing={proposing} causes={causes} onProposeCancel={() => setProposing(undefined)} onPropose={proposeSolution}
+          addressing={addressing ? { id: addressing.id, label: nameOf(addressing.id) } : undefined}
+          addressCandidates={causesForProposal(causes).filter((one) => !addressing?.addresses.some((address) => address.id === one.id))}
+          onAddressCancel={() => setAddressing(undefined)}
+          onAddress={({ causeId, strength }) => {
             if (addressing) commit({ solutions: addressCause(solutions, addressing.id, { id: causeId, strength }) })
             setAddressing(undefined)
           }}
-          s={s}
-        />
-        <NewExperimentDialog
-          subject={planning ? { id: planning.id, label: nameOf(planning.id) } : undefined}
-          onCancel={() => setPlanning(undefined)}
-          onCreate={(fields) => { if (planning) addExperiment(planning, fields) }}
-          s={s}
-        />
-        <DropDialog
-          subject={dropping ? { id: dropping.id, label: nameOf(dropping.id) } : undefined}
-          onCancel={() => setDropping(undefined)}
-          onConfirm={(reason) => {
+          planning={planning ? { id: planning.id, label: nameOf(planning.id) } : undefined} onPlanCancel={() => setPlanning(undefined)} onPlan={(fields) => { if (planning) addExperiment(planning, fields) }}
+          dropping={dropping ? { id: dropping.id, label: nameOf(dropping.id) } : undefined} onDropCancel={() => setDropping(undefined)}
+          onDrop={(reason) => {
             if (dropping) commit({ solutions: dropSolution(solutions, dropping.id, reason, today()) })
             setDropping(undefined)
           }}
-          s={s}
-        />
-        <ConfirmDialog
-          open={Boolean(deleting)}
-          title={deleting ? s(DELETE_TITLE[deleting.kind], { name: deleting.label }) : ''}
-          body={deleting ? s(DELETE_BODY[deleting.kind]) : ''}
-          confirmLabel={s('observation.delete')}
-          cancelLabel={s('common.cancel')}
-          onCancel={() => setDeleting(undefined)}
-          onConfirm={remove}
+          deleting={deleting} onDeleteCancel={() => setDeleting(undefined)} onDelete={remove} s={s}
         />
       </LanguageProvider>
     </PageDialog>
@@ -1217,26 +1063,6 @@ function editingOf(held: Selected | undefined, ctx: ReaderContext): RecordEditin
     case 'experiment': return { kind: 'experiment', record: held.experiment, onSave: (patch) => commit({ experiments: updateExperiment(work.experiments, held.experiment.id, patch) }) }
     default: return undefined
   }
-}
-
-/** Noted (decision 13): it leaves the waiting list with a mark, and the reason, where there is one, stays in its history. */
-function NotedDialog({ label, onCancel, onConfirm, s }: { label: string | undefined; onCancel: () => void; onConfirm: (reason: string) => void; s: Translate }) {
-  const [reason, setReason] = useState('')
-  useEffect(() => { if (label) setReason('') }, [label])
-  return (
-    <Dialog
-      open={label !== undefined} title={s('observation.notedTitle')} onClose={onCancel}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="primary" onClick={() => onConfirm(reason.trim())} data-testid="noted-confirm">{s('observation.notedConfirm')}</Button>
-        </>
-      )}
-    >
-      <p>{s('observation.notedBody', { name: label ?? '' })}</p>
-      <TextField label={s('observation.notedReason')} value={reason} onChange={setReason} autoFocus data-testid="noted-reason" />
-    </Dialog>
-  )
 }
 
 /** What a stage says with nothing in it, and it says which it is: filtered away is not nothing there. */

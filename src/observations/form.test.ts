@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { translator } from '../i18n'
-import { addCauseLinked, newObservationProblems, observationBody, observationProblems, recordObservation } from './form'
+import { addCauseLinked, newObservationProblems, observationBody, observationProblems, observationSections, recordObservation } from './form'
 import type { ObservationFields } from './form'
 import { observationTemplate } from './observation'
 import type { Analysis, Cause, Observation } from './observation'
@@ -100,5 +100,25 @@ describe('a new cause with what it explains and what lies behind it', () => {
     })
     expect(next.find((one) => one.id === 'n')).toMatchObject({ root: true, explains: [{ id: 'x9', scope: 'acme/warehouse', strength: 'normal' }] })
     expect(next.find((one) => one.id === 'c2')!.explains).toEqual([])
+  })
+})
+
+describe('a body as its three parts', () => {
+  it('reads what the form wrote, and writes it back to the letter', () => {
+    const parts = { saw: 'Two labels.\n\nOn every parcel.', evidence: '- A count', affected: 'Packers' }
+    const body = observationBody(parts, t)
+    expect(observationSections(body, t)).toEqual(parts)
+    expect(observationBody(observationSections(body, t)!, t)).toBe(body)
+  })
+
+  it('reads the template as three empty parts', () => {
+    expect(observationSections(observationTemplate(t), t)).toEqual({ saw: '', evidence: '', affected: '' })
+  })
+
+  it('has no three parts where the text holds anything else: it is written as one, and never rewritten', () => {
+    expect(observationSections('Plain text', t)).toBeUndefined()
+    expect(observationSections('## What we saw\n\nA', t)).toBeUndefined()
+    expect(observationSections(`${observationTemplate(t)}\n## Notes\n\nB`, t)).toBeUndefined()
+    expect(observationSections(`Intro\n\n${observationTemplate(t)}`, t)).toBeUndefined()
   })
 })

@@ -23,7 +23,7 @@
  * The form says what it wants and the page performs it: the page owns the lists,
  * the numbering and where the step lands.
  */
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'

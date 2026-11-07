@@ -110,7 +110,7 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
   const set = (field: string, value: string) => setDraft((held) => ({ ...held, [field]: value }))
   const body = sections ? observationBody(sections, s) : draft.body
   // Opened on the template's text, with nothing typed, is unchanged.
-  const startBody = useMemo(() => (sections ? observationBody(observationSections(editing.record.body, s) as ObservationSections, s) : editing.record.body), [editing.record.body, s]) // eslint-disable-line react-hooks/exhaustive-deps
+  const startBody = useMemo(() => (sections ? observationBody(observationSections(editing.record.body, s) as ObservationSections, s) : editing.record.body), [editing.record.body, s])
   const start = useMemo(() => draftOf(editing), [editing])
 
   const problems = editing.kind === 'observation'

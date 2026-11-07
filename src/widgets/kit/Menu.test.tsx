@@ -138,6 +138,13 @@ describe('Menu', () => {
     renderShell(<MoreMenu items={[]} />, { language: 'nl' })
     expect(screen.getByRole('button', { name: 'Meer' })).toBeTruthy()
   })
+
+  it('says in full what an entry does on hover, its label staying its name', () => {
+    renderShell(<MoreMenu label="More" items={[{ label: 'Merge…', hint: 'Fold these into one.', onSelect: () => {}, 'data-testid': 'merge' }]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    expect(screen.getByTestId('merge').getAttribute('title')).toBe('Fold these into one.')
+    expect(screen.getByRole('menuitem', { name: 'Merge…' })).toBeTruthy()
+  })
 })
 
 describe('what holds a refused choice', () => {

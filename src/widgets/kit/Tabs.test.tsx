@@ -92,4 +92,9 @@ describe('rovedIndex', () => {
     expect(rovedIndex('Enter', 0, 3)).toBeUndefined()
     expect(rovedIndex('ArrowDown', 0, 0)).toBeUndefined()
   })
+
+  it('carries a stable name per tab where a screen gives one', () => {
+    renderShell(<Tabs label="Stages" value="a" onChange={() => {}} items={[{ value: 'a', label: 'A', guide: 'x.a', testId: 'tab-a' }]} />)
+    expect(screen.getByTestId('tab-a').getAttribute('data-guide')).toBe('x.a')
+  })
 })

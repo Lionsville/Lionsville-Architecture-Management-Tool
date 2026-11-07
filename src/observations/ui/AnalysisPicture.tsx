@@ -80,6 +80,8 @@ export type AnalysisPictureProps = {
   onDragLink?: (from: string, to: string) => void
   /** What the dock holds beyond the zoom. */
   dockExtra?: ReactNode
+  /** Everything is drawn, so the map may run far past the window: say where the window stands. */
+  showOverview?: boolean
   s: Translate
 }
 
@@ -123,7 +125,7 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
   const large = size !== 'small'
 
   return (
-    <PictureFrame content={picture} view={view} label={s('observation.tabAnalysis')} dockExtra={props.dockExtra} overview={drawnWindow !== undefined && drawnWindow.shownChains === drawnWindow.totalChains ? { nodes: picture.nodes, slot: PICTURE_SIZE[size] } : undefined}>
+    <PictureFrame content={picture} view={view} label={s('observation.tabAnalysis')} dockExtra={props.dockExtra} overview={props.showOverview ? { nodes: picture.nodes, slot: PICTURE_SIZE[size] } : undefined}>
       {picture.nodes.length === 0 ? (
         <PageState compact state="empty" title={filtered ? s('observation.filterNothing') : s('observation.graphEmpty')} />
       ) : (

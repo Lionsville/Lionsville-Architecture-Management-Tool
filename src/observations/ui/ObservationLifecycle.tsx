@@ -11,16 +11,14 @@
  * through the same rules the agent uses.
  *
  * Beside it, the small pieces the page reads off the same records: the words
- * for an experiment's moves, making a root cause and a cause again, the
- * register's empty line, the cause a new solution starts from, and the crumbs.
+ * for an experiment's moves, making a root cause and a cause again, and the cause
+ * a new solution starts from.
  */
 import { useState, type ReactNode } from 'react'
-import Button from '@mui/material/Button'
 import type { Translate } from '../../i18n'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { AddIcon } from '../../widgets/icons'
 import {
-  causeEvidence, causeLabel, isArchived, isMerged, isRootCause, makeCause, makeRootCause, seenAgain, verifyCause,
+  causeEvidence, causeLabel, isRootCause, makeCause, makeRootCause, seenAgain, verifyCause,
 } from '../observation'
 import type { Cause, CauseAbove, Observation } from '../observation'
 import { concludeExperiment, formatSolutionNumber, isConcluded, reopenWithdraws } from '../solution'
@@ -199,43 +197,6 @@ export function experimentMoveLabel(from: ExperimentOutcome, to: ExperimentOutco
 }
 
 /**
- * The line an empty register shows with no search typed: how many archived
- * records it is hiding and the way to show them, so an empty list does not
- * read as nothing ever seen — or, where nothing is hidden, that nothing was,
- * with the way to record the first one where the page may write.
- */
-export function EmptyRegister({ observations, showArchived, onShowArchived, onNew, readOnly = false, filtering = false, s }: {
-  observations: readonly Observation[]
-  showArchived: boolean
-  onShowArchived: () => void
-  /** Record one, where the page may write. */
-  onNew?: () => void
-  readOnly?: boolean
-  /** A filter is on: what it hid is the filter's doing, and it says so (ADR-0032 §8). */
-  filtering?: boolean
-  s: Translate
-}) {
-  if (filtering) return <>{s('observation.filterNothing')}</>
-  const archived = observations.filter((one) => isArchived(one) && !isMerged(observations, one.id)).length
-  // The top bar's button carries the guide's name; this one is a second way in, and has none.
-  const record = onNew && !readOnly && (
-    <Button size="small" variant="outlined" startIcon={<AddIcon size={14} />} onClick={onNew} sx={{ textTransform: 'none', ml: 1 }} data-testid="observation-empty-new">
-      {s('observation.new')}
-    </Button>
-  )
-  if (archived === 0 || showArchived) return <>{s('observation.listEmpty')}{record}</>
-  return (
-    <>
-      {s('observation.listArchivedOnly', { count: archived })}
-      <Button size="small" onClick={onShowArchived} sx={{ textTransform: 'none', ml: 1 }} data-testid="observation-show-archived">
-        {s('observation.showArchived')}
-      </Button>
-      {record}
-    </>
-  )
-}
-
-/**
  * The cause a new solution is for, from what is selected: the root cause
  * being read, or the first root cause the solution being read addresses.
  * Only a cause the dialog offers — a root — is preselected.
@@ -249,18 +210,4 @@ export function preselectedCause(
   if (selected?.cause && offered(selected.cause.id)) return { causeId: selected.cause.id }
   const first = selected?.solution?.addresses.find((address) => offered(address.id))
   return first ? { causeId: first.id } : {}
-}
-
-/**
- * Where the page is, root first: the scopes above as the bar names them —
- * the group's name where the host gives no crumbs — then this one. An empty
- * name, the root before anybody named it, is left out rather than drawn as a
- * crumb with nothing in it.
- */
-export function crumbTrail(
-  crumbs: readonly { name: string }[] | undefined, groupName: string, scopeName: string,
-): string[] {
-  return [...(crumbs ? crumbs.map((crumb) => crumb.name) : [groupName]), scopeName]
-    .map((name) => name.trim())
-    .filter(Boolean)
 }
