@@ -27,6 +27,15 @@
  * rather than carries steps, it is written at once, so the merge is kept
  * when it is said to be (as a gesture across scopes is, `useGestures`).
  *
+ * **Where the source carries steps, the open scope's part goes in the same
+ * apply** (`published`). There is nothing unwritten to protect once the session's
+ * own steps are answered (`ScopeRepository.settle`), a server can only hold a
+ * change to what it says if it sees all of it at once — a record arriving from a
+ * scope that let it go, a thread brought home to where it was taken from — and two
+ * applies are two chances for half a change to stand. The part comes back to the
+ * session like any other step on the scope, so it is on no page's undo stack:
+ * across scopes there was only ever half of it to undo.
+ *
  * **Who may change what is asked first.** Nothing is written unless the
  * person may change every scope the change writes (`writable`); the
  * repository refuses a scope it will not let them write anyway
@@ -63,8 +72,10 @@ export type AcrossDeps = {
   writable: (path: ScopePath) => boolean
   /** Write what the session holds now, and reject where it did not land. */
   save: () => Promise<void>
-  /** The source carries every step of the open scope (`publishesSteps`): its dispatch is its write. */
+  /** The source carries every step of the open scope (`publishesSteps`): the open scope's part goes in the one apply. */
   published?: boolean
+  /** How long the session is given to hear its own part back before the answer is given anyway. */
+  echoWithinMs?: number
   /**
    * Whose steps these are, where not the person's: an agent's merge across
    * the tree (ADR-0035 §6) marks every scope's step its own, as every other
@@ -107,7 +118,8 @@ function workOut(
 ): Worked {
   const models = new Map<ScopePath, Model>()
   for (const [path, one] of held) models.set(path, fromArrays(one.model))
-  if (paths.includes(deps.scope)) models.set(deps.scope, deps.session.indexed())
+  // Read from the session unless it goes in the apply: then it is written against what was read, like the rest.
+  if (paths.includes(deps.scope) && !held.has(deps.scope)) models.set(deps.scope, deps.session.indexed())
   const next = change(new Map([...models].map(([path, model]) => [path, workOf(model)])))
   if (next === undefined) return { stop: { ok: false, reason: 'unchanged' } }
   if ('refused' in next) return { stop: { ok: false, reason: 'refused', refused: next.refused as string } }
@@ -120,7 +132,7 @@ function workOut(
     if (!made) continue
     const step: Command = deps.origin ? { ...made, origin: deps.origin } : made
     if (!deps.writable(path)) return { stop: { ok: false, reason: 'shell.scopeReadOnly', scope: path } }
-    if (path === deps.scope) open = step
+    if (path === deps.scope && !held.has(path)) open = step
     else steps.set(path, [step])
   }
   if (open) {
@@ -131,14 +143,29 @@ function workOut(
   return { steps, ...(open ? { open } : {}) }
 }
 
+const ECHO_WITHIN_MS = 3000
+
+/** The session moved on from `before`: what a caller reads next is what landed, where it comes back in time. */
+async function heardBack(session: AcrossSession, before: Model, within: number): Promise<void> {
+  const until = Date.now() + within
+  while (session.indexed() === before && Date.now() < until) await new Promise((next) => { setTimeout(next, 20) })
+}
+
 /**
  * Land `change` over the scopes at `paths`: the other scopes in one apply,
- * then the open scope's part through its session. Answers where it went.
+ * then the open scope's part through its session, or in that apply where the
+ * source carries steps. Answers where it went.
  */
 export async function landAcross(deps: AcrossDeps, paths: readonly ScopePath[], change: Parameters<ChangeAcross>[1]): Promise<ChangedAcross> {
-  const others = [...new Set(paths)].filter((path) => path !== deps.scope)
+  const together = deps.published === true && paths.includes(deps.scope)
+  const others = [...new Set(paths)].filter((path) => together || path !== deps.scope)
   let worked: Worked | undefined
+  let before: Model | undefined
   try {
+    if (together) {
+      await deps.scopes.settle?.(deps.scope)
+      before = deps.session.indexed()
+    }
     const landed = await changeScopes(deps.scopes, others, (held) => {
       worked = workOut(deps, paths, held, change)
       return 'stop' in worked ? undefined : worked.steps
@@ -151,6 +178,7 @@ export async function landAcross(deps: AcrossDeps, paths: readonly ScopePath[], 
   }
   if (!worked || 'stop' in worked) return worked?.stop ?? { ok: false, reason: 'unchanged' }
   const changed = [...worked.steps.keys()]
+  if (before && changed.includes(deps.scope)) await heardBack(deps.session, before, deps.echoWithinMs ?? ECHO_WITHIN_MS)
   if (!worked.open) return { ok: true, changed }
   const elsewhere = changed.length > 0
   if (deps.session.dispatch({ ...worked.open, ...(elsewhere ? { barrier: ACROSS_BARRIER } : {}) }) === undefined) {

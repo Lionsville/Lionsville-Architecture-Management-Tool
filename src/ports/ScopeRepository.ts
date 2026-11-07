@@ -187,6 +187,14 @@ export interface ScopeRepository {
   apply(work: readonly StepsFor[]): Promise<Applied | Refused>
 
   /**
+   * Where a session's steps travel apart from {@link apply}: wait until those the
+   * session has made on this scope are answered, so a read sees them. Absent where
+   * a session writes through {@link apply} itself; a change that writes the scope
+   * a session follows asks this first (`app/useChangeAcross`).
+   */
+  settle?(address: ScopeAddress): Promise<void>
+
+  /**
    * A new scope at an address, with a new identity and an empty model named
    * as it is told. The scopes above it that are not there are created too,
    * each named after its own last address segment: a scope filed under nothing

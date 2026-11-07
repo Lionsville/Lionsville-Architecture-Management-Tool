@@ -144,11 +144,35 @@ describe('landing a change on several scopes', () => {
     expect(open.dispatched).toEqual([])
   })
 
-  it('leaves the writing to the source where it carries every step, and says so where writing failed', async () => {
+  it('writes the open scope in the one apply where the source carries every step, after its own steps are answered', async () => {
     const { scopes } = await tree()
-    const carried = deps(scopes, { published: true })
-    await landAcross(carried.deps, ['', 'claims'], everywhere)
+    const asked: string[] = []
+    const applied: string[][] = []
+    const carrying: BelowScopes = {
+      tree: () => scopes.tree(), state: (id) => scopes.state(id),
+      settle: (address) => { asked.push(address); return Promise.resolve() },
+      apply: (work) => { applied.push(work.map((one) => one.scope)); return scopes.apply(work) },
+    }
+    const carried = deps(carrying, { published: true, echoWithinMs: 0 })
+    expect(await landAcross(carried.deps, ['', 'claims'], everywhere)).toMatchObject({ ok: true })
+    expect(asked).toEqual([''])
+    // Both scopes, once, and nothing through the session: what comes back to it is what landed.
+    expect(applied).toHaveLength(1)
+    expect(applied[0]).toHaveLength(2)
+    expect(carried.open.dispatched).toEqual([])
     expect(carried.saved()).toBe(0)
+    expect((await readScope(scopes, ''))?.model.observations?.[0]?.seen).toBe(3)
+  })
+
+  it('leaves a source that carries steps alone where the open scope is no part of the change', async () => {
+    const { scopes } = await tree()
+    const carried = deps(scopes, { published: true, echoWithinMs: 0 })
+    expect(await landAcross(carried.deps, ['claims'], (held) => new Map([['claims', seenAgain(held.get('claims')!)]]))).toEqual({ ok: true, changed: ['claims'] })
+    expect(carried.open.dispatched).toEqual([])
+  })
+
+  it('says so where writing failed', async () => {
+    const { scopes } = await tree()
     const failing = deps(scopes, { save: () => Promise.reject(new Error('disk full')) })
     expect(await landAcross(failing.deps, ['', 'claims'], everywhere)).toEqual({ ok: true, changed: ['claims', ''], unsaved: true })
   })
