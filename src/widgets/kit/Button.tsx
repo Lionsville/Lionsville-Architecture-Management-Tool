@@ -89,6 +89,8 @@ type IconButtonProps = Omit<NativeButton, 'aria-label'> & {
   reason?: string
   /** A toggle, on or off. */
   pressed?: boolean
+  /** What the tooltip says in place of the label, where there is more to say: the step an undo takes back, its keys. */
+  tip?: string
   children: ReactNode
 }
 
@@ -96,10 +98,10 @@ type IconButtonProps = Omit<NativeButton, 'aria-label'> & {
  * A control with a glyph for its only face, for the few places a word has no
  * room: ⋯, close, back. A bar's acts stay words.
  */
-export function IconButton({ label, size = 'normal', reason, pressed, children, onClick, type = 'button', ...rest }: IconButtonProps) {
+export function IconButton({ label, size = 'normal', reason, pressed, tip, children, onClick, type = 'button', ...rest }: IconButtonProps) {
   const refused = reason !== undefined && reason !== ''
   return (
-    <Tooltip title={refused ? `${label}: ${reason}` : label} names={!refused}>
+    <Tooltip title={refused ? `${label}: ${reason}` : tip ?? label} names={!refused && tip === undefined}>
       <button
         {...rest}
         type={type}

@@ -429,12 +429,8 @@ function UndoRedo({ facts, s }: { facts: ScreenFacts | undefined; s: Translate }
   const { undo, redo } = facts ?? {}
   return (
     <>
-      <Tooltip title={undo?.name ?? s('toolbar.undoTip')}>
-        <span><IconButton label={s('toolbar.undo')} size="small" disabled={!undo?.can} onClick={() => undo?.run()}><UndoIcon size={16} /></IconButton></span>
-      </Tooltip>
-      <Tooltip title={redo?.name ?? s('toolbar.redoTip')}>
-        <span><IconButton label={s('toolbar.redo')} size="small" disabled={!redo?.can} onClick={() => redo?.run()}><RedoIcon size={16} /></IconButton></span>
-      </Tooltip>
+      <IconButton label={s('toolbar.undo')} tip={undo?.name ?? s('toolbar.undoTip')} size="small" disabled={!undo?.can} onClick={() => undo?.run()}><UndoIcon size={16} /></IconButton>
+      <IconButton label={s('toolbar.redo')} tip={redo?.name ?? s('toolbar.redoTip')} size="small" disabled={!redo?.can} onClick={() => redo?.run()}><RedoIcon size={16} /></IconButton>
     </>
   )
 }

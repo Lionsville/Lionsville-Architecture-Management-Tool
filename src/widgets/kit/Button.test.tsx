@@ -105,6 +105,18 @@ describe('IconButton', () => {
     expect(await axeFindings()).toEqual([])
   })
 
+  it('says its tip in one tooltip where it has more to say, and keeps its label as its name', async () => {
+    renderShell(<IconButton label="Undo" tip="Undo (⌘Z)"><span aria-hidden>x</span></IconButton>)
+    const button = screen.getByRole('button', { name: 'Undo' })
+    fireEvent.mouseOver(button)
+    const tips = await screen.findAllByRole('tooltip')
+    expect(tips.map((tip) => tip.textContent)).toEqual(['Undo (⌘Z)'])
+  })
+
+  it('stays quiet when it is off, rather than drawn as if pressed', () => {
+    expect(STYLES).toMatch(/\.kit-button\[data-variant='quiet'\]:disabled \{ background: transparent; border-color: transparent; \}/)
+  })
+
   it('says why it is refused beside its name, and does nothing', async () => {
     const pressed = vi.fn()
     renderShell(<IconButton label="Delete" reason="Three views draw it" onClick={pressed}><span aria-hidden>x</span></IconButton>)

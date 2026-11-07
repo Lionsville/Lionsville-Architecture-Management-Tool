@@ -28,6 +28,8 @@
 .kit-button[data-variant='quiet'] { background: transparent; border-color: transparent; }
 .kit-button[data-variant='quiet']:hover { background: var(--surface-2); }
 .kit-button[data-variant='quiet']:active { background: var(--line); }
+/* A quiet control that is off stays quiet, by specificity over the refused look below: a filled ground would read as pressed. */
+.kit-button[data-variant='quiet']:disabled { background: transparent; border-color: transparent; }
 
 .kit-button[data-variant='danger'] { background: var(--surface); border-color: var(--bad); color: var(--bad); }
 .kit-button[data-variant='danger']:hover { background: var(--bad-soft); }
