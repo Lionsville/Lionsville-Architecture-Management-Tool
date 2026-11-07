@@ -17,6 +17,8 @@ import {
   freeSlotIn,
   freeZonePosition,
   rectsIntersect,
+  refitBand,
+  spotNear,
   DESCRIPTION_TYPE,
   descriptionLineClamp,
   diagramWithLivePlacements,
@@ -26,6 +28,7 @@ import {
   NODE_SIZES,
   nodeMaxSize,
   nodeMinSize,
+  placementRect,
   placementSize,
   rectContains,
   unionRects,
@@ -78,6 +81,118 @@ describe('descriptionLineClamp', () => {
     expect(
       descriptionLineClamp('application', NODE_SIZES.application.height + 2 * lineHeightOf('application')),
     ).toBe(4);
+  });
+});
+
+describe('refitBand', () => {
+  const tool = (id: string, x: number, y: number, size: { width?: number; height?: number } = {}) => ({
+    placement: { id, zone: 'management' as const, x, y, ...size },
+    figure: 'managementTool' as const,
+  });
+  const whereOf = (moved: { id: string; x: number; y: number }[]) =>
+    Object.fromEntries(moved.map(({ id, x, y }) => [id, { x, y }]));
+  /** Every pair of the band's cards that overlap, once the moved ones have moved. */
+  const overlaps = (members: ReturnType<typeof tool>[], moved: { id: string; x: number; y: number }[]) => {
+    const placed = members.map(({ placement, figure }) => ({
+      figure,
+      ...placement,
+      ...moved.find((m) => m.id === placement.id),
+    }));
+    return placed.flatMap((a, i) => placed.slice(i + 1)
+      .filter((b) => rectsIntersect(placementRect(a.figure, a), placementRect(b.figure, b)))
+      .map((b) => `${a.id}+${b.id}`));
+  };
+  const inside = (band: Rect, rect: Rect) =>
+    rect.x >= band.x && rect.y >= band.y &&
+    rect.x + rect.width <= band.x + band.width && rect.y + rect.height <= band.y + band.height;
+
+  it('moves no card that still fits, on a board of any size', () => {
+    const members = [tool('a', 100, 900), tool('b', 300, 950)];
+    expect(refitBand(members, undefined, { canvas: { width: 1200, height: 1040 } })).toEqual([]);
+    expect(refitBand(members, undefined, undefined)).toEqual([]);
+  });
+
+  it('takes every row along when a taller board moves the band away', () => {
+    const members = [tool('a', 100, 884), tool('b', 300, 884), tool('c', 100, 960), tool('d', 300, 960)];
+    const moved = refitBand(members, undefined, { canvas: { width: 1717, height: 1392 } });
+    expect(whereOf(moved)).toEqual({
+      a: { x: 100, y: 1236 }, b: { x: 300, y: 1236 },
+      c: { x: 100, y: 1312 }, d: { x: 300, y: 1312 },
+    });
+  });
+
+  it('keeps what the cards were to each other when they fit only together', () => {
+    // Past the right edge of the smaller board, and all of them can come in.
+    const members = [tool('a', 1300, 900), tool('b', 1450, 960), tool('c', 100, 950)];
+    const moved = refitBand(members, undefined, { canvas: { width: 1400, height: 1040 } });
+    expect(whereOf(moved)).toEqual({ a: { x: 1090, y: 900 }, b: { x: 1240, y: 960 } });
+  });
+
+  it('never stacks a row a smaller board cannot hold across its width', () => {
+    const members = Array.from({ length: 8 }, (_, i) => tool(`t${i}`, 200 + i * 180, 930));
+    const geometry = { canvas: { width: 900, height: 700 } };
+    const moved = refitBand(members, undefined, geometry);
+    expect(overlaps(members, moved)).toEqual([]);
+    const band = zoneRect('management', geometry);
+    for (const placement of moved) expect(inside(band, placementRect('managementTool', placement))).toBe(true);
+    expect(new Set(moved.map(({ x, y }) => `${x},${y}`)).size).toBe(moved.length);
+  });
+
+  it('keeps a card that fits where it is even when the others need its place', () => {
+    // 40 taller: the lower row is still inside the band and the upper is not.
+    const stays = tool('stays', 100, 960);
+    const members = [stays, tool('out', 100, 884)];
+    const moved = refitBand(members, undefined, { canvas: { width: 1680, height: 1120 } });
+    expect(moved.map(({ id }) => id)).toEqual(['out']);
+    expect(overlaps(members, moved)).toEqual([]);
+  });
+
+  it('draws a row closer together, in its order, while there is room to', () => {
+    const members = [tool('a', 100, 930), tool('b', 700, 930), tool('c', 1300, 930)];
+    const moved = refitBand(members, undefined, { canvas: { width: 1000, height: 1300 } });
+    expect(whereOf(moved)).toEqual({ a: { x: 0, y: 1190 }, b: { x: 420, y: 1190 }, c: { x: 840, y: 1190 } });
+  });
+
+  it('gives a band too small for its cards a different place for each', () => {
+    const members = Array.from({ length: 30 }, (_, i) => tool(`t${i}`, 100 + i * 50, 960));
+    const geometry = { canvas: { width: 840, height: 520 }, zones: { management: { size: 90 } } };
+    const moved = refitBand(members, undefined, geometry);
+    expect(new Set(moved.map(({ x, y }) => `${x},${y}`)).size).toBe(moved.length);
+    const band = zoneRect('management', geometry);
+    for (const placement of moved) expect(inside(band, placementRect('managementTool', placement))).toBe(true);
+  });
+
+  it('gives up a size the user set, and never invents one', () => {
+    const geometry = { canvas: { width: 840, height: 520 }, zones: { management: { size: 90 } } };
+    const moved = refitBand([tool('tall', 20, 900, { height: 150 }), tool('plain', 400, 900)], undefined, geometry);
+    expect(moved.find(({ id }) => id === 'tall')?.height).toBe(90);
+    expect(moved.find(({ id }) => id === 'plain')?.height).toBeUndefined();
+  });
+
+  it('leaves the landscape to itself', () => {
+    const card = { placement: { id: 'a', zone: 'landscape' as const, x: 5000, y: 5000 }, figure: 'application' as const };
+    expect(refitBand([card], undefined, { canvas: { width: 840, height: 520 } })).toEqual([]);
+  });
+});
+
+describe('spotNear', () => {
+  const card = (x: number, y: number): Rect => ({ x, y, width: 100, height: 40 });
+  const area: Rect = { x: 0, y: 0, width: 1000, height: 200 };
+
+  it('answers the nearest place on a lattice from the corner, inside the area', () => {
+    expect(spotNear(card(300, 50), area, [])).toEqual({ x: 354, y: 56 });
+    expect(spotNear(card(5000, 500), area, [])).toEqual({ x: 900, y: 160 });
+  });
+
+  it('skips a place somebody already holds', () => {
+    expect(spotNear(card(354, 56), area, [card(354, 56)])).toEqual({ x: 354, y: 0 });
+  });
+
+  it('is the least covered place when nothing is free', () => {
+    const small: Rect = { x: 0, y: 0, width: 100, height: 40 };
+    expect(spotNear(card(0, 0), small, [card(0, 0)])).toEqual({ x: 0, y: 0 });
+    const narrow: Rect = { x: 0, y: 0, width: 150, height: 40 };
+    expect(spotNear(card(0, 0), narrow, [card(0, 0)])).toEqual({ x: 50, y: 0 });
   });
 });
 

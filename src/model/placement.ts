@@ -304,10 +304,11 @@ export function descriptionLineClamp(figure: NodeFigure, height: number | undefi
 }
 
 /**
- * Keep a band member inside its band, for when the board — and with it the band
- * — shrinks. The node slides back in, and a size the user set explicitly gives
- * way to the band; a node left at its canonical size keeps it, so shrinking the
- * board never invents a stored size. Returns undefined when nothing moves.
+ * Keep one band member inside its band. The node slides back in, and a size the
+ * user set explicitly gives way to the band; a node left at its canonical size
+ * keeps it, so this never invents a stored size. Returns undefined when nothing
+ * moves. A whole band is {@link refitBand}'s, because this answers each card
+ * alone and every card past an edge the same.
  */
 export function clampPlacementIntoZone(
   placement: PlacedNode,
@@ -330,6 +331,150 @@ export function clampPlacementIntoZone(
     width === placement.width &&
     height === placement.height;
   return unchanged ? undefined : { ...placement, x, y, width, height };
+}
+
+/**
+ * A band's members after the board changed under them, as the placements that
+ * have to change.
+ *
+ * Each card alone in {@link clampPlacementIntoZone} is the wrong question for
+ * more than one of them: every card past an edge is sent to that edge, so a
+ * shrink lands a row on one spot, and a bottom band moved by a taller board
+ * flattens its rows onto its top line. So a card that still fits stays exactly
+ * where it is, and the ones that do not move as what they are: by what the band
+ * itself moved, then together as far as it takes to bring them in, drawn closer
+ * together on an axis the band has become too short for. Only when that lands
+ * on another card does each take the nearest free place ({@link spotNear}).
+ */
+export function refitBand(
+  members: readonly { placement: PlacedNode; figure: NodeFigure }[],
+  before: BoardGeometry | undefined,
+  after: BoardGeometry | undefined,
+): PlacedNode[] {
+  const byZone = new Map<Layer7Zone, (typeof members)[number][]>();
+  for (const member of members) {
+    const zone = member.placement.zone;
+    if (zone === undefined || zone === 'landscape') continue;
+    const held = byZone.get(zone);
+    if (held) held.push(member);
+    else byZone.set(zone, [member]);
+  }
+  return [...byZone].flatMap(([zone, held]) => refitOneBand(zone, held, before, after));
+}
+
+function refitOneBand(
+  zone: Layer7Zone,
+  members: readonly { placement: PlacedNode; figure: NodeFigure }[],
+  before: BoardGeometry | undefined,
+  after: BoardGeometry | undefined,
+): PlacedNode[] {
+  const band = zoneRect(zone, after);
+  const was = zoneRect(zone, before);
+  const staying: Rect[] = [];
+  const stranded: { sized: PlacedNode; rect: Rect }[] = [];
+  for (const { placement, figure } of members) {
+    const clamped = clampPlacementIntoZone(placement, figure, after);
+    if (!clamped) {
+      staying.push(placementRect(figure, placement));
+      continue;
+    }
+    const size = placementSize(figure, clamped);
+    stranded.push({
+      sized: clamped,
+      rect: { x: placement.x + band.x - was.x, y: placement.y + band.y - was.y, ...size },
+    });
+  }
+  const block = unionRects(stranded.map(({ rect }) => rect));
+  if (!block) return [];
+
+  const together = stranded.map(({ rect }) => ({
+    ...rect,
+    x: fitAlong(rect.x, rect.width, block.x, block.width, band.x, band.width),
+    y: fitAlong(rect.y, rect.height, block.y, block.height, band.y, band.height),
+  }));
+  const squeezed = block.width > band.width || block.height > band.height;
+  const clear =
+    !together.some((rect) => staying.some((other) => rectsIntersect(rect, other))) &&
+    // A squeeze must not make an overlap. Without one the cards are what they
+    // were to each other, and an overlap they had is theirs.
+    !(squeezed && together.some((rect, i) => together.slice(i + 1).some((other) => rectsIntersect(rect, other))));
+  if (clear) return stranded.map(({ sized }, i) => ({ ...sized, x: together[i].x, y: together[i].y }));
+
+  // One at a time, in reading order, each clear of the cards already settled.
+  const taken = [...staying];
+  return stranded
+    .map(({ sized }, i) => ({ sized, rect: together[i] }))
+    .sort((a, b) => a.rect.y - b.rect.y || a.rect.x - b.rect.x)
+    .map(({ sized, rect }) => {
+      const spot = spotNear(rect, band, taken);
+      taken.push({ ...rect, ...spot });
+      return { ...sized, ...spot };
+    });
+}
+
+/**
+ * Where a card lands on one axis when the block it is part of is brought inside
+ * the band: the one shift that does it, or, on a band shorter than the block,
+ * the same fraction of the way along the band as it was along the block.
+ */
+function fitAlong(
+  at: number, length: number,
+  blockAt: number, blockLength: number,
+  bandAt: number, bandLength: number,
+): number {
+  if (blockLength <= bandLength) {
+    return at + Math.min(Math.max(blockAt, bandAt), bandAt + bandLength - blockLength) - blockAt;
+  }
+  if (length >= bandLength || length >= blockLength) return bandAt;
+  return bandAt + ((at - blockAt) * (bandLength - length)) / (blockLength - length);
+}
+
+/**
+ * The place nearest `rect` for a card of its size, inside `area`, that overlaps
+ * none of `occupied`. It looks on a lattice a card and a gap apart from the
+ * area's corner, which is what gets the most rows out of a shallow band. When
+ * that has no room left, a finer one's least covered place answers: a band too
+ * small for its cards still shows each of them, overlapping.
+ */
+export function spotNear(rect: Rect, area: Rect, occupied: readonly Rect[]): { x: number; y: number } {
+  const target = {
+    x: Math.max(Math.min(rect.x, area.x + area.width - rect.width), area.x),
+    y: Math.max(Math.min(rect.y, area.y + area.height - rect.height), area.y),
+  };
+  const best = (divide: number) => {
+    const xs = latticeStops(area.x, area.x + area.width - rect.width, (rect.width + CASCADE_GAP_X) / divide);
+    const ys = latticeStops(area.y, area.y + area.height - rect.height, (rect.height + CASCADE_GAP_Y) / divide);
+    let found = { ...target, covered: Infinity, away: Infinity };
+    for (const x of xs) {
+      for (const y of ys) {
+        let covered = 0;
+        for (const other of occupied) {
+          const wide = Math.min(x + rect.width, other.x + other.width) - Math.max(x, other.x);
+          const high = Math.min(y + rect.height, other.y + other.height) - Math.max(y, other.y);
+          if (wide > 0 && high > 0) covered += wide * high;
+          // Squarely on another card is the one thing that hides it.
+          if (other.x === x && other.y === y) covered = Infinity;
+        }
+        const away = (x - target.x) ** 2 + (y - target.y) ** 2;
+        if (covered < found.covered || (covered === found.covered && away < found.away)) {
+          found = { x, y, covered, away };
+        }
+      }
+    }
+    return found;
+  };
+  const whole = best(1);
+  const { x, y } = whole.covered === 0 ? whole : best(4);
+  return { x, y };
+}
+
+/** Every `step` from `from` up to `to`, and `to` itself. */
+function latticeStops(from: number, to: number, step: number): number[] {
+  const end = Math.max(from, to);
+  const stops: number[] = [];
+  for (let at = from; at < end; at += step) stops.push(at);
+  stops.push(end);
+  return stops;
 }
 
 export function placementSize(

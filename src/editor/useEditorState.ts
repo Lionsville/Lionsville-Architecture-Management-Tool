@@ -17,8 +17,8 @@ import type { IdPolicy } from '../model/keys';
 import type { BoardPatch, Command, CommandMeta } from '../model/commands';
 import { placedNodes,
   canPlaceKind,
-  clampPlacementIntoZone,
   placementRect,
+  refitBand,
 } from '../model/placement';
 import { edgeRoutesEqual } from '../model/equality';
 import { edgeRoutesOf,
@@ -1300,7 +1300,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // at render time stranded their nodes: the second row of a deep actors
         // band drew inside the landscape while the placement still said
         // `actors`. Write the bands the new board allows, then bring their
-        // members back inside — one step, one undo step.
+        // members back inside as a band (`refitBand`) — one step, one undo step.
         const zones = { ...current.zones };
         for (const zone of RESIZABLE_ZONES) {
           const stored = current.zones?.[zone]?.size;
@@ -1309,13 +1309,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         }
         const next: BoardGeometry = { ...current, canvas, zones };
         const elementsById = new Map(currentModel().elements.map((e) => [e.id, e]));
-        const placements: PlacedNode[] = [];
-        for (const placement of placedNodes(diagram)) {
+        const members = placedNodes(diagram).flatMap((placement) => {
           const element = elementsById.get(placement.id);
-          if (!element || !placement.zone || placement.zone === 'landscape') continue;
-          const moved = clampPlacementIntoZone(placement, nodeFigure(element, placement.zone), next);
-          if (moved) placements.push(moved);
-        }
+          return element ? [{ placement, figure: nodeFigure(element, placement.zone) }] : [];
+        });
+        const placements = refitBand(members, current, next);
         dispatch(transaction([
           { type: 'board.set', diagramId: diagram.id, patch: { canvas, zones } },
           ...(placements.length
