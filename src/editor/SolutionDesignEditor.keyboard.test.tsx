@@ -101,6 +101,17 @@ describe('the board without a mouse', () => {
     expect(screen.getByRole('button', { name: 'Close documentation' })).toBeDefined();
   });
 
+  it('leaves Enter to a tab or a row in the panel, rather than opening the record behind it', () => {
+    const { card } = renderEditor();
+    press(card('a2'), 'Enter');
+    press(screen.getByRole('tab', { name: 'Appearance' }), 'Enter');
+    press(screen.getByRole('button', { name: /^Edit Lifecycle/ }), 'Enter');
+    expect(screen.queryByRole('button', { name: 'Close documentation' })).toBeNull();
+    // And on the card itself it is still the page.
+    press(card('a2'), 'Enter');
+    expect(screen.getByRole('button', { name: 'Close documentation' })).toBeDefined();
+  });
+
   it('moves a selected card with the arrows, as a step of its own', () => {
     const { card, at, host } = renderEditor();
     press(card('a2'), 'Enter');

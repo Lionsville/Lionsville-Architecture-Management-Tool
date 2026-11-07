@@ -97,3 +97,20 @@ export function ownsArrows(target: EventTarget | null): boolean {
   const element = typeof node?.closest === 'function' ? node : node?.parentElement;
   return !!element?.closest?.(ARROW_WIDGETS);
 }
+
+/**
+ * The controls whose own Enter is what was meant: a tab, a row pressed to edit, a
+ * link or a button in the panel or a bar. Enter there presses it, and is not the
+ * board's *open the record* for the card selected behind it. A card, a line and a
+ * group's name are not among them: Enter on those is the board's (`keyboardIntent`).
+ */
+const OWN_ENTER = 'button, a[href], summary, [role="button"], [role="tab"], [role="link"], [role="menuitem"], [role="checkbox"], [role="switch"]';
+const BOARD_ITEM = '.react-flow__node, .react-flow__edge, [data-group]';
+
+/** True when Enter was pressed on a control that answers it itself. */
+export function ownsEnter(target: EventTarget | null): boolean {
+  const node = target as (Node & { closest?: (selector: string) => Element | null }) | null;
+  const element = typeof node?.closest === 'function' ? node : node?.parentElement;
+  if (!element?.closest || element.closest(BOARD_ITEM)) return false;
+  return !!element.closest(OWN_ENTER);
+}

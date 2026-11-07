@@ -16,7 +16,7 @@ import type {
   ElementId,
   Point,
 } from '../model/types';
-import { isEditableTarget, isShortcutIgnoredTarget, OWN_WALK_ATTR, ownsArrows, ownsContextMenu, ownsWalk } from './isEditableTarget';
+import { isEditableTarget, isShortcutIgnoredTarget, OWN_WALK_ATTR, ownsArrows, ownsContextMenu, ownsEnter, ownsWalk } from './isEditableTarget';
 import { enterIsTheItems } from './canvas/keyboardIntent';
 import { CANVAS_SHORTCUTS, detectPlatform, matchEvent } from './keymap';
 import {
@@ -99,6 +99,8 @@ function keepsItsChord(id: string, target: EventTarget | null): boolean {
   // A page with a find of its own answers ⌘F wherever the focus is, even on nothing.
   if (id === 'find') return document.querySelector(`[${OWN_WALK_ATTR}]`) !== null;
   if ((ARROWS.has(id) || id === 'open-documentation') && ownsWalk(target)) return true;
+  // Enter on the panel's tab or row presses it; it opened the record behind it before.
+  if (id === 'open-documentation' && ownsEnter(target)) return true;
   return ARROWS.has(id) && ownsArrows(target);
 }
 
