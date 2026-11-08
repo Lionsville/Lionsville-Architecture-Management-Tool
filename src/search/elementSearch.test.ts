@@ -68,6 +68,12 @@ describe('searchElements', () => {
     expect(hit.diagramId).toBe('d1');
   });
 
+  it('focuses the first diagram that carries a hit where the one open draws nothing, as a laid-out view does', () => {
+    const [hit] = searchElements(board, 'reisinformatie', 'a-sheet');
+    expect(hit.onActiveDiagram).toBe(false);
+    expect(hit.diagramId).toBe('d1');
+  });
+
   it('still finds an element placed on no diagram, and ranks it last', () => {
     const hits = searchElements(board, 'e', 'd1');
     expect(hits.map((h) => h.id)).toContain('e');
