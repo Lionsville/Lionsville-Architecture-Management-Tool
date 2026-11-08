@@ -202,6 +202,26 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     write(false)
     distances()
   }, [write, distances])
+  /**
+   * Something opened or closed beside the pane on its left (Design's tray): the page moves with the pane, so
+   * what was at its left edge is still in sight, and a page at Fit is fitted to the room it has now. The
+   * kit holds a drawing still on the screen as the edge moves (`holdOnScreen`, after this, by the same
+   * amount), which is right for a seam dragged and wrong for a tray laid over where the page began.
+   */
+  const besideMoved = useCallback((before: { left: number; width: number; height: number }) => {
+    const held = pane.current
+    if (!held) return
+    const moved = held.getBoundingClientRect().left - before.left
+    if (Math.abs(moved) < 0.5) return
+    const room = roomOf(held)
+    const wasFit = fitOf({ width: before.width, height: before.height }, size.current, room, scale.current)
+    const at = camera.current
+    const atFit = Math.abs(wasFit.zoom - at.zoom) < 0.002 && Math.abs(wasFit.x - at.x) < 1 && Math.abs(wasFit.y - at.y) < 1
+    const next = atFit ? fitOf({ width: held.clientWidth, height: held.clientHeight }, size.current, room, scale.current) : at
+    camera.current = { ...next, x: next.x + moved }
+    write(false)
+    distances()
+  }, [write, distances])
   /** Keep this in the window, moving as little as it takes; from far off, come to where it can be read. */
   const follow = useCallback((element: Element, read = false) => {
     const held = pane.current
@@ -248,7 +268,7 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     write(true)
     distances()
   }, [textScale, write, distances, open])
-  return { attach, stage, pane, camera, panBy, open, follow, target, listen, fitFloor: atScale(FIT_FLOOR, textScale) }
+  return { attach, stage, pane, camera, panBy, open, follow, besideMoved, target, listen, fitFloor: atScale(FIT_FLOOR, textScale) }
 }
 
 export type PosterCamera = ReturnType<typeof usePosterCamera>

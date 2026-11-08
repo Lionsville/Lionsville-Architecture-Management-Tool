@@ -41,6 +41,7 @@ import { usePosterGestures } from './PosterDesign'
 import type { PosterDesign } from './PosterDesign'
 import { PosterItem } from './PosterItem'
 import { POSTER_ZOOM, usePosterCamera } from './posterCamera'
+import type { PosterCamera } from './posterCamera'
 import { PosterStripNarrow, useStripNarrow } from './posterStrip'
 import { unitTargets, UnitLabel } from './Responsible'
 import type { Who } from './Responsible'
@@ -263,6 +264,18 @@ function AreaLine({ area, drawing }: { area: SheetArea; drawing: Drawing }) {
 }
 
 /** What Design offers on a block: a + at the place it would land, on hover or focus and by keyboard. */
+/** Read and Design: the tray comes and goes on the pane's left, and the camera is told where the pane stood before. */
+function useTrayBeside(pane: { current: HTMLDivElement | null }, designing: boolean, besideMoved: PosterCamera['besideMoved']) {
+  const before = useRef<{ left: number; width: number; height: number } | undefined>(undefined)
+  useLayoutEffect(() => {
+    const held = pane.current
+    if (!held) return
+    const was = before.current
+    if (was) besideMoved(was)
+    before.current = { left: held.getBoundingClientRect().left, width: held.clientWidth, height: held.clientHeight }
+  }, [pane, designing, besideMoved])
+}
+
 /** A press that adds here: a + where there is one thing to add, its word where two sit side by side. */
 function AddHere({ label, word, onAdd }: { label: string; word?: string; onAdd(): void }) {
   return (
@@ -646,6 +659,7 @@ export function SheetPoster(props: SheetPosterProps) {
   const dragged = useRef(false)
   // Once a page: a change to the sheet does not take the reader's place away.
   useLayoutEffect(open, [open])
+  useTrayBeside(pane, design !== undefined, camera.besideMoved)
 
   const factsOf = useFactsOf(props)
   const tile = sheet?.poster?.tile ?? 'm'

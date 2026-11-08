@@ -95,3 +95,34 @@ describe('a kept place at another text size', () => {
     expect((16 - kept.y) / kept.zoom).toBeCloseTo((16 + 300) / 0.9)
   })
 })
+
+describe('the tray opening beside the poster', () => {
+  it('moves the page with the pane, so its left edge is not under the tray, and the kit\'s hold takes back the same amount', () => {
+    const { result } = opened()
+    const pane = result.current.pane.current as HTMLDivElement
+    act(() => result.current.panBy(-200, 0))
+    const was = result.current.camera.current
+    pane.getBoundingClientRect = () => ({ left: 272, top: 0, right: 1400, bottom: 800, width: 1128, height: 800, x: 272, y: 0, toJSON: () => ({}) })
+    act(() => result.current.besideMoved({ left: 0, width: PANE.width, height: PANE.height }))
+    expect(result.current.camera.current).toEqual({ ...was, x: was.x + 272 })
+  })
+
+  it('fits a page that was at Fit to the room it has now', () => {
+    const { result } = opened()
+    const pane = result.current.pane.current as HTMLDivElement
+    act(() => result.current.target.go('fit'))
+    const fitBefore = result.current.camera.current
+    pane.getBoundingClientRect = () => ({ left: 272, top: 0, right: 1400, bottom: 800, width: 1128, height: 800, x: 272, y: 0, toJSON: () => ({}) })
+    // Measured narrower before, so the page was not at Fit for that room: it only moves with the pane.
+    act(() => result.current.besideMoved({ left: 0, width: 900, height: PANE.height }))
+    expect(result.current.camera.current).toEqual({ ...fitBefore, x: fitBefore.x + 272 })
+    act(() => result.current.panBy(5, 0))
+    // At Fit for the room it had: fitted again to the pane as it is, then moved with it.
+    const refit = result.current.camera.current
+    act(() => result.current.target.go('fit'))
+    const fitted = result.current.camera.current
+    act(() => result.current.besideMoved({ left: 0, width: PANE.width, height: PANE.height }))
+    expect(result.current.camera.current).toEqual({ ...fitted, x: fitted.x + 272 })
+    expect(refit.x).not.toBe(fitted.x)
+  })
+})
