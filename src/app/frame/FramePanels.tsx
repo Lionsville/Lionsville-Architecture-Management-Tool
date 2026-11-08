@@ -12,7 +12,7 @@
  * with what can lose it, because a person expects *Save* to be what protects them
  * and it does nothing a moment later would not have done.
  */
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { LOCALE } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import { helpAt } from '../helpAt'
@@ -32,7 +32,8 @@ import { useFrameState } from './frameStore'
 import type { OwnWork, ScreenFacts } from './frameStore'
 import { PANEL_HELP } from '../../platform/helpPlaces'
 import type { WriteRefusal } from '../writeRefusals'
-import { notKeptSentence } from '../notKept'
+import { notKeptSentence, refusalReason } from '../notKept'
+import { stepWords } from '../stepWords'
 
 /** The place each window's word first said, kept by its frame: a save there needs no more than its time. */
 const firstPlace = new WeakMap<object, string>()
@@ -61,32 +62,133 @@ export function useWriteRefusals(parts: ShellParts): readonly WriteRefusal[] {
   return useSyncExternalStore(refusals?.subscribe ?? NEVER, refusals?.list ?? (() => NONE))
 }
 
+/** Where focus goes once a section of *Your work* is gone from under it: the panel's own body, which a keyboard reads on from. */
+function focusPanelBody(from: HTMLElement | null): void {
+  const body = from?.closest<HTMLElement>('.kit-panel__body')
+  // After the section is drawn away: the body stays.
+  if (body) window.setTimeout(() => body.focus(), 0)
+}
+
+/** One change that was not written, by name, and its own two ways out where there are several. */
+type NotKeptRow = { readonly key: string; readonly words: string; readonly retry?: () => Promise<boolean>; readonly putBack?: () => void }
+
 /**
- * What did not land, and the two ways out of it: made again, as it was made,
- * or put back, which lets the change go and leaves what is kept as it is.
- * A field that still shows what was typed says so beside it as well
- * (`ScopeSettingsPage`); here is where the rest are answered.
+ * A *Could not save* section: the place's sentence and the reason once, the
+ * changes a row each, and the two ways out — for each row where there are
+ * several, and for all of them. A *Try again* the place refuses once more says
+ * so where the button is, and keeps the button.
+ */
+function NotKeptSection({ parts, said, reason, rows, lead, retry, putBack, testId }: {
+  parts: ShellParts; said: string; reason: string; rows: readonly NotKeptRow[]; lead?: string | undefined
+  retry: () => Promise<boolean>; putBack: () => void; testId: string
+}) {
+  const { services: { s } } = parts
+  const [trying, setTrying] = useState(false)
+  const [still, setStill] = useState(false)
+  const again = useRef<HTMLButtonElement>(null)
+  const asked = useFrameState(parts.frame).workFocus
+  // Opened from a refusal's toast: the way out is where the keyboard lands.
+  useEffect(() => {
+    // Asked once: the first section drawn takes it, and the next finds it cleared.
+    if (asked === undefined || parts.frame.get().workFocus === undefined) return
+    again.current?.focus()
+    parts.frame.set({ workFocus: undefined })
+  }, [asked, parts.frame])
+  const several = rows.length > 1
+  const tried = (landed: boolean) => {
+    setTrying(false)
+    setStill(!landed)
+    // Where the section is gone with what it said, the panel takes the focus; otherwise it stays on the button.
+    if (landed) focusPanelBody(again.current)
+  }
+  return (
+    <PanelSection title={s('work.couldNotSave')}>
+      <p className="kit-work__say" data-testid={testId}>{said} {s('work.notKeptWays')}</p>
+      {lead && <p className="kit-work__say">{lead}</p>}
+      {rows.length > 0 && (
+        <ul className="kit-lines kit-work__rows">
+          {rows.map((row) => (
+            <li key={row.key} className="kit-lines__row kit-work__row" data-testid="work-refused-row">
+              <span className="kit-work__rowWords">{row.words}</span>
+              {several && (row.retry || row.putBack) && (
+                <span className="kit-work__acts">
+                  {row.retry && (
+                    <Button
+                      size="small" variant="quiet" working={trying} data-testid="work-retry-one"
+                      onClick={() => { const one = row.retry!; setTrying(true); void one().then((landed) => { setTrying(false); setStill(!landed) }, () => { setTrying(false); setStill(true) }) }}
+                    >
+                      {s('common.tryAgain')}
+                    </Button>
+                  )}
+                  {row.putBack && <Button size="small" variant="quiet" onClick={(event) => { focusPanelBody(event.currentTarget); row.putBack!() }} data-testid="work-put-back-one">{s('work.putBack')}</Button>}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      {still && <p className="kit-work__say" role="status" data-testid="work-still">{s('work.stillNotTaken', { reason })}</p>}
+      <div className="kit-work__acts">
+        <Button
+          ref={again} size="small" variant="primary" working={trying} data-testid="work-retry"
+          onClick={() => { setTrying(true); void retry().then(tried, () => tried(false)) }}
+        >
+          {s(several ? 'work.tryAgainAll' : 'common.tryAgain')}
+        </Button>
+        <Button size="small" variant="plain" onClick={(event) => { focusPanelBody(event.currentTarget); putBack() }} data-testid="work-put-back">
+          {s(several ? 'work.putBackAll' : 'work.putBack')}
+        </Button>
+      </div>
+    </PanelSection>
+  )
+}
+
+/** The reason a refusal gives, without the place's sentence before it: what *Still not taken* says. */
+function reasonOnly(parts: ShellParts, cause: unknown): string {
+  const { services: { s } } = parts
+  return refusalReason(cause, s) ?? s(parts.props.provider?.sayings?.keepFailedKey as StringKey ?? 'shell.keepFailed')
+}
+
+/**
+ * What did not land outside the open scope, a row each, and the two ways out
+ * of it: made again, as it was made, or put back, which lets the change go
+ * and leaves what is kept as it is. A field that still shows what was typed
+ * says so beside it as well (`ScopeSettingsPage`); here is where the rest are
+ * answered.
  */
 function NotKept({ parts, refused }: { parts: ShellParts; refused: readonly WriteRefusal[] }) {
   const { services: { s } } = parts
-  const [trying, setTrying] = useState(false)
   if (refused.length === 0 || !parts.refusals) return null
   const { retry, forget } = parts.refusals
   // The first refusal's reason: the rest were met at the same place, and nearly always for the same one.
   const said = notKeptSentence(s, parts.props.provider?.sayings?.keepFailedKey, refused[0]?.cause)
+  const rows = refused.map((one): NotKeptRow => ({
+    key: String(one.id),
+    words: one.summary ? stepWords(one.summary, s) : s('work.refusedChange'),
+    retry: () => retry(one.id),
+    putBack: () => forget(one.id),
+  }))
   return (
-    <PanelSection title={s('work.couldNotSave')}>
-      <p className="kit-work__say" data-testid="work-not-kept">{said} {s('work.notKeptWays')}</p>
-      <div className="kit-work__acts">
-        <Button
-          size="small" variant="primary" disabled={trying} data-testid="work-retry"
-          onClick={() => { setTrying(true); void retry().finally(() => setTrying(false)) }}
-        >
-          {s('common.tryAgain')}
-        </Button>
-        <Button size="small" variant="plain" onClick={() => forget()} data-testid="work-put-back">{s('work.putBack')}</Button>
-      </div>
-    </PanelSection>
+    <NotKeptSection
+      parts={parts} said={said} reason={reasonOnly(parts, refused[0]?.cause)} rows={rows} testId="work-not-kept"
+      retry={() => retry()} putBack={() => forget()}
+    />
+  )
+}
+
+/** The open scope's own changes the place would not take: the same reason and the same two ways out, for all of them at once. */
+function NotWrittenHere({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | undefined }) {
+  const { services: { s } } = parts
+  const held = facts?.notWritten
+  if (!held) return null
+  const said = notKeptSentence(s, parts.props.provider?.sayings?.keepFailedKey, held.cause)
+  // A row each, but no way out each: the session writes its changes in the order they were made, and one is not written past another.
+  const rows = held.rows().map((summary, at): NotKeptRow => ({ key: `${at}`, words: stepWords(summary, s) }))
+  return (
+    <NotKeptSection
+      parts={parts} said={said} reason={reasonOnly(parts, held.cause)} rows={rows} lead={rows.length > 0 ? s('work.notWrittenHere') : undefined} testId="work-not-written"
+      retry={held.retry} putBack={() => { void held.putBack() }}
+    />
   )
 }
 
@@ -148,7 +250,7 @@ function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: Screen
           </div>
         </PanelSection>
       )}
-      {facts?.saveFailed && <PanelSection title={s('work.couldNotSave')}><p className="kit-work__say">{notKeptSentence(s, props.provider?.sayings?.keepFailedKey)}</p></PanelSection>}
+      {facts?.saveFailed && !facts.notWritten && <PanelSection title={s('work.couldNotSave')}><p className="kit-work__say">{notKeptSentence(s, props.provider?.sayings?.keepFailedKey)}</p></PanelSection>}
       {riskKey && !trouble && <p className="kit-work__say" data-testid="work-risk">{s(riskKey as StringKey)}</p>}
       {!props.provider?.publishesSteps && (
         <PanelSection>
@@ -222,6 +324,7 @@ export function YourWorkPanel({ parts, facts }: { parts: ShellParts; facts: Scre
     >
       {/* What this host says of its own comes first: it is what a person opened this to read. */}
       {Own && <Own {...workProps(parts)} />}
+      <NotWrittenHere parts={parts} facts={facts} />
       <NotKept parts={parts} refused={refused} />
       <WorkFacts parts={parts} facts={facts} history={history} />
       <WorkActs parts={parts} facts={facts} history={history} />

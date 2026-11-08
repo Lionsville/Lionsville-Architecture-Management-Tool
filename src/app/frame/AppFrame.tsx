@@ -662,6 +662,20 @@ function useStatusCalm(tone: StatusTone): boolean {
   return statusCalm(tone, long && tone === 'busy' ? BUSY_ORDINARY_MS : 0)
 }
 
+/**
+ * Once nothing is refused any more — written, put back, or the scope that
+ * held it left and its changes handed on — the next refusal is news, and is
+ * said: the notice's latch lets go whenever the word stops saying *Not saved*.
+ */
+function useLatchLetGo(parts: ShellParts, refusing: boolean): void {
+  const was = useRef(refusing)
+  const { reportKept } = parts.services
+  useEffect(() => {
+    if (was.current && !refusing) reportKept('letGo')
+    was.current = refusing
+  }, [refusing, reportKept])
+}
+
 function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at: ScopePath }) {
   const { services: { s }, organisation: { tree } } = parts
   const facts = state.screen
@@ -671,6 +685,7 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   const { prefs } = parts.services
   const refused = useWriteRefusals(parts).length > 0
   const word = statusOf(parts, facts, prefs.language, s, state.work, refused)
+  useLatchLetGo(parts, refused || facts?.saveFailed === true)
   const calm = useStatusCalm(word.tone)
   // The order is the word's: a word that turns calm or not starts the row over, as a language does.
   const order = rowOneFolds(calm)

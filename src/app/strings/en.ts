@@ -2182,6 +2182,19 @@ export const EN = {
   /** After what was not kept and why: the two ways out, beside it. */
   'work.notKeptWays': 'Try it again, or put it back and leave what is kept as it is.',
   'work.putBack': 'Put back',
+  'work.tryAgainAll': 'Try all again',
+  'work.putBackAll': 'Put all back',
+  /** After a *Try again* the place refused once more: said where the button is, so the press is seen to have done something. */
+  'work.stillNotTaken': 'Still not taken: {reason}',
+  /** The open scope's changes that the place did not take, a row each under this. */
+  'work.notWrittenHere': 'Not written yet in this scope:',
+  'work.refusedChange': 'A change',
+  'work.refusedNewScope': 'New scope {name}',
+  'work.refusedMoveScope': 'Move a scope',
+  'work.refusedRemoveScope': 'Remove a scope',
+  'work.refusedPicture': 'Picture {name}',
+  'work.refusedSetting': 'A setting',
+  'work.refusedPeople': 'A change to the people register',
   'settings.notKept': 'Not saved: this was not written where your work is kept.',
   'work.lastSaved': 'Last saved',
   'work.lastCopy': 'Last copy saved',

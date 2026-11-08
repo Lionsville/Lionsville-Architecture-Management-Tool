@@ -501,7 +501,7 @@ export function App(given: AppProps) {
   landed.current = () => { parts.writes.treeChanged(); parts.people.refresh(); parts.services.reportKept(true) }
   letGo.current = () => { parts.services.reportKept('letGo') }
   // A refusal's toast points at *Your work*, which is the frame's: it can open it now.
-  parts.services.openWork.current = () => parts.agent.setPanel('work')
+  parts.services.openWork.current = () => { parts.frame.set({ workFocus: Date.now() }); parts.agent.setPanel('work') }
   const { prefs, s, toasts } = parts.services
   // Every page under the shell reads a person through the one register (ADR-0036 §8).
   const names = useMemo(() => personNames(parts.people, s), [parts.people, s])

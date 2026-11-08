@@ -31,6 +31,7 @@
  * it always has. *Keep mine* writes ours onto theirs, and puts on screen the
  * scope as that left it.
  */
+import type { WriteRefusal } from './writeRefusals'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
   AUTOSAVE_IDLE_MS, documentSession, hasUnsavedWork, openSession, shouldSaveNow,
@@ -74,7 +75,17 @@ export type ScopeWriter = {
    * other changes, as the step that adds it (ADR-0031 §3).
    */
   put(name: ImageName, bytes: Uint8Array): Promise<ImageEntry>
+  /** Hand refused changes to the list that outlives this session (`writeRefusals`), where one watches the place. */
+  handOver?(refusals: readonly Omit<WriteRefusal, 'id'>[]): void
 }
+
+/**
+ * The open scope going with changes the place it is kept would not take:
+ * the steps not written, in the order they were made, and what refused them.
+ * `before` is whether they were refused while the scope was open; otherwise
+ * the write on the way out was the one refused.
+ */
+export type LeftUnwritten = (steps: readonly ScopeStep[], cause: unknown, before: boolean) => void
 
 /** The part of the editing session this one reads: what changed, and what to write. */
 export type SavableSession = {
@@ -95,9 +106,9 @@ export type DocumentSessionHook = {
   /**
    * Take what is on disk. Answers the "changed elsewhere" notice and the "take
    * theirs" half of a conflict — the same act in both, which is why it is one
-   * function.
+   * function. Answers whether it was taken.
    */
-  takeTheirs: () => void
+  takeTheirs: () => Promise<boolean>
   /**
    * Ours stands. The document goes back to dirty, never to clean: their
    * version is still the one on disk until the next save writes over it.
@@ -129,6 +140,13 @@ export function useDocumentSession(deps: {
   writer: ScopeWriter
   onSaved: (at: Date) => void
   onResult: KeepNotice
+  /**
+   * Where changes that could not be written go when the session does
+   * (`LeftUnwritten`): somewhere that outlives it, so they are not lost with
+   * it and the word does not go calm over them. Absent, they are written on
+   * the way out and a refusal is only said.
+   */
+  onLeftUnwritten?: LeftUnwritten
   /**
    * Somebody else changed this project's files. Absent where nothing can
    * watch — a browser tab — and the document then simply never leaves the
@@ -188,7 +206,7 @@ export function useDocumentSession(deps: {
 }): DocumentSessionHook {
   const {
     session, writer, onSaved, onResult, watch, onAdopt, onUnsavedWork,
-    sourceStatus, onSourceWork, writeAfterMs: idleMs = AUTOSAVE_IDLE_MS, pendingSteps, openedAt,
+    sourceStatus, onSourceWork, writeAfterMs: idleMs = AUTOSAVE_IDLE_MS, pendingSteps, openedAt, onLeftUnwritten,
   } = deps
   const { model, logoLibrary, snapshot } = session
 
@@ -214,6 +232,8 @@ export function useDocumentSession(deps: {
   const writes = useScopeWrites(session, writer, onAdopt, pendingSteps, openedAt)
   /** The write in flight, where one is: what a flush waits for before it writes what is left. */
   const running = useRef<Promise<void> | undefined>(undefined)
+  /** What the place refused the last write with, until a write lands: what is handed over with the steps on leaving. */
+  const refused = useRef<{ cause: unknown } | undefined>(undefined)
   const save = useCallback((trigger: SaveTrigger, failedTo?: (cause: unknown) => void): Promise<void> => {
     if (!shouldSaveNow(held.current, trigger, Date.now() - editedAt.current, idleMs)) {
       return Promise.resolve()
@@ -223,6 +243,7 @@ export function useDocumentSession(deps: {
     const after = running.current
     const writing = (after ? after.then(() => writes.write()) : writes.write()).then(
       () => {
+        refused.current = undefined
         apply({ type: 'saveSucceeded' })
         onSaved(new Date())
         onResult(true)
@@ -232,6 +253,7 @@ export function useDocumentSession(deps: {
         // Somebody changed the scope since this session last saw it: nothing
         // was written, and what happens next is a person's to say.
         if (isScopeMoved(cause)) { apply({ type: 'externalChangeDetected' }); return }
+        refused.current = { cause }
         apply({ type: 'saveFailed', reason: String(cause) })
         // The cause travels with the fact: what a refusal where this source
         // keeps work means is the source's own sentence to say, and this is the
@@ -355,33 +377,23 @@ export function useDocumentSession(deps: {
 
   useLeavingWrites(held, running, writes, saving)
 
-  // The workspace going — home, another scope — with changes not yet
-  // written: written on the way out, as a window closing would, rather than
-  // left in a session nobody holds any more. A write refused on the way out
-  // is said as any refused write is: the app outlives this workspace, and the
-  // person is told on the screen they went to.
-  const leaving = useRef({ writes, onResult })
-  leaving.current = { writes, onResult }
-  useEffect(() => () => {
-    const { writes: last, onResult: told } = leaving.current
-    if (last.pending()) last.write().catch((cause: unknown) => told(false, cause))
-  }, [])
+  useWritesOnLeaving(writes, onResult, onLeftUnwritten, refused)
 
   useEffect(() => {
     if (!watch) return undefined
     return watch(() => apply({ type: 'externalChangeDetected' }))
   }, [watch, apply])
 
-  const takeTheirs = useCallback(() => {
-    void writes.takeTheirs().then((taken) => {
-      // Gone entirely: somebody removed the scope while it was open. Nothing
-      // to take, and the copy on screen is now the only one — which the
-      // unsaved-work prompt will insist on when the window closes.
-      if (taken) apply({ type: 'reloadAccepted' })
-    }, (cause: unknown) => {
-      apply({ type: 'saveFailed', reason: String(cause) })
-    })
-  }, [apply, writes])
+  const takeTheirs = useCallback(() => writes.takeTheirs().then((taken) => {
+    // Gone entirely: somebody removed the scope while it was open. Nothing
+    // to take, and the copy on screen is now the only one — which the
+    // unsaved-work prompt will insist on when the window closes.
+    if (taken) { refused.current = undefined; apply({ type: 'reloadAccepted' }) }
+    return taken
+  }, (cause: unknown) => {
+    apply({ type: 'saveFailed', reason: String(cause) })
+    return false
+  }), [apply, writes])
 
   const keepMine = useCallback(() => {
     // From `external-changed` this is a decision, and the machine only accepts
@@ -586,11 +598,49 @@ function useScopeWrites(
       },
       // Mine over theirs expects no revision, so no line can be held to one: the prompt answers for it.
       overTheirs: () => { over.current = true; hold() },
+      /**
+       * What this session has not written, as steps: its changes, and the
+       * pictures and marks it says about itself — but not the view it opens
+       * on, which is no change of anybody's to keep.
+       */
+      unwritten: (): ScopeStep[] => {
+        const { activeDiagramId: _view, ...said } = describedOf(snapshot())
+        const was = known.current!.described
+        return [...unwritten(), ...changesOf(was, { ...said, activeDiagramId: was.activeDiagramId }).map((command) => stepOf(command))]
+      },
       /** Is there anything this session has not written? */
       pending: (): boolean => journal.pending().length > 0
         || changesOf(known.current!.described, describedOf(snapshot())).length > 0,
     }
   }, [writer, journal, snapshot, take, pending, openedAt, indexed])
+}
+
+/**
+ * The workspace going — home, another scope — with changes not yet
+ * written: written on the way out, as a window closing would, rather than
+ * left in a session nobody holds any more. A write refused on the way out
+ * is said as any refused write is: the app outlives this workspace, and the
+ * person is told on the screen they went to. And what was not written is
+ * handed to whoever outlives the session (`onLeftUnwritten`): a session that
+ * went with refused changes in it used to take them along without a word,
+ * and the status word went calm over the loss.
+ */
+function useWritesOnLeaving(
+  writes: ReturnType<typeof useScopeWrites>, onResult: KeepNotice, onLeftUnwritten: LeftUnwritten | undefined,
+  refused: { readonly current: { cause: unknown } | undefined },
+): void {
+  const leaving = useRef({ writes, onResult, onLeftUnwritten })
+  leaving.current = { writes, onResult, onLeftUnwritten }
+  useEffect(() => () => {
+    const { writes: last, onResult: told, onLeftUnwritten: left } = leaving.current
+    if (!last.pending()) return
+    // Refused already: handed over at once, in this turn, so the word never says *saved* in between; *Try again* is the person's.
+    if (refused.current && left) { left(last.unwritten(), refused.current.cause, true); return }
+    last.write().catch((cause: unknown) => {
+      told(false, cause)
+      left?.(last.unwritten(), cause, false)
+    })
+  }, [refused])
 }
 
 /**

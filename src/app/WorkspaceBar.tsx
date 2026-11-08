@@ -48,7 +48,7 @@ function workTrouble(parts: WorkspaceParts): WorkTrouble | undefined {
       title: s('shell.changedElsewhere'),
       body: s(status === 'conflict' ? 'shell.conflictThere' : 'shell.changedThere'),
       acts: [
-        { label: s('shell.takeTheirs'), run: document.takeTheirs, testId: 'work-take-theirs' },
+        { label: s('shell.takeTheirs'), run: () => { void document.takeTheirs() }, testId: 'work-take-theirs' },
         { label: s('shell.keepMine'), run: document.keepMine, testId: 'work-keep-mine' },
         { label: s('shell.saveACopy'), run: () => { void files.saveWorkingFile() }, testId: 'work-copy-first' },
       ],
@@ -91,7 +91,7 @@ function carriedPlan(plan: Transition, day: string, go: (day: string) => void) {
 }
 
 export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
-  const { props, session, document: { document, savedAt, saveFailed }, alsoHere, pages, requests, dialogs } = parts
+  const { props, session, document: { document, savedAt, saveFailed, refusedWith, unwritten, putBack }, alsoHere, pages, requests, dialogs } = parts
   const { s } = props.shell
   /**
    * The source's own log of the open scope, bound to it — held by scope, so the
@@ -114,6 +114,13 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
   const { carried, letGo } = pages.plans
   useEffect(() => { if (!looking && carried) letGo() }, [looking, carried, letGo])
   const publishes = props.source.publishesSteps
+  const { flush } = document
+  const notWritten = useMemo(() => (saveFailed ? {
+    rows: unwritten,
+    ...(refusedWith !== undefined ? { cause: refusedWith } : {}),
+    retry: () => flush().then(() => true, () => false),
+    putBack,
+  } : undefined), [saveFailed, unwritten, refusedWith, flush, putBack])
   useFrameFacts({
     kind: 'workspace', path: props.project.path, name: session.model.name,
     openSearch: () => dialogs.setSearchOpen(true),
@@ -123,6 +130,7 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
       redo: { can: session.canRedo, run: session.redo },
     }),
     status: document.state.status, savedAt, saveFailed,
+    ...(notWritten ? { notWritten } : {}),
     ...(publishes !== undefined ? { publishesSteps: publishes } : {}),
     sourceStatus: props.source.status !== undefined,
     alsoHere,
@@ -144,7 +152,7 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
       {parts.unreadable.length > 0 && <UnreadableNotice parts={parts} />}
       <ChangedElsewhereNotice
         status={document.state.status}
-        onTakeTheirs={document.takeTheirs}
+        onTakeTheirs={() => { void document.takeTheirs() }}
         onKeepMine={document.keepMine}
         onSaveCopy={() => { void parts.files.saveWorkingFile() }}
         s={s}

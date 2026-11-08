@@ -139,3 +139,10 @@
 .kit-work__acts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); }
 /* A sentence in the panel sits in the body's own rhythm, not a paragraph's browser margins. */
 .kit-work__say { margin: 0 0 var(--s-2); }
+/* A sentence after a section of acts starts a step below the buttons, not flush on them. */
+.kit-panel__section + .kit-work__say { margin-top: var(--s-3); }
+/* What was not kept, a change to a row, its own two ways out at the row's end where there are several. */
+.kit-work__rows { margin: 0 0 var(--s-2); }
+.kit-work__row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.kit-work__rowWords { min-width: 0; overflow-wrap: anywhere; }
+.kit-work__row .kit-work__acts { flex-wrap: nowrap; }

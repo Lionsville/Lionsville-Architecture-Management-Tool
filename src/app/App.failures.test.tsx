@@ -214,8 +214,22 @@ describe('a view renamed on a home, where the folder refuses', () => {
     expect(screen.getByRole('button', { name: 'More for L7' })).toBeDefined()
     fireEvent.click(within(toast).getByRole('button', { name: 'See Your work' }))
     expect((await screen.findByTestId('work-not-kept')).textContent).toContain('The folder did not take the change')
-    expect(screen.getByTestId('work-retry')).toBeDefined()
+    // The change by name, and the keyboard where the way out is.
+    expect(screen.getByTestId('work-refused-row').textContent).toBe('Renamed a view to Order flow')
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('work-retry')))
     expect(screen.getByTestId('work-put-back')).toBeDefined()
+  })
+
+  it('says Still not taken where Try again is refused once more, and keeps the focus on it', async () => {
+    await renameRefused({ now: true })
+    await waitFor(() => expect(word().textContent).toContain('Not saved'))
+    fireEvent.click(word())
+    const again = await screen.findByTestId('work-retry')
+    again.focus()
+    fireEvent.click(again)
+    expect((await screen.findByTestId('work-still')).textContent).toBe('Still not taken: This app may not write in that folder: it is read-only, or kept from this app. Give it write access, or work from another folder.')
+    expect(document.activeElement).toBe(screen.getByTestId('work-retry'))
+    expect(screen.getByTestId('work-not-kept')).toBeDefined()
   })
 
   it('lands on Try again once the folder may be written, and the row says the new name', async () => {
@@ -238,6 +252,8 @@ describe('a view renamed on a home, where the folder refuses', () => {
     fireEvent.click(await screen.findByTestId('work-put-back'))
     await waitFor(() => expect(screen.queryByTestId('work-not-kept')).toBeNull())
     await waitFor(() => expect(word().getAttribute('data-tone')).not.toBe('problem'))
+    // The section went with what it said: the panel holds the focus, not the page.
+    await waitFor(() => expect(document.activeElement?.classList.contains('kit-panel__body')).toBe(true))
     expect(await nameKept(held)).toBe('L7')
     // By its name rather than its role: the panel open over the home hides the page from role queries.
     expect(document.querySelector('[aria-label="More for L7"]')).not.toBeNull()

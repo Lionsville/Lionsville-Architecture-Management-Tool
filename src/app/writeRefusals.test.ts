@@ -12,7 +12,7 @@ import type { Repositories } from '../ports/Repositories'
 import { changeScope, ensureScope, readScope } from '../projects/scopeAccess'
 import { refusalOf } from '../projects/refusalTag'
 import { SCOPE_MOVED } from '../projects/revision'
-import { holdWrite, unwatched, watchRepositories, whenLanded, writeRefusals, writesUnderway } from './writeRefusals'
+import { handOver, holdWrite, stepsSummary, unwatched, watchRepositories, whenLanded, writeRefusals, writesUnderway } from './writeRefusals'
 
 /** Memory repositories whose writes refuse while `refusing.now` says so: a folder made read-only and writable again. */
 function refusingWhile(refusing: { now: boolean }): Repositories {
@@ -237,5 +237,58 @@ describe('watchRepositories', () => {
     expect(unwatched(repositories.scopes)).toBe(held.scopes)
     expect(unwatched(held.scopes)).toBe(held.scopes)
     expect((await repositories.scopes.tree()).root).toBeDefined()
+  })
+
+  it('names each refused write as the Activity list would, from what it was handed', async () => {
+    const refusing = { now: false }
+    const store = writeRefusals()
+    const repositories = watchRepositories(refusingWhile(refusing), store)
+    await scopeAt(repositories, 'rail')
+    refusing.now = true
+    await changeScope(repositories.scopes, 'rail', () => [{ type: 'diagram.rename', id: 'd1', name: 'Order flow' }]).catch(() => undefined)
+    await changeScope(repositories.scopes, 'rail', () => [{ type: 'scope.describe', patch: { activeDiagramId: 'd1' } }]).catch(() => undefined)
+    await repositories.people.add({ name: 'Ada' } as never).catch(() => undefined)
+    expect(store.list().map((one) => one.summary)).toEqual([
+      { key: 'activity.diagramRenamed', name: 'Order flow' },
+      { key: 'activity.projectSettings' },
+      { key: 'work.refusedPeople' },
+    ])
+    expect(stepsSummary([{ type: 'element.update', id: 'x', patch: { name: 'Fleet' } } as never])).toEqual({ key: 'activity.elementRenamedTo', to: 'Fleet' })
+  })
+
+  it('makes one refused write again on its own, leaving the others standing', async () => {
+    const refusing = { now: false }
+    const store = writeRefusals()
+    const repositories = watchRepositories(refusingWhile(refusing), store)
+    await scopeAt(repositories, 'rail')
+    refusing.now = true
+    await changeScope(repositories.scopes, 'rail', rename('One')).catch(() => undefined)
+    await changeScope(repositories.scopes, 'rail', rename('Two')).catch(() => undefined)
+    const [first, second] = store.list()
+    refusing.now = false
+    await expect(store.retry(second!.id)).resolves.toBe(true)
+    expect(store.list().map((one) => one.id)).toEqual([first!.id])
+    expect((await readScope(repositories.scopes, 'rail'))?.model.name).toBe('Two')
+  })
+
+  it('takes changes a session handed over as it went, a row each, made again and put back like any other', async () => {
+    const letGo = vi.fn()
+    const store = writeRefusals(() => {}, letGo)
+    const made: string[] = []
+    const ids = store.handOver([
+      { cause: new Error('EACCES'), summary: { key: 'activity.elementRenamed', name: 'Fleet', to: 'Fleet QA' }, retry: () => { made.push('rename'); return Promise.resolve(true) } },
+      { cause: new Error('EACCES'), summary: { key: 'activity.elementAdded', name: 'QA App' }, retry: () => Promise.resolve(false) },
+    ])
+    expect(store.list().map((one) => one.id)).toEqual(ids)
+    await expect(store.retry()).resolves.toBe(false)
+    expect(made).toEqual(['rename'])
+    expect(store.list().map((one) => one.summary?.name)).toEqual(['QA App'])
+    store.forget(ids[1])
+    expect(store.list()).toEqual([])
+    expect(letGo).toHaveBeenCalledOnce()
+    // Handed to a watched repository's list, and to none where nobody watches.
+    const watched = watchRepositories(memoryRepositories(), store)
+    expect(handOver(watched.scopes, [{ retry: () => Promise.resolve(true) }])).toHaveLength(1)
+    expect(handOver(memoryRepositories().scopes, [{ retry: () => Promise.resolve(true) }])).toBeUndefined()
   })
 })

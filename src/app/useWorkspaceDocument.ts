@@ -6,7 +6,10 @@
  * when, what the bar says about that, and the session handed to whoever
  * answers for the source.
  */
-import { unwatched } from './writeRefusals'
+import { handOver, stepsSummary, unwatched } from './writeRefusals'
+import type { WriteRefusal } from './writeRefusals'
+import type { StepSummary } from '../model'
+import type { ScopeStep } from '../projects/scopeState'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ShellError } from '../platform/errors'
 import { imageEntryOf } from '../model/imageEntry'
@@ -18,7 +21,7 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import { useDocumentSession } from './useDocumentSession'
-import type { DocumentSessionHook, ScopeWriter } from './useDocumentSession'
+import type { DocumentSessionHook, LeftUnwritten, ScopeWriter } from './useDocumentSession'
 import type { ModelSession, ScopeSession } from './useModelSession'
 import type { KeepNotice } from './useKeepNotice'
 
@@ -28,6 +31,32 @@ export type WorkspaceDocument = {
   savedAt: Date | null
   /** The store is refusing now, whatever it last accepted. */
   saveFailed: boolean
+  /** What it refused the last write with, while it is refusing. */
+  refusedWith?: unknown
+  /** The changes not written yet, a row each in the words the Activity list uses. */
+  unwritten: () => readonly StepSummary[]
+  /** Let go of them for the scope as it is kept; answers whether it could be read. */
+  putBack: () => Promise<boolean>
+}
+
+/**
+ * The steps not written, one change to a row, each with its words. A journal
+ * line is one announcement of a step (`changeId`), and a typed sentence is many
+ * of them folded into one step on the stack: one change to a person, one row.
+ * Its words are its line in the Activity list where the session still has it,
+ * else what its commands say.
+ */
+function changesOf(session: Pick<ModelSession, 'history'>, steps: readonly ScopeStep[]): { steps: ScopeStep[]; summary: StepSummary }[] {
+  const stepOfFold = new Map<string, { stepId: string; summary: StepSummary }>()
+  for (const one of session.history()) for (const fold of one.folds) stepOfFold.set(fold.changeId, one)
+  const rows: { steps: ScopeStep[]; summary: StepSummary; of?: string }[] = []
+  for (const step of steps) {
+    const of = stepOfFold.get(step.stepId)
+    const last = rows.at(-1)
+    if (last && of && last.of === of.stepId) last.steps.push(step)
+    else rows.push({ steps: [step], summary: of?.summary ?? stepsSummary([step.command]), ...(of ? { of: of.stepId } : {}) })
+  }
+  return rows
 }
 
 export function useWorkspaceDocument(deps: {
@@ -55,13 +84,30 @@ export function useWorkspaceDocument(deps: {
    */
   const [savedAt, setSavedAt] = useState<Date | null>(null)
   const [saveFailed, setSaveFailed] = useState(false)
+  const [refusedWith, setRefusedWith] = useState<{ cause: unknown } | undefined>(undefined)
   // The cause is passed on rather than read here: the bar says the same thing
   // about a refused save whatever refused it, and what the notice SAYS is the
   // source's business (`useKeepNotice`).
   const onSaveResult = useCallback((ok: boolean, cause?: unknown) => {
     setSaveFailed(!ok)
+    setRefusedWith(ok ? undefined : { cause })
     onKeptResult(ok, cause)
   }, [onKeptResult])
+
+  /**
+   * Leaving with changes the place would not take: each handed to the list
+   * of refused writes, a row each, to be made again or put back from *Your
+   * work* — the word stays *Not saved* until one or the other.
+   */
+  const onLeftUnwritten = useCallback<LeftUnwritten>((steps, cause) => {
+    const refusals = changesOf(session, steps).map((change): Omit<WriteRefusal, 'id'> => ({
+      cause,
+      summary: change.summary,
+      // Made again over the scope as it stands: the person asked for this very change once more.
+      retry: () => writer.write(change.steps).then(() => true, () => false),
+    }))
+    writer.handOver?.(refusals)
+  }, [session, writer])
 
   const document = useDocumentSession({
     session,
@@ -72,6 +118,7 @@ export function useWorkspaceDocument(deps: {
     // through the index, and the index is read again only when asked.
     onSaved: (at: Date) => { setSavedAt(at); if (!watch) onTreeChanged() },
     onResult: onSaveResult,
+    ...(writer.handOver ? { onLeftUnwritten } : {}),
     watch,
     sourceStatus,
     onSourceWork,
@@ -83,7 +130,17 @@ export function useWorkspaceDocument(deps: {
     // a relayout — a project read back from its folder carries its geometry.
     onAdopt: useCallback((held: ScopeSnapshot) => session.adopt(held, false), [session]),
   })
-  return { document, savedAt, saveFailed }
+  const unwritten = useCallback(
+    () => changesOf(session, session.journal.pending().map(({ stepId, command, at }) => ({ stepId, command, at }))).map((change) => change.summary),
+    [session],
+  )
+  // Put back: the scope as it is kept, read over what was not written. Nothing is refused any more, so nothing is said.
+  const { takeTheirs } = document
+  const putBack = useCallback(() => takeTheirs().then((taken) => {
+    if (taken) { setSaveFailed(false); setRefusedWith(undefined) }
+    return taken
+  }), [takeTheirs])
+  return { document, savedAt, saveFailed, ...(saveFailed && refusedWith ? { refusedWith: refusedWith.cause } : {}), unwritten, putBack }
 }
 
 /**
@@ -156,6 +213,7 @@ export function useScopeWriter(
       return known
     }
     return {
+      handOver: (refusals) => { handOver(watchedScopes, refusals) },
       write: async (steps, expects) => {
         const scope = await identity()
         return landed(await scopes.apply([{ scope, steps, ...(expects !== undefined ? { expects } : {}) }])).revisions[0]

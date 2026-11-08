@@ -35,6 +35,8 @@
  */
 import { createContext } from 'react'
 import type { StringKey } from '../i18n'
+import { fromArrays, summarise } from '../model'
+import type { Command, StepSummary } from '../model'
 import type { Repositories } from '../ports/Repositories'
 import type { StepsFor } from '../ports/ScopeRepository'
 import { SCOPE_MOVED } from '../projects/revision'
@@ -48,6 +50,11 @@ export type WriteRefusal = {
   readonly cause?: unknown
   /** The very write again, as it was made: a refused write changed nothing, so making it again is safe. */
   readonly retry: () => Promise<boolean>
+  /**
+   * What the change was, in the words the Activity list uses for a step, so
+   * *Your work* names each one rather than one sentence for all of them.
+   */
+  readonly summary?: StepSummary
 }
 
 export type WriteRefusals = {
@@ -70,8 +77,14 @@ export type WriteRefusals = {
   readonly subscribe: (listener: () => void) => () => void
   /** One refusal let go of — put back by whoever made it — or every one. */
   readonly forget: (id?: number) => void
-  /** Every refused write made again; true where every one landed. */
-  readonly retry: () => Promise<boolean>
+  /** One refused write made again, or every one in the order they were made; true where every one landed. */
+  readonly retry: (id?: number) => Promise<boolean>
+  /**
+   * Writes the open scope's session could not make, handed over as it goes —
+   * a person leaving the scope with refused changes — so they stand here, a
+   * row each, rather than going with the session. Answers their numbers.
+   */
+  readonly handOver: (refusals: readonly Omit<WriteRefusal, 'id'>[]) => readonly number[]
 }
 
 /** The refusals that mean a write was not kept, rather than an answer to a question. */
@@ -139,11 +152,17 @@ export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => vo
       set([...held, { ...refusal, id: next }])
       return next
     },
+    handOver: (refusals) => {
+      const made = refusals.map((one, at) => ({ ...one, id: next + at + 1 }))
+      next += refusals.length
+      if (made.length > 0) set([...held, ...made])
+      return made.map((one) => one.id)
+    },
     // Made again from *Your work*: under way like the first time.
-    retry: () => hold((async () => {
+    retry: (id) => hold((async () => {
       // One after the other, in the order they were made: two changes to one scope are made as they were meant to land.
       const tried: boolean[] = []
-      for (const one of held) {
+      for (const one of held.filter((each) => id === undefined || each.id === id)) {
         const landed = await one.retry().catch(() => false)
         const then = after.get(one.id)
         if (landed) { drop(one.id); then?.() }
@@ -178,7 +197,10 @@ type Loosen<A> = (args: A) => A
 
 const refusedAtAll = (answer: unknown) => typeof answer === 'object' && answer !== null && 'refused' in answer
 
-function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Promise<R>, loosen?: Loosen<A>) {
+/** What a watched write was, from what it was handed: the words its row in *Your work* reads. */
+type Named<A> = (args: A) => StepSummary | undefined
+
+function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Promise<R>, loosen?: Loosen<A>, named?: Named<A>) {
   const attempt = async (args: A): Promise<{ answer: R; key?: StringKey } | { cause: unknown }> => {
     try {
       const answer = await call(...args)
@@ -200,10 +222,14 @@ function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Pro
       const loose = await attempt(loosen(args))
       return !('cause' in loose) && !refusedAtAll(loose.answer)
     }
+    // Words are a courtesy: a write that cannot be named still stands in the list, as a change.
+    let summary: StepSummary | undefined
+    try { summary = named?.(args) } catch { summary = undefined }
     const id = store.add({
       ...('key' in first && first.key ? { key: first.key } : {}),
       cause: 'cause' in first ? first.cause : first.answer,
       retry,
+      ...(summary ? { summary } : {}),
     })
     if ('cause' in first) {
       tagRefusal(first.cause, id)
@@ -225,7 +251,10 @@ const UNDERWAY = Symbol('underway')
  * Wrap the named methods of one repository, keeping everything else it has —
  * a method an adapter adds, a property — exactly as it was.
  */
-function watch<T extends object>(store: Store, repository: T, writes: readonly (keyof T & string)[], loosened: Partial<Record<string, Loosen<unknown[]>>> = {}): T {
+function watch<T extends object>(
+  store: Store, repository: T, writes: readonly (keyof T & string)[],
+  loosened: Partial<Record<string, Loosen<unknown[]>>> = {}, named: Partial<Record<string, Named<unknown[]>>> = {},
+): T {
   const names = new Set<string | symbol>(writes)
   const made = new Map<string | symbol, unknown>()
   return new Proxy(repository, {
@@ -236,7 +265,9 @@ function watch<T extends object>(store: Store, repository: T, writes: readonly (
       const value: unknown = Reflect.get(target, prop, target)
       if (typeof value !== 'function') return value
       if (!names.has(prop)) return (value as (...args: unknown[]) => unknown).bind(target)
-      if (!made.has(prop)) made.set(prop, watched(store, (value as (...args: unknown[]) => Promise<unknown>).bind(target), loosened[String(prop)]))
+      if (!made.has(prop)) {
+        made.set(prop, watched(store, (value as (...args: unknown[]) => Promise<unknown>).bind(target), loosened[String(prop)], named[String(prop)]))
+      }
       return made.get(prop)
     },
   })
@@ -250,6 +281,11 @@ export function unwatched<T extends object>(repository: T): T {
 /** Have `then` done once the refused write `id` lands when made again, where the repository is watched. */
 export function whenLanded(repository: object, id: number | undefined, then: () => void): void {
   if (id !== undefined) storeOf(repository)?.whenLanded(id, then)
+}
+
+/** Refused writes handed over to the list a watched repository keeps; nothing where nobody watches it. */
+export function handOver(repository: object, refusals: readonly Omit<WriteRefusal, 'id'>[]): readonly number[] | undefined {
+  return storeOf(repository)?.handOver(refusals)
 }
 
 /** The count of writes under way that a watched repository keeps, or none for one nobody watches. */
@@ -272,19 +308,46 @@ export function holdWrite<T>(repository: object, work: Promise<T>): Promise<T> {
   return writesUnderway(repository)?.hold(work) ?? work
 }
 
+/** Nothing at all: what a step is named against where the model it was made on is not at hand. */
+const NOTHING_HELD = fromArrays({ name: '', elements: [], relations: [], diagrams: [] })
+
+/**
+ * What steps sent to a scope were, as the Activity list would say them: named
+ * from the commands alone, since the model they were made on is not here — a
+ * rename says the name it gives, a change says what it changes where it can.
+ * A scope's own description, or a picture, is said as the scope's settings.
+ */
+export function stepsSummary(commands: readonly { readonly type: string }[]): StepSummary {
+  const modelled = commands.filter((one) => !one.type.startsWith('scope.') && !one.type.startsWith('image.')) as Command[]
+  if (modelled.length === 0) return { key: 'activity.projectSettings' }
+  try {
+    return summarise(modelled, NOTHING_HELD)
+  } catch {
+    return { key: 'work.refusedChange' }
+  }
+}
+
+const said = (key: StringKey, name?: unknown): Named<unknown[]> => () => ({ key, ...(typeof name === 'string' ? { name } : {}) })
+
 /** The app's repositories, with every write watched. Reads go through untouched. */
 export function watchRepositories(repositories: Repositories, store: Store): Repositories {
+  const people = said('work.refusedPeople')
   return {
     ...repositories,
     scopes: watch(store, repositories.scopes, ['apply', 'create', 'move', 'remove'], {
       // A move or a removal is never made over a scope that changed since: what it would take with it is not what was asked about.
       apply: ([work]) => [(work as readonly StepsFor[]).map(({ expects: _expects, ...steps }) => steps)],
+    }, {
+      apply: ([work]) => stepsSummary((work as readonly StepsFor[]).flatMap((one) => one.steps.map((each) => each.command))),
+      create: (args) => said('work.refusedNewScope', (args[1] as { name?: unknown } | undefined)?.name)(args),
+      move: said('work.refusedMoveScope'),
+      remove: said('work.refusedRemoveScope'),
     }),
-    images: watch(store, repositories.images, ['put']),
-    settings: watch(store, repositories.settings, ['write']),
+    images: watch(store, repositories.images, ['put'], {}, { put: (args) => said('work.refusedPicture', args[1])(args) }),
+    settings: watch(store, repositories.settings, ['write'], {}, { write: said('work.refusedSetting') }),
     people: watch(store, repositories.people, [
       'add', 'change', 'leave', 'takeBackLeaving', 'merge', 'forget', 'remove', 'bringIn', 'answerDistinct', 'takeBackDistinct',
-    ]),
+    ], {}, Object.fromEntries(['add', 'change', 'leave', 'takeBackLeaving', 'merge', 'forget', 'remove', 'bringIn', 'answerDistinct', 'takeBackDistinct'].map((name) => [name, people]))),
   }
 }
 

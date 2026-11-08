@@ -29,6 +29,7 @@ import type { Language, Translate } from '../i18n'
 import { formatMoment } from '../i18n/dates'
 import type { StepSummary } from '../model'
 import type { SourceActivityLine } from '../platform/sourceProvider'
+import { stepWords } from './stepWords'
 
 /** One line of the list: what was done, when, and by whom where that is not obvious. */
 export type ActivityEntry = {
@@ -179,17 +180,7 @@ export function ActivityLines({ open = true, entries, recent, language, s }: Omi
       {lines.map((entry, i) => (
         <li key={`${entry.at}-${i}`} className="kit-lines__row">
           <span data-testid="activity-summary">
-            {s(entry.summary.key, {
-              name: entry.summary.name ?? '—',
-              count: entry.summary.count ?? 1,
-              asOf: entry.summary.asOf ?? '',
-              // What kind of row it was, in today's language rather than
-              // the one it was drawn in (ADR-0012 §5).
-              type: entry.summary.typeKey ? s(entry.summary.typeKey) : '',
-              // Where a move took the scope from, and to.
-              from: entry.summary.from ?? '',
-              to: entry.summary.to ?? '',
-            })}
+            {stepWords(entry.summary, s)}
           </span>
           <small>
             {(entry.origin !== undefined || entry.you || entry.unattended) && (

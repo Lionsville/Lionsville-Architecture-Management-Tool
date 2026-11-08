@@ -24,7 +24,7 @@ import { AUTOSAVE_IDLE_MS } from '../projects/documentSession'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import { useDocumentSession } from './useDocumentSession'
-import type { DocumentSessionHook, SavableSession, ScopeWriter } from './useDocumentSession'
+import type { DocumentSessionHook, LeftUnwritten, SavableSession, ScopeWriter } from './useDocumentSession'
 import type { PendingStep, SessionJournal } from './useModelSession'
 import { ShellError } from '../platform/errors'
 import type { ScopeStep } from '../projects/scopeState'
@@ -51,6 +51,7 @@ function mount(
   sourceStatus?: (work: SourceWork) => SourceStatus,
   onSourceWork?: SourceWorkChanged,
   writeAfterMs?: number,
+  onLeftUnwritten?: LeftUnwritten,
 ) {
   const latest = { current: project() }
   const saved = vi.fn()
@@ -107,6 +108,7 @@ function mount(
       sourceStatus,
       onSourceWork,
       ...(writeAfterMs !== undefined ? { writeAfterMs } : {}),
+      ...(onLeftUnwritten ? { onLeftUnwritten } : {}),
     })
     return null
   }
@@ -123,7 +125,7 @@ function mount(
     watching: () => watching,
     status: () => hook.state.status,
     somebodyElseWrote: () => act(() => announce?.()),
-    takeTheirs: () => act(() => hook.takeTheirs()),
+    takeTheirs: () => act(() => { void hook.takeTheirs() }),
     keepMine: () => act(() => hook.keepMine()),
     unmount: () => view.unmount(),
     /** Another tab up, the document as it was. */
@@ -267,6 +269,49 @@ describe('when the store refuses', () => {
 
     expect(view.writes).toHaveLength(1)
     expect(view.result).toHaveBeenCalledWith(false, refusal)
+  })
+
+  it('hands refused changes over as it goes, in the same turn and without writing them again', async () => {
+    const refusal = new Error('read-only')
+    const left = vi.fn<LeftUnwritten>()
+    const view = mount(() => Promise.reject(refusal), undefined, undefined, undefined, undefined, left)
+    view.edit('One')
+    view.edit('Two')
+    await view.idle()
+    expect(view.writes).toHaveLength(1)
+
+    view.unmount()
+    // Nothing in between where the changes are nowhere: the word never says they are safe.
+    expect(left).toHaveBeenCalledTimes(1)
+    const [steps, cause, before] = left.mock.calls[0]!
+    expect(steps.map((one) => one.stepId)).toEqual(['step-0', 'step-1'])
+    expect(cause).toBe(refusal)
+    expect(before).toBe(true)
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(view.writes).toHaveLength(1)
+  })
+
+  it('hands over what the write on the way out could not write, and says that refusal', async () => {
+    const refusal = new Error('read-only')
+    const left = vi.fn<LeftUnwritten>()
+    const view = mount(() => Promise.reject(refusal), undefined, undefined, undefined, undefined, left)
+    view.edit('One')
+    view.unmount()
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+
+    expect(view.writes).toHaveLength(1)
+    expect(view.result).toHaveBeenCalledWith(false, refusal)
+    expect(left).toHaveBeenCalledWith([expect.objectContaining({ stepId: 'step-0' })], refusal, false)
+  })
+
+  it('hands nothing over where the way out wrote everything', async () => {
+    const left = vi.fn<LeftUnwritten>()
+    const view = mount(undefined, undefined, undefined, undefined, undefined, left)
+    view.edit('One')
+    view.unmount()
+    await act(async () => { await vi.advanceTimersByTimeAsync(0) })
+    expect(view.writes).toHaveLength(1)
+    expect(left).not.toHaveBeenCalled()
   })
 
   it('tries again after the next edit', async () => {

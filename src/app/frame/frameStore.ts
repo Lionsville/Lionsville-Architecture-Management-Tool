@@ -11,6 +11,7 @@
  * and the rows read them; a store and not a context value, so a keystroke's
  * new status draws the rows and not the whole workspace again.
  */
+import type { StepSummary } from '../../model'
 import type { ViewFacets } from '../../widgets/placeTab'
 import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from 'react'
 import type { TypeLink } from '../../projects/scopeType'
@@ -59,6 +60,17 @@ export type ScreenFacts = {
   readonly activity?: () => readonly ActivityEntry[]
   readonly recentActivity?: ActivityMenuProps['recent']
   readonly activityKept?: boolean
+  /**
+   * The open scope's changes the place would not take, while it will not: a
+   * row each, what refused them, and the two ways out — written again, or let
+   * go of for the scope as it is kept.
+   */
+  readonly notWritten?: {
+    readonly rows: () => readonly StepSummary[]
+    readonly cause?: unknown
+    readonly retry: () => Promise<boolean>
+    readonly putBack: () => Promise<boolean>
+  }
   /** What *Your work* says of this screen beyond where it is kept: something wrong, and the ways out of it. */
   readonly workTrouble?: WorkTrouble
   /** A band this screen is in: looking at another day. */
@@ -91,6 +103,8 @@ export type LeaveGuard = (to: Destination, go: () => void, stay?: () => void) =>
 
 export type FrameState = {
   readonly work?: OwnWork
+  /** *Your work* was opened to answer a refusal: its *Try again* takes the focus once, then this is cleared. */
+  readonly workFocus?: number
   readonly guard?: LeaveGuard
   readonly screen?: ScreenFacts
   readonly panel?: FramePanel
