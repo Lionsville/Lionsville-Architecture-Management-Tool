@@ -208,6 +208,8 @@ describe('Back and Forward', () => {
     fireEvent.click(screen.getByText(/^Settings of .*…$/))
     expect(await screen.findByTestId('scope-settings-page')).toBeDefined()
     await waitFor(async () => expect(((await where()) as { page?: { page?: string } }).page?.page).toBe('settings'))
+    // On screen is not yet in the history: a place is written once it settles, and Back before that leaves the board.
+    await waitFor(() => expect(window.location.hash).toBe('#/acme/retail/-/settings'))
     window.history.back()
     await settledOn({ scope: 'acme/retail', page: 'board', id: 'r7' })
     await waitFor(() => expect(screen.queryByTestId('scope-settings-page')).toBeNull())
