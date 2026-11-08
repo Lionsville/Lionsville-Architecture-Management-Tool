@@ -30,7 +30,10 @@ import type { PreferencesWriter, ShellPreferences } from './useShellPreferences'
 import { useKeepNotice } from './useKeepNotice'
 import type { KeepNotice } from './useKeepNotice'
 import { useToasts } from './useToasts'
-import type { Notify, Toasts } from './useToasts'
+import type { Notify, ToastAction, Toasts } from './useToasts'
+import { isFault, notKeptSentence } from './notKept'
+import type { KeepFailedKey } from './notKept'
+import { refusalOf } from '../projects/refusalTag'
 
 /** Report a failure to the trail, and — with a key — to the person as well. */
 export type Failed = (where: string, cause: unknown, key?: StringKey) => void
@@ -54,6 +57,12 @@ export type ShellServices = {
    * endless one.
    */
   failedRef: RefObject<Failed>
+  /**
+   * What *See Your work* on a refusal's toast opens, set once the frame that
+   * draws the panel is composed: until then, and on a screen with no frame,
+   * nothing.
+   */
+  openWork: RefObject<(() => void) | undefined>
 }
 
 /**
@@ -76,6 +85,8 @@ export function useShellServices(deps: {
   initialPreferences: unknown
   browserLanguages: readonly string[] | string | undefined
   keepFailure: SourceFailure | undefined
+  /** The source's sentence for a change it would not take (`SourceProvider.keepFailedKey`). */
+  keepFailedKey?: KeepFailedKey
   diagnostics: ShellDiagnostics
   /** The accent the source's environment asks for, not yet looked at. */
   accent?: string
@@ -84,8 +95,9 @@ export function useShellServices(deps: {
   /** Where the app is now, for a problem to say where it happened; read when it happens. */
   screen?: () => Screen | undefined
 }): ShellServices {
-  const { preferences, initialPreferences, browserLanguages, keepFailure, diagnostics, accent, problemAction } = deps
+  const { preferences, initialPreferences, browserLanguages, keepFailure, keepFailedKey, diagnostics, accent, problemAction } = deps
   const toasts = useToasts()
+  const openWork = useRef<(() => void) | undefined>(undefined)
   /**
    * Preferences and the storage notice need each other: writing a preference can
    * fail, and saying so needs the language, which is a preference. One late-bound
@@ -105,7 +117,9 @@ export function useShellServices(deps: {
     ...(shades ? { accent: shades } : {}),
   })
   const s = useMemo(() => translator(prefs.language), [prefs.language])
-  noticeRef.current = useKeepNotice(toasts.notify, s, keepFailure)
+  // The way out of a refusal is in *Your work*: Try again, Put back. Looked up when pressed, as the frame is composed after this.
+  const seeWork = useMemo<ToastAction>(() => ({ label: s('work.seeYourWork'), onClick: () => openWork.current?.() }), [s])
+  noticeRef.current = useKeepNotice(toasts.notify, s, keepFailure, keepFailedKey, seeWork)
   // Through a ref: where the app is is known only once the shell below has
   // been composed, and a problem reads it at the moment it happens.
   const screenRef = useRef(deps.screen)
@@ -132,11 +146,19 @@ export function useShellServices(deps: {
    */
   const failed = useCallback<Failed>((where, cause, key) => {
     diagnostics.report({ level: 'error', where, message: key ?? 'rejected', cause })
-    if (key) toasts.notify(s(key), 'error', ...offerFor(problem, { where, key, cause }))
-  }, [diagnostics, toasts, s, problem])
+    if (!key) return
+    // A write the place work is kept would not take (`writeRefusals`) is said
+    // as that place's truth and its reason, with the way to Try again and Put
+    // back, rather than as the screen's own sentence for having failed.
+    if (refusalOf(cause) !== undefined) {
+      toasts.notify(keepFailure?.(cause) ?? notKeptSentence(s, keepFailedKey, cause), 'error', seeWork)
+      return
+    }
+    toasts.notify(s(key), 'error', ...offerFor(problem, { where, key, cause }))
+  }, [diagnostics, toasts, s, problem, keepFailedKey, keepFailure, seeWork])
   const failedRef = useRef(failed)
   failedRef.current = failed
-  return { toasts, prefs, s, reportKept, failed, problem, failedRef }
+  return { toasts, prefs, s, reportKept, failed, problem, failedRef, openWork }
 }
 
 /**
@@ -225,7 +247,4 @@ export function useSavedFilters(prefs: ShellPreferences): SavedFilters {
   return useMemo(() => ({ list, onChange }), [list, onChange])
 }
 
-/** A JavaScript fault rather than a refusal with words: what no sentence for a person should quote. */
-export function isFault(failure: unknown): boolean {
-  return failure instanceof Error && ['TypeError', 'ReferenceError', 'SyntaxError', 'RangeError'].includes(failure.name)
-}
+export { isFault }

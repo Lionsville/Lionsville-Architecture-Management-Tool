@@ -20,6 +20,7 @@ import type { Command, DesignDiagram } from '../../model'
 import { claimKey, idsIn } from '../../model/keys'
 import { ShellError } from '../../platform/errors'
 import type { ScopeSnapshot } from '../../projects/scope'
+import { refusalOf } from '../../projects/refusalTag'
 import { changeScope } from '../../projects/scopeAccess'
 import type { ScopeCommand } from '../../projects/scopeState'
 import type { ScopePath } from '../../projects/scopePath'
@@ -72,7 +73,7 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
   refresh: () => void
   notify: (message: string, severity: 'success' | 'error', undo?: ToastUndo) => void
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
-  onKeptResult: (kept: boolean) => void
+  onKeptResult: (kept: boolean, cause?: unknown) => void
   s: Translate
 }): HomeViews {
   const { scopes } = repositories
@@ -80,10 +81,11 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
   const [steps, setSteps] = useState<readonly HomeStep[]>([])
 
   const failed = useCallback((where: string, cause: unknown) => {
-    // The reducer's own refusal is said in its words; anything else is where work is kept not answering.
-    if (cause instanceof ShellError) { notify(s(cause.key), 'error'); return }
+    // The reducer's own refusal is said in its words; a write the place work is
+    // kept would not take is that place's to say, with its reason (`notKept`).
+    if (cause instanceof ShellError && refusalOf(cause) === undefined) { notify(s(cause.key), 'error'); return }
     onFailure(where, cause)
-    onKeptResult(false)
+    onKeptResult(false, cause)
   }, [notify, onFailure, onKeptResult, s])
 
   /** Put one step back, wherever it is on the list: the toast's Undo may come after another change. */

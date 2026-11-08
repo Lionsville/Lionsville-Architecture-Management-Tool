@@ -202,6 +202,11 @@ export const EN = {
   'browser.risk': 'It is saved as you work. Clearing this browser\'s data removes it, so keep a copy somewhere safe.',
   'memory.risk': 'Your work is not kept: this browser refused its storage, so everything goes when this tab closes. Save a copy as you go, or work in a folder.',
   'folder.risk': 'Written three seconds after you stop. A folder can be backed up, synced and committed.',
+  /** A change the folder would not take, said before the refusal's own reason (`SourceProvider.keepFailedKey`). */
+  'folder.keepFailed': 'The folder did not take the change, so it is not saved.',
+  'browser.keepFailed': 'This browser did not keep the change, so it is not saved.',
+  /** The standing strip where this browser keeps nothing at all: what goes when the tab closes. */
+  'browser.notKeeping': 'This browser could not save your work (storage full or blocked). Save a copy, or it is gone when you close the tab.',
   'example.label': 'Example · not kept',
   'example.where': 'This is the example: nothing here is kept.',
   'example.risk': 'Everything tried here goes when you leave, unless you keep it as your start.',

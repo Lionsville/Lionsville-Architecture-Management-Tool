@@ -26,6 +26,16 @@ import type {
   DirectoryHandleLike, FileHandleLike, FileLike, WritableLike,
 } from '../FileSystemScopeStore'
 import type { DesktopFiles } from '../../desktop/channel'
+import { crossedFromMain } from '../../desktop/crossedFromMain'
+
+/**
+ * A write main refused, as the refusal it said (`electron/main/sayable.ts`):
+ * a folder that would not be written is told from one that is gone, and the
+ * page says which rather than the channel's own wrapping of it.
+ */
+function said<T>(call: Promise<T>): Promise<T> {
+  return call.catch((cause: unknown) => { throw crossedFromMain(cause) })
+}
 
 function missing(what: string, name: string): Error {
   // The browser throws `NotFoundError`; the store reads the failure and not the
@@ -61,7 +71,7 @@ function fileHandle(
         },
         // One write for the whole file, at the end. That is what makes it
         // atomic in main: a temporary file, flushed, renamed over the target.
-        async close() { await files.write(root, path, join(chunks)) },
+        async close() { await said(files.write(root, path, join(chunks))) },
       }
     },
   }
@@ -110,7 +120,7 @@ export class IpcDirectoryHandle implements DirectoryHandleLike {
     name: string, options?: { create?: boolean },
   ): Promise<DirectoryHandleLike> {
     const path = this.within(name)
-    if (options?.create) await this.files.makeDirectory(this.root, path)
+    if (options?.create) await said(this.files.makeDirectory(this.root, path))
     else if (!await this.files.list(this.root, path)) throw missing('directory', name)
     return new IpcDirectoryHandle(this.files, this.root, name, path)
   }
@@ -122,7 +132,7 @@ export class IpcDirectoryHandle implements DirectoryHandleLike {
   }
 
   async removeEntry(name: string, options?: { recursive?: boolean }): Promise<void> {
-    await this.files.remove(this.root, this.within(name), options)
+    await said(this.files.remove(this.root, this.within(name), options))
   }
 
   /**
@@ -133,24 +143,24 @@ export class IpcDirectoryHandle implements DirectoryHandleLike {
   async writeTogether(
     writes: readonly { path: string; data: string | Uint8Array }[], removals: readonly string[],
   ): Promise<void> {
-    await this.files.writeTogether(
+    await said(this.files.writeTogether(
       this.root,
       writes.map((write) => ({
         path: this.within(write.path),
         bytes: typeof write.data === 'string' ? new TextEncoder().encode(write.data) : write.data,
       })),
       removals.map((path) => this.within(path)),
-    )
+    ))
   }
 
   /** Made in main, where nothing else can come between looking at the path and writing it. */
   createFile(path: string, data: Uint8Array): Promise<boolean> {
-    return this.files.create(this.root, this.within(path), data)
+    return said(this.files.create(this.root, this.within(path), data))
   }
 
   /** Renamed in main: the folder moves as it is, and its bytes never cross to the page. */
   async moveEntry(from: string, to: string): Promise<void> {
-    await this.files.move(this.root, this.within(from), this.within(to))
+    await said(this.files.move(this.root, this.within(from), this.within(to)))
   }
 
   async *values(): AsyncIterableIterator<FileHandleLike | DirectoryHandleLike> {

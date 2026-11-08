@@ -13,6 +13,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { translator } from '../i18n'
+import { ShellError } from '../platform/errors'
 import { useKeepNotice } from './useKeepNotice'
 
 function mount(sourceFailure?: (cause: unknown) => string | undefined) {
@@ -33,7 +34,7 @@ describe('useKeepNotice', () => {
     const { notify, report } = mount()
     for (let i = 0; i < 20; i += 1) report(false)
     expect(notify).toHaveBeenCalledOnce()
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining('could not save'), 'error')
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('not saved'), 'error')
   })
 
   it('says so when it works again, and then goes quiet', () => {
@@ -42,7 +43,7 @@ describe('useKeepNotice', () => {
     report(true)
     report(true)
     expect(notify).toHaveBeenCalledTimes(2)
-    expect(notify).toHaveBeenLastCalledWith('Saving in this browser works again.', 'success')
+    expect(notify).toHaveBeenLastCalledWith('Saving works again.', 'success')
   })
 
   it('can report a second outage after a recovery', () => {
@@ -51,7 +52,35 @@ describe('useKeepNotice', () => {
     report(true)
     report(false)
     expect(notify).toHaveBeenCalledTimes(3)
-    expect(notify).toHaveBeenLastCalledWith(expect.stringContaining('could not save'), 'error')
+    expect(notify).toHaveBeenLastCalledWith(expect.stringContaining('not saved'), 'error')
+  })
+})
+
+/**
+ * Whose truth a refusal says: the place the work is kept, with its reason —
+ * never a browser's sentence over a folder on the desktop.
+ */
+describe('useKeepNotice, said as the source the work is kept in', () => {
+  it('names the source by its own key, then the refusal\u2019s reason, and points at Your work', () => {
+    const notify = vi.fn()
+    const seeWork = { label: 'See Your work', onClick: vi.fn() }
+    const { result } = renderHook(() => useKeepNotice(notify, translator('en'), undefined, 'folder.keepFailed', seeWork))
+    result.current(false, new ShellError('shell.folderNoAccess'))
+    const [said, severity, action] = notify.mock.calls[0] as [string, string, typeof seeWork]
+    expect(said).toBe('The folder did not take the change, so it is not saved. This app may not write in that folder: it is read-only, or kept from this app. Give it write access, or work from another folder.')
+    expect(said).not.toContain('browser')
+    expect(severity).toBe('error')
+    expect(action).toBe(seeWork)
+  })
+
+  it('names no place where the source gave no sentence, quotes a reason that came as words, and leaves out a fault', () => {
+    const notify = vi.fn()
+    const { result } = renderHook(() => useKeepNotice(notify, translator('en')))
+    result.current(false, new Error('the server did not answer'))
+    expect(notify).toHaveBeenLastCalledWith('Where your work is kept did not take the change, so it is not saved. It said: the server did not answer', 'error')
+    result.current(true)
+    result.current(false, new TypeError('x is undefined'))
+    expect(notify).toHaveBeenLastCalledWith('Where your work is kept did not take the change, so it is not saved.', 'error')
   })
 })
 

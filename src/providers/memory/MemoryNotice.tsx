@@ -25,7 +25,7 @@ export function MemoryNotice({ current }: SourceChromeProps) {
       className="kit-bottom-notice"
       sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 'var(--t-small)' }}
     >
-      {s('shell.keepFailed')}
+      {s('browser.notKeeping')}
     </Alert>
   )
 }

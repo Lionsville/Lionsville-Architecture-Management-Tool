@@ -21,5 +21,19 @@ export function sayable(channel: string, cause: unknown, note: (said: string) =>
   if (cause instanceof GitRefused) return new Error(`${GIT_REFUSED}: ${cause.reason}`)
   const code = (cause as { code?: unknown } | undefined)?.code
   note(`${channel} failed: ${typeof code === 'string' || typeof code === 'number' ? String(code) : 'unknown'}`)
-  return new Error(channel.startsWith('git:') ? 'shell.historyFailed' : 'shell.folderUnavailable')
+  if (channel.startsWith('git:')) return new Error('shell.historyFailed')
+  // A folder that is there and says no is not a folder gone: what a person can
+  // do about each is different, so the two the file system tells apart cross
+  // apart (`toFolder`).
+  return new Error(toFolder(code))
+}
+
+/** The file system's codes for a folder that is there and would not be written, and for one with no room. */
+const NO_ACCESS = new Set(['EACCES', 'EPERM', 'EROFS'])
+const NO_ROOM = new Set(['ENOSPC', 'EDQUOT'])
+
+function toFolder(code: unknown): string {
+  if (typeof code === 'string' && NO_ACCESS.has(code)) return 'shell.folderNoAccess'
+  if (typeof code === 'string' && NO_ROOM.has(code)) return 'shell.diskFull'
+  return 'shell.folderUnavailable'
 }

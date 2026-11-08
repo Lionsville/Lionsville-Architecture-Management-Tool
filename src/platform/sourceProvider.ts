@@ -437,6 +437,14 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    */
   /** What can lose the work here, for *Your work* and the first run; absent where nothing need be said. */
   readonly riskKey?: StringKey | (string & {})
+  /**
+   * What a change this place would not take means here, naming the place —
+   * *the folder did not take the change*: said on the toast with the
+   * refusal's own reason after it, and in *Your work*. Absent, the app says
+   * it in words that name no place, which is never wrong; this tree's
+   * sentence about a browser's storage was, everywhere but a browser.
+   */
+  readonly keepFailedKey?: StringKey | (string & {})
   readonly removeKey?: StringKey | (string & {})
   /**
    * What the notice over a scope that could not be read whole says here, with

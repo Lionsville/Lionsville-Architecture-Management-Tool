@@ -12,7 +12,9 @@
 import { useCallback, useRef } from 'react'
 import type { Translate } from '../i18n'
 import type { SourceFailure } from '../platform/sourceProvider'
-import type { Notify } from './useToasts'
+import { notKeptSentence } from './notKept'
+import type { KeepFailedKey } from './notKept'
+import type { Notify, ToastAction } from './useToasts'
 
 /**
  * `report(true)` after a successful write, `report(false)` after a failed one —
@@ -27,11 +29,14 @@ export type KeepNotice = (ok: boolean, cause?: unknown) => void
 
 /**
  * @param sourceFailure What the source this work is kept in says a refusal there
- * means ({@link SourceFailure}). Absent for the three sources that ship, and the
- * sentence is then this tree's own, exactly as it always was.
+ * means ({@link SourceFailure}). Absent for the sources that ship, and the
+ * sentence is then the source's key for it with the refusal's reason after it
+ * (`notKept`).
+ * @param keepFailedKey That key (`SourceProvider.keepFailedKey`); absent, words that name no place.
+ * @param seeWork The toast's one button: *Your work*, where the change is tried again or put back.
  */
 export function useKeepNotice(
-  notify: Notify, s: Translate, sourceFailure?: SourceFailure,
+  notify: Notify, s: Translate, sourceFailure?: SourceFailure, keepFailedKey?: KeepFailedKey, seeWork?: ToastAction,
 ): KeepNotice {
   const failed = useRef(false)
   return useCallback((ok: boolean, cause?: unknown) => {
@@ -41,11 +46,9 @@ export function useKeepNotice(
       return
     }
     if (ok || failed.current) return
-    // Our sentence is about this browser's storage, so it is the right one for
-    // the three sources that ship and the wrong one everywhere else: it names
-    // the wrong place and recommends a working file to somebody whose work is
-    // kept where a working file is not the copy that matters.
-    const said = sourceFailure ? sourceFailure(cause) : s('shell.keepFailed')
+    // The place's own truth, never another's: this used to be one sentence
+    // about a browser's storage, said over a folder on the desktop too.
+    const said = sourceFailure ? sourceFailure(cause) : notKeptSentence(s, keepFailedKey, cause)
     // Nothing from the source is the source saying it has this one covered
     // somewhere of its own. The latch stays open on purpose: nothing was said,
     // so there is nothing to take back with "saving works again", and the next
@@ -53,6 +56,6 @@ export function useKeepNotice(
     // it.
     if (!said) return
     failed.current = true
-    notify(said, 'error')
-  }, [notify, s, sourceFailure])
+    notify(said, 'error', ...(seeWork ? [seeWork] : []))
+  }, [notify, s, sourceFailure, keepFailedKey, seeWork])
 }

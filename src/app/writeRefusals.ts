@@ -33,6 +33,8 @@ export type WriteRefusal = {
   readonly id: number
   /** The key the refusal said, where it was one; a rejection has none. */
   readonly key?: StringKey
+  /** What the store answered or threw, for the reason said beside it (`notKept`). */
+  readonly cause?: unknown
   /** The very write again, as it was made: a refused write changed nothing, so making it again is safe. */
   readonly retry: () => Promise<boolean>
 }
@@ -131,7 +133,11 @@ function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Pro
       const loose = await attempt(loosen(args))
       return !('cause' in loose) && !refusedAtAll(loose.answer)
     }
-    const id = store.add({ ...('key' in first && first.key ? { key: first.key } : {}), retry })
+    const id = store.add({
+      ...('key' in first && first.key ? { key: first.key } : {}),
+      cause: 'cause' in first ? first.cause : first.answer,
+      retry,
+    })
     if ('cause' in first) {
       tagRefusal(first.cause, id)
       throw first.cause

@@ -32,6 +32,7 @@ import { useFrameState } from './frameStore'
 import type { OwnWork, ScreenFacts } from './frameStore'
 import { PANEL_HELP } from '../../platform/helpPlaces'
 import type { WriteRefusal } from '../writeRefusals'
+import { notKeptSentence } from '../notKept'
 
 /** The place each window's word first said, kept by its frame: a save there needs no more than its time. */
 const firstPlace = new WeakMap<object, string>()
@@ -70,10 +71,11 @@ function NotKept({ parts, refused }: { parts: ShellParts; refused: readonly Writ
   const [trying, setTrying] = useState(false)
   if (refused.length === 0 || !parts.refusals) return null
   const { retry, forget } = parts.refusals
-  const why = refused.find((one) => one.key !== undefined)?.key
+  // The first refusal's reason: the rest were met at the same place, and nearly always for the same one.
+  const said = notKeptSentence(s, parts.props.provider?.sayings?.keepFailedKey, refused[0]?.cause)
   return (
     <PanelSection title={s('work.couldNotSave')}>
-      <p className="kit-work__say" data-testid="work-not-kept">{s('work.notKept')}{why ? ` ${s(why)}` : ''}</p>
+      <p className="kit-work__say" data-testid="work-not-kept">{said} {s('work.notKeptWays')}</p>
       <div className="kit-work__acts">
         <Button
           size="small" variant="primary" disabled={trying} data-testid="work-retry"
@@ -145,7 +147,7 @@ function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: Screen
           </div>
         </PanelSection>
       )}
-      {facts?.saveFailed && <PanelSection title={s('work.couldNotSave')}><p className="kit-work__say">{s('shell.keepFailed')}</p></PanelSection>}
+      {facts?.saveFailed && <PanelSection title={s('work.couldNotSave')}><p className="kit-work__say">{notKeptSentence(s, props.provider?.sayings?.keepFailedKey)}</p></PanelSection>}
       {riskKey && !trouble && <p className="kit-work__say" data-testid="work-risk">{s(riskKey as StringKey)}</p>}
       {!props.provider?.publishesSteps && (
         <PanelSection>

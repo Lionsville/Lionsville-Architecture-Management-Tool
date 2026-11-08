@@ -22,6 +22,8 @@ export const EN = {
    * can, so it says which of the two it is rather than "saving failed".
    */
   'shell.folderUnavailable': 'That folder is not available. Choose it again, or reconnect the drive it is on.',
+  'shell.folderNoAccess': 'This app may not write in that folder: it is read-only, or kept from this app. Give it write access, or work from another folder.',
+  'shell.diskFull': 'The disk that folder is on is full. Free some space on it.',
   /**
    * A step refused on a scope a later version of the app wrote
    * (`ScopeState.later`), a put back included: what this version cannot read

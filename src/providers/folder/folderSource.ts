@@ -109,6 +109,7 @@ export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, FolderBas
   describeKey: 'shell.sourceTipFolder',
   whereKey: 'folder.where',
   riskKey: 'folder.risk',
+  keepFailedKey: 'folder.keepFailed',
   removeKey: 'picker.deleteBodyFolder',
   unreadableKey: 'folder.unreadableScope',
   connect: {

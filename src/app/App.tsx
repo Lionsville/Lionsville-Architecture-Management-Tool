@@ -497,6 +497,8 @@ export function App(given: AppProps) {
   const parts = useShellParts(props, refusals)
   // A refused write that lands when tried again is read back as any write is: the tree, its index, the people.
   landed.current = () => { parts.writes.treeChanged(); parts.people.refresh() }
+  // A refusal's toast points at *Your work*, which is the frame's: it can open it now.
+  parts.services.openWork.current = () => parts.agent.setPanel('work')
   const { prefs, s, toasts } = parts.services
   // Every page under the shell reads a person through the one register (ADR-0036 §8).
   const names = useMemo(() => personNames(parts.people, s), [parts.people, s])
@@ -795,7 +797,8 @@ function useShellBase(props: AppProps) {
   const services = useShellServices({
     ...(props.provider?.accent ? { accent: props.provider.accent } : {}),
     preferences: props.preferences, initialPreferences: boot.initialPreferences, browserLanguages: boot.browserLanguages,
-    keepFailure: props.provider?.keepFailure, diagnostics, problemAction: props.provider?.problemAction,
+    keepFailure: props.provider?.keepFailure, keepFailedKey: props.provider?.sayings?.keepFailedKey,
+    diagnostics, problemAction: props.provider?.problemAction,
     screen: () => screenRef.current(),
   })
   const { toasts, prefs, s, reportKept, failed, failedRef } = services

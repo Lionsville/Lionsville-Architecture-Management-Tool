@@ -334,6 +334,7 @@ export function sourceSayings(source: WorkingSource): {
   labelKey?: StringKey | (string & {}); whereKey?: StringKey | (string & {}); removeKey?: StringKey | (string & {})
   riskKey?: StringKey | (string & {})
   unreadableKey?: StringKey | (string & {})
+  keepFailedKey?: StringKey | (string & {})
 } {
   const provider = sourceProvider(source.provider)
   return {
@@ -342,6 +343,7 @@ export function sourceSayings(source: WorkingSource): {
     ...(provider?.removeKey ? { removeKey: provider.removeKey } : {}),
     ...(provider?.riskKey ? { riskKey: provider.riskKey } : {}),
     ...(provider?.unreadableKey ? { unreadableKey: provider.unreadableKey } : {}),
+    ...(provider?.keepFailedKey ? { keepFailedKey: provider.keepFailedKey } : {}),
   }
 }
 

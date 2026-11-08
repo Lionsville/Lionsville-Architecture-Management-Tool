@@ -14,6 +14,8 @@ import type { EN } from './en'
 export const DE: Record<keyof typeof EN, string> = {
   'shell.badScopePath': 'Dieser Bereich hat keine verwendbare Adresse ({path}) und kann daher nicht gespeichert werden.',
   'shell.folderUnavailable': 'Dieser Ordner ist nicht verfügbar. Wählen Sie ihn erneut aus, oder verbinden Sie das Laufwerk wieder, auf dem er liegt.',
+  'shell.folderNoAccess': 'Diese App darf in diesem Ordner nicht schreiben: Er ist schreibgeschützt oder für diese App gesperrt. Geben Sie Schreibrechte, oder arbeiten Sie aus einem anderen Ordner.',
+  'shell.diskFull': 'Das Laufwerk, auf dem dieser Ordner liegt, ist voll. Geben Sie dort Platz frei.',
   'shell.laterNotReplaced': 'Dieser Bereich wurde nicht geändert: eine spätere Version der App hat ihn geschrieben, und diese kann nicht alles davon lesen. Aktualisieren Sie die App, und öffnen Sie den Bereich erneut.',
   'shell.unreadableNotSaved': 'Dieser Bereich wurde nicht gespeichert: ein Teil davon konnte nicht gelesen werden, und eine Änderung hätte verloren, was er enthält. Holen Sie ihn aus dem Verlauf zurück, oder bringen Sie eine gespeicherte Kopie ein.',
   'shell.scopeMoved': 'Jemand hat diesen Bereich geändert, während dies lief, deshalb wurde nichts geschrieben. Öffnen Sie ihn erneut und nehmen Sie die Änderung noch einmal vor.',

@@ -81,9 +81,17 @@ export const EN = {
   'shell.takeTheirs': 'Take theirs',
   'shell.keepMine': 'Keep mine',
   'shell.saveACopy': 'Save a copy…',
-  'shell.keepFailed':
-    'This browser could not save your work (storage full or blocked). Save a copy, or it is gone when you close the tab.',
-  'shell.keptAgain': 'Saving in this browser works again.',
+  /**
+   * A change where work is kept would not take, in words that name no place:
+   * what is said for a source that gave no sentence of its own
+   * (`SourceProvider.keepFailedKey`). The refusal's reason follows it.
+   */
+  'shell.keepFailed': 'Where your work is kept did not take the change, so it is not saved.',
+  'shell.keptAgain': 'Saving works again.',
+  /** A refusal's reason where it came with no sentence of ours: its own words. */
+  'shell.refusalSaid': 'It said: {message}',
+  /** The toast's way to the two ways out (Try again, Put back). */
+  'work.seeYourWork': 'See Your work',
   /**
    * The same sentence for a source that is not a folder: a way in a
    * registered provider offered, pressed, and gone nowhere. It says nothing
@@ -2170,7 +2178,8 @@ export const EN = {
   'work.today': 'Today, {time}',
   'work.manual': 'Where your work is kept, in the help',
   'work.couldNotSave': 'Could not save',
-  'work.notKept': 'A change was not written where your work is kept, so it is not saved. Try it again, or put it back and leave what is kept as it is.',
+  /** After what was not kept and why: the two ways out, beside it. */
+  'work.notKeptWays': 'Try it again, or put it back and leave what is kept as it is.',
   'work.putBack': 'Put back',
   'settings.notKept': 'Not saved: this was not written where your work is kept.',
   'work.lastSaved': 'Last saved',

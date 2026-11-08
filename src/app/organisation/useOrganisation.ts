@@ -109,7 +109,7 @@ export type UseOrganisationInput = {
   notify: (message: string, severity: 'success' | 'error' | 'warning', undo?: ToastUndo) => void
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Latched storage notice: a store that refuses says so once, standing. */
-  onKeptResult: (ok: boolean) => void
+  onKeptResult: (ok: boolean, cause?: unknown) => void
   /**
    * May this person change the scope at this path? What `open` asks before it
    * gives a scope with no document one (R2 below). Every scope may be written
@@ -371,7 +371,7 @@ export function useOrganisation({
       // Where work is kept refusing is what the standing notice says, and it
       // is latched, so a burst says it once.
       onFailure('organisation.create', cause)
-      onKeptResult(false)
+      onKeptResult(false, cause)
     })
   }, [dialog, scopes, refresh, onTreeChanged, onHome, notify, onFailure, onKeptResult, s])
 
@@ -414,7 +414,7 @@ export function useOrganisation({
       notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
     })().catch((cause: unknown) => {
       onFailure('organisation.board', cause)
-      onKeptResult(false)
+      onKeptResult(false, cause)
     })
   }, [dialog, scopes, onEnter, refresh, notify, onFailure, onKeptResult, s, onTreeChanged])
 

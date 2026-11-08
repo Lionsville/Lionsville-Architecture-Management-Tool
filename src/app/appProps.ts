@@ -54,6 +54,8 @@ export type SourceSayings = {
   readonly riskKey?: StringKey | (string & {})
   readonly removeKey?: StringKey | (string & {})
   readonly unreadableKey?: StringKey | (string & {})
+  /** What a change this place would not take means here (`SourceProvider.keepFailedKey`). */
+  readonly keepFailedKey?: StringKey | (string & {})
 }
 
 /** What the composition root read before the first render, and what went wrong on the way. */

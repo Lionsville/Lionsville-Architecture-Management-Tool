@@ -23,6 +23,15 @@ describe('what a failure in main says to the page', () => {
     expect(said.at(-1)).toBe('git:changes failed: unknown')
   })
 
+  it('tells a folder that would not be written, and a full disk, from a folder that is gone', () => {
+    const coded = (code: string) => Object.assign(new Error(`${code}: /Users/someone/work/scope.json`), { code })
+    expect(sayable('files:writeTogether', coded('EACCES'), () => {}).message).toBe('shell.folderNoAccess')
+    expect(sayable('files:write', coded('EROFS'), () => {}).message).toBe('shell.folderNoAccess')
+    expect(sayable('files:write', coded('ENOSPC'), () => {}).message).toBe('shell.diskFull')
+    expect(sayable('files:write', coded('ENOENT'), () => {}).message).toBe('shell.folderUnavailable')
+    expect(sayable('git:log', coded('EACCES'), () => {}).message).toBe('shell.historyFailed')
+  })
+
   it('crosses a git refused in the folder with its own words, which name the setting, and a keyed one as its key', () => {
     const said: string[] = []
     const refused = new GitRefused('its configuration sets http.cookiefile, which this app does not run git with')
