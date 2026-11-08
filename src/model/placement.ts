@@ -487,6 +487,30 @@ export function placementSize(
   };
 }
 
+/**
+ * The least a box on a container diagram is drawn at, so it says its name and
+ * its type whatever size it was placed at: an actor placed as a low tile on a
+ * landscape has no room for [Person].
+ */
+export const CONTAINER_BOX_MIN = { width: 120, height: 100 } as const;
+
+/**
+ * The size a box on a container diagram is DRAWN at. Laying out, placing and
+ * routing go by this rather than the stored size, or a person stored at its
+ * landscape height is drawn taller than the room it was given and sits over the
+ * box below it.
+ */
+export function containerBoxSize(
+  figure: NodeFigure,
+  placement?: Pick<NodeGeometry, 'width' | 'height'>,
+): { width: number; height: number } {
+  const size = placementSize(figure, placement);
+  return {
+    width: Math.max(size.width, CONTAINER_BOX_MIN.width),
+    height: Math.max(size.height, CONTAINER_BOX_MIN.height),
+  };
+}
+
 export function placementRect(figure: NodeFigure, placement: Omit<NodeGeometry, 'id'>): Rect {
   const size = placementSize(figure, placement);
   return { x: placement.x, y: placement.y, width: size.width, height: size.height };
@@ -694,7 +718,7 @@ export function defaultContainerPosition(
   figure: NodeFigure,
   existingOfKindGroup: number,
 ): { x: number; y: number } {
-  const size = NODE_SIZES[figure];
+  const size = containerBoxSize(figure);
   if (figure === 'component') {
     const perRow = 3;
     const row = Math.floor(existingOfKindGroup / perRow);

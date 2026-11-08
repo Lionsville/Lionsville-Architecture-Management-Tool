@@ -11,6 +11,7 @@ import { aspectConfigFor, withDerivedAspects } from '../model/aspects';
 import { resolveArrowheads, resolveEdgeStroke } from './edges/edgeStyle';
 import { assignEdgeAnchors } from '../model/floatingEdgeMath';
 import { placedNodes,
+  CONTAINER_BOX_MIN,
   expandRect,
   nodeMaxSize,
   nodeMinSize,
@@ -113,7 +114,6 @@ export interface BuildGraphArgs {
 }
 
 const BOUNDARY_PADDING = 56;
-const C4_BOX_MIN = { width: 120, height: 100 };
 const BOUNDARY_MIN: Rect = { x: 0, y: 0, width: 520, height: 360 };
 
 export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode[]): ElementNode[] {
@@ -270,7 +270,7 @@ export function boundaryRect(
  */
 function roomToSayItsType(diagram: DesignDiagram, rect: Rect): Rect {
   if (diagram.kind !== 'container') return rect;
-  return { ...rect, width: Math.max(rect.width, C4_BOX_MIN.width), height: Math.max(rect.height, C4_BOX_MIN.height) };
+  return { ...rect, width: Math.max(rect.width, CONTAINER_BOX_MIN.width), height: Math.max(rect.height, CONTAINER_BOX_MIN.height) };
 }
 
 export type FloatingEdgeModel = Edge<FloatingEdgeData>;

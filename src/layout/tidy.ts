@@ -22,6 +22,7 @@ import {
   placedNodes,
   placementRect,
   placementSize,
+  containerBoxSize,
 } from '../model/placement';
 import { nodeFigure } from '../model/kinds';
 import { canvasRect, clampCanvasSize, LAYER7_CANVAS, zoneRect, zoneSizes } from '../model/zones';
@@ -1454,7 +1455,8 @@ export async function tidyContainer(
   for (const placement of placedNodes(diagram)) {
     const element = elementsById.get(placement.id);
     if (!element || element.id === appId) continue;
-    const child: ElkChild = { id: element.id, ...placementSize(nodeFigure(element, placement.zone), placement) };
+    // At the size it is drawn, or a person given its landscape height is drawn over the box below it.
+    const child: ElkChild = { id: element.id, ...containerBoxSize(nodeFigure(element, placement.zone), placement) };
     if (element.kind === 'component' && element.parentId === appId) {
       components.push(child);
     } else {

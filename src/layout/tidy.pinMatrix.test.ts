@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest';
-import { placedNodes } from '../model/placement';
+import { containerBoxSize, placedNodes, rectsIntersect } from '../model/placement';
 import { laidOut } from '../model/testFixtures';
 import { DEFAULT_TIDY_OPTIONS, tidyContainer, tidyLayer7, type TidyOptions } from './tidy';
 import type { DesignModel, PlacedNode } from '../model/types';
@@ -223,6 +223,28 @@ describe('Tidy — the pins on a container diagram, where the group is the bound
     const after = byId(result.placements);
     // The boundary is sized by ELK to hug what it laid out, not kept verbatim.
     expect(after.get('app')!.width).not.toBe(640);
+  });
+});
+
+describe('Tidy — a container diagram lays its boxes out at the size they are drawn', () => {
+  it('leaves no person over another box, though a person is stored at its landscape height', async () => {
+    const model = container();
+    const people = ['p1', 'p2', 'p3', 'p4'];
+    model.elements.push(...people.map((id) => ({ id, kind: 'actor' as const, name: id, lifecycle: 'live' as const, isManaged: true, aspects: {} })));
+    model.relations.push(...people.map((id) => ({ type: 'flow' as const, id: `${id}-c1`, sourceId: id, targetId: 'c1', isBidirectional: false })));
+    const diagram = laidOut({
+      id: 'd3', kind: 'container', name: 'Webshop', applicationElementId: 'app',
+      placements: [...placedNodes(model.diagrams[0]!), ...people.map((id, at) => ({ id, x: 0, y: at * 60 }))],
+    });
+    const result = await tidyContainer(model, diagram, DEFAULT_TIDY_OPTIONS);
+    const drawn = result.placements
+      .filter((p) => p.id !== 'app')
+      .map((p) => ({ id: p.id, x: p.x, y: p.y, ...containerBoxSize(people.includes(p.id) ? 'actor' : p.id === 'ext' ? 'application' : 'component', p) }));
+    for (const one of drawn) {
+      for (const other of drawn) {
+        if (one.id < other.id) expect(rectsIntersect(one, other), `${one.id} over ${other.id}`).toBe(false);
+      }
+    }
   });
 });
 

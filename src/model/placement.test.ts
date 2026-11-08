@@ -12,6 +12,8 @@ import {
   canPlaceKind,
   cascadeSlot,
   clampPlacementIntoZone,
+  containerBoxSize,
+  defaultContainerPosition,
   defaultZonePosition,
   seedPlacement,
   freeSlotIn,
@@ -610,5 +612,19 @@ describe('seedPlacement', () => {
 
   it('keeps a position somebody gave it', () => {
     expect(seedPlacement({ kind: 'actor', position: { x: 7, y: 9 } }, landscape, 'p')).toMatchObject({ x: 7, y: 9 });
+  });
+});
+
+describe('a box on a container diagram', () => {
+  it('is measured at the size it is drawn, which says its type', () => {
+    expect(containerBoxSize('actor')).toEqual({ width: 150, height: 100 });
+    expect(containerBoxSize('application')).toEqual(NODE_SIZES.application);
+    expect(containerBoxSize('actor', { width: 104, height: 40 })).toEqual({ width: 120, height: 100 });
+  });
+
+  it('cascades people far enough apart that none is drawn over the next', () => {
+    const first = defaultContainerPosition('actor', 0);
+    const second = defaultContainerPosition('actor', 1);
+    expect(second.y - first.y).toBeGreaterThan(containerBoxSize('actor').height);
   });
 });
