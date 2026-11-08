@@ -232,7 +232,7 @@ export function ChartPage(props: ChartPageProps) {
           </Box>
           {!empty && (
             <>
-              <CanvasDock zoom={zoom.zoom} onZoomIn={() => zoom.target.go('in')} onZoomOut={() => zoom.target.go('out')} onFit={() => zoom.target.go('fit')} onHome={() => zoom.target.go('home')} data-testid="chart-dock" />
+              <CanvasDock zoom={zoom.zoom} fitFloor={zoom.fitFloor} onZoomIn={() => zoom.target.go('in')} onZoomOut={() => zoom.target.go('out')} onFit={() => zoom.target.go('fit')} onHome={() => zoom.target.go('home')} data-testid="chart-dock" />
               {moving.up === undefined ? <ChartLinesLegend t={t} /> : <ChartMoveLegend t={t} />}
               <SummaryLine chart={chart} byUnit={byUnit} asked={going.summaryAsked} onPress={going.toggleSummary} t={t} />
             </>

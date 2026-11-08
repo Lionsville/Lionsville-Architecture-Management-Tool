@@ -11,16 +11,27 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 import { CANVAS_FLOAT, canvasRooms } from '../../widgets/kit/canvasRoom'
-import { canvasZoomProps, clampZoom, NO_INSETS, ZOOM_HOME } from '../../widgets/kit/zoom'
+import { canvasZoomProps, clampZoom, NO_INSETS, ZOOM_FLOOR, ZOOM_HOME } from '../../widgets/kit/zoom'
 import { textScale } from '../../widgets/kit/tokens'
 import { useTextScale } from '../../widgets/kit/useTextScale'
 import type { Insets, Point } from '../../widgets/kit/zoom'
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom'
 
-/** The zoom that fits a drawing of this size in this pane, never above 100%, never below the floor. */
-export function fitZoom(pane: { width: number; height: number }, drawing: { width: number; height: number }): number {
-  if (drawing.width <= 0 || drawing.height <= 0) return ZOOM_HOME
-  return clampZoom(Math.min(ZOOM_HOME, pane.width / drawing.width, pane.height / drawing.height))
+/**
+ * The zoom that fits a drawing of this size in this pane, never above 100%, never below the floor, each
+ * at the person's text size as a board's Fit is (`fitAll.viewportOverRect`): at 150% the chart opens at
+ * 150%, and Fit lands where an open would rather than at 100%. The zoom it says is the chart's own, the
+ * scale it is drawn at, with nothing of the text size taken out, as on every canvas.
+ */
+export function fitZoom(pane: { width: number; height: number }, drawing: { width: number; height: number }, scale = 1): number {
+  const home = clampZoom(ZOOM_HOME * scale)
+  if (drawing.width <= 0 || drawing.height <= 0) return home
+  return Math.max(chartFitFloor(scale), clampZoom(Math.min(home, pane.width / drawing.width, pane.height / drawing.height)))
+}
+
+/** Where the chart's Fit stops at this text size, as a board's does (`fitAll.fitFloorAt`). */
+export function chartFitFloor(scale: number): number {
+  return clampZoom(ZOOM_FLOOR * scale)
 }
 
 /**
@@ -105,7 +116,13 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
       // In the room the dock and the key leave: the chart pads its end by them (`clearOfFloats`),
       // so the pane's own box less its padding is that room, and a stage no wider than it is 100%.
       const room = roomOf(pane)
-      const fitted = fitZoom(room, { width: drawing.scrollWidth, height: drawing.scrollHeight })
+      // The stage is at least as wide as the pane, so a chart narrower than it read as exactly as wide: let go of
+      // that for the measure, or a Fit above 100% (at a larger text size) could never be asked for.
+      const held = drawing.style.minWidth
+      drawing.style.minWidth = '0'
+      const size = { width: drawing.scrollWidth, height: drawing.scrollHeight }
+      drawing.style.minWidth = held
+      const fitted = fitZoom(room, size, textScale())
       setZoom(fitted)
       // The chart's middle, where the top unit is, in the middle of the room, and its top at the room's top —
       // measured off the stage as now drawn, so a Fit after the people shown changed frames what is there now
@@ -120,8 +137,9 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
     })
   }, [page, stage])
   const target = useMemo(() => steppedZoomTarget({ zoom: () => latest.current, to, fit }), [to, fit])
-  // A text size changed while the chart is up grows or shrinks it as an open at that size would have: one meaning for
-  // the readout, live or after a reload (the poster's camera does the same).
+  // A text size changed while the chart is up grows or shrinks it as an open at that size would have, so the readout,
+  // which is the chart's own zoom with nothing of the text size taken out (as on a board and the poster), says the
+  // same live or after a reload.
   const scale = useTextScale()
   const scaledAt = useRef(scale)
   useEffect(() => {
@@ -135,7 +153,7 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
     attachZoom(element)
   }, [page, attachZoom])
   const props = canvasZoomProps(zoom, undefined, textScale())
-  return { zoom, target, attach, canvas: { 'data-distance': props['data-distance'], style: props.style as CSSProperties } }
+  return { zoom, target, attach, fitFloor: chartFitFloor(scale), canvas: { 'data-distance': props['data-distance'], style: props.style as CSSProperties } }
 }
 
 /** The room the pane shows, in its own pixels: its box less the padding the floats take. */
