@@ -153,9 +153,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'standIn.open': '{scope} openen',
   'standIn.from': 'uit {scope}',
   'shell.unknownFile': 'Dit bestand is geen bewaarde kopie.',
-  'shell.scopeGone': 'Dat onderdeel is er niet meer: iemand heeft het verwijderd. Er is niets weggeschreven.',
+  'shell.scopeGone': 'Die scope is er niet meer: iemand heeft hem verwijderd. Er is niets weggeschreven.',
   'shell.imageBytesGone': 'Deze afbeelding is niet toegevoegd: ze wordt hier niet meer bewaard. Voeg de afbeelding opnieuw toe vanaf waar je haar hebt.',
-  'shell.scopeTaken': 'Op dat adres staat al een ander onderdeel, dus er is niets weggeschreven. Kies een andere naam of plek.',
-  'shell.scopeIntoItself': 'Een onderdeel kan niet onder zichzelf worden geplaatst, dus er is niets verplaatst.',
-  'shell.scopeHasChildren': 'Onder dit onderdeel staat nog een ander, dus er is niets verwijderd. Verwijder of verplaats dat eerst.',
+  'shell.scopeTaken': 'Op dat adres staat al een andere scope, dus er is niets weggeschreven. Kies een andere naam of plek.',
+  'shell.scopeIntoItself': 'Een scope kan niet onder zichzelf worden geplaatst, dus er is niets verplaatst.',
+  'shell.scopeHasChildren': 'Onder deze scope staat nog een andere, dus er is niets verwijderd. Verwijder of verplaats dat eerst.',
 }

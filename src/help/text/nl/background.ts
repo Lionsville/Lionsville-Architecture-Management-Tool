@@ -35,14 +35,14 @@ en geen telemetrie.` },
     { title: `Het organisatiescherm`, text: `**Het voorbeeld.** Een organisatie waar nog niemand aan begon, opent op een eerste pagina: geef de jouwe een naam, kijk rond in het voorbeeld, of ga verder met een bestand of map die je hebt. **Voorbeeld openen** is een plek om te bezoeken: een band op elk scherm zegt dat je erin bent, je kunt alles proberen, er wordt niets bewaard en je eigen werk blijft onaangeroerd. **Voorbeeld overnemen** maakt wat je ziet tot je organisatie (onder een eigen scope als de jouwe intussen iets is geworden); **Voorbeeld verlaten** gaat terug zonder dat er iets veranderd is.` },
   ],
   frame: [
-    { title: `Het organisatiescherm`, text: `De app opent op de **organisatie**: een onderdeel als elk ander, en het
-onderdeel waaronder al het andere valt dat je bewaart. Een **onderdeel** is één document:
+    { title: `Het organisatiescherm`, text: `De app opent op de **organisatie**: een scope als elke andere, en de
+scope waaronder al het andere valt dat je bewaart. Een **scope** is één document:
 een naam, een landschap, de containerdiagrammen eronder, de besluiten, de
-plannen, de bedrijfsarchitectuur en alles wat erop staat. Onderdelen
+plannen, de bedrijfsarchitectuur en alles wat erop staat. Scopes
 **nestelen**, en ze zijn allemaal hetzelfde document — de organisatie bovenaan,
 een **domein** of een **team** eronder, een **landschapsscope** daar weer
-onder, zo diep als je werk vraagt. Een landschapsscope is een onderdeel; een
-landschap is ook een soort bord, en dat is een tekening binnen een onderdeel.
+onder, zo diep als je werk vraagt. Een landschapsscope is een scope; een
+landschap is ook een soort bord, en dat is een tekening binnen een scope.
 
 **Bediend door**, onder de kaarten, overal waar de organisatie eenheden heeft
 — maar niet op de eigen startpagina van de organisatie, want de organisatie
@@ -86,7 +86,7 @@ van de scope in de boom waarschuwt op dezelfde manier, en de controles
 noemen de drie gevallen die niet kloppen (*De pagina Controles*).
 
 Hernoemen hernoemt alleen het label — waar iets staat is zijn adres, en
-hernoemen is niet verplaatsen. Verplaatsen verandert het adres van het onderdeel
+hernoemen is niet verplaatsen. Verplaatsen verandert het adres van de scope
 en van alles eronder, en laat de inhoud ongemoeid: elke verwijzing elders in de
 map die naar iets in die tak wees, gaat in dezelfde stap mee naar het nieuwe
 adres, zodat een verplaatsing geen spoor van verouderde kopieën achterlaat. Zo
@@ -94,15 +94,15 @@ ook elke oorzaak die een van zijn oorzaken verklaart, en elke waarneming die een
 van zijn waarnemingen opnam: die noemen het bij zijn adres, en gaan mee. Zonder
 adres opent de app op de startpagina van de organisatie, met **Verdergaan**.
 
-Zeven namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
+Zeven namen worden geweigerd, omdat de mappen van een scope ze al gebruiken:
 \`diagrams\`, \`docs\`, \`decisions\`, \`transitions\`, \`observations\`, \`images\` en \`logos\`.` },
     { title: `Terug en Vooruit`, text: `**Terug gaat naar de plek waar je hiervoor was**, en Vooruit naar de plek
-waarvandaan je terugkwam. Een plek is de startpagina van een onderdeel en de pagina
-daarop, of een open onderdeel op zijn weergave of op de pagina daarover: zijn
+waarvandaan je terugkwam. Een plek is de startpagina van een scope en de pagina
+daarop, of een open scope op zijn weergave of op de pagina daarover: zijn
 besluiten, zijn waarnemingen, zijn roadmap, een plan, het rapport van een
 platform of een dienst. Elke stap naar een andere plek telt, of je hem zette
 met de boom, een kruimel, een kaart, een zoekresultaat of een link op een
-pagina, of dat een agent hem voor je zette. Heeft een agent een onderdeel
+pagina, of dat een agent hem voor je zette. Heeft een agent een scope
 geopend, dan brengt Terug je naar waar je was. Wat geselecteerd is, de dag
 waarop een bord wordt getoond, een filter en een open dialoog horen niet bij
 een plek, en een ander record kiezen op de pagina met besluiten of
@@ -122,7 +122,7 @@ Dezelfde stappen staan in het menu **Ga** als **Terug** en **Vooruit**, op
 terug- en vooruitknoppen van de muis werken ook, en vegen tussen pagina's op
 een Mac-trackpad als dat op *Veeg met twee of drie vingers* staat
 (Systeeminstellingen → Trackpad → Meer gebaren → Veeg tussen pagina's). Ze
-werken allemaal vanaf de startpagina van de organisatie en met een onderdeel open.
+werken allemaal vanaf de startpagina van de organisatie en met een scope open.
 Zolang er een dialoog open is, liggen de knoppen erachter en doen de toetsen,
 de menu-onderdelen en de muisknoppen niets. De geschiedenis hoort bij het
 venster: ze is weg als het venster sluit.
@@ -132,13 +132,13 @@ verlaten, zoals wanneer je die pagina op een andere manier verlaat. Tekst die
 erin getypt was, wordt niet bewaard.
 
 **Een plek die er niet meer is** wordt vervangen door de dichtstbijzijnde die
-er wel is: een verwijderde weergave opent zijn onderdeel op de eerste weergave
+er wel is: een verwijderde weergave opent zijn scope op de eerste weergave
 die over is, een verwijderd record opent zijn pagina zonder record, en een
-verwijderd onderdeel opent de startpagina van het dichtstbijzijnde onderdeel erboven.
+verwijderde scope opent de startpagina van de dichtstbijzijnde scope erboven.
 De lijst Activiteit zegt wat er werd verwijderd.` },
-    { title: `Delen met een link`, text: `**Wat een link zegt.** Na de \`#\` komt het pad van het onderdeel, een \`-\` die
+    { title: `Delen met een link`, text: `**Wat een link zegt.** Na de \`#\` komt het pad van de scope, een \`-\` die
 het afsluit, en dan de pagina en het record: \`#/acme/rail/-/board/landscape\`
-is het bord *landscape* van het onderdeel *acme/rail*, \`#/acme/-/document/billing\`
+is het bord *landscape* van de scope *acme/rail*, \`#/acme/-/document/billing\`
 de pagina van het element *billing* in *acme*, en \`#/-/home\` de startpagina van de
 organisatie. Een tabblad of een selectie volgt als \`?tab=analysis\` of
 \`?select=billing\`. Een link van vóór versie 3.7.0, die met \`#place?\` begint,
@@ -148,10 +148,10 @@ is, gaat daar ook heen.
 
 **Een link naar de pagina van een element opent die altijd**, waar het element
 ook bewaard wordt: een element dat geen weergave tekent, een eenheid van een
-onderdeel dat niets tekent, en een element van een ander onderdeel, dat opent
-in het onderdeel dat het bewaart. Sluit je de pagina in een onderdeel dat niets
-tekent, dan kom je op de startpagina van dat onderdeel. Een link naar een element
-dat er niet meer is, opent het onderdeel en zegt dat.
+scope die niets tekent, en een element van een andere scope, dat opent
+in de scope die het bewaart. Sluit je de pagina in een scope die niets
+tekent, dan kom je op de startpagina van die scope. Een link naar een element
+dat er niet meer is, opent de scope en zegt dat.
 
 **Op een weergave selecteert de link wat jij geselecteerd had.** Deel je vanaf
 een bord, een blad, een ondernemingskaart, het technologielandschap of een
@@ -228,7 +228,7 @@ werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
 \`\`\`
 <jouw map>/
   scope.json                          de organisatie: naam, klant, koppelingen
-  acme-logistics/                     een onderdeel eronder
+  acme-logistics/                     een scope eronder
     scope.json                        hetzelfde bestand, een niveau dieper
     warehouse-landscape/              en nog een keer
       scope.json                      hoe het heet, en wat erin zit
@@ -241,9 +241,9 @@ werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
       logos/own.svg                   een logo dat je hebt geüpload
 \`\`\`
 
-Een map met een \`scope.json\` erin is een onderdeel, en de mappen daarbinnen die
-er ook een hebben zijn de onderdelen eronder. Verplaats een map in je
-bestandsbeheer en het onderdeel staat op zijn nieuwe adres. Een map die je nog
+Een map met een \`scope.json\` erin is een scope, en de mappen daarbinnen die
+er ook een hebben zijn de scopes eronder. Verplaats een map in je
+bestandsbeheer en de scope staat op zijn nieuwe adres. Een map die je nog
 geen naam gaf, heet zoals de map zelf.
 
 **Een map van een oudere versie opent gewoon.** De eerste keer dat deze versie
@@ -329,8 +329,8 @@ een strook wat je moet sluiten of herladen voordat bewaren weer werkt.
 **Werk dat een oudere versie bewaarde.** Eerdere versies bewaarden het werk
 van een browser op een andere plek erin. Dat werk wordt bij elke start
 overgenomen: gekopieerd, nooit verplaatst, en nooit over werk dat hier sinds
-die tijd is gedaan. Is een onderdeel op beide plekken veranderd, dan vraagt een
-strook naar dat onderdeel: **De oudere kopie overnemen** (wat hier staat gaat
+die tijd is gedaan. Is een scope op beide plekken veranderd, dan vraagt een
+strook naar die scope: **De oudere kopie overnemen** (wat hier staat gaat
 eerst de geschiedenis in) of **Houden wat hier staat**.
 
 **Een privévenster** houdt je werk maar zo lang als de browser dat doet. De
@@ -350,7 +350,7 @@ een bewaarde kopie voordat je het tabblad sluit.
 Heeft de opslag van de browser na een paar seconden nog niet geantwoord, dan
 wordt de pagina toch getekend. Een strook zegt dat, en je werk verschijnt
 zodra de opslag antwoordt.` },
-    { title: `Als het elders is gewijzigd`, text: `Een onderdeel kan veranderen terwijl je het open hebt: de checkout van een
+    { title: `Als het elders is gewijzigd`, text: `Een scope kan veranderen terwijl je hem open hebt: de checkout van een
 collega, een synchronisatiedienst, jijzelf op een andere machine of in een ander
 tabblad.
 De balk zegt dan **Elders gewijzigd**, of **Hier én elders gewijzigd** als er
@@ -359,30 +359,30 @@ blijft:
 - **Die van elders** leest hun versie en zet die in beeld.
 - **Die van mij** speelt jouw wijzigingen opnieuw af op hun versie, zodat hun
   wijzigingen aan wat jij niet aanraakte blijven staan. Alleen waar dat wordt
-  geweigerd, schrijft het het hele onderdeel zoals het op je scherm staat over
+  geweigerd, schrijft het de hele scope zoals het op je scherm staat over
   het hunne.
 - **Kopie bewaren…**, met wijzigingen die hier openstaan, zet de jouwe eerst in
   een bewaarde kopie en laat de keuze voor later.
 
 Er wordt nooit iets ongevraagd overschreven.` },
-    { title: `Als een onderdeel niet helemaal te lezen is`, text: `Is een deel van een onderdeel niet te lezen, omdat een bestand ervan beschadigd
-is of met de hand is veranderd, dan opent het onderdeel om te bekijken en niet
+    { title: `Als een scope niet helemaal te lezen is`, text: `Is een deel van een scope niet te lezen, omdat een bestand ervan beschadigd
+is of met de hand is veranderd, dan opent de scope om te bekijken en niet
 om te wijzigen, en een melding noemt wat niet te lezen was. Waar je mag
-schrijven waar het onderdeel bewaard wordt, biedt die **Een bewaarde kopie
+schrijven waar de scope bewaard wordt, biedt die **Een bewaarde kopie
 binnenhalen…**, en **Terugzetten uit de geschiedenis…** waar een geschiedenis
 wordt bijgehouden; in een map zegt hij ook dat je het bestand kunt herstellen en
-het onderdeel opnieuw kunt openen.
+de scope opnieuw kunt openen.
 - **Terugzetten uit de geschiedenis…** opent de pagina Geschiedenis, waar **De
-  hele scope terugzetten…** het hele onderdeel maakt wat het was bij de
+  hele scope terugzetten…** de hele scope maakt wat het was bij de
   momentopname die je kiest. Wat niet te lezen was, wordt eerst bewaard, als
-  een punt in de geschiedenis of apart gezet naast het onderdeel, en waar dat
+  een punt in de geschiedenis of apart gezet naast de scope, en waar dat
   niet kan, wordt niets teruggezet.
-- **Een bewaard bestand binnenhalen…**, of er een openen op het onderdeel, zet het
+- **Een bewaard bestand binnenhalen…**, of er een openen op de scope, zet het
   op dezelfde manier terug uit het bestand, en de vraag vooraf zegt dat.
 
 Een punt in de geschiedenis dat bewaarde wat niet te lezen was, biedt **Bewaar
 wat niet gelezen kon worden…**, dat het als een bestand van jezelf bewaart. Een
-onderdeel dat een latere versie van de app schreef, opent alleen om te
+scope die een latere versie van de app schreef, opent alleen om te
 bekijken: de melding zegt dat je de app moet bijwerken, en niets hier zet het
 terug.` },
     { title: `De werkruimte`, text: `Alles wordt vanzelf bewaard terwijl je werkt: drie seconden nadat je stopt, als
@@ -727,14 +727,14 @@ zegt waarom.
 
 **Afbeeldingen.** Plak of sleep een afbeelding in de tekst om haar toe te
 voegen: PNG, JPEG, SVG of WebP. **Afbeeldingen** naast de bron toont elke
-afbeelding die het onderdeel heeft, met **Invoegen** om er een op deze pagina te
+afbeelding die de scope heeft, met **Invoegen** om er een op deze pagina te
 zetten en **Afbeelding verwijderen** om er een weg te halen. De tekst noemt een
-afbeelding bij haar naam, \`![bijschrift](image:floor-plan.png)\`, waar het
-onderdeel ook wordt bewaard. Een pagina legt alle afbeeldingen meteen op hun
+afbeelding bij haar naam, \`![bijschrift](image:floor-plan.png)\`, waar de
+scope ook wordt bewaard. Een pagina legt alle afbeeldingen meteen op hun
 eigen formaat neer, en haalt er een pas op als die in beeld schuift. Een lange
 pagina opent dus snel, en er verschuift niets als de afbeeldingen aankomen. Een
 afbeelding die niet getoond kan worden, toont haar bijschrift. Alleen
-afbeeldingen die bij het onderdeel bewaard zijn worden getekend: een webadres
+afbeeldingen die bij de scope bewaard zijn worden getekend: een webadres
 toont als bijschrift, en de app haalt nooit iets op.` },
     { title: `Verwijzingen in een document`, text: `Een document kan tonen waar het over gaat in plaats van het over te nemen.
 Typ \`[[\` of een losse \`@\` waar je schrijft, of kies een soort bij
@@ -1531,7 +1531,7 @@ sindsdien veranderde — applicaties erbij, weg en gewijzigd, koppelingen geteke
 en doorgeknipt, besluiten genomen — met de geometrie als aantal in plaats van
 als lijst, want een ronde Ordenen is één zin en vierhonderd gewijzigde regels. Een
 verplaatsing is ook een punt, *Verplaatst van X naar Y*, in de geschiedenis van
-elk onderdeel dat ze verplaatste.
+elke scope die ze verplaatste.
 
 **De geschiedenis van één ding.** De keuzelijst bovenaan de pagina beperkt haar
 tot een weergave, een beschrijving of een besluit: de lijst wordt de
@@ -1539,13 +1539,13 @@ momentopnames die dat raakten, en de veranderingen de regels die erover gaan.
 Dezelfde pagina opent al beperkt via **Geschiedenis…** in het menu van een
 weergavetab, op de documentatiepagina en op de pagina van een besluit.
 
-Een beschrijving is het enige onderwerp dat niet van één onderdeel is: een naam
+Een beschrijving is het enige onderwerp dat niet van één scope is: een naam
 betekent overal in de organisatie hetzelfde, dus de pagina van een element staat
-waar het is vastgelegd én overal waar een onderdeel het tekent en zegt wat het
+waar het is vastgelegd én overal waar een scope het tekent en zegt wat het
 daar betekent. De geschiedenis van dat element is de optelsom van die pagina's,
-en een regel onder de keuzelijst noemt de onderdelen die gelezen worden.
-Terugzetten blijft van dit onderdeel: het zet terug wat de pagina van dit
-onderdeel zei, de andere horen bij die onderdelen.
+en een regel onder de keuzelijst noemt de scopes die gelezen worden.
+Terugzetten blijft van deze scope: het zet terug wat de pagina van deze
+scope zei, de andere horen bij die scopes.
 
 **Terugzetten.** Met een momentopname gekozen maakt
 **Deze versie terugzetten…** de weergave, de beschrijving of het besluit weer wat het toen
@@ -1563,11 +1563,11 @@ teruggezette weergave laat elementen weg die niet meer bestaan, en zegt hoeveel.
 label reist mee met de geschiedenis, zodat een collega hetzelfde merkteken op
 dezelfde plek ziet; in de map van de desktop is het een git-tag, die elke
 git-client toont. Twee labels met dezelfde naam worden geweigerd, overal in een
-map en binnen één onderdeel in een browser; kies een ander woord.
+map en binnen één scope in een browser; kies een ander woord.
 
 **Momentopnamen die de app zelf maakt**, waar een geschiedenis wordt
 bijgehouden: voordat een bewaarde kopie vervangt wat hier staat, voordat een
-onderdeel uit de geschiedenis wordt teruggezet, en, op de desktop, voordat een
+scope uit de geschiedenis wordt teruggezet, en, op de desktop, voordat een
 map van haar remote wordt opgehaald en voordat een map van een oudere versie
 wordt omgezet. Elk heet naar waar hij aan voorafging, zodat wat er stond kan
 worden teruggezet.` },
@@ -2027,10 +2027,10 @@ verouderd is — dat kan niets — en de pagina zegt dat onder de lijst.` },
     { title: `Eén naam in de hele organisatie`, text: `Een naam betekent overal in je map hetzelfde. Het magazijnsysteem is één
 systeem, welk domein het ook tekent, en een capability die de organisatie
 benoemt is diezelfde capability waar een landschap hem verfijnt — dus elk ding
-wordt **één keer** vastgelegd, in één onderdeel, en elk ander onderdeel dat het
+wordt **één keer** vastgelegd, in één scope, en elke andere scope die het
 gebruikt wijst naar datzelfde ding.
 
-**Het onderdeel dat het vastlegt, beheert het.** Daar zitten de details: in
+**De scope die het vastlegt, beheert het.** Daar zitten de details: in
 welke fase het is en op welke data, wie het beheert, welke leverancier, waarop
 het draait, hoe volwassen het is. Verander daar iets en overal waar het
 getekend wordt staat het nieuwe.
@@ -2045,8 +2045,8 @@ betekent is een andere pagina dan wat het ERP ís, en allebei zijn ze het
 opschrijven waard. Net zo de kleur, de vorm en het icoon die je hem geeft, en
 waar je hem op je eigen borden zet.
 
-Welk onderdeel een ding beheert, wordt bepaald door **diepte**: het diepste
-onderdeel dat het vastlegt. Die ene regel werkt beide kanten op, en dat is het
+Welke scope een ding beheert, wordt bepaald door **diepte**: de diepste
+scope die het vastlegt. Die ene regel werkt beide kanten op, en dat is het
 punt. Capabilities worden bij de organisatie vastgelegd en naar beneden
 verfijnd, dus de organisatie houdt ze. Applicaties worden vastgelegd in het
 landschap dat ze draait, dus een domein houdt de zijne — en een organisatie die
@@ -2056,25 +2056,25 @@ zodra iemand dieper het echte record schrijft.` },
 en opnieuw zodra de map onder je verandert — en meldt wat hij vindt. Elke regel
 van de boom op het organisatiescherm draagt zijn eigen zin.
 
-- **Conflict** — twee onderdelen op hetzelfde niveau leggen dezelfde naam vast.
+- **Conflict** — twee scopes op hetzelfde niveau leggen dezelfde naam vast.
   Iemand is halverwege een migratie, of twee teams noemden hetzelfde ding op
   dezelfde middag. Beide regels zeggen het, want geen van beide is de foute.
   Maak er één een verwijzing naar de ander van.
 - **Verouderd** — de kopie van de naam klopt niet meer met hoe het beherende
-  onderdeel het noemt, of dat onderdeel is verplaatst. **Bijwerken** schrijft de
+  scope het noemt, of die scope is verplaatst. **Bijwerken** schrijft de
   kopieën in één stap terug, en dat kun je ongedaan maken als al het andere.
 - **Ongedefinieerd** — een verwijzing naar iets dat niets in de map vastlegt. De
   kaart wordt getekend en de regel blijft staan; wat ontbreekt is ergens een
   record om naar te wijzen.
 - **Een losse regel** — een lijn die eindigt op iets dat niets in de map heeft.
   Blijft staan en wordt als stomp getekend, en verdwijnt nooit bij een save.
-- **Een voorstel** — een capability die een domein benoemde en geen onderdeel
+- **Een voorstel** — een capability die een domein benoemde en geen scope
   erboven. Geen fout: het is een gesprek met het niveau erboven.
 - **Zonder eigenaar** — een systeem dat als andermans is gemarkeerd zonder dat
   iemand heeft gezegd van wie.
 
 Eén ding op die lijst is **informatie en geen fout**: een record dat niets in
-zijn eigen onderdeel tekent — geen bord houdt het, en geen tekening daar wijst
+zijn eigen scope tekent — geen bord houdt het, en geen tekening daar wijst
 ernaar. Iets kan echt, beheerd en beschreven zijn zonder al op iemands plaat te
 staan, dus het is een notitie, net als een voorstel, en wordt nooit als fout
 gekleurd.` },
@@ -2110,14 +2110,14 @@ en zet ze op de pagina Controles.
   blijven. De bevinding verdwijnt uit de lijst en staat onder **Geaccepteerd
   (N)**, onder de controles, met haar reden en de dag waarop ze is
   gemarkeerd. **Terugnemen** daar brengt haar terug. Een markering is een stap
-  in het model, bijgehouden in het onderdeel waar de bevinding over gaat, dus
+  in het model, bijgehouden in de scope waar de bevinding over gaat, dus
   iedereen ziet haar en de Activiteitenlijst noemt haar; gemarkeerd waar dat
-  onderdeel open is, neemt {key:Mod+Z} haar terug zoals elke andere stap. Een markering
+  scope open is, neemt {key:Mod+Z} haar terug zoals elke andere stap. Een markering
   gaat over de bevinding zoals ze is: verander waar ze over gaat — een andere
   eenheid aan de samenwerking, een andere rol eindverantwoordelijk — en de
   bevinding komt terug. **Herstellen** kan niet worden gemarkeerd: het model
-  spreekt zichzelf tegen, en het antwoord zit in het model. Waar je het
-  onderdeel dat haar bijhoudt alleen mag lezen, wordt niets aangeboden. Een
+  spreekt zichzelf tegen, en het antwoord zit in het model. Waar je de
+  scope die haar bijhoudt alleen mag lezen, wordt niets aangeboden. Een
   agent leest de markeringen en maakt er nooit een.` },
     { title: `De pagina Controles`, text: `**Controles** op de kaart van een startpagina, of een aantal onder **Vraagt
 aandacht**, opent de pagina Controles over die startpagina: wat de controles
@@ -2133,58 +2133,58 @@ vinden in of onder haar, en op het organisatiescherm in de hele boom.
   de app open is.
 - **Kies een controle** om haar te lezen: haar gewicht en categorie,
   **Waarom het ertoe doet**, **Hoe je het oplost**, en **Gevonden (N)** — elke
-  bevinding ervan, elk in haar onderdeel. Klik op een ervan om haar te openen
+  bevinding ervan, elk in haar scope. Klik op een ervan om haar te openen
   waar ze wordt opgelost: het record, de tekening, het plan, de pagina van het
   besturingsmodel, een persoon in Mensen. **Markeren als bedoeld…** naast een
-  bevinding van een nakijkpunt of een notitie markeert haar vanaf hier, in het
-  onderdeel dat haar bijhoudt, en **Geaccepteerd (N)** zet op een rij wat is
+  bevinding van een nakijkpunt of een notitie markeert haar vanaf hier, in de
+  scope die haar bijhoudt, en **Geaccepteerd (N)** zet op een rij wat is
   gemarkeerd, elk met **Terugnemen**. Een toewijzing in een eenheid die er
   niet is biedt ernaast **De toewijzing verwijderen**, op dezelfde manier
   weggeschreven: er is geen eenheid meer om het vandaan op te lossen. Een
   markering die hier wordt gemaakt,
-  met niets open, is een stap van dat onderdeel en staat niet op een
+  met niets open, is een stap van die scope en staat niet op een
   ongedaan-stapel: **Terugnemen** is hoe je haar ongedaan maakt.
 - Wat de pagina telt, komt uit wat de app al weet over de hele boom: de
-  bevindingen tussen onderdelen, de eenheden en mensen van de organisatie, de
-  datums van elk onderdeel, en de Conway-kaart over de startpagina. Een paar
-  controles lezen het hele document van een onderdeel — een record op geen
+  bevindingen tussen scopes, de eenheden en mensen van de organisatie, de
+  datums van elke scope, en de Conway-kaart over de startpagina. Een paar
+  controles lezen het hele document van een scope — een record op geen
   enkele weergave, de gegevens van de eigenaar op een stand-in, een lijn naar
   niets, de link van een tekening, de twee van de bedrijfslaag, een oorzaak
-  die een waarneming eronder verklaart — en vinden iets waar dat onderdeel
+  die een waarneming eronder verklaart — en vinden iets waar die scope
   open is: de pagina zet ze op een rij met hun uitleg en zegt *Hier niet
   geteld* in plaats van een getal.` },
     { title: `Het register`, text: `**Register** op het organisatiescherm is elke applicatie in de hele map, op één
-pagina. Niets schrijft hem: hij wordt telkens uit de onderdelen zelf afgeleid
+pagina. Niets schrijft hem: hij wordt telkens uit de scopes zelf afgeleid
 wanneer de map gelezen wordt, dus hij kan niet afwijken van wat de mappen zeggen
 en er is geen lijst die twee domeinen tegelijk bewerken.
 
-Elke regel zegt hoe de applicatie heet, **welk onderdeel haar beheert**, of ze
-van iemand anders is en van wie, **in hoeveel onderdelen ze getekend is** (houd
+Elke regel zegt hoe de applicatie heet, **welke scope haar beheert**, of ze
+van iemand anders is en van wie, **in hoeveel scopes ze getekend is** (houd
 de muis op het aantal voor de namen), en de bevindingen erover als kleine chips.
-Het filterveld doorzoekt de naam, de sleutel en het onderdeel; **Op naam** en
-**Op niveau** zijn de twee volgordes. **Openen** gaat naar het onderdeel dat de
+Het filterveld doorzoekt de naam, de sleutel en de scope; **Op naam** en
+**Op niveau** zijn de twee volgordes. **Openen** gaat naar de scope die de
 applicatie beheert, met de kaart geselecteerd — daar kunnen haar details worden
 gewijzigd.
 
-Een regel waar twee onderdelen dezelfde naam vastleggen biedt **Koppelen…**: dat
-opent het onderdeel waarvan de vastlegging moet wijken en vraagt het dáár, want
-een vastlegging wordt alleen gewijzigd door het onderdeel dat haar heeft.` },
-    { title: `Een vastlegging naar een ander onderdeel verplaatsen`, text: `Waar iets is vastgelegd is een keuze die je achteraf kunt wijzigen. Kies de kaart
+Een regel waar twee scopes dezelfde naam vastleggen biedt **Koppelen…**: dat
+opent de scope waarvan de vastlegging moet wijken en vraagt het dáár, want
+een vastlegging wordt alleen gewijzigd door de scope die haar heeft.` },
+    { title: `Een vastlegging naar een andere scope verplaatsen`, text: `Waar iets is vastgelegd is een keuze die je achteraf kunt wijzigen. Kies de kaart
 en klik op **Verplaatsen…** in de inspector; het venster biedt aan welke van de
 vier van toepassing zijn.
 
 - **Koppelen** — de eigen vastlegging opgeven en verwijzen naar die van een
-  ander onderdeel. Dit lost een conflict op, en het is wat een kaart nodig heeft
-  die getekend is voordat iemand de echte vastlegging schreef. Dit onderdeel
+  andere scope. Dit lost een conflict op, en het is wat een kaart nodig heeft
+  die getekend is voordat iemand de echte vastlegging schreef. Deze scope
   houdt zijn eigen beschrijving, zijn kleuren en waar de kaart op zijn borden
-  staat; het geeft de details op, waar het andere onderdeel vanaf dan voor
+  staat; het geeft de details op, waar de andere scope vanaf dan voor
   instaat.
-- **Omhoog** — de vastlegging naar een onderdeel hierboven verplaatsen en hier
+- **Omhoog** — de vastlegging naar een scope hierboven verplaatsen en hier
   een verwijzing achterlaten. Dat is wat een applicatie in een landschap nodig
   heeft als het domein erboven degene hoort te zijn die haar beheert.
-- **Omlaag** — het omgekeerde: naar een onderdeel hieronder.
-- **Overdragen** — naar elk ander onderdeel. **Hier een verwijzing achterlaten**
-  staat standaard aan; zet je het uit, dan tekent dit onderdeel het ding
+- **Omlaag** — het omgekeerde: naar een scope hieronder.
+- **Overdragen** — naar elke andere scope. **Hier een verwijzing achterlaten**
+  staat standaard aan; zet je het uit, dan tekent deze scope het ding
   helemaal niet meer.
 
 **Een eenheid neemt haar mensen mee.** Een eenheid omhoog, omlaag of over
@@ -2194,20 +2194,20 @@ eenheid — onder de id's die ze hadden, zodat ieders verleden van hen blijft. E
 verwijzing die achterblijft houdt er geen. De bevestiging zegt hoeveel er
 meegaan.
 
-De laatste drie schrijven **twee onderdelen**, dus ze vragen het eerst. Het
-onderdeel waar het naartoe gaat wordt geschreven vóór dit onderdeel verandert, en
+De laatste drie schrijven **twee scopes**, dus ze vragen het eerst. De
+scope waar het naartoe gaat wordt geschreven vóór deze scope verandert, en
 dat is met opzet: gaat er halverwege iets mis, dan staat de vastlegging op
 *beide* plaatsen — een conflict dat je ziet en met **Koppelen** oplost — en niet
 op geen van beide.
 
 Daarom **stopt ongedaan maken daar**. {key:Mod+Z} neemt alles terug wat je sindsdien deed
 en weigert dan die stap, met een regel die zegt waarom: maar de helft ervan staat
-op de stapel van dit venster, en de andere helft is een bestand in een onderdeel
+op de stapel van dit venster, en de andere helft is een bestand in een scope
 waar hier niemand voor spreekt. Verplaats de vastlegging opnieuw, de andere kant
 op, om het terug te zetten.
 
-Een verplaatsing wordt geweigerd, met de reden, als het onderdeel waar het
-naartoe zou gaan de naam al beheert, als een verplaatsing omhoog een onderdeel
+Een verplaatsing wordt geweigerd, met de reden, als de scope waar het
+naartoe zou gaan de naam al beheert, als een verplaatsing omhoog een scope
 noemt waar dit niet onder valt, en als het verwijderen van de vastlegging dingen
 die eronder vallen zonder ouder zou achterlaten.` },
   ],
@@ -2646,7 +2646,7 @@ verdwijnt hij in één keer van elk scherm.
 - **Verwijst naar hen** noemt elke vastlegging waarvan een veld de persoon
   bij id noemt — een element of plan waarvan ze eigenaar zijn, een
   waarneming die ze deden, een experiment dat ze uitvoeren, een besluit dat
-  ze voorstelden of ondertekenden — met het onderdeel dat haar bewaart, en
+  ze voorstelden of ondertekenden — met de scope die haar bewaart, en
   wat de regels van het besturingsmodel hen vandaag in eigendom geven (zie
   *Velden die een persoon noemen*). Een handtekening die haar naam hield,
   zegt de naam waarmee getekend is — behalve bij een vergeten vermelding, die

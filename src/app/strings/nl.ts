@@ -193,7 +193,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.none': 'Nog geen momentopnames.',
   'history.unavailable': 'Hier kan geen geschiedenis worden bijgehouden. De rest werkt gewoon.',
   'history.unchanged': 'Er is niets veranderd sinds deze momentopname.',
-  'history.gone': 'Dit onderdeel bestond bij die momentopname nog niet.',
+  'history.gone': 'Deze scope bestond bij die momentopname nog niet.',
   'history.by': '{author}',
   'history.subject': 'Toon de geschiedenis van',
   'history.everything': 'De hele scope',
@@ -324,7 +324,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'picker.under': 'Valt onder',
   'picker.addUnder': 'Nieuw domein of team onder {name}',
   'picker.organisation': 'Deze organisatie',
-  'picker.reservedName': 'Zo mag een onderdeel niet heten \u2014 die map is al in gebruik voor wat een onderdeel bevat.',
+  'picker.reservedName': 'Zo mag een scope niet heten \u2014 die map is al in gebruik voor wat een scope bevat.',
   'scope.kind.organisation': 'Organisatie',
   'scope.kind.domain': 'Domein',
   'scope.kind.programme': 'Programma',
@@ -381,7 +381,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'group.badUrl': 'Moet met http:// of https:// beginnen',
   'group.saved': '{name} opgeslagen.',
   'group.renamed': 'Hernoemd naar “{name}”.',
-  'group.saveFailed': 'Dit onderdeel kon niet worden opgeslagen.',
+  'group.saveFailed': 'Deze scope kon niet worden bewaard.',
   'agent.title': 'Een agent koppelen',
   'agent.tipOff': 'Een agent koppelen…',
   'agent.tipListening': 'Wacht op een agent op poort {port}',
@@ -475,7 +475,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.forward': 'Vooruit',
   'shell.searchTip': 'Zoek elementen, documentatie en besluiten ({key:Mod+K})',
 
-  // Het organisatiescherm: het thuis van de hoofdonderdeel, dat de kiezer verving.
+  // Het organisatiescherm: de startpagina van de hoofdscope, dat de kiezer verving.
   'org.kind': 'Wat dit is',
   'org.kindHelp': 'Getoond als label; het verandert verder niets.',
   'org.kindNone': 'Niet gezegd',
@@ -501,7 +501,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.typeUnsaid': 'Niet getypeerd uit het besturingsmodel; de eenheden die haar bedienen zijn van type {types}.',
   'org.typeFollowed': '{scope} is nu een {type}.',
   'org.filedUnder': 'Ondergebracht bij',
-  'org.filedUnderHelp': 'Verplaatsen verandert het adres van dit onderdeel en van alles eronder. De inhoud blijft ongemoeid.',
+  'org.filedUnderHelp': 'Verplaatsen verandert het adres van deze scope en van alles eronder. De inhoud blijft ongemoeid.',
 
   'org.nameThis': 'Geef deze organisatie een naam',
   'org.forClient': 'Voor {name}',

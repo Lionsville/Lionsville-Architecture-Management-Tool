@@ -59,7 +59,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'adr.supersedeConfirm': 'Als vervangen markeren',
   'adr.title': 'Besluiten',
   'adr.scopeGroup': 'Groep',
-  'adr.scopeAbove': 'Van een onderdeel erboven',
+  'adr.scopeAbove': 'Van een scope erboven',
   'adr.scopeLandscape': 'Landschappen',
   'adr.scopeApplications': 'Applicaties',
   'adr.scopeRemoved': 'Weggehaalde applicaties',
