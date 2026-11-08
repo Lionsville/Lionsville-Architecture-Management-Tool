@@ -10,6 +10,7 @@ import { renderShell } from '../testing/renderShell'
 import type { TechnologyRow } from '../../projects/technologyRegister'
 import type { RegisterRow } from './register'
 import { RegisterPage } from './RegisterPage'
+import { takeEditAsked } from '../../widgets/kit/editOnArrival'
 import type { RegisterPageProps } from './RegisterPage'
 
 const s = translator('en')
@@ -56,6 +57,18 @@ describe('the register', () => {
     expect(props.onOpenPage).toHaveBeenCalledWith('retail', 'Billing')
     fireEvent.click(within(preview).getByRole('button', { name: 'See in Checks' }))
     expect(props.onSeeInChecks).toHaveBeenCalledOnce()
+  })
+
+  it('offers ✎ Edit, which opens the record\'s page already being written, and none where it is only read', () => {
+    const props = page()
+    fireEvent.click(screen.getByRole('row', { name: /Billing/ }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Edit' }))
+    expect(props.onOpenPage).toHaveBeenCalledWith('retail', 'Billing')
+    expect(takeEditAsked('document', 'Billing')).toBe(true)
+    cleanup()
+    page({ readOnly: true })
+    fireEvent.click(screen.getByRole('row', { name: /Billing/ }))
+    expect(within(screen.getByRole('dialog')).queryByRole('button', { name: 'Edit' })).toBeNull()
   })
 
   it('gives services and platforms their own columns, each of one meaning, and their report in the preview', () => {

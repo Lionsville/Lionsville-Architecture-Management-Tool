@@ -46,6 +46,7 @@ import type { ListHow, ListView } from '../../widgets/kit/listView'
 import { Mark } from '../../widgets/kit/Mark'
 import { PageState } from '../../widgets/kit/PageState'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
+import { askToEdit } from '../../widgets/kit/editOnArrival'
 import { RecordActions } from '../../widgets/kit/RecordActions'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { Toast } from '../../widgets/kit/Toast'
@@ -380,7 +381,7 @@ export function RegisterPage(props: RegisterPageProps) {
       </div>
       <RecordPreview
         tab={tab} ids={ids} current={current} words={words} onSelect={(id) => setView({ ...view, select: id })} s={s}
-        onOpen={onOpen} onOpenPage={onOpenPage} onReport={onReport}
+        onOpen={onOpen} onOpenPage={onOpenPage} onReport={onReport} readOnly={readOnly}
       >
         {current && (
           <RecordFindings
@@ -397,9 +398,9 @@ export function RegisterPage(props: RegisterPageProps) {
 const LIST_WORD = { applications: 'register.listApplications', services: 'register.listServices', platforms: 'register.listPlatforms' } as const
 
 /** A record, large: its facts and findings, and the ways on from it said in words. */
-function RecordPreview({ tab, ids, current, words, onSelect, onOpen, onOpenPage, onReport, children, s }: {
+function RecordPreview({ tab, ids, current, words, onSelect, onOpen, onOpenPage, onReport, readOnly, children, s }: {
   tab: RegisterTab; ids: readonly string[]; current: Shown | undefined; words: RegisterWords
-  onSelect: (id: string | null) => void; onOpen: Open | undefined; onOpenPage: Open | undefined; onReport: RegisterPageProps['onReport']; children: ReactNode; s: Translate
+  onSelect: (id: string | null) => void; onOpen: Open | undefined; onOpenPage: Open | undefined; onReport: RegisterPageProps['onReport']; readOnly: boolean; children: ReactNode; s: Translate
 }) {
   const master = current?.master
   const openGuide = tab === 'applications' ? 'register.openRow' : 'technologyRegister.openRow'
@@ -411,6 +412,8 @@ function RecordPreview({ tab, ids, current, words, onSelect, onOpen, onOpenPage,
       {...(current && master !== undefined ? {
         actions: (
           <RecordActions
+            // A record's text and facts are written on its page: ✎ Edit opens it there, already writing.
+            {...(onOpenPage && !readOnly ? { edit: { onPress: () => { askToEdit('document', current.id); onOpenPage(master, current.id) }, testId: `register-edit-${current.id}` } } : {})}
             verbs={(
               <>
                 {tab !== 'applications' && onReport && (

@@ -521,3 +521,12 @@ describe('a drawing in its editor', () => {
     expect(placeOf({ open: { path: 'acme', name: 'Acme', view: { id: 'sketch', name: 'S', kind: 'drawing', editing: true } } })).toEqual(editing)
   })
 })
+
+describe('a record\'s page or a block\'s, opened already being written', () => {
+  it('reads ?edit on an element\'s page and a building block\'s, and on no other record\'s', () => {
+    expect(readPlace('#/acme/-/document/crm?edit')).toEqual({ scope: 'acme', page: 'document', id: 'crm', edit: true })
+    expect(readPlace('#/-/blocks/blk-1?edit')).toEqual({ scope: '', page: 'blocks', id: 'blk-1', edit: true })
+    expect(readPlace('#/acme/-/decisions/adr-1?edit')).toEqual({ scope: 'acme', page: 'decisions', id: 'adr-1' })
+    expect(writePlace({ scope: 'acme', page: 'document', id: 'crm', edit: true })).toBe('#/acme/-/document/crm?edit')
+  })
+})

@@ -3834,6 +3834,7 @@ const SPECS = [
         colour: { type: 'string', description: 'What a sheet is coloured by: coveredBy, who, domains, lifecycle, retiring, aspect:<key>, or none. The reader\'s own, written nowhere.' },
         focus: { type: 'string', description: 'On an organisation chart: the unit to focus on, which draws it and what is under it.' },
         lines: { type: 'string', enum: [...CHART_LINES], description: 'On an organisation chart: which lines to draw. off: none; person: the lines of the person picked; dotted: every dotted line; exceptions: every departure from the model.' },
+        edit: { type: 'boolean', description: 'Open it being written: a drawing in its editor, an element\'s page (document) or a building block (blocks) with its text open, each by id. Only where the person can change it; they save or cancel.' },
       },
       additionalProperties: false,
     },

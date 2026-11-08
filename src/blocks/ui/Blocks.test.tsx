@@ -20,6 +20,7 @@ import { BlockPage } from './BlockPage'
 import { BlocksProvider } from './BlocksContext'
 import type { BlocksAccess, BlockRow, EvaluationRow } from './BlocksContext'
 import { BlocksRegisterPage } from './BlocksRegisterPage'
+import { askToEdit } from '../../widgets/kit/editOnArrival'
 import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(cleanup)
@@ -210,6 +211,22 @@ describe('a building block\'s page', () => {
     await waitFor(() => expect(screen.getByTestId('block-document').textContent).toBe('Written again.'))
     expect(access.update).toHaveBeenCalledTimes(1)
     expect(access.update).toHaveBeenCalledWith('blk-gw', { description: 'Written again.' })
+  })
+
+  it('opens already writing when ✎ Edit on its preview asked, and only for who may write', async () => {
+    const access = accessOver()
+    renderShell(<BlocksProvider value={access}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
+    fireEvent.click(screen.getByRole('row', { name: /Message gateway/ }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Edit' }))
+    expect(access.openBlock).toHaveBeenCalledWith('blk-gw')
+    cleanup()
+    page(access)
+    expect(await screen.findByRole('textbox', { name: s('blocks.document') })).toHaveProperty('value', GATEWAY.description)
+    cleanup()
+    askToEdit('blocks', 'blk-gw')
+    page(accessOver({ mayWrite: () => false }))
+    await waitFor(() => expect(screen.getByTestId('block-document').textContent).toContain('What it is.'))
+    expect(screen.queryByRole('textbox', { name: s('blocks.document') })).toBeNull()
   })
 
   it('offers the way to the scope where its principles are cited', () => {

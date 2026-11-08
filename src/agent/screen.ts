@@ -38,6 +38,14 @@ export type Page = (typeof PAGES)[number]
 /** Pages that are a view's tab: the id is a diagram's. */
 export const VIEW_PAGES: readonly Page[] = ['board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway']
 
+/** The pages that may be opened already being written (`Destination.edit`): each names its record by id but a drawing. */
+export const EDIT_PAGES: readonly Page[] = ['drawing', 'document', 'blocks']
+
+/** Whether a page opens in its editor on `edit`. */
+export function isEditPage(page: Page | undefined): boolean {
+  return page !== undefined && EDIT_PAGES.includes(page)
+}
+
 /**
  * Which page's tab a view is. The two drawn kinds are boards. A sheet, a map,
  * a technology landscape, a drawing, an organisation chart and a Conway map
@@ -236,7 +244,12 @@ export type Destination = {
   readonly focus?: string
   /** Which lines an organisation chart draws. */
   readonly lines?: ChartLines
-  /** A drawing's page only: in its editor, which `?edit` says in the address. */
+  /**
+   * In its editor, which `?edit` says in the address: a drawing's page, where
+   * the editor is part of the place; and a record's page (`document`) or a
+   * building block's (`blocks`, by id), which open already being written —
+   * read on arrival there, as `field` is, and no part of the place.
+   */
   readonly edit?: boolean
 }
 

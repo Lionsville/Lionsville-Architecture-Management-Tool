@@ -26,6 +26,7 @@
  *     #/acme/-/observations?tab=analysis         a tab, as a query
  *     #/acme/rail/-/board/landscape?select=crm   what a link selects
  *     #/acme/-/drawing/context?edit              a drawing, in its editor
+ *     #/freight/-/document/freight-division?edit an element's page, its text being written
  *
  * The `-` is what keeps a scope called *board* from reading as a page: a
  * scope's path may hold any name, so the scope is said up to a segment that no
@@ -76,7 +77,7 @@
  * the history (`app/placeHistory.ts`), and a test here says that every place
  * written is read back the same.
  */
-import { FRAME_PAGES, HOME_PAGES, isChartLines, isFramePanel, isPageField, isPageTab, PAGE_TABS, pagesKnown, VIEW_PAGES, viewPage } from './screen'
+import { FRAME_PAGES, HOME_PAGES, isChartLines, isEditPage, isFramePanel, isPageField, isPageTab, PAGE_TABS, pagesKnown, VIEW_PAGES, viewPage } from './screen'
 import type { DesignDiagram } from '../model/types'
 import type { ChartLines, Destination, Page, Screen } from './screen'
 
@@ -257,8 +258,13 @@ function placeFrom(
     ...(onView.group ? { group: onView.group } : {}), ...(onView.pair ? { pair: onView.pair } : {}),
     ...(onView.focus ? { focus: onView.focus } : {}),
     ...(onView.lines !== undefined ? { lines: onView.lines as ChartLines } : {}),
-    ...(onView.edit !== undefined && page === 'drawing' ? { edit: true } : {}),
+    ...(onView.edit !== undefined && isEditPage(page) ? { edit: true } : {}),
   }
+}
+
+/** `edit`, as an entry's state holds it: on a page opened being written, and nowhere else. */
+function editIn(edit: unknown, page: unknown): { edit?: true } {
+  return edit === true && typeof page === 'string' && isPage(page) && isEditPage(page) ? { edit: true } : {}
 }
 
 /** A day a look may be on: a date, or today where a view is saved on another. */
@@ -323,7 +329,7 @@ export function placeInState(state: unknown): Place | undefined {
     ...(typeof finding === 'string' && finding !== '' ? { finding } : {}),
     ...(isLookDay(day) && typeof page === 'string' && isPage(page) && VIEW_PAGES.includes(page) ? { day } : {}),
     ...(typeof group === 'string' ? { group } : {}), ...(typeof pair === 'string' ? { pair } : {}),
-    ...(edit === true && page === 'drawing' ? { edit: true } : {}),
+    ...editIn(edit, page),
   }
 }
 

@@ -60,6 +60,7 @@ import { idAt, useOrganisation } from './organisation/useOrganisation'
 import { useAgentScopes } from './agentScopes'
 import { ToastBar } from './ToastBar'
 import { DraftQuestion } from '../widgets/kit/drafts'
+import { askToEdit } from '../widgets/kit/editOnArrival'
 import type { ShellPreferences } from './useShellPreferences'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
@@ -774,6 +775,8 @@ function useShellBase(props: AppProps) {
   // A tab said by the address the window opened on: a link and a reload arrive on it.
   const [frame] = useState(() => {
     const first = readPlace(window.location.hash)
+    // `?edit` on a record's page or a block's: the page opens with its text being written (`kit/editOnArrival`).
+    if (first?.edit && first.id !== undefined && first.page !== undefined && first.page !== 'drawing') askToEdit(first.page, first.id)
     return frameStore({
       pinned: prefs.readPreferences().treePinned === true,
       ...(first?.tab !== undefined && first.page !== undefined ? { tab: first.tab, tabOf: first.page } : {}),

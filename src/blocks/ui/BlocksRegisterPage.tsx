@@ -23,6 +23,7 @@ import { List } from '../../widgets/kit/List'
 import type { ListGroup } from '../../widgets/kit/List'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { RecordActions } from '../../widgets/kit/RecordActions'
+import { askToEdit } from '../../widgets/kit/editOnArrival'
 import { PageDialog } from '../../widgets/PageDialog'
 import { useBlockDocument } from './BlockAbout'
 import { useBlocks } from './BlocksContext'
@@ -52,7 +53,10 @@ function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; ro
     <Preview
       ids={ids} currentId={block.id} onSelect={onSelect} title={block.name} listWord={t('blocks.listWord')}
       openFull={{ onPress: () => { onSelect(null); access.openBlock(block.id) } }}
-      actions={<RecordActions more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => { onSelect(null); access.openScope(scope) } }]} />}
+      actions={<RecordActions
+        // The block's text is written on its page: ✎ Edit opens it there, already writing.
+        {...(access.mayWrite(scope) ? { edit: { onPress: () => { askToEdit('blocks', block.id); onSelect(null); access.openBlock(block.id) }, testId: 'block-preview-edit' } } : {})}
+        more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => { onSelect(null); access.openScope(scope) } }]} />}
       facts={(
         <>
           <PreviewFact label={t('blocks.colKeptIn')}>{access.scopeLabel(scope)}</PreviewFact>

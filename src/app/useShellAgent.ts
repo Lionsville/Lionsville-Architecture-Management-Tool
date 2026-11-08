@@ -17,12 +17,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
 import { viewFacetsOf } from '../agent/place'
 import type { Place } from '../agent/place'
-import { arrived, FRAME_PAGES, HOME_PAGES, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor, viewPage } from '../agent/screen'
+import { arrived, FRAME_PAGES, HOME_PAGES, isEditPage, isFramePanel, isPageTab, landed, scopeOf, VIEW_PAGES, viewFor, viewPage } from '../agent/screen'
 import type { DesignDiagram } from '../model/types'
 import type { PeopleView } from '../agent/people'
 import type { ScopesView } from '../agent/scopeTree'
 import type { ChartLines, Destination, FramePanel, MovedBy, Page, Screen } from '../agent/screen'
 import { throughGuard } from './frame/frameStore'
+import { askToEdit } from '../widgets/kit/editOnArrival'
 import type { FrameState, FrameStore } from './frame/frameStore'
 import { boardsDrawing } from '../model'
 import type { TreeView } from '../agent/tree'
@@ -71,6 +72,11 @@ function pickOf(page: OrgPage, pick: string | undefined): Pick<OrgPageRequest, '
 
 /** Where a failure goes when the caller gave nowhere: a history that cannot say where a place lands still opens it. */
 const NOBODY = () => {}
+
+/** A record's page or a block's asked for already being written: the page takes the ask up as it shows that record (`kit/editOnArrival`). */
+function askEditOf(to: Destination): void {
+  if (to.edit && to.id !== undefined && to.page !== undefined && to.page !== 'drawing' && isEditPage(to.page)) askToEdit(to.page, to.id)
+}
 
 export type ShellAgent = ReturnType<typeof useShellAgent>
 
@@ -169,7 +175,7 @@ export function useShellAgent(deps: {
     leaveFramePages(frame, to.page, preferences.current.closePreferences)
     // A panel beside the work moves nothing; every other way to go is asked here, whoever is going.
     if (to.page !== undefined && FRAME_PAGES.includes(to.page)) { openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, preferences.current.openPreferences); return }
-    throughGuard(frame, to, () => moved.current(to, nothing), stay)
+    throughGuard(frame, to, () => { askEditOf(to); moved.current(to, nothing) }, stay)
   }, [homeAt, project, home, frame])
   moved.current = (to, nothing) => {
     const listPage = holdInFrame(frame, to)
@@ -218,7 +224,6 @@ export function useShellAgent(deps: {
     if (near.page !== place.page || near.id !== place.id || near.scope !== place.scope) notify(s('shell.placeGone'), 'info')
     return near
   }, [tree, project, report, notify, s])
-  // Back kept from its place by the person's work is taken back: the address returns to where the screen still is.
   const lookAtPlace = usePlaceHistory({ open: (place, stay) => openFor(place, NOBODY, stay), nearest, failed: report })
   /**
    * Where the app is, as `app.current` says it (ADR-0019), held as state so a

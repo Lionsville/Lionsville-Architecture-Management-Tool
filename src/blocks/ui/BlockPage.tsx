@@ -25,6 +25,7 @@ import { Tabs } from '../../widgets/kit/Tabs'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceTab } from '../../widgets/placeTab'
 import { BlockAbout, BlockTextWindow, useBlockDocument } from './BlockAbout'
+import { useEditAsked } from '../../widgets/kit/editOnArrival'
 import { BlockRequirements } from './BlockRequirements'
 import { BlockSolutions } from './BlockSolutions'
 import { BlockWhereUsed } from './BlockWhereUsed'
@@ -58,6 +59,11 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
     shown.current = id
   }, [open, openOn, id, nonce, setTab])
   const document = useBlockDocument(id ?? '')
+  // ✎ Edit on the block's preview, an address with ?edit or an agent: the page opens with its text being written.
+  useEditAsked('blocks', id, () => {
+    const asked = id ? access?.block(id) : undefined
+    if (asked && access?.mayWrite(asked.scope)) setEditAsked(true)
+  })
   const row = id ? access?.block(id) : undefined
   if (!access || !row) return null
   const { block, scope } = row

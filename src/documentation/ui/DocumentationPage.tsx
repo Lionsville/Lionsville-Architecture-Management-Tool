@@ -31,6 +31,7 @@ import { SeamResizer } from '../../widgets/SeamResizer';
 import { RECORD_RAIL } from './DocumentationPage.rail';
 import { Button } from '../../widgets/kit/Button';
 import { leaveWithDrafts } from '../../widgets/kit/drafts';
+import { useEditAsked } from '../../widgets/kit/editOnArrival';
 import { FindField } from '../../widgets/kit/FindField';
 import { FocusedWindow, useWritingView } from '../../widgets/kit/FocusedWindow';
 import { List } from '../../widgets/kit/List';
@@ -287,6 +288,8 @@ export function DocumentationPage(props: DocumentationPageProps) {
     commit();
     onClose();
   };
+  // ✎ Edit on a register's preview, an address with ?edit or an agent: the page opens with its text being written.
+  useEditAsked('document', element.id, () => { if (!readOnly && mode === 'read') startWriting() });
   const navigate = useCallback(
     // Another element's page: a comment being written here is asked about first (`kit/drafts`).
     (id: ElementId) => leaveWithDrafts(() => {

@@ -18,7 +18,7 @@ import { isCheckKey } from '../model/checkCatalogue'
 import type { HostModel } from '../model/hostModel'
 import type { DesignDiagram } from '../model/types'
 import type { Driving } from './driving'
-import { arrived, CHART_LINES, FRAME_PAGES, HOME_PAGES, isChartLines, isPageField, isPageTab, NEEDS_ID, PAGE_FIELDS, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
+import { arrived, CHART_LINES, EDIT_PAGES, FRAME_PAGES, HOME_PAGES, isEditPage, isChartLines, isPageField, isPageTab, NEEDS_ID, PAGE_FIELDS, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
 import { isLookDay } from './place'
 import type { AgentAnswer } from './tools'
@@ -179,7 +179,7 @@ function viewRow(scope: string, scopeName: string, diagram: DesignDiagram, activ
 
 // --- app.open --------------------------------------------------------------------
 
-type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string; field?: string; colour?: string; day?: string }
+type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string; field?: string; colour?: string; day?: string; edit?: boolean }
 
 export async function openApp(rawArgs: unknown, session: OpenScope | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell) return refused('agent.noScreen', 'there is no screen to move')
@@ -216,7 +216,7 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
     target = resolved
     model = document.model
   }
-  const refined = withField(asked, withTabAndSelect(asked, target, model, scope))
+  const refined = withEdit(asked, withField(asked, withTabAndSelect(asked, target, model, scope)))
   if ('ok' in refined) return refined
   target = refined
   // A scope that draws nothing has no canvas to open on: its home is the
@@ -422,6 +422,15 @@ function withField(asked: Destination, target: Resolved | AgentAnswer): Resolved
   if (isPageField(target.page, asked.field)) return { ...target, field: asked.field }
   const pages = Object.entries(PAGE_FIELDS).map(([page, fields]) => `${page} (${(fields ?? []).join(', ')})`).join('; ')
   return refused('agent.badArguments', `"field" is a field of the page to focus: ${pages}`)
+}
+
+/** Opened already being written: a drawing in its editor, a record's page or a block's with its text open. */
+function withEdit(asked: Destination, target: Resolved | AgentAnswer): Resolved | AgentAnswer {
+  if ('ok' in target || asked.edit === undefined || asked.edit === false) return target
+  if (asked.edit !== true || !isEditPage(target.page) || target.id === undefined) {
+    return refused('agent.badArguments', `"edit" is true or absent, on page ${EDIT_PAGES.join(', ')} with an id`)
+  }
+  return { ...target, edit: true }
 }
 
 /**

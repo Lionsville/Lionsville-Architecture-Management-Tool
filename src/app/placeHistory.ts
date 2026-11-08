@@ -208,7 +208,8 @@ export class PlaceHistory {
       // An address in the form before 3.7.0 is written over in the new one,
       // and an entry the browser made for a pasted link is given its place.
       const rewrite = oldPlaceForm(this.#window.location.hash) || placeInState(this.#window.history.state) === undefined
-      if (!samePlace(near, place) || near.select !== undefined || rewrite) this.#write('replace', withoutSelect(near))
+      const kept = withoutSelect(near)
+      if (!samePlace(near, place) || kept !== near || rewrite) this.#write('replace', kept)
       this.#options.open(near, () => this.#stayed(pop, was, by))
     }, (cause: unknown) => {
       if (pop !== this.#pops) return
@@ -268,9 +269,13 @@ function stepIn(state: unknown): number | undefined {
   return typeof held === 'number' ? held : undefined
 }
 
-/** A place as the history keeps it: what a link selected on arrival is not part of it. */
+/**
+ * A place as the history keeps it: what a link selected on arrival is not part
+ * of it, nor a record's page opened already being written (`?edit` but on a drawing).
+ */
 function withoutSelect(place: Place): Place {
-  if (place.select === undefined) return place
-  const { select: _select, ...kept } = place
-  return kept
+  const writing = place.edit === true && place.page !== 'drawing'
+  if (place.select === undefined && !writing) return place
+  const { select: _select, edit: _edit, ...kept } = place
+  return writing ? kept : { ...kept, ...(place.edit ? { edit: true } : {}) }
 }
