@@ -16,8 +16,10 @@
 .lv-board .react-flow__renderer,
 .lv-board .react-flow { background: var(--canvas-ground); }
 
-/* A group holds its edge on screen as a zone does, and a selected one's is the heavier. */
-.lv-group[data-selected] { border-width: round(up, calc(3px / var(--canvas-zoom, 1)), 1px); }
+/*
+ * A selected group keeps its edge's width: the heavier look is the ring drawn outside it
+ * (DomainGroupLayer), so its heading, placed by that edge, does not move when it is picked.
+ */
 /* A group's name over the lines (DomainGroupLayer): its box's edges, unseen, place the name where the box's own sits. */
 .lv-group-name { height: auto; border-color: transparent; background: transparent; pointer-events: none; }
 .lv-group-name .kit-zone__name { white-space: nowrap; }
