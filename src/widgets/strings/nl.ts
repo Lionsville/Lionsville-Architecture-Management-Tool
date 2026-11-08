@@ -94,7 +94,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.state.slow': 'Dit duurt langer dan het zou moeten.',
   'kit.state.offline': 'De server is niet bereikbaar',
   'kit.state.noAnswer': '{where} gaf geen antwoord.',
-  'kit.state.nothingLost': 'Er is niets van u verloren.',
+  'kit.state.nothingLost': 'Er is niets van je verloren.',
   'kit.state.retryIn': 'Over {seconds} s opnieuw proberen.',
   'kit.state.tryNow': 'Nu proberen',
   'kit.state.unreadable': 'Dit kon niet worden gelezen',
