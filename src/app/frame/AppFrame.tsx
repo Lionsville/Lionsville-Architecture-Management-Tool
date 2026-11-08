@@ -26,7 +26,7 @@ import { flattenScopes } from '../../projects/scope'
 import type { ScopeSummary } from '../../projects/scope'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { AgentIcon, CaretIcon, RedoIcon, SearchIcon, UndoIcon } from '../../widgets/icons'
+import { AgentIcon, CaretIcon, iconSize, RedoIcon, SearchIcon, UndoIcon } from '../../widgets/icons'
 import { BandStack } from '../../widgets/kit/Band'
 import type { StackedBand } from '../../widgets/kit/Band'
 import { Button, IconButton } from '../../widgets/kit/Button'
@@ -815,7 +815,7 @@ function HelpMenu({ parts }: { parts: ShellParts }) {
 
 function TreeGlyph() {
   return (
-    <svg width={16} height={16} viewBox="0 0 16 16" aria-hidden fill="none" stroke="currentColor" strokeWidth={1.2}>
+    <svg {...iconSize(16)} viewBox="0 0 16 16" aria-hidden fill="none" stroke="currentColor" strokeWidth={1.2}>
       <rect x={1.5} y={2.5} width={13} height={11} rx={1} />
       <line x1={6} y1={2.5} x2={6} y2={13.5} />
     </svg>

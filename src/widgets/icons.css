@@ -1,0 +1,7 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* An icon follows the text size: its size is its pixels at 100 %, said in rem (`iconSize`). */
+.kit-icon { flex: none; width: calc(var(--icon-size) * var(--icon-unit, 0.0625rem)); height: calc(var(--icon-size) * var(--icon-unit, 0.0625rem)); }
+/* A drawing's type is in px and a card is made larger by zooming, so an icon drawn in one keeps its pixels. */
+:is(.react-flow__viewport, .kit-card, .poster__stage, .chart-stage) { --icon-unit: 1px; }
