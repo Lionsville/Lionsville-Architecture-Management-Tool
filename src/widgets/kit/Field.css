@@ -113,5 +113,5 @@
 .kit-prop__editing { flex-basis: 100%; min-width: 0; }
 .kit-prop__error { flex-basis: 100%; margin: 2px 0 var(--s-1); color: var(--bad); font-size: var(--t-body); }
 .kit-check { display: flex; align-items: center; gap: var(--s-2); cursor: pointer; }
-.kit-check input { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.kit-check input { flex: none; width: 1rem; height: 1rem; margin: 0; accent-color: var(--accent); }
 .kit-check input:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
