@@ -7,6 +7,7 @@
  * walks and ticks, and focus comes back to the row a preview was open on and
  * stays in place when the row holding it leaves.
  */
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { useState } from 'react'
@@ -352,6 +353,14 @@ describe('the end of a list that is not all there', () => {
     within(bar).getByRole('button', { name: 'Show all' }).focus()
     expect(document.activeElement?.textContent).toBe('Show all')
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('stays in view as the list scrolls, or keeps to the list\'s end where it is asked to', () => {
+    const css = readFileSync('src/widgets/kit/List.css', 'utf8')
+    expect(css).toMatch(/\.kit-list__more \{\n {2}position: sticky;/)
+    expect(css).toMatch(/\.kit-list__more\[data-at-end\] \{ position: static; \}/)
+    renderShell(<List label="Things" groups={GROUPS} more={<ListMore said="kept back" atEnd data-testid="end" />} />)
+    expect(screen.getByTestId('end').hasAttribute('data-at-end')).toBe(true)
   })
 
   it('stands under the empty line too, where a filter left no row', () => {
