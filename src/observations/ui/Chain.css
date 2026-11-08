@@ -21,7 +21,7 @@
 .chain-mono { font-family: var(--font-mono); font-size: var(--t-body); }
 .chain-tone { display: inline-flex; align-items: center; gap: var(--s-1); }
 
-.chain-foot { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; width: 100%; }
+.chain-foot { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; flex: 1; min-width: 0; }
 .chain-foot__end { margin-inline-start: auto; display: inline-flex; align-items: center; gap: var(--s-2); }
 
 .chain-form { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }

@@ -135,6 +135,26 @@ describe('the preview', () => {
     expect(onPress).toHaveBeenCalled()
   })
 
+  it('puts Edit with its pencil at the top, and Open full record at the end of the one row at the foot', () => {
+    const edit = vi.fn()
+    renderShell(
+      <Preview
+        ids={['x']} currentId="x" onSelect={() => undefined} title="T"
+        edit={{ label: 'Edit', onPress: edit }} openFull={{ label: 'Open full record', onPress: () => undefined }}
+        foot={<button type="button">Ask why</button>}
+      >
+        body
+      </Preview>,
+    )
+    const head = document.querySelector('.kit-preview__head')!
+    const foot = document.querySelector('.kit-preview__foot')!
+    expect(head.contains(screen.getByRole('button', { name: 'Edit' }))).toBe(true)
+    expect(head.querySelector('svg')).not.toBeNull()
+    expect([...foot.querySelectorAll('button')].map((one) => one.textContent)).toEqual(['Ask why', 'Open full record'])
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
+    expect(edit).toHaveBeenCalled()
+  })
+
   it('passes axe', async () => {
     renderShell(<Host start="select=b" />)
     expect(await axeFindings()).toEqual([])

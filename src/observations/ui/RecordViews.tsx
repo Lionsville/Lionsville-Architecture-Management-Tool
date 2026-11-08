@@ -184,10 +184,16 @@ function PreviewFacts({ held, ctx }: { held: Selected; ctx: ReaderContext }) {
 }
 
 /** The everyday actions, drawn; the others, the copy link among them, under the one ⋯. */
-function BarButtons({ view, ctx, held }: { view: RecordView; ctx: ReaderContext; held: Selected }) {
+function BarButtons({ view, ctx, held, editApart = false }: {
+  view: RecordView
+  ctx: ReaderContext
+  held: Selected
+  /** Edit is drawn elsewhere: in a preview's head. */
+  editApart?: boolean
+}) {
   const { s } = ctx
   const everyday = view.bar.filter((one) => EVERYDAY.has(one.key) && one.key !== 'edit')
-  const edit = view.bar.find((one) => one.key === 'edit')
+  const edit = editApart ? undefined : view.bar.find((one) => one.key === 'edit')
   const others = view.bar.filter((one) => !EVERYDAY.has(one.key))
   const steps_ = held.kind === 'solution' ? solutionSteps(solutionProps(held.solution, ctx), s) : []
   const { copyLink } = ctx
@@ -229,15 +235,17 @@ export function RecordPreview({ held, heldKey, ctx, page, ids, listWord, onSelec
 }) {
   const view = recordViewOf(held, heldKey, ctx, page)
   const isObservation = held.kind === 'observation' || held.kind === 'below'
+  const edit = view.bar.find((one) => one.key === 'edit')
   return (
     <Preview
       ids={ids} currentId={heldKey} onSelect={onSelect} title={view.title} code={view.code} {...(listWord ? { listWord } : {})}
       openFull={{ label: ctx.s('observation.openFull'), onPress: onFull }}
+      {...(edit ? { edit: { label: edit.label, onPress: edit.onClick, ...(edit.tip ? { title: edit.tip } : {}), ...(edit.testId ? { testId: edit.testId } : {}) } } : {})}
       {...(isObservation ? { facts: <PreviewFacts held={held} ctx={ctx} /> } : {})}
       foot={(
         <div className="chain-foot">
           {view.next && <NextStep inline {...view.next} />}
-          <span className="chain-foot__end"><BarButtons view={view} ctx={ctx} held={held} /></span>
+          <span className="chain-foot__end"><BarButtons view={view} ctx={ctx} held={held} editApart /></span>
         </div>
       )}
       dataGuide="observations.preview"

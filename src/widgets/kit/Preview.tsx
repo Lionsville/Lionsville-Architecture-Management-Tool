@@ -3,9 +3,14 @@
 
 /**
  * The large preview: what a row is, read in place over its list, opened only by
- * selecting that row. Sized for the record as it really is, a thousand
+ * selecting that row. As wide as the record as it really is, a thousand
  * characters and more, so the text reads at full measure with the facts wrapping
- * beside it, and the title and the next question stay put while the body scrolls.
+ * beside it; as tall as what it holds, up to the window less a margin, so a
+ * record of one sentence is not a sentence in an empty sheet. The title and the
+ * foot stay put while the body scrolls.
+ *
+ * What can be done sits in two places and no more: Edit at the top right, and
+ * the rest in one row at the foot, *Open full record* last.
  *
  * ‹ › and the arrow keys walk the list, Esc goes back to the row. Which record
  * is up belongs in the address, so a link reaches it and Back lets go of it: the
@@ -21,7 +26,7 @@ import { useEffect, useId, useRef } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import Modal from '@mui/material/Modal'
 import { useStrings } from '../../i18n/LanguageContext'
-import { BackIcon, CloseIcon, ForwardIcon } from '../icons'
+import { BackIcon, CloseIcon, ForwardIcon, PencilIcon } from '../icons'
 import './Preview.css'
 
 export type PreviewProps = {
@@ -36,8 +41,10 @@ export type PreviewProps = {
   readonly code?: string
   /** What the count is a count of: *waiting*. The position reads *1 of 17 waiting*. */
   readonly listWord?: string
-  /** *Open full record*, in the head. */
+  /** *Open full record*, at the end of the foot with what else can be done. */
   readonly openFull?: { readonly label: string; readonly onPress: () => void }
+  /** *Edit*, with its pencil, at the top right: the one act on the record itself. */
+  readonly edit?: { readonly label: string; readonly onPress: () => void; readonly title?: string; readonly testId?: string }
   /** The facts beside the text. They wrap; they are not clipped. */
   readonly facts?: ReactNode
   /** The next question and what can be done: stays in view. */
@@ -48,7 +55,7 @@ export type PreviewProps = {
 
 const WRITES = 'input, textarea, select, [contenteditable="true"]'
 
-export function Preview({ ids, currentId, onSelect, title, code, listWord, openFull, facts, foot, children, dataGuide }: PreviewProps) {
+export function Preview({ ids, currentId, onSelect, title, code, listWord, openFull, edit, facts, foot, children, dataGuide }: PreviewProps) {
   const { t } = useStrings()
   const titleId = useId()
   const body = useRef<HTMLDivElement>(null)
@@ -92,7 +99,12 @@ export function Preview({ ids, currentId, onSelect, title, code, listWord, openF
           )}
           {code && <span className="kit-preview__code">{code}</span>}
           <span className="kit-preview__grow" />
-          {openFull && <button type="button" className="kit-preview__link" onClick={openFull.onPress}>{openFull.label}</button>}
+          {edit && (
+            <button type="button" className="kit-preview__edit" title={edit.title} data-testid={edit.testId} onClick={edit.onPress}>
+              <PencilIcon size={14} />
+              {edit.label}
+            </button>
+          )}
           <button type="button" className="kit-preview__icon" aria-label={t('common.close')} onClick={() => onSelect(null)}><CloseIcon /></button>
         </div>
         <h2 className="kit-preview__title" id={titleId}>{title}</h2>
@@ -100,7 +112,12 @@ export function Preview({ ids, currentId, onSelect, title, code, listWord, openF
           <div className="kit-preview__text">{children}</div>
           {facts && <div className="kit-preview__facts">{facts}</div>}
         </div>
-        {foot && <div className="kit-preview__foot">{foot}</div>}
+        {(foot || openFull) && (
+          <div className="kit-preview__foot">
+            {foot}
+            {openFull && <button type="button" className="kit-preview__link" onClick={openFull.onPress}>{openFull.label}</button>}
+          </div>
+        )}
       </div>
     </Modal>
   )
