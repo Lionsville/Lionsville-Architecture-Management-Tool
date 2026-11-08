@@ -24,7 +24,7 @@ export function useRowFold(most: number, again: unknown) {
     if (!row) return
     setFolded((was) => {
       const width = row.clientWidth
-      if (row.scrollWidth > width && was < most) {
+      if ((row.scrollWidth > width || pastItsEnd(row)) && was < most) {
         widths.current[was] = width
         return was + 1
       }
@@ -49,4 +49,25 @@ export function useRowFold(most: number, again: unknown) {
   }, [row, look, folded])
 
   return { folded, anchor }
+}
+
+/**
+ * Whether the row's last control runs into its end padding or past it. A flex
+ * row's scroll width leaves its end padding out, so a row short by less than
+ * that padding never overflows by its own measure, and its last control (More)
+ * sat cut against the window's edge with nothing folded.
+ */
+export function pastItsEnd(row: HTMLElement): boolean {
+  const end = row.getBoundingClientRect().right - (Number.parseFloat(getComputedStyle(row).paddingRight) || 0)
+  return rightmost(row) > end + 0.5
+}
+
+/** The right edge of what the row draws: a child with no box of its own (`display: contents`) is read through. */
+function rightmost(parent: Element): number {
+  let most = Number.NEGATIVE_INFINITY
+  for (const child of Array.from(parent.children)) {
+    const right = getComputedStyle(child).display === 'contents' ? rightmost(child) : child.getBoundingClientRect().right
+    if (right > most) most = right
+  }
+  return most
 }
