@@ -3,7 +3,7 @@
 
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { tabAfterCard } from './linesAfterCard';
+import { cardBefore, tabAfterCard } from './linesAfterCard';
 
 describe('a card’s lines in the tab order', () => {
   it('goes from the card to its lines, line by line, and on past the last', () => {
@@ -17,5 +17,10 @@ describe('a card’s lines in the tab order', () => {
   });
   it('leaves a card with no lines to the browser', () => {
     expect(tabAfterCard({ kind: 'card', id: 'a' }, 'a', [], false)).toBeUndefined();
+  });
+  it('knows the card a Shift+Tab comes back to, whose lines it walks back into when it is selected', () => {
+    expect(cardBefore(['a', 'b', 'c'], 'b')).toBe('a');
+    expect(cardBefore(['a', 'b', 'c'], 'a')).toBeUndefined();
+    expect(cardBefore(['a', 'b'], 'z')).toBeUndefined();
   });
 });

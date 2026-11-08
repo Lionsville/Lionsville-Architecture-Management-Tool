@@ -7,7 +7,8 @@
  * which take a tab, sat before all of the cards: Tab from a card went on to the
  * next card, and its lines were two dozen Shift+Tabs away. Tab on the selected
  * card now goes to its first line, from line to line, and from its last line on
- * to the card after it; Shift+Tab walks the same way back to the card.
+ * to the card after it; Shift+Tab walks the same way back to the card, from the
+ * card after it too: back from there goes to the selected card's last line.
  */
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
@@ -31,6 +32,28 @@ export function tabAfterCard(
   return next >= walk.length ? 'after' : walk[next];
 }
 
+/** The card a Shift+Tab from `card` comes back to, where that card is selected: its lines are walked back into first. */
+export function cardBefore(order: readonly string[], card: string): string | undefined {
+  const at = order.indexOf(card);
+  return at > 0 ? order[at - 1] : undefined;
+}
+
+/** The lines of `home` that take a tab, in the order they are drawn. */
+function linesOf(element: HTMLElement, edges: readonly { id: string; source: string; target: string }[], home: string): string[] {
+  return [...element.querySelectorAll<HTMLElement>('.react-flow__edge[tabindex="0"]')]
+    .map((one) => one.dataset.id ?? '')
+    .filter((id) => edges.some((one) => one.id === id && (one.source === home || one.target === home)));
+}
+
+/** Shift+Tab from the card after the selected one: to that card's last line, where it has one. */
+function backIntoLines(element: HTMLElement, card: string, selected: readonly string[], edges: readonly { id: string; source: string; target: string }[]): HTMLElement | undefined {
+  const order = [...element.querySelectorAll<HTMLElement>('.react-flow__node[tabindex="0"]')].map((one) => one.dataset.id ?? '');
+  const before = cardBefore(order, card);
+  if (before === undefined || !selected.includes(before)) return undefined;
+  const last = linesOf(element, edges, before).at(-1);
+  return last === undefined ? undefined : element.querySelector<HTMLElement>(`.react-flow__edge[data-id=${quoted(last)}]`) ?? undefined;
+}
+
 export function useLinesAfterCard(container: RefObject<HTMLDivElement | null>): void {
   const flow = useStoreApi();
   useEffect(() => {
@@ -46,10 +69,13 @@ export function useLinesAfterCard(container: RefObject<HTMLDivElement | null>): 
       const at = node?.dataset.id !== undefined ? { kind: 'card' as const, id: node.dataset.id } : edge?.dataset.id !== undefined ? { kind: 'line' as const, id: edge.dataset.id } : undefined;
       if (!at) return;
       const home = at.kind === 'card' ? at.id : selected.find((id) => edges.some((one) => one.id === at.id && (one.source === id || one.target === id)));
+      if (at.kind === 'card' && event.shiftKey && !selected.includes(at.id)) {
+        const into = backIntoLines(element, at.id, selected, edges);
+        if (into) { event.preventDefault(); into.focus(); }
+        return;
+      }
       if (home === undefined || !selected.includes(home)) return;
-      const lines = [...element.querySelectorAll<HTMLElement>('.react-flow__edge[tabindex="0"]')]
-        .map((one) => one.dataset.id ?? '')
-        .filter((id) => edges.some((one) => one.id === id && (one.source === home || one.target === home)));
+      const lines = linesOf(element, edges, home);
       const next = tabAfterCard(at, home, lines, event.shiftKey);
       if (next === undefined) return;
       let target: HTMLElement | null | undefined;
