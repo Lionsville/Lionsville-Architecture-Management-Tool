@@ -22,6 +22,7 @@ import { ObservationsPage } from './ObservationsPage'
 import type { ChangeAcross, ObservationsPageProps } from './ObservationsPage'
 import { renderShell } from '../../app/testing/renderShell'
 import { SeamWidthsProvider } from '../../widgets/useSeamWidth'
+import { DraftQuestion, useDraft } from '../../widgets/kit/drafts'
 import type { SeamWidths } from '../../widgets/useSeamWidth'
 
 afterEach(() => cleanup())
@@ -50,10 +51,13 @@ const below: ScopeAnalysis[] = [{
 }]
 
 let ids = 0
-function mount({ wrap, ...over }: Partial<ObservationsPageProps> & { wrap?: SeamWidths } = {}) {
+function mount({ wrap, beside, ...over }: Partial<ObservationsPageProps> & { wrap?: SeamWidths; beside?: ReactElement } = {}) {
   const onChange = vi.fn()
   const onOpenScope = vi.fn()
-  const seamed = (page: ReactElement) => (wrap ? <SeamWidthsProvider value={wrap}>{page}</SeamWidthsProvider> : page)
+  const seamed = (page: ReactElement) => {
+    const withBeside = beside ? <>{beside}{page}</> : page
+    return wrap ? <SeamWidthsProvider value={wrap}>{withBeside}</SeamWidthsProvider> : withBeside
+  }
   const utils = renderShell(seamed(
     <ObservationsPage
       open
@@ -100,6 +104,25 @@ describe('ObservationsPage, as axe reads it', () => {
     cleanup()
     mount({ initialId: 'c1', initialTab: 'analysis-map', initialNonce: 1 })
     expect(await axeFindings()).toEqual([])
+  })
+})
+
+/** Something written in the panel and not yet sent. */
+function Draft() { useDraft(true); return null }
+
+describe('a card picked on the map', () => {
+  it('asks before it swaps a panel that holds a draft, and keeps the panel on Keep writing', async () => {
+    mount({ initialId: 'c1', initialTab: 'analysis-map', initialNonce: 1, beside: <><DraftQuestion /><Draft /></> })
+    const picture = screen.getByTestId('analysis-picture')
+    const card = (key: string) => within(picture).getAllByTestId('analysis-observation').find((node) => node.getAttribute('data-key') === key)!
+    fireEvent.click(card('o1'))
+    expect(screen.getByRole('heading', { name: 'Leave with a draft?' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Leave with a draft?' })).toBeNull())
+    expect(screen.queryByText('Nightly batch overruns', { selector: 'h2, h3' })).toBeNull()
+    fireEvent.click(card('o1'))
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
+    await waitFor(() => expect(screen.getByText('Nightly batch overruns', { selector: 'h2, h3' })).toBeTruthy())
   })
 })
 

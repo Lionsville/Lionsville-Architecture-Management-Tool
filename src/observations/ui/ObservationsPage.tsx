@@ -840,14 +840,25 @@ export function ObservationsPage(props: ObservationsPageProps) {
     copyLink: copyLinkOf(props, stage),
   }
   readerRef.current = readerCtx
+  /**
+   * A card picked on a map swaps the side panel for its own, and a comment being
+   * written in the panel would go with it: ask first, as every other way out does.
+   * A form's panel is not swapped by a pick, so it is not asked about.
+   */
+  const pickOnMap = (key: string, then?: () => void) => {
+    const swaps = key !== selectedKey && (forms.panel === undefined || forms.panel === null)
+    const go = () => { setSelectedKey(key); then?.() }
+    if (swaps) leaveWithDrafts(go)
+    else go()
+  }
   const pageWrites = { edit: (key: string) => setEditingKey(key), ask: (key: string, panel: CausePanel) => setAsked({ key, panel }) }
 
   // --- the right-click ------------------------------------------------------------------
 
   /** A right-click selects what it landed on, the way a click does, and offers what can be done with it. */
   const openMenu = (target: PictureTarget, at: { x: number; y: number }) => {
-    if (target.kind === 'node') setSelectedKey(target.key)
-    setMenu({ target, at })
+    if (target.kind !== 'node' || target.key === selectedKey) { setMenu({ target, at }); return }
+    pickOnMap(target.key, () => setMenu({ target, at }))
   }
   const menuActions = (target: PictureTarget): MenuAction[] => pictureMenuActions(target, {
     readOnly, s, commit, analysis, causes, solutions, experiments, resolve, readerCtx,
@@ -896,7 +907,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       scopeLabel={labelOf}
       hereLabel={f.hereLabel(s)}
       selectedKey={selectedKey}
-      onSelect={setSelectedKey}
+      onSelect={(key) => pickOnMap(key)}
       onMenu={openMenu}
       window={chainWindow}
       showOverview={chainsKept === CHAINS_ALL}
@@ -926,7 +937,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     .map((phase) => [phase, solutions.filter((one) => phaseOf(one) === phase).length] as const)
   const solutionsMap = (
     <SolutionPicture
-      graph={graph} selectedKey={selectedKey} onSelect={setSelectedKey} flags={flags} onMenu={openMenu} view={solveView} s={s}
+      graph={graph} selectedKey={selectedKey} onSelect={(key) => pickOnMap(key)} flags={flags} onMenu={openMenu} view={solveView} s={s}
       dockExtra={(
         <>
           <Button variant="quiet" size="small" aria-pressed={wholeChain} onClick={() => setWholeChain((on) => !on)} data-testid="solution-whole-chain">{s('solution.wholeChain')}</Button>
