@@ -89,7 +89,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'folder.adoptStoppedTitle': 'Kopieren angehalten',
   'folder.adoptFailedTitle': 'Das Kopieren ist nicht gelungen',
   'folder.adoptProgress': '{done} von {total} Bereichen: {scope}',
-  'folder.adoptChecking': 'Prüfung {done} von {total}: {scope}',
+  'folder.adoptChecking': '{done} von {total} geprüft: {scope}',
   'folder.adoptProgressLabel': 'Bisher kopierte Bereiche',
   'folder.adoptStop': 'Anhalten',
   'folder.adoptStopping': 'Hält nach diesem Bereich an\u2026',

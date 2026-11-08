@@ -75,7 +75,7 @@ export const GLOSSARY: Record<Exclude<Language, 'en'>, readonly Refused[]> = {
     { word: /\bJourneys?\b|^Ablauf$/, use: 'Kundenreise' },
     { word: /zu prüfen/, use: 'zur Durchsicht', except: (key) => key === 'drawing.silentAsk' },
     // Under review is a decision's state and stays In Prüfung (sent Zur Prüfung); the checks are Checks.
-    { word: /(?<!\b[Ii]n |\b[Zz]ur )Prüfung/, use: 'Check', except: (key) => key.startsWith('adr.') || key === 'folder.adoptChecking' },
+    { word: /(?<!\b[Ii]n |\b[Zz]ur )Prüfung/, use: 'Check', except: (key) => key.startsWith('adr.') },
     { word: /Verschachtelung/, use: 'Hierarchie' },
     { word: /Aufräumen/, use: 'Automatisch anordnen' },
   ],
