@@ -299,7 +299,19 @@ describe('an agent reaches every place', () => {
     expect((now.open as { view: { id: string } }).view.id).toBe('l7')
     await waitFor(() => expect(window.location.hash).toBe('#/retail/depot/-/board/l7?panel=work'))
     expect(parsed(await ask('app.open', { scope: 'retail/depot', page: 'activity' })).arrived).toBe(true)
-    expect(await screen.findByRole('list', { name: 'Activity' }).catch(() => screen.findByText(/nothing|Nothing/))).toBeDefined()
+    expect(await screen.findByRole('list', { name: 'Activity' }).catch(() => screen.findByText(/from now on shows in this list/))).toBeDefined()
+  })
+
+  it('takes the focus to a panel opened from row one, and gives it back when its × shuts it', async () => {
+    await home()
+    const word = screen.getByTestId('saved-indicator')
+    word.focus()
+    fireEvent.click(word)
+    const panel = await screen.findByTestId('frame-panel')
+    await waitFor(() => expect(document.activeElement).toBe(panel))
+    fireEvent.click(within(panel).getByRole('button', { name: 'Close' }))
+    await waitFor(() => expect(screen.queryByTestId('frame-panel')).toBeNull())
+    expect(document.activeElement).toBe(screen.getByTestId('saved-indicator'))
   })
 
   it('opens the preferences and a scope’s settings, with nothing open', async () => {

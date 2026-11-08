@@ -91,6 +91,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts)
   useExampleCommand(parts)
   useFrameKeys(parts, state)
+  usePanelFocus(state.panel)
   useRememberPlace(parts, screen)
   const lines = usePaletteLines(parts, at, go)
   const { lookAgain } = agent
@@ -263,6 +264,35 @@ export function undoKey(event: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey'
   const key = event.key.toLowerCase()
   if (key === 'z') return event.shiftKey ? 'redo' : 'undo'
   return key === 'y' && !event.shiftKey ? 'redo' : undefined
+}
+
+/**
+ * A panel opened from row one takes the focus, so the keyboard is where the
+ * eye goes rather than sixty Tabs away, and gives it back to what opened it
+ * when it shuts by its ×, as Escape already does. One an agent or an address
+ * opened while the person was elsewhere leaves their focus alone.
+ */
+function usePanelFocus(panel: string | undefined) {
+  const opener = useRef<HTMLElement | null>(null)
+  const was = useRef(panel)
+  useEffect(() => {
+    const before = was.current
+    was.current = panel
+    const active = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    if (panel !== undefined && before === undefined) {
+      const fromRowOne = active === null || active === document.body || active.closest('[data-testid="shell-toolbar"]') !== null
+      if (!fromRowOne) return
+      opener.current = active
+      document.querySelector<HTMLElement>('[data-testid="frame-panel"]')?.focus()
+      return
+    }
+    if (panel === undefined && before !== undefined) {
+      const back = opener.current
+      opener.current = null
+      const lost = active === null || active === document.body
+      if (lost && back?.isConnected) back.focus()
+    }
+  }, [panel])
 }
 
 /** ⌘\ pins the tree and Esc shuts a panel before the page and the board; `?` and F1 are the shell's, on every screen (`helpKeys.ts`). */
