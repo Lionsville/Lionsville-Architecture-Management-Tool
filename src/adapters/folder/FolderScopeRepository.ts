@@ -270,7 +270,11 @@ export class FolderScopeRepository implements ScopeRepository {
     const seen = new Map<string, ScopeId>()
     for (const { scope, steps, expects } of work) {
       const read = reads.get(scope) ?? await this.folder.read(scope)
-      if (!read) return { refused: 'shell.scopeGone', scope }
+      if (!read) {
+        // A folder moved away or a drive gone is not a scope somebody removed: said as the folder, and thrown as a failure to reach it is.
+        if (await this.folder.whyMissing(scope) === 'shell.folderUnavailable') throw new ShellError('shell.folderUnavailable')
+        return { refused: 'shell.scopeGone', scope }
+      }
       if (!reads.has(scope)) await this.applied.promote(scope, read.stored)
       reads.set(scope, read)
       const fresh: ScopeStep[] = []
@@ -601,6 +605,7 @@ export class FolderScopeRepository implements ScopeRepository {
       await this.folder.store.remove(node.address)
       this.staging.drop(removed)
       this.folder.forget(node.address)
+      this.folder.letGo(removed)
       return { removed }
     })
   }

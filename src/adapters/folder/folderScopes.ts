@@ -381,6 +381,31 @@ export class FolderScopes {
     return { node, state, snapshot, library, files, ...(snapshot?.revision !== undefined ? { stored } : {}) }
   }
 
+  /** Scopes removed here: no longer looked for where they were last found. */
+  letGo(ids: readonly ScopeId[]): void {
+    for (const id of ids) this.found.delete(id)
+  }
+
+  /**
+   * Why a scope that does not read is not there. A scope this folder knew,
+   * whose folder is now missing, or a folder that is itself gone, is the
+   * folder not being available — moved away, a drive unplugged, a sync
+   * folder offline — and the person can bring it back. Only a scope nobody
+   * here knows of any more, in a folder that is there, was removed.
+   */
+  async whyMissing(id: ScopeId): Promise<'shell.folderUnavailable' | 'shell.scopeGone'> {
+    try {
+      await this.root.values().next()
+    } catch {
+      return 'shell.folderUnavailable'
+    }
+    const address = this.found.get(id)
+    if (address === undefined || address === ROOT_SCOPE) return 'shell.scopeGone'
+    // A folder that is there and did not read is another matter, which the caller says as it always has.
+    const there = await folderAt(this.root, address).catch(() => undefined)
+    return there ? 'shell.scopeGone' : 'shell.folderUnavailable'
+  }
+
   /** Forget what was described of a scope's pictures: its folder has moved or gone. */
   forget(address: ScopeAddress): void {
     for (const key of this.described?.keys() ?? []) {
