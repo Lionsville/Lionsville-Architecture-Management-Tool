@@ -43,7 +43,7 @@ const ANYWHERE: Readonly<Record<string, string>> = {
 
 const MAC_KEY: Readonly<Record<string, string>> = {
   Delete: '⌫', Backspace: '⌫', Enter: '↩', Return: '↩', Escape: '⎋', Esc: '⎋', Tab: '⇥', Space: 'Space', ' ': 'Space',
-  // A Mac keyboard has no Menu key; ⇧F10 beside it is what reaches the menu there.
+  // A Mac keyboard has no Menu key, and a list of keys leaves it out there (`noMacKey`); one plugged in is still named.
   ContextMenu: 'Menu',
 }
 

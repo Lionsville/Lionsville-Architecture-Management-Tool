@@ -31,7 +31,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'gsearch.showAll': 'Alles tonen',
   'gsearch.empty': 'Typ om te zoeken in alles wat deze scope vastlegt — elementen en hun pagina’s, weergaven, relaties, besluiten, plannen en mijlpalen, waarnemingen, oorzaken, oplossingen en experimenten — en in wat de rest van de organisatie vastlegt.',
   'gsearch.noMatches': 'Niets komt overeen met \u201c{query}\u201d.',
-  'gsearch.hint': 'Enter opent het gemarkeerde resultaat waar het staat; Esc sluit.',
+  'gsearch.hint': '{key:Enter} opent het gemarkeerde resultaat waar het staat; {key:Escape} sluit.',
   'gsearch.kind.element': 'Elementen',
   'gsearch.kind.documentation': 'Documentatie',
   'gsearch.kind.view': 'Weergaven',

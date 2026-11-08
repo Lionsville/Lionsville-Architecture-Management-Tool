@@ -51,6 +51,8 @@ export interface ShortcutDef {
   group: ShortcutGroup;
   /** When present and false for the current context, the shortcut is inert. */
   when?: (ctx: ShortcutContext) => boolean;
+  /** A key a Mac keyboard does not have: still matched where one is plugged in, never listed there. */
+  noMacKey?: true;
 }
 
 const MODIFIER_TOKENS = new Set(['Mod', 'Shift', 'Alt']);
@@ -153,7 +155,7 @@ export const CANVAS_SHORTCUTS: ShortcutDef[] = [
   // selected). Two bindings because they differ in Shift: the conventional
   // Shift+F10 and the dedicated Menu key some keyboards carry.
   { id: 'context-menu', keys: ['Shift', 'F10'], labelKey: 'shortcut.context-menu', group: 'general' },
-  { id: 'context-menu-key', keys: ['ContextMenu'], labelKey: 'shortcut.context-menu', group: 'general' },
+  { id: 'context-menu-key', keys: ['ContextMenu'], labelKey: 'shortcut.context-menu', group: 'general', noMacKey: true },
   { id: 'help', keys: ['?'], labelKey: 'shortcut.help', group: 'general' },
   // ⌘F / Ctrl+F: the element finder. Browser-owned, so the dispatch hook always
   // preventDefaults it — a find bar over a canvas full of SVG finds nothing.
@@ -260,7 +262,7 @@ export function formatShortcut(id: string, platform: Platform, language: Languag
 export function canvasKeyRows(platform: Platform, groups?: readonly ShortcutGroup[], language: Language = 'en'): { labelKey: string; group: ShortcutGroup; keys: string[] }[] {
   const rows: { labelKey: string; group: ShortcutGroup; keys: string[] }[] = [];
   for (const def of CANVAS_SHORTCUTS) {
-    if (def.id === 'help' || (groups && !groups.includes(def.group))) continue;
+    if (def.id === 'help' || (groups && !groups.includes(def.group)) || (def.noMacKey && platform === 'mac')) continue;
     const chord = formatChord(def, platform, language);
     const row = rows.find((one) => one.labelKey === def.labelKey);
     if (row) { if (!row.keys.includes(chord)) row.keys.push(chord); } else rows.push({ labelKey: def.labelKey, group: def.group, keys: [chord] });

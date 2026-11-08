@@ -31,7 +31,7 @@ export const EN = {
   'gsearch.showAll': 'Show all',
   'gsearch.empty': 'Type to search every record of this scope — elements and their pages, views, relations, decisions, plans and milestones, observations, causes, solutions and experiments — and what the rest of the organisation holds.',
   'gsearch.noMatches': 'Nothing matches \u201c{query}\u201d.',
-  'gsearch.hint': 'Enter opens the highlighted result where it lives; Esc closes.',
+  'gsearch.hint': '{key:Enter} opens the highlighted result where it lives; {key:Escape} closes.',
   // One heading per kind of hit, in the order `SEARCH_KINDS` lists them.
   'gsearch.kind.element': 'Elements',
   'gsearch.kind.documentation': 'Documentation',

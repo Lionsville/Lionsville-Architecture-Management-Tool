@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CANVAS_SHORTCUTS,
+  canvasKeyRows,
   chordSignature,
   formatShortcut,
   matchEvent,
@@ -114,6 +115,15 @@ describe('formatShortcut', () => {
   it('draws the level keys as arrows, as the nudge row does', () => {
     expect(formatShortcut('level-in', 'mac')).toBe('⌘↓');
     expect(formatShortcut('level-out', 'other')).toBe('Ctrl+↑');
+  });
+});
+
+describe('canvasKeyRows', () => {
+  it('lists the Menu key beside ⇧F10 only where a keyboard has one, never on a Mac', () => {
+    const menuRow = (platform: Platform) => canvasKeyRows(platform).find((row) => row.labelKey === 'shortcut.context-menu')?.keys;
+    expect(menuRow('mac')).toEqual(['⇧F10']);
+    expect(menuRow('other')).toEqual(['Shift+F10', 'Menu']);
+    expect(canvasKeyRows('mac', undefined, 'de').flatMap((row) => row.keys).some((key) => /Menu/.test(key))).toBe(false);
   });
 });
 
