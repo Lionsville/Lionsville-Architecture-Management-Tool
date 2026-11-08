@@ -13,13 +13,14 @@
 .md-editor[data-variant='pane'] > .md-editor__bar { flex-wrap: wrap; padding: var(--s-1) var(--s-3); border-bottom: 1px solid var(--line); }
 .md-editor__end { display: flex; align-items: center; gap: var(--s-1); margin-left: auto; flex: none; }
 
-/* In a field the label and the tools share one row, one in place of the other,
-   so that a press in the text never moves the text out from under the pointer. */
-.md-editor__heading { display: grid; flex: 1; min-width: 0; align-items: center; }
-.md-editor__heading > * { grid-area: 1 / 1; min-width: 0; }
+/* In a field the label and the tools share one row, the label first and always
+   said, so the field being written is never the one with no name; the tools hold
+   their room while hidden, so a press in the text never moves it from under the pointer. */
+.md-editor__heading { display: flex; flex: 1; min-width: 0; align-items: center; gap: var(--s-2); }
+.md-editor__heading > .md-editor__label { flex: 0 1 auto; min-width: 0; }
+.md-editor__heading > .md-editor__tools { margin-inline-start: auto; }
 .md-editor__label { font-size: var(--t-small); font-weight: var(--fw-strong); color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .md-editor__label small { font-size: var(--t-small); font-weight: var(--fw-regular); color: var(--ink-3); margin-left: var(--s-2); }
-.md-editor[data-variant='field'][data-active='true'] .md-editor__label { visibility: hidden; }
 .md-editor[data-variant='field'][data-active='false'] .md-editor__tools { visibility: hidden; }
 
 .md-editor__tools { display: flex; align-items: center; gap: 1px; min-width: 0; }
@@ -58,6 +59,10 @@
 .md-editor__preview > * { box-sizing: border-box; width: 100%; max-width: var(--measure-reader); }
 .md-editor[data-variant='pane'] .md-editor__preview { padding: var(--s-4); }
 .md-editor__body[data-view='preview'] > .md-editor__preview > * { margin-inline: auto; }
+/* A field's preview reads where its text was written, at the field's start. */
+.md-editor[data-variant='field'] .md-editor__body[data-view='preview'] > .md-editor__preview > * { margin-inline: 0; }
+/* Side by side the pane is already a reading width: a table takes all of it rather than breaking its words. */
+.md-editor__body[data-view='split'] > .md-editor__preview > * { max-width: none; }
 .md-editor[data-variant='field'] .md-editor__preview {
   border: 1px solid var(--line); border-radius: var(--r-3); padding: var(--s-2) var(--s-3); font-size: var(--t-body); background: var(--surface);
 }

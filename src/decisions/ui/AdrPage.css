@@ -49,4 +49,3 @@
 .adr-write__supersedes legend { padding: 0; font-weight: var(--fw-strong); }
 .adr-write__supersedes label { display: flex; align-items: center; gap: var(--s-2); min-height: var(--row-h); }
 .adr-write__supersedes input { margin: 0; accent-color: var(--accent); }
-.adr-box[data-level='3'] { padding-inline-start: var(--s-3); }
