@@ -30,4 +30,10 @@ export const EN = {
   'help.picture': 'A picture of the screen',
   'help.toTop': 'Back to the top',
   'help.inChapter': 'in {chapter}',
+  'help.reference': 'Reference: how it works',
+  'help.referenceIntro': 'How each part works, for when you want the detail behind the tasks. Each is folded until you open it.',
+  'help.mostDo': 'Most people come here to:',
+  'help.tryIt': 'Try it',
+  'help.howItWorks': 'How it works: {chapter}',
+  'help.backToChapter': 'Back to {chapter}',
 } as const

@@ -6,7 +6,7 @@ import type { ChapterText } from '../../types'
 /** De titel van elk hoofdstuk, waar het over gaat, het uitgewerkte voorbeeld en wat de afbeelding toont. */
 export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
   start: {
-    title: 'Beginnen',
+    title: 'De eerste pagina',
     intro: 'De eerste pagina biedt drie wegen: je eigen organisatie beginnen, een voorbeeld bekijken, of verdergaan met werk dat je al hebt.',
     picture: 'De eerste pagina: een naam om mee te beginnen, het voorbeeld om te bekijken, en de manieren om werk te openen dat je hebt.',
     worked: {

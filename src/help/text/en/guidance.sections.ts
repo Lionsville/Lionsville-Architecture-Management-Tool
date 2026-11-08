@@ -91,7 +91,7 @@ export const SECTIONS: SectionTexts = {
     'Relevant topics on a scope\'s home: + Topic… and × on each chip.',
     ['On a scope\'s home, press + Topic….', 'Find and tick topics, press Add topics.', 'Press × on a chip to stop one.'],
     'On Application landscape\'s home, add the topic Integration.'],
-  'topics.subtopic': ['Subtopics', 'A topic under a topic, which comes with it wherever the topic is relevant.',
+  'topics.subtopic': ['Put a topic under another', 'A topic under a topic, which comes with it wherever the topic is relevant.',
     '+ Subtopic… in the Subtopics section of a topic\'s reader.',
     ['Open the topic.', 'Press + Subtopic…, name it and create.'],
     'Add Carrier formats under Integration.'],

@@ -64,6 +64,21 @@ describe('the help page', () => {
     expect((search as HTMLInputElement).value).toBe('')
   }, 30_000)
 
+  it('opens on Getting started, the tasks before the reference, and a place in the reference unfolded', async () => {
+    history.replaceState(null, '', '/help/?lang=en#board~2')
+    render(<HelpApp initial="en" />)
+    await waitFor(() => expect(document.activeElement?.tagName).toBe('H4'), { timeout: 10_000 })
+    const headings = screen.getAllByRole('heading', { level: 2 }).map((one) => one.textContent)
+    expect(headings[0]).toBe('Getting started')
+    expect(headings.at(-1)).toBe('Reference: how it works')
+    expect(document.activeElement?.closest('details')?.open).toBe(true)
+    const contents = within(screen.getByRole('navigation', { name: 'Contents' }))
+    const links = contents.getAllByRole('link').map((one) => one.textContent)
+    expect(links[0]).toBe('Getting started')
+    expect(links.indexOf('Reference: how it works')).toBeGreaterThan(links.indexOf('Working with an agent'))
+    expect(contents.getByRole('link', { name: document.activeElement?.textContent ?? '' }).getAttribute('aria-current')).toBe('location')
+  }, 30_000)
+
   it('changes language in place, and says so in the address', async () => {
     render(<HelpApp initial="en" />)
     await opened()

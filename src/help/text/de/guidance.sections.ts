@@ -91,7 +91,7 @@ export const SECTIONS: SectionTexts = {
     'Relevante Themen auf der Startseite eines Bereichs: + Thema… und × auf jedem Chip.',
     ['Drücken Sie auf der Startseite eines Bereichs + Thema….', 'Suchen und kreuzen Sie Themen an, drücken Sie Themen hinzufügen.', 'Drücken Sie × auf einem Chip, um eines zu beenden.'],
     'Fügen Sie auf der Startseite von Application landscape das Thema Integration hinzu.'],
-  'topics.subtopic': ['Unterthemen', 'Ein Thema unter einem Thema, das überall mitkommt, wo das Thema relevant ist.',
+  'topics.subtopic': ['Ein Thema unter ein anderes stellen', 'Ein Thema unter einem Thema, das überall mitkommt, wo das Thema relevant ist.',
     '+ Unterthema… im Abschnitt Unterthemen des Lesers eines Themas.',
     ['Öffnen Sie das Thema.', 'Drücken Sie + Unterthema…, benennen Sie es und legen Sie es an.'],
     'Fügen Sie Carrier formats unter Integration hinzu.'],

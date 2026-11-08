@@ -119,13 +119,13 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 }
 
 .help-worked {
-  margin: 0 0 28px;
-  padding: 14px 18px;
+  margin: 0 0 20px;
+  padding: 10px 16px;
   background: var(--accent-soft);
   border-radius: 6px;
 }
-.help-worked h3 { margin: 0 0 8px; font-size: var(--t-large) }
-.help-worked ol { margin: 0; padding-left: 22px }
+.help-worked summary { cursor: pointer; font-weight: 600 }
+.help-worked ol { margin: 8px 0 0; padding-left: 22px }
 .help-worked li { margin: 4px 0 }
 
 .help-section { padding: 18px 0; border-top: 1px solid var(--line) }
@@ -139,15 +139,16 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
   background: var(--surface-2);
   color: var(--ink-2);
 }
-.help-facts { display: grid; grid-template-columns: max-content 1fr; gap: 2px 14px; margin: 8px 0 }
-.help-facts dt, .help-label { color: var(--ink-2); font-size: var(--t-small); font-weight: 600 }
-.help-facts dt { padding-top: 2px }
-.help-facts dd { margin: 0 }
-.help-label { margin: 10px 0 2px }
-.help-steps { margin: 0; padding-left: 22px }
+.help-facts { display: flex; flex-wrap: wrap; gap: 2px 18px; margin: 8px 0 0 !important; color: var(--ink-2); font-size: var(--t-small) }
+.help-facts b { color: var(--ink-2); font-weight: 600; margin-right: 4px }
+.help-steps { margin: 6px 0 0; padding-left: 22px }
+.help-steps li { margin: 2px 0 }
+.help-more { margin-top: 4px; font-size: var(--t-small) }
+.help-more summary { cursor: pointer; color: var(--ink-3); width: max-content }
+.help-more[open] summary { color: var(--ink-2) }
 .help-example {
-  margin-top: 10px !important;
-  padding: 8px 12px;
+  margin-top: 6px !important;
+  padding: 6px 12px;
   border-left: 3px solid var(--accent);
   background: var(--surface);
   color: var(--ink-2);
@@ -155,8 +156,27 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 .help-example span { font-weight: 600; color: var(--ink) }
 .help-see { font-size: var(--t-small); color: var(--ink-2) }
 
-.help-background { margin-top: 24px; padding-top: 8px; border-top: 2px solid var(--line) }
-.help-background h3 { font-size: var(--t-title) }
+.help-first { margin: 0 0 18px; font-size: var(--t-large) }
+.help-first span { color: var(--ink-2) }
+
+.help-start__steps { list-style: none; margin: 0; padding: 0; counter-reset: none }
+.help-start__step { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 20px; align-items: start; padding: 16px 0; border-top: 1px solid var(--line); scroll-margin-top: 70px }
+.help-start__step h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: var(--t-title) }
+.help-start__step p { margin: 0 }
+.help-start__n {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: var(--t-small); font-weight: 600;
+}
+.help-figure--small { margin: 0 }
+.help-figure--small .help-screen { zoom: 0.66 }
+
+.help-nav__group { margin: 18px 0 4px; padding-top: 10px; border-top: 1px solid var(--line); font-weight: 600 }
+.help-nav__group a { color: var(--ink-2) }
+.help-nav__reference > li > a { color: var(--ink-2) }
+
+.help-background { padding: 10px 0; border-top: 1px solid var(--line) }
+.help-background summary { cursor: pointer }
+.help-background summary h3 { display: inline; font-size: var(--t-title); margin: 0 }
 .help-background h4 { font-size: var(--t-large); margin: 20px 0 6px }
 .help-background code, .help-section code, .help-worked code {
   font-family: var(--font-mono);
@@ -174,6 +194,7 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 
 @media (max-width: 860px) {
   .help-body { grid-template-columns: minmax(0, 1fr) }
+  .help-start__step { grid-template-columns: minmax(0, 1fr) }
   .help-nav { position: static; max-height: 40vh; border-right: 0; border-bottom: 1px solid var(--line) }
   .help-main { padding: 16px }
   .help-head { flex-wrap: wrap; position: static; gap: 8px 16px; padding: 10px 16px }
@@ -183,5 +204,6 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 
 @media print {
   .help-head, .help-nav, .help-skip, .help-chapter__top { display: none }
+  details > *:not(summary) { display: block }
   .help-body { display: block }
 }

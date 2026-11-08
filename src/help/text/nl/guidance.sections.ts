@@ -91,7 +91,7 @@ export const SECTIONS: SectionTexts = {
     'Relevante onderwerpen op het thuis van een scope: + Onderwerp… en × op elke chip.',
     ['Druk op het thuis van een scope op + Onderwerp….', 'Zoek en vink onderwerpen aan, druk op Onderwerpen toevoegen.', 'Druk op × op een chip om er een te stoppen.'],
     'Voeg op het thuis van Application landscape het onderwerp Integration toe.'],
-  'topics.subtopic': ['Subonderwerpen', 'Een onderwerp onder een onderwerp, dat meekomt overal waar het onderwerp relevant is.',
+  'topics.subtopic': ['Een onderwerp onder een ander zetten', 'Een onderwerp onder een onderwerp, dat meekomt overal waar het onderwerp relevant is.',
     '+ Subonderwerp… in het deel Subonderwerpen van de lezer van een onderwerp.',
     ['Open het onderwerp.', 'Druk op + Subonderwerp…, geef een naam en maak het.'],
     'Voeg Carrier formats toe onder Integration.'],

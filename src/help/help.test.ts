@@ -17,6 +17,7 @@ import { helpIndex, searchHelp } from './helpSearch'
 import { TEXT as EN } from './text/en'
 import { TEXT as NL } from './text/nl'
 import { TEXT as DE } from './text/de'
+import { START_PICTURES } from './ui/pictures/start'
 
 const sections = CHAPTERS.flatMap((chapter) => chapter.sections)
 const ids = sections.map((one) => one.id)
@@ -70,6 +71,19 @@ describe('every language', () => {
       expect(text.chapters[chapter.id]?.worked?.steps.length).toBe(EN.chapters[chapter.id].worked?.steps.length)
       expect((text.background[chapter.id] ?? []).length).toBe((EN.background[chapter.id] ?? []).length)
     }
+  })
+
+  it.each(LANGUAGE_CODES)('%s opens on Getting started: a picture for every step, read in two minutes', (language) => {
+    const start = tables[language].start
+    expect(start?.steps.length).toBe(START_PICTURES.length)
+    expect(start?.steps.length).toBeGreaterThanOrEqual(5)
+    expect(start?.steps.length).toBeLessThanOrEqual(7)
+    const words = (start?.steps ?? []).map((step) => `${step.title} ${step.text}`).join(' ').split(/\s+/).length
+    expect(words, `${language}: about 230 words a minute`).toBeLessThan(460)
+  })
+
+  it('names for every chapter only sections it has, as what most people come for', () => {
+    expect(CHAPTERS.flatMap((chapter) => (chapter.first ?? []).filter((id) => !chapter.sections.some((one) => one.id === id)))).toEqual([])
   })
 
   /** A translation that is the English word for word is a section nobody translated. */

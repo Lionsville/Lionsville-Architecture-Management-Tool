@@ -19,7 +19,8 @@ import { readHelpAddress } from '../../platform/helpAddress'
 import { helpOutline, loadHelpText } from '../registry'
 import { helpIndex, searchHelp } from '../helpSearch'
 import type { HelpChapterOutline, HelpText } from '../types'
-import { HelpDocument } from './HelpDocument'
+import { HelpDocument, REFERENCE } from './HelpDocument'
+import { GETTING_STARTED } from '../types'
 import './help.css'
 
 type Loaded = { language: Language; text: HelpText } | { language: Language; failed: true }
@@ -56,9 +57,13 @@ export function HelpApp({ initial }: { initial: Language }) {
     if (!text || !place) return
     const target = document.getElementById(place)
     if (!target) return
+    // A place inside something folded is unfolded to be read: the reference, a section's example.
+    for (let at = target.parentElement; at; at = at.parentElement) if (at instanceof HTMLDetailsElement) at.open = true
     target.scrollIntoView({ block: 'start' })
     const heading = target.matches('h2, h3, h4') ? target : target.querySelector<HTMLElement>('h2, h3, h4')
     heading?.focus({ preventScroll: true })
+    // The contents follow: the place read is the one in view beside it.
+    document.querySelector('.help-nav [aria-current]')?.scrollIntoView({ block: 'nearest' })
   }, [text, place])
 
   useEffect(() => {
@@ -104,7 +109,7 @@ export function HelpApp({ initial }: { initial: Language }) {
         </label>
       </header>
       <div className="help-body">
-        <Contents outline={outline} text={text} place={place} label={t('help.contents')} />
+        <Contents outline={outline} text={text} place={place} label={t('help.contents')} t={t} />
         <main id="help-main" className="help-main" tabIndex={-1}>
           <div id="help-hits" aria-live="polite">
             {query.trim() && text && <Hits hits={hits} query={query} text={text} t={t} onGo={() => setQuery('')} />}
@@ -117,14 +122,24 @@ export function HelpApp({ initial }: { initial: Language }) {
   )
 }
 
-function Contents({ outline, text, place, label }: { outline: readonly HelpChapterOutline[]; text: HelpText | undefined; place: string | undefined; label: string }) {
-  const open = outline.find((chapter) => chapter.id === place || chapter.sections.some((one) => one.id === place) || place?.startsWith(`${chapter.id}~`))?.id
+function Contents({ outline, text, place, label, t }: {
+  outline: readonly HelpChapterOutline[]; text: HelpText | undefined; place: string | undefined; label: string; t: ReturnType<typeof translator>
+}) {
+  const inReference = place?.includes('~') === true && !place.startsWith(`${GETTING_STARTED}~`)
+  const of = (chapter: HelpChapterOutline) => chapter.id === place || chapter.sections.some((one) => one.id === place) || place?.startsWith(`${chapter.id}~`)
+  const open = inReference ? undefined : outline.find(of)?.id
+  const openTopic = inReference ? outline.find(of)?.id : undefined
+  const reference = outline.filter((chapter) => (text?.background[chapter.id] ?? []).length > 0)
+  const startHere = place === undefined || place === GETTING_STARTED || place.startsWith(`${GETTING_STARTED}~`)
   return (
     <nav className="help-nav" aria-label={label}>
       <ol>
+        {text?.start && (
+          <li><a href={`#${GETTING_STARTED}`} aria-current={startHere ? 'location' : undefined}>{text.start.title}</a></li>
+        )}
         {outline.map((chapter) => (
           <li key={chapter.id}>
-            <a href={`#${chapter.id}`} aria-current={open === chapter.id ? 'location' : undefined}>{text?.chapters[chapter.id]?.title ?? chapter.id}</a>
+            <a href={`#${chapter.id}`} aria-current={open === chapter.id && place === chapter.id ? 'location' : undefined}>{text?.chapters[chapter.id]?.title ?? chapter.id}</a>
             {open === chapter.id && text && (
               <ol>
                 {chapter.sections.map((one) => (
@@ -137,6 +152,25 @@ function Contents({ outline, text, place, label }: { outline: readonly HelpChapt
           </li>
         ))}
       </ol>
+      {text && reference.length > 0 && (
+        <>
+          <p className="help-nav__group"><a href={`#${REFERENCE}`} aria-current={place === REFERENCE ? 'location' : undefined}>{t('help.reference')}</a></p>
+          {(inReference || place === REFERENCE) && <ol className="help-nav__reference">
+            {reference.map((chapter) => (
+              <li key={chapter.id}>
+                <a href={`#${chapter.id}~0`} aria-current={openTopic === chapter.id && place === `${chapter.id}~0` ? 'location' : undefined}>{text.chapters[chapter.id]?.title ?? chapter.id}</a>
+                {openTopic === chapter.id && (
+                  <ol>
+                    {(text.background[chapter.id] ?? []).map((topic, at) => (
+                      <li key={at}><a href={`#${chapter.id}~${at}`} aria-current={place === `${chapter.id}~${at}` ? 'location' : undefined}>{topic.title}</a></li>
+                    ))}
+                  </ol>
+                )}
+              </li>
+            ))}
+          </ol>}
+        </>
+      )}
     </nav>
   )
 }
@@ -153,7 +187,7 @@ function Hits({ hits, query, text, t, onGo }: {
         {hits.map((hit) => (
           <li key={hit.id}>
             <a href={`#${hit.id}`} onClick={onGo}>{hit.title}</a>
-            <span className="help-hits__where">{t('help.inChapter', { chapter: text.chapters[hit.chapter]?.title ?? hit.chapter })}</span>
+            <span className="help-hits__where">{t('help.inChapter', { chapter: hit.chapter === GETTING_STARTED ? (text.start?.title ?? hit.chapter) : (text.chapters[hit.chapter]?.title ?? hit.chapter) })}</span>
             <p>{hit.excerpt}</p>
           </li>
         ))}

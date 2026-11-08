@@ -6,6 +6,7 @@
  * whose name holds them comes before one whose text does. Folded for case and
  * accents, so *ubersicht* finds *Übersicht*.
  */
+import { GETTING_STARTED } from './types'
 import type { HelpChapterOutline, HelpText } from './types'
 
 export type HelpHit = {
@@ -27,6 +28,10 @@ export function fold(text: string): string {
 /** What a search reads: one entry per section, per chapter and per background topic. */
 export function helpIndex(outline: readonly HelpChapterOutline[], text: HelpText): readonly Entry[] {
   const entries: Entry[] = []
+  for (const [at, step] of (text.start?.steps ?? []).entries()) {
+    const body = step.text.replace(/[*`_]/g, '')
+    entries.push({ id: `${GETTING_STARTED}~${at}`, title: step.title, chapter: GETTING_STARTED, name: fold(step.title), body: fold(body), text: body })
+  }
   for (const chapter of outline) {
     const words = text.chapters[chapter.id]
     if (words) {

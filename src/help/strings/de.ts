@@ -31,4 +31,10 @@ export const DE: Record<keyof typeof EN, string> = {
   'help.picture': 'Ein Bild des Bildschirms',
   'help.toTop': 'Zurück nach oben',
   'help.inChapter': 'in {chapter}',
+  'help.reference': 'Nachschlagen: wie es funktioniert',
+  'help.referenceIntro': 'Wie jeder Teil funktioniert, für wenn Sie die Einzelheiten hinter den Aufgaben wollen. Jeder ist eingeklappt, bis Sie ihn öffnen.',
+  'help.mostDo': 'Die meisten kommen hierher, um:',
+  'help.tryIt': 'Ausprobieren',
+  'help.howItWorks': 'Wie es funktioniert: {chapter}',
+  'help.backToChapter': 'Zurück zu {chapter}',
 }

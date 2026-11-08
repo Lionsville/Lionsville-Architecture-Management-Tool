@@ -5,6 +5,7 @@
 import type { HelpText } from '../../types'
 import { BACKGROUND } from './background'
 import { CHAPTERS } from './chapters'
+import { START } from './start'
 import { SECTIONS as start } from './start.sections'
 import { SECTIONS as frame } from './frame.sections'
 import { SECTIONS as work } from './work.sections'
@@ -24,6 +25,7 @@ import { SECTIONS as people } from './people.sections'
 import { SECTIONS as guidance } from './guidance.sections'
 
 export const TEXT: HelpText = {
+  start: START,
   chapters: CHAPTERS,
   sections: {
     ...start,

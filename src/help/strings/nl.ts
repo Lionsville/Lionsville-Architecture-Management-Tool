@@ -31,4 +31,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'help.picture': 'Een afbeelding van het scherm',
   'help.toTop': 'Terug naar boven',
   'help.inChapter': 'in {chapter}',
+  'help.reference': 'Naslag: hoe het werkt',
+  'help.referenceIntro': 'Hoe elk deel werkt, voor wanneer je de details achter de taken wilt. Elk deel is ingeklapt tot je het opent.',
+  'help.mostDo': 'De meesten komen hier om:',
+  'help.tryIt': 'Probeer het',
+  'help.howItWorks': 'Hoe het werkt: {chapter}',
+  'help.backToChapter': 'Terug naar {chapter}',
 }

@@ -37,6 +37,7 @@ export function helpOutline(): readonly HelpChapterOutline[] {
 export async function loadHelpText(language: Language): Promise<HelpText> {
   const parts = await Promise.all([loadCoreText(language), ...added.map((one) => one.text(language))])
   return {
+    ...(parts[0].start ? { start: parts[0].start } : {}),
     chapters: Object.assign({}, ...parts.map((part) => part.chapters)),
     sections: Object.assign({}, ...parts.map((part) => part.sections)),
     background: Object.assign({}, ...parts.map((part) => part.background)),
