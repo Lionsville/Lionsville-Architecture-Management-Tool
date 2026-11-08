@@ -627,8 +627,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'dialog.deleteElementTitle': '“{name}” verwijderen?',
   'dialog.deleteElementKeeps': 'houdt het element in het model (en op andere weergaven).',
   'dialog.deleteElementRemoves': 'haalt het overal weg, inclusief de koppelingen.',
-  'dialog.removeFromDiagram': 'Uit deze weergave halen',
-  'dialog.deleteFromModelButton': 'Uit het model verwijderen',
+  'dialog.removeFromDiagram': 'Alleen hier weghalen',
+  'dialog.deleteFromModelButton': 'Overal verwijderen',
   'dialog.deleteComponentsFirst': 'Verwijder eerst haar containers of hang ze elders onder',
   'dialog.renameDiagram': 'Weergave hernoemen',
 

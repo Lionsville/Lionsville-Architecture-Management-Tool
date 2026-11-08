@@ -627,8 +627,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'dialog.deleteElementTitle': '„{name}“ löschen?',
   'dialog.deleteElementKeeps': 'behält das Element im Modell (und auf allen anderen Ansichten).',
   'dialog.deleteElementRemoves': 'entfernt es überall, einschließlich seiner Verbindungen.',
-  'dialog.removeFromDiagram': 'Aus der Ansicht entfernen',
-  'dialog.deleteFromModelButton': 'Aus dem Modell löschen',
+  'dialog.removeFromDiagram': 'Nur hier entfernen',
+  'dialog.deleteFromModelButton': 'Überall löschen',
   'dialog.deleteComponentsFirst': 'Löschen Sie zuerst ihre Container oder hängen Sie sie um',
   'dialog.renameDiagram': 'Ansicht umbenennen',
 
