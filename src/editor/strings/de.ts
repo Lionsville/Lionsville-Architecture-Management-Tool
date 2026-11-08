@@ -401,7 +401,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.resize': 'Breite des Inspektors anpassen',
   'inspector.emptyRead': 'Wählen Sie ein Element oder eine Verbindung, um die Eigenschaften zu lesen.',
   'inspector.empty':
-    'Wählen Sie ein Element oder eine Verbindung aus, um die Eigenschaften zu bearbeiten. Doppelklicken Sie eine Anwendung, um ihr Container-Diagramm zu öffnen.',
+    'Wählen Sie ein Element oder eine Verbindung aus, um die Eigenschaften zu bearbeiten. Doppelklicken Sie eine Anwendung, um ihr Containerdiagramm zu öffnen.',
   'inspector.emptyHint': 'Umschalt-Klick fügt ein Element der Auswahl hinzu oder nimmt es wieder heraus.',
   'inspector.selected': '{count} ausgewählt',
   'inspector.elementsOne': '{count} Element',
@@ -716,7 +716,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   // --- The C4 corner of a container diagram --------------------------------
   'c4.containerTitle': 'Containerdiagramm für {name}',
-  'c4.containerDescription': 'Das Container-Diagramm von {name}.',
+  'c4.containerDescription': 'Das Containerdiagramm von {name}.',
   'c4.applicationTag': '{name} [Anwendung]',
   'shortcut.level-in': 'Containerdiagramm öffnen',
   'shortcut.level-out': 'Eine Ebene zurück',

@@ -262,7 +262,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kindChange.sameKind': 'Es ist bereits von dieser Art',
   'kindChange.notOnThisDiagram': 'Dieses Element liegt nicht auf dieser Ansicht',
   'kindChange.hasContainerDiagram':
-    'Diese Anwendung hat ein Container-Diagramm — löschen Sie zuerst diese Ansicht',
+    'Diese Anwendung hat ein Containerdiagramm — löschen Sie zuerst diese Ansicht',
   'kindChange.hasParent': 'Dieser Container gehört zu einer Anwendung — lösen Sie ihn zuerst',
   'kindChange.hasComponents':
     'Diese Anwendung hat Container — verschieben oder löschen Sie diese zuerst',

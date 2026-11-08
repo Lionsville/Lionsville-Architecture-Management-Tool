@@ -71,7 +71,7 @@ const GLOSSARY: Record<Exclude<Language, 'en'>, readonly Refused[]> = {
     { word: /\bTafel/, use: 'Board' },
     { word: /\bHistorie\b/, use: 'Verlauf' },
     { word: /Weiträumig/, use: 'Großzügig' },
-    { word: /Container-?[Aa]nsicht/, use: 'Containerdiagramm' },
+    { word: /Container-?[Aa]nsicht|Container-Diagramm/, use: 'Containerdiagramm' },
     { word: /Datens[aä]tz/, use: 'Eintrag' },
     { word: /Zuweisung/, use: 'Zuordnung' },
     { word: /\bSnapshot/, use: 'Momentaufnahme' },
