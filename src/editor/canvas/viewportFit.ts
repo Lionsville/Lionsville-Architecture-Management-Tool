@@ -36,3 +36,29 @@ export function isRectFullyVisible(rect: Rect, viewport: Rect, margin = 0): bool
 export function toRect(box: { left: number; top: number; width: number; height: number }): Rect {
   return { x: box.left, y: box.top, width: box.width, height: box.height };
 }
+
+/** The free room of a pane: the largest of the rooms the dock, the key and the map leave it, in the pane's space. */
+export function largestRoom(pane: Rect, rooms: readonly { top: number; right: number; bottom: number; left: number }[]): Rect {
+  const areas = rooms.map((inset) => ({
+    x: pane.x + inset.left, y: pane.y + inset.top,
+    width: Math.max(0, pane.width - inset.left - inset.right), height: Math.max(0, pane.height - inset.top - inset.bottom),
+  }));
+  return areas.reduce((best, one) => (one.width * one.height > best.width * best.height ? one : best), areas[0] ?? pane);
+}
+
+/**
+ * How far to move the board so that the rect lies inside the room, a margin in:
+ * nothing where it already does, and the least that brings it in where it does
+ * not. A rect larger than the room is brought in by its top left. A pan, never a
+ * zoom: focusing a card must not take the board below the zoom it was read at.
+ */
+export function panInto(rect: Rect, room: Rect, margin = 16): { dx: number; dy: number } {
+  const along = (start: number, size: number, from: number, length: number) => {
+    const low = from + margin;
+    const high = from + length - margin;
+    if (size > high - low || start < low) return low - start;
+    if (start + size > high) return high - (start + size);
+    return 0;
+  };
+  return { dx: along(rect.x, rect.width, room.x, room.width), dy: along(rect.y, rect.height, room.y, room.height) };
+}

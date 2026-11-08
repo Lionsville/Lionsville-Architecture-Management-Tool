@@ -69,7 +69,8 @@ import type { StringKey } from '../../i18n/strings';
 import { useContextMenu, type ContextMenuState, type MenuOpenEvent } from './useContextMenu';
 import { dispatchMenuAction, type MenuActionHost } from './useMenuActions';
 import { GRID_SIZE } from './gridSize';
-import { isRectFullyVisible, toRect } from './viewportFit';
+import { largestRoom, panInto, toRect } from './viewportFit';
+import { canvasRooms } from '../../widgets/kit/canvasRoom';
 import { keyboardIntent } from './keyboardIntent';
 import { ViewportMemory, type Viewport } from './viewportMemory';
 import { useBoardZoom } from './ZoomControls';
@@ -481,7 +482,7 @@ export function parseDragPayload(raw: string): DragPayload {
 export function DiagramCanvas(props: DiagramCanvasProps) {
   const theme = useTheme();
   const tokens = getNodeTokens(theme);
-  const { screenToFlowPosition, flowToScreenPosition, getNodes, getNodesBounds, fitView, getZoom, setViewport } = useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition, getNodes, getNodesBounds, fitView, getViewport, setViewport } = useReactFlow();
   const fitBoard = useFitBoard();
 
   // Where each diagram was left, for the session (`viewportMemory.ts`). The
@@ -1593,11 +1594,11 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
    * those belong to the keymap, which actually commits the move. So focus put a
    * ring on a node the viewport had never heard of and the screen sat still.
    *
-   * Two deliberate narrownesses. It pans only when the node is not ALREADY fully
-   * in view (`isRectFullyVisible`), so tabbing across a board that fits does not
-   * twitch the viewport at every stop. And it pins `minZoom === maxZoom` to the
-   * zoom in force, because this is a pan: `fitView` would otherwise happily zoom
-   * to 100% on one node and lose the reader the context they were reading.
+   * Two deliberate narrownesses. It pans only when the node is not ALREADY in the
+   * free room the dock and the key leave (`panInto`), so tabbing across a board
+   * that fits does not twitch the viewport. And it is a pan, at once: an animated
+   * fit read its zoom mid-flight on a quick Tab, and pinned the board below its
+   * floor; one that zoomed would lose the reader the context they were reading.
    */
   const handleContainerFocus = useCallback(
     (event: React.FocusEvent<HTMLDivElement>) => {
@@ -1619,11 +1620,10 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       // A zero-sized container means no layout to compare against (jsdom, or a
       // canvas mid-mount) — there is nothing to decide, so decide nothing.
       if (box.width === 0 || box.height === 0) return;
-      if (isRectFullyVisible(toRect(nodeEl.getBoundingClientRect()), toRect(box))) return;
-      const zoom = getZoom();
-      void fitView({ nodes: [{ id }], duration: 150, maxZoom: zoom, minZoom: zoom });
+      const { dx, dy } = panInto(toRect(nodeEl.getBoundingClientRect()), largestRoom(toRect(box), canvasRooms(container)));
+      if (dx !== 0 || dy !== 0) void setViewport({ ...getViewport(), x: getViewport().x + dx, y: getViewport().y + dy });
     },
-    [fitView, getZoom],
+    [setViewport, getViewport],
   );
 
   return (
