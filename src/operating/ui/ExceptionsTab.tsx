@@ -143,13 +143,13 @@ export function ExceptionsTab({ model, exceptions, readOnly, dispatch, onBackBel
           })),
         }))}
         empty={<p className="op-quiet">{t('operating.exNone')}</p>}
+        // Solid lines come first; what that leaves out is a press away, not a filter to find. The list's own end, so no row shows under it.
+        more={!view.filters.kind?.length && ids.length < exceptions.length && (
+          <ListMore said={t('operating.exSolidFirst')} data-testid="operating-ex-more">
+            <Button variant="quiet" size="small" onClick={() => setView({ ...view, filters: { ...view.filters, kind: ['solid', 'dotted'] } })}>{t('operating.exShowAll', { count: exceptions.length })}</Button>
+          </ListMore>
+        )}
       />
-      {/* Solid lines come first; what that leaves out is a press away, not a filter to find. */}
-      {!view.filters.kind?.length && ids.length < exceptions.length && (
-        <ListMore said={t('operating.exSolidFirst')} data-testid="operating-ex-more">
-          <Button variant="quiet" size="small" onClick={() => setView({ ...view, filters: { ...view.filters, kind: ['solid', 'dotted'] } })}>{t('operating.exShowAll', { count: exceptions.length })}</Button>
-        </ListMore>
-      )}
       <p className="op-small">{t('operating.exFootnote')}</p>
       <Preview
         ids={ids} currentId={open ? open.key : null} onSelect={(id) => onSelect(id ?? undefined)} title={open ? titleOf(open, model, t) : ''}
