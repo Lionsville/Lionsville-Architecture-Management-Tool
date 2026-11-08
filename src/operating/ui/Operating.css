@@ -91,9 +91,11 @@ button.op-line:hover { background: var(--surface-2); }
 /* Responsibilities */
 .op-tree { width: 300px; flex: none; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); overflow: auto; background: var(--surface); border-inline-end: 1px solid var(--line); }
 .op-need { color: var(--bad); font-size: var(--t-small); white-space: nowrap; }
-/* The grid grows with its rows and the column scrolls as one page: a grid squeezed into its own scroll box showed three rows on a small window. */
+/* The column scrolls as one page, and the grid grows with its rows up to the column's height: past that the grid
+   scrolls inside itself, so its role names stay stuck on top (they stick to the grid's own scroll box, never the
+   column's). A grid squeezed under its head showed three rows on a small window; one as tall as its rows lost its heads. */
 .op-grid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); overflow: auto; }
-.op-grid .kit-matrix { flex: none; }
+.op-grid .kit-matrix { flex: none; max-height: 100%; }
 .op-gridHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
 .op-gridHead h2 { margin: 0; font-size: var(--t-body); font-weight: var(--fw-strong); }
 .op-picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); padding: var(--s-1) 0; }
