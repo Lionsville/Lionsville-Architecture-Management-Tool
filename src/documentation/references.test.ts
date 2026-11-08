@@ -50,6 +50,9 @@ describe('finding and putting in', () => {
 
   it('puts an element in the sentence and a fence on lines of its own', () => {
     expect(insertReferable('See [[Yar today', 4, 9, ref('element', 'Yard system', false))).toEqual({ text: 'See [[Yard system]] today', caret: 19 })
+    // Next to a word, a link is kept apart from it by a space on that side.
+    expect(insertReferable('The rating rules', 0, 0, ref('element', 'Quoting', false)).text).toBe('[[Quoting]] The rating rules')
+    expect(insertReferable('rules', 5, 5, ref('element', 'Quoting', false))).toEqual({ text: 'rules [[Quoting]]', caret: 17 })
     const block = insertReferable('Before @dec after', 7, 11, ref('decision', 'D'))
     expect(block.text).toBe('Before \n\n```ref\ndecision: D\n```\n\n after')
     expect(insertReferable('', 0, 0, ref('decision', 'D')).text).toBe('```ref\ndecision: D\n```\n\n')

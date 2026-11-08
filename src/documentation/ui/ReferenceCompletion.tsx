@@ -11,21 +11,18 @@
  * lines of its own. The Insert menu offers the same catalogue by kind. `/` at
  * the start of a line opens the same list with the blocks above it.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, RefObject } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import { DialogFooter } from '../../widgets/kit/Dialog'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import Dialog from '@mui/material/Dialog'
-import Divider from '@mui/material/Divider'
 import ListItemButton from '@mui/material/ListItemButton'
-import { SurfaceMenu as Menu, SurfacePopper as Popper } from '../../widgets/kit/Surface'
-import MenuItem from '@mui/material/MenuItem'
+import Divider from '@mui/material/Divider'
+import { SurfacePopper as Popper } from '../../widgets/kit/Surface'
 import Paper from '@mui/material/Paper'
 import { FieldBox } from '../../widgets/kit/FieldBox'
+import { Dialog } from '../../widgets/kit/Dialog'
+import { MenuButton } from '../../widgets/kit/Menu'
+import type { MenuEntry } from '../../widgets/kit/Menu'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { StringKey } from '../../i18n'
@@ -136,9 +133,12 @@ export function useReferenceCompletion(
   }, [open, all, blocks, t, putReferable, areaRef])
   useEffect(() => { setActive(0) }, [open?.query])
 
+  // Until a person has put the caret somewhere, Insert adds at the end, not before the first word.
+  const caretPlaced = useRef(false)
   const onInput = useCallback(() => {
     const area = areaRef.current
     if (!area) return
+    caretPlaced.current = true
     const caret = area.selectionStart
     if (area.selectionStart !== area.selectionEnd) { setOpen(undefined); return }
     const slash = blocks.length > 0 ? slashAt(area.value, caret) : undefined
@@ -166,7 +166,7 @@ export function useReferenceCompletion(
   const anchorEl = useMemo(() => (open ? { getBoundingClientRect: () => open.anchor } : null), [open])
   const popper = (
     <Popper open={Boolean(open) && rows.length > 0} anchorEl={anchorEl} placement="bottom-start" sx={{ zIndex: 1500 }}>
-      <Paper elevation={6} sx={{ width: 380, maxWidth: 'calc(100vw - 32px)', maxHeight: 320, overflow: 'auto', py: 0.5 }} data-testid="reference-completion" role="listbox" aria-label={t(open?.slash ? 'md.slashList' : 'doc.refCompletion')}>
+      <Paper elevation={6} sx={{ width: 440, maxWidth: 'calc(100vw - 32px)', maxHeight: 320, overflow: 'auto', py: 0.5 }} data-testid="reference-completion" role="listbox" aria-label={t(open?.slash ? 'md.slashList' : 'doc.refCompletion')}>
         {rows.map((one, index) => (
           <ListItemButton
             key={one.id} selected={index === active} role="option" aria-selected={index === active}
@@ -174,7 +174,7 @@ export function useReferenceCompletion(
             onMouseDown={(event) => event.preventDefault()} onClick={() => choose(one)}
             sx={{ py: 0.25, px: 1.5, gap: 1, alignItems: 'baseline' }}
           >
-            <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', width: 74, flex: '0 0 auto', textTransform: 'uppercase', letterSpacing: '.04em' }}>{one.word}</Typography>
+            <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', flex: '0 0 8.5em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase', letterSpacing: '.04em' }}>{one.word}</Typography>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography noWrap sx={{ fontSize: 'var(--t-body)' }}>{one.label}</Typography>
               {one.detail && <Typography noWrap sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{one.detail}</Typography>}
@@ -188,14 +188,17 @@ export function useReferenceCompletion(
   )
   const insert = useCallback((referable: Referable) => {
     const area = areaRef.current
-    if (area) putReferable(referable, area.selectionStart, area.selectionEnd)
+    if (!area) return
+    if (caretPlaced.current) putReferable(referable, area.selectionStart, area.selectionEnd)
+    else putReferable(referable, area.value.length, area.value.length)
   }, [areaRef, putReferable])
   return { onKeyDown, onInput, insert, popper }
 }
 
 /**
- * *Insert ▾* (ADR-0043 §9): a picture and a business case, as before, and
- * each kind of thing a document may refer to, picked by name.
+ * *Insert* (ADR-0043 §9): what is added to the text itself — a picture, a file, a
+ * business case, the record's template and its sections — under one heading, and
+ * each kind of thing a document may refer to, picked by name, under another.
  */
 export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more = [] }: {
   onPicture?: () => void
@@ -208,25 +211,24 @@ export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more
 }) {
   const access = useReferences()
   const { t } = useStrings()
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [picking, setPicking] = useState<ReferableKind | undefined>(undefined)
-  const all = useMemo(() => (anchor || picking ? access?.referables() ?? [] : []), [anchor, picking, access])
+  // Read when the menu is drawn: a list of kinds nobody can refer to is no list.
+  const all = access?.referables() ?? []
   const kinds = REFERABLE_KINDS.filter((kind) => all.some((one) => one.kind === kind))
+  const items: MenuEntry[] = [
+    { heading: t('doc.insertGroupText') },
+    ...(onPicture ? [{ label: t('doc.insertPictureMenu'), onSelect: onPicture }] : []),
+    ...(onAttach ? [{ label: t('md.attachMenu'), onSelect: onAttach, 'data-testid': 'doc-insert-attachment' }] : []),
+    { label: t('doc.insertBusinessCase'), onSelect: onBusinessCase },
+    ...more.map((one) => ({ label: one.label, onSelect: () => one.onPick() })),
+    ...(kinds.length > 0 ? [{ line: true } as const, { heading: t('doc.insertGroupRefer') }] : []),
+    ...kinds.map((kind) => ({ label: t(MENU_WORD[kind]), onSelect: () => setPicking(kind), 'data-testid': `doc-insert-${kind}` })),
+    { line: true },
+    { heading: t('doc.insertTypeHint') },
+  ]
   return (
     <>
-      <Button size="small" onClick={(event) => setAnchor(event.currentTarget)} aria-haspopup="menu" data-testid="doc-insert">{t('doc.insert')}</Button>
-      <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
-        {onPicture && <MenuItem onClick={() => { setAnchor(null); onPicture() }}>{t('doc.insertPictureMenu')}</MenuItem>}
-        {onAttach && <MenuItem data-testid="doc-insert-attachment" onClick={() => { setAnchor(null); onAttach() }}>{t('md.attachMenu')}</MenuItem>}
-        <MenuItem onClick={() => { setAnchor(null); onBusinessCase() }}>{t('doc.insertBusinessCase')}</MenuItem>
-        {more.map((one) => <MenuItem key={one.key} onClick={() => { setAnchor(null); one.onPick() }}>{one.label}</MenuItem>)}
-        {kinds.length > 0 && <Divider />}
-        {kinds.map((kind) => (
-          <MenuItem key={kind} onClick={() => { setAnchor(null); setPicking(kind) }} data-testid={`doc-insert-${kind}`}>{t(MENU_WORD[kind])}</MenuItem>
-        ))}
-        <Divider />
-        <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 2, py: 0.5, maxWidth: 260 }}>{t('doc.insertTypeHint')}</Typography>
-      </Menu>
+      <MenuButton size="small" label={t('doc.insertPicture')} items={items} data-testid="doc-insert" />
       {picking && (
         <PickDialog kind={picking} options={all.filter((one) => one.kind === picking)} onClose={() => setPicking(undefined)} onPick={(one) => { setPicking(undefined); onInsert(one) }} />
       )}
@@ -234,27 +236,28 @@ export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more
   )
 }
 
+/** One thing of a kind, picked by name; Return inserts what is picked, as the dialog's default button. */
 function PickDialog({ kind, options, onClose, onPick }: { kind: ReferableKind; options: readonly Referable[]; onClose: () => void; onPick: (one: Referable) => void }) {
   const { t } = useStrings()
   const [value, setValue] = useState<Referable | null>(null)
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t(MENU_WORD[kind])}</DialogTitle>
-      <DialogContent sx={{ pt: '8px !important' }}>
-        <Autocomplete
-          options={options as Referable[]} value={value} onChange={(_event, next) => setValue(next)} openOnFocus
-          getOptionLabel={(one) => one.label}
-          renderOption={(props, one) => (
-            <li {...props} key={one.key}>
-              <Box><Typography sx={{ fontSize: 'var(--t-small)' }}>{one.label}</Typography>{one.detail && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{one.detail}</Typography>}</Box>
-            </li>
-          )}
-          renderInput={(params) => <FieldBox {...params} autoFocus label={t(KIND_WORD[kind])} />}
-        />
-      </DialogContent>
-      <DialogFooter
-        cancel={{ onClick: onClose, label: t('common.cancel') }}
-        outcome={{ disabled: !value, onClick: () => value && onPick(value), label: t('doc.insertPicture') }}
+    <Dialog
+      open size="m" title={t(MENU_WORD[kind]).replace(/…$/, '')} onClose={onClose}
+      onSubmit={() => { if (value) onPick(value) }}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { type: 'submit', reason: value ? undefined : t(KIND_WORD[kind]), label: t('doc.insertPicture') },
+      }}
+    >
+      <Autocomplete
+        options={options as Referable[]} value={value} onChange={(_event, next) => setValue(next)} openOnFocus
+        getOptionLabel={(one) => one.label}
+        renderOption={(props, one) => (
+          <li {...props} key={one.key}>
+            <Box><Typography sx={{ fontSize: 'var(--t-small)' }}>{one.label}</Typography>{one.detail && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{one.detail}</Typography>}</Box>
+          </li>
+        )}
+        renderInput={(params) => <FieldBox {...params} autoFocus label={t(KIND_WORD[kind])} />}
       />
     </Dialog>
   )

@@ -118,7 +118,13 @@ export function completionAt(text: string, caret: number): { start: number; quer
 export function insertReferable(text: string, from: number, to: number, referable: Referable): { text: string; caret: number } {
   const head = text.slice(0, from)
   const tail = text.slice(to)
-  if (!referable.block) return { text: head + referable.markdown + tail, caret: head.length + referable.markdown.length }
+  if (!referable.block) {
+    // A link glued to a word reads as one word: *Quoting and tariffsThe*. A space keeps them apart.
+    const before = /[\p{L}\p{N}]$/u.test(head) ? ' ' : ''
+    const after = /^[\p{L}\p{N}]/u.test(tail) ? ' ' : ''
+    const inserted = `${before}${referable.markdown}${after}`
+    return { text: head + inserted + tail, caret: head.length + before.length + referable.markdown.length }
+  }
   const lead = head === '' || head.endsWith('\n\n') ? '' : head.endsWith('\n') ? '\n' : '\n\n'
   const trail = tail.startsWith('\n\n') ? '' : tail.startsWith('\n') ? '\n' : '\n\n'
   const inserted = `${lead}${referable.markdown}${trail}`

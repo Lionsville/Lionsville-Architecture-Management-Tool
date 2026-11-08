@@ -75,7 +75,9 @@ describe('referring while writing', () => {
     const field = await screen.findByRole('combobox')
     fireEvent.keyDown(field, { key: 'ArrowDown' })
     fireEvent.click(screen.getByRole('option', { name: /ADR-0001/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Insert' }))
+    expect(screen.getByRole('button', { name: 'Insert' }).getAttribute('type')).toBe('submit')
+    // Return in the field is the dialog's default button.
+    fireEvent.submit(field.closest('form')!)
     await waitFor(() => expect(onChange).toHaveBeenLastCalledWith('```ref\ndecision: adr-1\n```\n\n'))
   })
 })
