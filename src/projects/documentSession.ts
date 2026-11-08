@@ -290,7 +290,8 @@ export function shouldSaveNow(
   state: DocumentSession,
   trigger: SaveTrigger,
   msSinceLastEdit: number,
+  idleMs: number = AUTOSAVE_IDLE_MS,
 ): boolean {
   if (state.status !== 'dirty') return false
-  return trigger === 'idle' ? msSinceLastEdit >= AUTOSAVE_IDLE_MS : true
+  return trigger === 'idle' ? msSinceLastEdit >= idleMs : true
 }

@@ -72,6 +72,8 @@ export type WorkspaceSource = {
    * answer, which is what a file is.
    */
   status?: (work: SourceWork) => SourceStatus
+  /** How long an edit waits before it is written, where the source says (`ProviderParts.writeAfterMs`). */
+  writeAfterMs?: number | undefined
   /**
    * The source says its answer to {@link WorkspaceSource.status} has moved.
    * Absent where the document's own machine is the whole answer.

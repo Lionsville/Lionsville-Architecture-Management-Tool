@@ -82,6 +82,9 @@ export type FolderOpening = {
 
 export type FolderParts = ProviderParts<FolderOwn> & { own: FolderOwn }
 
+/** How long an edit waits before a folder in a tab writes it: short, since a tab can go at any moment, and long enough to be one edit. */
+export const TAB_FOLDER_WRITE_AFTER_MS = 500
+
 /** What the folder is handed from the shell's side: the trail, and the person's language for what it records. */
 export type FolderBase = {
   readonly diagnostics: Diagnostics
@@ -234,5 +237,7 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
     historyNoteKey: git ? opening.historyNoteKey ?? 'folder.historyNote' : 'memory.historyNote',
     historyKept: () => historyKeptIn(history),
     ...(channel ? { changes: watching(channel, root, diagnostics) } : {}),
+    // A folder in a tab has no window that waits for its last write: a reload or a close takes what was not written yet.
+    ...(channel ? {} : { writeAfterMs: TAB_FOLDER_WRITE_AFTER_MS }),
   }
 }

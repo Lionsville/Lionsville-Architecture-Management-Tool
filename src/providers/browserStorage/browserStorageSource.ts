@@ -57,6 +57,9 @@ export type BrowserParts = ProviderParts<BrowserOwn> & {
 
 type BrowserBase = { readonly diagnostics: Diagnostics; readonly s?: Translate }
 
+/** How long an edit waits before it is written to this browser's database: one gesture's worth, and no more. */
+export const BROWSER_WRITE_AFTER_MS = 250
+
 /** This browser, which is one place: there is nothing to tell apart. */
 export const BROWSER_STORAGE: WorkingSource = { provider: 'browserStorage', name: '', key: '' }
 
@@ -115,6 +118,8 @@ export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening
       }),
       preferences, source: BROWSER_STORAGE, own, historyNoteKey: 'browser.historyNote',
       ...(tabs ? { changes: tabs.changes } : {}),
+      // A write here is cheap and local, and a tab reloaded or closed before one lands loses it: almost at once.
+      writeAfterMs: BROWSER_WRITE_AFTER_MS,
     }
     return { ...parts, settled: () => settle(parts, kept, () => fallen, answering) }
   },

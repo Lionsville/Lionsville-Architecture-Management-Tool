@@ -167,10 +167,12 @@ export function useDocumentSession(deps: {
    * about without a keystroke.
    */
   onSourceWork?: SourceWorkChanged
+  /** How long an edit waits before it is written, where the source says otherwise than `AUTOSAVE_IDLE_MS` (`ProviderParts.writeAfterMs`). */
+  writeAfterMs?: number
 }): DocumentSessionHook {
   const {
     session, writer, onSaved, onResult, watch, onAdopt, onUnsavedWork,
-    sourceStatus, onSourceWork,
+    sourceStatus, onSourceWork, writeAfterMs: idleMs = AUTOSAVE_IDLE_MS,
   } = deps
   const { model, logoLibrary, snapshot } = session
 
@@ -197,7 +199,7 @@ export function useDocumentSession(deps: {
   /** The write in flight, where one is: what a flush waits for before it writes what is left. */
   const running = useRef<Promise<void> | undefined>(undefined)
   const save = useCallback((trigger: SaveTrigger, failedTo?: (cause: unknown) => void): Promise<void> => {
-    if (!shouldSaveNow(held.current, trigger, Date.now() - editedAt.current)) {
+    if (!shouldSaveNow(held.current, trigger, Date.now() - editedAt.current, idleMs)) {
       return Promise.resolve()
     }
     apply({ type: 'saveRequested' })
@@ -225,12 +227,14 @@ export function useDocumentSession(deps: {
     const done = () => { if (running.current === writing) running.current = undefined }
     void writing.then(done, done)
     return writing
-  }, [apply, writes, onSaved, onResult])
+  }, [apply, writes, onSaved, onResult, idleMs])
 
   // Read by the timers, which are installed once and must not hold the save
   // they were installed with.
   const saving = useRef(save)
   saving.current = save
+  const idleRef = useRef(idleMs)
+  idleRef.current = idleMs
 
   /**
    * Every change to what would be written is an edit, and every edit restarts
@@ -266,7 +270,7 @@ export function useDocumentSession(deps: {
       () => {
         editedAt.current = Date.now()
         apply({ type: 'edited' })
-        window.setTimeout(() => { void saving.current('idle') }, AUTOSAVE_IDLE_MS)
+        window.setTimeout(() => { void saving.current('idle') }, idleRef.current)
       },
     )
     running.current = writing
@@ -284,7 +288,7 @@ export function useDocumentSession(deps: {
     apply({ type: 'edited' })
     // A save answers its own failure (`saveFailed`, `onResult`), so a timer
     // that starts one has nothing to wait for.
-    const timer = window.setTimeout(() => { void saving.current('idle') }, AUTOSAVE_IDLE_MS)
+    const timer = window.setTimeout(() => { void saving.current('idle') }, idleRef.current)
     return () => window.clearTimeout(timer)
     // These two and nothing else. Everything the body reaches for besides
     // them is a path or is stable for the life of the hook; a dependency that
@@ -310,7 +314,7 @@ export function useDocumentSession(deps: {
     before.current = state.status
     const decided = was === 'saving' || was === 'conflict'
     if (state.status !== 'dirty' || !decided || state.lastError) return undefined
-    const timer = window.setTimeout(() => { void saving.current('idle') }, AUTOSAVE_IDLE_MS)
+    const timer = window.setTimeout(() => { void saving.current('idle') }, idleRef.current)
     return () => window.clearTimeout(timer)
   }, [state.status, state.lastError])
 
@@ -328,21 +332,7 @@ export function useDocumentSession(deps: {
     return () => onUnsavedWork?.(false)
   }, [outstanding, onUnsavedWork])
 
-  useEffect(() => {
-    const onLeaving = (event: BeforeUnloadEvent) => {
-      if (!hasUnsavedWork(held.current)) return
-      // Both, and in this order. The prompt is the only thing that can actually
-      // stop the loss; the write is what makes "leave anyway" cost nothing when
-      // the store is fast enough to finish. It cannot be awaited — nothing may
-      // await here — so it is deliberately fire-and-forget, with a catch so a
-      // refusal does not surface as an unhandled rejection on a page that is
-      // halfway gone.
-      event.preventDefault()
-      writes.write().catch(() => {})
-    }
-    window.addEventListener('beforeunload', onLeaving)
-    return () => window.removeEventListener('beforeunload', onLeaving)
-  }, [writes])
+  useLeavingWrites(held, running, writes, saving)
 
   // The workspace going — home, another scope — with changes not yet
   // written: written on the way out, as a window closing would, rather than
@@ -548,4 +538,42 @@ function useScopeWrites(
     pending: (): boolean => journal.pending().length > 0
       || changesOf(known.current!.described, describedOf(snapshot())).length > 0,
   }), [writer, journal, snapshot, take])
+}
+
+/**
+ * The page going with work still to write: the browser's prompt while anything
+ * is unwritten or still landing, the write started under it, and what waits on
+ * the timer written the moment the page is hidden.
+ */
+function useLeavingWrites(
+  held: { readonly current: DocumentSession },
+  running: { readonly current: Promise<void> | undefined },
+  writes: ReturnType<typeof useScopeWrites>,
+  saving: { readonly current: (trigger: SaveTrigger) => Promise<void> },
+): void {
+  useEffect(() => {
+    const onLeaving = (event: BeforeUnloadEvent) => {
+      // A write still landing counts as much as one not started: a page that goes under it takes it along.
+      if (!hasUnsavedWork(held.current) && held.current.status !== 'saving' && running.current === undefined && !writes.pending()) return
+      // Both, and in this order. The prompt is the only thing that can actually
+      // stop the loss; the write is what makes "leave anyway" cost nothing when
+      // the store is fast enough to finish. It cannot be awaited — nothing may
+      // await here — so it is deliberately fire-and-forget, with a catch so a
+      // refusal does not surface as an unhandled rejection on a page that is
+      // halfway gone.
+      event.preventDefault()
+      writes.write().catch(() => {})
+    }
+    // Hidden — another tab, the phone's home screen, a close the prompt was not asked for — is the last moment
+    // a write is sure to run: whatever waits on the timer is written then.
+    const onHidden = () => {
+      if (document.visibilityState === 'hidden' && writes.pending()) void saving.current('blur')
+    }
+    window.addEventListener('beforeunload', onLeaving)
+    document.addEventListener('visibilitychange', onHidden)
+    return () => {
+      window.removeEventListener('beforeunload', onLeaving)
+      document.removeEventListener('visibilitychange', onHidden)
+    }
+  }, [writes])
 }

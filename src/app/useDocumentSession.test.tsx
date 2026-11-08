@@ -47,6 +47,7 @@ function mount(
   onDisk?: { current: ScopeSnapshot | undefined },
   sourceStatus?: (work: SourceWork) => SourceStatus,
   onSourceWork?: SourceWorkChanged,
+  writeAfterMs?: number,
 ) {
   const latest = { current: project() }
   const saved = vi.fn()
@@ -102,6 +103,7 @@ function mount(
       onAdopt: (held) => adopted.push(held),
       sourceStatus,
       onSourceWork,
+      ...(writeAfterMs !== undefined ? { writeAfterMs } : {}),
     })
     return null
   }
@@ -186,6 +188,27 @@ describe('a document that has just been opened', () => {
     await view.idle(1)
     expect(view.writes).toHaveLength(1)
     expect(view.status()).toBe('clean')
+  })
+
+  it('writes as soon as the source says, where a page can go before the default wait is out', async () => {
+    const view = mount(undefined, undefined, undefined, undefined, 250)
+    view.edit('Edited')
+    await view.idle(249)
+    expect(view.writes).toHaveLength(0)
+    await view.idle(1)
+    expect(view.writes).toHaveLength(1)
+  })
+
+  it('writes what waits on the timer the moment the page is hidden', async () => {
+    const view = mount()
+    view.edit('Edited')
+    const hidden = Object.getOwnPropertyDescriptor(Document.prototype, 'visibilityState')
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+    act(() => { document.dispatchEvent(new Event('visibilitychange')) })
+    await view.idle(0)
+    expect(view.writes).toHaveLength(1)
+    if (hidden) Object.defineProperty(document, 'visibilityState', hidden)
+    else delete (document as { visibilityState?: unknown }).visibilityState
   })
 
   it('waits for the typing to stop, not for the first keystroke to age', async () => {

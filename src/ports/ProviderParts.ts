@@ -87,6 +87,13 @@ export type ProviderParts<Own = unknown> = {
    */
   historyKept?: () => Promise<boolean>
   /**
+   * How long the open scope waits after an edit before it writes, where this
+   * place is not the default's few seconds: a store in this browser is cheap
+   * and local, and a page reloaded or closed before a write lands loses what
+   * the write held, so it writes almost at once.
+   */
+  writeAfterMs?: number
+  /**
    * What the bar, the subtitle and a removal say of this source, where it is
    * not what its registration says: a source that opened as something less
    * than it is registered as — somewhere that keeps nothing — says so.

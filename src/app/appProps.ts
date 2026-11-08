@@ -124,6 +124,8 @@ export type AppProvider = {
    * bar then says exactly what it has always said.
    */
   status?: (work: SourceWork) => SourceStatus
+  /** How long the open scope waits after an edit before it writes (`ProviderParts.writeAfterMs`). */
+  writeAfterMs?: number
   /**
    * The source says its answer to {@link AppProvider.status} has moved, so
    * the bar asks again. Absent for all three sources that ship, whose every

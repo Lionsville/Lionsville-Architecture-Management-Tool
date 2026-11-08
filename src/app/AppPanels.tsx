@@ -140,6 +140,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         // means by the words on the bar.
         readOnly: sourceIsReadOnly(parts.source) || (props.provider?.readOnlyAt?.(project.path) ?? false),
         status: props.provider?.status,
+        writeAfterMs: props.provider?.writeAfterMs,
         onWork: props.provider?.onWork,
         onSession,
         publishesSteps: props.provider?.publishesSteps ?? false,

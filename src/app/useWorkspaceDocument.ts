@@ -37,8 +37,10 @@ export function useWorkspaceDocument(deps: {
   onUnsavedWork: ((unsaved: boolean) => void) | undefined
   onKeptResult: KeepNotice
   onTreeChanged: () => void
+  /** How long an edit waits before it is written, where the source says. */
+  writeAfterMs?: number | undefined
 }): WorkspaceDocument {
-  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onKeptResult, onTreeChanged } = deps
+  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onKeptResult, onTreeChanged, writeAfterMs } = deps
   /**
    * What the bar says about saving. Two pieces of state, not one: the last
    * accepted time is worth keeping through a failure — it is the honest answer
@@ -68,6 +70,7 @@ export function useWorkspaceDocument(deps: {
     sourceStatus,
     onSourceWork,
     onUnsavedWork,
+    ...(writeAfterMs !== undefined ? { writeAfterMs } : {}),
     // Their version, once it has been read: straight onto the session, without
     // a relayout — a project read back from its folder carries its geometry.
     onAdopt: useCallback((held: ScopeSnapshot) => session.adopt(held, false), [session]),

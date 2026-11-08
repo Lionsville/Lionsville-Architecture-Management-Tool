@@ -703,6 +703,7 @@ function renderApp(
         source={shell.source}
         provider={{
           status: shell.sourceStatus,
+          writeAfterMs: shell.writeAfterMs,
           onWork: shell.onSourceWork,
           description: shell.sayings?.describeKey ?? sourceDescription(shell.source),
           chip: sourceChip(shell.source),

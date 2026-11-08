@@ -265,6 +265,7 @@ describe('when to write', () => {
   it('waits for the editor to go quiet', () => {
     expect(shouldSaveNow(dirty, 'idle', AUTOSAVE_IDLE_MS - 1)).toBe(false)
     expect(shouldSaveNow(dirty, 'idle', AUTOSAVE_IDLE_MS)).toBe(true)
+    expect(shouldSaveNow(dirty, 'idle', 250, 250)).toBe(true)
   })
 
   it('does not wait when the window is left or the app is quitting', () => {
