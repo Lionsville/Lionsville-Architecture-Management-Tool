@@ -18,6 +18,8 @@
  */
 
 import type { StringKey } from '../i18n/strings';
+import type { Language } from '../i18n/languages';
+import { chordName } from '../platform/keyNames';
 import { chordHeld, isMac } from '../widgets/kit/keys';
 
 /** Which primary modifier `'Mod'` maps to. */
@@ -229,38 +231,14 @@ export function chordSignature(def: ShortcutDef, platform: Platform): string {
   return `${mod}|shift:${shift}|alt:${alt}|${token}`;
 }
 
-const MOD_GLYPH: Record<Platform, string> = { mac: '⌘', other: 'Ctrl' };
-const ALT_GLYPH: Record<Platform, string> = { mac: '⌥', other: 'Alt' };
-const SHIFT_GLYPH = '⇧';
-
-const KEY_GLYPH: Record<string, string> = {
-  Escape: 'Esc',
-  Delete: 'Del',
-  Arrow: '↑ ↓ ← →',
-  ArrowDown: '↓',
-  ArrowUp: '↑',
-  ContextMenu: 'Menu',
-  ArrowLeft: '←',
-  ArrowRight: '→',
-  '=': '+',
-  '-': '−',
-  '?': '?',
-};
-
-function keyGlyph(token: string): string {
-  if (KEY_GLYPH[token]) return KEY_GLYPH[token];
-  return token.length === 1 ? token.toUpperCase() : token;
-}
-
-/** Human-readable, platform-correct rendering of a def's chord for the overlay. */
-export function formatChord(def: ShortcutDef, platform: Platform): string {
-  const parts: string[] = [];
-  if (def.keys.includes('Mod')) parts.push(MOD_GLYPH[platform]);
-  if (def.keys.includes('Shift')) parts.push(SHIFT_GLYPH);
-  if (def.keys.includes('Alt')) parts.push(ALT_GLYPH[platform]);
-  parts.push(keyGlyph(keyTokenOf(def)));
-  // Mac stacks glyphs tight (⌘⇧1); elsewhere the words read better joined by +.
-  return platform === 'mac' ? parts.join(' ') : parts.join('+');
+/**
+ * Human-readable, platform-correct rendering of a def's chord for the overlay,
+ * through the one helper that names keys (`platform/keyNames`): ⇧⌘Z on a Mac,
+ * Strg+Umschalt+Z on a German keyboard elsewhere.
+ */
+export function formatChord(def: ShortcutDef, platform: Platform, language: Language = 'en'): string {
+  const modifiers = (['Mod', 'Shift', 'Alt'] as const).filter((token) => def.keys.includes(token));
+  return chordName([...modifiers, keyTokenOf(def)], platform === 'mac', language);
 }
 
 /**
@@ -268,9 +246,9 @@ export function formatChord(def: ShortcutDef, platform: Platform): string {
  * context menus read their right-aligned hints through this so a rebinding here
  * shows up in every menu without anyone touching the menu code.
  */
-export function formatShortcut(id: string, platform: Platform): string | undefined {
+export function formatShortcut(id: string, platform: Platform, language: Language = 'en'): string | undefined {
   const def = CANVAS_SHORTCUTS.find((d) => d.id === id);
-  return def ? formatChord(def, platform) : undefined;
+  return def ? formatChord(def, platform, language) : undefined;
 }
 
 /**
@@ -279,11 +257,11 @@ export function formatShortcut(id: string, platform: Platform): string | undefin
  * the sheet's own key, `?`, is left to whoever lists the keys of every screen.
  * What the one sheet of keys (`widgets/kit/KeySheet`) lists for a board.
  */
-export function canvasKeyRows(platform: Platform, groups?: readonly ShortcutGroup[]): { labelKey: string; group: ShortcutGroup; keys: string[] }[] {
+export function canvasKeyRows(platform: Platform, groups?: readonly ShortcutGroup[], language: Language = 'en'): { labelKey: string; group: ShortcutGroup; keys: string[] }[] {
   const rows: { labelKey: string; group: ShortcutGroup; keys: string[] }[] = [];
   for (const def of CANVAS_SHORTCUTS) {
     if (def.id === 'help' || (groups && !groups.includes(def.group))) continue;
-    const chord = formatChord(def, platform);
+    const chord = formatChord(def, platform, language);
     const row = rows.find((one) => one.labelKey === def.labelKey);
     if (row) { if (!row.keys.includes(chord)) row.keys.push(chord); } else rows.push({ labelKey: def.labelKey, group: def.group, keys: [chord] });
   }

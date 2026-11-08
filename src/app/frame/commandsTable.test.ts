@@ -36,8 +36,9 @@ describe('the one table of commands', () => {
   })
 
   it('says a key as the platform says it', () => {
-    expect(keyCap('CmdOrCtrl+Shift+E', true)).toBe('⌘⇧E')
+    expect(keyCap('CmdOrCtrl+Shift+E', true)).toBe('⇧⌘E')
     expect(keyCap('CmdOrCtrl+Shift+E', false)).toBe('Ctrl+Shift+E')
+    expect(keyCap('CmdOrCtrl+Shift+E', false, 'de')).toBe('Strg+Umschalt+E')
     expect(keyCap('Alt+Left', false)).toBe('Alt+←')
     expect(keyCap('CmdOrCtrl+Plus', true)).toBe('⌘+')
   })

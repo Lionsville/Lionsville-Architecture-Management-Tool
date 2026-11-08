@@ -124,10 +124,10 @@ describe('menuItemsFor — node', () => {
   it('reads the shortcut hints from the keymap, per platform', () => {
     const mac = menuItemsFor(NODE, ctx({ element: app() }));
     expect(byId(mac, 'rename').shortcut).toBe('F2');
-    expect(byId(mac, 'duplicate').shortcut).toBe('⌘ D');
-    expect(byId(mac, 'copy').shortcut).toBe('⌘ C');
-    expect(byId(mac, 'cut').shortcut).toBe('⌘ X');
-    expect(byId(mac, 'remove-from-diagram').shortcut).toBe('Del');
+    expect(byId(mac, 'duplicate').shortcut).toBe('⌘D');
+    expect(byId(mac, 'copy').shortcut).toBe('⌘C');
+    expect(byId(mac, 'cut').shortcut).toBe('⌘X');
+    expect(byId(mac, 'remove-from-diagram').shortcut).toBe('⌫');
     const win = menuItemsFor(NODE, ctx({ element: app(), platform: 'other' }));
     expect(byId(win, 'duplicate').shortcut).toBe('Ctrl+D');
   });
@@ -257,7 +257,7 @@ describe('menuItemsFor — line', () => {
     ]);
     expect(byId(items, 'remove-all-bends').disabled).toBe(true);
     expect(byId(items, 'reset-label-position').disabled).toBe(true);
-    expect(byId(items, 'delete-connection')).toMatchObject({ danger: true, shortcut: 'Del' });
+    expect(byId(items, 'delete-connection')).toMatchObject({ danger: true, shortcut: '⌫' });
   });
 
   it('adds "Remove bend point" on a handle and enables the bulk removal once bends exist', () => {
@@ -360,10 +360,10 @@ describe('menuItemsFor — pane', () => {
       'toggle-grid',
       'toggle-snap',
     ]);
-    expect(byId(items, 'paste-here').shortcut).toBe('⌘ V');
+    expect(byId(items, 'paste-here').shortcut).toBe('⌘V');
     expect(byId(items, 'paste-here').disabled).toBeUndefined();
-    expect(byId(items, 'select-all').shortcut).toBe('⌘ A');
-    expect(byId(items, 'fit-view').shortcut).toBe('⇧ 1');
+    expect(byId(items, 'select-all').shortcut).toBe('⌘A');
+    expect(byId(items, 'fit-view').shortcut).toBe('⇧1');
     expect(byId(items, 'toggle-grid').checked).toBe(true);
     expect(byId(items, 'toggle-snap').checked).toBe(false);
   });
@@ -449,7 +449,7 @@ describe('menuItemsFor — selection', () => {
       { distributeAxis: 'vertical' },
     ]);
     expect(byId(items, 'lifecycle').children?.every((c) => c.checked === undefined)).toBe(true);
-    expect(byId(items, 'delete-selection')).toMatchObject({ danger: true, shortcut: 'Del' });
+    expect(byId(items, 'delete-selection')).toMatchObject({ danger: true, shortcut: '⌫' });
   });
 
   it('disables Distribute below three elements', () => {

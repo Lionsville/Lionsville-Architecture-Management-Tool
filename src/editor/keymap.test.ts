@@ -103,16 +103,16 @@ describe('matchEvent — special keys', () => {
 
 describe('formatShortcut', () => {
   it('renders a known id for the platform and undefined for an unknown one', () => {
-    expect(formatShortcut('duplicate', 'mac')).toBe('⌘ D');
+    expect(formatShortcut('duplicate', 'mac')).toBe('⌘D');
     expect(formatShortcut('duplicate', 'other')).toBe('Ctrl+D');
     expect(formatShortcut('rename', 'mac')).toBe('F2');
-    expect(formatShortcut('context-menu', 'mac')).toBe('⇧ F10');
+    expect(formatShortcut('context-menu', 'mac')).toBe('⇧F10');
     expect(formatShortcut('context-menu-key', 'other')).toBe('Menu');
     expect(formatShortcut('no-such-shortcut', 'mac')).toBeUndefined();
   });
 
   it('draws the level keys as arrows, as the nudge row does', () => {
-    expect(formatShortcut('level-in', 'mac')).toBe('⌘ ↓');
+    expect(formatShortcut('level-in', 'mac')).toBe('⌘↓');
     expect(formatShortcut('level-out', 'other')).toBe('Ctrl+↑');
   });
 });

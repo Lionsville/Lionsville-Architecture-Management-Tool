@@ -7,6 +7,7 @@ import type {
 import type { CanvasKind } from '../../model/placement';
 import { formatShortcut, type Platform } from '../keymap';
 import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../../i18n/strings';
+import type { Language } from '../../i18n/languages';
 import { zoneMenuLabel } from '../../model/zones';
 import { paletteLabel } from './paletteItems';
 import type { AlignAxis, DistributeAxis } from '../../layout/alignDistribute';
@@ -220,6 +221,8 @@ export interface TabMenuFacts {
 export interface MenuContext {
   readOnly: boolean;
   platform: Platform;
+  /** The language a key is named in: Strg and Entf on a German keyboard. English when absent. */
+  language?: Language;
   /**
    * The host offers the register (ADR-0012 §2): *Add here* then ends with an
    * existing application, drawn at the click. Layer 7 only, like the palette
@@ -321,7 +324,7 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
   const el = ctx.element;
   if (!el) return [];
   const t = ctx.t ?? DEFAULT_TRANSLATE;
-  const key = (id: string) => formatShortcut(id, ctx.platform);
+  const key = (id: string) => formatShortcut(id, ctx.platform, ctx.language);
   const items: MenuItem[] = [];
 
   // Reading is not editing: the page opens in read-only too.
@@ -471,7 +474,7 @@ function lineItems(ctx: MenuContext, handleIndex: number | undefined): MenuItem[
   const c = ctx.connection;
   if (!c || ctx.readOnly) return [];
   const t = ctx.t ?? DEFAULT_TRANSLATE;
-  const key = (id: string) => formatShortcut(id, ctx.platform);
+  const key = (id: string) => formatShortcut(id, ctx.platform, ctx.language);
   const items: MenuItem[] = [
     { id: 'add-bend', label: t('menu.addBend'), action: 'add-bend' },
   ];
@@ -635,7 +638,7 @@ function attachAtSubmenu(c: ConnectionMenuFacts, layoutBusy: boolean, t: Transla
 
 function paneItems(ctx: MenuContext): MenuItem[] {
   const t = ctx.t ?? DEFAULT_TRANSLATE;
-  const key = (id: string) => formatShortcut(id, ctx.platform);
+  const key = (id: string) => formatShortcut(id, ctx.platform, ctx.language);
   const navigation: MenuItem[] = [
     { id: 'select-all', label: t('menu.selectAll'), shortcut: key('select-all'), action: 'select-all' },
   ];
@@ -700,7 +703,7 @@ function selectionItems(ctx: MenuContext): MenuItem[] {
   const sel = ctx.selection;
   if (!sel || ctx.readOnly) return [];
   const t = ctx.t ?? DEFAULT_TRANSLATE;
-  const key = (id: string) => formatShortcut(id, ctx.platform);
+  const key = (id: string) => formatShortcut(id, ctx.platform, ctx.language);
   const items: MenuItem[] = [
     {
       id: 'align',

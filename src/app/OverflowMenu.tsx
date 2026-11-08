@@ -20,7 +20,9 @@
  * held — what a provider offers moves with whether anybody is signed in to it.
  */
 import { useEffect, useState } from 'react'
-import type { StringKey, Translate } from '../i18n'
+import type { Language, StringKey, Translate } from '../i18n'
+import { useStrings } from '../i18n/LanguageContext'
+import { acceleratorName } from '../platform/keyNames'
 import type { HostCommand } from '../platform/hostCommands'
 import type { SourceMenuEntry, SourceWorkChanged } from '../platform/sourceProvider'
 import { FILE_MENU, HELP_MENU_ITEM, PREFERENCES_ITEM, offered } from '../platform/menu'
@@ -48,17 +50,16 @@ export type OverflowMenuProps = {
   s: Translate
 }
 
-/** ⌘ on a Mac, Ctrl elsewhere, for a key cap: what `menu.ts` says in Electron's words. */
-function keyCap(accelerator: string | undefined): string | undefined {
+/** A key cap for what `menu.ts` says in Electron's words, named as the platform and the language name keys. */
+function keyCap(accelerator: string | undefined, language: Language): string | undefined {
   if (!accelerator) return undefined
   const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
-  return mac
-    ? accelerator.replace('CmdOrCtrl+', '⌘').replace('Shift+', '⇧').replace(/⌘⇧|⇧⌘/, '⇧⌘')
-    : accelerator.replace('CmdOrCtrl', 'Ctrl')
+  return acceleratorName(accelerator, mac, language)
 }
 
 export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, folded = [], s }: OverflowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  const { language } = useStrings()
   const choose = (command: HostCommand) => () => { setAnchor(null); onCommand(command) }
 
   /**
@@ -89,7 +90,7 @@ export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, fold
     if (entry.kind === 'separator') { items.push({ line: true }); continue }
     if (entry.kind !== 'item') continue
     const needsScope = entry.needs?.includes('scope') && !can.scope
-    const shortcut = keyCap(entry.accelerator)
+    const shortcut = keyCap(entry.accelerator, language)
     items.push({
       label: s(entry.label),
       onSelect: choose(entry.command),
@@ -97,7 +98,7 @@ export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, fold
       ...(needsScope ? { refused: s('menu.saveNothingOpen') } : {}),
     })
   }
-  items.push({ line: true }, { label: s(PREFERENCES_ITEM.label), onSelect: choose(PREFERENCES_ITEM.command), shortcut: keyCap(PREFERENCES_ITEM.accelerator) ?? '' })
+  items.push({ line: true }, { label: s(PREFERENCES_ITEM.label), onSelect: choose(PREFERENCES_ITEM.command), shortcut: keyCap(PREFERENCES_ITEM.accelerator, language) ?? '' })
   // The help, last of ours: a host with no menu bar has no Help menu, and the
   // ? in row one folds away first when the row runs out of room.
   items.push({ label: s(HELP_MENU_ITEM.label), onSelect: choose(HELP_MENU_ITEM.command), 'data-testid': 'overflow-help' })

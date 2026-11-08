@@ -10,7 +10,8 @@
 import { EDIT_ITEMS, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, TEXT_SIZE_ITEMS, THEME_ITEMS, ZOOM_ITEMS, goMenu, offered } from '../../platform/menu'
 import type { MenuCapabilities, MenuItemSpec } from '../../platform/menu'
 import type { HostCommand } from '../../platform/hostCommands'
-import type { StringKey } from '../../i18n'
+import type { Language, StringKey } from '../../i18n'
+import { acceleratorName, chordName } from '../../platform/keyNames'
 
 export type CommandRow = {
   readonly id: string
@@ -43,11 +44,8 @@ export function commandsTable(can: MenuCapabilities, platform: string): readonly
 }
 
 /** An accelerator as a person reads it on this platform. */
-export function keyCap(keys: string, mac: boolean): string {
-  const said: Record<string, string> = {
-    CmdOrCtrl: mac ? '⌘' : 'Ctrl', Cmd: '⌘', Shift: mac ? '⇧' : 'Shift', Alt: mac ? '⌥' : 'Alt', Left: '←', Right: '→', Plus: '+',
-  }
-  return keys.split('+').map((part) => said[part] ?? part).join(mac ? '' : '+')
+export function keyCap(keys: string, mac: boolean, language: Language = 'en'): string {
+  return acceleratorName(keys, mac, language)
 }
 
 /**
@@ -57,9 +55,9 @@ export function keyCap(keys: string, mac: boolean): string {
  * help may name no key that is not here, on a menu or in the canvas's keymap
  * (`help/helpKeys.test.ts`).
  */
-export const FRAME_KEYS = (mac: boolean): readonly (readonly [StringKey, string])[] => [
-  ['frame.find', mac ? '⌘K' : 'Ctrl K'],
-  ['frame.treeToggle', mac ? '⌘\\' : 'Ctrl \\'],
+export const FRAME_KEYS = (mac: boolean, language: Language = 'en'): readonly (readonly [StringKey, string])[] => [
+  ['frame.find', chordName(['Mod', 'K'], mac, language)],
+  ['frame.treeToggle', chordName(['Mod', '\\'], mac, language)],
   ['frame.helpHere', 'F1'],
   ['menu.shortcuts', '?'],
 ]

@@ -177,7 +177,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           {!holding && page === 'agents' && <AgentsPlace parts={parts} at={at} />}
         </Frame>
         </HelpPlaceProvider>
-        <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} s={s} />
+        <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} language={parts.services.prefs.language} s={s} />
       </PlaceReadingContext.Provider>
         </PlaceFacetsContext.Provider>
         </PlaceListContext.Provider>
@@ -494,7 +494,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     commandsTable(JSON.parse(canKey), mac ? 'darwin' : 'other').forEach((row: CommandRow) => {
       // Light, Dark and System are a menu's radio under Theme; on a line of their own they need the word, and a person types it.
       const label = row.command.type === 'theme' ? `${s('prefs.theme')}: ${s(row.label)}` : s(row.label)
-      rows.push({ id: row.id, group: s('frame.commands'), label, ...(row.keys ? { keys: keyCap(row.keys, mac) } : {}), run: () => send(row.command) })
+      rows.push({ id: row.id, group: s('frame.commands'), label, ...(row.keys ? { keys: keyCap(row.keys, mac, language) } : {}), run: () => send(row.command) })
     })
     return (asked: string) => {
       if (asked.trim() === '') return rows
@@ -771,7 +771,7 @@ function AgentButton({ parts }: { parts: ShellParts }) {
 function helpEntries(parts: ShellParts): (MenuAct | MenuSpacer)[] {
   const { services: { s }, commands: { bus } } = parts
   const help = offered(HELP_MENU, 'web', { history: false, connect: false, scope: true, example: exampleOffered(parts) })
-  const items: (MenuAct | MenuSpacer)[] = [...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : entry.accelerator ? { shortcut: keyCap(entry.accelerator, isMac()) } : {}) }] : []))]
+  const items: (MenuAct | MenuSpacer)[] = [...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : entry.accelerator ? { shortcut: keyCap(entry.accelerator, isMac(), parts.services.prefs.language) } : {}) }] : []))]
   if (!parts.hostMenu) {
     const open = (href: string) => () => parts.props.hostControls.openExternal(href)
     items.push({ line: true }, { label: s(DESKTOP_APP_LINK.label), onSelect: open(DESKTOP_APP_LINK.href) }, { label: s(WEBSITE_LINK.label), onSelect: open(WEBSITE_LINK.href), 'data-guide': 'shell.website' })

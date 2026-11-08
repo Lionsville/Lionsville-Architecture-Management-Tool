@@ -7,17 +7,17 @@
  * not here, and the canvas's from its keymap, under a heading of their own.
  * `?` and Help › Keyboard Shortcuts… open this sheet everywhere (`AppFrame`).
  */
-import type { StringKey, Translate } from '../../i18n'
+import type { Language, StringKey, Translate } from '../../i18n'
 import { canvasKeyRows, detectPlatform } from '../../editor/keymap'
 import { KeySheet } from '../../widgets/kit/KeySheet'
 import { FRAME_KEYS, keyCap } from './commandsTable'
 import type { CommandRow } from './commandsTable'
 
-export function ShortcutsSheet({ open, onClose, rows, mac, s }: {
-  open: boolean; onClose: () => void; rows: readonly CommandRow[]; mac: boolean; s: Translate
+export function ShortcutsSheet({ open, onClose, rows, mac, language = 'en', s }: {
+  open: boolean; onClose: () => void; rows: readonly CommandRow[]; mac: boolean; language?: Language; s: Translate
 }) {
   const everywhere = [
-    ...FRAME_KEYS(mac).map(([label, key]) => ({ label: s(label), keys: [key] })),
+    ...FRAME_KEYS(mac, language).map(([label, key]) => ({ label: s(label), keys: [key] })),
     ...(['file', 'edit', 'go', 'view', 'help'] as const)
       .flatMap((name) => rows.filter((row) => row.group === name && row.keys !== undefined))
       .map((row) => ({ label: s(row.label), keys: [keyCap(row.keys!, mac)] })),

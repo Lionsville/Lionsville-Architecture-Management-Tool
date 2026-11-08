@@ -336,6 +336,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
             {
               readOnly: props.readOnly,
               platform,
+              language,
               t,
               diagramKind: tabMenu.kind,
               tab: {
@@ -351,7 +352,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
             },
           )
         : [],
-    [tabMenu, props.readOnly, platform, t, props.onRenameDiagram, props.onOpenDiagramSettings, props.onDuplicateDiagram, props.onDeleteDiagram, props.onDiagramHistory],
+    [tabMenu, props.readOnly, platform, language, t, props.onRenameDiagram, props.onOpenDiagramSettings, props.onDuplicateDiagram, props.onDeleteDiagram, props.onDiagramHistory],
   );
   const hasTabMenu = !props.readOnly && Boolean(
     props.onRenameDiagram || props.onOpenDiagramSettings

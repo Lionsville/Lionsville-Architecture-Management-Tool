@@ -541,7 +541,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
    * a four-thousand-element landscape on a timer.
    */
   const asOfDay = useMemo(() => props.diagram.asOf ?? today(), [props.diagram.asOf]);
-  const { t } = useStrings();
+  const { t, language } = useStrings();
 
   const derivedNodes = useMemo(
     () => {
@@ -1175,6 +1175,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       const ctx: MenuContext = {
         readOnly,
         platform,
+        language,
         t,
         diagramKind: diagram.kind,
         groups: diagram.groups ?? [],
@@ -1266,6 +1267,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     [
       readOnly,
       platform,
+      language,
       t,
       diagram,
       model,
