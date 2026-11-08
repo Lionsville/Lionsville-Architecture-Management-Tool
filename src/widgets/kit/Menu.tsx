@@ -267,8 +267,14 @@ const PAPER = 16
 export function opensAbove(anchor: HTMLElement | null, rows: number): boolean {
   if (!anchor || typeof window === 'undefined') return false
   const box = anchor.getBoundingClientRect()
-  const below = window.innerHeight - box.bottom
-  return below < rows * ROW + PAPER && box.top > below
+  // The screen's foot, not the layout's: on a phone a page wider than the screen
+  // grows the layout viewport, and its foot fell below the screen, so the dock's
+  // menu at the bottom opened under the screen with room said to be there.
+  const seen = window.visualViewport
+  const top = seen ? seen.offsetTop : 0
+  const foot = seen ? seen.offsetTop + seen.height : window.innerHeight
+  const below = foot - box.bottom
+  return below < rows * ROW + PAPER && box.top - top > below
 }
 
 function useAnchored() {

@@ -814,13 +814,13 @@ function Breadcrumb({
             data-guide="board.levelUp"
             onClick={() => onActiveDiagramChange(parent.id)}
           >
-            {`‹ ${viewWord(model, parent)}`}
+            <span className="lv-levelbar__words">{`‹ ${viewWord(model, parent)}`}</span>
           </KitButton>
         </Tooltip>
       )}
       {pressed
-        ? <span className="lv-levelbar__title"><KitButton variant="quiet" aria-haspopup={pageUp ? undefined : 'dialog'} data-testid="this-view" onClick={pressed}>{title}</KitButton></span>
-        : <span className="lv-levelbar__title">{title}</span>}
+        ? <span className="lv-levelbar__title"><KitButton variant="quiet" aria-haspopup={pageUp ? undefined : 'dialog'} data-testid="this-view" onClick={pressed}><span className="lv-levelbar__words" title={title}>{title}</span></KitButton></span>
+        : <span className="lv-levelbar__title"><span className="lv-levelbar__words" title={title}>{title}</span></span>}
       {onMenu && (
         <Tooltip title={t('toolbar.containerMenu')}>
           <IconButton

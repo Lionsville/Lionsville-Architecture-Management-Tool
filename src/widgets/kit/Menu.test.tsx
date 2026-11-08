@@ -86,6 +86,20 @@ describe('Menu', () => {
     expect(opensAbove(null, 3)).toBe(false)
   })
 
+  it('measures the room below by the screen, where a page wider than a phone grew the layout past it', () => {
+    const at = (top: number) => ({ getBoundingClientRect: () => ({ top, bottom: top + 30 }) }) as unknown as HTMLElement
+    const said = Object.getOwnPropertyDescriptor(window, 'visualViewport')
+    Object.defineProperty(window, 'visualViewport', { configurable: true, value: { offsetTop: 0, height: 844 } })
+    try {
+      // The layout says 1300 high, the screen 844: a button at 800 has no room under it.
+      expect(opensAbove(at(800), 3)).toBe(true)
+      expect(opensAbove(at(100), 3)).toBe(false)
+    } finally {
+      if (said) Object.defineProperty(window, 'visualViewport', said)
+      else delete (window as { visualViewport?: unknown }).visualViewport
+    }
+  })
+
   it('walks with the arrows, and Escape closes and puts the focus back', async () => {
     renderShell(<MenuButton label="Colour" items={[{ label: 'One', onSelect: () => {} }, { label: 'Two', onSelect: () => {} }]} />)
     const button = screen.getByRole('button', { name: 'Colour' })

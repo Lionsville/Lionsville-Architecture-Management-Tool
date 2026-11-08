@@ -172,6 +172,12 @@
 .lv-levelbar { display: flex; align-items: center; gap: var(--s-2); min-width: 0; padding-inline: var(--s-2); }
 /* Row two's words, which grow with the text size as its tabs do: the canvas's px sizes hold for what is drawn on it. */
 .lv-levelbar__title, .lv-levelbar__title button { color: var(--ink); font-size: var(--t-body); font-weight: var(--fw-strong); white-space: nowrap; }
+/* The title gives way on a narrow window, its words cut with an ellipsis, so the row's More stays after it and the page is no wider than the window. Only the words clip: the button keeps its focus ring. */
+.lv-levelbar__title { display: flex; flex: 0 1 auto; min-width: 0; }
+.lv-levelbar__title button { min-width: 0; max-width: 100%; }
+/* The way back gives way with it, or the title alone shrank, to nothing. */
+.lv-levelbar > .kit-button { flex: 0 1 auto; min-width: 0; }
+.lv-levelbar__words { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lv-levelbar[data-page-up] .lv-levelbar__title, .lv-levelbar[data-page-up] .lv-levelbar__title button { color: var(--ink-2); font-weight: var(--fw-regular); }
 
 /* A row per category, under the containers. */
