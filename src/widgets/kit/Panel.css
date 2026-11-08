@@ -93,6 +93,7 @@
 .kit-panel__foot {
   flex: none;
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--s-2);
   padding: var(--s-2) var(--s-3);
@@ -100,7 +101,8 @@
   color: var(--ink-2);
   font-size: var(--t-small);
 }
-.kit-panel__footSays { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+/* By word, and a line's room before what stands beside it wraps under it: broken anywhere, a narrow panel set it one letter a line. */
+.kit-panel__footSays { flex: 1 1 10rem; min-width: 0; overflow-wrap: break-word; }
 
 .kit-panel__icon {
   display: inline-flex;

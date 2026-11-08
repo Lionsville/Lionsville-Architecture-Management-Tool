@@ -202,6 +202,9 @@
   .kit-frame__row--one :is(button, a, [role='button']) { min-width: var(--bar-h); min-height: var(--bar-h); }
   .kit-frame__row--one .kit-frame__above { display: none; }
   .kit-frame__tree { position: absolute; inset-block: 0; inset-inline-start: 0; z-index: 5; width: min(var(--panel-w-tree), 85cqw); max-width: 85cqw; box-shadow: var(--shadow); }
+  /* A panel is a sheet over the page, the whole width, as find and the switcher are: at its own width beside the page it was a column a word wide. */
+  .kit-frame__panel { inset-inline-start: 0; max-width: none; box-shadow: none; }
+  .kit-frame__panel > .kit-panel { --kit-panel-w: 100%; border-inline-start: 0; }
 }
 
 /*
