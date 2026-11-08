@@ -5,8 +5,8 @@
 import type { EN } from './en'
 
 export const DE: Record<keyof typeof EN, string> = {
-  'roadmap.title': 'Fahrplan',
-  'roadmap.open': 'Fahrplan',
+  'roadmap.title': 'Roadmap',
+  'roadmap.open': 'Roadmap',
   'roadmap.empty': 'Noch nichts hier hat ein Datum.',
   'roadmap.today': 'Heute',
   'roadmap.plans': 'Pläne',
@@ -21,7 +21,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'roadmap.owner': 'Verantwortlich',
   'roadmap.fromBelow': 'Initiativen aus den Bereichen darunter',
   'roadmap.initiative': 'Initiative',
-  'roadmap.initiativeHelp': 'Auch auf dem Fahrplan jedes Bereichs darüber',
+  'roadmap.initiativeHelp': 'Auch auf der Roadmap jedes Bereichs darüber',
   'roadmap.openInitiative': 'In {scope} öffnen',
   'roadmap.showBelowChanges': 'Zeigen, was die Initiativen darunter ändern',
   'roadmap.milestones': 'Meilensteine',
@@ -41,7 +41,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'plan.retires': 'Schaltet ab',
   'plan.changes': 'Ändert',
   'plan.page': 'Plan',
-  'plan.close': 'Zurück zum Fahrplan',
+  'plan.close': 'Zurück zur Roadmap',
   'plan.read': 'Lesen',
   'plan.source': 'Quelltext des Plans (Markdown)',
   'plan.bodyEmpty': 'Noch nichts geschrieben.',
@@ -192,7 +192,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'plan.initiativeOn': 'Auch auf den Roadmaps darüber',
   'plan.initiativeTurnOn': 'Auf den Roadmaps darüber verfolgen',
   'plan.initiativeTurnOff': 'Nicht mehr auf den Roadmaps darüber verfolgen',
-  'plan.back': 'Fahrplan',
+  'plan.back': 'Roadmap',
   'plan.gone': 'Diesen Plan gibt es nicht mehr',
   'plan.strip': 'Der Plan über die Zeit',
   'plan.groupMoves': 'Bewegt',

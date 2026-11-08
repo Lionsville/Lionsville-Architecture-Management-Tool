@@ -23,7 +23,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.proposal': '{name} ist eine Fähigkeit, die diese Domäne vorschlägt, und die Organisation hat sie noch nicht benannt',
   'check.ownedElsewhere': 'Dies wird in {scope} geführt — ändern Sie es dort',
   'check.unattributed': '{name} liegt außerhalb der Organisation, und niemand hat gesagt, wem es gehört — nennen Sie die Partei auf seiner Seite',
-  'check.notDrawn': '{name} ist hier definiert und auf keiner Tafel gezeichnet — setzen Sie es auf eine Tafel, oder belassen Sie es als Datensatz',
+  'check.notDrawn': '{name} ist hier definiert und auf keinem Board gezeichnet — setzen Sie es auf ein Board, oder belassen Sie es als Datensatz',
   'check.drawingLinkMissing': 'Eine Form auf {name} zeigt auf {detail}, das dieser Bereich nicht hält — richten Sie sie auf ein Element hier, oder entfernen Sie die Form',
   'check.unmapped': '{name} ist niemandem zugewiesen und von keiner Domäne übernommen — weisen Sie es zu, oder übergeben Sie es einer Domäne',
   'check.uncovered': 'Nichts und niemand erledigt {name} — verbinden Sie eine Anwendung, die es unterstützt, oder weisen Sie eine Person zu',
@@ -146,7 +146,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'library.unknownId': 'Das Register kennt diese Anwendung nicht mehr.',
   'library.alreadyDrawn': '{name} ist bereits auf diesem Board.',
-  'library.notABoard': 'Eine Karte wird auf einer Landschaft oder einer Container-Ansicht gezeichnet.',
+  'library.notABoard': 'Eine Karte wird auf einer Landschaft oder einem Containerdiagramm gezeichnet.',
 
   'standIn.definedIn': 'Definiert in {scope} — die Details werden dort geführt.',
   'standIn.open': '{scope} öffnen',

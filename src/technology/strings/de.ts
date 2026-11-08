@@ -102,7 +102,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'landscape.place': 'Ort',
   'landscape.export': 'Exportieren…',
   'landscape.exportFailed': 'Das Bild konnte nicht erstellt werden.',
-  'landscape.assumed': 'angenommen',
+  'landscape.assumed': 'vermutet',
   'landscape.outside': 'extern',
   'landscape.noPlatform': 'keine Plattform',
   'landscape.planned': 'geplant',

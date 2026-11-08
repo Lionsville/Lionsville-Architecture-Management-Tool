@@ -66,7 +66,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.how.unattributed': 'Wem gehört sie? Nennen Sie ihre Partei in ihrem Datensatz.',
   'check.name.notDrawn': 'Noch in keiner Ansicht',
   'check.why.notDrawn': 'Es ist in diesem Bereich definiert, und keine Ansicht hier zeichnet es. Ein Datensatz und eine Zeichnung sind zweierlei, also ist ein Datensatz in keiner Ansicht gewöhnlich.',
-  'check.how.notDrawn': 'Sollen Menschen es hier sehen, setzen Sie es auf eine Tafel. Ist es nur ein Datensatz, muss sich nichts ändern.',
+  'check.how.notDrawn': 'Sollen Menschen es hier sehen, setzen Sie es auf ein Board. Ist es nur ein Datensatz, muss sich nichts ändern.',
   'check.name.drawingLinkMissing': 'Eine Zeichnung zeigt auf etwas, das nicht hier ist',
   'check.why.drawingLinkMissing': 'Eine Form auf einer Zeichnung zeigt auf ein Element, das dieser Bereich nicht hält, also verweist die Form hier auf nichts.',
   'check.how.drawingLinkMissing': 'Richten Sie die Form auf ein Element, das dieser Bereich hält, oder entfernen Sie die Form.',

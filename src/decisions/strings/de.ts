@@ -18,7 +18,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'adr.groupEnded': 'Beendet',
   'adr.scopeThis': 'dieser Bereich',
   'adr.aboutField': 'Betrifft',
-  'adr.aboutHelp': 'Oder eine Anwendung, Fähigkeit oder einen Schritt einer Journey in diesem Bereich.',
+  'adr.aboutHelp': 'Oder eine Anwendung, Fähigkeit oder einen Schritt einer Kundenreise in diesem Bereich.',
   'adr.aboutScope': 'Dieser Bereich als Ganzes',
   'adr.aboutWord': 'Betrifft: {about}',
   'adr.aboutWithRecords': 'Mit Entscheidungen',

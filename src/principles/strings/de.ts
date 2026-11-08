@@ -65,7 +65,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'principles.questionField': 'Was noch offen ist',
   'principles.questionHelp': 'Über einen Kandidaten wird gesprochen: über die Worte, und ob er fest oder flexibel ist.',
   'principles.groupsField': 'Gruppen',
-  'principles.groupsHelp': 'Wähle eine oder mehrere, oder tippe einen neuen Namen, um eine Gruppe anzulegen.',
+  'principles.groupsHelp': 'Wählen Sie eine oder mehrere, oder tippen Sie einen neuen Namen, um eine Gruppe anzulegen.',
   'principles.newGroupOption': 'Neue Gruppe „{name}“',
   'principles.addAspect': '+ Aspekt',
   'principles.aspectsHelp': 'Ein Aspekt ist eine Behauptung des Prinzips, nummeriert PR-0001.1, PR-0001.2 und nie neu nummeriert.',
