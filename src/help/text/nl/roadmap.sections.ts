@@ -192,7 +192,7 @@ export const SECTIONS: SectionTexts = {
     'Zie wanneer het venster van TR-0002 voor het laatst verschoof.'],
   'plan.comments': ['Reageren op een plan', 'Een draad over het plan die het nooit wijzigt.',
     'Reacties, onderaan het plan.',
-    ['Schrijf in Schrijf een opmerking.', 'Klik op Reageren.'],
+    ['Schrijf in Schrijf een reactie.', 'Klik op Reageren.'],
     'Vraag of de noordelijke dockdeuren meedoen aan de pilot.'],
   'plan.agent': ['Een agent plannen laten lezen en bijhouden', 'Een agent toont en leest plannen, controleert de data van de roadmap, en maakt, wijzigt, verschuift, verwijdert en vervangt plannen, verhuist koppelvlakken en houdt mijlpalen bij, elk een stap in Activiteit.',
     'Agenttools plans.list, plan.read, roadmap.check, plan.create, plan.update, plan.move, plan.remove, plan.replace, plan.port, plan.unport, milestone.add, milestone.update, milestone.remove; app.open met page roadmap of plan.',

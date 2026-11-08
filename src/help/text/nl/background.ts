@@ -683,7 +683,7 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.` },
   weergave-instellingen.
 - **Vormgeving.** Accentkleur, vorm, pictogram, pictogramgrootte, en waar het in
   deze weergave staat.
-- **Opmerkingen.** De draad, met het aantal op het tabblad.
+- **Reacties.** De draad, met het aantal op het tabblad.
 
 **⋯** naast de naam bevat **Verplaatsen…**, **Soort wijzigen** en
 **Uit de weergave halen of uit het model verwijderen…**.` },
@@ -698,7 +698,7 @@ De pagina leest als één geheel: de tekst met haar inhoud, dan dezelfde rijen a
 in het paneel met elk veld getoond, in elke stand klikken om te bewerken, en waar
 het mee verbonden is: zijn plannen, elke lijn erin en eruit, de weergaven die het
 tekenen, wat erin zit, de principes die het volgt, zijn wijzigingen en zijn
-opmerkingen. Links staan de andere elementen van de weergave, met een filter (een
+reacties. Links staan de andere elementen van de weergave, met een filter (een
 teken toont wie al een pagina heeft). *Vormgeving* blijft naast het bord, waar de
 kaart is.
 
@@ -1274,7 +1274,7 @@ noemt de eenheden ernaast onder dezelfde ouder, geen aangevinkt. Voordat iets wo
 geschreven, zegt **Wie haar aanstuurt** wie elke eenheid van bovenaf aanstuurt, vandaag en na
 de verplaatsing, en wordt een verplaatsing door een plan met haar dag genoemd. Niets
 wordt geschreven tot **Verplaatsen**, en {key:Escape} laat het. De eenheid houdt haar id, dus
-haar mensen, rapportagelijnen, bediende scopes en opmerkingen blijven bij haar, en de
+haar mensen, rapportagelijnen, bediende scopes en reacties blijven bij haar, en de
 eenheden erin gaan mee. Het is één stap in elke scope die een verplaatste eenheid
 bewaart, allemaal of geen; waar dat alleen deze scope is, neemt {key:Mod+Z} het terug, en waar
 ook andere scopes zijn geschreven, wordt elke op zichzelf teruggezet. Een verplaatsing
@@ -1329,7 +1329,7 @@ de pagina Mensen.
 
 Een klik op een persoon opent in plaats daarvan diens toewijzing in de
 inspector: wie haar heeft, de rol en de eenheid, de eerste en laatste dag, het
-deel van de tijd dat ze vraagt, en een opmerking waar iemand op de dag van het
+deel van de tijd dat ze vraagt, en een melding waar iemand op de dag van het
 organogram meer dan al zijn tijd heeft. **Beëindigen op deze dag** beëindigt
 haar, als één stap, op de laatste dag die je kiest — de dag vóór de dag van het
 organogram als je vooruitkijkt, anders vandaag, en nooit vóór de eerste dag.
@@ -1945,7 +1945,7 @@ band, gestippeld voor een concept, en een teken per mijlpaal; mijlpalen te dicht
 elkaar vallen samen en zeggen hoeveel. De pagina van een plan is één document met één
 scroll: de kop, een strook met mijlpalen die in beeld blijft, wat het wijzigt op één
 regel per stuk, dan de tekst, dan de borden die het wijzigt, de principes die het
-aanhaalt, de wijzigingen en de opmerkingen. Een overzicht links gaat naar elk daarvan.
+aanhaalt, de wijzigingen en de reacties. Een overzicht links gaat naar elk daarvan.
 Een feit leest als woorden en een klik maakt van die ene regel een formulier.
 **Bewerken** is alleen de tekst, in een eigen venster met voorbeeld, opgeslagen als één
 stap. **Koppelingen** en **Eenheden** wachten tot je erom vraagt;

@@ -79,7 +79,7 @@ export const SECTIONS: SectionTexts = {
     'Citeer Kopen voor bouwen bij ADR-0002.'],
   'decisions.comment': ['Reageren op een besluit', 'Voegt een reactie over het record toe; een reactie wijzigt het nooit. Werkt ook op vastliggende records.',
     'Reacties onderaan een record.',
-    ['Schrijf in Schrijf een opmerking.', 'Klik op Reageren.'],
+    ['Schrijf in Schrijf een reactie.', 'Klik op Reageren.'],
     'Vraag bij ADR-0002 wanneer de dockplanning verhuist.'],
   'decisions.links': ['Volgen waaraan een besluit vastzit', 'Links onder de status: de opvolger of wat het vervangt, de oplossing waarvoor het werd genomen, en de plannen die erop rusten. Namen van elementen in de tekst openen dat element.',
     'De regels onder de statuszin van een record, en genoemde elementen in de tekst.',

@@ -38,6 +38,8 @@ export const GLOSSARY: Record<Exclude<Language, 'en'>, readonly Refused[]> = {
   nl: [
     { word: /\b[Uu]w?\b|\b[Uu]zelf\b/, use: 'je, jouw, jezelf (Dutch says je throughout)' },
     { word: /[Oo]rganigram/, use: 'organogram' },
+    // A comment on a record is a reactie everywhere: the thread, the toast and Activity said it, the box and ⋯ said opmerking (8 November 2026).
+    { word: /[Oo]pmerking/, use: 'reactie' },
     { word: /[Oo]perating model/, use: 'besturingsmodel' },
     { word: /[Aa]anzicht/, use: 'weergave; containerdiagram for a container view' },
     { word: /\b[Vv]iews?\b/, use: 'weergave' },

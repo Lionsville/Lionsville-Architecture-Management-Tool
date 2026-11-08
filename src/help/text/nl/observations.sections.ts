@@ -118,7 +118,7 @@ export const SECTIONS: SectionTexts = {
     'Citeer PR-0001.1 One format per partner message bij OB-0003, als principe waartegen de negen weken schuren.'],
   'obs-comment': ['Reageren op een record', 'Voegt een reactie toe onder de geschiedenis van een record; een reactie wijzigt het record nooit, en gaat mee bij samenvoegen of verplaatsen.',
     'Reacties aan het eind van een volledig record.',
-    ['Open het hele record.', 'Schrijf onder Schrijf een opmerking en klik op Reageren.'],
+    ['Open het hele record.', 'Schrijf onder Schrijf een reactie en klik op Reageren.'],
     'Reageer bij OB-0001 dat financiën in april nog twee betwiste facturen telde.'],
   'obs-search': ['Elk record doorzoeken', 'Beperkt de lijst van het stadium tot de records waarvan de woorden passen, over waarnemingen, oorzaken, oplossingen en experimenten.',
     'Zoek in elk record links in de balk.',

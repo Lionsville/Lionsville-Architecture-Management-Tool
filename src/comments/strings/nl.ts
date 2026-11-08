@@ -17,7 +17,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'comments.cancel': 'Annuleren',
   'comments.remove': 'Verwijderen',
   'comments.removedToast': 'Reactie verwijderd',
-  'comments.more': 'Meer voor deze opmerking',
+  'comments.more': 'Meer voor deze reactie',
   'comments.removeTip': 'Verwijdert deze reactie en laat een teken achter waar ze stond, zodat de antwoorden hun plek houden',
   'comments.removed': 'Reactie verwijderd',
   'comments.edited': 'bewerkt',

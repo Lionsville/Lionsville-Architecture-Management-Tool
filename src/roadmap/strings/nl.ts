@@ -203,7 +203,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'plan.boards': 'Borden',
   'plan.principles': 'Principes',
   'plan.changesLog': 'Wijzigingen',
-  'plan.comments': 'Opmerkingen',
+  'plan.comments': 'Reacties',
   'plan.editing': 'De tekst van een plan bewerken',
   'plan.interfacesRow': '{done} van {total} hebben een dag',
   'plan.setDays': 'Dagen zetten',

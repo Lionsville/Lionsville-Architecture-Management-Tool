@@ -68,7 +68,7 @@ export const SECTIONS: SectionTexts = {
     '← → gaan tussen de tabbladen van het paneel'],
   'panel.comments': ['Reageren op een element', 'Het tabblad Reacties, met zijn aantal, bevat de draad over het element; een reactie verandert het element nooit.',
     'Het paneel rechts van een bord, tabblad Reacties; het deel Reacties van het record',
-    ['Selecteer de kaart en open het tabblad Reacties.', 'Schrijf in Schrijf een opmerking en klik op Reageren.', 'Beantwoord, bewerk of verwijder een eigen reactie in de draad.'],
+    ['Selecteer de kaart en open het tabblad Reacties.', 'Schrijf in Schrijf een reactie en klik op Reageren.', 'Beantwoord, bewerk of verwijder een eigen reactie in de draad.'],
     'Vraag bij Billing of de oude tariefmotor na maart nog wordt gelezen.'],
   'panel.more': ['Een element verplaatsen, van soort wisselen of verwijderen', 'De ⋯ in de bovenste rij van het paneel bevat Verplaatsen… (naar een andere scope, of stand-in worden voor een element dat elders staat), Soort wijzigen en Uit de weergave halen of uit het model verwijderen… (met wat er meegaat).',
     'Het paneel rechts van een bord, ⋯ in de bovenste rij; ook het rechtsklikmenu van de kaart',
