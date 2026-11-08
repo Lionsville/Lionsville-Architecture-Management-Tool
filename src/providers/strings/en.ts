@@ -43,7 +43,7 @@ export const EN = {
    * The machine-local scope says out loud that it is not shared: the file
    * sits in the folder, and everything else in the folder travels.
    */
-  'prefs.thisMachine': 'THIS FOLDER, ON THIS MACHINE',
+  'prefs.thisMachine': 'This folder, on this machine',
   'prefs.thisMachineNote':
     'Kept by this install and not shared \u2014 nothing is written into the folder, and another machine that opens it decides for itself.',
   'prefs.pullOnOpen': 'Pull from the remote when this folder is opened',

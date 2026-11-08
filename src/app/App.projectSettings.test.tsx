@@ -43,7 +43,7 @@ const saved = (store: HeldRepositories) => store.read('acme/landscape')
 
 async function openSettings() {
   fireEvent.click(screen.getByTestId('scope-switcher-open'))
-  fireEvent.click(await screen.findByText('Settings…'))
+  fireEvent.click(await screen.findByText(/^Settings of .*…$/))
   await screen.findByTestId('scope-settings-page')
 }
 

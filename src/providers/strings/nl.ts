@@ -29,7 +29,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sync.pullRefused': 'De map is niet opgehaald: {reason}',
   'sync.pushRefused': 'De momentopname is niet gepusht: {reason}',
   'sync.resolveRefused': 'Er is niets veranderd: {reason}',
-  'prefs.thisMachine': 'DEZE MAP, OP DEZE MACHINE',
+  'prefs.thisMachine': 'Deze map, op deze machine',
   'prefs.thisMachineNote':
     'Bewaard door deze installatie en niet gedeeld \u2014 er wordt niets in de map geschreven, en een andere machine die deze map opent beslist zelf.',
   'prefs.pullOnOpen': 'Van de remote ophalen als deze map wordt geopend',

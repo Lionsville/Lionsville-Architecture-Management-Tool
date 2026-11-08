@@ -205,7 +205,7 @@ describe('Back and Forward', () => {
     await ask('app.open', { scope: 'acme/retail' })
     await settledOn({ scope: 'acme/retail', page: 'board', id: 'r7' })
     fireEvent.click(screen.getByTestId('scope-switcher-open'))
-    fireEvent.click(screen.getByText('Settings…'))
+    fireEvent.click(screen.getByText(/^Settings of .*…$/))
     expect(await screen.findByTestId('scope-settings-page')).toBeDefined()
     await waitFor(async () => expect(((await where()) as { page?: { page?: string } }).page?.page).toBe('settings'))
     window.history.back()

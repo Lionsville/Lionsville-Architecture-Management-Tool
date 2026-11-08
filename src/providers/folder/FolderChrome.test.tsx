@@ -239,19 +239,19 @@ describe('what this machine does, in Preferences', () => {
     const repositories = memoryRepositories()
     render(<FolderPreferences own={folderOwn({ settings: repositories.settings, diagnostics: new RecordingDiagnostics() })} notify={vi.fn()} />)
     await settled()
-    expect(screen.queryByText('THIS FOLDER, ON THIS MACHINE')).toBeNull()
+    expect(screen.queryByText('This folder, on this machine')).toBeNull()
   })
 
   it('is absent where this machine has no git at all', async () => {
     render(<FolderPreferences own={(await own(remote({ available: false }).sync, false)).held} notify={vi.fn()} />)
     await settled()
-    expect(screen.queryByText('THIS FOLDER, ON THIS MACHINE')).toBeNull()
+    expect(screen.queryByText('This folder, on this machine')).toBeNull()
   })
 
   it('writes this person\'s settings, and says they stay with this install', async () => {
     const { held, repositories } = await own(remote().sync, false)
     render(<FolderPreferences own={held} notify={vi.fn()} />)
-    expect(await screen.findByText('THIS FOLDER, ON THIS MACHINE')).toBeDefined()
+    expect(await screen.findByText('This folder, on this machine')).toBeDefined()
     expect(screen.getByText(/nothing is written into the folder/)).toBeDefined()
     fireEvent.click(screen.getByLabelText(/Push after every snapshot/))
     await settled()
@@ -271,7 +271,7 @@ describe('what this machine does, in Preferences', () => {
     held.sync.available = () => Promise.reject(new Error('the channel closed'))
     render(<FolderPreferences own={(await own(held.sync, false)).held} notify={vi.fn()} />)
     await settled()
-    expect(screen.queryByText('THIS FOLDER, ON THIS MACHINE')).toBeNull()
+    expect(screen.queryByText('This folder, on this machine')).toBeNull()
   })
 
   it('puts a setting back, and says so, where it could not be kept', async () => {

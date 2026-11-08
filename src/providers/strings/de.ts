@@ -29,7 +29,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sync.pullRefused': 'Der Ordner wurde nicht geholt: {reason}',
   'sync.pushRefused': 'Die Momentaufnahme wurde nicht gepusht: {reason}',
   'sync.resolveRefused': 'Es wurde nichts geändert: {reason}',
-  'prefs.thisMachine': 'DIESER ORDNER, AUF DIESEM RECHNER',
+  'prefs.thisMachine': 'Dieser Ordner, auf diesem Rechner',
   'prefs.thisMachineNote':
     'Von dieser Installation verwahrt und nicht geteilt — in den Ordner wird nichts geschrieben, und ein anderer Rechner, der ihn öffnet, entscheidet selbst.',
   'prefs.pullOnOpen': 'Beim Öffnen dieses Ordners vom Remote holen',

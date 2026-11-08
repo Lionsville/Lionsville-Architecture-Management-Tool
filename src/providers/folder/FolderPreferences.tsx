@@ -27,8 +27,9 @@ export function FolderPreferences({ own, notify }: SourcePreferencesPanelProps<F
     const sync = own?.sync
     if (!own || !sync) return
     let live = true
+    // A folder that keeps no history, or whose pull found no remote, has nothing to pull from or push to.
     void sync.available().then(async (can) => {
-      if (!can) return
+      if (!can || own.pulled === 'no-remote' || !await sync.keeping()) return
       const read = await own.readSettings()
       if (live) setHeld(read)
     }, (cause: unknown) => own.report('folderSettings', cause))

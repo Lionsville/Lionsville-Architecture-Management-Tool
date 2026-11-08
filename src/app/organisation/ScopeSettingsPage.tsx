@@ -145,7 +145,8 @@ export function ScopeSettingsPage({
             <TypeField
               type={typeChoiceOf(target)} unitTypes={unitTypes} readOnly={readOnly} s={s}
               onChange={(type) => apply({ type }, s('settings.undoType'), { type: typeChoiceOf(target) })}
-              {...(topicNext(typeChoiceOf(target)) ? { help: s('org.kindTopicMoves') } : {})}
+              // The organisation is served by no unit, so its help says nothing of Served by.
+              {...(topicNext(typeChoiceOf(target)) ? { help: s('org.kindTopicMoves') } : !canMove && unitTypes.length > 0 ? { help: s('org.typeHelpUnserved') } : {})}
             />
             {servedBy}
             <CommittedDescription
