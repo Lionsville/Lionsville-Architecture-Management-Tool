@@ -80,7 +80,7 @@ export function StructureTab({ model, readOnly, selected, onSelect, dispatch, ma
       <p className="op-concept" data-testid="operating-concept">{t('operating.concept')}</p>
       {!readOnly && (
         <div className="op-actions">
-          <Button variant="primary" data-guide="operating.newUnitType" onClick={() => add(newUnitType(t('operating.newUnitTypeName'), makeId, model))}>{t('operating.newUnitType')}</Button>
+          <Button variant="plain" data-guide="operating.newUnitType" onClick={() => add(newUnitType(t('operating.newUnitTypeName'), makeId, model))}>{t('operating.newUnitType')}</Button>
           <Button variant="plain" data-guide="operating.newRole" onClick={() => add(newRole(t('operating.newRoleName'), makeId, model))}>{t('operating.newRole')}</Button>
           <Button variant="plain" data-guide="operating.fromLibrary" onClick={onFromLibrary}>{t('operating.fromLibrary')}</Button>
         </div>

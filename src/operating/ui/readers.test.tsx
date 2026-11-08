@@ -229,6 +229,16 @@ describe('a responsibility read', () => {
     expect(screen.queryByRole('button', { name: 'Lead' })).toBeNull()
   })
 
+  it('ends in the page’s one foot, its removal alone at the far end, as the exception’s way back is', () => {
+    renderShell(<ResponsibilityReader responsibility={of('plan')} parts={parts({ onOpenHistory: vi.fn() })} />)
+    const foot = screen.getByTestId('operating-reader-foot')
+    expect(foot.querySelector('.op-foot__away')?.textContent).toBe('Remove')
+    expect(foot.firstElementChild?.textContent).toBe('History')
+    cleanup()
+    exceptions({ start: 'by-type' })
+    expect(screen.getByTestId('operating-reader-foot').querySelector('.op-foot__away [data-testid="operating-back-to-default"]')).not.toBeNull()
+  })
+
   it('moves within its group, and not past either end', () => {
     const dispatch = vi.fn()
     renderShell(<ResponsibilityReader responsibility={of('plan')} parts={parts({ dispatch })} />)

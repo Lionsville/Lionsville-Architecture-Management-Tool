@@ -11,6 +11,10 @@
 .op-concept { margin: 0; max-width: 60ch; color: var(--ink-2); }
 .op-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .op-grow { flex: 1; }
+/* A reader's foot: what is next at the start, what takes it away alone at the far end. */
+.op-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-block-start: var(--s-3); padding-block-start: var(--s-2); border-top: 1px solid var(--line); }
+.op-foot__away { margin-inline-start: auto; }
+.kit-preview .op-foot { margin-block-start: 0; padding-block-start: 0; border-top: 0; width: 100%; }
 .op-quiet { color: var(--ink-2); }
 .op-small { font-size: var(--t-small); color: var(--ink-2); }
 .op-link { background: none; border: 0; padding: 0; font: inherit; color: var(--link, var(--accent)); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; text-align: start; }

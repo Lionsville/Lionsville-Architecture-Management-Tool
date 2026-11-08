@@ -140,22 +140,33 @@ export function SourceWord({ basedOn }: { basedOn: BasedOn | undefined }) {
   return <span className="op-small">{t('operating.basedOn', { library: library?.name ?? basedOn.library, entry: entry?.item.name[language] ?? basedOn.entry })}</span>
 }
 
-/** The end of every reader: history, the host's aside, and removing it. */
+/**
+ * The foot every reader on the page ends with, whichever frame it is in (the panel
+ * beside the structure and the grid, the preview over roles and exceptions): what
+ * is done next at the start, and what takes the thing away alone at the far end,
+ * where no other press lands on it.
+ */
+export function ReaderActions({ children, away }: { children?: ReactNode; away?: ReactNode }) {
+  if (!children && !away) return null
+  return (
+    <div className="op-foot" data-testid="operating-reader-foot">
+      {children}
+      {away && <span className="op-foot__away">{away}</span>}
+    </div>
+  )
+}
+
+/** The end of every reader: the host's aside, then the foot with history and removing it. */
 export function ReaderFoot({ item, parts }: { item: OperatingItem; parts: ReaderParts }) {
   const { t } = useStrings()
   return (
     <>
       {parts.aside}
-      {parts.onOpenHistory && (
-        <div className="op-fold">
-          <button type="button" className="op-link" data-testid="operating-history" onClick={parts.onOpenHistory}>{t('operating.history')}</button>
-        </div>
-      )}
-      {!parts.readOnly && (
-        <div className="op-actions">
-          <Button variant="danger" size="small" data-testid="operating-remove" onClick={() => parts.onRemove(item.item.id)}>{t('operating.remove')}</Button>
-        </div>
-      )}
+      <ReaderActions
+        away={!parts.readOnly && <Button variant="danger" size="small" data-testid="operating-remove" onClick={() => parts.onRemove(item.item.id)}>{t('operating.remove')}</Button>}
+      >
+        {parts.onOpenHistory && <button type="button" className="op-link" data-testid="operating-history" onClick={parts.onOpenHistory}>{t('operating.history')}</button>}
+      </ReaderActions>
     </>
   )
 }

@@ -26,6 +26,7 @@ import type { OperatingModel } from '../edit'
 import { manySayTheSame } from '../exceptions'
 import type { ManySay } from '../exceptions'
 import type { OutsideTheModel } from '../organisationFacts'
+import { ReaderActions } from './ReaderParts'
 import { roleNamed } from './reading'
 
 /** Who says otherwise, in words. */
@@ -148,12 +149,12 @@ export function ExceptionsTab({ model, exceptions, readOnly, dispatch, onBackBel
           </>
         )}
         foot={open && (
-          <div className="op-actions">
-            {canBack(open) && <Button variant="primary" data-testid="operating-back-to-default" onClick={() => back(open)}>{t('operating.backToDefault')}</Button>}
+          // Back to default takes the exception away: the far end, alone, as Remove is on every other reader here.
+          <ReaderActions away={canBack(open) && <Button variant="danger" data-testid="operating-back-to-default" onClick={() => back(open)}>{t('operating.backToDefault')}</Button>}>
             {open.on === 'type' && open.typeId && <Button variant="plain" onClick={() => onOpenType(open.typeId as string)}>{t('operating.openType')}</Button>}
             {open.unitId && onOpenUnit && <Button variant="plain" onClick={() => onOpenUnit({ id: open.unitId as string, scope: open.scope ?? '' })}>{t('operating.openInOrganisation')}</Button>}
-            <Button variant="quiet" onClick={() => onOpenRole(open.roleId)}>{t('operating.openRole')}</Button>
-          </div>
+            <Button variant="plain" onClick={() => onOpenRole(open.roleId)}>{t('operating.openRole')}</Button>
+          </ReaderActions>
         )}
       >
         {open && <p>{t(open.on === 'outside' ? 'operating.exWhyOutside' : 'operating.exWhy')}</p>}
