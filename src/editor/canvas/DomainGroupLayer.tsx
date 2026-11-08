@@ -251,8 +251,8 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                 top: rect.y,
                 width: rect.width,
                 height: rect.height,
-                // Selected reads like a selected node: a soft ring lifts the box off the band behind it.
-                boxShadow: isSelected ? `0 0 0 4px ${theme.palette.action.selected}` : undefined,
+                // Selected reads as a selected card does: the selection's edge, drawn outside the box so nothing in it moves.
+                ...(isSelected ? { borderColor: 'var(--selected-edge)', boxShadow: '0 0 0 calc(2px / var(--canvas-zoom, 1)) var(--selected-edge)' } : {}),
                 ...(colors.rail ? { borderLeft: `calc(3px / var(--canvas-zoom, 1)) solid ${colors.rail}` } : {}),
                 pointerEvents: 'none',
                 zIndex: -1,
