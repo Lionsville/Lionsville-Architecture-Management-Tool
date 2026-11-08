@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { translator } from '../../i18n'
-import { statusWord } from './statusWord'
+import { statusHead, statusWord } from './statusWord'
 import type { StatusFacts } from './statusWord'
 
 const s = translator('en')
@@ -65,5 +65,18 @@ describe('an editor\'s work', () => {
     expect(word({ status: 'clean', own: { state: 'saving' } }).text).toBe(s('shell.saving'))
     expect(word({ status: 'clean', own: { state: 'failed' } })).toMatchObject({ text: s('frame.ownFailed'), alarm: true })
     expect(word({ status: 'clean', own: { state: 'clean' } }).text).toBe(s('frame.ownClean'))
+  })
+})
+
+describe('a word’s first words', () => {
+  it('keeps what comes before the first mark, and the colon with it', () => {
+    expect(statusHead('Offline: changes are waiting')).toEqual({ head: 'Offline:', tail: ' changes are waiting' })
+    expect(statusHead('Offline · 3 not saved')).toEqual({ head: 'Offline', tail: ' · 3 not saved' })
+    expect(statusHead('Not saved — storage refused')).toEqual({ head: 'Not saved', tail: ' — storage refused' })
+    expect(statusHead('Saved 10:23 · Folder · work1')).toEqual({ head: 'Saved 10:23', tail: ' · Folder · work1' })
+  })
+
+  it('is the whole word where there is no mark', () => {
+    expect(statusHead('Changed here and elsewhere')).toEqual({ head: 'Changed here and elsewhere', tail: '' })
   })
 })

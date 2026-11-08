@@ -69,7 +69,11 @@ import { newViewChoices } from '../organisation/newViewChoices'
 import { registerSummary } from '../organisation/register'
 import { plural } from '../../i18n/strings'
 import { ShortcutsSheet } from './ShortcutsSheet'
-import { TONE_MARK } from './statusWord'
+import { rowOneFolds, statusCalm, BUSY_ORDINARY_MS } from './rowOneFolds'
+import type { RowOneFold } from './rowOneFolds'
+import { statusHead, TONE_MARK } from './statusWord'
+import type { StatusWord } from './statusWord'
+import type { StatusTone } from '../../ports/ProviderParts'
 import { NewViewDialog } from '../NewViewDialog'
 import { DESKTOP_APP_LINK, FILE_MENU, PREFERENCES_ITEM, WEBSITE_LINK, HELP_MENU, acceleratorMatches, offered } from '../../platform/menu'
 import type { KeyPress, MenuItemSpec, MenuNeed } from '../../platform/menu'
@@ -627,15 +631,20 @@ export function AlsoHere({ names, s }: { names: readonly string[]; s: Translate 
 }
 
 /**
- * What row one lets go of when it runs out, in order, each measured
- * (`useRowFold`) rather than set at a width: the words beside the work; the
- * status word, to its mark; Help and the size, since the size is what makes
- * room for reading; and Forward, beside a Back that never goes, Back being the
- * press people miss most. Once all of these are gone the find field may go to
- * its glass, and only then is a name in the trail cut (`Crumbs`' `capped`).
+ * Whether the word is calm, held still through an ordinary save: work on its
+ * way counts as not calm only once it has been so for `BUSY_ORDINARY_MS`, so a
+ * sentence being typed does not make the row fold and unfold under it.
  */
-const ROW_ONE_FOLDS = ['activity', 'agent', 'status', 'help', 'size', 'forward'] as const
-type RowOneFold = typeof ROW_ONE_FOLDS[number]
+function useStatusCalm(tone: StatusTone): boolean {
+  const [long, setLong] = useState(false)
+  useEffect(() => {
+    setLong(false)
+    if (tone !== 'busy') return undefined
+    const timer = window.setTimeout(() => setLong(true), BUSY_ORDINARY_MS)
+    return () => window.clearTimeout(timer)
+  }, [tone])
+  return statusCalm(tone, long && tone === 'busy' ? BUSY_ORDINARY_MS : 0)
+}
 
 function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at: ScopePath }) {
   const { services: { s }, organisation: { tree } } = parts
@@ -644,9 +653,13 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   const chip = frameChip(parts)
   const scopeOpen = facts?.kind === 'workspace'
   const { prefs } = parts.services
-  const { folded: gone, anchor } = useRowFold(ROW_ONE_FOLDS.length, `${prefs.textSize} ${prefs.language}`)
-  const folded = (what: RowOneFold) => gone > ROW_ONE_FOLDS.indexOf(what)
-  const allFolded = gone === ROW_ONE_FOLDS.length
+  const word = statusOf(parts, facts, prefs.language, s, state.work)
+  const calm = useStatusCalm(word.tone)
+  // The order is the word's: a word that turns calm or not starts the row over, as a language does.
+  const order = rowOneFolds(calm)
+  const { folded: gone, anchor } = useRowFold(order.length, `${prefs.textSize} ${prefs.language} ${calm}`)
+  const folded = (what: RowOneFold) => order.includes(what) && gone > order.indexOf(what)
+  const allFolded = gone === order.length
   const { t } = useStrings()
   const sizing = { size: prefs.textSize, steps: TEXT_SIZES, normal: DEFAULT_TEXT_SIZE, onChoose: prefs.chooseTextSize }
   const togglePanel = (panel: 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
@@ -671,7 +684,7 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
       <div className="kit-frame__grow" />
       {/* An editor has an undo of its own, for shapes; the model's here would take back the wrong thing. A phone's row has no room for them: its ⌘Z is a menu away. */}
       {!state.work && <span className="kit-frame__steps"><UndoRedo facts={facts} s={s} /></span>}
-      <SafeWords parts={parts} state={state} activity={!folded('activity')} word={!folded('status')} />
+      <SafeWords parts={parts} state={state} word={word} calm={calm} least={allFolded} activity={!folded('activity')} wordShown={!folded('status')} />
       {!folded('agent') && <AgentButton parts={parts} />}
       <BarEnd button={frameBarButton(parts, scopeOpen ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
       {!folded('size') && <TextSizeControl {...sizing} />}
@@ -738,10 +751,12 @@ function UndoRedo({ facts, s }: { facts: ScreenFacts | undefined; s: Translate }
 }
 
 /** Whether work is safe, who else is here, and what was lately done: the word and the two panels behind it. */
-function SafeWords({ parts, state, activity, word: wordShown }: { parts: ShellParts; state: FrameState; activity: boolean; word: boolean }) {
-  const { services: { s, prefs } } = parts
+function SafeWords({ parts, state, word, calm, least, activity, wordShown }: {
+  parts: ShellParts; state: FrameState; word: StatusWord; calm: boolean; least: boolean; activity: boolean; wordShown: boolean
+}) {
+  const { services: { s } } = parts
   const facts = state.screen
-  const word = statusOf(parts, facts, prefs.language, s, state.work)
+  const { head, tail } = statusHead(word.text)
   const togglePanel = (panel: 'work' | 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
   const here = facts?.alsoHere ?? []
   return (
@@ -749,12 +764,16 @@ function SafeWords({ parts, state, activity, word: wordShown }: { parts: ShellPa
       {word.text !== '' && (
         <button
           type="button" className="kit-frame__status" data-testid="saved-indicator" data-guide="frame.status" data-alarm={word.alarm || undefined} data-tone={word.tone} data-folded={wordShown ? undefined : true}
+          data-calm={calm} data-least={!calm && least ? true : undefined}
           aria-expanded={state.panel === 'work'} aria-label={word.text} title={word.text} onClick={() => togglePanel('work')}
         >
           <span className="kit-frame__status-mark" aria-hidden>{TONE_MARK[word.tone]}</span>
           {/* Below 75 rem the word goes to icon and count; on a row with no room for either, to the mark alone, still read out. */}
           <span className="kit-frame__status-say">
-            <span className="kit-frame__status-word" aria-live="polite">{word.text}</span>
+            {/* A word that is not calm keeps its first words wherever the row runs out; the rest may go to an ellipsis (`Frame.css`). */}
+            <span className="kit-frame__status-word" aria-live="polite">
+              {calm ? word.text : <><span className="kit-frame__status-head">{head}</span>{tail !== '' && <span className="kit-frame__status-tail">{tail}</span>}</>}
+            </span>
             {word.short !== undefined && <span className="kit-frame__status-short" aria-hidden>{word.short}</span>}
           </span>
           <CaretIcon size={12} />

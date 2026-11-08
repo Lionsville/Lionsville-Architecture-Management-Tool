@@ -51,6 +51,20 @@ const said = (text: string, tone: StatusTone): StatusWord => ({ text, tone, alar
 /** A mark for each tone: the shape carries it, for a greyscale print and for anybody who cannot tell the colours apart. */
 export const TONE_MARK: Readonly<Record<StatusTone, string>> = { saved: '✓', busy: '◌', waiting: '▲', offline: '○', problem: '●', reading: '◉' }
 
+/**
+ * A word's first words, and the rest: what a word that is not calm keeps where
+ * the row runs out (*Offline:*, *Not saved*, *Signed out*), and what may then
+ * go to an ellipsis. Cut at its first ` · `, `: ` or ` — `, the colon kept with
+ * the head; a word with none of them is all head.
+ */
+export function statusHead(text: string): { head: string; tail: string } {
+  const cuts = [' · ', ': ', ' — '].map((mark) => ({ mark, at: text.indexOf(mark) })).filter(({ at }) => at > 0)
+  if (cuts.length === 0) return { head: text, tail: '' }
+  const { mark, at } = cuts.reduce((first, one) => (one.at < first.at ? one : first))
+  const end = mark === ': ' ? at + 1 : at
+  return { head: text.slice(0, end), tail: text.slice(end) }
+}
+
 function ownWord(own: OwnWork, language: Language, s: Translate): StatusWord {
   switch (own.state) {
     case 'clean': return said(s('frame.ownClean'), 'saved')
