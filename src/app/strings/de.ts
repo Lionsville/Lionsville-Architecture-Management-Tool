@@ -485,6 +485,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.typeHelp': 'Ein Einheitentyp des Betriebsmodells oder eine eingebaute Art. Ein Etikett; eine Einheit unter Bedient von zu verknüpfen setzt es auf den Typ dieser Einheit.',
   'org.typeHelpUnserved': 'Ein Einheitentyp des Betriebsmodells oder eine eingebaute Art. Ein Etikett; es ändert sonst nichts.',
   'org.typeGoneBadge': 'Unbekannter Typ',
+  'org.typeGroupUnits': 'Einheitstypen',
+  'org.typeGroupKinds': 'Arten',
   'org.typedCount': '{count} × {type}',
   'org.typeAgrees': 'Typ {type}, wie eine Einheit, die ihn bedient.',
   'org.typeDisagrees': 'Typ {type}, während die Einheiten, die ihn bedienen, vom Typ {types} sind.',

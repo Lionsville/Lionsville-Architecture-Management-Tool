@@ -484,6 +484,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.typeHelp': 'Een eenheidstype uit het operating model, of een ingebouwd soort. Een label; een eenheid koppelen onder Bediend door zet het op het type van die eenheid.',
   'org.typeHelpUnserved': 'Een eenheidstype uit het operating model, of een ingebouwd soort. Een label; het verandert verder niets.',
   'org.typeGoneBadge': 'Onbekend type',
+  'org.typeGroupUnits': 'Eenheidstypen',
+  'org.typeGroupKinds': 'Soorten',
   'org.typedCount': '{count} × {type}',
   'org.typeAgrees': 'Type {type}, zoals een eenheid die haar bedient.',
   'org.typeDisagrees': 'Type {type}, terwijl de eenheden die haar bedienen van type {types} zijn.',

@@ -669,6 +669,8 @@ export const EN = {
   'org.typeHelp': 'A unit type of the operating model, or a built-in kind. A label; linking a unit under Served by sets it to that unit\'s type.',
   'org.typeHelpUnserved': 'A unit type of the operating model, or a built-in kind. A label; it changes nothing else.',
   'org.typeGoneBadge': 'Unknown type',
+  'org.typeGroupUnits': 'Unit types',
+  'org.typeGroupKinds': 'Kinds',
   'org.typedCount': '{count} × {type}',
   'org.typeAgrees': 'Typed {type}, as a unit that serves it is.',
   'org.typeDisagrees': 'Typed {type}, while the units that serve it are: {types}.',

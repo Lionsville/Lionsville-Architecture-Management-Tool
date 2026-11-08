@@ -20,9 +20,10 @@ export function TypeField({ type, unitTypes, onChange, help, readOnly = false, s
   const gone = type.startsWith('unit:') && !unitTypes.some((one) => `unit:${one.id}` === type)
   const options = [
     { value: '', label: s('org.kindNone') },
-    ...unitTypes.map((one) => ({ value: `unit:${one.id}`, label: one.name })),
-    ...(gone ? [{ value: type, label: s('org.typeGoneBadge') }] : []),
-    ...SCOPE_KINDS.map((one) => ({ value: `kind:${one}`, label: s(SCOPE_KIND_LABEL[one]) })),
+    // Under a heading each where there are unit types: a unit type and a kind may share a word (*Team*).
+    ...unitTypes.map((one) => ({ value: `unit:${one.id}`, label: one.name, group: s('org.typeGroupUnits') })),
+    ...(gone ? [{ value: type, label: s('org.typeGoneBadge'), group: s('org.typeGroupUnits') }] : []),
+    ...SCOPE_KINDS.map((one) => ({ value: `kind:${one}`, label: s(SCOPE_KIND_LABEL[one]), ...(unitTypes.length > 0 || gone ? { group: s('org.typeGroupKinds') } : {}) })),
   ]
   return (
     <SelectField
