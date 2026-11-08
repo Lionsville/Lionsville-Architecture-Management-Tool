@@ -47,7 +47,7 @@ import { registerFolderSettingsChannel } from './folderSettings'
 import { useHooksFolder } from '../../src/platform/node/git'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
 import { showsWindow } from './smokeWindow'
-import { closeHelpWindow, helpWindowInLanguage, isHelpWindow, openHelpWindow, opensInBrowser } from './helpWindow'
+import { closeHelpWindow, helpWindowInLanguage, helpWindowInTheme, isHelpWindow, openHelpWindow, opensInBrowser } from './helpWindow'
 import { helpAddress } from '../../src/platform/helpAddress'
 import { isLanguage } from '../../src/i18n/languages'
 
@@ -574,6 +574,8 @@ void app.whenReady().then(() => {
     if (held !== themeSaid) void keepTheme(keptThemePath(), held)
     themeSaid = held
     reportTheme(held)
+    // An open help window follows, as it follows the language.
+    helpWindowInTheme(held === 'light' || held === 'dark' ? held : undefined, groundNow())
   })
   // And the app's language, so the question closing asks is asked in it.
   ipcMain.handle('app:language', (_event, held: unknown) => {

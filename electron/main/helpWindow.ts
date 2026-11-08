@@ -107,6 +107,30 @@ export function helpAddressInLanguage(url: string, language: string): string | u
   return held.href
 }
 
+/**
+ * The app changed its theme: an open help window follows, as it follows the
+ * language, so two windows of one app are not in two themes. `undefined` is
+ * the system's, which the help reads for itself where its address says none.
+ */
+export function helpWindowInTheme(theme: 'light' | 'dark' | undefined, background: string): void {
+  if (!helpWindow || helpWindow.isDestroyed()) return
+  const now = helpWindow.webContents.getURL()
+  const again = helpAddressInTheme(now, theme)
+  if (again === undefined || again === now) return
+  helpWindow.setBackgroundColor(background)
+  void helpWindow.loadURL(again)
+}
+
+/** The same help address in another theme, keeping where it reads; nothing for what is not an address. */
+export function helpAddressInTheme(url: string, theme: 'light' | 'dark' | undefined): string | undefined {
+  let held: URL
+  try { held = new URL(url) } catch { return undefined }
+  if ((held.searchParams.get('theme') ?? undefined) === theme) return url
+  if (theme) held.searchParams.set('theme', theme)
+  else held.searchParams.delete('theme')
+  return held.href
+}
+
 /** Is this the help's window? The app's own windows are counted without it. */
 export function isHelpWindow(window: unknown): boolean {
   return helpWindow !== undefined && window === helpWindow

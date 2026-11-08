@@ -31,7 +31,7 @@ vi.mock('electron', () => ({
   },
 }))
 
-const { helpAddressInLanguage, helpNavigation, helpWindowOptions, openHelpWindow, opensInBrowser } = await import('./helpWindow')
+const { helpAddressInLanguage, helpAddressInTheme, helpNavigation, helpWindowOptions, openHelpWindow, opensInBrowser } = await import('./helpWindow')
 const BASE = 'app://local/'
 
 describe('the help window', () => {
@@ -84,5 +84,15 @@ describe('the help window and the app\'s language', () => {
     expect(helpAddressInLanguage('app://local/help/#frame.back', 'nl')).toBe('app://local/help/?lang=nl#frame.back')
     expect(helpAddressInLanguage('app://local/help/?lang=de', 'de')).toBe('app://local/help/?lang=de')
     expect(helpAddressInLanguage('not an address', 'de')).toBeUndefined()
+  })
+})
+
+describe('the help window and the app\'s theme', () => {
+  it('reads the same place in the theme the app switched to, and in the system\'s where it follows the system', () => {
+    expect(helpAddressInTheme('app://local/help/?lang=nl&theme=dark#chart.find', 'light')).toBe('app://local/help/?lang=nl&theme=light#chart.find')
+    expect(helpAddressInTheme('app://local/help/?lang=nl#frame.back', 'dark')).toBe('app://local/help/?lang=nl&theme=dark#frame.back')
+    expect(helpAddressInTheme('app://local/help/?lang=de&theme=dark#board', undefined)).toBe('app://local/help/?lang=de#board')
+    expect(helpAddressInTheme('app://local/help/?theme=dark', 'dark')).toBe('app://local/help/?theme=dark')
+    expect(helpAddressInTheme('not an address', 'dark')).toBeUndefined()
   })
 })
