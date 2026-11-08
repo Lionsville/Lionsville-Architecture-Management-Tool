@@ -12,6 +12,9 @@
 .chain-page__window { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-4); font-size: var(--t-small); color: var(--ink-2); border-bottom: 1px solid var(--line); flex-wrap: wrap; flex-shrink: 0; }
 
 .chain-map { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
+/* A card picked with the mouse shows the kit's ring and no browser outline round it; reached by the keyboard, the focus ring. */
+.chain-map [role='button']:focus { outline: none; }
+.chain-map [role='button']:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 .chain-overview { position: absolute; top: var(--s-3); right: var(--s-3); padding: var(--s-2); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); }
 .chain-overview svg { display: block; touch-action: none; cursor: grab; }
 .chain-overview__said { margin-top: var(--s-1); font-size: var(--t-small); color: var(--ink-2); }
