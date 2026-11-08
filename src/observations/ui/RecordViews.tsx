@@ -147,9 +147,12 @@ export function recordViewOf(held: Selected, key: string, ctx: ReaderContext, pa
       const bar = experimentBar(experimentProps(one, ctx), 'read', edit)
       const base = { code: formatExperimentNumber(one.number), title: one.title }
       if (isConcluded(one.outcome)) return { ...base, bar: [...bar.actions, ...bar.moves.map((move) => ({ ...move, occasional: true }))] }
+      // The answers to the question stand in the band, the first of them the accent; going back to planned is not an answer, and waits in ⋯.
+      const back = bar.moves.filter((move) => move.key === 'planned')
+      const ahead = bar.moves.filter((move) => move.key !== 'planned')
       return {
-        ...base, bar: bar.actions,
-        next: { question: one.outcome === 'planned' ? s('solution.nextStart') : s('solution.nextShow'), actions: bar.moves.map((move) => asNext(move)) },
+        ...base, bar: [...bar.actions, ...back],
+        next: { question: one.outcome === 'planned' ? s('solution.nextStart') : s('solution.nextShow'), actions: ahead.map((move, at) => asNext(move, at === 0)) },
       }
     }
     case 'solutionBelow': return { code: formatSolutionNumber(held.solution.number), title: held.solution.title, bar: [] }

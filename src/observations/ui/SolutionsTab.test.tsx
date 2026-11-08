@@ -177,10 +177,15 @@ describe('the Solutions tab', () => {
 
   it('concludes an experiment from its reader, with a result and the day it ended', () => {
     const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })], experiments: [experiment({ from: '2026-09-10' })] }, { initialId: 'ex:e1' })
-    // Running: back to planned, or one of the three outcomes; nothing else.
+    // Running: one of the three outcomes in the band, the first the accent; back to planned waits in ⋯.
     expect(screen.getByRole('dialog', { name: 'Two weeks at one desk' }).textContent).toContain('What did it show?')
-    expect(['experiment-outcome-planned', 'experiment-outcome-confirmed', 'experiment-outcome-refuted', 'experiment-outcome-inconclusive'].map((id) => screen.getByTestId(id).textContent))
-      .toEqual(['Back to planned', 'Confirmed', 'Refuted', 'Inconclusive'])
+    expect(['experiment-outcome-confirmed', 'experiment-outcome-refuted', 'experiment-outcome-inconclusive'].map((id) => screen.getByTestId(id).textContent))
+      .toEqual(['Confirmed', 'Refuted', 'Inconclusive'])
+    expect(screen.getByTestId('experiment-outcome-confirmed').dataset.variant).toBe('primary')
+    expect(screen.queryByTestId('experiment-outcome-planned')).toBeNull()
+    fireEvent.click(screen.getAllByRole('button', { name: 'More actions' }).at(-1)!)
+    expect(screen.getByTestId('experiment-outcome-planned').textContent).toContain('Back to planned')
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     fireEvent.click(screen.getByTestId('experiment-outcome-confirmed'))
     expect(onChange).not.toHaveBeenCalled()
     // Without a result there is nothing to conclude: pressed, it says what is missing.
