@@ -43,9 +43,10 @@ describe('removing a scope’s last view', () => {
     // The empty place has an address of its own, the scope's, which a reload lands on its home with nothing said.
     await waitFor(() => expect(window.location.hash).toBe('#/acme/landscape/-'))
     // A closing dialog hides the page from role queries until it is gone.
-    expect(await screen.findByRole('button', { name: 'New view…' })).toBeTruthy()
+    // The place's own, and row two's +: both say what they open.
+    expect((await screen.findAllByRole('button', { name: 'New view…' })).length).toBe(2)
     // Row two keeps its +, though the tabs it stood after are gone.
-    expect(document.querySelector('.kit-frame__views [aria-label="New Layer 7 view"]')).not.toBeNull()
+    expect(document.querySelector('.kit-frame__views [aria-label="New view…"]')).not.toBeNull()
     // Still the workspace: no home came up in its place.
     expect(screen.queryByTestId('organisation-name')).toBeNull()
 
@@ -70,7 +71,7 @@ describe('removing a scope’s last view', () => {
     renderApp({ repositories: heldRepositories(scopes), boot: { initialProject: scopes[1] }, provider: { onScopeSession: (held) => { session = held } } })
     await waitFor(() => expect(session?.scope).toBe('acme/landscape'))
     act(() => { session!.dispatch({ type: 'diagram.delete', id: 'd1' }) })
-    fireEvent.click(await screen.findByRole('button', { name: 'New view…' }))
+    fireEvent.click((await screen.findAllByRole('button', { name: 'New view…' }))[0])
     expect(await screen.findByRole('dialog')).toBeTruthy()
   })
 })

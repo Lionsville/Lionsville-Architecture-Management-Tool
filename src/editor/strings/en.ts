@@ -170,6 +170,7 @@ export const EN = {
 
   // --- toolbar -------------------------------------------------------------
   'toolbar.newDiagram': 'New Layer 7 view',
+  'toolbar.newView': 'New view\u2026',
   'toolbar.newLandscape': 'Landscape',
   'toolbar.newSheet': 'Business architecture',
   'toolbar.newMap': 'Coverage',

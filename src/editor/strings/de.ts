@@ -161,6 +161,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'paletteDescription.existing': 'Eine Anwendung, die die Organisation bereits hat, hier gezeichnet',
 
   'toolbar.newDiagram': 'Neue Layer-7-Ansicht',
+  'toolbar.newView': 'Neue Ansicht\u2026',
   'toolbar.newLandscape': 'Landschaft',
   'toolbar.newSheet': 'Geschäftsarchitektur',
   'toolbar.newMap': 'Abdeckung',

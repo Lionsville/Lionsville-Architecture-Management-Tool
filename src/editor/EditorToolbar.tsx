@@ -602,8 +602,8 @@ export function NewViewMenu({ props }: { props: NewViewProps }) {
   if (props.onNewView) {
     const landscape = props.onCreateLayer7Diagram;
     return (
-      <Tooltip title={t('toolbar.newDiagram')}>
-        <IconButton size="small" sx={NEW_VIEW_INK} aria-label={t('toolbar.newDiagram')} aria-haspopup="dialog" data-testid="tab-new-view" onClick={() => props.onNewView?.(landscape)}>
+      <Tooltip title={t('toolbar.newView')}>
+        <IconButton size="small" sx={NEW_VIEW_INK} aria-label={t('toolbar.newView')} aria-haspopup="dialog" data-testid="tab-new-view" onClick={() => props.onNewView?.(landscape)}>
           <AddIcon />
         </IconButton>
       </Tooltip>
@@ -621,11 +621,11 @@ export function NewViewMenu({ props }: { props: NewViewProps }) {
   ];
   return (
     <>
-      <Tooltip title={t('toolbar.newDiagram')}>
+      <Tooltip title={t('toolbar.newView')}>
         <IconButton
           size="small"
           sx={NEW_VIEW_INK}
-          aria-label={t('toolbar.newDiagram')}
+          aria-label={t('toolbar.newView')}
           aria-haspopup="menu"
           onClick={(event) => setAnchor(event.currentTarget)}
         >

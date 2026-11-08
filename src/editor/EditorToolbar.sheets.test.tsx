@@ -112,7 +112,7 @@ describe('the + ', () => {
   it('offers both kinds when the host can make a sheet', () => {
     const onCreateSheet = vi.fn();
     renderToolbar({ onCreateSheet, onOpenSheet: vi.fn() });
-    fireEvent.click(screen.getByLabelText('New Layer 7 view'));
+    fireEvent.click(screen.getByLabelText('New view…'));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Business architecture' }));
     expect(onCreateSheet).toHaveBeenCalled();
   });
@@ -120,7 +120,7 @@ describe('the + ', () => {
   it('still makes a landscape from the same menu', () => {
     const onCreateLayer7Diagram = vi.fn();
     renderToolbar({ onCreateSheet: vi.fn(), onCreateLayer7Diagram });
-    fireEvent.click(screen.getByLabelText('New Layer 7 view'));
+    fireEvent.click(screen.getByLabelText('New view…'));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Landscape' }));
     expect(onCreateLayer7Diagram).toHaveBeenCalled();
   });
@@ -134,6 +134,6 @@ describe('the + ', () => {
 
   it('is offered at all only while the editor can be written to', () => {
     renderToolbar({ onCreateSheet: vi.fn(), readOnly: true });
-    expect(screen.queryByLabelText('New Layer 7 view')).toBeNull();
+    expect(screen.queryByLabelText('New view…')).toBeNull();
   });
 });

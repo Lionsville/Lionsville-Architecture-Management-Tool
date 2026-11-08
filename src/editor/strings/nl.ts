@@ -161,6 +161,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'paletteDescription.existing': 'Een applicatie die de organisatie al heeft, hier getekend',
 
   'toolbar.newDiagram': 'Nieuwe Layer 7-weergave',
+  'toolbar.newView': 'Nieuwe weergave\u2026',
   'toolbar.newLandscape': 'Landschap',
   'toolbar.newSheet': 'Bedrijfsarchitectuur',
   'toolbar.newMap': 'Dekking',

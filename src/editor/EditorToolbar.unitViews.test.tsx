@@ -66,10 +66,10 @@ describe('the organisation chart and the Conway map in the strip', () => {
     const onCreateChart = vi.fn();
     const onCreateConway = vi.fn();
     renderToolbar({ onCreateChart, onCreateConway });
-    fireEvent.click(screen.getByLabelText('New Layer 7 view'));
+    fireEvent.click(screen.getByLabelText('New view…'));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Organisation chart' }));
     expect(onCreateChart).toHaveBeenCalled();
-    fireEvent.click(screen.getByLabelText('New Layer 7 view'));
+    fireEvent.click(screen.getByLabelText('New view…'));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Conway map' }));
     expect(onCreateConway).toHaveBeenCalled();
   });
