@@ -43,7 +43,7 @@ export function FramePicture() {
 
 export function WorkPicture() {
   return (
-    <Screen crop trail={TRAIL.slice(0, 1)} tree={TREE}>
+    <Screen crop trail={TRAIL.slice(0, 1)} tree={TREE} height="auto">
       <div className="hp-split">
         <div className="hp-home"><div className="hp-home__title">Acme Logistics</div><Rows title={<Say k="org.viewsHere" />} rows={VIEWS.map((view) => <span key={view}>{view}</span>)} /></div>
         <SidePanel kind={<Say k="frame.yourWork" />} name="~/Documents/acme" facts={<Say k="shell.sourceBrowser" />} rows={[
@@ -56,7 +56,7 @@ export function WorkPicture() {
 
 export function BoardPicture() {
   return (
-    <Screen crop trail={TRAIL} tabs={VIEWS} on={0}>
+    <Screen crop trail={TRAIL} tabs={VIEWS} on={0} height="auto">
       <ViewBar items={[<Say key="a" k="shell.add" />, <Say key="b" k="bar.arrange" />, <Say key="c" k="landscape.show" />, <Say key="d" k="kit.colour" />, <Say key="e" k="kit.day" />]} />
       <div className="hp-split">
         <div className="hp-canvas">

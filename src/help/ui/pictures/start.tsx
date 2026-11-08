@@ -4,20 +4,23 @@
 /**
  * Getting started's pictures: one small screen a step, from the same parts as
  * the chapters' and in the app's own words, with the place the step is about
- * marked by a ring (`data-mark`) so the eye finds it first.
+ * marked by a ring (`data-mark`) so the eye finds it first. A step's picture
+ * is cut to the parts its words name (`data-crop`), never to numbers: the cut
+ * is taken out to whole lines of text where it stands (`HelpFigure`).
  */
 import type { ComponentType } from 'react'
 import { Card } from '../../../widgets/kit/Card'
 import { Mark } from '../../../widgets/kit/Mark'
 import '../../../widgets/kit/HelpPress.css'
-import { Btn, CropTo, Rows, Say, Screen, SidePanel, Tree } from './parts'
+import { Btn, Rows, Say, Screen, SidePanel, Tree } from './parts'
 
 const TREE = <Tree at="Warehouse" rows={[['Acme Logistics', 0], ['Warehouse', 1], ['Shared platforms', 1], ['Topics', 1]]} />
 const PLACES = [<Say key="d" k="shell.decisions" />, <Say key="o" k="shell.observations" />, <Say key="r" k="shell.roadmap" />]
 
-function Home({ mark }: { mark?: 'views' }) {
+/** `crop`: the home is what the step is about, and the cut is its. */
+function Home({ mark, crop }: { mark?: 'views'; crop?: boolean }) {
   return (
-    <div className="hp-home">
+    <div className="hp-home" data-crop={crop || undefined}>
       <div className="hp-home__title">Warehouse</div>
       <p className="hp-text">Receiving, slotting, picking and shipping.</p>
       <div data-mark={mark === 'views' || undefined}>
@@ -29,37 +32,37 @@ function Home({ mark }: { mark?: 'views' }) {
 }
 
 function WhatFor() {
-  return <Screen trail={['Acme Logistics', 'Warehouse']} tree={TREE} tabs={PLACES} height={230} crop><Home /></Screen>
+  return <Screen trail={['Acme Logistics', 'Warehouse']} tree={TREE} tabs={PLACES} height="auto"><Home crop /></Screen>
 }
 
 function TheFrame() {
   return (
     <div className="hp-marked-frame">
-      <Screen trail={['Acme Logistics', 'Warehouse']} tree={TREE} tabs={PLACES} height={230}>
+      <Screen trail={['Acme Logistics', 'Warehouse']} tree={TREE} tabs={PLACES} height="auto">
         <div className="hp-split">
           <Home />
           <SidePanel kind="Application" name="Dispatch" rows={[[<Say key="l" k="register.colLifecycle" />, <Say key="v" k="lifecycle.live" />]]} />
         </div>
       </Screen>
-      <span className="hp-callout" data-at="one">1</span>
-      <span className="hp-callout" data-at="two">2</span>
-      <span className="hp-callout" data-at="tree">3</span>
+      {/* Cut to the first three numbers: the panel's would take the cut wider than a step's column, and the caption names it. */}
+      <span className="hp-callout" data-at="one" data-crop="">1</span>
+      <span className="hp-callout" data-at="two" data-crop="">2</span>
+      <span className="hp-callout" data-at="tree" data-crop="">3</span>
       <span className="hp-callout" data-at="panel">4</span>
-      <CropTo x={0} y={0} width={376} height={140} />
     </div>
   )
 }
 
 function OpenAView() {
-  return <Screen trail={['Acme Logistics', 'Warehouse']} tree={TREE} tabs={PLACES} height={230}><Home mark="views" /></Screen>
+  return <Screen trail={['Acme Logistics', 'Warehouse']} tree={TREE} tabs={PLACES} height="auto"><Home mark="views" /></Screen>
 }
 
 function AddAndConnect() {
   return (
-    <Screen trail={['Acme Logistics', 'Warehouse', 'Application landscape']} tabs={['Application landscape']} on={0} height={230} crop>
-      <div className="hp-viewbar"><b data-mark=""><Say k="shell.add" /></b><span><Say k="bar.arrange" /></span><span><Say k="landscape.show" /></span></div>
+    <Screen trail={['Acme Logistics', 'Warehouse', 'Application landscape']} tabs={['Application landscape']} on={0} height="auto">
+      <div className="hp-viewbar"><b data-mark="" data-crop=""><Say k="shell.add" /></b><span><Say k="bar.arrange" /></span><span><Say k="landscape.show" /></span></div>
       <div className="hp-split">
-        <div className="hp-canvas">
+        <div className="hp-canvas" data-crop="">
           <div className="hp-cards">
             <Card name="Order Management" sub={<Say k="lifecycle.live" />} marks={<Mark kind="managed" />} />
             <Card name="Route Optimiser" sub={<Say k="lifecycle.planned" />} selected />
@@ -74,12 +77,12 @@ function AddAndConnect() {
 
 function RecordOne() {
   return (
-    <Screen trail={['Acme Logistics', 'Warehouse']} tabs={PLACES} on={1} height={230} crop>
-      <div className="hp-viewbar"><b><Say k="observation.stageSeen" /></b><span><Say k="observation.stageWhy" /></span><span><Say k="observation.stageSolve" /></span><span data-mark=""><Btn primary><Say k="observation.new" /></Btn></span></div>
+    <Screen trail={['Acme Logistics', 'Warehouse']} tabs={PLACES} on={1} height="auto">
+      <div className="hp-viewbar"><b><Say k="observation.stageSeen" /></b><span><Say k="observation.stageWhy" /></span><span><Say k="observation.stageSolve" /></span><span data-mark="" data-crop=""><Btn primary><Say k="observation.new" /></Btn></span></div>
       <Rows rows={[
-        <span key="a"><b>OB-0001</b> Quoted one price, billed another</span>,
-        <span key="b"><b>OB-0002</b> Two delivery estimates for one parcel</span>,
-        <span key="c"><b>OB-0003</b> Handover to the carrier waits a day</span>,
+        <span key="a" data-crop=""><b>OB-0001</b> Quoted one price, billed another</span>,
+        <span key="b" data-crop=""><b>OB-0002</b> Two delivery estimates for one parcel</span>,
+        <span key="c" data-crop=""><b>OB-0003</b> Handover to the carrier waits a day</span>,
       ]} />
     </Screen>
   )

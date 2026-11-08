@@ -13,7 +13,6 @@
   overflow: hidden;
   position: relative;
 }
-.hp-crop { position: absolute; pointer-events: none }
 .hp-row { min-height: 30px; padding: 0 8px; gap: 6px; display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden }
 .kit-frame__row.hp-row { position: static }
 .hp-glyph { color: var(--ink-2); min-width: 10px; text-align: center }
@@ -37,7 +36,8 @@
 .hp-rows { margin: 0 0 10px }
 .hp-rows__title { font-size: 11px; font-weight: 600; color: var(--ink-2); margin: 0 0 4px; text-transform: none }
 .hp-rows__row { padding: 4px 6px; border-bottom: 1px solid var(--line) }
-.hp-text { margin: 0 0 8px; color: var(--ink-2) }
+/* Under the window, so a page's own rule for a paragraph (Getting started's step) does not take its room away. */
+.hp-window .hp-text { margin: 0 0 8px; color: var(--ink-2) }
 
 .hp-split { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 10px; height: 100% }
 .hp-split--wide { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) }
@@ -45,11 +45,13 @@
 .hp-panel__kind { font-size: 11px; color: var(--ink-3) }
 .hp-panel__name { font-size: 14px; font-weight: 600; margin: 2px 0 }
 .hp-panel__facts { color: var(--ink-2); margin: 0 0 6px }
-.hp-panel__tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); margin: 0 0 6px }
+.hp-panel__tabs { display: flex; flex-wrap: wrap; gap: 0 8px; border-bottom: 1px solid var(--line); margin: 0 0 6px }
 .hp-panel__tabs span { padding: 2px 0; color: var(--ink-2) }
 .hp-panel__tabs span[data-on] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent) }
 .hp-panel__row { display: grid; grid-template-columns: 80px 1fr; gap: 6px; padding: 3px 0; border-bottom: 1px solid var(--line) }
 .hp-panel__row span:first-child { color: var(--ink-3) }
+/* A value wraps in its column rather than running under the panel's edge, where the picture would cut it. */
+.hp-panel__row > span { min-width: 0; overflow-wrap: anywhere }
 
 .hp-btn { display: inline-block; padding: 3px 9px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface-raised); color: var(--ink); white-space: nowrap }
 .hp-btn[data-primary] { background: var(--accent); border-color: var(--accent); color: var(--on-accent) }
@@ -156,7 +158,7 @@
   font-weight: 600;
 }
 .hp-callout[data-at='one'] { top: 6px; left: 4px }
-.hp-callout[data-at='two'] { top: 37px; left: 350px }
+.hp-callout[data-at='two'] { top: 37px; left: 330px }
 .hp-callout[data-at='tree'] { top: 90px; left: 120px }
 .hp-callout[data-at='panel'] { top: 70px; right: 14px }
 .hp-keys { display: flex; align-items: center; gap: 6px; color: var(--ink-2) }

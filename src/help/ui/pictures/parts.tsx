@@ -25,9 +25,10 @@ export function Say({ k }: { k: StringKey }) {
 /**
  * A window: the frame's two rows over what the screen shows. `crop` cuts the
  * picture to what the screen shows, below the rows every picture repeats.
+ * `height` `auto` is as tall as what it shows: nothing at its foot is cut.
  */
 export function Screen({ trail, tabs, on, children, tree, height = 300, crop }: {
-  trail: readonly string[]; tabs?: readonly ReactNode[]; on?: number; children: ReactNode; tree?: ReactNode; height?: number; crop?: boolean
+  trail: readonly string[]; tabs?: readonly ReactNode[]; on?: number; children: ReactNode; tree?: ReactNode; height?: number | 'auto'; crop?: boolean
 }) {
   return (
     <div className="hp-window" style={{ height }}>
@@ -106,10 +107,3 @@ export function ViewBar({ items }: { items: readonly ReactNode[] }) {
   return <div className="hp-viewbar">{items.map((item, at) => <span key={at}>{item}</span>)}</div>
 }
 
-/**
- * The part of a picture its figure is cut to, where that is no one element:
- * a box at a place in the picture, in px from its top left, drawn as nothing.
- */
-export function CropTo({ x, y, width, height }: { x: number; y: number; width: number; height: number }) {
-  return <span className="hp-crop" data-crop="" style={{ left: x, top: y, width, height }} />
-}

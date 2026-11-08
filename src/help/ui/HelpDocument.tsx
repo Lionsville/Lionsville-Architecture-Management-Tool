@@ -42,8 +42,10 @@ export const HelpDocument = memo(function HelpDocument({ outline, text, t, hidde
  * The widths the pictures are laid out at: a step's beside its words, a
  * chapter's across a column as narrow as the desktop's help window gives it.
  */
-const START_WIDTH = 560
-const CHAPTER_WIDTH = 700
+export const START_WIDTH = 560
+export const CHAPTER_WIDTH = 700
+/** The column a step's picture stands in beside its words: `.help-start__step`'s second column in `help.css`. */
+export const START_COLUMN = 400
 
 /** The address of the reference part, where each chapter's account of how it works is kept. */
 export const REFERENCE = 'reference'
@@ -63,7 +65,7 @@ function GettingStarted({ start, t }: { start: NonNullable<HelpText['start']>; t
                 <h3 tabIndex={-1}><span className="help-start__n" aria-hidden="true">{at + 1}</span>{step.title}</h3>
                 <p><Words text={step.text} /></p>
               </div>
-              {Picture && <HelpFigure Picture={Picture} caption={step.picture || t('help.picture')} t={t} width={START_WIDTH} small />}
+              {Picture && <HelpFigure Picture={Picture} caption={step.picture || t('help.picture')} t={t} width={START_WIDTH} column={START_COLUMN} small />}
             </li>
           )
         })}
