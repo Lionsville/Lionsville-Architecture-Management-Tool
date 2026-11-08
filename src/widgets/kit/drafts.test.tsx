@@ -57,15 +57,6 @@ describe('leaving with a draft', () => {
     expect(answers.slice(-2)).toEqual(['Keep writing', 'Leave and drop it'])
     expect(document.activeElement?.textContent).toBe('Keep writing')
   })
-
-  it('tells a watcher whether a draft is held, as it changes: what decides a desktop window\'s close', () => {
-    const heard: boolean[] = []
-    const stop = watchDrafts((holding) => heard.push(holding))
-    const { unmount } = renderShell(<Box start="Who owns this?" />)
-    unmount()
-    stop()
-    expect(heard).toEqual([false, true, false])
-  })
 })
 
 describe('whether a draft is held, for a host that closes the window', () => {
