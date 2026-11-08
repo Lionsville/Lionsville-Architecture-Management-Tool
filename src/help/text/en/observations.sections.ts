@@ -150,7 +150,7 @@ export const SECTIONS: SectionTexts = {
     'The + at the right edge of a card on the Why map, in Large size.',
     ['Hover a card on the Why map.', 'Press the + to ask why, or drag it onto the cause that explains it.'],
     'Drag from OB-0002\'s + onto RC-0002 to link them at normal strength.'],
-  'obs-zoom': ['Zoom and fit a map', 'Every map zooms the same way: − and + and Fit in the dock, 100% to return, ⌘ or Ctrl with + − 0, ⌘ or Ctrl with the wheel or a pinch. Zoom stops at 60% and 200%.',
+  'obs-zoom': ['Zoom and fit a map', 'Every map zooms the same way: − and + and Fit in the dock, 100% to return, ⌘ or Ctrl with + − 0, ⌘ or Ctrl with the wheel or a pinch. Zoom stops at 20% and 200%; Fit shows the whole map, and under 60% its records are drawn from far while the titles of its frames keep a size that reads.',
     'The dock at the bottom left of the Why and Solve maps.',
     ['Press − or +, or Fit to see every card.', 'Press 100% to go back.'],
     'Press Fit on a large scope\'s Why map after Show all to see every chain at once.',

@@ -150,7 +150,7 @@ export const SECTIONS: SectionTexts = {
     'Das + am rechten Rand einer Karte auf der Warum-Karte, in der Größe Groß.',
     ['Zeigen Sie auf eine Karte auf der Warum-Karte.', 'Drücken Sie das +, um nach dem Warum zu fragen, oder ziehen Sie es auf die Ursache, die sie erklärt.'],
     'Ziehen Sie vom + von OB-0002 auf RC-0002, um sie mit normaler Stärke zu verknüpfen.'],
-  'obs-zoom': ['Eine Karte zoomen und einpassen', 'Jede Karte zoomt gleich: − und + und Einpassen im Dock, 100% zum Zurückgehen, ⌘ oder Strg mit + − 0, ⌘ oder Strg mit dem Rad oder einer Zwei-Finger-Geste. Der Zoom stoppt bei 60% und 200%.',
+  'obs-zoom': ['Eine Karte zoomen und einpassen', 'Jede Karte zoomt gleich: − und + und Einpassen im Dock, 100% zum Zurückgehen, ⌘ oder Strg mit + − 0, ⌘ oder Strg mit dem Rad oder einer Zwei-Finger-Geste. Der Zoom stoppt bei 20% und 200%; Einpassen zeigt die ganze Karte, und unter 60% werden die Einträge von weitem gezeichnet, während die Titel der Rahmen lesbar bleiben.',
     'Das Dock unten links auf der Warum- und Lösen-Karte.',
     ['Drücken Sie − oder + oder Einpassen, um jede Karte zu sehen.', 'Drücken Sie 100%, um zurückzugehen.'],
     'Drücken Sie Einpassen auf der Warum-Karte eines großen Bereichs nach Alle zeigen, um jede Kette zugleich zu sehen.',

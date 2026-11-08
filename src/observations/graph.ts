@@ -688,16 +688,17 @@ function collect(section: Section): PictureNode[] {
 
 /**
  * What *Fit* comes to: the whole of a picture of `content` in `viewport`, never
- * larger than it is, and never below the floor, under which a name can no longer
- * be read: a picture that does not fit by then scrolls. A map opens at 100%, so
- * this is only what somebody asks for, or what a map whose whole point is to be
- * seen together opens on. A viewport not measured yet is 100%.
+ * larger than it is, and never below `floor`. Pressed, the floor is the map's
+ * own (`MAP_ZOOM`), so the whole map is in the window, its records drawn from
+ * far and its frames' titles held at a size that reads; a map that opens
+ * fitted keeps the kit's floor, under which a name can no longer be read, and
+ * scrolls. A viewport not measured yet is 100%.
  */
-export function fitZoom(content: { width: number; height: number }, viewport: { width: number; height: number }): number {
+export function fitZoom(content: { width: number; height: number }, viewport: { width: number; height: number }, floor = ZOOM_FLOOR): number {
   if (viewport.width <= 0 || viewport.height <= 0 || content.width <= 0 || content.height <= 0) return 1
   const wide = (viewport.width - 8) / content.width
   const tall = (viewport.height - 8) / content.height
-  return Math.max(ZOOM_FLOOR, Math.round(Math.min(1, wide, tall) * 100) / 100)
+  return Math.max(floor, Math.floor(Math.min(1, wide, tall) * 100) / 100)
 }
 
 /**

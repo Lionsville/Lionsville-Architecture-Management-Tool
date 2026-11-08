@@ -388,6 +388,13 @@ describe('fitZoom', () => {
   it('is 100 % while the window has not been measured', () => {
     expect(fitZoom({ width: 400, height: 300 }, { width: 0, height: 0 })).toBe(1)
   })
+
+  it('goes to the map\'s own floor when pressed, so the whole of a large map is in the window, never past its edge', () => {
+    const fitted = fitZoom({ width: 4000, height: 2000 }, { width: 1008, height: 808 }, 0.2)
+    expect(fitted).toBe(0.25)
+    expect(4000 * fitted).toBeLessThanOrEqual(1008)
+    expect(fitZoom({ width: 4000, height: 80000 }, { width: 1008, height: 1008 }, 0.2)).toBe(0.2)
+  })
 })
 
 describe('traceChain', () => {

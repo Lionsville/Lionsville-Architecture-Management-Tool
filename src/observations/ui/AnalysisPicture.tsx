@@ -24,9 +24,9 @@
  * done with it (`PictureMenu`); a line offers its menu only where the link is
  * this scope's to change.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import { useStrings } from '../../i18n'
-import { stepZoom } from '../../widgets/kit/zoom'
+import { stepZoomAlong, ZOOM_FLOOR } from '../../widgets/kit/zoom'
 import { canvasInsets } from '../../widgets/kit/canvasRoom'
 import { toneOf } from '../observation'
 import Box from '@mui/material/Box'
@@ -42,7 +42,7 @@ import type { MapWindow } from '../chain'
 import { DIMMED, LINE_HIT_WIDTH, STROKE, seenTint } from './ChainMarks'
 import type { PictureMenuHandler } from './PictureMenu'
 import { RecordMark, anchorOf, recordLabel, recordState, recordTitle } from './PictureMarks'
-import { clampZoom } from './usePictureFilters'
+import { clampZoom, MAP_ZOOM } from './usePictureFilters'
 import type { PictureView } from './usePictureFilters'
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom'
 import { CanvasDock } from '../../widgets/kit/CanvasDock'
@@ -146,7 +146,7 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
             style={{ display: 'block' }}
           >
             <Headings picture={picture} hereLabel={props.hereLabel} s={s} large={large} />
-            <Boundaries picture={picture} scopeLabel={props.scopeLabel} s={s} />
+            <Boundaries picture={picture} scopeLabel={props.scopeLabel} s={s} zoom={view.zoom} />
             <Edges picture={picture} here={here} size={size} traced={traced} bright={bright} onMenu={props.onMenu} />
             <Nodes {...props} picture={picture} size={size} open={open} traced={traced} hot={hot} onHot={setHot} />
           </svg>
@@ -253,21 +253,23 @@ export function PictureFrame({ content, opensAt, view, label, children, dockExtr
     zoom: () => latest.current.zoom,
     to: zoomTo,
     fit: () => latest.current.fitNow(),
-  }))
+  }, MAP_ZOOM))
   const frameRef = useCallback((element: HTMLDivElement | null) => {
     frame.current = element
     zoomRef(element)
   }, [zoomRef])
 
-  const { fit, fitted } = view
+  const { fit, fitted, fitFloor } = view
   useEffect(() => {
     if (!fit) return
     // In the room the dock leaves: it floats beside the frame, over its foot.
     const element = frame.current
     const insets = element ? canvasInsets(element, element.parentElement ?? element) : undefined
     const room = insets ? { width: viewport.width - insets.left - insets.right, height: viewport.height - insets.top - insets.bottom } : viewport
-    fitted(fitZoom(content, room))
-  }, [fit, fitted, content, viewport])
+    fitted(fitZoom(content, room, fitFloor))
+    // From its top left, whatever it was scrolled to: a map that still does not fit shows its start, not its end.
+    if (element) requestAnimationFrame(() => { element.scrollLeft = 0; element.scrollTop = 0 })
+  }, [fit, fitted, fitFloor, content, viewport])
 
   const start = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 || (event.target as Element).closest('[data-key], [data-handle]')) return
@@ -305,8 +307,9 @@ export function PictureFrame({ content, opensAt, view, label, children, dockExtr
       </Box>
       <CanvasDock
         zoom={view.zoom}
-        onZoomIn={() => zoomTo(stepZoom(view.zoom, 'in'))}
-        onZoomOut={() => zoomTo(stepZoom(view.zoom, 'out'))}
+        onZoomIn={() => zoomTo(stepZoomAlong(view.zoom, 'in', MAP_ZOOM))}
+        onZoomOut={() => zoomTo(stepZoomAlong(view.zoom, 'out', MAP_ZOOM))}
+        floor={MAP_ZOOM.floor} ceiling={MAP_ZOOM.ceiling}
         onFit={view.fitNow}
         onHome={() => zoomTo(1)}
         {...(overview && overflows ? { map: { on: mapOn, onToggle: () => setMapOn((on) => !on) } } : {})}
@@ -318,8 +321,18 @@ export function PictureFrame({ content, opensAt, view, label, children, dockExtr
   )
 }
 
+/**
+ * A frame's title holds its size down to the kit's floor, as a chart's names
+ * do: under 100% it is drawn larger by as much as the map is drawn smaller, so
+ * at 60% it still reads at the kit's size. Past the floor it shrinks with the
+ * map, since held any larger it would run into the frame nested under it.
+ */
+const heldDown = (zoom: number) => Math.min(1, Math.max(zoom, ZOOM_FLOOR))
+const readable = (size: string, zoom: number) => (heldDown(zoom) >= 1 ? size : `calc(${size} / ${heldDown(zoom)})`)
+
 function Headings({ picture, hereLabel, large, s }: { picture: SectionedPicture; hereLabel: string; large: boolean; s: Translate }) {
   const theme = useTheme()
+  // The lanes' headings grow with the map and do not hold their size: held, they would run into one another.
   const head = { fontSize: 'var(--t-small)', fontWeight: 600, style: { textTransform: 'uppercase' as const, letterSpacing: '.09em' } }
   return (
     <g data-testid="picture-headings">
@@ -338,20 +351,27 @@ function Headings({ picture, hereLabel, large, s }: { picture: SectionedPicture;
   )
 }
 
-function Boundaries({ picture, scopeLabel, s }: { picture: SectionedPicture; scopeLabel: (path: string) => string; s: Translate }) {
+function Boundaries({ picture, scopeLabel, s, zoom }: { picture: SectionedPicture; scopeLabel: (path: string) => string; s: Translate; zoom: number }) {
   const theme = useTheme()
   const { info } = theme.palette
+  const clip = useId()
   return (
     <g>
-      {picture.boundaries.map((box) => (
-        <g key={box.scope} data-testid="picture-boundary" data-scope={box.scope}>
-          <rect x={box.x} y={box.y} width={box.width} height={box.height} rx={12} fill={info.main} fillOpacity={0.05} stroke={info.main} strokeWidth={1.2} />
-          <text x={box.x + 14} y={box.y + 22} fontSize={12} fontWeight={600} fill={info.main}>{scopeLabel(box.scope)}</text>
-          <text x={box.x + box.width - 14} y={box.y + 22} fontSize={11} textAnchor="end" fill={theme.palette.text.secondary}>
-            {s('observation.pictureBoxCounts', { observations: box.observations, causes: box.causes })}
-          </text>
-        </g>
-      ))}
+      {picture.boundaries.map((box, at) => {
+        const counts = s('observation.pictureBoxCounts', { observations: box.observations, causes: box.causes })
+        // The title stops short of the counts beside it, whatever the zoom draws them at.
+        const room = Math.max(0, box.width - 28 - (counts.length * 6.5 + 12) / heldDown(zoom))
+        return (
+          <g key={box.scope} data-testid="picture-boundary" data-scope={box.scope}>
+            <clipPath id={`${clip}-${at}`}><rect x={box.x + 14} y={box.y} width={room} height={box.height} /></clipPath>
+            <rect x={box.x} y={box.y} width={box.width} height={box.height} rx={12} fill={info.main} fillOpacity={0.05} stroke={info.main} strokeWidth={1.2} />
+            <text x={box.x + 14} y={box.y + 22} fontWeight={600} fill={info.main} clipPath={`url(#${clip}-${at})`} style={{ fontSize: readable('var(--t-small)', zoom) }}>{scopeLabel(box.scope)}</text>
+            <text x={box.x + box.width - 14} y={box.y + 22} textAnchor="end" fill={theme.palette.text.secondary} style={{ fontSize: readable('var(--t-xs)', zoom) }}>
+              {counts}
+            </text>
+          </g>
+        )
+      })}
     </g>
   )
 }

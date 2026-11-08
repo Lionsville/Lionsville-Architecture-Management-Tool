@@ -812,7 +812,7 @@ export const EN = {
   'observation.zoomHome': 'Back to 100%',
   'observation.zoomMove': 'Move around',
   'observation.zoomMoveKeys': 'Wheel, two fingers, or drag the background',
-  'observation.zoomSaid': 'Zoom stops at 60% and 200%, and the pointer stays on the card under it.',
+  'observation.zoomSaid': 'Zoom stops at 20% and 200%, and the pointer stays on the card under it.',
   'observation.ladderKind': 'Why',
   'observation.ladderGroup': 'All {count} are in {scope}. A cause explains observations of its own scope.',
   'observation.ladderField': 'Why it happens, in a few words',

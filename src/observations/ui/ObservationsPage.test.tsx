@@ -992,10 +992,10 @@ describe('a map opens readable', () => {
     expect(screen.getByTestId('observation-tab-register').getAttribute('aria-selected')).toBe('true')
   })
 
-  it('zooms down to a floor of 60% and no further, and a card far out drops to one line', () => {
+  it('zooms down to the map\'s own floor of 20% and no further, and a card far out drops to one line', () => {
     mount({ initialTab: 'analysis-map', initialNonce: 1 })
-    for (let press = 0; press < 8; press += 1) fireEvent.click(screen.getByTestId('zoom-out'))
-    expect(screen.getByTestId('zoom-value').textContent).toBe('60%')
+    for (let press = 0; press < 12; press += 1) fireEvent.click(screen.getByTestId('zoom-out'))
+    expect(screen.getByTestId('zoom-value').textContent).toBe('20%')
     fireEvent.click(screen.getByTestId('zoom-home'))
     expect(screen.getByTestId('zoom-value').textContent).toBe('100%')
   })

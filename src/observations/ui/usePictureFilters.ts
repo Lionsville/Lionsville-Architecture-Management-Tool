@@ -31,6 +31,7 @@ import type { Mine, MineCaption } from '../recordedBy'
 import { registerOf } from '../../people/shown'
 import type { Translate } from '../../i18n'
 import { ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom'
+import type { ZoomRange } from '../../widgets/kit/zoom'
 import { usePersonNames } from '../../people/ui/names'
 
 /** How the picture is looked at: the size of its marks, the zoom, and whether the zoom is the fitted one. */
@@ -38,6 +39,8 @@ export type PictureView = {
   size: 'large' | 'small'
   zoom: number
   fit: boolean
+  /** How far the fit asked for may go out: the kit's floor for a map that opens fitted, the map's own for a press. */
+  fitFloor: number
   setSize: (size: 'large' | 'small') => void
   /** Back to the fitted zoom. */
   fitNow: () => void
@@ -49,8 +52,18 @@ export type PictureView = {
 
 export const ZOOM = { min: ZOOM_FLOOR, max: ZOOM_CEILING, step: 0.1 } as const
 
+/**
+ * How far a map goes out: past the kit's floor, as the poster does, so *Fit*
+ * shows the whole of a large one. Under the floor its records are drawn from
+ * far and its frames' titles keep a size that reads.
+ */
+export const MAP_ZOOM: ZoomRange = {
+  floor: 0.2, ceiling: ZOOM_CEILING,
+  stops: Array.from({ length: 19 }, (_, at) => Math.round((0.2 + at * 0.1) * 10) / 10),
+}
+
 export function clampZoom(zoom: number): number {
-  return Math.min(ZOOM.max, Math.max(ZOOM.min, Math.round(zoom * 100) / 100))
+  return Math.min(MAP_ZOOM.ceiling, Math.max(MAP_ZOOM.floor, Math.round(zoom * 100) / 100))
 }
 
 export type PictureFilters = {
@@ -102,12 +115,13 @@ export function usePictureView(opensFitted = false): PictureView {
   const [size, setSize] = useState<'large' | 'small'>('large')
   const [zoom, setZoom] = useState(1)
   const [fit, setFit] = useState(opensFitted)
+  const [fitFloor, setFitFloor] = useState(ZOOM_FLOOR)
   return useMemo<PictureView>(() => ({
-    size, zoom, fit, setSize,
-    fitNow: () => setFit(true),
+    size, zoom, fit, fitFloor, setSize,
+    fitNow: () => { setFitFloor(MAP_ZOOM.floor); setFit(true) },
     fitted: (next) => setZoom(clampZoom(next)),
     zoomTo: (next) => { setFit(false); setZoom(clampZoom(next)) },
-  }), [size, zoom, fit])
+  }), [size, zoom, fit, fitFloor])
 }
 
 export function usePictureFilters(deps: {

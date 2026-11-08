@@ -793,7 +793,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.zoomHome': 'Zurück auf 100%',
   'observation.zoomMove': 'Bewegen',
   'observation.zoomMoveKeys': 'Rad, zwei Finger oder den Hintergrund ziehen',
-  'observation.zoomSaid': 'Der Zoom stoppt bei 60% und 200%, und der Zeiger bleibt auf der Karte darunter.',
+  'observation.zoomSaid': 'Der Zoom stoppt bei 20% und 200%, und der Zeiger bleibt auf der Karte darunter.',
   'observation.ladderKind': 'Warum',
   'observation.ladderGroup': 'Alle {count} sind in {scope}. Eine Ursache erklärt Beobachtungen ihres eigenen Scopes.',
   'observation.ladderField': 'Warum es geschieht, in wenigen Worten',

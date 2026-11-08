@@ -150,7 +150,7 @@ export const SECTIONS: SectionTexts = {
     'De + aan de rechterrand van een kaart op de Waarom-kaart, in grootte Groot.',
     ['Wijs een kaart aan op de Waarom-kaart.', 'Druk op de + om waarom te vragen, of sleep hem op de oorzaak die haar verklaart.'],
     'Sleep vanaf de + van OB-0002 op RC-0002 om ze met normale sterkte te koppelen.'],
-  'obs-zoom': ['Een kaart zoomen en passend maken', 'Elke kaart zoomt op dezelfde manier: − en + en Passend in het dok, 100% om terug te gaan, ⌘ of Ctrl met + − 0, ⌘ of Ctrl met het wieltje of knijpen. Zoomen stopt op 60% en 200%.',
+  'obs-zoom': ['Een kaart zoomen en passend maken', 'Elke kaart zoomt op dezelfde manier: − en + en Passend in het dok, 100% om terug te gaan, ⌘ of Ctrl met + − 0, ⌘ of Ctrl met het wieltje of knijpen. Zoomen stopt op 20% en 200%; Passend toont de hele kaart, en onder 60% worden de records van ver getekend terwijl de titels van de kaders leesbaar blijven.',
     'Het dok linksonder op de Waarom- en Oplossen-kaart.',
     ['Druk op − of +, of Passend om elke kaart te zien.', 'Druk op 100% om terug te gaan.'],
     'Druk op Passend op de Waarom-kaart van een grote scope na Alles tonen om elke keten tegelijk te zien.',

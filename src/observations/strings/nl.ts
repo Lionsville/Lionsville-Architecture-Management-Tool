@@ -793,7 +793,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.zoomHome': 'Terug naar 100%',
   'observation.zoomMove': 'Rondkijken',
   'observation.zoomMoveKeys': 'Wiel, twee vingers, of sleep de achtergrond',
-  'observation.zoomSaid': 'Zoomen stopt bij 60% en 200%, en de aanwijzer blijft op de kaart eronder.',
+  'observation.zoomSaid': 'Zoomen stopt bij 20% en 200%, en de aanwijzer blijft op de kaart eronder.',
   'observation.ladderKind': 'Waarom',
   'observation.ladderGroup': 'Alle {count} staan in {scope}. Een oorzaak verklaart observaties van haar eigen scope.',
   'observation.ladderField': 'Waarom het gebeurt, in een paar woorden',
