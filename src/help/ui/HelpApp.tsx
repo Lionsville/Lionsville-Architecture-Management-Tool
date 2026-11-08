@@ -45,7 +45,8 @@ export function HelpApp({ initial }: { initial: Language }) {
   }, [language])
 
   useEffect(() => {
-    const moved = () => setPlace(readHelpAddress(location.search, location.hash).section)
+    // A place chosen — a chapter in the contents, a link — leaves the search for it.
+    const moved = () => { setPlace(readHelpAddress(location.search, location.hash).section); setQuery('') }
     addEventListener('hashchange', moved)
     return () => removeEventListener('hashchange', moved)
   }, [])
@@ -80,6 +81,8 @@ export function HelpApp({ initial }: { initial: Language }) {
     url.searchParams.set('lang', next)
     history.replaceState(null, '', url)
     setLanguage(next)
+    // A query in the old language finds nothing in the new one.
+    setQuery('')
   }
 
   const index = useMemo(() => (text ? helpIndex(outline, text) : []), [outline, text])

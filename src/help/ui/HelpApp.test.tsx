@@ -101,4 +101,16 @@ describe('the help page', () => {
     expect(document.documentElement.lang).toBe('nl')
     expect(new URL(location.href).searchParams.get('lang')).toBe('nl')
   }, 30_000)
+
+  it('leaves the search when the language changes or a place is chosen', async () => {
+    render(<HelpApp initial="en" />)
+    await opened()
+    const search = screen.getByTestId('help-search') as HTMLInputElement
+    fireEvent.change(search, { target: { value: 'zzqqxx' } })
+    fireEvent.change(screen.getByTestId('help-language'), { target: { value: 'de' } })
+    expect(search.value).toBe('')
+    fireEvent.change(search, { target: { value: 'zzqqxx' } })
+    act(() => { location.hash = '#frame.back'; window.dispatchEvent(new HashChangeEvent('hashchange')) })
+    expect(search.value).toBe('')
+  }, 30_000)
 })
