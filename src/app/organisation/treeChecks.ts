@@ -153,7 +153,7 @@ function fromTree(item: AttentionItem, index: ScopeIndex | undefined): CheckInst
             ? { topic: item.scope }
             : { scope: item.scope, page: withField(pageOfItem(item), item.key) }
   return {
-    key: item.key, scope: item.scope, text: item.text, finding: item, id: `${item.key}|${item.scope}|${item.id}`, opens,
+    key: item.key, scope: item.scope, text: item.text, finding: item, id: `${item.key}|${item.scope}|${item.id}${item.fields?.length ? `|${item.fields.join(',')}` : ''}`, opens,
     about: item.id, ...(item.subject !== undefined ? { subject: item.subject } : {}),
     ...(OF_A_ROLE.has(item.key) && item.detail !== undefined ? { role: item.detail } : {}),
     ...(OF_A_TYPE.has(item.key) && item.detail !== undefined ? { unitType: item.detail } : {}),

@@ -904,6 +904,7 @@ export const EN = {
   'checks.colSubject': 'What it is about',
   'checks.colReason': 'Reason',
   'checks.colMarked': 'Marked',
+  'checks.colRole': 'Role',
   'checks.colUnder': 'Sits under',
   'checks.foundBy.role': 'Role',
   'checks.foundBy.unitType': 'Unit type',

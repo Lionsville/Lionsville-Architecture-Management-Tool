@@ -123,7 +123,8 @@ export function attentionItems(
   const items: AttentionItem[] = []
   const seen = new Set<string>()
   const add = (item: Omit<AttentionItem, 'kind'>) => {
-    const key = `${item.key}|${item.scope}|${item.id}`
+    // Its fields too: a unit short of two roles is two findings, one per role, as the chart lists them.
+    const key = `${item.key}|${item.scope}|${item.id}|${item.fields?.join(',') ?? ''}`
     if (seen.has(key)) return
     seen.add(key)
     items.push({ ...item, kind: findingKind(item.key) })

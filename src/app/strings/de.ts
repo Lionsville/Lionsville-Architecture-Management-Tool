@@ -699,6 +699,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'checks.colSubject': 'Worum es geht',
   'checks.colReason': 'Grund',
   'checks.colMarked': 'Markiert',
+  'checks.colRole': 'Rolle',
   'checks.colUnder': 'Liegt unter',
   'checks.foundBy.role': 'Rolle',
   'checks.foundBy.unitType': 'Einheitstyp',

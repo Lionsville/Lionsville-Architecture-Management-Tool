@@ -136,4 +136,12 @@ describe('attentionItems', () => {
     expect(attentionItems(findings, [], [], 'retail', s, scopeName).map((item) => item.id)).toEqual(['wms'])
     expect(attentionItems(findings, [], [], '', s, scopeName).map((item) => item.id)).toEqual(['crm', 'wms'])
   })
+  it('says a unit short of two roles twice, once per role, as the chart does', () => {
+    const findings = new Map<string, Finding[]>([['', [
+      finding({ key: 'check.roleVacant', scope: '', id: 'crew', name: 'Crew', fields: ['lead'], detail: 'Lead' }),
+      finding({ key: 'check.roleVacant', scope: '', id: 'crew', name: 'Crew', fields: ['member'], detail: 'Member' }),
+      finding({ key: 'check.roleVacant', scope: '', id: 'crew', name: 'Crew', fields: ['member'], detail: 'Member' }),
+    ]]])
+    expect(attentionItems(findings, [], [], '', s, scopeName).map((item) => item.detail)).toEqual(['Lead', 'Member'])
+  })
 })

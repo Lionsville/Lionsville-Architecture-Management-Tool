@@ -187,13 +187,17 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
       unitType: (one: CheckInstance) => ({ id: one.unitType ?? '', label: one.unitType ?? '' }),
       master: (one: CheckInstance) => ({ id: one.scope ?? '', label: one.scope !== undefined ? scopeName(one.scope) : '' }),
     },
-    sortBy: { '': (one: CheckInstance) => one.subject ?? one.text, under: (one: CheckInstance) => one.under ?? null, master: (one: CheckInstance) => (one.scope !== undefined ? scopeName(one.scope) : null) },
+    sortBy: { '': (one: CheckInstance) => one.subject ?? one.text, role: (one: CheckInstance) => one.role ?? null, under: (one: CheckInstance) => one.under ?? null, master: (one: CheckInstance) => (one.scope !== undefined ? scopeName(one.scope) : null) },
   }), [scopeName])
   const groups = useMemo(() => listed(row.shown, view, how), [row.shown, view, how])
   const hasUnder = row.shown.some((one) => one.under !== undefined)
+  // Which role, for a check that is about one; where it is kept only where that differs from row to row.
+  const hasRole = row.shown.some((one) => one.role !== undefined)
+  const keptApart = row.shown.length < 2 || new Set(row.shown.map((one) => one.scope)).size > 1
   const columns: readonly ListColumn[] = [
+    ...(hasRole ? [{ id: 'role', label: s('checks.colRole'), sortable: true }] : []),
     ...(hasUnder ? [{ id: 'under', label: s('checks.colUnder'), sortable: true }] : []),
-    { id: 'master', label: s('register.colMaster'), sortable: true },
+    ...(keptApart ? [{ id: 'master', label: s('register.colMaster'), sortable: true }] : []),
   ]
   const anyWithoutSubject = row.shown.some((one) => one.subject === undefined)
   const mark = (some: readonly CheckInstance[], reason: string) => {
@@ -209,7 +213,7 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
     id: group.id, label: group.label,
     rows: group.rows.map((one): ListRow => ({
       id: one.id, text: one.subject ?? one.text, attributes: one.attributes,
-      cells: { under: one.under, master: one.scope !== undefined ? scopeName(one.scope) : undefined },
+      cells: { role: one.role, under: one.under, master: one.scope !== undefined ? scopeName(one.scope) : undefined },
       actions: (
         <span className="org-finding" data-testid="checks-row-actions">
           <p className="checks-page__text">{one.text}</p>
