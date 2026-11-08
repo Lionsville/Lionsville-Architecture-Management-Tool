@@ -373,12 +373,12 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, capped =
       {shown.map((crumb, index) => (
         <Fragment key={crumb.path}>
         {index === 1 && folded.length > 0 && (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }} data-testid="crumbs-folded">
+          <Box className="kit-frame__above" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }} data-testid="crumbs-folded">
             <MoreMenu size="small" label={s('shell.crumbsBetween')} items={folded.map((one) => ({ label: one.name, onSelect: () => go(one.path) }))} />
             <Typography aria-hidden sx={{ fontSize: 'var(--t-small)', color: 'text.disabled' }}>›</Typography>
           </Box>
         )}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, fontSize: 'var(--t-body)', ...shrinking(index === 0 ? giveWay.organisation : giveWay.between, fewLetters) }}>
+        <Box className="kit-frame__above" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, fontSize: 'var(--t-body)', ...shrinking(index === 0 ? giveWay.organisation : giveWay.between, fewLetters) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>
             <Button
               size="small"

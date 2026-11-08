@@ -189,7 +189,14 @@
   .kit-frame__steps { display: none; }
   .kit-frame__row--one { gap: 0; padding-inline: var(--s-1); }
   .kit-frame__row--one > :last-child { flex-shrink: 0; }
-  .kit-frame__find { min-width: 36px; }
+  .kit-frame__find { min-width: var(--bar-h); }
+  /*
+   * A finger's target: every press in row one is as tall and as wide as the row. To make the room,
+   * the trail keeps only the open scope's name, inside a scope: the scopes above it are a press of
+   * the switcher beside it, or of the tree.
+   */
+  .kit-frame__row--one :is(button, a, [role='button']) { min-width: var(--bar-h); min-height: var(--bar-h); }
+  .kit-frame__row--one .kit-frame__above { display: none; }
   .kit-frame__tree { position: absolute; inset-block: 0; inset-inline-start: 0; z-index: 5; width: min(var(--panel-w-tree), 85cqw); max-width: 85cqw; box-shadow: var(--shadow); }
 }
 
