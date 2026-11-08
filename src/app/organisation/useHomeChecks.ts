@@ -9,7 +9,7 @@
  * changes — the index read again, the home's document, the day — and never
  * for a render.
  */
-import { useMemo } from 'react'
+import { useDeferredValue, useMemo } from 'react'
 import type { Translate } from '../../i18n'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CHECK_CATALOGUE } from '../../model/checkCatalogue'
@@ -51,7 +51,10 @@ export function useHomeChecks(deps: {
   scopeName: (path: ScopePath) => string
   s: Translate
 }) {
-  const { findings, register, technology, at, tree, platformTree, today, scopeName, s } = deps
+  const { register, technology, at, tree, platformTree, today, scopeName, s } = deps
+  // Worked out in a render of its own after the home is on screen, which React may set aside for a press: on a large
+  // tree this is most of the work a home does when it comes up, and it made a click on the home wait for it.
+  const findings = useDeferredValue(deps.findings, undefined)
   const home = deps.root?.path === at ? deps.root.model : undefined
   const people = deps.people?.people
   const marking = useCheckMarking()
