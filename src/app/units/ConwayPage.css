@@ -17,6 +17,7 @@
 .conway__cell { display: inline-flex; align-items: center; justify-content: center; gap: 2px; font-weight: var(--fw-regular); font-variant-numeric: tabular-nums; }
 .conway__cell[data-standing='attention'] { font-weight: var(--fw-strong); }
 .conway__cell sup { font-size: var(--t-small); line-height: 1; color: var(--ink-2); }
+.conway__unknown { color: var(--status-unset); font-weight: var(--fw-strong); margin-inline-end: 2px; }
 .conway__you { color: var(--ink-2); font-size: var(--t-small); }
 
 .conway__key { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); margin-top: var(--s-3); color: var(--ink-2); font-size: var(--t-small); }

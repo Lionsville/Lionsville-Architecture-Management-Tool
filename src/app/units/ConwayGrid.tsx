@@ -35,6 +35,12 @@ export const STANDING_MARK: Record<PairStanding, MarkKind> = {
   attention: 'review', agree: 'agree', unused: 'none', unowned: 'unset', accepted: 'note',
 }
 
+/** A standing's mark. *No owner yet* is a question, not a dash: a dash before its count read as a negative number. */
+function StandingMark({ standing }: { standing: PairStanding }) {
+  if (standing === 'unowned') return <span className="conway__unknown" aria-hidden="true">?</span>
+  return <Mark kind={STANDING_MARK[standing]} />
+}
+
 export const STANDING_WORD: Record<PairStanding, StringKey> = {
   attention: 'conway.state.attention', agree: 'conway.state.agree', unused: 'conway.state.unused', unowned: 'conway.state.unowned', accepted: 'conway.state.accepted',
 }
@@ -63,7 +69,7 @@ function cellOf(pair: PairReading, t: Translate): MatrixCell {
     said || undefined,
   ].filter(Boolean).join(', ')
   // The Matrix draws the triangle of a cell that asks for attention itself.
-  const mark = pair.standing === 'attention' ? null : <Mark kind={STANDING_MARK[pair.standing]} />
+  const mark = pair.standing === 'attention' ? null : <StandingMark standing={pair.standing} />
   return {
     meaning, attention: pair.standing === 'attention',
     ...(pair.standing === 'unused' || pair.standing === 'unowned' ? { tone: 'soft' as const } : {}),
@@ -139,7 +145,7 @@ export function ConwayKey({ t }: { t: Translate }) {
   return (
     <>
       <div className="conway__key" data-testid="conway-key">
-        {states.map((one) => <span key={one} className="conway__keyItem"><Mark kind={STANDING_MARK[one]} />{t(STANDING_WORD[one])}</span>)}
+        {states.map((one) => <span key={one} className="conway__keyItem"><StandingMark standing={one} />{t(STANDING_WORD[one])}</span>)}
       </div>
       <div className="conway__key">
         {INTERACTION_MODES.map((mode) => <span key={mode}>{t(MODE_MARK[mode])} {t(INTERACTION_MODE_LABEL[mode])}</span>)}
