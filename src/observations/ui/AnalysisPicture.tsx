@@ -358,7 +358,10 @@ function Boundaries({ picture, scopeLabel, s, zoom }: { picture: SectionedPictur
   return (
     <g>
       {picture.boundaries.map((box, at) => {
-        const counts = s('observation.pictureBoxCounts', { observations: box.observations, causes: box.causes })
+        // The scope's own count, which its home, the tree and Seen say too, and how many of them are drawn where the rest wait on the pile.
+        const counts = box.observations < box.seen
+          ? s('observation.pictureBoxCountsPart', { drawn: box.observations, seen: box.seen, causes: box.causes })
+          : s('observation.pictureBoxCounts', { observations: box.observations, causes: box.causes })
         // The title stops short of the counts beside it, whatever the zoom draws them at.
         const room = Math.max(0, box.width - 28 - (counts.length * 6.5 + 12) / heldDown(zoom))
         return (

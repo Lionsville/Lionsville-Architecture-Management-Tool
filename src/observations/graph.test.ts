@@ -216,6 +216,8 @@ describe('analysisPicture', () => {
     expect(drawn.nodes.map((node) => node.key).sort()).toEqual(['acme/rail#x1', 'acme/rail#y1', 'c1', 'o1', 'r1'])
     // A boundary holding nothing but the scope below it stays, around that one; one holding nothing goes.
     expect(drawn.boundaries.map((box) => box.scope)).toEqual(['acme', 'acme/rail'])
+    // Its heading counts what is drawn against the scope's own count, which every other place says.
+    expect(drawn.boundaries.find((box) => box.scope === 'acme')).toMatchObject({ observations: 0, seen: 2 })
     expect(drawn.height).toBeLessThan(picture().height)
     // Without anything below, this scope's lanes start at the margin.
     const alone = picture(tree, new Set(['o1', 'c1']))

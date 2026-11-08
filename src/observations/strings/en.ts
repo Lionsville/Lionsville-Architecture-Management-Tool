@@ -587,6 +587,7 @@ export const EN = {
   'observation.pictureGlobal': 'Global · the organisation',
   'observation.pictureThisScope': 'This scope · {scope}',
   'observation.pictureBoxCounts': 'Observations {observations} · causes {causes}',
+  'observation.pictureBoxCountsPart': 'Observations {drawn} of {seen} · causes {causes}',
   'observation.pictureOpenEnd': 'No root cause yet: nothing explains this cause, and it is not a root cause.',
   'observation.pictureFromAbove': '↗ {label} {scope}',
   'observation.pictureToBelow': '↙ {count} local',

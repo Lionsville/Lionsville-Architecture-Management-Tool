@@ -568,6 +568,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.pictureGlobal': 'Globaal · de organisatie',
   'observation.pictureThisScope': 'Deze scope · {scope}',
   'observation.pictureBoxCounts': 'Waarnemingen {observations} · oorzaken {causes}',
+  'observation.pictureBoxCountsPart': 'Waarnemingen {drawn} van {seen} · oorzaken {causes}',
   'observation.pictureOpenEnd': 'Nog geen grondoorzaak: niets verklaart deze oorzaak, en het is geen grondoorzaak.',
   'observation.pictureFromAbove': '↗ {label} {scope}',
   'observation.pictureToBelow': '↙ {count} lokaal',

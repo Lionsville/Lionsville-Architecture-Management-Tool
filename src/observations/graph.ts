@@ -445,6 +445,8 @@ export type PictureBoundary = {
   /** What its own lanes hold: the counts its heading says. */
   observations: number
   causes: number
+  /** Every live observation the scope keeps, drawn or on the pile: the one count every other place says. */
+  seen: number
 }
 
 export type SectionedPicture = {
@@ -491,6 +493,7 @@ type Section = {
   children: Section[]
   observations: number
   causes: number
+  seen: number
 }
 
 /**
@@ -592,7 +595,7 @@ function sectionOf(
   return {
     scope: one.scope, nodes, lanes, kinds, children: [],
     tallest: Math.max(0, ...Array.from({ length: lanes }, (_, lane) => rowsIn(lane))),
-    observations: observations.length, causes: causes.length,
+    observations: observations.length, causes: causes.length, seen: one.observations.filter((held) => !isArchived(held)).length,
   }
 }
 
@@ -668,7 +671,7 @@ function placeChildren(
   let width = 0
   children.forEach((child, index) => {
     const at = out.length
-    out.push({ scope: child.scope, depth, x: left, y, width: 0, height: 0, observations: child.observations, causes: child.causes })
+    out.push({ scope: child.scope, depth, x: left, y, width: 0, height: 0, observations: child.observations, causes: child.causes, seen: child.seen })
     const inner = placeChildren(child.children, left + BOX_PAD, y + BOX_HEAD, depth + 1, slot, out)
     const own = ownSize(child, slot)
     const ownLeft = left + BOX_PAD + (inner.width > 0 ? inner.width + (own.width > 0 ? LEFT_GAP : 0) : 0)

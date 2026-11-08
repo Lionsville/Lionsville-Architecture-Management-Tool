@@ -568,6 +568,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.pictureGlobal': 'Global · die Organisation',
   'observation.pictureThisScope': 'Dieser Bereich · {scope}',
   'observation.pictureBoxCounts': 'Beobachtungen {observations} · Ursachen {causes}',
+  'observation.pictureBoxCountsPart': 'Beobachtungen {drawn} von {seen} · Ursachen {causes}',
   'observation.pictureOpenEnd': 'Noch keine Grundursache: Nichts erklärt diese Ursache, und sie ist keine Grundursache.',
   'observation.pictureFromAbove': '↗ {label} {scope}',
   'observation.pictureToBelow': '↙ {count} lokal',
