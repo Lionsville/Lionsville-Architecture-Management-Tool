@@ -739,7 +739,7 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
   useWindowTitle({
     onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,
     home: nav.home, homeName: home.name,
-    here: screenWord(shellAgent.screen ?? shellAgent.screenNow(), s), before: props.visiting ? s('example.titleWord') : undefined,
+    here: screenWord(shellAgent.screen ?? shellAgent.screenNow(), s, project?.model), before: props.visiting ? s('example.titleWord') : undefined,
   })
   if (props.provider?.frame?.Agents) base.openAgentRef.current = () => shellAgent.openSomewhere({ scope: ROOT_SCOPE, page: 'agents', tab: 'connect' })
   const provider = useProviderParts({
@@ -912,9 +912,20 @@ const PAGE_WORDS: Partial<Record<Page, StringKey>> = {
 }
 
 /** What is on screen, for the window's title: the page that is up by its word, or the view by its name. */
-export function screenWord(screen: Screen, s: Translate): string | undefined {
+export function screenWord(screen: Screen, s: Translate, model?: { elements: readonly { id: string; name: string }[]; decisions?: readonly { id: string; title: string }[] }): string | undefined {
   const page = screen.page?.page
   if (page === undefined || VIEW_PAGES.includes(page)) return screen.open?.view?.name
+  // A record names itself before the page it is on, so two decisions, or two
+  // documents, are two tabs a person can tell apart.
+  const id = screen.page && 'id' in screen.page ? screen.page.id : undefined
+  if (page === 'document') {
+    const element = id === undefined ? undefined : model?.elements.find((one) => one.id === id)
+    return [element?.name, s('shell.documentation')].filter(Boolean).join(' — ')
+  }
   const word = PAGE_WORDS[page]
+  if (page === 'decisions' && id !== undefined) {
+    const record = model?.decisions?.find((one) => one.id === id)
+    if (record) return [record.title, word && s(word)].filter(Boolean).join(' — ')
+  }
   return word ? s(word) : undefined
 }

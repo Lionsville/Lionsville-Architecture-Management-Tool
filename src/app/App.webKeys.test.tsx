@@ -13,6 +13,8 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import type { ScopeSnapshot } from '../projects/scope'
 import { heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
+import { screenWord } from './App'
+import { translator } from '../i18n'
 
 afterEach(() => {
   cleanup()
@@ -84,5 +86,22 @@ describe('the window’s title', () => {
     })
     await screen.findByTestId('preferences-page')
     await waitFor(() => expect(titles.at(-1)).toBe('Example|Preferences|Acme'))
+  })
+})
+
+describe('what a page names itself in the window’s title', () => {
+  const s = translator('en')
+  const open = { path: 'land', name: 'Land', view: { id: 'l7', name: 'Landscape', kind: 'layer7' } }
+  const model = { elements: [{ id: 'billing', name: 'Billing' }], decisions: [{ id: 'adr-yard', title: 'Buy the yard system' }] }
+
+  it('names a decision, and a record’s document, before the page they are on', () => {
+    expect(screenWord({ open, page: { page: 'decisions', id: 'adr-yard' } } as never, s, model)).toBe('Buy the yard system — Decisions')
+    expect(screenWord({ open, page: { page: 'document', id: 'billing' } } as never, s, model)).toBe('Billing — Documentation')
+  })
+
+  it('says the page’s word where the record is not this scope’s, and the view where nothing is over it', () => {
+    expect(screenWord({ open, page: { page: 'decisions', id: 'adr-above' } } as never, s, model)).toBe('Decisions')
+    expect(screenWord({ open, page: { page: 'document', id: 'gone' } } as never, s, model)).toBe('Documentation')
+    expect(screenWord({ open } as never, s, model)).toBe('Landscape')
   })
 })
