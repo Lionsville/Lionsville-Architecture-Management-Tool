@@ -1944,6 +1944,9 @@ export const EN = {
   'org.readOnlyHere': 'You may read this scope; you may not change it',
   'org.findingShow': 'Show',
   'org.checksMostly': 'Most are: {what}.',
+  'org.checksMostlyItem': '{count} × {name}',
+  // Whether a check's name is written in lower case after the count: not in German, whose nouns keep their capital.
+  'org.checksMostlyLower': 'yes',
   'org.checksNone': 'Nothing found here.',
   'org.newLandscapeTitle': 'New landscape',
   'org.newScopeTypeHelp': 'A label from your operating model. It changes nothing about how the scope behaves.',

@@ -1716,6 +1716,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.readOnlyHere': 'U mag deze scope lezen; u mag hem niet wijzigen',
   'org.findingShow': 'Tonen',
   'org.checksMostly': 'De meeste: {what}.',
+  'org.checksMostlyItem': '{count} × {name}',
+  // Whether a check's name is written in lower case after the count: not in German, whose nouns keep their capital.
+  'org.checksMostlyLower': 'yes',
   'org.checksNone': 'Hier niets gevonden.',
   'org.newLandscapeTitle': 'Nieuw landschap',
   'org.newScopeTypeHelp': 'Een label uit uw operating model. Het verandert niets aan hoe de scope werkt.',

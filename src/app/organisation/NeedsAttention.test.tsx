@@ -56,6 +56,13 @@ describe('the Checks line', () => {
     expect(mostlySaid(many('check.roleVacant', 12), s)).toContain('12 ')
   })
 
+  it('writes the name inside its sentence as a count of it, in lower case where the language does', () => {
+    const many = (count: number) => Array.from({ length: count }, () => ({ key: 'check.drift' })) as never[]
+    expect(mostlySaid(many(35), s)).toBe('Most are: 35 × a stand-in disagrees with its definition.')
+    expect(mostlySaid(many(35), translator('nl'))).toMatch(/^De meeste: 35 × [a-z]/)
+    expect(mostlySaid(many(35), translator('de'))).toMatch(/^Die meisten: 35 × Ein /)
+  })
+
   it('says each weight in the words of the page it opens, one and many', () => {
     expect([weightCount('fix', 1, s), weightCount('review', 2, s), weightCount('note', 1, s), weightCount('note', 44, s)])
       .toEqual(['1 to fix', '2 to review', '1 note', '44 notes'])

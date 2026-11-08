@@ -1717,6 +1717,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.readOnlyHere': 'Sie dürfen diesen Bereich lesen, aber nicht ändern',
   'org.findingShow': 'Zeigen',
   'org.checksMostly': 'Die meisten: {what}.',
+  'org.checksMostlyItem': '{count} × {name}',
+  // Whether a check's name is written in lower case after the count: not in German, whose nouns keep their capital.
+  'org.checksMostlyLower': 'no',
   'org.checksNone': 'Hier nichts gefunden.',
   'org.newLandscapeTitle': 'Neue Landschaft',
   'org.newScopeTypeHelp': 'Eine Bezeichnung aus Ihrem Betriebsmodell. Sie ändert nichts daran, wie sich der Bereich verhält.',

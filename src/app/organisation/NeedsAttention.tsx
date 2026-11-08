@@ -26,14 +26,21 @@ export function weightCount(weight: CheckWeight, count: number, s: Translate): s
   return plural(s, SAID[weight], count)
 }
 
-/** *Most are one thing: 116 not drawn*, where one or two checks are over half of a list worth summing up. */
+/** *Most are: 116 × not drawn yet*, where one or two checks are over half of a list worth summing up. */
 export function mostlySaid(shown: readonly { readonly key: CheckKey }[], s: Translate): string {
   if (shown.length < 10) return ''
   const counted = new Map<CheckKey, number>()
   for (const one of shown) counted.set(one.key, (counted.get(one.key) ?? 0) + 1)
   const top = [...counted].sort((a, b) => b[1] - a[1]).slice(0, 2)
   if (top.reduce((sum, [, count]) => sum + count, 0) * 2 < shown.length) return ''
-  return s('org.checksMostly', { what: top.map(([key, count]) => `${count} ${s(CHECK_CATALOGUE[key].name)}`).join(', ') })
+  const lower = s('org.checksMostlyLower') === 'yes'
+  return s('org.checksMostly', { what: top.map(([key, count]) => s('org.checksMostlyItem', { count, name: midSentence(s(CHECK_CATALOGUE[key].name), lower) })).join(', ') })
+}
+
+/** A name that starts a sentence of its own, read inside another: *a stand-in disagrees…*, never an acronym's capital. */
+function midSentence(name: string, lower: boolean): string {
+  const [first, second] = name
+  return lower && first !== undefined && second !== undefined && second === second.toLowerCase() ? first.toLowerCase() + name.slice(1) : name
 }
 
 export function ChecksLine({ counts, shown = [], onOpen, onPage, s }: {
