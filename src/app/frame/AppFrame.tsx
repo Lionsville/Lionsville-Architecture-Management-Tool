@@ -724,17 +724,19 @@ function TreeToggle({ parts, pinned, onHome }: { parts: ShellParts; pinned: bool
 
 /** `least`: nothing is left to fold, so its short word goes to the glass before a name in the trail loses a letter. */
 function FindField({ openSearch, s, least }: { openSearch: (() => void) | undefined; s: Translate; least: boolean }) {
+  const chord = isMac() ? '⌘K' : 'Ctrl K'
   return (
     <Tooltip title={s('frame.findTip')}>
       {/* Named in full whatever it shows: the words, a short word where they will not fit, or the glass alone (`Frame.css`). */}
       <button
         type="button" className={least ? 'kit-frame__find kit-frame__find--least' : 'kit-frame__find'} data-testid="frame-find" data-guide="frame.find" onClick={() => openSearch?.()}
-        aria-label={s('frame.find')} aria-keyshortcuts={isMac() ? 'Meta+K' : 'Control+K'}
+        // The key it shows is in its name too: a name short of the words on screen is one a speech user cannot say (WCAG 2.5.3).
+        aria-label={`${s('frame.find')} ${chord}`} aria-keyshortcuts={isMac() ? 'Meta+K' : 'Control+K'}
       >
         <SearchIcon size={14} />
         <span className="kit-frame__find-word" aria-hidden>{s('frame.find')}</span>
         <span className="kit-frame__find-short" aria-hidden>{s('frame.findShort')}</span>
-        <span className="kit-frame__kbd" aria-hidden>{isMac() ? '⌘K' : 'Ctrl K'}</span>
+        <span className="kit-frame__kbd" aria-hidden>{chord}</span>
       </button>
     </Tooltip>
   )

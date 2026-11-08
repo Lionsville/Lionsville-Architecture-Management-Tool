@@ -59,7 +59,7 @@ describe('a phone', () => {
       const status = screen.getByTestId('saved-indicator')
       expect(status.dataset.folded).toBe('true')
       expect(status.getAttribute('aria-label')).not.toBe('')
-      expect(screen.getByTestId('frame-find').getAttribute('aria-label')).toBe('Find or run a command')
+      expect(screen.getByTestId('frame-find').getAttribute('aria-label')).toMatch(/^Find or run a command (⌘K|Ctrl K)$/)
       fireEvent.click(screen.getAllByTestId('overflow-button')[0])
       fireEvent.click(await screen.findByRole('menuitem', { name: 'Forward' }))
       expect(forward).toHaveBeenCalledTimes(1)
