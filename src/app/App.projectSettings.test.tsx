@@ -16,7 +16,7 @@ import type { HeldRepositories } from './testing/heldRepositories'
 import { bareScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
-import { chooseValue } from '../widgets/kit/testing/select'
+import { chooseValue, optionValues } from '../widgets/kit/testing/select'
 
 vi.mock('../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../editor')>()
@@ -192,13 +192,13 @@ describe('a setting taken back', () => {
   it('what this is, the description and the links', async () => {
     const { store, send } = show()
     await openSettings()
-    const type = await screen.findByTestId('scope-type-field') as HTMLSelectElement
+    const type = await screen.findByTestId('scope-type-field') as HTMLButtonElement
     const before = type.value
-    const other = Array.from(type.options).find((option) => option.value !== before && !option.disabled)!.value
-    fireEvent.change(type, { target: { value: other } })
-    await waitFor(() => expect((screen.getByTestId('scope-type-field') as HTMLSelectElement).value).toBe(other))
+    const other = optionValues(type).find((value) => value !== before)!
+    chooseValue(type, other)
+    await waitFor(() => expect((screen.getByTestId('scope-type-field') as HTMLButtonElement).value).toBe(other))
     send({ type: 'undo' })
-    await waitFor(() => expect((screen.getByTestId('scope-type-field') as HTMLSelectElement).value).toBe(before))
+    await waitFor(() => expect((screen.getByTestId('scope-type-field') as HTMLButtonElement).value).toBe(before))
 
     leave(screen.getByPlaceholderText('Who they are, what this landscape covers, who to ask.'), 'What it covers')
     await waitFor(async () => expect((await model(store))?.description).toBe('What it covers'))
