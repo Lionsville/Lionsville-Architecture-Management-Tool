@@ -3,7 +3,7 @@
 
 /** The chart's lines run at right angles along the gaps of the tree, from what was measured. */
 import { describe, expect, it } from 'vitest'
-import { connectorsOf, middleOf, pathOf, routeBetween, spreadTags } from './chartGeometry'
+import { connectorsOf, middleOf, pathOf, placeTags, routeAround, routeBetween } from './chartGeometry'
 
 const box = (left: number, top: number, right: number, bottom: number) => ({ left, top, right, bottom })
 
@@ -59,10 +59,55 @@ describe('a reporting line', () => {
   })
 })
 
+describe('a line round the cards', () => {
+  const crossesBox = (points: readonly { x: number; y: number }[], box: { left: number; top: number; right: number; bottom: number }) =>
+    points.some((point, at) => at > 0 && Math.min(point.x, points[at - 1]!.x) < box.right - 1 && Math.max(point.x, points[at - 1]!.x) > box.left + 1
+      && Math.min(point.y, points[at - 1]!.y) < box.bottom - 1 && Math.max(point.y, points[at - 1]!.y) > box.top + 1)
+
+  it('keeps the plain route where no card is in the way', () => {
+    const a = box(0, 100, 100, 120)
+    const b = box(200, 0, 300, 40)
+    expect(routeAround(a, b, false, [a, b, box(400, 0, 500, 40)])).toEqual(routeBetween(a, b, false))
+  })
+
+  it('goes round a card that stands between its two ends, along the gutter, and still ends square on the far card', () => {
+    const a = box(0, 0, 100, 40)
+    const b = box(400, 0, 500, 40)
+    const between = box(200, 0, 300, 40)
+    expect(crossesBox(routeBetween(a, b, false), between)).toBe(true)
+    const route = routeAround(a, b, false, [a, b, between])
+    expect(crossesBox(route, between)).toBe(false)
+    expect(route[0]).toEqual({ x: 100, y: 20 })
+    expect(route[route.length - 1]).toEqual({ x: 400, y: 20 })
+    // In from the side it faces, so the arrowhead points at the card.
+    expect(route[route.length - 2]!.y).toBe(20)
+    expect(route.every((point, at) => at === 0 || point.x === route[at - 1]!.x || point.y === route[at - 1]!.y)).toBe(true)
+  })
+
+  it('goes round a card in a column between the two ends', () => {
+    const a = box(0, 200, 100, 240)
+    const b = box(0, 0, 100, 40)
+    const between = box(0, 100, 100, 140)
+    const route = routeAround(a, b, false, [a, b, between])
+    expect(crossesBox(route, between)).toBe(false)
+    expect(route[route.length - 1]).toEqual({ x: 50, y: 40 })
+  })
+})
+
 describe('the tags on the lines', () => {
-  it('step apart where two lines share a stretch, and stay put where they do not', () => {
-    expect(spreadTags([{ x: 100, y: 50 }, { x: 104, y: 52 }, { x: 98, y: 50 }, { x: 400, y: 50 }])).toEqual([
-      { x: 100, y: 50 }, { x: 104, y: 32 }, { x: 98, y: 14 }, { x: 400, y: 50 },
-    ])
+  const tagHits = (at: { x: number; y: number }, card: { left: number; top: number; right: number; bottom: number }) =>
+    at.x - 40 < card.right && at.x + 40 > card.left && at.y - 10 < card.bottom && at.y + 10 > card.top
+
+  it('sit on their line clear of every card, and of each other', () => {
+    const cards = [box(0, 0, 100, 40), box(160, 0, 260, 40), box(0, 120, 100, 160)]
+    // A line down the gutter between two cards, past a card's title at its middle.
+    const line = [{ x: 130, y: 0 }, { x: 130, y: 300 }]
+    const [one, two] = placeTags([{ points: line, width: 80, height: 20, above: 0 }, { points: line, width: 80, height: 20, above: 0 }], cards)
+    for (const card of cards) {
+      expect(tagHits(one!, card)).toBe(false)
+      expect(tagHits(two!, card)).toBe(false)
+    }
+    expect(Math.abs(one!.y - two!.y)).toBeGreaterThanOrEqual(20)
+    expect(one!.x).toBe(130)
   })
 })

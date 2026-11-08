@@ -23,7 +23,7 @@ import type { Translate } from '../../i18n'
 import type { ChartShape } from '../../model/orgChart'
 import { KeyStrip } from '../../widgets/kit/KeyStrip'
 import { arrowAt, Line, LineLabel } from '../../widgets/kit/Line'
-import { connectorsOf, middleOf, pathOf, routeBetween, spreadTags } from './chartGeometry'
+import { connectorsOf, pathOf, placeTags, routeAround } from './chartGeometry'
 import type { LineEnd, Point, Rect } from './chartGeometry'
 import type { ChartLine, ChartLineEnd } from './chartLines'
 
@@ -128,12 +128,14 @@ function endOf(element: HTMLElement, rectOf: (element: Element) => Rect | undefi
 }
 
 /** Where each line runs, measured from the names on the stage. */
-function useMeasured(stage: Stage, lines: readonly ChartLine[], zoom: number, redraw: unknown): Drawn[] {
-  const [drawn, setDrawn] = useState<Drawn[]>([])
+function useMeasured(stage: Stage, lines: readonly ChartLine[], zoom: number, redraw: unknown): { drawn: Drawn[]; cards: Rect[] } {
+  const [drawn, setDrawn] = useState<{ drawn: Drawn[]; cards: Rect[] }>({ drawn: [], cards: [] })
   const measure = useCallback(() => {
     const root = stage.current
-    if (!root || lines.length === 0) { setDrawn([]); return }
+    if (!root || lines.length === 0) { setDrawn({ drawn: [], cards: [] }); return }
     const rectOf = measurer(root, zoom)
+    // Every card a line has to go round, and its tag keep off.
+    const cards = [...root.querySelectorAll('[data-tree-box]')].flatMap((box) => { const rect = rectOf(box); return rect ? [rect] : [] })
     const boxes = new Map([...root.querySelectorAll<HTMLElement>('[data-testid="chart-unit"]')].map((one) => [one.dataset.elementId ?? '', one]))
     const next: Drawn[] = []
     for (const line of lines) {
@@ -144,11 +146,11 @@ function useMeasured(stage: Stage, lines: readonly ChartLine[], zoom: number, re
           const b = endOf(to.element, rectOf)
           if (!a || !b) continue
           const folded = to.folded ?? from.folded
-          next.push({ key: `${line.key}:${next.length}`, points: routeBetween(a, b, line.within === true), line, ...(folded !== undefined ? { folded } : {}) })
+          next.push({ key: `${line.key}:${next.length}`, points: routeAround(a, b, line.within === true, cards), line, ...(folded !== undefined ? { folded } : {}) })
         }
       }
     }
-    setDrawn(next)
+    setDrawn({ drawn: next, cards })
   }, [stage, lines, zoom])
   useRemeasure(stage, measure, redraw)
   return drawn
@@ -156,6 +158,10 @@ function useMeasured(stage: Stage, lines: readonly ChartLine[], zoom: number, re
 
 /** How far over its line a tag sits, so the head and the dash stay in sight in a narrow gap. */
 const TAG_ABOVE = 13
+/** A tag's size for keeping it clear, from its words: a little over the small size's average letter. */
+const TAG_CHAR = 7
+const TAG_PAD = 14
+const TAG_HEIGHT = 20
 
 /** The words on a line that is not the plain case. */
 function tagOf(line: ChartLine, folded: string | undefined, unitName: (id: string) => string, t: Translate): { words: string; exception?: string } | undefined {
@@ -171,13 +177,14 @@ function tagOf(line: ChartLine, folded: string | undefined, unitName: (id: strin
 export function ChartLinesOverlay({ stage, lines, zoom, redraw, unitName, t }: {
   stage: Stage; lines: readonly ChartLine[]; zoom: number; redraw: unknown; unitName: (id: string) => string; t: Translate
 }) {
-  const drawn = useMeasured(stage, lines, zoom, redraw)
+  const { drawn, cards } = useMeasured(stage, lines, zoom, redraw)
   const tagged = drawn.flatMap((one) => {
     const tag = tagOf(one.line, one.folded, unitName, t)
-    return tag ? [{ key: one.key, tag, at: middleOf(one.points) }] : []
+    return tag ? [{ key: one.key, tag, points: one.points }] : []
   })
-  const spread = spreadTags(tagged.map((one) => one.at))
-  const tags = tagged.map((one, index) => ({ ...one, at: spread[index] ?? one.at }))
+  // Where each tag sits on its line, clear of the cards and of each other: in the stage's units, the words' size estimated.
+  const spots = placeTags(tagged.map((one) => ({ points: one.points, width: one.tag.words.length * TAG_CHAR + TAG_PAD, height: TAG_HEIGHT, above: TAG_ABOVE })), cards)
+  const tags = tagged.map((one, index) => ({ ...one, at: spots[index]! }))
   if (lines.length === 0) return null
   return (
     <>
