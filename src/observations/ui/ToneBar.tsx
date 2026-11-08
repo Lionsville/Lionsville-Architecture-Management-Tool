@@ -3,8 +3,9 @@
 
 /**
  * The 3 px bar a tone is drawn with (ADR-0038, amended): down the register's
- * row as its stripe, and to the left of the word on the form's button, so the
- * form and the list read alike. Success, grey and error.
+ * row as the kit list's rail, and to the left of the word on the form's button
+ * and in the reader, so the form and the list read alike. The bar takes the
+ * rail's tokens; the maps keep the status colours of `toneColor`.
  */
 import Box from '@mui/material/Box'
 import type { Theme } from '@mui/material/styles'
@@ -17,11 +18,8 @@ export function toneColor(theme: Theme, tone: ObservationTone): string {
   return theme.palette.grey[400]
 }
 
-/** The row's stripe, as a style: an inset shadow, so it takes no width from the first cell. */
-export function toneStripe(tone: ObservationTone) {
-  return { boxShadow: (theme: Theme) => `inset 3px 0 0 ${toneColor(theme, tone)}` }
-}
+const RAIL: Record<ObservationTone, string> = { bright: 'var(--rail-good)', problem: 'var(--rail-bad)', neutral: 'var(--rail-neutral)' }
 
 export function ToneBar({ tone, height = 14 }: { tone: ObservationTone; height?: number }) {
-  return <Box aria-hidden sx={{ width: 3, height, borderRadius: 0.5, bgcolor: (theme) => toneColor(theme, tone), flex: '0 0 auto' }} />
+  return <Box aria-hidden sx={{ width: 3, height, borderRadius: 0.5, bgcolor: RAIL[tone], flex: '0 0 auto' }} />
 }
