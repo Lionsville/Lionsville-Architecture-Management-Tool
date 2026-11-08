@@ -905,7 +905,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Collections",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -914,7 +914,7 @@
         "kind": "actor",
         "lifecycle": "live",
         "name": "Commercial team",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -923,7 +923,7 @@
         "kind": "platformService",
         "lifecycle": "live",
         "name": "Container platform",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -932,7 +932,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Contract management",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -941,7 +941,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Customer management",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {
@@ -1006,7 +1006,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Data platform",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {
@@ -1043,7 +1043,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Dispatch and driving",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1052,7 +1052,7 @@
         "kind": "actor",
         "lifecycle": "live",
         "name": "Dispatcher",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1089,7 +1089,7 @@
         "kind": "platform",
         "lifecycle": "live",
         "name": "Enterprise bus",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1098,7 +1098,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Fleet management",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {
@@ -1129,7 +1129,7 @@
         "kind": "platformService",
         "lifecycle": "live",
         "name": "Identity",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1138,7 +1138,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Identity and access",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1147,7 +1147,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Integration",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1156,7 +1156,7 @@
         "kind": "platformService",
         "lifecycle": "live",
         "name": "Integration",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1165,7 +1165,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Invoicing",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1174,7 +1174,7 @@
         "kind": "platform",
         "lifecycle": "live",
         "name": "Event broker",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1224,7 +1224,7 @@
         "kind": "platformService",
         "lifecycle": "live",
         "name": "Managed database",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1233,7 +1233,7 @@
         "kind": "platformService",
         "lifecycle": "live",
         "name": "Message brokering",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1242,7 +1242,7 @@
         "kind": "platform",
         "lifecycle": "live",
         "name": "Logistics namespace",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1251,7 +1251,7 @@
         "kind": "platformService",
         "lifecycle": "live",
         "name": "Observability",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1260,7 +1260,7 @@
         "kind": "platform",
         "lifecycle": "live",
         "name": "OpenShift",
-        "ref": "acme-logistics/platforms"
+        "ref": "platforms"
       },
       {
         "aspects": {},
@@ -1269,7 +1269,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Order intake",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {
@@ -1339,7 +1339,7 @@
         "kind": "actor",
         "lifecycle": "live",
         "name": "Transport planner",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1348,7 +1348,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Quoting and tariffs",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1357,7 +1357,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Rating",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {
@@ -1433,7 +1433,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Slotting and replenishment",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1442,7 +1442,7 @@
         "kind": "actor",
         "lifecycle": "live",
         "name": "Support agent",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {
@@ -1477,7 +1477,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Telematics",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1486,7 +1486,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Track and trace",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {
@@ -1539,7 +1539,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Transport planning",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1548,7 +1548,7 @@
         "kind": "actor",
         "lifecycle": "live",
         "name": "Warehouse lead",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1557,7 +1557,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Warehouse operations",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {},
@@ -1566,7 +1566,7 @@
         "kind": "actor",
         "lifecycle": "live",
         "name": "Warehouse team",
-        "ref": "acme-logistics"
+        "ref": ""
       },
       {
         "aspects": {
@@ -1752,7 +1752,7 @@
         "kind": "function",
         "lifecycle": "live",
         "name": "Yard and dock",
-        "ref": "acme-logistics"
+        "ref": ""
       }
     ],
     "relations": [
@@ -4500,7 +4500,7 @@
     "  - id: ob-replaced-still-run",
     "    strength: strong",
     "  - id: ca-two-raters",
-    "    scope: acme-logistics/application-landscape",
+    "    scope: application-landscape",
     "    strength: normal",
     "---",
     "",
@@ -4742,7 +4742,7 @@
         "kind": "actor",
         "lifecycle": "live",
         "name": "Platform team",
-        "ref": "acme-logistics"
+        "ref": ""
       }
     ],
     "relations": [

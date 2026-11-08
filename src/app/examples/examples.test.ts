@@ -30,6 +30,7 @@ import { describeLeverage, leverageOf } from '../../model/leverage'
 import { scopeFiles, scopeFromFolder } from '../../adapters/folder/format/folderFormat'
 import { indexScopes } from '../../projects/scopeIndex'
 import { stableJson } from '../../projects/text'
+import { carryAddresses } from '../../projects/readdress'
 import { syntheticModel } from '../../model/testing/synthetic'
 import { computeBusinessCase, readBusinessCase } from '../../documentation/businessCase'
 import { sheetPage } from '../../business'
@@ -373,8 +374,10 @@ describe.each(EXAMPLES.map((e) => [e.key, e] as const))('example %s as a working
   it('is written back as the files it was read from', () => {
     // The example ships as the folders the format writes, so a save of an
     // untouched copy has to be no diff at all — which is also what says the
-    // shipped file is current rather than something a reader forgives.
-    const written = scopes.flatMap((scope) => {
+    // shipped file is current rather than something a reader forgives. Its
+    // addresses are written from its own top, so they go back there first.
+    const fromItsTop = (address: string) => (address === example.path ? '' : address.startsWith(`${example.path}/`) ? address.slice(example.path.length + 1) : address)
+    const written = scopes.map((scope) => carryAddresses(scope, fromItsTop)).flatMap((scope) => {
       const within = scope.path === example.path
         ? ''
         : `${scope.path.slice(example.path.length + 1)}/`

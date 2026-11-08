@@ -11,6 +11,15 @@ import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
 import { readScope } from '../../projects/scopeAccess'
 import { exampleWorkingFile, seedExample, SHIPPED, shippedExample } from './examples'
 import { readWorkingFile } from './workingFile'
+import { indexScopes } from '../../projects/scopeIndex'
+import type { Repositories } from '../../ports/Repositories'
+
+/** The ids whose stand-ins disagree with their definition: the drift check's list. */
+async function drifting(repositories: Repositories): Promise<string[]> {
+  const read = await repositories.index.read()
+  return indexScopes(read.scopes.map((one) => ({ path: one.address, model: one.model }))).entries()
+    .filter((entry) => entry.stale.length > 0).map((entry) => entry.id)
+}
 
 describe('the shipped examples, from node', () => {
   it('names every example that ships, and reads each as its scopes', async () => {
@@ -29,6 +38,8 @@ describe('the shipped examples, from node', () => {
     if ('refused' in read) throw new Error(read.refused)
     expect(read.landed).toEqual(['', 'application-landscape', 'platforms', 'topics', 'topics/integration'])
     expect(read.arrival.accounted).toBe(true)
+    // Read at the root, its stand-ins still point at their definitions: the file's refs move with it.
+    expect(await drifting(into)).toEqual([])
     expect(await exampleWorkingFile('nowhere')).toBeUndefined()
   })
 
@@ -36,6 +47,7 @@ describe('the shipped examples, from node', () => {
     const repositories = memoryRepositories()
     expect(await seedExample(repositories, 'acme-logistics')).toEqual(['', 'application-landscape', 'platforms', 'topics', 'topics/integration'])
     expect((await readScope(repositories.scopes, ''))?.model.name).toBe('Acme Logistics')
+    expect(await drifting(repositories)).toEqual([])
     expect(await seedExample(repositories, 'acme-logistics'))
       .toEqual(['acme-logistics', 'acme-logistics/application-landscape', 'acme-logistics/platforms', 'acme-logistics/topics', 'acme-logistics/topics/integration'])
     expect(await seedExample(repositories, 'nowhere')).toBeUndefined()

@@ -50,9 +50,10 @@
 import { SCOPE_FILE, scopeFromFolder } from './folderFormat'
 import type { FolderFile } from './folderFormat'
 import type { ScopeSnapshot } from '../../../projects/scope'
-import { joinScope } from '../../../projects/scopePath'
+import { joinScope, joinScopePath } from '../../../projects/scopePath'
 import type { ScopePath } from '../../../projects/scopePath'
 import { stableJson } from '../../../projects/text'
+import { carryAddresses } from '../../../projects/readdress'
 
 /**
  * A scope's folder, as JSON: an object for each `.json` file it holds, and the
@@ -85,6 +86,13 @@ export function exampleFiles(folder: ExampleFolder): FolderFile[] {
  *
  * An empty answer would mean a shipped example this build cannot read, which
  * `examples.test.ts` is there to make impossible.
+ *
+ * Every address inside the file — a stand-in's `ref`, a cause's link, a unit's
+ * line — is written as the folder is, from its own top: `""` is the example's
+ * organisation and `platforms` the scope under it. So the file copied onto a
+ * disk as it stands is a folder whose stand-ins point at their definitions,
+ * and read under `path` every address moves with the scopes
+ * (`carryAddresses`).
  */
 export function exampleScopes(folder: ExampleFolder, path: ScopePath): ScopeSnapshot[] {
   const files = exampleFiles(folder)
@@ -92,7 +100,7 @@ export function exampleScopes(folder: ExampleFolder, path: ScopePath): ScopeSnap
     .filter((file) => file.path.endsWith(SCOPE_FILE))
     .map((file) => file.path.slice(0, -SCOPE_FILE.length).replace(/\/$/, '')))]
     .sort()
-  return within.flatMap((prefix) => {
+  const scopes = within.flatMap((prefix) => {
     const inside = files
       .filter((file) => (prefix === '' ? true : file.path.startsWith(`${prefix}/`)))
       .filter((file) => !within.some((other) =>
@@ -105,4 +113,5 @@ export function exampleScopes(folder: ExampleFolder, path: ScopePath): ScopeSnap
     const scope = scopeFromFolder(inside, prefix === '' ? path : joinScope(path, prefix))
     return scope ? [scope] : []
   })
+  return scopes.map((scope) => carryAddresses(scope, (address) => joinScopePath(path, address)))
 }
