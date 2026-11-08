@@ -39,6 +39,16 @@ export function TidyIcon({ size = 18 }: IconProps) {
   );
 }
 
+/** A padlock: something only the person looking sees. */
+export function LockIcon({ size = 12 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /** Split-button caret: "this control has more behind it". */
 export function CaretIcon({ size = 12 }: IconProps) {
   return (

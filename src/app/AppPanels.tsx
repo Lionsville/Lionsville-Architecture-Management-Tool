@@ -25,7 +25,7 @@ import { SnapshotDialog } from './history/SnapshotDialog'
 import { FirstRun } from './organisation/FirstRun'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
 import { ProjectWorkspace } from './ProjectWorkspace'
-import { flattenScopes } from '../projects/scope'
+import { flattenScopes, sharedScopes } from '../projects/scope'
 import { sourceKey } from '../platform/workingSource'
 import { recentFrom, RECENT_KEY, stillThere } from './frame/recentPlaces'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -267,9 +267,10 @@ function Home({ parts }: { parts: ShellParts }) {
   const marking = useHomeMarking(parts)
   const { index, models } = parts.tree
   const treeRead = useMemo(() => ({ index, models }), [index, models])
+  // *Continue* leads back into the organisation's work: a scope only this person sees is reached from the tree.
   const recentHere = stillThere(
     recentFrom(prefs.readPreferences()[RECENT_KEY], sourceKey(parts.source)),
-    (path) => path === ROOT_SCOPE || flattenScopes(organisation.tree).some((one) => one.path === path),
+    (path) => path === ROOT_SCOPE || flattenScopes(sharedScopes(organisation.tree)).some((one) => one.path === path),
   )
   // The home's own document shows the home scope's pictures, as a workspace
   // shows its scope's.

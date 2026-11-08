@@ -37,6 +37,13 @@ describe('holdingsOf', () => {
     expect([...holdingsOf(TREE, MODELS).withWork].sort()).toEqual(['', 'road', 'road/last', 'road/line'])
   })
 
+  it('counts a scope only its reader sees on its own row and in no scope above it', () => {
+    const withOwn = { ...TREE, children: [...TREE.children, { ...scope('mine', 'Mine', 3), personal: true as const }] }
+    const held = holdingsOf(withOwn, MODELS)
+    expect(held.count('mine')).toBe(3)
+    expect(held.count('')).toBe(6)
+  })
+
   it('reads an absent index as the views alone', () => {
     expect(holdingsOf(TREE, []).count('road')).toBe(2)
   })

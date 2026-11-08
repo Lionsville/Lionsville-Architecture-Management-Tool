@@ -70,6 +70,14 @@ export type ScopeNode = {
   client?: string
   /** Its model's description. */
   description?: string
+  /**
+   * Only the person reading the tree sees it: a scope of their own, which is no
+   * part of the organisation's work. A source that keeps such scopes says so on
+   * the tree it answers to that person; nothing else in the tree says it, and a
+   * source that keeps none never does. The screens list it last, marked, and
+   * count none of it in what they say about the scopes above it.
+   */
+  personal?: true
   links?: RecordLink[]
   /** Where it is relevant, as a topic (ADR-0042 §1): dated links, ended ones kept. */
   relevantTo?: TopicLink[]

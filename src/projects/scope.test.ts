@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bareScope, countScopeKinds, countScopes, emptyScope, flattenScopes, isOpenableScope, isProjectOrder, isStoredScope,
   moveScope, movedPaths, namesUnder, newestChange,
-  onView, renameScope, resolveActive, scopeTree, setScopeDefaults,
+  onView, renameScope, resolveActive, scopeTree, setScopeDefaults, sharedScopes,
   sortScopes, subtreeTotals, summarise,
 } from './scope'
 import type { ScopeSummary } from './scope'
@@ -130,6 +130,12 @@ describe('sortScopes', () => {
       children: [summary('acme/zebra', 'Zebra'), summary('acme/ant', 'Ant')],
     }]
     expect(sortScopes(nested)[0].children.map((s) => s.name)).toEqual(['Ant', 'Zebra'])
+  })
+
+  it('lists a scope only its reader sees after the organisation\'s, in either order', () => {
+    const own = { ...summary('mine', 'Aardvark', '2026-02-01T00:00:00.000Z'), personal: true as const }
+    expect(sortScopes([own, ...list]).map((s) => s.name)).toEqual(['Beta', 'Charlie', 'Delta', 'Aardvark'])
+    expect(sortScopes([own, ...list], 'updated').at(-1)?.name).toBe('Aardvark')
   })
 
   it('copies rather than sorting the caller\'s array in place', () => {
@@ -310,6 +316,16 @@ describe('what a tree of scopes adds up to', () => {
   it('answers the newest change anywhere in the tree, and nothing where none was written', () => {
     expect(newestChange(tree)).toBe('2026-09-09T09:00:00.000Z')
     expect(newestChange(scopeTree([at(''), at('retail')]))).toBeUndefined()
+  })
+
+  it('leaves a scope only its reader sees out of the organisation\'s work: its last change and what is under it', () => {
+    const own: ScopeSummary = { path: 'mine', name: 'Mine', personal: true, diagrams: 1, updatedAt: '2027-01-01T00:00:00.000Z', children: [] }
+    const withOwn = { ...tree, children: [...tree.children, own] }
+    expect(newestChange(withOwn)).toBe('2026-09-09T09:00:00.000Z')
+    expect(sharedScopes(withOwn).children.map((one) => one.path)).toEqual(tree.children.map((one) => one.path))
+    expect(sharedScopes(tree)).toBe(tree)
+    // Its own home still says when it last changed.
+    expect(newestChange(own)).toBe('2027-01-01T00:00:00.000Z')
   })
 })
 

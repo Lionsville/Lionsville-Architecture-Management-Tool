@@ -25,9 +25,9 @@ import { plural } from '../../i18n/strings'
 import { fold } from '../../model/textSearch'
 import { flattenScopes } from '../../projects/scope'
 import type { ScopeSummary } from '../../projects/scope'
-import { ROOT_SCOPE, scopeSegments } from '../../projects/scopePath'
+import { parentScope, ROOT_SCOPE, scopeSegments } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { CaretIcon } from '../../widgets/icons'
+import { CaretIcon, LockIcon } from '../../widgets/icons'
 import { Mark } from '../../widgets/kit/Mark'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
@@ -125,6 +125,9 @@ function rowsOf({ tree, folds, onlyWork, matching, holdings }: Pick<ScopeTreePro
   return visibleRows(tree, folds.collapsed)
 }
 
+/** Whether a path is one of these scopes or filed under one. */
+const within = (path: ScopePath, scopes: readonly ScopePath[]) => scopes.some((one) => path === one || path.startsWith(`${one}/`))
+
 /** The names above a scope, for a match shown flat: where it is, since nothing around it says. */
 function pathWords(tree: ScopeSummary, path: ScopePath): string {
   const nodes = new Map(flattenScopes(tree).map((one) => [one.path, one.name]))
@@ -136,6 +139,7 @@ export function ScopeTree({
   tree, folds, onHome, menuOf, holdings, typeLink, language, s, current, onlyWork = false, matching, unread, topicRows, asked = '',
 }: ScopeTreeProps) {
   const rows = rowsOf({ tree, folds, onlyWork, matching, holdings })
+  const personal = flattenScopes(tree).filter((one) => one.personal).map((one) => one.path)
   // The top of the tree is its own row, so its children are the first column.
   const base = scopeSegments(tree.path).length
 
@@ -145,12 +149,16 @@ export function ScopeTree({
 
   return (
     <div data-guide="org.tree">
-      {rows.map((scope) => {
+      {rows.map((scope, at) => {
         const depth = matching ? 0 : scopeSegments(scope.path).length - base
+        // Scopes only the reader sees come last (`sortScopes`), under a rule that keeps them apart from the organisation's.
+        const before = rows[at - 1]
+        const apart = !matching && scope.personal === true && before !== undefined && !within(before.path, personal) && parentScope(scope.path) !== before.path
         const shut = folds.collapsed.has(scope.path)
         const topics = matching || onlyWork ? [] : topicRows?.(scope.path) ?? []
         return (
           <Fragment key={scope.path}>
+            {apart && <div className="kit-tree__apart" role="separator" data-testid="tree-personal-rule" />}
             <ScopeRow
               scope={scope} depth={depth} shut={shut} hasBranch={scope.children.length > 0 || topics.length > 0}
               current={scope.path === current} foldable={!matching && !onlyWork} above={matching ? pathWords(tree, scope.path) : ''} unread={unread?.has(scope.path) === true}
@@ -207,9 +215,10 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
   const foldName = s(shut ? 'org.expand' : 'org.collapse', { name: scope.name })
   const items = unread ? [] : menuOf(scope)
   const named = above ? `${above} / ${scope.name}` : scope.name
+  const own = scope.personal ? s('org.treePersonal') : ''
   // The row's name says what it shows, its count or its mark too: a name short of the words on screen
   // is a name a speech user cannot say to press it (WCAG 2.5.3).
-  const said = [named, warns ? s('org.typeMismatch') : '', unread ? s('org.notRead') : count > 0 ? String(count) : ''].filter(Boolean).join(', ')
+  const said = [named, own, warns ? s('org.typeMismatch') : '', unread ? s('org.notRead') : count > 0 ? String(count) : ''].filter(Boolean).join(', ')
   return (
     // The press anywhere on the row is the way home; the name is the button
     // that carries it for a keyboard and a screen reader, and the controls at
@@ -226,7 +235,8 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
       data-quiet={count === 0 || undefined}
       aria-current={current ? 'page' : undefined}
       style={{ paddingInlineStart: `${depth * 14}px` }}
-      title={[named, unread ? s('org.notReadTip') : [words, whenChanged(scope.updatedAt, language, s)].filter(Boolean).join(' · ')].join('\n')}
+      data-personal={scope.personal || undefined}
+      title={[named, own, unread ? s('org.notReadTip') : [words, whenChanged(scope.updatedAt, language, s)].filter(Boolean).join(' · ')].filter(Boolean).join('\n')}
       onClick={unread ? undefined : () => onHome(scope.path)}
     >
       {foldable && hasBranch ? (
@@ -243,6 +253,7 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
         {above && <><span className="kit-tree__above">{above}</span><span className="kit-tree__sep" aria-hidden> / </span></>}
         <span className="kit-tree__own" data-testid={`open-${scope.path}`}><Marked text={scope.name} asked={asked} /></span>
       </button>
+      {own && <span className="kit-tree__mine" role="img" aria-label={own} title={own} data-testid="scope-personal"><LockIcon size={12} /></span>}
       {/* A space between the words, which the flex row does not draw: read as text, the name and the count are two words, not one. */}
       {' '}
       {warns && <span className="kit-tree__warn" title={s('org.typeMismatchTip')}><Mark kind="review" size={12} />{s('org.typeMismatch')}</span>}

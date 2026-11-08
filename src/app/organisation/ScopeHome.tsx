@@ -21,7 +21,7 @@ import type { DesignDiagram } from '../../model'
 import { isSheetReading } from '../../model/sheetReading'
 import { useBlocks } from '../../blocks/ui/BlocksContext'
 import type { ScopeSummary } from '../../projects/scope'
-import { flattenScopes } from '../../projects/scope'
+import { flattenScopes, sharedScopes } from '../../projects/scope'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
 import { parentScope, ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
@@ -402,11 +402,13 @@ export function homeMeta(home: ScopeSummary, tree: ScopeSummary, typeWord: strin
   const every = flattenScopes(tree)
   const above = parentScope(home.path)
   const parentName = above === undefined ? undefined : (above === ROOT_SCOPE ? tree.name : every.find((one) => one.path === above)?.name)
-  const below = flattenScopes(home).length - 1
+  // How many scopes are under it is the organisation's: one only its reader sees is not counted.
+  const shared = sharedScopes(home)
+  const below = flattenScopes(shared).length - 1
   return [
     home.client?.trim() && home.client.trim() !== home.name.trim() ? s('org.forClient', { name: home.client.trim() }) : '',
     [typeWord, parentName ? s('org.underName', { name: parentName }) : ''].filter(Boolean).join(', '),
-    below > 0 ? s('org.scopesUnder', { direct: home.children.length, all: below }) : '',
+    below > 0 ? s('org.scopesUnder', { direct: shared.children.length, all: below }) : '',
     // A moment held on one line: a day split across two ("8. / Nov.") reads as two facts.
     changed ? s('org.lastChanged', { when: new Date(changed).toLocaleString(LOCALE[language], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\s/g, '\u00a0') }) : '',
   ].filter(Boolean).join('. ')

@@ -220,6 +220,8 @@ export type ScopeSummary = {
   /** Its own answer only; {@link scopeClient} is what walks up for the rest. */
   client?: string
   description?: string
+  /** Only the person reading the tree sees it, and it is not the organisation's ({@link ScopeNode.personal}). */
+  personal?: true
   /** A ticket queue, a wiki space, a dashboard — a screen shows these. */
   links?: RecordLink[]
   /** Where it is relevant, as a topic (ADR-0042 §1): dated links, ended ones kept. */
@@ -400,6 +402,16 @@ export function isListed(tree: ScopeSummary): boolean {
   return tree !== NOT_LISTED
 }
 
+/**
+ * The tree as the organisation's work: every scope but those only the reader
+ * sees ({@link ScopeNode.personal}), with what is filed under them. What a home
+ * counts, when it last changed and where *Continue* may lead are asked of this.
+ */
+export function sharedScopes(root: ScopeSummary): ScopeSummary {
+  if (!flattenScopes(root).some((scope) => scope !== root && scope.personal)) return root
+  return { ...root, children: root.children.filter((child) => !child.personal).map(sharedScopes) }
+}
+
 /** Every scope in a tree, depth first, the root first. */
 export function flattenScopes(root: ScopeSummary): ScopeSummary[] {
   return [root, ...root.children.flatMap(flattenScopes)]
@@ -545,10 +557,12 @@ export function sortScopes(
 ): ScopeSummary[] {
   const byName = (a: ScopeSummary, b: ScopeSummary) =>
     a.name.localeCompare(b.name) || a.path.localeCompare(b.path)
-  const compare = order === 'name'
+  const byOrder = order === 'name'
     ? byName
     : (a: ScopeSummary, b: ScopeSummary) =>
       (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '') || byName(a, b)
+  // A scope only the reader sees comes after the organisation's, whichever order is chosen.
+  const compare = (a: ScopeSummary, b: ScopeSummary) => Number(a.personal ?? false) - Number(b.personal ?? false) || byOrder(a, b)
   return [...scopes]
     .map((scope) => ({ ...scope, children: sortScopes(scope.children, order) }))
     .sort(compare)
@@ -682,14 +696,15 @@ export function subtreeTotals(scope: ScopeSummary): { landscapes: number; diagra
 
 /**
  * The newest `updatedAt` anywhere in the tree — when the organisation last
- * changed, whichever scope it happened in.
+ * changed, whichever scope it happened in, but for a scope only its reader sees.
  *
  * ISO timestamps, so the newest is the largest string. Absent where no scope
  * has been written yet, which a store answers for a folder nobody has saved
  * into; the caller says "not yet" rather than inventing a day.
  */
 export function newestChange(root: ScopeSummary): string | undefined {
-  return flattenScopes(root)
+  // A change only its owner sees is not the organisation's change.
+  return flattenScopes(sharedScopes(root))
     .map((scope) => scope.updatedAt)
     .filter((at): at is string => at !== undefined)
     .sort()

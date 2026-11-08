@@ -81,7 +81,11 @@ export function holdingsOf(tree: ScopeSummary, models: readonly ScopeModel[]): H
   const walk = (scope: ScopeSummary): Held => {
     const here = heldBy(scope.diagrams, modelAt.get(scope.path))
     own.set(scope.path, here)
-    const whole = scope.children.reduce((sum, child) => added(sum, walk(child)), here)
+    // A scope only its reader sees keeps its own counts and adds nothing to the organisation's.
+    const whole = scope.children.reduce((sum, child) => {
+      const theirs = walk(child)
+      return child.personal ? sum : added(sum, theirs)
+    }, here)
     all.set(scope.path, whole)
     return whole
   }

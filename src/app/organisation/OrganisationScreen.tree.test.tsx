@@ -16,7 +16,7 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { checkOnPage, pressFound } from '../testing/findings'
-import { heldRepositories } from '../testing/heldRepositories'
+import { answering, heldRepositories } from '../testing/heldRepositories'
 import { laidOut } from '../../model/testFixtures'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { renderApp } from '../testing/renderShell'
@@ -68,6 +68,26 @@ describe('the tree', () => {
     // The root has a row of its own over them, and none among them.
     expect(screen.getByTestId('scope-root').textContent).toContain('Acme Logistics')
     expect(screen.queryByTestId('scope-')).toBeNull()
+  })
+
+  it('lists a scope only its reader sees last, under a rule, marked, and counts none of it on the organisation', async () => {
+    const held = heldRepositories([...TREE(), scope('aaa', 'Aardvark')])
+    // A source that keeps somebody's own scope says so on the tree it answers them.
+    const store = answering(held, {
+      tree: async () => {
+        const read = await held.scopes.tree()
+        return { ...read, root: { ...read.root, children: read.root.children.map((child) => (child.address === 'aaa' ? { ...child, personal: true as const } : child)) } }
+      },
+    })
+    renderApp({ repositories: store, today: TODAY })
+    const own = await screen.findByTestId('scope-aaa')
+    const rows = [...document.querySelectorAll('[data-guide="org.tree.row"]')].map((row) => row.getAttribute('data-testid'))
+    expect(rows.at(-1)).toBe('scope-aaa')
+    expect(own.previousElementSibling?.getAttribute('data-testid')).toBe('tree-personal-rule')
+    expect(within(own).getByRole('img', { name: /Only you see this/ })).toBeTruthy()
+    // Two filed under the organisation, not three; its view not in the root's count.
+    expect(screen.getByTestId('organisation-meta').textContent).toContain('2 directly under it, 3 in all')
+    expect(within(screen.getByTestId('scope-root')).getByText('2')).toBeTruthy()
   })
 
   it('sums a subtree on a scope that has one, and a leaf on one that has not', async () => {

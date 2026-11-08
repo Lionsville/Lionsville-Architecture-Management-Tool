@@ -148,6 +148,9 @@
 .kit-tree__row[data-enter] { background: var(--surface-2); }
 .kit-tree__row:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(0px - var(--focus-ring-width)); }
 .kit-tree__holds { color: var(--ink-2); font-size: var(--t-small); flex: 0 0 auto; padding-inline: var(--s-2) 0; text-align: end; font-variant-numeric: tabular-nums; }
+/* A scope only the reader sees: under a rule of its own, after the organisation's, with a padlock. */
+.kit-tree__apart { height: 0; margin-block: var(--s-1); border-top: 1px solid var(--line); }
+.kit-tree__mine { display: inline-flex; align-items: center; flex: 0 0 auto; color: var(--ink-2); padding-inline-end: var(--s-1); }
 /* Held open on every row, with or without a menu, so the numbers stand in one column. */
 .kit-tree__menu { flex: 0 0 var(--kit-tree-menu); display: inline-flex; justify-content: center; margin-inline-start: var(--s-1); opacity: 0; }
 .kit-tree__row:hover .kit-tree__menu, .kit-tree__row:focus-within .kit-tree__menu, .kit-tree__row:focus .kit-tree__menu { opacity: 1; }

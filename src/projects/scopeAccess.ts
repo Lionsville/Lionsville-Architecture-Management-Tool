@@ -53,6 +53,7 @@ function summaryOfNode(node: ScopeNode): ScopeSummary {
     ...(node.unitTypeId !== undefined ? { unitTypeId: node.unitTypeId } : {}),
     ...(node.client !== undefined ? { client: node.client } : {}),
     ...(node.description !== undefined ? { description: node.description } : {}),
+    ...(node.personal ? { personal: true as const } : {}),
     ...(node.links !== undefined ? { links: node.links } : {}),
     ...(node.relevantTo !== undefined ? { relevantTo: node.relevantTo } : {}),
     diagrams: node.diagrams,

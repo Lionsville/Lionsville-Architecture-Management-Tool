@@ -759,6 +759,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.tree': 'Scopes binnen {name}',
   'org.treeEmpty': 'Nog niets geplaatst. Een divisie of een team hoort hier.',
   'org.treeEmptyLandscape': 'Een landschap houdt zijn eigen weergaven bij. Voeg er alleen een scope onder toe om het op te splitsen.',
+  'org.treePersonal': 'Alleen jij ziet dit. Het is niet van de organisatie en niets hierin telt mee.',
   'org.expand': 'Toon wat onder {name} zit',
   'org.collapse': 'Verberg wat onder {name} zit',
   'org.treeTopicRow': 'Onderwerp dat hier van belang is: {name}',
