@@ -47,7 +47,7 @@ describe('the inspector beside the organisation chart', () => {
     fireEvent.click(await screen.findByTestId('chart-summary-line'))
     const summary = await screen.findByTestId('chart-summary')
     expect(within(summary).getByTestId('chart-summary-title').textContent).toBe('Acme Logistics, today')
-    expect(within(summary).getByTestId('chart-summary-counts').textContent).toBe('1 unit · 1 person · 1 vacant')
+    expect(within(summary).getByTestId('chart-summary-counts').textContent).toBe('1 unit · 1 person · 1 role vacant')
     expect(screen.queryByText(/Select an element or connection/)).toBeNull()
     // Opened on its explanation, whose Open the unit goes to it (3.6.1; the line itself went there before).
     unfoldFindings(within(summary).getByTestId('chart-findings'))

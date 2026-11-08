@@ -61,7 +61,7 @@ export const SECTIONS: SectionTexts = {
     ['Drücken Sie − oder + zum Zoomen, Einpassen für alles, 100% zum Zurückgehen.'],
     'Drücken Sie Einpassen, um jede Einheit von Acme Logistics zugleich zu sehen.'],
   'chart.summary': ['Die Zusammenfassung und die Befunde des Organigramms lesen', 'Die Zeile unter dem Organigramm zählt Einheiten, Personen und offene Stellen und die anzusehenden Befunde; ein Druck darauf öffnet ein Panel mit den Befunden nach Prüfung, jeder ein Weg zu seiner Einheit, und wie man das Organigramm liest.',
-    'Die Zeile unter dem Organigramm, etwa 5 Einheiten · 2 Personen · 2 offen · 7 anzusehen.',
+    'Die Zeile unter dem Organigramm, etwa 5 Einheiten · 2 Personen · 2 Rollen unbesetzt · 7 anzusehen.',
     ['Drücken Sie die Zeile unter dem Organigramm.', 'Öffnen Sie einen Befund, um zu seiner Einheit zu gehen.'],
     'Drücken Sie die Zusammenfassung, um Eine Rolle mit zu wenigen Personen (2) zu sehen und zu Terminal zu gehen.'],
   'chart.day': ['Das Organigramm an einem anderen Tag ansehen', 'Zeichnet die Organisation, wie sie an einem anderen Tag steht: Einheiten, die ein Plan bringt oder beendet, Personen, die begonnen haben oder ausgeschieden sind. Ein Band sagt, welcher Tag gezeigt wird, mit Zurück zu heute, und der Tag lässt sich mit dem Organigramm behalten.',

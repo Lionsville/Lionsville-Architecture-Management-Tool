@@ -61,7 +61,7 @@ export const SECTIONS: SectionTexts = {
     ['Druk op − of + om te zoomen, Passend om alles te zien, 100% om terug te gaan.'],
     'Druk op Passend om elke eenheid van Acme Logistics tegelijk te zien.'],
   'chart.summary': ['De samenvatting en bevindingen van het organigram lezen', 'De regel onder het organigram telt eenheden, mensen en vacatures en de bevindingen om naar te kijken; erop drukken opent een paneel met de bevindingen per controle, elk een weg naar de eenheid, en hoe je het organigram leest.',
-    'De regel onder het organigram, bijvoorbeeld 5 eenheden · 2 mensen · 2 vacant · 7 om naar te kijken.',
+    'De regel onder het organigram, bijvoorbeeld 5 eenheden · 2 mensen · 2 rollen vacant · 7 om naar te kijken.',
     ['Druk op de regel onder het organigram.', 'Open een bevinding om naar de eenheid te gaan.'],
     'Druk op de samenvatting om Een rol met te weinig mensen (2) te zien en naar Terminal te gaan.'],
   'chart.day': ['Het organigram op een andere dag bekijken', 'Tekent de organisatie zoals ze op een andere dag staat: eenheden die een plan brengt of beëindigt, mensen die begonnen of vertrokken. Een balk zegt welke dag wordt getoond, met Terug naar vandaag, en de dag kan bij het organigram worden bewaard.',

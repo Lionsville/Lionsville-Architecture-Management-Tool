@@ -61,7 +61,7 @@ export const SECTIONS: SectionTexts = {
     ['Press − or + to zoom, Fit to see it all, 100% to go back.'],
     'Press Fit to see every unit of Acme Logistics at once.'],
   'chart.summary': ['Read the chart\'s summary and findings', 'The line under the chart counts units, people and vacancies and the findings to look at; pressing it opens a panel with the findings grouped by check, each a way to its unit, and how to read the chart.',
-    'The line under the chart, for example 5 units · 2 people · 2 vacant · 7 to look at.',
+    'The line under the chart, for example 5 units · 2 people · 2 roles vacant · 7 to look at.',
     ['Press the line under the chart.', 'Open a finding to go to its unit.'],
     'Press the summary to see A role short of people (2) and go to Terminal.'],
   'chart.day': ['Look at the chart on another day', 'Draws the organisation as it stands on another day: units a plan brings or ends, people who started or left. A band says which day is shown with Back to today, and the day can be kept with the chart.',

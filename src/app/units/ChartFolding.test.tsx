@@ -87,13 +87,13 @@ describe('a large organisation on its chart', () => {
   // 3.7.3: the note no longer counts thirty units — a first open of any size folds below the second level (ChartReading.test opens a small one).
   it('folds a first open below the second level, the Levels control says so, and each folded unit says what it hides', async () => {
     renderShell(<Harness />)
-    expect(screen.getByTestId('chart-count').textContent).toBe('54 units · 36 people · 72 vacant')
+    expect(screen.getByTestId('chart-count').textContent).toBe('54 units · 36 people · 72 roles vacant')
     // The domains and their clusters, and no team.
     expect(drawn()).toHaveLength(18)
     expect(drawn().filter((id) => id!.includes('t'))).toEqual([])
     expect(box('d0c0').getAttribute('data-folded')).toBe('true')
     // Each team is short of its developers, which the organisation's findings say of each — listed in the summary beside the chart (3.6.1).
-    expect(within(box('d0c0')).getByTestId('chart-rollup').textContent).toBe('3 units · 6 vacant')
+    expect(within(box('d0c0')).getByTestId('chart-rollup').textContent).toBe('3 units · 6 roles vacant')
     expect(screen.getByRole('radio', { name: '2' }).getAttribute('aria-checked')).toBe('true')
     // The outline folds the same on a first open.
     expect(outlined()).toHaveLength(18)
@@ -113,7 +113,7 @@ describe('a large organisation on its chart', () => {
     // A domain folds what is under it, clusters and all, and keeps its own place.
     fireEvent.click(within(box('d2')).getByRole('button', { name: 'Fold Domain 2' }))
     expect(drawn()).not.toContain('d2c1')
-    expect(within(box('d2')).getByTestId('chart-rollup').textContent).toBe('8 units · 12 vacant')
+    expect(within(box('d2')).getByTestId('chart-rollup').textContent).toBe('8 units · 12 roles vacant')
   })
 
   it('shows as many levels as the Levels control says: one folds every unit, All opens every one', () => {

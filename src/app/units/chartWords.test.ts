@@ -63,14 +63,14 @@ describe('what a folded unit hides', () => {
       { key: 'units', text: '4 units', warn: false }, { key: 'people', text: '1 person', warn: false },
     ])
     expect(rollUpWords({ units: 1, people: 12, vacant: 2, findings: 1 }, t).map((part) => [part.text, part.warn])).toEqual([
-      ['1 unit', false], ['12 people', false], ['2 vacant', true], ['1 to look at', true],
+      ['1 unit', false], ['12 people', false], ['2 roles vacant', true], ['1 to look at', true],
     ])
   })
 
   it('says it in Dutch and German too', () => {
     const rolled = { units: 3, people: 9, vacant: 1, findings: 2 }
-    expect(rollUpWords(rolled, translator('nl')).map((part) => part.text)).toEqual(['3 eenheden', '9 mensen', '1 vacature', '2 om naar te kijken'])
-    expect(rollUpWords(rolled, translator('de')).map((part) => part.text)).toEqual(['3 Einheiten', '9 Personen', '1 unbesetzt', '2 zum Ansehen'])
+    expect(rollUpWords(rolled, translator('nl')).map((part) => part.text)).toEqual(['3 eenheden', '9 mensen', '1 rol vacant', '2 om naar te kijken'])
+    expect(rollUpWords(rolled, translator('de')).map((part) => part.text)).toEqual(['3 Einheiten', '9 Personen', '1 Rolle unbesetzt', '2 zum Ansehen'])
   })
 })
 
@@ -80,8 +80,8 @@ describe('what a whole chart holds, for its summary', () => {
       { key: 'units', text: '13 units', warn: false }, { key: 'people', text: '37 people', warn: false },
     ])
     expect(summaryWords({ units: 1, people: 1, vacant: 2 }, t).map((part) => [part.text, part.warn])).toEqual([
-      ['1 unit', false], ['1 person', false], ['2 vacant', true],
+      ['1 unit', false], ['1 person', false], ['2 roles vacant', true],
     ])
-    expect(summaryWords({ units: 2, people: 3, vacant: 1 }, translator('nl')).map((part) => part.text)).toEqual(['2 eenheden', '3 mensen', '1 vacature'])
+    expect(summaryWords({ units: 2, people: 3, vacant: 1 }, translator('nl')).map((part) => part.text)).toEqual(['2 eenheden', '3 mensen', '1 rol vacant'])
   })
 })

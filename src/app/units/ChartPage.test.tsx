@@ -157,7 +157,7 @@ describe('the organisation chart', () => {
     expect(units()).toEqual(['shipping', 'pf', 'tt', 'data'])
     expect(unitBox('tt').closest('[data-tree-under]')?.getAttribute('data-tree-under')).toBe('pf')
     expect(within(unitBox('data')).getByTestId('chart-badge-serves').textContent).toBe('serves Shipping · Warehouse')
-    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people · 1 vacant')
+    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people · 1 role vacant')
     // The organisation stands at the top, with its units under it.
     expect(screen.getByTestId('chart-organisation').textContent).toBe('the organisation')
   })
@@ -216,7 +216,7 @@ describe('the organisation chart', () => {
     expect(unitBox('shipping').closest('[data-tree-under]')?.getAttribute('data-shape')).toBe('across')
     // Folded, a unit says what it hides.
     fireEvent.click(within(unitBox('pf')).getByRole('button', { name: 'Fold Parcel & Freight' }))
-    expect(within(unitBox('pf')).getByTestId('chart-rollup').textContent).toBe('1 unit · 1 vacant')
+    expect(within(unitBox('pf')).getByTestId('chart-rollup').textContent).toBe('1 unit · 1 role vacant')
     expect(unitBox('pf').closest('[data-tree-under]')?.getAttribute('data-shape')).toBe('hanging')
   })
 
@@ -363,7 +363,7 @@ describe('the organisation chart', () => {
     const shipping: HostModel = { ...SHIPPING, assignments: [...SHIPPING.assignments!, as('as-5', 'pf', 'ro-dev', 'pe-noor2', { share: 0.5 })] }
     renderShell(<Harness commands={[]} shipping={shipping} people={people} />)
     // Noor holds the domain, and Parcel & Freight's developer role under the id merged into hers: one person, at 150%.
-    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people · 1 vacant')
+    expect(screen.getByTestId('chart-count').textContent).toBe('4 units · 4 people · 1 role vacant')
     const noor = screen.getAllByTestId('chart-holder').filter((chip) => chip.textContent?.includes('Noor Haddad'))
     expect(noor).toHaveLength(2)
     expect(noor.every((chip) => chip.getAttribute('data-over') === 'true')).toBe(true)

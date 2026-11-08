@@ -108,7 +108,7 @@ describe('the chart\'s summary, beside it while nothing is picked', () => {
     renderShell(<Harness />)
     expect(text('chart-summary-title')).toBe('Shipping, today')
     // Track & Trace has one developer of the two its type asks for.
-    expect(text('chart-summary-counts')).toBe('3 units · 3 people · 1 vacant')
+    expect(text('chart-summary-counts')).toBe('3 units · 3 people · 1 role vacant')
     expect(screen.getByTestId('chart-summary-counts').querySelector('[data-part="vacant"]')).not.toBeNull()
     expect(await axeFindings()).toEqual([])
     cleanup()
@@ -153,7 +153,7 @@ describe('the chart\'s summary, beside it while nothing is picked', () => {
     renderShell(<Harness shipping={shipping} people={people} />)
     unfoldFindings(screen.getByTestId('chart-findings'))
     expect(within(screen.getByTestId('chart-findings')).getByText(/Noor Haddad holds 150% across their roles/)).toBeTruthy()
-    expect(text('chart-summary-counts')).toBe('3 units · 3 people · 1 vacant')
+    expect(text('chart-summary-counts')).toBe('3 units · 3 people · 1 role vacant')
   })
 
   it('says when there is nothing to say, and how to read the chart wherever it is', () => {
