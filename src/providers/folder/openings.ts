@@ -9,6 +9,7 @@
  */
 import type { DesktopDirectory, DesktopFiles } from '../../adapters/desktop/channel'
 import { desktopHistory, desktopSettings } from '../../adapters/desktop/desktopFiles'
+import { readingOnce } from '../../adapters/desktop/readingOnce'
 import { rememberingWrites } from '../../adapters/desktop/rememberingWrites'
 import { BrowserFolder } from '../../adapters/folder/browser/browserFolder'
 import { browserFolderGit } from '../../adapters/folder/browser/browserFolderGit'
@@ -27,6 +28,7 @@ import { IndexedDbStore } from '../../adapters/webStorage/IndexedDbStore'
 import type { SourceDestination } from '../../ports/ProviderParts'
 import { desktopPerson } from './desktopPerson'
 import { desktopSync } from './folderOwn'
+import type { FolderSync } from './folderOwn'
 import type { FolderOpening } from './openFolder'
 
 /**
@@ -37,7 +39,9 @@ import type { FolderOpening } from './openFolder'
  * somebody else's change, and the app would interrupt itself.
  */
 export function desktopOpening(files: DesktopFiles, directory: DesktopDirectory): FolderOpening {
-  const channel = rememberingWrites(files)
+  // One read of a file per open: a view, the scopes above it and the findings each read the same files at once.
+  const once = readingOnce(files)
+  const channel = rememberingWrites(once.files)
   const handle = new IpcDirectoryHandle(channel.files, directory.root, directory.name)
   const git = desktopHistory()
   const settings = desktopSettings()
@@ -46,7 +50,7 @@ export function desktopOpening(files: DesktopFiles, directory: DesktopDirectory)
     handle,
     name: directory.name,
     root: directory.root,
-    ...(git ? { git: new DesktopFolderGit(git, directory.root), sync: desktopSync(git, directory.root) } : {}),
+    ...(git ? { git: new DesktopFolderGit(git, directory.root), sync: forgettingAfter(desktopSync(git, directory.root), () => once.forget(directory.root)) } : {}),
     historyNoteKey: 'folder.historyNote',
     ...(settings
       ? {
@@ -56,6 +60,15 @@ export function desktopOpening(files: DesktopFiles, directory: DesktopDirectory)
         person: desktopPerson(settings, directory.root, new FileSystemFolderSettings(handle)),
       }
       : {}),
+  }
+}
+
+/** A pull and a resolve change the folder behind the file channel: what was read before them is not kept. */
+function forgettingAfter(sync: FolderSync, forget: () => void): FolderSync {
+  return {
+    ...sync,
+    pull: () => sync.pull().finally(forget),
+    resolve: (side) => sync.resolve(side).finally(forget),
   }
 }
 

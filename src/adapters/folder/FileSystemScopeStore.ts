@@ -191,6 +191,9 @@ export const SET_ASIDE = '.unread'
 type AnalysisList = 'observations' | 'causes' | 'solutions' | 'experiments'
 type OrganisationList = 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks'
 
+/** When each file a read handed back was last written, as the read found it. */
+const writtenAt = new WeakMap<FolderFile, number>()
+
 export class FileSystemScopeStore implements ScopeStore {
   readonly id = 'folder on disk'
 
@@ -238,8 +241,14 @@ export class FileSystemScopeStore implements ScopeStore {
     return file?.text().catch(this.orAbsent(what))
   }
 
-  /** When a file was last written, or 0 where that cannot be read — which is said. */
+  /**
+   * When a file was last written, or 0 where that cannot be read — which is said.
+   * Asked of the handle's stamp where it has one, which reads none of the file:
+   * dating a tree that way read every file of every scope over the desktop's channel.
+   */
   private async stampOf(handle: FileHandleLike): Promise<number> {
+    const stamped = handle.stamp ? await handle.stamp().catch(this.orAbsent('a file\'s date')) : undefined
+    if (stamped) return stamped.lastModified
     return (await handle.getFile().catch(this.orAbsent('a file\'s date')))?.lastModified ?? 0
   }
 
@@ -301,9 +310,11 @@ export class FileSystemScopeStore implements ScopeStore {
   private async read(entry: Entry): Promise<FolderFile | typeof UNREAD | undefined> {
     try {
       const file = await entry.handle.getFile()
-      return isBinary(entry.path)
+      const held: FolderFile = isBinary(entry.path)
         ? { path: entry.path, bytes: new Uint8Array(await file.arrayBuffer()) }
         : { path: entry.path, text: await file.text() }
+      writtenAt.set(held, file.lastModified)
+      return held
     } catch (cause) {
       if (isAbsent(cause)) return undefined
       this.fault('a file of the scope', cause)
@@ -718,10 +729,8 @@ export class FileSystemScopeStore implements ScopeStore {
       const scope = openScopeFolder(files, path, failed)
       if (!scope) return undefined
       // Dated by the files that read: one that did not has been said once already.
-      const read = new Set(files.map((file) => file.path))
-      const latest = Math.max(0, ...await Promise.all(entries
-        .filter((entry) => read.has(entry.path))
-        .map((entry) => this.stampOf(entry.handle))))
+      // By when each was written as it was read: asking each file again was a second call to main per file.
+      const latest = Math.max(0, ...files.map((file) => writtenAt.get(file) ?? 0))
       const revision = folderRevision(files)
       return latest
         ? { ...scope, updatedAt: new Date(latest).toISOString(), revision }
