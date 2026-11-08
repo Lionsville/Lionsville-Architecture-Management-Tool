@@ -332,7 +332,8 @@ have to change again.
 For the desktop app: `npm run dev:desktop` runs it against the Vite dev server,
 `npm run smoke:desktop` builds it and drives the real production bundle through
 its checks in a real window, and `npm run dist:desktop` packages it (unsigned,
-locally).
+locally). A development run with `LVARCH_USER_DATA=<folder>` keeps its own
+settings there.
 
 ## The loop
 

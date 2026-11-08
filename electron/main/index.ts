@@ -331,6 +331,28 @@ let readyToShow = false
  */
 if (app.isPackaged) app.setPath('userData', join(app.getPath('appData'), USER_DATA_NAME))
 
+/**
+ * A development run may keep its own `userData`: `LVARCH_USER_DATA=<folder>`.
+ *
+ * An unpackaged run's default folder is one machine-wide folder, shared by
+ * every development run on the machine, and it remembers the working folder
+ * the last run opened. A test run started from a checkout then opens that
+ * folder, whatever it holds. Naming a folder of its own gives the run its own
+ * preferences, its own remembered folder and its own log, and starts it at
+ * the first-run page.
+ *
+ * Never in a packaged app: an installed app's settings are where the pin above
+ * puts them, and nothing in its environment moves them. Before `whenReady` and
+ * before the first read of a path, like the pin; the smoke run's own folder
+ * below still wins over it.
+ */
+const ownUserData = app.isPackaged ? undefined : process.env.LVARCH_USER_DATA
+if (ownUserData) {
+  mkdirSync(ownUserData, { recursive: true })
+  app.setPath('userData', ownUserData)
+  app.setAppLogsPath(join(ownUserData, 'logs'))
+}
+
 /** A run's directory where no launcher made one: said, because nothing will remove it. */
 function madeForThisRun(): string {
   const made = mkdtempSync(join(tmpdir(), 'lvarch-smoke-'))

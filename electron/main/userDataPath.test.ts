@@ -42,4 +42,38 @@ describe('where main puts userData', () => {
     const smoke = MAIN.indexOf("app.setPath('userData', own)")
     expect(smoke).toBeGreaterThan(pinned)
   })
+
+  /**
+   * A development run's own folder, `LVARCH_USER_DATA`: so a test run started
+   * from a checkout never opens the folder another run remembered. Read only
+   * where the app is not packaged — an installed app's settings are never
+   * moved by its environment — and set before `whenReady`, with the log beside
+   * it, after the pin and before the smoke run's own folder, which still wins.
+   */
+  it('lets a development run keep its own folder, never a packaged app', () => {
+    expect(MAIN).toContain('const ownUserData = app.isPackaged ? undefined : process.env.LVARCH_USER_DATA')
+    expect(MAIN.match(/process\.env\.LVARCH_USER_DATA/g)).toHaveLength(1)
+  })
+
+  it('sets that folder and its logs before whenReady, between the pin and the smoke run', () => {
+    const pinned = MAIN.indexOf("app.setPath('userData', join(")
+    const own = MAIN.indexOf("app.setPath('userData', ownUserData)")
+    const logs = MAIN.indexOf("app.setAppLogsPath(join(ownUserData, 'logs'))")
+    const smoke = MAIN.indexOf("app.setPath('userData', own)")
+    const ready = MAIN.indexOf('app.whenReady()')
+    expect(own).toBeGreaterThan(pinned)
+    expect(logs).toBeGreaterThan(own)
+    expect(smoke).toBeGreaterThan(logs)
+    expect(ready).toBeGreaterThan(smoke)
+  })
+
+  it('reads no path before that folder is set', () => {
+    const own = MAIN.indexOf("app.setPath('userData', ownUserData)")
+    const before = MAIN.slice(0, own)
+    // Only a function that reads a path later, and the pin's own appData.
+    const reads = [...before.matchAll(/app\.getPath\('(\w+)'\)/g)].map((m) => m[1])
+    expect(reads.every((name) => name === 'userData' || name === 'appData')).toBe(true)
+    expect(before).toMatch(/const keptThemePath = \(\): string => join\(app\.getPath\('userData'\)/)
+    expect(before.match(/app\.getPath\('userData'\)/g)).toHaveLength(1)
+  })
 })

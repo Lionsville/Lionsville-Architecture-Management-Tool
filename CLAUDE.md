@@ -101,7 +101,8 @@ without deciding anything: no flags, no reading of scrollback. `npm run smoke` i
 the last two steps on their own; `npm run test:perf` is the perf step alone.
 The smoke's window is never shown, so it runs behind whatever you are doing and
 takes nothing from you; `LVARCH_SMOKE_SHOWN=1` runs it in a shown window. A step
-that fails says how the window stood.
+that fails says how the window stood. A development run with
+`LVARCH_USER_DATA=<folder>` keeps its own settings there; a packaged app ignores it.
 
 The perf step times a generated landscape of a few thousand elements against a
 written-down budget per operation (`model/testing/`, ADR-0004). It is
