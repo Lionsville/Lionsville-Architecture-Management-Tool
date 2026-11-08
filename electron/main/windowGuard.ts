@@ -23,7 +23,10 @@
  *
  * **A dead renderer is a window that will never paint again.** Without a word
  * it stays on screen showing the last frame it managed, and the only way to
- * tell it apart from a very slow app is to wait indefinitely.
+ * tell it apart from a very slow app is to wait indefinitely. The log says
+ * why it went, its exit code and the last error the page said before it did,
+ * since the page's own trail went with it; and a renderer that hangs is said
+ * when it hangs and when it answers again.
  *
  * **What it holds unsaved is its own.** Each window's page says so over
  * `app:unsaved` ({@link reportUnsaved}), and it is forgotten when the page is
@@ -57,6 +60,9 @@ export const SAVE_BEFORE_CLOSE_MS = 5_000
  * this bundle compiles against Node and the DOM adapter it lives in does not.
  */
 export const RENDERER_LOG_PREFIX = '[lvarch]'
+
+/** How much of the renderer's last error is kept for the line that says it died. */
+export const LAST_ERROR_KEPT = 2_000
 
 /** As much of a window as its guards use. */
 export type GuardedWindow = Pick<BrowserWindow, 'on' | 'close' | 'destroy' | 'isDestroyed'> & {
@@ -113,13 +119,18 @@ export function guardWindow(window: GuardedWindow, deps: WindowGuardDeps): void 
   window.webContents.on('did-fail-load', (_event, code, description, url) => {
     deps.log('renderer', `did-fail-load ${code} ${description} ${url}`)
   })
+  // A renderer that hangs is the other way a window stops painting, and the
+  // one a person reports as a crash: said when it starts and when it ends.
+  window.on('unresponsive', () => { deps.log('renderer', 'unresponsive') })
+  window.on('responsive', () => { deps.log('renderer', 'responsive again') })
   window.webContents.on('render-process-gone', (_event, details) => {
-    deps.log('renderer', `render-process-gone ${details.reason}`)
+    deps.log('renderer', goneLine(details, lastErrorIn.get(page)))
+    lastErrorIn.delete(page)
     if (deps.unattended || window.isDestroyed()) return
     void deps.dialog.showMessageBox(window as BrowserWindow, {
       type: 'error',
       message: 'The window stopped responding.',
-      detail: `Reason: ${details.reason}.\nDiagnostics: ${deps.logFile()}`,
+      detail: `Reason: ${details.reason} (exit code ${details.exitCode}).\nDiagnostics: ${deps.logFile()}`,
       buttons: ['Reload', 'Close'],
       defaultId: 0,
       cancelId: 1,
@@ -129,9 +140,28 @@ export function guardWindow(window: GuardedWindow, deps: WindowGuardDeps): void 
   })
 }
 
+/**
+ * Per page, the last error its renderer said. A renderer that dies takes its
+ * own trail with it, and the line before the end is the one worth having
+ * beside the reason: it is written again with the line that says it went.
+ */
+const lastErrorIn = new WeakMap<object, string>()
+
+/** As much of Electron's `RenderProcessGoneDetails` as the line says. */
+export type GoneDetails = { reason: string; exitCode: number }
+
+/** The log's line for a renderer gone: why, its exit code, and the last error it said, where it said one. */
+export function goneLine(details: GoneDetails, lastError: string | undefined): string {
+  const said = lastError === undefined ? 'no error said before' : `last error: ${lastError}`
+  return `render-process-gone reason=${details.reason} exitCode=${details.exitCode}; ${said}`
+}
+
 function relayConsole(window: GuardedWindow, deps: WindowGuardDeps): void {
+  const page = window.webContents
+  page.on('did-navigate', () => { lastErrorIn.delete(page) })
   window.webContents.on('console-message', (event) => {
     const ours = event.message.startsWith(RENDERER_LOG_PREFIX)
+    if (event.level === 'error') lastErrorIn.set(page, event.message.slice(0, LAST_ERROR_KEPT))
     if (ours || event.level === 'warning' || event.level === 'error') {
       deps.log(`renderer[${event.level}]`, event.message)
       return

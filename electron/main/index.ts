@@ -61,6 +61,14 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   log('main', `unhandledRejection ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}`)
 })
+/**
+ * A helper process gone — the GPU's, a utility's, the network service's. A
+ * window can go blank because the GPU process died with no renderer dying, and
+ * without this line the log says nothing at all about it.
+ */
+app.on('child-process-gone', (_event, details) => {
+  log('main', `child-process-gone type=${details.type} reason=${details.reason} exitCode=${details.exitCode}${details.name ? ` name=${details.name}` : ''}`)
+})
 
 /**
  * Registering the scheme has to happen before `ready`, and this statement being

@@ -212,6 +212,32 @@ describe('what a window’s page says', () => {
     expect(held.state.echoed).toEqual(['renderer[info] a library chatting'])
   })
 
+  it('says why a renderer went, its exit code and the last error it said before it did', () => {
+    const held = app({ unattended: true })
+    const first = held.windows.first()
+    first.raise('console-message', { level: 'error', message: '[lvarch] ERROR window: uncaught error' })
+    first.raise('console-message', { level: 'warning', message: 'a warning after it' })
+    first.raise('render-process-gone', {}, { reason: 'oom', exitCode: 133 })
+    expect(held.state.logged.at(-1)).toBe('renderer render-process-gone reason=oom exitCode=133; last error: [lvarch] ERROR window: uncaught error')
+  })
+
+  it('says a renderer went with nothing said before, and forgets a page replaced', () => {
+    const held = app({ unattended: true })
+    const first = held.windows.first()
+    first.raise('console-message', { level: 'error', message: 'from the page before' })
+    first.raise('did-navigate')
+    first.raise('render-process-gone', {}, { reason: 'crashed', exitCode: 11 })
+    expect(held.state.logged.at(-1)).toBe('renderer render-process-gone reason=crashed exitCode=11; no error said before')
+  })
+
+  it('says when a renderer hangs and when it answers again', () => {
+    const held = app({ unattended: true })
+    const first = held.windows.first()
+    first.raise('unresponsive')
+    first.raise('responsive')
+    expect(held.state.logged).toEqual(['renderer unresponsive', 'renderer responsive again'])
+  })
+
   it('says nothing more than the log where nobody runs the smoke', () => {
     const held = app()
     const first = held.windows.first()
