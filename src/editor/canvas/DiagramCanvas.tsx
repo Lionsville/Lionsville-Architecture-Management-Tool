@@ -77,7 +77,7 @@ import type { OverlayLegendProps } from './OverlayLegend';
 import { BoardChrome, BoardConnectionLine, boardAttributes, EmptyBoardNote, useAskAdd } from './BoardOverlays';
 import type { AddRequest } from '../AddPicker';
 import type { OverlayMark } from '../theme/overlayColors';
-import { linesInTabOrder, selectGroup } from './tabOrder';
+import { FLOW_OPTIONS, linesInTabOrder, selectGroup } from './flowParts';
 import { MAX_ZOOM, MIN_ZOOM, useFitBoard } from './fitAll';
 import { BoardFocusProvider, BoardFocusSheet, useBoardFocusing } from './boardFocus';
 import { useBoardFrame, useReadingDistance } from './useBoardFrame';
@@ -1658,7 +1658,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         <NodeResizeContext.Provider value={nodeResize}>
         <ReactFlow
           nodes={nodes}
-          edges={tabbableEdges} edgesFocusable={false}
+          edges={tabbableEdges} edgesFocusable={false} proOptions={FLOW_OPTIONS}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode={theme.palette.mode}
