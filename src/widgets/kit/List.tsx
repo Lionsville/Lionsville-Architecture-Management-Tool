@@ -384,6 +384,14 @@ function GroupHead({ group, folded, focusable, selected, ticks, tickedHere, tick
 
 const INTERACTIVE = 'button, a, input, select, textarea, [data-kit-actions]'
 
+/** How many rows of this one's height the nearest scrolling box shows, less one kept for context. */
+function rowsInView(row: HTMLElement): number {
+  let box = row.parentElement
+  while (box && !(box.scrollHeight > box.clientHeight && /(auto|scroll)/.test(getComputedStyle(box).overflowY))) box = box.parentElement
+  const height = box?.clientHeight ?? window.innerHeight
+  return Math.max(1, Math.floor(height / Math.max(1, row.getBoundingClientRect().height)) - 1)
+}
+
 export function List({
   label, groups, wrap, density, columns, itemLabel, itemSortable, sort, onSort, selectedId, onOpen,
   checked, onCheckedChange, bulkActions, defaultFolded, folded: foldedTold, onFold, onOpenGroup, onRowDragStart, empty, more, doors, dataGuide, rowGuide,
@@ -430,6 +438,9 @@ export function List({
       ArrowUp: () => stepTo(index - 1),
       Home: () => move(0),
       End: () => move(keys.length - 1),
+      // A window's worth of rows, focus and all: scrolled alone, the focus stayed on a row out of sight.
+      PageDown: () => move(index + rowsInView(row)),
+      PageUp: () => move(index - rowsInView(row)),
       Enter: () => {
         if (!head) onOpen?.(id)
         else if (onOpenGroup) onOpenGroup(id)

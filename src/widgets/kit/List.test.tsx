@@ -140,6 +140,11 @@ describe('a list', () => {
     key(row('Onboarding stalls'), 'Home')
     expect(document.activeElement).toBe(row(/Waiting/))
     expect(document.querySelectorAll('[role="row"][tabindex="0"]')).toHaveLength(1)
+    // A page down and up moves the focus with the rows, here a whole short list's worth.
+    key(row(/Waiting/), 'PageDown')
+    expect(document.activeElement).toBe(row('Onboarding stalls'))
+    key(row('Onboarding stalls'), 'PageUp')
+    expect(document.activeElement).toBe(row(/Waiting/))
   })
 
   it('hands the focus back to the row last selected when the preview lets go', () => {
