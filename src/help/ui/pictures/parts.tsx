@@ -22,9 +22,12 @@ export function Say({ k }: { k: StringKey }) {
   return <>{t(k)}</>
 }
 
-/** A window: the frame's two rows over what the screen shows. */
-export function Screen({ trail, tabs, on, children, tree, height = 300 }: {
-  trail: readonly string[]; tabs?: readonly ReactNode[]; on?: number; children: ReactNode; tree?: ReactNode; height?: number
+/**
+ * A window: the frame's two rows over what the screen shows. `crop` cuts the
+ * picture to what the screen shows, below the rows every picture repeats.
+ */
+export function Screen({ trail, tabs, on, children, tree, height = 300, crop }: {
+  trail: readonly string[]; tabs?: readonly ReactNode[]; on?: number; children: ReactNode; tree?: ReactNode; height?: number; crop?: boolean
 }) {
   return (
     <div className="hp-window" style={{ height }}>
@@ -45,7 +48,7 @@ export function Screen({ trail, tabs, on, children, tree, height = 300 }: {
       </div>
       <div className="hp-body">
         {tree}
-        <div className="hp-main">{children}</div>
+        <div className="hp-main" data-crop={crop || undefined}>{children}</div>
       </div>
     </div>
   )
@@ -101,4 +104,12 @@ export function Chip({ children, tone }: { children: ReactNode; tone?: 'ok' | 'w
 /** A line of the View bar over a view. */
 export function ViewBar({ items }: { items: readonly ReactNode[] }) {
   return <div className="hp-viewbar">{items.map((item, at) => <span key={at}>{item}</span>)}</div>
+}
+
+/**
+ * The part of a picture its figure is cut to, where that is no one element:
+ * a box at a place in the picture, in px from its top left, drawn as nothing.
+ */
+export function CropTo({ x, y, width, height }: { x: number; y: number; width: number; height: number }) {
+  return <span className="hp-crop" data-crop="" style={{ left: x, top: y, width, height }} />
 }

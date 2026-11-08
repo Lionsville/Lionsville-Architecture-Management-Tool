@@ -27,6 +27,8 @@ export const EN = {
   'help.writes': 'Not offered where you may only read',
   'help.worked': 'Worked example',
   'help.background': 'How it works',
+  'help.enlarge': 'Show the whole picture',
+  'help.close': 'Close',
   'help.picture': 'A picture of the screen',
   'help.toTop': 'Back to the top',
   'help.inChapter': 'in {chapter}',

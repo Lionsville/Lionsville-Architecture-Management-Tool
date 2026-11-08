@@ -15,6 +15,7 @@ import { readMarkdown } from '../markdown'
 import type { Block, Inline } from '../markdown'
 import { GETTING_STARTED } from '../types'
 import type { HelpChapterOutline, HelpSectionOutline, HelpText } from '../types'
+import { HelpFigure } from './HelpFigure'
 import { PICTURES } from './pictures'
 import { START_PICTURES } from './pictures/start'
 
@@ -37,6 +38,13 @@ export const HelpDocument = memo(function HelpDocument({ outline, text, t, hidde
   )
 })
 
+/**
+ * The widths the pictures are laid out at: a step's beside its words, a
+ * chapter's across a column as narrow as the desktop's help window gives it.
+ */
+const START_WIDTH = 560
+const CHAPTER_WIDTH = 700
+
 /** The address of the reference part, where each chapter's account of how it works is kept. */
 export const REFERENCE = 'reference'
 
@@ -55,12 +63,7 @@ function GettingStarted({ start, t }: { start: NonNullable<HelpText['start']>; t
                 <h3 tabIndex={-1}><span className="help-start__n" aria-hidden="true">{at + 1}</span>{step.title}</h3>
                 <p><Words text={step.text} /></p>
               </div>
-              {Picture && (
-                <figure className="help-figure help-figure--small">
-                  <div className="help-screen" aria-hidden="true" inert><Picture /></div>
-                  <figcaption>{step.picture || t('help.picture')}</figcaption>
-                </figure>
-              )}
+              {Picture && <HelpFigure Picture={Picture} caption={step.picture || t('help.picture')} t={t} width={START_WIDTH} small />}
             </li>
           )
         })}
@@ -84,12 +87,7 @@ function Chapter({ chapter, text, t }: { chapter: HelpChapterOutline; text: Help
           {first.map((id, at) => <Fragment key={id}>{at > 0 && ' · '}<a href={`#${id}`}>{text.sections[id][0]}</a></Fragment>)}
         </p>
       )}
-      {Picture && (
-        <figure className="help-figure">
-          <div className="help-screen" aria-hidden="true" inert><Picture /></div>
-          <figcaption>{words?.picture ?? t('help.picture')}</figcaption>
-        </figure>
-      )}
+      {Picture && <HelpFigure Picture={Picture} caption={words?.picture ?? t('help.picture')} t={t} width={CHAPTER_WIDTH} />}
       {words?.worked && (
         <details className="help-worked">
           <summary>{t('help.tryIt')}: {words.worked.title}</summary>

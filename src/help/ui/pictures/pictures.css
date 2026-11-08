@@ -11,7 +11,9 @@
   color: var(--ink);
   background: var(--ground);
   overflow: hidden;
+  position: relative;
 }
+.hp-crop { position: absolute; pointer-events: none }
 .hp-row { min-height: 30px; padding: 0 8px; gap: 6px; display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden }
 .kit-frame__row.hp-row { position: static }
 .hp-glyph { color: var(--ink-2); min-width: 10px; text-align: center }
@@ -96,7 +98,7 @@
 .hp-chart { display: flex; flex-direction: column; align-items: center; gap: 14px }
 .hp-chart__row { display: flex; gap: 10px }
 .hp-unit { padding: 6px 8px; border: 1px solid var(--card-edge); border-radius: 4px; background: var(--card-surface); min-width: 120px }
-.hp-unit__type { font-size: 10px; color: var(--ink-3) }
+.hp-unit__type { font-size: 11px; color: var(--ink-3) }
 .hp-unit__role { color: var(--ink-2) }
 .hp-unit__role [data-vacant] { color: var(--warn); font-style: italic }
 
@@ -153,8 +155,8 @@
   color: var(--on-accent);
   font-weight: 600;
 }
-.hp-callout[data-at='one'] { top: 6px; left: 50% }
-.hp-callout[data-at='two'] { top: 37px; left: 40% }
+.hp-callout[data-at='one'] { top: 6px; left: 4px }
+.hp-callout[data-at='two'] { top: 37px; left: 350px }
 .hp-callout[data-at='tree'] { top: 90px; left: 120px }
 .hp-callout[data-at='panel'] { top: 70px; right: 14px }
 .hp-keys { display: flex; align-items: center; gap: 6px; color: var(--ink-2) }

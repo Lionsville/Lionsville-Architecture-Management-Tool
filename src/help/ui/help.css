@@ -118,6 +118,26 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
   user-select: none;
 }
 
+.help-figure__frame { position: relative; display: inline-block; max-width: 100%; vertical-align: top }
+/* The part a picture is cut to, at the size it is drawn: never scaled, so its words read as they do on screen. */
+.help-crop { display: block; max-width: 100%; position: relative }
+.help-crop__picture { display: block }
+.help-figure__press {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  padding: 0; border: 0; border-radius: 8px; background: none; cursor: zoom-in;
+}
+.help-figure__press:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px }
+.help-whole {
+  max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); padding: 16px; overflow: auto;
+  border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink);
+}
+.help-whole::backdrop { background: var(--scrim) }
+.help-whole__foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 10px 0 0; color: var(--ink-2); font-size: var(--t-small) }
+.help-whole__close {
+  font: inherit; padding: 4px 12px; border: 1px solid var(--line-strong); border-radius: 4px;
+  background: var(--surface-raised); color: var(--ink); cursor: pointer;
+}
+
 .help-worked {
   margin: 0 0 20px;
   padding: 10px 16px;
@@ -160,7 +180,7 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 .help-first span { color: var(--ink-2) }
 
 .help-start__steps { list-style: none; margin: 0; padding: 0; counter-reset: none }
-.help-start__step { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 20px; align-items: start; padding: 16px 0; border-top: 1px solid var(--line); scroll-margin-top: 70px }
+.help-start__step { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 20px; align-items: start; padding: 16px 0; border-top: 1px solid var(--line); scroll-margin-top: 70px }
 .help-start__step h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: var(--t-title) }
 .help-start__step p { margin: 0 }
 .help-start__n {
@@ -168,7 +188,6 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
   width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: var(--t-small); font-weight: 600;
 }
 .help-figure--small { margin: 0 }
-.help-figure--small .help-screen { zoom: 0.66 }
 
 .help-nav__group { margin: 18px 0 4px; padding-top: 10px; border-top: 1px solid var(--line); font-weight: 600 }
 .help-nav__group a { color: var(--ink-2) }

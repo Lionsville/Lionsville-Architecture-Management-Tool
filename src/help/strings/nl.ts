@@ -28,6 +28,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'help.writes': 'Niet aangeboden waar je alleen mag lezen',
   'help.worked': 'Uitgewerkt voorbeeld',
   'help.background': 'Hoe het werkt',
+  'help.enlarge': 'Het hele plaatje tonen',
+  'help.close': 'Sluiten',
   'help.picture': 'Een afbeelding van het scherm',
   'help.toTop': 'Terug naar boven',
   'help.inChapter': 'in {chapter}',

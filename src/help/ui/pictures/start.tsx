@@ -10,7 +10,7 @@ import type { ComponentType } from 'react'
 import { Card } from '../../../widgets/kit/Card'
 import { Mark } from '../../../widgets/kit/Mark'
 import '../../../widgets/kit/HelpPress.css'
-import { Btn, Rows, Say, Screen, SidePanel, Tree } from './parts'
+import { Btn, CropTo, Rows, Say, Screen, SidePanel, Tree } from './parts'
 
 const TREE = <Tree at="Warehouse" rows={[['Acme Logistics', 0], ['Warehouse', 1], ['Shared platforms', 1], ['Topics', 1]]} />
 const PLACES = [<Say key="d" k="shell.decisions" />, <Say key="o" k="shell.observations" />, <Say key="r" k="shell.roadmap" />]
@@ -29,7 +29,7 @@ function Home({ mark }: { mark?: 'views' }) {
 }
 
 function WhatFor() {
-  return <Screen trail={['Acme Logistics', 'Warehouse']} tree={TREE} tabs={PLACES} height={230}><Home /></Screen>
+  return <Screen trail={['Acme Logistics', 'Warehouse']} tree={TREE} tabs={PLACES} height={230} crop><Home /></Screen>
 }
 
 function TheFrame() {
@@ -45,6 +45,7 @@ function TheFrame() {
       <span className="hp-callout" data-at="two">2</span>
       <span className="hp-callout" data-at="tree">3</span>
       <span className="hp-callout" data-at="panel">4</span>
+      <CropTo x={0} y={0} width={376} height={140} />
     </div>
   )
 }
@@ -55,8 +56,8 @@ function OpenAView() {
 
 function AddAndConnect() {
   return (
-    <Screen trail={['Acme Logistics', 'Warehouse', 'Application landscape']} tabs={['Application landscape']} on={0} height={230}>
-      <div className="hp-viewbar"><b data-mark=""><Say k="shell.add" /></b><Say k="bar.arrange" /><Say k="landscape.show" /></div>
+    <Screen trail={['Acme Logistics', 'Warehouse', 'Application landscape']} tabs={['Application landscape']} on={0} height={230} crop>
+      <div className="hp-viewbar"><b data-mark=""><Say k="shell.add" /></b><span><Say k="bar.arrange" /></span><span><Say k="landscape.show" /></span></div>
       <div className="hp-split">
         <div className="hp-canvas">
           <div className="hp-cards">
@@ -73,8 +74,8 @@ function AddAndConnect() {
 
 function RecordOne() {
   return (
-    <Screen trail={['Acme Logistics', 'Warehouse']} tabs={PLACES} on={1} height={230}>
-      <div className="hp-viewbar"><b><Say k="observation.stageSeen" /></b><Say k="observation.stageWhy" /><Say k="observation.stageSolve" /><span data-mark=""><Btn primary><Say k="observation.new" /></Btn></span></div>
+    <Screen trail={['Acme Logistics', 'Warehouse']} tabs={PLACES} on={1} height={230} crop>
+      <div className="hp-viewbar"><b><Say k="observation.stageSeen" /></b><span><Say k="observation.stageWhy" /></span><span><Say k="observation.stageSolve" /></span><span data-mark=""><Btn primary><Say k="observation.new" /></Btn></span></div>
       <Rows rows={[
         <span key="a"><b>OB-0001</b> Quoted one price, billed another</span>,
         <span key="b"><b>OB-0002</b> Two delivery estimates for one parcel</span>,
@@ -86,10 +87,9 @@ function RecordOne() {
 
 function GoNext() {
   return (
-    <div className="hp-window" style={{ height: 120 }}>
+    <div className="hp-window" style={{ height: 96, width: 376 }} data-crop="">
       <div className="kit-frame__row kit-frame__row--one hp-row">
-        <span className="hp-glyph">‹</span><span className="hp-glyph">›</span>
-        <span className="hp-trail"><span>Acme Logistics</span><span data-last="">Warehouse</span></span>
+        <span className="hp-trail"><span data-last="">Warehouse</span></span>
         <span className="kit-frame__grow" />
         <span className="hp-status"><span className="hp-dot" /> <Say k="frame.yourWork" /></span>
         <span className="hp-word" data-mark=""><span className="kit-help-press">?</span></span>

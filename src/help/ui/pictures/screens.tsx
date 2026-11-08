@@ -43,7 +43,7 @@ export function FramePicture() {
 
 export function WorkPicture() {
   return (
-    <Screen trail={TRAIL.slice(0, 1)} tree={TREE}>
+    <Screen crop trail={TRAIL.slice(0, 1)} tree={TREE}>
       <div className="hp-split">
         <div className="hp-home"><div className="hp-home__title">Acme Logistics</div><Rows title={<Say k="org.viewsHere" />} rows={VIEWS.map((view) => <span key={view}>{view}</span>)} /></div>
         <SidePanel kind={<Say k="frame.yourWork" />} name="~/Documents/acme" facts={<Say k="shell.sourceBrowser" />} rows={[
@@ -56,7 +56,7 @@ export function WorkPicture() {
 
 export function BoardPicture() {
   return (
-    <Screen trail={TRAIL} tabs={VIEWS} on={0}>
+    <Screen crop trail={TRAIL} tabs={VIEWS} on={0}>
       <ViewBar items={[<Say key="a" k="shell.add" />, <Say key="b" k="bar.arrange" />, <Say key="c" k="landscape.show" />, <Say key="d" k="kit.colour" />, <Say key="e" k="kit.day" />]} />
       <div className="hp-split">
         <div className="hp-canvas">
@@ -78,7 +78,7 @@ export function BoardPicture() {
 
 export function PanelPicture() {
   return (
-    <Screen trail={TRAIL} tabs={VIEWS} on={0}>
+    <Screen crop trail={TRAIL} tabs={VIEWS} on={0}>
       <div className="hp-split hp-split--wide">
         <div className="hp-record">
           <div className="hp-home__title">Warehouse Management</div>
@@ -102,7 +102,7 @@ export function TechnologyPicture() {
     <div className="hp-column"><div className="hp-rows__title">{title}</div>{rows.map((row) => <div key={row} className="hp-tech" data-on={row === picked || undefined}>{row}</div>)}</div>
   )
   return (
-    <Screen trail={['Acme Logistics', 'Shared platforms']} tabs={['Technology landscape']} on={0}>
+    <Screen crop trail={['Acme Logistics', 'Shared platforms']} tabs={['Technology landscape']} on={0}>
       <div className="hp-columns">
         {column(<Say k="landscape.applications" />, ['Order Management', 'Warehouse Management', 'Billing', 'Dispatch'], 'Warehouse Management')}
         {column(<Say k="register.tabServices" />, ['Container platform', 'Message brokering', 'Managed database', 'Identity'], 'Container platform')}
@@ -115,7 +115,7 @@ export function TechnologyPicture() {
 export function SheetPicture() {
   const tile = (name: string, tone: 'apps' | 'people' | 'none') => <span key={name} className="hp-tile" data-tone={tone}>{name}</span>
   return (
-    <Screen trail={['Acme Logistics']} tabs={['Business architecture']} on={0}>
+    <Screen crop trail={['Acme Logistics']} tabs={['Business architecture']} on={0}>
       <ViewBar items={[<Say key="p" k="sheet.reading.poster" />, <Say key="n" k="sheet.reading.names" />, <Say key="c" k="shell.newMap" />, <Say key="k" k="kit.colour" />]} />
       <div className="hp-journey">{['Sell', 'Plan', 'Move', 'Bill'].map((phase) => <span key={phase}>{phase}</span>)}</div>
       <div className="hp-areas">
@@ -130,7 +130,7 @@ export function SheetPicture() {
 
 export function PosterPicture() {
   return (
-    <Screen trail={['Acme Logistics']} tabs={['Business architecture']} on={0}>
+    <Screen crop trail={['Acme Logistics']} tabs={['Business architecture']} on={0}>
       <ViewBar items={[<Say key="p" k="sheet.reading.poster" />, <span key="r"><b><Say k="doc.read" /></b> | <Say k="sheet.poster.design" /></span>, <Say key="k" k="kit.colour" />, <Say key="d" k="kit.day" />]} />
       <div className="hp-poster">
         <div className="hp-poster__journey">Ship a consignment</div>
@@ -147,7 +147,7 @@ export function ChartPicture() {
     <div className="hp-unit"><div className="hp-unit__type">{type}</div><b>{name}</b>{roles.map(([role, who]) => <div key={role} className="hp-unit__role">{role}: <span data-vacant={who === '' || undefined}>{who || 'vacant'}</span></div>)}</div>
   )
   return (
-    <Screen trail={['Acme Logistics']} tabs={['Organisation chart']} on={0}>
+    <Screen crop trail={['Acme Logistics']} tabs={['Organisation chart']} on={0}>
       <ViewBar items={[<Say key="l" k="map.levels" />, <Say key="p" k="org.people" />, <Say key="n" k="conway.lines" />, '+', <Say key="d" k="kit.day" />]} />
       <div className="hp-chart">
         {box('Department', 'Terminal', [['Head', 'Anna de Vries']])}
@@ -163,7 +163,7 @@ export function ChartPicture() {
 
 export function DrawingPicture() {
   return (
-    <Screen trail={TRAIL} tabs={['Application landscape', 'Dock flow']} on={1}>
+    <Screen crop trail={TRAIL} tabs={['Application landscape', 'Dock flow']} on={1}>
       <ViewBar items={['Dock flow', '3 links', <Say key="e" k="drawing.edit" />, 'Export…']} />
       <div className="hp-drawing">
         <span className="hp-shape" data-linked>Warehouse Management</span>
@@ -178,7 +178,7 @@ export function DrawingPicture() {
 
 export function DecisionsPicture() {
   return (
-    <Screen trail={TRAIL} tabs={VIEWS} on={undefined}>
+    <Screen crop trail={TRAIL} tabs={VIEWS} on={undefined}>
       <div className="hp-split hp-split--wide">
         <div>
           <Rows title={<Say k="adr.groupOpen" />} rows={['ADR-0003 Keep carrier rates in the tariff engine']} />
@@ -198,7 +198,7 @@ export function DecisionsPicture() {
 export function ObservationsPicture() {
   const node = (label: string, title: string, kind: 'obs' | 'cause' | 'root' | 'sol') => <div className="hp-node" data-kind={kind}><b>{label}</b> {title}</div>
   return (
-    <Screen trail={TRAIL} tabs={[<Say key="o" k="shell.observations" />]} on={0}>
+    <Screen crop trail={TRAIL} tabs={[<Say key="o" k="shell.observations" />]} on={0}>
       <ViewBar items={[<Say key="s" k="observation.stageSeen" />, <b key="w"><Say k="observation.stageWhy" /></b>, <Say key="v" k="observation.stageSolve" />, <Say key="r" k="observation.stageResults" />]} />
       <div className="hp-lanes">
         <div>{node('OB-0001', 'Quoted one price, billed another', 'obs')}{node('OB-0002', 'Two delivery estimates', 'obs')}</div>
@@ -215,7 +215,7 @@ export function RoadmapPicture() {
     <div className="hp-timeline__row"><span>{name}</span><span className="hp-timeline__track"><span className="hp-timeline__bar" data-kind={kind} style={{ left: `${from}%`, width: `${to - from}%` }} /></span></div>
   )
   return (
-    <Screen trail={TRAIL} tabs={VIEWS} on={undefined}>
+    <Screen crop trail={TRAIL} tabs={VIEWS} on={undefined}>
       <ViewBar items={[<Say key="w" k="kit.axis.weeks" />, <b key="m"><Say k="kit.axis.months" /></b>, <Say key="q" k="kit.axis.quarters" />, <Say key="y" k="kit.axis.years" />, <Say key="t" k="roadmap.today" />, <Say key="f" k="kit.axis.fit" />]} />
       <div className="hp-timeline">
         <div className="hp-timeline__today" />
@@ -230,7 +230,7 @@ export function RoadmapPicture() {
 
 export function RegistersPicture() {
   return (
-    <Screen trail={['Acme Logistics']} tabs={[<Say key="r" k="org.register" />]} on={0}>
+    <Screen crop trail={['Acme Logistics']} tabs={[<Say key="r" k="org.register" />]} on={0}>
       <ViewBar items={[<b key="a"><Say k="register.tabApplications" /></b>, <Say key="s" k="register.tabServices" />, <Say key="p" k="register.tabPlatforms" />]} />
       <div className="hp-table">
         <div className="hp-table__head"><span>Name</span><span><Say k="register.colMaster" /></span><span><Say k="register.colLifecycle" /></span><span><Say k="register.colFindings" /></span></div>
@@ -246,7 +246,7 @@ export function OperatingPicture() {
   const roles = ['PO', 'SM', 'Lead', 'Ops']
   const grid: [string, string[]][] = [['Order the backlog', ['A', 'C', 'I', '']], ['Plan the cycle', ['R', 'C', 'A', '']], ['Keep it running', ['I', '', 'R', 'A']]]
   return (
-    <Screen trail={['Acme Logistics']} tabs={[<Say key="o" k="org.operating" />]} on={0}>
+    <Screen crop trail={['Acme Logistics']} tabs={[<Say key="o" k="org.operating" />]} on={0}>
       <ViewBar items={[<Say key="s" k="operating.tabStructure" />, <Say key="r" k="operating.roles" />, <b key="x"><Say k="operating.tabRaci" /></b>, <Say key="e" k="operating.tabExceptions" />, <Say key="l" k="operating.tabLibraries" />]} />
       <div className="hp-raci">
         <div className="hp-raci__row hp-raci__row--head"><span />{roles.map((role) => <span key={role}>{role}</span>)}</div>
@@ -258,7 +258,7 @@ export function OperatingPicture() {
 
 export function PeoplePicture() {
   return (
-    <Screen trail={['Acme Logistics']} tabs={[<Say key="p" k="org.people" />]} on={0}>
+    <Screen crop trail={['Acme Logistics']} tabs={[<Say key="p" k="org.people" />]} on={0}>
       <Rows rows={[
         <span key="a"><b>Anna de Vries</b> · Head in Terminal</span>,
         <span key="t"><b>Tom Berger</b> · Lead in Dock crew <Chip>+1</Chip></span>,
@@ -271,7 +271,7 @@ export function PeoplePicture() {
 
 export function GuidancePicture() {
   return (
-    <Screen trail={TRAIL} tabs={[<Say key="g" k="frame.place.guidance" />]} on={0}>
+    <Screen crop trail={TRAIL} tabs={[<Say key="g" k="frame.place.guidance" />]} on={0}>
       <ViewBar items={[<b key="p"><Say k="frame.place.principles" /></b>, <Say key="t" k="topics.title" />, <Say key="b" k="blocks.registerTitle" />]} />
       <Rows rows={['PR-0001 Buy before build', 'PR-0002 One source for every fact', 'PR-0003 Tell, do not ask']} />
     </Screen>
@@ -280,7 +280,7 @@ export function GuidancePicture() {
 
 export function AgentPicture() {
   return (
-    <Screen trail={TRAIL} tabs={VIEWS} on={0}>
+    <Screen crop trail={TRAIL} tabs={VIEWS} on={0}>
       <div className="hp-canvas hp-canvas--short">
         <div className="hp-cards"><Card name="Order Management" agentChanged /><Card name="Dispatch" /><Card name="Route Optimiser" agentChanged /></div>
       </div>
