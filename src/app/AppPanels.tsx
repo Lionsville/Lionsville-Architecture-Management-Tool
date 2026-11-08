@@ -20,6 +20,7 @@ import { arrivingDialog, arrivingPage } from '../widgets/Arriving'
 import { ShareLinkDialog } from './dialogs/ShareLinkDialog'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HistoryPage } from './history/lazyHistoryPage'
+import { useHistoryPlace } from './history/useHistoryPlace'
 import { SnapshotDialog } from './history/SnapshotDialog'
 import { FirstRun } from './organisation/FirstRun'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
@@ -339,6 +340,7 @@ function historyNote(parts: ShellParts): string | undefined {
 export function HomeHistoryDialogs({ parts }: { parts: ShellParts }) {
   const { services: { prefs, s }, home } = parts
   const { history } = home
+  useHistoryPlace(history)
   return (
     <>
       <SnapshotDialog

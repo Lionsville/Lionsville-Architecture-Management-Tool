@@ -155,7 +155,7 @@ describe('from the menu bar', () => {
   it('takes a snapshot from the organisation screen', async () => {
     // A snapshot is of every scope, so it means the same from the front door
     // as from inside a landscape.
-    const view = showDesktop([], { open: false })
+    const view = showDesktop([{ id: 'abc1234', address: '', subject: 'Before the merger', at: 1_757_000_000_000, by: 'W. Simons', state: { ...project(), path: '' } }], { open: false })
     await screen.findByTestId('shell-toolbar')
     await view.settled()
     view.send({ type: 'snapshot' })
@@ -185,6 +185,29 @@ describe('from the menu bar', () => {
     await readFirst()
     // The root holds nothing now, and the snapshot held Crews: removed since.
     expect(await screen.findByText('Removed Crews')).toBeDefined()
+  })
+})
+
+describe('the History page as a place', () => {
+  it('has an address of its own, which Back leaves and which opens it again', async () => {
+    const view = showDesktop([{ id: 'abc1234', address: '', subject: 'Before the merger', at: 1_757_000_000_000, by: 'W. Simons', state: { ...project(), path: '' } }], { open: false })
+    await screen.findByTestId('shell-toolbar')
+    await view.settled()
+    view.send({ type: 'history' })
+    await screen.findByTestId('history-list')
+    await waitFor(() => expect(window.location.hash).toBe('#/-/history'), { timeout: 6000 })
+    // Row two does not call it Home while it is up.
+    expect(document.querySelector('.kit-frame__row--two [aria-current="page"]')?.textContent ?? '').not.toBe('Home')
+    act(() => { window.history.back() })
+    await waitFor(() => expect(screen.queryByTestId('history-list')).toBeNull(), { timeout: 6000 })
+    act(() => { window.history.forward() })
+    expect(await screen.findByTestId('history-list', {}, { timeout: 6000 })).toBeDefined()
+  })
+
+  it('opens from its address as the app comes up', async () => {
+    const { repositories } = kept([project()], [{ id: 'abc1234', address: '', subject: 'Before the merger', at: 1_757_000_000_000, by: 'W. Simons', state: { ...project(), path: '' } }])
+    renderApp({ repositories, boot: { initialFramePage: 'history' } })
+    expect(await screen.findByTestId('history-list')).toBeDefined()
   })
 })
 

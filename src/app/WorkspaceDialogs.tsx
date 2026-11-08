@@ -6,6 +6,7 @@
  * dialogs, the choosers, the wider search, the four gestures and the scope's
  * settings.
  */
+import { useHistoryPlace } from './history/useHistoryPlace'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ComponentProps } from 'react'
 import type { Destination } from '../agent/screen'
@@ -119,6 +120,7 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
     notify: props.shell.notify,
     s,
   })
+  useHistoryPlace(snapshots)
   return (
     <>
       <SnapshotDialog

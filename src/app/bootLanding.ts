@@ -38,7 +38,7 @@ export type BootLanding = {
   /** A finding the address says a band is carrying. */
   initialFinding?: string
   /** One of the frame's own places the address named, opened over the home (`FRAME_PAGES`). */
-  initialFramePage?: 'work' | 'activity' | 'preferences'
+  initialFramePage?: 'work' | 'activity' | 'preferences' | 'history'
   /** The look the address named, taken up by the workspace once it is there. */
   initialLook?: { view?: string; day: string }
   /** What the address keeps of the view it lands on, beyond which view: its reading, its grouping, a pair. */
@@ -156,7 +156,7 @@ export function placeToRead(place: Place): ScopePath | undefined {
  */
 export function placeLanding(held: PlaceScope | undefined, place: Place): BootLanding {
   const { scope, page } = place
-  if (page !== undefined && FRAME_PAGES.includes(page)) return { ...homeOf(scope), initialFramePage: page as 'work' | 'activity' | 'preferences' }
+  if (page !== undefined && FRAME_PAGES.includes(page)) return { ...homeOf(scope), initialFramePage: page as 'work' | 'activity' | 'preferences' | 'history' }
   if (page !== undefined && HOME_PAGES.includes(page)) {
     return { ...homeOf(scope), ...(page === 'home' ? {} : homePageLanding(place)) }
   }

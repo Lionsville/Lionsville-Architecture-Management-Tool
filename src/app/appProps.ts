@@ -79,7 +79,7 @@ export type AppBoot = {
   /** A finding the address says a band is carrying. */
   initialFinding?: string
   /** One of the frame's own places the address named (`FRAME_PAGES`). */
-  initialFramePage?: 'work' | 'activity' | 'preferences'
+  initialFramePage?: 'work' | 'activity' | 'preferences' | 'history'
   /** The look the address named: a view on a day. */
   initialLook?: { view?: string; day: string }
   /** What the address keeps of the view it lands on (`useViewFacets`). */

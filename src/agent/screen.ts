@@ -30,7 +30,7 @@ export const PAGES = [
   'home', 'board', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway',
   'decisions', 'observations', 'roadmap', 'plan', 'element', 'document', 'documentation',
   'platform', 'service', 'register', 'technologyRegister', 'people', 'operating', 'checks', 'principles', 'topics', 'blocks',
-  'work', 'activity', 'settings', 'preferences', 'agents',
+  'work', 'activity', 'settings', 'preferences', 'agents', 'history',
 ] as const
 
 export type Page = (typeof PAGES)[number]
@@ -78,7 +78,8 @@ export function viewPage(kind: DesignDiagram['kind']): Page {
 export const FRAME_PANELS = ['work', 'activity', 'settle'] as const
 export type FramePanel = (typeof FRAME_PANELS)[number]
 // Settling is a panel with no page of its own: it is reached only while something waits to be settled.
-export const FRAME_PAGES: readonly Page[] = ['work', 'activity', 'preferences']
+// The history is a page over the scope's home or its workspace, whichever is up: the frame holds it, as the preferences.
+export const FRAME_PAGES: readonly Page[] = ['work', 'activity', 'preferences', 'history']
 
 export function isFramePanel(value: unknown): value is FramePanel {
   return (FRAME_PANELS as readonly unknown[]).includes(value)
@@ -248,6 +249,8 @@ export type ScreenPage =
   | { readonly page: 'blocks'; readonly id?: string; readonly tab?: string }
   | { readonly page: 'settings'; readonly tab?: string }
   | { readonly page: 'preferences' }
+  /** The scope's history of snapshots (ADR-0008), over its home or its workspace. */
+  | { readonly page: 'history' }
   /** What agents did, and how to connect one, where the source has a page for it. */
   | { readonly page: 'agents'; readonly tab?: string }
 

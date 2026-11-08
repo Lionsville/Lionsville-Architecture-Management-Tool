@@ -121,6 +121,8 @@ export type FrameState = {
   readonly asks?: 'settings'
   /** The preferences are up over this screen: a place of their own, so an address and an agent can say so. */
   readonly preferences?: boolean
+  /** The History page is up over this scope (`useHistoryPlace`): a place of its own, as the preferences are. */
+  readonly history?: boolean
   /** ⌘\: the tree docked on every screen, by this person's choice. */
   readonly pinned: boolean
 }
