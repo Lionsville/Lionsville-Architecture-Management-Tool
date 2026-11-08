@@ -152,6 +152,19 @@ describe('choosing a row', () => {
     fireEvent.click(rowOf('Warehouse Management'))
     expect(screen.queryByTestId('landscape-inspector')).toBeNull()
   })
+  it('lets go on Escape and on a press on empty space, as a board and the chart do', () => {
+    open()
+    fireEvent.click(rowOf('Warehouse Management'))
+    fireEvent.keyDown(rowOf('Warehouse Management'), { key: 'Escape' })
+    expect(screen.queryByTestId('landscape-inspector')).toBeNull()
+    fireEvent.click(rowOf('Warehouse Management'))
+    fireEvent.click(screen.getByTestId('landscape-body'))
+    expect(screen.queryByTestId('landscape-inspector')).toBeNull()
+    // A press on another row chooses that one instead.
+    fireEvent.click(rowOf('Warehouse Management'))
+    fireEvent.click(rowOf('Customer portal'))
+    expect(screen.getByTestId('landscape-inspector').textContent).toContain('Customer portal')
+  })
   it('hides what the choice does not touch, from the Show menu', () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: 'Show' }))

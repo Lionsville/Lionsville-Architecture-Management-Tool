@@ -362,6 +362,30 @@ function useGestures(props: TechnologyLandscapePageProps, landscape: TechnologyL
 /** Most of a sheet of A3 at a good resolution: the whole page, and small enough to send to somebody. */
 const EXPORT_PIXELS = 16_000_000
 
+/**
+ * Escape, or a press on the page's empty space, puts a picked row down and brings
+ * the page's own reading back, as on a board and the chart: only a second press on
+ * the same row did. Not while uses are being ticked, which Done ends, and not from
+ * a field.
+ */
+function useUnpick(selected: NodeKey | undefined, ticking: ElementId | undefined, choose: (key: NodeKey | undefined) => void, setRecordUp: (up: boolean) => void) {
+  const put = useCallback(() => { setRecordUp(false); choose(undefined) }, [choose, setRecordUp])
+  return {
+    onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== 'Escape' || event.defaultPrevented || selected === undefined || ticking !== undefined) return
+      if (event.target instanceof HTMLElement && event.target.closest('input, textarea, select, [contenteditable="true"]')) return
+      event.preventDefault()
+      event.stopPropagation()
+      put()
+    },
+    onClick: (event: React.MouseEvent<HTMLDivElement>) => {
+      if (selected === undefined || ticking !== undefined || !(event.target instanceof Element)) return
+      if (event.target.closest('button, a, input, [role="button"], [role="row"], [role="gridcell"], [data-kit-row], .kit-list__row, [draggable="true"]')) return
+      put()
+    },
+  }
+}
+
 function useHandle(props: TechnologyLandscapePageProps, page: React.RefObject<HTMLDivElement | null>, selected: NodeKey | undefined) {
   const { onHandle } = props
   const diagramId = props.diagram?.id
@@ -565,6 +589,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const gestures = useGestures(props, landscape, selected, choose, setUndo)
   const { ticking, setTicking, recordUp, setRecordUp, writes, appOf } = gestures
   const capture = useHandle(props, page, selected)
+  const unpick = useUnpick(selected, ticking, choose, setRecordUp)
   const exporting = useExport(props, capture)
 
   const { onOpenServiceReport, onOpenPlatformReport, onOpenContainers, onOpenElsewhere } = props
@@ -607,7 +632,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
         <div className="tl-work">
           <div className="tl-main">
             {isEmpty ? <EmptyLandscape add={add} /> : (
-              <div className="tl-scroll" data-testid="landscape-body" ref={page}>
+              <div className="tl-scroll" data-testid="landscape-body" ref={page} {...unpick}>
                 {chain ? (
                   <LandscapeChain
                     showing={showing} landscape={shown} markOf={markOf} quiet={colouring.quiet} dropTarget={gestures.dropTarget} dragging={gestures.dragging !== undefined} groupLabel={groupLabel}
