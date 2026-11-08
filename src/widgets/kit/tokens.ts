@@ -73,6 +73,8 @@ export const LIGHT = {
   'lens-6-soft': 'var(--cat-6-soft)',
   shadow: '0 1px 1px rgb(28 34 48 / .07),0 3px 10px rgb(28 34 48 / .09)', scrim: 'rgb(28 34 48 / .36)',
   'scrim-solid': '#e3e2dc',
+  // A row's start, where its kind is the point: quieter than the status inks beside the words, 3:1 on any ground a row takes.
+  'rail-good': '#3d8754', 'rail-bad': '#c04b42', 'rail-neutral': 'var(--line-quiet)',
 } as const
 
 export const DARK: Record<ColourToken, string> = {
@@ -121,6 +123,7 @@ export const DARK: Record<ColourToken, string> = {
   'lens-5': 'var(--cat-5)', 'lens-5-soft': 'var(--cat-5-soft)', 'lens-6': 'var(--cat-6)',
   'lens-6-soft': 'var(--cat-6-soft)', shadow: '0 0 0 1px rgb(0 0 0 / .25),0 3px 12px rgb(0 0 0 / .42)',
   scrim: 'rgb(6 10 16 / .62)', 'scrim-solid': '#0e141c',
+  'rail-good': '#56a06c', 'rail-bad': '#cf6a63', 'rail-neutral': 'var(--line-quiet)',
 }
 
 export const SCALE = {

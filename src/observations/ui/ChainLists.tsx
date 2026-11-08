@@ -15,14 +15,14 @@ import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { CommentBadge } from '../../comments/ui/CommentBadge'
 import type { PersonNames } from '../../people/ui/names'
-import type { ListColumn, ListGroup, ListRow } from '../../widgets/kit/List'
+import type { ListColumn, ListGroup, ListRow, ListTone } from '../../widgets/kit/List'
 import { byPickUp, byProgress, splitResults, splitSeen, splitWhy } from '../chain'
 import { nodeKey, pictureKey } from '../graph'
 import {
   causeLabel, formatObservationNumber, isArchived, isCauseMerged, isMerged, isRootCause, sortCauses, toneOf,
 } from '../observation'
-import type { Cause, Observation, ObservationBelow, ScopeAnalysis } from '../observation'
-import { IMPACT_LABEL, OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
+import type { Cause, Observation, ObservationBelow, ObservationTone, ScopeAnalysis } from '../observation'
+import { IMPACT_LABEL, OUTCOME_LABEL, PHASE_LABEL, TONE_WORD } from '../observationScope'
 import { formatExperimentNumber, formatSolutionNumber, isLive, rootsWithoutSolution, solutionPhase } from '../solution'
 import type { Experiment, Solution, SolutionPlan } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
@@ -65,16 +65,21 @@ export function observationColumns(s: Translate): ListColumn[] {
   return OBSERVATION_COLUMNS.map((id) => ({ id, label: said[id], width: id === 'where' || id === 'causes' ? 'minmax(120px, 1fr)' : 'minmax(84px, 120px)' }))
 }
 
+const RAIL: Record<ObservationTone, ListTone> = { bright: 'good', problem: 'bad', neutral: 'neutral' }
+
 function observationRow(one: Observation, scope: string | undefined, d: StageData, note?: string): ListRow {
   const { s } = d
   const key = nodeKey(one.id, scope)
   const into = d.analysedInto(one.id, scope)
   const recorder = one.recordedBy ? recordedByText(one.recordedBy, d.names, s) : ''
-  const toneWord = toneOf(one) === 'bright' ? s('observation.toneBright') : undefined
+  const tone = toneOf(one)
+  const toneWord = tone === 'bright' ? s('observation.toneBright') : undefined
   const said = note ?? toneWord
   const mark: ReactNode = scope === undefined ? <CommentBadge about={{ kind: 'observation', id: one.id }} /> : undefined
+  // What kind it is, at a glance down the list; named in words where the row does not already say it.
+  const rail = said === toneWord && toneWord ? { tone: RAIL[tone] } : { tone: RAIL[tone], label: s(TONE_WORD[tone]) }
   return {
-    id: key, text: one.title, testId: `observation-row-${key}`,
+    id: key, text: one.title, testId: `observation-row-${key}`, rail,
     ...(mark ? { mark } : {}), ...(said ? { note: said } : {}),
     cells: {
       number: <span className="chain-mono">{formatObservationNumber(one.number)}</span>,

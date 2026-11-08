@@ -440,6 +440,24 @@ describe('the chain', () => {
   })
 })
 
+describe('the overview\'s rows', () => {
+  it('mark each observation\'s kind with a rail at its start, said in words where the row does not say it', () => {
+    mount({ model: { ...model, observations: [
+      observation({ id: 'o1', tone: 'problem' }),
+      observation({ id: 'o2', number: 2, title: 'Claims settle same day', tone: 'bright' }),
+      observation({ id: 'o3', number: 3, title: 'Two forms for one claim' }),
+    ], causes: [] }, below: [] })
+    const rowOf = (id: string) => screen.getByTestId(`observation-row-${id}`)
+    expect(rowOf('o1').dataset.rail).toBe('bad')
+    expect(within(rowOf('o1')).getByRole('img', { name: 'Problem' })).toBeTruthy()
+    expect(rowOf('o2').dataset.rail).toBe('good')
+    expect(within(rowOf('o2')).queryByRole('img')).toBeNull()
+    expect(rowOf('o2').textContent).toContain('Bright spots')
+    expect(rowOf('o3').dataset.rail).toBe('neutral')
+    expect(within(rowOf('o3')).getByRole('img', { name: 'Neutral' })).toBeTruthy()
+  })
+})
+
 describe('the ladder', () => {
   it('asks why in one field, for one observation, with the defaults said, and goes on to the next rung', () => {
     const { onChange } = mount()

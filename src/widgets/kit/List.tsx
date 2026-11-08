@@ -26,6 +26,16 @@ import type { ListSort } from './listView'
 import './hidden.css'
 import './List.css'
 
+/** What a row's rail says: good, bad or neither. */
+export type ListTone = 'good' | 'bad' | 'neutral'
+
+/**
+ * A thin mark at the row's start, where what kind of item it is is worth seeing
+ * down a long list. The colour is never the only cue: `label` names it to a
+ * screen reader, and is left out only where the row already says it in words.
+ */
+export type ListRail = { readonly tone: ListTone; readonly label?: string }
+
 export type ListRow = {
   readonly id: string
   /** The item, in words. Also what a tick is named by and what a clipped line shows on hover. */
@@ -57,6 +67,8 @@ export type ListRow = {
   readonly testId?: string
   /** Words a screen's own stylesheet reads off the row (`data-state`): how it differs, never what it says. */
   readonly state?: string
+  /** A thin colour mark at the row's start. Most lists have none. */
+  readonly rail?: ListRail
 }
 
 export type ListGroup = {
@@ -154,6 +166,7 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
       data-guide={row.guide ?? guide}
       data-testid={row.testId}
       data-state={row.state}
+      data-rail={row.rail?.tone}
       draggable={draggable || undefined}
       aria-selected={selected}
       aria-level={level === undefined && row.depth === undefined ? undefined : (level ?? 1) + (row.depth ?? 0)}
@@ -167,6 +180,10 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
         </div>
       )}
       <div role="gridcell" className="kit-list__item" data-fact={row.fact !== undefined || undefined} style={row.indent ? { paddingInlineStart: `calc(${row.indent} * var(--s-5))` } : undefined}>
+        {/* In the item's cell, where a grid lets it be, and drawn at the row's edge. */}
+        {row.rail && (row.rail.label
+          ? <span className="kit-list__rail" role="img" aria-label={row.rail.label} />
+          : <span className="kit-list__rail" aria-hidden="true" />)}
         {row.unread && <span className="kit-list__dot" aria-hidden="true" />}
         {row.mark && <span className="kit-list__mark">{row.mark}</span>}
         {row.code && <span className="kit-list__code">{row.code}</span>}

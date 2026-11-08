@@ -281,6 +281,10 @@ const TOKEN_NON_TEXT: Record<string, string[]> = {
   'accent': ['surface', 'ground', 'surface-2', 'canvas-ground', 'zone-fill', 'card-surface'],
   'focus-ring': ['surface', 'ground', 'surface-2', 'card-surface', 'zone-fill', 'canvas-ground', 'accent-soft', 'selected-soft'],
   'selected-edge': ['surface', 'ground', 'surface-2'],
+  // A list row's rail, on the row at rest, under the pointer and selected.
+  'rail-good': ['surface', 'ground', 'surface-2', 'selected-soft'],
+  'rail-bad': ['surface', 'ground', 'surface-2', 'selected-soft'],
+  'rail-neutral': ['surface', 'ground', 'surface-2', 'selected-soft'],
   'progress-track': ['surface', 'ground', 'surface-2'],
   'line-quiet': ['canvas-ground', 'zone-fill', 'card-surface'],
   'line-ink': ['canvas-ground', 'zone-fill', 'card-surface'],

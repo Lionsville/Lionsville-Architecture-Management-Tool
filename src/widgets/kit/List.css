@@ -33,6 +33,25 @@
   outline: var(--focus-ring-width) solid var(--focus-ring);
   outline-offset: calc(0px - var(--focus-ring-width));
 }
+/*
+ * A rail: a thin mark down the row's start, drawn over the row's own edge. A
+ * selected row keeps its edge just inside the rail, and the focus ring, which
+ * runs inside the row, moves the rail in with it so both are seen.
+ */
+.kit-list__row[data-rail] { position: relative; }
+.kit-list__rail {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 3px;
+  background: var(--rail-neutral);
+  pointer-events: none;
+}
+.kit-list__row[data-rail='good'] .kit-list__rail { background: var(--rail-good); }
+.kit-list__row[data-rail='bad'] .kit-list__rail { background: var(--rail-bad); }
+.kit-list__row[data-rail][data-selected] { box-shadow: inset calc(3px + 2px) 0 0 var(--selected-edge); }
+.kit-list__row[data-rail]:focus-visible .kit-list__rail { inset-block: var(--focus-ring-width); inset-inline-start: var(--focus-ring-width); }
+
 .kit-list__row--header {
   min-height: var(--row-h);
   color: var(--ink-2);

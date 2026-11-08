@@ -50,6 +50,28 @@ describe('a list', () => {
     expect(row(/portal and the planning/).dataset.unread).toBe('true')
   })
 
+  it('draws a rail at a row\'s start in its tone, named in words unless the row says it already, and nothing else on the row', async () => {
+    const rows = [
+      { id: 'p', text: 'Orders wait a day', rail: { tone: 'bad' as const, label: 'Problem' } },
+      { id: 'b', text: 'Support answers fast', note: 'Bright spots', rail: { tone: 'good' as const } },
+      { id: 'n', text: 'Two teams plan apart', rail: { tone: 'neutral' as const, label: 'Neutral' } },
+      { id: 'x', text: 'No rail here' },
+    ]
+    const { container } = renderShell(<List label="Observations" groups={[{ id: 'g', label: '', rows }]} selectedId="p" />)
+    expect(row(/Orders wait/).dataset.rail).toBe('bad')
+    expect(row(/Support answers/).dataset.rail).toBe('good')
+    expect(row(/No rail/).hasAttribute('data-rail')).toBe(false)
+    expect(within(row(/Orders wait/)).getByRole('img', { name: 'Problem' })).toBeTruthy()
+    expect(within(row(/Two teams/)).getByRole('img', { name: 'Neutral' })).toBeTruthy()
+    // The bright one says so in its note: its rail is a picture only, and not said twice.
+    expect(within(row(/Support answers/)).queryByRole('img')).toBeNull()
+    expect(row(/Support answers/).querySelector('.kit-list__rail')?.getAttribute('aria-hidden')).toBe('true')
+    // The rail adds no words to what is seen.
+    expect(row(/Orders wait/).textContent).toBe('Orders wait a day')
+    expect(container.querySelectorAll('.kit-list__rail')).toHaveLength(3)
+    expect(await axeFindings()).toEqual([])
+  })
+
   it('marks a list of ways on, which a stylesheet draws as pressable at rest, and a row still opens by press and key', () => {
     const onOpen = vi.fn()
     const rows = [{ id: 'one', text: 'Observations', fact: '4 here' }]

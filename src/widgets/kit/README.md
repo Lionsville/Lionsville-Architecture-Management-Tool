@@ -28,7 +28,7 @@ and behaves is said here, once.
 | `Mark.tsx` | **Mark**: the closed set of sixteen, `MARK_KINDS` |
 | `roving.ts` | the arrows of a row of choices, shared by tabs and the switch |
 | `listView.ts` | what a list shows as data: find, filters, group, sort, columns, selection; read from and written to the address; the rows a view keeps; *Did you mean* |
-| `List.tsx` | **List**: a row is the item and nothing else, one line or wrapped; groups that fold; columns only when asked for; ticks and bulk; the keyboard; focus handed back to the row; `doors`, for rows that are ways on, as on a home: pressable at rest |
+| `List.tsx` | **List**: a row is the item and nothing else, one line or wrapped; groups that fold; columns only when asked for; ticks and bulk; the keyboard; focus handed back to the row; `doors`, for rows that are ways on, as on a home: pressable at rest; a row's `rail`, a thin mark at its start in a tone (`--rail-good`, `--rail-bad`, `--rail-neutral`), named in words unless the row says its kind |
 | `ListMore.tsx` | **List more**: the end of a list that is not all there, how many are kept back and the button that brings them; `List`'s `more`, or under a map |
 | `listDensity.ts` | how close a person likes every list's rows: one choice for the product, which the app keeps |
 | `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
