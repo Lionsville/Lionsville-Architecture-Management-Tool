@@ -110,7 +110,7 @@ function applicationRows(work: TrayWork): Row[] {
   return [...list].sort((a, b) => a.name.localeCompare(b.name)).map((one) => ({
     id: one.id, name: one.name,
     note: `${retiring?.(one.id) ? `${t('lifecycle.retiring')} · ` : ''}${used.get(one.id) ?? 0}`,
-    noteSays: t('sheet.poster.coversHere', { count: used.get(one.id) ?? 0 }),
+    noteSays: coversHere(t, used.get(one.id) ?? 0),
   }))
 }
 
@@ -259,4 +259,9 @@ export function PosterPickAt({ work, kind, ids, anchor, onClose }: { work: TrayW
       {...(kind === 'team' ? { onCreate: (name: string) => { applyTray(work, 'team', { name }, ids, false); onClose() } } : {})}
     />
   )
+}
+
+/** What an application in the tray covers on this sheet, said with its number's own form: never 1 functions. */
+function coversHere(t: Translate, count: number): string {
+  return count === 0 ? t('sheet.poster.coversHereNone') : plural(t, { one: 'sheet.poster.coversHereOne', other: 'sheet.poster.coversHere' }, count)
 }

@@ -58,7 +58,9 @@ button.op-slot { cursor: pointer; }
 .op-prose { padding: var(--s-1) 0; }
 .op-prose__read { display: block; width: 100%; font: inherit; color: inherit; background: none; border: 0; padding: 0; text-align: start; cursor: pointer; white-space: pre-wrap; }
 /* Pressed to write, as a property's value is: the pointer, and a pencil after the words where the pointer or the focus is. */
-.op-prose__pen { display: inline-flex; margin-inline-start: var(--s-1); vertical-align: middle; color: var(--ink-3); opacity: 0; }
+/* At the block's inline end, on its last line: rendered words end in a block, and a pencil after it wrapped to a line of its own. */
+.op-prose__read { position: relative; padding-inline-end: calc(12px + var(--s-2)); }
+.op-prose__pen { position: absolute; inset-inline-end: 0; inset-block-end: 0.3em; display: inline-flex; color: var(--ink-3); opacity: 0; }
 .op-prose__read:hover .op-prose__pen, .op-prose__read:focus-visible .op-prose__pen { opacity: 1; }
 .op-fold { border-top: 1px solid var(--line); padding-block: var(--s-1); }
 .op-fold > summary { cursor: pointer; padding-block: 2px; color: var(--ink-2); }

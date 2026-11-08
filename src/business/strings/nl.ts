@@ -242,6 +242,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.poster.tray': 'Wat op de poster gaat',
   'sheet.poster.teams': 'Eenheden',
   'sheet.poster.coversHere': 'Dekt hier {count} functies',
+  'sheet.poster.coversHereOne': 'Dekt hier 1 functie',
+  'sheet.poster.coversHereNone': 'Dekt hier geen functie',
   'sheet.poster.applications': 'Applicaties',
   'sheet.poster.subscopes': 'Onderliggende scopes',
   'sheet.poster.findTray': 'Zoeken',

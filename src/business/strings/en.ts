@@ -266,6 +266,8 @@ export const EN = {
   'sheet.poster.tray': 'What goes on the poster',
   'sheet.poster.teams': 'Units',
   'sheet.poster.coversHere': 'Covers {count} functions here',
+  'sheet.poster.coversHereOne': 'Covers 1 function here',
+  'sheet.poster.coversHereNone': 'Covers no function here',
   'sheet.poster.applications': 'Applications',
   'sheet.poster.subscopes': 'Subscopes',
   'sheet.poster.findTray': 'Find',

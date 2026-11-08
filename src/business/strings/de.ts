@@ -242,6 +242,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.poster.tray': 'Was auf das Poster kommt',
   'sheet.poster.teams': 'Einheiten',
   'sheet.poster.coversHere': 'Deckt hier {count} Funktionen ab',
+  'sheet.poster.coversHereOne': 'Deckt hier 1 Funktion ab',
+  'sheet.poster.coversHereNone': 'Deckt hier keine Funktion ab',
   'sheet.poster.applications': 'Anwendungen',
   'sheet.poster.subscopes': 'Unterbereiche',
   'sheet.poster.findTray': 'Suchen',
