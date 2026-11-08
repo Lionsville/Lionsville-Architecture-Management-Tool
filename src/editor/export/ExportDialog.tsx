@@ -109,8 +109,8 @@ export function ExportDialog(props: ExportDialogProps) {
             onChange={(theme) => { if (!exporting) onChange({ ...options, theme }); }}
             options={[{ value: 'light', label: t('export.themeLight') }, { value: 'dark', label: t('export.themeDark') }]}
           />
-          <SettingSwitch label={t('export.labels')} hint={t('export.labelsHelp')} checked={options.showLabels} disabled={exporting} onChange={(showLabels) => onChange({ ...options, showLabels })} />
-          <SettingSwitch label={t('export.titleBlock')} hint={t('export.titleBlockHelp')} checked={options.titleBlock} disabled={exporting} onChange={(titleBlock) => onChange({ ...options, titleBlock })} />
+          <SettingSwitch boxFirst label={t('export.labels')} hint={t('export.labelsHelp')} checked={options.showLabels} disabled={exporting} onChange={(showLabels) => onChange({ ...options, showLabels })} />
+          <SettingSwitch boxFirst label={t('export.titleBlock')} hint={t('export.titleBlockHelp')} checked={options.titleBlock} disabled={exporting} onChange={(titleBlock) => onChange({ ...options, titleBlock })} />
           {options.titleBlock && titleFields && (
             <div className="export-dialog__title-fields">
               <TitleField label={t('diagramSettings.client')} hint={t('diagramSettings.clientHelp', { name: titleFields.clientFrom })} held={titleFields.client} disabled={exporting} onCommit={(client) => titleFields.onChange({ client })} />
@@ -119,9 +119,9 @@ export function ExportDialog(props: ExportDialogProps) {
             </div>
           )}
           {/* The key lives on the strip: without one there is nowhere to draw it. */}
-          <SettingSwitch label={t('export.legend')} hint={t(props.offersLineList ? 'export.keyHelp' : 'export.legendHelp')} checked={options.legend && options.titleBlock} disabled={exporting || !options.titleBlock} onChange={(legend) => onChange({ ...options, legend })} />
+          <SettingSwitch boxFirst label={t('export.legend')} hint={t(props.offersLineList ? 'export.keyHelp' : 'export.legendHelp')} checked={options.legend && options.titleBlock} disabled={exporting || !options.titleBlock} onChange={(legend) => onChange({ ...options, legend })} />
           {props.offersLineList && (
-            <SettingSwitch label={t('export.lineList')} hint={t('export.lineListHelp')} checked={options.lineList === true} disabled={exporting || !options.titleBlock} onChange={(lineList) => onChange({ ...options, lineList })} />
+            <SettingSwitch boxFirst label={t('export.lineList')} hint={t('export.lineListHelp')} checked={options.lineList === true} disabled={exporting || !options.titleBlock} onChange={(lineList) => onChange({ ...options, lineList })} />
           )}
           <p className="export-dialog__size">{t('export.size', props.size)}</p>
           {large && <p className="export-dialog__large" role="status">{t('export.largeBody')}</p>}

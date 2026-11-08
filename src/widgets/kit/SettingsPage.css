@@ -17,6 +17,8 @@
 .kit-settings__row-hint { color: var(--ink-3); font-size: var(--t-small); }
 .kit-settings__row-control { flex: none; }
 .kit-settings__row--switch { cursor: pointer; }
+.kit-settings__row--first { flex-direction: row-reverse; justify-content: flex-end; align-items: flex-start; gap: var(--s-2); }
+.kit-settings__row--first .kit-settings__switch { margin-top: 2px; }
 .kit-settings__switch { flex: none; width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
 .kit-settings__switch:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 @media (max-width: 760px) {

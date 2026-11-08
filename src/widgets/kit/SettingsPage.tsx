@@ -79,16 +79,18 @@ export function PreferenceRow({ label, hint, children }: { label: string; hint?:
 }
 
 /** A plain on and off, named by its row. */
-export function SettingSwitch({ label, checked, onChange, hint, disabled, 'data-testid': testId }: {
+export function SettingSwitch({ label, checked, onChange, hint, disabled, boxFirst, 'data-testid': testId }: {
   label: string
   checked: boolean
   onChange: (checked: boolean) => void
   hint?: string
   disabled?: boolean
+  /** The box before the words, as a dialog's and a menu's options have it; a settings page keeps it at the end. */
+  boxFirst?: boolean
   'data-testid'?: string
 }) {
   return (
-    <label className="kit-settings__row kit-settings__row--switch">
+    <label className={boxFirst ? 'kit-settings__row kit-settings__row--switch kit-settings__row--first' : 'kit-settings__row kit-settings__row--switch'}>
       <span className="kit-settings__row-words">
         <span className="kit-settings__row-label">{label}</span>
         {hint && <span className="kit-settings__row-hint">{hint}</span>}
