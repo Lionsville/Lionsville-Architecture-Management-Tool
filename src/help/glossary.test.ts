@@ -11,7 +11,7 @@
  * address would read as a second author for pages on end.
  */
 import { describe, expect, it } from 'vitest'
-import { refusedIn } from '../i18n/glossary'
+import { pressedNotKey, refusedIn } from '../i18n/glossary'
 import { MODIFIER_GLYPHS } from '../i18n/keyNames'
 import { TEXT as EN } from './text/en'
 import { TEXT as NL } from './text/nl'
@@ -25,61 +25,6 @@ export function helpStrings(value: unknown, path = ''): [string, string][] {
     return Object.entries(value).flatMap(([key, item]) => helpStrings(item, path ? `${path}.${key}` : key))
   }
   return []
-}
-
-/** A key's name: a glyph, a key placeholder, a key's own word, a bare ? or slash, or one character standing alone. */
-const KEY_WORD = /(\{key:|[⌘⇧⌥⌃↩⎋⌫⇥↑↓←→]|\b(Enter|Esc|Escape|Tab|Return|Delete|Del|Backspace|Entf|Eingabe\w*|Rücktaste|Spatie|Spatiebalk|Leertaste|Space|Shift|Umschalt|Ctrl|Strg|Alt|F\d+|Page\w*|Home|End|Pos1|Pfeil\w*|[Pp]ijl\w*|\w*[Tt]aste\w*|\w*toets\w*)\b|[?/](?=\s|[,.;:'")]|$)|(\*\*)?([?/]|[A-Z0-9])(\*\*)?(?=[,.;:'")]|$|\s(of|om|en|or|oder|und|bis|zu|to|op)\b))/
-/**
- * The words a press names begin with a key: only the first words count, so
- * "Druk op Roadmap om de 2 plannen te zien" is a control whatever the rest of
- * the clause says, and "Druk op 2 op te lossen" names a line, not the key 2.
- */
-const KEY_FIRST = new RegExp(`^(\\*\\*)?(de |het |een |die |der |den |eine? )?${KEY_WORD.source}`)
-
-/** What follows a press, to the end of its clause. */
-const clause = (after: string) => after.split(/[,.;!](?:\s|$)|\n\n|\(/)[0] ?? ''
-
-/** Whether a press is a key's, read the way each language puts what is pressed. */
-const IS_KEY: Record<'nl' | 'de', { press: RegExp; key: (before: string, word: string, after: string) => boolean }> = {
-  // Druk op X · druk in het paneel op X · op X drukken · erop drukken · één druk · dubbeldruk
-  nl: {
-    press: /\b(dubbel)?[Dd]ruk(t|ken|te)?\b/g,
-    key: (before, word, after) => {
-      if (/^\s+(haar\s+|het\s+)?af\b/.test(after) || /\bheel\s+$/.test(before)) return true // drukt af, een druk bord
-      if (word.startsWith('dubbel')) return false
-      const said = clause(after)
-      if (/^\s*(erop|er)\b/.test(said)) return false
-      const objects = said.split(/\bop\s+/).slice(1)
-      if (objects.length === 0) {
-        const op = /\b[Oo]p\s+(.{1,40}?)\s*$/.exec(before)
-        return !!op && KEY_FIRST.test(op[1]!)
-      }
-      return objects.some((object) => KEY_FIRST.test(object))
-    },
-  },
-  // Drücken Sie X · Drücken Sie auf X · Enter drücken · ein Druck auf X · ein Doppeldruck
-  de: {
-    press: /\b[Dd]rücken Sie auf\b|\b[Dd]rücken Sie\b|\b([Dd]oppel)?[Dd]ruck\b|\b[Dd]rücken\b/g,
-    key: (before, word, after) => {
-      if (word === 'Druck' && /\bdem\s+$/.test(before)) return true // the printout
-      const said = clause(after)
-      if (/^drücken sie/i.test(word)) return KEY_WORD.test(said)
-      if (/^drücken$/i.test(word) && KEY_WORD.test(before.slice(-30))) return true
-      return KEY_FIRST.test(said.trim())
-    },
-  },
-}
-
-/** A press of something that is not a key: a control is clicked. */
-export function pressedNotKey(text: string, language: 'nl' | 'de'): string[] {
-  const { press, key } = IS_KEY[language]
-  const found: string[] = []
-  for (const match of text.matchAll(press)) {
-    const at = match.index ?? 0
-    const after = text.slice(at + match[0].length, at + match[0].length + 120)
-    if (!key(text.slice(Math.max(0, at - 60), at), match[0], after)) found.push(`${text.slice(Math.max(0, at - 20), at)}${match[0]}${after.slice(0, 30)}`)
-  }
-  return found
 }
 
 /**

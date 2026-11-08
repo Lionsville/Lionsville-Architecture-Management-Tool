@@ -121,7 +121,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'principles.reasonField': 'Warum (optional)',
   'principles.reasonRequired': 'Warum es abweicht',
   'principles.citeSubmit': 'Zitieren',
-  'principles.refusedFixed': '{number} ist fest: eine Entscheidung darf nicht davon abweichen. Um dennoch abzuweichen, ändere zuerst das Prinzip: mach es flexibel, oder schärfe es.',
+  'principles.refusedFixed': '{number} ist fest: eine Entscheidung darf nicht davon abweichen. Um dennoch abzuweichen, ändern Sie zuerst das Prinzip: Machen Sie es flexibel, oder schärfen Sie es.',
   'principles.refusedRetired': '{number} ist zurückgezogen: es behält seine Zitate und nimmt keine neuen.',
   'principles.refusedReason': 'Eine Abweichung sagt, warum.',
   'principles.refusedStance': 'Diese Art Eintrag zitiert nicht so.',

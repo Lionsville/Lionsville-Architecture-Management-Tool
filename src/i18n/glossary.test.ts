@@ -19,7 +19,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { STRINGS } from './strings'
-import { SAME_EVERYWHERE, SHARED, prose, refusedIn } from './glossary'
+import { SAME_EVERYWHERE, SHARED, pressedNotKey, prose, refusedIn } from './glossary'
 
 describe.each(['nl', 'de'] as const)('the %s words', (language) => {
   const table = STRINGS[language]
@@ -30,6 +30,11 @@ describe.each(['nl', 'de'] as const)('the %s words', (language) => {
       if (key.endsWith('markdownHelp')) continue
       wrong.push(...refusedIn(language, key, text))
     }
+    expect(wrong).toEqual([])
+  })
+
+  it('click a control and press a key', () => {
+    const wrong = Object.entries(table).flatMap(([key, text]) => pressedNotKey(text, language).map((press) => `${key}: ${press}`))
     expect(wrong).toEqual([])
   })
 
@@ -97,3 +102,15 @@ describe('terms that must not meet', () => {
     }
   })
 })
+
+describe('a du imperative', () => {
+  it('is refused at the head of a clause, capital or not, and the Sie form and an infinitive are not', () => {
+    expect(refusedIn('de', 'k', 'verbinde zwei Elemente')).toHaveLength(1)
+    expect(refusedIn('de', 'k', 'Bring mich hin')).toHaveLength(1)
+    expect(refusedIn('de', 'k', 'Die letzten Wochen. Zeige auf einen Balken.')).toHaveLength(1)
+    expect(refusedIn('de', 'k', 'Zwei Elemente verbinden')).toEqual([])
+    expect(refusedIn('de', 'k', 'Schlagen Sie eine Lösung vor')).toEqual([])
+    expect(refusedIn('de', 'k', 'Eine Frage zur Karte')).toEqual([])
+  })
+})
+
