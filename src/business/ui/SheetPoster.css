@@ -11,8 +11,9 @@
 .poster__pane { position: relative; flex: 1 1 auto; min-height: 0; overflow: clip; background: var(--canvas-ground); touch-action: none; cursor: grab; outline: none; }
 .poster__pane[data-panning] { cursor: grabbing; }
 .poster__pane[data-posture="design"] { background-image: radial-gradient(var(--line) 1px, transparent 1px); background-size: 16px 16px; cursor: default; }
-.poster__strip { flex: none; min-height: 30px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding-inline: var(--s-2); border-top: 1px solid var(--line); background: var(--surface); }
-.poster__say { position: absolute; inset-inline-start: var(--s-3); inset-block-start: var(--s-3); z-index: 6; max-width: 60ch; color: var(--ink); background: var(--surface); font-size: var(--t-small); pointer-events: none; }
+.poster__strip { flex: none; min-height: 30px; display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding-inline: var(--s-2); padding-inline-end: calc(var(--s-2) + var(--sheet-over, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
+/* Bottom left over the pane, above the dock, where no block's head sits. */
+.poster__say { position: absolute; inset-inline-start: var(--s-3); inset-block-end: var(--s-3); z-index: 6; max-width: 60ch; color: var(--ink); background: var(--surface); font-size: var(--t-small); pointer-events: none; }
 .poster__say:not(:empty) { padding: 2px var(--s-2); border: 1px solid var(--line-strong); }
 .poster__stage { position: absolute; inset-block-start: 0; inset-inline-start: 0; transform-origin: 0 0; color: var(--ink); font-family: var(--font-ui); font-size: var(--canvas-t-sm); line-height: 1; --poster-tile-h: 46px; --poster-tile-min: 98px; }
 .poster__stage[data-tile="s"] { --poster-tile-h: 40px; --poster-tile-min: 80px; }
@@ -182,6 +183,7 @@
 .poster-box { position: absolute; z-index: 9; border: 1px dashed var(--selected-edge); background: var(--selected-soft); opacity: 0.5; pointer-events: none; }
 .poster-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; margin-inline-start: auto; font-size: var(--t-small); }
 .poster-bar__warn { color: var(--warn); padding-inline: var(--s-1); }
+.poster-block[data-flash] { z-index: 7; outline: 3px solid var(--state-attention-border); outline-offset: 2px; }
 
 [data-posture="design"] .poster-block { content-visibility: visible; }
 .poster-tray .kit-segmented { display: flex; }

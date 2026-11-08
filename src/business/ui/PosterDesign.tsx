@@ -433,7 +433,7 @@ export function usePosterGestures(args: {
 }
 
 /** The acts of Design, in the strip: undo, the layouts, the free items, and what the page should know. */
-export function DesignBar({ actions, places, onPaperLayout, onAddArea, fromAbove, onNote, onPicture, t }: {
+export function DesignBar({ actions, places, onPaperLayout, onAddArea, fromAbove, onNote, onPicture, onShowOverlap, t }: {
   actions: PosterActions
   places: PosterPlaces
   onPaperLayout(): void
@@ -441,9 +441,13 @@ export function DesignBar({ actions, places, onPaperLayout, onAddArea, fromAbove
   fromAbove?: ReactNode
   onNote(): void
   onPicture(): void
+  /** Finds the blocks that overlap: they may lie one under the other, where nothing shows it. */
+  onShowOverlap?(blocks: readonly string[]): void
   t: Translate
 }) {
-  const overlaps = overlapsOf(places.blocks).length
+  const crossing = overlapsOf(places.blocks)
+  const overlaps = crossing.length
+  const said = plural(t, { one: 'sheet.poster.overlapOne', other: 'sheet.poster.overlapOther' }, overlaps)
   return (
     <div className="poster-bar" role="toolbar" aria-label={t('sheet.poster.design')} data-testid="poster-design-bar">
       <Button variant="quiet" size="small" onClick={actions.undo}>{t('sheet.poster.undo')}</Button>
@@ -457,7 +461,9 @@ export function DesignBar({ actions, places, onPaperLayout, onAddArea, fromAbove
       {fromAbove}
       <Button variant="quiet" size="small" onClick={onNote} data-testid="poster-add-note">{t('sheet.poster.addNote')}</Button>
       <Button variant="quiet" size="small" onClick={onPicture}>{t('sheet.poster.addPicture')}</Button>
-      {overlaps > 0 && <span className="poster-bar__warn" data-testid="poster-overlaps">{plural(t, { one: 'sheet.poster.overlapOne', other: 'sheet.poster.overlapOther' }, overlaps)}</span>}
+      {overlaps > 0 && (onShowOverlap
+        ? <Button variant="quiet" size="small" data-testid="poster-overlaps" onClick={() => onShowOverlap([...new Set(crossing.flatMap((one) => [one.a, one.b]))])}><span className="poster-bar__warn">{said}</span></Button>
+        : <span className="poster-bar__warn" data-testid="poster-overlaps">{said}</span>)}
       {places.waiting.length > 0 && <span className="poster-bar__warn" data-testid="poster-waiting">{plural(t, { one: 'sheet.poster.waitingOne', other: 'sheet.poster.waitingOther' }, places.waiting.length)}</span>}
     </div>
   )

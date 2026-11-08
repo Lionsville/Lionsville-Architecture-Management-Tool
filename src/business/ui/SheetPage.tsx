@@ -819,7 +819,8 @@ export function SheetPage(props: SheetPageProps) {
 
       <Box
         ref={page} className="sheet-page" data-exporting={exporting ? '' : undefined}
-        style={exporting?.width !== undefined ? { width: exporting.width } : undefined}
+        // The panel lies over the page: the poster's strip ends where it starts, so nothing in the strip is under it.
+        style={{ ...(exporting?.width !== undefined ? { width: exporting.width } : {}), ...(selectedId !== undefined && !exporting ? { '--sheet-over': `${detailsWidth}px` } : {}) } as CSSProperties}
         sx={exporting ? undefined : locatedRing(at.locatedId)}
       >
         <SheetInside at={at} props={props} jump={jump} room={room} full={full} onFull={setFull} posterExport={posterExport} onPosterExported={() => setPosterExport(false)} onLane={() => setLaneOpen(true)} detailsWidth={detailsWidth} onDetailsWidth={setDetailsWidth} />

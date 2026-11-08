@@ -76,6 +76,8 @@ export type PosterHandle = {
   say(words: string): void
   /** The middle of what is on screen, in units: where something new lands. */
   centre(): { x: number; y: number }
+  /** Bring these blocks on screen and mark them for a moment: what overlaps, found. */
+  flash(blocks: readonly string[]): void
 }
 
 export type SheetPosterProps = {
@@ -576,6 +578,9 @@ function useFactsOf(props: SheetPosterProps) {
 
 const EMPTY_ITEMS: readonly PosterItemRecord[] = []
 
+/** How long blocks found for a person stay marked. */
+const FLASH_MS = 1600
+
 /** Attributes, not a render of every tile: what is lit, quieted and picked comes and goes often. */
 function useTileMarks(stage: { current: HTMLDivElement | null }, marks: { selectedId: ElementId | undefined; only: string | undefined; lit: ReadonlySet<ElementId> | undefined; picked: ReadonlySet<ElementId> | undefined }, drawn: unknown) {
   const { selectedId, only, lit, picked } = marks
@@ -680,6 +685,12 @@ export function SheetPoster(props: SheetPosterProps) {
       return node ? { node, ...page } : undefined
     },
     say: telling,
+    flash(ids) {
+      const found = ids.flatMap((id) => [...(stage.current?.querySelectorAll<HTMLElement>(`[data-block="${CSS.escape(id)}"]`) ?? [])])
+      if (found[0]) follow(found[0], true)
+      for (const one of found) one.setAttribute('data-flash', '')
+      setTimeout(() => { for (const one of found) one.removeAttribute('data-flash') }, FLASH_MS)
+    },
     centre() {
       const held = pane.current
       const { x, y, zoom } = camera.camera.current
@@ -738,8 +749,8 @@ export function SheetPoster(props: SheetPosterProps) {
         <div ref={stage} className="poster__stage" data-testid="poster-stage" data-lens={lens?.startsWith('aspect:') ? 'aspect' : lens} data-tile={tile} style={{ width: page.width, height: page.height }}>
           {blocks}
         </div>
+        <div className="poster__say" ref={say} role="status" aria-live="polite" data-testid="poster-say" />
       </div>
-      <div className="poster__say" ref={say} role="status" aria-live="polite" data-testid="poster-say" />
       <div className="poster__strip">
         <Dock listen={listen} onGo={(how) => target.go(how)} extra={dockExtra} />
         {strip}

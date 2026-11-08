@@ -97,7 +97,7 @@ function SelectingBar({ design, places, parts, author, t, onPicture, handle }: {
 }) {
   return (
     <DesignBar
-      actions={design.actions} places={places} t={t} onPicture={onPicture}
+      actions={design.actions} places={places} t={t} onPicture={onPicture} onShowOverlap={(blocks) => handle.current?.flash(blocks)}
       onAddArea={() => author.made(author.actions.addArea(t('sheet.nameArea')))}
       fromAbove={<FromAbove claims={parts.claims} t={t} />}
       onPaperLayout={() => {
