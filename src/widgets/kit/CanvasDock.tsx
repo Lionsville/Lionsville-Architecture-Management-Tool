@@ -60,7 +60,7 @@ export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gri
   )
   return (
     <div className="kit-dock" data-canvas-float="" data-corner={corner || undefined} role="group" aria-label={t('kit.dock.label')} data-testid={testId}>
-      <Tooltip title={zoom <= floor ? t('kit.dock.atFloor') : hint(t('kit.dock.zoomOut'), `${mod}−`)} placement="top">
+      <Tooltip title={zoom <= floor ? t('kit.dock.atFloor', { percent: Math.round(floor * 100) }) : hint(t('kit.dock.zoomOut'), `${mod}−`)} placement="top">
         <Button variant="quiet" size="small" aria-label={t('kit.dock.zoomOut')} data-limit={zoom <= floor || undefined} onClick={onZoomOut} data-testid="zoom-out">−</Button>
       </Tooltip>
       <output className="kit-dock__value" aria-label={t('kit.dock.value', { percent })} data-testid="zoom-value">{percent}%</output>
@@ -68,7 +68,7 @@ export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gri
         <Button variant="quiet" size="small" aria-label={t('kit.dock.zoomIn')} data-limit={zoom >= ceiling || undefined} onClick={onZoomIn} data-testid="zoom-in">+</Button>
       </Tooltip>
       <span className="kit-dock__rule" />
-      <Tooltip title={hint(t('kit.dock.fitHint'), `${shift}1`)} placement="top">
+      <Tooltip title={hint(t('kit.dock.fitHint', { percent: Math.round(floor * 100) }), `${shift}1`)} placement="top">
         <Button variant="quiet" size="small" onClick={onFit} data-testid="zoom-fit">{t('kit.dock.fit')}</Button>
       </Tooltip>
       <Tooltip title={hint(t('kit.dock.homeHint'), `${mod}0`)} placement="top">
