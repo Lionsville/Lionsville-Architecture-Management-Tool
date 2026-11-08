@@ -51,6 +51,8 @@ import { TextSizeControl, textSizeEntries } from '../../widgets/kit/TextSizeCont
 import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from '../../platform/textSize'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { CommandRow } from './commandsTable'
+import { scopeLines, startsWords, viewLines } from './paletteFind'
+import type { TreeView } from './paletteFind'
 import { FrameCommandsContext, useFrameState } from './frameStore'
 import type { FrameState, PaletteLine, ScreenFacts } from './frameStore'
 import { FOUND_PLACES, MORE_PLACES, ORGANISATION_PLACES, placeShows, SCOPE_PLACES } from './places'
@@ -352,8 +354,36 @@ function usePanelEscape(parts: ShellParts, hasPanel: boolean) {
   }, [parts, hasPanel])
 }
 
+/**
+ * Every view of the tree by name, for ⌘K. The index reads no view, so the
+ * scopes that hold one are read the first time something is asked, as
+ * `views.list` reads them, and again only once the tree has moved.
+ */
+function useTreeViews(parts: ShellParts): { views: readonly TreeView[]; want: () => void } {
+  const { organisation: { tree }, writes: { readScope }, services: { failed } } = parts
+  const [held, setHeld] = useState<{ of: ScopeSummary; views: readonly TreeView[] } | undefined>(undefined)
+  const asked = useRef<ScopeSummary | undefined>(undefined)
+  const want = useMemo(() => () => {
+    if (asked.current === tree) return
+    asked.current = tree
+    const holding = flattenScopes(tree).filter((scope) => scope.diagrams > 0)
+    Promise.all(holding.map(async (scope) => {
+      const read = await readScope(scope.path)
+      return (read?.model.diagrams ?? []).map((view): TreeView => ({ scope: scope.path, id: view.id, name: view.name, kind: view.kind }))
+    }))
+      .then((each) => { if (asked.current === tree) setHeld({ of: tree, views: each.flat() }) })
+      .catch((failure: unknown) => { asked.current = undefined; failed('paletteViews', failure) })
+  }, [tree, readScope, failed])
+  return { views: held?.of === tree ? held.views : [], want }
+}
+
 function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent']['openSomewhere']) {
-  const { services: { s }, commands: { bus } } = parts
+  const { services: { s }, commands: { bus }, organisation, writable } = parts
+  const { tree } = organisation
+  const mayFile = writable(at)
+  const latest = useRef(parts)
+  latest.current = parts
+  const { views, want } = useTreeViews(parts)
   const send = bus.send
   const can = canOf(parts, parts.frame.get().screen)
   const canKey = JSON.stringify(can)
@@ -370,14 +400,34 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     rows.push({ id: 'place:activity', group: s('frame.places'), label: s('shell.activity'), run: () => go({ scope: at, page: 'activity' }) })
     rows.push({ id: 'place:settings', group: s('frame.places'), label: s('settings.title'), run: () => go({ scope: at, page: 'settings' }) })
     if (hasAgentsPage) rows.push({ id: 'place:agents', group: s('frame.places'), label: s('frame.agents'), run: () => go({ scope: ROOT_SCOPE, page: 'agents' }) })
+    // The frame's own acts, which are on no menu: the tree's key, and a scope filed under the one here.
     const mac = isMac()
+    rows.push({ id: 'frame:tree', group: s('frame.commands'), label: s('frame.treeToggle'), keys: mac ? '⌘\\' : 'Ctrl \\', run: () => {
+      const now = latest.current
+      if (treeAlwaysOn(now)) return
+      const pinned = !now.frame.get().pinned
+      now.frame.set({ pinned })
+      now.services.prefs.writePreference({ treePinned: pinned })
+    } })
+    if (mayFile) rows.push({ id: 'frame:newScope', group: s('frame.commands'), label: s('picker.newScope'), run: () => { go({ scope: at, page: 'home' }); organisation.addUnder(at) } })
     commandsTable(JSON.parse(canKey), mac ? 'darwin' : 'other').forEach((row: CommandRow) => {
       // Light, Dark and System are a menu's radio under Theme; on a line of their own they need the word, and a person types it.
       const label = row.command.type === 'theme' ? `${s('prefs.theme')}: ${s(row.label)}` : s(row.label)
       rows.push({ id: row.id, group: s('frame.commands'), label, ...(row.keys ? { keys: keyCap(row.keys, mac) } : {}), run: () => send(row.command) })
     })
-    return (asked: string) => (asked.trim() === '' ? rows : rows.filter((row) => matchesQuery(asked, [row.label])))
-  }, [s, at, go, send, canKey, hasAgentsPage])
+    return (asked: string) => {
+      if (asked.trim() === '') return rows
+      want()
+      const named = rows.filter((row) => matchesQuery(asked, [row.label])).map((row) => (startsWords(asked, row.label) ? { ...row, lead: true } : row))
+      // A command whose name starts with the words leads a scope that only contains them: "light" is Theme: Light.
+      return [
+        ...named.filter((row) => row.lead),
+        ...scopeLines(tree, asked, s('org.treeScopes'), go),
+        ...viewLines(views, tree, asked, s('gsearch.kind.view'), go),
+        ...named.filter((row) => !row.lead),
+      ]
+    }
+  }, [s, at, go, send, canKey, hasAgentsPage, tree, views, want, organisation, mayFile])
 }
 
 /** The source's own page for agents: a place like any other, with an address and a way in with nothing open. */

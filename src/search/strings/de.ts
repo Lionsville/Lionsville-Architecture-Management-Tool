@@ -23,9 +23,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'search.unplaced': 'auf keiner Ansicht',
   'search.hint': 'Enter öffnet den ersten Treffer; Esc schließt.',
 
-  'gsearch.title': 'Überall suchen',
-  'gsearch.placeholder': 'Elemente, Ansichten, Entscheidungen, Pläne, Beobachtungen…',
-  'gsearch.field': 'Überall suchen',
+  'gsearch.title': 'Suchen oder Befehl ausführen',
+  'gsearch.placeholder': 'Bereiche, Ansichten, Einträge, Personen und Befehle…',
+  'gsearch.field': 'Suchen oder Befehl ausführen',
   'gsearch.results': 'Ergebnisse',
   'gsearch.empty': 'Tippen, um alles zu durchsuchen, was dieser Bereich festhält — Elemente und ihre Seiten, Ansichten, Beziehungen, Entscheidungen, Pläne und Meilensteine, Beobachtungen, Ursachen, Lösungen und Experimente — und was der Rest der Organisation festhält.',
   'gsearch.noMatches': 'Nichts entspricht „{query}“.',

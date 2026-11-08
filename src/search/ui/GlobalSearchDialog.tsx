@@ -64,6 +64,14 @@ export type PaletteLine = {
   readonly group: string
   readonly label: string
   readonly keys?: string
+  /** Where it is, said quietly after the label: the scope a view is drawn in, the scopes above a scope. */
+  readonly hint?: string
+  /**
+   * Goes ahead of the records: a scope or a view by its name, a place or a
+   * command whose words start with what was typed. A word found inside some
+   * record's description is a weaker answer than a name.
+   */
+  readonly lead?: boolean
   readonly run: () => void
 }
 
@@ -151,7 +159,8 @@ function PaletteRows({ lines, first, active, onHover, onRun }: {
                   data-testid={`palette-${line.id}`}
                   sx={{ display: 'flex', gap: 1, px: 2, py: 0.5 }}
                 >
-                  <Typography sx={{ fontSize: 'var(--t-body)', flex: 1, minWidth: 0 }} noWrap>{line.label}</Typography>
+                  <Typography sx={{ fontSize: 'var(--t-body)', flex: '0 1 auto', minWidth: 0 }} noWrap>{line.label}</Typography>
+                  <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', flex: 1, minWidth: 0 }} noWrap>{line.hint}</Typography>
                   {line.keys !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{line.keys}</Typography>}
                 </ListItemButton>
               )
@@ -183,7 +192,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
    */
   const asked = useDeferredValue(query)
 
-  const hits = useMemo(
+  const found = useMemo(
     () => (open ? searchAll({ sources, query: asked, ...(people ? { people } : {}) }) : []),
     [open, sources, asked, people],
   )
@@ -191,8 +200,13 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
   // highlight resets when the rows it points into change.
   useEffect(() => setActiveIndex(0), [asked])
 
-  const lines = useMemo(() => (open && more ? more(asked) : []), [open, more, asked])
-  const total = hits.length + lines.length
+  const offered = useMemo(() => (open && more ? more(asked) : []), [open, more, asked])
+  const ahead = useMemo(() => offered.filter((line) => line.lead), [offered])
+  const lines = useMemo(() => offered.filter((line) => !line.lead), [offered])
+  // A view found by name across the tree is a line ahead; the same view as a record of this scope would be said twice.
+  const leadIds = useMemo(() => new Set(ahead.map((line) => line.id)), [ahead])
+  const hits = useMemo(() => found.filter((hit) => !(hit.kind === 'view' && leadIds.has(`view:${hit.id}`))), [found, leadIds])
+  const total = ahead.length + hits.length + lines.length
   const active = total > 0 ? Math.min(activeIndex, total - 1) : -1
 
   useEffect(() => {
@@ -215,10 +229,11 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
     line.run()
   }
   const chooseAt = (index: number) => {
-    if (index < hits.length) choose(hits[index])
-    else run(lines[index - hits.length])
+    if (index < ahead.length) run(ahead[index])
+    else if (index < ahead.length + hits.length) choose(hits[index - ahead.length])
+    else run(lines[index - ahead.length - hits.length])
   }
-  const previewed = active >= 0 && active < hits.length ? hits[active] : undefined
+  const previewed = active >= ahead.length && active < ahead.length + hits.length ? hits[active - ahead.length] : undefined
 
   // The empty state describes the list, so it quotes the query the list answers.
   const trimmed = asked.trim()
@@ -227,7 +242,8 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth={previewed ? 'md' : 'sm'}
+      // One width, whatever the list holds: a dialog that grows when a result arrives moves under the pointer.
+      maxWidth="md"
       fullWidth
       sx={{ '& .MuiDialog-container': { alignItems: 'flex-start', pt: '10vh' } }}
     >
@@ -265,11 +281,14 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
         aria-label={s('gsearch.results')}
         sx={{ maxHeight: 420, overflowY: 'auto', pb: 0.5, flex: '1 1 0', minWidth: 0 }}
       >
+        <PaletteRows lines={ahead} first={0} active={active} onHover={setActiveIndex} onRun={run} />
         {/* One group per kind, named by its heading, so a screen reader says
             which kind a row is as it reaches the first of them. */}
-        {runsOfKind(hits).map(({ kind, from, run }) => (
+        {runsOfKind(hits).map(({ kind, from: at, run }) => {
+          const from = ahead.length + at
+          return (
           <Box key={`${kind}-${from}`} role="group" aria-labelledby={`lv-gsearch-kind-${from}`}>
-            <ListSubheader id={`lv-gsearch-kind-${from}`} component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 'var(--t-small)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
+            <ListSubheader id={`lv-gsearch-kind-${from}`} component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 'var(--t-small)' }}>
               {s(KIND_LABEL[kind])}
             </ListSubheader>
             {run.map((hit, offset) => {
@@ -291,8 +310,9 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
               )
             })}
           </Box>
-        ))}
-        <PaletteRows lines={lines} first={hits.length} active={active} onHover={setActiveIndex} onRun={run} />
+          )
+        })}
+        <PaletteRows lines={lines} first={ahead.length + hits.length} active={active} onHover={setActiveIndex} onRun={run} />
       </Box>
       {/* What a whole sentence needs room for: a hit read before it is opened. */}
       {previewed && (

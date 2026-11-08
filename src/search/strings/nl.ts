@@ -23,9 +23,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'search.unplaced': 'op geen enkele weergave',
   'search.hint': 'Enter opent het eerste resultaat; Esc sluit.',
 
-  'gsearch.title': 'Overal zoeken',
-  'gsearch.placeholder': 'Elementen, aanzichten, besluiten, plannen, waarnemingen…',
-  'gsearch.field': 'Overal zoeken',
+  'gsearch.title': 'Zoek of voer een opdracht uit',
+  'gsearch.placeholder': 'Scopes, aanzichten, records, mensen en opdrachten…',
+  'gsearch.field': 'Zoek of voer een opdracht uit',
   'gsearch.results': 'Resultaten',
   'gsearch.empty': 'Typ om te zoeken in alles wat deze scope vastlegt — elementen en hun pagina’s, aanzichten, relaties, besluiten, plannen en mijlpalen, waarnemingen, oorzaken, oplossingen en experimenten — en in wat de rest van de organisatie vastlegt.',
   'gsearch.noMatches': 'Niets komt overeen met \u201c{query}\u201d.',

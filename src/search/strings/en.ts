@@ -22,9 +22,9 @@ export const EN = {
   'search.hint': 'Enter opens the first match; Esc closes.',
 
   // --- the search over everything ------------------------------------------
-  'gsearch.title': 'Search everything',
-  'gsearch.placeholder': 'Elements, views, decisions, plans, observations…',
-  'gsearch.field': 'Search everything',
+  'gsearch.title': 'Find or run a command',
+  'gsearch.placeholder': 'Scopes, views, records, people and commands…',
+  'gsearch.field': 'Find or run a command',
   'gsearch.results': 'Results',
   'gsearch.empty': 'Type to search every record of this scope — elements and their pages, views, relations, decisions, plans and milestones, observations, causes, solutions and experiments — and what the rest of the organisation holds.',
   'gsearch.noMatches': 'Nothing matches \u201c{query}\u201d.',

@@ -377,6 +377,24 @@ describe('⌘K', () => {
     fireEvent.click(await screen.findByTestId('palette-help:menu.shortcuts'))
     expect(await screen.findByTestId('shortcuts-sheet')).toBeDefined()
   })
+
+  it('finds a scope by its name, ahead of the records, and opens its home', async () => {
+    await home()
+    fireEvent.click(screen.getByTestId('frame-find'))
+    fireEvent.change(await screen.findByRole('combobox'), { target: { value: 'depo' } })
+    const line = await screen.findByTestId('palette-scope:retail/depot')
+    expect(screen.getAllByRole('option')[0]).toBe(line)
+    fireEvent.click(line)
+    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Depot'))
+  })
+
+  it('finds a view of any scope by its name, and opens it', async () => {
+    await home()
+    fireEvent.click(screen.getByTestId('frame-find'))
+    fireEvent.change(await screen.findByRole('combobox'), { target: { value: 'the board' } })
+    fireEvent.click(await screen.findByTestId('palette-view:l7'))
+    await waitFor(() => expect(screen.queryByTestId('organisation-cards')).toBeNull())
+  })
 })
 
 describe('the sheet of keys', () => {
