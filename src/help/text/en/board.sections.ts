@@ -140,7 +140,7 @@ export const SECTIONS: SectionTexts = {
     'Right-click a card ▸ Change kind; the panel\'s ⋯',
     ['Right-click the card and open Change kind.', 'Pick the new kind and confirm what changes.'],
     'Change Event broker from an application to a platform.'],
-  'board.remove': ['Remove from the diagram or delete from the model', 'Remove from diagram takes the card off this board and keeps the record; Delete from model removes the record everywhere it is drawn, after saying where.',
+  'board.remove': ['Remove from the view or delete from the model', 'Remove from view takes the card off this board and keeps the record; Delete from model removes the record everywhere it is drawn, after saying where.',
     'Right-click a card; Delete key on a picked card; the panel\'s ⋯ ▸ Remove / delete…',
     ['Pick the card.', 'Press Delete to remove it from the diagram, or right-click ▸ Delete from model… and confirm.'],
     'Remove Support desk from Landscape in 2027 while keeping it on Application landscape.',

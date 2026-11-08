@@ -498,8 +498,8 @@ should have been; connections, description and place stay. Two cases are
 refused with the reason: an application that has a container diagram, and a
 component still attached to an application.
 
-Elements belong to the model, not to a diagram: one element can be on several
-diagrams, and **Remove from diagram** is a different action from **Delete from
+Elements belong to the model, not to a view: one element can be on several
+views, and **Remove from view** is a different action from **Delete from
 model**. Deleting asks first, and says how many connections go with it.
 Deleting a unit takes every assignment in it along, ended ones included, as
 if they had never been made: the question names who stops being what —
@@ -1455,7 +1455,7 @@ restore.
 diagram, description or decision what it was then; with the whole scope
 shown, **Restore the whole scope…** does the same for everything. A restore
 is a new change on top of everything that happened since, not a step back: the
-history keeps growing, the Activity list says *Restored the diagram Warehouse
+history keeps growing, the Activity list says *Restored the view Warehouse
 as of 3 Sep*, ⌘Z undoes it, and the next snapshot records it. The app offers
 that snapshot on the spot. A decision that has been accepted, rejected or
 superseded stays as it is — write a new one that supersedes it — and a

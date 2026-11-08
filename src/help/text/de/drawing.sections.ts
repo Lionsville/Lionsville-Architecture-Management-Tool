@@ -60,7 +60,7 @@ export const SECTIONS: SectionTexts = {
     'Exportieren Sie \'Order to delivery sketch\' als XML, um eine Kopie außerhalb der App zu behalten.'],
   'drawing.tabMenu': ['Eine Zeichnung umbenennen, duplizieren oder löschen', 'Das Menü des Reiters benennt die Zeichnung um, dupliziert sie, zeigt ihren Verlauf oder löscht sie.',
     'Rechtsklick auf den Reiter der Zeichnung oder das ▾ neben ihrem Namen.',
-    ['Klicken Sie mit rechts auf den Reiter der Zeichnung.', 'Wählen Sie Diagramm umbenennen…, Diagramm duplizieren, Verlauf… oder Diagramm löschen….'],
+    ['Drücken Sie ⌄ auf dem Reiter der Zeichnung, oder klicken Sie mit rechts darauf.', 'Wählen Sie Ansicht umbenennen…, Ansicht duplizieren, Verlauf… oder Ansicht löschen….'],
     'Benennen Sie \'Order to delivery sketch\' in \'Order to delivery, night shift\' um.'],
   'drawing.elementDrawings': ['Sehen, welche Zeichnungen ein Element zeigen', 'Die Seite eines Elements listet die Zeichnungen, auf denen es steht, unter Verbunden, Zeichnung; der Leser neben einem Bild listet sie als Steht auf. Ein Element zu löschen behält die Zeichnung, ohne die Verknüpfung; Rückgängig stellt sie wieder her.',
     'Die Seite des Elements, Abschnitt Verbunden; oder der Leser neben einer Zeichnung.',

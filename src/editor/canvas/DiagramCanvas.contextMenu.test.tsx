@@ -123,7 +123,7 @@ describe('DiagramCanvas — element menu', () => {
     fireEvent.contextMenu(nodeEl('a1'), { clientX: 300, clientY: 300 });
 
     const root = menu('Element menu');
-    for (const label of ['Open container diagram', 'Rename', 'Start connection to…', 'Duplicate', 'Copy', 'Cut', 'Remove from diagram', 'Delete from model…']) {
+    for (const label of ['Open container diagram', 'Rename', 'Start connection to…', 'Duplicate', 'Copy', 'Cut', 'Remove from view', 'Delete from model…']) {
       expect(within(root).getByText(label)).toBeDefined();
     }
     // Submenus for the things an application carries. "Icon…" is NOT one of
@@ -236,7 +236,7 @@ describe('DiagramCanvas — element menu', () => {
     expect(name.selectionEnd).toBe('Webshop'.length);
   });
 
-  it('"Delete from model…" opens the delete dialog; "Remove from diagram" removes straight away', () => {
+  it('"Delete from model…" opens the delete dialog; "Remove from view" removes straight away', () => {
     const { landed } = renderEditor();
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Delete from model…'));
@@ -245,7 +245,7 @@ describe('DiagramCanvas — element menu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     fireEvent.contextMenu(nodeEl('a1'));
-    fireEvent.click(within(menu('Element menu')).getByText('Remove from diagram'));
+    fireEvent.click(within(menu('Element menu')).getByText('Remove from view'));
     // Off the diagram, still in the model — removing is a layout edit.
     expect(landed().placements.map((p) => p.id)).toEqual(['b1']);
     expect(landed().elements.map((e) => e.id)).toEqual(['a1', 'b1']);

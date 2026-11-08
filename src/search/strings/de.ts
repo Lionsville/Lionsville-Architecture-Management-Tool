@@ -20,7 +20,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'search.empty': 'Tippen, um in diesem Entwurf zu suchen.',
   'search.noMatches': 'Kein Element entspricht „{query}“.',
   'search.otherDiagram': 'auf {name}',
-  'search.unplaced': 'auf keinem Diagramm',
+  'search.unplaced': 'auf keiner Ansicht',
   'search.hint': 'Enter öffnet den ersten Treffer; Esc schließt.',
 
   'gsearch.title': 'Überall suchen',

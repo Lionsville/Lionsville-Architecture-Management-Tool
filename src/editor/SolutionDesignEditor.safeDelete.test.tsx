@@ -187,7 +187,7 @@ describe('SolutionDesignEditor — confirming a multi-delete', () => {
     fireEvent.keyDown(screen.getByText('Actors'), { key: 'Delete' });
 
     // The remove-or-delete dialog, not the confirmation.
-    expect(within(dialog()).getByRole('button', { name: 'Remove from diagram' })).toBeDefined();
+    expect(within(dialog()).getByRole('button', { name: 'Remove from view' })).toBeDefined();
     expect(within(dialog()).getByRole('button', { name: 'Delete from model' })).toBeDefined();
   });
 });

@@ -173,7 +173,7 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
     const { host, onLayoutError, onLayoutSettled } = renderBoard();
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
-    expect(onLayoutError.mock.calls[0][0]).toBe('This diagram could not be laid out automatically.');
+    expect(onLayoutError.mock.calls[0][0]).toBe('This view could not be laid out automatically.');
     expect(host.current.commands).toEqual([]);
     expect(onLayoutSettled).not.toHaveBeenCalled();
     expect(mockTidy).toHaveBeenCalledTimes(1);
@@ -221,7 +221,7 @@ describe('SolutionDesignEditor — a reader opening a board nobody has laid out'
     mockTidy.mockResolvedValue({ placements: LAID, edgeRoutes: [], routingError: new Error('router down') });
     const { onLayoutError, rerender } = renderBoard();
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
-    expect(onLayoutError.mock.calls[0][0]).toBe('This diagram was laid out but its connections could not be routed.');
+    expect(onLayoutError.mock.calls[0][0]).toBe('This view was laid out but its connections could not be routed.');
 
     rerender({ model: renamed() });
     await waitFor(() => expect(mockTidy).toHaveBeenCalledTimes(2));

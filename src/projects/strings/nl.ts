@@ -12,7 +12,7 @@
 import type { EN } from './en'
 
 export const NL: Record<keyof typeof EN, string> = {
-  'shell.workingFileNoDiagrams': 'Deze bewaarde kopie heeft geen aanzichten.',
+  'shell.workingFileNoDiagrams': 'Deze bewaarde kopie heeft geen weergaven.',
   'entry.andMore': ' en nog {count}',
 
   'check.conflict': '{name} is zowel hier als in {scope} gedefinieerd — houd één definitie en maak van de andere een plaatsvervanger met Koppelen…',

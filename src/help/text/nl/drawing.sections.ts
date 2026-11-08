@@ -60,7 +60,7 @@ export const SECTIONS: SectionTexts = {
     'Exporteer \'Order to delivery sketch\' als XML om een kopie buiten de app te houden.'],
   'drawing.tabMenu': ['Een tekening hernoemen, dupliceren of verwijderen', 'Het menu van het tabblad hernoemt de tekening, dupliceert haar, toont haar geschiedenis of verwijdert haar.',
     'Klik rechts op het tabblad van de tekening, of de ▾ naast de naam.',
-    ['Klik rechts op het tabblad van de tekening.', 'Kies Diagram hernoemen…, Diagram dupliceren, Geschiedenis… of Diagram verwijderen….'],
+    ['Druk op ⌄ op het tabblad van de tekening, of klik er rechts op.', 'Kies Weergave hernoemen…, Weergave dupliceren, Geschiedenis… of Weergave verwijderen….'],
     'Hernoem \'Order to delivery sketch\' naar \'Order to delivery, night shift\'.'],
   'drawing.elementDrawings': ['Zien welke tekeningen een element tonen', 'De pagina van een element toont de tekeningen waarop het staat onder Verbonden, Tekening; de lezer naast een afbeelding toont ze als Staat op. Een element verwijderen houdt de tekening, zonder de koppeling; ongedaan maken zet die terug.',
     'De pagina van het element, deel Verbonden; of de lezer naast een tekening.',

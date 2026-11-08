@@ -357,7 +357,7 @@ describe('the history of one thing (ADR-0008)', () => {
     // And the changes are the diagram's own: renamed since, nothing about the decision.
     await readFirst()
     const diff = await screen.findByTestId('history-diff')
-    expect(await within(diff).findByText('Changed the diagram L7 (name)')).toBeDefined()
+    expect(await within(diff).findByText('Changed the view L7 (name)')).toBeDefined()
     expect(within(diff).queryByText(/One writer/)).toBeNull()
   })
 
@@ -493,7 +493,7 @@ describe('going back, as going forward (ADR-0008)', () => {
   const openHistoryOfTheDiagram = async () => {
     fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
     await readFirst()
-    return within(await screen.findByTestId('history-diff')).findByText('Changed the diagram L7 (name)')
+    return within(await screen.findByTestId('history-diff')).findByText('Changed the view L7 (name)')
   }
 
   it('restores one diagram as a new step: named in the Activity list, undoable, and offered a snapshot', async () => {
@@ -510,14 +510,14 @@ describe('going back, as going forward (ADR-0008)', () => {
     expect(screen.queryByTestId('history-list')).toBeNull()
 
     act(() => { fireEvent.click(screen.getByTestId('frame-activity')) })
-    expect(screen.getByRole('list', { name: 'Activity' }).firstElementChild?.textContent).toContain(`Restored the diagram Old name as of ${asOf}`)
+    expect(screen.getByRole('list', { name: 'Activity' }).firstElementChild?.textContent).toContain(`Restored the view Old name as of ${asOf}`)
     act(() => { fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' }) })
 
     // Offered, not taken: the snapshot is the toast's button, and its draft
     // is written from the restore.
     fireEvent.click(within(toast).getByRole('button', { name: 'Snapshot' }))
     const field = await screen.findByLabelText('What changed')
-    expect((field as HTMLTextAreaElement).value).toContain('Restored the diagram Old name')
+    expect((field as HTMLTextAreaElement).value).toContain('Restored the view Old name')
     fireEvent.click(screen.getByText('Take snapshot'))
     await waitFor(() => expect(history.recorded).toHaveLength(1))
     // And the folder now holds the old diagram, through the store that always writes it.
@@ -544,7 +544,7 @@ describe('going back, as going forward (ADR-0008)', () => {
     await waitFor(() => expect(screen.getByText('History…')).toBeDefined())
     fireEvent.click(screen.getByText('History…'))
     await readFirst()
-    await within(await screen.findByTestId('history-diff')).findByText('Changed the diagram L7 (name)')
+    await within(await screen.findByTestId('history-diff')).findByText('Changed the view L7 (name)')
     // Under ⋯: the heaviest act there is does not stand on every snapshot.
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Restore the whole scope…' }))

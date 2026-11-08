@@ -96,7 +96,7 @@ describe('the activity list', () => {
     click('rename')
     openActivity()
 
-    expect(lines()).toEqual(['Renamed a diagram to Renamed', 'Added Warehouse'])
+    expect(lines()).toEqual(['Renamed a view to Renamed', 'Added Warehouse'])
   })
 
   it('leaves out a change nobody made', () => {
@@ -275,7 +275,7 @@ describe('the list over a source that keeps a log', () => {
     const tags = screen.getAllByTestId('activity-origin').map((tag) => tag.textContent)
     // Newest first: the session's own step, the person's earlier one, the colleague's.
     expect(tags).toEqual(['You', 'You via Browser', 'By B. Colleague'])
-    expect(lines()).toEqual(['Renamed a diagram to Mine', 'Renamed a diagram to Theirs', 'Renamed a diagram to Theirs'])
+    expect(lines()).toEqual(['Renamed a view to Mine', 'Renamed a view to Theirs', 'Renamed a view to Theirs'])
   })
 
   it('says it is reading while the log has not answered and there is nothing else to show', () => {
@@ -285,7 +285,7 @@ describe('the list over a source that keeps a log', () => {
 
   it('shows the session alone where the log could not be read', async () => {
     list(async () => { throw new Error('offline') }, [own()])
-    expect(await screen.findByText('Renamed a diagram to Mine')).toBeDefined()
+    expect(await screen.findByText('Renamed a view to Mine')).toBeDefined()
     expect(screen.queryByTestId('activity-origin')).toBeNull()
   })
 })

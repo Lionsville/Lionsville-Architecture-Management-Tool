@@ -196,7 +196,7 @@ describe('Layer7Canvas — domain-group context menu', () => {
 
     expect(screen.queryByText('Remove group')).toBeNull();
     expect(screen.getByRole('menu', { name: 'Element menu' })).toBeDefined();
-    expect(screen.getByText('Remove from diagram')).toBeDefined();
+    expect(screen.getByText('Remove from view')).toBeDefined();
     // Right-click selects the node it is about, like every other editor does.
     expect(onSelectionChange).toHaveBeenCalledWith({ elementIds: ['a1'], connectionIds: [], domainGroups: [] });
   });

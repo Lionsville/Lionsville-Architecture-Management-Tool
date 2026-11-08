@@ -301,7 +301,7 @@ export const EN = {
    */
   'history.everywhere': 'Everywhere this is drawn: {scopes}',
   'history.restorePerScope': 'A restore puts back what this scope holds. The other scopes’ pages are theirs to restore.',
-  'history.diagrams': 'Diagrams',
+  'history.diagrams': 'Views',
   'history.descriptions': 'Descriptions',
   'history.decisions': 'Decisions',
   'history.noneFor': 'No snapshot has touched this yet.',
@@ -361,9 +361,9 @@ export const EN = {
   'change.rowAdded': 'Drew a row ({type}): {name}',
   'change.rowRemoved': 'Cut a row ({type}): {name}',
   'change.rowChanged': 'Changed a row ({type}): {name} ({fields})',
-  'change.diagramAdded': 'Added the diagram {name}',
-  'change.diagramRemoved': 'Deleted the diagram {name}',
-  'change.diagramChanged': 'Changed the diagram {name} ({fields})',
+  'change.diagramAdded': 'Added the view {name}',
+  'change.diagramRemoved': 'Deleted the view {name}',
+  'change.diagramChanged': 'Changed the view {name} ({fields})',
   'change.decisionAdded': 'Added the decision {name}',
   'change.decisionRemoved': 'Removed the decision {name}',
   'change.decisionChanged': 'Changed the decision {name} ({fields})',
@@ -456,9 +456,9 @@ export const EN = {
   'settings.moved': 'Moved to {name}.',
   'settings.renamed': 'Renamed to \u201c{name}\u201d.',
   'settings.defaults': 'DEFAULTS FOR THIS SCOPE',
-  'settings.defaultsHelp': 'What a diagram in this scope falls back on. Changing these never rewrites a diagram that has already been configured.',
+  'settings.defaultsHelp': 'What a view in this scope falls back on. Changing these never rewrites a view that has already been configured.',
   'settings.defaultAuthor': 'Author',
-  'settings.defaultAuthorHelp': 'Named on an exported diagram that has no author of its own.',
+  'settings.defaultAuthorHelp': 'Named on an exported view that has no author of its own.',
   'settings.defaultColumns': 'The operational aspects a new landscape starts with.',
 
   // --- preferences, in three scopes (ADR-0005) ------------------------------
@@ -485,7 +485,7 @@ export const EN = {
   'group.name': 'Name',
   'group.nameHelp': 'Renaming does not move it: the address ({path}) stays, and “Filed under” is what moves it.',
   'group.client': 'Client',
-  'group.clientHelp': 'Named on every exported diagram. Empty means the nearest name above.',
+  'group.clientHelp': 'Named on every exported view. Empty means the nearest name above.',
   'group.description': 'Description',
   'group.descriptionPlaceholder': 'Who they are, what this landscape covers, who to ask.',
   'group.links': 'LINKS',
@@ -695,8 +695,8 @@ export const EN = {
   'org.unreadableOne': 'One scope could not be read and is not shown: {paths}. Its folder is left as it is, and nothing is created in its place.',
   'org.unreadableOther': '{count} scopes could not be read and are not shown: {paths}. Their folders are left as they are, and nothing is created in their place.',
   'org.unreadableRoot': 'Nothing here could be read, so what it holds is not shown. Nothing in it has been changed, and nothing is created in it until it reads again.',
-  'org.diagramsOne': '{count} diagram',
-  'org.diagramsOther': '{count} diagrams',
+  'org.diagramsOne': '{count} view',
+  'org.diagramsOther': '{count} views',
 
   // The organisation's own pages, as cards.
   'org.business': 'Business architecture',

@@ -60,7 +60,7 @@ export const SECTIONS: SectionTexts = {
     'Export \'Order to delivery sketch\' as XML to keep a copy outside the app.'],
   'drawing.tabMenu': ['Rename, duplicate or delete a drawing', 'The drawing\'s tab menu renames it, duplicates it, shows its history, or deletes it.',
     'Right-click the drawing\'s tab, or the ▾ beside its name.',
-    ['Right-click the drawing\'s tab.', 'Choose Rename diagram…, Duplicate diagram, History… or Delete diagram….'],
+    ['Press ⌄ on the drawing\'s tab, or right-click it.', 'Choose Rename view…, Duplicate view, History… or Delete view….'],
     'Rename \'Order to delivery sketch\' to \'Order to delivery, night shift\'.'],
   'drawing.elementDrawings': ['See which drawings show an element', 'An element\'s page lists the drawings that show it under Connected, Drawing; the reader beside a picture lists them as Shown on. Deleting an element keeps the drawing, without the link; undo restores it.',
     'The element\'s page, Connected section; or the reader beside a drawing.',

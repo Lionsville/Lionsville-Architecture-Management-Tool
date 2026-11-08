@@ -18,7 +18,7 @@ export const EN = {
   'search.empty': 'Type to search this design.',
   'search.noMatches': 'No element matches “{query}”.',
   'search.otherDiagram': 'on {name}',
-  'search.unplaced': 'not on any diagram',
+  'search.unplaced': 'not on any view',
   'search.hint': 'Enter opens the first match; Esc closes.',
 
   // --- the search over everything ------------------------------------------

@@ -20,7 +20,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'search.empty': 'Typ om in dit ontwerp te zoeken.',
   'search.noMatches': 'Geen element komt overeen met “{query}”.',
   'search.otherDiagram': 'op {name}',
-  'search.unplaced': 'op geen enkel aanzicht',
+  'search.unplaced': 'op geen enkele weergave',
   'search.hint': 'Enter opent het eerste resultaat; Esc sluit.',
 
   'gsearch.title': 'Overal zoeken',

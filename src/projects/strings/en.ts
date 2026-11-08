@@ -9,7 +9,7 @@
  * module's slice into the table `t()` reads (`i18n/strings.ts`).
  */
 export const EN = {
-  'shell.workingFileNoDiagrams': 'This saved copy has no diagrams.',
+  'shell.workingFileNoDiagrams': 'This saved copy has no views.',
   'shell.unknownFile': 'This file is not a saved copy.',
   // --- what a repository refuses about a scope (ADR-0031 §1) ----------------
   'shell.scopeGone': 'That scope is not there any more: somebody removed it. Nothing was written.',

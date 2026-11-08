@@ -417,7 +417,7 @@ describe('SolutionDesignEditor — an automatic layout that failed', () => {
     await waitFor(() => expect(host.current.commands.length).toBeGreaterThan(0));
     expect(onLayoutError).toHaveBeenCalledTimes(1);
     expect(onLayoutError.mock.calls[0][0]).toBe(
-      'This diagram was laid out but its connections could not be routed.',
+      'This view was laid out but its connections could not be routed.',
     );
     // It DID lay out, so the host is told and clears the flag.
     await waitFor(() => expect(onLayoutSettled).toHaveBeenCalledWith('d1'));
@@ -431,7 +431,7 @@ describe('SolutionDesignEditor — an automatic layout that failed', () => {
     const { onLayoutError, onLayoutSettled } = renderNeedingLayout();
 
     await waitFor(() => expect(onLayoutError).toHaveBeenCalledTimes(1));
-    expect(onLayoutError.mock.calls[0][0]).toBe('This diagram could not be laid out automatically.');
+    expect(onLayoutError.mock.calls[0][0]).toBe('This view could not be laid out automatically.');
     expect(onLayoutSettled).not.toHaveBeenCalled();
   });
 
