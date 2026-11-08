@@ -289,7 +289,8 @@ function focusIn(main: HTMLElement | null, id: string, letter = false) {
   const first = (selector: string, mark: (one: HTMLElement) => string | undefined) =>
     Array.from(main.querySelectorAll<HTMLElement>(selector)).find((one) => mark(one) === id)
   const row = first('[data-kit-row]', (one) => one.dataset.kitRow)
-  const cell = letter ? row?.parentElement?.querySelector<HTMLElement>('td[data-kit-cell]') : undefined
+  // A folded column takes no letter: where every role is folded away the row's name takes the focus.
+  const cell = letter ? row?.parentElement?.querySelector<HTMLElement>('td[data-kit-cell]:not([data-folded])') : undefined
   const card = first('[data-testid^="unit-type-"]', (one) => one.dataset.testid?.slice('unit-type-'.length))
   const chip = first('button[data-testid^="role-"]', (one) => one.dataset.testid?.slice('role-'.length))
   const target = cell ?? row ?? card?.querySelector<HTMLElement>('.op-card__name') ?? chip
