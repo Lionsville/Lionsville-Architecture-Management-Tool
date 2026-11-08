@@ -65,14 +65,31 @@ describe('PageDialog', () => {
     expect(onClose).toHaveBeenCalledWith(expect.anything(), 'escapeKeyDown')
   })
 
+  it('leaves a field typed in on Escape, keeping what was typed, and closes on the next', () => {
+    const onClose = vi.fn()
+    render(
+      <ThemeProvider theme={createTheme()}>
+        <PageDialog open onClose={onClose} aria-label="page"><TextField label="Name" defaultValue="A draft" /><button>Go</button></PageDialog>
+      </ThemeProvider>,
+    )
+    const field = screen.getByRole<HTMLInputElement>('textbox', { name: 'Name' })
+    field.focus()
+    fireEvent.keyDown(field, { key: 'Escape' })
+    expect(onClose).not.toHaveBeenCalled()
+    expect(field.value).toBe('A draft')
+    expect(document.activeElement).toBe(screen.getByRole('dialog'))
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    expect(onClose).toHaveBeenCalledTimes(1)
+  })
+
   it('closes on Escape from anywhere else on it', () => {
     const onClose = vi.fn()
     render(
       <ThemeProvider theme={createTheme()}>
-        <PageDialog open onClose={onClose} aria-label="page"><TextField label="Name" /></PageDialog>
+        <PageDialog open onClose={onClose} aria-label="page"><button>Go</button></PageDialog>
       </ThemeProvider>,
     )
-    fireEvent.keyDown(screen.getByRole('textbox', { name: 'Name' }), { key: 'Escape' })
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Go' }), { key: 'Escape' })
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

@@ -25,7 +25,7 @@
  * The page never writes anywhere itself.
  */
 import type { Citation } from '../../model/citable'
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { LanguageProvider } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
@@ -43,6 +43,7 @@ import type { ListGroup } from '../../widgets/kit/List'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { PageBack, PageClose, useBackToReading } from '../../widgets/PageClose'
+import { claimKey, keyClaimed } from '../../widgets/kit/keys'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useSeamWidth, useSeamWidthsOf } from '../../widgets/useSeamWidth'
@@ -538,6 +539,18 @@ function phaseRows(counted: PictureCounts): PhaseRow[] {
   return [...plain, ...lit]
 }
 
+/**
+ * With a card picked on a map and its record in the panel beside it, the first
+ * Escape puts the panel and the pick away and the page stays; the next leaves the
+ * page. Innermost first: it claims the key it acted on (`claimKey`), which the
+ * page's own Escape leaves alone.
+ */
+function escapeClosesPanel(event: ReactKeyboardEvent, onMap: boolean, selectedKey: string | undefined, setSelectedKey: (key: string | undefined) => void) {
+  if (event.key !== 'Escape' || keyClaimed(event) || !onMap || selectedKey === undefined) return
+  claimKey(event)
+  setSelectedKey(undefined)
+}
+
 /** The whole record has one way back, its named crumb (‹ Seen), and Escape goes the same way: the tab row's ‹ and × stand aside. */
 function OffTheRecord({ full, children }: { full: boolean; children: ReactNode }) {
   return full ? null : <>{children}</>
@@ -993,7 +1006,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   return (
     <PageDialog open={open} topInset={chrome.topInset} onClose={leaving.leave} aria-label={s('observation.title')}>
       <LanguageProvider language={props.language}>
-        <Box className="chain-page" ref={located.ref} sx={located.ring}>
+        <Box className="chain-page" ref={located.ref} sx={located.ring} onKeyDown={(event) => escapeClosesPanel(event, onMap, selectedKey, setSelectedKey)}>
           <div className="chain-page__tabs" data-testid="observation-topbar">
             <OffTheRecord full={full}><PageBack onBack={leaving.leave} label={leaving.said} /></OffTheRecord>
             <Tabs<Tab>

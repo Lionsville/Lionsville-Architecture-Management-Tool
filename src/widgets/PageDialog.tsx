@@ -33,14 +33,19 @@ export type PageDialogProps = Omit<DialogProps, 'fullScreen' | 'hideBackdrop'> &
   topInset?: number
 }
 
+/** Where a person types: Escape there means leave the field, never the page. */
+const TYPED_IN = 'textarea, [contenteditable="true"], input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="range"]):not([type="color"]):not([type="file"])'
+
 /**
- * Escape from a field that picks from a list leaves the field for the page
- * itself, and goes no further: the page keeps the focus, so the next Escape
- * reaches it and closes it.
+ * Escape from a field that picks from a list, or from one that is typed in,
+ * leaves the field for the page itself, and goes no further: the page keeps
+ * the focus and the field keeps what was typed, so the next Escape reaches the
+ * page and closes it. The reflex that puts away a completion or leaves a field
+ * never loses the page and a draft with it.
  */
 function leavesFieldFirst(event: object): boolean {
   const target = (event as { target?: unknown }).target
-  if (!(target instanceof HTMLElement) || !target.closest('.MuiAutocomplete-root')) return false
+  if (!(target instanceof HTMLElement) || !(target.closest('.MuiAutocomplete-root') || target.matches(TYPED_IN))) return false
   const page = target.closest<HTMLElement>('[role="dialog"], [data-place-page]')
   if (page) page.focus()
   else target.blur()

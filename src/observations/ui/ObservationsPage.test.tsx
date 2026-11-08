@@ -834,6 +834,16 @@ describe('merging, moving, and a cause’s root step', () => {
     expect(screen.getByTestId('observation-row-o1').getAttribute('data-guide')).toBe('observations.row')
   })
 
+  it('puts the panel beside a map away on the first Escape, and leaves the page only on the next', () => {
+    const onClose = vi.fn()
+    mount({ onClose, initialId: 'c1', initialTab: 'analysis-map', initialNonce: 1 })
+    const seam = () => screen.queryByRole('separator', { name: 'Resize the reading pane' })
+    expect(seam()).toBeTruthy()
+    fireEvent.keyDown(seam()!, { key: 'Escape' })
+    expect(seam()).toBeNull()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('has a seam the panel beside a map is resized at, with the keyboard too', () => {
     mount({ initialId: 'c1', initialTab: 'analysis-map', initialNonce: 1 })
     const seam = screen.getByRole('separator', { name: 'Resize the reading pane' })
