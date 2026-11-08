@@ -89,7 +89,16 @@
  * scope's name last of all.
  */
 .kit-frame__status[data-calm='false'] { max-width: 24rem; min-width: min-content; }
-.kit-frame__status[data-least='true'] { flex-shrink: 1; }
+/* Its words do not shrink under the head, or the row's least squeezes them to a letter beside a crumb that stands whole: the crumb gives way first. */
+.kit-frame__status[data-calm='false'] .kit-frame__status-say { flex-shrink: 0; min-width: min-content; }
+/*
+ * Its tail gives way first — a factor far above the trail's, so while it can the trail loses
+ * nothing — and then the trail, by a factor of 1 (one under 1 takes only that part of the
+ * shortfall and spills the rest), down to its few letters: never the word's head beside a
+ * crumb that stands whole.
+ */
+.kit-frame__status[data-least='true'] { flex-shrink: 1000000; }
+.kit-frame__row--one:has(.kit-frame__status[data-least='true']) [data-guide='shell.crumbs'] { flex-shrink: 1; min-width: min-content; }
 .kit-frame__status[data-calm='false'] .kit-frame__status-word { display: inline-grid; grid-auto-flow: column; grid-template-columns: auto minmax(0, max-content); }
 .kit-frame__status-head { white-space: nowrap; }
 .kit-frame__status-tail { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: pre; }

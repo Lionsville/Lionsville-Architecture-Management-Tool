@@ -55,6 +55,18 @@ describe('the status word under 75 rem', () => {
   })
 })
 
+describe('a status word that is not calm, where the row has nothing left to fold', () => {
+  // At 600 px, and at 700 px with 150 %, "Offline" was squeezed to "(" beside a crumb that stood
+  // whole: its words had no floor of their own, and the trail barely shrank. The layout is the
+  // browser's; this holds the three rules it turns on (the e2e in the server's suite measures it).
+  it('keeps its head and lets the trail give way instead', () => {
+    const css = readFileSync('src/widgets/kit/Frame.css', 'utf8')
+    expect(css).toContain(".kit-frame__status[data-calm='false'] .kit-frame__status-say { flex-shrink: 0; min-width: min-content; }")
+    expect(css).toContain(".kit-frame__status[data-least='true'] { flex-shrink: 1000000; }")
+    expect(css).toContain(".kit-frame__row--one:has(.kit-frame__status[data-least='true']) [data-guide='shell.crumbs'] { flex-shrink: 1; min-width: min-content; }")
+  })
+})
+
 describe('the density switch', () => {
   // It was written and never imported, so Compact set an attribute nothing read.
   it('is loaded with the frame, and moves the rows, the frame’s bars and its controls', () => {
