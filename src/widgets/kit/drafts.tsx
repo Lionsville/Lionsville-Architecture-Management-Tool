@@ -14,7 +14,6 @@
  */
 import { useEffect, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
-import { Button } from './Button'
 import { Dialog } from './Dialog'
 
 const held = new Set<symbol>()
@@ -62,12 +61,11 @@ export function DraftQuestion() {
     <Dialog
       open={going !== undefined} title={t('kit.draft.title')} onClose={() => setGoing(undefined)} onSubmit={() => setGoing(undefined)}
       data-testid="draft-question"
-      actions={(
-        <>
-          <Button variant="danger" onClick={leave} data-testid="draft-leave">{t('kit.draft.leave')}</Button>
-          <Button variant="primary" type="submit" autoFocus>{t('kit.draft.keep')}</Button>
-        </>
-      )}
+      actions={{
+        // Leaving is something else done with the draft, set apart; keeping on writing is the answer.
+        aside: [{ danger: true, onClick: leave, 'data-testid': 'draft-leave', label: t('kit.draft.leave') }],
+        outcome: { type: 'submit', autoFocus: true, label: t('kit.draft.keep') },
+      }}
     >
       <p>{t('kit.draft.body')}</p>
     </Dialog>
