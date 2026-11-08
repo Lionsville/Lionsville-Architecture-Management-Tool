@@ -334,6 +334,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.properties': 'Eigenschappen',
   'inspector.connected': 'Verbonden',
   'inspector.comments': 'Opmerkingen',
+  'inspector.principles': 'Principes',
   'inspector.placedIn': 'Geplaatst in',
   'inspector.plans': 'Plannen',
   'inspector.lines': 'Lijnen',

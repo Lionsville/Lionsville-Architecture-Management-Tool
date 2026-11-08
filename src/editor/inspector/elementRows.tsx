@@ -747,7 +747,7 @@ export function PanelAppearance({ props, onHelp }: { props: ElementInspectorProp
 }
 
 /** The record's sections, in the order the page reads them, each its own row list. */
-export const RECORD_SECTIONS = ['properties', 'record', 'aspects', 'connected', 'comments'] as const;
+export const RECORD_SECTIONS = ['properties', 'record', 'aspects', 'connected', 'principles', 'comments'] as const;
 export type RecordSectionId = (typeof RECORD_SECTIONS)[number];
 
 /** Which sections a kind has, and what each is headed. Aspects only where the kind has them: no empty tab, no empty heading. */
@@ -757,6 +757,7 @@ export function recordSectionsOf(element: DesignElement, t: Translate): { id: Re
     { id: 'record', heading: t('record.title') },
     { id: 'aspects', heading: t('section.operationalAspects') },
     { id: 'connected', heading: t('inspector.connected') },
+    { id: 'principles', heading: t('inspector.principles') },
     { id: 'comments', heading: t('inspector.comments') },
   ];
   return all.filter((section) => section.id !== 'aspects' || element.kind === 'application');
@@ -783,11 +784,13 @@ export function RecordSectionBody({ props, section, unit }: { props: ElementInsp
       return (
         <div data-testid="record-connected">
           <RowSet rows={present([plansRow(ctx), linesRow(ctx), viewsRow(ctx), ...insideRows(ctx)])} surface="record" readOnly={readOnly} />
-          {/* The principles it follows, and what has been done to it (ADR-0041 §12). */}
-          <CitationsSection about={{ kind: 'element', id: element.id }} subject={`${element.name}\n${element.description ?? ''}`} readOnly={readOnly} />
+          {/* What has been done to it (ADR-0038). */}
           <RecordChanges about={{ kind: 'element', id: element.id }} first="added" />
         </div>
       );
+    case 'principles':
+      // The principles it follows (ADR-0041 §12), under the page's own heading.
+      return <CitationsSection about={{ kind: 'element', id: element.id }} subject={`${element.name}\n${element.description ?? ''}`} readOnly={readOnly} headed={false} />;
     case 'comments':
       return <CommentThread about={{ kind: 'element', id: element.id }} headed={false} />;
   }

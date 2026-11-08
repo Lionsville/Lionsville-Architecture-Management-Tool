@@ -285,8 +285,8 @@ function aroundSections(on: Sections): RecordSection[] {
       ),
     },
     {
-      id: 'principles', heading: t('plan.principles'), group: t('plan.groupAround'), headless: true,
-      children: <CitationsSection about={about} subject={`${plan.title}\n${plan.body}`} />,
+      id: 'principles', heading: t('plan.principles'), group: t('plan.groupAround'),
+      children: <CitationsSection about={about} subject={`${plan.title}\n${plan.body}`} headed={false} />,
     },
     {
       id: 'history', heading: t('plan.changesLog'), group: t('plan.groupAround'),

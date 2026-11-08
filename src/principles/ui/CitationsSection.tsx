@@ -7,6 +7,10 @@
  * principles in force here whose words the record shares, or that other
  * records about the same subject cite, each with what matched. One line per
  * citation, the number written `PR-0001.2` where an aspect is cited.
+ *
+ * Headed like the sections beside it, with *Cite…* and *Deviates…* under the
+ * heading where the eye already is, as *Edit text* is; a page whose own
+ * section already says *Principles* passes `headed={false}`.
  */
 import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
@@ -25,12 +29,15 @@ import { CiteDialog } from './CiteDialog'
 import { usePrinciples } from './PrinciplesContext'
 import type { PrinciplesAccess } from './PrinciplesContext'
 import { STANCE_WORD } from './words'
+import { Button as KitButton } from '../../widgets/kit/Button'
 
-export function CitationsSection({ about, subject, readOnly = false }: {
+export function CitationsSection({ about, subject, readOnly = false, headed = true }: {
   about: { kind: CitingKind; id: string }
   /** What the record says, for *May apply*: its title and body. */
   subject: string
   readOnly?: boolean
+  /** False where the page around it already heads it *Principles*, as a record's section does. */
+  headed?: boolean
 }) {
   const access = usePrinciples()
   const { t } = useStrings()
@@ -46,17 +53,16 @@ export function CitationsSection({ about, subject, readOnly = false }: {
   // Written where the record is kept, and only where that scope may be written.
   readOnly = readOnly || !access.mayWrite(here)
   const quickStance = stancesOf(about.kind)[0]!
+  const deviating = about.kind === 'element' && access.deviate !== undefined
   return (
-    <Box data-testid="citations-section" sx={{ mt: 4 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Typography variant="overline" color="text.secondary" sx={{ flex: 1 }}>{t('principles.sectionTitle')}</Typography>
-        {!readOnly && (
-          <Button size="small" onClick={() => setCiting({})} data-testid="cite-open">{t('principles.cite')}</Button>
-        )}
-        {!readOnly && about.kind === 'element' && access.deviate && (
-          <Button size="small" onClick={() => setCiting({ deviating: true })} data-testid="deviate-open">{t('principles.deviate')}</Button>
-        )}
-      </Box>
+    <Box component={headed ? 'section' : 'div'} data-testid="citations-section" aria-label={headed ? t('principles.sectionTitle') : undefined} sx={headed ? { mt: 2, pt: 1.5, borderTop: 1, borderColor: 'divider' } : undefined}>
+      {headed && <Typography variant="subtitle2" component="h3" sx={{ mb: 0.5 }}>{t('principles.sectionTitle')}</Typography>}
+      {!readOnly && (
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1 }}>
+          <KitButton size="small" onClick={() => setCiting({})} data-testid="cite-open">{t('principles.cite')}</KitButton>
+          {deviating && <KitButton size="small" onClick={() => setCiting({ deviating: true })} data-testid="deviate-open">{t('principles.deviate')}</KitButton>}
+        </Box>
+      )}
       {citations.length === 0 && (
         <Typography variant="body2" color="text.secondary" sx={{ fontSize: 'var(--t-small)' }}>{t('principles.citesNone')}</Typography>
       )}

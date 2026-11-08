@@ -346,6 +346,7 @@ export const EN = {
   'inspector.properties': 'Properties',
   'inspector.connected': 'Connected',
   'inspector.comments': 'Comments',
+  'inspector.principles': 'Principles',
   'inspector.placedIn': 'Placed in',
   'inspector.plans': 'Plans',
   'inspector.lines': 'Lines',
