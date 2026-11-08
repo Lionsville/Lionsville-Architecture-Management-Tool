@@ -278,7 +278,7 @@ describe('two workspaces over one command channel', () => {
     expect(Object.keys(channel.head(scope.path).elements)).toEqual(['billing', 'ledger'])
 
     // On their screen it is somebody else's work, and it says whose.
-    expect(await activityOf(b)).toEqual(['BY A. Author'])
+    expect(await activityOf(b)).toEqual(['By A. Author'])
   })
 
   it('carries an undo over as a new step, because a colleague cannot un-see one', async () => {
@@ -292,7 +292,7 @@ describe('two workspaces over one command channel', () => {
     // It arrives as a change, not as a retraction: the element goes, and their
     // log has two of this author's steps on it rather than none.
     await waitFor(async () => { expect(parsed(await askB('project.current')).elements).toBe(1) })
-    expect(await activityOf(b)).toEqual(['BY A. Author', 'BY A. Author'])
+    expect(await activityOf(b)).toEqual(['By A. Author', 'By A. Author'])
   })
 
   it('puts their step underneath ours when ours has not been sequenced yet', async () => {
@@ -348,7 +348,7 @@ describe('two workspaces over one command channel', () => {
 
     // One step here is five out there, which is what the stack's type says:
     // each announcement is sequenced, named and undoable on its own over there.
-    expect(await activityOf(b)).toEqual(Array(typed.length).fill('BY A. Author'))
+    expect(await activityOf(b)).toEqual(Array(typed.length).fill('By A. Author'))
 
     // And taking it back is ONE change of ours, carrying every fold's inverse —
     // so it crosses as one step and their name goes back in one go.

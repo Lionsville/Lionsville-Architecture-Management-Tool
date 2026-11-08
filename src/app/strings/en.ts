@@ -598,30 +598,30 @@ export const EN = {
   'shell.activityTip': 'What has changed in this scope since you opened it',
   'shell.activityEmpty': 'Nothing yet',
   /** The tag on a step an agent took, beside the time (ADR-0007). */
-  'shell.activityAgent': 'AGENT',
+  'shell.activityAgent': 'Agent',
   /** The tag on a step another author made, beside the time: their name. */
-  'shell.activityBy': 'BY {name}',
+  'shell.activityBy': 'By {name}',
   /**
    * The same tag where the step also said which client the person made it with
    * — one author working from two is two different things to read a log about,
    * and a line that said only the name would flatten them into one.
    */
-  'shell.activityByVia': 'BY {name} VIA {client}',
+  'shell.activityByVia': 'By {name} via {client}',
   /** What that tag says when the step arrived with no author's name on it. */
-  'shell.activityElsewhere': 'ANOTHER AUTHOR',
+  'shell.activityElsewhere': 'another author',
   /**
    * The tag on the person's own step, where the list also holds everybody
    * else's because the source keeps a log of the scope (`SourceRecentActivity`).
    */
-  'shell.activityYou': 'YOU',
+  'shell.activityYou': 'You',
   /** The same, where the step said which client the person made it with. */
-  'shell.activityYouVia': 'YOU VIA {client}',
+  'shell.activityYouVia': 'You via {client}',
   /** The list while the source's log of the scope is being read, with nothing else to show yet. */
   'shell.activityReading': 'Reading what was done here…',
   /** The button's tip where the list is the source's log and not only this session's steps. */
   'shell.activityTipKept': 'What was lately done in this scope, and by whom',
   /** The tag on a step nobody made: a board the editor laid out by itself as it opened. */
-  'shell.activityUnattended': 'LAID OUT AUTOMATICALLY',
+  'shell.activityUnattended': 'Laid out automatically',
   /**
    * Who else has the open scope in front of them, on the bar beside the status.
    * Names only, as the source said them, and nothing at all when there is

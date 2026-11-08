@@ -134,22 +134,22 @@ describe('who took the step', () => {
 
   it('tags an agent’s step, as it always has', () => {
     list([entry({ origin: 'agent' })])
-    expect(screen.getByTestId('activity-origin').textContent).toBe('AGENT')
+    expect(screen.getByTestId('activity-origin').textContent).toBe('Agent')
   })
 
   it('names the author of a step made elsewhere', () => {
     list([entry({ origin: 'remote', by: 'A. Author' })])
-    expect(screen.getByTestId('activity-origin').textContent).toBe('BY A. Author')
+    expect(screen.getByTestId('activity-origin').textContent).toBe('By A. Author')
   })
 
   it('still says it was not ours when the step arrived with no name on it', () => {
     list([entry({ origin: 'remote' })])
-    expect(screen.getByTestId('activity-origin').textContent).toBe('BY ANOTHER AUTHOR')
+    expect(screen.getByTestId('activity-origin').textContent).toBe('By another author')
   })
 
   it('says it in the language the app is in', () => {
     list([entry({ origin: 'remote', by: 'A. Author' })], 'nl')
-    expect(screen.getByTestId('activity-origin').textContent).toBe('DOOR A. Author')
+    expect(screen.getByTestId('activity-origin').textContent).toBe('Door A. Author')
   })
 
   /**
@@ -159,7 +159,7 @@ describe('who took the step', () => {
    */
   it('names the client the author made it with, where the step said', () => {
     list([entry({ origin: 'remote', by: 'A. Author', via: 'their client' })])
-    expect(screen.getByTestId('activity-origin').textContent).toBe('BY A. Author VIA their client')
+    expect(screen.getByTestId('activity-origin').textContent).toBe('By A. Author via their client')
   })
 
   it('names the client in each of the three languages', () => {
@@ -168,22 +168,22 @@ describe('who took the step', () => {
       list([entry({ origin: 'remote', by: 'A. Author', via: 'their client' })], language)
       return screen.getByTestId('activity-origin').textContent
     }
-    expect(said('nl')).toBe('DOOR A. Author VIA their client')
-    expect(said('de')).toBe('VON A. Author \u00dcBER their client')
-    expect(said('en')).toBe('BY A. Author VIA their client')
+    expect(said('nl')).toBe('Door A. Author via their client')
+    expect(said('de')).toBe('Von A. Author \u00fcber their client')
+    expect(said('en')).toBe('By A. Author via their client')
   })
 
   /** A step with a client and no author is still not ours, and still says so. */
   it('falls back to the author nobody named, with the client beside it', () => {
     list([entry({ origin: 'remote', via: 'their client' })])
     expect(screen.getByTestId('activity-origin').textContent)
-      .toBe('BY ANOTHER AUTHOR VIA their client')
+      .toBe('By another author via their client')
   })
 
   /** Every step in this repository: no client said, and the line as it was. */
   it('says only the name where no client was said', () => {
     list([entry({ origin: 'remote', by: 'A. Author' })])
-    expect(screen.getByTestId('activity-origin').textContent).toBe('BY A. Author')
+    expect(screen.getByTestId('activity-origin').textContent).toBe('By A. Author')
   })
 })
 
@@ -240,14 +240,14 @@ describe('the list over a source that keeps a log', () => {
 
   it('draws it as laid out automatically, with no author', async () => {
     list(async () => [logged({ stepId: 'layout', unattended: true, mine: true })])
-    expect(await screen.findByText('LAID OUT AUTOMATICALLY')).toBeDefined()
-    expect(screen.queryByText('YOU')).toBeNull()
+    expect(await screen.findByText('Laid out automatically')).toBeDefined()
+    expect(screen.queryByText('You')).toBeNull()
   })
 
   it('does the same for a layout the session made by itself', async () => {
     list(async () => [], [own({ unattended: true })])
-    expect(await screen.findByText('LAID OUT AUTOMATICALLY')).toBeDefined()
-    expect(screen.queryByText('YOU')).toBeNull()
+    expect(await screen.findByText('Laid out automatically')).toBeDefined()
+    expect(screen.queryByText('You')).toBeNull()
   })
 
   it('leaves an agent\'s step tagged as an agent\'s', () => {
@@ -270,11 +270,11 @@ describe('the list over a source that keeps a log', () => {
   it('asks the source when it opens, and names every author', async () => {
     const recent = vi.fn(async () => [logged(), logged({ stepId: 'mine', mine: true, via: 'Browser', at: 2_000 })])
     list(recent, [own()])
-    expect(await screen.findByText('BY B. Colleague')).toBeDefined()
+    expect(await screen.findByText('By B. Colleague')).toBeDefined()
     expect(recent).toHaveBeenCalledTimes(1)
     const tags = screen.getAllByTestId('activity-origin').map((tag) => tag.textContent)
     // Newest first: the session's own step, the person's earlier one, the colleague's.
-    expect(tags).toEqual(['YOU', 'YOU VIA Browser', 'BY B. Colleague'])
+    expect(tags).toEqual(['You', 'You via Browser', 'By B. Colleague'])
     expect(lines()).toEqual(['Renamed a diagram to Mine', 'Renamed a diagram to Theirs', 'Renamed a diagram to Theirs'])
   })
 
