@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from 'vitest'
-import { pillClearOfChip } from './FloatingEdge'
+import { chipClearOfPills, pillClearOfChip } from './FloatingEdge'
 
 describe('pillClearOfChip', () => {
   const a = { x: 0, y: 100 }
@@ -38,3 +38,27 @@ describe('pillClearOfChip', () => {
     expect(Math.abs(at.y - 200)).toBe(23)
   })
 })
+
+describe('chipClearOfPills', () => {
+  const chip = { at: { x: 50, y: 100 }, width: 140, height: 20 }
+
+  it('leaves a chip no pill covers where it is', () => {
+    expect(chipClearOfPills(chip, [{ at: { x: 300, y: 100 }, axis: 'horizontal' }], 1)).toEqual(chip.at)
+  })
+
+  it('steps a chip off a pill that kept the middle of a short leg, across the leg, just clear of it', () => {
+    // The leg of 100 has no room past a 140-wide chip: the pill stays on its middle, over the chip.
+    const pill = pillClearOfChip(chip.at, 'horizontal', { x: 0, y: 100 }, { x: 100, y: 100 }, chip, 1)
+    const at = chipClearOfPills(chip, [{ at: pill, axis: 'horizontal' }], 1)
+    // Half the pill (4), half the chip (10) and a gap (4): 18 above the leg.
+    expect(at).toEqual({ x: 50, y: 82 })
+  })
+
+  it('steps off a vertical leg’s pill by whichever way is shortest, in the canvas’s units', () => {
+    const at = chipClearOfPills({ at: { x: 10, y: 200 }, width: 40, height: 20 }, [{ at: { x: 10, y: 200 }, axis: 'vertical' }], 0.5)
+    // At half scale: up past the pill's half length (4.5), the chip's half height (5) and a gap (2) is 11.5,
+    // shorter than aside past its half width (2 + 10 + 2).
+    expect(at).toEqual({ x: 10, y: 188.5 })
+  })
+})
+

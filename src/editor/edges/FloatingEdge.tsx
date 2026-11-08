@@ -213,6 +213,55 @@ export function pillClearOfChip(
   return { ...mid, [along]: best };
 }
 
+/**
+ * Where a chip the board placed stands when a leg's pill would still cover it:
+ * the pill keeps the middle of a leg too short to go past the chip
+ * (`pillClearOfChip`), so there the chip steps aside instead — just off the
+ * pill, across its leg, on whichever side is nearest — and a new line's
+ * "double-click to label…" reads whole. A chip clear of every pill stays where
+ * it is. Sizes on screen are turned into the canvas's units by `scale`.
+ */
+export function chipClearOfPills(
+  chip: { at: Point; width: number; height: number },
+  pills: readonly { at: Point; axis: LegAxis }[],
+  scale: number,
+): Point {
+  const half = { x: (chip.width / 2) * scale, y: (chip.height / 2) * scale };
+  const gap = 4 * scale;
+  const pillHalf = (axis: LegAxis) => {
+    const along = (SEGMENT_HANDLE_PX.width / 2) * scale;
+    const across = (SEGMENT_HANDLE_PX.height / 2) * scale;
+    if (axis === 'horizontal') return { x: along, y: across };
+    if (axis === 'vertical') return { x: across, y: along };
+    return { x: along, y: along };
+  };
+  const covering = (at: Point) => pills.filter((pill) => {
+    const size = pillHalf(pill.axis);
+    return Math.abs(pill.at.x - at.x) < half.x + size.x && Math.abs(pill.at.y - at.y) < half.y + size.y;
+  });
+  const hit = covering(chip.at);
+  if (hit.length === 0) return chip.at;
+  const places = hit.flatMap((pill) => {
+    const size = pillHalf(pill.axis);
+    return [
+      { ...chip.at, y: pill.at.y - size.y - half.y - gap }, { ...chip.at, y: pill.at.y + size.y + half.y + gap },
+      { ...chip.at, x: pill.at.x - size.x - half.x - gap }, { ...chip.at, x: pill.at.x + size.x + half.x + gap },
+    ];
+  }).filter((at) => covering(at).length === 0);
+  if (places.length === 0) return chip.at;
+  const away = (at: Point) => Math.hypot(at.x - chip.at.x, at.y - chip.at.y);
+  return places.reduce((one, other) => (away(other) < away(one) ? other : one));
+}
+
+/** Where the chip is drawn: a chip the board placed steps off a pill that could not step off it; one the person placed or holds stays put. */
+function chipStandsAt({ anchor, shown, handles, held, data, size, pills, scale }: {
+  anchor: Point; shown: boolean | undefined; handles: boolean | undefined; held: Point | null | undefined; data: { labelPosition?: Point } | undefined
+  size: { width: number; height: number } | undefined; pills: readonly { at: Point; axis: LegAxis }[]; scale: number
+}): Point {
+  if (!shown || !handles || held || data?.labelPosition || !size) return anchor;
+  return chipClearOfPills({ at: anchor, ...size }, pills, scale);
+}
+
 /** What a segment drag is about, captured at pointer-down. */
 interface SegmentGesture {
   /** Leg index into `polyline`; ignored for a straight line. */
@@ -633,10 +682,10 @@ export const FloatingEdge = memo(function FloatingEdge({
             : axis === 'vertical'
               ? 90
               : (Math.atan2(b.y - a.y, b.x - a.x) * 180) / Math.PI;
-        const cursor = axis === 'horizontal' ? 'ns-resize' : axis === 'vertical' ? 'ew-resize' : 'move';
-        return { index: i, at, angle, cursor };
+        return { index: i, at, angle, axis, cursor: axis === 'horizontal' ? 'ns-resize' : axis === 'vertical' ? 'ew-resize' : 'move' };
       })
     : [];
+  const chipShownAt = chipStandsAt({ anchor, shown: showChip, handles: showHandles, held: dragLabel, data, size: chipBox.size, pills: segmentHandles, scale: handleScale });
 
   return (
     <>
@@ -682,7 +731,7 @@ export const FloatingEdge = memo(function FloatingEdge({
               position: 'absolute',
               // The kit's label holds its own size, about its own middle; only the field that edits it asks this to.
               // The nudge is `LabelSpread`'s, so that labels keep clear of each other with no render.
-              transform: `translate(-50%, -50%) translate(${anchor.x}px, ${anchor.y}px) translate(var(--lv-nudge-x, 0px), var(--lv-nudge-y, 0px))${editing ? ` scale(${handleScale})` : ''}`,
+              transform: `translate(-50%, -50%) translate(${chipShownAt.x}px, ${chipShownAt.y}px) translate(var(--lv-nudge-x, 0px), var(--lv-nudge-y, 0px))${editing ? ` scale(${handleScale})` : ''}`,
               pointerEvents: routeEditing.readOnly ? 'none' : 'all',
               cursor: editing ? 'text' : 'grab',
               zIndex: 9,
