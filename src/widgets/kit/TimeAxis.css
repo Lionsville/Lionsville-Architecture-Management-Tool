@@ -166,8 +166,10 @@
 }
 button.kit-time__bar { cursor: pointer; }
 button.kit-time__bar:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
-.kit-time__barname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The bar's words stand over the day lines, on the bar's own fill, so Today never runs through a word; the bar beside them stays open to the line. */
+.kit-time__barname { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; position: relative; z-index: 1; padding-inline: 1px; background: var(--kit-bar-fill); }
 .kit-time__runs { flex: none; font-weight: var(--fw-strong); line-height: 1; color: var(--kit-bar-edge); }
+.kit-time__runs[data-end] { margin-left: auto; }
 .kit-time__bar[data-tone='draft'] { --kit-bar-edge: var(--line-strong); --kit-bar-fill: transparent; border-style: dashed; }
 .kit-time__bar[data-tone='agreed'] { --kit-bar-edge: var(--accent); --kit-bar-fill: var(--surface); }
 .kit-time__bar[data-tone='running'] { --kit-bar-edge: var(--accent); --kit-bar-fill: var(--accent-soft); }
