@@ -23,6 +23,8 @@ import { applyTextSize, movedTextSize, readTextSize } from '../platform/textSize
 import type { TextSize, TextSizeMove } from '../platform/textSize'
 import type { KeepNotice } from './useKeepNotice'
 import type { AccentShades } from '../widgets/kit/tokens'
+import { densityFrom } from '../widgets/kit/density'
+import type { Density } from '../widgets/kit/density'
 
 /**
  * What this hook needs from a store: writing. Nothing else.
@@ -36,11 +38,9 @@ export type PreferencesWriter = {
   write(preferences: Record<string, unknown>): Promise<void>
 }
 
-/** How much a screen holds: the one switch every row measure follows (`widgets/kit/density.css`). */
-export type Density = 'comfortable' | 'compact'
-
+/** How much a screen holds: the kit's one choice (`widgets/kit/density.ts`), every row measure follows it. */
 function readDensity(stored: unknown): Density {
-  return stored && typeof stored === 'object' && (stored as { density?: unknown }).density === 'compact' ? 'compact' : 'comfortable'
+  return densityFrom(stored && typeof stored === 'object' ? (stored as { density?: unknown }).density : undefined)
 }
 
 export type ShellPreferences = {

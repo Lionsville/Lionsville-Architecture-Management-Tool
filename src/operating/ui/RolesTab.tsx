@@ -17,7 +17,8 @@ import { Button } from '../../widgets/kit/Button'
 import { Select } from '../../widgets/kit/Field'
 import { FilterWords } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
-import type { ListColumn, ListDensity } from '../../widgets/kit/List'
+import type { ListColumn } from '../../widgets/kit/List'
+import { useDensity } from '../../widgets/kit/density'
 import { listed } from '../../widgets/kit/listView'
 import { FRESH_VIEW } from '../../widgets/kit/listView'
 import type { ListView } from '../../widgets/kit/listView'
@@ -80,7 +81,7 @@ export function RolesTab({ parts, makeId, selected, onSelect, onNew }: {
   const { t, language } = useStrings()
   const { model, readOnly, dispatch } = parts
   const [view, setView] = useState<ListView>(FRESH_VIEW)
-  const [density, setDensity] = useState<ListDensity>('normal')
+  const [density, setDensity] = useDensity()
   const columnsAll: readonly ListColumn[] = useMemo(() => [
     { id: 'held', label: t('operating.heldIn'), sortable: true },
     { id: 'line', label: t('operating.lineSolid'), sortable: true },

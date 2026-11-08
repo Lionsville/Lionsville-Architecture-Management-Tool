@@ -33,7 +33,7 @@ and behaves is said here, once.
 | `listView.ts` | what a list shows as data: find, filters, group, sort, columns, selection; read from and written to the address; the rows a view keeps; *Did you mean* |
 | `List.tsx` | **List**: a row is the item and nothing else, one line or wrapped; groups that fold; columns only when asked for; ticks and bulk; the keyboard; focus handed back to the row; `doors`, for rows that are ways on, as on a home: pressable at rest; a row's `rail`, a thin mark at its start in a tone (`--rail-good`, `--rail-bad`, `--rail-neutral`), named in words unless the row says its kind |
 | `ListMore.tsx` | **List more**: the end of a list that is not all there, how many are kept back and the button that brings them; `List`'s `more`, or under a map |
-| `listDensity.ts` | how close a person likes every list's rows: one choice for the product, which the app keeps |
+| `density.ts` | how much a screen holds: the person's one choice, Comfortable or Compact, named once and offered by Preferences and a list's View alike; the app keeps it and sets it on the root (`density.css`) |
 | `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
 | `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address |
 | `TreeList.tsx` | **Tree list**: a short tree to choose a part by: nodes that fold and can be picked, a note and a count, one tab stop |

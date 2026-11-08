@@ -111,13 +111,16 @@ describe('filter words', () => {
     const onDensity = vi.fn()
     const onReset = vi.fn()
     renderShell(
-      <Host columns={[{ id: 'a', label: 'Vendor' }, { id: 'b', label: 'Owner' }]} shownColumns={['a']} onColumns={onColumns} density="normal" onDensity={onDensity} onReset={onReset} />,
+      <Host columns={[{ id: 'a', label: 'Vendor' }, { id: 'b', label: 'Owner' }]} shownColumns={['a']} onColumns={onColumns} density="comfortable" onDensity={onDensity} onReset={onReset} />,
     )
     fireEvent.click(screen.getByRole('button', { name: /View/ }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Owner' }))
     expect(onColumns).toHaveBeenCalledWith(['a', 'b'])
     fireEvent.click(screen.getByRole('checkbox', { name: 'Vendor' }))
     expect(onColumns).toHaveBeenLastCalledWith([])
+    // The one density, with the options and names Preferences has.
+    expect(screen.getAllByRole('radio').map((one) => one.closest('label')?.textContent)).toEqual(['Comfortable', 'Compact'])
+    expect((screen.getByRole('radio', { name: 'Comfortable' }) as HTMLInputElement).checked).toBe(true)
     fireEvent.click(screen.getByRole('radio', { name: 'Compact' }))
     expect(onDensity).toHaveBeenCalledWith('compact')
     fireEvent.click(screen.getByText('Reset this list'))

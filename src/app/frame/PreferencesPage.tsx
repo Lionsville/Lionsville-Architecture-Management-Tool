@@ -31,7 +31,8 @@ import { PageDialog } from '../../widgets/PageDialog'
 import { Button } from '../../widgets/kit/Button'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { PreferenceRow, SettingsPage, SettingsSection, SettingSwitch } from '../../widgets/kit/SettingsPage'
-import type { Density } from '../useShellPreferences'
+import { DENSITIES, DENSITY_LABEL, DENSITY_NAME } from '../../widgets/kit/density'
+import type { Density } from '../../widgets/kit/density'
 
 export type PreferencesPageProps = {
   open: boolean
@@ -98,10 +99,10 @@ export function PreferencesPage({
               options={TEXT_SIZES.map((size) => ({ value: String(size), label: `${size}%` }))}
             />
           </PreferenceRow>
-          <PreferenceRow label={s('prefs.density')} hint={s('prefs.densityHint')}>
+          <PreferenceRow label={s(DENSITY_NAME)} hint={s('prefs.densityHint')}>
             <Segmented
-              label={s('prefs.density')} value={density} onChange={onDensityChange} data-guide="prefs.density"
-              options={[{ value: 'comfortable', label: s('prefs.densityComfortable') }, { value: 'compact', label: s('prefs.densityCompact') }]}
+              label={s(DENSITY_NAME)} value={density} onChange={onDensityChange} data-guide="prefs.density"
+              options={DENSITIES.map((one) => ({ value: one, label: s(DENSITY_LABEL[one]) }))}
             />
           </PreferenceRow>
           <PreferenceRow label={s('prefs.projectOrder')}>

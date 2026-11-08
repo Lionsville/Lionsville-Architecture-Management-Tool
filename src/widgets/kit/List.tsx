@@ -25,6 +25,7 @@ import { CaretIcon } from '../icons'
 import type { ListSort } from './listView'
 import { claimKey, commandKey } from './keys'
 import './hidden.css'
+import type { Density } from './density'
 import './List.css'
 
 /** What a row's rail says: good, bad or neither. */
@@ -91,7 +92,6 @@ export type ListColumn = {
   readonly guide?: string
 }
 
-export type ListDensity = 'compact' | 'normal' | 'comfortable'
 
 export type ListProps = {
   /** What the list is, for assistive technology. */
@@ -99,7 +99,8 @@ export type ListProps = {
   readonly groups: readonly ListGroup[]
   /** The sentences variant: a row wraps, up to the system's clamp. */
   readonly wrap?: boolean
-  readonly density?: ListDensity
+  /** Left out, the rows follow the person's density (`density.ts`); `compact` holds a list close whatever it is. */
+  readonly density?: Density
   /** Off unless somebody asked for them; a list with no columns has no header. */
   readonly columns?: readonly ListColumn[]
   /** The heading over the item, where there are columns. */
@@ -384,7 +385,7 @@ function GroupHead({ group, folded, focusable, selected, ticks, tickedHere, tick
 const INTERACTIVE = 'button, a, input, select, textarea, [data-kit-actions]'
 
 export function List({
-  label, groups, wrap, density = 'normal', columns, itemLabel, itemSortable, sort, onSort, selectedId, onOpen,
+  label, groups, wrap, density, columns, itemLabel, itemSortable, sort, onSort, selectedId, onOpen,
   checked, onCheckedChange, bulkActions, defaultFolded, folded: foldedTold, onFold, onOpenGroup, onRowDragStart, empty, more, doors, dataGuide, rowGuide,
 }: ListProps) {
   const { t } = useStrings()

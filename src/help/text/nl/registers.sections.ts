@@ -33,7 +33,7 @@ export const SECTIONS: SectionTexts = {
     'Ga met Tab naar de kop en druk op Enter'],
   'register.columns': ['Kolommen en dichtheid kiezen', 'Toont of verbergt kolommen (bij Applicaties beginnen leverancier, technologie en Ook getekend in verborgen) en zet hoe hoog regels zijn. Kolommen staan in het adres; dichtheid is een voorkeur; Deze lijst terugzetten gaat terug naar de standaard.',
     'De knop Weergave in de werkbalk van het register.',
-    ['Druk op Weergave.', 'Vink kolommen aan of uit.', 'Kies Compact, Normaal of Ruim.', 'Druk op Deze lijst terugzetten om opnieuw te beginnen.'],
+    ['Druk op Weergave.', 'Vink kolommen aan of uit.', 'Kies Ruim of Compact, dezelfde dichtheid als in Voorkeuren.', 'Druk op Deze lijst terugzetten om opnieuw te beginnen.'],
     'Toon Ook getekend in om te zien welke applicaties op borden van andere scopes staan.'],
   'register.preview': ['Een record in het register lezen', 'Op een regel drukken opent een groot voorbeeld van het record: waar het staat, de eigenaar, categorie, levenscyclus, leverancier, technologie, waarop het draait en wat het gebruikt, waar het nog meer getekend is, en de bevindingen met waarom elk ertoe doet. Vorige en volgende gaan door de lijst.',
     'Druk op een regel van het register. Het adres wordt #/-/register/<id>.',

@@ -43,7 +43,7 @@ import { FilterWords } from '../../widgets/kit/FilterWords'
 import { TextInput } from '../../widgets/kit/Field'
 import { List } from '../../widgets/kit/List'
 import type { ListColumn, ListGroup, ListRow } from '../../widgets/kit/List'
-import { useListDensity } from '../../widgets/kit/listDensity'
+import { useDensity } from '../../widgets/kit/density'
 import { listed } from '../../widgets/kit/listView'
 import type { ListView } from '../../widgets/kit/listView'
 import { Mark } from '../../widgets/kit/Mark'
@@ -156,7 +156,7 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
   index: ChecksPageProps['index']; today: string; onGo: ChecksPageProps['onGo']; onLink: ChecksPageProps['onLink']; fixes: ChecksPageProps['fixes']
   onFixed: (done: FixDone) => void; onMarked: (marks: readonly KeptCheckMark[]) => void; scopeName: (path: ScopePath) => string; s: Translate
 }) {
-  const [density] = useListDensity()
+  const [density] = useDensity()
   const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
   const [pressed, setPressed] = useState<string | null>(ask ?? null)
   const [marking1, setMarking1] = useState(false)
@@ -244,7 +244,7 @@ function AcceptedList({ row, index, marking, scopeName, s }: {
   row: CheckRow; index: ChecksPageProps['index']; marking: CheckMarking | undefined; scopeName: (path: ScopePath) => string; s: Translate
 }) {
   const { language } = useStrings()
-  const [density] = useListDensity()
+  const [density] = useDensity()
   const [pressed, setPressed] = useState<string | null>(null)
   const rows = row.marked.map(({ instance, mark, keptIn }): ListRow => {
     const takeBack = marking?.mayTakeBack(keptIn) ? () => { void marking.takeBack({ scope: keptIn, mark }) } : undefined
@@ -343,7 +343,7 @@ function ScopeOfChecks({ at, scopes, onScope, scopeName, s }: {
 export function ChecksPage(props: ChecksPageProps) {
   const { rows, counts, request, s, at = ROOT_SCOPE, scopes, onScope, scopeName, index, today = '', onGo, onLink, onOpenScope } = props
   const marking = useCheckMarking()
-  const [density, setDensity] = useListDensity()
+  const [density, setDensity] = useDensity()
   const [view, setView] = usePlaceListView('checks')
   const [tab, setTab] = usePlaceTab('found')
   const [toast, setToast] = useState<ToastWords | null>(null)

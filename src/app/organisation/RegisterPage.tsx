@@ -40,7 +40,7 @@ import { FilterWords } from '../../widgets/kit/FilterWords'
 import type { FilterChoice, FilterField } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
 import type { ListColumn, ListGroup } from '../../widgets/kit/List'
-import { useListDensity } from '../../widgets/kit/listDensity'
+import { useDensity } from '../../widgets/kit/density'
 import { didYouMean, FRESH_VIEW, listed } from '../../widgets/kit/listView'
 import type { ListHow, ListView } from '../../widgets/kit/listView'
 import { Mark } from '../../widgets/kit/Mark'
@@ -211,7 +211,7 @@ function RegisterList<R extends Shown>({ tab, rows, how, columns, view, setView,
   tab: RegisterTab; rows: readonly R[]; how: ListHow<R>; columns: readonly Drawn<R>[]; view: ListView; setView: (next: ListView) => void
   words: RegisterWords; s: Translate
 }) {
-  const [density, setDensity] = useListDensity()
+  const [density, setDensity] = useDensity()
   const shownIds = view.columns ?? columns.filter((column) => !column.startsHidden).map((column) => column.id)
   const shownColumns = columns.filter((column) => shownIds.includes(column.id))
   // Find covers every shown column, the hidden ones too since what they hold can be asked for.

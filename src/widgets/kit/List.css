@@ -8,8 +8,9 @@
   color: var(--ink);
   font-size: var(--t-body);
 }
+/* The person's density, unless the list holds a density of its own. */
+:root[data-density='compact'] .kit-list:not([data-density]),
 .kit-list[data-density='compact'] { --kit-list-row: var(--row-h-dense); --kit-list-pad: 0px; }
-.kit-list[data-density='comfortable'] { --kit-list-row: calc(var(--row-h-loose) + var(--s-2)); --kit-list-pad: var(--s-2); }
 
 .kit-list__row {
   display: grid;

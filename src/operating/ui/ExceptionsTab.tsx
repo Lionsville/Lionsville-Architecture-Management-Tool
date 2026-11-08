@@ -16,7 +16,8 @@ import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { FilterWords } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
-import type { ListColumn, ListDensity } from '../../widgets/kit/List'
+import type { ListColumn } from '../../widgets/kit/List'
+import { useDensity } from '../../widgets/kit/density'
 import { FRESH_VIEW, listed } from '../../widgets/kit/listView'
 import type { ListView } from '../../widgets/kit/listView'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
@@ -60,7 +61,7 @@ export function ExceptionsTab({ model, exceptions, readOnly, dispatch, onBackBel
 }) {
   const { t, language } = useStrings()
   const [view, setView] = useState<ListView>(FRESH_VIEW)
-  const [density, setDensity] = useState<ListDensity>('normal')
+  const [density, setDensity] = useDensity()
   const [asking, setAsking] = useState<ManySay | undefined>(undefined)
   const wanted = view.filters.kind?.length ? view : { ...view, filters: { ...view.filters, kind: ['solid'] } }
   const columnsAll: readonly ListColumn[] = useMemo(() => [

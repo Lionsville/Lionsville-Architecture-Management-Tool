@@ -33,7 +33,7 @@ export const SECTIONS: SectionTexts = {
     'Mit Tab zur Überschrift und die Eingabetaste drücken'],
   'register.columns': ['Spalten und Dichte wählen', 'Zeigt oder verbirgt Spalten (bei Anwendungen beginnen Anbieter, Technologie und Auch gezeichnet in verborgen) und legt fest, wie hoch Zeilen sind. Spalten stehen in der Adresse; die Dichte ist eine Voreinstellung; Diese Liste zurücksetzen kehrt zu den Standardwerten zurück.',
     'Die Schaltfläche Ansicht in der Werkzeugleiste des Registers.',
-    ['Drücken Sie Ansicht.', 'Kreuzen Sie Spalten an oder ab.', 'Wählen Sie Kompakt, Normal oder Großzügig.', 'Drücken Sie Diese Liste zurücksetzen, um neu zu beginnen.'],
+    ['Drücken Sie Ansicht.', 'Kreuzen Sie Spalten an oder ab.', 'Wählen Sie Großzügig oder Kompakt, dieselbe Dichte wie in den Voreinstellungen.', 'Drücken Sie Diese Liste zurücksetzen, um neu zu beginnen.'],
     'Zeigen Sie Auch gezeichnet in, um zu sehen, welche Anwendungen auf Boards anderer Bereiche stehen.'],
   'register.preview': ['Einen Eintrag im Register lesen', 'Ein Druck auf eine Zeile öffnet eine große Vorschau des Eintrags: wo er geführt wird, Eigentümer, Kategorie, Lebenszyklus, Anbieter, Technologie, worauf er läuft und was er nutzt, wo er noch gezeichnet ist, und seine Befunde mit dem Grund, warum jeder wichtig ist. Vorheriger und nächster gehen durch die Liste.',
     'Drücken Sie eine Zeile des Registers. Die Adresse wird #/-/register/<id>.',

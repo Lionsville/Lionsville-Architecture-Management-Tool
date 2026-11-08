@@ -33,7 +33,7 @@ export const SECTIONS: SectionTexts = {
     'Tab to the header and press Enter'],
   'register.columns': ['Choose columns and density', 'Shows or hides columns (on Applications vendor, technology and Also drawn in start hidden) and sets how tall rows are. Columns are kept in the address; density is a preference; Reset this list returns to the defaults.',
     'View button in the register\'s toolbar.',
-    ['Press View.', 'Tick or untick columns.', 'Choose Compact, Normal or Comfortable.', 'Press Reset this list to start again.'],
+    ['Press View.', 'Tick or untick columns.', 'Choose Comfortable or Compact, the same density as in Preferences.', 'Press Reset this list to start again.'],
     'Show Also drawn in to see which applications are drawn on boards of other scopes.'],
   'register.preview': ['Read a record in the register', 'Pressing a row opens a large preview of the record: where it is kept, its owner, category, lifecycle, vendor, technology, what it runs on and uses, where else it is drawn, and its findings with why each matters. Previous and next step through the list.',
     'Press any row of the register. The address becomes #/-/register/<id>.',

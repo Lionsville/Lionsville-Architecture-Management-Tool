@@ -18,7 +18,8 @@ import { SurfacePopover as Popover } from './Surface'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon, CloseIcon } from '../icons'
 import { Button } from './Button'
-import type { ListDensity } from './List'
+import { DENSITIES, DENSITY_LABEL, DENSITY_NAME } from './density'
+import type { Density } from './density'
 import { FindField } from './FindField'
 import './FilterWords.css'
 
@@ -69,8 +70,9 @@ export type FilterWordsProps = {
   readonly columns?: readonly FilterChoice[]
   readonly shownColumns?: readonly string[]
   readonly onColumns?: (columns: readonly string[]) => void
-  readonly density?: ListDensity
-  readonly onDensity?: (density: ListDensity) => void
+  /** The person's density (`useDensity`): View offers the one choice Preferences does. */
+  readonly density?: Density
+  readonly onDensity?: (density: Density) => void
   readonly onReset?: () => void
   /** Said when the list is narrowed: *3 of 44*. */
   readonly shown?: { readonly count: number; readonly total: number }
@@ -166,11 +168,11 @@ function ViewPop({ columns, shownColumns, onColumns, density, onDensity, onReset
       )}
       {onDensity && (
         <fieldset className="kit-filter__field">
-          <legend>{t('kit.filter.density')}</legend>
-          {(['compact', 'normal', 'comfortable'] as const).map((one) => (
+          <legend>{t(DENSITY_NAME)}</legend>
+          {DENSITIES.map((one) => (
             <label className="kit-filter__option" key={one}>
-              <input type="radio" name={name} checked={(density ?? 'normal') === one} onChange={() => onDensity(one)} />
-              <span>{t(`kit.filter.density.${one}`)}</span>
+              <input type="radio" name={name} checked={(density ?? 'comfortable') === one} onChange={() => onDensity(one)} />
+              <span>{t(DENSITY_LABEL[one])}</span>
             </label>
           ))}
         </fieldset>
