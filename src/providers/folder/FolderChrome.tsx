@@ -101,6 +101,18 @@ function useSyncResolve(
 
 }
 
+/**
+ * What *Your work* says of the remote, from what the pull as the folder opened
+ * answered: up to date only where it was, its refusal where one stands, and
+ * nothing where no pull was made or there is no remote to make one from.
+ */
+function remoteSaid(pulled: FolderOwn['pulled'], parted: boolean, s: (key: StringKey) => string): string | undefined {
+  if (parted || pulled === 'diverged') return s('sync.diverged')
+  if (pulled === 'done') return s('sync.pulled')
+  if (pulled === undefined || pulled === 'no-remote') return undefined
+  return reasonFor(pulled, s)
+}
+
 /** What the folder says in *Your work*: its remote, and the same two answers the strip offers while the two have parted. */
 export function FolderYourWork({ own, notify, reread, flush }: SourceYourWorkProps<FolderOwn>) {
   const { t: s } = useStrings()
@@ -109,9 +121,12 @@ export function FolderYourWork({ own, notify, reread, flush }: SourceYourWorkPro
   const settled = useCallback(() => setParted(false), [])
   const resolve = useSyncResolve(own as FolderOwn, notify as never, reread as never, flush as never, settled)
   if (!own?.sync) return null
+  const said = remoteSaid(own.pulled, parted, s)
+  // A folder with no history, or a history with no remote, has no remote to say anything about.
+  if (said === undefined) return null
   return (
     <PanelSection title={s('sync.remote')}>
-      <p data-testid="work-remote">{s(parted ? 'sync.diverged' : 'sync.pulled')}</p>
+      <p data-testid="work-remote">{said}</p>
       {parted && (
         <>
           <p>{s('sync.outcomes')}</p>

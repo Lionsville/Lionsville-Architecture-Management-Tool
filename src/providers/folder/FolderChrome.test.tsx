@@ -18,7 +18,7 @@ import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
 import { RecordingDiagnostics } from '../../adapters/memory/RecordingDiagnostics'
 import type { PullOutcome, PushOutcome, ResolveOutcome, SyncSide } from '../../platform/sync'
 import type { SourceChromeProps } from '../../ports/ProviderParts'
-import { FolderChrome } from './FolderChrome'
+import { FolderChrome, FolderYourWork } from './FolderChrome'
 import { FolderPreferences } from './FolderPreferences'
 import { folderOwn, pushingAfterRecord } from './folderOwn'
 import type { FolderOwn, FolderSync } from './folderOwn'
@@ -80,6 +80,29 @@ describe('what the pull as the folder opened becomes', () => {
     expect(screen.getByTestId('sync-notice')).toBeDefined()
     expect(screen.getByText('Take theirs')).toBeDefined()
     expect(screen.getByText('Keep ours')).toBeDefined()
+  })
+})
+
+describe('the remote in Your work', () => {
+  const panel = (held: FolderOwn) => render(<FolderYourWork own={held} open={() => {}} notify={vi.fn()} reread={vi.fn()} flush={() => Promise.resolve()} />)
+
+  it('is not there where no pull was made or there is no remote: a folder with no history has none', async () => {
+    panel((await own(remote().sync, false)).held)
+    expect(screen.queryByTestId('work-remote')).toBeNull()
+    cleanup()
+    panel((await own(remote().sync, false, 'no-remote')).held)
+    expect(screen.queryByTestId('work-remote')).toBeNull()
+  })
+
+  it('says up to date only where the pull said so, and the refusal where it did not', async () => {
+    panel((await own(remote().sync, false, 'done')).held)
+    expect(screen.getByTestId('work-remote').textContent).toBe('Up to date with the remote.')
+    cleanup()
+    panel((await own(remote().sync, false, 'unreachable')).held)
+    expect(screen.getByTestId('work-remote').textContent).toBe('The remote could not be reached.')
+    cleanup()
+    panel((await own(remote().sync, false, 'diverged')).held)
+    expect(screen.getByText('Take theirs')).toBeDefined()
   })
 })
 
