@@ -184,7 +184,7 @@ describe('from the menu bar', () => {
     expect(within(await screen.findByTestId('history-list')).getByText('Before the merger')).toBeDefined()
     await readFirst()
     // The root holds nothing now, and the snapshot held Crews: removed since.
-    expect(await screen.findByText('Removed Crews')).toBeDefined()
+    expect(await screen.findByText('Deleted Crews')).toBeDefined()
   })
 })
 
@@ -307,7 +307,7 @@ describe('reading one back', () => {
     await readFirst()
     // The element is in the snapshot and not on screen now, so it was removed
     // since — which is the direction somebody standing in a history reads in.
-    expect(await screen.findByText('Removed Crews')).toBeDefined()
+    expect(await screen.findByText('Deleted Crews')).toBeDefined()
   })
 
   it('says so when the scope was not there then', async () => {

@@ -312,7 +312,7 @@ describe('the operating model\'s page', () => {
     fireEvent.keyDown(name, { key: 'Enter' })
     expect(screen.getByTestId('unit-type-ut-1').textContent).toContain('Station')
     fireEvent.click(screen.getByTestId('operating-remove'))
-    fireEvent.click(await screen.findByRole('button', { name: 'Remove' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.queryByTestId('unit-type-ut-1')).toBeNull())
     expect(sent.at(-1)?.type).toBe('transaction')
   })

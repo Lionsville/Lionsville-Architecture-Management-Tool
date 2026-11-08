@@ -241,7 +241,7 @@ describe('a responsibility read', () => {
   it('ends in the page’s one foot, its removal alone at the far end, as the exception’s way back is', () => {
     renderShell(<ResponsibilityReader responsibility={of('plan')} parts={parts({ onOpenHistory: vi.fn() })} />)
     const foot = screen.getByTestId('operating-reader-foot')
-    expect(foot.querySelector('.op-foot__away')?.textContent).toBe('Remove')
+    expect(foot.querySelector('.op-foot__away')?.textContent).toBe('Delete')
     expect(foot.firstElementChild?.textContent).toBe('History')
     cleanup()
     exceptions({ start: 'by-type' })

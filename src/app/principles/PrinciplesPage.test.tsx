@@ -155,7 +155,7 @@ describe('the principles page (ADR-0041)', () => {
     await waitFor(() => expect(screen.queryByRole('row', { name: /Reuse before buy/, hidden: true })).toBeNull())
     expect(screen.getByTestId('principle-aspects').textContent).toContain('Look for one first')
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.queryByRole('row', { name: /Reuse is cheaper/, hidden: true })).toBeNull())
   })

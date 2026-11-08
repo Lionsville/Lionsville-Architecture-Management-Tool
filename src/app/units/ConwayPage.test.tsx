@@ -211,7 +211,7 @@ describe('the Conway map', () => {
     fireEvent.click(within(panel).getByRole('button', { name: 'Draw the missing interface…' }))
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Integration Hub' }))
     expect(onOpen).toHaveBeenCalledWith('hub')
-    fireEvent.click(within(panel).getByRole('button', { name: 'Remove what was said' }))
+    fireEvent.click(within(panel).getByRole('button', { name: 'Delete what was said' }))
     expect(commands).toEqual([{ type: 'relation.delete', id: 'i-3' }])
   })
 

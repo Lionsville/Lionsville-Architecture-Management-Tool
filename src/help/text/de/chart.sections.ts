@@ -152,7 +152,7 @@ export const SECTIONS: SectionTexts = {
     'Ein gewähltes Paar: In Ordnung so: als beabsichtigt markieren…; Akzeptiert am Fuß der Liste des Panels.',
     ['Wählen Sie das Paar.', 'Drücken Sie In Ordnung so: als beabsichtigt markieren….', 'Sagen Sie nach Belieben warum, und bestätigen Sie.'],
     'Markieren Sie Commercial team und Customs authority als beabsichtigt: Die Behörde legt die Schnittstelle fest.'],
-  'conway.removeSaid': ['Eine Zusammenarbeit entfernen, die kein System braucht', 'Entfernt bei einem Paar mit ○ (gesagt, aber kein System verbindet) die erklärte Zusammenarbeit oder zeichnet die fehlende Schnittstelle zwischen zwei ihrer Anwendungen.',
+  'conway.removeSaid': ['Eine Zusammenarbeit löschen, die kein System braucht', 'Löscht bei einem Paar mit ○ (gesagt, aber kein System verbindet) die erklärte Zusammenarbeit oder zeichnet die fehlende Schnittstelle zwischen zwei ihrer Anwendungen.',
     'Ein gewähltes ○-Paar: Entfernen, was gesagt wurde, oder Die fehlende Schnittstelle zeichnen….',
     ['Wählen Sie das ○-Paar.', 'Drücken Sie Entfernen, was gesagt wurde, oder Die fehlende Schnittstelle zeichnen… und wählen Sie die zwei Anwendungen.'],
     'Entfernen Sie die Zusammenarbeit, die das Finance team und das Warehouse team erklärt haben, die aber kein System braucht.'],

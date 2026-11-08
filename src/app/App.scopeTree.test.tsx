@@ -102,7 +102,7 @@ describe('the tree kept by an agent, in the app', () => {
       parsed(await wire.ask('scope.remove', { path: 'acme/rail', removeContents: true, personSaid: 'Yes, remove Rail with everything' }))
     })
     expect(await readScope(held.scopes, 'acme/rail')).toBeUndefined()
-    expect((await screen.findByText(/removed Rail with 1 views and 1 other records/)).textContent).toContain('Yes, remove Rail with everything')
+    expect((await screen.findByText(/deleted Rail with 1 views and 1 other records/)).textContent).toContain('Yes, remove Rail with everything')
   })
 
   it('leaves the scope open to its session, and moves it once the agent has gone home', async () => {

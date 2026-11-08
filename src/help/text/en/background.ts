@@ -1283,7 +1283,7 @@ how they work together it says why: a party that is no unit yet can be given a
 type there and then with **Make them units**, a party outside the organisation
 can only be marked or planned away, and two units another scope keeps are
 answered where they are kept. A pair that said how it works with no system
-between them can **Remove what was said** or **Draw the missing interface…**.
+between them can **Delete what was said** or **Draw the missing interface…**.
 Pressing a unit's name reads what it owns, who it works with and its open pairs,
 with **Open on the organisation chart** for the rest; pressing an application
 reads its owner and its interfaces. **Find me** goes to your unit, and says why
@@ -2572,7 +2572,7 @@ still being discussed, with the question it is about; *accepted*; or
 or depart from one by one. It is written in a window of its own; why,
 implications and keywords are folded until there is something in them. Groups
 sort the list; **Groups** names them and puts them in order. **More** on a
-principle holds Retire, Merge and Remove, and says why a Remove is refused. Changing an accepted principle's statement or aspects
+principle holds Retire, Merge and Delete, and says why a Delete is refused. Changing an accepted principle's statement or aspects
 **sharpens** it: you are asked for a note, kept under the principle with the
 day. Two principles that say the same are **merged** into one; one that a
 record cites is retired rather than removed.

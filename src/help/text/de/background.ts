@@ -1447,7 +1447,7 @@ nicht sagen können, wie sie zusammenarbeiten, sagt es warum: Eine Partei, die n
 keine Einheit ist, bekommt mit **Zu Einheiten machen** gleich dort einen Typ, eine
 Partei außerhalb der Organisation lässt sich nur markieren oder wegplanen, und zwei
 Einheiten, die ein anderer Bereich führt, werden dort beantwortet. Ein Paar, das
-ohne System dazwischen sagte, wie es arbeitet, kann **Das Gesagte entfernen** oder
+ohne System dazwischen sagte, wie es arbeitet, kann **Das Gesagte löschen** oder
 **Fehlende Schnittstelle zeichnen…**. Ein Druck auf den Namen einer Einheit liest,
 was ihr gehört, mit wem sie arbeitet und ihre offenen Paare, mit **Im Organigramm
 öffnen** für den Rest; ein Druck auf eine Anwendung liest ihren Eigentümer und ihre

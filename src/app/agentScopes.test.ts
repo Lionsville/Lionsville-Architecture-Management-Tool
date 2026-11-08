@@ -169,6 +169,6 @@ describe('the tree lent to the agent on the desktop', () => {
     expect(notices).toEqual([])
     const rail = await view.read('acme/rail')
     expect(await view.remove('acme/rail', { expects: rail!.revision, holds: rail!.holds, personSaid: 'Yes, Rail can go' })).toEqual({ removed: ['acme/rail'] })
-    expect(notices).toEqual([['warning', 'Claude Code removed Rail with 1 views and 0 other records, as you said: “Yes, Rail can go”. This cannot be undone.']])
+    expect(notices).toEqual([['warning', 'Claude Code deleted Rail with 1 views and 0 other records, as you said: “Yes, Rail can go”. This cannot be undone.']])
   })
 })
