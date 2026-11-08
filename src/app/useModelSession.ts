@@ -259,9 +259,11 @@ function mintStepId(): string {
  * key that is sent.
  */
 function withoutUnattended(command: Command): Command {
-  if (command.unattended === undefined) return command
+  if (command.unattended === undefined && command.movedUnder === undefined) return command
   const carried = { ...command }
+  // The same for the mark that the value moved under the person: it is said beside the change (`SessionChange.movedUnder`).
   delete carried.unattended
+  delete carried.movedUnder
   return carried
 }
 
@@ -515,7 +517,7 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
       revision: revision.current,
       ...(landed.origin !== undefined ? { origin: landed.origin } : {}),
       ...(landed.by !== undefined ? { by: landed.by } : {}),
-      ...(landed.unattended === true ? { unattended: true as const } : {}),
+      ...(landed.unattended === true ? { unattended: true as const } : {}), ...(meta.movedUnder === true ? { movedUnder: true as const } : {}),
     })
   }, [announce, trim, keep])
 
@@ -546,7 +548,7 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
     if (options?.activeDiagramId !== undefined) setActiveDiagramId(options.activeDiagramId)
     // A command that changed nothing is not a refusal and not a step.
     if (result.model === before) return asArrays(before)
-    const meta: StepMeta = {}
+    const meta: StepMeta = command.movedUnder === true ? { movedUnder: true } : {}
     if (command.coalesce !== undefined) meta.coalesce = command.coalesce
     if (command.undoable !== undefined) meta.undoable = command.undoable
     if (command.origin !== undefined) meta.origin = command.origin

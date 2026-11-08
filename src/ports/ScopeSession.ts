@@ -294,6 +294,13 @@ export type SessionChange = {
    * somebody asked for.
    */
   unattended?: true
+  /**
+   * The change was made over a value that moved under the person while they
+   * made it (`CommandMeta.movedUnder`): whoever checks it against another's
+   * checks it against the change that moved the value. Only on the
+   * announcement of the change itself.
+   */
+  movedUnder?: true
   /** When this change was made, epoch milliseconds. */
   at: number
   /** What `revision()` answers now, so a caller need not ask. */

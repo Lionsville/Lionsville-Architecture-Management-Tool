@@ -493,6 +493,11 @@ export interface EditorEditing {
   ids?: IdPolicy;
   /** Nothing may change. Every mutating affordance hides or disables itself. */
   readOnly?: boolean;
+  /**
+   * Who else last renamed this element, by name, where the host knows: what a
+   * name being typed over is told when another's rename lands under it.
+   */
+  renamedBy?(elementId: ElementId): string | undefined;
 }
 
 /**

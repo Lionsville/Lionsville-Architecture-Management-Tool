@@ -210,7 +210,11 @@ export interface EditorActions {
     id: ElementId,
     patch: Partial<Omit<DesignElement, 'id' | 'kind'>>,
     coalesce?: string,
+    /** Made over a value that moved under the person while they made it (`CommandMeta.movedUnder`). */
+    made?: { readonly movedUnder?: true },
   ): void;
+  /** Who else last renamed this element, where the host can say (`EditorEditing.renamedBy`). */
+  renamedBy?(id: ElementId): string | undefined;
   /**
    * The same patch onto several elements in ONE step — the selection menu's
    * Lifecycle. One undo step for one gesture, exactly like a multi-node drag.
@@ -733,10 +737,10 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         setSelection(selectElement(id));
       },
 
-      updateElement(id, patch, coalesce) {
-        if (!currentModel().elements.some((e) => e.id === id)) return;
-        dispatch({ type: 'element.update', id, patch, ...(coalesce ? { coalesce } : {}) });
+      updateElement(id, patch, coalesce, made) {
+        if (currentModel().elements.some((e) => e.id === id)) dispatch({ type: 'element.update', id, patch, ...(coalesce ? { coalesce } : {}), ...(made?.movedUnder ? { movedUnder: true as const } : {}) });
       },
+      renamedBy: (id) => propsRef.current.editing.renamedBy?.(id),
 
       updateElements(ids, patch) {
         const held = new Set(currentModel().elements.map((e) => e.id));

@@ -5,3 +5,5 @@
 .kit-pressname__pen { display: inline-flex; margin-inline-start: var(--s-1); vertical-align: middle; color: var(--ink-3); opacity: 0; }
 button:hover > .kit-pressname__pen,
 button:focus-visible > .kit-pressname__pen { opacity: 1; }
+/* The name moved under the open field: said under it, quietly, as a fact beside what is typed. */
+.kit-pressname__moved { margin-block-start: var(--s-1); font-size: var(--t-small); color: var(--ink-2); }

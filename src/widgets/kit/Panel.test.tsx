@@ -153,6 +153,42 @@ describe('the name', () => {
     rerender(<Panel kind="K" name="Rating" onRename={() => undefined}>rows</Panel>)
     expect(screen.queryByRole('textbox')).toBeNull()
   })
+
+  it('drops it for another subject too, where the panel says what the name is of', () => {
+    const { rerender } = renderShell(<Panel kind="K" name="Billing" nameOf="a" onRename={() => undefined}>rows</Panel>)
+    press()
+    rerender(<Panel kind="K" name="Rating" nameOf="b" onRename={() => undefined}>rows</Panel>)
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  // A colleague's rename landing under the field closed it and threw the person's words away, silently.
+  it('keeps what is typed when somebody else renames the same thing, says so, and sends it marked as made over the move', () => {
+    const onRename = vi.fn()
+    const { rerender } = renderShell(<Panel kind="K" name="Billing" nameOf="a" movedBy={() => 'A Colleague'} onRename={onRename}>rows</Panel>)
+    press()
+    fireEvent.change(field(), { target: { value: 'Mine' } })
+    rerender(<Panel kind="K" name="Theirs" nameOf="a" movedBy={() => 'A Colleague'} onRename={onRename}>rows</Panel>)
+    expect(field().value).toBe('Mine')
+    expect(screen.getByRole('status').textContent).toContain('A Colleague renamed this to Theirs while you were typing')
+    fireEvent.keyDown(field(), { key: 'Enter' })
+    expect(onRename).toHaveBeenCalledWith('Mine', { movedUnder: true })
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('says the move without a name where the place cannot say who, and marks nothing on an ordinary rename', () => {
+    const onRename = vi.fn()
+    const { rerender } = renderShell(<Panel kind="K" name="Billing" nameOf="a" onRename={onRename}>rows</Panel>)
+    press()
+    fireEvent.change(field(), { target: { value: 'Mine' } })
+    rerender(<Panel kind="K" name="Theirs" nameOf="a" onRename={onRename}>rows</Panel>)
+    expect(screen.getByRole('status').textContent).toContain('This was renamed to Theirs while you were typing')
+    fireEvent.keyDown(field(), { key: 'Escape' })
+    rerender(<Panel kind="K" name="Theirs" nameOf="a" onRename={onRename}>rows</Panel>)
+    press()
+    fireEvent.change(field(), { target: { value: 'Mine again' } })
+    fireEvent.keyDown(field(), { key: 'Enter' })
+    expect(onRename).toHaveBeenLastCalledWith('Mine again')
+  })
 })
 
 describe('as a whole', () => {

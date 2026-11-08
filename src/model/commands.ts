@@ -365,6 +365,18 @@ export type CommandMeta = {
    */
   unattended?: true
   /**
+   * The person made this change over a value that moved under them while they
+   * made it: they began typing a name, and the name changed — somebody else's
+   * change arrived — before they pressed Enter. Theirs still lands here, as
+   * they asked; whoever carries it elsewhere and checks two changes against
+   * each other checks it against the one that moved the value, rather than
+   * taking it for a change made after that one and letting it win unasked.
+   *
+   * Lifted off by the session as `unattended` is, and announced beside the
+   * change (`SessionChange.movedUnder`), never carried in the command.
+   */
+  movedUnder?: true
+  /**
    * The stack may not undo this step, and this key says why (ADR-0012 §10).
    *
    * What a gesture that wrote TWO scopes leaves behind. Only one of the two

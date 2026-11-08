@@ -388,6 +388,19 @@ describe('useModelSession — undo and redo', () => {
    * asked for it cleared in the same step: one step, carried like any other,
    * and marked so that nobody counts it as the person's work.
    */
+  // A name typed over a colleague's rename that landed under the field: the session says so beside the change, and never in the command.
+  it('announces a change made over a value that moved, with the mark beside it and not in the command', () => {
+    const { session } = mount()
+    const heard: SessionChange[] = []
+    act(() => { session().steps.onChange((change) => heard.push(change)) })
+    act(() => { session().dispatch({ ...rename('Mine'), movedUnder: true }) })
+    expect(heard[0].movedUnder).toBe(true)
+    expect('movedUnder' in heard[0].commands[0]).toBe(false)
+    expect('movedUnder' in session().history()[0].commands[0]).toBe(false)
+    act(() => { session().dispatch(rename('Again')) })
+    expect(heard[1].movedUnder).toBeUndefined()
+  })
+
   describe('a step the editor made by itself', () => {
     const flagged = () => project({
       model: model({

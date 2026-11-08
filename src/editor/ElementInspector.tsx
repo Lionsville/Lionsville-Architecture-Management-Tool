@@ -29,6 +29,7 @@ import type { ElementId } from '../model/types';
 import { MoreMenu } from '../widgets/kit/Menu';
 import type { MenuEntry } from '../widgets/kit/Menu';
 import { Panel, PanelLink } from '../widgets/kit/Panel';
+import type { RenameMade } from '../widgets/kit/PressName';
 import type { ElementInspectorProps } from './ElementInspectorProps';
 import { InspectorSection } from './InspectorSection';
 import { PanelAppearance, PanelProperties } from './inspector/elementRows';
@@ -102,7 +103,9 @@ export function ElementInspector(props: ElementInspectorProps) {
       kind={kindLabel(element.kind, t)}
       name={element.name}
       {...(readOnly || nameOwned ? {} : {
-        onRename: (name: string) => actions.updateElement(element.id, { name }),
+        onRename: (name: string, made?: RenameMade) => (made ? actions.updateElement(element.id, { name }, undefined, made) : actions.updateElement(element.id, { name })),
+        nameOf: element.id,
+        movedBy: () => actions.renamedBy?.(element.id),
         renameRequest: rename,
       })}
       facts={elementFacts(props, t)}

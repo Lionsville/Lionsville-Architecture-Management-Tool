@@ -33,6 +33,7 @@ import { hostCommands, useCommands } from '../model/technologyWrites'
 import type { WrittenIn } from './units/writeIn'
 import { pictureFailed, savePicture } from './savePicture'
 import type { StringKey } from '../i18n'
+import { renamedBy } from './renamedBy'
 
 /**
  * A drawing is a tab, never the first view: its picture and its editor arrive
@@ -79,7 +80,10 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
           onActiveDiagramChange: (id) => tabMove(id, () => { parts.pages.closePages(); session.setActiveDiagramId(id) }),
           viewing: parts.viewing,
         }}
-        editing={{ dispatch: session.dispatch, history: seams.history, ids: session.ids, readOnly: session.readOnly }}
+        editing={{
+          dispatch: session.dispatch, history: seams.history, ids: session.ids, readOnly: session.readOnly,
+          renamedBy: (id) => renamedBy(session.history(), id),
+        }}
         pages={{ render: (diagram, view) => laidOutPage(parts, diagram, view), inspector: (diagram) => unitViewInspector(parts, diagram) }}
         diagrams={diagramCalls(parts, tabMove)}
         history={seams.historyRequests}
