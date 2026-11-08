@@ -297,6 +297,8 @@ export const EN = {
   'add.placeholder': 'Find what exists, or name something new',
   'add.new': 'New {kind} “{name}”',
   'add.kind': 'Kind',
+  'add.existingSame': 'Already in the organisation',
+  'add.existingOther': 'Other kinds',
   'add.how': 'Enter adds · Tab changes kind · Esc cancels',
   'board.keyColumns': 'Left to right: {columns}',
   'board.releaseToConnect': 'Release to connect',

@@ -22,7 +22,7 @@ import type { EditorPreferences } from './preferences';
 import type { ShownDays } from './useShownDays';
 import type { StandInNote } from './nodes/nodeData';
 import type {
-  DesignElement, DesignModel, DiagramSettings, ElementId, Layer7Zone,
+  DesignElement, DesignModel, DiagramSettings, ElementId, ElementKind, Layer7Zone,
   Rect, UploadedLogo,
 } from '../model/types';
 import type { Transition } from '../model/transition';
@@ -718,7 +718,7 @@ export interface EditorOwnership {
    */
   onAddExisting?(at?: ExistingAt): void;
   /** What exists and is not on this board, said for the add picker's one list. */
-  existingRows?(): readonly { id: ElementId; name: string; detail?: string }[];
+  existingRows?(): readonly { id: ElementId; name: string; detail?: string; kind?: ElementKind }[];
   /** One of those drawn on this board, there. Whatever it needs asking is the host's. */
   onPickExisting?(id: ElementId, at?: ExistingAt): void;
   /**

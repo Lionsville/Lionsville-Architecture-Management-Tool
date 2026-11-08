@@ -286,6 +286,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'add.placeholder': 'Vorhandenes suchen oder Neues benennen',
   'add.new': 'Neu: {kind} „{name}“',
   'add.kind': 'Art',
+  'add.existingSame': 'Schon in der Organisation',
+  'add.existingOther': 'Andere Arten',
   'add.how': 'Enter fügt hinzu · Tab wechselt die Art · Esc bricht ab',
   'board.keyColumns': 'Von links nach rechts: {columns}',
   'board.releaseToConnect': 'Zum Verbinden loslassen',

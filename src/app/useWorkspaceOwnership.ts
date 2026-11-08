@@ -149,7 +149,7 @@ export function useWorkspaceOwnership(deps: {
     },
     onAddExisting: addExisting,
     existingRows: () => existingRows().map((row) => ({
-      id: row.id, name: row.name,
+      id: row.id, name: row.name, kind: row.kind,
       ...(row.master !== undefined ? { detail: s('library.inScope', { scope: scopeLabel(row.master) }) } : {}),
     })),
     onPickExisting: pickExisting,

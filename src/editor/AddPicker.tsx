@@ -65,10 +65,14 @@ export function AddPicker({ parts, diagram }: { parts: EditorParts; diagram: Des
 
   const existing = useMemo<PickerOption[]>(() => {
     if (!request) return [];
-    const rows = props.ownership?.existingRows?.();
-    if (rows) return rows.map((row) => ({ id: row.id, label: row.name, ...(row.detail ? { detail: row.detail } : {}) }));
-    return [];
-  }, [request, props.ownership]);
+    const rows = props.ownership?.existingRows?.() ?? [];
+    // What exists of the kind asked for comes first, under its own heading, so the
+    // list never offers a platform first while the chip says Application.
+    const same = rows.filter((row) => row.kind === kind)
+    const others = rows.filter((row) => row.kind !== kind)
+    const option = (group: string) => (row: (typeof rows)[number]): PickerOption => ({ id: row.id, label: row.name, group, ...(row.detail ? { detail: row.detail } : {}) });
+    return [...same.map(option(t('add.existingSame'))), ...others.map(option(t('add.existingOther')))];
+  }, [request, props.ownership, kind, t]);
 
   if (!request) return null;
   const name = paletteLabel(kind, t);

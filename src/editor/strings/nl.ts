@@ -286,6 +286,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'add.placeholder': 'Zoek wat bestaat, of geef iets nieuws een naam',
   'add.new': 'Nieuw: {kind} “{name}”',
   'add.kind': 'Soort',
+  'add.existingSame': 'Al in de organisatie',
+  'add.existingOther': 'Andere soorten',
   'add.how': 'Enter voegt toe · Tab wisselt soort · Esc annuleert',
   'board.keyColumns': 'Van links naar rechts: {columns}',
   'board.releaseToConnect': 'Loslaten om te verbinden',
