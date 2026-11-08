@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
-import { Menu, MenuButton, MoreMenu, orderedEntries } from './Menu'
+import { Menu, MenuButton, MoreMenu, opensAbove, orderedEntries } from './Menu'
 import type { MenuEntry } from './Menu'
 
 afterEach(cleanup)
@@ -55,6 +55,27 @@ describe('Menu', () => {
     expect(moved).toHaveBeenCalledOnce()
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     expect(document.activeElement).toBe(more)
+  })
+
+  it('takes no press that is the second of a double-click on its button: what opened under the pointer is not chosen', async () => {
+    const forgot = vi.fn()
+    renderShell(<MoreMenu items={[{ label: 'History', onSelect: () => {} }, { label: 'Forget now…', final: true, onSelect: forgot }]} />)
+    open('More')
+    const item = screen.getByRole('menuitem', { name: 'Forget now…' })
+    fireEvent.click(item, { detail: 2 })
+    expect(forgot).not.toHaveBeenCalled()
+    expect(screen.getByRole('menu')).toBeTruthy()
+    // Away from the corner the other tests press in: the press that closes a menu drops a second one on its spot for a moment.
+    fireEvent.click(item, { detail: 1, clientX: 60, clientY: 60 })
+    expect(forgot).toHaveBeenCalledOnce()
+  })
+
+  it('opens above its button when the list would not fit below and there is more room above, and below otherwise', () => {
+    const at = (top: number) => ({ getBoundingClientRect: () => ({ top, bottom: top + 30 }) }) as unknown as HTMLElement
+    const tall = window.innerHeight
+    expect(opensAbove(at(tall - 40), 3)).toBe(true)
+    expect(opensAbove(at(20), 3)).toBe(false)
+    expect(opensAbove(null, 3)).toBe(false)
   })
 
   it('walks with the arrows, and Escape closes and puts the focus back', async () => {

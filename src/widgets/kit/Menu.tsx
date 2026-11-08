@@ -15,6 +15,11 @@
  * before pressing. It can be reached with the arrows, because a reason only a
  * mouse can reach is no use, and pressing it does nothing and leaves the menu up.
  *
+ * **Nothing opens under the pointer**: a menu with no room below its button opens
+ * above it rather than sliding up over it, where its last entry, the final one,
+ * would sit under the pointer, and the second press of a double-click on the
+ * button selects nothing.
+ *
  * **A submenu goes one level down and no further**: the type has no way to say a
  * second. The arrows go in and come back, and an arrow in the submenu must stop
  * there: React sends it on through the portal to the menu above, which would take
@@ -134,7 +139,8 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
         aria-haspopup={submenu ? 'menu' : undefined}
         aria-expanded={submenu ? sub?.index === index : undefined}
         onClick={(event) => {
-          if (refused) return
+          // The second press of a double-click on the button, landing on what opened under it.
+          if (refused || event.detail > 1) return
           if (submenu) { setSub({ index, anchor: event.currentTarget }); return }
           onClose()
           act?.onSelect()
@@ -161,14 +167,15 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
     )
   }
 
+  const above = !beside && open && opensAbove(anchorEl, ordered.length)
   return (
     <>
       <MuiMenu
         open={open}
         anchorEl={anchorEl}
         onClose={() => { setSub(null); onClose() }}
-        anchorOrigin={beside ? { vertical: 'top', horizontal: 'right' } : { vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        anchorOrigin={beside ? { vertical: 'top', horizontal: 'right' } : { vertical: above ? 'top' : 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: above ? 'bottom' : 'top', horizontal: 'left' }}
         slotProps={{
           paper: { className: 'kit-menu' },
           list: { 'aria-label': label, disabledItemsFocusable: true, dense: true },
@@ -214,6 +221,18 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
       )}
     </>
   )
+}
+
+/** A row's height in a dense menu, and the paper's padding: enough to tell whether a list fits below its button. */
+const ROW = 34
+const PAPER = 16
+
+/** Whether the list fits under its button, or would have to slide up over it; then it opens above, if there is more room there. */
+export function opensAbove(anchor: HTMLElement | null, rows: number): boolean {
+  if (!anchor || typeof window === 'undefined') return false
+  const box = anchor.getBoundingClientRect()
+  const below = window.innerHeight - box.bottom
+  return below < rows * ROW + PAPER && box.top > below
 }
 
 function useAnchored() {
