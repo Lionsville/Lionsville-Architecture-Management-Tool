@@ -170,25 +170,25 @@ export function PersonRefField(props: PersonRefFieldProps) {
   }
   return (
     <Box data-testid={testId} sx={{ display: 'grid', gap: 0.5 }}>
-      <Box sx={{ display: 'flex', gap: 0.5, alignItems: variant === 'standard' ? 'flex-end' : 'center' }}>
-        <FieldBox
-          variant={variant === 'standard' ? 'standard' : 'outlined'} size="small" fullWidth label={variant === 'standard' ? undefined : label}
-          value={draft} disabled={disabled} required={required} error={props.error} helperText={props.helperText}
-          placeholder={props.placeholder}
-          onChange={(event) => changed(event.target.value)}
-          onBlur={left}
-          onKeyDown={(event) => { if (event.key === 'Enter' && commit === 'blur') left() }}
-          slotProps={{ htmlInput: { 'aria-label': label, autoComplete: 'off', ...(inputId ? { 'data-testid': inputId } : {}) } }}
-        />
-        {toPicker && (
-          <Button size="small" sx={{ whiteSpace: 'nowrap', flexShrink: 0 }} onClick={toPicker}
-            // Going to the picker leaves what was typed unwritten: the picker starts from it.
-            onMouseDown={(event) => event.preventDefault()}
-            data-testid={testId ? `${testId}-pick` : undefined}>
-            {s('people.fromRegister')}
-          </Button>
-        )}
-      </Box>
+      <FieldBox
+        variant={variant === 'standard' ? 'standard' : 'outlined'} size="small" fullWidth label={variant === 'standard' ? undefined : label}
+        value={draft} disabled={disabled} required={required} error={props.error} helperText={props.helperText}
+        placeholder={props.placeholder}
+        onChange={(event) => changed(event.target.value)}
+        onBlur={left}
+        onKeyDown={(event) => { if (event.key === 'Enter' && commit === 'blur') left() }}
+        slotProps={{ htmlInput: { 'aria-label': label, autoComplete: 'off', ...(inputId ? { 'data-testid': inputId } : {}) } }}
+        {...(toPicker ? {
+          trailing: (
+            <KitButton size="small" variant="quiet" onClick={toPicker}
+              // Going to the picker leaves what was typed unwritten: the picker starts from it.
+              onMouseDown={(event) => event.preventDefault()}
+              {...(testId ? { 'data-testid': `${testId}-pick` } : {})}>
+              {s('people.fromRegister')}
+            </KitButton>
+          ),
+        } : {})}
+      />
       {offeredRow}
     </Box>
   )

@@ -40,8 +40,22 @@ describe('FieldBox', () => {
     expect(screen.getByRole('combobox', { name: /Impact/ })).toBeTruthy()
   })
 
-  it('is MUI\'s field alone where there is no label', () => {
+  it('wears the kit\'s box where there is no label too, with no label drawn', () => {
     renderShell(<FieldBox placeholder="Find" value="" onChange={() => {}} />)
     expect(document.querySelector('.kit-field__label')).toBeNull()
+    expect(screen.getByPlaceholderText('Find').closest('.kit-fieldBox')).toBeTruthy()
+  })
+
+  it('stands a control beside the box, apart from the label and the words under it', () => {
+    renderShell(<FieldBox label="Observed by" helperText="A name" value="" onChange={() => {}} trailing={<button type="button">From the register…</button>} />)
+    const row = screen.getByRole('button', { name: 'From the register…' }).closest('.kit-fieldBox__row')!
+    expect(row.querySelector('input')).toBeTruthy()
+    expect(row.textContent).toContain('A name')
+    expect(row.parentElement!.querySelector(':scope > .kit-field__label')).toBeTruthy()
+  })
+
+  it('draws the kit\'s chevron on a select', () => {
+    renderShell(<FieldBox select label="Impact" value="low" onChange={() => {}}><MenuItem value="low">Low</MenuItem></FieldBox>)
+    expect(document.querySelector('.kit-fieldBox__caret')).toBeTruthy()
   })
 })

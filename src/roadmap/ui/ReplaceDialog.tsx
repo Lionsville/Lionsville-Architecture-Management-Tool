@@ -139,25 +139,25 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
             </Box>
           ))}
           {others.filter((element) => element.id !== existingId).length > 0 && (
-            <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
-              <FieldBox
-                select label={t('plan.addApplication')} value={adding} sx={{ flex: 1 }}
-                // MUI 9 names a select by its visible label alone; the fuller
-                // name is the one that says what the field is for.
-                slotProps={{
-                  htmlInput: { 'aria-label': t('replace.alsoField') },
-                  select: { SelectDisplayProps: { 'aria-labelledby': undefined } },
-                }}
-                onChange={(e) => setAdding(e.target.value)}
-              >
-                {others.filter((element) => element.id !== existingId).map((element) => (
-                  <MenuItem key={element.id} value={element.id}>{element.name}</MenuItem>
-                ))}
-              </FieldBox>
-              <Button size="small" disabled={!adding} onClick={() => { setAlso((list) => [...list, adding]); setAdding('') }}>
-                {t('plan.add')}
-              </Button>
-            </Box>
+            <FieldBox
+              select label={t('plan.addApplication')} value={adding} fullWidth sx={{ mt: 0.5 }}
+              // MUI 9 names a select by its visible label alone; the fuller
+              // name is the one that says what the field is for.
+              slotProps={{
+                htmlInput: { 'aria-label': t('replace.alsoField') },
+                select: { SelectDisplayProps: { 'aria-labelledby': undefined } },
+              }}
+              onChange={(e) => setAdding(e.target.value)}
+              trailing={(
+                <Button size="small" disabled={!adding} onClick={() => { setAlso((list) => [...list, adding]); setAdding('') }}>
+                  {t('plan.add')}
+                </Button>
+              )}
+            >
+              {others.filter((element) => element.id !== existingId).map((element) => (
+                <MenuItem key={element.id} value={element.id}>{element.name}</MenuItem>
+              ))}
+            </FieldBox>
           )}
         </Box>
 

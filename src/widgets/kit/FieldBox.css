@@ -19,3 +19,11 @@
 /* The words under it start where the box and the label start, as the kit field's do. */
 .kit-fieldBox .MuiFormHelperText-root { margin: var(--s-1) 0 0; color: var(--ink-3); font: inherit; font-size: var(--t-body); line-height: var(--lh-body); }
 .kit-fieldBox .MuiFormHelperText-root.Mui-error { color: var(--bad); }
+
+/* A control beside the box stands at the box's top and is as tall as it; the words under the box stay under the box. */
+.kit-fieldBox__row { display: flex; align-items: flex-start; gap: var(--s-2); min-width: 0; }
+.kit-fieldBox__row > .MuiTextField-root { flex: 1; min-width: 0; }
+.kit-fieldBox__trailing { display: flex; align-items: center; flex: none; height: var(--ctl-h); }
+/* A select's chevron is the kit's, where MUI draws its own filled one. */
+.kit-fieldBox__caret { position: absolute; right: var(--s-2); top: 50%; display: inline-flex; transform: translateY(-50%); color: var(--ink-2); pointer-events: none; }
+.kit-fieldBox__row[data-standard] { align-items: flex-end; }
