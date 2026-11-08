@@ -53,7 +53,15 @@ export function LabelSpread({ maxMove }: { /** On screen: how far from its line 
     const unsubscribe = flow.subscribe((state) => {
       if (state.transform[2] !== zoom) { zoom = state.transform[2]; soon(); }
     });
-    return () => { clearTimeout(timer); unsubscribe(); };
+    // A label that comes up on its own, under the pointer, is kept clear at once, before it
+    // is painted: it stood where nothing moved it, and jumped when its line was then selected.
+    const chip = (node: Node) => node instanceof HTMLElement && (node.classList.contains('lv-edge-chip') || node.querySelector('.lv-edge-chip') !== null);
+    const root = flow.getState().domNode;
+    const watch = typeof MutationObserver === 'undefined' || !root ? undefined : new MutationObserver((changes) => {
+      if (changes.some((change) => [...change.addedNodes].some(chip))) spread();
+    });
+    if (root) watch?.observe(root, { childList: true, subtree: true });
+    return () => { clearTimeout(timer); unsubscribe(); watch?.disconnect(); };
   }, [flow, edges, showLabels, maxMove]);
   return null;
 }
