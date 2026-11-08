@@ -77,6 +77,8 @@ export type PaletteLine = {
   readonly lead?: boolean
   /** Changes what the dialog lists rather than leaving it: it stays open. */
   readonly stays?: boolean
+  /** Does something to the list rather than naming a place: said in the action's ink, so it does not read as a heading. */
+  readonly action?: boolean
   readonly run: () => void
 }
 
@@ -211,7 +213,7 @@ function PaletteRow({ line, index, active, onHover, onRun }: {
       data-testid={`palette-${line.id}`}
       sx={{ display: 'flex', gap: 1, px: 2, py: 0.5 }}
     >
-      <Typography sx={{ fontSize: 'var(--t-body)', flex: '0 1 auto', minWidth: 0 }} noWrap>{line.label}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-body)', flex: '0 1 auto', minWidth: 0, ...(line.action ? { color: 'primary.main', fontWeight: 'var(--fw-strong)' } : {}) }} noWrap>{line.label}</Typography>
       <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', flex: 1, minWidth: 0 }} noWrap>{line.hint}</Typography>
       {line.keys !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{line.keys}</Typography>}
     </ListItemButton>
@@ -351,11 +353,12 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
           {chipOf(previewed, s) !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{chipOf(previewed, s)}</Typography>}
           <Typography sx={{ fontSize: 'var(--t-large)', fontWeight: 600, overflowWrap: 'anywhere' }}>{previewed.title !== '' ? previewed.title : previewed.about.join(' → ')}</Typography>
           {previewed.scope !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mt: 0.5 }}>{scopeLabel(previewed.scope)}</Typography>}
-          {previewed.holds && (
-            <Typography sx={{ fontSize: 'var(--t-body)', mt: 1 }}>
-              {[s('gsearch.person.holds', { role: previewed.holds.role, unit: previewed.holds.unit }), previewed.holds.more ? s('gsearch.person.holdsMore', { count: previewed.holds.more }) : undefined].filter(Boolean).join(' · ')}
+          {/* The row says one role and how many more; here there is room to say each, one to a line. */}
+          {previewed.holds && (previewed.holds.all ?? [previewed.holds]).map((one, at) => (
+            <Typography key={at} data-testid="palette-preview-holds" sx={{ fontSize: 'var(--t-body)', mt: at === 0 ? 1 : 0 }}>
+              {s('gsearch.person.holds', { role: one.role, unit: one.unit })}
             </Typography>
-          )}
+          ))}
           {previewed.detail && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{readDays(previewed.detail, language)}</Typography>}
           {previewed.snippet && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{previewed.snippet}</Typography>}
         </Box>
@@ -395,11 +398,11 @@ function useFoundWithMore(open: boolean, sources: readonly SearchSource[], asked
   const [whole, setWhole] = useState<ReadonlySet<SearchKind>>(new Set())
   useEffect(() => setWhole(new Set()), [open, asked])
   const { found, cut } = useMemo(
-    () => (open ? searchWithMore(sources, asked, people, whole) : { found: [], cut: new Set<SearchKind>() }),
+    () => (open ? searchWithMore(sources, asked, people, whole) : { found: [], cut: new Map<SearchKind, number>() }),
     [open, sources, asked, people, whole],
   )
-  const more = useMemo(() => [...cut].map((kind): PaletteLine => ({
-    id: `all:${kind}`, group: s(KIND_LABEL[kind]), label: s('gsearch.showAll'), stays: true,
+  const more = useMemo(() => [...cut].map(([kind, count]): PaletteLine => ({
+    id: `all:${kind}`, group: s(KIND_LABEL[kind]), label: s('gsearch.showAll', { count }), stays: true, action: true,
     run: () => setWhole((was) => new Set(was).add(kind)),
   })), [cut, s])
   return { found, more }
@@ -409,11 +412,13 @@ function useFoundWithMore(open: boolean, sources: readonly SearchSource[], asked
 function searchWithMore(sources: readonly SearchSource[], query: string, people: PeopleMatch | undefined, whole: ReadonlySet<SearchKind>) {
   const asked = { sources, query, day: today(), ...(people ? { people } : {}) }
   const hits = searchAll({ ...asked, limitPerKind: SEARCH_LIMIT_PER_KIND + 1 })
-  const cut = new Set<SearchKind>()
+  // A kind cut short, and how many it holds: its Show all says the number it brings.
+  const cut = new Map<SearchKind, number>()
   const found: SearchHit[] = []
+  const everyOf = (kind: SearchKind) => searchAll({ ...asked, kinds: [kind], limitPerKind: Number.MAX_SAFE_INTEGER })
   for (const { kind, run } of runsOfKind(hits)) {
-    if (whole.has(kind)) { found.push(...searchAll({ ...asked, kinds: [kind], limitPerKind: Number.MAX_SAFE_INTEGER })); continue }
-    if (run.length > SEARCH_LIMIT_PER_KIND) cut.add(kind)
+    if (whole.has(kind)) { found.push(...everyOf(kind)); continue }
+    if (run.length > SEARCH_LIMIT_PER_KIND) cut.set(kind, everyOf(kind).length)
     found.push(...run.slice(0, SEARCH_LIMIT_PER_KIND))
   }
   return { found, cut }

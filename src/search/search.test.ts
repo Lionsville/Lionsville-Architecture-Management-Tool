@@ -263,6 +263,14 @@ describe('snippet', () => {
     expect(out).not.toContain('flowchart')
     expect(out).toContain('See Billing and docs.')
   })
+
+  it('reads a template\'s table as its words, without the rules or the pipes', () => {
+    const text = '## Owner\n\n| Field | Value |\n| --- | :---: |\n| Short description | Billing engine |\n\n---\n\n- Criticality: high'
+    const out = snippet(text, 'criticality')
+    expect(out).not.toMatch(/---|\|/)
+    expect(out).toContain('Short description · Billing engine')
+    expect(out).toContain('Criticality: high')
+  })
 })
 
 describe('a person found', () => {
@@ -281,7 +289,7 @@ describe('a person found', () => {
 
   it('says what they hold, a managing role first, so two of one name are told apart', () => {
     const hits = searchAll({ sources: [{ scope: '', model }], query: 'sam', kinds: ['person'], people, day: '2026-06-01' })
-    expect(hits.map((hit) => hit.holds)).toEqual([{ role: 'Lead', unit: 'Payments', more: 1 }, undefined])
+    expect(hits.map((hit) => hit.holds)).toEqual([{ role: 'Lead', unit: 'Payments', more: 1, all: [{ role: 'Lead', unit: 'Payments' }, { role: 'Member', unit: 'Billing team' }] }, undefined])
   })
 
   it('reads every role they were given where no day is said', () => {

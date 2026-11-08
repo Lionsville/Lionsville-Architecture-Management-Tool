@@ -28,7 +28,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'gsearch.field': 'Suchen oder Befehl ausführen',
   'gsearch.results': 'Ergebnisse',
   'gsearch.more': 'Mehr',
-  'gsearch.showAll': 'Alle zeigen',
+  'gsearch.showAll': 'Alle {count} zeigen',
   'gsearch.empty': 'Tippen, um alles zu durchsuchen, was dieser Bereich festhält — Elemente und ihre Seiten, Ansichten, Beziehungen, Entscheidungen, Pläne und Meilensteine, Beobachtungen, Ursachen, Lösungen und Experimente — und was der Rest der Organisation festhält.',
   'gsearch.noMatches': 'Nichts entspricht „{query}“.',
   'gsearch.hint': '{key:Enter} öffnet das markierte Ergebnis dort, wo es liegt; {key:Escape} schließt.',

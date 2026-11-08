@@ -149,6 +149,8 @@ describe('a kind with more hits than it shows', () => {
     const options = [...all.closest('[role=group]')!.querySelectorAll('[role=option]')]
     expect(options).toHaveLength(9)
     expect(options.at(-1)).toBe(all)
+    // It says how many it brings.
+    expect(all.textContent).toBe('Show all 12')
     expect(fireEvent.mouseDown(all)).toBe(false)
     fireEvent.click(all)
     expect(screen.getAllByRole('option').filter((one) => /Gateway/.test(one.textContent ?? ''))).toHaveLength(12)

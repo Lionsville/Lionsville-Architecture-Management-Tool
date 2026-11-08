@@ -60,9 +60,14 @@ export type SearchHit = {
   readonly detail?: string
   /**
    * What a person holds, for telling two of one name apart: their first role,
-   * a managing one before the rest, the unit, and how many more they hold.
+   * a managing one before the rest, the unit, and how many more they hold;
+   * and where they hold more, every one of them in that order, for a preview
+   * with room to say them.
    */
-  readonly holds?: { readonly role: string; readonly unit: string; readonly more: number }
+  readonly holds?: {
+    readonly role: string; readonly unit: string; readonly more: number
+    readonly all?: readonly { readonly role: string; readonly unit: string }[]
+  }
   /** The names of the elements it is about: a decision's subject, a relation's two ends. */
   readonly about: readonly string[]
   /** The stretch of prose around the match; `''` where the title said enough. */
@@ -158,7 +163,9 @@ function holdings(sources: readonly SearchSource[], day: string | undefined): (i
     const theirs = held.filter((one) => personOf(one) === id)
     const first = theirs.find((one) => roles.get(one.roleId)?.manages) ?? theirs[0]
     if (!first) return undefined
-    return { role: roles.get(first.roleId)?.name ?? first.roleId, unit: units.get(first.unitId) ?? first.unitId, more: theirs.length - 1 }
+    const said = (one: typeof first) => ({ role: roles.get(one.roleId)?.name ?? one.roleId, unit: units.get(one.unitId) ?? one.unitId })
+    const all = [first, ...theirs.filter((one) => one !== first)].map(said)
+    return { ...said(first), more: theirs.length - 1, ...(all.length > 1 ? { all } : {}) }
   }
 }
 
@@ -316,11 +323,19 @@ const aboveModels = new WeakMap<readonly Adr[], SearchableModel>()
 export function snippet(text: string, query: string, radius = 70): string {
   const plain = text
     .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    // A table's rule and a line drawn across say nothing: a template's snippet read "Short description ------ Owner".
+    .replace(/^\s*\|?(\s*:?-{3,}:?\s*\|?)+\s*$/gm, ' ')
+    .replace(/^\s*([-*_]\s*){3,}$/gm, ' ')
+    .replace(/^\s*([-*+]|\d+\.)\s+/gm, '')
+    .replace(/\s*\|\s*/g, ' · ')
     .replace(/^\s*#{1,6}\s+/gm, '')
-    .replace(/[*_`>|]/g, '')
+    .replace(/[*_`>]/g, '')
     .replace(/\[\[([^\]]+)\]\]/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
     .replace(/\s+/g, ' ')
+    .replace(/(^|\s)·(?=\s·|\s*$)/g, '')
+    .replace(/^\s*·\s*|\s*·\s*$/g, '')
     .trim()
   const haystack = fold(plain)
   let at = -1
