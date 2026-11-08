@@ -54,8 +54,9 @@ function scope(comments: Comment[] = []): Model {
 }
 
 /** The workspace, as far as a thread sees it: a model, the writer over it, and the register. */
-function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptIn, onOpenFrom, onOpenScope, pointed, headed }: {
+function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptIn, onOpenFrom, onOpenScope, pointed, headed, focusNew }: {
   headed?: boolean
+  focusNew?: boolean
   start: Model; me: PersonId | undefined; mayComment?: boolean; mayModerate?: boolean; onMe?: (id: PersonId | undefined) => void; keptIn?: string
   /** Where given, a record a comment came with is named by its id in capitals and opens through this. */
   onOpenFrom?: (id: string) => void
@@ -79,7 +80,7 @@ function Harness({ start, me, mayComment = true, mayModerate = true, onMe, keptI
         makeId: () => `cm-new-${++next}`, now: () => AT, ...(pointed ? { pointed } : {}),
       }}>
         <CommentThread
-          about={web} {...(headed === false ? { headed } : {})} {...(keptIn ? { scope: keptIn, scopeLabel: 'Elsewhere' } : {})} {...(onOpenScope ? { onOpenScope } : {})}
+          about={web} {...(headed === false ? { headed } : {})} {...(focusNew ? { focusNew } : {})} {...(keptIn ? { scope: keptIn, scopeLabel: 'Elsewhere' } : {})} {...(onOpenScope ? { onOpenScope } : {})}
           {...(onOpenFrom ? { nameOf: (from) => from.id.toUpperCase(), openFrom: (from) => () => onOpenFrom(from.id) } : {})}
         />
       </CommentsProvider>
@@ -234,5 +235,12 @@ describe('a record’s count where it is listed', () => {
     )
     expect(screen.getByTestId('comment-badge-element-web').textContent).toBe('2')
     expect(screen.queryByTestId('comment-badge-element-pay')).toBeNull()
+  })
+})
+
+describe('a thread opened by Write a comment', () => {
+  it('puts the focus in the box, so what is typed next lands there', async () => {
+    renderShell(<Harness start={scope()} me="pe-eva" focusNew />)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('comment-new')))
   })
 })

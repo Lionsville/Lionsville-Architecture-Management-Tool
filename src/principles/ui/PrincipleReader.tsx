@@ -64,7 +64,7 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
     ...(principle.status === 'accepted' ? [{ label: t('principles.retire'), onSelect: () => setStatus('retired') }] : []),
     ...(principle.status === 'retired' ? [{ label: t('principles.restore'), onSelect: () => setStatus('accepted') }] : []),
     { label: t('principles.merge'), onSelect: () => setMerging(true) },
-    { label: t('principles.remove'), final: true, onSelect: () => setRemoving(true), ...removalRefused(mayRemove(principle, scope, citations), citations.length, t) },
+    { label: `${t('principles.remove')}…`, final: true, onSelect: () => setRemoving(true), ...removalRefused(mayRemove(principle, scope, citations), citations.length, t) },
   ]
   return (
     <>
@@ -87,7 +87,7 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
           <Relations found={found} onPick={onPick} />
           {/* Its thread where it is kept; a principle from elsewhere is commented on there (ADR-0037). */}
           {from.kind === 'here' && (talking
-            ? <CommentThread about={{ kind: 'principle', id: principle.id }} />
+            ? <CommentThread about={{ kind: 'principle', id: principle.id }} focusNew />
             : <div><Button variant="quiet" onClick={() => setTalking(true)}>{t('principles.writeComment')}</Button></div>)}
           <RecordChanges about={{ kind: 'principle', id: principle.id }} scope={scope} first="proposed" />
         </div>

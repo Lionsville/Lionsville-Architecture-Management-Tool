@@ -26,7 +26,7 @@ import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { Button as KitButton } from '../../widgets/kit/Button'
 import Link from '@mui/material/Link'
-import Tooltip from '@mui/material/Tooltip'
+import { Tooltip } from '../../widgets/kit/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
@@ -339,8 +339,9 @@ function SolutionGate({ gate, solution, canEdit, s, onPlanExperiment, onDecide }
           <Box component="li" key={one.item} data-testid={`solution-gate-${one.item}`} data-ok={one.ok ? 'true' : 'false'} sx={{ display: 'flex', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
             <Box component="span" aria-hidden sx={{ width: 16, fontWeight: 700, color: one.ok ? 'success.main' : 'text.secondary' }}>{one.ok ? '✓' : '○'}</Box>
             {/* The hint describes the line rather than naming it, and the line
-                takes focus, so the hint is not for the mouse only. */}
-            <Tooltip describeChild title={s(GATE_HINT[one.item])}>
+                takes focus, so the hint is not for the mouse only. Above it, never over
+                the rows under it, whose ⋯ a pointer left on the line would reach for. */}
+            <Tooltip placement="top" title={s(GATE_HINT[one.item])}>
               <Box component="span" tabIndex={0} data-gate-line sx={{ flex: 1, cursor: 'help' }}>{label(one.item)}</Box>
             </Tooltip>
             {!one.ok && canEdit && one.item === 'experimentPlanned' && <KitButton size="small" onClick={onPlanExperiment}>{s('solution.planExperiment')}</KitButton>}

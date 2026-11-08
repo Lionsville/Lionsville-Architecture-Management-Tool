@@ -124,7 +124,7 @@ export function BlockTextWindow({ row, document, asked, onDone }: { row: BlockRo
       changed={draft !== undefined && draft !== document.text} onSave={keep} onCancel={close}
     >
       <div className="guidance-form__edit">
-        <MarkdownEditor variant="pane" value={draft ?? ''} onChange={setDraft} label={t('blocks.document')} shownAs={view} renderPreview={(text) => <MarkdownView markdown={text} />} />
+        <MarkdownEditor variant="pane" autoFocus value={draft ?? ''} onChange={setDraft} label={t('blocks.document')} shownAs={view} renderPreview={(text) => <MarkdownView markdown={text} />} />
       </div>
     </FocusedWindow>
   )

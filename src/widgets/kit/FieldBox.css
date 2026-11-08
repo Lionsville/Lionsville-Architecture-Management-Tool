@@ -26,4 +26,6 @@
 .kit-fieldBox__trailing { display: flex; align-items: center; flex: none; height: var(--ctl-h); }
 /* A select's chevron is the kit's, where MUI draws its own filled one. */
 .kit-fieldBox__caret { position: absolute; right: var(--s-2); top: 50%; display: inline-flex; transform: translateY(-50%); color: var(--ink-2); pointer-events: none; }
+/* Handed to a select as its icon, MUI's own `top` would win and lift it off the middle: the class twice outweighs it. */
+.kit-fieldBox__caret.kit-fieldBox__caret { top: 50%; }
 .kit-fieldBox__row[data-standard] { align-items: flex-end; }

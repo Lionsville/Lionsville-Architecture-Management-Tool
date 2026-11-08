@@ -67,12 +67,14 @@ export type CommentThreadProps = {
   openFrom?: (from: CommentFrom) => (() => void) | undefined
   /** False where the screen around it already names it, as a tab or a section headed *Comments* does: no second heading, no second landmark, no rule. */
   headed?: boolean
+  /** Opened by a press on *Write a comment*: the box takes the focus, so what is typed next lands in it. */
+  focusNew?: boolean
 }
 
 /** What is being written: a new comment, a reply to one, or an edit of one. */
 type Writing = { kind: 'new' } | { kind: 'reply'; to: string } | { kind: 'edit'; id: string }
 
-export function CommentThread({ about, scope, scopeLabel, onOpenScope, nameOf, openFrom, headed = true }: CommentThreadProps) {
+export function CommentThread({ about, scope, scopeLabel, onOpenScope, nameOf, openFrom, headed = true, focusNew = false }: CommentThreadProps) {
   const access = useComments()
   const { t } = useStrings()
   if (!access) return null
@@ -93,7 +95,7 @@ export function CommentThread({ about, scope, scopeLabel, onOpenScope, nameOf, o
       </ThreadFrame>
     )
   }
-  return <OpenThread access={access} about={about} headed={headed} {...(nameOf ? { nameOf } : {})} {...(openFrom ? { openFrom } : {})} />
+  return <OpenThread access={access} about={about} headed={headed} focusNew={focusNew} {...(nameOf ? { nameOf } : {})} {...(openFrom ? { openFrom } : {})} />
 }
 
 function ThreadFrame({ count, headed, children }: { count: number | undefined; headed: boolean; children: ReactNode }) {
@@ -115,8 +117,8 @@ function useMe(names: PersonNames): PersonId | undefined {
   return useMemo(() => meIn(register?.me, registerOf(register?.people ?? []))?.id, [register?.me, register?.people])
 }
 
-function OpenThread({ access, about, headed, nameOf, openFrom }: {
-  access: CommentsAccess; about: RecordKey; headed: boolean; nameOf?: (from: CommentFrom) => string; openFrom?: (from: CommentFrom) => (() => void) | undefined
+function OpenThread({ access, about, headed, focusNew, nameOf, openFrom }: {
+  access: CommentsAccess; about: RecordKey; headed: boolean; focusNew: boolean; nameOf?: (from: CommentFrom) => string; openFrom?: (from: CommentFrom) => (() => void) | undefined
 }) {
   const { t } = useStrings()
   const names = usePersonNames()
@@ -185,21 +187,21 @@ function OpenThread({ access, about, headed, nameOf, openFrom }: {
           post(asking.body, id, asking.replyTo)
           void names.access?.setMe(id)
         }} />
-        : <NewComment access={access} names={names} writing={writing} onWrite={(body) => write(body)} />}
+        : <NewComment access={access} names={names} writing={writing} onWrite={(body) => write(body)} focus={focusNew} />}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </ThreadFrame>
   )
 }
 
 /** The field for a new comment, or why there is none. */
-function NewComment({ access, names, writing, onWrite }: {
-  access: CommentsAccess; names: PersonNames; writing: Writing | undefined; onWrite: (body: string) => void
+function NewComment({ access, names, writing, onWrite, focus }: {
+  access: CommentsAccess; names: PersonNames; writing: Writing | undefined; onWrite: (body: string) => void; focus: boolean
 }) {
   const { t } = useStrings()
   if (!access.mayComment) return <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t('comments.readOnly')}</Typography>
   if (!names.access) return <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t('comments.noRegister')}</Typography>
   if (writing && writing.kind !== 'new') return null
-  return <Composer label={t('comments.write')} submit={t('comments.send')} testId="comment-new" onSubmit={onWrite} clears />
+  return <Composer label={t('comments.write')} submit={t('comments.send')} testId="comment-new" onSubmit={onWrite} clears autoFocus={focus} />
 }
 
 /** *Who is writing?*, asked once: the register's picker, kept as *This is me*. */

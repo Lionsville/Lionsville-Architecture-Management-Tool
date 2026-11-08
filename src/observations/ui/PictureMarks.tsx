@@ -125,11 +125,12 @@ function MoreMark({ node, size, s }: RecordMarkProps) {
   return (
     <>
       <rect width={slot.width} height={slot.height} rx={6} fill={theme.palette.background.paper} stroke={theme.palette.text.secondary} strokeWidth={1} strokeDasharray="3 3" />
-      <text x={12} y={size === 'far' ? slot.height / 2 + 4 : 24} fontSize={size === 'far' ? 14 : 12.5} fontWeight={600} fill={theme.palette.text.primary}>
+      {/* At the canvas's reading sizes, as the record cards beside it are: never smaller than their meta. */}
+      <text x={12} y={size === 'far' ? slot.height / 2 + 4 : 24} fontWeight={600} fill={theme.palette.text.primary} style={{ fontSize: size === 'large' ? 'var(--canvas-t-lg)' : size === 'far' ? 14 : 'var(--canvas-t-sm)' }}>
         {fold ? s('observation.mapMore', { count: node.count }) : s('observation.mapPile', { count: node.count })}
       </text>
       {size !== 'far' && (
-        <text x={12} y={42} fontSize={11.5} fill={theme.palette.text.secondary}>
+        <text x={12} y={44} fill={theme.palette.text.secondary} style={{ fontSize: 'var(--canvas-t-sm)' }}>
           {fold ? s('observation.mapMoreHint') : s('observation.mapPileHint')}
         </text>
       )}
