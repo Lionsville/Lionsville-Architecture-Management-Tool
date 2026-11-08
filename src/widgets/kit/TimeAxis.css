@@ -75,7 +75,9 @@
 
 .kit-time__handle {
   position: absolute;
-  bottom: 6px;
+  /* On the ruler's foot rather than in its month row, where it sat on the month's word. */
+  bottom: -6px;
+  z-index: 1;
   width: 12px;
   height: 12px;
   margin-left: -6px;
