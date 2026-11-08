@@ -156,7 +156,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       steps: [
         'Öffnen Sie **Entscheidungen** in der zweiten Zeile und drücken Sie **Neue Entscheidung**.',
         'Geben Sie ihr den Titel *Ein Schreiber je Bereich* und sagen Sie, worum es geht.',
-        'Schreiben Sie Kontext und Optionen in **Text bearbeiten** und drücken Sie **Fertig**.',
+        'Schreiben Sie Kontext und Optionen in **Bearbeiten** und drücken Sie **Speichern**.',
         'Senden Sie sie zur Prüfung, und wenn die Prüfenden unterschrieben haben, drücken Sie **Annehmen**.',
       ],
     },

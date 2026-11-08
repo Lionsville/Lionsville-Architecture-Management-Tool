@@ -742,7 +742,7 @@ seine Kommentare. Links stehen die anderen Elemente der Ansicht, mit einem Filte
 (eine Marke zeigt, wer schon eine Seite hat). *Darstellung* bleibt neben dem Board,
 wo die Karte ist.
 
-**Text bearbeiten** öffnet ein Fenster mit nichts als dem Quelltext und dem Ergebnis
+**Bearbeiten** öffnet ein Fenster mit nichts als dem Quelltext und dem Ergebnis
 daneben; **Felder** holt die Zeilen dazu. ⌘B und ⌘I umschließen die Auswahl. Der Text
 wird nach einer kurzen Pause gespeichert, ein Rückgängig-Schritt für das Ganze.
 **Fertig** beendet das Schreiben, und **Abbrechen** oder Escape setzt ihn auf das
@@ -1564,7 +1564,7 @@ Eine Entscheidung folgt dem MADR-Format: Kontext und Problemstellung,
 Entscheidungstreiber, die erwogenen Optionen, das Ergebnis und seine Folgen, Vor- und
 Nachteile jeder Option, weitere Informationen. **Neue Entscheidung** fragt nach dem
 Titel und wen sie betrifft, beginnt den Text mit dieser Vorlage und öffnet bereit zum
-Schreiben. **Text bearbeiten** ist ein ganzes Fenster: ein Feld je Abschnitt, mit
+Schreiben. **Bearbeiten** ist ein ganzes Fenster: ein Feld je Abschnitt, mit
 Markdown darin und der Hilfe darunter, und **Quelltext** für den ganzen Text auf einmal,
 wo eine Überschrift geändert wird und der das Fenster füllt. Neben dem Text stehen, was
 die Annahme noch braucht, wer sie vorgeschlagen hat, was sie ablöst, und die **Prüfer und
@@ -2046,7 +2046,7 @@ Die Seite eines Plans ist ein Dokument mit einem Bildlauf: der Kopf, ein Streife
 den Meilensteinen, der im Blick bleibt, was er ändert, je eine Zeile, dann der Text, dann
 die Boards, die er ändert, die Prinzipien, die er zitiert, die Änderungen und die
 Kommentare. Eine Gliederung links führt zu allem davon. Ein Fakt liest sich als Worte, und
-ein Druck macht aus dieser einen Zeile ein Formular. **Text bearbeiten** ist nur der Text,
+ein Druck macht aus dieser einen Zeile ein Formular. **Bearbeiten** ist nur der Text,
 in einem eigenen Fenster mit Vorschau, gespeichert als ein Schritt. **Schnittstellen** und
 **Einheiten** warten, bis Sie danach fragen; **Dem Rest einen Tag geben…** bewegt jede
 Linie ohne Tag an einem Tag, und eine Zeile öffnet sich, um die ganze Beschriftung zu
@@ -2964,7 +2964,7 @@ unter das bei *Abgelegt unter* gewählte Thema — mit allem darunter.` },
     { title: `Bausteine`, text: `Ein Baustein ist das, was viele Lösungen wiederverwenden: ein *Message
 Gateway*, ein *Identitätsdienst*. Er wird in einem Thema oder einem Bereich
 gehalten, und die Karte **Bausteine** öffnet die Liste aller Bausteine. Einen wählen
-liest ihn groß; **Baustein öffnen** ist seine Seite, mit weggefalteter Liste, auf
+liest ihn groß; **Ganzen Eintrag öffnen** ist seine Seite, mit weggefalteter Liste, auf
 vier Reitern:
 
 - **Über** — sein Dokument, mit einem Kapitel je Nutzungskontext, und die

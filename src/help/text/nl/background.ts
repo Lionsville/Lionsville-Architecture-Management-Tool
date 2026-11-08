@@ -700,7 +700,7 @@ opmerkingen. Links staan de andere elementen van de weergave, met een filter (ee
 teken toont wie al een pagina heeft). *Vormgeving* blijft naast het bord, waar de
 kaart is.
 
-**Tekst bewerken** opent een venster met niets dan de bron en het resultaat ernaast;
+**Bewerken** opent een venster met niets dan de bron en het resultaat ernaast;
 **Velden** haalt de rijen erbij. ⌘B en ⌘I omhullen de selectie. De tekst wordt
 bewaard na een korte pauze, één stap in Ongedaan maken voor het geheel. **Klaar**
 beëindigt het schrijven, en **Annuleren**, of Escape, zet haar terug op wat ze was,
@@ -1480,7 +1480,7 @@ landschap zijn twee besluiten.
 Een besluit volgt het MADR-formaat: context en probleemstelling, beslisfactoren, de
 overwogen opties, de uitkomst en de gevolgen, de voor- en nadelen per optie, meer
 informatie. **Nieuw besluit** vraagt de titel en waar het over gaat, begint de tekst
-met dat sjabloon en opent klaar om te schrijven. **Tekst bewerken** is een volledig
+met dat sjabloon en opent klaar om te schrijven. **Bewerken** is een volledig
 venster: een vak per sectie, met markdown erin en de hulp eronder, en **Bron** voor de
 hele tekst tegelijk, waar je een kop wijzigt en die het venster vult. Naast de tekst
 staan wat aanvaarding nog nodig heeft, wie het voorstelde, wat het vervangt en de
@@ -2816,7 +2816,7 @@ of onder het onderwerp dat bij *Ondergebracht bij* gekozen is — met alles eron
     { title: `Bouwstenen`, text: `Een bouwsteen is wat veel oplossingen hergebruiken: een *message gateway*,
 een *identiteitsdienst*. Hij wordt bewaard in een onderwerp of een scope, en
 de kaart **Bouwstenen** opent de lijst van alle bouwstenen. Eén kiezen leest hem
-groot; **Bouwsteen openen** is zijn pagina, met de lijst weggevouwen, op vier
+groot; **Open het hele record** is zijn pagina, met de lijst weggevouwen, op vier
 tabbladen:
 
 - **Over** — zijn document, met een hoofdstuk per gebruikscontext, en de

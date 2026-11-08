@@ -657,7 +657,7 @@ inside it, the principles it follows, its changes and its comments. Down the lef
 are the view's other elements, with a filter (a mark shows who has a page
 already). *Appearance* stays beside the board, where the card is.
 
-**Edit text** opens a window with nothing but the source and the result beside it;
+**Edit** opens a window with nothing but the source and the result beside it;
 **Fields** brings the rows back beside it. ⌘B and ⌘I wrap the selection. The text
 is saved after a short pause, one undo step for the whole of it. **Done** ends the
 writing, and **Cancel**, or Escape, takes it back to what it was, asking first if
@@ -1390,7 +1390,7 @@ A record follows the MADR format: context and problem statement, decision
 drivers, the options considered, the outcome and its consequences, the pros and
 cons of each option, more information. **New decision** asks for the title and
 what it is about, starts the body from that template, and opens ready to write.
-**Edit text** is a full window: a box per section, with markdown inside and its
+**Edit** is a full window: a box per section, with markdown inside and its
 help under it, and **Source** for the whole body at once, which is where a
 heading is changed, and which fills the window. Beside the text stand what
 acceptance still needs, who proposed it, what it supersedes, and the
@@ -1807,7 +1807,7 @@ A plan's page is one document with one scroll: its head, a strip of its mileston
 that stays in view, what it changes one line each, then its text, then the boards it
 changes, the principles it cites, its changes and its comments. An outline on the left
 goes to any of them. A fact reads as words and a press makes that one row a form.
-**Edit text** is the text alone, in a window of its own with its preview, saved as one
+**Edit** is the text alone, in a window of its own with its preview, saved as one
 step. **Interfaces** and **Units** wait to be asked for; **Give the rest a day…**
 moves every line with no day on one day, and a row opens to read its whole label and
 set its own day. A milestone outside the window is allowed, and says so.
@@ -2616,7 +2616,7 @@ is*, and saving files it under Topics — or under the topic chosen under
     { title: `Building blocks`, text: `A building block is what many solutions reuse: a *message gateway*, an
 *identity service*. It is kept in a topic or a scope, and the **Building
 blocks** card opens the list of all of them, under where each is kept.
-Selecting one reads it large; **Open the building block** is its page, with the
+Selecting one reads it large; **Open full record** is its page, with the
 list folded away, on four tabs:
 
 - **About** — its document, with a chapter per usage context, and the
