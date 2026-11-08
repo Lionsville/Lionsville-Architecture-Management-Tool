@@ -418,7 +418,7 @@ export function ChecksPage(props: ChecksPageProps) {
               <p className="checks-clear" data-testid="checks-no-fix"><Mark kind="agree" /><span><strong>{s('checks.noFixTitle')}</strong> {s('checks.noFixBody')}</span></p>
             )}
             <List
-              key={`${by}-${showing ?? ''}`} label={s('checks.title')} groups={groups} density={density} selectedId={selectedId} onOpen={chooseCheck}
+              key={`${by}-${showing ?? ''}`} label={s('checks.title')} groups={groups} wrap density={density} selectedId={selectedId} onOpen={chooseCheck}
               defaultFolded={folded} rowGuide="checks.row"
               onFold={(id, isFolded) => { if (id === 'note') setSession(new Set(isFolded ? [...session].filter((one) => one !== NOTES_OPEN) : [...session, NOTES_OPEN])) }}
             />

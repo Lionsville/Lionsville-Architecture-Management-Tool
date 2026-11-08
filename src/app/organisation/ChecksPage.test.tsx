@@ -84,6 +84,11 @@ describe('the Checks page', () => {
     expect(listRow(/Interaction not used/)).not.toBeNull()
   })
 
+  it('wraps the name of a check in its narrow list rather than clipping it', () => {
+    page()
+    expect(document.querySelector('[data-guide="checks.row"]')?.closest('.kit-list')?.hasAttribute('data-wrap')).toBe(true)
+  })
+
   it('lists every check by category, the ones that found nothing too, when asked to group so', () => {
     page()
     fireEvent.click(screen.getByRole('button', { name: /Group: Weight/ }))
