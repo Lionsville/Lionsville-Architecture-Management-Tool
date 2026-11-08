@@ -775,6 +775,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.fullRecord': 'Der ganze Eintrag',
   'observation.howToRead': 'So lesen Sie das',
   'observation.saidSeen': '{seen} gesehen · {waiting} warten auf ein Warum',
+  'observation.saidSeenBelow': '{seen} gesehen — {here} hier, {below} darunter · {waiting} warten auf ein Warum',
   'observation.saidWhy': '{causes} Ursachen · {open} offene Enden',
   'observation.bulkAskWhy': 'Warum fragen für diese {count}',
   'observation.bulkOneScope': 'Eine Ursache erklärt Beobachtungen ihres eigenen Scopes: Wählen Sie aus einem Scope.',

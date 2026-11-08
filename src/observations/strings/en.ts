@@ -794,6 +794,7 @@ export const EN = {
   'observation.fullRecord': 'The whole record',
   'observation.howToRead': 'How to read this',
   'observation.saidSeen': '{seen} seen · {waiting} wait for a why',
+  'observation.saidSeenBelow': '{seen} seen — {here} here, {below} below · {waiting} wait for a why',
   'observation.saidWhy': '{causes} causes · {open} open ends',
   'observation.bulkAskWhy': 'Ask why for these {count}',
   'observation.bulkOneScope': 'A cause explains observations of its own scope: pick from one scope.',

@@ -137,8 +137,27 @@ export type Chain = {
 export type MapRecords = {
   /** Every chain, those holding a record of this scope first, heaviest first within each. */
   readonly chains: readonly Chain[]
-  /** The observations no line reaches, this scope's first, in pick-up order: most of the data, and one pile on the map. */
+  /**
+   * The observations no line reaches and nobody noted, this scope's first, in
+   * pick-up order: what waits for a why, and one pile on the map. A noted one
+   * wants no cause, so it is neither on the pile nor counted as waiting.
+   */
   readonly loose: readonly string[]
+  /**
+   * How many were seen in the scopes in view, by the one rule every count of
+   * observations reads (`seenBelow`): live in its own scope's list — not
+   * archived, merged or moved — and not taken in by one here. `here` of them
+   * in this scope.
+   */
+  readonly seen: { readonly here: number; readonly below: number }
+}
+
+/**
+ * How many observations the scopes below saw, by the rule `chainsOf` counts
+ * the scopes in view by: each scope's live ones. What a home and a tree say.
+ */
+export function seenBelow(below: readonly Pick<ScopeAnalysis, 'observations'>[]): number {
+  return below.reduce((sum, one) => sum + liveObservations(one.observations).length, 0)
 }
 
 /**
@@ -150,10 +169,15 @@ export function chainsOf(scopes: readonly ScopeAnalysis[], here: string): MapRec
   const gone = absorbedKeys(scopes, here)
   const observations = new Map<string, Observation>()
   const others: string[] = []
-  for (const { scope, observations: seen, causes, solutions } of scopes) {
-    for (const one of seen) {
+  const seen = { here: 0, below: 0 }
+  for (const { scope, observations: held, causes, solutions } of scopes) {
+    const live = new Set(liveObservations(held))
+    for (const one of held) {
       const key = pictureKey(here, scope, one.id)
-      if (!gone.has(key) && !one.archived) observations.set(key, one)
+      if (gone.has(key) || !live.has(one)) continue
+      observations.set(key, one)
+      if (scope === here) seen.here += 1
+      else seen.below += 1
     }
     for (const one of causes) {
       const key = pictureKey(here, scope, one.id)
@@ -191,8 +215,8 @@ export function chainsOf(scopes: readonly ScopeAnalysis[], here: string): MapRec
       seen: seen.reduce((sum, key) => sum + (observations.get(key) as Observation).seen, 0),
     }
   }).sort((a, b) => Number(b.keys.some(isHere)) - Number(a.keys.some(isHere)) || b.weight - a.weight || b.seen - a.seen || (a.id < b.id ? -1 : 1))
-  const loose = [...observations.keys()].filter((key) => !joined.has(key)).sort(heaviestFirst)
-  return { chains, loose }
+  const loose = [...observations.keys()].filter((key) => !joined.has(key) && !isNoted(observations.get(key) as Observation)).sort(heaviestFirst)
+  return { chains, loose, seen }
 }
 
 /** A card standing for records not drawn: a chain's *and 11 more*, or the pile of records with no chain. */

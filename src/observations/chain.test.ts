@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { byPickUp, CHAINS_FIRST, chainsOf, mapWindow, splitResults, splitSeen, splitWhy, standingOf } from './chain'
+import { byPickUp, CHAINS_FIRST, chainsOf, mapWindow, seenBelow, splitResults, splitSeen, splitWhy, standingOf } from './chain'
 import type { Cause, Observation, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
 import { pictureLinks } from './graph'
@@ -170,5 +170,24 @@ describe('this scope comes first', () => {
     const records = chainsOf([here, below], 'a')
     expect(records.chains[0].observations).toEqual(['o1', 'a/b#b1'])
     expect(records.loose).toEqual(['alone', 'a/b#loose-below'])
+  })
+})
+
+describe('how many were seen, counted one way', () => {
+  it('is the live observations in view, here and below, the pile what waits for a why, and a home\'s count below the same', () => {
+    const here = scope({
+      observations: [
+        observation('o1'), observation('o2', { noted: true }), observation('o3', { archived: true }),
+        observation('o4', { history: [{ date: '2026-01-02', kind: 'merged', id: 'o1' }] }), observation('o5', { tone: 'bright' }),
+      ],
+      causes: [cause('c1', ['o5'])],
+    })
+    const below = scope({ scope: 'team', observations: [observation('o1'), observation('o2', { archived: true }), observation('o3', { noted: true })] })
+    const records = chainsOf([here, below], '')
+    // o1, the noted o2 and the bright o5 here; o1 and the noted o3 below. Archived and merged ones are not seen any more.
+    expect(records.seen).toEqual({ here: 3, below: 2 })
+    expect(seenBelow([below])).toBe(records.seen.below)
+    // What waits: nothing explains it and nobody noted it — o1 here and o1 below; o5 has a why.
+    expect(records.loose).toEqual(['o1', 'team#o1'])
   })
 })

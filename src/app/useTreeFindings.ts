@@ -8,6 +8,7 @@
  * reads it while nothing is open. One fold each over the index, memoised on
  * it — nothing here commits anything, and nothing loads for it.
  */
+import { seenBelow } from '../observations/chain'
 import { treeRecords } from '../projects/treeRecords'
 import { useMemo, useRef } from 'react'
 import type { SourceChanges } from '../ports/ProviderParts'
@@ -87,9 +88,9 @@ export function useTreeFindings(deps: {
   const identity = useMemo(() => [...identityFindings(index), ...organisationFindings(index), ...topicalFindings(index, tree)], [index, tree])
   /** Every plan flagged as an initiative anywhere below the root (ADR-0012 §7), for the roadmap card. */
   const initiatives = useMemo(() => index.initiativesBelow(home).length, [index, home])
-  /** Every open observation anywhere below this home (ADR-0032 §1), for the observations card. */
+  /** Every observation seen anywhere below this home (ADR-0032 §1), for the observations card: counted as the page and the map count them (`seenBelow`). */
   const localObservations = useMemo(
-    () => index.analysisBelow(home).reduce((sum, one) => sum + one.observations.filter((held) => !held.archived).length, 0),
+    () => seenBelow(index.analysisBelow(home)),
     [index, home],
   )
   const treeFindings = useMemo(() => findingsByScope(identity), [identity])

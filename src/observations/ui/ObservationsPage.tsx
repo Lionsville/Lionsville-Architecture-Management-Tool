@@ -64,6 +64,7 @@ import type { SavedFilters } from '../filter'
 import { FAR_BELOW, nodeKey, openEnds, pictureLinks } from '../graph'
 import type { PictureCounts } from '../graph'
 import { CHAINS_ALL, CHAINS_FIRST, chainsOf, mapWindow } from '../chain'
+import type { MapRecords } from '../chain'
 import { AnalysisPicture, PictureLegend } from './AnalysisPicture'
 import { useMerge } from './useMerge'
 import { usePageMove } from './useMove'
@@ -503,6 +504,13 @@ function mergedIntoOf(one: Observation, from: Away & { absorbedAbove: Observatio
  * causes, keyed as the page keys a record below, and any cause of this scope
  * that still explains one below (ADR-0032 §9).
  */
+/** What the Seen stage says, counted as the map and a home count (`chainsOf`): what is in view, and of that what waits for a why. */
+function seenSaid({ seen, loose }: MapRecords, s: Translate): string {
+  return seen.below > 0
+    ? s('observation.saidSeenBelow', { seen: seen.here + seen.below, here: seen.here, below: seen.below, waiting: loose.length })
+    : s('observation.saidSeen', { seen: seen.here, waiting: loose.length })
+}
+
 function analysedIntoOf(causes: readonly Cause[], below: readonly ScopeAnalysis[]) {
   return (id: string, scope?: string) => [
     ...(scope === undefined ? [] : explainedBy(below.find((one) => one.scope === scope)?.causes ?? [], id))
@@ -916,7 +924,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const liveCount = liveObservations(observations).length
   const rootCount = rootCauses(causes).length
   const stageSaid: Record<Tab, ReactNode> = {
-    register: <span data-testid="stage-said">{s('observation.saidSeen', { seen: liveCount, waiting: liveObservations(observations).filter((one) => !one.noted && analysedInto(one.id).length === 0).length })}</span>,
+    register: <span data-testid="stage-said">{seenSaid(records, s)}</span>,
     analysis: <span data-testid="stage-said">{s('observation.saidWhy', { causes: causes.filter((one) => !isCauseMerged(causes, one.id)).length, open: counted.openEnds })}</span>,
     solutions: (
       <span data-testid="solution-phases" data-guide="solutions.phases">

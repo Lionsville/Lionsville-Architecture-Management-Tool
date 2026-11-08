@@ -126,7 +126,8 @@ describe('the chain', () => {
 
   it('says what each stage waits for, and has a stage for whether it worked', () => {
     mount()
-    expect(screen.getByTestId('stage-said').textContent).toBe('2 seen · 1 wait for a why')
+    // The scope below is in view, so its observation is counted with this scope's, as the list shows it.
+    expect(screen.getByTestId('stage-said').textContent).toBe('3 seen — 2 here, 1 below · 2 wait for a why')
     toStage('analysis')
     expect(screen.getByTestId('stage-said').textContent).toBe('1 causes · 1 open ends')
     toStage('results')
