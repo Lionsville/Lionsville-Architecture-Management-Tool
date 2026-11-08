@@ -707,7 +707,7 @@ export const NL: Record<keyof typeof EN, string> = {
     'De koppeling kon niet worden gerouteerd. Ververs de pagina en probeer het opnieuw.',
   'error.export': 'De PNG-export is mislukt. Ververs de pagina en probeer het opnieuw.',
   'note.overCap': 'deze weergave heeft meer koppelingen dan routeren aankan',
-  'note.reclassify': 'klik één keer op ‘Koppelingen routeren’ zodat de bestaande lijnen van deze weergave mogen bewegen',
+  'note.reclassify': 'klik één keer op ‘Lijnen routeren’ zodat de bestaande lijnen van deze weergave mogen bewegen',
 
   'format.perMonth': '{amount}/mnd',
   'export.client': 'KLANT',

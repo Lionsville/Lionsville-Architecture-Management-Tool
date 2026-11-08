@@ -707,7 +707,7 @@ export const DE: Record<keyof typeof EN, string> = {
     'Die Verbindung konnte nicht geroutet werden. Laden Sie die Seite neu und versuchen Sie es erneut.',
   'error.export': 'Der PNG-Export ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es erneut.',
   'note.overCap': 'diese Ansicht hat mehr Verbindungen, als das Routing bewältigt',
-  'note.reclassify': 'klicken Sie einmal auf „Verbindungen routen“, damit sich die bestehenden Linien dieser Ansicht bewegen dürfen',
+  'note.reclassify': 'klicken Sie einmal auf „Linien führen“, damit sich die bestehenden Linien dieser Ansicht bewegen dürfen',
 
   'format.perMonth': '{amount}/Mon.',
   'export.client': 'KUNDE',
