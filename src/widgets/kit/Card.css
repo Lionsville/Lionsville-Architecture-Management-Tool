@@ -29,8 +29,13 @@
   font-size: calc(var(--t-canvas-name) / var(--canvas-zoom, 1));
   font-weight: var(--fw-strong);
   line-height: var(--lh-tight);
-  overflow-wrap: anywhere;
-  hyphens: auto;
+  /*
+   * A name is the person's own words, in whatever language they wrote it: the
+   * page's hyphenation would split it at English points, and a word that only
+   * breaks where it must keeps whole wherever it fits a line.
+   */
+  overflow-wrap: break-word;
+  hyphens: manual;
 }
 [data-distance='far'] .kit-card__name { -webkit-line-clamp: 2; }
 .kit-card__body { display: grid; gap: 1px; min-width: 0; font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); line-height: var(--lh-tight); }
