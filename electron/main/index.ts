@@ -28,7 +28,7 @@ import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { openedDocuments } from './openedDocuments'
 import { keepsCrashDumps } from './crashDumps'
-import { guardWindow, leaveAnyway, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
+import { guardWindow, keepWriting, leaveAnyway, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand, setMenuLanguage, zoomWindow } from './appMenu'
 import { productName } from '../../package.json'
 import { swipeCommand } from '../../src/platform/menu'
@@ -566,6 +566,7 @@ void app.whenReady().then(() => {
   // round trip inside an event that has to decide at once (`windowGuard.ts`).
   ipcMain.handle('app:unsaved', (event, holds: unknown) => { reportUnsaved(event.sender, holds) })
   ipcMain.handle('app:leaveAnyway', (event) => { leaveAnyway(event.sender) })
+  ipcMain.handle('app:keepWriting', (event) => { keepWriting(event.sender) })
 
   // The second fact the renderer reports, so the View menu's radio is right.
   ipcMain.handle('app:theme', (_event, held: unknown) => {

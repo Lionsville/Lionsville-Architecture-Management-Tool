@@ -41,7 +41,8 @@ export type HostCommand =
   | { type: 'closing'; saving: boolean }
   /**
    * The window is closing over a draft: the page asks its own question (*Leave
-   * with a draft?*), and says `leaveAnyway` only where the person leaves it.
+   * with a draft?*), and says `leaveAnyway` only where the person leaves it,
+   * `keepWriting` where they keep it.
    */
   | { type: 'closeAsked' }
   /** Hand the project over as a working file. */
@@ -143,6 +144,8 @@ export type HostCommands = {
   reportUnsaved(holds: WindowHolds): void
   /** The person left a draft at the page's question: the window closes. */
   leaveAnyway(): void
+  /** The person kept writing at that question: the window stays, and the host's log says so. */
+  keepWriting(): void
   /** Which theme is on, so the View menu's radio can be right. */
   reportTheme(mode: ThemeMode): void
   /**

@@ -106,14 +106,28 @@ const holdsIn = new WeakMap<object, WindowHolds>()
 /** Per page, what main does when the person leaves a draft at the page's question. */
 const leavingIn = new WeakMap<object, () => void>()
 
+/** Per page, a close waiting on its word: told as the word arrives, rather than on the next tick. */
+const heardIn = new WeakMap<object, () => void>()
+
+/** Per page, what main does when the person keeps a draft at the page's question. */
+const keepingIn = new WeakMap<object, () => void>()
+
 /** A page said what closing it would lose (`app:unsaved`); anything else it says is nothing. */
 export function reportUnsaved(contents: object, holds: unknown): void {
   holdsIn.set(contents, holds === 'write' || holds === 'draft' ? holds : 'clean')
+  heardIn.get(contents)?.()
 }
 
 /** The person left a draft at the page's question (`app:leaveAnyway`): its window goes, where main asked. */
 export function leaveAnyway(contents: object): void {
+  keepingIn.delete(contents)
   leavingIn.get(contents)?.()
+}
+
+/** The person kept writing at the page's question (`app:keepWriting`): the window stays, and the log says so. */
+export function keepWriting(contents: object): void {
+  leavingIn.delete(contents)
+  keepingIn.get(contents)?.()
 }
 
 /** Windows that can still answer: neither gone, nor showing a renderer that died. */
@@ -233,6 +247,9 @@ function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps:
     held = false
     letting = true
     if (window.isDestroyed()) return
+    // Part of a quit: the quit asked again closes the window itself. Closing it
+    // here first and then quitting unloads the page twice, a tenth of a second each.
+    if (how === 'close' && deps.quitting?.()) { deps.closed?.(); return }
     if (how === 'close') window.close()
     else window.destroy()
     deps.closed?.()
@@ -254,9 +271,13 @@ function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps:
     deps.saving?.(false)
     deps.kept?.()
     deps.log('main', `closing: the page asks about a draft after ${Date.now() - started} ms`)
+    keepingIn.set(page, () => {
+      keepingIn.delete(page)
+      deps.log('main', `closing: the draft was kept after ${Date.now() - started} ms`)
+    })
     leavingIn.set(page, () => {
       leavingIn.delete(page)
-      deps.log('main', 'closing: the draft was left')
+      deps.log('main', `closing: the draft was left after ${Date.now() - started} ms`)
       held = false
       letting = true
       if (!window.isDestroyed()) window.destroy()
@@ -269,7 +290,8 @@ function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps:
 
   /**
    * Save, then close once the write has landed — or ask, where it did not land
-   * in time. Never a frozen window: main polls and the question is a sheet, so
+   * in time. Never a frozen window: main goes on the page's word as it
+   * arrives, ticks only for the time limit, and the question is a sheet, so
    * the page goes on painting its *Saving…*, and a write that lands while the
    * question is up closes the window and takes the question with it.
    */
@@ -280,12 +302,20 @@ function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps:
     deps.save()
     deps.saving?.(true)
     let asking: AbortController | undefined
-    const poll = setInterval(() => {
-      if (window.isDestroyed()) { clearInterval(poll); asking?.abort(); return }
+    let done = false
+    const finish = () => {
+      done = true
+      clearInterval(poll)
+      heardIn.delete(page)
+      asking?.abort()
+    }
+    // Decided as the page's word arrives, and on a tick for the five seconds a write is given before the person is asked.
+    const check = () => {
+      if (done) return
+      if (window.isDestroyed()) { finish(); return }
       const now = holds()
       if (now !== 'write') {
-        clearInterval(poll)
-        asking?.abort()
+        finish()
         deps.log('main', `closing: written in ${Date.now() - started} ms`)
         if (now === 'draft') askDraft(started)
         else goAhead('close')
@@ -297,7 +327,7 @@ function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps:
       const signal = asking.signal
       void askNotSaved(signal).then((closeAnyway) => {
         if (signal.aborted) return
-        clearInterval(poll)
+        finish()
         if (!closeAnyway) { stay(); return }
         // Closed as the person said, and not asked of the page: its own
         // `beforeunload` holds while work is unsaved, and would cancel a close
@@ -305,11 +335,13 @@ function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps:
         deps.log('main', `closing: closed anyway after ${Date.now() - started} ms`)
         goAhead('destroy')
       }, (error: unknown) => {
-        clearInterval(poll)
+        finish()
         deps.log('main', `closing: the question failed: ${String(error)}`)
         stay()
       })
-    }, 100)
+    }
+    const poll = setInterval(check, 100)
+    heardIn.set(page, check)
   }
 
   /** The one question main asks itself: a write that did not land, which is when *could not be saved* is true. */

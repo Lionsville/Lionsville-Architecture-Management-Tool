@@ -8,7 +8,7 @@
  * what its page says reaches the log.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { guardWindow, leaveAnyway, liveWindows, PAGE_ANSWERS_MS, PAGE_SAYS_MS, platformWords, reportUnsaved, SAVE_BEFORE_CLOSE_MS, windowsOf } from './windowGuard'
+import { guardWindow, keepWriting, leaveAnyway, liveWindows, PAGE_ANSWERS_MS, PAGE_SAYS_MS, platformWords, reportUnsaved, SAVE_BEFORE_CLOSE_MS, windowsOf } from './windowGuard'
 import type { WindowGuardDeps } from './windowGuard'
 
 vi.mock('electron', () => ({}))
@@ -303,6 +303,49 @@ describe('closing never freezes, and never stalls a quit', () => {
     expect(first.closed).toBe(1)
     expect(held.state.closedAfterHold).toBe(1)
     expect(held.state.logged.some((line) => /closing: written in \d+ ms/.test(line))).toBe(true)
+  })
+
+  it('leaves the window to the quit asked again, where the close was part of one, rather than closing it twice', () => {
+    const held = app()
+    const first = held.windows.first()
+    held.state.quitting = true
+    reportUnsaved(first.webContents, 'write')
+    held.closing(first)
+    reportUnsaved(first.webContents, 'clean')
+    expect(first.closed).toBe(0)
+    expect(held.state.closedAfterHold).toBe(1)
+    // The quit's own close of the window is let through.
+    expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
+  })
+
+  it('closes as the page says the write landed, not on the next tick', () => {
+    const held = app()
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'write')
+    held.closing(first)
+    expect(first.closed).toBe(0)
+    reportUnsaved(first.webContents, 'clean')
+    expect(first.closed).toBe(1)
+    // Decided once: the tick after it finds nothing left to do.
+    reportUnsaved(first.webContents, 'clean')
+    expect(first.closed).toBe(1)
+  })
+
+  it('logs the answer to the draft question either way, with its time', () => {
+    const held = app()
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'draft')
+    held.closing(first)
+    keepWriting(first.webContents)
+    expect(held.state.logged.some((line) => /closing: the draft was kept after \d+ ms/.test(line))).toBe(true)
+    expect(first.closed + first.forced).toBe(0)
+    // A leave after a keep belongs to the next question, not this one.
+    leaveAnyway(first.webContents)
+    expect(first.forced).toBe(0)
+    held.closing(first)
+    leaveAnyway(first.webContents)
+    expect(first.forced).toBe(1)
+    expect(held.state.logged.some((line) => /closing: the draft was left after \d+ ms/.test(line))).toBe(true)
   })
 
   it('closes a page that does not answer within a second where nothing was said to be pending', async () => {
