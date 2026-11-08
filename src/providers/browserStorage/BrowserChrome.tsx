@@ -65,7 +65,7 @@ function KeepsNothing({ own }: { own: BrowserOwn }) {
   }, [own])
   if (!nothing) return null
   return (
-    <Alert severity="warning" square data-testid="storage-notice" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 'var(--t-small)' }}>
+    <Alert severity="warning" square data-testid="storage-notice" className="kit-bottom-notice" sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 'var(--t-small)' }}>
       {s(own.shownFromOlder() ? 'browser.shownFromOlder' : 'shell.keepFailed')}
     </Alert>
   )

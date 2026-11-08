@@ -22,6 +22,7 @@ export function MemoryNotice({ current }: SourceChromeProps) {
       severity="warning"
       square
       data-testid="storage-notice"
+      className="kit-bottom-notice"
       sx={{ flex: '0 0 auto', borderRadius: 0, py: 0, fontSize: 'var(--t-small)' }}
     >
       {s('shell.keepFailed')}
