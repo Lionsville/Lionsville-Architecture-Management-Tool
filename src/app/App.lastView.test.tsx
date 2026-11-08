@@ -40,6 +40,8 @@ describe('removing a scope’s last view', () => {
 
     await screen.findByText('No view here yet')
     expect(session!.current().diagrams).toEqual([])
+    // The empty place has an address of its own, the scope's, which a reload lands on its home with nothing said.
+    await waitFor(() => expect(window.location.hash).toBe('#/acme/landscape/-'))
     // A closing dialog hides the page from role queries until it is gone.
     expect(await screen.findByRole('button', { name: 'New view…' })).toBeTruthy()
     // Still the workspace: no home came up in its place.

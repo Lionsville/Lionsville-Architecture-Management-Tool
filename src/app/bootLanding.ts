@@ -168,7 +168,8 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
   // landed on: the nearest place is the right landing and the wrong silence.
   const gone = near.page !== page || near.id !== place.id ? { notice: 'shell.placeGone' as const } : {}
   const snapshot = held.snapshot
-  if (near.page === 'home') return { ...homeOf(scope), ...gone }
+  // A scope's own address with no view in it to open — the empty place its last view left — is its home, and nothing is gone.
+  if (near.page === 'home') return { ...homeOf(scope), ...(page === undefined && place.id === undefined ? {} : gone) }
   if (near.page === undefined || VIEW_PAGES.includes(near.page)) {
     // A scope that draws nothing has no view to open on: its home.
     if (!isOpenableScope(snapshot)) return { ...homeOf(scope), ...(page === undefined ? {} : { notice: 'shell.placeGone' }) }

@@ -278,6 +278,8 @@ export type Screen = {
     readonly path: string
     readonly name: string
     readonly view?: ScreenView
+    /** It has no view at all, its last one removed while it was open: the empty place offering one. */
+    readonly noView?: boolean
   }
   /** Whose home is on screen while nothing is open. */
   readonly home?: {

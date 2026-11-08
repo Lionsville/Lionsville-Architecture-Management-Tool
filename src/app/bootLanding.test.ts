@@ -148,6 +148,8 @@ describe('a place in the address (ADR-0033)', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail' }).initialProject?.activeDiagramId).toBe('one')
     // A scope that draws nothing has nothing to open on: its home, and a word about the board that is not there.
     expect(placeLanding(held(scope('acme', [])), { scope: 'acme', page: 'board', id: 'gone' })).toEqual({ initialHome: 'acme', notice: 'shell.placeGone' })
+    // The empty place a scope's last view left is the scope's own address: a reload lands on its home and says nothing.
+    expect(placeLanding(held(scope('acme', [])), { scope: 'acme' })).toEqual({ initialHome: 'acme' })
   })
 
   it('says so once the app is up where the address did not land where it pointed, and not where it did', () => {

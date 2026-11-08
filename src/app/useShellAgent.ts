@@ -536,6 +536,7 @@ function screenOf(
       open: {
         path: project.path, name: model.name,
         ...(active ? { view: { id: active.id, name: active.name, kind: active.kind, ...(held.editingDrawing?.() === active.id ? { editing: true } : {}) } } : {}),
+        ...(model.diagrams.length === 0 ? { noView: true } : {}),
       },
       ...(page ? { page } : {}),
     }

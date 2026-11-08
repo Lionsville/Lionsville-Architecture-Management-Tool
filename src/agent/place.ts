@@ -340,6 +340,9 @@ export function placeOf(screen: Screen): Place | undefined {
       }
     }
     const view = screen.open.view
+    // A scope whose last view went stays open on an empty place: its address is the scope's
+    // own, which a reload lands on its home, as an open scope with no views always has.
+    if (!view && screen.open.noView) return { scope, ...beside }
     return view
       ? {
           scope, page: viewPage(diagramKind(view.kind)), id: view.id, ...(view.editing ? { edit: true } : {}), ...(view.day !== undefined ? { day: view.day } : {}), ...beside,

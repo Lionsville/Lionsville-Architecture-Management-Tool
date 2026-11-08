@@ -853,8 +853,11 @@ decisions, the roadmap and the rest — are where they were, and a page closed
 over the empty place closes onto it. A scope opened with no views at all
 still opens on its home, and its pages still close there, as before.
 
-**What is deliberately not done.** The address of the empty place is not a
-place of its own: it keeps the address it had until the next move, and a
-reload of it lands on the scope's home and says the view is not there. No
-agent tool removes a view; an agent reads a scope with none, is refused what
+**Its address is the scope's own** (`#/<scope>/-`, no page): the screen says
+`noView` on the open scope, `placeOf` writes the scope alone, and a reload of
+it lands on the scope's home with nothing said, since a scope opened with no
+views opens there. `app.open` with that scope and no page reaches the empty
+place while the scope is open on it.
+
+**What is deliberately not done.** No agent tool removes a view; an agent reads a scope with none, is refused what
 needs one, and makes one with `diagram.create`.

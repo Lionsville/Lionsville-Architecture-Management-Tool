@@ -162,6 +162,14 @@ describe('the place a screen is', () => {
     expect(placeOf({})).toBeUndefined()
   })
 
+  it('is the scope itself where it is open with no view left: the empty place has an address', () => {
+    const empty = { open: { path: 'acme/rail', name: 'Rail', noView: true } }
+    expect(placeOf(empty)).toEqual({ scope: 'acme/rail' })
+    expect(writePlace(placeOf(empty)!)).toBe('#/acme/rail/-')
+    expect(readPlace('#/acme/rail/-')).toEqual({ scope: 'acme/rail' })
+    expect(placeOf({ ...empty, page: { page: 'decisions' } })).toEqual({ scope: 'acme/rail', page: 'decisions' })
+  })
+
   it('round-trips through the address', () => {
     const place = placeOf({ open: { path: 'a/b', name: 'B' }, page: { page: 'observations', id: 'CA-0001' } })!
     expect(readPlace(writePlace(place))).toEqual(place)
