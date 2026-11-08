@@ -33,7 +33,7 @@ import { useCanvasZoom } from './useCanvasZoom'
 import type { ZoomTarget } from './useCanvasZoom'
 import {
   AXIS_SCALES, barInView, cellWord, dayAt, dayNumber, dayString, fitView, fractionOf, lastDayOf, mergedMilestones, monthWords,
-  fittedCellWord, openingView, rootFontPx, rulerCells, rulerCharPx, scaleOf, scrolledView, sideOf, viewAround, viewAtScale, viewBetween, viewWith, zoomedView,
+  wordedRuler, openingView, rootFontPx, rulerCharPx, scaleOf, scrolledView, sideOf, viewAround, viewAtScale, viewBetween, viewWith, zoomedView,
 } from './timeScale'
 import type { AxisScale, AxisView } from './timeScale'
 import { chordHeld, claimKey } from './keys'
@@ -178,9 +178,9 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
           <div ref={ruler} className="kit-time__ruler" role="group" tabIndex={0} aria-label={t('kit.axis.ruler')} onKeyDown={onRulerKey}>
             <RulerMarks view={view} width={width} today={today} day={day} slides={onDayChange !== undefined} onViewChange={onViewChange} />
             <div className="kit-time__cells">
-              {rulerCells(view, width).map((cell) => (
+              {wordedRuler(view, width, locale, charPx).map((cell) => (
                 <span key={cell.key} className="kit-time__cell" title={cellWord(cell, locale)} data-major={cell.major || undefined} style={{ left: `${cell.left * 100}%`, width: `${cell.width * 100}%` }}>
-                  {width === 0 ? cellWord(cell, locale) : fittedCellWord(cell, locale, cell.width * width, charPx)}
+                  {cell.word}
                 </span>
               ))}
             </div>

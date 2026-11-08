@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { barInView, cellWord, fittedCellWord, dayAt, dayNumber, dayString, fitView, fractionOf, lastDayOf, mergedMilestones, monthWords, openingView, rulerCells, scaleOf, scrolledView, sideOf, viewAtScale, viewBetween, viewWith, zoomedView, AXIS_MAX_DAYS, AXIS_MIN_DAYS } from './timeScale'
+import { barInView, cellWord, fittedCellWord, fittedRulerWords, dayAt, dayNumber, dayString, fitView, fractionOf, lastDayOf, mergedMilestones, monthWords, openingView, rulerCells, scaleOf, scrolledView, sideOf, viewAtScale, viewBetween, viewWith, zoomedView, AXIS_MAX_DAYS, AXIS_MIN_DAYS } from './timeScale'
 
 const year = openingView('2026-11-07')
 
@@ -49,6 +49,13 @@ describe('the window', () => {
     // A month too narrow for its short name keeps its letter (at 150 % on a small window), and only a sliver says nothing.
     expect(fittedCellWord(cell, 'en-GB', 20, 7)).toBe('A')
     expect(fittedCellWord(cell, 'en-GB', 12, 7)).toBe('')
+  })
+
+  it('says every month of a ruler as its letter once one of them is', () => {
+    const cells = ['2026-08-01', '2026-09-01', '2026-10-01'].map((day, at) => ({ key: day, left: at / 3, width: 1 / 3, unit: 'month' as const, day, withYear: false, major: false }))
+    // 3 × 33 px: room for Aug and Oct, not for Sept.
+    expect(fittedRulerWords(cells, 'en-GB', 99, 7)).toEqual(['A', 'S', 'O'])
+    expect(fittedRulerWords(cells, 'en-GB', 300, 7)).toEqual(['Aug', 'Sept', 'Oct'])
   })
 
   it('scrolls by the ruler’s pixels', () => {

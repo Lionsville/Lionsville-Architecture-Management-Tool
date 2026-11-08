@@ -15,7 +15,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n/LanguageContext'
 import { LOCALE } from '../../i18n/strings'
-import { barInView, fittedCellWord, fitView, fractionOf, mergedMilestones, rootFontPx, rulerCells, rulerCharPx, sideOf } from './timeScale'
+import { barInView, wordedRuler, fitView, fractionOf, mergedMilestones, rootFontPx, rulerCharPx, sideOf } from './timeScale'
 import type { AxisView } from './timeScale'
 import './TimeStrip.css'
 
@@ -56,9 +56,9 @@ export function TimeStrip({ label, today, from, to, items, pickedId, onPick, 'da
   return (
     <div ref={box} className="kit-strip" role="group" aria-label={label} data-guide={guide}>
       <div className="kit-strip__ruler" aria-hidden="true">
-        {rulerCells(view, width).map((cell) => (
+        {wordedRuler(view, width, LOCALE[language], charPx).map((cell) => (
           <span key={cell.key} className="kit-strip__cell" data-major={cell.major || undefined} style={{ left: `${cell.left * 100}%`, width: `${cell.width * 100}%` }}>
-            {fittedCellWord(cell, LOCALE[language], cell.width * width, charPx)}
+            {cell.word}
           </span>
         ))}
       </div>

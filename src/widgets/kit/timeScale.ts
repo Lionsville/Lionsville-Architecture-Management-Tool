@@ -278,6 +278,27 @@ export function fittedCellWord(cell: Pick<RulerCell, 'unit' | 'day' | 'withYear'
   return letter !== '' && charPx <= room ? letter : ''
 }
 
+/**
+ * A ruler's words, each cell fitted to its width, and the months in one form:
+ * where one month is down to its letter (*Sept* is longer than *Aug*), they all
+ * are, so the ruler reads *J A S O*, never *Aug S Oct*. `px` is the ruler's
+ * width; at 0 nothing is measured yet, and each cell says itself whole.
+ */
+export function fittedRulerWords(cells: readonly RulerCell[], locale: string, px: number, charPx: number): string[] {
+  if (px === 0) return cells.map((cell) => cellWord(cell, locale))
+  const fitted = cells.map((cell) => fittedCellWord(cell, locale, cell.width * px, charPx))
+  const lettered = cells.some((cell, at) => cell.unit === 'month' && fitted[at]!.length === 1)
+  if (!lettered) return fitted
+  return cells.map((cell, at) => (cell.unit === 'month' && fitted[at] !== '' ? cellWord({ ...cell, withYear: false }, locale).charAt(0).toLocaleUpperCase(locale) : fitted[at]!))
+}
+
+/** A window's ruler at a width, each cell with the words it says. */
+export function wordedRuler(view: AxisView, px: number, locale: string, charPx: number): (RulerCell & { word: string })[] {
+  const cells = rulerCells(view, px)
+  const words = fittedRulerWords(cells, locale, px, charPx)
+  return cells.map((cell, at) => ({ ...cell, word: words[at]! }))
+}
+
 /** The window in words: "Aug 2026" and "Jul 2027", for a sentence of the caller's. */
 export function monthWords(view: AxisView, locale: string): { from: string; to: string } {
   const say = (day: string) => {
