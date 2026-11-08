@@ -3,5 +3,12 @@
 .kit-settle__side { display: flex; gap: var(--s-1); align-items: flex-start; min-width: 0; overflow-wrap: anywhere; cursor: default; }
 .kit-settle__side:has(input) { cursor: pointer; }
 .kit-settle__side[data-chosen='true'] { font-weight: var(--fw-strong); }
-.kit-settle__side input { margin: 2px 0 0; flex: 0 0 auto; accent-color: var(--accent); }
+/* Drawn rather than native: a native radio is a light disc on a dark theme and reads as chosen whether it is or not. */
+.kit-settle__side input {
+  appearance: none; margin: 2px 0 0; flex: 0 0 auto; width: 1em; height: 1em; border-radius: 50%;
+  border: 1px solid var(--line-strong); background: var(--surface); display: grid; place-content: center; cursor: pointer;
+}
+.kit-settle__side input::before { content: ''; width: 0.5em; height: 0.5em; border-radius: 50%; background: var(--accent); transform: scale(0); }
+.kit-settle__side input:checked { border-color: var(--accent); }
+.kit-settle__side input:checked::before { transform: scale(1); }
 .kit-settle__side input:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
