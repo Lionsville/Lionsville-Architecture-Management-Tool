@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   BaseEdge,
   EdgeLabelRenderer,
@@ -168,6 +168,51 @@ function segmentHandleAt(a: Point, b: Point, chip: Point | undefined): Point {
   return Math.hypot(b.x - a.x, b.y - a.y) < 2 * CHIP_CLEARANCE_PX ? mid : quarter;
 }
 
+/**
+ * The chip's size on screen, measured only while its line is selected: that is
+ * when the handles are up and must keep off it, and measuring every line on every
+ * zoom would cost a layout each.
+ */
+function useChipSize(selected: boolean | undefined) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [size, setSize] = useState<{ width: number; height: number } | undefined>(undefined);
+  useLayoutEffect(() => {
+    const box = selected ? ref.current?.getBoundingClientRect() : undefined;
+    const next = box && box.width > 0 ? { width: box.width, height: box.height } : undefined;
+    setSize((was) => (was?.width === next?.width && was?.height === next?.height ? was : next));
+  });
+  return { ref, size };
+}
+
+/**
+ * Where a line with no bends draws its pill: on its middle leg, at the middle, or
+ * — where the chip stands there — just past the chip's end along the leg, on the
+ * side with more of the leg, so a new line's "double-click to label…" is not cut
+ * by it. A leg too short for either side keeps the middle. Sizes on screen are
+ * turned into the canvas's units by `scale`.
+ */
+export function pillClearOfChip(
+  mid: Point, axis: LegAxis, a: Point, b: Point,
+  chip: { at: Point; width: number; height: number } | undefined, scale: number,
+): Point {
+  if (!chip || axis === 'diagonal') return mid;
+  const along = axis === 'horizontal' ? 'x' : 'y';
+  const across = axis === 'horizontal' ? 'y' : 'x';
+  const half = { x: (chip.width / 2) * scale, y: (chip.height / 2) * scale };
+  const pill = { along: (SEGMENT_HANDLE_PX.width / 2) * scale, across: (SEGMENT_HANDLE_PX.height / 2) * scale };
+  const covered = Math.abs(mid[along] - chip.at[along]) < half[along] + pill.along && Math.abs(mid[across] - chip.at[across]) < half[across] + pill.across;
+  if (!covered) return mid;
+  const gap = 4 * scale;
+  const low = Math.min(a[along], b[along]) + pill.along;
+  const high = Math.max(a[along], b[along]) - pill.along;
+  const before = chip.at[along] - half[along] - gap - pill.along;
+  const after = chip.at[along] + half[along] + gap + pill.along;
+  const fits = [after, before].filter((at) => at >= low && at <= high);
+  if (fits.length === 0) return mid;
+  const best = fits.reduce((one, other) => (Math.abs(one - mid[along]) <= Math.abs(other - mid[along]) ? one : other));
+  return { ...mid, [along]: best };
+}
+
 /** What a segment drag is about, captured at pointer-down. */
 interface SegmentGesture {
   /** Leg index into `polyline`; ignored for a straight line. */
@@ -229,7 +274,7 @@ export const FloatingEdge = memo(function FloatingEdge({
   const dimmed = useLineDimmed(id);
   // Handles and markers keep a constant SCREEN size — see `BEND_HANDLE_PX`.
   const { zoom } = useViewport();
-  const handleScale = zoom > 0 ? 1 / zoom : 1;
+  const handleScale = zoom > 0 ? 1 / zoom : 1, chipBox = useChipSize(selected);
   const [dragWaypoints, setDragWaypoints] = useState<Point[] | null>(null);
   const [dragLabel, setDragLabel] = useState<Point | null>(null);
   const [editing, setEditing] = useState(false);
@@ -572,11 +617,11 @@ export const FloatingEdge = memo(function FloatingEdge({
           // middle is the path's own midpoint, not the chord between the anchors.
           // Its axis is the step's middle leg: the exit axis itself when the two
           // anchors are aligned, perpendicular to it when they are offset.
-          at = { x: labelX, y: labelY };
           const aligned =
             straightAxis === 'horizontal' ? Math.abs(a.y - b.y) < 1 : Math.abs(a.x - b.x) < 1;
           const exit: LegAxis = straightAxis ?? 'horizontal';
           axis = aligned ? exit : exit === 'horizontal' ? 'vertical' : 'horizontal';
+          at = pillClearOfChip({ x: labelX, y: labelY }, axis, a, b, chipAt && chipBox.size && { at: chipAt, ...chipBox.size }, handleScale);
         } else {
           at = segmentHandleAt(a, b, chipAt);
           axis = legAxis(a, b);
@@ -615,7 +660,7 @@ export const FloatingEdge = memo(function FloatingEdge({
       {showChip && (
         <EdgeLabelRenderer>
           <div
-            className="nodrag nopan lv-edge-chip"
+            className="nodrag nopan lv-edge-chip" ref={chipBox.ref}
             data-testid={`edge-label-${id}`}
             data-up={up || undefined}
             onMouseEnter={onHoverEnter}
