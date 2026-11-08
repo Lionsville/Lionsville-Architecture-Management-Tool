@@ -27,13 +27,14 @@ import { chooseValue } from '../../widgets/kit/testing/select'
 afterEach(() => cleanup())
 
 /** The page over a model a reducer keeps, and every command it sent. */
-function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId, aside, slotTakeOut, refuseLine, facts, onSave }: {
+function Harness({ start, readOnly = false, atOrganisation = true, sent, initialId, aside, slotTakeOut, refuseLine, facts, onSave, onClose }: {
   start: Model; readOnly?: boolean; atOrganisation?: boolean; sent: Command[]; initialId?: string
   aside?: ComponentProps<typeof OperatingModelPage>['aside']
   slotTakeOut?: SlotTakeOut
   refuseLine?: ComponentProps<typeof OperatingModelPage>['refuseLine']
   facts?: OrganisationFacts
   onSave?: (name: string, text: string) => void
+  onClose?: () => void
 }) {
   const [model, setModel] = useState(start)
   let n = 0
@@ -54,7 +55,7 @@ function Harness({ start, readOnly = false, atOrganisation = true, sent, initial
       {...(refuseLine ? { refuseLine } : {})}
       {...(facts ? { facts } : {})}
       {...(onSave ? { onSave } : {})}
-      onClose={() => {}}
+      onClose={onClose ?? (() => {})}
     />
   )
 }
@@ -144,6 +145,23 @@ describe('the operating model\'s page', () => {
     fireEvent.click(screen.getByTestId('operating-change-line'))
     chooseValue(screen.getByLabelText('Planner: Reports to (Line manager)'), 'ro-2')
     expect(screen.getByTestId('operating-slot-answer').textContent).toBe('Biller')
+  })
+
+  it('hands the focus into a role inside a type and back to its row, and Escape from nowhere closes the record, not the page', async () => {
+    let closed = 0
+    show(MODEL(), { initialId: 'ut-1', onClose: () => { closed++ } })
+    const row = screen.getAllByTestId('operating-slot')[1]
+    row.focus()
+    fireEvent.click(row)
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('operating-back-to-type')))
+    fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' })
+    await waitFor(() => expect((document.activeElement as HTMLElement).dataset.role).toBe('ro-3'))
+    expect(closed).toBe(0)
+    // The focus lost to the body: the record still goes first.
+    ;(document.activeElement as HTMLElement).blur()
+    fireEvent.keyDown(document.body, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryAllByTestId('operating-slot')).toHaveLength(0))
+    expect(closed).toBe(0)
   })
 
   it('refuses a line the host says would close a loop, and says why', () => {

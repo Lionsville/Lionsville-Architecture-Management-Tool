@@ -16,7 +16,7 @@
  * `usePlaceLook`), so a person, a link and an agent reach the same screen.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { KeyboardEvent, ReactNode } from 'react'
+import type { KeyboardEvent, ReactNode, RefObject } from 'react'
 import type { Command } from '../../model/commands'
 import type { MakeId } from '../../model/keys'
 import type { RoleId, UnitType, UnitTypeId } from '../../model/operatingModel'
@@ -214,10 +214,13 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
     if (event.key !== 'Escape' || keyClaimed(event)) return
     if (arranging) { claimKey(event); setArranging(false) } else if (reading) { claimKey(event); closeReader() }
   }
+  const page = useRef<HTMLDivElement>(null)
+  useSlotFocus(panel, slotOpen)
+  useEscapeFromNowhere(page, reading || arranging, () => (arranging ? setArranging(false) : closeReader()))
   return (
     <PageDialog open={props.open} topInset={props.windowChrome?.topInset} onClose={props.onClose} aria-label={t('operating.title')}>
       {/* One Escape does one thing: Arrange or the record beside the grid closes before the page does. */}
-      <div className="op-page" onKeyDown={onEscape}>
+      <div className="op-page" ref={page} onKeyDown={onEscape}>
         <div className="op-bar">
           <Tabs
             label={t('operating.title')} value={tab} onChange={(next) => chooseTab(next)}
@@ -295,6 +298,50 @@ function focusIn(main: HTMLElement | null, id: string, letter = false) {
   const chip = first('button[data-testid^="role-"]', (one) => one.dataset.testid?.slice('role-'.length))
   const target = cell ?? row ?? card?.querySelector<HTMLElement>('.op-card__name') ?? chip
   target?.focus()
+}
+
+/**
+ * A role inside a type opens in place of the type's panel, so the row pressed is
+ * gone and the focus with it: it goes to the way back, and on the way back to the
+ * row the role is read from — where the focus was in the panel or nowhere.
+ */
+function useSlotFocus(panel: RefObject<HTMLDivElement | null>, slotOpen: RoleId | undefined) {
+  const last = useRef(slotOpen)
+  useEffect(() => {
+    const was = last.current
+    last.current = slotOpen
+    const here = panel.current
+    if (was === slotOpen || !here) return
+    const lost = document.activeElement === null || document.activeElement === document.body || here.contains(document.activeElement)
+    if (!lost) return
+    const target = slotOpen !== undefined
+      ? here.querySelector<HTMLElement>('[data-testid="operating-back-to-type"]')
+      : Array.from(here.querySelectorAll<HTMLElement>('[data-testid="operating-slot"]')).find((row) => row.dataset.role === was)
+    target?.focus()
+  }, [panel, slotOpen])
+}
+
+/**
+ * Escape while the record beside the lanes is open and the focus is nowhere (a
+ * row pressed and redrawn away): the record goes first, never the page under it.
+ * Heard on the document, before the page's own listener on the window.
+ */
+function useEscapeFromNowhere(page: RefObject<HTMLDivElement | null>, active: boolean, close: () => void) {
+  const latest = useRef(close)
+  latest.current = close
+  useEffect(() => {
+    if (!active) return
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape' || keyClaimed(event)) return
+      const focus = document.activeElement
+      if (focus !== null && focus !== document.body) return
+      if (!page.current?.isConnected) return
+      claimKey(event)
+      latest.current()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [page, active])
 }
 
 /** The part the grid shows, as the tab reads it: with none said and no unit or whole organisation, its first group. */

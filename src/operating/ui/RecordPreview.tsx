@@ -101,7 +101,7 @@ export function RecordPanel({ picked, onSelect, parts, naming, onNamed, slotOpen
       <SlotReader type={type} slot={type.slots[at]} index={at} parts={parts} onTakeOut={() => removeSlotOf?.(type, at)} frame={(layout) => (
         <Panel
           kind={t('operating.roleIn', { type: type.name })} name={name} onClose={() => onSlot?.(undefined)} width={width} dataGuide={dataGuide}
-          actions={<button type="button" className="op-link op-small" onClick={() => onSlot?.(undefined)}>{t('operating.backToType', { type: type.name })}</button>}
+          actions={<button type="button" className="op-link op-small" data-testid="operating-back-to-type" onClick={() => onSlot?.(undefined)}>{t('operating.backToType', { type: type.name })}</button>}
         >
           {stackedFrame(layout)}
         </Panel>

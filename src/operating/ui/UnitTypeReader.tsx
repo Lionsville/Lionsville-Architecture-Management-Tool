@@ -69,7 +69,7 @@ export function UnitTypeReader({ type, parts, onOpenSlot, slotAside, frame = sta
             const { line, own } = slotReading(slot, role, 'solid')
             const words = own ? t('operating.ownLineHere', { line: lineWords(line, model.roles, t) }) : lineWords(line, model.roles, t)
             return (
-              <button key={slot.role} type="button" className="op-line" data-testid="operating-slot" onClick={() => onOpenSlot(slot.role)}>
+              <button key={slot.role} type="button" className="op-line" data-testid="operating-slot" data-role={slot.role} onClick={() => onOpenSlot(slot.role)}>
                 <span className="op-line__name">{role?.name ?? slot.role}</span>
                 <span className="op-line__many">{howManyWords(slot, t)}</span>
                 <span className="op-line__where" data-own={own || undefined}>{words}</span>
