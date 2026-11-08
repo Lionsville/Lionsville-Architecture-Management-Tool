@@ -467,7 +467,7 @@ export const EN = {
   'picker.listFailed': 'The organisations could not be read.',
   'picker.deleteFailed': 'That scope could not be deleted.',
   'settings.title': 'Scope settings',
-  'settings.open': 'Settings\u2026',
+  'settings.open': 'Scope settings…',
   'settings.projectName': 'Name',
   'settings.group': 'Group',
   'settings.groupHelp': 'Moving a scope files it under another group. Its content is untouched.',
@@ -499,7 +499,7 @@ export const EN = {
   'prefs.writeFailed': 'That setting could not be saved: {message}',
 
   'group.title': 'Scope settings',
-  'group.open': 'Settings…',
+  'group.open': 'Scope settings…',
   'group.openFor': 'Settings for {name}',
   'group.name': 'Name',
   'group.nameHelp': 'Renaming does not move it: the address ({path}) stays, and “Filed under” is what moves it.',
