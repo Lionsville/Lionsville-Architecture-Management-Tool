@@ -46,7 +46,7 @@
 .org-node[data-target='warn'] { background: var(--drop-warn); outline-color: var(--warn); }
 .org-node[draggable='true'] { cursor: grab; }
 
-.org-name { all: unset; display: block; box-sizing: border-box; width: 100%; font: inherit; cursor: pointer; overflow-wrap: break-word; hyphens: manual; }
+.org-name { all: unset; display: block; box-sizing: border-box; width: 100%; font: inherit; cursor: pointer; }
 .org-name:hover { text-decoration: underline; }
 .org-name:focus-visible,
 .org-person:focus-visible,

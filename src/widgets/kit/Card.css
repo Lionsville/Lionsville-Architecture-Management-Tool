@@ -29,15 +29,11 @@
   font-size: calc(var(--t-canvas-name) / var(--canvas-zoom, 1));
   font-weight: var(--fw-strong);
   line-height: var(--lh-tight);
-  /*
-   * A name is the person's own words, in whatever language they wrote it: the
-   * page's hyphenation would split it at English points, and a word that only
-   * breaks where it must keeps whole wherever it fits a line.
-   */
-  overflow-wrap: break-word;
-  hyphens: manual;
 }
 [data-distance='far'] .kit-card__name { -webkit-line-clamp: 2; }
+/* A name breaks at its spaces and nowhere else; a word wider than its line ends in an ellipsis (`CanvasName`). */
+.kit-name { overflow-wrap: normal; word-break: normal; hyphens: manual; }
+.kit-name__word { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top; }
 .kit-card__body { display: grid; gap: 1px; min-width: 0; font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); line-height: var(--lh-tight); }
 [data-distance='far'] .kit-card__over { display: none; }
 .kit-card__over,

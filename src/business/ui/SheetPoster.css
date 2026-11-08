@@ -65,7 +65,7 @@
 .poster-tile[data-hit][aria-current="true"] { outline: 4px solid var(--focus-ring); outline-offset: -2px; }
 .poster-person[data-hit], .poster-column__group [data-hit], .poster-grouping__name[data-hit], .poster-item[data-hit] { outline-offset: 2px; }
 .poster-person[data-hit][aria-current="true"], .poster-item[data-hit][aria-current="true"] { outline-width: 4px; background: var(--selected-soft); }
-.poster-tile__name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: var(--t-canvas-name); line-height: 14px; hyphens: auto; text-wrap: balance; }
+.poster-tile__name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: var(--t-canvas-name); line-height: 14px; text-wrap: balance; }
 .poster-tile__near { display: none; }
 .poster-tile__label { display: none; }
 .poster-tile[data-labelled] .poster-tile__name { -webkit-line-clamp: 2; line-height: 13.5px; }

@@ -4,7 +4,7 @@
 /**
  * One thing on a canvas. The name holds its size on screen at any zoom, what does
  * not fit the distance goes, and a card is as tall as what it says: 2 lines of name
- * from far, 3 nearer, broken inside a long compound rather than cut.
+ * from far, 3 nearer, broken between words only (`CanvasName`).
  *
  * A plain element and a class, because a board draws hundreds. The zoom reaches it
  * through the custom property a canvas sets (`canvasZoomProps`), so zooming renders
@@ -46,6 +46,20 @@ export type CardProps = Omit<ComponentPropsWithRef<'div'>, 'children' | 'about'>
   nub?: ReactNode
 }
 
+/**
+ * A name on a canvas, said the one way every card and chip says it: broken between
+ * words and never inside one, since "Warehou|se" reads as two words that are not;
+ * a word too long for its line ends in an ellipsis instead. Each word is a box of
+ * its own for that, so a space is the only place a line may break.
+ */
+export function CanvasName({ text }: { text: string }) {
+  return (
+    <span className="kit-name">
+      {text.split(/(\s+)/).map((part, at) => (/^\s*$/.test(part) ? part : <span key={at} className="kit-name__word">{part}</span>))}
+    </span>
+  )
+}
+
 export function Card({ name, nameAs, over, lead, sub, about, body, marks, rail, selected, neighbour, dimmed, planned, agentChanged, hoverWord, nub, className, style, ...rest }: CardProps) {
   const { t } = useStrings()
   return (
@@ -63,7 +77,7 @@ export function Card({ name, nameAs, over, lead, sub, about, body, marks, rail, 
         {lead && <div className="kit-card__lead">{lead}</div>}
         <div className="kit-card__text">
           {over && <div className="kit-card__over">{over}</div>}
-          <div className="kit-card__name">{nameAs ?? name}</div>
+          <div className="kit-card__name">{nameAs ?? <CanvasName text={name} />}</div>
           {sub && <div className="kit-card__sub">{sub}</div>}
           {about && <div className="kit-card__about">{about}</div>}
         </div>

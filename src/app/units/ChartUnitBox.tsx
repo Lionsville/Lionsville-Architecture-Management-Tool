@@ -36,7 +36,7 @@ import type { ElementId } from '../../model/types'
 import type { PersonNames } from '../../people/ui/names'
 import type { ScopePath } from '../../projects/scopePath'
 import { CaretIcon } from '../../widgets/icons'
-import { Card } from '../../widgets/kit/Card'
+import { CanvasName, Card } from '../../widgets/kit/Card'
 import { Mark } from '../../widgets/kit/Mark'
 import { rollUpWords, unitBadges } from './chartWords'
 import type { UnitPlans } from './unitViewsHere'
@@ -128,7 +128,7 @@ export function OrgTree({ organisation, focused, drawing }: { organisation: stri
         className="org-node" name={organisation} data-organisation="" data-testid="chart-organisation" data-tree-box={ORGANISATION}
         {...(moving ? { 'data-drop': moving.atTop, 'data-target': moving.target === ORGANISATION ? moving.atTop : undefined } : {})}
         {...(moving && moving.atTop !== 'none' && moving.atTop !== 'current'
-          ? { nameAs: <button type="button" className="org-name" onClick={() => moving.choose(undefined)}>{organisation}</button> }
+          ? { nameAs: <button type="button" className="org-name" onClick={() => moving.choose(undefined)}><CanvasName text={organisation} /></button> }
           : {})}
       />
       <Under owner={ORGANISATION} units={drawing.chart.roots} shape="across" drawing={drawing} />
@@ -184,7 +184,7 @@ function UnitBox({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
             type="button" className="org-name" onClick={press} onDoubleClick={() => { if (!moving) drawing.open(unit.id) }} onKeyDown={(event) => drawing.onKey(unit, event)}
             data-testid="chart-unit-open" disabled={!pressable} tabIndex={tabbable ? 0 : -1}
           >
-            {unit.name}
+            <CanvasName text={unit.name} />
           </button>
           {unit.children.length > 0 && (
             <button

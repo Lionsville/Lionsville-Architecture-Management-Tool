@@ -23,6 +23,7 @@ import type { CSSProperties, FocusEvent as ReactFocusEvent, KeyboardEvent as Rea
 import type { DesignDiagram, DesignElement, ElementId, PosterCell, PosterItem as PosterItemRecord, PosterItemPlace } from '../../model'
 import type { Translate } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
+import { CanvasName } from '../../widgets/kit/Card'
 import { CanvasDock } from '../../widgets/kit/CanvasDock'
 import { Menu } from '../../widgets/kit/Menu'
 import { tokenVar } from '../../widgets/kit/tokens'
@@ -142,7 +143,7 @@ function TileWords({ element, inside, value, facts, labelled, mark, t }: {
     <>
       {mark && <i className="poster-tile__mark" />}
       {value?.heat !== undefined && <span className="poster-tile__value">{value.said}</span>}
-      <span className="poster-tile__name">{element.name}</span>
+      <span className="poster-tile__name"><CanvasName text={element.name} /></span>
       {facts?.apps && <span className="poster-tile__near">{facts.apps}</span>}
       {labelled && facts?.label !== undefined && <span className="poster-tile__label" data-tile-label={element.id} data-typed={facts.labelTyped ? '' : undefined} data-none={facts.labelNone ? '' : undefined}>{facts.label}</span>}
       {last && <span className="poster-tile__near" data-via={facts?.via ? '' : undefined}>{last}</span>}

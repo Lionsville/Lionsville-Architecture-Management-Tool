@@ -21,10 +21,20 @@ describe('a card', () => {
   })
 
   it('says its name, what it is and what it does', () => {
-    render(<Card name="Warehouse Management" sub="WMS · Application" about="Stock, slots and picking." />)
-    expect(screen.getByText('Warehouse Management')).toBeTruthy()
+    const { container } = render(<Card name="Warehouse Management" sub="WMS · Application" about="Stock, slots and picking." />)
+    expect(container.querySelector('.kit-card__name')?.textContent).toBe('Warehouse Management')
     expect(screen.getByText('WMS · Application')).toBeTruthy()
     expect(screen.getByText('Stock, slots and picking.')).toBeTruthy()
+  })
+
+  it('breaks its name between words only: each word a box of its own, the spaces between them', () => {
+    const { container } = render(<Card name="Warehouse  lead" />)
+    const words = [...container.querySelectorAll('.kit-name__word')].map((word) => word.textContent)
+    expect(words).toEqual(['Warehouse', 'lead'])
+    expect(container.querySelector('.kit-name')?.textContent).toBe('Warehouse  lead')
+    const sheet = css('./Card.css')
+    expect(sheet).not.toMatch(/\.kit-card__name \{[^}]*(overflow-wrap: anywhere|hyphens: auto)/)
+    expect(sheet).toContain('.kit-name { overflow-wrap: normal; word-break: normal; hyphens: manual; }')
   })
 
   it('says each state as an attribute, for its CSS to draw', () => {
