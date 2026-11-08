@@ -53,13 +53,19 @@ export type FieldProps = {
   children: (ties: ControlTies) => ReactNode
 }
 
+/**
+ * A required field's label carries a * after its name (`data-required`, drawn by
+ * the stylesheet). A reader of the screen hears *required* from the control
+ * itself, which carries `required`, so the mark is for the eye and the label
+ * stays the field's plain name: the * has no words in the accessible name.
+ */
 export function Field({ label, hint, error, required, children }: FieldProps) {
   const id = useId()
   const wordsId = `${id}-words`
   const words = error ?? hint
   return (
     <div className="kit-field">
-      <label className="kit-field__label" htmlFor={id}>{label}</label>
+      <label className="kit-field__label" htmlFor={id} data-required={required || undefined}>{label}</label>
       {children({
         id,
         ...(words ? { 'aria-describedby': wordsId } : {}),

@@ -27,7 +27,7 @@ export function FieldBox({ label, id: given, sx, fullWidth, slotProps, ...rest }
   const select = rest.select ? { select: { ...(slotProps?.select as object | undefined), labelId } } : {}
   return (
     <Box className="kit-field kit-fieldBox" data-full={fullWidth || undefined} sx={sx}>
-      <label className="kit-field__label" id={labelId} htmlFor={id}>{label}</label>
+      <label className="kit-field__label" id={labelId} htmlFor={id} data-required={rest.required || undefined}>{label}</label>
       <MuiTextField {...rest} id={id} fullWidth slotProps={{ ...slotProps, ...select }} />
     </Box>
   )

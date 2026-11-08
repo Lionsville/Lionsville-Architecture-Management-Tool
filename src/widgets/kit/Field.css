@@ -1,5 +1,6 @@
 .kit-field { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
 .kit-field__label { color: var(--ink-2); font-size: var(--t-small); }
+.kit-field__label[data-required]::after { content: '*' / ''; margin-inline-start: 0.15em; color: var(--bad); }
 .kit-field__words { margin: 0; color: var(--ink-3); font-size: var(--t-body); }
 .kit-field__words[data-error] { color: var(--bad); }
 
@@ -90,7 +91,8 @@
 .kit-prop__pen { flex: none; align-self: center; display: inline-flex; color: var(--ink-3); opacity: 0; }
 .kit-prop__press:hover .kit-prop__pen,
 .kit-prop__press:focus-visible .kit-prop__pen { opacity: 1; }
-.kit-prop__press:hover { background: var(--surface-2); }
+/* A fill of its own, which reads on a panel's raised paper in both themes as surface-2 does not in the dark. */
+.kit-prop__press:hover { background: var(--press-hover); }
 .kit-prop__press:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
 [data-quiet].kit-prop__read, [data-quiet].kit-prop__press { color: var(--ink-3); }
 .kit-prop__text { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--clamp-lines); overflow: hidden; }

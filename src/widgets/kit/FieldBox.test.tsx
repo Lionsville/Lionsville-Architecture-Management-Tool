@@ -3,6 +3,7 @@
 
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it } from 'vitest'
 import { cleanup, screen } from '@testing-library/react'
 import MenuItem from '@mui/material/MenuItem'
@@ -22,6 +23,16 @@ describe('FieldBox', () => {
     expect((document.querySelector('legend span')?.textContent ?? '').replace('\u200b', '')).toBe('')
     expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('Labels print twice')
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('marks a required field\'s label for the eye, and leaves its name and the control\'s required state to say it', () => {
+    renderShell(<><FieldBox label="Title" value="" onChange={() => {}} required /><FieldBox label="Note" value="" onChange={() => {}} /></>)
+    const [title, note] = [...document.querySelectorAll<HTMLElement>('.kit-field__label')]
+    expect(title!.dataset.required).toBe('true')
+    expect(note!.dataset.required).toBeUndefined()
+    expect(screen.getByLabelText('Title').hasAttribute('required')).toBe(true)
+    // The * is drawn by the stylesheet with no words in the name.
+    expect(readFileSync('src/widgets/kit/Field.css', 'utf8')).toMatch(/\[data-required\]::after \{ content: '\*' \/ ''/)
   })
 
   it('names a select of MUI items by the same label', () => {
