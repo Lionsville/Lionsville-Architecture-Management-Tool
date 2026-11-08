@@ -57,7 +57,7 @@ import { isBlankRef, personRefOf } from '../../model/person'
 import type { PersonRef } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
-import { claimKey } from '../../widgets/kit/keys'
+import { claimKey, commandKey } from '../../widgets/kit/keys'
 import { useDraft } from '../../widgets/kit/drafts'
 
 /** A scope an observation may be recorded in, and what the form reads of it. */
@@ -135,7 +135,7 @@ export function splitLongTitle(title: string): { title: string; rest: string } {
 /** Escape is Cancel; ⌘Enter records from any field, the description's text included, where Return makes a new line. */
 function formKey(event: KeyboardEvent, cancel: () => void, record: () => void) {
   if (event.key === 'Escape') { claimKey(event); cancel() }
-  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); record() }
+  if (event.key === 'Enter' && commandKey(event)) { event.preventDefault(); record() }
 }
 
 /** Cancel asks first where something was written, and leaving the page does too (`kit/drafts`). */
