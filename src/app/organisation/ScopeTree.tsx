@@ -158,7 +158,7 @@ export function ScopeTree({
         const topics = matching || onlyWork ? [] : topicRows?.(scope.path) ?? []
         return (
           <Fragment key={scope.path}>
-            {apart && <div className="kit-tree__apart" role="separator" data-testid="tree-personal-rule" />}
+            {apart && <div className="kit-tree__apart" role="none" aria-hidden data-testid="tree-personal-rule" />}
             <ScopeRow
               scope={scope} depth={depth} shut={shut} hasBranch={scope.children.length > 0 || topics.length > 0}
               current={scope.path === current} foldable={!matching && !onlyWork} above={matching ? pathWords(tree, scope.path) : ''} unread={unread?.has(scope.path) === true}
@@ -218,7 +218,8 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
   const own = scope.personal ? s('org.treePersonal') : ''
   // The row's name says what it shows, its count or its mark too: a name short of the words on screen
   // is a name a speech user cannot say to press it (WCAG 2.5.3).
-  const said = [named, own, warns ? s('org.typeMismatch') : '', unread ? s('org.notRead') : count > 0 ? String(count) : ''].filter(Boolean).join(', ')
+  // What only its reader sees is said last: the words on screen come first, in their order.
+  const said = [named, warns ? s('org.typeMismatch') : '', unread ? s('org.notRead') : count > 0 ? String(count) : '', own].filter(Boolean).join(', ')
   return (
     // The press anywhere on the row is the way home; the name is the button
     // that carries it for a keyboard and a screen reader, and the controls at
