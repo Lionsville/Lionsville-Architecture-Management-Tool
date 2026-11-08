@@ -11,6 +11,7 @@ import type {
   Layer7Zone,
   NodeGeometry,
   PlacedNode,
+  Point,
   Rect,
 } from './types';
 import { nodeFigure } from './kinds';
@@ -662,6 +663,7 @@ export function seedPlacement(
   diagram: Pick<DesignDiagram, 'id' | 'kind' | 'members' | 'geometry'>,
   elementId: ElementId,
   figureOf?: (id: ElementId, zone: Layer7Zone | undefined) => NodeFigure | undefined,
+  avoid?: SlotObstacles,
 ): PlacedNode {
   if (diagram.kind === 'layer7') {
     const zone = seed.zone ?? HOME_ZONE[nodeFigure(seed)];
@@ -670,7 +672,7 @@ export function seedPlacement(
       .filter((p) => p.id !== elementId && (p.zone ?? 'landscape') === zone)
       .map((p) => placementRect(figureOf?.(p.id, p.zone) ?? figure, p));
     const position =
-      seed.position ?? freeZonePosition(zone, figure, occupied, diagram.geometry);
+      seed.position ?? freeZonePosition(zone, figure, occupied, diagram.geometry, avoid);
     return { id: elementId, zone, group: seed.group, ...position };
   }
   const position =
@@ -679,20 +681,102 @@ export function seedPlacement(
 }
 
 /**
+ * What else a new card keeps clear of beyond the cards: the lines drawn across
+ * the band, as polylines, and the domain groups in it, which it may sit wholly
+ * inside or wholly outside but never across the edge of.
+ */
+export interface SlotObstacles {
+  lines?: readonly (readonly Point[])[];
+  groups?: readonly Rect[];
+}
+
+/** How far a new card keeps from a line, so the line is not read as entering it. */
+const LINE_CLEARANCE = 8;
+/** The step of the finer search, once every cascade slot is taken. */
+const FINE_STEP = 12;
+
+/** Does the segment a→b pass through the rectangle? Liang–Barsky, clipped to it. */
+export function segmentMeetsRect(a: Point, b: Point, rect: Rect): boolean {
+  let low = 0;
+  let high = 1;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const sides: [number, number][] = [
+    [-dx, a.x - rect.x], [dx, rect.x + rect.width - a.x],
+    [-dy, a.y - rect.y], [dy, rect.y + rect.height - a.y],
+  ];
+  for (const [p, q] of sides) {
+    if (p === 0) { if (q < 0) return false; continue; }
+    const r = q / p;
+    if (p < 0) low = Math.max(low, r); else high = Math.min(high, r);
+    if (low > high) return false;
+  }
+  return true;
+}
+
+function clearOf(candidate: Rect, occupied: readonly Rect[], avoid: SlotObstacles | undefined): boolean {
+  if (occupied.some((rect) => rectsIntersect(candidate, rect))) return false;
+  if (!avoid) return true;
+  const wide: Rect = {
+    x: candidate.x - LINE_CLEARANCE, y: candidate.y - LINE_CLEARANCE,
+    width: candidate.width + LINE_CLEARANCE * 2, height: candidate.height + LINE_CLEARANCE * 2,
+  };
+  for (const line of avoid.lines ?? []) {
+    for (let i = 0; i + 1 < line.length; i += 1) if (segmentMeetsRect(line[i]!, line[i + 1]!, wide)) return false;
+  }
+  const inside = (rect: Rect) => candidate.x >= rect.x && candidate.y >= rect.y
+    && candidate.x + candidate.width <= rect.x + rect.width && candidate.y + candidate.height <= rect.y + rect.height;
+  return !(avoid.groups ?? []).some((rect) => rectsIntersect(candidate, rect) && !inside(rect));
+}
+
+/**
+ * What a card added to a board keeps clear of: each line between two of its
+ * members, from centre to centre through the bends a person gave it, and its
+ * domain groups. The centres stand in for where the router lets a line leave a
+ * card; a little more room than the line takes does no harm to a new card.
+ */
+export function slotObstaclesOn(
+  diagram: Pick<DesignDiagram, 'members' | 'geometry'>,
+  relations: readonly { id: string; sourceId: ElementId; targetId: ElementId }[],
+  figureOf: (id: ElementId, zone: Layer7Zone | undefined) => NodeFigure | undefined,
+): SlotObstacles {
+  const centres = new Map<ElementId, Point>();
+  for (const placed of placedNodes(diagram)) {
+    const figure = figureOf(placed.id, placed.zone);
+    if (!figure) continue;
+    const rect = placementRect(figure, placed);
+    centres.set(placed.id, { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
+  }
+  const bends = new Map((diagram.geometry?.routes ?? []).map((route) => [route.relationId, route.waypoints]));
+  const lines: Point[][] = [];
+  for (const relation of relations) {
+    const from = centres.get(relation.sourceId);
+    const to = centres.get(relation.targetId);
+    if (from && to) lines.push([from, ...(bends.get(relation.id) ?? []), to]);
+  }
+  return { lines, groups: diagram.geometry?.groups ?? [] };
+}
+
+/**
  * The first cascade slot in `area` that overlaps none of `occupied` — where a
  * node goes when it is MOVED into an area (the menu's "Move to zone" and
  * "Domain group"), as opposed to added to it. Counting the occupants, as the
  * palette does, assumes nobody has moved anything since; walking the slots
- * against the real rects does not. Falls back to the slot past the last
- * occupant when every slot is taken, which can only happen with an area too
- * small for its own contents. The walk covers every slot the area holds, not
- * one per occupant, because one wide card can cover several slots.
+ * against the real rects does not. The walk covers every slot the area holds,
+ * not one per occupant, because one wide card can cover several slots.
+ *
+ * Where `avoid` is given, the slot keeps clear of those lines and group edges
+ * too; where every slot is taken, a finer walk over the area finds the room
+ * the cascade's grid passes over. Only an area with no room anywhere falls
+ * back, first to a place clear of the cards alone, then to the slot past the
+ * last occupant — which leaves the area, as it always did.
  */
 export function freeSlotIn(
   area: Rect,
   figure: NodeFigure,
   occupied: readonly Rect[],
   inset?: { x: number; y: number },
+  avoid?: SlotObstacles,
 ): { x: number; y: number } {
   const size = NODE_SIZES[figure];
   // Every slot the area holds, and never fewer than one past the occupants:
@@ -700,12 +784,38 @@ export function freeSlotIn(
   // is no bound on how many slots are taken. Walked in order, so the answer
   // is the same for the same board.
   const bound = Math.max(occupied.length + 1, slotsIn(area, figure, inset));
-  for (let index = 0; index < bound; index += 1) {
+  const fits = (slot: { x: number; y: number }, obstacles: SlotObstacles | undefined) =>
+    clearOf({ ...slot, width: size.width, height: size.height }, occupied, obstacles);
+  const inArea = slotsIn(area, figure, inset);
+  const passes = avoid ? [avoid, undefined] : [undefined];
+  for (const obstacles of passes) {
+    // The slots past the area's own are left to the last resort: one free there is outside the band.
+    for (let index = 0; index < inArea; index += 1) {
+      const slot = cascadeSlot(area, figure, index, inset);
+      if (fits(slot, obstacles)) return slot;
+    }
+    const fine = fineSlot(area, size, inset, (slot) => fits(slot, obstacles));
+    if (fine) return fine;
+  }
+  for (let index = inArea; index < bound; index += 1) {
     const slot = cascadeSlot(area, figure, index, inset);
-    const candidate: Rect = { ...slot, width: size.width, height: size.height };
-    if (!occupied.some((rect) => rectsIntersect(candidate, rect))) return slot;
+    if (fits(slot, undefined)) return slot;
   }
   return cascadeSlot(area, figure, bound, inset);
+}
+
+/** The first place on a fine grid inside the area's inset where a card of this size fits, row by row. */
+function fineSlot(
+  area: Rect, size: { width: number; height: number }, inset: { x: number; y: number } | undefined,
+  fits: (slot: { x: number; y: number }) => boolean,
+): { x: number; y: number } | undefined {
+  const pad = inset ?? { x: ZONE_INSET, y: ZONE_INSET };
+  for (let y = area.y + pad.y; y + size.height <= area.y + area.height - pad.y / 2; y += FINE_STEP) {
+    for (let x = area.x + pad.x; x + size.width <= area.x + area.width - pad.x; x += FINE_STEP) {
+      if (fits({ x, y })) return { x, y };
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -727,8 +837,9 @@ export function freeZonePosition(
   figure: NodeFigure,
   occupied: readonly Rect[],
   geometry?: BoardGeometry,
+  avoid?: SlotObstacles,
 ): { x: number; y: number } {
-  return freeSlotIn(zoneRect(zone, geometry), figure, occupied);
+  return freeSlotIn(zoneRect(zone, geometry), figure, occupied, undefined, avoid);
 }
 
 /**

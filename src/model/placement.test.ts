@@ -20,6 +20,8 @@ import {
   freeSlotIn,
   freeZonePosition,
   rectsIntersect,
+  segmentMeetsRect,
+  slotObstaclesOn,
   refitBand,
   spotNear,
   DESCRIPTION_TYPE,
@@ -401,6 +403,59 @@ describe('diagramWithLivePlacements', () => {
       width: 300,
       height: 200,
     });
+  });
+});
+
+describe('a new card kept clear of lines and group edges', () => {
+  const area = { x: 100, y: 100, width: 700, height: 500 };
+
+  it('says whether a segment passes through a rectangle', () => {
+    const rect = { x: 0, y: 0, width: 10, height: 10 };
+    expect(segmentMeetsRect({ x: -5, y: 5 }, { x: 15, y: 5 }, rect)).toBe(true);
+    expect(segmentMeetsRect({ x: -5, y: 20 }, { x: 15, y: 20 }, rect)).toBe(false);
+    expect(segmentMeetsRect({ x: -5, y: -5 }, { x: -1, y: 15 }, rect)).toBe(false);
+  });
+
+  it('passes over a free slot a line runs through, for the next one clear of it', () => {
+    const slot0 = cascadeSlot(area, 'application', 0);
+    const across = [{ x: slot0.x - 50, y: slot0.y + 60 }, { x: slot0.x + 150, y: slot0.y + 60 }];
+    const slot = freeSlotIn(area, 'application', [], undefined, { lines: [across] });
+    expect(slot).not.toEqual(slot0);
+    expect(segmentMeetsRect(across[0]!, across[1]!, { ...slot, ...NODE_SIZES.application })).toBe(false);
+  });
+
+  it('sits wholly inside a group or wholly outside it, never across its edge', () => {
+    const slot0 = cascadeSlot(area, 'application', 0);
+    const group = { x: slot0.x + 100, y: slot0.y - 10, width: 400, height: 300 };
+    const slot = freeSlotIn(area, 'application', [], undefined, { groups: [group] });
+    const card = { ...slot, ...NODE_SIZES.application };
+    const inside = card.x >= group.x && card.y >= group.y && card.x + card.width <= group.x + group.width && card.y + card.height <= group.y + group.height;
+    expect(inside || !rectsIntersect(card, group)).toBe(true);
+  });
+
+  it('finds room inside the area the cascade passes over, before it leaves the area', () => {
+    const small = { x: 0, y: 0, width: 620, height: 200 };
+    // The first slot is taken, and a card stands off the grid in the rest of the row's room.
+    const taken = [{ ...cascadeSlot(small, 'application', 0), ...NODE_SIZES.application }, { x: 300, y: 28, width: 40, height: 40 }];
+    const slot = freeSlotIn(small, 'application', taken, undefined, { lines: [] });
+    expect(slot.y + NODE_SIZES.application.height).toBeLessThanOrEqual(small.height);
+    expect(taken.some((rect) => rectsIntersect({ ...slot, ...NODE_SIZES.application }, rect))).toBe(false);
+  });
+
+  it('falls back to a place clear of the cards alone where the lines leave no room', () => {
+    const everywhere = [[{ x: 0, y: 0 }, { x: 2000, y: 2000 }], [{ x: 2000, y: 0 }, { x: 0, y: 2000 }], [{ x: 0, y: 200 }, { x: 2000, y: 200 }], [{ x: 0, y: 400 }, { x: 2000, y: 400 }], [{ x: 0, y: 300 }, { x: 2000, y: 300 }], [{ x: 0, y: 500 }, { x: 2000, y: 500 }]];
+    expect(freeSlotIn(area, 'application', [], undefined, { lines: everywhere })).toEqual(cascadeSlot(area, 'application', 0));
+  });
+
+  it('reads a board’s lines centre to centre through their bends, and its groups', () => {
+    const diagram = laidOut({
+      id: 'd', kind: 'layer7', name: 'D',
+      placements: [{ id: 'a', zone: 'landscape', x: 0, y: 0 }, { id: 'b', zone: 'landscape', x: 400, y: 0 }],
+    });
+    diagram.geometry = { ...diagram.geometry!, routes: [{ relationId: 'r', waypoints: [{ x: 200, y: 300 }] }], groups: [{ id: 'g', x: 0, y: 0, width: 10, height: 10 }] };
+    const said = slotObstaclesOn(diagram, [{ id: 'r', sourceId: 'a', targetId: 'b' }, { id: 'x', sourceId: 'a', targetId: 'gone' }], () => 'application');
+    expect(said.lines).toEqual([[{ x: 100, y: 65 }, { x: 200, y: 300 }, { x: 500, y: 65 }]]);
+    expect(said.groups).toHaveLength(1);
   });
 });
 

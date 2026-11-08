@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BoardGeometry } from '../model/zones';
 import { claimKey } from '../model/keys';
 import { placeOn, transaction } from '../model/commands';
-import { isLaidOutKind, memberOf, nodeGeometryOf, placedNode, seedPlacement } from '../model/placement';
+import { isLaidOutKind, memberOf, nodeGeometryOf, placedNode, seedPlacement, slotObstaclesOn } from '../model/placement';
 import type { CanvasKind } from '../model/placement';
 import type { DesignConnection, DesignDiagram, DesignElement, DesignModel, DiagramGroup, PlacedNode, EdgeRoute, EdgeRouteSource, ElementId, ElementKind, Layer7Zone, NodeIconSize, NodeShapeVariant, Point, Rect, Relation, ResizableZone } from '../model/types';
 import type { SolutionDesignEditorProps } from './props';
@@ -715,13 +715,11 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
           setSelection(selectElement(id));
           return;
         }
-        // What each card already in the band is drawn as, so the free slot is
-        // measured against the rects that are really there.
+        // What each card in the band is drawn as, so the free slot is measured against
+        // the rects that are really there, clear of the lines and the groups' edges.
         const elementsById = new Map(currentModel().elements.map((e) => [e.id, e]));
-        const placement = seedPlacement(seed, diagram, id, (other, zone) => {
-          const held = elementsById.get(other);
-          return held ? nodeFigure(held, zone) : undefined;
-        });
+        const figureOf = (other: string, zone: Layer7Zone | undefined) => { const held = elementsById.get(other); return held ? nodeFigure(held, zone) : undefined; };
+        const placement = seedPlacement(seed, diagram, id, figureOf, slotObstaclesOn(diagram, currentModel().relations, figureOf));
         geometry(transaction([
           { type: 'element.create', element },
           placeOn(diagram.id, [placement]),
