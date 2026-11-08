@@ -53,7 +53,9 @@
 }
 .kit-button[data-icon][data-refused] { background: transparent; border-color: transparent; }
 /* An icon that is off has no words to grey: it fades, so ↶ with nothing to undo does not read as ↶ with something. */
-.kit-button[data-icon]:disabled > svg, .kit-button[data-icon][data-refused] > svg { opacity: .4; }
+/* A glyph drawn in words (↑ ↓) fades with it: what fades is the face, not only an svg. */
+.kit-button[data-icon][data-refused] > svg { opacity: .4; }
+.kit-button[data-icon]:disabled { color: var(--ink-dim); opacity: .4; cursor: default; }
 /* A quiet press has no fill to grey: refused, it fades its word and stays as flat as it was, rather than looking pressed. */
 .kit-button[data-refused]:is([data-variant=quiet]) { background: transparent; border-color: transparent; }
 .kit-button[aria-busy='true'] { cursor: progress; }
