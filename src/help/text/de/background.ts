@@ -97,8 +97,7 @@ Inhalt unberührt: jeder Platzhalter anderswo im Ordner, der hineinzeigte, wird
 im selben Schritt an die neue Adresse mitgenommen, sodass ein Verschieben nie
 eine Spur veralteter Kopien hinterlässt. Ebenso jede Ursache, die eine seiner
 Ursachen erklärt, und jede Beobachtung, die eine seiner Beobachtungen
-aufgenommen hat: Sie nennen ihn bei seiner Adresse und gehen mit. Beim Start öffnet die App den Bereich
-wieder, den Sie geöffnet hatten.
+aufgenommen hat: Sie nennen ihn bei seiner Adresse und gehen mit. Ohne Adresse öffnet die App die Startseite der Organisation, mit **Weitermachen**.
 
 Sieben Namen werden abgelehnt, weil die eigenen Ordner eines Bereichs sie schon
 verwenden: \`diagrams\`, \`docs\`, \`decisions\`, \`transitions\`, \`observations\`, \`images\` und
@@ -281,8 +280,8 @@ speichert sie zuerst, in jedem Fenster; die App fragt nur, wenn dieses
 Speichern nicht geklappt hat.
 
 **Die Arbeit aus dem Browser mitnehmen.** Hat dieser Browser schon Arbeit
-aufbewahrt, bevor Sie einen Ordner gewählt haben, fragt die Wahl **Ihre Arbeit
-in diesen Ordner mitnehmen?**:
+aufbewahrt, bevor Sie einen Ordner gewählt haben, fragt die Wahl
+**Ihre Arbeit in diesen Ordner mitnehmen?**:
 - **Meine Arbeit hineinkopieren** kopiert jeden Bereich, den der Browser hielt, in
   den Ordner, mit dem Personenregister, den Einstellungen der Organisation und
   jedem Bild, liest danach alles zurück und vergleicht es. Das Fenster zeigt, wie
@@ -487,7 +486,7 @@ Eigenes in Ihren Ordner.` },
   ],
   board: [
     { title: `Zeichnen`, text: `**Domänengruppen** rahmen die Anwendungen ein, die zusammengehören. Fügen Sie
-eine aus der Palette oder aus dem Menü der Zeichenfläche hinzu, geben Sie ihr
+eine über **Hinzufügen** oder aus dem Menü der Zeichenfläche hinzu, geben Sie ihr
 eine Farbe, ziehen Sie Anwendungen hinein, räumen Sie sie für sich auf. Eine
 Gruppe zu entfernen lässt ihre Elemente, wo sie sind.
 
@@ -495,7 +494,7 @@ Gruppe zu entfernen lässt ihre Elemente, wo sie sind.
 sich haben: die Anwendung wird zur Grenze dieses Diagramms, und ihre
 Komponenten sitzen darin. Sie legen eines bewusst an — klicken Sie mit rechts
 auf die Anwendung und wählen Sie **Containerdiagramm erstellen**, oder klicken
-Sie die Schaltfläche dieses Namens auf dem Reiter Allgemein des Inspektors —
+Sie im Panel auf **Erstellen** neben *Containerdiagramm* —
 und es ist ein Schritt in der Aktivität wie jeder andere, den {key:Mod+Z} zurücknimmt.
 Eine Karte, die eines hat, trägt eine kleine Marke; doppelklicken Sie die
 Karte, um es zu öffnen. Ein Doppelklick legt nie eines an. Ein Landschaftsreiter
@@ -504,8 +503,12 @@ auf einen Eintrag, oder klicken Sie auf den Pfeil hinter dem Namen, sobald das
 Diagramm offen ist, um es umzubenennen, seine **Ansichtseinstellungen** zu
 öffnen oder es zu löschen. Löschen nimmt die Komponenten mit und lässt die
 Anwendung stehen. Klicken Sie mit rechts auf einen Landschaftsreiter für
-dasselbe Menü, mit Duplizieren dazu. **Zurück zur Landschaft** bringt Sie
-genau zu der Ansicht zurück, die Sie verlassen haben.
+dasselbe Menü, mit Duplizieren dazu. **‹** mit dem Namen des Boards, von dem Sie
+kamen, oder {key:Mod+Up} bringt Sie dorthin zurück, an seinem Tag, mit seinem Zoom
+und dem, was ausgewählt war; ein Diagramm, das von einem Board an einem anderen Tag
+geöffnet wurde, öffnet an diesem Tag. {key:Mod+Down} auf einer Anwendung geht hinein,
+ebenso ein Doppelklick oder **Containerdiagramm öffnen** in ihrem Panel; ihre Karte
+sagt, wie viele Container sie hält.
 
 **Wo es läuft** in der Leiste zeichnet gestrichelte Rahmen um die Container,
 einer je Plattform, geschachtelt wie die Plattformen
@@ -535,8 +538,8 @@ der physischen Sicht, eine **Plattform**: ein Cluster, ein Broker, ein Bus,
 die Werkzeuge, worauf Anwendungen laufen und was sie nutzen. Wählen Sie eines
 aus, und das **Panel** rechts zeigt es: seine Art, einen Namen, der umbricht, eine
 Zeile Fakten und drei Reiter. Ist nichts ausgewählt, gibt es kein Panel und das
-Board hat die Breite; klicken Sie auf den Namen der offenen Ansicht für **Diese
-Ansicht**, was sie ist und enthält und wie sie aufräumt. Jeder Fakt ist eine Zeile
+Board hat die Breite; klicken Sie auf den Namen der offenen Ansicht für
+**Diese Ansicht**, was sie ist und enthält und wie sie aufräumt. Jeder Fakt ist eine Zeile
 aus Beschriftung und Wert, und ein Klick macht aus dem Wert ein Feld: Enter oder
 Verlassen behält ihn, Escape setzt ihn zurück, und der Fuß sagt, wofür das Feld
 ist. Ein Feld ohne Inhalt bleibt aus dem Panel, bis **+ Verantwortlicher,
@@ -565,8 +568,8 @@ wählen Sie, was es hätte sein sollen; Verbindungen, Beschreibung und Platz
 bleiben. Zwei Fälle werden mit dem Grund abgelehnt: eine Anwendung, die ein
 Containerdiagramm hat, und eine Komponente, die noch an einer Anwendung hängt.
 
-Elemente gehören zum Modell, nicht zu einem Diagramm: ein Element kann auf
-mehreren Diagrammen liegen, und **Aus dem Diagramm entfernen** ist eine andere
+Elemente gehören zum Modell, nicht zu einer Ansicht: ein Element kann auf
+mehreren Ansichten liegen, und **Aus der Ansicht entfernen** ist eine andere
 Aktion als **Aus dem Modell löschen**. Löschen fragt zuerst und sagt, wie viele
 Verbindungen mitgehen. Eine Einheit zu löschen nimmt jede Zuordnung darin mit,
 auch beendete, als wären sie nie gemacht worden: Die Frage nennt, wer was
@@ -580,8 +583,8 @@ Die Frage zu einer Einheit beginnt dort: *Meist ist Beenden gemeint*, mit
 ohne etwas zu löschen. Unter **Löschen** steht in kurzen Zeilen, was mitgeht.
 **Darin** nennt die Einheiten, die unter ihr geführt werden, hier oder in
 einem anderen Bereich, und wohin sie gehen: eine Ebene höher, in ihr
-übergeordnetes Element, wo ihr Typ dort stehen darf, mit **Andere
-Möglichkeiten** darunter eingeklappt; wo nicht, in eine andere Einheit ihres
+übergeordnetes Element, wo ihr Typ dort stehen darf, mit
+**Andere Möglichkeiten** darunter eingeklappt; wo nicht, in eine andere Einheit ihres
 Typs, aus einer Liste gewählt, mit **Eine Ebene höher setzen** als *falsch
 eingeordnet* markiert und **Ebenfalls löschen**, das alles darunter und die
 Zuordnungen ihrer Leute mitnimmt. Anwendungen, die sie als ihr Team nennen,
@@ -625,8 +628,8 @@ geführt, wenn sich etwas bewegt. Wenn automatisch nicht das ist, was Sie wollen
 - Ziehen Sie eine **Pille** in der Mitte eines Segments, um dieses Segment zu
   verschieben, ziehen Sie ein **Quadrat**, um einen Knick zu bewegen; die Route
   wird handgezeichnet, und der Router lässt sie in Ruhe.
-- **Hier einen Knickpunkt einfügen**, **Knickpunkt entfernen**, **Zurück zur
-  automatischen Route** im Linienmenü.
+- **Hier einen Knickpunkt einfügen**, **Knickpunkt entfernen**,
+  **Zurück zur automatischen Route** im Linienmenü.
 - **Route fixieren** hält eine Linie genau so, wie sie ist, auch eine ohne
   Knicke.
 - **Anheften an ▸** wählt, an welcher Seite eines Elements jedes Ende austritt
@@ -723,8 +726,8 @@ Checks der Roadmap eine Person nennen können.` },
   Ansicht sitzt.
 - **Kommentare.** Der Verlauf, mit der Anzahl auf dem Reiter.
 
-**⋯** neben dem Namen enthält **Verschieben…**, **Art ändern** und **Entfernen /
-löschen…**.` },
+**⋯** neben dem Namen enthält **Verschieben…**, **Art ändern** und
+**Aus der Ansicht entfernen oder aus dem Modell löschen…**.` },
     { title: `Dokumentation`, text: `Jedes Element hat eine Markdown-Beschreibung, und sie kann eine ganze Seite sein.
 Die ersten Zeilen stehen im Panel; ein Klick schreibt sie dort mit demselben Editor,
 und **Seite öffnen** öffnet denselben Text auf den **Steckbrief** des Elements. Das
@@ -1187,8 +1190,8 @@ Board sie zeichnet.` },
 andersherum gelesen, im Reiter des Blatts selbst: jede Funktion an der Seite, eine
 Spalte je Anwendung, die die Zeilen nennen, und ein Zeichen, wo eine die andere
 unterstützt. Der erste Klick legt die Karte an, wenn der Bereich keine hat und Sie
-schreiben dürfen; auch **+** in den Reitern legt eine an, und **Neue Karte in diesem
-Bereich** unter **⋯** eine zweite, die neben dem Schalter steht. Sie behält ihre eigene
+schreiben dürfen; auch **+** in den Reitern legt eine an, und
+**Neue Karte in diesem Bereich** unter **⋯** eine zweite, die neben dem Schalter steht. Sie behält ihre eigene
 Adresse, und ein Agent erreicht sie dort.
 
 Sie öffnet auf zwei Ebenen, mit **1 2 3** für mehr. Neben jedem Namen steht, worauf er
@@ -1199,8 +1202,8 @@ Anwendungen eines anderen Bereichs stehen unter dessen Namen, der sie auch einkl
 **Alle**, **Lücken** und **Überschneidungen** machen aus der Seite eine einfache Liste,
 und **Suchen** tut das für einen Namen. **Tag** zählt die Zeilen, die am gewählten Tag
 gelten, und während der Ansicht eines anderen Tages lässt sich nichts ändern.
-**Exportieren** speichert die ganze Tabelle als Bild, mit Schriftfeld. **Was sie
-zeichnet…** unter **⋯** wählt die Bereiche.
+**Exportieren** speichert die ganze Tabelle als Bild, mit Schriftfeld.
+**Was sie zeichnet…** unter **⋯** wählt die Bereiche.
 
 Ein Klick wählt aus, Lesen ändert also nichts: Eine Zeile öffnet ihr Feld, und ein
 Spaltenkopf zeigt, was diese Anwendung unterstützt, wofür sie die einzige ist, und den
@@ -1251,8 +1254,8 @@ Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
 Kachel fließen, **Für dieses Papier anordnen** platziert alles in Papierform. Überlappungen sind
 erlaubt und stehen im Streifen; ein Gebiet, das zu einer platzierten Seite hinzukommt, erhält den
 ersten freien Platz oder wartet unter der Seite und wird dort gezählt. Beim Blick auf einen anderen
-Tag kann nichts platziert werden. Die Kachelgröße und die Zeilen der Kundenreise stehen unter **Was
-dieses Blatt zeigt**: eine Kundenreise, die für ganze Wörter zu schmal ist, erhält zwei Zeilen, bis
+Tag kann nichts platziert werden. Die Kachelgröße und die Zeilen der Kundenreise stehen unter
+**Was dieses Blatt zeigt**: eine Kundenreise, die für ganze Wörter zu schmal ist, erhält zwei Zeilen, bis
 Sie eine sagen.
 
 **Exportieren…** unter ⋯ bringt es auf eine Seite, A4 bis A0, mit Titel, Fußzeile und
@@ -1333,7 +1336,7 @@ ihrer Ecke, sodass eine neue Linie nichts verschiebt.
 
 **Eine Einheit an einen anderen Platz verschieben.** Eine falsch abgelegte Einheit zieht
 um, ohne neu verknüpft zu werden: **Verschieben nach…** auf dem gewählten Kasten, unten in
-der Gliederung, **Sitzt unter** in ihrem Inspektor, M, oder durch Ziehen auf eine andere.
+der Gliederung, **Steht unter** in ihrem Inspektor, M, oder durch Ziehen auf eine andere.
 Ein Feld öffnet sich neben dem Organigramm, das mit seinen hervorgehobenen Plätzen sichtbar
 bleibt: jede Einheit der Organisation, welcher Bereich sie auch führt, gewählt durch Klick
 im Organigramm oder in der Liste, oder **Ganz oben**. Die Plätze, an denen ihr Typ sitzen
@@ -1353,20 +1356,20 @@ Ein Umzug ab einem Tag gehört einem Plan. Ein nur gelesenes Organigramm bietet 
 
 **Eine Einheit im Organigramm anlegen.** **+ Einheit** auf der Leiste legt eine in der
 gewählten Einheit an, oder ganz oben, wenn keine gewählt ist; **+ Einheit darin** steht auf dem
-gewählten Kasten, und ein leeres Organigramm bietet **+ Einheit ganz oben**. Ein kleiner Dialog
+gewählten Kasten, und ein leeres Organigramm bietet **+ Einheit oben**. Ein kleiner Dialog
 fragt vier Dinge. **Typ** bietet nur die Typen, die dort sitzen dürfen. **Name**. **Bedient**,
-nur ganz oben oder für einen Typ, der mehrere Domänen bedient. **Abgelegt in**, der Bereich, der
+nur ganz oben oder für einen Typ, der mehrere Domänen bedient. **Abgelegt unter**, der Bereich, der
 sie führt: standardmäßig der der Einheit, in der sie sitzt, und ganz oben die bediente Domäne,
 sonst der Bereich dieses Organigramms. **Anlegen** ist ein Schritt in diesem Bereich. Die neue
 Einheit wird gewählt, und ihre erforderlichen Rollen stehen als **unbesetzt**, sodass das Zuweisen
 gleich folgt. Wo kein Typ sitzen darf, sagt es das und führt zum **Betriebsmodell**; ohne
-Einheitstypen zu **Aus einer Bibliothek beginnen**. Ein nur gelesenes Organigramm bietet nichts
+Einheitstypen zu **Mit einer Bibliothek beginnen**. Ein nur gelesenes Organigramm bietet nichts
 davon.
 
 **Zuweisen** öffnet ein Popover neben der unbesetzten Stelle, mit dem Organigramm weiter im Blick:
 die Rolle, wobei jede andere Rolle der Organisation als Ausnahme angeboten und so genannt wird;
-jede Person mit ihrem jetzigen Anteil; **Neue Person…**; und der Anteil, der erste Tag und
-*kommissarisch*. Wo die Wahl jemanden über die ganze Zeit bringt, sagt es das vor **Zuweisen**, mit
+jede Person mit ihrem jetzigen Anteil; **Neue Person …**; und der Anteil, der erste Tag und
+*kommissarisch*. Wo die Wahl jemanden über die ganze Zeit bringt, sagt es das vor **Zuordnen**, mit
 **Anteil festlegen**.
 
 Das Organigramm wird an einem Tag gezeichnet, wie ein Board: **Tag** auf der Leiste schaut auf jeden
@@ -1382,8 +1385,8 @@ und Personen darauf stehen und wie viele Plätze unbesetzt sind; dann
 **Befunde**, was die Organisation über diese Einheiten und die Personen darin
 widerspricht, in der Liste von Befunden — **Einheit öffnen** geht zu der
 Einheit, um die es geht, und **In Personen öffnen** zu jemandem über seiner
-ganzen Zeit; und **So wird es
-gelesen** — ein gestricheltes **+ unbesetzt** ist eine Rolle, die der Typ der
+ganzen Zeit; und
+**So wird es gelesen** — ein gestricheltes **+ unbesetzt** ist eine Rolle, die der Typ der
 Einheit verlangt und die niemand innehat, ein roter Rand ist jemand über
 seiner ganzen Zeit, *führt* markiert eine Rolle, deren Inhaber die Personen
 der Einheit führt, und ein gestrichelter Kasten ist eine aufgelöste Einheit,
@@ -1449,8 +1452,8 @@ Partei außerhalb der Organisation lässt sich nur markieren oder wegplanen, und
 Einheiten, die ein anderer Bereich führt, werden dort beantwortet. Ein Paar, das
 ohne System dazwischen sagte, wie es arbeitet, kann **Das Gesagte löschen** oder
 **Fehlende Schnittstelle zeichnen…**. Ein Klick auf den Namen einer Einheit liest,
-was ihr gehört, mit wem sie arbeitet und ihre offenen Paare, mit **Im Organigramm
-öffnen** für den Rest; ein Klick auf eine Anwendung liest ihren Eigentümer und ihre
+was ihr gehört, mit wem sie arbeitet und ihre offenen Paare, mit
+**Im Organigramm öffnen** für den Rest; ein Klick auf eine Anwendung liest ihren Eigentümer und ihre
 Schnittstellen. **Mich finden** geht zu Ihrer Einheit und sagt, warum nicht, wo Sie
 keine Rolle in einer Einheit auf der Karte haben. Wie das Organigramm ist sie an
 einem Tag gezeichnet. Eine Anwendung steht auf der Karte, solange sie am Tag der
@@ -1459,8 +1462,8 @@ gezeichnet, ihre Schnittstellen und was die Karte darüber fände auch nicht; da
 Limit einer Einheit zählt, was ihr an dem Tag gehört.` },
     { title: `Wer mit wem arbeitet`, text: `Der Inspektor einer Einheit hat **Arbeitet mit**: jede Einheit, mit der sie
 festgehalten hat zusammenzuarbeiten, auf eine von drei Arten —
-**Seite an Seite** (eine Zeit lang an einer Sache), **Als
-Dienst** (die eine liefert, was die andere nutzt, mit wenig abzustimmen bei
+**Seite an Seite** (eine Zeit lang an einer Sache),
+**Als Dienst** (die eine liefert, was die andere nutzt, mit wenig abzustimmen bei
 jeder Nutzung) und **Unterstützend** (die eine hilft der anderen, etwas zu
 lernen oder aufzugreifen) — und die Tage, an denen das gilt, wo sie bekannt
 sind. **+ Sagen, wie ihr mit einer Einheit arbeitet…** fügt eine hinzu, ohne Vorauswahl, ein Klick darauf
@@ -1479,8 +1482,8 @@ Bereichs bietet dasselbe. Sie hat einen eigenen Tab, wie eine Landschaft oder ei
 Eine Zeichnung wird als ihr Bild gezeigt, mit einer Leiste wie jede Ansicht: was sie
 ist, wie viele Formen auf das Modell zeigen, und was Sie damit tun können. Eine
 spätere Seite einer Datei wird im Editor gezeichnet und nicht abgebildet; die Leiste
-sagt das. Ohne Bild sagt sie, warum: **Noch nicht gezeichnet**, mit **Mit dem Zeichnen
-beginnen**; **Geschrieben, aber noch ohne Bild** für eine Zeichnung, die ein Agent
+sagt das. Ohne Bild sagt sie, warum: **Noch nicht gezeichnet**, mit
+**Mit dem Zeichnen beginnen**; **Geschrieben, aber noch ohne Bild** für eine Zeichnung, die ein Agent
 schrieb, mit dem, worauf sie zeigt; oder, wo kein Editor ist, warum nicht und woher
 einer kommt.
 
@@ -1513,8 +1516,8 @@ Agenten und für Dateien.
 Gehen mit ungespeicherter Arbeit fragt zuerst, welchen Weg Sie auch nehmen: ein Tab,
 eine Seite, der Baum, Zurück oder das Fenster. **Speichern und gehen** behält sie,
 **Bleiben** geht zurück, **Ohne Speichern gehen** verwirft sie. Der Editor ist ein
-eigener Dienst; hat er 15 Sekunden nicht geantwortet, sagt die Seite das, mit **Jetzt
-versuchen** und **Zurück zum Bild**, und **Fertig** ist immer da.
+eigener Dienst; hat er 15 Sekunden nicht geantwortet, sagt die Seite das, mit
+**Jetzt versuchen** und **Zurück zum Bild**, und **Fertig** ist immer da.
 
 **Diagram › Exportieren als** im Editor erzeugt eine Datei der Zeichnung: PNG, JPEG,
 WebP, eine Animation als GIF, SVG, XML oder JSON. Sie ist nach der Zeichnung benannt,
@@ -1590,8 +1593,8 @@ Das Suchfeld über der Liste durchsucht alle Entscheidungen auf einmal: Titel, T
 Prüfer, dieses Bereichs und der darüber. Der Text ist Markdown, mit denselben
 \`[[Name]]\`-Verweisen wie die Dokumentation, und Mermaid-Diagrammen. Änderungen werden mit
 diesem Bereich gespeichert.` },
-    { title: `Verlauf`, text: `Jeder Ort führt einen Verlauf Ihrer Arbeit. **Eine Momentaufnahme festhalten…** im Menü Datei (im
-Web im Menü **⋯**: **Eine Momentaufnahme festhalten…**) bietet eine Nachricht an, die schon
+    { title: `Verlauf`, text: `Jeder Ort führt einen Verlauf Ihrer Arbeit. **Momentaufnahme…** im Menü Datei (im
+Web im Menü **⋯**) bietet eine Nachricht an, die schon
 aus dem geschrieben ist, was Sie getan haben, etwa „Lagerverwaltung geändert,
 3 Elemente verschoben“, und die Sie bearbeiten können, bevor sie festgehalten
 wird. Die erste Momentaufnahme bietet **Verlauf führen** an und sagt, wo er
@@ -1630,10 +1633,10 @@ nennt die Bereiche, die sie liest. Eine wiederherzustellen bleibt Sache dieses
 Bereichs: es setzt zurück, was die Seite dieses Bereichs sagte, und die anderen
 gehören jenen zum Wiederherstellen.
 
-**Wiederherstellen.** Mit einer gewählten Momentaufnahme macht **Diese Version
-wiederherstellen…** das Diagramm, die Beschreibung oder die Entscheidung wieder
-zu dem, was es damals war; wenn der ganze Bereich gezeigt wird, tut **Den ganzen
-Bereich wiederherstellen…** dasselbe für alles. Eine Wiederherstellung ist eine
+**Wiederherstellen.** Mit einer gewählten Momentaufnahme macht
+**Diese Version wiederherstellen…** das Diagramm, die Beschreibung oder die Entscheidung wieder
+zu dem, was es damals war; wenn der ganze Bereich gezeigt wird, tut
+**Den ganzen Bereich wiederherstellen…** dasselbe für alles. Eine Wiederherstellung ist eine
 neue Änderung über allem, was seither geschah, kein Schritt zurück: der Verlauf
 wächst weiter, die Aktivitätsliste sagt *Diagramm Lager wiederhergestellt auf
 den Stand vom 3. Sept.*, {key:Mod+Z} macht es rückgängig, und die nächste Momentaufnahme
@@ -1765,8 +1768,8 @@ einer eines Bereiche darunter — öffnet die **Zusammenführungsansicht** über
 Seite, mit diesem Eintrag gewählt. Sie hat drei Teile:
 
 - **Was zusammengeführt wird.** Eine Suche über die lebenden Beobachtungen,
-  oder die nicht zusammengeführten Ursachen, dieses Bereiche; mit **Über Bereiche
-  hinweg** wird in jedem Bereich gesucht, den Sie lesen können, der nächste
+  oder die nicht zusammengeführten Ursachen, dieses Bereiche; mit
+  **Über Bereiche hinweg** wird in jedem Bereich gesucht, den Sie lesen können, der nächste
   zuerst, und jeder Treffer nennt seinen Bereich. Haken Sie so viele an, wie
   dasselbe sind. Einer der gewählten **bleibt bestehen**; bis Sie einen
   anderen wählen, ist es der, von dem Sie ausgingen. Ein Eintrag eines
@@ -1920,7 +1923,7 @@ eine Liste mit einem Kästchen je Bereich, die ein Feld eingrenzt. **Beob**
 behält die Beobachtungen, deren Text passt, und die Kette dahinter — ihre
 Ursachen, Grundursachen und Lösungen. **Ursache** und **RC** behalten die
 Ursachen, oder die Grundursachen, deren Text passt, mit allem, was sie
-erklären, und allem, was dahintersteckt. **Alles durchsuchen** sucht in jedem
+erklären, und allem, was dahintersteckt. **Suchen** sucht in jedem
 Eintrag, Lösungen eingeschlossen, und behält, was gefunden wurde, und was
 damit verknüpft ist. Filter grenzen einander ein, und sie grenzen alle drei
 Reiter ein. Was passte, wird umrandet, und was mitkam, schlicht gezeichnet;
@@ -1958,8 +1961,8 @@ umgesetzt). Eine Lösung rückt nach rechts, während sie reift; ihre Breite ist
 der Nutzen, den sie verspricht, ihre Füllung, wie weit sie ist. Ist sie
 strukturell, behält sie ein verblasstes Feld in der Bahn der Richtungen für
 die Richtung, die sie war, sodass die Linie von der Ursache über dieses Feld
-und das Experiment, das sie bestätigt hat, in die Lösung läuft. **Ganze
-Kette** stellt die Beobachtungen und die ganze Analyse wieder links dazu,
+und das Experiment, das sie bestätigt hat, in die Lösung läuft.
+**Ganze Kette** stellt die Beobachtungen und die ganze Analyse wieder links dazu,
 sodass ein Bild vom Gesehenen bis zum Gebauten reicht. Eine Markierung (!)
 sagt, wohin man schauen sollte: eine Grundursache, an der niemand arbeitet,
 oder eine Lösung mit einer Frage.
@@ -2215,8 +2218,8 @@ und führt sie auf der Seite Checks auf.
   Aktionen, die ihn beheben oder öffnen, wo er behoben wird — den Eintrag
   öffnen, die Zeichnung, die Einheit oder beide Einheiten, den Einheitstyp,
   den Plan, die Person in Personen; **Verknüpfen…**, **Übernehmen**,
-  **Zuweisen…**, **Zuordnung beenden…**, **Zuordnung löschen**, **Eine
-  Zusammenarbeit festhalten…**,
+  **Zuweisen…**, **Zuordnung beenden…**, **Zuordnung löschen**,
+  **Eine Zusammenarbeit festhalten…**,
   **Festlegung löschen**. Eine Liste bietet die Aktionen, die sie dort tun
   kann, wo sie steht, und der Bildschirm, den sie öffnet, tut den Rest.
   **Alle Befunde** geht zurück zu dem Befund, von dem Sie kamen.
@@ -2258,8 +2261,8 @@ Organisationsbildschirm im ganzen Baum.
   markieren…** neben dem Befund eines Prüfpunkts oder eines Hinweises
   markiert ihn von hier aus, in dem Bereich, der ihn führt, und **Akzeptiert
   (N)** führt auf, was markiert wurde, jedes mit **Zurücknehmen**. Eine
-  Zuordnung in einer Einheit, die es nicht gibt, bietet daneben **Zuordnung
-  entfernen**, auf dieselbe Weise geschrieben: Es bleibt keine Einheit, von
+  Zuordnung in einer Einheit, die es nicht gibt, bietet daneben
+  **Zuordnung löschen**, auf dieselbe Weise geschrieben: Es bleibt keine Einheit, von
   der aus sie zu beheben wäre. Eine hier
   gesetzte Markierung, mit nichts geöffnet, ist ein Schritt dieses Bereichs
   und liegt auf keinem Rückgängig-Stapel: **Zurücknehmen** ist der Weg, sie
@@ -2306,8 +2309,8 @@ Inspektor; der Dialog bietet an, welche der vier in Frage kommen.
   sein soll, die sie verantwortet.
 - **Abgeben** — das Umgekehrte: ihn in einen Bereich hinunterschieben, der unter
   diesem abgelegt ist.
-- **Übergeben** — ihn in einen beliebigen anderen Bereich verschieben. **Hier
-  einen Platzhalter lassen** ist standardmäßig angehakt; entfernen Sie den
+- **Übergeben** — ihn in einen beliebigen anderen Bereich verschieben.
+  **Hier einen Platzhalter lassen** ist standardmäßig angehakt; entfernen Sie den
   Haken, und dieser Bereich zeichnet das Ding gar nicht mehr.
 
 **Eine Einheit nimmt ihre Personen mit.** Eine Einheit hochziehen, abgeben oder
@@ -2352,12 +2355,14 @@ Ein **Einheitstyp** ist das Wort der Organisation für eine Art von Einheit. **S
 zeichnet die Typen als die Struktur, die sie bilden, nach **Ebene**: wie tief eine Einheit des
 Typs sitzen kann. Jede Karte nennt den Typ, wie viele Einheiten er heute hat und seine Rollen,
 je eine Zeile. Unter den Ebenen sagt eine Zeile, was nirgends sitzt und welche Rollen in keinem
-Typ sind.
+Typ sind. Ein Typ, der nirgends sitzt, wird auch in der Zeile **Checks** auf der Startseite der
+Organisation gezählt und auf ihrer Seite Checks aufgeführt.
 
 Eine Karte klicken wählt den Typ: wo er sitzen darf, was darin sitzen darf und seine Rollen
 leuchten auf, der Rest tritt zurück, und rechts öffnet sich der Leser. Eine Rolle klicken wählt
 sie und zeichnet ihre Berichtslinien, durchgezogen für die Führungskraft und gepunktet für eine
-fachliche. Ein leeres Modell zeigt die drei Schritte der Reihe nach.
+fachliche. Ein leeres Modell zeigt die drei Schritte der Reihe nach, zuerst
+**Mit einer Bibliothek beginnen**.
 
 Der Leser eines Typs sagt, wo er sitzen darf, mit **Ändern**, und jede Rolle in einer Zeile: wie
 viele, und an wen ihre Inhaber berichten. Nur eine Linie, die dieser Typ ändert, fällt auf, als
@@ -2366,18 +2371,20 @@ Höchstzahl der Anwendungen, die Reihenfolge und die Tage.
 
 Die Zeile einer Rolle klicken zeigt, an wen ihre Inhaber berichten und **woher das kommt**, die
 oberste Regel zuerst: die eigene Linie einer Person, der Einheit, dieses Typs, der Rolle, dann die
-Hierarchie. **Linie ändern für** diesen Typ setzt hier eine Linie; **Zurück zu dem, was die
-Rolle sagt** nimmt sie weg. Eine Linie, die einen Kreis schließen würde, wird abgelehnt, mit Grund.` },
+Hierarchie. **Linie ändern für** diesen Typ setzt hier eine Linie;
+**Zurück zu dem, was die Rolle sagt** nimmt sie weg; eine andere Wahl ist
+**Über die Hierarchie in diesem Typ**. Eine Linie, die einen Kreis schließen würde, wird abgelehnt, mit Grund.` },
     { title: `Rollen`, text: `**Rollen** zeigt jede Rolle: wo sie sitzt, die Führungskraft und den Anteil. Eine Rolle wählen
 öffnet sie groß: Zweck, Inhaber und freie Plätze, die Linien, wofür sie einsteht, wer an sie
 berichtet, und jede Einheit mit ihrem Inhaber. Eine Einheit klicken führt zu ihrem Platz in der
-Organisation.
+Organisation. **Mehr** enthält den Kurznamen, die Spaltenfolge und die Tage.
 
 Die zwei Eigentümerregeln stehen über der Liste. Eine nicht festgelegte Regel sagt, was daraus
 folgt. Eine Rolle entfernen nimmt sie aus den Typen und Regeln, in einem Schritt; haben Menschen
 sie noch, sagt die Frage, wie viele und wo.` },
     { title: `Verantwortungen`, text: `**Verantwortungen** öffnet auf einem Teil: links ein Baum der Gruppen, rechts ein Raster mit
-den Rollen, die dort einen Anteil haben. Die anderen Rollen sind in einer Spalte **+N** gefaltet.
+den Rollen, die dort einen Anteil haben. Die anderen Rollen sind in einer Spalte **+N** gefaltet: ein
+Klick darauf zeigt sie, und **Eine als Spalte hinzufügen** fügt eine hinzu.
 **Ganze Organisation** zeigt alles, für Audits und Export. **Einheit** beschränkt das Raster auf die
 Rollen einer Einheit und sagt, wer sie hat; eine Zeile mit dem A außerhalb sagt, wo es ist. Der
 Leser einer Einheit im Organigramm führt hierher.
@@ -2389,8 +2396,8 @@ und die Zahl über dem Raster gilt immer der ganzen Organisation. **Filter** beh
 Gruppen, **Ordnen** enthält die Reihenfolge, **Exportieren** speichert CSV.` },
     { title: `Ausnahmen`, text: `**Ausnahmen** ist die eine Liste von allem, was etwas anderes sagt als das Modell: die Linie eines
 Typs, einer Einheit, einer Person, und eine Rolle außerhalb der Plätze der Einheit. Eine Zeile wählen
-zeigt sie groß, mit **Zurück zum Standard**. Sagen mehrere Typen dasselbe, bietet die Seite **Die Rolle
-ändern** an: Das fragt zuerst und ist ein Schritt.` },
+zeigt sie groß, mit **Zurück zum Standard**. Sagen mehrere Typen dasselbe, bietet die Seite
+**Die Rolle ändern** an: Das fragt zuerst und ist ein Schritt.` },
     { title: `Bibliotheken`, text: `Mit der App werden vier Ausgangspunkte ausgeliefert: **Scrum**, **SAFe**, die
 Wertströme von **IT4IT** (die sieben der Version 3.0) und **Team
 Topologies**. Jede ist nur lesbar, hat eine Version und ist auf Englisch,
@@ -2426,8 +2433,8 @@ zurücknimmt, solange seitdem nichts geschehen ist. {key:Mod+Z} nimmt ihn ebenfa
 zurück.
 
 Was hereinkommt, gehört der Organisation: umbenennen, umschreiben, streichen.
-Der Reiter **Bibliotheken** zeigt für jede Bibliothek **Was übernommen
-wurde**: das Wort der Bibliothek neben dem, wie es hier heißt, an Ort und
+Der Reiter **Bibliotheken** zeigt für jede Bibliothek
+**Was übernommen wurde**: das Wort der Bibliothek neben dem, wie es hier heißt, an Ort und
 Stelle umzubenennen — ein Klick auf das Wort der Bibliothek öffnet den
 Eintrag dort, wo er bearbeitet wird — und was sich seitdem geändert hat;
 sowie die Einträge, für die ein eigener verwendet wurde, als **… aus Ihrem
@@ -2501,8 +2508,8 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   nicht für immer gilt; **Hier über die Hierarchie berichten** sagt,
   dass die Rolle so berichtet, wie die Einheit verschachtelt ist, was ihr Typ
   oder die Rolle auch sagt; **Die eigene Linie dieser Einheit wegnehmen**
-  lässt den Typ oder die Rolle wieder sprechen. **Eine
-  Linie für …** gibt einer Rolle ohne Linie eine eigene. Die Inhaber einer
+  lässt den Typ oder die Rolle wieder sprechen.
+  **Eine Linie für …** gibt einer Rolle ohne Linie eine eigene. Die Inhaber einer
   Rolle mit der Linie einer Führungskraft werden von den Inhabern der Rolle
   geführt, bei der sie endet, und dann von dem, der diese führt; der Rest der
   Einheit über die Hierarchie. Eine Linie von einer Rolle zu sich selbst
@@ -2516,8 +2523,8 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   gibt, und sagt **Keine Domäne**, wo Sie nur lesen dürfen. Eine Einheit, die mehrere
   Domänen bedient, wird im Bereich darüber eingeordnet, und ihr Typ muss es
   erlauben. **+ Domäne** wählt eine weitere Domäne, wo ihr Typ mehr als eine
-  erlaubt. Ein Klick auf eine Domäne öffnet ihre Startseite, deren **Bedient
-  von** dasselbe vom anderen Ende sagt.
+  erlaubt. Ein Klick auf eine Domäne öffnet ihre Startseite, deren
+  **Bedient von** dasselbe vom anderen Ende sagt.
 - **Besitzt**: jede Anwendung, die sie als den Akteur nennt, zu dem sie
   gehört.
 - **Verantwortlich für**: die Gebiete, Gruppen und Fähigkeiten, die ihr
@@ -2546,8 +2553,8 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   dem eine Linie beginnt oder ein Plan eine Einheit verschiebt. Eine Einheit bedient eine Domäne, wenn
   sie diesen Bereich bedient, einen darüber oder einen darin. In der Liste von
   Befunden bietet eine Rolle mit zu wenigen Personen **Zuweisen…** und eine
-  Zuordnung, die ihre Einheit oder Rolle überdauert hat, **Zuordnung
-  beenden…**, wo Sie die Personen dieser Rolle ändern dürfen. Die Startseite
+  Zuordnung, die ihre Einheit oder Rolle überdauert hat,
+  **Zuordnung beenden…**, wo Sie die Personen dieser Rolle ändern dürfen. Die Startseite
   der Organisation zeigt dieselben Befunde für jeden Bereich.
 
 Die Abschnitte lesen den Tag, an dem das Board daneben betrachtet wird. Auf
@@ -2884,7 +2891,7 @@ oder Text wie bisher — einen Namen, Initialen, ein Team.
   Anwendung der Organisation ist es die Einheit, zu der sie gehört.
 - **Ein Stellvertreter** führt keinen eigenen Verantwortlichen; er zeigt den,
   den sein Master nennt, mit derselben ID.
-- **Die Suche** findet eine Person über das Register: Ein Name findet die
+- **Suchen** findet eine Person über das Register: Ein Name findet die
   Einträge, die auf die Person verweisen, und eine vergessene Person wird
   über ihr Pseudonym gefunden und nicht mehr über ihren Namen.` },
   ],
@@ -2934,8 +2941,9 @@ sind eigene Bereiche unter dem Ort **Themen** der Organisation, der mit dem
 ersten Thema entsteht; ein Thema kann Unterthemen haben. Die Karte **Themen**
 auf der Startseite der Organisation öffnet den Katalog: jedes Thema, verschachtelt,
 mit der Zahl der Bereiche, die es erreicht; gewählt, wo es relevant ist und welche
-Bausteine und Prinzipien es hält. **Mehr** bei einer Verknüpfung enthält Beenden,
-die Tage ändern und Entfernen.
+Bausteine und Prinzipien es hält. **Mehr** bei einer Verknüpfung enthält
+**An einem Tag beenden…**, das die Verknüpfung als Verlauf behält, **Tage ändern…** und
+**Löschen** für eine versehentlich gemachte Verknüpfung.
 
 Ein Thema wird **ab einem Tag** mit einem Bereich verknüpft, und die
 Verknüpfung kann an einem Tag enden: **+ Bereich…** beim Thema oder
@@ -2973,7 +2981,8 @@ vier Reitern:
   die Situationen, in denen er genutzt wird, in Worten, die je sagen, wie viel
   sie von jeder Fähigkeit brauchen: ein Harvey Ball von leer bis voll, mit einer
   Legende. Ein Klick wählt eine Zelle und schreibt nichts; die Leertaste geht ein
-  Viertel weiter, und 0 bis 4 setzt ihn.
+  Viertel weiter, und 0 bis 4 setzt ihn. **Mehr** bei einer Zeile entfernt eine
+  Fähigkeit, und der Name eines Nutzungskontexts öffnet sein Kapitel.
 - **Optionen** — der Katalog: Produkte, Dienste und Eigenentwicklungen, die
   ihn liefern könnten, je mit Anbieter und Status, und die Elemente in der
   Landschaft, die sie sind.
@@ -3052,8 +3061,8 @@ vorschlagen und ändern und eines aus einem Eintrag zitieren; ein Thema
 anlegen und mit den Bereiche verknüpfen, für die es relevant ist; die
 Fähigkeiten, Nutzungskontexte und den Katalog eines Bausteins ändern; die
 Bewertung eines Bausteins in einem Bereich beginnen, seine Optionen bewerten und
-die Entscheidung vorschlagen, die daraus folgt, wie **Eine
-Entscheidung vorschlagen…** auf der Seite des Bausteins — sie anzunehmen ist Ihre Sache.
+die Entscheidung vorschlagen, die daraus folgt, wie
+**Eine Entscheidung vorschlagen…** auf der Seite des Bausteins — sie anzunehmen ist Ihre Sache.
 Schreibt er eine Beschreibung oder eine Entscheidung, verweist er auf eine
 Ansicht, ein Element, ein Prinzip, eine Bewertung, eine Entscheidung oder eine
 Beobachtung mit denselben Worten, die *Einfügen ▾* schreibt.` },

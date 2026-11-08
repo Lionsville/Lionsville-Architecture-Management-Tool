@@ -35,7 +35,7 @@ export const SECTIONS: SectionTexts = {
     ['Klicken Sie auf Exportieren… auf der Leiste.', 'Wählen Sie SVG, PNG oder Drucken….'],
     'Exportieren Sie \'Order to delivery sketch\' als PNG für eine Folie.'],
   'drawing.edit': ['Eine Zeichnung bearbeiten', 'Öffnet den Zeichen-Editor in der Sprache und dem Aussehen der App. Die Adresse erhält ?edit, sodass ein Neuladen oder ein Link den Editor wieder öffnet. Das Statuswort oben sagt, ob es ungespeicherte Änderungen gibt.',
-    'Zeichnung bearbeiten auf der Leiste der Zeichnung, Zeichnen beginnen auf einer leeren oder die Adresse #/<scope>/-/drawing/<id>?edit.',
+    'Zeichnung bearbeiten auf der Leiste der Zeichnung, Mit dem Zeichnen beginnen auf einer leeren oder die Adresse #/<scope>/-/drawing/<id>?edit.',
     ['Klicken Sie auf Zeichnung bearbeiten.', 'Zeichnen Sie; das Statuswort sagt Noch nicht gespeichert, solange es Änderungen gibt.', 'Klicken Sie auf Speichern, dann Fertig.'],
     'Bearbeiten Sie \'Order to delivery sketch\' und fügen Sie Dispatch zwischen Order Management und Billing ein.'],
   'drawing.palette': ['Mit den Elementen des Modells zeichnen', 'Die Seitenleiste Formen listet die Elemente des Bereichs nach Art (Anwendungen, Funktionen, Akteure, Plattformdienste, Plattformen, Komponenten), jedes mit seinem Namen; eine Form daraus zeigt auf dieses Element. Die Suche findet ein Element oder eine Form; C4 und Weitere Formen stehen darunter.',

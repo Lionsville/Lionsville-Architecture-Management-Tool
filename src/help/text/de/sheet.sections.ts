@@ -26,7 +26,7 @@ export const SECTIONS: SectionTexts = {
     ['Wählen Sie eine Fähigkeit.', 'Klicken Sie auf + Anwendung und wählen Sie eine.', 'Klicken Sie auf × neben einer, um sie wegzunehmen.'],
     'Fügen Sie Fleet Register zu Maintenance hinzu.'],
   'sheet.whoHolds': ['Festlegen, wer für eine Funktion antwortet, und sie an eine Domäne übergeben', 'Antwortet dafür nennt Einheiten (+ Einheit, × zum Wegnehmen); Übergeben an nennt die Domänen, die die Organisation bittet (+ Domäne); Aufgenommen von sagt, welche Domänen sie aufgenommen haben.',
-    'Wer sie hält, im Panel einer Funktion.',
+    'Wer es hält, im Panel einer Funktion.',
     ['Wählen Sie eine Funktion.', 'Klicken Sie auf + Einheit oder + Domäne und wählen Sie eine.'],
     'Übergeben Sie Commercial mit + Domäne an die Domäne Application landscape.'],
   'sheet.fromAbove': ['Ein Gebiet oder eine Fähigkeit von einem Blatt darüber aufnehmen', 'Holt auf dem Blatt einer Domäne ein Gebiet oder eine Fähigkeit eines Blatts darüber als Stellvertreter herein, sodass die Domäne sagt, dass sie sie aufnimmt.',

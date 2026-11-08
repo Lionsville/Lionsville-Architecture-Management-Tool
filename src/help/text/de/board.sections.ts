@@ -79,7 +79,7 @@ export const SECTIONS: SectionTexts = {
     ['Wählen Sie die Linie.', 'Bearbeiten Sie ihre Zeilen im Panel oder klicken Sie mit rechts für Richtung, Linienform, Beschriftung bearbeiten und Verbindung löschen.'],
     'Machen Sie die Linie zwischen Tariff Engine und Rating (legacy) beidseitig, solange beide Verträge berechnen.'],
   'board.lineRoute': ['Die Route einer Linie von Hand formen', 'Ziehen Sie die Pille eines Abschnitts, um ihn zu verschieben, fügen Sie Knickpunkte hinzu oder entfernen Sie sie, wählen Sie die Seite, an der jedes Ende hängt, heften Sie eine Route an, damit nichts sie bewegt, oder setzen Sie sie auf die automatische Route zurück. Ziehen Sie eine Beschriftung von ihrem Platz oder setzen Sie sie zurück.',
-    'Rechtsklick auf eine Linie: Knickpunkt hier hinzufügen, Knickpunkt entfernen, Alle Knickpunkte entfernen, Verankern an, Route anheften, Zurück auf automatische Route, Beschriftungsposition zurücksetzen',
+    'Rechtsklick auf eine Linie: Hier einen Knickpunkt einfügen, Knickpunkt entfernen, Alle Knickpunkte entfernen, Anheften an, Route fixieren, Zurück zur automatischen Route, Beschriftungsposition zurücksetzen',
     ['Wählen Sie die Linie.', 'Ziehen Sie ihre Pille oder klicken Sie mit rechts für Knick, Seite, Anheften und Zurücksetzen.'],
     'Heften Sie die Route der Linie von Dispatch zu Yard Management an, nachdem Sie sie am Rand von Warehouse entlanggelegt haben.'],
   'board.labels': ['Linienbeschriftungen beim Zeigen oder immer', 'Ob jede Linie ihre Beschriftung zeigt oder nur die unter dem Zeiger und die Linien der gewählten Karte.',

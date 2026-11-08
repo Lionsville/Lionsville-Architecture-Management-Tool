@@ -77,7 +77,7 @@ export const SECTIONS: SectionTexts = {
   'technology.platformReport': ['Lesen, was wegfällt, wenn eine Plattform ginge', 'Der Plattformbericht: ein Satz, wie viele Anwendungen sie verlören und wie, die Fakten, eine Zeile je Ding, das auf ihr steht (Container mit ihrer Anwendung), und die Schnittstellen, die über sie laufen.',
     'Wenn es wegfiele… im Leser einer Plattform; Doppelklick auf eine Plattformzeile; Adresse #/<scope>/-/platform/<id>.',
     ['Wählen Sie eine Plattform.', 'Klicken Sie auf Wenn es wegfiele….'],
-    'Wenn OpenShift ginge: 16 Anwendungen verlören es, Cloud landing zone bliebe.',
+    'Wenn OpenShift wegfiele: 16 Anwendungen verlören es, Cloud landing zone bliebe.',
     'Doppelklick'],
   'technology.serviceReport': ['Lesen, was strandet, wenn ein Dienst zurückgezogen würde', 'Der Dienstbericht: wer sich auf den Dienst stützt, worüber, aus welchem Bereich, und ob jeder stranden würde oder rechtzeitig davon weg ist.',
     'Wenn es wegfiele… im Leser eines Dienstes; Doppelklick auf eine Dienstzeile; Adresse #/<scope>/-/service/<id>.',

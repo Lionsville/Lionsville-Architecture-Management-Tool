@@ -28,7 +28,7 @@ export const SECTIONS: SectionTexts = {
     'Erste Seite einer Organisation, die noch niemand begonnen hat (Web: #/-/home, ohne aufbewahrte Arbeit)',
     ['Geben Sie den Namen der Organisation in "Name Ihrer Organisation" ein', 'Klicken Sie auf Beginnen, oder drücken Sie die Eingabetaste'],
     'Geben Sie "Northline Freight" ein und drücken Sie die Eingabetaste: Die Startseite von Northline Freight öffnet sich mit "Was möchten Sie zuerst festhalten?"'],
-  'first.next': ['Einen ersten Schritt in einer neuen Organisation tun', 'Eine benannte Organisation, in der noch nichts liegt, bietet vier Anfänge: die Organisation gliedern (Neuer Bereich…), zeichnen, was läuft (Neue Ansicht…), festhalten, was Sie sehen (Eine Beobachtung erfassen…), und sagen, wer was tut (Das Betriebsmodell öffnen).',
+  'first.next': ['Einen ersten Schritt in einer neuen Organisation tun', 'Eine benannte Organisation, in der noch nichts liegt, bietet vier Anfänge: die Organisation gliedern (Neuer Bereich…), zeichnen, was läuft (Neue Ansicht…), festhalten, was Sie sehen (Eine Beobachtung festhalten…), und sagen, wer was tut (Das Betriebsmodell öffnen).',
     'Startseite einer benannten Organisation, die noch nichts enthält',
     ['Wählen Sie einen der vier Blöcke und klicken Sie auf seine Schaltfläche'],
     'Klicken Sie in Northline Freight auf "Neuer Bereich…", um eine Division "Road network" anzulegen.'],
