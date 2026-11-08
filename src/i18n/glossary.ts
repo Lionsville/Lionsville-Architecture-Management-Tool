@@ -23,6 +23,8 @@ export const SAME_EVERYWHERE = new Set([
   'first.brand', 'help.product', 'common.languageNl', 'common.languageDe', 'common.languageEn',
   // A flag read by the code, not a word on screen.
   'org.checksMostlyLower',
+  // A file's name and its size: a unit's symbol is the same in every language.
+  'md.fileKb', 'md.fileMb',
 ])
 
 /** Words each language shares with English, so a string made only of them is translated already. */

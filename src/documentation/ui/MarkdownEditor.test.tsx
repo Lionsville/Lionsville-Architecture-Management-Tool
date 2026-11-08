@@ -283,7 +283,7 @@ describe('attachments, the seam', () => {
     fireEvent.drop(area, { dataTransfer: transfer([file()]) })
     await vi.waitFor(() => expect(onChange).toHaveBeenCalled())
     expect(source.add).toHaveBeenCalledWith(expect.any(File), '')
-    expect(onChange).toHaveBeenLastCalledWith('Hello\n\n[report.pdf](attachment:att-1)\n')
+    expect(onChange).toHaveBeenLastCalledWith('Hello\n\n[report.pdf · 1 KB](attachment:att-1)\n')
   })
 
   it('takes one picked with the button, and refuses one too large before sending it, saying why', async () => {
@@ -294,7 +294,31 @@ describe('attachments, the seam', () => {
     expect((await screen.findByRole('alert')).textContent).toContain('report.pdf')
     expect(source.add).not.toHaveBeenCalled()
     fireEvent.change(screen.getByTestId('md-attach-input'), { target: { files: [file(2)] } })
-    await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith('[report.pdf](attachment:att-1)\n'))
+    await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith('[report.pdf · 1 KB](attachment:att-1)\n'))
+  })
+
+  it('says a refusal in a pane under its toolbar, above the text, and a large file\'s size in megabytes', async () => {
+    const source = attachments({ maxBytes: 4 * 1024 * 1024 })
+    const onChange = vi.fn()
+    renderShell(<AttachmentsProvider value={source}><Controlled start="" onChange={onChange} /></AttachmentsProvider>)
+    fireEvent.change(screen.getByTestId('md-attach-input'), { target: { files: [file(5 * 1024 * 1024)] } })
+    const refusal = await screen.findByRole('alert')
+    const text = screen.getByRole('textbox', { name: 'Source' })
+    expect(refusal.compareDocumentPosition(text) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    fireEvent.change(screen.getByTestId('md-attach-input'), { target: { files: [file(Math.round(1.5 * 1024 * 1024))] } })
+    await vi.waitFor(() => expect(onChange).toHaveBeenLastCalledWith('[report.pdf · 1.5 MB](attachment:att-1)\n'))
+  })
+
+  it('says a picture is on its way while it is kept, and puts it in the text only once it is', async () => {
+    let keep: (name: string) => void = () => undefined
+    const onAddImage = vi.fn(() => new Promise<string>((done) => { keep = done }))
+    const { onChange, area } = setup({ onAddImage }, '')
+    fireEvent.drop(area, { dataTransfer: transfer([new File([new Uint8Array([1])], 'plan.png', { type: 'image/png' })]) })
+    await vi.waitFor(() => expect(screen.getByTestId('md-said').textContent).toBe('Attaching plan.png…'))
+    expect(onChange).not.toHaveBeenCalled()
+    keep('plan.png')
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalled())
+    expect(screen.getByTestId('md-said').hidden).toBe(true)
   })
 
   it('says a refusal in the source\'s own words, and writes nothing', async () => {

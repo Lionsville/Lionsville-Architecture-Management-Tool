@@ -186,6 +186,13 @@ function useGrowing(area: RefObject<HTMLTextAreaElement | null>, value: string, 
   }, [area, value, width, on, minRows, maxRows])
 }
 
+/** A file's name and its size, as its link reads: *notes.pdf · 20 KB*. */
+function fileWords(file: File, language: string, t: ReturnType<typeof useStrings>['t']): string {
+  const kb = file.size / 1024
+  if (kb < 1024) return t('md.fileKb', { file: file.name, size: Math.max(1, Math.round(kb)) })
+  return t('md.fileMb', { file: file.name, size: new Intl.NumberFormat(language, { maximumFractionDigits: 1 }).format(kb / 1024) })
+}
+
 /** Pictures and files coming in: pasted, dropped or picked. One at a time, so they land in the order they came. */
 function useFilesComing({ apply, areaRef, onAddImage, attachable }: {
   apply: (edit: Edit) => void
@@ -193,7 +200,7 @@ function useFilesComing({ apply, areaRef, onAddImage, attachable }: {
   onAddImage?: (file: File) => Promise<string | undefined>
   attachable: boolean
 }) {
-  const { t } = useStrings()
+  const { t, language } = useStrings()
   const scope = usePictureScope()
   const source = useAttachments()
   const attachments = attachable ? source : undefined
@@ -218,7 +225,8 @@ function useFilesComing({ apply, areaRef, onAddImage, attachable }: {
         return
       }
       setSaid(undefined)
-      if (answer) put(attachmentMarkdown(answer, file.name))
+      // The link says how large the file is, so a reader knows before opening it.
+      if (answer) put(attachmentMarkdown(answer, fileWords(file, language, t)))
     } catch {
       setSaid({ words: t('md.attachmentFailed', { file: file.name }), refused: true })
     }
@@ -229,11 +237,13 @@ function useFilesComing({ apply, areaRef, onAddImage, attachable }: {
   const take = useCallback((files: readonly File[]) => {
     void files.reduce<Promise<void>>((queue, file) => queue.then(async () => {
       if (file.type.startsWith('image/') && onAddImage) {
-        const name = await onAddImage(file)
+        // Said while it goes, and put into the text only once it is kept: never a picture drawn before its bytes are there.
+        setSaid({ words: t('md.attaching', { file: file.name }), refused: false })
+        const name = await onAddImage(file).finally(() => setSaid((now) => (now?.refused ? now : undefined)))
         if (name) put(pictureMarkdown(name, file.name.replace(/\.[^.]+$/, '')))
       } else await attach(file)
     }), Promise.resolve())
-  }, [onAddImage, attach, put])
+  }, [onAddImage, attach, put, t])
 
   return { attachments, said, taken, take }
 }
@@ -637,23 +647,30 @@ function SourceColumn({ editor, fieldId, areaRef, pane, flow, minRows, completio
           {...(editor.helper && !editor.labelHidden ? { 'aria-describedby': `${fieldId}-hint` } : {})}
           classes="md-editor__text"
         />
-        <div className="md-editor__said" role={files.said?.refused ? 'alert' : 'status'} data-refused={files.said?.refused === true} hidden={!files.said}>{files.said?.words}</div>
+        <Said said={files.said} />
       </div>
     )
   }
   return (
     <div className="md-editor__source">
       {pane && editor.above}
+      {/* In a pane the text runs a window tall: what a file coming in did is said under the toolbar its button is on, not at the foot. */}
+      {pane && <Said said={files.said} />}
       <textarea {...text} className="md-editor__text" placeholder={editor.placeholder} rows={pane ? undefined : minRows} />
       {!editor.disabled && (
         <EditorFoot
           words={words} helpOpen={helpOpen} onHelp={() => setHelpOpen((open) => !open)}
-          said={files.said} canAttach={canAttach} canPicture={canPicture}
+          said={pane ? 'above' : files.said} canAttach={canAttach} canPicture={canPicture}
         />
       )}
       {helpOpen && !editor.disabled && <MarkdownGuide images={canPicture} attachments={canAttach} />}
     </div>
   )
+}
+
+/** What a file coming in did: going, refused, or nothing. */
+function Said({ said }: { said: { words: string; refused: boolean } | undefined }) {
+  return <div className="md-editor__said" role={said?.refused ? 'alert' : 'status'} data-refused={said?.refused === true} hidden={!said} data-testid="md-said">{said?.words}</div>
 }
 
 /** The help's way in on a bar that several parts share: under the bar there is one, for the part in use. */
@@ -670,7 +687,8 @@ function EditorFoot({ words, helpOpen, onHelp, said, canAttach, canPicture }: {
   words: number
   helpOpen: boolean
   onHelp(): void
-  said: { words: string; refused: boolean } | undefined
+  /** `above`: said under the toolbar instead (a pane). */
+  said: { words: string; refused: boolean } | undefined | 'above'
   canAttach: boolean
   canPicture: boolean
 }) {
@@ -678,7 +696,7 @@ function EditorFoot({ words, helpOpen, onHelp, said, canAttach, canPicture }: {
   const hint = canAttach ? t('md.hintFiles') : canPicture ? t('md.hintPictures') : t('md.hint')
   return (
     <>
-      <div className="md-editor__said" role={said?.refused ? 'alert' : 'status'} data-refused={said?.refused === true} hidden={!said}>{said?.words}</div>
+      {said !== 'above' && <Said said={said} />}
       <div className="md-editor__foot">
         <span className="md-editor__hint" title={hint}>{hint}</span>
         <button type="button" className="md-editor__more" aria-expanded={helpOpen} onMouseDown={(event) => event.preventDefault()} onClick={onHelp}>

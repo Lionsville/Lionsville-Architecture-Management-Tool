@@ -174,6 +174,8 @@ export const EN = {
   'md.attaching': 'Attaching {file}…',
   'md.attachmentTooLarge': '{file} is larger than the {size} MB a file may be.',
   'md.attachmentFailed': '{file} could not be attached.',
+  'md.fileKb': '{file} · {size} KB',
+  'md.fileMb': '{file} · {size} MB',
   'md.attachmentNotHere': 'This file is kept with the environment the document came from.',
   'md.block.heading2': 'Heading',
   'md.block.heading3': 'Smaller heading',

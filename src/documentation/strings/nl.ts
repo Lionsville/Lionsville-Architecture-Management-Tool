@@ -165,6 +165,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'md.attaching': '{file} wordt toegevoegd…',
   'md.attachmentTooLarge': '{file} is groter dan de {size} MB die een bestand mag zijn.',
   'md.attachmentFailed': '{file} kon niet worden toegevoegd.',
+  'md.fileKb': '{file} · {size} kB',
+  'md.fileMb': '{file} · {size} MB',
   'md.attachmentNotHere': 'Dit bestand staat in de omgeving waar het document vandaan komt.',
   'md.block.heading2': 'Kop',
   'md.block.heading3': 'Kleinere kop',

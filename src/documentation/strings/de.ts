@@ -165,6 +165,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'md.attaching': '{file} wird angehängt…',
   'md.attachmentTooLarge': '{file} ist größer als die erlaubten {size} MB.',
   'md.attachmentFailed': '{file} konnte nicht angehängt werden.',
+  'md.fileKb': '{file} · {size} KB',
+  'md.fileMb': '{file} · {size} MB',
   'md.attachmentNotHere': 'Diese Datei liegt in der Umgebung, aus der das Dokument stammt.',
   'md.block.heading2': 'Überschrift',
   'md.block.heading3': 'Kleinere Überschrift',
