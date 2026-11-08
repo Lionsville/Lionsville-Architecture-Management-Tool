@@ -19,7 +19,7 @@ import { usePersonNames } from '../../people/ui/names'
 import { Button } from '../../widgets/kit/Button'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { NextStep, StepLadder } from '../../widgets/kit/NextStep'
-import type { NextAction, Step } from '../../widgets/kit/NextStep'
+import type { NextAction, NextHold, Step } from '../../widgets/kit/NextStep'
 import { Panel } from '../../widgets/kit/Panel'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { RecordActions } from '../../widgets/kit/RecordActions'
@@ -28,7 +28,8 @@ import { CHAIN_STEPS, standingOf } from '../chain'
 import type { ChainStep } from '../chain'
 import { causeLabel, explainedBy, formatObservationNumber, isNoted, isRootCause, toneOf } from '../observation'
 import type { Cause, Observation } from '../observation'
-import { formatExperimentNumber, formatSolutionNumber, implementedOn, isConcluded, isLive } from '../solution'
+import { formatExperimentNumber, formatSolutionNumber, implementedOn, isConcluded, isLive, openItems } from '../solution'
+import { GATE_LABEL, PHASE_LABEL } from '../observationScope'
 import type { ReaderAction } from './ActionButton'
 import { RecordBody, causeProps, experimentProps, observationProps, solutionProps, solutionSteps } from './PageReaders'
 import type { ReaderContext, Selected } from './PageReaders'
@@ -50,7 +51,7 @@ export type RecordView = {
   readonly title: string
   readonly bar: readonly ReaderAction[]
   /** What else the right-click has for it: a solution's steps. */
-  readonly next?: { readonly question?: string; readonly actions: readonly NextAction[] }
+  readonly next?: { readonly question?: string; readonly actions: readonly NextAction[]; readonly holds?: readonly NextHold[] }
 }
 
 const asNext = (action: ReaderAction, primary = action.primary): NextAction => ({
@@ -101,6 +102,26 @@ function causeView(cause: Cause, scope: string | undefined, key: string, ctx: Re
   return { ...base, bar: rest, next: { question: s('observation.andWhy'), actions } }
 }
 
+/**
+ * A solution's step to its next state, in the Next band like every record's next
+ * step: held while the gate has lines open, which the reading lists, and Waive…
+ * beside it while what holds it is the experiment's proof.
+ */
+function solutionGateNext(props: ReturnType<typeof solutionProps>, s: Translate): RecordView['next'] {
+  const { gate, solution } = props
+  if (!gate || props.readOnly || solution.state === 'dropped') return undefined
+  const open = openItems(gate)
+  const state = s(PHASE_LABEL[gate.to]).toLowerCase()
+  return {
+    question: s('solution.gateTitle', { state }),
+    actions: [
+      { label: s('solution.moveOn', { state }), primary: true, held: open.length > 0, onPress: () => props.onMove(gate.to), testId: 'solution-move', dataGuide: 'solution.move' },
+      ...(open.includes('experimentConfirmed') ? [{ label: `${s('solution.waive')}…`, onPress: props.onWaive, testId: 'solution-waive-open' }] : []),
+    ],
+    holds: open.map((item) => ({ label: s(GATE_LABEL[item]) })),
+  }
+}
+
 /** What a record is, and what it offers, whatever frames it. */
 export function recordViewOf(held: Selected, key: string, ctx: ReaderContext, page: RecordPageWrites): RecordView {
   const { s } = ctx
@@ -118,7 +139,8 @@ export function recordViewOf(held: Selected, key: string, ctx: ReaderContext, pa
       if (!ctx.readOnly && held.solution.state === 'adopted' && !held.solution.plan && props.onStartPlan) {
         return { ...base, next: { question: s('solution.whoBuildsIt'), actions: [{ label: s('solution.startPlan'), primary: true, onPress: props.onStartPlan }] } }
       }
-      return base
+      const gateNext = solutionGateNext(props, s)
+      return gateNext ? { ...base, next: gateNext } : base
     }
     case 'experiment': {
       const one = held.experiment

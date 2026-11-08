@@ -225,6 +225,28 @@ export function DropDialog({ subject, onCancel, onConfirm, s }: DropDialogProps)
   )
 }
 
+/** Waiving a solution's experiment: the reason no experiment is needed, which its history and its decision keep. */
+export function WaiveDialog({ subject, onCancel, onConfirm, s }: DropDialogProps) {
+  const [reason, setReason] = useState('')
+  const [pressed, setPressed] = useState(false)
+  useFreshFor(subject, (one) => one.id, () => { setReason(''); setPressed(false) })
+  const missing = pressed && !reason.trim()
+  const submit = () => { if (reason.trim()) onConfirm(reason.trim()); else setPressed(true) }
+  return (
+    <FormDialog
+      open={Boolean(subject)} title={subject ? s('solution.waiveTitle', { name: subject.label }) : ''} intro={s('solution.waiveBody')}
+      dirty={reason.trim() !== ''} onCancel={onCancel} onSubmit={submit} submitLabel={s('solution.waive')} submitTestId="solution-waive"
+      problem={problemsLine(missing ? 1 : 0, s)} s={s}
+    >
+      <FieldBox
+        autoFocus fullWidth size="small" multiline required label={s('solution.waiveField')} value={reason} onChange={(event) => setReason(event.target.value)}
+        error={missing} helperText={missing ? s('solution.waiveMissing') : undefined}
+        slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }}
+      />
+    </FormDialog>
+  )
+}
+
 /**
  * Concluding an experiment (ADR-0026, amended 28 September 2026): the result,
  * in numbers where there are numbers, and the day it ended — today unless

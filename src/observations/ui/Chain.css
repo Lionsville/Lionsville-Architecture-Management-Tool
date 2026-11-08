@@ -76,3 +76,10 @@
 .chain-read th, .chain-read td { text-align: start; padding: var(--s-1) var(--s-2); border-bottom: 1px solid var(--line); }
 .chain-counts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-4); margin: 0; font-size: var(--t-small); color: var(--ink-2); }
 .chain-counts b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* A solution's earlier attempts in the editor's facts: one stacked group a row, set apart by a rule. */
+.chain-editor__tried { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); margin: 0; padding: 0; border: 0; min-width: 0; }
+.chain-editor__tried > legend { padding: 0; margin-bottom: var(--s-1); font-size: var(--t-small); font-weight: var(--fw-strong); color: var(--ink-2); }
+.chain-editor__hint { margin: 0; font-size: var(--t-small); color: var(--ink-3); }
+.chain-editor__attempt { display: flex; flex-direction: column; gap: var(--s-2); align-self: stretch; padding-block-end: var(--s-2); border-bottom: 1px solid var(--line); }
+.chain-editor__attempt > .kit-button { align-self: flex-start; }

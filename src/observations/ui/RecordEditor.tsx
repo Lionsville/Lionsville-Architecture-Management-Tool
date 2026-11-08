@@ -35,7 +35,9 @@ import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { isBlankRef } from '../../model/person'
 import type { PersonRef } from '../../model/person'
+import { Button } from '../../widgets/kit/Button'
 import { SelectField, DateField, TextField, TitleField, TitleRead } from '../../widgets/kit/Field'
+import { Switch } from '../../widgets/kit/Switch'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
 import { PreviewFact } from '../../widgets/kit/Preview'
 import { observationBody, observationProblems, observationSections } from '../form'
@@ -46,14 +48,14 @@ import {
 import type { Cause, Observation, ObservationImpact, ObservationPatch, ObservationTone } from '../observation'
 import { IMPACT_LABEL, SIZE_LABEL, TONE_WORD } from '../observationScope'
 import { experimentTemplate, formatExperimentNumber, formatSolutionNumber, SOLUTION_SIZES, solutionTemplate } from '../solution'
-import type { Experiment, Solution, SolutionSize } from '../solution'
+import type { EarlierAttempt, Experiment, Solution, SolutionPatch, SolutionSize } from '../solution'
 import { exampleFor, problemText } from './ObservationForm'
 import { observationFacts, renderedBody } from './Readers'
 
 export type RecordEditing =
   | { kind: 'observation'; record: Observation; onSave: (patch: ObservationPatch) => void }
   | { kind: 'cause'; record: Cause; onSave: (patch: Partial<Pick<Cause, 'title' | 'body'>>) => void }
-  | { kind: 'solution'; record: Solution; onSave: (patch: Partial<Pick<Solution, 'title' | 'body' | 'benefit' | 'cost' | 'whyNow'>>) => void }
+  | { kind: 'solution'; record: Solution; onSave: (patch: SolutionPatch) => void }
   | { kind: 'experiment'; record: Experiment; onSave: (patch: Partial<Pick<Experiment, 'title' | 'body' | 'hypothesis' | 'measure' | 'where' | 'by' | 'from' | 'to' | 'result'>>) => void }
 
 export type RecordEditorProps = {
@@ -96,7 +98,10 @@ function draftOf(editing: RecordEditing): Draft {
   switch (editing.kind) {
     case 'observation': return { ...base, where: editing.record.where ?? '', date: editing.record.date, impact: editing.record.impact, tone: toneOf(editing.record) }
     case 'cause': return base
-    case 'solution': return { ...base, benefit: editing.record.benefit ?? '', cost: editing.record.cost ?? '', whyNow: editing.record.whyNow ?? '' }
+    case 'solution': return {
+      ...base, benefit: editing.record.benefit ?? '', cost: editing.record.cost ?? '', whyNow: editing.record.whyNow ?? '',
+      validatedWith: editing.record.validatedWith.join('\n'),
+    }
     case 'experiment': return {
       ...base, hypothesis: editing.record.hypothesis, measure: editing.record.measure ?? '', where: editing.record.where ?? '',
       from: editing.record.from ?? '', to: editing.record.to ?? '', result: editing.record.result ?? '',
@@ -134,6 +139,10 @@ function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, image
   // Three parts where that is what the text holds; one field otherwise, so a record is never rewritten by being opened.
   const [sections, setSections] = useState<ObservationSections | undefined>(() => (editing.kind === 'observation' ? observationSections(editing.record.body, s) : undefined))
   const set = (field: string, value: string) => setDraft((held) => ({ ...held, [field]: value }))
+  // A solution's earlier attempts are rows, not text, and None known answers them while there are none.
+  const [tried, setTried] = useState<Tried>(() => (editing.kind === 'solution' ? { attempts: editing.record.attempts, noneKnown: editing.record.noneKnown === true } : NOTHING_TRIED))
+  const startTried = useMemo<Tried>(() => (editing.kind === 'solution' ? { attempts: editing.record.attempts, noneKnown: editing.record.noneKnown === true } : NOTHING_TRIED), [editing])
+  const triedChanged = JSON.stringify(tried) !== JSON.stringify(startTried)
   const body = sections ? observationBody(sections, s) : draft.body
   // Opened on the template's text, with nothing typed, is unchanged.
   const startBody = useMemo(() => (sections ? observationBody(observationSections(editing.record.body, s) as ObservationSections, s) : editing.record.body), [editing.record.body, s])
@@ -147,12 +156,14 @@ function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, image
   const refusals = Object.keys(problems).length + (editing.kind !== 'observation' && titleMissing ? 1 : 0)
   const changedFields = Object.keys(draft).filter((key) => key !== 'body' && draft[key] !== start[key])
   const byChanged = (editing.kind === 'observation' || editing.kind === 'experiment') && JSON.stringify(by ?? '') !== JSON.stringify(editing.record.by ?? '')
-  const changed = changedFields.length > 0 || body !== startBody || byChanged
+  const changed = changedFields.length > 0 || body !== startBody || byChanged || triedChanged
 
   const save = () => {
     if (changed) {
       const patch: Record<string, unknown> = {}
       for (const key of changedFields) patch[key] = draft[key] === '' && (key === 'benefit' || key === 'cost') ? undefined : draft[key]
+      if (changedFields.includes('validatedWith')) patch.validatedWith = namesOf(draft.validatedWith ?? '')
+      if (triedChanged) Object.assign(patch, { attempts: tried.attempts.filter(isTold), noneKnown: tried.noneKnown && tried.attempts.filter(isTold).length === 0 })
       if (body !== startBody) patch.body = body
       if (byChanged) patch[BY_FIELD] = isBlankRef(by) ? '' : by
       ;(editing.onSave as (patch: Record<string, unknown>) => void)(patch)
@@ -207,7 +218,7 @@ function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, image
   })()
 
   const aside = editing.kind === 'cause' ? undefined : (
-    <RecordFacts editing={editing} draft={draft} set={set} by={by} onBy={setBy} today={today} shown={shown} reading={shownView === 'preview'} s={s} />
+    <RecordFacts editing={editing} draft={draft} set={set} by={by} onBy={setBy} tried={tried} onTried={setTried} today={today} shown={shown} reading={shownView === 'preview'} s={s} />
   )
   return (
     <FocusedWindow
@@ -261,12 +272,14 @@ function ReadingColumn({ parts, draft, body, renderMarkdown, s }: {
 }
 
 /** The column of facts beside the document: written, or, for an observation under Preview, read. */
-function RecordFacts({ editing, draft, set, by, onBy, today, shown, reading, s }: {
+function RecordFacts({ editing, draft, set, by, onBy, tried, onTried, today, shown, reading, s }: {
   editing: Exclude<RecordEditing, { kind: 'cause' }>
   draft: Draft
   set: (field: string, value: string) => void
   by: PersonRef | undefined
   onBy: (next: PersonRef | undefined) => void
+  tried: Tried
+  onTried: (next: Tried) => void
   today: string
   shown: (key: 'title' | 'where' | 'by' | 'date') => string | undefined
   reading: boolean
@@ -309,7 +322,12 @@ function RecordFacts({ editing, draft, set, by, onBy, today, shown, reading, s }
         <>
           <SelectField label={s('solution.benefitField')} value={draft.benefit} options={sizes} onChange={(value) => set('benefit', value)} />
           <SelectField label={s('solution.costField')} value={draft.cost} options={sizes} onChange={(value) => set('cost', value)} />
-          <TextField label={s('solution.whyNowField')} rows={3} value={draft.whyNow} onChange={(value) => set('whyNow', value)} />
+          <TextField
+            label={s('solution.validatedWith')} hint={s('solution.validatedHelp')} rows={3} value={draft.validatedWith ?? ''}
+            onChange={(value) => set('validatedWith', value)} data-testid="solution-validated-field"
+          />
+          <TriedBefore tried={tried} onChange={onTried} s={s} />
+          <TextField label={s('solution.whyNow')} hint={s('solution.whyNowField')} rows={3} value={draft.whyNow} onChange={(value) => set('whyNow', value)} data-testid="solution-why-now" />
         </>
       )
       case 'experiment': return (
@@ -322,6 +340,38 @@ function RecordFacts({ editing, draft, set, by, onBy, today, shown, reading, s }
       )
   }
 
+}
+
+type Tried = { readonly attempts: readonly EarlierAttempt[]; readonly noneKnown: boolean }
+const NOTHING_TRIED: Tried = { attempts: [], noneKnown: false }
+const isTold = (one: EarlierAttempt) => Boolean(one.what.trim() || one.why.trim())
+/** *Checked with*, a name a line, as the record keeps it. */
+const namesOf = (text: string) => text.split('\n').map((one) => one.trim()).filter(Boolean)
+
+/** *Tried before*: an earlier attempt a row, its three answers stacked, or None known while there is none. */
+function TriedBefore({ tried, onChange, s }: { tried: Tried; onChange: (next: Tried) => void; s: Translate }) {
+  const change = (index: number, field: keyof EarlierAttempt, value: string) => onChange({
+    ...tried, attempts: tried.attempts.map((one, at) => (at === index ? { ...one, [field]: value } : one)),
+  })
+  return (
+    <fieldset className="chain-editor__tried" data-testid="solution-attempts-field">
+      <legend>{s('solution.attempts')}</legend>
+      {tried.attempts.length === 0
+        ? <Switch label={s('solution.noneKnown')} checked={tried.noneKnown} onChange={(noneKnown) => onChange({ ...tried, noneKnown })} data-testid="solution-none-known" />
+        : <p className="chain-editor__hint">{s('solution.attemptsHelp')}</p>}
+      {tried.attempts.map((one, index) => (
+        <div key={index} className="chain-editor__attempt">
+          <TextField label={s('solution.attemptWhen')} value={one.when ?? ''} onChange={(value) => change(index, 'when', value)} />
+          <TextField label={s('solution.attemptWhat')} value={one.what} onChange={(value) => change(index, 'what', value)} data-testid="solution-attempt-what" />
+          <TextField label={s('solution.attemptWhy')} value={one.why} onChange={(value) => change(index, 'why', value)} data-testid="solution-attempt-why" />
+          <Button variant="quiet" size="small" onClick={() => onChange({ ...tried, attempts: tried.attempts.filter((_, at) => at !== index) })}>{s('solution.remove')}</Button>
+        </div>
+      ))}
+      <Button size="small" onClick={() => onChange({ attempts: [...tried.attempts, { when: '', what: '', why: '' }], noneKnown: false })} data-testid="solution-attempt-add">
+        {s('solution.attemptAdd')}
+      </Button>
+    </fieldset>
+  )
 }
 
 /** The record as the draft has it, for the facts its reader will show. */

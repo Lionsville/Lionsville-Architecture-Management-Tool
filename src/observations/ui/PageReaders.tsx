@@ -26,7 +26,7 @@ import type { Cause, CauseAbove, CauseLink, Observation, ScopeAnalysis } from '.
 import { nodeKey, pictureKey } from '../graph'
 import {
   alternatives, experimentsFor, implementedOn, moveSolution, openItems, previousState, restoreSolution, seenSinceImplemented,
-  solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath, updateExperiment, updateSolution, waiveExperiment,
+  solutionGate, solutionPhase, solutionQuestions, unaddressCause, underneath, updateExperiment, updateSolution,
 } from '../solution'
 import type { Experiment, ExperimentOutcome, Solution, SolutionContext, SolutionPlan, SolutionState } from '../solution'
 import { experimentKey, solutionKey } from '../solutionGraph'
@@ -149,6 +149,8 @@ export type ReaderContext = {
     address: (solution: Solution) => void
     plan: (solution: Solution) => void
     drop: (solution: Solution) => void
+    /** Waive its experiment, asking why none is needed. */
+    waive: (solution: Solution) => void
   }
   mergedLabel: (observation: Observation) => MergedInto | undefined
   /** Where a cause went when it was merged, of this scope or of `scope`. */
@@ -414,7 +416,7 @@ export function solutionProps(one: Solution, ctx: ReaderContext): SolutionReader
     nameOf: (id) => ctx.nameOf(id),
     onUpdate: (patch) => ctx.commit({ solutions: updateSolution(work.solutions, one.id, patch) }),
     onMove: move,
-    onWaive: (reason) => ctx.commit({ solutions: waiveExperiment(work.solutions, one.id, reason, ctx.today()) }),
+    onWaive: () => ctx.ask.waive(one),
     onAddress: () => ctx.ask.address(one),
     onUnaddress: (causeId) => ctx.commit({ solutions: unaddressCause(work.solutions, one.id, causeId) }),
     onPlanExperiment: () => ctx.ask.plan(one),

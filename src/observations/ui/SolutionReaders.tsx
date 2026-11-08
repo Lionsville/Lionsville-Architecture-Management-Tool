@@ -22,17 +22,10 @@
  * answered reads as text and is changed there, so a record does not look like an
  * empty form; what the gate still waits for keeps its control where it is asked.
  */
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import { Button as KitButton } from '../../widgets/kit/Button'
-import Checkbox from '@mui/material/Checkbox'
-import Chip from '@mui/material/Chip'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import Link from '@mui/material/Link'
-import { FieldBox } from '../../widgets/kit/FieldBox'
-import ToggleButton from '@mui/material/ToggleButton'
-import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
@@ -42,10 +35,10 @@ import { inSentence } from '../../i18n/languages'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import {
-  SOLUTION_PHASES, SOLUTION_SIZES, experimentMovesFrom, formatSolutionNumber, mayAddress, mayPlanExperiment, previousState,
+  SOLUTION_PHASES, experimentMovesFrom, formatSolutionNumber, mayAddress, mayPlanExperiment, previousState,
 } from '../solution'
 import type {
-  EarlierAttempt, Experiment, ExperimentOutcome, ExperimentPatch, Gate, GateItem, Solution, SolutionPatch, SolutionPhase,
+  Experiment, ExperimentOutcome, ExperimentPatch, Gate, GateItem, Solution, SolutionPatch, SolutionPhase,
   SolutionQuestion, SolutionSize, SolutionState,
 } from '../solution'
 import type { CauseStrength } from '../observation'
@@ -81,24 +74,6 @@ function Muted({ children }: { children: ReactNode }) {
   return <Box component="span" sx={{ color: 'text.secondary' }}>{children}</Box>
 }
 
-/** A line of text written on blur rather than on every key, for the one-line answers. */
-function AnswerField(props: { label: string; value: string; onSave: (value: string) => void; disabled: boolean; testId?: string; multiline?: boolean }) {
-  const [draft, setDraft] = useState(props.value)
-  useEffect(() => setDraft(props.value), [props.value])
-  return (
-    <FieldBox
-      fullWidth
-      multiline={props.multiline}
-      label={props.label}
-      value={draft}
-      disabled={props.disabled}
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={() => { if (draft !== props.value) props.onSave(draft) }}
-      slotProps={{ htmlInput: { 'data-testid': props.testId } }}
-    />
-  )
-}
-
 // --- one solution -------------------------------------------------------------------------
 
 export type SolutionReaderProps = {
@@ -128,7 +103,8 @@ export type SolutionReaderProps = {
   nameOf: (id: string) => string
   onUpdate: (patch: SolutionPatch) => void
   onMove: (to: SolutionState) => void
-  onWaive: (reason: string) => void
+  /** Asks why no experiment is needed, and waives it. */
+  onWaive: () => void
   onAddress: () => void
   onUnaddress: (causeId: string) => void
   onPlanExperiment: () => void
@@ -174,46 +150,17 @@ export function SolutionReader(props: SolutionReaderProps) {
   const { language } = useStrings()
   const day = (date: string) => formatDay(date, language)
 
-  const [name, setName] = useState('')
-  const [attempt, setAttempt] = useState<EarlierAttempt>({ when: '', what: '', why: '' })
-  const addName = () => {
-    if (!name.trim()) return
-    props.onUpdate({ validatedWith: [...solution.validatedWith, name] })
-    setName('')
-  }
-  const addAttempt = () => {
-    if (!attempt.what.trim() && !attempt.why.trim()) return
-    props.onUpdate({ attempts: [...solution.attempts, attempt], noneKnown: false })
-    setAttempt({ when: '', what: '', why: '' })
-  }
-
-  // Answered, it reads as text and is changed on Edit; unanswered, it is asked here.
-  const sizePicker = (field: 'benefit' | 'cost', value: SolutionSize | undefined) => (
-    canEdit && !value ? (
-      <ToggleButtonGroup
-        exclusive value={value ?? null}
-        onChange={(_e, next: SolutionSize | null) => props.onUpdate({ [field]: next ?? undefined })}
-        aria-label={s(field === 'benefit' ? 'solution.benefitField' : 'solution.costField')}
-        data-testid={`solution-${field}`}
-      >
-        {SOLUTION_SIZES.map((size) => <ToggleButton key={size} value={size} sx={{ py: 0, px: 1, fontSize: 'var(--t-small)', textTransform: 'none' }}>{s(SIZE_LABEL[size])}</ToggleButton>)}
-      </ToggleButtonGroup>
-    ) : value ? s(SIZE_LABEL[value]) : <Muted>{s('solution.unset')}</Muted>
-  )
+  // A reading: every answer is written in Edit, and an unanswered one says so here.
+  const size = (value: SolutionSize | undefined) => (value ? s(SIZE_LABEL[value]) : <Muted>{s('solution.unset')}</Muted>)
 
   return (
     <ReaderRoot testId="solution-reader">
             <div data-testid="solution-phase"><SolutionLadder phase={phase} s={s} /></div>
             {gate && !dropped && (
               <SolutionGate
-                gate={gate} solution={solution} canEdit={canEdit} back={back} s={s}
-                onPlanExperiment={props.onPlanExperiment} onDecide={props.onDecide} onWaive={props.onWaive} onMove={props.onMove}
+                gate={gate} solution={solution} canEdit={canEdit} s={s}
+                onPlanExperiment={props.onPlanExperiment} onDecide={props.onDecide}
               />
-            )}
-            {!gate && solution.state === 'adopted' && canEdit && back && (
-              <Box sx={{ mt: 2 }}>
-                <KitButton variant="quiet" size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: inSentence(s(PHASE_LABEL[back]), language) })}</KitButton>
-              </Box>
             )}
             {!back && props.reopenBy && !dropped && (
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }} data-testid="solution-reopen-hint">
@@ -255,66 +202,28 @@ export function SolutionReader(props: SolutionReaderProps) {
                     />
                   )}
               </Value>
-              <Term>{s('solution.benefitField')}</Term><Value>{sizePicker('benefit', solution.benefit)}</Value>
-              <Term>{s('solution.costField')}</Term><Value>{sizePicker('cost', solution.cost)}</Value>
+              <Term>{s('solution.benefitField')}</Term><Value testId="solution-benefit">{size(solution.benefit)}</Value>
+              <Term>{s('solution.costField')}</Term><Value testId="solution-cost">{size(solution.cost)}</Value>
               <Term>{s('solution.validatedWith')}</Term>
               <Value testId="solution-validated-with">
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'center' }}>
-                  {solution.validatedWith.length === 0 && !canEdit && <Muted>—</Muted>}
-                  {solution.validatedWith.map((one) => (
-                    <Chip key={one} label={one} {...(canEdit ? { onDelete: () => props.onUpdate({ validatedWith: solution.validatedWith.filter((held) => held !== one) }) } : {})} />
-                  ))}
-                  {canEdit && (
-                    <>
-                      <FieldBox
-                        placeholder={s('solution.validatedField')} value={name}
-                        onChange={(event) => setName(event.target.value)}
-                        onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addName() } }}
-                        slotProps={{ htmlInput: { 'aria-label': s('solution.validatedWith'), 'data-testid': 'solution-validated-field' } }}
-                        sx={{ minWidth: 180 }}
-                      />
-                      <Button sx={{ textTransform: 'none' }} size="small" onClick={addName} data-testid="solution-validated-add">{s('solution.add')}</Button>
-                    </>
-                  )}
-                </Box>
+                {solution.validatedWith.length === 0 ? <Muted>{s('solution.notAnswered')}</Muted> : solution.validatedWith.join(', ')}
               </Value>
               <Term>{s('solution.attempts')}</Term>
               <Value testId="solution-attempts">
-                {solution.attempts.length === 0 && (
-                  canEdit
-                    ? <FormControlLabel control={<Checkbox checked={solution.noneKnown === true} onChange={(event) => props.onUpdate({ noneKnown: event.target.checked })} data-testid="solution-none-known" />} label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('solution.noneKnown')}</Typography>} />
-                    : <Muted>{solution.noneKnown ? s('solution.noneKnown') : s('solution.notAnswered')}</Muted>
-                )}
-                <Box component="ul" sx={{ m: 0, pl: 2 }}>
-                  {solution.attempts.map((one, index) => (
-                    <li key={index}>
-                      {one.when ? <b>{one.when}: </b> : null}{one.what}{one.why ? <> — <i>{one.why}</i></> : null}
-                      {canEdit && <Button size="small" sx={{ textTransform: 'none', minWidth: 0, px: 0.5, fontSize: 'var(--t-small)' }} onClick={() => props.onUpdate({ attempts: solution.attempts.filter((_, at) => at !== index) })}>{s('solution.remove')}</Button>}
-                    </li>
-                  ))}
-                </Box>
-              </Value>
-              {canEdit && (
-                <>
-                  <Term>{null}</Term>
-                  <Value>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 0.5, alignItems: 'center' }}>
-                      <FieldBox placeholder={s('solution.attemptWhen')} value={attempt.when} onChange={(e) => setAttempt((a) => ({ ...a, when: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhen') } }} />
-                      <FieldBox placeholder={s('solution.attemptWhat')} value={attempt.what} onChange={(e) => setAttempt((a) => ({ ...a, what: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhat'), 'data-testid': 'solution-attempt-what' } }} />
-                      <FieldBox placeholder={s('solution.attemptWhy')} value={attempt.why} onChange={(e) => setAttempt((a) => ({ ...a, why: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhy'), 'data-testid': 'solution-attempt-why' } }} />
-                      <Button sx={{ textTransform: 'none' }} size="small" onClick={addAttempt} data-testid="solution-attempt-add">{s('solution.attemptAdd')}</Button>
+                {solution.attempts.length === 0
+                  ? <Muted>{solution.noneKnown ? s('solution.noneKnown') : s('solution.notAnswered')}</Muted>
+                  : (
+                    <Box component="ul" sx={{ m: 0, pl: 2 }}>
+                      {solution.attempts.map((one, index) => (
+                        <li key={index}>{one.when ? <b>{one.when}: </b> : null}{one.what}{one.why ? <> — <i>{one.why}</i></> : null}</li>
+                      ))}
                     </Box>
-                  </Value>
-                </>
-              )}
+                  )}
+              </Value>
               {(solution.attempts.length > 0 || solution.whyNow) && (
                 <>
                   <Term>{s('solution.whyNow')}</Term>
-                  <Value>
-                    {canEdit && !solution.whyNow
-                      ? <AnswerField label={s('solution.whyNowField')} value={solution.whyNow ?? ''} onSave={(whyNow) => props.onUpdate({ whyNow })} disabled={false} testId="solution-why-now" multiline />
-                      : solution.whyNow ?? <Muted>{s('solution.notAnswered')}</Muted>}
-                  </Value>
+                  <Value testId="solution-why-now">{solution.whyNow ?? <Muted>{s('solution.notAnswered')}</Muted>}</Value>
                 </>
               )}
               <Term>{s('solution.experiments')}</Term>
@@ -410,20 +319,16 @@ function SolutionLadder({ phase, s }: { phase: SolutionPhase; s: Translate }) {
   return <StepLadder steps={steps} />
 }
 
-function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDecide, onWaive, onMove }: {
+/** What the next state asks, a line each; the step itself is the Next band's, and Waive… and the step back are with it. */
+function SolutionGate({ gate, solution, canEdit, s, onPlanExperiment, onDecide }: {
   gate: Gate
   solution: Solution
   canEdit: boolean
-  back: SolutionState | undefined
   s: Translate
   onPlanExperiment: () => void
   onDecide?: () => void
-  onWaive: (reason: string) => void
-  onMove: (to: SolutionState) => void
 }) {
   const { language } = useStrings()
-  const [waiver, setWaiver] = useState('')
-  const open = gate.items.filter((one) => !one.ok)
   const label = (item: GateItem) => (
     item === 'whyNow' && solution.attempts.length === 0 ? s('solution.gateWhyNowNoneKnown') : s(GATE_LABEL[item])
   )
@@ -445,21 +350,6 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
           </Box>
         ))}
       </Box>
-      {canEdit && gate.items.some((one) => one.item === 'experimentConfirmed' && !one.ok) && (
-        <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-          <FieldBox fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
-          <KitButton size="small" reason={waiver.trim() ? undefined : s('solution.waiveField')} onClick={() => { onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</KitButton>
-        </Box>
-      )}
-      {canEdit && (
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
-          <KitButton variant="primary" reason={open.length > 0 ? s('solution.toGo', { count: open.length }) : undefined} reasonAt="beside" onClick={() => onMove(gate.to)} data-testid="solution-move" data-guide="solution.move">
-            {s('solution.moveOn', { state: inSentence(s(PHASE_LABEL[gate.to]), language) })}
-          </KitButton>
-          <Box sx={{ flex: 1 }} />
-          {back && <KitButton variant="quiet" onClick={() => onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: inSentence(s(PHASE_LABEL[back]), language) })}</KitButton>}
-        </Box>
-      )}
     </Section>
   )
 }

@@ -96,9 +96,11 @@ describe('the Solutions tab', () => {
     const gate = screen.getByTestId('solution-gate')
     expect(within(gate).getByTestId('solution-gate-addresses').dataset.ok).toBe('true')
     expect(within(gate).getByTestId('solution-gate-benefit').dataset.ok).toBe('false')
-    expect(screen.getByTestId('solution-move').getAttribute('aria-disabled')).toBe('true')
+    // The step is the Next band's, held, and says how much holds it; the gate in the reading lists what.
+    const move = screen.getByTestId('solution-move')
+    expect(move.getAttribute('aria-disabled')).toBe('true')
     // "Was this tried before?" is unanswered, so why-now is not ticked either.
-    expect(gate.textContent).toContain('5 to go')
+    expect(move.closest('.kit-next')!.textContent).toContain('5 holding it')
   })
 
   it('says on the why-now line that one tick answers it while nothing earlier is listed, and each line its rule on hover', async () => {
@@ -126,13 +128,26 @@ describe('the Solutions tab', () => {
     expect(moved.history.at(-1)).toEqual({ date: '2026-09-24', kind: 'moved', to: 'shaped' })
   })
 
-  it('answers the gate from the reader: a name checked with, and none known', () => {
+  it('answers the gate in Edit, the preview only reading it: a name checked with, and none known', () => {
     const { onChange } = mount({ ...base, solutions: [solution({})] }, { initialId: 'so:s1' })
-    fireEvent.change(screen.getByTestId('solution-validated-field'), { target: { value: 'Operations' } })
-    fireEvent.click(screen.getByTestId('solution-validated-add'))
-    expect(lastChange(onChange).solutions[0].validatedWith).toEqual(['Operations'])
+    expect(screen.queryByTestId('solution-validated-field')).toBeNull()
+    expect(screen.getByTestId('solution-validated-with').textContent).toBe('Not answered')
+    fireEvent.click(screen.getByTestId('reader-edit'))
+    fireEvent.change(screen.getByTestId('solution-validated-field'), { target: { value: 'Operations\n Finance \n' } })
     fireEvent.click(screen.getByTestId('solution-none-known').querySelector('input')!)
-    expect(lastChange(onChange).solutions[0].noneKnown).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(onChange).toHaveBeenCalledTimes(1)
+    expect(lastChange(onChange).solutions[0]).toMatchObject({ validatedWith: ['Operations', 'Finance'], noneKnown: true })
+  })
+
+  it('waives the experiment from the Next band, asking why', () => {
+    const { onChange } = mount({ ...base, solutions: [solution({ state: 'testing' })] }, { initialId: 'so:s1' })
+    fireEvent.click(screen.getByTestId('solution-waive-open'))
+    fireEvent.click(screen.getByTestId('solution-waive'))
+    expect(onChange).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByTestId('solution-waive-field'), { target: { value: 'A configuration change, undone in a minute' } })
+    fireEvent.click(screen.getByTestId('solution-waive'))
+    expect(lastChange(onChange).solutions[0].waived).toBe('A configuration change, undone in a minute')
   })
 
   it('plans an experiment for a shaped solution, and moves the solution on to testing with it', () => {

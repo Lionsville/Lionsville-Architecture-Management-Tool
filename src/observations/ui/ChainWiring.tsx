@@ -28,7 +28,7 @@ import { recordMenu } from './PageReaders'
 import type { DeleteKind, ReaderContext, Selected } from './PageReaders'
 import type { MenuAction, PictureTarget } from './PictureMenu'
 import type { CausePanel } from './Readers'
-import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog } from './SolutionDialogs'
+import { AddressDialog, DropDialog, NewExperimentDialog, NewSolutionDialog, WaiveDialog } from './SolutionDialogs'
 import type { NewSolution } from './SolutionDialogs'
 import { NotedDialog } from './NotedDialog'
 
@@ -40,6 +40,9 @@ const DELETE_BODY = {
   observation: 'observation.deleteBody', cause: 'observation.deleteCauseBody',
   solution: 'solution.deleteBody', experiment: 'solution.deleteExperimentBody',
 } as const
+
+/** The two questions of why a solution asks: why drop it, and why it needs no experiment. */
+export type SolutionAsk = 'drop' | 'waive'
 
 type Subject = { id: string; label: string } | undefined
 
@@ -65,9 +68,10 @@ export function RecordDialogs(props: {
   planning: Subject
   onPlanCancel: () => void
   onPlan: (fields: { title: string; hypothesis: string; measure: string }) => void
-  dropping: Subject
-  onDropCancel: () => void
-  onDrop: (reason: string) => void
+  /** A solution being dropped, or its experiment waived. */
+  asking: { id: string; label: string; what: SolutionAsk } | undefined
+  onAskCancel: () => void
+  onAsk: (reason: string) => void
   deleting: { kind: DeleteKind; id: string; label: string } | undefined
   onDeleteCancel: () => void
   onDelete: () => void
@@ -86,7 +90,8 @@ export function RecordDialogs(props: {
       />
       <AddressDialog subject={props.addressing} candidates={props.addressCandidates} onCancel={props.onAddressCancel} onConfirm={props.onAddress} s={s} />
       <NewExperimentDialog subject={props.planning} onCancel={props.onPlanCancel} onCreate={props.onPlan} s={s} />
-      <DropDialog subject={props.dropping} onCancel={props.onDropCancel} onConfirm={props.onDrop} s={s} />
+      <DropDialog subject={props.asking?.what === 'drop' ? props.asking : undefined} onCancel={props.onAskCancel} onConfirm={props.onAsk} s={s} />
+      <WaiveDialog subject={props.asking?.what === 'waive' ? props.asking : undefined} onCancel={props.onAskCancel} onConfirm={props.onAsk} s={s} />
       <ConfirmDialog
         open={Boolean(deleting)}
         title={deleting ? s(DELETE_TITLE[deleting.kind], { name: deleting.label }) : ''}

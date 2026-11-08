@@ -78,6 +78,7 @@ import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
 import { BulkActions, ChainEmpty, ChainFilter, HiddenBar, MapWindowBar, ResultsSaid } from './ChainBars'
 import { RecordDialogs, pictureMenuActions, useSolveMap } from './ChainWiring'
+import type { SolutionAsk } from './ChainWiring'
 import { hiddenRows, observationColumns, recordsBelow, stageGroups } from './ChainLists'
 import type { StageData } from './ChainLists'
 import type { MergedInto, CausePanel } from './Readers'
@@ -91,7 +92,7 @@ import {
   addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, newExperiment,
   newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution,
   rootsWithoutSolution, solutionPhase, solutionPlanOf,
-  updateExperiment, updateSolution,
+  updateExperiment, updateSolution, waiveExperiment,
 } from '../solution'
 import type { Solution, SolutionContext, SolutionPhase, SolutionPlan, SolutionWork } from '../solution'
 import { causesForProposal, experimentKey, solutionKey } from '../solutionGraph'
@@ -559,6 +560,9 @@ function escapeClosesPanel(event: ReactKeyboardEvent, onMap: boolean, selectedKe
   setSelectedKey(undefined)
 }
 
+/** What answering a solution's question of why does: drop it, or waive its experiment. */
+const ANSWER = { drop: dropSolution, waive: waiveExperiment } as const
+
 /** The whole record has one way back, its named crumb (‹ Seen), and Escape goes the same way: the tab row's ‹ and × stand aside. */
 function OffTheRecord({ full, children }: { full: boolean; children: ReactNode }) {
   return full ? null : <>{children}</>
@@ -610,7 +614,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [proposing, setProposing] = useState<{ causeId?: string } | undefined>(undefined)
   const [addressing, setAddressing] = useState<Solution | undefined>(undefined)
   const [planning, setPlanning] = useState<Solution | undefined>(undefined)
-  const [dropping, setDropping] = useState<Solution | undefined>(undefined)
+  /** A solution being dropped, or its experiment waived: both ask why first. */
+  const [asking, setAsking] = useState<{ what: SolutionAsk; solution: Solution } | undefined>(undefined)
   const [selectedKey, setSelectedKeyRaw] = useState<string | undefined>(undefined)
   /** The whole record is up, of what is selected: links, history, comments. */
   const [full, setFull] = useState(false)
@@ -813,7 +818,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       move: moving.ask,
       note: (observation, scope) => setNoting({ observation, ...(scope !== undefined ? { scope } : {}) }),
       remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
-      address: setAddressing, plan: setPlanning, drop: setDropping,
+      address: setAddressing, plan: setPlanning, drop: (solution) => setAsking({ what: 'drop', solution }), waive: (solution) => setAsking({ what: 'waive', solution }),
     },
     mergedLabel, mergedCause, openKey: setSelectedKey, asked,
     ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
@@ -1085,10 +1090,10 @@ export function ObservationsPage(props: ObservationsPageProps) {
             setAddressing(undefined)
           }}
           planning={planning ? { id: planning.id, label: nameOf(planning.id) } : undefined} onPlanCancel={() => setPlanning(undefined)} onPlan={(fields) => { if (planning) addExperiment(planning, fields) }}
-          dropping={dropping ? { id: dropping.id, label: nameOf(dropping.id) } : undefined} onDropCancel={() => setDropping(undefined)}
-          onDrop={(reason) => {
-            if (dropping) commit({ solutions: dropSolution(solutions, dropping.id, reason, today()) })
-            setDropping(undefined)
+          asking={asking && { what: asking.what, id: asking.solution.id, label: nameOf(asking.solution.id) }} onAskCancel={() => setAsking(undefined)}
+          onAsk={(reason) => {
+            if (asking) commit({ solutions: ANSWER[asking.what](solutions, asking.solution.id, reason, today()) })
+            setAsking(undefined)
           }}
           deleting={deleting} onDeleteCancel={() => setDeleting(undefined)} onDelete={remove} s={s}
         />

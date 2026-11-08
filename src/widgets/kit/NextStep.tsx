@@ -85,6 +85,7 @@ export function NextStep({ steps, orientation, stepsLabel, question, actions, ho
           <>
             {question && <strong className="kit-next__question">{question}</strong>}
             {buttons}
+            {held > 0 && <span className="kit-next__heldCount">{t('kit.next.holds', { count: held })}</span>}
           </>
         )}
       </div>
