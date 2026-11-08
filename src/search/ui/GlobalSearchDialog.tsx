@@ -155,24 +155,66 @@ function PaletteRows({ lines, first, active, onHover, onRun }: {
       {runsOfGroup(lines).map(({ group, from, run: inGroup }) => (
           <Box key={group} role="group" aria-label={group}>
             <ListSubheader component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 'var(--t-small)' }}>{group}</ListSubheader>
-            {inGroup.map((line, offset) => {
-              const index = first + from + offset
-              return (
-                <ListItemButton
-                  key={line.id} id={optionId(index)} role="option" aria-selected={index === active} selected={index === active} dense
-                  onMouseMove={() => onHover(index)} onClick={() => onRun(line)}
-                  data-testid={`palette-${line.id}`}
-                  sx={{ display: 'flex', gap: 1, px: 2, py: 0.5 }}
-                >
-                  <Typography sx={{ fontSize: 'var(--t-body)', flex: '0 1 auto', minWidth: 0 }} noWrap>{line.label}</Typography>
-                  <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', flex: 1, minWidth: 0 }} noWrap>{line.hint}</Typography>
-                  {line.keys !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{line.keys}</Typography>}
-                </ListItemButton>
-              )
-            })}
+            {inGroup.map((line, offset) => <PaletteRow key={line.id} line={line} index={first + from + offset} active={active} onHover={onHover} onRun={onRun} />)}
           </Box>
         ))}
     </>
+  )
+}
+
+/** The hits a kind to a group, named by its heading so a screen reader says which kind a row is, each kind's Show all last in it. */
+function KindGroups({ kinds, active, onHover, onChoose, onRun, scopeLabel, s }: {
+  kinds: readonly { kind: SearchKind; from: number; run: readonly SearchHit[]; all: PaletteLine | undefined }[]
+  active: number
+  onHover(index: number): void
+  onChoose(hit: SearchHit): void
+  onRun(line: PaletteLine): void
+  scopeLabel: (path: string) => string
+  s: Translate
+}) {
+  return kinds.map(({ kind, from, run: found, all }) => (
+    <Box key={`${kind}-${from}`} role="group" aria-labelledby={`lv-gsearch-kind-${from}`}>
+      <ListSubheader id={`lv-gsearch-kind-${from}`} component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 'var(--t-small)' }}>
+        {s(KIND_LABEL[kind])}
+      </ListSubheader>
+      {found.map((hit, offset) => {
+        const index = from + offset
+        return (
+          <ListItemButton
+            key={`${hit.kind}-${index}`} id={optionId(index)} role="option" aria-selected={index === active} selected={index === active} dense
+            onMouseDown={keepTheField} onMouseMove={() => onHover(index)} onClick={() => onChoose(hit)}
+            sx={{ display: 'block', px: 2, py: 0.75 }}
+          >
+            <HitRow hit={hit} scopeLabel={scopeLabel} s={s} />
+          </ListItemButton>
+        )
+      })}
+      {all && <PaletteRow line={all} index={from + found.length} active={active} onHover={onHover} onRun={onRun} />}
+    </Box>
+  ))
+}
+
+/** A press on a row keeps the focus in the field, where the typing and the arrows are: a row that keeps the dialog open would otherwise take it. */
+const keepTheField = (event: { preventDefault(): void }) => event.preventDefault()
+
+function PaletteRow({ line, index, active, onHover, onRun }: {
+  line: PaletteLine
+  index: number
+  active: number
+  onHover(index: number): void
+  onRun(line: PaletteLine): void
+}) {
+  return (
+    <ListItemButton
+      id={optionId(index)} role="option" aria-selected={index === active} selected={index === active} dense
+      onMouseDown={keepTheField} onMouseMove={() => onHover(index)} onClick={() => onRun(line)}
+      data-testid={`palette-${line.id}`}
+      sx={{ display: 'flex', gap: 1, px: 2, py: 0.5 }}
+    >
+      <Typography sx={{ fontSize: 'var(--t-body)', flex: '0 1 auto', minWidth: 0 }} noWrap>{line.label}</Typography>
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', flex: 1, minWidth: 0 }} noWrap>{line.hint}</Typography>
+      {line.keys !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{line.keys}</Typography>}
+    </ListItemButton>
   )
 }
 
@@ -205,11 +247,22 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
 
   const offered = useMemo(() => (open && more ? more(asked) : []), [open, more, asked])
   const ahead = useMemo(() => offered.filter((line) => line.lead), [offered])
-  const lines = useMemo(() => [...showAll, ...offered.filter((line) => !line.lead)], [offered, showAll])
+  const lines = useMemo(() => offered.filter((line) => !line.lead), [offered])
   // A view found by name across the tree is a line ahead; the same view as a record of this scope would be said twice.
   const leadIds = useMemo(() => new Set(ahead.map((line) => line.id)), [ahead])
   const hits = useMemo(() => found.filter((hit) => !(hit.kind === 'view' && leadIds.has(`view:${hit.id}`))), [found, leadIds])
-  const total = ahead.length + hits.length + lines.length
+  // The hits in their kinds, each kind's Show all last in it, where the reader looking at a cut kind sees it: the arrows count them in that order.
+  const kinds = useMemo(() => {
+    let at = ahead.length
+    return runsOfKind(hits).map(({ kind, run }) => {
+      const all = showAll.find((line) => line.id === `all:${kind}`)
+      const group = { kind, from: at, run, all }
+      at += run.length + (all ? 1 : 0)
+      return group
+    })
+  }, [ahead.length, hits, showAll])
+  const shown: { hit?: SearchHit; line?: PaletteLine }[] = kinds.flatMap(({ run, all }) => [...run.map((hit) => ({ hit })), ...(all ? [{ line: all }] : [])])
+  const total = ahead.length + shown.length + lines.length
   const active = total > 0 ? Math.min(activeIndex, total - 1) : -1
 
   useEffect(() => {
@@ -232,11 +285,13 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
     line.run()
   }
   const chooseAt = (index: number) => {
-    if (index < ahead.length) run(ahead[index])
-    else if (index < ahead.length + hits.length) choose(hits[index - ahead.length])
-    else run(lines[index - ahead.length - hits.length])
+    if (index < ahead.length) { run(ahead[index]); return }
+    const row = shown[index - ahead.length]
+    if (row?.hit) choose(row.hit)
+    else if (row?.line) run(row.line)
+    else run(lines[index - ahead.length - shown.length])
   }
-  const previewed = active >= ahead.length && active < ahead.length + hits.length ? hits[active - ahead.length] : undefined
+  const previewed = active >= ahead.length ? shown[active - ahead.length]?.hit : undefined
 
   // The empty state describes the list, so it quotes the query the list answers.
   const trimmed = asked.trim()
@@ -287,35 +342,8 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
         <PaletteRows lines={ahead} first={0} active={active} onHover={setActiveIndex} onRun={run} />
         {/* One group per kind, named by its heading, so a screen reader says
             which kind a row is as it reaches the first of them. */}
-        {runsOfKind(hits).map(({ kind, from: at, run }) => {
-          const from = ahead.length + at
-          return (
-          <Box key={`${kind}-${from}`} role="group" aria-labelledby={`lv-gsearch-kind-${from}`}>
-            <ListSubheader id={`lv-gsearch-kind-${from}`} component="div" role="presentation" disableSticky sx={{ lineHeight: '28px', bgcolor: 'transparent', fontSize: 'var(--t-small)' }}>
-              {s(KIND_LABEL[kind])}
-            </ListSubheader>
-            {run.map((hit, offset) => {
-              const index = from + offset
-              return (
-                <ListItemButton
-                  key={`${hit.kind}-${index}`}
-                  id={optionId(index)}
-                  role="option"
-                  aria-selected={index === active}
-                  selected={index === active}
-                  dense
-                  onMouseMove={() => setActiveIndex(index)}
-                  onClick={() => choose(hit)}
-                  sx={{ display: 'block', px: 2, py: 0.75 }}
-                >
-                  <HitRow hit={hit} scopeLabel={scopeLabel} s={s} />
-                </ListItemButton>
-              )
-            })}
-          </Box>
-          )
-        })}
-        <PaletteRows lines={lines} first={ahead.length + hits.length} active={active} onHover={setActiveIndex} onRun={run} />
+        <KindGroups kinds={kinds} active={active} onHover={setActiveIndex} onChoose={choose} onRun={run} scopeLabel={scopeLabel} s={s} />
+        <PaletteRows lines={lines} first={ahead.length + shown.length} active={active} onHover={setActiveIndex} onRun={run} />
       </Box>
       {/* What a whole sentence needs room for: a hit read before it is opened. */}
       {previewed && (
@@ -366,7 +394,7 @@ function useFoundWithMore(open: boolean, sources: readonly SearchSource[], asked
     [open, sources, asked, people, whole],
   )
   const more = useMemo(() => [...cut].map((kind): PaletteLine => ({
-    id: `all:${kind}`, group: s('gsearch.more'), label: s('gsearch.showAllOf', { kind: s(KIND_LABEL[kind]) }), stays: true,
+    id: `all:${kind}`, group: s(KIND_LABEL[kind]), label: s('gsearch.showAll'), stays: true,
     run: () => setWhole((was) => new Set(was).add(kind)),
   })), [cut, s])
   return { found, more }

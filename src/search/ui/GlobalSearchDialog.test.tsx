@@ -144,7 +144,13 @@ describe('a kind with more hits than it shows', () => {
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'gateway' } })
     expect(screen.getAllByRole('option').filter((one) => /Gateway/.test(one.textContent ?? ''))).toHaveLength(8)
     expect(await axeFindings()).toEqual([])
-    fireEvent.click(screen.getByTestId('palette-all:element'))
+    // Last in its own kind, under the eight it cuts, and a press leaves the typing where it was.
+    const all = screen.getByTestId('palette-all:element')
+    const options = [...all.closest('[role=group]')!.querySelectorAll('[role=option]')]
+    expect(options).toHaveLength(9)
+    expect(options.at(-1)).toBe(all)
+    expect(fireEvent.mouseDown(all)).toBe(false)
+    fireEvent.click(all)
     expect(screen.getAllByRole('option').filter((one) => /Gateway/.test(one.textContent ?? ''))).toHaveLength(12)
     expect(screen.queryByTestId('palette-all:element')).toBeNull()
   })

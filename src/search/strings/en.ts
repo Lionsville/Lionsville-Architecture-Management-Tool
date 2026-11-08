@@ -27,7 +27,8 @@ export const EN = {
   'gsearch.field': 'Find or run a command',
   'gsearch.results': 'Results',
   'gsearch.more': 'More',
-  'gsearch.showAllOf': 'Show all {kind}',
+  // Last among one kind's hits, which its heading names.
+  'gsearch.showAll': 'Show all',
   'gsearch.empty': 'Type to search every record of this scope — elements and their pages, views, relations, decisions, plans and milestones, observations, causes, solutions and experiments — and what the rest of the organisation holds.',
   'gsearch.noMatches': 'Nothing matches \u201c{query}\u201d.',
   'gsearch.hint': 'Enter opens the highlighted result where it lives; Esc closes.',
