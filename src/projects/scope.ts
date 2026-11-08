@@ -35,6 +35,7 @@ import type { Citation } from '../model/citable'
 import type { Evaluation } from '../model/evaluation'
 import type { Principle, PrincipleGroup } from '../model/principle'
 import type { CheckMark } from '../model/checkMarks'
+import type { Comment } from '../model/comment'
 import type { RecordLink } from './links'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -329,6 +330,12 @@ export type ScopeModel = {
     citations?: readonly Citation[]
     /** The scope's evaluations of building blocks (ADR-0043 §4): where each block is weighed and chosen. */
     evaluations?: readonly Evaluation[]
+    /**
+     * The comments brought from another scope, without their bodies
+     * (`readdress.commentsIndexed`, ADR-0037 §6): what a move of that scope
+     * finds this one by. A scope's threads are read where they are shown.
+     */
+    comments?: readonly Comment[]
     /** How many decision records it keeps, for what a tree's row says it holds; absent where a store has not counted them. */
     decisionCount?: number
   }

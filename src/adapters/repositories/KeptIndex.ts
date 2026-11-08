@@ -18,6 +18,7 @@ import type { Transaction } from './KeyedStore'
 import { allScopes, indexRevision, readMeta, readModel, sequenceKey } from './kept'
 import type { IndexLogged, KeptScope } from './kept'
 import type { Source } from './source'
+import { commentsIndexed } from '../../projects/readdress'
 
 export class KeptIndex implements OrganisationIndex {
   readonly id: string
@@ -77,7 +78,7 @@ function sequenceOf(revision: string, nonce: string): number | undefined {
 async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> {
   const {
     decisions, elements, relations, transitions, observations, causes, solutions, experiments,
-    unitTypes, roles, responsibilities, operatingRules, assignments, checkMarks, principles, principleGroups, aspectScales, citations, evaluations,
+    unitTypes, roles, responsibilities, operatingRules, assignments, checkMarks, principles, principleGroups, aspectScales, citations, evaluations, comments,
   } = (await readModel(tx, kept)).content.model
   return {
     id: kept.id, address: kept.address,
@@ -111,6 +112,8 @@ async function indexed(tx: Transaction, kept: KeptScope): Promise<IndexedScope> 
       ...(citations ? { citations } : {}),
       // And the evaluations of building blocks: where each is weighed and chosen (ADR-0043 §8).
       ...(evaluations ? { evaluations } : {}),
+      // And the comments brought from another scope, without their bodies: what a move of that scope finds this one by (ADR-0037 §6).
+      ...commentsIndexed(comments),
     },
   }
 }

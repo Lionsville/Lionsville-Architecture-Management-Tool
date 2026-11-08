@@ -20,7 +20,7 @@ import type { DesignDiagram } from '../model/types'
 import type { ScopeNode } from './ScopeRepository'
 import { emptyContent } from '../projects/scopeState'
 import type { ScopeContent, ScopeId } from '../projects/scopeState'
-import { moveScopeUnder } from '../projects/scopeTree'
+import { moveScopeUnder, scopesAMoveWrites } from '../projects/scopeTree'
 import { evaluationId } from '../model/evaluation'
 import type { HostModel } from '../model/hostModel'
 import {
@@ -757,11 +757,23 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
           groups: [], regime: 'flexible', status: 'accepted', relations: [{ kind: 'refines', to: { scope: base, id: 'pr-1' } }],
         }],
         evaluations: [{ id: evaluationId({ scope: base, id: 'block' }), block: { scope: base, id: 'block' }, contexts: [], options: [], coverage: {} }],
+        // A mark's key names a scope where its subjects do: the scope below a type is about, and the one below a cause reaches into.
+        checkMarks: [
+          { check: 'check.scopeTypeUnserved', key: `${base}/below ut-team`, on: day },
+          { check: 'check.causeExplainsObservationBelow', key: `ca-1 ${base}/below ob-9`, on: day },
+        ],
+      } as unknown as HostModel)
+      /** A scope whose one address is a comment brought from the scope that moves: what the index must hold for a move to find it. */
+      const commented = (base: string): HostModel => ({
+        ...emptyContent('Commented').model,
+        observations: [{ id: 'ob-1', number: 1, title: 'Seen', date: day, impact: 'minor', seen: 1, body: '', history: [{ date: day, kind: 'recorded' }] }],
+        comments: [{ id: 'cm-1', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-a' }, at: `${day}T09:00:00Z`, body: 'Brought here.', from: { kind: 'observation', id: 'ob-9', scope: base } }],
       } as unknown as HostModel)
       /** What a scope read before the move holds after it: every address in the subtree said from its new place. */
       const carried = (value: unknown, to: string) => JSON.parse(JSON.stringify(value)
         .replaceAll(`"${FROM}`, `"${to}`)
-        .replaceAll(`"${FROM.replaceAll('/', '.')}~`, `"${to.replaceAll('/', '.')}~`))
+        .replaceAll(`"${FROM.replaceAll('/', '.')}~`, `"${to.replaceAll('/', '.')}~`)
+        .replaceAll(` ${FROM}/`, ` ${to}/`))
 
       // A loop rather than `it.each`: a host's runner may wrap `it` and not its table.
       for (const [how, parent, to] of [
@@ -777,10 +789,16 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         for (const scope of [beside, inside]) {
           await repositories.steps(scope, { type: 'scope.replace', content: { ...emptyContent('Holder'), model: holding(FROM), relevantTo: [{ path: `${FROM}/below`, from: day }] } })
         }
-        const before = await Promise.all([beside, inside].map((scope) => repositories.state(scope)))
+        const comment = await repositories.scope('gamma/commented', 'Commented')
+        await repositories.steps(comment, { type: 'scope.replace', content: { ...emptyContent('Commented'), model: commented(FROM) } })
+        const topic = await repositories.scope('topics/route', 'Route')
+        await repositories.steps(topic, { type: 'scope.describe', patch: { relevantTo: [{ path: `${FROM}/below`, from: day }] } })
+        const before = await Promise.all([beside, inside, comment].map((scope) => repositories.state(scope)))
         // Each address was kept as written, or a carry would have nothing to show.
         const named = (value: unknown) => JSON.stringify(value).split(`"${FROM}`).length - 1
-        for (const one of before) expect(named(one.model)).toBe(named(holding(FROM)))
+        for (const one of before.slice(0, 2)) expect(named(one.model)).toBe(named(holding(FROM)))
+        // Asked before anything moves, the scopes outside it that a move writes: by any field, a comment's and a topic's links among them.
+        expect(await scopesAMoveWrites(repositories.scopes, repositories.index, FROM)).toEqual(['beta/holder', 'gamma/commented', 'topics/route'])
         const moved = await moveScopeUnder(repositories.scopes, repositories.index, FROM, parent, { strict: true })
         expect(moved?.to).toBe(to)
         const after = await Promise.all([beside, inside].map((scope) => repositories.state(scope)))
@@ -789,7 +807,12 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
           expect(one.model).toEqual(carried(before[at].model, to))
           expect(one.relevantTo).toEqual([{ path: `${to}/below`, from: day }])
           expect(JSON.stringify(one.model)).not.toContain(`"${FROM}`)
+          expect(JSON.stringify(one.model)).not.toContain(` ${FROM}/`)
         })
+        // The comment's body and author as they were, its `from` at the new address.
+        expect((await repositories.state(comment)).model).toEqual(carried(before[2].model, to))
+        expect((await repositories.state(comment)).model.comments?.[0]).toMatchObject({ body: 'Brought here.', from: { scope: to } })
+        expect((await repositories.state(topic)).relevantTo).toEqual([{ path: `${to}/below`, from: day }])
       })
     })
 

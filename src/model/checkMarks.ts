@@ -210,6 +210,31 @@ function conwaySubjects(finding: ConwayFinding): string[] {
   }
 }
 
+/**
+ * Which of a mark's subjects are a scope's path, by its check: the scope a
+ * finding about a scope's type is about, and the scope below whose
+ * observation a cause explains. Only a review's or a note's, which are the
+ * marks there are; a check whose subjects are ids alone is not here.
+ */
+const PATH_SUBJECTS: Partial<Record<CheckKey, readonly number[]>> = {
+  'check.scopeTypeDisagrees': [0],
+  'check.scopeTypeUnserved': [0],
+  'check.causeExplainsObservationBelow': [1],
+}
+
+/**
+ * A mark with the scope paths its key holds carried by `carry`: a scope moved
+ * or filed somewhere new is the same instance at its new address, and a key
+ * left naming the old one would let the finding back
+ * (`projects/readdress.carryModel`). The mark itself where nothing changed.
+ */
+export function carryMarkKey(mark: CheckMark, carry: (path: string) => string): CheckMark {
+  const paths = PATH_SUBJECTS[mark.check]
+  if (!paths || !isMarkable(mark.check)) return mark
+  const key = mark.key.split(' ').map((subject, at) => (paths.includes(at) ? carry(subject) : subject)).join(' ')
+  return key === mark.key ? mark : { ...mark, key }
+}
+
 /** The check a finding is of, whichever shape it was worked out in. */
 export function findingCheck(finding: AnyFinding): CheckKey {
   if (isScoped(finding)) return finding.key

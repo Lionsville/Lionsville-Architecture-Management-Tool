@@ -12,7 +12,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
 import type { ScopeModel, ScopeSnapshot } from './scope'
-import { addressesNameWithin, applyRefPatch, carryAddresses, readdressHeld, readdressRef, readdressRefs, readdressScope } from './readdress'
+import { addressesNameWithin, applyRefPatch, carryAddresses, commentAsIndexed, commentsIndexed, readdressHeld, readdressRef, readdressRefs, readdressScope } from './readdress'
 import type { Cause, Observation } from '../model/observation'
 
 function element(id: string, ref?: string): DesignElement {
@@ -337,5 +337,67 @@ describe('a move carries every address a scope holds, by the one list', () => {
   it('lands on what carryAddresses makes of the scope', () => {
     const moved = carryAddresses(at('acme/rail'), (path) => readdressRef(path, 'acme/rail', 'group/rail'))
     expect(moved).toEqual(at('group/rail'))
+  })
+})
+
+/**
+ * A mark's key is its subjects' ids, and three checks name a scope among
+ * them: a scope's type disagreeing or unserved (the scope itself, first), and
+ * a cause over an observation below (the scope below, second). A key left
+ * naming the old place would let the finding back, so the mark is carried by
+ * the one list, on a copy and on a move alike.
+ */
+describe('a check mark whose key names a scope (ADR-0036, amended)', () => {
+  const marks = (base: string) => [
+    { check: 'check.scopeTypeUnserved', key: `${base}/below ut-team`, on: '2026-01-01' },
+    { check: 'check.causeExplainsObservationBelow', key: `ca-1 ${base}/below ob-9`, reason: 'Kept on purpose.', on: '2026-01-01' },
+    { check: 'check.scopeTypeDisagrees', key: `beta ut-team unit`, on: '2026-01-01' },
+    // Ids only: a key that happens to read like the path is no path.
+    { check: 'check.unitSpans', key: base, on: '2026-01-01' },
+    // A fix is never marked, and one a file carries anyway is left as it was.
+    { check: 'check.scopeTypeGone', key: `${base}/below ut-gone`, on: '2026-01-01' },
+  ]
+  const at = (base: string) => ({
+    path: 'beta', activeDiagramId: '', logoLibrary: [],
+    model: { name: 'Beta', diagrams: [], relations: [], elements: [], checkMarks: marks(base) },
+  } as unknown as ScopeSnapshot)
+
+  it('is found by a move of the scope its key names, and of none other', () => {
+    expect(addressesNameWithin(at('acme/rail').model, 'acme/rail')).toBe(true)
+    expect(addressesNameWithin(at('acme/rail').model, 'acme/road')).toBe(false)
+    expect(addressesNameWithin({ elements: [], checkMarks: [marks('acme/rail')[3], marks('acme/rail')[4]] } as never, 'acme/rail')).toBe(false)
+  })
+
+  it('is carried on a copy, its key and nothing else', () => {
+    const copied = carryAddresses(at('acme/rail'), (path) => readdressRef(path, 'acme/rail', 'group/rail'))
+    expect(copied.model.checkMarks).toEqual([
+      marks('group/rail')[0], marks('group/rail')[1], marks('acme/rail')[2], marks('acme/rail')[3], marks('acme/rail')[4],
+    ])
+  })
+
+  it('is taken back and made again where it stood on a move, since its id is its key', () => {
+    expect(readdressScope(at('acme/rail'), 'acme/rail', 'group/rail')).toEqual([{ type: 'transaction', commands: [
+      { type: 'checkMark.remove', id: 'check.scopeTypeUnserved acme/rail/below ut-team' },
+      { type: 'checkMark.add', mark: marks('group/rail')[0], at: 0 },
+      { type: 'checkMark.remove', id: 'check.causeExplainsObservationBelow ca-1 acme/rail/below ob-9' },
+      { type: 'checkMark.add', mark: marks('group/rail')[1], at: 1 },
+    ] }])
+  })
+})
+
+describe('a comment as the index holds it (ADR-0037 §6)', () => {
+  const brought = { id: 'k', about: { kind: 'observation', id: 'o1' }, by: { person: 'pe-a' }, at: '2026-01-01T09:00:00Z', body: 'Said there.', edited: '2026-01-02', from: { kind: 'observation', id: 'o9', scope: 'acme' } } as const
+  const here = { ...brought, id: 'l', from: { kind: 'observation', id: 'o8' } } as const
+
+  it('holds one brought from another scope, by its address and without what it says, and leaves every other out', () => {
+    expect(commentAsIndexed(brought)).toEqual({ id: 'k', about: brought.about, by: brought.by, at: brought.at, body: '', from: brought.from })
+    expect(commentAsIndexed(here)).toBeUndefined()
+    expect(commentsIndexed([brought, here])).toEqual({ comments: [commentAsIndexed(brought)] })
+    expect(commentsIndexed([here])).toEqual({})
+    expect(commentsIndexed(undefined)).toEqual({})
+  })
+
+  it('is enough for a move to find the scope by', () => {
+    expect(addressesNameWithin({ elements: [], ...commentsIndexed([brought]) }, 'acme')).toBe(true)
   })
 })

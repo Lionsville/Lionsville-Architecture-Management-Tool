@@ -352,7 +352,7 @@ export async function moveScope(
 }
 
 /** The topics whose links name a scope inside the subtree at `from` (ADR-0042 §5), by where they are. */
-function topicsNamingWithin(tree: ScopeTree, from: ScopeAddress): ScopeAddress[] {
+export function topicsNamingWithin(tree: ScopeTree, from: ScopeAddress): ScopeAddress[] {
   if (from === ROOT_SCOPE) return []
   const found: ScopeAddress[] = []
   const walk = (node: ScopeTree['root']) => {

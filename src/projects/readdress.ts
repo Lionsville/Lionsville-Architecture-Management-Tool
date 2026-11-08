@@ -23,6 +23,8 @@
  */
 import type { Command, DesignElement, ElementId } from '../model'
 import type { Comment } from '../model/comment'
+import { carryMarkKey, checkMarkId } from '../model/checkMarks'
+import type { CheckMark } from '../model/checkMarks'
 import type { Cause, Observation } from '../model/observation'
 import type { Assignment } from '../model/units'
 import type { Citation } from '../model/citable'
@@ -121,6 +123,26 @@ export type AddressesHeld = {
   citations?: readonly Citation[]
   principles?: readonly Principle[]
   evaluations?: readonly Evaluation[]
+  checkMarks?: readonly CheckMark[]
+}
+
+/**
+ * A comment as an organisation's index holds it: only one whose `from` names
+ * the scope it was written in (ADR-0037 §6) — the one address a comment
+ * holds, which a move of that scope finds it by ({@link addressesNameWithin})
+ * — and that without its body, as an element is indexed without its
+ * description. `undefined` for every other comment, which the index leaves
+ * out: a scope's threads are read where they are shown.
+ */
+export function commentAsIndexed(comment: Comment): Comment | undefined {
+  if (comment.from?.scope === undefined) return undefined
+  return { id: comment.id, about: comment.about, by: comment.by, at: comment.at, body: '', from: comment.from }
+}
+
+/** A scope's comments as its index holds them ({@link commentAsIndexed}): nothing where none names a scope. */
+export function commentsIndexed(comments: readonly Comment[] | undefined): { comments?: Comment[] } {
+  const held = (comments ?? []).flatMap((one) => commentAsIndexed(one) ?? [])
+  return held.length ? { comments: held } : {}
 }
 
 /**
@@ -135,7 +157,9 @@ export type AddressesHeld = {
  * `from` (ADR-0037 §6); a citation's principle and a principle's relations
  * (ADR-0041 §5, §7); an evaluation's block — and its id, which is said from
  * that block's scope (`evaluationId`) — and a building block's capability's
- * aspect (ADR-0043). A field added that names a scope belongs here.
+ * aspect (ADR-0043); and a check mark's key, where its subjects hold a
+ * scope's path (`model/checkMarks.carryMarkKey`). A field added that names a
+ * scope belongs here.
  *
  * Records are rebuilt where they hold an address and the rest kept as they
  * were; the scope's own `path`, and a topic's links, are the snapshot's.
@@ -166,6 +190,7 @@ export function carryModel<M extends AddressesHeld>(model: M, carry: (path: Scop
     ...(model.citations ? { citations: model.citations.map((one) => ({ ...one, principle: at(one.principle) })) } : {}),
     ...(model.principles ? { principles: model.principles.map((one) => (one.relations ? { ...one, relations: one.relations.map((relation) => ({ ...relation, to: at(relation.to) })) } : one)) } : {}),
     ...(evaluations ? { evaluations } : {}),
+    ...(model.checkMarks ? { checkMarks: model.checkMarks.map((one) => carryMarkKey(one, carry)) } : {}),
   }
 }
 
@@ -253,6 +278,11 @@ export function readdressHeld(model: AddressesHeld, from: ScopePath, to: ScopePa
     ...each(model.evaluations, now.evaluations, (one, next, at) => {
       if (next.id === one.id) return []
       return [{ type: 'evaluation.remove', id: one.id }, { type: 'evaluation.add', evaluation: next, at }]
+    }),
+    // A mark's id is its check and its key, so one whose key names a path is taken and put back where it stood, as an evaluation is.
+    ...each(model.checkMarks, now.checkMarks, (one, next, at) => {
+      if (next.key === one.key) return []
+      return [{ type: 'checkMark.remove', id: checkMarkId(one) }, { type: 'checkMark.add', mark: next, at }]
     }),
   ]
 }

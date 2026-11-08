@@ -187,7 +187,7 @@ export function scopesViewOver(deps: AgentScopesDeps): ScopesView {
       if (!writable(path)) return READ_ONLY(path)
       if (!writable(parent)) return READ_ONLY(parent)
       const open = openPath()
-      if (open !== undefined && (await scopesAMoveWrites(index, path)).includes(open)) {
+      if (open !== undefined && (await scopesAMoveWrites(scopes, index, path)).includes(open)) {
         return IS_OPEN(open, `the scope open in the workspace names ${path} and would be re-addressed behind its session: open a home first`)
       }
       const moved = await moveScopeUnder(scopes, index, path, parent)

@@ -73,6 +73,8 @@ import { CITATIONS_FOLDER, citationsFrom, isCitationsPath } from './format/citat
 import { EVALUATIONS_FOLDER, evaluationsFrom, isEvaluationPath } from './format/evaluationFile'
 import { isPrinciplePath, PRINCIPLE_GROUPS_FILE, PRINCIPLES_FOLDER, principleGroupsFrom, principlesFrom } from './format/principleFile'
 import { CHECK_MARK_FILES, checkMarksFrom } from './format/checkMarkFile'
+import { COMMENTS_FOLDER, commentsFrom, isThreadPath } from './format/commentFile'
+import { commentsIndexed } from '../../projects/readdress'
 
 import {
   isSafeScopePath, parentScope, ROOT_SCOPE, scopePathLabel, scopeSegments,
@@ -414,6 +416,7 @@ export class FileSystemScopeStore implements ScopeStore {
         ...await this.principlesIn(folder),
         ...await this.citationsIn(folder),
         ...await this.evaluationsIn(folder),
+        ...await this.commentsIn(folder),
         causes: causesAsSaid(analysis.causes, analysis.solutions, headerText === undefined ? undefined : folderFormatVersion(headerText)),
       } })
     })
@@ -512,6 +515,25 @@ export class FileSystemScopeStore implements ScopeStore {
       if (text !== undefined) texts.set(path, text)
     }
     return evaluationsFrom([...texts.keys()], (path) => texts.get(path))
+  }
+
+  /**
+   * The comments a move finds a scope by (ADR-0037 §6): those whose `from`
+   * names the scope they were written in, without their bodies
+   * (`readdress.commentsIndexed`) — a scope whose only address is a comment
+   * brought from another is still written when that one moves.
+   */
+  private async commentsIn(folder: DirectoryHandleLike): Promise<Pick<ScopeModel['model'], 'comments'>> {
+    const held = await folder.getDirectoryHandle(COMMENTS_FOLDER).catch(this.orAbsent('the comments folder'))
+    if (!held) return {}
+    const texts = new Map<string, string>()
+    for await (const entry of held.values()) {
+      const path = `${COMMENTS_FOLDER}/${entry.name}`
+      if (entry.kind !== 'file' || !isThreadPath(path)) continue
+      const text = await this.textOf(entry, 'a record\'s comments')
+      if (text !== undefined) texts.set(path, text)
+    }
+    return commentsIndexed(commentsFrom([...texts.keys()], (path) => texts.get(path)).comments)
   }
 
   /** The citations of principles (ADR-0041 §7), likewise: how each principle is used is read across the tree. */

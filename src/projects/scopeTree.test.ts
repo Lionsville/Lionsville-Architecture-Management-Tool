@@ -196,8 +196,24 @@ describe('moving a scope', () => {
 
   it('says which scopes outside the subtree a move would write, before anything moves', async () => {
     const repositories = await landscape()
-    expect((await scopesAMoveWrites(repositories.index, 'acme')).sort()).toEqual(['globex', 'initech'])
-    expect(await scopesAMoveWrites(repositories.index, 'globex')).toEqual([])
+    expect((await scopesAMoveWrites(repositories.scopes, repositories.index, 'acme')).sort()).toEqual(['globex', 'initech'])
+    expect(await scopesAMoveWrites(repositories.scopes, repositories.index, 'globex')).toEqual([])
+  })
+
+  it('says a topic that links into the subtree, and a scope whose only address is a comment brought from it, among the scopes a move writes', async () => {
+    const repositories = memoryRepositories()
+    await place(repositories, '', model('Org'))
+    await place(repositories, 'a', model('A'))
+    await place(repositories, 'a/b', model('B'))
+    await placeWhole(repositories.scopes, 'topics/routing', { ...contentOf(snapshot('topics/routing', model('Routing'))), relevantTo: [{ path: 'a/b', from: DAY }] })
+    await place(repositories, 'c', {
+      ...model('C'),
+      comments: [{ id: 'cm-1', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-a' }, at: `${DAY}T09:00:00Z`, body: 'Seen there.', from: { kind: 'observation', id: 'ob-9', scope: 'a' } }],
+    })
+    expect(await scopesAMoveWrites(repositories.scopes, repositories.index, 'a')).toEqual(['c', 'topics/routing'])
+    // The index holds the comment's address and not what it says.
+    const indexed = modelsOf(await repositories.index.read()).find((one) => one.path === 'c')
+    expect(indexed?.model.comments).toEqual([{ id: 'cm-1', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-a' }, at: `${DAY}T09:00:00Z`, body: '', from: { kind: 'observation', id: 'ob-9', scope: 'a' } }])
   })
 
   it('carries the units that serve the moved scope and the scopes under it, and lists them (3.7.5)', async () => {
@@ -207,7 +223,7 @@ describe('moving a scope', () => {
     await place(repositories, 'a/b', model('B', [{ ...unit('crew', 'ut-team'), scopes: ['a/b/x'] }]))
     await place(repositories, 'a/b/x', model('X'))
     await place(repositories, 'c', model('C'))
-    expect(await scopesAMoveWrites(repositories.index, 'a/b')).toEqual([''])
+    expect(await scopesAMoveWrites(repositories.scopes, repositories.index, 'a/b')).toEqual([''])
     const moved = await moveScopeUnder(repositories.scopes, repositories.index, 'a/b', 'c')
     expect(moved).toEqual({
       from: 'a/b', to: 'c/b', carried: ['', 'c/b'], notCarried: [],

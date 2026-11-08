@@ -32,7 +32,7 @@ import { normaliseLinks } from './links'
 import type { RecordLink } from './links'
 import { bareScope, emptyScope, flattenScopes, namesUnder, unreadableAt } from './scope'
 import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
-import { changeScope, changeScopes, ensureScope, landed, modelsOf, moveScope, nodeAt, nodesOf, summaryOf } from './scopeAccess'
+import { changeScope, changeScopes, ensureScope, landed, modelsOf, moveScope, nodeAt, nodesOf, summaryOf, topicsNamingWithin } from './scopeAccess'
 import { addressesNameWithin, readdressRef } from './readdress'
 import type { ScopeReader } from './scopeAccess'
 import { TOPICS_PLACE } from './topics'
@@ -301,14 +301,19 @@ export type MovedUnder = {
 
 /**
  * The scopes outside the subtree at `from` that a move of it writes: those
- * whose records name an address in it (`readdress.addressesNameWithin`,
- * `scopeAccess.moveScope`'s carry), by where they are. What a host
- * asks before a move that must not write behind a session open on one.
+ * whose records name an address in it (`readdress.addressesNameWithin`), and
+ * the topics whose links do (ADR-0042 §5) — what `scopeAccess.moveScope`
+ * carries — by where they are, in path order. What a host asks before a move
+ * that must not write behind a session open on one.
  */
-export async function scopesAMoveWrites(index: Pick<OrganisationIndex, 'read'>, from: ScopePath): Promise<ScopePath[]> {
-  return modelsOf(await index.read())
-    .filter(({ path, model }) => !isWithinScope(path, from) && addressesNameWithin(model, from))
-    .map(({ path }) => path)
+export async function scopesAMoveWrites(
+  scopes: Pick<TreeScopes, 'tree'>, index: Pick<OrganisationIndex, 'read'>, from: ScopePath,
+): Promise<ScopePath[]> {
+  const [tree, read] = await Promise.all([scopes.tree(), index.read()])
+  const named = modelsOf(read).filter(({ model }) => addressesNameWithin(model, from)).map(({ path }) => path)
+  return [...new Set([...named, ...topicsNamingWithin(tree, from)])]
+    .filter((path) => !isWithinScope(path, from))
+    .sort((a, b) => a.localeCompare(b))
 }
 
 /**
