@@ -35,7 +35,7 @@ import { causeLabel, formatObservationNumber } from '../observation'
 import type { ObservationImpact } from '../observation'
 import { PHASE_LABEL, STATE_LABEL } from '../observationScope'
 import { formatSolutionNumber } from '../solution'
-import { CardFace, shorten } from './ChainMarks'
+import { CardFace, shorten, wrapTitle } from './ChainMarks'
 
 /** A small mark's radius per impact: the size of an observation is how much it hurts. */
 export const DOT: Record<ObservationImpact, number> = { minor: 10, major: 13, critical: 16 }
@@ -116,6 +116,10 @@ export function RecordMark(props: RecordMarkProps) {
 /** How many characters a card's line holds: its width less the margins, over what a character takes at the card's type. */
 const LARGE_LINE = 30
 
+/** What a character of the small canvas type takes across, and a line of it down, on a card's hint. */
+const HINT_CHAR = 5.6
+const HINT_LINE = 16
+
 /** Records not drawn, said as a card: pressing it opens them where they are, or lists them. */
 function MoreMark({ node, size, s }: RecordMarkProps) {
   const theme = useTheme()
@@ -130,8 +134,10 @@ function MoreMark({ node, size, s }: RecordMarkProps) {
         {fold ? s('observation.mapMore', { count: node.count }) : s('observation.mapPile', { count: node.count })}
       </text>
       {size !== 'far' && (
+        // Wrapped inside the dashed card, as a record card's title is: a hint on one line ran past it in Dutch and German.
         <text x={12} y={44} fill={theme.palette.text.secondary} style={{ fontSize: 'var(--canvas-t-sm)' }}>
-          {fold ? s('observation.mapMoreHint') : s('observation.mapPileHint')}
+          {wrapTitle(fold ? s('observation.mapMoreHint') : s('observation.mapPileHint'), Math.floor((slot.width - 24) / HINT_CHAR), Math.floor((slot.height - 44) / HINT_LINE) + 1)
+            .map((line, at) => <tspan key={at} x={12} dy={at === 0 ? 0 : HINT_LINE}>{line}</tspan>)}
         </text>
       )}
     </>
