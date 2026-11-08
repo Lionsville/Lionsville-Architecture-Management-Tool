@@ -15,6 +15,7 @@ import { canvasInsets } from '../../widgets/kit/canvasRoom'
 import { canvasZoomProps, clampZoomTo, frameInRoom } from '../../widgets/kit/zoom'
 import type { Insets, Point, ZoomRange } from '../../widgets/kit/zoom'
 import { ViewerKeepContext } from '../../widgets/useViewerKeep'
+import { useTextScale } from '../../widgets/kit/useTextScale'
 
 /** This canvas only: it is read whole from far off, where every other stops at the zoom a name can be read at. */
 export const POSTER_ZOOM: ZoomRange = {
@@ -54,16 +55,34 @@ const BARE: Insets = { top: MARGIN, right: MARGIN, bottom: MARGIN, left: MARGIN 
 
 const whole = (page: Size) => ({ x: 0, y: 0, ...page })
 
+/**
+ * A zoom said at 100% text, at the person's text size. The poster's type is in pixels, so its
+ * words keep to the blocks its layout worked out; the text size reaches it as a scale on the
+ * whole page, as it reaches a board (`canvasZoomProps`): Fit's floor and ceiling, the zoom a
+ * name reads at and every reading distance scale with it.
+ */
+export const atScale = (zoom: number, scale: number) => clampZoomTo(zoom * scale, POSTER_ZOOM)
+
 /** The whole page in the room the dock leaves, centred. */
-function fitOf(pane: Size, page: Size, insets: Insets): Camera {
-  return frameInRoom(whole(page), pane, insets, { floor: FIT_FLOOR, ceiling: 1 }) ?? { x: insets.left, y: insets.top, zoom: FIT_FLOOR }
+function fitOf(pane: Size, page: Size, insets: Insets, scale = 1): Camera {
+  const floor = atScale(FIT_FLOOR, scale)
+  return frameInRoom(whole(page), pane, insets, { floor, ceiling: atScale(1, scale) }) ?? { x: insets.left, y: insets.top, zoom: floor }
 }
 
 /** At Fit where that can be read, centred; otherwise at a readable zoom from the top left, with the rest a pan. */
-export function openingCamera(pane: Size, page: Size, insets: Insets = BARE): Camera {
-  const fit = fitOf(pane, page, insets)
-  if (fit.zoom >= READABLE) return fit
-  return frameInRoom(whole(page), pane, insets, { floor: READABLE, ceiling: READABLE }) ?? { x: insets.left, y: insets.top, zoom: READABLE }
+export function openingCamera(pane: Size, page: Size, insets: Insets = BARE, scale = 1): Camera {
+  const fit = fitOf(pane, page, insets, scale)
+  const readable = atScale(READABLE, scale)
+  if (fit.zoom >= readable) return fit
+  return frameInRoom(whole(page), pane, insets, { floor: readable, ceiling: readable }) ?? { x: insets.left, y: insets.top, zoom: readable }
+}
+
+/** The same place at another text size: the page grows or shrinks about the pane's middle, as a step of the zoom does. */
+export function rescaled(camera: Camera, ratio: number, pane: Size): Camera {
+  const zoom = clampZoomTo(camera.zoom * ratio, POSTER_ZOOM)
+  const by = zoom / camera.zoom
+  const at = { x: pane.width / 2, y: pane.height / 2 }
+  return { x: at.x - (at.x - camera.x) * by, y: at.y - (at.y - camera.y) * by, zoom }
 }
 
 export function heldInView(camera: Camera, pane: Size, page: Size): Camera {
@@ -71,10 +90,15 @@ export function heldInView(camera: Camera, pane: Size, page: Size): Camera {
   return { ...camera, x: hold(camera.x, pane.width, page.width * camera.zoom), y: hold(camera.y, pane.height, page.height * camera.zoom) }
 }
 
-function keptCamera(held: unknown): Camera | undefined {
-  const at = held as Partial<Camera> | null | undefined
+/** A place is kept with the text size it was left at, so a person who changed it since comes back to the same page at their size now. */
+type KeptPlace = Camera & { scale?: number }
+
+function keptCamera(held: unknown, scale: number, pane: Size): Camera | undefined {
+  const at = held as Partial<KeptPlace> | null | undefined
   if (typeof at?.x !== 'number' || typeof at.y !== 'number' || typeof at.zoom !== 'number') return undefined
-  return { x: at.x, y: at.y, zoom: clampZoomTo(at.zoom, POSTER_ZOOM) }
+  const camera = { x: at.x, y: at.y, zoom: clampZoomTo(at.zoom, POSTER_ZOOM) }
+  const was = typeof at.scale === 'number' && at.scale > 0 ? at.scale : 1
+  return was === scale ? camera : rescaled(camera, scale / was, pane)
 }
 
 /** What a person's last place on this view is kept under. */
@@ -93,6 +117,8 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
   key.current = viewId
   const keeper = useRef(keep)
   keeper.current = keep
+  const textScale = useTextScale()
+  const scale = useRef(textScale)
 
   const write = useCallback((moving: boolean) => {
     const on = stage.current
@@ -106,13 +132,13 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     clearTimeout(settle.current)
     settle.current = setTimeout(() => {
       delete held.dataset.moving
-      if (key.current !== undefined) keeper.current?.keep(posterPlaceKey(key.current), camera.current)
+      if (key.current !== undefined) keeper.current?.keep(posterPlaceKey(key.current), { ...camera.current, scale: scale.current } satisfies KeptPlace)
     }, SETTLE_MS)
   }, [])
   const distances = useCallback(() => {
     const on = stage.current
     if (!on) return
-    const props = canvasZoomProps(camera.current.zoom, WORDS_FROM)
+    const props = canvasZoomProps(camera.current.zoom, WORDS_FROM, scale.current)
     if (on.dataset.distance !== props['data-distance']) on.dataset.distance = props['data-distance']
     if (on.dataset.labels !== props['data-labels']) on.dataset.labels = props['data-labels']
     // Only the far sizes read it, and an inherited property touches every descendant: a step inside reading distance pays nothing.
@@ -137,15 +163,16 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     const held = pane.current
     if (!held) return
     const box = { width: held.clientWidth, height: held.clientHeight }
-    camera.current = fitOf(box, size.current, roomOf(held))
+    camera.current = fitOf(box, size.current, roomOf(held), scale.current)
     write(true)
     distances()
   }, [write, distances])
   const open = useCallback(() => {
     const held = pane.current
     if (!held) return
-    const kept = key.current !== undefined ? keptCamera(keeper.current?.read(posterPlaceKey(key.current))) : undefined
-    camera.current = kept ?? openingCamera({ width: held.clientWidth, height: held.clientHeight }, size.current, roomOf(held))
+    const box = { width: held.clientWidth, height: held.clientHeight }
+    const kept = key.current !== undefined ? keptCamera(keeper.current?.read(posterPlaceKey(key.current)), scale.current, box) : undefined
+    camera.current = kept ?? openingCamera(box, size.current, roomOf(held), scale.current)
     write(false)
     distances()
   }, [write, distances])
@@ -153,10 +180,10 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
   const follow = useCallback((element: Element, read = false) => {
     const held = pane.current
     if (!held) return
-    if (read && camera.current.zoom < 0.85) {
+    if (read && camera.current.zoom < 0.85 * scale.current) {
       const box = element.getBoundingClientRect()
       const frame = held.getBoundingClientRect()
-      to(1, { x: box.left + box.width / 2 - frame.left, y: box.top + box.height / 2 - frame.top })
+      to(atScale(1, scale.current), { x: box.left + box.width / 2 - frame.left, y: box.top + box.height / 2 - frame.top })
     }
     const box = element.getBoundingClientRect()
     const frame = held.getBoundingClientRect()
@@ -180,7 +207,18 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     return () => { listeners.current.delete(tell) }
   }, [])
   useEffect(() => () => clearTimeout(settle.current), [])
-  return { attach, stage, pane, camera, panBy, open, follow, target, listen }
+  // A text size changed while the poster is up grows or shrinks the whole page about the middle, as a board is framed again.
+  useEffect(() => {
+    const was = scale.current
+    if (was === textScale) return
+    scale.current = textScale
+    const held = pane.current
+    if (!held) return
+    camera.current = rescaled(camera.current, textScale / was, { width: held.clientWidth, height: held.clientHeight })
+    write(true)
+    distances()
+  }, [textScale, write, distances])
+  return { attach, stage, pane, camera, panBy, open, follow, target, listen, fitFloor: atScale(FIT_FLOOR, textScale) }
 }
 
 export type PosterCamera = ReturnType<typeof usePosterCamera>

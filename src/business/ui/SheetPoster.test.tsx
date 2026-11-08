@@ -13,6 +13,7 @@ import { coverageOf } from '../coverage'
 import { sheetPage } from '../sheet'
 import { area, capability, grouping, journey, phase, relation, application } from '../testFixtures'
 import { heldInView, openingCamera, SheetPoster } from './SheetPoster'
+import { rescaled } from './posterCamera'
 import type { SheetPosterProps } from './SheetPoster'
 import type { PosterActions, PosterDesign } from './PosterDesign'
 import { axeFindings } from '../../app/testing/axe'
@@ -125,6 +126,25 @@ describe('where the poster opens', () => {
 
   it('opens at 90% from the top left where it cannot, with the rest a pan', () => {
     expect(openingCamera({ width: 1440, height: 700 }, page)).toEqual({ x: 8, y: 8, zoom: 0.9 })
+  })
+
+  it('opens the whole page larger at a larger text size, as a board is framed', () => {
+    const insets = { top: 8, right: 8, bottom: 8, left: 8 }
+    // Fit's ceiling is 100% at the text size, so a page with room to spare opens at 150% at 150% text.
+    expect(openingCamera({ width: 4000, height: 2000 }, page, insets, 1.5).zoom).toBe(1.5)
+    // And where Fit cannot be read, at the zoom a name reads at, half as large again.
+    expect(openingCamera({ width: 1440, height: 700 }, page, insets, 1.5)).toEqual({ x: 8, y: 8, zoom: 1.35 })
+  })
+
+  it('keeps the same place about the middle when the text size changes', () => {
+    const pane = { width: 1000, height: 600 }
+    const before = { x: 100, y: 50, zoom: 0.8 }
+    const after = rescaled(before, 1.5, pane)
+    expect(after.zoom).toBeCloseTo(1.2)
+    // The page point under the middle stays under it.
+    const under = (at: typeof before) => ({ x: (500 - at.x) / at.zoom, y: (300 - at.y) / at.zoom })
+    expect(under(after).x).toBeCloseTo(under(before).x)
+    expect(under(after).y).toBeCloseTo(under(before).y)
   })
 })
 

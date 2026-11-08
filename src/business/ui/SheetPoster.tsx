@@ -40,7 +40,7 @@ import { IconOrImage } from './posterIcons'
 import { usePosterGestures } from './PosterDesign'
 import type { PosterDesign } from './PosterDesign'
 import { PosterItem } from './PosterItem'
-import { FIT_FLOOR, POSTER_ZOOM, usePosterCamera } from './posterCamera'
+import { POSTER_ZOOM, usePosterCamera } from './posterCamera'
 import { PosterStripNarrow, useStripNarrow } from './posterStrip'
 import { unitTargets, UnitLabel } from './Responsible'
 import type { Who } from './Responsible'
@@ -483,12 +483,12 @@ const Column = memo(function Column({ actors, block, kept, drawing }: { actors: 
 })
 
 /** The dock's number is the one thing here that renders on a zoom. */
-function Dock({ listen, onGo, extra }: { listen(to: (zoom: number) => void): () => void; onGo(how: 'in' | 'out' | 'home' | 'fit'): void; extra: ReactNode }) {
+function Dock({ listen, onGo, extra, fitFloor }: { listen(to: (zoom: number) => void): () => void; onGo(how: 'in' | 'out' | 'home' | 'fit'): void; extra: ReactNode; fitFloor: number }) {
   const [zoom, setZoom] = useState(1)
   useEffect(() => listen(setZoom), [listen])
   return (
     <CanvasDock
-      corner={false} zoom={zoom} floor={POSTER_ZOOM.floor} fitFloor={FIT_FLOOR} ceiling={POSTER_ZOOM.ceiling} data-testid="poster-dock" extra={extra}
+      corner={false} zoom={zoom} floor={POSTER_ZOOM.floor} fitFloor={fitFloor} ceiling={POSTER_ZOOM.ceiling} data-testid="poster-dock" extra={extra}
       onZoomIn={() => onGo('in')} onZoomOut={() => onGo('out')} onFit={() => onGo('fit')} onHome={() => onGo('home')}
     />
   )
@@ -768,7 +768,7 @@ export function SheetPoster(props: SheetPosterProps) {
         <div className="poster__say" ref={say} role="status" aria-live="polite" data-testid="poster-say" />
       </div>
       <div className="poster__strip" ref={stripRef} data-narrow={narrow.bar || undefined}>
-        <Dock listen={listen} onGo={(how) => target.go(how)} extra={dockExtra} />
+        <Dock listen={listen} onGo={(how) => target.go(how)} extra={dockExtra} fitFloor={camera.fitFloor} />
         <PosterStripNarrow.Provider value={narrow}>{strip}</PosterStripNarrow.Provider>
       </div>
       <Menu
