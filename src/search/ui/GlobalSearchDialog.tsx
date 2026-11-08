@@ -29,6 +29,7 @@ import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { Language, StringKey, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
+import { today } from '../../model/lifecycle'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { DesignDiagram } from '../../model'
 import { STATUS_LABEL } from '../../decisions/adrScope'
@@ -373,7 +374,7 @@ function useFoundWithMore(open: boolean, sources: readonly SearchSource[], asked
 
 /** The hits, each kind cut to the dialog's number unless it was asked for whole, and which kinds had more than that. */
 function searchWithMore(sources: readonly SearchSource[], query: string, people: PeopleMatch | undefined, whole: ReadonlySet<SearchKind>) {
-  const asked = { sources, query, ...(people ? { people } : {}) }
+  const asked = { sources, query, day: today(), ...(people ? { people } : {}) }
   const hits = searchAll({ ...asked, limitPerKind: SEARCH_LIMIT_PER_KIND + 1 })
   const cut = new Set<SearchKind>()
   const found: SearchHit[] = []
@@ -409,6 +410,8 @@ function HitRow({ hit, scopeLabel, s }: {
   // A relation with no label is called by its two ends.
   const title = hit.title !== '' ? hit.title : about
   const second = [
+    hit.holds ? s('gsearch.person.holds', { role: hit.holds.role, unit: hit.holds.unit }) : undefined,
+    hit.holds?.more ? s('gsearch.person.holdsMore', { count: hit.holds.more }) : undefined,
     hit.scope !== undefined ? scopeLabel(hit.scope) : undefined,
     hit.title !== '' && about !== '' ? about : undefined,
     readDays(hit.detail, language),

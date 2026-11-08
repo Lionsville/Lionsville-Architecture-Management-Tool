@@ -264,3 +264,23 @@ describe('snippet', () => {
     expect(out).toContain('See Billing and docs.')
   })
 })
+
+describe('a person found', () => {
+  const people = Object.assign(() => new Set<string>(), {
+    entries: () => [{ id: 'pe-1', title: 'Sam Kestle', state: 'active' }, { id: 'pe-2', title: 'Sam Kestle', state: 'active' }],
+  })
+  const model = {
+    elements: [{ id: 'u1', kind: 'actor', name: 'Billing team' }, { id: 'u2', kind: 'actor', name: 'Payments' }],
+    roles: [{ id: 'member', name: 'Member' }, { id: 'lead', name: 'Lead', manages: true }],
+    assignments: [
+      { id: 'a1', unitId: 'u1', roleId: 'member', person: { person: 'pe-1' } },
+      { id: 'a2', unitId: 'u2', roleId: 'lead', person: { person: 'pe-1' } },
+      { id: 'a3', unitId: 'u1', roleId: 'lead', person: { person: 'pe-2' }, until: '2026-01-31' },
+    ],
+  } as unknown as HostModel
+
+  it('says what they hold, a managing role first, so two of one name are told apart', () => {
+    const hits = searchAll({ sources: [{ scope: '', model }], query: 'sam', kinds: ['person'], people, day: '2026-06-01' })
+    expect(hits.map((hit) => hit.holds)).toEqual([{ role: 'Lead', unit: 'Payments', more: 1 }, undefined])
+  })
+})

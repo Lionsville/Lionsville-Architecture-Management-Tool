@@ -50,6 +50,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'gsearch.person.active': 'Actief',
   'gsearch.person.left': 'Vertrokken',
   'gsearch.person.forgotten': 'Vergeten',
+  // What a person holds, under their name: their first role and its unit, and how many more.
+  'gsearch.person.holds': '{role} in {unit}',
+  'gsearch.person.holdsMore': 'nog {count}',
   'gsearch.kind.comment': 'Reacties',
   'gsearch.kind.experiment': 'Experimenten',
   'gsearch.view.layer7': 'Landschap',

@@ -50,6 +50,9 @@ export const EN = {
   'gsearch.person.active': 'Active',
   'gsearch.person.left': 'Left',
   'gsearch.person.forgotten': 'Forgotten',
+  // What a person holds, under their name: their first role and its unit, and how many more.
+  'gsearch.person.holds': '{role} in {unit}',
+  'gsearch.person.holdsMore': '{count} more',
   'gsearch.kind.comment': 'Comments',
   'gsearch.kind.experiment': 'Experiments',
   // A view is one kind of hit; which view it is, beside it.

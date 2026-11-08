@@ -35,6 +35,7 @@ import { fold, queryTokens } from '../model'
 import { SEARCH_KINDS } from '../model/searchable'
 import type { SearchableModel, SearchKind, SearchPlace } from '../model/searchable'
 import type { Adr } from '../model/adr'
+import { personOf, runsOn } from '../model/units'
 import { matchesTokens } from './searchIndex'
 import { recordIndex } from './recordIndex'
 import type { RecordEntry, RecordIndex } from './recordIndex'
@@ -57,6 +58,11 @@ export type SearchHit = {
   /** The element's kind, the view's kind, the relation's type. */
   readonly variant?: string
   readonly detail?: string
+  /**
+   * What a person holds, for telling two of one name apart: their first role,
+   * a managing one before the rest, the unit, and how many more they hold.
+   */
+  readonly holds?: { readonly role: string; readonly unit: string; readonly more: number }
   /** The names of the elements it is about: a decision's subject, a relation's two ends. */
   readonly about: readonly string[]
   /** The stretch of prose around the match; `''` where the title said enough. */
@@ -105,6 +111,8 @@ export type SearchInput = {
   readonly kinds?: readonly SearchKind[]
   /** Which register ids each word names; absent finds people by the text typed into a field alone. */
   readonly people?: PeopleMatch
+  /** The day a person's roles are read on; absent, every role they were given. */
+  readonly day?: string
 }
 
 /**
@@ -114,7 +122,7 @@ export type SearchInput = {
  */
 const TREE_WIDE: ReadonlySet<SearchKind> = new Set(['element', 'documentation'])
 
-export function searchAll({ sources, query, limitPerKind = SEARCH_LIMIT_PER_KIND, kinds, people }: SearchInput): SearchHit[] {
+export function searchAll({ sources, query, limitPerKind = SEARCH_LIMIT_PER_KIND, kinds, people, day }: SearchInput): SearchHit[] {
   const tokens = queryTokens(query)
   if (tokens.length === 0) return []
   const folded = fold(query.trim())
@@ -124,18 +132,34 @@ export function searchAll({ sources, query, limitPerKind = SEARCH_LIMIT_PER_KIND
   for (const kind of SEARCH_KINDS) {
     if (kinds && !kinds.includes(kind)) continue
     // Not a list of the model: the register is outside the history, and whoever may read it hands it in.
-    if (kind === 'person') { hits.push(...personHits(tokens, people, limitPerKind)); continue }
+    if (kind === 'person') { hits.push(...personHits(tokens, people, limitPerKind, sources, day)); continue }
     hits.push(...bestOfKind(kind, indexed, matches, folded, limitPerKind).map(({ entry, source, index }) =>
       hitOf(entry, source, index, tokens, query)))
   }
   return hits
 }
 
-/** The people a query names, each opening on the register. */
-function personHits(tokens: readonly string[], people: PeopleMatch | undefined, limit: number): SearchHit[] {
-  return (people?.entries?.(tokens) ?? []).slice(0, limit).map(({ id, title, state }) => ({
-    kind: 'person', id, title, status: state, about: [], snippet: '', opens: { page: 'people', id },
-  }))
+/** The people a query names, each opening on the register, with what they hold. */
+function personHits(tokens: readonly string[], people: PeopleMatch | undefined, limit: number, sources: readonly SearchSource[], day: string | undefined): SearchHit[] {
+  const named = (people?.entries?.(tokens) ?? []).slice(0, limit)
+  const holdsOf = named.length ? holdings(sources, day) : () => undefined
+  return named.map(({ id, title, state }) => {
+    const holds = holdsOf(id)
+    return { kind: 'person', id, title, status: state, ...(holds ? { holds } : {}), about: [], snippet: '', opens: { page: 'people', id } }
+  })
+}
+
+/** What each person holds across the sources: the nearest scope's roles first, a managing role before the rest. */
+function holdings(sources: readonly SearchSource[], day: string | undefined): (id: string) => SearchHit['holds'] {
+  const roles = new Map(sources.flatMap((source) => source.model.roles ?? []).map((role) => [role.id, role]))
+  const units = new Map(sources.flatMap((source) => source.model.elements ?? []).map((element) => [element.id, element.name]))
+  const held = sources.flatMap((source) => source.model.assignments ?? []).filter((one) => day === undefined || runsOn(one, day))
+  return (id) => {
+    const theirs = held.filter((one) => personOf(one) === id)
+    const first = theirs.find((one) => roles.get(one.roleId)?.manages) ?? theirs[0]
+    if (!first) return undefined
+    return { role: roles.get(first.roleId)?.name ?? first.roleId, unit: units.get(first.unitId) ?? first.unitId, more: theirs.length - 1 }
+  }
 }
 
 type Found = { entry: RecordEntry; source: SearchSource; index: RecordIndex }
