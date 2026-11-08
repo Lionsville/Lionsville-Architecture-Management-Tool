@@ -698,11 +698,12 @@ describe('a way in a registered provider brought', () => {
 /**
  * What a refused write says, where the source is not this browser.
  *
- * Our sentence is *this browser could not save your work (storage full or
- * blocked)*, which is right for the three sources that ship and wrong for
- * anywhere else: it names the wrong place, blames a quota that is not the one
- * that ran out, and tells somebody to keep a working file when the copy that
- * matters is somewhere else. Only the provider knows what its store said no for.
+ * *This browser could not save your work (storage full or blocked)* is the
+ * browser's own standing strip, and wrong for anywhere else: it names the
+ * wrong place, blames a quota that is not the one that ran out, and tells
+ * somebody to keep a working file when the copy that matters is somewhere
+ * else. Only the provider knows what its store said no for; where it says
+ * nothing, the shell's words name no place.
  */
 describe('a refusal where the source keeps work', () => {
   const elsewhere = {
@@ -764,12 +765,18 @@ describe('a refusal where the source keeps work', () => {
     expect(screen.queryByText(/could not save your work/)).toBeNull()
   })
 
-  /** And the three that ship say what they have always said, byte for byte. */
-  it('says what it has always said where the source gives no sentence', async () => {
+  /**
+   * And where the source gives no sentence, the shell's own: words that name
+   * no place, and the refusal's own reason after them (9bfbb676) — never the
+   * browser's storage sentence, which blamed a quota for any refusal.
+   */
+  it('says the shell\'s own words and the reason where the source gives no sentence', async () => {
     refuse({ source: { provider: 'browserStorage', name: '', key: '' } })
     await copy()
     await waitFor(() => expect(screen.getByRole('alert').textContent)
-      .toContain('could not save your work'))
+      .toContain('did not take the change, so it is not saved'))
+    expect(screen.getByRole('alert').textContent).toContain('signed out')
+    expect(screen.getByRole('alert').textContent).not.toContain('could not save your work')
   })
 })
 
