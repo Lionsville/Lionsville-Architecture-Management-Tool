@@ -3,7 +3,7 @@
 // @vitest-environment jsdom
 
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { Profiler } from 'react'
+import { createRef, Profiler } from 'react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LanguageProvider } from '../../i18n/LanguageContext'
@@ -14,7 +14,7 @@ import { sheetPage } from '../sheet'
 import { area, capability, grouping, journey, phase, relation, application } from '../testFixtures'
 import { heldInView, openingCamera, SheetPoster } from './SheetPoster'
 import { rescaled } from './posterCamera'
-import type { SheetPosterProps } from './SheetPoster'
+import type { PosterHandle, SheetPosterProps } from './SheetPoster'
 import type { PosterActions, PosterDesign } from './PosterDesign'
 import { axeFindings } from '../../app/testing/axe'
 
@@ -276,5 +276,23 @@ describe('designing a poster', () => {
     expect(note.textContent).toContain('Reviewed')
     fireEvent.keyDown(note, { key: 'Delete' })
     expect(design.actions.removeItem).toHaveBeenCalledWith('n')
+  })
+})
+
+describe('the poster\'s handle', () => {
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  it('flashes and brings on a block by an id that holds quotes, in a page with no CSS.escape', () => {
+    vi.stubGlobal('CSS', undefined)
+    const odd = 'q"1\\'
+    const handle = createRef<PosterHandle | undefined>()
+    const withOdd = [...elements, area(odd, 'Area odd'), capability('t4', 'Tile four', odd)]
+    const laidOut = sheetPage({ elements: withOdd, relations }, { journeyId: 'j', areas: ['a', 'b', odd], showActors: true })
+    inLanguage(<Poster laidOut={laidOut} handle={handle} />)
+    const tile = screen.getByTestId(`poster-title-${odd}`).closest('[data-block]')
+    expect(tile?.getAttribute('data-block')).toBe(odd)
+    expect(() => { act(() => { handle.current?.flash([odd]) }) }).not.toThrow()
+    expect(tile?.hasAttribute('data-flash')).toBe(true)
+    expect(() => { act(() => { handle.current?.bringOn(odd) }) }).not.toThrow()
   })
 })

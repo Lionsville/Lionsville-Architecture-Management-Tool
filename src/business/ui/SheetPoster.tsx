@@ -689,7 +689,9 @@ export function SheetPoster(props: SheetPosterProps) {
   useImperativeHandle(handle, () => ({
     bringOn(id) {
       // A capability under a capability has no tile: its parent's is where it is.
-      const on = stage.current?.querySelector(locatedSelector(id)) ?? stage.current?.querySelector(`[data-item-id="${CSS.escape(id)}"]`)
+      // Matched by the attribute's value rather than a selector built from the id, which would need escaping (jsdom has no CSS.escape).
+      const on = stage.current?.querySelector(locatedSelector(id))
+        ?? [...(stage.current?.querySelectorAll('[data-item-id]') ?? [])].find((one) => one.getAttribute('data-item-id') === id)
       if (on) follow(on, true)
     },
     focus(id) {
@@ -702,7 +704,9 @@ export function SheetPoster(props: SheetPosterProps) {
     },
     say: telling,
     flash(ids) {
-      const found = ids.flatMap((id) => [...(stage.current?.querySelectorAll<HTMLElement>(`[data-block="${CSS.escape(id)}"]`) ?? [])])
+      // In the order the ids were asked for, read in one pass and matched by value: no selector built from an id.
+      const blocks = [...(stage.current?.querySelectorAll<HTMLElement>('[data-block]') ?? [])]
+      const found = ids.flatMap((id) => blocks.filter((one) => one.getAttribute('data-block') === id))
       if (found[0]) follow(found[0], true)
       for (const one of found) one.setAttribute('data-flash', '')
       setTimeout(() => { for (const one of found) one.removeAttribute('data-flash') }, FLASH_MS)
