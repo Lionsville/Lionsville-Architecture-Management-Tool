@@ -148,6 +148,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'blocks.backToList': '‹ Alle bouwstenen',
   'blocks.keptInScope': 'Bewaard in {scope}',
   'blocks.listWord': 'bouwstenen',
+  'blocks.countOne': '{count} bouwsteen',
+  'blocks.count': '{count} bouwstenen',
   'blocks.noteChosenOne': 'Gekozen in 1 scope',
   'blocks.noteChosen': 'Gekozen in {count} scopes',
   'blocks.noteEvaluateOne': '1 scope evalueert',

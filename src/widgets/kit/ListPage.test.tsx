@@ -15,11 +15,11 @@ afterEach(() => cleanup())
 const rows = [{ id: 'a', label: '', rows: [{ id: 'one', code: 'ADR-0001', text: 'One place where a price is decided' }] }]
 
 describe('one list page', () => {
-  it('says its name and count, then Find, View, its tools and New last, then the list', async () => {
+  it('says its name, then Find, View, how many at the bar\'s end, its tools and New last, then the list', async () => {
     const create = vi.fn()
     renderShell(
       <ListPage
-        title="Decisions" count={12} about="Kept in this scope"
+        title="Decisions" counted="12 decisions" about="Kept in this scope"
         filter={{ find: '', onFind: () => {}, findLabel: 'Find a decision' }}
         tools={<Button variant="plain">Groups</Button>}
         create={{ label: 'New decision', onPress: create, testId: 'new' }}
@@ -29,7 +29,10 @@ describe('one list page', () => {
       </ListPage>,
     )
     expect(screen.getByRole('heading', { level: 1, name: 'Decisions' })).toBeTruthy()
-    expect(screen.getByText('12')).toBeTruthy()
+    // The count's one place: the bar's end, before what can be done, not beside the name.
+    const said = screen.getByText('12 decisions')
+    expect(said.closest('.kit-filter__end')).toBeTruthy()
+    expect(said.closest('.kit-list-page__head')).toBeNull()
     expect(screen.getByText('Kept in this scope')).toBeTruthy()
     expect(screen.getByRole('searchbox', { name: 'Find a decision' })).toBeTruthy()
     // View is on every list page, the person's density at least.

@@ -2,10 +2,10 @@
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
 .chain-page { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; }
-.chain-page__tabs { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-4); border-bottom: 1px solid var(--line); flex-shrink: 0; }
-.chain-page__tabsGrow { flex: 1; }
+/* The stages' tabs stand as Guidance's do: on the page, the kit's rule under them across the gutter. */
+.chain-page__tabs { display: flex; align-items: center; gap: var(--s-2); padding: 0 var(--s-4); background: var(--surface); flex-shrink: 0; }
+.chain-page__tabs > .kit-tabs { flex: 1; }
 .chain-page__actions { display: inline-flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
-.chain-page__said { font-size: var(--t-small); color: var(--ink-2); }
 .chain-page__work { display: flex; flex: 1; min-height: 0; min-width: 0; }
 .chain-page__main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: auto; }
 /* A stage's list stands in the page's gutter, as every list page's does (`ListPage`); a map takes the whole width. */

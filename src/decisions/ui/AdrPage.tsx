@@ -26,6 +26,7 @@ import { leaveWithDrafts } from '../../widgets/kit/drafts'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { LanguageProvider } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
+import { plural } from '../../i18n/strings'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import {
   formatAdrNumber, isAdrLocked, newAdr, nextAdrNumber, removeAdr, setAdrStatus, sortAdrs, updateAdr,
@@ -437,7 +438,7 @@ export function AdrPage(props: AdrPageProps) {
           )
           : (
             <ListPage
-              title={s('adr.title')} count={allRecords.length}
+              title={s('adr.title')} counted={plural(s, { one: 'adr.countOne', other: 'adr.count' }, allRecords.length)}
               filter={{
                 find: view.find, onFind: (find) => setView((was) => ({ ...was, find })), findLabel: s('adr.searchPlaceholder'),
                 fields: [aboutFilter], filters: view.filters, onFilters: (filters) => setView((was) => ({ ...was, filters })),

@@ -58,6 +58,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'adr.gateDone': 'erledigt',
   'adr.supersedeConfirm': 'Als abgelöst markieren',
   'adr.title': 'Entscheidungen',
+  'adr.countOne': '{count} Entscheidung',
+  'adr.count': '{count} Entscheidungen',
   'adr.scopeGroup': 'Gruppe',
   'adr.scopeAbove': 'Aus einem Bereich darüber',
   'adr.scopeLandscape': 'Landschaften',

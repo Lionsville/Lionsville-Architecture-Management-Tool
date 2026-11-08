@@ -259,10 +259,13 @@ export function FilterWords({
             onReset={onReset} name={`kit-density-${dataGuide ?? 'list'}`}
           />
         )}
-        {shown && shown.count !== shown.total ? (
-          <span className="kit-filter__shown" role="status">{t('kit.filter.shown', { count: shown.count, total: shown.total })}</span>
-        ) : summary !== undefined && <span className="kit-filter__shown" data-testid="filter-summary">{summary}</span>}
-        {actions && <span className="kit-filter__actions">{actions}</span>}
+        {/* How many, said in one place on every list — at the bar's end before what can be done — and what is shown of them when narrowed. */}
+        <span className="kit-filter__end">
+          {shown && shown.count !== shown.total ? (
+            <span className="kit-filter__shown" role="status">{t('kit.filter.shown', { count: shown.count, total: shown.total })}</span>
+          ) : summary !== undefined && <span className="kit-filter__shown" data-testid="filter-summary">{summary}</span>}
+          {actions && <span className="kit-filter__actions">{actions}</span>}
+        </span>
       </div>
       {saidOn > 0 && (
         <div className="kit-filter__line">

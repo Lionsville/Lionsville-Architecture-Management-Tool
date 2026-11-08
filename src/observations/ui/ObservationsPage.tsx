@@ -996,9 +996,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
   // How the stage is read: quiet, before New at the bar's end (`ListPage`).
   const tools = (
     <span className="chain-page__actions">
-      <span className="chain-page__said" data-testid="picture-count">
-        {stageSaid[stage]}
-      </span>
       <Button
         variant="quiet" size="small" aria-pressed={f.viewLocal} {...(f.hasBelow ? { title: s('observation.viewLocalTip') } : { reason: s('observation.viewLocalNone') })}
         onClick={() => f.setViewLocal(!f.viewLocal)} data-testid="view-local" data-guide="observations.viewLocal"
@@ -1071,7 +1068,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
                 { value: 'results', label: s('observation.stageResults'), guide: 'observations.tabResults', testId: 'observation-tab-results' },
               ]}
             />
-            <span className="chain-page__tabsGrow" />
             <OffTheRecord full={full}><PageClose onClose={leaving.leave} label={leaving.closeSaid} /></OffTheRecord>
           </div>
           {full && selected && selectedKey ? (
@@ -1085,7 +1081,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
                 ...(stage === 'register' ? { columns: { choices: observationColumns(s), shown: shownColumns, onChange: setShownColumns } } : {}),
                 s,
               })}
-              tools={tools} {...(create ? { create } : {})} body="fill"
+              tools={tools} {...(create ? { create } : {})} body="fill" counted={<span data-testid="picture-count">{stageSaid[stage]}</span>}
             >
               <div className="chain-page__work" data-testid="observation-body" data-map={onMap || undefined}>
                 <div className="chain-page__main">

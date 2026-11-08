@@ -56,6 +56,8 @@ export const EN = {
   'adr.gateDone': 'done',
   'adr.supersedeConfirm': 'Mark as superseded',
   'adr.title': 'Decisions',
+  'adr.countOne': '{count} decision',
+  'adr.count': '{count} decisions',
   'adr.scopeGroup': 'Group',
   'adr.scopeAbove': 'From a scope above',
   'adr.scopeLandscape': 'Landscapes',

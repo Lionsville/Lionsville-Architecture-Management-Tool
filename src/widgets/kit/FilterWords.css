@@ -11,7 +11,8 @@
 }
 .kit-filter__anchor { display: inline-flex; }
 .kit-filter__shown { color: var(--ink-3); font-size: var(--t-small); }
-.kit-filter__actions { display: inline-flex; gap: var(--s-2); margin-inline-start: auto; }
+.kit-filter__end { display: inline-flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--s-2) var(--s-3); margin-inline-start: auto; }
+.kit-filter__actions { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 
 .kit-filter__line {
   display: flex;

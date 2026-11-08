@@ -58,6 +58,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'adr.gateDone': 'gedaan',
   'adr.supersedeConfirm': 'Als vervangen markeren',
   'adr.title': 'Besluiten',
+  'adr.countOne': '{count} besluit',
+  'adr.count': '{count} besluiten',
   'adr.scopeGroup': 'Groep',
   'adr.scopeAbove': 'Van een scope erboven',
   'adr.scopeLandscape': 'Landschappen',

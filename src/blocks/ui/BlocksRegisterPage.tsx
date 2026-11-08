@@ -135,6 +135,7 @@ export function BlocksRegisterPage({ open, at, select, onClose, windowChrome }: 
         {every.length === 0 ? <div className="guidance__body"><GuidanceEmpty tab="blocks" {...(newOne ? { action: newOne } : {})} /></div> : (
           <ListPage
             filter={{ find, onFind: setFind, findLabel: t('blocks.search'), shown: { count: rows.length, total: every.length } }}
+            counted={plural(t, { one: 'blocks.countOne', other: 'blocks.count' }, every.length)}
             {...(newOne ? { create: { label: newOne.label, onPress: newOne.onPress, guide: 'blocks.new', testId: 'blocks-new' } } : {})}
             listTestId="blocks-register"
           >

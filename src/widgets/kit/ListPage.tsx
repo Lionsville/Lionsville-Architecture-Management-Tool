@@ -7,11 +7,12 @@
  * register — is laid out the same way, so a person finds the same thing in the
  * same place on each:
  *
- * - **The head**: the page's name and how many it holds, where no tab row above
- *   already names it, a quiet line about what it covers, and its tabs.
- * - **The bar**: Find, Filter, Group and View (`FilterWords`), what is shown when
- *   it is narrowed, the page's other quiet controls, and **New** at the far end,
- *   the one accent on the page.
+ * - **The head**: the page's name, where no tab row above already names it, a
+ *   quiet line about what it covers, and its tabs.
+ * - **The bar**: Find, Filter, Group and View (`FilterWords`); at its end, how
+ *   many it holds (*4 seen · 1 wait for a why*) or what is shown of them when it
+ *   is narrowed, in one place and one quiet style on every page, then the page's
+ *   other quiet controls, and **New** at the far end, the one accent on the page.
  * - **The list**: the quiet `List`, full width in the page's gutter, a row the
  *   item and nothing else; selecting one opens it large (`Preview`), which the
  *   page draws beside this.
@@ -36,8 +37,8 @@ export type ListPageCreate = {
 export type ListPageProps = {
   /** The page's name, where no tab row above it says it. */
   readonly title?: string
-  /** How many records the page holds, said beside its name. */
-  readonly count?: number
+  /** How many records the page holds, in words (*2 decisions*, *4 seen · 1 wait for a why*): said at the bar's end, the one place every list page says it. */
+  readonly counted?: ReactNode
   /** What the page covers, in a quiet line beside its name. */
   readonly about?: ReactNode
   /** The page's own tabs, under its name. */
@@ -61,7 +62,7 @@ export type ListPageProps = {
   readonly listTestId?: string
 }
 
-export function ListPage({ title, count, about, tabs, filter, tools, create, note, body = 'scroll', children, testId, headTestId, listTestId }: ListPageProps) {
+export function ListPage({ title, counted, about, tabs, filter, tools, create, note, body = 'scroll', children, testId, headTestId, listTestId }: ListPageProps) {
   // View is on every list page: the person's density at least, and the page's columns where it has some.
   const [density, setDensity] = useDensity()
   const head = title !== undefined || about !== undefined || tabs !== undefined
@@ -80,7 +81,6 @@ export function ListPage({ title, count, about, tabs, filter, tools, create, not
           {(title !== undefined || about !== undefined) && (
             <div className="kit-list-page__title">
               {title !== undefined && <h1 className="kit-list-page__name">{title}</h1>}
-              {title !== undefined && count !== undefined && <span className="kit-list-page__count">{count}</span>}
               {about !== undefined && <span className="kit-list-page__about">{about}</span>}
             </div>
           )}
@@ -89,7 +89,7 @@ export function ListPage({ title, count, about, tabs, filter, tools, create, not
       )}
       {filter && (
         <div className="kit-list-page__bar">
-          <FilterWords density={density} onDensity={setDensity} {...filter} {...(actions ? { actions } : {})} />
+          <FilterWords density={density} onDensity={setDensity} {...filter} {...(counted !== undefined ? { summary: counted } : {})} {...(actions ? { actions } : {})} />
         </div>
       )}
       {note}

@@ -79,7 +79,8 @@ function mount() {
 
 const picture = () => screen.getByTestId('analysis-picture')
 const drawn = () => [...picture().querySelectorAll('[data-key]')].map((node) => node.getAttribute('data-key')).sort()
-const shown = () => document.querySelector('.kit-filter__shown')?.textContent
+/** What is shown of the list when it is narrowed: the status, beside which the stage's own count stands in the same place. */
+const shown = () => document.querySelector('.kit-filter__shown[role="status"]')?.textContent
 /** Every filter stands in one panel that closes: open it to set one. */
 const openFilter = () => fireEvent.click(screen.getByRole('button', { name: /^Filter/ }))
 const setFilter = (field: string, value: string) => fireEvent.change(screen.getByTestId(`filter-${field}`), { target: { value } })

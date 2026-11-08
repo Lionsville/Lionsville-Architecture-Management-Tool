@@ -72,6 +72,7 @@ export function TopicsPage({ open, select, nonce, onClose, windowChrome }: {
         {rows.length === 0 ? <div className="guidance__body"><GuidanceEmpty tab="topics" {...(newOne ? { action: newOne } : {})} /></div> : (
           <ListPage
             filter={{ find, onFind: setFind, findLabel: t('topics.search'), shown: { count: shown.length, total: rows.length } }}
+            counted={plural(t, { one: 'topics.cardCountOne', other: 'topics.cardCount' }, rows.length)}
             {...(newOne ? { create: { label: newOne.label, onPress: newOne.onPress, guide: 'topics.new', testId: 'topics-new' } } : {})}
             listTestId="topics-catalogue"
           >
