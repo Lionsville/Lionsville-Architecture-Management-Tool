@@ -26,6 +26,7 @@ import type { OperatingModel } from '../edit'
 import { manySayTheSame } from '../exceptions'
 import type { ManySay } from '../exceptions'
 import type { OutsideTheModel } from '../organisationFacts'
+import { ListMore } from '../../widgets/kit/ListMore'
 import { ReaderActions } from './ReaderParts'
 import { roleNamed } from './reading'
 
@@ -37,6 +38,13 @@ function whoWords(one: OutsideTheModel, model: OperatingModel, t: Translate): st
     case 'holder': return t('operating.exByHolder', { holder: one.holder ?? '', unit: one.unitName ?? '' })
     case 'outside': return t('operating.exOutside', { holder: one.holder ?? '', unit: one.unitName ?? '' })
   }
+}
+
+/** The reader's title: the role, and where it is said otherwise, since *Lead* alone could be any of them. */
+function titleOf(one: OutsideTheModel, model: OperatingModel, t: Translate): string {
+  const role = roleNamed(model.roles, one.roleId)
+  const where = one.on === 'type' ? model.unitTypes.find((type) => type.id === one.typeId)?.name : one.unitName
+  return where ? t('operating.exTitle', { role, where }) : role
 }
 
 const saysWords = (one: OutsideTheModel, model: OperatingModel, t: Translate) => {
@@ -136,9 +144,15 @@ export function ExceptionsTab({ model, exceptions, readOnly, dispatch, onBackBel
         }))}
         empty={<p className="op-quiet">{t('operating.exNone')}</p>}
       />
+      {/* Solid lines come first; what that leaves out is a press away, not a filter to find. */}
+      {!view.filters.kind?.length && ids.length < exceptions.length && (
+        <ListMore said={t('operating.exSolidFirst')} data-testid="operating-ex-more">
+          <Button variant="quiet" size="small" onClick={() => setView({ ...view, filters: { ...view.filters, kind: ['solid', 'dotted'] } })}>{t('operating.exShowAll', { count: exceptions.length })}</Button>
+        </ListMore>
+      )}
       <p className="op-small">{t('operating.exFootnote')}</p>
       <Preview
-        ids={ids} currentId={open ? open.key : null} onSelect={(id) => onSelect(id ?? undefined)} title={open ? roleNamed(model.roles, open.roleId) : ''}
+        ids={ids} currentId={open ? open.key : null} onSelect={(id) => onSelect(id ?? undefined)} title={open ? titleOf(open, model, t) : ''}
         listWord={t('operating.exWord')}
         facts={open && (
           <>

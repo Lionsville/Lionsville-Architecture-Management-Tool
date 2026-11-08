@@ -70,6 +70,15 @@ describe('the Exceptions tab', () => {
     expect(said).toContain('Ada')
     expect(said).toContain('Grace')
     expect(document.querySelectorAll('[data-guide="operating.exceptions"] [data-key="dotted"]')).toHaveLength(0)
+    // What solid-first leaves out is a press away.
+    fireEvent.click(within(screen.getByTestId('operating-ex-more')).getByRole('button', { name: /^Show all/ }))
+    expect(document.querySelectorAll('[data-guide="operating.exceptions"] [data-key="dotted"]')).toHaveLength(1)
+    expect(screen.queryByTestId('operating-ex-more')).toBeNull()
+  })
+
+  it('titles an exception with the role and where it is said otherwise', () => {
+    exceptions({ start: 'dotted' })
+    expect(screen.getByRole('dialog').getAttribute('aria-labelledby') && document.getElementById(screen.getByRole('dialog').getAttribute('aria-labelledby')!)?.textContent).toContain('in Quay')
   })
 
   it('puts a type’s own line back, and opens the type and the role it is about', () => {
