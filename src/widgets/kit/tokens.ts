@@ -147,7 +147,7 @@ export const SCALE = {
   'panel-w-tree': '18.75rem', 'panel-w': 'min(22rem, 42vw)', 'panel-w-l': 'min(34rem, 60vw)', 'rail-w': '5.25rem',
   'pane-list': 'min(28rem, 50vw)', 'w-dialog-s': '30rem', 'w-dialog-m': '37.5rem', 'w-dialog-l': '68rem', 'w-document': '48rem',
   'row-h': '1.875rem', 'row-h-dense': '1.5rem', 'row-h-loose': '2.25rem', 'row-prop': '1.5rem',
-  'label-col': '7.5rem', 'clamp-lines': '3', 'cell-size': '1.75rem', 'mark-size': '0.625rem',
+  'label-col': '7.5rem', 'value-col-min': '8rem', 'clamp-lines': '3', 'cell-size': '1.75rem', 'mark-size': '0.625rem',
   'target-min': '1.5rem', 'line-width-structure': '1px', 'line-width-emphasis': '2px',
   'line-dash-functional': '4 3', 'line-dash-implied': '1 3', 'line-dash-planned': '7 4',
   'focus-ring-width': '2px', 'focus-ring-offset': '1px', 'dim-opacity': '.45',

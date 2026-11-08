@@ -58,14 +58,18 @@
 .kit-props[data-line] .kit-props__list { flex-direction: row; flex-wrap: wrap; align-items: baseline; column-gap: var(--s-3); }
 .kit-props[data-line] .kit-prop__label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .kit-props[data-line] .kit-prop { flex: none; max-width: 100%; }
-.kit-props[data-line] .kit-prop__value { flex: none; max-width: 100%; }
+.kit-props[data-line] .kit-prop__value { flex: none; max-width: 100%; min-width: 0; }
 .kit-props[data-line] .kit-prop__text { display: block; overflow: visible; white-space: nowrap; }
 .kit-props__add { margin-inline-start: calc(var(--s-2) * -1); }
 .kit-props__add .kit-button { color: var(--accent); }
 
-.kit-prop { display: flex; align-items: flex-start; gap: var(--s-2); min-height: var(--row-prop); }
-.kit-prop__label { flex: none; width: var(--label-col); padding-block: 3px; color: var(--ink-3); font-size: var(--t-small); line-height: 1.125rem; overflow-wrap: break-word; }
-.kit-prop__value { flex: 1; min-width: 0; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s-1); }
+/*
+ * The value keeps room for a word at the text size: where the label's column would leave it less,
+ * as a panel's at large text did ("Wareho|use"), the value goes under its label, the row's width whole.
+ */
+.kit-prop { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 var(--s-2); min-height: var(--row-prop); }
+.kit-prop__label { flex: none; width: var(--label-col); max-width: 100%; padding-block: 3px; color: var(--ink-3); font-size: var(--t-small); line-height: 1.125rem; overflow-wrap: break-word; }
+.kit-prop__value { flex: 1 1 var(--value-col-min); min-width: min(var(--value-col-min), 100%); margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s-1); }
 .kit-prop__read,
 .kit-prop__press {
   display: inline-block;

@@ -3,6 +3,7 @@
 
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs'
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
@@ -383,5 +384,14 @@ describe('a form that reads as a page', () => {
   it('reads a title as a heading in the same place', () => {
     renderShell(<TitleRead>Late every night</TitleRead>)
     expect(screen.getByRole('heading', { name: 'Late every night' }).parentElement?.className).toBe('kit-titleField')
+  })
+})
+
+describe('a row at large text', () => {
+  // jsdom lays nothing out, so the rule is read where it is written: the row wraps, and the value keeps room for a word.
+  const sheet = readFileSync('src/widgets/kit/Field.css', 'utf8')
+  it('puts the value under its label where the label’s column would leave it less than a word’s room', () => {
+    expect(sheet).toMatch(/\.kit-prop \{ display: flex; flex-wrap: wrap;/)
+    expect(sheet).toMatch(/\.kit-prop__value \{ flex: 1 1 var\(--value-col-min\); min-width: min\(var\(--value-col-min\), 100%\);/)
   })
 })
