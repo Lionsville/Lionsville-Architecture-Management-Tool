@@ -64,7 +64,8 @@ export const GLOSSARY: Record<Exclude<Language, 'en'>, readonly Refused[]> = {
     { word: /\b(du|Du|dich|Dich|dir|Dir|dein\w*|Dein\w*)\b/, use: 'Sie, Ihr (German says Sie throughout)' },
     { word: /(^|[.:!?]\s+)(Wähle|Gib|Drücke|Verknüpfe|Ändere|Zieh|Öffne|Markiere|Füge|Klicke|Tippe)\b/, use: 'the Sie form: Wählen Sie, Geben Sie…' },
     // A du imperative at the head of a clause, capital or not ("verbinde zwei Elemente", "Bring mich hin"): an infinitive or the Sie form.
-    { word: /(^|[.:;!?]\s+)(verbinde|erstelle|schlage|halte|füge|plane|setze|arbeite|schließe|übernimm|repariere|fülle|schlichte|bringe?|sammle|zeige|definiere|nimm|decke|wirf|wähle|gib|drücke|verknüpfe|ändere|zieh|öffne|markiere|klicke|tippe|lege|schreibe|lies|sieh|probiere|starte|beende|mache?|folge|finde|teile|lade|benenne|schau|lass|lasse|schärfe)\b(?! Sie\b)/i, use: 'an infinitive (Zwei Elemente verbinden) or the Sie form' },
+    // Bitte only as the verb ("Bitte die anderen, sie zu lesen"), not as the polite word ("Bitte noch einmal versuchen").
+    { word: /(^|[.:;!?]\s+)(verbinde|erstelle|schlage|halte|füge|plane|setze|arbeite|schließe|übernimm|repariere|fülle|schlichte|bringe?|sammle|zeige|definiere|nimm|decke|wirf|wähle|gib|drücke|verknüpfe|ändere|zieh|öffne|markiere|klicke|tippe|lege|schreibe|lies|sieh|probiere|starte|beende|mache?|folge|finde|teile|lade|benenne|schau|lass|lasse|schärfe|berichtige|ergänze|kläre|bitte(?= (die|den|das|eine[mnr]?|andere\w*|jemand\w*|ihn|sie|es)\b[^.]*\b(um|zu)\b))\b(?! Sie\b)/i, use: 'an infinitive (Zwei Elemente verbinden) or the Sie form' },
     { word: /\bScopes?\b/, use: 'Bereich (the scope, and nothing else)' },
     { word: /Fahrplan/, use: 'Roadmap' },
     { word: /\bVerzeichnis\b|Technologieverzeichnis/, use: 'Register' },
