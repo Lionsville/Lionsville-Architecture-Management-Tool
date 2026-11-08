@@ -410,6 +410,8 @@ export function stateFrom(
     ...(content.unitTypeId !== undefined ? { unitTypeId: content.unitTypeId } : {}),
     ...(content.client !== undefined ? { client: content.client } : {}),
     ...(content.links !== undefined ? { links: content.links } : {}),
+    // A topic's links (ADR-0042 §1): the tree says them, and a read of the scope says them too.
+    ...(content.relevantTo !== undefined ? { relevantTo: content.relevantTo } : {}),
     ...(typeof active === 'string' && active !== '' ? { activeDiagramId: active } : {}),
     ...(content.logoLibrary.length ? { logoLibrary: content.logoLibrary } : {}),
   }

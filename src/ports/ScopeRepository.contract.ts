@@ -134,6 +134,17 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect([node.kind, node.client, node.description, node.links, node.diagrams])
           .toEqual(['domain', 'Acme', 'Freight and rail.', [{ label: 'Wiki', url: 'https://example.org/acme' }], 1])
       })
+
+      it('reads a scope whole: what the tree says it says about itself, its state says too — a topic\'s links included', async () => {
+        const repositories = await fresh()
+        const topic = await repositories.scope('topics/routing', 'Routing')
+        const relevantTo = [{ path: 'acme', from: '2026-01-01' }, { path: 'acme/rail', from: '2026-01-01', until: '2026-03-31' }]
+        await repositories.steps(topic, { type: 'scope.describe', patch: { kind: 'domain', client: 'Acme', links: [{ label: 'Wiki', url: 'https://example.org/acme' }], relevantTo } })
+        const node = (await nodeOf(repositories, topic))!
+        const state = await repositories.state(topic)
+        expect(node.relevantTo).toEqual(relevantTo)
+        expect([state.kind, state.client, state.links, state.relevantTo]).toEqual([node.kind, node.client, node.links, node.relevantTo])
+      })
     })
 
     describe('steps', () => {
