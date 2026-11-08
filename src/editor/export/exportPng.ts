@@ -6,6 +6,7 @@ import type { Rect } from '../../model/types';
 import type { ExportDiagramPngOptions, ExportLegend, ExportSwatch, ExportTitleBlock } from '../props';
 import type { ExportTokens } from '../theme/tokens';
 import { SCALE } from '../../widgets/kit/tokens';
+import { pictureFontCss } from '../../widgets/pictureFonts';
 
 /** The face the board itself draws in, so a picture of it reads the same. */
 const FACE = SCALE['font-ui'];
@@ -67,6 +68,8 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
     // happens once, into the blob that leaves.
     canvas = await toCanvas(viewport, {
       backgroundColor: background,
+      // The app's own faces, handed over ready: the library's own way to them is refused by the desktop's policy.
+      fontEmbedCSS: await pictureFontCss(),
       pixelRatio,
       width,
       height,
