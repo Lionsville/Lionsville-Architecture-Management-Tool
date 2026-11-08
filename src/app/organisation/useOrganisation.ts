@@ -437,7 +437,7 @@ export function useOrganisation({
       const name = patch.name.trim() || scopePathLabel(path)
       const was = flattenScopes(listing).find((scope) => scope.path === path)?.name
       try {
-        await writeSettings(scopes, path, name, patch)
+        await writeSettings(scopes, path, name, patch, patch.changed ? new Set(patch.changed) : undefined)
         if (moving) {
           await moveFiled(scopes, repositories.index, path, to, s('topics.title'))
         }

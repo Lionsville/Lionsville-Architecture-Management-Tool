@@ -88,6 +88,31 @@ describe('watchRepositories', () => {
     expect((await repositories.people.list()).people.map((one) => one.name)).toContain('Ada')
   })
 
+  it('makes two refused changes to one scope again in order, the second over the scope the first moved', async () => {
+    const refusing = { now: false }
+    const store = writeRefusals()
+    const repositories = watchRepositories(refusingWhile(refusing), store)
+    await scopeAt(repositories, 'rail')
+    refusing.now = true
+    await changeScope(repositories.scopes, 'rail', rename('Rail freight')).catch(() => undefined)
+    await changeScope(repositories.scopes, 'rail', () => [{ type: 'project.settings' as const, patch: { name: 'Rail freight', description: 'Freight lines' } }]).catch(() => undefined)
+    refusing.now = false
+    expect(await store.retry()).toBe(true)
+    const kept = await readScope(repositories.scopes, 'rail')
+    expect(kept?.model.name).toBe('Rail freight')
+    expect(kept?.model.description).toBe('Freight lines')
+  })
+
+  it('does not count a refusal as landed when it is tried again', async () => {
+    const store = writeRefusals()
+    const held = memoryRepositories()
+    const answers: unknown[] = [{ refused: 'shell.scopeReadOnly' }, { refused: 'shell.scopeGone' }]
+    const repositories = watchRepositories({ ...held, scopes: { ...held.scopes, id: 'x', apply: () => Promise.resolve(answers.shift() as never) } }, store)
+    await repositories.scopes.apply([])
+    expect(await store.retry()).toBe(false)
+    expect(store.list()).toHaveLength(1)
+  })
+
   it('puts back one refusal, or every one, and tells whoever listens', async () => {
     const refusing = { now: true }
     const store = writeRefusals()

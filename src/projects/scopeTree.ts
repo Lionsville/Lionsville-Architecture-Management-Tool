@@ -188,29 +188,43 @@ export type ScopeSettings = {
   defaultAspectConfig?: AspectConfigEntry[]
 }
 
-/** What the settings dialog says about a scope, as the two steps that say it. */
-export function settingsCommands(name: string, settings: ScopeSettings): ScopeCommand[] {
+/** A field of the settings, by the name a page changes it under. */
+export type SettingsField = 'name' | 'description' | 'defaultAuthor' | 'defaultAspectConfig' | 'client' | 'links' | 'type'
+
+/** A patch with only the fields named, where any are: a command made again later then changes those and nothing it did not mean to. */
+function onlyOf<T extends object>(patch: T, changed: ReadonlySet<string> | undefined, field: (key: string) => string = (key) => key): T {
+  if (!changed) return patch
+  return Object.fromEntries(Object.entries(patch).filter(([key]) => changed.has(field(key)))) as T
+}
+
+/**
+ * What the settings dialog says about a scope, as the two steps that say it.
+ * With `changed`, only those fields: the page writes one field at a time, and
+ * a change it makes again after another landed must not put the other back.
+ */
+export function settingsCommands(name: string, settings: ScopeSettings, changed?: ReadonlySet<SettingsField>): ScopeCommand[] {
   const links = normaliseLinks(settings.links ? [...settings.links] : undefined)
-  return [
+  const commands: ScopeCommand[] = [
     {
       type: 'project.settings',
-      patch: {
+      patch: onlyOf({
         name,
         description: settings.description?.trim() || undefined,
         ...(settings.defaultAuthor !== undefined ? { defaultAuthor: settings.defaultAuthor.trim() || undefined } : {}),
         ...(settings.defaultAspectConfig ? { defaultAspectConfig: settings.defaultAspectConfig } : {}),
-      },
+      }, changed),
     },
     {
       type: 'scope.describe',
-      patch: {
+      patch: onlyOf({
         client: settings.client?.trim() || undefined,
         links: links.length ? links : undefined,
         // The one picker says both fields; a caller speaking kinds alone sets the kind as before.
         ...(settings.type !== undefined ? typeChosen(settings.type) : settings.kind ? { kind: settings.kind } : {}),
-      },
+      }, changed, (key) => (key === 'kind' || key === 'unitTypeId' ? 'type' : key)),
     },
   ]
+  return commands.filter((command) => !('patch' in command) || Object.keys(command.patch).length > 0)
 }
 
 /**
@@ -218,9 +232,9 @@ export function settingsCommands(name: string, settings: ScopeSettings): ScopeCo
  * then the form is written over the scope as it stands, so its model,
  * decisions and plans survive a change the form cannot see.
  */
-export async function writeSettings(scopes: TreeScopes, path: ScopePath, name: string, settings: ScopeSettings): Promise<void> {
+export async function writeSettings(scopes: TreeScopes, path: ScopePath, name: string, settings: ScopeSettings, changed?: ReadonlySet<SettingsField>): Promise<void> {
   await ensureScope(scopes, path, { name })
-  await changeScope(scopes, path, () => settingsCommands(name, settings))
+  await changeScope(scopes, path, () => settingsCommands(name, settings, changed))
 }
 
 /** What a scope says about itself, as a patch: absent keeps a field, null clears an optional one. */

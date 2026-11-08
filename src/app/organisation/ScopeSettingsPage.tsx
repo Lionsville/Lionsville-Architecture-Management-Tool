@@ -52,6 +52,7 @@ import { claimKey } from '../../widgets/kit/keys'
 import { focusLeaves } from '../../widgets/kit/Surface'
 import { WriteRefusalsContext } from '../writeRefusals'
 import type { SettingsApplied } from './useOrganisation'
+import type { SettingsField as ChangedField } from '../../projects/scopeTree'
 
 export const SETTINGS_TABS = ['general', 'links', 'exports', 'landscapes'] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
@@ -113,13 +114,14 @@ export function ScopeSettingsPage({
 
   const apply = useCallback(async (patch: Partial<ScopeSettingsPatch>, name: string, back: Partial<ScopeSettingsPatch>): Promise<SettingsApplied> => {
     const whole = patchOf(target)
-    const answer = await Promise.resolve(onApply(path, { ...whole, ...patch })) ?? LANDED
+    const changed = Object.keys(patch) as ChangedField[]
+    const answer = await Promise.resolve(onApply(path, { ...whole, ...patch, changed })) ?? LANDED
     // A change that did not land is no step: undo would take back what is not there.
     if (!answer.ok) return answer
     const undo: SettingsUndo = {
       name,
       run: () => {
-        void onApply(path, { ...patchOf(target), ...patch, ...back })
+        void onApply(path, { ...patchOf(target), ...patch, ...back, changed })
         steps.current.pop()
         onUndoChange?.(steps.current.at(-1))
       },

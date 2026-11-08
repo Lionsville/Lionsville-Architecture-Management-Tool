@@ -155,4 +155,23 @@ describe('a scope whose record will not save', () => {
     await waitFor(() => expect(screen.queryByTestId('work-not-kept')).toBeNull())
     expect((await held.read('acme/warehouse'))?.model.name).toBe('Warehouse renamed')
   })
+
+  it('makes two refused fields of one scope again from Your work, each keeping the other', async () => {
+    const refusing = { now: true }
+    const { held, name } = await settingsRefusing(refusing)
+    const description = document.querySelector<HTMLElement>('[data-field=description] textarea')!
+    fireEvent.focus(description)
+    fireEvent.change(description, { target: { value: 'Freight lines' } })
+    fireEvent.blur(description, { relatedTarget: document.body })
+    await waitFor(() => expect(screen.getAllByTestId('setting-not-kept')).toHaveLength(2))
+    expect(name.value).toBe('Warehouse renamed')
+    refusing.now = false
+    fireEvent.click(word())
+    fireEvent.click(await screen.findByTestId('work-retry'))
+    await waitFor(() => expect(screen.queryByTestId('work-not-kept')).toBeNull())
+    const kept = await held.read('acme/warehouse')
+    expect(kept?.model.name).toBe('Warehouse renamed')
+    expect(kept?.model.description).toBe('Freight lines')
+  })
 })
+

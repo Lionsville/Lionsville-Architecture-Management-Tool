@@ -14,6 +14,7 @@
  * but the hooks below it do not, and each asks for its own slice. Nothing here
  * knows whether a project lives in browser storage, on disk or on a server.
  */
+import type { SettingsField } from '../projects/scopeTree'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import Box from '@mui/material/Box'
@@ -466,6 +467,12 @@ export type ScopeSettingsPatch = {
   defaultAuthor?: string
   /** The aspects a new landscape starts with. */
   defaultAspectConfig?: AspectConfigEntry[]
+  /**
+   * The fields this change is about, where the page says: only those are
+   * written, so a change made again after another landed (`writeRefusals`)
+   * does not put the other back. Absent writes every field, as the agent does.
+   */
+  changed?: readonly SettingsField[]
 }
 
 export type { AppBoot, AppHost, AppProps, AppProvider } from './appProps'

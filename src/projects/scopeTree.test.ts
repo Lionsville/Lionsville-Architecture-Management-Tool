@@ -277,3 +277,16 @@ describe('removing a scope', () => {
     await expect(removeScopeAt(repositories.scopes, '')).rejects.toBeInstanceOf(ShellError)
   })
 })
+
+describe('settingsCommands', () => {
+  it('says every field where nobody says which changed, and only those named where somebody does', () => {
+    const settings = { name: 'Rail', description: 'Freight', client: 'Acme', links: [], type: 'kind:domain' }
+    expect(settingsCommands('Rail', settings)).toHaveLength(2)
+    expect(settingsCommands('Rail', settings, new Set(['description']))).toEqual([{ type: 'project.settings', patch: { description: 'Freight' } }])
+    expect(settingsCommands('Rail', settings, new Set(['name']))).toEqual([{ type: 'project.settings', patch: { name: 'Rail' } }])
+    const typed = settingsCommands('Rail', settings, new Set(['type']))
+    expect(typed).toHaveLength(1)
+    expect(typed[0]!.type).toBe('scope.describe')
+    expect(Object.keys((typed[0] as { patch: object }).patch)).not.toContain('client')
+  })
+})

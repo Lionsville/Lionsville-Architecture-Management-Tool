@@ -25,6 +25,8 @@
 import { createContext } from 'react'
 import type { StringKey } from '../i18n'
 import type { Repositories } from '../ports/Repositories'
+import type { StepsFor } from '../ports/ScopeRepository'
+import { SCOPE_MOVED } from '../projects/revision'
 import { refusalOf, tagRefusal } from '../projects/refusalTag'
 
 export type WriteRefusal = {
@@ -71,11 +73,13 @@ export function writeRefusals(onLanded: () => void = () => {}): Store {
       return next
     },
     retry: async () => {
-      const tried = await Promise.all(held.map(async (one) => {
+      // One after the other, in the order they were made: two changes to one scope are made as they were meant to land.
+      const tried: boolean[] = []
+      for (const one of held) {
         const landed = await one.retry().catch(() => false)
         if (landed) forget(one.id)
-        return landed
-      }))
+        tried.push(landed)
+      }
       if (tried.some(Boolean)) onLanded()
       return tried.every(Boolean)
     },
@@ -95,7 +99,17 @@ function notKept(answer: unknown): StringKey | undefined {
  * added to the list and tagged with its number (`projects/refusalTag`), so the
  * caller that catches it can let go of that one when it is put back.
  */
-function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Promise<R>) {
+/**
+ * The same write, no longer expecting the state it was first made against:
+ * what *Try again* falls back on where the scope moved since, which another
+ * change made again before it will have done. The person asked for this very
+ * change once more, over the scope as it stands.
+ */
+type Loosen<A> = (args: A) => A
+
+const refusedAtAll = (answer: unknown) => typeof answer === 'object' && answer !== null && 'refused' in answer
+
+function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Promise<R>, loosen?: Loosen<A>) {
   const attempt = async (args: A): Promise<{ answer: R; key?: StringKey } | { cause: unknown }> => {
     try {
       const answer = await call(...args)
@@ -111,7 +125,11 @@ function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Pro
     if (!failed) return first.answer
     const retry = async () => {
       const again = await attempt(args)
-      return !('cause' in again) && again.key === undefined
+      if ('cause' in again) return false
+      if (!refusedAtAll(again.answer)) return true
+      if (!loosen || (again.answer as { refused: unknown }).refused !== SCOPE_MOVED) return false
+      const loose = await attempt(loosen(args))
+      return !('cause' in loose) && !refusedAtAll(loose.answer)
     }
     const id = store.add({ ...('key' in first && first.key ? { key: first.key } : {}), retry })
     if ('cause' in first) {
@@ -130,7 +148,7 @@ const RAW = Symbol('unwatched')
  * Wrap the named methods of one repository, keeping everything else it has —
  * a method an adapter adds, a property — exactly as it was.
  */
-function watch<T extends object>(store: Store, repository: T, writes: readonly (keyof T & string)[]): T {
+function watch<T extends object>(store: Store, repository: T, writes: readonly (keyof T & string)[], loosened: Partial<Record<string, Loosen<unknown[]>>> = {}): T {
   const names = new Set<string | symbol>(writes)
   const made = new Map<string | symbol, unknown>()
   return new Proxy(repository, {
@@ -139,7 +157,7 @@ function watch<T extends object>(store: Store, repository: T, writes: readonly (
       const value: unknown = Reflect.get(target, prop, target)
       if (typeof value !== 'function') return value
       if (!names.has(prop)) return (value as (...args: unknown[]) => unknown).bind(target)
-      if (!made.has(prop)) made.set(prop, watched(store, (value as (...args: unknown[]) => Promise<unknown>).bind(target)))
+      if (!made.has(prop)) made.set(prop, watched(store, (value as (...args: unknown[]) => Promise<unknown>).bind(target), loosened[String(prop)]))
       return made.get(prop)
     },
   })
@@ -154,7 +172,10 @@ export function unwatched<T extends object>(repository: T): T {
 export function watchRepositories(repositories: Repositories, store: Store): Repositories {
   return {
     ...repositories,
-    scopes: watch(store, repositories.scopes, ['apply', 'create', 'move', 'remove']),
+    scopes: watch(store, repositories.scopes, ['apply', 'create', 'move', 'remove'], {
+      // A move or a removal is never made over a scope that changed since: what it would take with it is not what was asked about.
+      apply: ([work]) => [(work as readonly StepsFor[]).map(({ expects: _expects, ...steps }) => steps)],
+    }),
     images: watch(store, repositories.images, ['put']),
     settings: watch(store, repositories.settings, ['write']),
     people: watch(store, repositories.people, [
