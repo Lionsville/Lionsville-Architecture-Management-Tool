@@ -210,6 +210,12 @@ describe('Layer7Canvas — domain-group context menu', () => {
     expect(actions.removeDomainGroup).toHaveBeenCalledWith('core');
   });
 
+  it('selects the group it opens on, from the label and from inside the box, so the panel says what the menu acts on', () => {
+    const { rightClickAt, onSelectionChange } = renderCanvas({ onTidyGroup: vi.fn() });
+    rightClickAt({ x: GROUP.x + 40, y: GROUP.y + GROUP.height - 40 });
+    expect(onSelectionChange).toHaveBeenLastCalledWith({ elementIds: [], connectionIds: [], domainGroups: ['core'] });
+  });
+
   it('offers no Tidy entry when the editor supplies no handler', () => {
     const { rightClickAt } = renderCanvas();
 

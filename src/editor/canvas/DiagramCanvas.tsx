@@ -1354,11 +1354,16 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       const point = screenToFlowPosition({ x: event.clientX, y: event.clientY });
       const target = resolvePaneMenuTarget?.(point) ?? { kind: 'pane' as const };
       // A group with nothing to offer (read-only) still gets the canvas menu.
-      if (!tryOpenMenu(target, { event }) && target.kind !== 'pane') {
+      if (tryOpenMenu(target, { event })) {
+        // The menu acts on the group, so the panel says the group too, as a card's right-click does.
+        if (target.kind === 'group' && !props.selection.domainGroups.includes(target.groupId)) {
+          onSelectionChange({ elementIds: [], connectionIds: [], domainGroups: [target.groupId] });
+        }
+      } else if (target.kind !== 'pane') {
         tryOpenMenu({ kind: 'pane' }, { event });
       }
     },
-    [resolvePaneMenuTarget, screenToFlowPosition, tryOpenMenu],
+    [resolvePaneMenuTarget, screenToFlowPosition, tryOpenMenu, props.selection, onSelectionChange],
   );
 
   const canvasMenu = useMemo<CanvasMenuApi>(
