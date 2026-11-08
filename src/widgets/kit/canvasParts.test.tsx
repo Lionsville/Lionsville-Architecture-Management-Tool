@@ -37,6 +37,13 @@ describe('a card', () => {
     expect(sheet).toContain('.kit-name { overflow-wrap: normal; word-break: normal; hyphens: manual; }')
   })
 
+  it('may part a word after a slash, the slash kept with the word before it', () => {
+    const { container } = render(<Card name="Intake/Review desk /" />)
+    const words = [...container.querySelectorAll('.kit-name__word')].map((word) => word.textContent)
+    expect(words).toEqual(['Intake/', 'Review', 'desk', '/'])
+    expect(container.querySelector('.kit-name')?.textContent).toBe('Intake/Review desk /')
+  })
+
   it('says each state as an attribute, for its CSS to draw', () => {
     const { container } = render(<Card name="X" selected neighbour dimmed planned />)
     const card = container.firstElementChild as HTMLElement

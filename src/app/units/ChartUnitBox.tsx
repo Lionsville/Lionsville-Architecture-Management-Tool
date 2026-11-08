@@ -192,6 +192,8 @@ function UnitBox({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
             type="button" className="org-name" onClick={press} onDoubleClick={() => { if (!moving) drawing.open(unit.id) }}
             onKeyDown={(event) => (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10') ? menuAt(event) : drawing.onKey(unit, event))}
             data-testid="chart-unit-open" disabled={!pressable} tabIndex={tabbable ? 0 : -1}
+            // The whole name where the card shows it cut, at the whole organisation's distance.
+            title={unit.name}
           >
             <CanvasName text={unit.name} />
           </button>
@@ -316,6 +318,9 @@ function slotDrawn(slot: ChartSlot, role: Role | undefined, drawing: Drawing): b
   return role?.manages === true || slot.holders.some((holder) => holder.assignment.id === drawing.chosen)
 }
 
+/** A word joiner: no line breaks between a word and the mark after it. */
+const JOINED = '\u2060'
+
 /** One role of a unit, on one line: who holds it, and what its slot still asks for. */
 function SlotRow({ unit, slot, drawing, tabbable }: { unit: ChartUnit; slot: ChartSlot; drawing: Drawing; tabbable: boolean }) {
   const { t } = drawing
@@ -333,8 +338,9 @@ function SlotRow({ unit, slot, drawing, tabbable }: { unit: ChartUnit; slot: Cha
   }
   return (
     <div className="org-row" data-testid={`chart-slot-${slot.roleId}`} title={role?.manages ? t('chart.readManages') : undefined}>
-      <span data-testid="chart-role-name">{role?.name ?? slot.roleId}</span>{': '}
-      {parts.map((part, at) => <span key={at}>{at > 0 ? ', ' : ''}{part}</span>)}
+      {/* The role in whole words, as a name on a canvas is; its colon and each comma held to the word before them, so none stands alone on a line. */}
+      <span data-testid="chart-role-name"><CanvasName text={role?.name ?? slot.roleId} />{JOINED}:</span>{' '}
+      {parts.map((part, at) => <span key={at}>{part}{at < parts.length - 1 ? `${JOINED}, ` : ''}</span>)}
       {slot.holders.filter((holder) => holder.overloaded).map((holder) => <Over key={holder.assignment.id} holder={holder} drawing={drawing} />)}
     </div>
   )

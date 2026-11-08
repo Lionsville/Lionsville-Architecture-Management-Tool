@@ -50,12 +50,16 @@ export type CardProps = Omit<ComponentPropsWithRef<'div'>, 'children' | 'about'>
  * A name on a canvas, said the one way every card and chip says it: broken between
  * words and never inside one, since "Warehou|se" reads as two words that are not;
  * a word too long for its line ends in an ellipsis instead. Each word is a box of
- * its own for that, so a space is the only place a line may break.
+ * its own for that, so a space is the only place a line may break — and after a
+ * slash, which joins two words a line may part ("Intake/Review"): each side is a
+ * box of its own, the slash kept with the first.
  */
 export function CanvasName({ text }: { text: string }) {
   return (
     <span className="kit-name">
-      {text.split(/(\s+)/).map((part, at) => (/^\s*$/.test(part) ? part : <span key={at} className="kit-name__word">{part}</span>))}
+      {text.split(/(\s+)/).flatMap((part, at): ReactNode[] => (/^\s*$/.test(part)
+        ? [part]
+        : part.split(/(?<=\/)(?=.)/).map((piece, within) => <span key={`${at}.${within}`} className="kit-name__word">{piece}</span>)))}
     </span>
   )
 }

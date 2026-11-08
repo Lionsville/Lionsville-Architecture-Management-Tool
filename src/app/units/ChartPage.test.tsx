@@ -199,7 +199,8 @@ describe('the organisation chart', () => {
     expect(within(unitBox('tt')).getByTestId('chart-vacant')).toBeTruthy()
     pressMenu('People: Required roles', 'All roles')
     const coach = within(unitBox('pf')).getByTestId('chart-slot-ro-coach')
-    expect(coach.textContent).toBe('Agile coach: assign')
+    // The colon held to the role's last word by a word joiner, which nobody reads.
+    expect(coach.textContent?.replaceAll('\u2060', '')).toBe('Agile coach: assign')
     expect(within(coach).getByTestId('chart-assign')).toBeTruthy()
     expect(await axeFindings()).toEqual([])
     pressMenu('People: All roles', 'Leaders')

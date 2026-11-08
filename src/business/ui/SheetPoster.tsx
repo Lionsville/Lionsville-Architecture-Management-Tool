@@ -348,7 +348,7 @@ function Step({ step, first, drawing }: { step: { element: DesignElement; outsid
         type="button" tabIndex={first ? 0 : -1} className="poster-step" data-outside={outside ? '' : undefined} data-element-id={element.id} title={element.name}
         aria-label={outside ? t('sheet.outsideStep', { name: element.name }) : undefined}
       >
-        <span className="poster-step__name">{element.name}</span>
+        <span className="poster-step__name"><CanvasName text={element.name} /></span>
       </button>
       {design && (
         <span className="poster-add poster-add--icon" data-sheet-add>
