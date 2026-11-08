@@ -1095,7 +1095,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     awaiting: awaitsLayout(props.diagram),
     ready: initialised,
     ...(props.emptyFrame ? { emptyFrame: props.emptyFrame } : {}),
-    setViewport,
+    setViewport, drawnAs: String(props.showDeployment === true),
   });
   // When the pointer last went down inside the canvas — how the focus handler
   // tells a click apart from a Tab (see `handleContainerFocus`).

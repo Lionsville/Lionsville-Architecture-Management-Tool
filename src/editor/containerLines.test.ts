@@ -81,6 +81,24 @@ describe('a container diagram, as data', () => {
     expect(nodes[0]).toMatchObject({ id: 'app', type: 'applicationBoundary', zIndex: 0 });
   });
 
+  it('moves a box placed against the boundary clear of it while Where it runs grows it, and grows it most at the top', () => {
+    // `below` stands 12 under the plain boundary, which pads the containers by 56 on every side; the stored box is smaller.
+    const placed = { ...diagram, members: [...diagram.members!, { id: 'below' }], geometry: { nodes: [...diagram.geometry!.nodes!.map((one) => (one.id === 'app' ? { ...one, width: 100, height: 100 } : one)), { id: 'below', x: 50, y: 0 }] } } as DesignDiagram;
+    const withBelow = { ...model, elements: [...model.elements, el('below', 'application')], diagrams: [placed] } as DesignModel;
+    const plain = buildNodes({ model: withBelow, diagram: placed, readOnly: true, edgeColor: '' });
+    const app = plain.find((node) => node.id === 'app')!;
+    const under = app.position.y + app.height! + 12;
+    const moved = { ...placed, geometry: { nodes: placed.geometry!.nodes!.map((one) => (one.id === 'below' ? { ...one, y: under } : one)) } } as DesignDiagram;
+    const before = buildNodes({ model: withBelow, diagram: moved, readOnly: true, edgeColor: '' });
+    expect(before.find((node) => node.id === 'below')!.position.y).toBe(under);
+    const grown = buildNodes({ model: withBelow, diagram: moved, readOnly: true, edgeColor: '', deployment: true });
+    const boundary = grown.find((node) => node.id === 'app')!;
+    expect(grown.find((node) => node.id === 'below')!.position.y).toBe(boundary.position.y + boundary.height! + 16);
+    // The top takes the platforms' names; below, only their padding.
+    const plainBox = before.find((node) => node.id === 'app')!;
+    expect(plainBox.position.y - boundary.position.y).toBeGreaterThan(boundary.position.y + boundary.height! - plainBox.position.y - plainBox.height!);
+  });
+
   it('says an empty boundary is empty', () => {
     const empty = { ...model, elements: model.elements.filter((one) => one.kind !== 'component'), relations: [] };
     const nodes = buildNodes({ model: empty, diagram, readOnly: true, edgeColor: '' });

@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from 'vitest'
-import { BOUNDARY_PADDING, DEPLOYMENT_ROOM } from '../graph'
+import { BOUNDARY_PADDING, DEPLOYMENT_ROOM, DEPLOYMENT_SIDE_ROOM } from '../graph'
 import { deploymentPadding } from './DeploymentLayer'
 
 /** The name's room over a box, as the layer keeps it. */
@@ -19,6 +19,12 @@ describe('deploymentPadding', () => {
   it('keeps the outer box and its name inside the application’s boundary, clear of its edge, however deep the nesting', () => {
     for (const deepest of [0, 1, 2, 4]) {
       expect(deploymentPadding(0, deepest) + LABEL_ROOM).toBeLessThanOrEqual(BOUNDARY_PADDING + DEPLOYMENT_ROOM - 50)
+    }
+  })
+
+  it('keeps the outer box clear of the boundary below and at the sides, where the boundary grows less', () => {
+    for (const deepest of [0, 1, 2, 4]) {
+      expect(deploymentPadding(0, deepest)).toBeLessThanOrEqual(BOUNDARY_PADDING + DEPLOYMENT_SIDE_ROOM - 16)
     }
   })
 })

@@ -29,7 +29,7 @@ const LAYOUT_WAIT_MS = 5000;
 /** A canvas with no size yet is asked again, a frame at a time, for about a second. */
 const SIZE_TRIES = 60;
 
-export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFrame, setViewport }: {
+export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFrame, setViewport, drawnAs }: {
   container: RefObject<HTMLDivElement | null>;
   nodes: readonly Node[];
   /** Where this board was left earlier in the session: it goes back there, as React Flow's default. */
@@ -41,6 +41,8 @@ export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFr
   /** The board's sheet, framed with what is on it (a landscape's bands), and alone on a board with nothing on it. */
   emptyFrame?: Rect;
   setViewport: (viewport: Viewport) => unknown;
+  /** What changes the drawing's size besides its cards, as Where it runs grows a boundary: framed again when it changes. */
+  drawnAs?: string;
 }): { framed: boolean } {
   const flow = useStoreApi();
   const [framed, setFramed] = useState(kept !== undefined);
@@ -82,12 +84,13 @@ export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFr
 
   // A text size changed grows or shrinks every card, so the frame chosen for the old
   // size cuts the board off or leaves it small: framed again once the cards have
-  // been measured at the new size, two frames on.
+  // been measured at the new size, two frames on. So is a drawing grown otherwise.
   const scale = useTextScale();
-  const framedAt = useRef(scale);
+  const drawn = `${scale}|${drawnAs ?? ''}`;
+  const framedAt = useRef(drawn);
   useEffect(() => {
-    if (!settled.current || framedAt.current === scale) return undefined;
-    framedAt.current = scale;
+    if (!settled.current || framedAt.current === drawn) return undefined;
+    framedAt.current = drawn;
     let handle = requestAnimationFrame(() => {
       handle = requestAnimationFrame(() => {
         const box = container.current?.getBoundingClientRect();
@@ -102,7 +105,7 @@ export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFr
       });
     });
     return () => cancelAnimationFrame(handle);
-  }, [scale, container, flow]);
+  }, [drawn, container, flow]);
 
   useEffect(() => {
     if (!awaiting || framed) return undefined;

@@ -12,7 +12,6 @@ import { resolveArrowheads, resolveEdgeStroke } from './edges/edgeStyle';
 import { assignEdgeAnchors } from '../model/floatingEdgeMath';
 import { placedNodes,
   containerBoxes,
-  expandRect,
   nodeMaxSize,
   nodeMinSize,
   placementRect,
@@ -119,6 +118,16 @@ export interface BuildGraphArgs {
 export const BOUNDARY_PADDING = 56;
 /** What the boundary adds while Where it runs is drawn: the room the platforms' boxes are padded into. */
 export const DEPLOYMENT_ROOM = 72;
+/**
+ * What it adds below and at the sides: a platform's box names itself at its top, so
+ * only the top needs the whole room. Grown as far on every side, the edge came down
+ * over a box placed below the application (another application, half inside it).
+ */
+export const DEPLOYMENT_SIDE_ROOM = 24;
+
+/** The boundary's padding round its containers on each side: wider while Where it runs is drawn, most at the top. */
+export type BoundaryPadding = { top: number; right: number; bottom: number; left: number };
+const padded = (top: number, sides: number): BoundaryPadding => ({ top, right: sides, bottom: sides, left: sides });
 const BOUNDARY_MIN: Rect = { x: 0, y: 0, width: 520, height: 360 };
 
 export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode[]): ElementNode[] {
@@ -139,6 +148,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
 
   const aspectConfig = aspectConfigFor(args.diagram);
   const sayType = roomToSayItsType(args.diagram, elementsById);
+  const clearOfGrown = boxesClearOfGrownBoundary(args, elementsById);
   const nodes: ElementNode[] = [];
   for (const placement of placedNodes(args.diagram)) {
     const element = elementsById.get(placement.id);
@@ -153,8 +163,8 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
     const mark = args.overlayMarks?.get(element.id);
     const faded = args.overlayFaded?.has(element.id) === true;
     const rect = isBoundary
-      ? boundaryRect(args.diagram, elementsById, args.deployment ? BOUNDARY_PADDING + DEPLOYMENT_ROOM : BOUNDARY_PADDING)
-      : sayType(element.id, placementRect(figure, placement));
+      ? boundaryRect(args.diagram, elementsById, args.deployment ? DEPLOYMENT_PADDING : BOUNDARY_PADDING)
+      : clearOfGrown(sayType(element.id, placementRect(figure, placement)));
     nodes.push({
       id: element.id,
       // What a box looks like is the figure, not the kind (ADR-0012 §4): the
@@ -252,10 +262,35 @@ function withoutHelpOverContent(nodes: ElementNode[]): ElementNode[] {
  * union of the stored placement rect and the components' bounding box plus
  * padding. Dragging a component outside grows the boundary on the next derive.
  */
+/** The boundary's padding while Where it runs is drawn. */
+const DEPLOYMENT_PADDING = padded(BOUNDARY_PADDING + DEPLOYMENT_ROOM, BOUNDARY_PADDING + DEPLOYMENT_SIDE_ROOM);
+/** What a box outside the application keeps from the grown boundary. */
+const CLEAR_OF_BOUNDARY = 16;
+
+/**
+ * A box outside the application, moved clear of its boundary while Where it runs
+ * grows it, on screen only: a box placed against the boundary was otherwise half
+ * inside it, read as part of the application. It moves straight out from the side
+ * it stands beyond; one the plain boundary already covers is left where it is.
+ */
+function boxesClearOfGrownBoundary(args: BuildGraphArgs, elementsById: Map<ElementId, DesignElement>): (rect: Rect) => Rect {
+  if (args.diagram.kind !== 'container' || !args.deployment) return (rect) => rect;
+  const plain = boundaryRect(args.diagram, elementsById);
+  const grown = boundaryRect(args.diagram, elementsById, DEPLOYMENT_PADDING);
+  const meets = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+  return (rect) => {
+    if (!meets(rect, grown) || meets(rect, plain)) return rect;
+    if (rect.y >= plain.y + plain.height) return { ...rect, y: grown.y + grown.height + CLEAR_OF_BOUNDARY };
+    if (rect.y + rect.height <= plain.y) return { ...rect, y: grown.y - CLEAR_OF_BOUNDARY - rect.height };
+    if (rect.x >= plain.x + plain.width) return { ...rect, x: grown.x + grown.width + CLEAR_OF_BOUNDARY };
+    return { ...rect, x: grown.x - CLEAR_OF_BOUNDARY - rect.width };
+  };
+}
+
 export function boundaryRect(
   diagram: DesignDiagram,
   elementsById: Map<ElementId, DesignElement>,
-  padding: number = BOUNDARY_PADDING,
+  padding: number | BoundaryPadding = BOUNDARY_PADDING,
 ): Rect {
   const appId = diagram.applicationElementId;
   const appPlacement = placedNodes(diagram).find((p) => p.id === appId);
@@ -272,7 +307,12 @@ export function boundaryRect(
     })
     .map((p) => placementRect('component', p));
   if (componentRects.length === 0) return stored;
-  const componentsBox = expandRect(unionRects(componentRects) as Rect, padding);
+  const pad = typeof padding === 'number' ? padded(padding, padding) : padding;
+  const union = unionRects(componentRects) as Rect;
+  const componentsBox = {
+    x: union.x - pad.left, y: union.y - pad.top,
+    width: union.width + pad.left + pad.right, height: union.height + pad.top + pad.bottom,
+  };
   return unionRects([stored, componentsBox]) as Rect;
 }
 
