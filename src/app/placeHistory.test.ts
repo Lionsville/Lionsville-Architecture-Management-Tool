@@ -266,6 +266,22 @@ describe('Back and Forward', () => {
     expect(unknown).toHaveBeenCalledTimes(1)
   })
 
+  it('puts the place shown in the address over a page this app does not have, typed into a tab or loaded fresh', () => {
+    const typed = fakeWindow()
+    const history = new PlaceHistory(typed.win, { open: () => undefined, nearest: (place) => Promise.resolve(place), unknown: () => undefined })
+    history.listen()
+    history.look({ scope: 'acme', page: 'home' })
+    history.settle()
+    typed.paste('#/acme/-/nonsense', 'hashchange')
+    expect(typed.win.location.hash).toBe('#/acme/-/home')
+
+    const loaded = fakeWindow('https://app.example/index.html#/acme/-/nonsense')
+    const first = new PlaceHistory(loaded.win, { open: () => undefined, nearest: (place) => Promise.resolve(place) })
+    first.look({ scope: '', page: 'home' })
+    first.settle()
+    expect(loaded.win.location.hash).toBe('#/-/home')
+  })
+
   it('opens a pasted link once where the browser says both, in the old form as well, and writes it over in the new one', async () => {
     const { look, paste, opened, entries } = setUp()
     look(home)

@@ -189,7 +189,13 @@ export class PlaceHistory {
    */
   hashChanged(): void {
     const place = readPlace(this.#window.location.hash)
-    if (place === undefined && unknownPlace(this.#window.location.hash)) this.#options.unknown?.()
+    if (place === undefined && unknownPlace(this.#window.location.hash)) {
+      this.#options.unknown?.()
+      // The address is the place still shown, so a reload or a copied link does not carry the page that is not there.
+      const shown = this.#entry ?? this.#seen
+      if (shown !== undefined) this.#write('replace', shown)
+      return
+    }
     if (place === undefined || samePlace(place, this.#entry)) return
     this.#arrive(place)
   }
@@ -256,8 +262,8 @@ export class PlaceHistory {
       [PLACE_STATE_KEY]: place, [STEP_STATE_KEY]: number,
     }
     const url = new URL(location.href)
-    // The first entry keeps a fragment that is somebody else's.
-    if (!(first && url.hash !== '' && readPlace(url.hash) === undefined)) url.hash = writePlace(place)
+    // The first entry keeps a fragment that is somebody else's, but not one that meant to be a place and names a page this app does not have.
+    if (!(first && url.hash !== '' && readPlace(url.hash) === undefined && !unknownPlace(url.hash))) url.hash = writePlace(place)
     const to = `${url.pathname}${url.search}${url.hash}`
     if (step === 'push') history.pushState(state, '', to)
     else history.replaceState(state, '', to)
