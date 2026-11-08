@@ -321,7 +321,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.yes': 'Ja',
   'inspector.no': 'Nee',
   'inspector.ofTotal': '{count} van {total}',
-  'inspector.containerView': 'Containerweergave',
+  'inspector.containerView': 'Containerdiagram',
   'inspector.create': 'Maken',
   'inspector.drawing': 'Tekening',
   'inspector.insideIt': 'Erin',
@@ -374,7 +374,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.today': 'Vandaag',
   'inspector.thisView': 'Deze weergave',
   'inspector.viewFacts': '{elements} elementen · {lines} lijnen · {day}',
-  'inspector.tidy': 'Opruimen',
+  'inspector.tidy': 'Ordenen',
   'inspector.shownDay': 'Getoonde dag',
   'inspector.columns': 'Kolommen',
   'inspector.onThisBoard': 'Op dit bord',
@@ -401,7 +401,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.resize': 'Breedte van de inspector aanpassen',
   'inspector.emptyRead': 'Kies een element of verbinding om de eigenschappen te lezen.',
   'inspector.empty':
-    'Selecteer een element of koppeling om de eigenschappen te bewerken. Dubbelklik een applicatie om haar containeraanzicht te openen.',
+    'Selecteer een element of koppeling om de eigenschappen te bewerken. Dubbelklik een applicatie om haar containerdiagram te openen.',
   'inspector.emptyHint': 'Shift-klik om een element aan de selectie toe te voegen of er weer uit te halen.',
   'inspector.selected': '{count} geselecteerd',
   'inspector.elementsOne': '{count} element',
@@ -685,7 +685,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shortcut.help': 'Sneltoetsen',
   'shortcut.find': 'Element zoeken',
 
-  'error.diagramNotFound': 'Er is hier geen aanzicht om te tonen. Open er een vanaf de startpagina van de scope.',
+  'error.diagramNotFound': 'Er is hier geen weergave om te tonen. Open er een vanaf de startpagina van de scope.',
   'error.overCap':
     'Dit aanzicht heeft een groep van {total} koppelingen; routeren gaat tot {max} tegelijk, dus die lijnen konden niet automatisch worden gerouteerd.',
   'error.tidyRoutingUnattended': 'Deze weergave is ingedeeld, maar de koppelingen konden niet worden gerouteerd.',

@@ -65,7 +65,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.filter.view': 'Weergave',
   'kit.filter.columns': 'Kolommen',
   'kit.density': 'Dichtheid',
-  'kit.density.comfortable': 'Ruim',
+  'kit.density.comfortable': 'Comfortabel',
   'kit.density.compact': 'Compact',
   'kit.filter.reset': 'Deze lijst terugzetten',
   'kit.filter.shown': '{count} van {total}',

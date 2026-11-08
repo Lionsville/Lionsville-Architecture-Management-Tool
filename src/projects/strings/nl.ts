@@ -49,10 +49,10 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.reportingVacant': '{name}: de lijn van {detail} komt uit bij een rol die niemand vervult',
   'check.scopeTypeDisagrees': '{scope} zegt een {detail} te zijn, en de eenheden die haar bedienen zijn van een ander type: {name}',
   'check.scopeTypeUnserved': '{scope} zegt een {detail} te zijn, en nog geen eenheid bedient haar',
-  'check.scopeTypeGone': '{scope} zegt een eenheidstype te zijn dat het operating model niet kent ({detail})',
+  'check.scopeTypeGone': '{scope} zegt een eenheidstype te zijn dat het besturingsmodel niet kent ({detail})',
   'check.servedScopeGone': '{name} bedient {detail}, en daar is geen scope',
   'check.principleUnused': '{name} is aanvaard, en niets haalt het aan',
-  'check.principleChafes': '{name} schuurt in {count} observaties',
+  'check.principleChafes': '{name} schuurt in {count} waarnemingen',
   'check.citationGone': 'Een record haalt {name} aan, dat hier niet geldt',
   'check.relevantGone': 'Een koppeling met {name}, dat er niet is',
 
@@ -146,7 +146,7 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'library.unknownId': 'Het register kent die applicatie niet meer.',
   'library.alreadyDrawn': '{name} staat al op dit bord.',
-  'library.notABoard': 'Een kaart wordt op een landschap of een containerweergave getekend.',
+  'library.notABoard': 'Een kaart wordt op een landschap of een containerdiagram getekend.',
 
   'standIn.definedIn': 'Gedefinieerd in {scope} — de details worden daar bijgehouden.',
   'standIn.open': '{scope} openen',

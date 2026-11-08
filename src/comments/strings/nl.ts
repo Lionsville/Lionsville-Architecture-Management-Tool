@@ -13,7 +13,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'comments.send': 'Reageren',
   'comments.reply': 'Antwoorden',
   'comments.edit': 'Bewerken',
-  'comments.save': 'Opslaan',
+  'comments.save': 'Bewaren',
   'comments.cancel': 'Annuleren',
   'comments.remove': 'Verwijderen',
   'comments.removeTip': 'Haalt deze reactie uit de draad en laat een teken achter waar ze stond, zodat de antwoorden hun plek houden',

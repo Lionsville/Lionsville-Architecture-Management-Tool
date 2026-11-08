@@ -46,6 +46,7 @@ import Typography from '@mui/material/Typography'
 import { useStrings } from '../i18n'
 import type { StringKey, Translate } from '../i18n'
 import { plural } from '../i18n/strings'
+import { inSentence } from '../i18n/languages'
 import { useSessionSet } from './sessionMemory'
 import { WEIGHT_MARK } from './weightMark'
 import type { FindingWeight } from './weightMark'
@@ -189,6 +190,7 @@ function Groups<F, A extends string>(props: FindingsListProps<F, A> & {
   held: ReadonlySet<string>; onToggle: (key: string) => void; onOpen: (group: FindingsGroup<F, A>, finding: F) => void; t: Translate
 }) {
   const { groups, words, held, t } = props
+  const { language } = useStrings()
   const notes = groups.filter((one) => one.weight === 'note').reduce((sum, one) => sum + one.count, 0)
   const looking = groups.filter((one) => one.weight !== 'note').reduce((sum, one) => sum + one.count, 0)
   const notesShown = held.has(NOTES_SHOWN)
@@ -213,7 +215,7 @@ function Groups<F, A extends string>(props: FindingsListProps<F, A> & {
         {weights.map((weight) => (
           <Box component="li" key={weight} sx={{ ...QUIET, display: 'flex', alignItems: 'baseline', gap: 0.5 }}>
             <Box component="span" aria-hidden sx={{ fontSize: 'var(--t-small)', ...WEIGHT_MARK[weight].sx }}>{WEIGHT_MARK[weight].glyph}</Box>
-            {t(words.weight[weight].name)}: {t(words.weight[weight].about)}
+            {t(words.weight[weight].name)}: {inSentence(t(words.weight[weight].about), language)}
           </Box>
         ))}
       </Box>

@@ -57,7 +57,7 @@ describe('a list of findings', () => {
     expect(screen.queryByText(/Order Service/)).toBeNull()
     expect(screen.getByTestId('findings-summary').textContent).toBe('3 to look at · 2 notes')
     expect(screen.getByRole('switch', { name: 'Show notes (2)' })).toBeTruthy()
-    expect(screen.getByTestId('findings-legend').textContent).toContain('Note: Information, often intended')
+    expect(screen.getByTestId('findings-legend').textContent).toContain('Note: information, often intended')
     expect(await axeFindings()).toEqual([])
   })
 

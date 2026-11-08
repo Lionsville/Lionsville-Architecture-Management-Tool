@@ -34,7 +34,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'gsearch.hint': 'Enter opent het gemarkeerde resultaat waar het staat; Esc sluit.',
   'gsearch.kind.element': 'Elementen',
   'gsearch.kind.documentation': 'Documentatie',
-  'gsearch.kind.view': 'Aanzichten',
+  'gsearch.kind.view': 'Weergaven',
   'gsearch.kind.relation': 'Relaties',
   'gsearch.kind.decision': 'Besluiten',
   'gsearch.kind.plan': 'Plannen',

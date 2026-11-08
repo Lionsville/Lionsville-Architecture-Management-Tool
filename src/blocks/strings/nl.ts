@@ -112,7 +112,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'blocks.percent': '{value} %',
   'blocks.howTitle': 'Hoe het dit dekt',
   'blocks.howPlaceholder': 'Een module, een omweg, een roadmap-item…',
-  'blocks.save': 'Opslaan',
+  'blocks.save': 'Bewaren',
   'blocks.registerTitle': 'Bouwstenen',
   'blocks.search': 'Zoek een bouwsteen',
   'blocks.searchEmpty': 'Niets past bij “{query}”.',
