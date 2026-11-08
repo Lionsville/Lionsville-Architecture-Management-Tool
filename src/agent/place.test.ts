@@ -372,6 +372,12 @@ describe('what a list keeps in the address', () => {
     expect(readPlace(writePlace(place))).toEqual(place)
   })
 
+  it('carries the block read large over the blocks list, beside the list, where the id would be its whole page', () => {
+    const place = { scope: '', page: 'blocks' as const, list: 'preview=blk-gateway' }
+    expect(writePlace(place)).toBe('#/-/blocks?preview=blk-gateway')
+    expect(readPlace(writePlace(place))).toEqual(place)
+  })
+
   it('is another place, and choosing one replaces the entry rather than adding a Back', () => {
     const on = { scope: '', page: 'register' as const }
     expect(samePlace(on, { ...on, list: 'q=x' })).toBe(false)

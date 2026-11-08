@@ -8,7 +8,7 @@
  * and its numbers; *Open the building block* is its workbench. *New building block*
  * keeps one in a topic or a scope. A page over the home it was opened from.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { plural } from '../../i18n/strings'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
@@ -24,6 +24,7 @@ import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { RecordActions } from '../../widgets/kit/RecordActions'
 import { askToEdit } from '../../widgets/kit/editOnArrival'
 import { PageDialog } from '../../widgets/PageDialog'
+import { usePlaceList } from '../../widgets/placeTab'
 import { useBlockDocument } from './BlockAbout'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow, BlocksAccess } from './BlocksContext'
@@ -72,6 +73,9 @@ function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; ro
   )
 }
 
+/** The list's key for the block read large over it. */
+const PREVIEW = 'preview'
+
 export function BlocksRegisterPage({ open, at, select, onClose, windowChrome }: {
   open: boolean
   /** The home it was opened over: the organisation lists every block, a scope those it keeps or evaluates. */
@@ -85,8 +89,25 @@ export function BlocksRegisterPage({ open, at, select, onClose, windowChrome }: 
   const { t } = useStrings()
   const [find, setFind] = useState('')
   const [making, setMaking] = useState(false)
-  const [picked, setPicked] = useState<string | null>(select ?? null)
+  // The block read large is said in the address beside the list (`?preview=`), since the block's own address is its whole page: Back and a reload come back to it.
+  const [list, , choose] = usePlaceList('blocks')
+  const addressed = new URLSearchParams(list).get(PREVIEW) ?? null
+  const [picked, setPicked] = useState<string | null>(select ?? addressed)
   useEffect(() => { if (open && select) setPicked(select) }, [open, select])
+  // The address moved under the page (Back, Forward): the preview follows it.
+  const heard = useRef(addressed)
+  useEffect(() => {
+    if (addressed === heard.current) return
+    heard.current = addressed
+    if (open) setPicked(addressed)
+  }, [open, addressed])
+  useEffect(() => {
+    if (!open) return
+    const next = new URLSearchParams(list)
+    if (picked) next.set(PREVIEW, picked); else next.delete(PREVIEW)
+    heard.current = picked
+    if (next.toString() !== list) choose(next.toString(), undefined)
+  }, [open, picked, list, choose])
   const version = access?.version ?? 0
   const every = useMemo(() => {
     if (!access) return []

@@ -103,11 +103,13 @@ const KEYS = new Set(['scope', 'page', 'id', 'tab', 'look', 'select', 'field', '
 
 /**
  * What a list says about itself in the address (`widgets/kit/listView.ts`):
- * what was typed, what is filtered, how it is grouped and sorted, the columns.
+ * what was typed, what is filtered, how it is grouped and sorted, the columns,
+ * and the record read large over it where the page's id means another page
+ * (`preview`: a building block's id is its whole page).
  * Carried whole as one string, because what they mean is the list's and a place
  * only keeps them with it. A filter's key may be said twice.
  */
-const isListKey = (key: string) => key === 'q' || key === 'group' || key === 'sort' || key === 'cols' || key.startsWith('f.')
+const isListKey = (key: string) => key === 'q' || key === 'group' || key === 'sort' || key === 'cols' || key === 'preview' || key.startsWith('f.')
 
 /** On a Conway map `group` is what the map is grouped by: the page has no list for it to be a list's. */
 const isListKeyOn = (page: string | undefined, key: string) => isListKey(key) && !(page === 'conway' && key === 'group')

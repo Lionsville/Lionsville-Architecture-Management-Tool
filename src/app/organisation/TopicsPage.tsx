@@ -7,7 +7,7 @@
  * opens what it links and keeps, large. A page over the home it was opened from,
  * reached from Guidance, a chip on a home, the tree's ↗ row or a check.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { plural } from '../../i18n/strings'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -20,6 +20,7 @@ import { useTopics } from './TopicsContext'
 import { TopicDetail } from './TopicDetail'
 import { NewTopicDialog } from './topicDialogs'
 import { nested } from './topicChoices'
+import { usePlaceList } from '../../widgets/placeTab'
 
 export function TopicsPage({ open, select, nonce, onClose, windowChrome }: {
   open: boolean
@@ -36,6 +37,20 @@ export function TopicsPage({ open, select, nonce, onClose, windowChrome }: {
   const [find, setFind] = useState('')
   const [making, setMaking] = useState<{ parent?: string } | undefined>(undefined)
   useEffect(() => { if (open && select) setPicked(select) }, [open, select, nonce])
+  // The topic up is said in the address as every record's preview is (#/-/topics/<path>, its own address): Back and a reload come back to it.
+  const [list, addressed, choose] = usePlaceList('topics')
+  const heard = useRef(addressed)
+  useEffect(() => {
+    // The address moved under the page (Back, Forward): the preview follows it.
+    if (addressed === heard.current) return
+    heard.current = addressed
+    if (open) setPicked(addressed ?? null)
+  }, [open, addressed])
+  useEffect(() => {
+    if (!open || (picked ?? undefined) === heard.current) return
+    heard.current = picked ?? undefined
+    choose(list, picked ?? undefined)
+  }, [open, picked, list, choose])
   const version = access?.version ?? 0
   const rows = useMemo(() => nested(access?.list() ?? []), [access, version])
   if (!access) return null
