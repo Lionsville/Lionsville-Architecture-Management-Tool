@@ -42,6 +42,7 @@ import {
 } from '../projects/scopeAccess'
 import type { RecordLink } from '../projects/links'
 import { SCOPE_MOVED } from '../projects/revision'
+import { readingAfterWrites } from '../projects/readsAfterWrites'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
@@ -597,7 +598,7 @@ function useWatchedWrites(given: AppProps) {
   const landed = useRef<() => void>(() => {})
   const letGo = useRef<() => void>(() => {})
   const [refusals] = useState(() => writeRefusals(() => landed.current(), () => letGo.current()))
-  const repositories = useMemo(() => watchRepositories(given.repositories, refusals), [given.repositories, refusals])
+  const repositories = useMemo(() => watchRepositories(readingAfterWrites(given.repositories), refusals), [given.repositories, refusals])
   const props = useMemo(() => ({ ...given, repositories }), [given, repositories])
   return { props, refusals, landed, letGo }
 }
