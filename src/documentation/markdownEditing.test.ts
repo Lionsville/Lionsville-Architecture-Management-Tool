@@ -34,6 +34,14 @@ describe('marks on a selection', () => {
     expect(shown(toggleInline(at('a|'), '_'))).toBe('a_‸_')
   })
 
+  it('ends a pair typed with nothing selected on the second press, rather than opening another', () => {
+    expect(shown(toggleInline(at('log **bold|**'), '**'))).toBe('log **bold**‸')
+    expect(shown(toggleInline(at('an _aside|_ here'), '_'))).toBe('an _aside_‸ here')
+    expect(shown(toggleInline(at('use `npm|`'), '`'))).toBe('use `npm`‸')
+    // A closing mark of a pair that is not open before the caret is not this pair's end.
+    expect(shown(toggleInline(at('**a** |**b**'), '**'))).toBe('**a** **‸****b**')
+  })
+
   it('makes a link with the address ready to type over, or the words where none were selected', () => {
     expect(shown(insertLink(at('|see|'), 'words'))).toBe('[see](‸https://‸)')
     expect(shown(insertLink(at('|'), 'words'))).toBe('[‸words‸](https://)')
@@ -136,7 +144,19 @@ describe('Tab', () => {
   it('goes from cell to cell in a table, and leaves at its ends', () => {
     expect(shown(tabIn(at('| a¦ | b |'), false))).toBe('| a | ‸b‸ |')
     expect(shown(tabIn(at('| a | b¦ |'), true))).toBe('| ‸a‸ | b |')
-    expect(tabIn(at('| a | b¦ |'), false)).toBeUndefined()
+    expect(tabIn(at('| ¦a | b |'), true)).toBeUndefined()
+    expect(tabIn(at('|  |  ¦|'), false)).toBeUndefined()
+  })
+
+  it('goes on from a row’s last cell to the next row’s first, past the delimiter, and adds a row after the last', () => {
+    expect(shown(tabIn(at('| a | b¦ |\n|---|---|\n| c | d |'), false))).toBe('| a | b |\n|---|---|\n| ‸c‸ | d |')
+    expect(shown(tabIn(at('| a | b |\n|---|---|\n| ¦c | d |'), true))).toBe('| a | ‸b‸ |\n|---|---|\n| c | d |')
+    expect(shown(tabIn(at('| a | b |\n|---|---|\n| c | d¦ |\nafter'), false))).toBe('| a | b |\n|---|---|\n| c | d |\n| ‸ |  |\nafter')
+  })
+
+  it('takes a cell whose words are selected, as Tab leaves them, for a caret in that cell', () => {
+    expect(shown(tabIn(at('| ¦Site¦ | b |'), false))).toBe('| Site | ‸b‸ |')
+    expect(tabIn(at('| ¦Si¦te | b |'), false)).toBeUndefined()
   })
 
   it('is two spaces in a fence', () => {

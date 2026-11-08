@@ -53,7 +53,16 @@ export function toggleInline({ text, start, end }: Selected, mark: string): Edit
   if (text.slice(start - size, start) === mark && text.slice(end, end + size) === mark) {
     return { text: text.slice(0, start - size) + inside + text.slice(end + size), start: start - size, end: end - size }
   }
+  // The second press of a pair typed with nothing selected ends it: the caret steps past the closing mark (GitHub, Typora).
+  if (start === end && text.slice(start, start + size) === mark && opensBefore(text, start, mark)) {
+    return { text, start: start + size, end: start + size }
+  }
   return { text: text.slice(0, start) + mark + inside + mark + text.slice(end), start: start + size, end: end + size }
+}
+
+/** Whether a mark of this kind stands open before the caret on its line: an odd number of them lie between the line's start and the caret. */
+function opensBefore(text: string, at: number, mark: string): boolean {
+  return text.slice(lineStart(text, at), at).split(mark).length % 2 === 0
 }
 
 const LINK_PLACEHOLDER = 'https://'
@@ -278,7 +287,7 @@ export function tabIn(state: Selected, back: boolean): Edit | undefined {
   const { from, to } = selectedLines(state)
   const fence = inFence(text, start)
   const line = text.slice(from, lineEnd(text, start))
-  if (!fence && isTableLine(text.slice(lineStart(text, start), lineEnd(text, start))) && state.start === state.end) {
+  if (!fence && isTableLine(text.slice(lineStart(text, start), lineEnd(text, start)))) {
     return tableTab(state, back)
   }
   if (!fence && !LIST_LINE.test(line)) return undefined
@@ -297,23 +306,67 @@ export function tabIn(state: Selected, back: boolean): Edit | undefined {
   return { text: text.slice(0, from) + body + text.slice(to), start: from, end: from + body.length }
 }
 
-function tableTab({ text, start }: Selected, back: boolean): Edit | undefined {
-  const from = lineStart(text, start)
-  const to = lineEnd(text, start)
+/** Where a table line's cells are bounded: its unescaped bars. */
+function barsOf(text: string, from: number, to: number): number[] {
   const marks: number[] = []
   for (let at = from; at < to; at += 1) {
     if (text[at] === '|' && text[at - 1] !== '\\') marks.push(at)
   }
-  const cell = marks.filter((at) => at < start).length - 1
-  const target = cell + (back ? -1 : 1)
-  if (target < 0 || target >= marks.length - 1) return undefined
-  const open = marks[target]! + 1
-  const close = marks[target + 1]!
+  return marks
+}
+
+const isDelimiterLine = (line: string) => /^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$/.test(line)
+
+/** A cell's words selected, the caret placed in an empty one. */
+function intoCell(text: string, open: number, close: number): Edit {
   const bare = text.slice(open, close)
   const lead = bare.length - bare.trimStart().length
   const words = bare.trim().length
   const caret = words === 0 ? Math.min(open + 1, close) : open + lead
   return { text, start: caret, end: caret + words }
+}
+
+/** The table line next to this one, the delimiter row passed over; undefined where the table ends. */
+function rowBeside(text: string, from: number, to: number, back: boolean): { from: number; to: number } | undefined {
+  let at = back ? from : to
+  for (;;) {
+    if (back ? at === 0 : at >= text.length) return undefined
+    const lineFrom = back ? lineStart(text, at - 1) : at + 1
+    const lineTo = lineEnd(text, lineFrom)
+    const line = text.slice(lineFrom, lineTo)
+    if (!isTableLine(line)) return undefined
+    if (!isDelimiterLine(line)) return { from: lineFrom, to: lineTo }
+    at = back ? lineFrom : lineTo
+  }
+}
+
+/**
+ * Tab in a table: the next cell, then the next row's first, and past the last row a
+ * new one, as GitHub's and Confluence's tables do. A cell arrives with its words
+ * selected, so a selection that is exactly a cell's words is a caret in that cell.
+ * The way out is a row left empty: Tab from its last cell leaves the field, and so
+ * does Shift+Tab from the table's first cell.
+ */
+function tableTab({ text, start, end }: Selected, back: boolean): Edit | undefined {
+  const from = lineStart(text, start)
+  const to = lineEnd(text, start)
+  const marks = barsOf(text, from, to)
+  const cell = marks.filter((at) => at < start).length - 1
+  if (cell < 0 || cell >= marks.length - 1) return undefined
+  if (end !== start && (end > marks[cell + 1]! || text.slice(start, end) !== text.slice(marks[cell]! + 1, marks[cell + 1]).trim())) return undefined
+  const target = cell + (back ? -1 : 1)
+  if (target >= 0 && target < marks.length - 1) return intoCell(text, marks[target]! + 1, marks[target + 1]!)
+  const row = rowBeside(text, from, to, back)
+  if (row) {
+    const bars = barsOf(text, row.from, row.to)
+    if (bars.length < 2) return undefined
+    const at = back ? bars.length - 2 : 0
+    return intoCell(text, bars[at]! + 1, bars[at + 1]!)
+  }
+  if (back || text.slice(from, to).replace(/[|\s]/g, '') === '') return undefined
+  const made = `\n|${'  |'.repeat(marks.length - 1)}`
+  const next = text.slice(0, to) + made + text.slice(to)
+  return { text: next, start: to + 3, end: to + 3 }
 }
 
 // --- reading the text ----------------------------------------------------------
