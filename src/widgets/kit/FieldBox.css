@@ -1,3 +1,21 @@
 /* As wide as MUI's field would be, or the row's whole width; the label goes with it. */
 .kit-fieldBox { display: inline-flex; vertical-align: top; }
 .kit-fieldBox[data-full] { display: flex; width: 100%; }
+
+/* The box as tall as the kit's own field, with its padding, outline and words,
+   so a form that mixes the two reads as one style. A box that holds several
+   lines or an Autocomplete's chips grows from there. */
+.kit-fieldBox .MuiInputBase-root { min-height: var(--ctl-h); border-radius: var(--r-2); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--t-body); }
+.kit-fieldBox .MuiInputBase-root:not(.MuiInputBase-multiline):not(.MuiAutocomplete-inputRoot) { height: var(--ctl-h); }
+.kit-fieldBox .MuiInputBase-input { box-sizing: border-box; height: auto; padding: 0 var(--s-2); font-size: var(--t-body); }
+.kit-fieldBox .MuiInputBase-multiline { padding: var(--s-1) var(--s-2); line-height: var(--lh-body); }
+.kit-fieldBox .MuiInputBase-multiline .MuiInputBase-input { padding: 0; }
+.kit-fieldBox .MuiSelect-select.MuiInputBase-input { display: flex; align-items: center; min-height: 0; padding-block: 0; padding-inline-end: calc(var(--s-2) + 24px); }
+.kit-fieldBox .MuiAutocomplete-inputRoot.MuiInputBase-root { padding: 2px var(--s-2); }
+.kit-fieldBox .MuiAutocomplete-inputRoot .MuiInputBase-input.MuiAutocomplete-input { padding: 0; }
+.kit-fieldBox .MuiOutlinedInput-notchedOutline { border-color: var(--line-strong); }
+.kit-fieldBox .Mui-focused .MuiOutlinedInput-notchedOutline { border-width: 1px; border-color: var(--field-focus); }
+.kit-fieldBox .Mui-error .MuiOutlinedInput-notchedOutline { border-color: var(--bad); }
+/* The words under it start where the box and the label start, as the kit field's do. */
+.kit-fieldBox .MuiFormHelperText-root { margin: var(--s-1) 0 0; color: var(--ink-3); font: inherit; font-size: var(--t-body); line-height: var(--lh-body); }
+.kit-fieldBox .MuiFormHelperText-root.Mui-error { color: var(--bad); }
