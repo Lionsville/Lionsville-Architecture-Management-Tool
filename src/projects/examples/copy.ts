@@ -209,11 +209,17 @@ export async function keepVisit(
  * intended, as a person would, in the scope it is about — read off the copy
  * over the organisation as it is, so a function the organisation does name is
  * no finding and is not marked — and stays under *Accepted*, to be taken back.
+ *
+ * **Its top is not an organisation.** It was the example's, and filed under
+ * one it is a part of it: a domain, as a scope made under a home is, so its
+ * home does not say *Organisation, under …*. And the views read from the
+ * units — an organisation chart, a Conway map — go with the units' types:
+ * over plain actors they would only say they have no units.
  */
 export function filedUnder(
   copy: readonly ScopeSnapshot[], under: ScopePath, organisation: ScopeSnapshot | undefined, on: string,
 ): ScopeSnapshot[] {
-  const plain = copy.map((scope) => withoutOperatingModel(scope.path === under ? withoutOrganisationOnly(scope) : scope))
+  const plain = copy.map((scope) => withoutUnitViews(withoutOperatingModel(scope.path === under ? asDomain(withoutOrganisationOnly(scope)) : scope)))
   const index = indexScopes([...(organisation ? [{ ...organisation, path: ROOT_SCOPE }] : []), ...plain])
   const marks = new Map<ScopePath, CheckMark[]>()
   for (const finding of identityFindings(index)) {
@@ -227,6 +233,23 @@ export function filedUnder(
     const known = new Set(held.map(checkMarkId))
     return { ...scope, model: { ...scope.model, checkMarks: [...held, ...marked.filter((mark) => !known.has(checkMarkId(mark)))] } }
   })
+}
+
+/** The example's top as a part of the organisation it is filed under: a domain, whatever it said of itself. */
+function asDomain(scope: ScopeSnapshot): ScopeSnapshot {
+  const { unitTypeId: _type, ...rest } = scope
+  return { ...rest, kind: 'domain' }
+}
+
+/** Views laid out from the units' types: with the units brought plain, they have nothing to draw. */
+const UNIT_VIEWS: ReadonlySet<string> = new Set(['chart', 'conway'])
+
+/** A scope without its views of the units, the view on its tab moved to the first that stays. */
+function withoutUnitViews(scope: ScopeSnapshot): ScopeSnapshot {
+  if (!scope.model.diagrams.some((diagram) => UNIT_VIEWS.has(diagram.kind))) return scope
+  const diagrams = scope.model.diagrams.filter((diagram) => !UNIT_VIEWS.has(diagram.kind))
+  const active = diagrams.some((diagram) => diagram.id === scope.activeDiagramId) ? scope.activeDiagramId : diagrams[0]?.id ?? ''
+  return { ...scope, activeDiagramId: active, model: { ...scope.model, diagrams } }
 }
 
 /** A scope with none of what only the organisation reads. */

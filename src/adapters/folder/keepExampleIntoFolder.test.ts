@@ -209,6 +209,22 @@ describe('the example filed under an organisation that holds work, as it reads t
     }
   })
 
+  it('is a domain of the organisation it is filed under, without the views its units\' types drew', async () => {
+    const { base, tree, scopes } = await landed(true)
+    const top = scopes.get(base)!
+    expect(top.kind).toBe('domain')
+    expect(nodesOf(tree.root).find((node) => node.address === base)?.kind).toBe('domain')
+    for (const scope of scopes.values()) {
+      expect(scope.model.diagrams.filter((view) => view.kind === 'chart' || view.kind === 'conway'), scope.path).toEqual([])
+      if (scope.model.diagrams.length > 0) expect(scope.model.diagrams.map((view) => view.id)).toContain(scope.activeDiagramId)
+    }
+    // What it draws from its own records stays.
+    expect(top.model.diagrams.map((view) => view.kind)).toEqual(expect.arrayContaining(['sheet', 'map']))
+    // Kept as the organisation, it is the example whole: its chart is there.
+    const whole = await landed(false)
+    expect(whole.scopes.get(whole.base)?.model.diagrams.some((view) => view.kind === 'chart')).toBe(true)
+  })
+
   it('greets the person with no finding the example kept as the organisation lacks: its capabilities are marked as its own, not proposed', async () => {
     const asOrganisation = await landed(false)
     const under = await landed(true)
