@@ -45,6 +45,7 @@ import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import type { ScopeSettingsPatch } from '../App'
 import { ScopeField } from './ScopeField'
 import { TypeField } from './TypeField'
+import { claimKey } from '../../widgets/kit/keys'
 
 export const SETTINGS_TABS = ['general', 'links', 'exports', 'landscapes'] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
@@ -243,7 +244,8 @@ function CommittedText({ label, hint, held, onCommit, readOnly, required, 'data-
       label={label} {...(hint ? { hint } : {})} value={typed} onChange={setTyped} readOnly={readOnly} data-testid={testId} onBlur={commit}
       onKeyDown={(event) => {
         if (event.key === 'Enter') { event.preventDefault(); commit() }
-        if (event.key === 'Escape') setTyped(held)
+        // A field with something to put back claims the key; one with nothing lets it close the page.
+        if (event.key === 'Escape' && typed !== held) { claimKey(event); setTyped(held) }
       }}
     />
   )

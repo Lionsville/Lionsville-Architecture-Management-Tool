@@ -104,7 +104,7 @@ import { movedText, UNIT_MOVE_BARRIER } from './useMoveUnit'
 import { useNewUnit } from './useNewUnit'
 import type { NewUnit, UnitMaking } from './useNewUnit'
 import { useSiblingOrder } from './useSiblingOrder'
-import { commandKey } from '../../widgets/kit/keys'
+import { claimKey, commandKey, keyClaimed } from '../../widgets/kit/keys'
 import './chart.css'
 
 export type ChartPageProps = {
@@ -577,7 +577,7 @@ function useMoving(held: { unitId: ElementId; parent: string | null; nonce: numb
   useEffect(() => { setParent(held?.parent ?? null) }, [held?.nonce])
   useEffect(() => {
     if (!held) return undefined
-    const onKey = (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape') at.onClose() }
+    const onKey = (event: globalThis.KeyboardEvent) => { if (event.key === 'Escape' && !keyClaimed(event)) { claimKey(event); at.onClose() } }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [held !== undefined, at.onClose])

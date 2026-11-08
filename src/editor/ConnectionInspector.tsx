@@ -40,6 +40,7 @@ import { certaintyRow } from './inspector/elementRows';
 import { DASH, RowSet, pickEdit } from './inspector/rowTools';
 import type { RowSpec } from './inspector/rowTools';
 import type { EditorActions } from './useEditorState';
+import { claimKey } from '../widgets/kit/keys';
 import './inspector/inspector.css';
 import { PANEL_HELP } from '../platform/helpPlaces';
 
@@ -93,7 +94,7 @@ export function ValidEditor({ editor, connection, onWrite, t }: {
     <div
       className="inspector-aspect"
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}
-      onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); editor.cancel(); } }}
+      onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); editor.cancel(); } }}
     >
       <TextInput autoFocus type="date" data-fit aria-label={t('field.validFrom')} value={connection.validFrom ?? ''} onChange={(event) => onWrite({ validFrom: event.target.value || undefined })} />
       <TextInput type="date" data-fit aria-label={t('field.validUntil')} value={connection.validUntil ?? ''} onChange={(event) => onWrite({ validUntil: event.target.value || undefined })} />
@@ -213,7 +214,7 @@ function ConnectionAppearance({ connection, route, routeStatus, badge, bends, re
                   <div
                     className="inspector-aspect"
                     onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}
-                    onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); editor.cancel(); } }}
+                    onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); editor.cancel(); } }}
                   >
                     <Select
                       autoFocus data-fit aria-label={t('field.source')} value={connection.sourceArrowhead ?? ''} options={options(ARROWHEAD_OPTIONS, t)}

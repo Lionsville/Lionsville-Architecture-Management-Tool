@@ -67,6 +67,7 @@ import { SheetExportDialog } from './SheetExportDialog'
 import type { ExportLayout } from './SheetExportDialog'
 import { InlineFrame, LookBand, fileSafe, settled } from './SheetPage'
 import type { SheetCaptureOptions, SheetHandle } from './SheetPage'
+import { claimKey } from '../../widgets/kit/keys'
 import './Sheet.css'
 
 export type MapPageProps = {
@@ -530,7 +531,7 @@ function MapFind({ query, count, onQuery, onClose, t }: { query: string; count: 
       <span className="sheet-find__field">
         <TextInput
           autoFocus value={query} placeholder={t('sheet.findPlaceholder')} aria-label={t('sheet.find')} onChange={(event) => onQuery(event.target.value)}
-          onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); onClose() } }}
+          onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); onClose() } }}
         />
       </span>
       {query.trim() !== '' && <span className="sheet-find__count" role="status">{count === 0 ? t('sheet.findNone') : t('sheet.findCount', { count })}</span>}

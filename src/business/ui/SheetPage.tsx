@@ -99,7 +99,7 @@ import type { SheetSettingsDialog as SheetSettingsDialogShape } from './SheetSet
 import { lensWord, lookOf, valueWord } from './sheetLook'
 import { useRail } from './useRail'
 import { WINDOW_COVER } from '../../widgets/kit/windowArea'
-import { commandKey } from '../../widgets/kit/keys'
+import { claimKey, commandKey, keyClaimed } from '../../widgets/kit/keys'
 import './Sheet.css'
 
 export type { SheetClaims } from './SheetAuthor'
@@ -514,7 +514,7 @@ function OverPanel({ selected, sheet, laidOut, width, onWidth, readOnly, naming,
   const { t } = useStrings()
   const { actions } = props
   return (
-    <div className="sheet-page__over" onKeyDown={poster ? (event) => { if (event.key === 'Escape' && !event.defaultPrevented) { event.stopPropagation(); poster.onEscape() } } : undefined}>
+    <div className="sheet-page__over" onKeyDown={poster ? (event) => { if (event.key === 'Escape' && !keyClaimed(event)) { claimKey(event); poster.onEscape() } } : undefined}>
       <SeamResizer
         orientation="vertical" region="after" value={width} min={INSPECTOR_WIDTH.min} max={INSPECTOR_WIDTH.max}
         defaultValue={INSPECTOR_WIDTH.default} onChange={onWidth} label={t('sheet.resizeDetails')}
@@ -804,7 +804,7 @@ export function SheetPage(props: SheetPageProps) {
   const Frame = props.inline ? InlineFrame : PageDialog
   return (
     <Frame open={props.open} topInset={(props.windowChrome ?? NO_WINDOW_CHROME).topInset} onClose={props.onClose} aria-label={t('sheet.page')}>
-      <div className={full ? `sheet-full ${WINDOW_COVER}` : 'sheet-full'} data-full={full ? '' : undefined} onKeyDown={full ? (event) => { if (event.key === 'Escape' && selectedId === undefined) setFull(false) } : undefined}>
+      <div className={full ? `sheet-full ${WINDOW_COVER}` : 'sheet-full'} data-full={full ? '' : undefined} onKeyDown={full ? (event) => { if (event.key === 'Escape' && selectedId === undefined && !keyClaimed(event)) { claimKey(event); setFull(false) } } : undefined}>
       <SheetTopBar at={at} props={props} onLevel={at.chooseTab} onPosterExport={() => setPosterExport(true)} full={full} />
       {at.looking && reading.day !== undefined && <SheetLook day={reading.day} at={at} props={props} />}
       {finder.finding && <FindBar query={finder.query} hits={finder.hits} at={finder.at} onQuery={finder.onQuery} onWalk={finder.walk} onClose={finder.close} t={t} />}

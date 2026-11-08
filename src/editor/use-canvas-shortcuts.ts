@@ -19,6 +19,7 @@ import type {
 import { isEditableTarget, isShortcutIgnoredTarget, OWN_WALK_ATTR, ownsArrows, ownsContextMenu, ownsEnter, ownsWalk } from './isEditableTarget';
 import { enterIsTheItems } from './canvas/keyboardIntent';
 import { CANVAS_SHORTCUTS, detectPlatform, matchEvent } from './keymap';
+import { claimKey, keyClaimed } from '../widgets/kit/keys';
 import {
   EMPTY_SELECTION,
   isSelectionEmpty,
@@ -162,8 +163,10 @@ const ARROW_DELTAS: Record<string, Point> = {
  *   (`document.body`, where focus lands after a pane click). A chord typed
  *   into a search box elsewhere on the host page is not ours;
  * - the target is not EDITABLE (`isEditableTarget`) — typing keeps its keys.
- *   Escape is the exception, because React Flow's own Escape never fires from
- *   an inspector field and something must still deselect;
+ *   Escape is not this listener's at all: letting go of the selection is the
+ *   last thing an Escape does, so it is heard on the window as it bubbles,
+ *   after a field, a menu, the frame's panel and a page have had it, and from
+ *   an inspector field with nothing of its own to put back too;
  * - the target does not own the keys itself (`isShortcutIgnoredTarget`: a
  *   `role="separator"` seam, anything marked `data-shortcuts-ignore`). Those
  *   keep every chord, Escape included.
@@ -236,6 +239,31 @@ export function useCanvasShortcuts(
    * because flushing a pending save must work while the caret sits in a field.
    */
   useEffect(() => {
+    /**
+     * Escape lets go of the selection last of all (`widgets/kit/keys.ts`): on
+     * the window as it bubbles, so a field reverting, a menu, the frame's panel
+     * and a page closing have all had it first, and one that acted claimed it.
+     * Ours from inside the editor, an inspector field with nothing to put back
+     * included, or from nowhere in particular while the editor is what is seen.
+     */
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || keyClaimed(event)) return;
+      const node = nodeRef.current;
+      const h = handlersRef.current;
+      if (!node || !node.isConnected || !h.diagram) return;
+      const target = event.target;
+      const inside = target instanceof Node && node.contains(target);
+      const nowhere = target == null || target === document.body || target === document || target === window;
+      const visible = node.offsetParent !== null || node.getClientRects().length > 0;
+      // A page up over the board hears it on the window too, and closes first whichever listener was added first.
+      if (!inside && !(nowhere && visible && document.querySelector('[data-place-page]') === null)) return;
+      if (isShortcutIgnoredTarget(target) || keepsItsChord('deselect', target)) return;
+      const def = CANVAS_SHORTCUTS.find((one) => one.id === 'deselect');
+      if (!def || !matchEvent(event, def, platformRef.current)) return;
+      if (def.when && !def.when({ readOnly: h.readOnly, hasSelection: !isSelectionEmpty(h.selection) })) return;
+      claimKey(event);
+      dispatch('deselect', event, h, viewRef.current, h.diagram);
+    };
     const onDocumentKeyDown = (event: KeyboardEvent) => {
       const node = nodeRef.current;
       // offsetParent alone misses a visible position:fixed wrapper (it reports
@@ -259,6 +287,8 @@ export function useCanvasShortcuts(
 
       for (const def of CANVAS_SHORTCUTS) {
         if (!matchEvent(event, def, platformRef.current)) continue;
+        // Escape is the outermost thing a key does: heard on the window below.
+        if (def.id === 'deselect') return;
         const forceSave = def.id === 'force-save';
         if (!inEditor && !forceSave) return;
         // A control that declared the keys its own gets ALL of them, Escape
@@ -266,9 +296,8 @@ export function useCanvasShortcuts(
         // instead of deselecting" true rather than merely intended.
         if (ignored && !forceSave) return;
         // Bail inside text inputs so native typing keeps its keys — except for
-        // Escape/deselect (React Flow's own Escape never fires from the
-        // inspector, so the editor must still deselect) and force-save.
-        if (editable && def.id !== 'deselect' && !forceSave) return;
+        // force-save.
+        if (editable && !forceSave) return;
         if (h.hostOwnsUndo && HOST_MAY_OWN.has(def.id)) return;
         if (keepsItsChord(def.id, event.target)) return;
         if (ALWAYS_PREVENT.has(def.id)) event.preventDefault();
@@ -282,7 +311,11 @@ export function useCanvasShortcuts(
       }
     };
     document.addEventListener('keydown', onDocumentKeyDown, true);
-    return () => document.removeEventListener('keydown', onDocumentKeyDown, true);
+    window.addEventListener('keydown', onEscape);
+    return () => {
+      document.removeEventListener('keydown', onDocumentKeyDown, true);
+      window.removeEventListener('keydown', onEscape);
+    };
   }, []);
 
   return useCallback((node: HTMLElement | null) => {
@@ -310,11 +343,10 @@ export function useCanvasShortcuts(
 
       for (const def of CANVAS_SHORTCUTS) {
         if (!matchEvent(event, def, platformRef.current)) continue;
-        // Bail inside text inputs so native typing keeps its keys — except for
-        // Escape/deselect: React Flow's own Escape never fires from the
-        // inspector, so the editor must still deselect (and close the panel)
-        // when Escape arrives from an input.
-        if (editable && def.id !== 'deselect') return;
+        // Escape is the window's listener's, after everything further in.
+        if (def.id === 'deselect') return;
+        // Bail inside text inputs so native typing keeps its keys.
+        if (editable) return;
         if (h.hostOwnsUndo && HOST_MAY_OWN.has(def.id)) return;
         if (keepsItsChord(def.id, event.target)) return;
         if (ALWAYS_PREVENT.has(def.id)) event.preventDefault();

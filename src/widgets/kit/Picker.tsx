@@ -30,6 +30,7 @@ import { SurfacePopover as Popover, SurfacePopper as Popper } from './Surface'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
 import { AddIcon, CloseIcon, SearchIcon } from '../icons'
+import { claimKey } from './keys'
 import './Picker.css'
 
 export type PickerOption = {
@@ -183,7 +184,10 @@ export function Picker({
         event.preventDefault()
         event.stopPropagation()
         setPopped(false)
-      } else onEscape?.()
+      } else if (onEscape) {
+        claimKey(event)
+        onEscape()
+      }
       return
     }
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {

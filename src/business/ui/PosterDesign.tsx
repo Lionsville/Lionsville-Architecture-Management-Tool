@@ -26,7 +26,7 @@ import type { PosterPlaces, PosterSheet } from '../posterPlaces'
 import type { LaidOutSheet } from '../sheet'
 import { locatedSelector } from '../../widgets/useLocated'
 import type { PosterCamera } from './posterCamera'
-import { chordHeld } from '../../widgets/kit/keys'
+import { chordHeld, claimKey } from '../../widgets/kit/keys'
 
 /** What placing and mapping on a poster writes. Each is one step. */
 export type PosterActions = {
@@ -240,7 +240,7 @@ function useLift({ design, camera, say, t, commit, rectOf }: {
         return true
       }
       if (event.key === 'Escape') {
-        event.preventDefault()
+        claimKey(event)
         lifted.current = undefined
         delete held.element.dataset.moving
         writeRect(held.element, held.was)

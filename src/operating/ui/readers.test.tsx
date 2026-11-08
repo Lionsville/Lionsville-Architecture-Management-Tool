@@ -238,6 +238,23 @@ describe('a responsibility read', () => {
     expect(dispatch).toHaveBeenCalledTimes(1)
   })
 
+  it('puts its group back on Escape, and the key goes no further: the page around it stays', () => {
+    const dispatch = vi.fn()
+    const outside = vi.fn()
+    window.addEventListener('keydown', outside)
+    try {
+      renderShell(<ResponsibilityReader responsibility={of('plan')} parts={parts({ dispatch })} />)
+      fireEvent.click(screen.getByRole('button', { name: /Group, such as a value stream/ }))
+      const field = screen.getByRole('combobox', { name: /Group, such as a value stream/ })
+      fireEvent.change(field, { target: { value: 'Half typed' } })
+      fireEvent.keyDown(field, { key: 'Escape' })
+      expect(outside).not.toHaveBeenCalled()
+      expect(dispatch).not.toHaveBeenCalled()
+    } finally {
+      window.removeEventListener('keydown', outside)
+    }
+  })
+
   it('offers no order where the page only reads', () => {
     renderShell(<ResponsibilityReader responsibility={of('plan')} parts={parts({ readOnly: true })} />)
     expect(document.querySelector('[data-guide="operating.responsibilityOrder"]')).toBeNull()

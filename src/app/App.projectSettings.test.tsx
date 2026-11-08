@@ -102,6 +102,18 @@ describe('a scope’s settings, from the scope that is open', () => {
     })
   })
 
+  it('puts a field back with Escape and keeps the page; the next Escape closes it', async () => {
+    renderApp({ repositories: heldRepositories([project()]), boot: { initialProject: project() } })
+    await openSettings()
+    const name = await screen.findByTestId('settings-name') as HTMLInputElement
+    fireEvent.change(name, { target: { value: 'Half typed' } })
+    fireEvent.keyDown(name, { key: 'Escape' })
+    expect(name.value).toBe('Landscape')
+    expect(screen.getByTestId('scope-settings-page')).toBeDefined()
+    fireEvent.keyDown(name, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('scope-settings-page')).toBeNull())
+  })
+
   it('takes a change back with the frame’s undo', async () => {
     const store = heldRepositories([project()])
     renderApp({ repositories: store, boot: { initialProject: project() } })

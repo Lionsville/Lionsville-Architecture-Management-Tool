@@ -11,6 +11,7 @@ import { useCanvasMenu } from './CanvasMenuContext';
 import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
 import { Zone } from '../../widgets/kit/Zone';
+import { claimKey } from '../../widgets/kit/keys';
 
 const MIN_GROUP_SIZE = 120;
 
@@ -197,7 +198,7 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                     // bubble to the editor's Escape-to-deselect shortcut.
                     e.stopPropagation();
                     if (e.key === 'Enter') commitRename();
-                    if (e.key === 'Escape') setRenaming(null);
+                    if (e.key === 'Escape') { claimKey(e); setRenaming(null); }
                   }}
                   style={{
                     position: 'absolute',

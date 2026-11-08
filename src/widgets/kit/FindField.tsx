@@ -13,6 +13,7 @@
  */
 import type { ComponentPropsWithRef } from 'react'
 import { SearchIcon } from '../icons'
+import { claimKey } from './keys'
 import './FindField.css'
 
 export type FindFieldProps = Omit<ComponentPropsWithRef<'input'>, 'className' | 'style' | 'type' | 'value' | 'onChange' | 'placeholder' | 'aria-label'> & {
@@ -34,7 +35,7 @@ export function FindField({ label, value, onChange, onKeyDown, fill, ...rest }: 
         onKeyDown={(event) => {
           onKeyDown?.(event)
           if (event.defaultPrevented || event.key !== 'Escape' || value === '') return
-          event.stopPropagation()
+          claimKey(event)
           onChange('')
         }}
       />

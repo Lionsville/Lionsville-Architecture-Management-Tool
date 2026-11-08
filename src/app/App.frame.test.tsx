@@ -160,10 +160,10 @@ describe('the foot of the tree', () => {
     for (const word of ['Applications', 'Services', 'Platforms', 'Principles', 'Topics', 'Building blocks']) expect(within(foot).getByRole('button', { name: word })).toBeDefined()
     await press('Building blocks')
     await waitFor(() => expect(window.location.hash).toBe('#/-/blocks'))
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
     await press('Topics')
     await waitFor(() => expect(window.location.hash).toBe('#/-/topics'))
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
     await press('Platforms')
     await waitFor(() => expect(window.location.hash).toMatch(/^#\/-\/register\?.*tab=platforms/))
   })
@@ -175,13 +175,27 @@ describe('a page as a place', () => {
     fireEvent.click(screen.getByTestId('tree-place-register'))
     await placePage()
     await waitFor(() => expect(window.location.hash).toBe('#/-/register'))
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
     await waitFor(() => expect(placePageNow()).toBeNull())
     fireEvent.click(screen.getByTestId('tree-place-people'))
     await placePage()
     fireEvent.click(screen.getByTestId('frame-home'))
     await waitFor(() => expect(placePageNow()).toBeNull())
     await waitFor(() => expect(window.location.hash).toBe('#/-/home'))
+  })
+
+  it('closes on an Escape nothing further in claimed, and claims it, so the board under it keeps what is selected', async () => {
+    await home()
+    fireEvent.click(screen.getByTestId('tree-place-register'))
+    await placePage()
+    const claimed = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    claimed.preventDefault()
+    document.body.dispatchEvent(claimed)
+    expect(placePageNow()).not.toBeNull()
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    document.body.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+    await waitFor(() => expect(placePageNow()).toBeNull())
   })
 
   it('marks the page that is up in row two', async () => {
@@ -219,7 +233,7 @@ describe('an agent reaches every place', () => {
     const { ask } = await home()
     await ask('app.open', { scope: '', page: 'preferences' })
     await screen.findByTestId('preferences-page')
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByTestId('preferences-page')).toBeNull())
     await ask('app.open', { scope: 'retail', page: 'settings' })
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Retail'))
@@ -243,7 +257,7 @@ describe('the status word', () => {
     expect(await screen.findByTestId('work-copy')).toBeDefined()
     await waitFor(() => expect(window.location.hash).toBe('#/-/work'))
     expect(screen.queryByTestId('work-save')).toBeNull()
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByTestId('work-copy')).toBeNull())
   })
 
@@ -256,7 +270,7 @@ describe('the status word', () => {
     const panel = await screen.findByTestId('frame-panel')
     await waitFor(() => expect(within(panel).getByText('Not started')).toBeDefined())
     expect(within(panel).queryByText('Kept')).toBeNull()
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByTestId('frame-panel')).toBeNull())
     await repositories.history!.record({ subject: 'First' })
     fireEvent.click(screen.getByTestId('saved-indicator'))
@@ -275,12 +289,56 @@ describe('the status word', () => {
   })
 })
 
+/**
+ * One Escape, one thing (`widgets/kit/keys.ts`): the panel shuts once whatever
+ * is further in has had the key, and before the page and the board.
+ */
+describe('Escape and the panel', () => {
+  async function panelUp() {
+    await home()
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    return screen.findByTestId('frame-panel')
+  }
+
+  it('from a field in the panel leaves the field and keeps the panel; the next one shuts it', async () => {
+    const panel = await panelUp()
+    const field = document.createElement('input')
+    panel.appendChild(field)
+    field.focus()
+    fireEvent.keyDown(field, { key: 'Escape' })
+    expect(screen.getByTestId('frame-panel')).toBe(panel)
+    expect(document.activeElement).toBe(panel)
+    fireEvent.keyDown(panel, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByTestId('frame-panel')).toBeNull())
+  })
+
+  it('leaves a key something further in claimed, and a field elsewhere its own', async () => {
+    await panelUp()
+    const claimed = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    claimed.preventDefault()
+    document.body.dispatchEvent(claimed)
+    const elsewhere = document.createElement('input')
+    document.body.appendChild(elsewhere)
+    fireEvent.keyDown(elsewhere, { key: 'Escape' })
+    expect(screen.getByTestId('frame-panel')).toBeDefined()
+    elsewhere.remove()
+  })
+
+  it('claims the key it shut the panel with, so the board under it keeps what is selected', async () => {
+    await panelUp()
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    document.body.dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(true)
+    await waitFor(() => expect(screen.queryByTestId('frame-panel')).toBeNull())
+  })
+})
+
 describe('the menu’s keys on the web', () => {
   it('runs what the ⋯ shows a key for, with nothing open', async () => {
     await home()
     fireEvent.keyDown(window, { key: ',', ctrlKey: true })
     expect(await screen.findByTestId('preferences-page')).toBeDefined()
-    fireEvent.keyDown(window, { key: 'Escape' })
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByTestId('preferences-page')).toBeNull())
     fireEvent.keyDown(window, { key: 'E', ctrlKey: true, shiftKey: true })
     expect(await screen.findByText(/^Save a copy of/)).toBeDefined()

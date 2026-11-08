@@ -95,6 +95,7 @@ import {
 } from '../../layout/alignDistribute';
 import { getHelperLines, HelperLines, type HelperLineResult } from './HelperLines';
 import { serializeSelection, type ClipboardPayload } from '../../model/clipboard';
+import { claimKey } from '../../widgets/kit/keys';
 
 const edgeTypes = { floating: FloatingEdge };
 
@@ -1134,7 +1135,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   useEffect(() => {
     if (connectFrom === null) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setConnectFrom(null);
+      if (event.key === 'Escape') { claimKey(event); setConnectFrom(null); }
     };
     document.addEventListener('keydown', onKeyDown, true);
     return () => document.removeEventListener('keydown', onKeyDown, true);

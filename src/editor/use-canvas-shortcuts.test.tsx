@@ -650,3 +650,67 @@ describe('with a host that owns undo', () => {
     expect(setSelection).toHaveBeenCalled();
   });
 });
+
+/**
+ * One Escape, one thing (`widgets/kit/keys.ts`): letting go of the selection is
+ * the last thing it does, so the board hears it on the window as it bubbles and
+ * leaves alone a key something further in has claimed — a field putting its
+ * value back, the frame's panel shutting, a page closing.
+ */
+describe('useCanvasShortcuts — Escape, outermost', () => {
+  const EMPTY = { elementIds: [], connectionIds: [], domainGroups: [] };
+
+  it('lets go of the selection from a field with nothing of its own to put back', () => {
+    const { view, setSelection } = setup();
+    fireEvent.keyDown(view.getByTestId('field'), { key: 'Escape' });
+    expect(setSelection).toHaveBeenCalledWith(EMPTY);
+  });
+
+  it('keeps the selection when a field claimed the key', () => {
+    const { view, setSelection } = setup();
+    const field = view.getByTestId('field');
+    const revert = (event: KeyboardEvent) => { event.preventDefault(); event.stopPropagation(); };
+    field.addEventListener('keydown', revert);
+    fireEvent.keyDown(field, { key: 'Escape' });
+    expect(setSelection).not.toHaveBeenCalled();
+    field.removeEventListener('keydown', revert);
+  });
+
+  it('keeps the selection when the frame’s panel, on the document, shut first; the next Escape lets go', () => {
+    const { view, setSelection } = setup();
+    Object.defineProperty(view.getByTestId('container'), 'offsetParent', { configurable: true, get: () => document.body });
+    let panelUp = true;
+    const panel = (event: KeyboardEvent) => { if (event.key === 'Escape' && panelUp && !event.defaultPrevented) { event.preventDefault(); panelUp = false; } };
+    document.addEventListener('keydown', panel);
+    try {
+      fireEvent.keyDown(document.body, { key: 'Escape' });
+      expect(panelUp).toBe(false);
+      expect(setSelection).not.toHaveBeenCalled();
+      fireEvent.keyDown(document.body, { key: 'Escape' });
+      expect(setSelection).toHaveBeenCalledWith(EMPTY);
+    } finally {
+      document.removeEventListener('keydown', panel);
+    }
+  });
+
+  it('claims the key it acted on, so nothing on the window acts on it too', () => {
+    const { view } = setup();
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+    node(view).dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('is not the board’s from nowhere while a page is up over it', () => {
+    const { view, setSelection } = setup();
+    Object.defineProperty(view.getByTestId('container'), 'offsetParent', { configurable: true, get: () => document.body });
+    const page = document.createElement('div');
+    page.setAttribute('data-place-page', '');
+    document.body.appendChild(page);
+    try {
+      fireEvent.keyDown(document.body, { key: 'Escape' });
+      expect(setSelection).not.toHaveBeenCalled();
+    } finally {
+      page.remove();
+    }
+  });
+});

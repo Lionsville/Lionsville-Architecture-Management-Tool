@@ -196,8 +196,16 @@ describe('Picker in a popup', () => {
     expect(outer).not.toHaveBeenCalled()
     expect(escaped).not.toHaveBeenCalled()
     fireEvent.keyDown(field(), { key: 'Escape' })
-    expect(outer).toHaveBeenCalled()
     expect(escaped).toHaveBeenCalledOnce()
+    // onEscape acted on it, so it is claimed: nothing further out acts on the same key.
+    expect(outer).not.toHaveBeenCalled()
+  })
+
+  it('lets Escape go on outward where there is nothing for it to do', () => {
+    const outer = vi.fn()
+    renderShell(<div onKeyDown={outer}><Picker label="Owner" options={OPTIONS} onPick={() => {}} posture="popup" /></div>)
+    fireEvent.keyDown(field(), { key: 'Escape' })
+    expect(outer).toHaveBeenCalledOnce()
   })
 })
 

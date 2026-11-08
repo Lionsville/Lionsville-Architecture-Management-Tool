@@ -49,6 +49,7 @@ import type { DrawingLook } from './drawingProtocol'
 import { handOver } from './handOver'
 import { pictureFile, printPicture } from './drawingExport'
 import type { PrintHost } from './drawingExport'
+import { claimKey } from '../widgets/kit/keys'
 import './DrawingView.css'
 
 type Dispatch = (command: { type: 'diagram.update'; id: string; patch: { drawing: DrawingContent } }) => unknown
@@ -206,7 +207,7 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
         className="drawing-view__body"
         onKeyDown={(event) => {
           if (event.key !== 'Escape' || (!element && !linksOpen)) return
-          event.stopPropagation()
+          claimKey(event)
           setReading(undefined)
           setLinksOpen(false)
         }}

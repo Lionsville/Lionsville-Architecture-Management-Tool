@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
+import { claimKey } from './keys'
 
 export type PressNameProps = {
   readonly name: string
@@ -69,7 +70,7 @@ export function PressName({ name, onRename, renameRequest, renameAtOnce, heading
       event.preventDefault()
       commit()
     } else if (event.key === 'Escape') {
-      event.stopPropagation()
+      claimKey(event)
       setRefused(null)
       setTyped(null)
     }

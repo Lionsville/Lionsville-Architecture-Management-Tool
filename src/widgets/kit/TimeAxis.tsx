@@ -35,7 +35,7 @@ import {
   openingView, rulerCells, scaleOf, scrolledView, sideOf, viewAround, viewAtScale, viewBetween, viewWith, zoomedView,
 } from './timeScale'
 import type { AxisScale, AxisView } from './timeScale'
-import { chordHeld } from './keys'
+import { chordHeld, claimKey } from './keys'
 import './TimeAxis.css'
 
 const AxisContext = createContext<{ view: AxisView; width: number }>({ view: { start: '2000-01-01', days: 365 }, width: 0 })
@@ -307,7 +307,7 @@ function DayHandle({ view, today, day, ruler, onDayChange }: {
       ArrowRight: at + 1, ArrowUp: at + 1, ArrowLeft: at - 1, ArrowDown: at - 1,
       PageUp: at + page, PageDown: at - page, Home: dayNumber(view.start), End: dayNumber(lastDayOf(view)),
     }
-    if (event.key === 'Escape' && day) { event.preventDefault(); onDayChange(undefined); return }
+    if (event.key === 'Escape' && day) { claimKey(event); onDayChange(undefined); return }
     const moved = next[event.key]
     if (moved === undefined) return
     event.preventDefault()

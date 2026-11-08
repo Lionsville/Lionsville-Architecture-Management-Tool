@@ -68,7 +68,7 @@ import { TONE_MARK } from './statusWord'
 import { NewViewDialog } from '../NewViewDialog'
 import { DESKTOP_APP_LINK, FILE_MENU, PREFERENCES_ITEM, WEBSITE_LINK, HELP_MENU, acceleratorMatches, offered } from '../../platform/menu'
 import type { KeyPress, MenuItemSpec } from '../../platform/menu'
-import { commandKey, chordHeld, isMac } from '../../widgets/kit/keys'
+import { chordHeld, claimKey, commandKey, isMac, keyClaimed } from '../../widgets/kit/keys'
 
 
 export function AppFrame({ parts, children }: { parts: ShellParts; children: ReactNode }) {
@@ -263,7 +263,7 @@ export function undoKey(event: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey'
   return key === 'y' && !event.shiftKey ? 'redo' : undefined
 }
 
-/** ⌘\ pins the tree and Esc shuts a panel first; `?` and F1 are the shell's, on every screen (`helpKeys.ts`). */
+/** ⌘\ pins the tree and Esc shuts a panel before the page and the board; `?` and F1 are the shell's, on every screen (`helpKeys.ts`). */
 function useFrameKeys(parts: ShellParts, state: FrameState) {
   const { frame } = parts
   const send = parts.commands.bus.send
@@ -292,14 +292,41 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         const command = menuKeyCommand(event, canOf(parts, frame.get().screen), boardUp, isMac())
         if (command) { event.preventDefault(); send(command); return }
       }
-      if (event.key === 'Escape' && hasPanel && !modalUp() && !document.querySelector('[role="menu"]')) {
-        event.preventDefault()
-        parts.agent.setPanel(undefined)
-      }
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [frame, send, hasPanel, boardUp, parts])
+  }, [frame, send, boardUp, parts])
+  usePanelEscape(parts, hasPanel)
+}
+
+/**
+ * Esc shuts the panel, once whatever is further in has had it: heard on the
+ * document as it bubbles, so a field, a menu or a popover inside has claimed
+ * it first (`widgets/kit/keys.ts`), and before the page and the board, which
+ * hear it on the window. From a field in the panel it leaves the field and
+ * keeps the panel, so what was typed is not shut away with it; from a field
+ * anywhere else it is that field's, and the panel stays.
+ */
+function usePanelEscape(parts: ShellParts, hasPanel: boolean) {
+  useEffect(() => {
+    if (!hasPanel) return undefined
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || keyClaimed(event) || modalUp() || document.querySelector('[role="menu"]')) return
+      const target = event.target instanceof HTMLElement ? event.target : null
+      const typing = target !== null && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+      const panel = target?.closest<HTMLElement>('[data-testid="frame-panel"]') ?? null
+      if (typing && !panel) return
+      claimKey(event)
+      if (typing && target) {
+        target.blur()
+        panel?.focus({ preventScroll: true })
+        return
+      }
+      parts.agent.setPanel(undefined)
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [parts, hasPanel])
 }
 
 function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent']['openSomewhere']) {

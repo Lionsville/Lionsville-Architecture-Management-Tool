@@ -30,6 +30,7 @@ import { unfoldedRows } from '../sheetRows'
 import { UnitLabel } from './Responsible'
 import type { Who } from './Responsible'
 import { lookOf, valueWord } from './sheetLook'
+import { claimKey } from '../../widgets/kit/keys'
 
 /** What every row of the page reads. */
 export type RowContext = {
@@ -129,7 +130,7 @@ function NameField({ element, label, onNamed }: { element: DesignElement; label:
     event.stopPropagation()
     if (event.key === 'Enter') { event.preventDefault(); finish('next') }
     if (event.key === 'Tab' && !event.shiftKey) { event.preventDefault(); finish('under') }
-    if (event.key === 'Escape') { event.preventDefault(); done.current = true; onNamed(element.id, element.name, 'stop') }
+    if (event.key === 'Escape') { claimKey(event); done.current = true; onNamed(element.id, element.name, 'stop') }
   }
   return (
     <input

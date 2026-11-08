@@ -26,6 +26,7 @@ import Box from '@mui/material/Box'
 import Dialog from '@mui/material/Dialog'
 import type { DialogProps } from '@mui/material/Dialog'
 import { usePlaceHost } from './kit/placeHost'
+import { claimKey, keyClaimed } from './kit/keys'
 
 export type PageDialogProps = Omit<DialogProps, 'fullScreen' | 'hideBackdrop'> & {
   /** How much of the top of the window belongs to the host, in px. */
@@ -68,9 +69,11 @@ function PlacePage({ host, open, onClose, children, slotProps, sx, ...rest }: Om
     const here = page.current
     if (here && !here.contains(document.activeElement)) here.focus({ preventScroll: true })
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || event.defaultPrevented || modalUp()) return
+      if (event.key !== 'Escape' || keyClaimed(event) || modalUp()) return
       // Only the page on top: a plan is up over the roadmap, and each closes by itself.
       if (host.lastElementChild !== page.current) return
+      // Claimed either way, so the board under the page does not let go of its selection with the same key.
+      claimKey(event)
       if (leavesFieldFirst(event)) return
       latestClose.current?.(event, 'escapeKeyDown')
     }

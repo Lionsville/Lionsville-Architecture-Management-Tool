@@ -57,6 +57,7 @@ import { isBlankRef, personRefOf } from '../../model/person'
 import type { PersonRef } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
+import { claimKey } from '../../widgets/kit/keys'
 
 /** A scope an observation may be recorded in, and what the form reads of it. */
 export type FormScope = {
@@ -213,7 +214,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
         aria-label={s('observation.new')}
         noValidate
         onSubmit={(event) => { event.preventDefault(); record() }}
-        onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); cancel() } }}
+        onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); cancel() } }}
       >
         {scopes.length > 1 && (
           <ExampleField

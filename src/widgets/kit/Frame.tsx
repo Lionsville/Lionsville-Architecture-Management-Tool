@@ -83,7 +83,7 @@ export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageU
             <div className="kit-frame__view" data-testid="frame-view">{children}</div>
             <div className="kit-frame__pages" ref={setPage} data-testid="frame-pages" />
           </main>
-          {panel && <aside className="kit-frame__panel" data-testid="frame-panel">{panel}</aside>}
+          {panel && <aside className="kit-frame__panel" data-testid="frame-panel" tabIndex={-1}>{panel}</aside>}
         </div>
       </div>
     </PlaceHostContext.Provider>

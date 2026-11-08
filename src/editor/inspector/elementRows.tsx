@@ -56,6 +56,7 @@ import { useResolvedLogo } from '../nodes/logoRegistry';
 import { useUsesPicker } from '../useInspectorState';
 import { DASH, RowSet, pickEdit } from './rowTools';
 import type { RowSpec, Surface } from './rowTools';
+import { claimKey } from '../../widgets/kit/keys';
 import './inspector.css';
 
 /** Parts a row opens or only the record shows: not in the first download, which every board pays for. */
@@ -476,7 +477,7 @@ function AspectEditor({ editor, entryLabel, field, entryKey, t }: {
     <div
       className="inspector-aspect"
       onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}
-      onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); editor.cancel(); } }}
+      onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); editor.cancel(); } }}
     >
       <Select
         autoFocus aria-label={entryLabel} data-fit value={aspect?.status ?? ''}
@@ -573,7 +574,7 @@ function DescriptionBlock({ ctx }: { ctx: Ctx }) {
   const openPage = open ? () => open(element.id) : undefined;
   if (writing && !locked) {
     return (
-      <div className="inspector-description" data-shortcuts-ignore="" onKeyDown={(event) => { if (event.key === 'Escape') setWriting(false); }}>
+      <div className="inspector-description" data-shortcuts-ignore="" onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); setWriting(false); } }}>
         <MarkdownField
           value={text} disabled={false} autoFocus
           onChange={(value) => typed('description', { description: value || undefined })}
@@ -708,7 +709,7 @@ export function PanelAppearance({ props, onHelp }: { props: ElementInspectorProp
         <PropertyRow
           label={iconLabel} data-testid="element-icon" value={logo?.entry.label ?? element.iconKey ?? ''} empty={t('common.none')}
           edit={(editor) => (
-            <div className="inspector-icons" onKeyDown={(event) => { if (event.key === 'Escape') { event.stopPropagation(); editor.cancel(); } }}>
+            <div className="inspector-icons" onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); editor.cancel(); } }}>
               <LogoGrid label={iconLabel} value={element.iconKey} onChange={(iconKey) => update({ iconKey })} onRequestUpload={onRequestLogoUpload} maxHeight={220} />
               <Button size="small" variant="quiet" onClick={editor.cancel}>{t('inspector.done')}</Button>
             </div>

@@ -13,6 +13,7 @@ import { editResponsibility, moveResponsibility } from '../edit'
 import { groupsOf } from '../matrixView'
 import { Prose, ReaderFoot, SourceWord } from './ReaderParts'
 import type { ReaderParts } from './ReaderParts'
+import { claimKey } from '../../widgets/kit/keys'
 
 export function ResponsibilityReader({ responsibility, parts }: { responsibility: Responsibility; parts: ReaderParts }) {
   const { t } = useStrings()
@@ -38,7 +39,7 @@ export function ResponsibilityReader({ responsibility, parts }: { responsibility
           edit={(editor) => (
             <>
               <input {...editor.ties} list={groupsId} className="kit-input" value={editor.value} onChange={(event) => editor.onChange(event.target.value)}
-                onBlur={() => editor.commit()} onKeyDown={(event) => { if (event.key === 'Enter') editor.commit(); else if (event.key === 'Escape') editor.cancel() }} />
+                onBlur={() => editor.commit()} onKeyDown={(event) => { if (event.key === 'Enter') editor.commit(); else if (event.key === 'Escape') { claimKey(event); editor.cancel() } }} />
               <datalist id={groupsId}>{groupsOf(model.responsibilities).filter(Boolean).map((one) => <option key={one} value={one} />)}</datalist>
             </>
           )}

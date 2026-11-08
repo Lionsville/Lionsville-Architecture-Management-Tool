@@ -23,7 +23,7 @@ import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent, ReactNode } f
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon } from '../icons'
 import type { ListSort } from './listView'
-import { commandKey } from './keys'
+import { claimKey, commandKey } from './keys'
 import './hidden.css'
 import './List.css'
 
@@ -448,7 +448,7 @@ export function List({
       return
     }
     if (event.key === 'Escape' && ticks && checked && checked.size > 0) {
-      event.stopPropagation()
+      claimKey(event)
       change(new Set())
       return
     }
