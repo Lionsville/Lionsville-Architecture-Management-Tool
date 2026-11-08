@@ -6,8 +6,8 @@
  * and every measure that holds text is written against (`widgets/kit/tokens.ts`).
  *
  * A percentage and not a number of pixels, so it stands on top of what the
- * browser was set to rather than over it. A canvas's type is in px and takes no
- * part: a card is made larger by zooming the canvas.
+ * browser was set to rather than over it. A canvas's type is in rem too, so it
+ * follows; zooming the canvas past 100% makes it larger still.
  */
 export const TEXT_SIZES = [90, 100, 112, 125, 150] as const
 export type TextSize = (typeof TEXT_SIZES)[number]

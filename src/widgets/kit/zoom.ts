@@ -126,9 +126,13 @@ export const DENSE_LABEL_WORDS_FROM = 0.9
  * What a canvas puts on the element its drawing sits in, and all it needs to do
  * for the kit's Card, Zone and Line to keep their sizes on screen and to say what
  * the distance allows. Through CSS, because a zoom must not render 500 cards.
+ *
+ * `--canvas-zoom` is what a size is held against, and it stops at 1: zoomed out,
+ * words and strokes keep their size on screen so a far board stays readable;
+ * zoomed in past 100%, they grow with the drawing, so ⌘+ reads larger.
  */
 export function canvasZoomProps(zoom: number, wordsFrom = LABEL_WORDS_FROM): { 'data-distance': ReadingDistance; 'data-labels': 'words' | 'numbers'; style: Record<'--canvas-zoom', string> } {
-  return { 'data-distance': readingDistance(zoom), 'data-labels': zoom < wordsFrom ? 'numbers' : 'words', style: { '--canvas-zoom': String(zoom) } }
+  return { 'data-distance': readingDistance(zoom), 'data-labels': zoom < wordsFrom ? 'numbers' : 'words', style: { '--canvas-zoom': String(Math.min(zoom, 1)) } }
 }
 
 /**

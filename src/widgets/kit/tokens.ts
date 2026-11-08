@@ -134,9 +134,10 @@ export const SCALE = {
   // Branches still landing say the older names. Each is the size that took its place.
   't-xs': 'var(--t-small)', 't-sm': 'var(--t-body)', 't-md': 'var(--t-body)', 't-lg': 'var(--t-large)', 't-xl': 'var(--t-title)',
   't-2xl': 'var(--t-page)', 't-label': 'var(--t-small)',
-  // A canvas keeps its own type: in px, so no text size reaches a card, and its zoom is what makes it larger.
-  'canvas-t-xs': '12px', 'canvas-t-sm': '13px', 'canvas-t-md': '14px', 'canvas-t-lg': '16px', 'canvas-t-label': '11px', 'canvas-t-near': '9.5px', 'canvas-mark': '10px', 'canvas-target': '24px',
-  't-canvas-name': '13px', 'fw-regular': '400', 'fw-medium': '500', 'fw-strong': '600',
+  // A canvas's type, in rem as the screens' is, so the person's text size reaches a card as it reaches a page;
+  // the zoom then makes it larger from 100% up (`canvasZoomProps`).
+  'canvas-t-xs': '0.75rem', 'canvas-t-sm': '0.8125rem', 'canvas-t-md': '0.875rem', 'canvas-t-lg': '1rem', 'canvas-t-label': '0.6875rem', 'canvas-t-near': '0.59375rem', 'canvas-mark': '10px', 'canvas-target': '24px',
+  't-canvas-name': '0.8125rem', 'fw-regular': '400', 'fw-medium': '500', 'fw-strong': '600',
   // A short card's two lines of name, set close so both fit its box at the floor.
   'lh-close': '1.1', 'lh-tight': '1.25', 'lh-body': '1.45', 'measure-reader': '68ch', 's-1': '4px', 's-2': '8px',
   's-3': '12px', 's-4': '16px', 's-5': '24px', 's-6': '32px', 'r-1': '2px', 'r-2': '3px', 'r-3': '6px',

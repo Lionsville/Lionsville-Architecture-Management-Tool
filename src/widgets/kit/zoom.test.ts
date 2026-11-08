@@ -87,6 +87,11 @@ describe('the seam for the reading distances', () => {
     expect(canvasZoomProps(0.8)).toEqual({ 'data-distance': 'middle', 'data-labels': 'words', style: { '--canvas-zoom': '0.8' } })
     expect(canvasZoomProps(0.8, 0.9)['data-labels']).toBe('numbers')
   })
+
+  it('holds sizes on screen zoomed out, and lets them grow with the drawing past 100%', () => {
+    expect(canvasZoomProps(1.6).style['--canvas-zoom']).toBe('1')
+    expect(canvasZoomProps(1.6)['data-distance']).toBe('near')
+  })
 })
 
 describe('a canvas with a range of its own', () => {
