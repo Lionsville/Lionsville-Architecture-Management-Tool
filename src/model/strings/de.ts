@@ -425,4 +425,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.descriptionRestored': 'Beschreibung von {name} wiederhergestellt auf den Stand vom {asOf}',
   'activity.decisionRestored': 'Entscheidung {name} wiederhergestellt auf den Stand vom {asOf}',
   'activity.projectRestored': 'Den ganzen Bereich wiederhergestellt auf den Stand vom {asOf}',
+  'activity.scopeReplaced': 'Den ganzen Bereich auf einmal geändert',
+  'activity.scopePutBack': 'Den ganzen Bereich auf „{name}“ zurückgesetzt',
+  'activity.picturesChanged': 'Die Bilder des Bereichs geändert',
 }

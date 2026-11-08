@@ -425,4 +425,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.descriptionRestored': 'Beschrijving van {name} teruggezet naar {asOf}',
   'activity.decisionRestored': 'Besluit {name} teruggezet naar {asOf}',
   'activity.projectRestored': 'De hele scope teruggezet naar {asOf}',
+  'activity.scopeReplaced': 'De hele scope in één keer gewijzigd',
+  'activity.scopePutBack': 'De hele scope teruggezet naar “{name}”',
+  'activity.picturesChanged': 'De afbeeldingen van de scope gewijzigd',
 }

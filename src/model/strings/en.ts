@@ -444,4 +444,7 @@ export const EN = {
   'activity.descriptionRestored': 'Restored the description of {name} as of {asOf}',
   'activity.decisionRestored': 'Restored the decision {name} as of {asOf}',
   'activity.projectRestored': 'Restored the whole scope as of {asOf}',
+  'activity.scopeReplaced': 'Changed the whole scope at once',
+  'activity.scopePutBack': 'Put the whole scope back to “{name}”',
+  'activity.picturesChanged': 'Changed the pictures of the scope',
 } as const
