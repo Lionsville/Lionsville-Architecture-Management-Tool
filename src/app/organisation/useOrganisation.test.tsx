@@ -453,7 +453,7 @@ describe('useOrganisation', () => {
     it('carries every ref that points into the subtree', async () => {
       const { held, store } = mount(tree())
       await settle()
-      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await act(async () => { await held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
       await settle()
 
       const road = await store.read('road')
@@ -467,7 +467,7 @@ describe('useOrganisation', () => {
       const { held, store } = mount(tree())
       await settle()
       const before = [(await store.read('rail'))?.id, (await store.read('rail/rolling-stock'))?.id]
-      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await act(async () => { await held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
       await settle()
       expect([(await store.read('freight/rail'))?.id, (await store.read('freight/rail/rolling-stock'))?.id]).toEqual(before)
     })
@@ -479,7 +479,7 @@ describe('useOrganisation', () => {
         move: () => Promise.resolve({ refused: 'shell.scopeTaken' }),
       })
       await settle()
-      await act(async () => { held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
+      await act(async () => { await held().applySettings('rail', { name: 'Rail', parent: 'freight' }) })
       await settle()
 
       expect(failures).toContain('organisation.settings')
