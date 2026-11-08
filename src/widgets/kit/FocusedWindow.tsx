@@ -34,7 +34,7 @@
  * **What holds the save** is said by the save button (`saveRefused`) and at the
  * field, which is the screen's. Save is one step for Undo, also the screen's.
  */
-import { LeaveQuestion, LeaveThrough, useDraft } from './drafts'
+import { LeaveQuestion, LeaveThrough, leaveWithDrafts, useDraft } from './drafts'
 import { createContext, useCallback, useContext, useId, useState } from 'react'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ReactNode } from 'react'
@@ -122,9 +122,10 @@ export function FocusedWindow({
   }
   const through = useCallback((go: () => void) => {
     if (working) return
-    if (changed) { setAsking({ then: go }); return }
+    // Past the editor the door leaves the page under it, which asks about its own drafts (a comment there) as any way out does.
+    if (changed) { setAsking({ then: () => leaveWithDrafts(go) }); return }
     onCancel()
-    go()
+    leaveWithDrafts(go)
   }, [working, changed, onCancel])
   const leave = () => {
     const then = asking?.then
