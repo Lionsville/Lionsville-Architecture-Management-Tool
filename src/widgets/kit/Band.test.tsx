@@ -30,6 +30,14 @@ describe('a band', () => {
     expect(container.querySelector('.kit-mark')?.getAttribute('data-kind')).toBe('look')
   })
 
+  it('keeps its mark in the run of words, the title alone in bold, so a long sentence wraps beside it', () => {
+    const { container } = renderShell(<Band tone="looking" title="Kept under it." detail="A long sentence that says what follows from it." />)
+    const words = container.querySelector('.kit-band__words')!
+    expect(words.firstElementChild?.classList.contains('kit-mark')).toBe(true)
+    expect(words.querySelector('strong')?.textContent).toBe('Kept under it.')
+    expect(words.querySelector('.kit-band__detail')?.closest('strong')).toBeNull()
+  })
+
   it('walks a set, and offers only the steps there are', () => {
     const onNext = vi.fn()
     renderShell(<Band tone="finding" title="Nobody owns this." position={{ at: 1, total: 10, onNext }} />)

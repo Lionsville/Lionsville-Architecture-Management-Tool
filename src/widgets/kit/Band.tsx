@@ -47,9 +47,12 @@ export function Band({ tone, mark: said, title, detail, position, action, dataGu
   const mark = said ?? MARK_OF[tone]
   return (
     <div className="kit-band" data-tone={tone} role="status" data-guide={dataGuide}>
-      {mark && <Mark kind={mark} size={12} />}
-      <strong className="kit-band__title">{title}</strong>
-      {detail && <span className="kit-band__detail">{detail}</span>}
+      {/* One run of words, the mark at its start: a sentence that wraps keeps its mark beside it, not alone on a line above. */}
+      <span className="kit-band__words">
+        {mark && <Mark kind={mark} size={12} />}
+        <strong className="kit-band__title">{title}</strong>
+        {detail && <> <span className="kit-band__detail">{detail}</span></>}
+      </span>
       {position && (
         <span className="kit-band__position">
           {t('kit.preview.position', { at: position.at, total: position.total })}

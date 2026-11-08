@@ -23,6 +23,8 @@
 .kit-band[data-tone='problem'] { --kit-band-ink: var(--bad); --kit-band-fill: var(--bad-soft); }
 .kit-band[data-tone='info'] { --kit-band-ink: var(--info); --kit-band-fill: var(--info-soft); }
 
+.kit-band__words { flex: 1 1 auto; min-width: 0; }
+.kit-band__words > .kit-mark { margin-inline-end: var(--s-2); }
 .kit-band__title { font-weight: var(--fw-strong); overflow-wrap: anywhere; }
 .kit-band__detail { color: var(--ink-2); overflow-wrap: anywhere; }
 .kit-band__position { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--ink-2); font-size: var(--t-small); }

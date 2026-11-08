@@ -692,7 +692,9 @@ function useVisitBand(parts: ShellParts): StackedBand | undefined {
   const visiting = parts.props.visiting
   return useMemo(() => (visiting?.asking ? {
     id: 'example', tone: 'looking',
+    // The decision in bold, what follows from it in the band's plain detail.
     title: <span data-testid="example-keep-question">{s('example.keepAsk')}</span>,
+    detail: <span data-testid="example-keep-detail">{s('example.keepAskDetail')}</span>,
     action: (
       <>
         <Button size="small" variant="primary" onClick={visiting.asking.onKeep} data-testid="example-keep-under">{s('example.keepUnder')}</Button>
