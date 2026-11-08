@@ -343,3 +343,7 @@
 /* A line the keyboard is on: the selected weight and a halo, so it is told from its neighbours. */
 .lv-board .react-flow__edge:focus-visible { outline: none; filter: drop-shadow(0 0 calc(2px / var(--canvas-zoom, 1)) var(--focus-ring)); }
 .lv-board .react-flow__edge:focus-visible path:not(.react-flow__edge-interaction) { stroke-width: calc(2.5px / var(--canvas-zoom, 1)) !important; stroke: var(--selected-edge); }
+
+/* A group's heading, reached by the keyboard or handed the focus back by its colour popover: the kit's ring, not the system's. */
+.lv-group__name:focus { outline: none; }
+.lv-group__name:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }

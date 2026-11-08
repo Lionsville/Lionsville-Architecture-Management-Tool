@@ -219,7 +219,7 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                 />
               ) : (
                 <span
-                  className="nodrag nopan"
+                  className="nodrag nopan lv-group__name"
                   role="button" tabIndex={0}
                   aria-label={t('canvas.groupNamed', { name: label })}
                   aria-pressed={isSelected}

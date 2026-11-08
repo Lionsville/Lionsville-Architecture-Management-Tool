@@ -128,6 +128,7 @@
 .kit-panel__icon:focus-visible,
 .kit-panel__link:focus-visible,
 .kit-panel__namePress:focus-visible,
+.kit-panel__nameField:focus,
 .kit-panel__body:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 .kit-panel__body:focus-visible { outline-offset: calc(0px - var(--focus-ring-width)); }
 
