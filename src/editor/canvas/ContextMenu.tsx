@@ -85,6 +85,9 @@ export function ContextMenu({
   );
 }
 
+/** What a submenu needs beside its item: its least width and the room around it. */
+const SUBMENU_ROOM = 200;
+
 /** The placement engine MUI's Popper hands back, named through MUI's own type. */
 type PopperInstance = NonNullable<Extract<PopperProps['popperRef'], { current: unknown }>['current']>;
 
@@ -367,7 +370,9 @@ function SubMenuItem({
         role="presentation"
         open={isOpen}
         anchorEl={anchorRef.current}
-        placement="right-start"
+        // Beside the item, or to its left where the window's right edge leaves no room: Popper's own
+        // flip reads its frame wrongly inside the menu's transformed paper.
+        placement={isOpen && anchorRef.current && anchorRef.current.getBoundingClientRect().right + SUBMENU_ROOM > window.innerWidth ? 'left-start' : 'right-start'}
         disablePortal
         popperRef={popperRef}
         popperOptions={{ strategy: 'fixed' }}
