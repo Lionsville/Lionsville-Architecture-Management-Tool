@@ -21,6 +21,14 @@ describe('PasswordDialog, as axe reads it', () => {
 })
 
 describe('PasswordDialog', () => {
+  it('says Download where the copy goes to the browser’s downloads, and asks where only where a save asks', () => {
+    const { unmount } = renderShell(<PasswordDialog open mode="set" downloads onCancel={() => {}} onConfirm={() => {}} s={s} />)
+    expect(screen.getByTestId('password-confirm').textContent).toBe('Download…')
+    unmount()
+    renderShell(<PasswordDialog open mode="set" onCancel={() => {}} onConfirm={() => {}} s={s} />)
+    expect(screen.getByTestId('password-confirm').textContent).toBe('Choose where to save…')
+  })
+
   it('asks twice when setting one, and offers Save only when the two agree', () => {
     const onConfirm = vi.fn()
     renderShell(<PasswordDialog open mode="set" onCancel={() => {}} onConfirm={onConfirm} s={s} />)

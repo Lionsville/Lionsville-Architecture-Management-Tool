@@ -132,6 +132,7 @@ export const EN = {
   'shell.leftOutPart': '{count} × {label}',
   'shell.savedPicture': 'Picture saved.',
   'shell.savedWorkingFile': 'Saved {name}.',
+  'shell.downloadedWorkingFile': 'Downloaded {name} to your Downloads folder.',
   /**
    * The password a working file leaves under, and the one it is opened with
    * (ADR-0023). `seal.wrong` does double duty on purpose: a wrong password and
@@ -146,6 +147,7 @@ export const EN = {
   'seal.mismatch': 'The two do not match.',
   'seal.wrong': 'That password does not open this file. Check it and try again. If it keeps failing, the file may be damaged.',
   'seal.confirmSet': 'Choose where to save…',
+  'seal.confirmDownload': 'Download…',
   'seal.confirmEnter': 'Open',
   'seal.setWarning': 'Nothing can recover a lost password. Whoever opens the file needs it too.',
   'seal.withoutNames': 'Every person leaves as their pseudonym, with no address. Signed decisions lose the names they were signed with, and observations lose who recorded them.',

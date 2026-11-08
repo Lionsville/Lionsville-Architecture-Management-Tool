@@ -69,6 +69,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.savedPicture': 'Bild gespeichert.',
   'shell.savedWorkingFile':
     '{name} gespeichert.',
+  'shell.downloadedWorkingFile': '{name} wurde in Ihren Download-Ordner heruntergeladen.',
   'seal.setTitle': 'Eine Kopie von {name} speichern',
   'seal.setBody': 'Die ganze Organisation in einer Datei: {holds}. Sie enthält alles, auf welchem Bildschirm Sie auch sind.',
   'seal.enterTitle': '{name} öffnen',
@@ -78,6 +79,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'seal.mismatch': 'Die beiden stimmen nicht überein.',
   'seal.wrong': 'Mit diesem Passwort lässt sich die Datei nicht öffnen. Prüfen Sie es und versuchen Sie es erneut. Schlägt es weiter fehl, ist die Datei vielleicht beschädigt.',
   'seal.confirmSet': 'Speicherort wählen…',
+  'seal.confirmDownload': 'Herunterladen…',
   'seal.confirmEnter': 'Öffnen',
   'seal.setWarning': 'Ein verlorenes Passwort lässt sich nicht wiederherstellen. Wer die Datei öffnet, braucht es ebenfalls.',
   'seal.withoutNames': 'Jede Person geht als Pseudonym mit, ohne Adresse. Unterzeichnete Entscheidungen verlieren die Namen der Unterzeichner, und Beobachtungen verlieren, wer sie festgehalten hat.',

@@ -19,6 +19,7 @@ const REVOKE_AFTER_MS = 800
 
 export class BrowserDocumentGateway implements DocumentGateway {
   readonly id = 'browser'
+  readonly downloads = true
 
   save(doc: SavedDocument): Promise<void> {
     const a = document.createElement('a')

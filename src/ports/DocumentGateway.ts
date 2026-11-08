@@ -43,6 +43,12 @@ export interface DocumentGateway {
   save(doc: SavedDocument): Promise<void | 'cancelled'>
 
   /**
+   * The document goes straight to the browser's downloads and nobody is asked
+   * where: what the words before and after a save say. Absent where a save asks.
+   */
+  readonly downloads?: boolean
+
+  /**
    * The page as it now stands for print, to a PDF the user is asked where to put:
    * text and lines rather than pixels, at the page's own `@page` size. Absent where the
    * only way to paper is a browser's own print dialog.

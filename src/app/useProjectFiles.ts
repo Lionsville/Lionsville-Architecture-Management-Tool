@@ -44,6 +44,8 @@ import { putBackSaid } from './history/useProjectHistory'
  */
 export type ProjectFileChannel = {
   save(doc: SavedDocument): Promise<void | 'cancelled'>
+  /** A save goes to the downloads without asking where (`DocumentGateway.downloads`). */
+  readonly downloads?: boolean
   print?(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled'>
   readBytes(blob: Blob): Promise<Uint8Array>
   readDataUrl(blob: Blob): Promise<string>
@@ -190,7 +192,7 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
    */
   const saveWorkingFile = useCallback(() => (
     sealedWorkingFile((choice) => carryOut([session.snapshot()], choice), askPassword).then(
-      (sealed) => (sealed ? handOverFile(sealed.doc, s('shell.savedWorkingFile', { name: sealed.doc.name }), savedWithout(sealed.carried.without, s), onCopySaved) : undefined),
+      (sealed) => (sealed ? handOverFile(sealed.doc, s(documents.downloads ? 'shell.downloadedWorkingFile' : 'shell.savedWorkingFile', { name: sealed.doc.name }), savedWithout(sealed.carried.without, s), onCopySaved) : undefined),
     ).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))

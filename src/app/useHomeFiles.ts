@@ -75,7 +75,7 @@ export function useHomeFiles(deps: {
       if (await documents.save(sealed.doc) === 'cancelled') return
       onCopySaved?.()
       const without = savedWithout(sealed.carried.without, s)
-      notify(without ?? s('shell.savedWorkingFile', { name: sealed.doc.name }), without ? 'warning' : 'success')
+      notify(without ?? s(documents.downloads ? 'shell.downloadedWorkingFile' : 'shell.savedWorkingFile', { name: sealed.doc.name }), without ? 'warning' : 'success')
     }).catch((err: unknown) => notify(err instanceof ShellError
       ? messageFor(err, s)
       : s('shell.saveFileFailed', { message: reasonOf(err) }), 'error'))

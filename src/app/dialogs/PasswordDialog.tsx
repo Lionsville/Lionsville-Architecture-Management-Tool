@@ -40,10 +40,12 @@ export type PasswordDialogProps = {
   about?: PasswordAbout
   onCancel: () => void
   onConfirm: (answer: PasswordAnswer) => void
+  /** The copy goes to the browser's downloads, asking nobody where. */
+  downloads?: boolean
   s: Translate
 }
 
-export function PasswordDialog({ open, mode, error, about, onCancel, onConfirm, s }: PasswordDialogProps) {
+export function PasswordDialog({ open, mode, error, about, onCancel, onConfirm, downloads = false, s }: PasswordDialogProps) {
   const [password, setPassword] = useState('')
   const [repeat, setRepeat] = useState('')
   const [people, setPeople] = useState<'named' | 'without'>('named')
@@ -74,7 +76,7 @@ export function PasswordDialog({ open, mode, error, about, onCancel, onConfirm, 
       open={open} size={setting ? 'm' : 's'} title={title} onClose={onCancel}
       actions={{
         cancel: { onClick: onCancel, label: s('common.cancel') },
-        outcome: { disabled: !ready, onClick: confirm, 'data-testid': 'password-confirm', label: s(setting ? 'seal.confirmSet' : 'seal.confirmEnter') },
+        outcome: { disabled: !ready, onClick: confirm, 'data-testid': 'password-confirm', label: s(setting ? (downloads ? 'seal.confirmDownload' : 'seal.confirmSet') : 'seal.confirmEnter') },
       }}
     >
       {setting

@@ -27,7 +27,7 @@ export type AskPassword = (mode: PasswordMode, error?: string, file?: string) =>
 
 type Asking = { mode: PasswordMode; error?: string; file?: string }
 
-export function usePasswordPrompt(s: Translate, copying?: () => PasswordAbout): { askPassword: AskPassword; dialog: React.ReactElement } {
+export function usePasswordPrompt(s: Translate, copying?: () => PasswordAbout, downloads = false): { askPassword: AskPassword; dialog: React.ReactElement } {
   const [asking, setAsking] = useState<Asking | undefined>(undefined)
   const resolveRef = useRef<((answer: PasswordAnswer | undefined) => void) | undefined>(undefined)
 
@@ -58,9 +58,10 @@ export function usePasswordPrompt(s: Translate, copying?: () => PasswordAbout): 
       about={asking?.mode === 'set' ? copyingRef.current?.() : asking?.file ? { file: asking.file } : undefined}
       onCancel={() => settle(undefined)}
       onConfirm={settle}
+      downloads={downloads}
       s={s}
     />
-  ), [asking, settle, s])
+  ), [asking, settle, s, downloads])
 
   return { askPassword, dialog }
 }

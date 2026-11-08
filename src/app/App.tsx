@@ -643,7 +643,7 @@ function useShellParts(props: AppProps): ShellParts {
    * the two file flows is asking: the workspace's, with a scope open, or the
    * home's below, with nothing open.
    */
-  const prompts = { password: usePasswordPrompt(s, () => copyAbout(organisation.tree, s)), openInto: useOpenIntoPrompt(s) }
+  const prompts = { password: usePasswordPrompt(s, () => copyAbout(organisation.tree, s), props.documents.downloads), openInto: useOpenIntoPrompt(s) }
   /** What is folded shut on each view's trees, for as long as the window is open (`sessionFolds.ts`). */
   const [folds] = useState(() => new SessionFolds())
   const home = useHomeParts({
