@@ -18,9 +18,8 @@
  *
  * **It covers the shell's toolbar**, so the bar takes over what that toolbar did
  * for the window: it keeps clear of the traffic lights and is the handle that
- * moves the window. So it takes the host's window chrome, without a page below it
- * to leave room for. The kit knows the two measures it needs and not where they
- * come from.
+ * moves the window. It says so by wearing the window's bar (`windowArea`), which
+ * knows what the window asks today, full screen included.
  *
  * **Cancel asks first if anything changed**, and only then; Escape is Cancel.
  * Escape in a list that is open inside the body closes the list first, since the
@@ -35,10 +34,8 @@ import MuiDialog from '@mui/material/Dialog'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Button } from './Button'
 import { Dialog } from './Dialog'
+import { WINDOW_BAR } from './windowArea'
 import './FocusedWindow.css'
-
-/** What the bar must do about the window. The host's `WindowChrome` is one of these. */
-export type FocusedWindowChrome = { controlsInset: number; draggable: boolean }
 
 export type FocusedWindowProps = {
   open: boolean
@@ -46,7 +43,6 @@ export type FocusedWindowProps = {
   title: string
   /** The record's number, in the mono face, before the title. */
   number?: string
-  windowChrome: FocusedWindowChrome
   /** The bar's middle: a Segmented *Write | Preview*. */
   middle?: ReactNode
   children: ReactNode
@@ -73,7 +69,7 @@ export function useInFocusedWindow(): boolean {
 }
 
 export function FocusedWindow({
-  open, title, number, windowChrome, middle, children, aside, changed, saveLabel, onSave, saveRefused, onCancel,
+  open, title, number, middle, children, aside, changed, saveLabel, onSave, saveRefused, onCancel,
   working = false, error, 'data-guide': guide,
 }: FocusedWindowProps) {
   const { t } = useStrings()
@@ -96,11 +92,7 @@ export function FocusedWindow({
       onClose={cancel}
       slotProps={{ paper: { className: 'kit-focused', 'data-guide': guide } as object }}
     >
-      <div
-        className="kit-focused__bar"
-        data-draggable={windowChrome.draggable || undefined}
-        style={windowChrome.controlsInset > 0 ? { paddingInlineStart: windowChrome.controlsInset } : undefined}
-      >
+      <div className={`kit-focused__bar ${WINDOW_BAR}`}>
         <div className="kit-focused__start">
           <Button variant="quiet" onClick={cancel} data-guide={guide && `${guide}-cancel`}>{t('kit.focused.cancel')}</Button>
           {number && <span className="kit-focused__number">{number}</span>}

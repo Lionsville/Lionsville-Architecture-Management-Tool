@@ -25,7 +25,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../../model/types';
 import type { MarkdownRenderOptions } from '../documentation';
 import type { WindowChrome } from '../../platform/windowChrome';
-import { barChromeFor } from '../../platform/windowChrome';
 import { PageDialog } from '../../widgets/PageDialog';
 import { PageClose } from '../../widgets/PageClose';
 import { SeamResizer } from '../../widgets/SeamResizer';
@@ -104,7 +103,7 @@ export interface DocumentationPageProps {
   onAddImage?(file: File): Promise<string | undefined>;
   /** The pictures the project holds (ADR-0009). Absent = no list. */
   images?: DocumentImages;
-  /** See {@link SolutionDesignEditorProps.windowChrome}: room for the window's own controls. */
+  /** How much of the top the shell keeps; its full-window writing wears the window's bar on its own. */
   windowChrome?: WindowChrome;
   /** How wide the list down the left is. The host's, so it outlives the page. Absent = the default, and no seam. */
   railWidth?: { value: number; onChange(next: number): void };
@@ -315,8 +314,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
     target?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
 
-  const chrome = props.windowChrome ?? { controlsInset: 0, draggable: false };
-  const bar = barChromeFor(chrome);
+  const chrome = props.windowChrome ?? {};
   const template = { label: t('doc.insertTemplate'), text: documentTemplate(t) };
   const kind = kindLabel(element.kind, t);
   const rest = props.recordSections?.(element) ?? [];
@@ -371,7 +369,6 @@ export function DocumentationPage(props: DocumentationPageProps) {
         open
         data-guide="record.writing"
         title={t('doc.editing', { name: element.name })}
-        windowChrome={bar}
         changed={changed}
         saveLabel={t('doc.done')}
         onSave={doneWriting}

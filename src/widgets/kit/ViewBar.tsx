@@ -18,6 +18,7 @@ import { Button } from './Button'
 import { CaretIcon } from '../icons'
 import { MenuButton } from './Menu'
 import type { MenuEntry } from './Menu'
+import { WINDOW_BAR } from './windowArea'
 import './ViewBar.css'
 
 export type ViewBarProps = {
@@ -34,13 +35,15 @@ export type ViewBarProps = {
   label?: string
   /** It stands in a row that is already a bar, and draws no bar of its own. */
   flush?: boolean
+  /** It stands at the top of the window, as a view in full window does: it keeps clear of the window's controls and moves it. */
+  windowBar?: boolean
   'data-guide'?: string
 }
 
-export function ViewBar({ reading, add, arrange, show, colour, day, find, exportAs, more, label, flush, 'data-guide': guide }: ViewBarProps) {
+export function ViewBar({ reading, add, arrange, show, colour, day, find, exportAs, more, label, flush, windowBar, 'data-guide': guide }: ViewBarProps) {
   const { t } = useStrings()
   return (
-    <div className="kit-viewbar" data-flush={flush || undefined} role="group" aria-label={label ?? t('kit.viewbar.label')} data-guide={guide}>
+    <div className={windowBar ? `kit-viewbar ${WINDOW_BAR}` : 'kit-viewbar'} data-flush={flush || undefined} role="group" aria-label={label ?? t('kit.viewbar.label')} data-guide={guide}>
       <div className="kit-viewbar__start">{reading}{add}{arrange}{show}{colour}{day}</div>
       <div className="kit-viewbar__end">{find}{exportAs}{more}</div>
     </div>

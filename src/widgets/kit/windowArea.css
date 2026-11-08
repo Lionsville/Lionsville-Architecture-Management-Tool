@@ -1,0 +1,12 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* The window's own corner (`windowArea.ts`). Only where the host said so: a browser tab, Windows and Linux are untouched. */
+:root[data-window-controls] .kit-window-bar { padding-inline-start: calc(var(--window-controls-w) + var(--s-2)); }
+
+/* The top bar moves the window, except where something is pressed: stated once, so a control added later cannot become dead surface. */
+:root[data-window-drag] .kit-window-bar { -webkit-app-region: drag; }
+:root[data-window-drag] .kit-window-bar :is(button, a, input, select, textarea, label, [contenteditable], [tabindex]:not([tabindex='-1']), [role='button'], [role='link'], [role='tab'], [role='radio'], [role='checkbox'], [role='switch'], [role='combobox'], [role='textbox'], [role='searchbox'], [role='slider'], [role='spinbutton'], [role='menuitem']) { -webkit-app-region: no-drag; }
+
+/* What covers the window is never a drag region: a press on a dialog, a menu or a list that pops up is that press, not a move of the window under it. A bar inside one that stands at the top of the window drags again, being later in the page. */
+:root[data-window-drag] :is(.MuiModal-root, .MuiPopper-root, .MuiSnackbar-root, .kit-window-cover) { -webkit-app-region: no-drag; }

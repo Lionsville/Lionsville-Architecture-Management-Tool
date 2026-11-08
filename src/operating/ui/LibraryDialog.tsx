@@ -75,7 +75,7 @@ export function LibraryDialog(props: LibraryDialogProps) {
       slotProps={{
         paper: {
           'data-testid': 'library-dialog',
-          sx: { width: 'calc(100% - 32px)', maxWidth: 1480, height: 'calc(100% - 32px)', m: 2, display: 'flex', flexDirection: 'column', WebkitAppRegion: 'no-drag' },
+          sx: { width: 'calc(100% - 32px)', maxWidth: 1480, height: 'calc(100% - 32px)', m: 2, display: 'flex', flexDirection: 'column' },
         } as object,
       }}
     >

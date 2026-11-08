@@ -47,7 +47,8 @@ import { BrowserDocumentGateway } from '../adapters/browser/BrowserDocumentGatew
 import { browserHostControls } from '../adapters/browser/browserHostControls'
 import { reloadOnStaleScripts } from '../adapters/browser/staleScripts'
 import { ConsoleDiagnostics } from '../adapters/browser/ConsoleDiagnostics'
-import { hostWindowChrome, showWindowTitle } from '../adapters/browser/hostWindow'
+import { hostWindowChrome, showWindowTitle, watchWindowArea } from '../adapters/browser/hostWindow'
+import { showWindowArea } from '../widgets/kit/windowArea'
 import { browserDatabase, browserStorage } from '../adapters/webStorage/available'
 import type { WindowChrome } from '../platform/windowChrome'
 import { sourceProviderKind } from '../platform/workingSource'
@@ -629,6 +630,15 @@ export function composeShell(s?: Translate): Shell {
     windowChrome: hostWindowChrome(),
     showTitle: showWindowTitle,
   }
+}
+
+/**
+ * Tell the surfaces at the top of the window what the window asks of them,
+ * now and whenever it goes into full screen or comes out (`widgets/kit/windowArea`).
+ * Once per page, from the boot.
+ */
+export function watchHostWindow(): () => void {
+  return watchWindowArea(showWindowArea)
 }
 
 function failNoPreferences(kind: string): never {

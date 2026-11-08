@@ -10,15 +10,14 @@ import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { FocusedWindow, useInFocusedWindow } from './FocusedWindow'
 import type { FocusedWindowProps } from './FocusedWindow'
+import { WINDOW_BAR } from './windowArea'
 
 afterEach(cleanup)
-
-const CHROME = { controlsInset: 0, draggable: false }
 
 function Editing(props: Partial<FocusedWindowProps>) {
   return (
     <FocusedWindow
-      open title="Editing an observation" number="OB-0021" windowChrome={CHROME} changed={false}
+      open title="Editing an observation" number="OB-0021" changed={false}
       saveLabel="Save changes" onSave={() => {}} onCancel={() => {}} {...props}
     >
       <p>The writing</p>
@@ -39,18 +38,12 @@ describe('FocusedWindow', () => {
     expect(await axeFindings()).toEqual([])
   })
 
-  it('keeps clear of the traffic lights and moves the window where the host asks', () => {
-    renderShell(<Editing windowChrome={{ controlsInset: 78, draggable: true }} />)
-    const bar = document.querySelector<HTMLElement>('.kit-focused__bar')
-    expect(bar?.style.paddingInlineStart).toBe('78px')
-    expect(bar?.dataset.draggable).toBeDefined()
-  })
-
-  it('draws no such room in a browser tab', () => {
+  it('wears the window’s bar, which keeps clear of the traffic lights and moves the window where the host asks', () => {
     renderShell(<Editing />)
     const bar = document.querySelector<HTMLElement>('.kit-focused__bar')
-    expect(bar?.style.paddingInlineStart).toBe('')
-    expect(bar?.dataset.draggable).toBeUndefined()
+    expect(bar?.classList.contains(WINDOW_BAR)).toBe(true)
+    // Its own style says nothing of the window: that is the root's to say (`windowArea`).
+    expect(bar?.getAttribute('style')).toBeNull()
   })
 
   it('leaves at once on Cancel and on Escape with nothing changed', () => {
@@ -130,7 +123,7 @@ describe('FocusedWindow', () => {
     renderShell(
       <>
         <Says />
-        <FocusedWindow open title="Editing" windowChrome={CHROME} changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}><Says /></FocusedWindow>
+        <FocusedWindow open title="Editing" changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}><Says /></FocusedWindow>
       </>,
     )
     expect(screen.getByText('outside')).toBeTruthy()

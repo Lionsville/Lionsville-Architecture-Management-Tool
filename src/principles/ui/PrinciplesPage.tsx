@@ -186,7 +186,7 @@ export function PrinciplesPage({ open, onClose, scope, select, nonce, onSelect, 
       )}
       {editing && (
         <PrincipleEditor
-          open scope={editing.scope} windowChrome={windowChrome}
+          open scope={editing.scope}
           {...(editing.principle ? { principle: editing.principle } : {})}
           {...(editing.title ? { title: editing.title } : {})}
           onClose={(made) => { setEditing(undefined); if (made) pick({ scope: editing.scope, id: made }) }}

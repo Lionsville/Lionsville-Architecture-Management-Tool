@@ -126,6 +126,16 @@ export type DesktopFileAt = { path: string; text: string } | { path: string; byt
 export type DesktopTag = { name: string; sha: string; message: string }
 
 /**
+ * The window itself, as far as the page has to know it: whether it is in full
+ * screen, where macOS takes the traffic lights away and the page's top bar
+ * owes them no room (`platform/windowChrome.ts`'s `windowAreaFor`).
+ */
+export type DesktopWindow = {
+  isFullScreen(): Promise<boolean>
+  onFullScreen(listener: (full: boolean) => void): () => void
+}
+
+/**
  * The settings main keeps for itself (ADR-0005): what it must read before any
  * window exists. A channel of its own beside the files, because `userData` is
  * not a folder the user granted, and because main reacts to a write — the

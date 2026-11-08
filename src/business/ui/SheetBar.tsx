@@ -58,7 +58,7 @@ export function PostureSwitch({ value, onChange, t }: { value: 'read' | 'design'
   )
 }
 
-export function SheetBar({ reading, colour, day, journey, stakeholders, finding, onFind, more, t }: {
+export function SheetBar({ reading, colour, day, journey, stakeholders, finding, onFind, more, windowBar, t }: {
   reading: ReactNode
   colour?: ReactNode
   day?: ReactNode
@@ -67,12 +67,15 @@ export function SheetBar({ reading, colour, day, journey, stakeholders, finding,
   finding: boolean
   onFind(): void
   more: readonly MenuEntry[]
+  /** The sheet is in full window, and this bar is the window's top. */
+  windowBar?: boolean
   t: Translate
 }) {
   return (
     <div data-testid="sheet-topbar">
       <ViewBar
         label={t('sheet.page')}
+        windowBar={windowBar}
         reading={reading}
         colour={colour}
         day={day}

@@ -85,7 +85,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
             ? <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />
             : (
               <div className="guidance-record__body">
-                {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} windowChrome={windowChrome} />}
+                {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} />}
                 {now === 'requirements' && <BlockRequirements row={row} onChapter={toChapter} />}
                 {now === 'options' && <BlockSolutions row={row} />}
                 {now === 'used' && <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />}

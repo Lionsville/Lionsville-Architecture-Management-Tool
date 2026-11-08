@@ -14,7 +14,6 @@ import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-libra
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { translator } from '../../i18n'
-import type { WindowChrome } from '../../platform/windowChrome'
 import type { Cause, Observation, ScopeAnalysis, Solution } from '../../model/observation'
 import type { RecordAt } from '../merge'
 import { MovePage } from './MovePage'
@@ -268,21 +267,5 @@ describe('the move screen', () => {
     const archived = mount('n2', { onChangeAcross: changeAcross })
     fireEvent.click(within(archived.page().getByTestId('move-target-south')).getByRole('radio'))
     expect(archived.page().getByTestId('move-blocked').textContent).toBe(t('observation.moveArchived'))
-  })
-
-  it('keeps its top bar clear of the window controls and draggable', () => {
-    const chrome = { controlsInset: 78, draggable: true } as WindowChrome
-    const { changeAcross } = host(new Map())
-    function Chromed() {
-      const move = useMove({
-        here: 'north', scopes: [north, south], paths: ['north', 'south'], readOnly: false, today: () => DAY, t,
-        scopeLabel: (path) => path, onMoved: () => {}, onChangeAcross: changeAcross,
-      })
-      const { open } = move
-      useEffect(() => open(north.observations[0]!), [open])
-      return <MovePage state={move.state} s={t} windowChrome={chrome} onNoteClose={() => {}} />
-    }
-    renderShell(<Chromed />)
-    expect(getComputedStyle(screen.getByTestId('move-topbar')).paddingLeft).toBe('90px')
   })
 })

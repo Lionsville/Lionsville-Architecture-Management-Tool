@@ -12,8 +12,8 @@
  * It draws what `useMove` worked out and hands every press back; what the
  * move does is the rule's (`planMove`), and where it lands the hook's.
  *
- * A page over a page, so it takes `windowChrome` as every full-window view
- * does: its top bar keeps clear of the traffic lights and moves the window.
+ * A page over a page, in the frame's column under its rows: the frame's first
+ * row is what keeps clear of the traffic lights and moves the window.
  */
 import { useId } from 'react'
 import type { ReactNode } from 'react'
@@ -29,7 +29,7 @@ import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
-import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
+import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
 import { BRIGHT_LABEL } from '../observationScope'
@@ -145,7 +145,6 @@ function WhatIsCut({ state, s }: { state: MoveScreenState; s: Translate }) {
 
 export function MovePage({ state, s, windowChrome, note, onNoteClose }: MovePageProps) {
   const chrome = windowChrome ?? NO_WINDOW_CHROME
-  const bar = barChromeFor(chrome)
   const close = () => state?.close()
   // Named by its own heading: a dialog's aria-label lands on the modal's root, not on the dialog.
   const titleId = useId()
@@ -164,9 +163,7 @@ export function MovePage({ state, s, windowChrome, note, onNoteClose }: MovePage
       <Box
         data-testid="move-topbar"
         sx={{
-          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, px: 1.5, pl: `${12 + bar.controlsInset}px`,
-          WebkitAppRegion: bar.draggable ? 'drag' : undefined,
-          '& button, & a, & input': { WebkitAppRegion: 'no-drag' },
+          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1, px: 1.5,
           minHeight: 48, borderBottom: 1, borderColor: 'divider', bgcolor: 'background.paper', flexShrink: 0,
         }}
       >

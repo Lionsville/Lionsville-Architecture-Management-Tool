@@ -327,7 +327,6 @@ describe('how much of the window it takes', () => {
       if (was) Object.defineProperty(HTMLElement.prototype, 'scrollHeight', was)
     }
   }
-  const CHROME = { controlsInset: 0, draggable: false }
   const field = <MarkdownEditor label="Words" value="A long text" onChange={() => {}} />
 
   it('stops a field and scrolls it among other fields', () => {
@@ -337,14 +336,14 @@ describe('how much of the window it takes', () => {
 
   it('grows a field with its text in a full window, which is the one scroll', () => {
     tall(5000, () => renderShell(
-      <FocusedWindow open title="Writing" windowChrome={CHROME} changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}>{field}</FocusedWindow>,
+      <FocusedWindow open title="Writing" changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}>{field}</FocusedWindow>,
     ))
     expect((screen.getByRole('textbox', { name: 'Words' }) as HTMLElement).style.height).toBe('5000px')
   })
 
   it('still stops one that asks to stop', () => {
     tall(5000, () => renderShell(
-      <FocusedWindow open title="Writing" windowChrome={CHROME} changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}>
+      <FocusedWindow open title="Writing" changed={false} saveLabel="Save" onSave={() => {}} onCancel={() => {}}>
         <MarkdownEditor label="Words" value="A long text" onChange={() => {}} maxRows={4} />
       </FocusedWindow>,
     ))

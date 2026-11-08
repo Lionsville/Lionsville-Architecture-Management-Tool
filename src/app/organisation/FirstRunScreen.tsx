@@ -41,7 +41,7 @@ export function firstRunUp(parts: ShellParts): 'up' | 'waiting' | 'no' {
 }
 
 export function FirstRunScreen({ parts }: { parts: ShellParts }) {
-  const { props, services: { s, prefs }, commands: { bus }, organisation, provider, windowChrome } = parts
+  const { props, services: { s, prefs }, commands: { bus }, organisation, provider } = parts
   const [name, setName] = useState('')
   const ways = provider.offered ?? []
   const said = (key: string) => s(key as StringKey)
@@ -53,7 +53,6 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
       brand={s('first.brand')}
       title={s('first.title')}
       intro={s('first.intro')}
-      draggable={windowChrome.draggable}
       data-testid="first-run-page"
       tools={(
         <>

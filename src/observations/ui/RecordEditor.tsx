@@ -37,7 +37,6 @@ import { isBlankRef } from '../../model/person'
 import type { PersonRef } from '../../model/person'
 import { SelectField, TextField, TitleField, TitleRead } from '../../widgets/kit/Field'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
-import type { FocusedWindowChrome } from '../../widgets/kit/FocusedWindow'
 import { PreviewFact } from '../../widgets/kit/Preview'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { observationBody, observationProblems, observationSections } from '../form'
@@ -63,7 +62,6 @@ export type RecordEditorProps = {
   editing: RecordEditing | undefined
   onClose: () => void
   today: string
-  windowChrome: FocusedWindowChrome
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   onAddImage?: ((file: File) => Promise<string | undefined>) | undefined
   images?: DocumentImages | undefined
@@ -126,7 +124,7 @@ export function RecordEditor(props: RecordEditorProps) {
   return <OpenEditor key={`${editing.kind}:${editing.record.id}`} {...props} editing={editing} s={s} />
 }
 
-function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onAddImage, images, s }: RecordEditorProps & { editing: RecordEditing }) {
+function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, images, s }: RecordEditorProps & { editing: RecordEditing }) {
   // Side by side is what the desktop's documents open on where there is room. It writes one document and reads the other in the same scroll.
   const roomBeside = useMediaQuery(ROOM_BESIDE, { noSsr: true })
   const opensBeside = useMediaQuery(OPENS_BESIDE, { noSsr: true })
@@ -217,7 +215,6 @@ function OpenEditor({ editing, onClose, today, windowChrome, renderMarkdown, onA
       open
       title={s(TITLE[editing.kind])}
       number={numberOf(editing)}
-      windowChrome={windowChrome}
       middle={(
         <Segmented
           label={s('observation.editView')} value={shownView} onChange={setView}

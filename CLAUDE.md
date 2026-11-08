@@ -1564,13 +1564,18 @@ whose contract is `ports/CommandChannel.contract.ts`.
   what refuses (`ModelSession.readOnly`, `mayChange`), so one you forget
   changes nothing; a hook that writes another scope before it dispatches asks
   `mayChange()` first.
-- Anything that covers the whole window (a fullscreen dialog) must take
-  `windowChrome` and apply it to its top bar — the inset for the macOS traffic
-  lights, `-webkit-app-region: drag` on the bar and `no-drag` on its controls.
-  Electron computes drag regions from geometry, not from what is painted on
-  top, so the shell toolbar's drag strip stays live under a dialog and swallows
-  every click on the controls placed there. `DocumentationPage` and `AdrPage`
-  are the examples; both pin it in a test.
+- Anything that stands at the top of the window — the frame's row one, a
+  full-window editor (`FocusedWindow`), a view in full window — has its top bar
+  wear the kit's window bar (`WINDOW_BAR`, `widgets/kit/windowArea.ts`), and
+  something of our own fixed over the whole window wears its cover
+  (`WINDOW_COVER`). That one seam keeps the bar clear of the macOS traffic
+  lights, makes it the window's drag handle with every control in it a press,
+  drops both in full screen and asks nothing on Windows, Linux or in a tab; the
+  host says which through the root (`hostWindow.watchWindowArea`). Electron
+  computes drag regions from geometry, not from what is painted on top, so a
+  surface that does neither leaves the frame's drag strip live under its first
+  row and swallows every click there. No screen writes an app region or an
+  inset of its own: `build/windowArea.test.ts` reads the tree for both.
 - Both themes must keep working; a colour is a token (`widgets/kit/tokens.ts`,
   `build/literalColours.test.ts`), and a screen composes the kit
   (`widgets/kit/README.md`).

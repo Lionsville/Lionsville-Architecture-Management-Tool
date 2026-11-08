@@ -7,10 +7,9 @@
  * running off its side or drawing their labels over each other, which is
  * what every one of them did.
  *
- * jsdom lays nothing out, so this is held in the source: a bar that covers
- * the width of the window is the one that says which of its parts may not
- * drag the window (`'& button, & a, & input'`, see `core/CLAUDE.md` on
- * `windowChrome`), and every such bar wraps. The quiet buttons in the two
+ * jsdom lays nothing out, so this is held in the source: a page's top bar
+ * (`data-testid="…-topbar"`) that a page still writes in its own `sx` is a
+ * bar across the width of the window, and every such bar wraps. The quiet buttons in the two
  * shell bars keep their width, so it is the bar that wraps and not a label
  * that is squeezed out from under its own button.
  */
@@ -19,7 +18,8 @@ import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { QUIET, WRAPS } from './ShellToolbar'
 
-const DRAG_RULE = "'& button, & a, & input': { WebkitAppRegion: 'no-drag' }"
+/** A page's top bar, written by the page itself rather than by the kit. */
+const OWN_BAR = /data-testid="[a-z-]+-topbar"/
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -37,7 +37,7 @@ describe('a bar across the window, out of width', () => {
     for (const path of sources(join(root, 'src'))) {
       const lines = readFileSync(path, 'utf8').split('\n')
       lines.forEach((line, index) => {
-        if (!line.includes(DRAG_RULE)) return
+        if (!OWN_BAR.test(line) || !lines.slice(index, index + 4).join('\n').includes('sx={{')) return
         const at = `${relative(root, path)}:${index + 1}`
         bars.push(at)
         const around = lines.slice(Math.max(0, index - 12), index + 8).join('\n')

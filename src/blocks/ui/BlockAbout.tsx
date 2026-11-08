@@ -14,8 +14,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
-import { barChromeFor } from '../../platform/windowChrome'
-import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
 import { PanelSection } from '../../widgets/kit/Panel'
@@ -56,7 +54,7 @@ export function useBlockDocument(block: string): { text: string | undefined; wro
   return { text, wrote: setText }
 }
 
-export function BlockAbout({ row, chapter, onChapterShown, windowChrome }: { row: BlockRow; chapter: string | undefined; onChapterShown: () => void; windowChrome: WindowChrome }) {
+export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; chapter: string | undefined; onChapterShown: () => void }) {
   const access = useBlocks()
   const { t } = useStrings()
   const { block, scope } = row
@@ -103,7 +101,7 @@ export function BlockAbout({ row, chapter, onChapterShown, windowChrome }: { row
       {/* Who added it and who changed it since (ADR-0038, amended §11): a block is an element of the scope that keeps it. */}
       <RecordChanges about={{ kind: 'element', id: block.id }} scope={scope} first="added" />
       <FocusedWindow
-        open={draft !== undefined} windowChrome={barChromeFor(windowChrome)} title={t('blocks.editingDocument', { name: block.name })}
+        open={draft !== undefined} title={t('blocks.editingDocument', { name: block.name })}
         changed={draft !== undefined && draft !== document.text} saveLabel={t('blocks.save')} onSave={keep} onCancel={() => setDraft(undefined)}
       >
         <div className="guidance-form__edit">

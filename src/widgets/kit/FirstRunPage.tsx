@@ -7,9 +7,10 @@
  * the frame's rows, because there is no scope yet for them to speak of.
  */
 import type { ReactNode } from 'react'
+import { WINDOW_BAR } from './windowArea'
 import './FirstRunPage.css'
 
-export function FirstRunPage({ brand, tools, title, intro, children, foot, draggable, 'data-testid': testId }: {
+export function FirstRunPage({ brand, tools, title, intro, children, foot, 'data-testid': testId }: {
   brand: string
   /** Language and the manual, at the end of the top line. */
   tools?: ReactNode
@@ -19,13 +20,12 @@ export function FirstRunPage({ brand, tools, title, intro, children, foot, dragg
   children: ReactNode
   /** What is said under the ways: where it is kept, and what can lose it. */
   foot?: ReactNode
-  /** The window has no title bar of its own: the top line is what it is dragged by. */
-  draggable?: boolean
   'data-testid'?: string
 }) {
   return (
     <div className="kit-firstrun" data-testid={testId}>
-      <header className="kit-firstrun__bar" data-drag={draggable ? true : undefined}>
+      {/* The top line stands at the top of the window: it keeps clear of the window's controls and moves it (`windowArea`). */}
+      <header className={`kit-firstrun__bar ${WINDOW_BAR}`}>
         <span className="kit-firstrun__brand">{brand}</span>
         {tools && <span className="kit-firstrun__tools">{tools}</span>}
       </header>

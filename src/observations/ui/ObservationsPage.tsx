@@ -34,7 +34,7 @@ import type { HostModel } from '../../model/hostModel'
 import type { Comment } from '../../model/comment'
 import { hasMap, stageOfTab } from '../tabs'
 import type { ChainLens, ObservationStage, ObservationTab } from '../tabs'
-import { NO_WINDOW_CHROME, barChromeFor } from '../../platform/windowChrome'
+import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
@@ -544,7 +544,6 @@ export function ObservationsPage(props: ObservationsPageProps) {
     absorbedAbove,
   } = props
   const chrome = props.windowChrome ?? NO_WINDOW_CHROME
-  const bar = barChromeFor(chrome)
   const observations = useMemo(() => model.observations ?? [], [model.observations])
   const causes = useMemo(() => model.causes ?? [], [model.causes])
   const analysis = useMemo<Analysis>(() => ({ observations: [...observations], causes: [...causes] }), [observations, causes])
@@ -990,7 +989,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     <PageDialog open={open} topInset={chrome.topInset} onClose={leaving.leave} aria-label={s('observation.title')}>
       <LanguageProvider language={props.language}>
         <Box className="chain-page" ref={located.ref} sx={located.ring}>
-          <div className="chain-page__tabs" data-testid="observation-topbar" style={bar.controlsInset > 0 ? { paddingInlineStart: 12 + bar.controlsInset } : undefined} data-draggable={bar.draggable || undefined}>
+          <div className="chain-page__tabs" data-testid="observation-topbar">
             <PageBack onBack={leaving.leave} label={leaving.said} />
             <Tabs<Tab>
               label={s('observation.title')} value={stage} onChange={setStage}
@@ -1037,7 +1036,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           />
         )}
         <RecordEditor
-          editing={editing} onClose={() => setEditingKey(undefined)} today={today()} windowChrome={chrome}
+          editing={editing} onClose={() => setEditingKey(undefined)} today={today()}
           renderMarkdown={props.renderMarkdown} onAddImage={props.onAddImage} images={props.images} s={s}
         />
         <PictureMenu at={menu?.at} actions={menu ? withCopyLink(menuActions(menu.target), menu.target, resolve, copyLinkOf(props, stage), s) : []} onClose={() => setMenu(undefined)} />

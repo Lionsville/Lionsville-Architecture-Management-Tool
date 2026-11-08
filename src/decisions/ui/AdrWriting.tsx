@@ -25,7 +25,6 @@ import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { Field, TextField } from '../../widgets/kit/Field'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
-import type { FocusedWindowChrome } from '../../widgets/kit/FocusedWindow'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { formatAdrNumber, madrTemplate } from '../adr'
 import type { Adr, AdrGateItem, AdrPatch } from '../adr'
@@ -45,7 +44,6 @@ export type AdrWritingProps = {
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   onAddImage?: (file: File) => Promise<string | undefined>
   images?: DocumentImages
-  windowChrome: FocusedWindowChrome
   onSave: (patch: AdrPatch) => void
   onCancel: () => void
 }
@@ -106,7 +104,7 @@ function SectionBoxes({ body, onBody, s, preview, editor }: {
   )
 }
 
-export function AdrWriting({ adr, list, at, s, language, today, elements, renderMarkdown, onAddImage, images, windowChrome, onSave, onCancel }: AdrWritingProps) {
+export function AdrWriting({ adr, list, at, s, language, today, elements, renderMarkdown, onAddImage, images, onSave, onCancel }: AdrWritingProps) {
   const names = usePersonNames()
   const [title, setTitle] = useState(adr.title)
   const [body, setBody] = useState(adr.body)
@@ -155,7 +153,6 @@ export function AdrWriting({ adr, list, at, s, language, today, elements, render
       open
       title={s('adr.writing')}
       number={formatAdrNumber(adr.number)}
-      windowChrome={windowChrome}
       changed={changed}
       saveLabel={s('adr.done')}
       onSave={() => { if (changed) onSave(patch); else onCancel() }}

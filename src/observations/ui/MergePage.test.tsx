@@ -88,14 +88,6 @@ describe('the merge screen, as axe and the keyboard read it', () => {
     search.focus()
     expect(document.activeElement).toBe(search)
   })
-
-  it('keeps its top bar clear of the window controls and draggable', () => {
-    mount(undefined, {}, { controlsInset: 78, draggable: true })
-    const bar = screen.getByTestId('merge-topbar')
-    expect(getComputedStyle(bar).paddingLeft).toBe('90px')
-    const css = [...document.querySelectorAll('style')].map((tag) => tag.textContent).join('')
-    expect(css).toContain('-webkit-app-region:drag')
-  })
 })
 
 describe('the merge screen', () => {

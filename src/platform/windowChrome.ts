@@ -2,14 +2,16 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * How much of the top bar belongs to the window rather than to the app.
+ * What the window around us asks of the page.
  *
  * The desktop build hides the macOS title bar (`titleBarStyle: 'hiddenInset'`,
  * `electron/main/index.ts`) so the app starts at the top of the window instead
  * of under a strip of grey. Hiding it does not remove the two jobs it was
  * doing: the traffic lights still sit over our top-left corner, and there is no
- * longer anywhere to grab to move the window. Both become the top bar's
- * problem, and this is the rule that decides when.
+ * longer anywhere to grab to move the window. Both become the job of whatever
+ * bar stands at the top of the window, and this is the rule that decides when
+ * ({@link windowAreaFor}); the kit's `windowArea` is the one place a bar is
+ * told, through the root, so no surface carries the numbers itself.
  *
  * A decision, so it lives here. What the host is comes from the preload bridge
  * (`src/adapters/browser/hostWindow.ts`); what follows from it is arithmetic,
@@ -17,13 +19,6 @@
  */
 
 export type WindowChrome = {
-  /**
-   * Space to keep clear at the start of the top bar, in px, for window controls
-   * the host draws on top of it.
-   */
-  controlsInset: number
-  /** Whether the top bar must double as the handle that moves the window. */
-  draggable: boolean
   /**
    * How much of the top of the window a full-window page must leave to the
    * shell, in px: the height of the shell's own toolbar, which stays on
@@ -41,19 +36,7 @@ export type WindowChrome = {
 }
 
 /** A browser tab draws its own frame around us; there, the page owns every pixel. */
-export const NO_WINDOW_CHROME: WindowChrome = { controlsInset: 0, draggable: false }
-
-/**
- * What a page's own top bar must do about the window.
- *
- * Nothing, when the shell's toolbar stays above it: that bar already keeps
- * clear of the traffic lights and is the handle that moves the window, and a
- * second inset under it would be a strip of dead space. Only a page that
- * covers the window takes both jobs over.
- */
-export function barChromeFor(chrome: WindowChrome): WindowChrome {
-  return (chrome.topInset ?? 0) > 0 ? NO_WINDOW_CHROME : chrome
-}
+export const NO_WINDOW_CHROME: WindowChrome = {}
 
 /**
  * Where the traffic lights end.
@@ -64,13 +47,20 @@ export function barChromeFor(chrome: WindowChrome): WindowChrome {
  */
 const MAC_TRAFFIC_LIGHTS = 78
 
-/**
- * Windows and Linux keep a real title bar, which moves the window itself and
- * covers nothing of ours: only macOS hands us both jobs. Back and Forward are
- * the bar's on every desktop, because no desktop window has a browser's.
- */
+/** Back and Forward are the bar's on every desktop, because no desktop window has a browser's. */
 export function windowChromeFor(host: { desktop: boolean; platform?: string }): WindowChrome {
-  if (!host.desktop) return NO_WINDOW_CHROME
-  if (host.platform !== 'darwin') return { ...NO_WINDOW_CHROME, backForward: true }
-  return { controlsInset: MAC_TRAFFIC_LIGHTS, draggable: true, backForward: true }
+  return host.desktop ? { backForward: true } : NO_WINDOW_CHROME
+}
+
+/**
+ * What the bar at the top of the window must do about it: keep `controls` px
+ * clear for the window's own buttons, and be what the window is dragged by.
+ *
+ * Only macOS hands us both jobs: Windows and Linux keep a real title bar, which
+ * moves the window itself and covers nothing of ours. In full screen the
+ * traffic lights are gone and the window cannot be moved, so neither is asked.
+ */
+export function windowAreaFor(host: { desktop: boolean; platform?: string; fullScreen?: boolean }): { controls: number; drag: boolean } {
+  if (!host.desktop || host.platform !== 'darwin' || host.fullScreen) return { controls: 0, drag: false }
+  return { controls: MAC_TRAFFIC_LIGHTS, drag: true }
 }

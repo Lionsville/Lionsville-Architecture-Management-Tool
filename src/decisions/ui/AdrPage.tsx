@@ -33,7 +33,6 @@ import type { Adr, AdrGateItem, AdrPatch, AdrStatus } from '../adr'
 import { ABOUT_THE_SCOPE, aboutOf, aboutOptions, STANDING_LABEL, STANDINGS, standingOf } from '../adrList'
 import type { AboutGroup } from '../adrList'
 import type { HostModel } from '../../model/hostModel'
-import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
 import { Button } from '../../widgets/kit/Button'
@@ -466,7 +465,6 @@ export function AdrPage(props: AdrPageProps) {
             renderMarkdown={props.renderMarkdown}
             {...(props.onAddImage ? { onAddImage: props.onAddImage } : {})}
             {...(props.images ? { images: props.images } : {})}
-            windowChrome={props.windowChrome ?? NO_WINDOW_CHROME}
             onSave={(patch) => { changes.update(written, patch); setWriting(undefined) }}
             onCancel={() => setWriting(undefined)}
           />

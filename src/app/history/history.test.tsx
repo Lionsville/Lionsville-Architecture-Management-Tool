@@ -27,6 +27,7 @@ import type { HostModel } from '../../model/hostModel'
 import type { HostCommand } from '../../platform/hostCommands'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { renderApp } from '../testing/renderShell'
+import { WINDOW_BAR } from '../../widgets/kit/windowArea'
 
 vi.mock('../../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../editor')>()
@@ -300,11 +301,11 @@ describe('reading one back', () => {
     renderApp({
       repositories: kept().repositories,
       boot: { initialProject: project() },
-      host: { windowChrome: { draggable: true, controlsInset: 78 } },
     })
     await openIt()
-    await screen.findByRole('heading', { name: 'History' })
-    expect(screen.getByTestId('shell-toolbar').getAttribute('style')).toContain('86px')
+    const heading = await screen.findByRole('heading', { name: 'History' })
+    expect(screen.getByTestId('shell-toolbar').classList.contains(WINDOW_BAR)).toBe(true)
+    expect(heading.closest(`.${WINDOW_BAR}`)).toBeNull()
   })
 })
 

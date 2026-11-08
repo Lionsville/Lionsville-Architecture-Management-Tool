@@ -19,7 +19,8 @@ and behaves is said here, once.
 | `Tooltip.tsx` | **Tooltip**: describes a control and does not rename it |
 | `Dialog.tsx` | **Dialog** in S, M, L; `DialogChoices`, `DialogFacts`, `DialogDanger` |
 | `Progress.tsx` | **Progress**: how far a long piece of work has got, by a number; the browser's own bar, so it is said as one |
-| `FocusedWindow.tsx` | the dialog family's full-window member: window chrome, Cancel that asks, Save; the writing takes the width and height the column of facts leaves, each scrolls on its own, and the facts fold under it on a narrow window (`useInFocusedWindow` for a field that grows) |
+| `windowArea.ts` | the window's corner, the one seam with the host: `WINDOW_BAR` on a top bar that stands at the top of the window (clear of the macOS traffic lights, the window's drag handle, its controls presses; nothing in full screen, on Windows, Linux or in a tab), `WINDOW_COVER` on a surface of ours fixed over the whole window, and `showWindowArea`, what the host says on the root. Dialogs, menus and poppers are never drag regions. `build/windowArea.test.ts` holds every full-window surface to it |
+| `FocusedWindow.tsx` | the dialog family's full-window member: the window's bar, Cancel that asks, Save; the writing takes the width and height the column of facts leaves, each scrolls on its own, and the facts fold under it on a narrow window (`useInFocusedWindow` for a field that grows) |
 | `Toast.tsx` | **Toast**: one, six seconds, Undo or Put back; goes when any dialog opens |
 | `Field.tsx` | **Field** with the label above (`TextField`, `SelectField`, `TextInput`, `TextArea`, `Select`) and **PropertyRow** in `PropertyRows`: 24 px, press to edit, one at a time, a date as a kind of edit, `help` said while edited (`onHelp`), `startOpen` for a row just asked for |
 | | `GrowingTextArea`, a box as tall as its text with no scroll of its own, and `TitleField` and `TitleRead`, a record's title written and read in one place and size, for a form that reads as a page |
@@ -110,8 +111,8 @@ the views are the page's own rows. Nothing below it draws a bar of its own.
 **A page is a `PageDialog`.** Keep `open` and `onClose`. In the frame it is a place
 in the main column (`role="region"`, `[data-place-page]`), under the rows and over
 the view, and with no frame above it, as in the page's own test, it is the dialog
-it was. Do not pass `windowChrome` duties: row one keeps clear of the window's
-controls and is what it is dragged by. `PageClose` and `PageBack` draw nothing in
+it was. It wears no window bar: row one keeps clear of the window's controls and is
+what it is dragged by. `PageClose` and `PageBack` draw nothing in
 the frame, except *back to reading* while a page is being written, since a page is
 left by Esc, *Home*, a view's tab or Back. Do not add a ×.
 

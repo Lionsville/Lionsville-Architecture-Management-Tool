@@ -22,7 +22,7 @@
  */
 import { contextBridge, ipcRenderer } from 'electron'
 import type {
-  DesktopAgent, DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory, DesktopSettings,
+  DesktopAgent, DesktopChange, DesktopCommands, DesktopFiles, DesktopHistory, DesktopSettings, DesktopWindow,
 } from '../../src/adapters/desktop/channel'
 import type { AgentRequest } from '../../src/agent/tools'
 import type { AgentServerStatus } from '../../src/platform/agentServer'
@@ -44,6 +44,8 @@ export type DesktopBridge = {
   readonly settings: DesktopSettings
   /** An agent's tool calls, relayed from the MCP server in main. See `DesktopAgent`. */
   readonly agent: DesktopAgent
+  /** Whether the window is in full screen, and when that changes. See `DesktopWindow`. */
+  readonly window: DesktopWindow
   /**
    * The one door that is not a channel of ours: a call to whatever a build
    * composed from this one registered in main (`platform/desktopHook.ts`).
@@ -140,6 +142,15 @@ const settings: DesktopSettings = {
   writeFolderStamps: (root, stamps) => ipcRenderer.invoke('settings:writeFolderStamps', root, stamps),
 }
 
+const windowFacts: DesktopWindow = {
+  isFullScreen: () => ipcRenderer.invoke('window:isFullScreen'),
+  onFullScreen(listener) {
+    const relay = (_event: unknown, full: boolean) => listener(full === true)
+    ipcRenderer.on('window:fullScreen', relay)
+    return () => { ipcRenderer.off('window:fullScreen', relay) }
+  },
+}
+
 const agent: DesktopAgent = {
   onRequest(listener) {
     const relay = (_event: unknown, request: AgentRequest) => listener(request)
@@ -187,6 +198,7 @@ const bridge: DesktopBridge = {
   history,
   settings,
   agent,
+  window: windowFacts,
   invokeHook,
 }
 

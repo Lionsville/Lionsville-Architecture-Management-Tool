@@ -76,7 +76,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const onWork = parts.props.provider?.onWork
   useEffect(() => onWork?.(() => askAgain((count) => count + 1)), [onWork])
   const facts = state.screen
-  const { services: { s }, agent, windowChrome } = parts
+  const { services: { s }, agent } = parts
   const go = agent.openSomewhere
   const at: ScopePath = facts?.path ?? parts.nav.project?.path ?? parts.nav.home
   const screen = agent.screen ?? agent.screenNow()
@@ -144,8 +144,6 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
       <PlaceReadingContext.Provider value={reading}>
         <Frame
           pageUp={pageUp}
-          controlsInset={windowChrome.controlsInset}
-          draggable={windowChrome.draggable}
           rowOne={<RowOne parts={parts} state={state} at={at} />}
           rowTwoStart={<RowTwoStart parts={parts} facts={facts} at={at} pageUp={pageUp} />}
           rowTwoEnd={<RowTwoEnd parts={parts} at={at} page={page} />}

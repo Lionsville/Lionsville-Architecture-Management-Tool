@@ -9,15 +9,39 @@
  * which is the whole test. Reading a global is why this sits in an adapter —
  * the rule that follows from the answer lives in `core/windowChrome.ts`.
  */
-import { windowChromeFor } from '../../platform/windowChrome'
+import { windowAreaFor, windowChromeFor } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { windowTitleFor } from '../../platform/windowTitle'
+import type { DesktopWindow } from '../desktop/channel'
 
-type DesktopHost = { platform?: string }
+type DesktopHost = { platform?: string; window?: DesktopWindow }
+
+function desktopHost(): DesktopHost | undefined {
+  return (window as unknown as { desktop?: DesktopHost }).desktop
+}
 
 export function hostWindowChrome(): WindowChrome {
-  const desktop = (window as unknown as { desktop?: DesktopHost }).desktop
-  return windowChromeFor({ desktop: Boolean(desktop), platform: desktop?.platform })
+  return windowChromeFor({ desktop: Boolean(desktopHost()) })
+}
+
+/** What the window asks of the bar at its top, and the root it is said on. */
+export type ShowWindowArea = (root: HTMLElement, area: { controls: number; drag: boolean }) => void
+
+/**
+ * Say what the window asks of the page's top bar now, and again whenever it
+ * goes into full screen or comes out (`platform/windowChrome.ts`'s
+ * `windowAreaFor`). A browser tab is said once, as asking nothing.
+ */
+export function watchWindowArea(show: ShowWindowArea): () => void {
+  const desktop = desktopHost()
+  const root = document.documentElement
+  const say = (fullScreen: boolean) => show(root, windowAreaFor({ desktop: Boolean(desktop), platform: desktop?.platform, fullScreen }))
+  say(false)
+  const facts = desktop?.window
+  if (!facts) return () => undefined
+  // A page loaded into a window already in full screen; nothing to say if main cannot tell.
+  facts.isFullScreen().then(say, () => undefined)
+  return facts.onFullScreen(say)
 }
 
 /**

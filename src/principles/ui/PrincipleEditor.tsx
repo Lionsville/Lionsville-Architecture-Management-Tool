@@ -11,8 +11,6 @@
 import { useState } from 'react'
 import type { Translate } from '../../i18n'
 import { useStrings } from '../../i18n/LanguageContext'
-import { barChromeFor } from '../../platform/windowChrome'
-import type { WindowChrome } from '../../platform/windowChrome'
 import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import { formatPrincipleNumber, PRINCIPLE_REGIMES, PRINCIPLE_STATUSES } from '../../model/principle'
@@ -33,7 +31,7 @@ let made = 0
 /** A principle's words read as the reader will read them. */
 const preview = (text: string) => renderMarkdown(text)
 
-export function PrincipleEditor({ open, scope, principle, title, onClose, windowChrome }: {
+export function PrincipleEditor({ open, scope, principle, title, onClose }: {
   open: boolean
   scope: string
   principle?: Principle
@@ -41,7 +39,6 @@ export function PrincipleEditor({ open, scope, principle, title, onClose, window
   title?: string
   /** Closed: with the id of the principle made or changed, or nothing on cancel. */
   onClose: (id?: string) => void
-  windowChrome: WindowChrome
 }) {
   const access = usePrinciples()
   const { t } = useStrings()
@@ -61,7 +58,7 @@ export function PrincipleEditor({ open, scope, principle, title, onClose, window
   return (
     <>
       <FocusedWindow
-        open={open} windowChrome={barChromeFor(windowChrome)}
+        open={open}
         title={principle ? t('principles.editWord') : t('principles.newTitle')}
         {...(principle ? { number: formatPrincipleNumber(principle.number) } : {})}
         changed={JSON.stringify(draft) !== start}

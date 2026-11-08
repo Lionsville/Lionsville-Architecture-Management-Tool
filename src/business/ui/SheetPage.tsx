@@ -98,6 +98,7 @@ import type { ExportLayout } from './SheetExportDialog'
 import type { SheetSettingsDialog as SheetSettingsDialogShape } from './SheetSettingsDialog'
 import { lensWord, lookOf, valueWord } from './sheetLook'
 import { useRail } from './useRail'
+import { WINDOW_COVER } from '../../widgets/kit/windowArea'
 import './Sheet.css'
 
 export type { SheetClaims } from './SheetAuthor'
@@ -620,7 +621,7 @@ function AreaOf({ area, at, context, picture, position, span, domains, owner, co
   )
 }
 
-function SheetTopBar({ at, props, onLevel, onPosterExport }: { at: ReturnType<typeof usePage>; props: SheetPageProps; onLevel(level: 'poster' | 'names'): void; onPosterExport(): void }) {
+function SheetTopBar({ at, props, onLevel, onPosterExport, full }: { at: ReturnType<typeof usePage>; props: SheetPageProps; onLevel(level: 'poster' | 'names'): void; onPosterExport(): void; full: boolean }) {
   const { t } = useStrings()
   const { sheet } = props
   const { lensed, reading, changeReading, selection, laidOut, picture, finder, day, readOnly } = at
@@ -660,7 +661,7 @@ function SheetTopBar({ at, props, onLevel, onPosterExport }: { at: ReturnType<ty
           ...(laidOut?.journey && !onPosterTab ? { journey: { shown: selection.journeyOpen, onShown: selection.setJourneyOpen } } : {}),
           ...(sheet.showActors !== false && !onPosterTab ? { stakeholders: { shown: selection.railOpen, onShown: selection.setRailOpen } } : {}),
         } : {})}
-        finding={finder.finding} onFind={finder.toggle} more={more}
+        finding={finder.finding} onFind={finder.toggle} more={more} windowBar={full}
       />
       {settingsOpen && sheet && <SheetSettingsDialog model={props.model} sheet={sheet} actions={props.actions} onClose={() => setSettingsOpen(false)} />}
       {exportOpen && sheet && (
@@ -802,8 +803,8 @@ export function SheetPage(props: SheetPageProps) {
   const Frame = props.inline ? InlineFrame : PageDialog
   return (
     <Frame open={props.open} topInset={(props.windowChrome ?? NO_WINDOW_CHROME).topInset} onClose={props.onClose} aria-label={t('sheet.page')}>
-      <div className="sheet-full" data-full={full ? '' : undefined} onKeyDown={full ? (event) => { if (event.key === 'Escape' && selectedId === undefined) setFull(false) } : undefined}>
-      <SheetTopBar at={at} props={props} onLevel={at.chooseTab} onPosterExport={() => setPosterExport(true)} />
+      <div className={full ? `sheet-full ${WINDOW_COVER}` : 'sheet-full'} data-full={full ? '' : undefined} onKeyDown={full ? (event) => { if (event.key === 'Escape' && selectedId === undefined) setFull(false) } : undefined}>
+      <SheetTopBar at={at} props={props} onLevel={at.chooseTab} onPosterExport={() => setPosterExport(true)} full={full} />
       {at.looking && reading.day !== undefined && <SheetLook day={reading.day} at={at} props={props} />}
       {finder.finding && <FindBar query={finder.query} hits={finder.hits} at={finder.at} onQuery={finder.onQuery} onWalk={finder.walk} onClose={finder.close} t={t} />}
 

@@ -53,7 +53,7 @@ import {
   composeShell, desktopCommandChannel, EXAMPLE_OFFERS, INTERCHANGE, openSource, overSource, registeredChrome, registeredConnects,
   registeredMenus, reloadWhenScriptsAreGone, sourceAgentPanel, sourceBarButton, sourceChip, sourcePages, sourceChipFace, sourceChipPanel,
   sourceConnected, sourceDescription, sourceDestination, sourceFrameOf, sourcePreferencesPanel, sourceYourWork, sourceProblemAction, sourceRecentActivity,
-  sourceSayings, withDesktopDrawing,
+  sourceSayings, watchHostWindow, withDesktopDrawing,
 } from './composition'
 import type { RegisteredConnect } from './composition'
 import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
@@ -120,6 +120,9 @@ configureElkWorker(() => new ElkWorker())
  */
 let counter = 0
 const makeId = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${++counter}`
+
+// The window's corner, said before anything is drawn under it.
+watchHostWindow()
 
 const container = document.getElementById('root')!
 const root = createRoot(container)

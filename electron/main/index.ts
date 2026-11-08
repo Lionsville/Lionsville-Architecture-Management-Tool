@@ -259,6 +259,10 @@ function createWindow(): BrowserWindow {
   window.webContents.on('will-frame-navigate', (event) => {
     if (frameNavigationCancelled(event.url, event.isMainFrame, event.frame?.parent?.url)) event.preventDefault()
   })
+  // In full screen the traffic lights go, and the room the page's top bar kept
+  // for them with them (`platform/windowChrome.ts`).
+  window.on('enter-full-screen', () => window.webContents.send('window:fullScreen', true))
+  window.on('leave-full-screen', () => window.webContents.send('window:fullScreen', false))
   // The trackpad's swipe between pages (ADR-0033), on macOS where the system
   // is set to swipe between pages: Back and Forward, as the Go menu sends
   // them. The mouse's own back and forward buttons reach the page itself.
@@ -495,6 +499,8 @@ void app.whenReady().then(() => {
   // And the app's language, so the question closing asks is asked in it.
   ipcMain.handle('app:language', (_event, held: unknown) => { language = held })
   ipcMain.handle('app:zoomWindow', (event, how: unknown) => { zoomWindow(event.sender, how) })
+  // Whether the window asking is in full screen, for a page that loads in one.
+  ipcMain.handle('window:isFullScreen', (event) => BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false)
   // And the third: whether a scope is open, so the items about one are enabled only while it is.
   ipcMain.handle('app:scopeOpen', (_event, held: unknown) => { reportScopeOpen(held === true) })
 

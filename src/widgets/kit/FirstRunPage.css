@@ -1,7 +1,5 @@
 .kit-firstrun { flex: 1 1 auto; min-height: 0; overflow-y: auto; background: var(--ground); color: var(--ink); font-size: var(--t-body); line-height: var(--lh-body); }
 .kit-firstrun__bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); min-height: var(--row-h-loose); padding: var(--s-1) var(--s-4); border-bottom: 1px solid var(--line); background: var(--surface); }
-.kit-firstrun__bar[data-drag] { -webkit-app-region: drag; padding-left: 80px; }
-.kit-firstrun__bar[data-drag] button, .kit-firstrun__bar[data-drag] select { -webkit-app-region: no-drag; }
 .kit-firstrun__brand { font-weight: var(--fw-strong); }
 .kit-firstrun__tools { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--s-2); }
 /* A field is as wide as its column elsewhere; in the bar a choice is as wide as its words, so the tools stay one row. */

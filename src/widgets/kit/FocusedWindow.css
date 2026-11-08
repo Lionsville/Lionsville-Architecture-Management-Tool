@@ -17,8 +17,6 @@
   border-bottom: 1px solid var(--line);
   background: var(--surface);
 }
-.kit-focused__bar[data-draggable] { -webkit-app-region: drag; }
-.kit-focused__bar[data-draggable] button { -webkit-app-region: no-drag; }
 .kit-focused__start { display: flex; align-items: center; gap: var(--s-3); min-width: 0; }
 .kit-focused__number { flex: none; color: var(--ink-3); font-family: var(--font-mono); font-size: var(--t-small); }
 .kit-focused__title { margin: 0; min-width: 0; overflow: hidden; font-size: var(--t-body); font-weight: var(--fw-strong); text-overflow: ellipsis; white-space: nowrap; }

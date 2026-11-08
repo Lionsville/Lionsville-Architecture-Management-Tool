@@ -22,8 +22,6 @@ import type { TextSize } from '../../platform/textSize'
 import { LANGUAGES, LANGUAGE_NAME } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import type { SourceWayIn } from '../../platform/sourceProvider'
-import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
-import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
 import { Select } from '../../widgets/kit/Field'
 import { FirstRunPage, FirstRunWay } from '../../widgets/kit/FirstRunPage'
@@ -43,10 +41,9 @@ export type FirstRunProps = {
   textSize?: TextSize
   onTextSizeChange?: (next: TextSize) => void
   s: Translate
-  windowChrome?: WindowChrome
 }
 
-export function FirstRun({ waysIn, language, onLanguageChange, textSize, onTextSizeChange, s, windowChrome = NO_WINDOW_CHROME }: FirstRunProps) {
+export function FirstRun({ waysIn, language, onLanguageChange, textSize, onTextSizeChange, s }: FirstRunProps) {
   const asked = waysIn.find((way) => way.required)
   const others = waysIn.filter((way) => way !== asked)
   const recent = asked?.recent ?? []
@@ -55,7 +52,6 @@ export function FirstRun({ waysIn, language, onLanguageChange, textSize, onTextS
     <FirstRunPage
       brand={s('first.brand')}
       title={s('source.firstTitle')}
-      draggable={windowChrome.draggable}
       data-testid="first-run"
       {...(asked?.introKey ? { intro: said(asked.introKey) } : {})}
       {...(language && onLanguageChange ? {

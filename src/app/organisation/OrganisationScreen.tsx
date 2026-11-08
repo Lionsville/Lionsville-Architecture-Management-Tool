@@ -279,7 +279,7 @@ export function OrganisationScreen({
   /** What the settings page can take back, which the frame's undo offers while it is up. */
   const [settingsUndo, setSettingsUndo] = useState<SettingsUndo | undefined>(undefined)
   const searchDoor = useRef<() => void>(() => undefined)
-  const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, controlsInset: 0, draggable: false, topInset: 0 }), [windowChrome])
+  const pageChrome = useMemo<WindowChrome>(() => ({ ...windowChrome, topInset: 0 }), [windowChrome])
 
   /**
    * The scope whose home this is, out of the listing. The root is the listing

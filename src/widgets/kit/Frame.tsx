@@ -14,13 +14,14 @@
  * page or a view's tabs go is said to whoever asks through {@link PlaceHostContext}.
  */
 import { useMemo, useState } from 'react'
-import type { CSSProperties, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { SeamResizer } from '../SeamResizer'
 import { useSeamWidth } from '../useSeamWidth'
 import { PlaceHostContext } from './placeHost'
 import type { PlaceHost } from './placeHost'
 import { px, textScale } from './tokens'
+import { WINDOW_BAR } from './windowArea'
 import './Frame.css'
 
 /** Enough for a name and its number, and never so much that the page beside it is what gives way. */
@@ -41,10 +42,6 @@ export type FrameProps = {
   readonly panel?: ReactNode
   /** Is a page up over the view? */
   readonly pageUp: boolean
-  /** Space the window keeps at the start of row one, for its own controls, in px. */
-  readonly controlsInset?: number
-  /** Row one is the surface the window is dragged by. */
-  readonly draggable?: boolean
   readonly children: ReactNode
 }
 
@@ -62,19 +59,16 @@ function DockedTree({ children }: { readonly children: ReactNode }) {
   )
 }
 
-export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageUp, controlsInset = 0, draggable = false, accented = false, panelName, children }: FrameProps) {
+export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageUp, accented = false, panelName, children }: FrameProps) {
   const [page, setPage] = useState<HTMLElement | null>(null)
   const [views, setViews] = useState<HTMLElement | null>(null)
   const host = useMemo<PlaceHost>(() => ({ page, views, pageUp }), [page, views, pageUp])
-  const barStyle = {
-    ...(controlsInset > 0 ? { paddingInlineStart: `${8 + controlsInset}px` } : {}),
-    ...(draggable ? { WebkitAppRegion: 'drag' } : {}),
-  } as CSSProperties
   return (
     <PlaceHostContext.Provider value={host}>
       <div className="kit-frame" data-testid="frame" data-panel={panelName}>
         {accented && <div className="kit-frame__accent" data-testid="frame-accent" />}
-        <div className="kit-frame__row kit-frame__row--one" data-testid="shell-toolbar" data-draggable={draggable || undefined} style={barStyle}>{rowOne}</div>
+        {/* Row one stands at the top of the window: it keeps clear of the window's own controls and moves it (`windowArea`). */}
+        <div className={`kit-frame__row kit-frame__row--one ${WINDOW_BAR}`} data-testid="shell-toolbar">{rowOne}</div>
         <nav className="kit-frame__row kit-frame__row--two" data-testid="frame-places">
           {rowTwoStart}
           <div className="kit-frame__views" ref={setViews} data-testid="frame-views" />

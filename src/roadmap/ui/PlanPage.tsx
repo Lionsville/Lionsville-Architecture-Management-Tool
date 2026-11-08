@@ -365,7 +365,7 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
         onSection={goTo}
         sections={[...movesSections(on), documentSection(on), ...aroundSections(on)]}
       />
-      {writing && <WritePlan plan={plan} model={model} chrome={props.windowChrome ?? NO_WINDOW_CHROME} {...writeProps(props)} onDone={() => setWriting(false)} onSave={(text) => set({ body: text })} />}
+      {writing && <WritePlan plan={plan} model={model} {...writeProps(props)} onDone={() => setWriting(false)} onSave={(text) => set({ body: text })} />}
       {moving && <PlanMoveDialog plan={plan} model={model} onClose={() => setMoving(false)} onMove={(days) => { actions.shiftTransition(plan.id, days); setMoving(false) }} />}
       <Dialog
         open={deleting} title={t('roadmap.deleteConfirm', { name: plan.title })} onClose={() => setDeleting(false)}
@@ -396,10 +396,9 @@ function PlanBody({ plan, model, onOpenElement, renderMarkdown }: { plan: Transi
 }
 
 /** *Edit text*: the body in the one editor, with nothing else on screen. Saved as one step; Cancel asks if anything changed. */
-function WritePlan({ plan, model, chrome, renderMarkdown, onAddImage, images, onSave, onDone }: {
+function WritePlan({ plan, model, renderMarkdown, onAddImage, images, onSave, onDone }: {
   plan: Transition
   model: DesignModel
-  chrome: WindowChrome
   renderMarkdown?: RenderMarkdown
   onAddImage?(file: File): Promise<string | undefined>
   images?: DocumentImages
@@ -410,7 +409,7 @@ function WritePlan({ plan, model, chrome, renderMarkdown, onAddImage, images, on
   const [draft, setDraft] = useState(plan.body)
   return (
     <FocusedWindow
-      open title={t('plan.editing')} number={transitionLabel(plan)} windowChrome={chrome}
+      open title={t('plan.editing')} number={transitionLabel(plan)}
       changed={draft !== plan.body} saveLabel={t('plan.saveText')} onCancel={onDone}
       onSave={() => { if (draft !== plan.body) onSave(draft); onDone() }}
     >

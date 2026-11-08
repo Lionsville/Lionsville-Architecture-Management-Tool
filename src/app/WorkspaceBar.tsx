@@ -32,7 +32,7 @@ import type { WorkspaceParts } from './workspaceParts'
  */
 export function usePageChrome(windowChrome: WindowChrome | undefined) {
   const pageChrome = useMemo<WindowChrome>(
-    () => ({ ...(windowChrome ?? NO_WINDOW_CHROME), controlsInset: 0, draggable: false, topInset: 0 }),
+    () => ({ ...(windowChrome ?? NO_WINDOW_CHROME), topInset: 0 }),
     [windowChrome],
   )
   return { pageChrome, windowChrome: windowChrome ?? NO_WINDOW_CHROME }
