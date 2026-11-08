@@ -19,6 +19,11 @@
 }
 .kit-viewbar__end { flex: none; }
 .kit-viewbar__item { display: inline-flex; }
+/* A phone's width: what stands at the bar's end (find, export, ⋯) takes a line of its own under the menus when they do not share one, rather than lying over them. */
+@container kit-frame (max-width: 37.5rem) {
+  .kit-viewbar { flex-wrap: wrap; row-gap: 0; }
+  .kit-viewbar__end { flex: 1 1 auto; max-width: 100%; justify-content: flex-end; }
+}
 .kit-viewbar__labelled { display: inline-flex; align-items: center; gap: var(--s-2); color: var(--ink-3); font-size: var(--t-small); margin-inline-end: var(--s-2); }
 .kit-viewbar__item[data-on] .kit-button { color: var(--accent); font-weight: var(--fw-strong); }
 

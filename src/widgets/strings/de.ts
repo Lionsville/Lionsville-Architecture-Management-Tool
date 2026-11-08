@@ -130,6 +130,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.dock.grid': 'Raster',
   'kit.dock.map': 'Minikarte',
   'kit.dock.mapHint': 'Eine kleine Karte der ganzen Fläche',
+  'kit.dock.more': 'Raster und Minikarte',
   'kit.colour': 'Farbe',
   'kit.colour.on': 'Farbe: {question}',
   'kit.colour.none': 'Keine',

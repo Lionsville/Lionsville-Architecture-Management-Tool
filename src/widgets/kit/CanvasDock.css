@@ -21,3 +21,11 @@
 .kit-dock .kit-button[data-limit] { color: var(--ink-3); }
 
 .kit-dock__note { max-width: 260px; margin-inline: var(--s-1); color: var(--ink-2); font-size: var(--t-small); line-height: var(--lh-tight); }
+
+.kit-dock__wide { display: contents; }
+.kit-dock__narrow { display: none; }
+/* A phone's width: Grid and Map in the dock's own ⋯, and the dock no wider than − n% + Fit 100% ⋯. */
+@container kit-frame (max-width: 37.5rem) {
+  .kit-dock__wide { display: none; }
+  .kit-dock__narrow { display: inline-flex; }
+}

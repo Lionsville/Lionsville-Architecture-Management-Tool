@@ -10,13 +10,16 @@
  * At the floor and the ceiling − and + stay where they are, the focus on them, and
  * say that the zoom stops here: a button that turned dead would drop the focus.
  *
+ * At a phone's width Grid and Map fold into a ⋯ of the dock's own, so the dock
+ * keeps clear of what stands at the canvas's other foot corner (a board's Key).
+ *
  * It places nothing itself but the corner it asks for: a canvas that owns its
  * panels, as React Flow does, puts it where `corner={false}` lets it be.
  */
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Button } from './Button'
-import { MenuButton } from './Menu'
+import { MenuButton, MoreMenu } from './Menu'
 import type { MenuEntry } from './Menu'
 import { Tooltip } from './Tooltip'
 import { ZOOM_CEILING, ZOOM_FLOOR } from './zoom'
@@ -77,11 +80,28 @@ export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gri
         <Button variant="quiet" size="small" onClick={onHome} data-testid="zoom-home">{t('kit.dock.home')}</Button>
       </Tooltip>
       {(grid || gridItems || map) && <span className="kit-dock__rule" />}
-      {gridItems && <MenuButton variant="quiet" size="small" label={t('kit.dock.grid')} items={gridItems} />}
-      {grid && !gridItems && toggle(t('kit.dock.grid'), grid)}
-      {map && toggle(t('kit.dock.map'), map, t('kit.dock.mapHint'))}
+      {(grid || gridItems || map) && (
+        <span className="kit-dock__wide">
+          {gridItems && <MenuButton variant="quiet" size="small" label={t('kit.dock.grid')} items={gridItems} />}
+          {grid && !gridItems && toggle(t('kit.dock.grid'), grid)}
+          {map && toggle(t('kit.dock.map'), map, t('kit.dock.mapHint'))}
+        </span>
+      )}
+      {(grid || gridItems || map) && (
+        <span className="kit-dock__narrow">
+          <MoreMenu size="small" label={t('kit.dock.more')} items={folded(t('kit.dock.grid'), t('kit.dock.map'), grid, gridItems, map)} />
+        </span>
+      )}
       {extra && <><span className="kit-dock__rule" />{extra}</>}
       {note && <span className="kit-dock__note" role="note">{note}</span>}
     </div>
   )
+}
+
+/** Grid's entries and Map's, as one menu's: what the dock folds at a phone's width. */
+function folded(gridWord: string, mapWord: string, grid: Toggle | undefined, gridItems: readonly MenuEntry[] | undefined, map: Toggle | undefined): MenuEntry[] {
+  return [
+    ...(gridItems ?? (grid ? [{ label: gridWord, checked: grid.on, onSelect: grid.onToggle }] : [])),
+    ...(map ? [{ label: mapWord, checked: map.on, onSelect: map.onToggle }] : []),
+  ]
 }

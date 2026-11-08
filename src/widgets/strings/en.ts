@@ -129,6 +129,7 @@ export const EN = {
   'kit.dock.grid': 'Grid',
   'kit.dock.map': 'Minimap',
   'kit.dock.mapHint': 'A small map of the whole canvas',
+  'kit.dock.more': 'Grid and minimap',
   'kit.colour': 'Colour',
   'kit.colour.on': 'Colour: {question}',
   'kit.colour.none': 'None',
