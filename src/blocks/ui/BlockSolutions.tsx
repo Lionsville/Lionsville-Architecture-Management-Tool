@@ -10,8 +10,7 @@
  * elements are it; its status and elements are changed in the row.
  */
 import { useState } from 'react'
-import Autocomplete from '@mui/material/Autocomplete'
-import { FieldBox } from '../../widgets/kit/FieldBox'
+import { AutocompleteBox, FieldBox } from '../../widgets/kit/FieldBox'
 import type { StringKey } from '../../i18n'
 import { useStrings } from '../../i18n/LanguageContext'
 import { SOLUTION_SORTS, SOLUTION_STATUSES } from '../../model/buildingBlock'
@@ -112,7 +111,7 @@ function ElementsDialog({ row, sbb, onClose }: { row: BlockRow; sbb: SolutionBlo
         outcome: { onClick: save, 'data-testid': 'sbb-elements-save', label: t('blocks.save') },
       }}
     >
-      <Autocomplete
+      <AutocompleteBox
         multiple options={choices} value={value} onChange={(_event, next) => setValue(next)}
         getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.id === b.id}
         renderInput={(params) => <FieldBox {...params} autoFocus label={t('blocks.isElement')} helperText={t('blocks.isElementHelp')} />}
@@ -149,7 +148,7 @@ export function SolutionDialog({ row, onClose }: { row: BlockRow; onClose: (made
       <TextField autoFocus label={t('blocks.name')} value={name} onChange={setName} data-testid="sbb-name" />
       <TextField label={t('blocks.supplier')} value={supplier} onChange={setSupplier} />
       <SelectField label={t('blocks.sort')} value={sort} onChange={(next) => setSort(next as SolutionSort)} options={SOLUTION_SORTS.map((one) => ({ value: one, label: t(SORT_WORD[one]) }))} />
-      <Autocomplete
+      <AutocompleteBox
         multiple options={access.elementChoices() as { id: string; name: string }[]} value={elements} onChange={(_event, next) => setElements(next)}
         getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.id === b.id}
         renderInput={(params) => <FieldBox {...params} label={t('blocks.isElement')} helperText={t('blocks.isElementHelp')} />}

@@ -7,8 +7,7 @@
  * the first download; a topic's own fields are in `TopicEditDialog`.
  */
 import { useState } from 'react'
-import Autocomplete from '@mui/material/Autocomplete'
-import { FieldBox } from '../../widgets/kit/FieldBox'
+import { AutocompleteBox, FieldBox } from '../../widgets/kit/FieldBox'
 import { useStrings } from '../../i18n/LanguageContext'
 import { isWithinScope } from '../../projects/scopePath'
 import { Dialog } from '../../widgets/kit/Dialog'
@@ -49,7 +48,7 @@ export function NewTopicDialog({ access, parent, name: named = '', relevantTo = 
       <p>{t('topics.newIntro')}</p>
       <TextField autoFocus label={t('topics.name')} value={name} onChange={setName} data-testid="topic-name" />
       <SelectField label={t('topics.under')} value={under} onChange={setUnder} options={underChoices(access, t('topics.underNone'))} />
-      <Autocomplete
+      <AutocompleteBox
         multiple options={access.scopeChoices() as ScopeChoice[]} value={places} onChange={(_event, next) => setPlaces(next)}
         getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.path === b.path} renderOption={renderScopeOption}
         renderInput={(params) => <FieldBox {...params} label={t('topics.relevantTo')} />}

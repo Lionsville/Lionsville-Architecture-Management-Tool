@@ -7,8 +7,7 @@
  * aspects as a plain numbered list, each with its nature and what would show
  * it holds.
  */
-import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
-import { FieldBox } from '../../widgets/kit/FieldBox'
+import { AutocompleteBox, FieldBox, createFilterOptions } from '../../widgets/kit/FieldBox'
 import type { Translate } from '../../i18n'
 import { CloseIcon } from '../../widgets/icons'
 import { Button, IconButton } from '../../widgets/kit/Button'
@@ -46,7 +45,7 @@ export function GroupPicker({ groups, picked, made, onChange, t }: {
     onChange([...new Set(ids)], [...new Set(names)])
   }
   return (
-    <Autocomplete<GroupOption, true, false, true>
+    <AutocompleteBox<GroupOption, true, false, true>
       multiple freeSolo
       options={groups.map((one) => ({ id: one.id, name: one.name }))}
       value={value}

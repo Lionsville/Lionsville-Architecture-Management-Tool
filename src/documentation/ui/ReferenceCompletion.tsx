@@ -13,13 +13,12 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, RefObject } from 'react'
-import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import ListItemButton from '@mui/material/ListItemButton'
 import Divider from '@mui/material/Divider'
 import { SurfacePopper as Popper } from '../../widgets/kit/Surface'
 import Paper from '@mui/material/Paper'
-import { FieldBox } from '../../widgets/kit/FieldBox'
+import { AutocompleteBox, FieldBox } from '../../widgets/kit/FieldBox'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
@@ -249,7 +248,7 @@ function PickDialog({ kind, options, onClose, onPick }: { kind: ReferableKind; o
         outcome: { type: 'submit', reason: value ? undefined : t(KIND_WORD[kind]), label: t('doc.insertPicture') },
       }}
     >
-      <Autocomplete
+      <AutocompleteBox
         options={options as Referable[]} value={value} onChange={(_event, next) => setValue(next)} openOnFocus
         getOptionLabel={(one) => one.label}
         renderOption={(props, one) => (

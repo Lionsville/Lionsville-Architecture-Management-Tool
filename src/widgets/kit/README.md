@@ -30,7 +30,7 @@ and behaves is said here, once.
 | `Select.tsx` | **Select**: a short closed list drawn by the kit, a button and a list of choices under it, with a select's keys; never the browser's own (`build/nativeControls.test.ts`) |
 | `DateInput.tsx` | **DateInput**: a day typed or chosen from the kit's calendar, `YYYY-MM-DD` or nothing; never the browser's own date field |
 | `Switch.tsx` | **Switch**: on or off with its words beside it, a checkbox drawn as a track |
-| `FieldBox.tsx` | **FieldBox**: MUI's text field with the kit's label above, for what only MUI's field does (an Autocomplete's input, a select of MUI items); the one place MUI's text field is imported |
+| `FieldBox.tsx` | **FieldBox**: MUI's text field with the kit's label above, for what only MUI's field does (an Autocomplete's input, a select of MUI items); **AutocompleteBox**: MUI's Autocomplete at the kit's 30 px with the kit's chevron, its `renderInput` a FieldBox; the one place MUI's text field and Autocomplete are imported (`build/nativeControls.test.ts`) |
 | `Picker.tsx` | **Picker**, in a panel or a form, `PickerAt` where a canvas landed and `PickerMany` for several in a row; `matching` is its search |
 | `Segmented.tsx` | **Segmented switch**: a radio group, a menu when it runs out of room below 1024 px |
 | `Mark.tsx` | **Mark**: the closed set of seventeen, `MARK_KINDS` |

@@ -9,13 +9,12 @@
  */
 import { useMemo, useState } from 'react'
 import Alert from '@mui/material/Alert'
-import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
-import { FieldBox } from '../../widgets/kit/FieldBox'
+import { AutocompleteBox, FieldBox } from '../../widgets/kit/FieldBox'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
@@ -73,7 +72,7 @@ export function CiteDialog({ open, about, here, initial, deviating = false, onCl
     <FieldsDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{t(deviating ? 'principles.deviateTitle' : 'principles.citeTitle')}</DialogTitle>
       <DialogContent sx={{ display: 'grid', gap: 2, pt: '8px !important' }}>
-        <Autocomplete
+        <AutocompleteBox
           options={options}
           value={picked}
           onChange={(_event, next) => { setPicked(next); setAspect(''); setSaid(undefined) }}

@@ -8,12 +8,19 @@
  * MUI items — takes this, so a form reads the same whether a field in it is the
  * kit's own `TextField` or this. Every prop is MUI's; `sx` places the whole, the
  * label with it.
+ *
+ * `AutocompleteBox` is MUI's Autocomplete for such a box: the kit's size and the
+ * kit's chevron where MUI draws its filled ▼, so its `renderInput` hands its
+ * params to `FieldBox` and the field reads as every other one in the form.
  */
 import { useId } from 'react'
-import type { ReactNode } from 'react'
+import type { ElementType, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import MuiTextField from '@mui/material/TextField'
 import type { TextFieldProps } from '@mui/material/TextField'
+import MuiAutocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
+import type { AutocompleteProps } from '@mui/material/Autocomplete'
+import type { ChipTypeMap } from '@mui/material/Chip'
 import { CaretIcon } from '../icons'
 import './FieldBox.css'
 
@@ -51,3 +58,26 @@ export function FieldBox({ label, id: given, sx, fullWidth, slotProps, trailing,
     </Box>
   )
 }
+
+/**
+ * MUI's Autocomplete at the kit's size, with the kit's chevron. Every prop is
+ * MUI's; `renderInput` gives its params to `FieldBox`.
+ */
+export function AutocompleteBox<
+  Value,
+  Multiple extends boolean | undefined = false,
+  DisableClearable extends boolean | undefined = false,
+  FreeSolo extends boolean | undefined = false,
+  ChipComponent extends ElementType = ChipTypeMap['defaultComponent'],
+>({ className, ...rest }: AutocompleteProps<Value, Multiple, DisableClearable, FreeSolo, ChipComponent>) {
+  return (
+    <MuiAutocomplete<Value, Multiple, DisableClearable, FreeSolo, ChipComponent>
+      size="small"
+      popupIcon={<CaretIcon size={12} />}
+      {...rest}
+      className={`kit-autocomplete ${className ?? ''}`}
+    />
+  )
+}
+
+export { createFilterOptions }

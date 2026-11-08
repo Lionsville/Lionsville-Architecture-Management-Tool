@@ -20,10 +20,9 @@
  */
 import { useEffect, useId, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import { FieldBox } from './kit/FieldBox'
+import { AutocompleteBox, FieldBox } from './kit/FieldBox'
 import Typography from '@mui/material/Typography'
 
 /** One thing on offer. */
@@ -130,7 +129,7 @@ export function GroupedPicker({ options, field, nothing, onPick, onClose, testId
   const grouped = options.some((option) => option.group !== undefined)
   const id = useId()
   return (
-    <Autocomplete
+    <AutocompleteBox
       size="small" openOnFocus autoHighlight fullWidth
       options={options}
       value={value === undefined || value === null ? null : options.find((option) => option.id === value) ?? null}
