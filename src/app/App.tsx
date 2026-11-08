@@ -65,6 +65,7 @@ import { useAgentScopes } from './agentScopes'
 import { ToastBar } from './ToastBar'
 import { DraftQuestion } from '../widgets/kit/drafts'
 import { askToEdit } from '../widgets/kit/editOnArrival'
+import { warmLazyParts } from '../widgets/lazyPart'
 import type { ShellPreferences } from './useShellPreferences'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
@@ -513,6 +514,8 @@ export function App(given: AppProps) {
   const keeps = useViewerKeeps(prefs)
   const firstRun = firstRunUp(parts)
   const framed = !props.provider?.sourceNeeded && firstRun === 'no'
+  // The main pages' scripts once the first screen is drawn and the window is idle: their first open is drawn at once.
+  useEffect(() => warmLazyParts(), [])
   useHelpKeys({ send: parts.commands.bus.send, on: parts.commands.bus.on, framed, hostMenu: parts.hostMenu, place: () => (framed ? helpHere(parts) : FIRST_RUN_HELP) })
   return (
     /* The theme lives here and not at module level: it hangs off state (light /

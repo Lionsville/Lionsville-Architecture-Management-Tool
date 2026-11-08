@@ -55,7 +55,7 @@ const PlatformReportPage = lazyPart<ComponentProps<typeof PlatformReportShape>>(
  * the workspace has: its script arrives when it is first opened.
  */
 const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
-  () => import('../observations/ui/ObservationsPage').then((held) => held.ObservationsPage), { until: (props) => props.open, fallback: arrivingPage },
+  () => import('../observations/ui/ObservationsPage').then((held) => held.ObservationsPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
 )
 
 /**
@@ -71,13 +71,13 @@ const ObservationsPage = lazyPart<ComponentProps<typeof ObservationsPageShape>>(
  * *New plan* meanwhile, where the Enter that named the plan pressed it again.
  */
 const AdrPage = lazyPart<ComponentProps<typeof AdrPageShape>>(
-  () => import('../decisions/ui/AdrPage').then((held) => held.AdrPage), { until: (props) => props.open, fallback: arrivingPage },
+  () => import('../decisions/ui/AdrPage').then((held) => held.AdrPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
 )
 const PlanPage = lazyPart<ComponentProps<typeof PlanPageShape>>(
   () => import('../roadmap/ui/PlanPage').then((held) => held.PlanPage), { until: (props) => props.open, fallback: arrivingPage },
 )
 const RoadmapPage = lazyPart<ComponentProps<typeof RoadmapPageShape>>(
-  () => import('../roadmap/ui/RoadmapPage').then((held) => held.RoadmapPage), { until: (props) => props.open, brings: [PlanPage], fallback: arrivingPage },
+  () => import('../roadmap/ui/RoadmapPage').then((held) => held.RoadmapPage), { warm: true, until: (props) => props.open, brings: [PlanPage], fallback: arrivingPage },
 )
 const ReplaceDialog = lazyPart<ComponentProps<typeof ReplaceDialogShape>>(
   () => import('../roadmap/ui/ReplaceDialog').then((held) => held.ReplaceDialog),
@@ -90,7 +90,7 @@ const ReplaceDialog = lazyPart<ComponentProps<typeof ReplaceDialogShape>>(
  * is first opened.
  */
 const OperatingModelPage = lazyPart<ComponentProps<typeof OperatingModelPageShape>>(
-  () => import('../operating/ui/OperatingModelPage').then((held) => held.OperatingModelPage), { until: (props) => props.open, fallback: arrivingPage },
+  () => import('../operating/ui/OperatingModelPage').then((held) => held.OperatingModelPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
 )
 
 /**

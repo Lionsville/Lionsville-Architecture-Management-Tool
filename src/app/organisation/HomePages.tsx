@@ -40,11 +40,11 @@ import type { PeopleAccess } from './usePeopleRegister'
 import type { OrgPageRequest } from '../useShellAgent'
 
 const RegisterPage = lazyPart<ComponentProps<typeof RegisterPageShape>>(
-  () => import('./RegisterPage').then((held) => held.RegisterPage), { until: (props) => props.open, fallback: arrivingPage },
+  () => import('./RegisterPage').then((held) => held.RegisterPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
 )
 /** The people register's page (ADR-0036), fetched the first time it is opened, as the registers are. */
 const PeoplePage = lazyPart<ComponentProps<typeof PeoplePageShape>>(
-  () => import('../../people/ui/PeoplePage').then((held) => held.PeoplePage), { until: (props) => props.open, fallback: arrivingPage },
+  () => import('../../people/ui/PeoplePage').then((held) => held.PeoplePage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
 )
 /** The topics catalogue (ADR-0042 §3), likewise: it reads the topics the home hands down. */
 const TopicsPage = lazyPart<ComponentProps<typeof TopicsPageShape>>(
@@ -59,7 +59,7 @@ const BlockPage = lazyPart<ComponentProps<typeof BlockPageShape>>(
 )
 /** The Checks page (ADR-0036, amended 11 October 2026), likewise. */
 const ChecksPage = lazyPart<ComponentProps<typeof ChecksPageShape>>(
-  () => import('./ChecksPage').then((held) => held.ChecksPage), { until: (props) => props.open, fallback: arrivingPage },
+  () => import('./ChecksPage').then((held) => held.ChecksPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
 )
 
 /** The People page has no day of its own: today is its day, and a look away is the window's (ADR-0027). */

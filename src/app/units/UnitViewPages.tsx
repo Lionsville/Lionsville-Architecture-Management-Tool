@@ -36,10 +36,10 @@ import { ROOT_SCOPE } from '../../projects/scopePath'
  * download does not carry them.
  */
 const ChartPage = lazyPart<ComponentProps<typeof ChartPageShape>>(
-  () => import('./ChartPage').then((held) => held.ChartPage),
+  () => import('./ChartPage').then((held) => held.ChartPage), { warm: true },
 )
 const ConwayPage = lazyPart<ComponentProps<typeof ConwayPageShape>>(
-  () => import('./ConwayPage').then((held) => held.ConwayPage),
+  () => import('./ConwayPage').then((held) => held.ConwayPage), { warm: true },
 )
 /** An assignment in the inspector arrives with the first one chosen. */
 const AssignmentInspector = lazyPart<ComponentProps<typeof AssignmentInspectorShape>>(

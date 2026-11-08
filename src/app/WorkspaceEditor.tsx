@@ -45,10 +45,10 @@ const DrawingView = lazyPart<ComponentProps<typeof DrawingViewShape>>(
 
 /** The sheet and its Coverage are tabs as well: their rows, panel and matrix arrive with the first one opened. */
 const SheetPage = lazyPart<ComponentProps<typeof SheetPageShape>>(
-  () => import('../business/ui/SheetPage').then((held) => held.SheetPage),
+  () => import('../business/ui/SheetPage').then((held) => held.SheetPage), { warm: true },
 )
 const MapPage = lazyPart<ComponentProps<typeof MapPageShape>>(
-  () => import('../business/ui/MapPage').then((held) => held.MapPage),
+  () => import('../business/ui/MapPage').then((held) => held.MapPage), { warm: true },
 )
 
 /**
@@ -56,7 +56,7 @@ const MapPage = lazyPart<ComponentProps<typeof MapPageShape>>(
  * platforms and its dialogs arrive when the first landscape is opened.
  */
 const TechnologyLandscapePage = lazyPart<ComponentProps<typeof TechnologyLandscapePageShape>>(
-  () => import('../technology/ui/TechnologyLandscapePage').then((held) => held.TechnologyLandscapePage),
+  () => import('../technology/ui/TechnologyLandscapePage').then((held) => held.TechnologyLandscapePage), { warm: true },
 )
 
 export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {

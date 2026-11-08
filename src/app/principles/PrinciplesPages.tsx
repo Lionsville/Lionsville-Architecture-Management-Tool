@@ -23,7 +23,7 @@ import type { WorkspaceParts } from '../workspaceParts'
 import { usePrinciplesAccess } from './usePrinciplesAccess'
 
 const PrinciplesPage = lazyPart<ComponentProps<typeof PrinciplesPageShape>>(
-  () => import('../../principles/ui/PrinciplesPage').then((held) => held.PrinciplesPage), { until: (props) => props.open, fallback: arrivingPage },
+  () => import('../../principles/ui/PrinciplesPage').then((held) => held.PrinciplesPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
 )
 
 /** The open scope's principles, and those above it, for every screen under the workspace. */

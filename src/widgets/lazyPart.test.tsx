@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Component, useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { lazyPart, PartNotLoaded } from './lazyPart'
+import { lazyPart, PartNotLoaded, warmLazyParts } from './lazyPart'
 
 afterEach(() => cleanup())
 
@@ -31,7 +31,7 @@ function Counter({ title }: Props) {
 function held(part: ComponentType<Props> = Page) {
   let release!: () => void
   const load = vi.fn(() => new Promise<ComponentType<Props>>((resolve) => { release = () => resolve(part) }))
-  return { load, release: () => act(async () => { release(); await Promise.resolve() }) }
+  return { load, release: () => act(async () => { release(); for (let tick = 0; tick < 5; tick += 1) await Promise.resolve() }) }
 }
 
 describe('lazyPart', () => {
@@ -51,6 +51,45 @@ describe('lazyPart', () => {
     expect(screen.getByText('loading')).toBeTruthy()
     await release()
     expect(await screen.findByText('Register')).toBeTruthy()
+  })
+
+  it('draws the page as soon as its script is there, with no wait of React\'s own before it shows', async () => {
+    // A Suspense boundary that has shown its fallback holds what arrived for 300 ms: the first Observations of a run said Loading… that long.
+    vi.useFakeTimers()
+    try {
+      const { load, release } = held()
+      const Part = lazyPart(load, { until: (props: Props) => props.open, fallback: () => <span>loading</span> })
+      render(<Part open title="Register" />)
+      await release()
+      expect(screen.getByText('Register')).toBeTruthy()
+      expect(screen.queryByText('loading')).toBeNull()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('warms a main page while the window is idle, so its first open is drawn at once, and leaves the others', async () => {
+    const page = held()
+    const other = held()
+    const Warm = lazyPart(page.load, { until: (props: Props) => props.open, warm: true })
+    lazyPart(other.load, { until: (props: Props) => props.open })
+    const idle: (() => void)[] = []
+    vi.stubGlobal('requestIdleCallback', (run: () => void) => idle.push(run))
+    vi.stubGlobal('cancelIdleCallback', () => {})
+    try {
+      const stop = warmLazyParts()
+      expect(page.load).not.toHaveBeenCalled()
+      // Every warm part made so far in this suite is asked for, one per idle moment, this one among them.
+      while (idle.length > 0 && !page.load.mock.calls.length) await act(async () => { idle.shift()!(); await Promise.resolve() })
+      expect(page.load).toHaveBeenCalledTimes(1)
+      await page.release()
+      stop()
+      render(<Warm open title="Observations" />)
+      expect(screen.getByText('Observations')).toBeTruthy()
+      expect(other.load).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('draws a page it has loaded directly after that, open or not, so its closing plays out', async () => {

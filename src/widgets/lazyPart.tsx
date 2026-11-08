@@ -17,16 +17,16 @@
  * drawn every render after, open or not — so what it holds between an open
  * and the next is kept, and its transition plays out.
  *
- * **A part is drawn the way it was first drawn, for as long as it is
- * there** — first drawn being the first render that draws it at all, not the
- * caller's first, where an unwanted part is nothing. One whose script is here
- * by then is drawn directly, in the same render as the change that wanted it,
- * exactly as a part that was always in the bundle: a page opened by a press
- * is up, and holds the focus, before the next key arrives. One that waited
- * for its script stays under the boundary it waited in. Taking it out from
- * under the boundary on the next render would be a different tree, and React
- * draws a different tree anew: a dialog open in the part, a person just
- * picked in it, would be gone the first time its caller drew again.
+ * **A part whose script is here is drawn directly**, in the same render as
+ * the change that wanted it, exactly as a part that was always in the bundle:
+ * a page opened by a press is up, and holds the focus, before the next key
+ * arrives. One that waits for its script draws its fallback meanwhile, and
+ * itself in the render after the script arrives. That is state of its own and
+ * not a Suspense boundary: React holds a boundary that has shown its fallback
+ * for 300 ms before it reveals what arrived, and the first Observations of a
+ * run said *Loading…* for a third of a second over a script that took a
+ * tenth. Once drawn it is drawn the same way every render after, so what it
+ * holds — a dialog open in it, a person just picked — is kept.
  *
  * **A part may bring the parts it opens** (`brings`): a page that opens
  * another as the outcome of a press in it — the roadmap a plan it makes —
@@ -37,22 +37,27 @@
  * there. What a part brings is a head start, not a need: one that will not
  * load holds nothing back, and asks again when it is itself wanted.
  *
- * **A part is one boundary.** While its script is on the way it draws what
- * `fallback` says, nothing by default. A script that will not load — offline,
- * a network that dropped it — is drawn where the part would be, in what
- * `failed` says or one quiet line by default, with *Try again*, which asks for
- * the script anew: the screen around it goes on working, and a reader whose
- * comments would not load is still read. Only the fetch is caught there; a
- * part that loaded and then throws is the nearest boundary's, as before. A
- * script that no longer exists because a deploy replaced it is
- * `vite:preloadError`, which the boot answers with a reload, and which puts
- * the failure on the trail where it does not (`adapters/browser/staleScripts.ts`).
+ * **A part answers for its own fetch.** While its script is on the way it
+ * draws what `fallback` says, nothing by default. A script that will not
+ * load — offline, a network that dropped it — is drawn where the part would
+ * be, in what `failed` says or one quiet line by default, with *Try again*,
+ * which asks for the script anew: the screen around it goes on working, and a
+ * reader whose comments would not load is still read. A part that loaded and
+ * then throws is the nearest boundary's, as before. A script that no longer
+ * exists because a deploy replaced it is `vite:preloadError`, which the boot
+ * answers with a reload, and which puts the failure on the trail where it
+ * does not (`adapters/browser/staleScripts.ts`).
+ *
+ * **A main page may be warmed** (`warm`): its script is fetched once the
+ * first screen is drawn and the window is idle (`warmLazyParts`), so the
+ * first open of a run is drawn directly, as every later one is, rather than
+ * waiting for its script after the press.
  *
  * Every part is also listed, so that a suite rendering the app can have all of
  * them before it starts (`preloadLazyParts`): a test that clicks a card and
  * reads the page behind it is about the page, not about the network.
  */
-import { Component, lazy, Suspense, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ComponentType, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -69,6 +74,8 @@ export type LazyPartOptions<P> = {
   brings?: readonly Preloadable[]
   /** What is drawn where its script will not load, with what asks for it again. {@link PartNotLoaded}, where absent. */
   failed?: (props: P, retry: () => void) => ReactNode
+  /** A main page, fetched once the first screen is drawn and the window is idle (`warmLazyParts`). */
+  warm?: boolean
 }
 
 /** Anything whose script can be fetched ahead of its use. */
@@ -76,14 +83,11 @@ export type Preloadable = { preload(): Promise<void> }
 
 export type LazyPart<P> = ComponentType<P> & Preloadable
 
-/** How a part is drawn, fixed by the first render that draws it at all. */
-type Shape = 'direct' | 'waited'
-
 /** Every part made, so a suite can have them all before it starts. */
 const PARTS = new Set<() => Promise<void>>()
 
-/** The causes of fetches that failed: what a part's boundary draws in its own place, and nothing else. */
-const NOT_LOADED = new WeakSet<object>()
+/** The main pages, fetched when the window is idle after its first screen. */
+const WARM = new Set<() => Promise<void>>()
 
 /**
  * Where a part's script would not load, one quiet line and *Try again*: the
@@ -99,74 +103,76 @@ export function PartNotLoaded({ message = 'common.partNotLoaded', onRetry }: { m
   )
 }
 
-type NotLoadedProps = { children: ReactNode; failed: () => ReactNode }
-
-/**
- * The fetch's failure caught where the part stands. A class, as every
- * boundary is; anything thrown below it that is not a failed fetch is thrown
- * on, to the boundary that would have had it without this one.
- */
-class NotLoadedBoundary extends Component<NotLoadedProps, { caught?: unknown }> {
-  override state: { caught?: unknown } = {}
-  static getDerivedStateFromError(caught: unknown) { return { caught } }
-  override render() {
-    const { caught } = this.state
-    if (caught === undefined) return this.props.children
-    if (typeof caught !== 'object' || caught === null || !NOT_LOADED.has(caught)) throw caught
-    return this.props.failed()
-  }
-}
-
 export function lazyPart<P extends object>(
   load: () => Promise<ComponentType<P>>,
   options: LazyPartOptions<P> = {},
 ): LazyPart<P> {
   let loaded: ComponentType<P> | undefined
   let loading: Promise<ComponentType<P>> | undefined
-  const pending = () => lazy(async () => ({ default: await fetchPart() }))
-  let Pending = pending()
   // A part brought along that will not load is asked for again when it is
   // wanted itself, where its failure is drawn: here it holds nothing back.
   const brought = () => Promise.all((options.brings ?? []).map((part) => part.preload().catch(() => undefined)))
   const fetchPart = (): Promise<ComponentType<P>> => {
     loading ??= Promise.all([load(), brought()]).then(([part]) => { loaded = part; return part }, (cause: unknown) => {
-      // A failed fetch is not remembered: `lazy` would keep the rejection for
-      // good, so the next render gets a fresh one and asks again — which is
-      // what a person pressing the card a second time means.
+      // A failed fetch is not remembered: the next ask fetches again — which
+      // is what a person pressing the card a second time means.
       loading = undefined
-      Pending = pending()
-      const failure = typeof cause === 'object' && cause !== null ? cause : new Error(String(cause))
-      NOT_LOADED.add(failure)
-      throw failure
+      throw cause
     })
     return loading
   }
 
   function Part(props: P) {
-    const [shape, setShape] = useState<Shape | undefined>(undefined)
-    // Each try is a boundary of its own, so *Try again* draws the part anew with the fetch made fresh.
-    const [attempt, setAttempt] = useState(0)
-    const Loaded = loaded
-    if (!Loaded && options.until && !options.until(props)) return null
-    const drawn: Shape = shape ?? (Loaded ? 'direct' : 'waited')
-    // Kept from the first render that draws anything, before it is committed.
-    if (shape === undefined) setShape(drawn)
-    if (drawn === 'direct' && Loaded) return <Loaded {...props} />
-    const retry = () => setAttempt((at) => at + 1)
-    return (
-      <NotLoadedBoundary key={attempt} failed={() => options.failed?.(props, retry) ?? <PartNotLoaded onRetry={retry} />}>
-        <Suspense fallback={options.fallback?.(props) ?? null}>
-          <Pending {...props} />
-        </Suspense>
-      </NotLoadedBoundary>
-    )
+    // What arrived for this one, where the script came after its first render.
+    const [arrived, setArrived] = useState<{ part: ComponentType<P> } | undefined>(undefined)
+    const [failed, setFailed] = useState(false)
+    const Loaded = loaded ?? arrived?.part
+    const wanted = Loaded !== undefined || !options.until || options.until(props)
+    useEffect(() => {
+      if (!wanted || Loaded || failed) return undefined
+      let live = true
+      fetchPart().then((part) => { if (live) setArrived({ part }) }, () => { if (live) setFailed(true) })
+      return () => { live = false }
+    }, [wanted, Loaded, failed])
+    if (Loaded) return <Loaded {...props} />
+    if (!wanted) return null
+    if (failed) {
+      const retry = () => setFailed(false)
+      return <>{options.failed?.(props, retry) ?? <PartNotLoaded onRetry={retry} />}</>
+    }
+    return <>{options.fallback?.(props) ?? null}</>
   }
   const preload = async (): Promise<void> => { await fetchPart() }
   PARTS.add(preload)
+  if (options.warm) WARM.add(preload)
   return Object.assign(Part, { preload })
 }
 
 /** Load every part made so far. For a suite, before its first render. */
 export async function preloadLazyParts(): Promise<void> {
   await Promise.all([...PARTS].map((preload) => preload()))
+}
+
+/**
+ * Fetch the main pages' scripts one after another while the window is idle,
+ * so the first open of each is drawn at once. Where nothing says the window is
+ * idle — a suite, an old browser — nothing is fetched. A script that will not
+ * load is left for the page's own open to ask for and say.
+ */
+export function warmLazyParts(): () => void {
+  if (typeof requestIdleCallback !== 'function') return () => {}
+  const waiting = [...WARM]
+  let asked: number | undefined
+  let stopped = false
+  const next = () => {
+    asked = undefined
+    const one = waiting.shift()
+    if (!one || stopped) return
+    void one().catch(() => undefined).finally(() => { if (!stopped) asked = requestIdleCallback(next) })
+  }
+  asked = requestIdleCallback(next)
+  return () => {
+    stopped = true
+    if (asked !== undefined) cancelIdleCallback(asked)
+  }
 }
