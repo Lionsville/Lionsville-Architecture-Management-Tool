@@ -11,6 +11,7 @@
  */
 import { useMemo } from 'react'
 import type { Translate } from '../../i18n'
+import { useStrings } from '../../i18n/LanguageContext'
 import { CHECK_CATALOGUE } from '../../model/checkCatalogue'
 import type { CheckWeight } from '../../model/checkCatalogue'
 import type { KeptCheckMark } from '../../model/checkMarks'
@@ -55,11 +56,12 @@ export function useHomeChecks(deps: {
   const people = deps.people?.people
   const marking = useCheckMarking()
   const marks = marking?.marks ?? deps.marks
+  const { language } = useStrings()
   const instances = useMemo(() => {
     if (findings === undefined) return []
     const attention = attentionItems(findings, register, technology, at, s, scopeName, people, at === ROOT_SCOPE ? home : undefined)
-    return treeInstances({ attention, models: tree?.models ?? [], at, today, platformTree, index: tree?.index, home, t: s })
-  }, [findings, register, technology, at, s, scopeName, people, home, tree, today, platformTree])
+    return treeInstances({ attention, models: tree?.models ?? [], at, today, platformTree, index: tree?.index, home, t: s, language })
+  }, [findings, register, technology, at, s, scopeName, people, home, tree, today, platformTree, language])
   const split = useMemo(() => splitInstances(instances, marks ?? []), [instances, marks])
   const rows = useMemo(() => checksByCategory(split), [split])
   const counts = useMemo(() => {

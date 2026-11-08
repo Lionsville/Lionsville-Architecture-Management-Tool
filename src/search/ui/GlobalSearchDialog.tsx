@@ -27,7 +27,9 @@ import ListItemButton from '@mui/material/ListItemButton'
 import ListSubheader from '@mui/material/ListSubheader'
 import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
-import type { StringKey, Translate } from '../../i18n'
+import type { Language, StringKey, Translate } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
+import { useStrings } from '../../i18n/LanguageContext'
 import type { DesignDiagram } from '../../model'
 import { STATUS_LABEL } from '../../decisions/adrScope'
 import { isElementKind, kindLabel } from '../../model/kinds'
@@ -172,6 +174,7 @@ function PaletteRows({ lines, first, active, onHover, onRun }: {
 }
 
 export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoose, people, more, s }: GlobalSearchDialogProps) {
+  const { language } = useStrings()
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
   const listRef = useRef<HTMLDivElement>(null)
@@ -320,7 +323,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
           {chipOf(previewed, s) !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{chipOf(previewed, s)}</Typography>}
           <Typography sx={{ fontSize: 'var(--t-large)', fontWeight: 600, overflowWrap: 'anywhere' }}>{previewed.title !== '' ? previewed.title : previewed.about.join(' → ')}</Typography>
           {previewed.scope !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mt: 0.5 }}>{scopeLabel(previewed.scope)}</Typography>}
-          {previewed.detail && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{previewed.detail}</Typography>}
+          {previewed.detail && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{readDays(previewed.detail, language)}</Typography>}
           {previewed.snippet && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{previewed.snippet}</Typography>}
         </Box>
       )}
@@ -360,9 +363,15 @@ function runsOfKind(hits: readonly SearchHit[]): { kind: SearchKind; from: numbe
   return runs
 }
 
+/** Days written as stored — a plan's window, a retirement — said as the person reads days everywhere else. */
+function readDays(text: string | undefined, language: Language): string | undefined {
+  return text?.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (day) => formatDay(day, language))
+}
+
 function HitRow({ hit, scopeLabel, s }: {
   hit: SearchHit; scopeLabel: (path: string) => string; s: Translate
 }) {
+  const { language } = useStrings()
   const chip = chipOf(hit, s)
   const about = hit.about.join(' → ')
   // A relation with no label is called by its two ends.
@@ -370,7 +379,7 @@ function HitRow({ hit, scopeLabel, s }: {
   const second = [
     hit.scope !== undefined ? scopeLabel(hit.scope) : undefined,
     hit.title !== '' && about !== '' ? about : undefined,
-    hit.detail,
+    readDays(hit.detail, language),
     hit.snippet || undefined,
   ].filter(Boolean).join(' · ')
   return (

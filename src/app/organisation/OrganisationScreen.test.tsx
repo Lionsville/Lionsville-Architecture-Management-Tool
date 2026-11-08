@@ -248,7 +248,7 @@ describe('the organisation screen — its own pages', () => {
     renderApp({ repositories: heldRepositories([organisation()]), today: TODAY })
     const cards = await screen.findByTestId('organisation-cards')
     await waitFor(() => expect(cards.textContent).toContain('1 plan'))
-    expect(cards.textContent).toContain('was due to finish on 2026-08-01')
+    expect(cards.textContent).toContain('was due to finish on 1 Aug 2026')
   })
 
   /**

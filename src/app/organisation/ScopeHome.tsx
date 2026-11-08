@@ -127,7 +127,7 @@ function useKept(props: ScopeHomeProps): readonly Kept[] {
 
 /** What every scope keeps of its own. */
 function ownRows(props: ScopeHomeProps, principles: { own: number; inForce: number } | undefined): Kept[] {
-  const { at, pages, draws, localObservations, initiatives, open, onFinding, s } = props
+  const { at, pages, draws, localObservations, initiatives, open, onFinding, s, language } = props
   const latest = pages.decisions.latest
   const finding = pages.roadmap.findingOpens
   return [
@@ -151,7 +151,7 @@ function ownRows(props: ScopeHomeProps, principles: { own: number; inForce: numb
     },
     {
       id: 'open-roadmap', label: s('shell.roadmap'), icon: <TimelineIcon />, guide: 'org.card.roadmap',
-      fact: roadmapFact(pages, initiatives, s), holds: pages.roadmap.total + initiatives > 0, open: () => open(at, { page: 'roadmap' }),
+      fact: roadmapFact(pages, initiatives, s, language), holds: pages.roadmap.total + initiatives > 0, open: () => open(at, { page: 'roadmap' }),
       ...(finding ? { end: (
         <Button variant="quiet" size="small" data-testid="open-roadmap-finding" aria-label={`${s('org.findingShow')}: ${s('org.openFinding')}`} onClick={() => onFinding(finding)}>{s('org.findingShow')}</Button>
       ) } : {}),

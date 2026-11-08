@@ -93,7 +93,7 @@ export function decisionsFact(pages: OrganisationPages, s: Translate): string {
 }
 
 /** The plans, the initiatives from below, and the first thing the dates disagree about: the one sentence kept from the old card. */
-export function roadmapFact(pages: OrganisationPages, initiatives: number, s: Translate): string {
+export function roadmapFact(pages: OrganisationPages, initiatives: number, s: Translate, language?: Language): string {
   const { total, byStatus, finding } = pages.roadmap
   return joined(
     [
@@ -101,6 +101,6 @@ export function roadmapFact(pages: OrganisationPages, initiatives: number, s: Tr
       tallyLine(byStatus, PLAN_STATUS_LABEL, s),
       initiatives > 0 ? plural(s, { one: 'org.initiativesOne', other: 'org.initiativesOther' }, initiatives) : '',
     ].filter(Boolean).join(', '),
-    finding ? findingWords(finding, s) : '',
+    finding ? findingWords(finding, s, language) : '',
   )
 }

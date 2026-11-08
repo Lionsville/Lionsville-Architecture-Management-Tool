@@ -26,7 +26,7 @@
  * person on the People page — and carries the finding as it was worked out,
  * which a mark as intended is made from and split by.
  */
-import type { Translate } from '../../i18n'
+import type { Language, Translate } from '../../i18n'
 import { CHECK_CATALOGUE, CHECK_CATEGORIES, CHECK_FIELD, CHECK_KEYS, CONWAY_CHECK, DATE_CHECK } from '../../model/checkCatalogue'
 import type { CheckCategory, CheckEntry, CheckKey, CheckWeight } from '../../model/checkCatalogue'
 import { splitMarked } from '../../model/checkMarks'
@@ -106,6 +106,8 @@ export type TreeChecksInput = {
   index?: ScopeIndex | undefined
   home?: HostModel | undefined
   t: Translate
+  /** A day in a finding's sentence, said as the person reads days; absent: as stored. */
+  language?: Language
 }
 
 /**
@@ -169,7 +171,7 @@ function underOf(id: string, index: ScopeIndex | undefined): { under?: string } 
 }
 
 /** Each scope's dates, checked as its roadmap checks them, opened where its roadmap opens them. */
-function fromDates({ models, at, today, platformTree, t }: TreeChecksInput): CheckInstance[] {
+function fromDates({ models, at, today, platformTree, t, language }: TreeChecksInput): CheckInstance[] {
   return models.filter((one) => at === ROOT_SCOPE || isWithinScope(one.path, at)).flatMap(({ path, model }) => {
     const checked = dateFindings({
       model: { elements: [...model.elements], relations: [...model.relations], ...(model.transitions ? { transitions: [...model.transitions] } : {}) },
@@ -180,7 +182,7 @@ function fromDates({ models, at, today, platformTree, t }: TreeChecksInput): Che
       const about = problem.subject === 'relation' ? model.relations.find((one) => one.id === problem.id)?.sourceId : problem.subject === 'element' ? problem.id : undefined
       const field = CHECK_FIELD[DATE_CHECK[problem.kind]]
       return {
-        key: DATE_CHECK[problem.kind], scope: path, checkedIn: path, text: findingWords(problem, t), finding: problem,
+        key: DATE_CHECK[problem.kind], scope: path, checkedIn: path, text: findingWords(problem, t, language), finding: problem,
         id: `${problem.kind}|${path}|${problem.id}`, ...(target ? { opens: { scope: path, page: target && field && target.page === 'element' ? { ...target, field } : target } } : {}),
         subject: problem.name, ...(about !== undefined ? { about } : {}),
         attributes: { 'data-testid': `checks-${path}-${problem.id}`, 'data-finding': problem.kind },
