@@ -23,3 +23,5 @@
   .kit-settings { flex-direction: column; gap: var(--s-4); padding: var(--s-4); }
   .kit-settings__side { position: static; flex: none; }
 }
+/* A quiet button standing alone under the rows: its words line up with the labels above it, not its padding. */
+.kit-settings__flush > .kit-button[data-variant='quiet'][data-size='small'] { margin-inline-start: calc(0px - var(--s-2)); }

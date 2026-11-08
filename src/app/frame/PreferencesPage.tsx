@@ -134,7 +134,7 @@ export function PreferencesPage({
               options={[{ value: 'compact', label: s('prefs.tidyCompact') }, { value: 'normal', label: s('prefs.tidyNormal') }, { value: 'spacious', label: s('prefs.tidySpacious') }]}
             />
           </PreferenceRow>
-          <div>
+          <div className="kit-settings__flush">
             <Button size="small" variant="quiet" onClick={() => onEditorChange({ ...DEFAULT_EDITOR_PREFERENCES })} data-testid="prefs-canvas-reset">{s('prefs.canvasReset')}</Button>
           </div>
         </SettingsSection>
