@@ -194,6 +194,9 @@
 [data-posture="design"] .poster-grouping__head { overflow: visible; }
 .poster-grouping__head > .poster-add { position: relative; z-index: 3; }
 .poster-block:hover .poster-add, .poster-block:focus-within .poster-add, .poster-item:hover .poster-add, .poster-item:focus-within .poster-add { opacity: 1; }
+/* A bar's two adds stand over its end, on the bar's own colour, only while the block is pointed at or holds the focus. */
+.poster-title__adds { display: none; position: absolute; inset-block: 0; inset-inline-end: 4px; align-items: center; gap: 2px; padding-inline-start: 4px; background: var(--poster-title); }
+.poster-block:hover .poster-title__adds, .poster-block:focus-within .poster-title__adds { display: flex; }
 .poster-add--icon { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 2; }
 /* Where the press sits among many like it, it shows on its own cell, step or stakeholder only, at a full target, clear of the words. */
 .poster-band__cell > .poster-add button, .poster-st > .poster-add button, .poster-person-row > .poster-add button { min-width: var(--canvas-target); height: var(--canvas-target); }

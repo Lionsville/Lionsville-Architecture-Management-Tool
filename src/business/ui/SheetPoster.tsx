@@ -315,8 +315,13 @@ const AreaBlock = memo(function AreaBlock({ area, block, drawing, span }: { area
         {units.length > 0
           ? <span className="poster-title__unit"><UnitLabel who={drawing.who} functionId={element.id} t={t} /></span>
           : facts?.unit && <span className="poster-title__unit">{facts.unit}</span>}
-        {design && <AddHere label={t('sheet.poster.addInto', { name: element.name })} word={t('sheet.addCapability')} onAdd={() => design.addUnder(element.id, 'capability')} />}
-        {design && <AddHere label={t('sheet.poster.addGroupingInto', { name: element.name })} word={t('sheet.addGrouping')} onAdd={() => design.addUnder(element.id, 'grouping')} />}
+        {/* Over the bar's end while the block is pointed at or holds the focus, and out of its flow otherwise: in the flow, unseen, they took the name's room. */}
+        {design && (
+          <span className="poster-title__adds">
+            <AddHere label={t('sheet.poster.addInto', { name: element.name })} word={t('sheet.addCapability')} onAdd={() => design.addUnder(element.id, 'capability')} />
+            <AddHere label={t('sheet.poster.addGroupingInto', { name: element.name })} word={t('sheet.addGrouping')} onAdd={() => design.addUnder(element.id, 'grouping')} />
+          </span>
+        )}
       </h3>
       <AreaLine area={area} drawing={drawing} />
       <span className="poster-meter" aria-hidden="true">
