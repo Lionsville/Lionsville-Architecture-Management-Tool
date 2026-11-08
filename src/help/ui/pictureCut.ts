@@ -126,6 +126,23 @@ export function cutAtLines(start: Box, lines: readonly Box[], whole: { width: nu
   return cut
 }
 
+/**
+ * How much smaller than it is laid out a picture is drawn: a picture scaled down to a narrow column is
+ * measured as it is laid out, so the cut does not shrink with the scale it decides. 1 where nothing is laid out.
+ */
+export function drawnScale(picture: Element): number {
+  const laid = (picture as HTMLElement).offsetWidth
+  const drawn = picture.getBoundingClientRect().width
+  return laid > 0 && drawn > 0 ? drawn / laid : 1
+}
+
+/** A box on screen in px from the picture's top left, as the picture is laid out. */
+export function inPicture(picture: Element): (rect: DOMRect) => Box {
+  const origin = picture.getBoundingClientRect()
+  const scale = drawnScale(picture)
+  return (rect) => ({ x: (rect.left - origin.left) / scale, y: (rect.top - origin.top) / scale, width: rect.width / scale, height: rect.height / scale })
+}
+
 /** Whether a line's text ends in an ellipsis where it does not fit. */
 function ellipsed(element: Element | null): boolean {
   return !!element && element.ownerDocument.defaultView?.getComputedStyle(element).textOverflow === 'ellipsis'
@@ -143,11 +160,10 @@ function clips(element: Element): boolean {
  * and one that shows not at all does not count.
  */
 export function textLines(picture: Element): Line[] {
-  const origin = picture.getBoundingClientRect()
   const doc = picture.ownerDocument
   const walker = doc.createTreeWalker(picture, 4 /* NodeFilter.SHOW_TEXT */)
   const clipOf = new Map<Element, Box | undefined>()
-  const relative = (rect: DOMRect): Box => ({ x: rect.left - origin.left, y: rect.top - origin.top, width: rect.width, height: rect.height })
+  const relative = inPicture(picture)
   const clipFor = (element: Element | null): Box | undefined => {
     if (!element || element === picture || !picture.contains(element)) return undefined
     if (clipOf.has(element)) return clipOf.get(element)

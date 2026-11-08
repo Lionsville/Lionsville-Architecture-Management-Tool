@@ -38,12 +38,12 @@ const figures = [
   ...Object.entries(PICTURES).map(([name, Picture]) => ({ name, Picture, width: CHAPTER_WIDTH, column: undefined })),
 ]
 
-async function draw(language: Language, textSize: number): Promise<HTMLElement> {
+async function draw(language: Language, textSize: number, across = 780): Promise<HTMLElement> {
   for (const [name, value] of Object.entries(tokenVariables('light'))) document.documentElement.style.setProperty(name, value)
   document.documentElement.style.fontSize = `${textSize}%`
   const host = document.createElement('div')
   // As wide as the help's column of text at its widest, where a step's picture has the whole of its column.
-  host.style.cssText = 'width:780px'
+  host.style.cssText = `width:${across}px`
   document.body.append(host)
   const root = createRoot(host)
   mounted.push(root)
@@ -128,5 +128,25 @@ describe("the help's pictures, cut", () => {
     // Its shape kept, to the few per cent text laid out larger rounds its lines to.
     expect(Math.abs((picture.width - 2) / (picture.height - 2) / (CHAPTER_WIDTH / inline.offsetHeight) - 1)).toBeLessThan(0.05)
     expect(dialog.scrollHeight).toBeLessThanOrEqual(dialog.clientHeight + 1)
+  })
+
+  it('scales a picture down to a phone\'s column rather than cutting it at the edge, and cuts it where a wide column does', async () => {
+    const cutsAt = (host: HTMLElement) => figures.map(({ name }) => shownCut(host.querySelector(`[data-figure="${name}"]`) as HTMLElement))
+    const wide = cutsAt(await draw('en', 100))
+    for (const root of mounted.splice(0)) root.unmount()
+    document.body.replaceChildren()
+    const phone = await draw('en', 100, 358)
+    const problems: string[] = []
+    figures.forEach(({ name }, at) => {
+      const figure = phone.querySelector(`[data-figure="${name}"]`) as HTMLElement
+      const crop = (figure.querySelector('.help-crop') as HTMLElement).getBoundingClientRect()
+      if (crop.right > phone.getBoundingClientRect().right + 0.5) problems.push(`${name}: ${crop.width} px in a column of 358`)
+      const scaled = /scale\(([\d.]+)\)/.exec((figure.querySelector('.help-crop__picture') as HTMLElement).style.transform)
+      // The same part of the picture, only smaller.
+      const cut = shownCut(figure)
+      const drawn = scaled ? { ...cut, width: cut.width / Number(scaled[1]), height: cut.height / Number(scaled[1]) } : cut
+      for (const key of ['x', 'y', 'width', 'height'] as const) if (Math.abs(drawn[key] - wide[at]![key]) > 1) problems.push(`${name}: ${key} ${drawn[key]} against ${wide[at]![key]}`)
+    })
+    expect(problems).toEqual([])
   })
 })

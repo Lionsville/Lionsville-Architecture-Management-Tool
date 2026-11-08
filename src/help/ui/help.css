@@ -119,9 +119,10 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 }
 
 .help-figure__frame { position: relative; display: inline-block; max-width: 100%; vertical-align: top }
-/* The part a picture is cut to, at the size it is drawn: never scaled, so its words read as they do on screen. */
+/* The part a picture is cut to, at the size it is drawn, so its words read as they do on screen; scaled down only where the column is narrower, as on a phone. */
 .help-crop { display: block; max-width: 100%; position: relative }
-.help-crop__picture { display: block }
+/* Scaled from its top left where the column is narrower than the cut (`HelpFigure`), and moved by the cut. */
+.help-crop__picture { display: block; transform-origin: 0 0 }
 .help-figure__press {
   position: absolute; inset: 0; width: 100%; height: 100%;
   padding: 0; border: 0; border-radius: 8px; background: none; cursor: zoom-in;

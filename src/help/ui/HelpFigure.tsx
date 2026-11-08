@@ -12,7 +12,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import type { Translate } from '../../i18n/strings'
-import { cutAtLines, fitScale, partsBox, textLines } from './pictureCut'
+import { cutAtLines, fitScale, inPicture, partsBox, textLines } from './pictureCut'
 import type { Box } from './pictureCut'
 
 /** Room left round a ring a picture is cut to, so the ring stays in; a part marked to be cut to is cut at its edge. */
@@ -25,14 +25,11 @@ const same = (a: Box | undefined, b: Box | undefined) =>
 
 /** The cut of a picture laid out whole, in px from its top left; nothing where nothing could be measured. */
 export function measureCut(picture: HTMLElement, most?: number): Box | undefined {
-  const origin = picture.getBoundingClientRect()
-  if (origin.width === 0) return undefined
+  if (picture.getBoundingClientRect().width === 0) return undefined
   const marked = Array.from(picture.querySelectorAll('[data-crop]'))
   const parts = marked.length > 0 ? marked : Array.from(picture.querySelectorAll('[data-mark]'))
-  const start = partsBox(parts.map((part) => {
-    const rect = part.getBoundingClientRect()
-    return { x: rect.left - origin.left, y: rect.top - origin.top, width: rect.width, height: rect.height }
-  }), marked.length > 0 ? 0 : RING_ROOM)
+  const relative = inPicture(picture)
+  const start = partsBox(parts.map((part) => relative(part.getBoundingClientRect())), marked.length > 0 ? 0 : RING_ROOM)
   if (!start) return undefined
   return cutAtLines(start, textLines(picture), { width: picture.scrollWidth, height: picture.scrollHeight }, most)
 }
@@ -52,13 +49,32 @@ export function HelpFigure({ Picture, caption, t, width, column, small }: {
   const foot = useRef<HTMLParagraphElement>(null)
   const [cut, setCut] = useState<Box | undefined>()
   const [scale, setScale] = useState(1)
+  // The column the picture stands in, where it is narrower than the cut: a phone's. The cut is drawn smaller to fit it
+  // rather than cut off at its edge, and a press still shows the whole picture at a size to read.
+  const figure = useRef<HTMLElement>(null)
+  const [room, setRoom] = useState<number | undefined>()
+  useLayoutEffect(() => {
+    const element = figure.current
+    if (!element || typeof ResizeObserver !== 'function') return
+    const measure = () => setRoom(element.clientWidth || undefined)
+    measure()
+    const watch = new ResizeObserver(measure)
+    watch.observe(element)
+    return () => watch.disconnect()
+  }, [])
+  // A picture with no part marked is shown whole: the box it is scaled by is all of it.
+  const [tall, setTall] = useState(0)
+  const drawn = cut ?? (tall > 0 ? { x: 0, y: 0, width, height: tall } : undefined)
+  // Two px of the frame's border are not scaled.
+  const shrink = drawn && room !== undefined && drawn.width + 2 > room ? Math.max(0.1, (room - 2) / drawn.width) : 1
+  const shown = cut ?? (shrink < 1 ? drawn : undefined)
   // Measured when the picture is laid out anew — a language changed in place changes its lines, a document shown
   // again or a fold opened gives it a size — and never because the cut was set: measured after every render, a
   // browser that had not settled the layout yet answered two cuts in turn, and the help went blank in a loop.
   useLayoutEffect(() => {
     const picture = inner.current
     if (!picture) return
-    const measure = () => { const next = measureCut(picture, most); setCut((was) => (same(was, next) ? was : next)) }
+    const measure = () => { const next = measureCut(picture, most); setCut((was) => (same(was, next) ? was : next)); setTall(picture.offsetHeight) }
     measure()
     if (typeof ResizeObserver !== 'function') return
     const watch = new ResizeObserver(measure)
@@ -107,10 +123,10 @@ export function HelpFigure({ Picture, caption, t, width, column, small }: {
     else dialog.removeAttribute('open')
   }
   return (
-    <figure className={`help-figure${small ? ' help-figure--small' : ''}`}>
+    <figure ref={figure} className={`help-figure${small ? ' help-figure--small' : ''}`}>
       <div className="help-figure__frame">
-        <div className="help-screen help-crop" aria-hidden="true" inert style={cut ? { width: cut.width, height: cut.height } : undefined}>
-          <div ref={inner} className="help-crop__picture" style={{ width, ...(cut ? { transform: `translate(${-cut.x}px, ${-cut.y}px)` } : {}) }}>
+        <div className="help-screen help-crop" aria-hidden="true" inert style={shown ? { width: shown.width * shrink, height: shown.height * shrink } : undefined}>
+          <div ref={inner} className="help-crop__picture" style={{ width, ...(shown ? { transform: `${shrink < 1 ? `scale(${shrink}) ` : ''}translate(${-shown.x}px, ${-shown.y}px)` } : {}) }}>
             <Picture />
           </div>
         </div>
