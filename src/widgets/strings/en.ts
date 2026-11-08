@@ -85,6 +85,7 @@ export const EN = {
   'kit.picture.save': 'Save picture',
   'kit.picture.busy': 'Drawing…',
   'kit.picture.failed': 'The picture could not be made: {message}',
+  'kit.why': 'why?',
   'kit.help.here': 'Help on this',
   'kit.help.on': 'Help on {about}',
   'kit.matrix.empty': 'nothing',

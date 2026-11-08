@@ -86,6 +86,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.picture.save': 'Afbeelding bewaren',
   'kit.picture.busy': 'Tekenen…',
   'kit.picture.failed': 'De afbeelding kon niet gemaakt worden: {message}',
+  'kit.why': 'waarom?',
   'kit.help.here': 'Help hierbij',
   'kit.help.on': 'Help bij {about}',
   'kit.matrix.empty': 'niets',

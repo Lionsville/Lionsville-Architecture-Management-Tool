@@ -1,0 +1,8 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.kit-why { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-1); min-width: 0; }
+.kit-why__press { min-height: var(--target-min); padding: 0 var(--s-1); margin-inline-start: calc(var(--s-1) * -1); border: 0; border-radius: var(--r-1); background: none; color: var(--ink-2); font: inherit; font-size: var(--t-small); cursor: pointer; }
+.kit-why__press:hover { color: var(--ink); background: var(--surface-2); }
+.kit-why__press:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.kit-why__note { color: var(--ink-2); font-size: var(--t-small); overflow-wrap: anywhere; }

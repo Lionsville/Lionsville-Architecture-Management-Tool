@@ -11,6 +11,9 @@
 export const EN = {
   'field.description': 'Description',
   'field.descriptionPlaceholder': 'What does this element do? Markdown supported.',
+  'field.writeDescription': 'Write the description',
+  'field.addDescription': 'Add a description',
+  'field.descriptionDone': 'Done',
 
   // The documentation template: a header table, then the sections. Only what
   // the element does not already know — vendor, technology and lifecycle are

@@ -14,6 +14,9 @@ import type { EN } from './en'
 export const DE: Record<keyof typeof EN, string> = {
   'field.description': 'Beschreibung',
   'field.descriptionPlaceholder': 'Was tut dieses Element? Markdown wird unterstützt.',
+  'field.writeDescription': 'Die Beschreibung schreiben',
+  'field.addDescription': 'Eine Beschreibung hinzufügen',
+  'field.descriptionDone': 'Fertig',
 
   'doc.shortDescription': 'Kurzbeschreibung',
   'doc.owner': 'Verantwortlich',

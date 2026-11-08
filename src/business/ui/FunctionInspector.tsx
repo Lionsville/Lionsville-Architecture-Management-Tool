@@ -29,7 +29,7 @@ import { DATED_PHASES, LIFECYCLE_ORDER, datesInOrder } from '../../model'
 import type { Command, DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle, Relation } from '../../model'
 import type { AspectScale } from '../../model/aspectScale'
 import { ratingOn, withRating } from '../../model/aspectScale'
-import { MarkdownField } from '../../documentation/ui/MarkdownField'
+import { DescriptionPress } from '../../documentation/ui/DescriptionPress'
 import type { MarkdownRenderOptions } from '../../documentation'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n'
@@ -43,6 +43,7 @@ import { PickToAdd } from '../../widgets/PickToAdd'
 import type { PickOption } from '../../widgets/PickToAdd'
 import { Button, IconButton } from '../../widgets/kit/Button'
 import { Select } from '../../widgets/kit/Field'
+import { WhyNote } from '../../widgets/kit/WhyNote'
 import { Panel, PanelSection } from '../../widgets/kit/Panel'
 import { mayRemove } from '../authoring'
 import { coverageFor, coverageOf } from '../coverage'
@@ -345,7 +346,7 @@ function pathOf(element: DesignElement, model: DesignModel): string {
 function FoldLine({ label, value, children, testId }: { label: string; value: string; children: ReactNode; testId?: string }) {
   return (
     <details className="sheet-fold" data-testid={testId}>
-      <summary><span>{label}</span><span>{value}</span></summary>
+      <summary><span className="sheet-held__label">{label}</span><span className="sheet-held__name">{value}</span></summary>
       <div className="sheet-fold__body">{children}</div>
     </details>
   )
@@ -365,7 +366,7 @@ function FunctionBlocks({ props, owned }: { props: FunctionInspectorProps & { el
       <PanelSection title={t('sheet.whoHolds')}>
         <AssignedTo element={element} model={model} readOnly={readOnly} actions={actions} responsible={props.responsible} elsewhere={props.elsewhere} describe={props.describe} applications={props.applications} />
         <Domains element={element} model={model} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
-        {props.domains && <div className="sheet-held__say">{t('sheet.handingSay')}</div>}
+        {props.domains && <WhyNote>{t('sheet.handingSay')}</WhyNote>}
       </PanelSection>
       <Ratings element={element} readOnly={readOnly || owned('ratings')} actions={actions} scales={props.scales ?? []} />
       <Inside element={element} model={model} onSelect={props.onSelect} />
@@ -504,7 +505,7 @@ function IconRow({ element, readOnly, poster }: { element: DesignElement; readOn
   )
 }
 
-/** A description is asked for: almost none has one, and an empty box would stand where the links are read. */
+/** A description is read as text, with a pencil to write it: almost none has one, and an open box stood where the links are read. */
 function Description({ element, readOnly, actions, renderMarkdown }: {
   element: DesignElement
   readOnly: boolean
@@ -512,16 +513,12 @@ function Description({ element, readOnly, actions, renderMarkdown }: {
   renderMarkdown: FunctionInspectorProps['renderMarkdown']
 }) {
   const { t } = useStrings()
-  const [asked, setAsked] = useState(false)
-  const has = (element.description ?? '') !== ''
-  if (!has && readOnly) return null
-  if (!has && !asked) {
-    return <PanelSection><button type="button" className="sheet-page__link" onClick={() => setAsked(true)}>{t('sheet.addDescription')}</button></PanelSection>
-  }
+  const text = element.description ?? ''
+  if (text === '' && readOnly) return null
   return (
     <PanelSection>
-      <MarkdownField
-        value={element.description ?? ''} disabled={readOnly} renderMarkdown={renderMarkdown}
+      <DescriptionPress
+        text={text} locked={readOnly} renderMarkdown={renderMarkdown} addLabel={t('sheet.addDescription')}
         onChange={(value) => actions.updateElement(element.id, { description: value }, `sheet.description:${element.id}`)}
       />
     </PanelSection>
@@ -761,18 +758,28 @@ function OnThisPoster({ poster, readOnly }: { poster: PosterPanel; readOnly: boo
           <input type="checkbox" checked={poster.labelled} aria-label={t('sheet.poster.showLabel')} onChange={(event) => poster.onLabel(event.target.checked)} />
           {t('sheet.poster.showLabel')}
         </label>
-        <div className="sheet-held__say">{t('sheet.poster.showLabelSay')}</div>
+        <WhyNote>{t('sheet.poster.showLabelSay')}</WhyNote>
+        {/* Where it stands, then what changes that: Automatic · Pin to a cell, where one phrase read as both. */}
         <div className="sheet-held">
           <span className="sheet-held__label">{t('sheet.poster.cell')}</span>
-          {cell
-            ? (
-              <>
-                <input type="number" min={1} className="kit-input" style={{ width: 56 }} aria-label={t('sheet.poster.cellColumn')} value={cell.col + 1} onChange={(event) => poster.onCell({ ...cell, col: number(event.target.value) })} />
-                <input type="number" min={1} className="kit-input" style={{ width: 56 }} aria-label={t('sheet.poster.cellRow')} value={cell.row + 1} onChange={(event) => poster.onCell({ ...cell, row: number(event.target.value) })} />
-                <Button variant="quiet" size="small" onClick={() => poster.onCell(undefined)}>{t('sheet.poster.flow')}</Button>
-              </>
-            )
-            : <Button variant="quiet" size="small" onClick={() => poster.onCell({ col: 0, row: 0 })}>{t('sheet.poster.flows')}</Button>}
+          <span className="sheet-held__values sheet-held__line">
+            {cell
+              ? (
+                <>
+                  <input type="number" min={1} className="kit-input sheet-held__number" aria-label={t('sheet.poster.cellColumn')} value={cell.col + 1} onChange={(event) => poster.onCell({ ...cell, col: number(event.target.value) })} />
+                  <input type="number" min={1} className="kit-input sheet-held__number" aria-label={t('sheet.poster.cellRow')} value={cell.row + 1} onChange={(event) => poster.onCell({ ...cell, row: number(event.target.value) })} />
+                  <span aria-hidden="true">·</span>
+                  <button type="button" className="sheet-page__link" onClick={() => poster.onCell(undefined)}>{t('sheet.poster.flow')}</button>
+                </>
+              )
+              : (
+                <>
+                  <span>{t('sheet.poster.automatic')}</span>
+                  <span aria-hidden="true">·</span>
+                  <button type="button" className="sheet-page__link" onClick={() => poster.onCell({ col: 0, row: 0 })}>{t('sheet.poster.flows')}</button>
+                </>
+              )}
+          </span>
         </div>
       </PanelSection>
     </div>
@@ -869,25 +876,30 @@ function CoveredBy({ element, model, readOnly, actions, applications, elsewhere,
   return (
     <div data-testid="sheet-inspector-coverage" data-guide="sheet.coverage">
       <PanelSection title={t('sheet.coverage')}>
-        {coverage.coverage === 'uncovered' && <div className="sheet-held__say">{under ? t('sheet.coverageUnder', under) : t('sheet.coverageNobody')}</div>}
-        {coverage.coverage === 'manual' && <div className="sheet-held__say">{t('sheet.coveragePeople')}</div>}
-        {coverage.supportedBy.map((id) => (
-          <div className="sheet-held" key={id} data-testid={`sheet-supporter-${id}`}>
-            <button type="button" className="sheet-page__link sheet-held__name" aria-label={t('sheet.open', { name: named(id) })} onClick={() => actions.onOpenElement(id)}>{named(id)}</button>
-            <span className="sheet-held__note">{state(id)}</span>
-            {!readOnly && own.supportedBy.includes(id) && (
-              <IconButton size="small" label={t('sheet.takeOff', { name: named(id) })} onClick={() => actions.setCoverage({ type: 'supports', sourceId: id, functionId: element.id, on: false })}><CloseIcon /></IconButton>
+        <div className="sheet-held">
+          <span className="sheet-held__label">{t('sheet.coveredApps')}</span>
+          <div className="sheet-held__values">
+            {coverage.coverage === 'uncovered' && <span>{under ? t('sheet.coverageUnder', under) : t('sheet.coverageNobody')}</span>}
+            {coverage.coverage === 'manual' && <span>{t('sheet.coveragePeople')}</span>}
+            {coverage.supportedBy.map((id) => (
+              <div className="sheet-held" key={id} data-testid={`sheet-supporter-${id}`}>
+                <button type="button" className="sheet-page__link sheet-held__name" aria-label={t('sheet.open', { name: named(id) })} onClick={() => actions.onOpenElement(id)}>{named(id)}</button>
+                <span className="sheet-held__note">{state(id)}</span>
+                {!readOnly && own.supportedBy.includes(id) && (
+                  <IconButton size="small" label={t('sheet.takeOff', { name: named(id) })} onClick={() => actions.setCoverage({ type: 'supports', sourceId: id, functionId: element.id, on: false })}><CloseIcon /></IconButton>
+                )}
+              </div>
+            ))}
+            {!readOnly && (
+              <PickToAdd
+                options={offered.map((one) => ({ id: one.id, label: one.name, ...(one.where !== undefined ? { note: one.where } : {}) }))}
+                label={t('sheet.addApplication')} field={t('sheet.supportedBy')} nothing={t('sheet.coverageNobody')}
+                guide="sheet.supportedBy" testId="sheet-support" disabled={offered.length === 0}
+                onPick={(sourceId) => actions.setCoverage({ type: 'supports', sourceId, functionId: element.id, on: true })}
+              />
             )}
           </div>
-        ))}
-        {!readOnly && (
-          <PickToAdd
-            options={offered.map((one) => ({ id: one.id, label: one.name, ...(one.where !== undefined ? { note: one.where } : {}) }))}
-            label={t('sheet.addApplication')} field={t('sheet.supportedBy')} nothing={t('sheet.coverageNobody')}
-            guide="sheet.supportedBy" testId="sheet-support" disabled={offered.length === 0}
-            onPick={(sourceId) => actions.setCoverage({ type: 'supports', sourceId, functionId: element.id, on: true })}
-          />
-        )}
+        </div>
       </PanelSection>
     </div>
   )

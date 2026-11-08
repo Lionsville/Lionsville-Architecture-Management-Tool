@@ -123,9 +123,10 @@
 .sheet-empty__means { color: var(--ink-2); }
 
 /* A folded line in the panel: its name, its value, and the fields when asked. */
-.sheet-fold { border-top: 1px solid var(--line); }
-.sheet-fold > summary { display: flex; align-items: center; gap: var(--s-2); min-height: var(--row-h); cursor: pointer; }
-.sheet-fold > summary > span:last-child { margin-inline-start: auto; color: var(--ink-2); }
+/* A folded line reads as every other row of the panel: the label in its column, the value in the ink, and a press opens its fields. */
+.sheet-fold > summary { display: flex; align-items: baseline; gap: 0 var(--s-2); min-height: var(--row-h-dense); border-radius: var(--r-1); cursor: pointer; }
+.sheet-fold > summary:hover { background: var(--surface-2); }
+.sheet-fold > summary:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
 .sheet-fold__body { display: flex; flex-direction: column; gap: var(--s-2); padding-block: var(--s-2); }
 .sheet-held { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--s-2); min-height: var(--row-h-dense); }
 .sheet-held__name { flex: 1 1 60px; min-width: 0; overflow-wrap: anywhere; text-align: start; }
@@ -134,6 +135,8 @@
 .sheet-held[data-warn] .sheet-held__note { color: var(--warn); }
 .sheet-held__label { flex: 0 0 96px; color: var(--ink-2); }
 .sheet-held__values { flex: 1 1 0; min-width: 120px; display: flex; flex-direction: column; gap: 2px; align-items: stretch; }
+.sheet-held__values.sheet-held__line { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: var(--s-1); }
+.sheet-held__number { width: 3.5rem; }
 .sheet-panel__foot { padding-block: var(--s-3); display: flex; flex-direction: column; gap: var(--s-1); align-items: flex-start; }
 .sheet-panel__testid { display: contents; }
 

@@ -1,0 +1,15 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.description-press { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-1); margin-block: var(--s-2); }
+.description-press > :first-child { align-self: stretch; }
+.description-press__text { margin: 0; color: var(--ink); font: inherit; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--clamp-lines); overflow: hidden; }
+.description-press__press { display: flex; align-items: flex-start; gap: var(--s-1); min-height: var(--target-min); width: 100%; padding: 0 var(--s-1); margin-inline-start: calc(var(--s-1) * -1); border: 0; border-radius: var(--r-1); background: none; color: var(--ink); font: inherit; text-align: start; cursor: pointer; }
+.description-press__press > .description-press__text { flex: 1; min-width: 0; }
+.description-press__press:hover { background: var(--surface-2); }
+.description-press__press:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.description-press__press[data-empty] { color: var(--ink-3); }
+/* The pencil says the words are written here; it shows where the pointer or the keys are. */
+.description-press__pen { flex: none; display: inline-flex; align-self: center; color: var(--ink-3); opacity: 0; }
+.description-press__press:hover .description-press__pen,
+.description-press__press:focus-visible .description-press__pen { opacity: 1; }

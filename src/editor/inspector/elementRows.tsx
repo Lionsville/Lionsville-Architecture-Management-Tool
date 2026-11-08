@@ -16,8 +16,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import type { CitationsSection as CitationsSectionShape } from '../../principles/ui/CitationsSection';
 import type { PersonRefField as PersonRefFieldShape } from '../../people/ui/PersonRefField';
 import { lazyPart } from '../../widgets/lazyPart';
-import { MarkdownField } from '../../documentation/ui/MarkdownField';
-import { shortDescription } from '../../documentation/documentation';
+import { DescriptionPress } from '../../documentation/ui/DescriptionPress';
 import { BlockFacts } from '../../blocks/ui/BlockFacts';
 import { CommentThread } from '../../comments/ui/threadPart';
 import { RecordChanges } from '../../comments/ui/RecordChanges';
@@ -593,36 +592,14 @@ function insideRows(ctx: Ctx): RowSpec[] {
 /** First lines, press to write, and the way to the page. Help for the writing is the editor's own `?`. */
 function DescriptionBlock({ ctx }: { ctx: Ctx }) {
   const { field: { element, readOnly, owned, typed }, t, props } = ctx;
-  const [writing, setWriting] = useState(false);
-  const locked = readOnly || owned('description');
   const text = (owned('description') ? props.owned?.description : element.description) ?? '';
   const open = props.onOpenDocumentation;
-  const openPage = open ? () => open(element.id) : undefined;
-  if (writing && !locked) {
-    return (
-      <div className="inspector-description" data-shortcuts-ignore="" onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); setWriting(false); } }}>
-        <MarkdownField
-          value={text} disabled={false} autoFocus
-          onChange={(value) => typed('description', { description: value || undefined })}
-          renderMarkdown={props.renderMarkdown}
-          onOpenDocumentation={openPage}
-        />
-        <Button size="small" variant="quiet" onClick={() => setWriting(false)}>{t('inspector.done')}</Button>
-      </div>
-    );
-  }
-  const shown = shortDescription(text) || text;
   return (
-    <div className="inspector-description" data-testid="element-description">
-      {locked
-        ? shown && <p className="inspector-description__text">{shown}</p>
-        : (
-          <button type="button" className="inspector-description__press" data-empty={shown ? undefined : true} onClick={() => setWriting(true)} aria-label={shown ? `${t('inspector.writeDescription')}: ${shown}` : undefined}>
-            {shown || t('inspector.addDescription')}
-          </button>
-        )}
-      {openPage && <PanelLink data-testid="open-documentation" onPress={openPage}>{t('inspector.openPage')}</PanelLink>}
-    </div>
+    <DescriptionPress
+      text={text} locked={readOnly || owned('description')} renderMarkdown={props.renderMarkdown}
+      onChange={(value) => typed('description', { description: value || undefined })}
+      onOpenPage={open ? () => open(element.id) : undefined} openPageLabel={t('inspector.openPage')}
+    />
   );
 }
 
