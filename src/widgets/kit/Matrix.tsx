@@ -353,6 +353,11 @@ function useMoreAtEnd(): { ref: (element: HTMLDivElement | null) => void; 'data-
   return { ref, 'data-more-end': more || undefined }
 }
 
+/** A cell focused under the stuck heads is out of sight: brought out past them (the scroll's padding is their width). */
+function intoSight(cell: HTMLElement) {
+  cell.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+}
+
 export function Matrix({
   label, rowHeading, rows, columns, columnGroups, cellOf, answer, answers: moreAnswers, selected, onSelect, keys, onKey, hint,
   defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, openFoldable, onOpenColumn, absent, litColumn, wrapRows, groupBand, rotateHeads, dataGuide,
@@ -475,7 +480,7 @@ export function Matrix({
 
   const onFocus = (event: { target: EventTarget | null }) => {
     const address = (event.target as HTMLElement).dataset?.kitCell?.split(':').map(Number)
-    if (address) setAt({ row: address[0] ?? 0, column: address[1] ?? 0 })
+    if (address) { setAt({ row: address[0] ?? 0, column: address[1] ?? 0 }); intoSight(event.target as HTMLElement) }
   }
 
   const hoverLine = pointerLine(hover, shownRows, drawn, cellOf, absent, t('kit.matrix.empty'))
@@ -488,7 +493,7 @@ export function Matrix({
 
   return (
     <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-wrap={wrapRows || undefined} data-band={(groupBand && columnGroups) ? '' : undefined} data-guide={dataGuide}>
-      <div className="kit-matrix__scroll" {...scrolling}>
+      <div className="kit-matrix__scroll" style={{ '--kit-matrix-answers': answers.length } as CSSProperties} {...scrolling}>
         <table ref={table} role="grid" aria-label={label} className="kit-matrix__table" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocus} onPointerOver={onPointerOver} onPointerLeave={leave}>
           <colgroup>
             <col />

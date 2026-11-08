@@ -11,7 +11,14 @@
   color: var(--ink);
   font-size: var(--t-body);
 }
-.kit-matrix__scroll { flex: 1; min-height: 0; overflow: auto; }
+.kit-matrix__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  /* A cell brought into view stops beside the stuck row heads and answers, not under them. */
+  scroll-padding-inline-start: calc(var(--kit-matrix-head) + var(--kit-matrix-answers, 0) * var(--kit-matrix-answer));
+  scroll-padding-block-start: calc(var(--kit-matrix-band) + var(--cell-size));
+}
 /* The columns run on: the end fades, so a cut column does not read as the last. */
 .kit-matrix { position: relative; }
 .kit-matrix:has(> .kit-matrix__scroll[data-more-end])::after {

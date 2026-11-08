@@ -49,6 +49,22 @@ describe('the matrix', () => {
     expect(document.querySelector('[data-hover]')).toBeNull()
   })
 
+  it('brings a focused cell into sight past the stuck heads, which the scroll\'s padding measures', () => {
+    const into = vi.fn()
+    const was = HTMLElement.prototype.scrollIntoView
+    HTMLElement.prototype.scrollIntoView = into
+    try {
+      renderShell(<Matrix label="RACI" {...BASE} answer={{ label: 'Needs', of: () => '' }} />)
+      const target = cell(/Order the backlog, Run/)
+      target.focus()
+      expect(into).toHaveBeenCalledWith({ block: 'nearest', inline: 'nearest' })
+      expect(into.mock.contexts.at(-1)).toBe(target)
+      expect((document.querySelector('.kit-matrix__scroll') as HTMLElement).style.getPropertyValue('--kit-matrix-answers')).toBe('1')
+    } finally {
+      HTMLElement.prototype.scrollIntoView = was
+    }
+  })
+
   it('selects on a press and writes nothing', () => {
     const onSelect = vi.fn()
     const onKey = vi.fn()

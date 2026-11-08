@@ -7,7 +7,11 @@
 .op-readonly { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2) var(--s-4); background: var(--surface-2); border-bottom: 1px solid var(--line); flex: none; }
 .op-body { display: flex; flex: 1; min-height: 0; }
 .op-main { flex: 1; min-width: 0; overflow: auto; padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); }
-.op-main[data-flat] { padding: 0; flex-direction: row; gap: 0; overflow: hidden; }
+.op-main[data-flat] { padding: 0; flex-direction: row; gap: 0; overflow: hidden; container-type: inline-size; }
+/* Narrow beside the record (a small window, a large text size): the parts' tree gives the grid its room. */
+@container (max-width: 40rem) {
+  .op-main[data-flat] .op-tree { width: 200px; padding: var(--s-2); }
+}
 .op-concept { margin: 0; max-width: 60ch; color: var(--ink-2); }
 .op-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .op-grow { flex: 1; }
@@ -99,7 +103,15 @@ button.op-line:hover { background: var(--surface-2); }
 .op-grid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); overflow: auto; }
 .op-gridBox { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
 .op-gridBox[data-tall] { min-height: min(24rem, 100%); }
+/* A few rows are never squeezed under a tall head: the column scrolls as one page instead. */
+.op-gridBox:not([data-tall]) { flex-shrink: 0; }
 .op-gridBox > .kit-matrix { flex: 0 1 auto; min-height: 0; }
+/* Narrow, beside the record: the stuck name column gives way, so the role columns stay in sight and a letter set is seen.
+   The grid scrolls sideways under the names; a name cut short says itself whole on hover. */
+.op-gridBox { container-type: inline-size; }
+@container (max-width: 44rem) {
+  .op-gridBox .kit-matrix, .op-gridBox .kit-matrix[data-wrap] { --kit-matrix-head: 11rem; }
+}
 .op-gridHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
 .op-gridHead h2 { margin: 0; font-size: var(--t-body); font-weight: var(--fw-strong); }
 .op-picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); padding: var(--s-1) 0; }
