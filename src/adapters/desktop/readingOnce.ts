@@ -15,8 +15,9 @@
  * and one still on its way is shared. That is long enough for one open and
  * short enough that the next open reads the folder as it is now.
  *
- * A listing and a stamp are kept longer where the folder is watched: until the
- * watcher reports a change under them, for at most {@link WATCHED_KEEP_MS}.
+ * A listing, a stamp and a small file are kept longer where the folder is
+ * watched: until the watcher reports a change under them, for at most
+ * {@link WATCHED_KEEP_MS}.
  * Dating the tree stamps every file of the organisation, and a team's open
  * asked main for all four hundred of them each time; the watcher hears every
  * file the app reads that changes, and is what the app already trusts to say
@@ -41,6 +42,9 @@ export const KEEP_MS = 1000
 
 /** How long a listing or a stamp under a watched folder stands at most, where nothing reports it changed. */
 export const WATCHED_KEEP_MS = 5 * 60_000
+
+/** The largest file whose read is kept until the watcher says it changed. */
+const KEPT_BYTES = 64 * 1024
 
 type Kept<T> = { at: number; answer: Promise<T>; keep: number }
 
@@ -132,7 +136,19 @@ export function readingOnce(files: DesktopFiles, keep = KEEP_MS, now: () => numb
     forget,
     files: {
       ...files,
-      read: (root, path) => once(reads, root, path, () => files.read(root, path)),
+      read: (root, path) => {
+        const answer = once(reads, root, path, () => files.read(root, path))
+        // A small file of a watched folder is kept as its stamp is, until the watcher says it changed: the tree read
+        // again after every save read every scope's files whole once the open's second had passed. A large one is
+        // kept for an open only, so what is held stays small.
+        const entry = reads.get(keyFor(root, path))
+        if (entry?.answer === answer && entry.keep === keep) {
+          void answer.then((held) => {
+            if (reads.get(keyFor(root, path)) === entry && held && held.bytes.length <= KEPT_BYTES) entry.keep = keepFor(root, path)
+          }, () => undefined)
+        }
+        return answer
+      },
       list: (root, path) => once(lists, root, path, () => files.list(root, path), true),
       stamp: (root, path) => once(stamps, root, path, () => files.stamp(root, path), true),
       watch: async (root) => {

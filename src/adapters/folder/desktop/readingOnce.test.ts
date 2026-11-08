@@ -192,16 +192,19 @@ describe('readingOnce', () => {
     await once.files.remove(root, 'docs-note.txt')
   })
 
-  it('keeps a stamp and a listing of a watched folder until the watcher says they changed, and a dotted path\'s only for an open', async () => {
+  it('keeps a stamp, a listing and a small file of a watched folder until the watcher says they changed, and a dotted path\'s only for an open', async () => {
     const root = await seeded
     const raw = counted(root)
     let clock = 0
     const once = readingOnce(raw.files, 1000, () => clock)
     await once.files.watch(root)
     await once.files.stamp(root, 'scope.json')
+    await once.files.read(root, 'scope.json')
     await once.files.list(root, '')
     await once.files.list(root, '.lionsville-architecture')
     clock = 60_000
+    await once.files.read(root, 'scope.json')
+    expect(raw.reads.get('scope.json')).toBe(1)
     await once.files.stamp(root, 'scope.json')
     await once.files.list(root, '')
     await once.files.list(root, '.lionsville-architecture')
@@ -210,7 +213,9 @@ describe('readingOnce', () => {
     expect(raw.lists.get('.lionsville-architecture')).toBe(2)
     raw.changed({ root, path: 'scope.json' })
     await once.files.stamp(root, 'scope.json')
+    await once.files.read(root, 'scope.json')
     expect(raw.stamps.get('scope.json')).toBe(2)
+    expect(raw.reads.get('scope.json')).toBe(2)
     // The change was in the root: its listing goes with it.
     await once.files.list(root, '')
     expect(raw.lists.get('')).toBe(2)
