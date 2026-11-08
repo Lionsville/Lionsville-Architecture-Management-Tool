@@ -37,7 +37,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'history.beforeSync': 'Vor dem Synchronisieren',
   'history.beforeUpgrade': 'Vor der Aktualisierung des Dateiformats',
   'folder.body': 'Wählen Sie einen Ordner; diese App bewahrt Ihre Arbeit darin als Dateien auf, die Sie lesen, sichern, synchronisieren und committen können. In der App selbst bleibt nichts.',
-  'folder.choose': 'Einen Ordner wählen…',
+  'folder.choose': 'Einen Ordner öffnen…',
   'folder.adoptTitle': 'Ihre Arbeit in diesen Ordner mitnehmen?',
   'folder.adoptBody': 'Ihre Arbeit liegt zurzeit in der App selbst. „{name}“ kann eine Kopie davon bekommen oder so geöffnet werden, wie er ist. Gelöscht wird in beiden Fällen nichts — die App behält ihre eigene Kopie, bis Sie sie absichtlich verschieben.',
   'folder.adoptCopy': 'Meine Arbeit hineinkopieren',

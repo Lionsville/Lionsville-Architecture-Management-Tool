@@ -54,7 +54,7 @@ export const EN = {
 
   // --- the way into a folder -------------------------------------------------
   'folder.body': 'Pick a folder and this app keeps your work in it as files you can read, back up, sync and commit. Nothing is kept inside the app itself.',
-  'folder.choose': 'Choose a folder…',
+  'folder.choose': 'Open a folder…',
   /**
    * The folder pick asks before it copies. Both answers are safe and the body
    * says so: the app keeps its own copy until somebody moves it on purpose.

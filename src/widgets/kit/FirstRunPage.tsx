@@ -40,7 +40,7 @@ export function FirstRunPage({ brand, tools, title, intro, children, foot, 'data
 }
 
 /** One way forward: what it is, in a line, and its control. `stacked` puts a field under the words. */
-export function FirstRunWay({ title, body, stacked, children }: { title: string; body?: string; stacked?: boolean; children: ReactNode }) {
+export function FirstRunWay({ title, body, stacked, children }: { title: string; body?: ReactNode; stacked?: boolean; children: ReactNode }) {
   return (
     <section className="kit-firstrun__way" data-stacked={stacked ? true : undefined}>
       <div className="kit-firstrun__way-words">

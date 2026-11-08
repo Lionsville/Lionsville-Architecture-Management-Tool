@@ -75,18 +75,18 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
       foot={(
         <>
           <div className="kit-firstrun__way-control">
-            <span>{place}</span>
+            <span>{s('first.keptAt', { place })}</span>
             {ways.map((way) => (
               <Button key={way.kind} size="small" variant="quiet" onClick={way.onConnect} data-testid={`first-kept-${way.kind}`}>{said(way.firstLabelKey ?? way.labelKey)}</Button>
             ))}
             {!parts.hostMenu && <Button size="small" variant="quiet" onClick={() => props.hostControls.openExternal(DESKTOP_APP_LINK.href)}>{s(DESKTOP_APP_LINK.label)}</Button>}
           </div>
-          {sayings?.riskKey && <p data-testid="first-risk">{said(sayings.riskKey)}</p>}
           <p>{s('first.nothingLeaves')}</p>
         </>
       )}
     >
-      <FirstRunWay title={s('first.startOwn')} stacked>
+      {/* What can lose the work, said where it is started and at the size it is read. */}
+      <FirstRunWay title={s('first.startOwn')} body={sayings?.riskKey ? <span data-testid="first-risk">{said(sayings.riskKey)}</span> : undefined} stacked>
         <TextInput
           autoFocus aria-label={s('first.nameLabel')} placeholder={s('first.nameLabel')} value={name} data-testid="organisation-name-field" data-guide="first.name"
           onChange={(event) => setName(event.target.value)}

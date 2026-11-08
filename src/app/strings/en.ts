@@ -1891,7 +1891,7 @@ export const EN = {
   'frame.nothingWaiting': 'Nothing waiting',
   'frame.yourWork': 'Your work',
   'frame.keepIt': 'Keep it',
-  'frame.moveIt': 'Move it',
+  'frame.moveIt': 'Change where it is kept',
   'frame.lookBack': 'Look back',
   'frame.appliesToAll': 'Applies to the whole organisation',
   'frame.sessionChanges': 'Changes this session: {count}',
@@ -2131,6 +2131,7 @@ export const EN = {
   'first.nameLabel': 'Name of your organisation',
   'first.start': 'Start',
   'first.started': '“{name}” is started.',
+  'first.keptAt': 'Your work: {place}',
   'first.lookAround': 'Look around an example',
   /** The example's own description, which is in English, and where the language is not English a word that it is. */
   'first.exampleSaid': '{description}',

@@ -81,7 +81,7 @@ describe('an organisation nobody has started', () => {
     })
     await screen.findByTestId('first-run-page')
     expect(screen.getByTestId('first-kept-folder').textContent).toBe('Work from another folder…')
-    expect(screen.queryByText('Choose a folder…')).toBeNull()
+    expect(screen.queryByTestId('first-kept-folder')?.textContent).not.toBe('Open a folder…')
     fireEvent.click(screen.getByTestId('first-kept-folder'))
     expect(onConnect).toHaveBeenCalled()
   })

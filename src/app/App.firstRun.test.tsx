@@ -81,7 +81,7 @@ describe('where work has nowhere to be kept yet', () => {
       },
     })
 
-    fireEvent.click(screen.getByText('Choose a folder…'))
+    fireEvent.click(screen.getByText('Open a folder…'))
     expect(connect).toHaveBeenCalled()
     fireEvent.click(screen.getByText('Somewhere else'))
     expect(other).toHaveBeenCalled()
