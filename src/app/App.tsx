@@ -686,8 +686,8 @@ function useShellParts(props: AppProps): ShellParts {
   useEffect(() => {
     if (noticed.current || props.boot.notice === undefined) return
     noticed.current = true
-    toasts.notify(s(props.boot.notice), 'info')
-  }, [props.boot.notice, toasts, s])
+    toasts.notify(s(props.boot.notice, props.boot.noticeWith), 'info')
+  }, [props.boot.notice, props.boot.noticeWith, toasts, s])
   const shellAgent = useShellAgent({
     gateway: agent, status: agentServer.status, tree: findings.shellTree, project, home: nav.home,
     homeName: home.name, organisationName: organisation.tree.name, goHome: nav.goHome,

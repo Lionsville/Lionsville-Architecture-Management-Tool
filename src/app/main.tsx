@@ -291,6 +291,12 @@ function take(way: RegisteredConnect, chose: () => Promise<unknown>): Promise<vo
  */
 let choseFrom: { readonly shell: typeof shell; readonly sourced: boolean; readonly stored: unknown; readonly way: RegisteredConnect } | undefined
 
+/** What the boot says as it comes up, with what the sentence names. */
+function noticePart(landing: Pick<BootLanding, 'notice' | 'noticeWith'> | undefined) {
+  if (!landing?.notice) return {}
+  return { notice: landing.notice, ...(landing.noticeWith ? { noticeWith: landing.noticeWith } : {}) }
+}
+
 function backPart(): { back?: () => void } {
   return choseFrom ? { back: goBack } : {}
 }
@@ -374,7 +380,7 @@ function waysIn(): readonly SourceWayIn[] {
  * untouched, because nothing was written to it.
  */
 let enteredFrom: { readonly shell: typeof shell; readonly sourced: boolean } | undefined
-let visiting: { readonly offer: ExampleOffer; readonly asking?: true } | undefined
+let visiting: { readonly offer: ExampleOffer; readonly asking?: true; readonly holdsWork?: boolean } | undefined
 
 /** The address's query without the example in it, `?` included where anything is left. */
 function withoutExample(): string {
@@ -397,6 +403,14 @@ async function enterExample(offer: ExampleOffer): Promise<boolean> {
   if (!await workFrom('example', { offer })) return false
   enteredFrom = from
   visiting = { offer }
+  // Whether a keep files a copy under work that is there, for the button to say so before it is pressed.
+  void keepAsks(from.shell.repositories.scopes).then((holdsWork) => {
+    if (!holdsWork || visiting?.offer !== offer) return
+    visiting = { ...visiting, holdsWork }
+    renderApp(stored, undefined)
+  }, (cause: unknown) => {
+    shell.diagnostics.report({ level: 'warn', where: 'source', message: 'what the organisation holds could not be read', cause })
+  })
   return true
 }
 
@@ -411,7 +425,7 @@ function visitExample(offer: ExampleOffer): void {
   })
 }
 
-function leaveExample(notice?: 'example.kept' | 'example.keptUnder', where: 'home' | 'here' = 'home'): void {
+function leaveExample(notice?: 'example.kept' | 'example.keptUnder', where: 'home' | 'here' = 'home', noticeWith?: Record<string, string>): void {
   if (!enteredFrom) return
   shell = enteredFrom.shell
   sourced = enteredFrom.sourced
@@ -419,7 +433,7 @@ function leaveExample(notice?: 'example.kept' | 'example.keptUnder', where: 'hom
   visiting = undefined
   // Out to a new entry, leaving the visit's own as they were, `?example=` and all: Back to one of them is back in the example.
   if (where === 'home') window.history.pushState(null, '', `${window.location.pathname}${withoutExample()}#/-/home`)
-  renderApp(stored, notice ? { initialProject: undefined, notice } : undefined)
+  renderApp(stored, notice ? { initialProject: undefined, notice, ...(noticeWith ? { noticeWith } : {}) } : undefined)
 }
 
 /**
@@ -472,20 +486,28 @@ function keepNow(): void {
   const { offer } = visiting
   void keepVisit(shell.repositories.scopes, enteredFrom.shell.repositories, { key: offer.key, label: offer.label, description: offer.description, path: offer.path },
     bootWords()('example.markedBecause'))
-    .then((kept) => leaveExample(kept.under === undefined ? 'example.kept' : 'example.keptUnder'))
+    .then(async (kept) => {
+      if (kept.under === undefined) { leaveExample('example.kept'); return }
+      // Said by the name it was filed under, which is the one the tree shows.
+      const filed = enteredFrom && await readScope(enteredFrom.shell.repositories.scopes, kept.under).catch((cause: unknown) => {
+        shell.diagnostics.report({ level: 'warn', where: 'source', message: 'the kept example could not be read back for its name', cause })
+        return undefined
+      })
+      leaveExample('example.keptUnder', 'home', { name: filed?.model.name || offer.label })
+    })
     .catch(keptNot)
 }
 
 function keepNotNow(): void {
   if (!visiting) return
-  visiting = { offer: visiting.offer }
+  visiting = { offer: visiting.offer, ...(visiting.holdsWork ? { holdsWork: true } : {}) }
   renderApp(stored, undefined)
 }
 
 function visitingPart() {
   if (!visiting) return {}
   const asking = visiting.asking ? { asking: { onKeep: keepNow, onCancel: keepNotNow } } : {}
-  return { visiting: { name: visiting.offer.label, onKeep: keepExample, onLeave: () => leaveExample(), ...asking } }
+  return { visiting: { name: visiting.offer.label, onKeep: keepExample, onLeave: () => leaveExample(), ...asking, ...(visiting.holdsWork ? { holdsWork: true } : {}) } }
 }
 
 function yourWorkPart() {
@@ -672,7 +694,7 @@ function renderApp(
           ...(landing?.initialLook ? { initialLook: landing.initialLook } : {}),
           ...(landing?.initialFacets ? { initialFacets: landing.initialFacets } : {}),
           ...pageLookOfAddress(bootPlace),
-          ...(landing?.notice ? { notice: landing.notice } : {}),
+          ...noticePart(landing),
           ...(landing?.dialog ? { opensDialog: landing.dialog } : {}),
           initialPreferences: storedPreferences,
           browserLanguages: navigator.languages ?? navigator.language,

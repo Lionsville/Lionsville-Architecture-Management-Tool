@@ -49,6 +49,7 @@ export type BootLanding = {
    * is not there any more. Silence read as the link being broken.
    */
   notice?: BootNotice
+  noticeWith?: Readonly<Record<string, string>>
 }
 
 export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone' | 'example.kept' | 'example.keptUnder'

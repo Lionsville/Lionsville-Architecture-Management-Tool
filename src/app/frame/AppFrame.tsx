@@ -953,7 +953,7 @@ function useVisitBand(parts: ShellParts): StackedBand | undefined {
     title: <span data-testid="example-band">{s('example.band')}</span>,
     action: (
       <>
-        <Button size="small" variant="primary" onClick={afterWrites(visiting.onKeep)} data-testid="example-keep" data-guide="example.keep">{s('example.keep')}</Button>
+        <Button size="small" variant="primary" onClick={afterWrites(visiting.onKeep)} data-testid="example-keep" data-guide="example.keep">{s(visiting.holdsWork ? 'example.keepCopy' : 'example.keep')}</Button>
         <Button size="small" variant="quiet" onClick={visiting.onLeave} data-testid="example-leave" data-guide="example.leave">{s('example.leave')}</Button>
       </>
     ),

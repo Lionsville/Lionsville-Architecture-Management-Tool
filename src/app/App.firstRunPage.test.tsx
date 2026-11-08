@@ -106,6 +106,11 @@ describe('the example, visited', () => {
     expect(onLeave).toHaveBeenCalled()
   })
 
+  it('says a keep over work that is there is a copy in the organisation', async () => {
+    renderApp({ repositories: heldRepositories([]), offersFirstRun: true, visiting: { name: 'One', onKeep: vi.fn(), onLeave: vi.fn(), holdsWork: true } })
+    expect((await screen.findByTestId('example-keep')).textContent).toBe('Keep a copy in my organisation')
+  })
+
   it('keeps a change made a moment before the press: the open scope is written first', async () => {
     const scopes: ScopeSnapshot[] = [
       { path: '', model: { name: 'One', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },

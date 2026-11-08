@@ -88,6 +88,8 @@ export type AppBoot = {
   initialPageLook?: { page: Page; tab?: string; look?: string }
   /** What to say once the app is up about the address it landed from, where it did not land where that pointed (ADR-0033). */
   notice?: BootNotice
+  /** What the notice names, said in it. */
+  noticeWith?: Readonly<Record<string, string>>
   /**
    * One of the shell's own dialogs, open at the first paint because the
    * address asked for it (`bootLanding`'s `dialogAsked`) — a page elsewhere
@@ -427,6 +429,8 @@ export type AppProps = {
   visiting?: {
     readonly name: string; readonly onKeep: () => void; readonly onLeave: () => void
     readonly asking?: { readonly onKeep: () => void; readonly onCancel: () => void }
+    /** The organisation it was entered from holds work already: a keep files a copy under it, and says so. */
+    readonly holdsWork?: boolean
   }
   /** A new organisation is met by the first-run page and its first steps, rather than the home's cards. */
   offersFirstRun?: boolean
