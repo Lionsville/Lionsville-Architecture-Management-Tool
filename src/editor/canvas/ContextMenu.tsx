@@ -187,7 +187,7 @@ function ItemContent({
           aria-label={t('menu.shortcutAria', { keys: item.shortcut })}
           sx={{
             ml: 3,
-            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+            fontFamily: 'var(--font-mono)',
             fontSize: 'var(--t-small)',
             color: 'text.secondary',
             whiteSpace: 'nowrap',

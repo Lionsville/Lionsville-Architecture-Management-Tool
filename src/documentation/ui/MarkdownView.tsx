@@ -182,7 +182,7 @@ function TaskBox({ checked }: { checked: boolean }) {
   )
 }
 
-const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+const CODE_FONT = 'var(--font-mono)'
 
 function components(
   onElementLink: ((elementId: string) => void) | undefined,

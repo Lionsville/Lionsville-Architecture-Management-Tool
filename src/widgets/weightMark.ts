@@ -15,5 +15,5 @@ export type FindingWeight = 'fix' | 'review' | 'note'
 export const WEIGHT_MARK: Record<FindingWeight, { glyph: string; sx: object }> = {
   fix: { glyph: '●', sx: { color: 'error.main' } },
   review: { glyph: '▲', sx: { color: 'warning.main' } },
-  note: { glyph: 'i', sx: { color: 'text.secondary', fontStyle: 'italic', fontFamily: 'Georgia, serif', fontWeight: 700 } },
+  note: { glyph: 'i', sx: { color: 'text.secondary', fontStyle: 'italic', fontWeight: 700 } },
 }

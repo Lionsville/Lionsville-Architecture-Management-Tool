@@ -4,16 +4,25 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="/icon.svg" />
+    <!-- The face every first screen draws in, fetched with the page rather than
+         after the script has asked for it, so the first paint is already in it. -->
+    <link rel="preload" href="/src/widgets/kit/fonts/source-sans-3-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <title>Lionsville Architect</title>
     <style>
-      html, body, #root { height: 100%; margin: 0; font-family: system-ui, sans-serif }
+      /* No typeface here: the kit's tokens give the page its face (`theme.ts`),
+         and one set here outlived them on #root, so the app drew in the system's. */
+      html, body, #root { height: 100%; margin: 0 }
       /* The ground the app paints over, in the theme's ground as the window is
          made with it (electron/main/index.ts): /ground.js says which before the
          body is drawn, the system's where it cannot, since a flash between two
          grounds is the most visible thing about starting the app. */
       body { background: #f6f3ef }
+      /* Said only when a start takes long: an ordinary start replaces it before
+         it shows, so no word is ever drawn here before the app's own face is in. */
       #boot { display: flex; height: 100%; align-items: center; justify-content: center;
-              color: #565d66; font-size: 13px; letter-spacing: .02em }
+              color: #565d66; font-size: 13px; letter-spacing: .02em;
+              opacity: 0; animation: boot-said 0s 1s forwards }
+      @keyframes boot-said { to { opacity: 1 } }
       @media (prefers-color-scheme: dark) {
         :root:not([data-ground='light']) body { background: #0c151d }
         :root:not([data-ground='light']) #boot { color: #9ea9b4 }

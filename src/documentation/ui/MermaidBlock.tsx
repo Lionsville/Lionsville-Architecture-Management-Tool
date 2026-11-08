@@ -59,7 +59,7 @@ export const renderWithMermaid: MermaidRenderer = async (code, theme) => {
   return svg
 }
 
-const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+const CODE_FONT = 'var(--font-mono)'
 
 export type MermaidBlockProps = {
   code: string

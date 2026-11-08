@@ -54,7 +54,7 @@ function PrincipleQuote({ scope, principle, aspect, reads }: { scope: string; pr
   const said = aspect !== undefined ? principle.aspects.find((one) => one.number === aspect) : undefined
   return (
     <Box component="span" sx={{ ...FRAME, borderColor: 'primary.main', display: 'block' }}>
-      <Link component="button" type="button" underline="hover" onClick={() => reads.openPrinciple(scope, principle.id)} sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 'var(--t-small)' }}>
+      <Link component="button" type="button" underline="hover" onClick={() => reads.openPrinciple(scope, principle.id)} sx={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--t-small)' }}>
         {said ? formatAspectNumber(principle.number, said.number) : formatPrincipleNumber(principle.number)}
       </Link>{' '}
       <Box component="span" sx={{ fontWeight: 600 }}>{principle.title}</Box>

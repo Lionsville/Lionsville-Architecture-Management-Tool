@@ -111,7 +111,7 @@ function CitationLine({ citation, access, readOnly }: { citation: Citation; acce
   const from = access.sourceOf(access.here, citation.principle.scope)
   return (
     <Box component="li" data-testid={`citation-${citation.id}`} sx={{ display: 'flex', alignItems: 'baseline', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider', fontSize: 'var(--t-body)' }}>
-      <Box component="span" sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 'var(--t-small)', color: 'text.secondary', whiteSpace: 'nowrap' }}>{label.number}</Box>
+      <Box component="span" sx={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--t-small)', color: 'text.secondary', whiteSpace: 'nowrap' }}>{label.number}</Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         {label.gone ? (
           <Typography component="span" color="warning.main" sx={{ fontSize: 'var(--t-body)' }}>{t('principles.citationGone')}</Typography>
@@ -148,7 +148,7 @@ function SuggestionLine({ suggestion, access, quickStance, onQuick, onCite }: {
   const reason = why === 'subject' ? t('principles.whySubject') : undefined
   return (
     <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1, py: 0.25, fontSize: 'var(--t-body)' }} data-testid={`may-apply-${principle.id}`}>
-      <Box component="span" sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 'var(--t-small)', color: 'text.secondary' }}>{number}</Box>
+      <Box component="span" sx={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--t-small)', color: 'text.secondary' }}>{number}</Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>
         {access.open
           ? <Link component="button" type="button" underline="hover" onClick={() => access.open?.(suggestion.ref)} sx={{ textAlign: 'left', fontSize: 'var(--t-body)' }}>{principle.title}</Link>

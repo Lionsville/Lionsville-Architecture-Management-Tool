@@ -5,6 +5,10 @@ import { atFullSize } from '../canvas/useBoardFrame';
 import type { Rect } from '../../model/types';
 import type { ExportDiagramPngOptions, ExportLegend, ExportSwatch, ExportTitleBlock } from '../props';
 import type { ExportTokens } from '../theme/tokens';
+import { SCALE } from '../../widgets/kit/tokens';
+
+/** The face the board itself draws in, so a picture of it reads the same. */
+const FACE = SCALE['font-ui'];
 
 /**
  * Export the rendered diagram to a PNG Blob (ported from the POC, extended
@@ -362,13 +366,13 @@ function drawTitleBlock(
   // on anything else.
   if (block.c4) {
     ctx.fillStyle = palette.accent;
-    ctx.font = `600 ${10 * scale}px sans-serif`;
+    ctx.font = `600 ${10 * scale}px ${FACE}`;
     ctx.fillText(fitText(ctx, block.c4.scope, titleWidth - pad * 2), pad, labelBaseline);
     ctx.fillStyle = palette.ink;
-    ctx.font = `700 ${16 * scale}px sans-serif`;
+    ctx.font = `700 ${16 * scale}px ${FACE}`;
     ctx.fillText(fitText(ctx, block.c4.title, titleWidth - pad * 2), pad, labelBaseline + 21 * scale);
     ctx.fillStyle = palette.inkMuted;
-    ctx.font = `${11 * scale}px sans-serif`;
+    ctx.font = `${11 * scale}px ${FACE}`;
     ctx.fillText(
       fitText(ctx, `${block.c4.description}  ${block.c4.date}`, titleWidth - pad * 2),
       pad, labelBaseline + 40 * scale,
@@ -392,12 +396,12 @@ function drawTitleBlock(
     const rowTop = top + ((block.c4 ? FOOTER_C4_ROW : FOOTER_ROW) + index * FOOTER_LEGEND_ROW) * scale;
     const baseline = rowTop + 10 * scale;
     ctx.fillStyle = palette.inkMuted;
-    ctx.font = `600 ${9 * scale}px sans-serif`;
+    ctx.font = `600 ${9 * scale}px ${FACE}`;
     ctx.fillText(row.label, pad, baseline);
     let x = pad + ctx.measureText(row.label).width + 12 * scale;
     if (row.text) {
       ctx.fillStyle = palette.ink;
-      ctx.font = `${11 * scale}px sans-serif`;
+      ctx.font = `${11 * scale}px ${FACE}`;
       const text = fitText(ctx, row.text, canvasWidth - x - pad);
       ctx.fillText(text, x, baseline);
       x += ctx.measureText(text).width + 20 * scale;
@@ -446,7 +450,7 @@ function drawSwatch(
     if (swatch.line === 'dashed-box') ctx.setLineDash([]);
   }
   ctx.fillStyle = palette.ink;
-  ctx.font = `${11 * scale}px sans-serif`;
+  ctx.font = `${11 * scale}px ${FACE}`;
   ctx.fillText(swatch.label, x + width + 5 * scale, baseline);
   return x + width + 5 * scale + ctx.measureText(swatch.label).width + 16 * scale;
 }
@@ -463,10 +467,10 @@ function drawCell(
   bold: boolean,
 ): void {
   ctx.fillStyle = palette.inkMuted;
-  ctx.font = `600 ${9 * scale}px sans-serif`;
+  ctx.font = `600 ${9 * scale}px ${FACE}`;
   ctx.fillText(cell.label, x, labelBaseline);
   ctx.fillStyle = palette.ink;
-  ctx.font = `${bold ? 700 : 400} ${13 * scale}px sans-serif`;
+  ctx.font = `${bold ? 700 : 400} ${13 * scale}px ${FACE}`;
   ctx.fillText(fitText(ctx, cell.value, width), x, valueBaseline);
 }
 

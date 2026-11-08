@@ -28,6 +28,7 @@ import { useStrings } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { inSentence } from '../../i18n/languages'
 import { inkOn, mix } from '../../widgets'
+import { SCALE } from '../../widgets/kit/tokens'
 import { PICTURE_SIZE } from '../graph'
 import type { PictureNode, PictureSize } from '../graph'
 import { causeLabel, formatObservationNumber } from '../observation'
@@ -187,7 +188,7 @@ function LargeMark({ node, selected, matched, openEnd, marker, s }: RecordMarkPr
       )}
       <rect width={width} height={height} rx={root ? 18 : 6} fill={fill} stroke={line.stroke} strokeWidth={line.width} strokeDasharray={line.dash} />
       {node.kind === 'observation' && <rect x={0} y={0} width={4} height={height} rx={2} fill={impactColour(theme, node.observation.impact)} />}
-      <text x={left} y={19} fontSize={11} fontFamily="var(--font-mono, ui-monospace, monospace)" fill={theme.palette.text.secondary}>{meta}</text>
+      <text x={left} y={19} fontSize={11} fontFamily={SCALE['font-mono']} fill={theme.palette.text.secondary}>{meta}</text>
       {title.map((text, index) => (
         <text key={index} x={left} y={37 + index * 16} fontSize={12.5} fill={theme.palette.text.primary}>{text}</text>
       ))}
@@ -229,7 +230,7 @@ function SmallMark({ node, selected, matched, openEnd, marker, fill, s }: Record
         <rect x={cx - 11} y={cy - 11} width={22} height={22} rx={5} fill={mix(theme.palette.primary.main, 0.12, paper)} stroke={line.stroke} strokeWidth={line.width} />
       )}
       {openEnd && <OpenEnd x={cx + 14} y={cy - 11} r={6.5} s={s} />}
-      <text x={cx} y={cy + 32} textAnchor="middle" fontSize={10.5} fontFamily="ui-monospace, Menlo, monospace" fill={theme.palette.text.secondary}>{recordLabel(node)}</text>
+      <text x={cx} y={cy + 32} textAnchor="middle" fontSize={10.5} fontFamily={SCALE['font-mono']} fill={theme.palette.text.secondary}>{recordLabel(node)}</text>
       <text x={cx} y={cy + 47} textAnchor="middle" fontSize={11.5} fill={theme.palette.text.primary}>{shorten(recordTitle(node), 20)}</text>
       {marker && <text x={cx} y={cy - reach - 6} textAnchor="middle" fontSize={9.5} fill={theme.palette.info.main}>{marker}</text>}
     </>

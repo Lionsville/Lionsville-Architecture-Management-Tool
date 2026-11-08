@@ -33,7 +33,7 @@
 .md-editor__tool:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 .md-editor__tool[aria-pressed='true'], .md-editor__tool[aria-expanded='true'] { background: var(--accent-soft); color: var(--accent); }
 .md-editor__tool b { font-weight: 700; }
-.md-editor__tool i { font-family: Georgia, serif; font-style: italic; }
+.md-editor__tool i { font-style: italic; }
 
 .md-editor__switch { display: inline-flex; flex: none; border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden; }
 .md-editor__switch button {

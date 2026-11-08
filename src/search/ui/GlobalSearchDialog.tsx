@@ -357,7 +357,7 @@ function HitRow({ hit, scopeLabel, s }: {
     <>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {hit.label !== undefined && (
-          <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', fontFamily: 'ui-monospace, Menlo, monospace' }}>
+          <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', fontFamily: 'var(--font-mono)' }}>
             {hit.label}
           </Typography>
         )}

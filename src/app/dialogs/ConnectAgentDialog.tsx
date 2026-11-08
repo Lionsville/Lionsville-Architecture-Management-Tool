@@ -179,7 +179,7 @@ export function ConnectAgentDialog({
                 sx={{
                   m: 0, p: 1.25, fontSize: 'var(--t-small)', lineHeight: 1.5, borderRadius: 1,
                   bgcolor: 'action.hover', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all',
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                  fontFamily: 'var(--font-mono)',
                 }}
               >
                 {recipe}

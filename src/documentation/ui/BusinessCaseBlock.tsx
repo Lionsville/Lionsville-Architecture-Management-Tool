@@ -28,7 +28,7 @@ import type { Translate } from '../../i18n'
 import { computeBusinessCase, readBusinessCase } from '../businessCase'
 import type { BusinessCase, BusinessCaseResult } from '../businessCase'
 
-const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+const CODE_FONT = 'var(--font-mono)'
 
 /**
  * Money, in the block's own currency where it named one this runtime knows.

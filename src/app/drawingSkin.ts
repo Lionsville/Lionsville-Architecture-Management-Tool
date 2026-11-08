@@ -10,10 +10,10 @@
  * moves this without sending anything again. The selectors are draw.io's class
  * names, which a new pin may move: the worst that does is a seam showing again.
  */
-import { coloursOf } from '../widgets/kit/tokens'
+import { coloursOf, SCALE } from '../widgets/kit/tokens'
 import type { AccentShades, ColourToken, Mode } from '../widgets/kit/tokens'
 
-const FACE = "'Source Sans 3', 'Helvetica Neue', Arial, sans-serif"
+const FACE = SCALE['font-ui']
 
 /** One token as both of its values. */
 function both(shades: AccentShades | undefined): (token: ColourToken) => string {

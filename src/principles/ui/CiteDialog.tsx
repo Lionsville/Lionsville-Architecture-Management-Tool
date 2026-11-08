@@ -85,7 +85,7 @@ export function CiteDialog({ open, about, here, initial, deviating = false, onCl
           renderOption={(props, one) => (
             <li {...props} key={`${one.scope}/${one.principle.id}`}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'baseline', width: '100%' }}>
-                <Box component="span" sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 'var(--t-small)', color: 'text.secondary' }}>{formatPrincipleNumber(one.principle.number)}</Box>
+                <Box component="span" sx={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--t-small)', color: 'text.secondary' }}>{formatPrincipleNumber(one.principle.number)}</Box>
                 <Box component="span" sx={{ flex: 1 }}>{one.principle.title}</Box>
                 <Box component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{t(REGIME_WORD[one.principle.regime])}</Box>
               </Box>
@@ -101,7 +101,7 @@ export function CiteDialog({ open, about, here, initial, deviating = false, onCl
             <MenuItem value="">{t('principles.wholePrinciple')}</MenuItem>
             {picked.principle.aspects.map((one) => (
               <MenuItem key={one.id} value={one.number}>
-                <Box component="span" sx={{ fontFamily: 'ui-monospace, Menlo, monospace', fontSize: 'var(--t-small)', color: 'text.secondary', mr: 1 }}>{formatAspectNumber(picked.principle.number, one.number)}</Box>
+                <Box component="span" sx={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--t-small)', color: 'text.secondary', mr: 1 }}>{formatAspectNumber(picked.principle.number, one.number)}</Box>
                 {one.text}
               </MenuItem>
             ))}

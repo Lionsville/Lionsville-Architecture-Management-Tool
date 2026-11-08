@@ -30,7 +30,7 @@ import type { StringKey } from '../../i18n'
 import { readBpmn, wrapLabel } from '../bpmn'
 import type { BpmnDrawing, BpmnRefusal, Edge, Point, Shape } from '../bpmn'
 
-const CODE_FONT = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+const CODE_FONT = 'var(--font-mono)'
 const FONT = 12
 const LINE = 14
 /** Around the drawing, so a stroke on the edge is not clipped. */
