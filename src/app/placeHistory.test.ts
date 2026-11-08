@@ -251,6 +251,21 @@ describe('Back and Forward', () => {
     expect(entries).toHaveLength(2)
   })
 
+  it('says an address changed to a page this app does not have, and opens nothing for it', async () => {
+    const win = fakeWindow()
+    const unknown = vi.fn()
+    const opened: Place[] = []
+    const history = new PlaceHistory(win.win, { open: (place) => { opened.push(place) }, nearest: (place) => Promise.resolve(place), unknown })
+    history.listen()
+    win.paste('#/acme/-/nonsense', 'hashchange')
+    await Promise.resolve()
+    expect(unknown).toHaveBeenCalledTimes(1)
+    expect(opened).toEqual([])
+    // A fragment that never meant to be a place is someone else's, and nothing is said.
+    win.paste('#section-2', 'hashchange')
+    expect(unknown).toHaveBeenCalledTimes(1)
+  })
+
   it('opens a pasted link once where the browser says both, in the old form as well, and writes it over in the new one', async () => {
     const { look, paste, opened, entries } = setUp()
     look(home)

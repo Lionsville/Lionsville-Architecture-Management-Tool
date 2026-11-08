@@ -48,7 +48,7 @@
  * No React: a class with a window handed in, so every rule here is a node
  * test with a fake window and a clock (`placeHistory.test.ts`).
  */
-import { PLACE_STATE_KEY, oldPlaceForm, placeInState, readPlace, samePlace, stepBetween, writePlace } from '../agent/place'
+import { PLACE_STATE_KEY, oldPlaceForm, placeInState, readPlace, samePlace, stepBetween, unknownPlace, writePlace } from '../agent/place'
 import type { Place } from '../agent/place'
 
 /** How long a look waits for the next before the place is written. */
@@ -81,6 +81,8 @@ export type PlaceHistoryOptions = {
   nearest: (place: Place) => Promise<Place>
   /** Somewhere a failure is said, for a place that could not be worked out. */
   failed?: (cause: unknown) => void
+  /** The fragment changed to one that means to be a place and is none: said, as the boot says it. */
+  unknown?: () => void
   now?: () => number
   setTimer?: (run: () => void, ms: number) => unknown
   clearTimer?: (timer: unknown) => void
@@ -91,7 +93,7 @@ type Moving = { from: Place | undefined; until: number }
 
 export class PlaceHistory {
   readonly #window: HistoryWindow
-  readonly #options: Required<Omit<PlaceHistoryOptions, 'failed'>> & Pick<PlaceHistoryOptions, 'failed'>
+  readonly #options: Required<Omit<PlaceHistoryOptions, 'failed' | 'unknown'>> & Pick<PlaceHistoryOptions, 'failed' | 'unknown'>
   /** The place the current entry holds, as this class last wrote or was told it. */
   #entry: Place | undefined
   /** The place the last look found, written or not. */
@@ -182,10 +184,12 @@ export class PlaceHistory {
    * so with `popstate` as well where it makes a new entry, and then this
    * finds the entry already holding the place and does nothing; where only
    * `hashchange` comes, the place is opened as Back opens one. A fragment
-   * that is not a place, or the place the entry holds, is no move.
+   * that is not a place, or the place the entry holds, is no move; one that
+   * meant to be a place and names nothing this app has is said.
    */
   hashChanged(): void {
     const place = readPlace(this.#window.location.hash)
+    if (place === undefined && unknownPlace(this.#window.location.hash)) this.#options.unknown?.()
     if (place === undefined || samePlace(place, this.#entry)) return
     this.#arrive(place)
   }

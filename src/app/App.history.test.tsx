@@ -262,6 +262,12 @@ describe('Back and Forward', () => {
     await settledOn({ scope: 'acme/retail', page: 'home' })
     await screen.findByText('What the address pointed at is not there, so it opened the nearest place.')
   })
+
+  it('names a scope that is not there at all, as the first paint does, landing on the organisation’s home', async () => {
+    const { where } = await backTo({ scope: 'nowhere', page: 'home' })
+    await waitFor(async () => expect((await where()).home?.path).toBe(''))
+    await screen.findByText('There is no scope “nowhere”, so this is the organisation’s home.')
+  })
 })
 
 describe('the first paint, where a place in the address landed it', () => {

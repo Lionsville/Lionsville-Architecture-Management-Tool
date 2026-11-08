@@ -20,6 +20,8 @@ export function usePlaceHistory(deps: {
   open: (place: Place, stay?: () => void) => void
   nearest: (place: Place) => Promise<Place>
   failed: (cause: unknown) => void
+  /** An address changed to one that names a page this app does not have. */
+  unknown?: () => void
 }): (screen: Screen) => void {
   // Read through a ref: the history is made once per mount and must reach the
   // shell's functions as they are now, not as they were then.
@@ -29,6 +31,7 @@ export function usePlaceHistory(deps: {
     open: (place, stay) => latest.current.open(place, stay),
     nearest: (place) => latest.current.nearest(place),
     failed: (cause) => latest.current.failed(cause),
+    unknown: () => latest.current.unknown?.(),
   })))
   useEffect(() => places?.listen(), [places])
   return useCallback((screen: Screen) => places?.look(placeOf(screen)), [places])

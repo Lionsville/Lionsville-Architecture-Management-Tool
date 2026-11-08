@@ -221,10 +221,10 @@ export function useShellAgent(deps: {
       return held && project?.path === path ? { model: held.current(), ancestorDecisions: held.ancestorDecisions() } : undefined
     }, report)
     // Back to a place that is gone lands on the nearest one, and says so (ADR-0033).
-    if (near.page !== place.page || near.id !== place.id || near.scope !== place.scope) notify(s('shell.placeGone'), 'info')
+    sayLanded(place, near, s, (said) => notify(said, 'info'))
     return near
   }, [tree, project, report, notify, s])
-  const lookAtPlace = usePlaceHistory({ open: (place, stay) => openFor(place, NOBODY, stay), nearest, failed: report })
+  const lookAtPlace = usePlaceHistory({ open: (place, stay) => openFor(place, NOBODY, stay), nearest, failed: report, unknown: () => notify(s('shell.placeUnknown'), 'info') })
   /**
    * Where the app is, as `app.current` says it (ADR-0019), held as state so a
    * provider's chrome is drawn again when it moves — `screenNow` is read at
@@ -574,4 +574,14 @@ function screenOf(
     home: { path: home, name: home === ROOT_SCOPE ? organisationName : (homeName ?? scopePathLabel(home)) },
     ...(orgPage ? { page: (orgPage === 'blocks' && orgRecord !== undefined ? { page: orgPage, id: orgRecord } : { page: orgPage }) as Screen['page'] } : {}),
   }
+}
+
+/**
+ * What a place that landed elsewhere says, in the words the boot says it in:
+ * a scope that is not there, landed on the organisation's home, by its name;
+ * anything else, the nearest scope above it included, as gone.
+ */
+function sayLanded(place: Place, near: Place, s: Translate, say: (said: string) => void): void {
+  if (near.scope !== place.scope && place.scope !== ROOT_SCOPE && near.scope === ROOT_SCOPE) say(s('shell.placeNoScope', { scope: place.scope }))
+  else if (near.page !== place.page || near.id !== place.id || near.scope !== place.scope) say(s('shell.placeGone'))
 }
