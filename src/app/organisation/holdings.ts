@@ -33,6 +33,14 @@ const NOTHING: Held = { views: 0, observations: 0, causes: 0, solutions: 0, deci
 
 const totalOf = (held: Held): number => Object.values(held).reduce((sum, one) => sum + one, 0)
 
+/**
+ * The one number a row says: the views and the records worked on there. The
+ * principles are left out of it, as guidance rather than work — kept at the
+ * organisation, fifty of them made its row look heavier than everything
+ * under it — and are still in the breakdown and in *With work*.
+ */
+const workOf = (held: Held): number => totalOf(held) - held.principles
+
 export type Holdings = {
   /** What the scope keeps itself. */
   own: (path: ScopePath) => Held
@@ -40,6 +48,8 @@ export type Holdings = {
   all: (path: ScopePath) => Held
   /** {@link all}, as the one number. */
   count: (path: ScopePath) => number
+  /** What a row says it holds: {@link all} without the principles (`workOf`). */
+  work: (path: ScopePath) => number
   /** Every scope with something at or below it: the tree's *With work*. */
   withWork: ReadonlySet<ScopePath>
 }
@@ -81,6 +91,7 @@ export function holdingsOf(tree: ScopeSummary, models: readonly ScopeModel[]): H
     own: (path) => own.get(path) ?? NOTHING,
     all: allAt,
     count: (path) => totalOf(allAt(path)),
+    work: (path) => workOf(allAt(path)),
     withWork: new Set([...all].filter(([, held]) => totalOf(held) > 0).map(([path]) => path)),
   }
 }

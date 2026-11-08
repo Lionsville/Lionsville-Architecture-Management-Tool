@@ -154,7 +154,7 @@ export function ScopeTree({
             <ScopeRow
               scope={scope} depth={depth} shut={shut} hasBranch={scope.children.length > 0 || topics.length > 0}
               current={scope.path === current} foldable={!matching && !onlyWork} above={matching ? pathWords(tree, scope.path) : ''} unread={unread?.has(scope.path) === true}
-              count={holdings.count(scope.path)} words={heldInWords(holdings.all(scope.path), s)} warns={typeWarns(typeLink?.(scope.path))}
+              count={holdings.work(scope.path)} words={heldInWords(holdings.all(scope.path), s)} warns={typeWarns(typeLink?.(scope.path))}
               onHome={onHome} menuOf={menuOf} language={language} s={s} toggleCollapsed={folds.toggleCollapsed} asked={matching ? asked : ''} enters={matching?.[0] === scope.path}
             />
             {!shut && topics.map((topic) => <TopicTreeRow key={topic.path} at={scope.path} topic={topic} depth={depth + 1} onHome={onHome} s={s} />)}

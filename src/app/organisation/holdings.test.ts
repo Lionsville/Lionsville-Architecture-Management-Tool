@@ -25,6 +25,14 @@ describe('holdingsOf', () => {
     expect(held.all('road')).toMatchObject({ views: 2, decisions: 3 })
   })
 
+  it('says on a row the work, not the principles kept beside it, which the breakdown still names', () => {
+    const principle = { id: 'p1', number: 1, title: 'P', statement: '', aspects: [], lastAspect: 0, groups: [], regime: 'flexible', status: 'accepted' }
+    const held = holdingsOf(TREE, [...MODELS, { path: '', model: { elements: [], relations: [], principles: [principle, { ...principle, id: 'p2' }] } as unknown as ScopeModel['model'] }])
+    expect(held.count('')).toBe(8)
+    expect(held.work('')).toBe(6)
+    expect(held.all('')).toMatchObject({ principles: 2 })
+  })
+
   it('keeps only what holds something, and the path down to it', () => {
     expect([...holdingsOf(TREE, MODELS).withWork].sort()).toEqual(['', 'road', 'road/last', 'road/line'])
   })

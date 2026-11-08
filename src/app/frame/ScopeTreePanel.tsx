@@ -229,7 +229,7 @@ export function ScopeTreePanel({
         <div className="kit-tree__head" aria-hidden="true"><span>{s('org.treeScopes')}</span><span>{s('org.treeHolds')}</span></div>
         {matching === undefined && (
           <RootRow
-            tree={tree} name={name} current={at === ROOT_SCOPE} count={holdings.count(ROOT_SCOPE)} words={heldInWords(holdings.all(ROOT_SCOPE), s)}
+            tree={tree} name={name} current={at === ROOT_SCOPE} count={holdings.work(ROOT_SCOPE)} words={heldInWords(holdings.all(ROOT_SCOPE), s)}
             onHome={onHome} menuOf={menuOf} s={s}
           />
         )}
