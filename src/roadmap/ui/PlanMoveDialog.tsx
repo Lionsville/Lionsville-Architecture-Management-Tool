@@ -16,6 +16,7 @@ import { PropertyRow, PropertyRows, TextField } from '../../widgets/kit/Field'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { slipOf } from '../planReading'
 import { useWindowWords } from './planWords'
+import { plural } from '../../i18n/strings'
 
 export function PlanMoveDialog({ plan, model, onMove, onClose }: {
   plan: Transition
@@ -37,7 +38,7 @@ export function PlanMoveDialog({ plan, model, onMove, onClose }: {
       actions={(
         <>
           <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={days === 0} onClick={() => onMove(days)}>{t('plan.moveAct', { count })}</Button>
+          <Button variant="primary" disabled={days === 0} onClick={() => onMove(days)}>{plural(t, { one: 'plan.moveActOne', other: 'plan.moveAct' }, count)}</Button>
         </>
       )}
     >

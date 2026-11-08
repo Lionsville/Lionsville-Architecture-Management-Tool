@@ -970,14 +970,14 @@ function useAgentBand(parts: ShellParts, facts: ScreenFacts | undefined): Stacke
     return {
       id: 'agent', tone: 'agent',
       title: <span data-testid="agent-driving">{session.purpose ? s('agent.drivingFor', { name: who, purpose: session.purpose }) : s('agent.driving', { name: who })}</span>,
-      detail: <>{run ? `${s('frame.agentCount', { count: run.steps })} ` : ''}{s('agent.drivingHint')}</>,
+      detail: <>{run ? `${plural(s, { one: 'frame.agentCountOne', other: 'frame.agentCount' }, run.steps)} ` : ''}{s('agent.drivingHint')}</>,
       action: <Button size="small" onClick={agent.stop} data-testid="agent-stop">{s('agent.stop')}</Button>,
     }
   }
   if (!ended) return undefined
   return {
     id: 'agent', tone: 'agent',
-    title: <span data-testid="agent-ended">{ended.stopped ? s('frame.agentStopped', { name: ended.name }) : s('frame.agentFinished', { name: ended.name, count: run?.steps ?? 0 })}</span>,
+    title: <span data-testid="agent-ended">{ended.stopped ? s('frame.agentStopped', { name: ended.name }) : plural(s, { one: 'frame.agentFinishedOne', other: 'frame.agentFinished' }, run?.steps ?? 0, { name: ended.name })}</span>,
     action: (
       <>
         {run?.undo && <Button size="small" variant="quiet" onClick={run.undo} data-testid="agent-undo-run">{s('frame.undoThem')}</Button>}

@@ -192,7 +192,7 @@ export function PosterTray({ work, picked, lit, onLight }: {
     const tiles = laidOut.areas.flatMap((area) => [...area.capabilities, ...area.groupings.flatMap((grouping) => grouping.capabilities)])
       .filter((tile) => coverageAt(tile.element.id).supportedBy.includes(row.id ?? '')).map((tile) => tile.element.id)
     onLight(row.id, tiles)
-    say(t('sheet.poster.appCovers', { name: row.name, count: tiles.length }))
+    say(plural(t, { one: 'sheet.poster.appCoversOne', other: 'sheet.poster.appCovers' }, tiles.length, { name: row.name }))
   }
   const drop = (row: Row, id: ElementId, onBlock: boolean) => {
     applyTray(work, mode, row, !onBlock && picked.has(id) ? [...picked] : [id], onBlock)

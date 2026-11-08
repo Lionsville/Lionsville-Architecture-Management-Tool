@@ -222,6 +222,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'plan.direction': 'Richtung',
   'plan.pickTargetFirst': 'Sagen Sie zuerst, wohin sie zieht.',
   'plan.moveTitle': 'Diesen Plan verschieben',
+  'plan.moveActOne': 'Um {count} Tag verschieben',
   'plan.moveAct': 'Um {count} Tage verschieben',
   'plan.moveWay': 'In welche Richtung',
   'plan.later': 'Später',

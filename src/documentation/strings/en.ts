@@ -33,6 +33,7 @@ export const EN = {
   'doc.writeText': 'Write text',
   'doc.noPage': 'No page written yet.',
   'doc.text': 'Text',
+  'doc.filterOne': 'Find among {count} element',
   'doc.filter': 'Find among {count} elements',
   'doc.noMatch': 'Nothing by that name.',
   'doc.statusOn': '{kind} · on {view}',

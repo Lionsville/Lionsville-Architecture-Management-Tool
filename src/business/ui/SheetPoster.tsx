@@ -45,6 +45,7 @@ import type { Who } from './Responsible'
 import { lookOf, valueWord } from './sheetLook'
 import { chordHeld } from '../../widgets/kit/keys'
 import './SheetPoster.css'
+import { plural } from '../../i18n/strings'
 
 export { heldInView, openingCamera, POSTER_ZOOM } from './posterCamera'
 
@@ -283,7 +284,7 @@ const AreaBlock = memo(function AreaBlock({ area, block, drawing, span }: { area
     <section
       className="poster-block" style={{ ...place(block), ...(accent ? { '--poster-rail': accent } as CSSProperties : {}) }}
       data-accent={accent ? '' : undefined} data-block={element.id} data-drop={element.id} data-stand-in={element.ref !== undefined ? '' : undefined}
-      aria-labelledby={`poster-title-${element.id}`} aria-description={t('sheet.poster.areaSays', { count: all.length })}
+      aria-labelledby={`poster-title-${element.id}`} aria-description={plural(t, { one: 'sheet.poster.areaSaysOne', other: 'sheet.poster.areaSays' }, all.length)}
     >
       <h3 className="poster-title" id={`poster-title-${element.id}`}>
         <button type="button" className="poster-title__name" data-element-id={element.id} data-testid={`poster-title-${element.id}`} title={element.name}>{element.name}</button>

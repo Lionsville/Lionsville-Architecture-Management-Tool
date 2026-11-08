@@ -19,6 +19,7 @@ import { setReportsTo, setSlot } from '../edit'
 import { LinesEditor } from './LinesEditor'
 import type { ReaderParts } from './ReaderParts'
 import { howManyWords, lineWords, roleNamed, slotReading } from './reading'
+import { plural } from '../../i18n/strings'
 
 export function SlotReader({ type, slot, index, parts, onTakeOut }: {
   type: UnitType; slot: RoleSlot; index: number; parts: ReaderParts; onTakeOut(): void
@@ -81,7 +82,7 @@ function SlotRows({ type, slot, index, name, parts, changing, onChanging, write 
   const units = facts?.unitsOfType(type.id).length
   return (
     <>
-      {units !== undefined && <p className="op-small">{t('operating.appliesTo', { count: units })}</p>}
+      {units !== undefined && <p className="op-small">{plural(t, { one: 'operating.appliesToOne', other: 'operating.appliesTo' }, units)}</p>}
       <div className="op-rowEnd">
         <span>{t('operating.functionalLine', { line: dotted.line?.role !== undefined ? roleNamed(model.roles, dotted.line.role) : t('operating.none') })}</span>
         {!readOnly && <Button variant="quiet" size="small" data-testid="operating-change-functional" aria-expanded={changing === 'dotted'} onClick={() => onChanging(changing === 'dotted' ? undefined : 'dotted')}>{t('operating.change')}</Button>}

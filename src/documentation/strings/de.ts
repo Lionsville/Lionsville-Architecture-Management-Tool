@@ -32,6 +32,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'doc.writeText': 'Text schreiben',
   'doc.noPage': 'Noch keine Seite geschrieben.',
   'doc.text': 'Text',
+  'doc.filterOne': 'In {count} Element suchen',
   'doc.filter': 'In {count} Elementen suchen',
   'doc.noMatch': 'Nichts unter diesem Namen.',
   'doc.statusOn': '{kind} · auf {view}',

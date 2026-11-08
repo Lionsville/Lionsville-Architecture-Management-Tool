@@ -22,6 +22,7 @@ import type { Difference } from '../compare'
 import type { OperatingModel } from '../edit'
 import type { Library, LibraryLanguage } from '../library'
 import { countsLine } from './countsLine'
+import { plural } from '../../i18n/strings'
 
 type Props = {
   model: OperatingModel
@@ -109,7 +110,7 @@ const cameInWords = (made: readonly CameInItem[], matched: readonly MatchedItem[
   const count = made.length + matched.length
   if (count === 0) return t('operating.nothingBrought')
   const changed = made.filter((item) => item.changed.length > 0).length
-  return changed > 0 ? t('operating.broughtChanged', { count, changed }) : t('operating.brought', { count })
+  return changed > 0 ? t('operating.broughtChanged', { count, changed }) : plural(t, { one: 'operating.broughtOne', other: 'operating.brought' }, count)
 }
 
 /** A difference as a sentence. */

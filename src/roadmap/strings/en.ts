@@ -239,6 +239,7 @@ export const EN = {
   'plan.direction': 'Direction',
   'plan.pickTargetFirst': 'Say where it moves to first.',
   'plan.moveTitle': 'Move this plan',
+  'plan.moveActOne': 'Move by {count} day',
   'plan.moveAct': 'Move by {count} days',
   'plan.moveWay': 'Which way',
   'plan.later': 'Later',

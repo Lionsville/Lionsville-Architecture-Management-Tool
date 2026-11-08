@@ -222,6 +222,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'plan.direction': 'Richting',
   'plan.pickTargetFirst': 'Zeg eerst waarheen het gaat.',
   'plan.moveTitle': 'Dit plan verplaatsen',
+  'plan.moveActOne': '{count} dag verplaatsen',
   'plan.moveAct': '{count} dagen verplaatsen',
   'plan.moveWay': 'Welke kant op',
   'plan.later': 'Later',

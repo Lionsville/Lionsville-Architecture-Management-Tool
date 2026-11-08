@@ -54,6 +54,7 @@ import { DocGlyph } from '../../widgets/icons';
 import { kindLabel } from '../../model/kinds';
 import { fieldEdit } from '../../model/commands';
 import './DocumentationPage.css';
+import { plural } from '../../i18n/strings'
 
 /** How long the text must be quiet before a draft becomes a commit. */
 const COMMIT_DELAY_MS = 1200;
@@ -183,7 +184,7 @@ function RecordRail({ groups, current, onOpen }: {
   return (
     <nav className="doc-record__rail" data-testid="doc-nav" aria-label={t('doc.neighbours')}>
       <div className="doc-record__find">
-        <FindField fill label={t('doc.filter', { count: total })} value={find} onChange={setFind} />
+        <FindField fill label={plural(t, { one: 'doc.filterOne', other: 'doc.filter' }, total)} value={find} onChange={setFind} />
       </div>
       <List
         label={t('doc.neighbours')} groups={listed} wrap density="compact" selectedId={current}
