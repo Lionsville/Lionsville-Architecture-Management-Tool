@@ -6,7 +6,8 @@
   menu), accepted and built; amended 11 October 2026 (what a link selects,
   and a link to one record), accepted and built; amended 17 October 2026 (a
   link is a path, the old form is read, a pasted link moves an open window,
-  and an element's page needs no view), accepted and built
+  and an element's page needs no view), accepted and built; amended
+  8 November 2026 (a page of records keeps the tree beside it), accepted and built
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -523,3 +524,7 @@ A scope's settings are a page of its home, `#/<scope>/-/settings`, with its sect
 ## Amended 8 November 2026: a way in may land on a field
 
 A way in that is about one field lands on it. The tree's *Move to…* opens a scope's settings on *Filed under*, `#/<scope>/-/settings?field=filedUnder`, with the focus in it. `field` is read on arrival, as `select` is, and is no part of the place: Back, `samePlace` and the history never hold it. A page says which fields it has in `PAGE_FIELDS` (`agent/screen.ts`), as it says its tabs in `PAGE_TABS`, and `app.open` takes the same word and refuses a field the page has not.
+
+## Amended 8 November 2026: a page of records keeps the tree beside it
+
+A page reached from row two works by scope, and nothing on it said which scope that was or where else its records were. The pages whose records each scope keeps — documentation (an element's record too), decisions, observations, the roadmap, principles and building blocks (`TALLIED`, `app/frame/pageTally.ts`) — now dock the scope tree as a home does, whatever the tree's preference says, and on a phone leave it to the toggle as a home does. Beside such a page each row counts that page's records the scope keeps itself, under the page's word, never what is under it: the page reads the scopes below where it reads them, and a rolled-up number would say the same record once per scope above it. A scope with none shows no number, and reads quiet where nothing is found below it either; *With …* keeps the scopes that have some and the path down to them. The count is the page's own rule, off the index the shell already read: the elements kept and not a stand-in, the decision records filed, the live observations (`liveObservations`), every plan, the standing principles, the blocks kept. Pressing a row keeps the page and moves it to that scope, through the guard every move passes (`throughGuard`), so a draft is asked about first. The register, technology, people, the operating model, topics and Checks are the organisation's and keep the width to the work.

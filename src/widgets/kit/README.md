@@ -137,6 +137,9 @@ a person, a link and an agent alike:
    `MORE_PLACES`. Row two, the foot of the tree, More and ⌘K all read that table.
 3. Say it on the screen: `useWorkspacePages`'s `page()` for a scope's page,
    `useHomePages` for a home's. `app.open` and Back then arrive through `openFor`.
+4. Where a page lists records each scope keeps, give it a line in
+   `app/frame/pageTally.ts` with the rule it counts by: the tree then docks
+   beside it, counting each scope's own, and a row moves the page there.
 
 **Tabs.** `const [tab, setTab] = usePlaceTab('first')` from `widgets/placeTab.ts`
 instead of a `useState`, with the tab named in `PAGE_TABS`. The address says

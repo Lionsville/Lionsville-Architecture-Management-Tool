@@ -502,3 +502,60 @@ describe('the sheet of keys', () => {
     expect(await screen.findByTestId('shortcuts-sheet')).toBeDefined()
   })
 })
+
+describe('the tree beside a record page', () => {
+  const decided = (id: string, number: number) => ({ id, number, title: `Decision ${number}`, status: 'proposed' as const, date: '2026-09-01', body: '', signers: [] })
+  const seen = (id: string, number: number) => ({
+    id, number, title: `Seen ${number}`, date: '2026-09-01', where: '', by: '', impact: 'minor' as const, seen: 1, body: '', history: [{ date: '2026-09-01', kind: 'recorded' as const }],
+  })
+  async function withRecords() {
+    const [root, retail, depot] = TREE()
+    const agent = wire()
+    renderApp({
+      agent: agent.gateway, boot: { initialProject: undefined },
+      repositories: heldRepositories([
+        root,
+        { ...retail, model: { ...retail.model, decisions: [decided('r1', 1)] } },
+        { ...depot, model: { ...depot.model, decisions: [decided('d1', 1), decided('d2', 2)], observations: [seen('o1', 1)] } },
+      ]),
+    })
+    await waitFor(() => expect(agent.bound()).toBe(true))
+    await screen.findByTestId('organisation-cards')
+    return agent
+  }
+  const countOf = (path: string) => within(screen.getByTestId(`scope-${path}`)).queryByTestId('scope-holds')?.textContent ?? ''
+
+  it('is docked on the page, counting each scope\'s own records of it, and a scope with none says nothing and reads quiet', async () => {
+    const { ask } = await withRecords()
+    await ask('app.open', { scope: 'retail/depot', page: 'decisions' })
+    await waitFor(() => expect(screen.getByTestId('tree-head-count').textContent).toBe('Decisions'))
+    // The path to where you are stands open.
+    await waitFor(() => expect(countOf('retail/depot')).toBe('2'))
+    // Its own, not what is below it.
+    expect(countOf('retail')).toBe('1')
+    expect(screen.getByTestId('scope-retail/depot').getAttribute('aria-current')).toBe('page')
+    expect(within(screen.getByTestId('scope-root')).queryByText(/\d/)).toBeNull()
+    expect(screen.getByTestId('frame-tree-toggle').getAttribute('aria-pressed')).toBe('true')
+    await ask('app.open', { scope: 'retail/depot', page: 'observations' })
+    await waitFor(() => expect(screen.getByTestId('tree-head-count').textContent).toBe('Observations'))
+    expect(countOf('retail/depot')).toBe('1')
+    expect(countOf('retail')).toBe('')
+    expect(screen.getByTestId('scope-retail').hasAttribute('data-quiet')).toBe(false)
+  })
+
+  it('keeps the page and moves it to the scope pressed', async () => {
+    const { ask } = await withRecords()
+    await ask('app.open', { scope: 'retail/depot', page: 'decisions' })
+    await waitFor(() => expect(screen.getByTestId('tree-head-count').textContent).toBe('Decisions'))
+    fireEvent.click(screen.getByTestId('scope-retail'))
+    await waitFor(async () => expect(parsed(await ask('app.current'))).toMatchObject({ open: { path: 'retail' }, page: { page: 'decisions' } }))
+    expect(screen.getByTestId('scope-retail').getAttribute('aria-current')).toBe('page')
+  })
+
+  it('keeps the width to the work on a page whose records are not kept by scope', async () => {
+    await withRecords()
+    fireEvent.click(screen.getByTestId('tree-place-register'))
+    await placePage()
+    expect(screen.queryByTestId('frame-tree')).toBeNull()
+  })
+})

@@ -72,6 +72,22 @@ export type ScopeTreeProps = RowActs & {
   topicRows?: ((path: ScopePath) => readonly TopicRow[]) | undefined
   /** What was typed in the find box, marked where a name holds it. */
   asked?: string
+  /** Beside a record page: each row says that page's records the scope keeps itself, in place of what it holds (`frame/pageTally`). */
+  tally?: TreeTally | undefined
+}
+
+/** One page's records per scope, as the rows say them: the count, whether the row reads quiet, and the count in words on hover. */
+export type TreeTally = {
+  readonly own: (path: ScopePath) => number
+  /** Every scope keeping one at or below it: the rest read quiet. */
+  readonly within: ReadonlySet<ScopePath>
+  readonly words: (count: number) => string
+}
+
+/** What a hover says of a scope's own records of the page beside the tree, where it keeps any. */
+export function tallyWords(tally: TreeTally, path: ScopePath): string {
+  const own = tally.own(path)
+  return own > 0 ? tally.words(own) : ''
 }
 
 /** A topic as a row under a scope it is relevant to: where it lives, and what it is called. */
@@ -116,12 +132,12 @@ function visibleRows(tree: ScopeSummary, collapsed: ReadonlySet<ScopePath>): Sco
 
 const NONE_FOLDED: ReadonlySet<ScopePath> = new Set()
 
-function rowsOf({ tree, folds, onlyWork, matching, holdings }: Pick<ScopeTreeProps, 'tree' | 'folds' | 'onlyWork' | 'matching' | 'holdings'>): ScopeSummary[] {
+function rowsOf({ tree, folds, onlyWork, matching, holdings, tally }: Pick<ScopeTreeProps, 'tree' | 'folds' | 'onlyWork' | 'matching' | 'holdings' | 'tally'>): ScopeSummary[] {
   if (matching) {
     const found = new Set(matching)
     return flattenScopes(tree).filter((scope) => scope.path !== tree.path && found.has(scope.path))
   }
-  if (onlyWork) return visibleRows(tree, NONE_FOLDED).filter((scope) => holdings.withWork.has(scope.path))
+  if (onlyWork) return visibleRows(tree, NONE_FOLDED).filter((scope) => (tally?.within ?? holdings.withWork).has(scope.path))
   return visibleRows(tree, folds.collapsed)
 }
 
@@ -136,9 +152,9 @@ function pathWords(tree: ScopeSummary, path: ScopePath): string {
 }
 
 export function ScopeTree({
-  tree, folds, onHome, menuOf, holdings, typeLink, language, s, current, onlyWork = false, matching, unread, topicRows, asked = '',
+  tree, folds, onHome, menuOf, holdings, typeLink, language, s, current, onlyWork = false, matching, unread, topicRows, asked = '', tally,
 }: ScopeTreeProps) {
-  const rows = rowsOf({ tree, folds, onlyWork, matching, holdings })
+  const rows = rowsOf({ tree, folds, onlyWork, matching, holdings, tally })
   const personal = flattenScopes(tree).filter((one) => one.personal).map((one) => one.path)
   // The top of the tree is its own row, so its children are the first column.
   const base = scopeSegments(tree.path).length
@@ -162,7 +178,8 @@ export function ScopeTree({
             <ScopeRow
               scope={scope} depth={depth} shut={shut} hasBranch={scope.children.length > 0 || topics.length > 0}
               current={scope.path === current} foldable={!matching && !onlyWork} above={matching ? pathWords(tree, scope.path) : ''} unread={unread?.has(scope.path) === true}
-              count={holdings.work(scope.path)} words={heldInWords(holdings.all(scope.path), s)} warns={typeWarns(typeLink?.(scope.path))}
+              count={tally ? tally.own(scope.path) : holdings.work(scope.path)} words={tally ? tallyWords(tally, scope.path) : heldInWords(holdings.all(scope.path), s)}
+              quiet={tally ? !tally.within.has(scope.path) : holdings.work(scope.path) === 0} warns={typeWarns(typeLink?.(scope.path))}
               onHome={onHome} menuOf={menuOf} language={language} s={s} toggleCollapsed={folds.toggleCollapsed} asked={matching ? asked : ''} enters={matching?.[0] === scope.path}
             />
             {!shut && topics.map((topic) => <TopicTreeRow key={topic.path} at={scope.path} topic={topic} depth={depth + 1} onHome={onHome} s={s} />)}
@@ -215,9 +232,11 @@ function rowSaid({ named, own, warns, unread, count, s }: {
   return [named, warns ? s('org.typeMismatch') : '', unread ? s('org.notRead') : count > 0 ? String(count) : '', own].filter(Boolean).join(', ')
 }
 
-function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unread, count, words, warns, onHome, menuOf, s, language, toggleCollapsed, asked, enters }: RowActs & {
+function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unread, count, words, quiet, warns, onHome, menuOf, s, language, toggleCollapsed, asked, enters }: RowActs & {
   scope: ScopeSummary; depth: number; shut: boolean; hasBranch: boolean; current: boolean; foldable: boolean; above: string; unread: boolean
   count: number; words: string; warns: boolean; asked: string
+  /** Nothing to find here or below: the row keeps its place in a quieter ink. */
+  quiet: boolean
   /** The match Enter in the find box opens, marked as the one. */
   enters: boolean
   toggleCollapsed: (path: ScopePath) => void
@@ -241,7 +260,7 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
       data-testid={`scope-${scope.path}`}
       data-guide="org.tree.row"
       data-depth={depth}
-      data-quiet={count === 0 || undefined}
+      data-quiet={quiet || undefined}
       aria-current={current ? 'page' : undefined}
       style={{ paddingInlineStart: `${depth * 14}px` }}
       data-personal={scope.personal || undefined}
@@ -278,15 +297,17 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
 }
 
 /** The root's own row: a name, what the whole tree holds, and no way to fold or remove it. */
-export function RootRow({ tree, name, current, count, words, onHome, menuOf, s }: RowActs & {
+export function RootRow({ tree, name, current, count, words, quiet = count === 0, onHome, menuOf, s }: RowActs & {
   tree: ScopeSummary; name: string; current: boolean; count: number; words: string; s: Translate
+  /** Nothing to find in the whole tree; absent: when the count is nought. */
+  quiet?: boolean
 }) {
   const items = menuOf(tree)
   return (
     <div
       className="kit-tree__row" data-testid="scope-root" aria-current={current ? 'page' : undefined}
       role="treeitem" tabIndex={-1} aria-level={1} aria-label={count > 0 ? `${name}, ${count}` : name} data-name={name}
-      data-quiet={count === 0 || undefined} title={[name, words].filter(Boolean).join('\n')}
+      data-quiet={quiet || undefined} title={[name, words].filter(Boolean).join('\n')}
       onClick={() => onHome(ROOT_SCOPE)}
     >
       <span className="kit-tree__fold" aria-hidden />

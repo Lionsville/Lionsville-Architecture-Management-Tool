@@ -133,6 +133,16 @@ describe('moving away with a draft', () => {
     expect((await where()).page).toBeUndefined()
   })
 
+  it('asks first from the tree beside a record page, and leaves for the same page there on Leave and drop it', async () => {
+    const { ask } = await organisationOnScreen()
+    await ask('app.open', { scope: '', page: 'decisions' })
+    await waitFor(() => expect(screen.getByTestId('tree-head-count').textContent).toBe('Decisions'))
+    render(<Draft />)
+    fireEvent.click(screen.getByTestId('scope-acme'))
+    fireEvent.click(await screen.findByTestId('draft-leave'))
+    await waitFor(() => expect(entryPlace()).toMatchObject({ scope: 'acme', page: 'decisions' }))
+  })
+
   it('asks first from row two, and leaves on Leave and drop it', async () => {
     await organisationOnScreen()
     render(<Draft />)

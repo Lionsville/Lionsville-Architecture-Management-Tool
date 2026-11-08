@@ -30,8 +30,8 @@ import type { MenuEntry } from '../../widgets/kit/Menu'
 import { FindField } from '../../widgets/kit/FindField'
 import { LinkLine } from '../../widgets/kit/Section'
 import { Tabs } from '../../widgets/kit/Tabs'
-import { heldInWords, RootRow, ScopeTree, TopicTreeRow } from '../organisation/ScopeTree'
-import type { TopicRow } from '../organisation/ScopeTree'
+import { heldInWords, RootRow, ScopeTree, tallyWords, TopicTreeRow } from '../organisation/ScopeTree'
+import type { TopicRow, TreeTally } from '../organisation/ScopeTree'
 import type { Holdings } from '../organisation/holdings'
 import type { ScopeFolds } from '../organisation/useScopeFolds'
 import { ORGANISATION_PLACES, placeShows } from './places'
@@ -67,6 +67,18 @@ export type ScopeTreePanelProps = TreeActs & {
   today: string
   language: Language
   s: Translate
+  /**
+   * Beside a record page: the rows count that page's records, a scope's own,
+   * under the page's word, and *With …* keeps the scopes that have some.
+   */
+  tally?: PanelTally | undefined
+}
+
+export type PanelTally = TreeTally & {
+  /** The column's head: what is counted. */
+  readonly head: string
+  /** The second tab: the scopes keeping some. */
+  readonly withLabel: string
 }
 
 type Show = 'all' | 'work'
@@ -158,8 +170,9 @@ function useFootFold(panel: RefObject<HTMLDivElement | null>, rows: RefObject<HT
 }
 
 export function ScopeTreePanel({
-  tree, at, page, order, onOrderChange, folds, holdings, onHome, go, writable, typeLink, placeFact, today, language, s, findFirst = false, ...acts
+  tree, at, page, order, onOrderChange, folds, holdings, onHome, go, writable, typeLink, placeFact, today, language, s, findFirst = false, tally, ...acts
 }: ScopeTreePanelProps) {
+  const within = tally?.within ?? holdings.withWork
   const [find, setFind] = useState('')
   const [show, setShow] = useState<Show>('all')
   // The path to where you are, and what is filed under it, stands open, whichever way you arrived.
@@ -211,7 +224,7 @@ export function ScopeTreePanel({
             // While a name is typed, what each tab would show of what was found.
             // A scope only its reader sees is listed, and counted in neither.
             { value: 'all', label: s('org.treeAll'), count: (matching ?? flattenScopes(tree).map((one) => one.path)).filter((path) => !holdings.personal.has(path)).length },
-            { value: 'work', label: s('org.treeWithWork'), count: matching ? matching.filter((path) => holdings.withWork.has(path)).length : holdings.withWork.size },
+            { value: 'work', label: tally?.withLabel ?? s('org.treeWithWork'), count: matching ? matching.filter((path) => within.has(path)).length : within.size },
           ]}
         />
         <MoreMenu
@@ -227,20 +240,25 @@ export function ScopeTreePanel({
         />
       </div>
       <div className="kit-tree__rows" ref={rowsRef} role="tree" aria-label={s('org.treeScopes')} onKeyDown={treeKeys} onContextMenu={rowMenu}>
-        <div className="kit-tree__head" aria-hidden="true"><span>{s('org.treeScopes')}</span><span>{s('org.treeHolds')}</span></div>
-        {matching === undefined && (
+        <div className="kit-tree__head" aria-hidden="true"><span>{s('org.treeScopes')}</span><span data-testid="tree-head-count">{tally?.head ?? s('org.treeHolds')}</span></div>
+        {matching === undefined && (tally ? (
+          <RootRow
+            tree={tree} name={name} current={at === ROOT_SCOPE} count={tally.own(ROOT_SCOPE)} words={tallyWords(tally, ROOT_SCOPE)} quiet={!tally.within.has(ROOT_SCOPE)}
+            onHome={onHome} menuOf={menuOf} s={s}
+          />
+        ) : (
           <RootRow
             tree={tree} name={name} current={at === ROOT_SCOPE} count={holdings.work(ROOT_SCOPE)} words={heldInWords(holdings.all(ROOT_SCOPE), s)}
             onHome={onHome} menuOf={menuOf} s={s}
           />
-        )}
+        ))}
         {/* The organisation's branch is always open, so what is relevant to it shows at once. */}
         {matching === undefined && show !== 'work' && topicRows(ROOT_SCOPE).map((topic) => (
           <TopicTreeRow key={topic.path} at={ROOT_SCOPE} topic={topic} depth={1} onHome={onHome} s={s} />
         ))}
         <ScopeTree
           tree={listed} folds={folds} onHome={onHome} menuOf={menuOf} holdings={holdings} current={at} language={language} s={s} unread={unread}
-          onlyWork={show === 'work'} topicRows={topicRows}
+          onlyWork={show === 'work'} topicRows={topicRows} tally={tally}
           {...(matching ? { matching, asked } : {})}
           {...(typeLink ? { typeLink } : {})}
         />

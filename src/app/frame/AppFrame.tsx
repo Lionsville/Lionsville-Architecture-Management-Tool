@@ -66,6 +66,8 @@ import { ScopeTreePanel } from './ScopeTreePanel'
 import { recentFrom, recentOf, RECENT_KEY, remembered } from './recentPlaces'
 import { sourceKey } from '../../platform/workingSource'
 import { holdingsOf } from '../organisation/holdings'
+import { TALLY_WORDS, talliedPage, tallyOf } from './pageTally'
+import type { PanelTally } from './ScopeTreePanel'
 import { newViewChoices } from '../organisation/newViewChoices'
 import { registerSummary } from '../organisation/register'
 import { plural } from '../../i18n/strings'
@@ -101,7 +103,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const pageUp = page !== undefined
   // A phone has no room for the tree beside a home: it is the toggle's to bring, over the page. Asked here so a turn of the phone draws again.
   useMediaQuery(PHONE, { noSsr: true })
-  const onHomeBare = treeAlwaysOn(parts, pageUp)
+  const onHomeBare = treeAlwaysOn(parts, page)
   const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts)
   useExampleCommand(parts)
   useFrameKeys(parts, state)
@@ -566,7 +568,9 @@ function TreeFor({ parts, at, page, onDone, findFirst = false }: { parts: ShellP
   const leave = (then: () => void) => () => { onDone?.(); then() }
   // Removal is asked by the organisation's dialog on a home; from a scope that
   // is open, that home is one move away, and that is the move.
-  const onHome = (path: ScopePath) => leave(() => agent.openSomewhere({ scope: path, page: 'home' }))()
+  // Beside a record page a scope's row keeps the page and moves it there; elsewhere it is the scope's home.
+  const tallied = talliedPage(page)
+  const onHome = (path: ScopePath) => leave(() => agent.openSomewhere({ scope: path, page: tallied ?? 'home' }))()
   const fromHome = (then: (scope: ScopeSummary) => void) => (scope: ScopeSummary) => {
     onDone?.()
     if (nav.project) nav.goHome(at)
@@ -574,6 +578,13 @@ function TreeFor({ parts, at, page, onDone, findFirst = false }: { parts: ShellP
   }
   const { models } = parts.tree
   const holdings = useMemo(() => holdingsOf(organisation.tree, models), [organisation.tree, models])
+  const { index } = parts.tree
+  const tally = useMemo<PanelTally | undefined>(() => {
+    if (!tallied) return undefined
+    const counted = tallyOf(tallied, organisation.tree, models, holdings, index)
+    const words = TALLY_WORDS[tallied]
+    return { ...counted, head: s(words.head), withLabel: s(words.with), words: (count: number) => plural(s, { one: words.one, other: words.other }, count) }
+  }, [tallied, organisation.tree, models, holdings, index, s])
   const atHome = (then: () => void) => { onDone?.(); if (nav.project) nav.goHome(at); then() }
   return (
     <ScopeTreePanel
@@ -586,7 +597,7 @@ function TreeFor({ parts, at, page, onDone, findFirst = false }: { parts: ShellP
       onNewScopeUnder={(path) => atHome(() => organisation.addUnder(path))}
       newViewItems={(path) => newViewChoices(s, () => atHome(() => organisation.addBoard(path)), (kind) => { onDone?.(); organisation.open(path, { page: 'make', kind }) })}
       placeFact={(place) => placeFact(place, parts)}
-      writable={writable} language={prefs.language} s={s} findFirst={findFirst}
+      writable={writable} language={prefs.language} s={s} findFirst={findFirst} tally={tally}
       {...(parts.frame.get().screen?.typeLink ? { typeLink: parts.frame.get().screen?.typeLink } : {})}
     />
   )
@@ -735,9 +746,14 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   )
 }
 
-/** A home with no page over it docks the tree whatever the preference says — but on a phone, which has no room beside it. */
-function treeAlwaysOn(parts: ShellParts, pageUp = (parts.agent.screen ?? parts.agent.screenNow()).page !== undefined): boolean {
-  return !parts.nav.project && !pageUp && !(window.matchMedia?.(PHONE).matches ?? false)
+/**
+ * A home with no page over it docks the tree whatever the preference says, and
+ * so does a page of records kept per scope, whose tree counts them by scope
+ * (`pageTally`) — but not on a phone, which has no room beside either.
+ */
+function treeAlwaysOn(parts: ShellParts, page = (parts.agent.screen ?? parts.agent.screenNow()).page?.page): boolean {
+  if (window.matchMedia?.(PHONE).matches ?? false) return false
+  return talliedPage(page) !== undefined || (!parts.nav.project && page === undefined)
 }
 
 /**
@@ -751,7 +767,7 @@ function TreeToggle({ parts, pinned, onHome }: { parts: ShellParts; pinned: bool
   return (
     <IconButton
       label={label} size="small" pressed={onHome || pinned} data-testid="frame-tree-toggle" data-guide="frame.tree"
-      reason={onHome ? s('frame.treeOnHome') : undefined}
+      reason={onHome ? s(talliedPage((parts.agent.screen ?? parts.agent.screenNow()).page?.page) ? 'frame.treeOnPage' : 'frame.treeOnHome') : undefined}
       tip={`${label} (${isMac() ? '⌘\\' : 'Ctrl \\'})`}
       onClick={() => { frame.set({ pinned: !pinned }); prefs.writePreference({ treePinned: !pinned }) }}
     >
