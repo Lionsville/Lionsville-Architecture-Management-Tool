@@ -405,10 +405,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // A landscape's own sheet, which may take up what the organisation's sheet holds (ADR-0040 §5).
   [['a sheet below the organisation’s', ['sheet.fromAbove'], async () => {
     const sheeted = example.map((one) => (one.path === landscape.path ? sheetBelow(one) : one))
-    const below = sheeted.find((one) => one.path === landscape.path)!
-    renderApp({ repositories: heldRepositories(sheeted), boot: { initialProject: below } })
-    // The scope is read and open first, and its sheet drawn after: two things a loaded machine takes its time over.
-    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe(below.model.name))
+    renderApp({ repositories: heldRepositories(sheeted), boot: { initialProject: sheeted.find((one) => one.path === landscape.path)! } })
     await screen.findByTestId('sheet-canvas')
   }]],
   [['the enterprise map', ['map.grid', 'map.summary', 'page.seam', 'map.reading', 'map.filter', 'map.levels', 'map.day', 'map.matrix'], async () => {
@@ -779,6 +776,9 @@ describe('the stable control names', { timeout: 20_000 }, () => {
 
   it.each([...JOURNEYS, DRAWN, CHOSEN].map((journey) => [journey.map(([label]) => label).join(', then '), journey] as const))(
     'are on %s', async (_label, journey) => {
+      // The window outlives a journey, and the one before may have lived long enough to write its place:
+      // the sheet read as a poster left ?tab=poster, and the next sheet opened on its poster.
+      window.history.replaceState(null, '', '/')
       for (const [, names, reach] of journey) {
         await reach()
         await named(...names)
