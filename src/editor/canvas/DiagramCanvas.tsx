@@ -481,6 +481,14 @@ export function parseDragPayload(raw: string): DragPayload {
  * the effective model; live drag positions stay in local React Flow state and
  * are committed into the overlay on drag-stop (single batch per gesture).
  */
+/**
+ * What besides its cards changes a board's size, for `useBoardFrame` to frame it again: Where it runs grows a
+ * boundary by what runs on the day looked at, and a day other than today brings the banner that takes the pane's top.
+ */
+function drawnAsOf(showDeployment: boolean | undefined, day: string): string {
+  return showDeployment === true ? `deployed|${day}` : 'plain';
+}
+
 export function DiagramCanvas(props: DiagramCanvasProps) {
   const theme = useTheme();
   const tokens = getNodeTokens(theme);
@@ -1096,7 +1104,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     awaiting: awaitsLayout(props.diagram),
     ready: initialised,
     ...(props.emptyFrame ? { emptyFrame: props.emptyFrame } : {}),
-    setViewport, drawnAs: String(props.showDeployment === true),
+    setViewport, drawnAs: drawnAsOf(props.showDeployment, asOfDay),
   });
   // When the pointer last went down inside the canvas — how the focus handler
   // tells a click apart from a Tab (see `handleContainerFocus`).
