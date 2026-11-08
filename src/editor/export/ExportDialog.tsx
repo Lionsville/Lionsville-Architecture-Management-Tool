@@ -17,6 +17,7 @@
  * chosen options while this is open and hands over the preview and the size;
  * this decides nothing but what the person chose.
  */
+import { useTheme } from '@mui/material/styles';
 import { useStrings } from '../../i18n/LanguageContext';
 import { PictureDialog, PictureGroup, PictureTitleFields } from '../../widgets/kit/PictureDialog';
 import { Segmented } from '../../widgets/kit/Segmented';
@@ -76,10 +77,12 @@ export function ExportDialog(props: ExportDialogProps) {
   const { t } = useStrings();
   const { options, onChange, titleFields, exporting } = props;
   const large = props.size.megapixels > LARGE_EXPORT_MEGAPIXELS;
+  // The board behind is drawn in the picture's theme while this is open: in the other one it is covered, not shown changed.
+  const windowMode = useTheme().palette.mode;
   const warning = props.outOfSight ? t('export.outOfSight') : large ? t('export.largeBody') : undefined;
   return (
     <PictureDialog
-      open={props.open} name={props.name ?? ''} onSave={props.onExport} onClose={props.onClose} working={exporting} closesItself
+      open={props.open} cover={options.theme !== windowMode} name={props.name ?? ''} onSave={props.onExport} onClose={props.onClose} working={exporting} closesItself
       saveWord={large ? t('export.largeConfirm') : t('export.confirm')}
       {...(warning ? { warning } : {})}
       facts={<p className="export-dialog__size">{t('export.size', props.size)}</p>}

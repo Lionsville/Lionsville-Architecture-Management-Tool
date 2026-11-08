@@ -51,6 +51,8 @@ export type PictureDialogProps = {
   readonly open?: boolean
   /** The view closes it itself once its own work is done (a board's export runs on after the press). */
   readonly closesItself?: boolean
+  /** The page under it is repainted for the picture: covered rather than dimmed, so it does not look changed. */
+  readonly cover?: boolean
 }
 
 export type PictureTitleBlock = {
@@ -177,7 +179,7 @@ export function PictureDialog(props: PictureDialogProps) {
   )
   return (
     <Dialog
-      open={props.open ?? true} size={props.preview !== undefined ? 'l' : 'm'} title={t('kit.picture.title', { name: props.name })} onClose={props.onClose} working={held}
+      open={props.open ?? true} cover={props.cover === true} size={props.preview !== undefined ? 'l' : 'm'} title={t('kit.picture.title', { name: props.name })} onClose={props.onClose} working={held}
       data-testid={props['data-testid']}
       {...(failure !== undefined ? { error: props.failed ? props.failed(failure) : t('kit.picture.failed', { message: failure }) } : {})}
       actions={{

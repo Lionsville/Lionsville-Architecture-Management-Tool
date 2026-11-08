@@ -1,4 +1,5 @@
 .kit-dialog__scrim.MuiBackdrop-root { background: var(--scrim); }
+.kit-dialog__scrim.MuiBackdrop-root[data-cover] { background: var(--ground); }
 .MuiPaper-root.kit-dialog {
   display: flex;
   flex-direction: column;

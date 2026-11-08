@@ -114,12 +114,14 @@ export type DialogProps = {
    * where it was.
    */
   returnFocus?: () => HTMLElement | undefined
+  /** Covers what is behind it rather than dimming it: for a dialog whose work repaints the page under it. */
+  cover?: boolean
   'data-guide'?: string
   'data-testid'?: string
 }
 
 export function Dialog({
-  open, size = 's', title, children, actions, onClose, error, working = false, onSubmit, steady = false, returnFocus, 'data-guide': guide, 'data-testid': testId,
+  open, size = 's', title, children, actions, onClose, error, working = false, onSubmit, steady = false, returnFocus, cover = false, 'data-guide': guide, 'data-testid': testId,
 }: DialogProps) {
   const titleId = useId()
   // Asked as the question opens, whether to take the focus back by itself rather than
@@ -153,7 +155,7 @@ export function Dialog({
       onClose={() => { if (!working) onClose() }}
       slotProps={{
         paper: { className: 'kit-dialog', 'data-size': size, 'data-steady': steady ? '' : undefined, 'data-guide': guide, 'data-testid': testId } as object,
-        backdrop: { className: 'kit-dialog__scrim' },
+        backdrop: { className: 'kit-dialog__scrim', 'data-cover': cover ? '' : undefined } as object,
       }}
     >
       {onSubmit

@@ -104,3 +104,15 @@ describe('ExportDialog', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('ExportDialog — the board behind it', () => {
+  // The board is drawn in the picture's theme while the dialog is open: in the window's own it shows through dimmed as ever.
+  it('covers the board, rather than dimming it, while the picture is in the other theme than the window', () => {
+    open({ options: { ...options, theme: 'dark' } });
+    expect(document.querySelector('.kit-dialog__scrim')?.hasAttribute('data-cover')).toBe(true);
+  });
+  it('dims it as ever in the window’s own theme', () => {
+    open();
+    expect(document.querySelector('.kit-dialog__scrim')?.hasAttribute('data-cover')).toBe(false);
+  });
+});
