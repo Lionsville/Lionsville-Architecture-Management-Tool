@@ -91,7 +91,8 @@ export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, fold
   for (const entry of ordered) {
     if (entry.kind === 'separator') { items.push({ line: true }); continue }
     if (entry.kind !== 'item') continue
-    const needsScope = entry.needs?.includes('scope') && !can.scope
+    // In the example nothing is kept, inside a scope too: Save says so wherever it is asked.
+    const needsScope = entry.needs?.includes('scope') && (!can.scope || visiting === true)
     const shortcut = keyCap(entry.accelerator, language)
     items.push({
       label: s(entry.label),

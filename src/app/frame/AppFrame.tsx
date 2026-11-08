@@ -287,12 +287,17 @@ const WEB_KEYED = [
  * `undefined` is a key that is none of the menu's.
  */
 export function menuKey(
-  press: KeyPress, can: ReturnType<typeof canOf>, at: { boardUp: boolean; modal: boolean }, mac: boolean,
+  press: KeyPress, can: ReturnType<typeof canOf>, at: { boardUp: boolean; modal: boolean; visiting?: boolean }, mac: boolean,
 ): { run?: MenuItemSpec['command']; refused?: StringKey } | undefined {
   const hit = WEB_KEYED.find((entry) => entry.accelerator !== undefined && acceleratorMatches(entry.accelerator, press, mac))
-  if (!hit || (hit.command.type === 'save' && at.boardUp && !at.modal)) return undefined
+  if (!hit) return undefined
+  // The example keeps nothing, inside a scope as well: Save says so wherever it is asked.
+  const example = hit.command.type === 'save' && at.visiting === true
+  const unmet = hit.needs?.some((need) => !(can as Partial<Record<MenuNeed, boolean>>)[need]) === true
+  if (hit.command.type === 'save' && at.boardUp && !at.modal && !unmet && !example) return undefined
   if (at.modal) return {}
-  if (hit.needs?.some((need) => !(can as Partial<Record<MenuNeed, boolean>>)[need])) return hit.needs.includes('scope') && !can.scope ? { refused: 'menu.saveNothingOpen' } : { refused: 'menu.notNow' }
+  if (example) return { refused: 'menu.saveExample' }
+  if (unmet) return hit.needs?.includes('scope') && !can.scope ? { refused: 'menu.saveNothingOpen' } : { refused: 'menu.notNow' }
   return { run: hit.command }
 }
 
@@ -378,13 +383,15 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         return
       }
       if (!parts.hostMenu && chordHeld(event)) {
-        const key = menuKey(event, canOf(parts, frame.get().screen), { boardUp, modal: modalUp() }, isMac())
+        const key = menuKey(event, canOf(parts, frame.get().screen), { boardUp, modal: modalUp(), visiting: parts.props.visiting !== undefined }, isMac())
         if (!key) return
         event.preventDefault()
         // As a native menu does when its key equivalent fires: ⋯ goes before what the key opens.
         closeMenus()
         if (key.run) send(key.run)
-        else if (key.refused) parts.services.toasts.notify(parts.services.s(key.refused === 'menu.saveNothingOpen' && parts.props.visiting ? 'menu.saveExample' : key.refused), 'info')
+        // A refusal is the whole answer: a board's own keymap does not save behind it.
+        else if (key.refused) event.stopPropagation()
+        if (key.refused) parts.services.toasts.notify(parts.services.s(key.refused === 'menu.saveNothingOpen' && parts.props.visiting ? 'menu.saveExample' : key.refused), 'info')
       }
     }
     window.addEventListener('keydown', onKey, true)
