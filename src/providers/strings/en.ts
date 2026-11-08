@@ -88,7 +88,7 @@ export const EN = {
     + 'file before it runs out — a browser stops saving without asking.',
   // --- where a history is kept -----------------------------------------------
   /** Said where a person takes the first snapshot: where the history they are starting is kept. */
-  'folder.historyNote': 'Every snapshot you take is recorded in the folder itself, using git \u2014 nothing leaves this machine.',
+  'folder.historyNote': 'Every snapshot you take is recorded in the folder itself, using git \u2014 nothing leaves this machine. It goes with this browser\'s data, so it is no backup: Save a copy… is.',
   'folder.historyNoteBrowser': 'Every snapshot you take is recorded in this browser, beside the folder \u2014 nothing is written into the folder for it.',
   'browser.historyNote': 'Every snapshot you take is recorded in this browser \u2014 nothing leaves this machine.',
   'memory.historyNote': 'Snapshots are kept for as long as this tab is open, and go with it.',

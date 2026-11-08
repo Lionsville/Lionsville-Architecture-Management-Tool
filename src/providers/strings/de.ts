@@ -60,7 +60,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.storageNearlyFull':
     'Dieser Browser ist für diese App zu etwa {percent}% voll. Speichern Sie Ihre Arbeit in einem Ordner '
     + 'oder einer Datei, bevor der Platz ausgeht — ein Browser hört ohne Nachfrage auf zu speichern.',
-  'folder.historyNote': 'Jede Momentaufnahme wird im Ordner selbst festgehalten, mit git \u2014 nichts verlässt diesen Rechner.',
+  'folder.historyNote': 'Jede Momentaufnahme wird im Ordner selbst festgehalten, mit git \u2014 nichts verlässt diesen Rechner. Sie geht mit den Daten dieses Browsers, ist also keine Sicherung: Kopie speichern… ist eine.',
   'folder.historyNoteBrowser': 'Jede Momentaufnahme wird in diesem Browser festgehalten, neben dem Ordner \u2014 dafür wird nichts in den Ordner geschrieben.',
   'browser.historyNote': 'Jede Momentaufnahme wird in diesem Browser festgehalten \u2014 nichts verlässt diesen Rechner.',
   'memory.historyNote': 'Momentaufnahmen bleiben erhalten, solange dieser Tab offen ist, und verschwinden, wenn er geschlossen wird.',
