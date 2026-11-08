@@ -542,6 +542,13 @@ export type SourceFrame<Own = unknown> = {
    * start again on top of work they cannot see.
    */
   readonly holding?: () => boolean
+  /**
+   * Whether loading the page again now loses nothing this source holds: it is
+   * reached, and nothing made here is still waiting to go out to it. Asked
+   * before a tab left open over a deploy is reloaded for a script that is
+   * gone (`adapters/browser/staleScripts.ts`). Absent: it may.
+   */
+  readonly mayReload?: () => boolean
   readonly Hold?: ComponentType<SourceSlotProps<Own>>
   /** At the head of *Your work*. */
   readonly YourWork?: ComponentType<SourceSlotProps<Own>>

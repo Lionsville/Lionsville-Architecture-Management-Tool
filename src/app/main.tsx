@@ -140,8 +140,9 @@ let unsaved = false
 // Before anything is rendered: a part reached later is a script of its own,
 // and a deploy while this tab was open is a script that is gone. Never
 // reloaded over work a reload would lose — an edit not yet written, or a
-// source nothing outlives the tab in: the part says it did not load instead.
-reloadWhenScriptsAreGone(browserShell, () => !unsaved && !shell.source.transient)
+// source nothing outlives the tab in, or a source that is not reached or
+// still holds work to send: the part says it did not load instead.
+reloadWhenScriptsAreGone(browserShell, () => !unsaved && !shell.source.transient && (sourceFrameOf(shell.source)?.mayReload?.() ?? true))
 
 /**
  * The working file's part, fetched once the first screen is up and the page

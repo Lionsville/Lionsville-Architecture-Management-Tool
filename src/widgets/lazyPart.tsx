@@ -45,8 +45,9 @@
  * reader whose comments would not load is still read. A part that loaded and
  * then throws is the nearest boundary's, as before. A script that no longer
  * exists because a deploy replaced it is `vite:preloadError`, which the boot
- * answers with a reload, and which puts the failure on the trail where it
- * does not (`adapters/browser/staleScripts.ts`).
+ * answers with a reload once the server says the script is gone — never
+ * while offline, where this line is what stays — and which puts the failure
+ * on the trail where it does not (`adapters/browser/staleScripts.ts`).
  *
  * **A main page may be warmed** (`warm`): its script is fetched once the
  * first screen is drawn and the window is idle (`warmLazyParts`), so the
