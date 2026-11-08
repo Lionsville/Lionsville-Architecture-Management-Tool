@@ -16,6 +16,8 @@ const sent = vi.hoisted(() => [] as unknown[])
 const opened = vi.hoisted(() => [] as string[])
 
 vi.mock('electron', () => ({
+  // The name Quit carries off a Mac, where the platform's own item is not used.
+  app: { getName: () => 'Lionsville Architect' },
   // A menu that can be built: what `installAppMenu` makes, with nothing of Electron's own under it.
   Menu: Object.assign(vi.fn(function menu() { return { items: [], append: vi.fn() } }), {
     setApplicationMenu: vi.fn(), buildFromTemplate: vi.fn(), getApplicationMenu: () => null,
