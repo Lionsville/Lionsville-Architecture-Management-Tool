@@ -129,3 +129,40 @@ export const DENSE_LABEL_WORDS_FROM = 0.9
 export function canvasZoomProps(zoom: number, wordsFrom = LABEL_WORDS_FROM): { 'data-distance': ReadingDistance; 'data-labels': 'words' | 'numbers'; style: Record<'--canvas-zoom', string> } {
   return { 'data-distance': readingDistance(zoom), 'data-labels': zoom < wordsFrom ? 'numbers' : 'words', style: { '--canvas-zoom': String(zoom) } }
 }
+
+/**
+ * What a canvas's floating controls take off its pane, side by side, in the pane's
+ * pixels: the dock, a legend, a key. A fit frames what is drawn in the rest.
+ */
+export type Insets = { top: number; right: number; bottom: number; left: number }
+
+/** Clear room round what a fit frames, where nothing floats. */
+export const FIT_GAP = 16
+
+export const NO_INSETS: Insets = { top: FIT_GAP, right: FIT_GAP, bottom: FIT_GAP, left: FIT_GAP }
+
+export type Size = { width: number; height: number }
+
+/**
+ * The viewport that shows `content` (in the drawing's own units, from `x`, `y`) in the
+ * room a pane of this size leaves inside `insets`: as large as fits, never past `ceiling`
+ * nor under `floor`. Where it fits it stands in the middle of the room; where it does not,
+ * even at the floor, it starts at the room's start on that side, so what is read first
+ * is in view and clear of the controls, and the rest is a pan away rather than cut at
+ * both ends.
+ */
+export function frameInRoom(
+  content: { x: number; y: number; width: number; height: number },
+  pane: Size,
+  insets: Insets = NO_INSETS,
+  range: { floor: number; ceiling: number } = { floor: ZOOM_FLOOR, ceiling: ZOOM_HOME },
+): Viewport | undefined {
+  const room = { width: pane.width - insets.left - insets.right, height: pane.height - insets.top - insets.bottom }
+  if (!(content.width > 0) || !(content.height > 0) || !(room.width > 0) || !(room.height > 0)) return undefined
+  const zoom = Math.min(range.ceiling, Math.max(range.floor, Math.min(room.width / content.width, room.height / content.height)))
+  const place = (start: number, size: number, from: number, length: number) => {
+    const drawn = length * zoom
+    return (drawn <= size ? start + (size - drawn) / 2 : start) - from * zoom
+  }
+  return { x: place(insets.left, room.width, content.x, content.width), y: place(insets.top, room.height, content.y, content.height), zoom }
+}

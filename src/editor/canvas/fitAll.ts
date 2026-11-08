@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { getNodesBounds, getViewportForBounds, type Node, type Viewport } from '@xyflow/react';
+import { useCallback } from 'react';
+import { getNodesBounds, useReactFlow, useStoreApi, type Node, type Viewport } from '@xyflow/react';
 import type { Rect } from '../../model/types';
-import { ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
+import { canvasInsets } from '../../widgets/kit/canvasRoom';
+import { frameInRoom, NO_INSETS, ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
+import type { Insets } from '../../widgets/kit/zoom';
 
 /**
  * The options every "fit the board" shares.
@@ -38,14 +41,35 @@ export function viewportOverNodes<N extends Node>(
   nodes: readonly N[],
   width: number,
   height: number,
+  insets: Insets = NO_INSETS,
 ): Viewport | undefined {
   if (nodes.length === 0 || !(width > 0) || !(height > 0)) return undefined;
   const bounds = getNodesBounds([...nodes]);
   if (!(bounds.width > 0) || !(bounds.height > 0)) return undefined;
-  return viewportOverRect(bounds, width, height);
+  return viewportOverRect(bounds, width, height, insets);
 }
 
-/** The viewport that frames this rectangle of the board in a pane of this size. */
-export function viewportOverRect(rect: Rect, width: number, height: number): Viewport {
-  return getViewportForBounds(rect, width, height, MIN_ZOOM, FIT_ALL.maxZoom, FIT_ALL.padding);
+/**
+ * The viewport that frames this rectangle of the board in a pane of this size, in
+ * the room its dock and its key leave (`widgets/kit/canvasRoom`). A board too large
+ * for the room even at the floor starts at its top left there, and the rest is a pan.
+ */
+export function viewportOverRect(rect: Rect, width: number, height: number, insets: Insets = NO_INSETS): Viewport | undefined {
+  return frameInRoom(rect, { width, height }, insets, { floor: MIN_ZOOM, ceiling: FIT_ALL.maxZoom });
+}
+
+/**
+ * Fit, for every way a board is asked to: the dock, ⇧ 1, the menus and a layout
+ * pass. The room is read from the board as it is drawn now, since a key comes and
+ * goes with the colouring; React Flow's own `fitView` knows nothing of the panels
+ * over it, and framed the bottom row under the dock.
+ */
+export function useFitBoard(): (duration?: number) => void {
+  const { getNodes, setViewport } = useReactFlow();
+  const flow = useStoreApi();
+  return useCallback((duration = 300) => {
+    const { width, height, domNode } = flow.getState();
+    const viewport = viewportOverNodes(getNodes(), width, height, domNode ? canvasInsets(domNode) : NO_INSETS);
+    if (viewport) void setViewport(viewport, { duration });
+  }, [flow, getNodes, setViewport]);
 }

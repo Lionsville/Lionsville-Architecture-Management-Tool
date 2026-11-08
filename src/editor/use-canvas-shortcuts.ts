@@ -4,7 +4,7 @@
 import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { placedNodes } from '../model/placement';
 import { useReactFlow } from '@xyflow/react';
-import { FIT_ALL } from './canvas/fitAll';
+import { useFitBoard } from './canvas/fitAll';
 import { stepZoom } from '../widgets/kit/zoom';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
 import { serializeSelection, type ClipboardPayload } from '../model/clipboard';
@@ -190,7 +190,8 @@ const ARROW_DELTAS: Record<string, Point> = {
 export function useCanvasShortcuts(
   handlers: CanvasShortcutHandlers,
 ): (node: HTMLElement | null) => void {
-  const { fitView, getZoom, zoomTo } = useReactFlow();
+  const { getZoom, zoomTo } = useReactFlow();
+  const fitView = useFitBoard();
 
   // Latest closures reach the stable listener through refs, so the callback ref
   // stays stable and only re-binds when the DOM node itself changes.
@@ -331,8 +332,8 @@ export function useCanvasShortcuts(
 
 type ViewActions = Pick<
   ReturnType<typeof useReactFlow>,
-  'fitView' | 'getZoom' | 'zoomTo'
->;
+  'getZoom' | 'zoomTo'
+> & { fitView: () => void };
 
 function dispatch(
   id: string,
@@ -398,7 +399,7 @@ function dispatch(
       void view.zoomTo(stepZoom(view.getZoom(), 'out'));
       return;
     case 'fit-view':
-      void view.fitView({ ...FIT_ALL, duration: 300 });
+      view.fitView();
       return;
     case 'zoom-100':
       void view.zoomTo(1, { duration: 300 });

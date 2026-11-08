@@ -21,6 +21,7 @@ import { useStoreApi, type Node, type Viewport } from '@xyflow/react';
 import { canvasZoomProps } from '../../widgets/kit/zoom';
 import type { Rect } from '../../model/types';
 import { viewportOverNodes, viewportOverRect } from './fitAll';
+import { canvasInsets } from '../../widgets/kit/canvasRoom';
 
 /** How long a board waits for a layout pass before it is shown as it stands. */
 const LAYOUT_WAIT_MS = 5000;
@@ -64,9 +65,12 @@ export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFr
       settled.current = true;
       const { nodes: held, emptyFrame: sheet, setViewport: put } = latest.current;
       if (width > 0 && height > 0) {
+        // In the room the dock and the key leave, read off the board as it is drawn.
+        const element = container.current;
+        const insets = element ? canvasInsets(element) : undefined;
         const viewport = held.length > 0
-          ? viewportOverNodes(held, width, height)
-          : sheet && viewportOverRect(sheet, width, height);
+          ? viewportOverNodes(held, width, height, insets)
+          : sheet && viewportOverRect(sheet, width, height, insets);
         if (viewport) put(viewport);
       }
       setFramed(true);

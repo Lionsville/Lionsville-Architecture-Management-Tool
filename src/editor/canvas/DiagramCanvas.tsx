@@ -77,7 +77,7 @@ import type { OverlayLegendProps } from './OverlayLegend';
 import { BoardChrome, BoardConnectionLine, boardAttributes, EmptyBoardNote, useAskAdd } from './BoardOverlays';
 import type { AddRequest } from '../AddPicker';
 import type { OverlayMark } from '../theme/overlayColors';
-import { FIT_ALL, MAX_ZOOM, MIN_ZOOM } from './fitAll';
+import { MAX_ZOOM, MIN_ZOOM, useFitBoard } from './fitAll';
 import { BoardFocusProvider, BoardFocusSheet, useBoardFocusing } from './boardFocus';
 import { useBoardFrame, useReadingDistance } from './useBoardFrame';
 import { DENSE_LABEL_WORDS_FROM } from '../../widgets/kit/zoom';
@@ -477,17 +477,16 @@ export function parseDragPayload(raw: string): DragPayload {
 export function DiagramCanvas(props: DiagramCanvasProps) {
   const theme = useTheme();
   const tokens = getNodeTokens(theme);
-  const { screenToFlowPosition, flowToScreenPosition, getNodes, getNodesBounds, fitView, getZoom, setViewport } =
-    useReactFlow();
+  const { screenToFlowPosition, flowToScreenPosition, getNodes, getNodesBounds, fitView, getZoom, setViewport } = useReactFlow();
+  const fitBoard = useFitBoard();
 
   // Where each diagram was left, for the session (`viewportMemory.ts`). The
   // memory is the editor's, not this component's: the canvas is mounted anew
   // for every diagram, so a ref here would forget on every switch. On mount,
   // a diagram left before is put back where it was; one never visited is
-  // fitted by React Flow's own initial fit, told to count the nodes it has
-  // not drawn (`FIT_ALL`) — on a virtualised board it otherwise framed the
-  // handful that happened to be in view. The id in force is read through a
-  // ref so a change React Flow reports late is filed under the right diagram.
+  // framed by `useBoardFrame`, over every node drawn or not and clear of the
+  // dock and the key. The id in force is read through a ref so a change
+  // React Flow reports late is filed under the right diagram.
   const viewports = props.viewports;
   const viewportOwner = useRef(props.diagram.id);
   viewportOwner.current = props.diagram.id;
@@ -1396,7 +1395,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       setSelection: onSelectionChange,
       translate: t,
       nodeBounds: () => getNodes().map(nodeBoundsOf),
-      fitView: () => void fitView({ ...FIT_ALL, duration: 300 }),
+      fitView: () => fitBoard(),
       clipboardRef,
       pasteCountRef,
       addElementAt: (kind, position) => onAddByDrop(kind, position),

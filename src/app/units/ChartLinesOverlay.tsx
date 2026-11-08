@@ -221,7 +221,7 @@ function Sample({ line, arrow = true }: { line: Pick<ChartLine, 'direction' | 'o
 /** What the lines mean: always there, in its own corner. */
 export function ChartLinesLegend({ t }: { t: Translate }) {
   return (
-    <div className="chart-legend" data-testid="chart-lines-legend" aria-label={t('chart.legend')}>
+    <div className="chart-legend" data-canvas-float="" data-testid="chart-lines-legend" aria-label={t('chart.legend')}>
       <KeyStrip
         values={[
           { id: 'sits', label: t('chart.legendSits'), sample: <Sample line={undefined} arrow={false} /> },

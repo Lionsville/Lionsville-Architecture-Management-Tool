@@ -20,7 +20,7 @@
  * by the drawing's id, so an editor can never save one drawing into another, and
  * no way out of it passes without the question the editor's guard asks.
  */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTheme } from '@mui/material/styles'
 import type { Destination } from '../agent/screen'
 import { imageName } from '../model/imageName'
@@ -37,7 +37,8 @@ import { CanvasDock } from '../widgets/kit/CanvasDock'
 import { PageState } from '../widgets/kit/PageState'
 import { ViewBar, ViewBarButton, ViewBarMenu } from '../widgets/kit/ViewBar'
 import { steppedZoomTarget, useCanvasZoom } from '../widgets/kit/useCanvasZoom'
-import { clampZoom, stepZoom, ZOOM_HOME } from '../widgets/kit/zoom'
+import { canvasInsets } from '../widgets/kit/canvasRoom'
+import { clampZoom, FIT_GAP, stepZoom, ZOOM_HOME } from '../widgets/kit/zoom'
 import type { Notify } from './useToasts'
 import { DrawingEditor } from './DrawingEditor'
 import type { DrawingKeeper } from './DrawingEditor'
@@ -210,7 +211,7 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
           setLinksOpen(false)
         }}
       >
-        <div className="drawing-view__canvas" ref={zoom.ref} tabIndex={pictured ? 0 : undefined} data-testid="drawing-canvas">
+        <div className="drawing-view__canvas" ref={zoom.ref} tabIndex={pictured ? 0 : undefined} data-testid="drawing-canvas" style={zoom.style}>
           {pictured ? (
             <>
               {/* A picture whose frame cannot be read has no areas to place, and is still shown. */}
@@ -325,36 +326,51 @@ function NoPicture({ shapes, links, facts, waiting, canEdit, noEditor, onEdit, o
 /** The kit's zoom, for a picture: its own size is 100%, and it opens fitted to the room there is. */
 function usePictureZoom(width: number | undefined, height: number | undefined) {
   const [asked, setAsked] = useState<number | undefined>(undefined)
-  const [room, setRoom] = useState<{ width: number; height: number } | undefined>(undefined)
+  const [room, setRoom] = useState<{ width: number; height: number; clear: number } | undefined>(undefined)
+  const remeasure = useRef<(() => void) | undefined>(undefined)
   const canvas = useMemo(() => {
     let observer: ResizeObserver | undefined
     return (element: HTMLElement | null) => {
       observer?.disconnect()
+      remeasure.current = undefined
       if (!element) return
-      const measure = () => setRoom({ width: element.clientWidth, height: element.clientHeight })
+      // The room is the canvas less its own padding and what the dock takes off its foot.
+      const measure = () => {
+        const style = getComputedStyle(element)
+        const pad = (side: string) => Number.parseFloat(style.getPropertyValue(`padding-${side}`)) || 0
+        const insets = canvasInsets(element)
+        const clear = insets.bottom > FIT_GAP ? insets.bottom : 0
+        setRoom({
+          width: element.clientWidth - pad('left') - pad('right'),
+          height: element.clientHeight - pad('top') - (clear || pad('bottom')),
+          clear,
+        })
+      }
       measure()
+      remeasure.current = measure
       if (typeof ResizeObserver !== 'undefined') {
         observer = new ResizeObserver(measure)
         observer.observe(element)
       }
     }
   }, [])
+  // The dock is drawn once the picture's frame is known, after the canvas was first measured.
+  useLayoutEffect(() => remeasure.current?.(), [width, height])
   const fitted = width && height && room && room.width > 0 && room.height > 0
-    ? Math.min(ZOOM_HOME, (room.width - FIT_MARGIN) / width, (room.height - FIT_MARGIN) / height)
+    ? Math.min(ZOOM_HOME, room.width / width, room.height / height)
     : ZOOM_HOME
   const value = asked ?? fitted
   const zoomRef = useCanvasZoom(steppedZoomTarget({ zoom: () => value, to: (zoom) => setAsked(zoom), fit: () => setAsked(undefined) }))
   const ref = useCallback((element: HTMLElement | null) => { canvas(element); zoomRef(element) }, [canvas, zoomRef])
   return {
     ref, value,
+    /** The canvas's foot kept clear of the dock, so a fitted picture is centred in the room above it. */
+    style: room?.clear ? { paddingBottom: room.clear } : undefined,
     step: (way: 'in' | 'out') => setAsked(clampZoom(stepZoom(value, way))),
     fit: () => setAsked(undefined),
     home: () => setAsked(ZOOM_HOME),
   }
 }
-
-/** Room left round a fitted picture, so the dock does not sit on it. */
-const FIT_MARGIN = 96
 
 /** The origin a source gave, or nothing when it gave none or could not say. */
 function drawingOriginOf(origin: (() => string | undefined) | undefined): string | undefined {

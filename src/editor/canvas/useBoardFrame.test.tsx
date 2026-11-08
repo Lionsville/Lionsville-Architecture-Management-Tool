@@ -12,7 +12,7 @@ afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 const wrapper = ({ children }: { children: ReactNode }) => <ReactFlowProvider>{children}</ReactFlowProvider>;
 const sized = (width: number, height: number) => ({
-  current: { getBoundingClientRect: () => ({ width, height }) } as unknown as HTMLDivElement,
+  current: { getBoundingClientRect: () => ({ left: 0, top: 0, right: width, bottom: height, width, height }), querySelectorAll: () => [] } as unknown as HTMLDivElement,
 });
 const nodes: Node[] = [
   { id: 'a', position: { x: 0, y: 0 }, data: {}, width: 200, height: 130 },

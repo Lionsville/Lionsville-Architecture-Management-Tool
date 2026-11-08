@@ -56,7 +56,7 @@ export function LinesCrossing({ onRoute, boundary }: { onRoute: (lines: readonly
   }, [edges, nodes, flow, boundary]);
   if (lines.length === 0) return null;
   return (
-    <Panel position="top-right">
+    <Panel position="top-right" data-canvas-float="">
       <div className="lv-crossing" role="status" data-testid="lines-crossing">
         <span>{lines.length === 1 ? t('c4.crossingOne') : t('c4.crossingMany', { count: lines.length })}</span>
         <Button size="small" onClick={() => onRoute(lines)}>{t('c4.routeAgain')}</Button>

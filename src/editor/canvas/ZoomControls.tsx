@@ -7,7 +7,7 @@ import { Panel, useReactFlow, useStore } from '@xyflow/react';
 import { CanvasDock } from '../../widgets/kit/CanvasDock';
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom';
 import { stepZoom, zoomAbout, ZOOM_HOME } from '../../widgets/kit/zoom';
-import { FIT_ALL } from './fitAll';
+import { useFitBoard } from './fitAll';
 import { useStrings } from '../../i18n/LanguageContext';
 
 /**
@@ -16,7 +16,8 @@ import { useStrings } from '../../i18n/LanguageContext';
  * keymap has the board's own = and − and ⇧ keys. The ref goes on the canvas's element.
  */
 export function useBoardZoom(container: RefObject<HTMLDivElement | null>): (element: HTMLDivElement | null) => void {
-  const { getViewport, getZoom, setViewport, fitView } = useReactFlow();
+  const { getViewport, getZoom, setViewport } = useReactFlow();
+  const fit = useFitBoard();
   const attach = useCanvasZoom(steppedZoomTarget({
     zoom: getZoom,
     to: (zoom, at) => {
@@ -25,7 +26,7 @@ export function useBoardZoom(container: RefObject<HTMLDivElement | null>): (elem
       // At once: a press reads the zoom the last one left, and one still animating has not left it yet.
       void setViewport(zoomAbout(getViewport(), about, zoom));
     },
-    fit: () => void fitView({ ...FIT_ALL, duration: 300 }),
+    fit: () => fit(),
   }), { wheel: false, plainKeys: false });
   return useCallback((element: HTMLDivElement | null) => {
     container.current = element;
@@ -43,7 +44,8 @@ export function ZoomControls({ grid, map, note }: {
   note?: string;
 }) {
   const { t } = useStrings();
-  const { zoomTo, fitView, getZoom } = useReactFlow();
+  const { zoomTo, getZoom } = useReactFlow();
+  const fit = useFitBoard();
   const zoom = useStore((state) => state.transform[2]);
   return (
     <Panel position="bottom-left">
@@ -53,7 +55,7 @@ export function ZoomControls({ grid, map, note }: {
         zoom={zoom}
         onZoomIn={() => void zoomTo(stepZoom(getZoom(), 'in'))}
         onZoomOut={() => void zoomTo(stepZoom(getZoom(), 'out'))}
-        onFit={() => void fitView({ ...FIT_ALL, duration: 300 })}
+        onFit={() => fit()}
         onHome={() => void zoomTo(ZOOM_HOME, { duration: 300 })}
         {...(grid ? {
           gridItems: [

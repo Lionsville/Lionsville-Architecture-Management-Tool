@@ -27,6 +27,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type RefObject } from 'react'
 import { useStrings } from '../../i18n'
 import { stepZoom } from '../../widgets/kit/zoom'
+import { canvasInsets } from '../../widgets/kit/canvasRoom'
 import { toneOf } from '../observation'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
@@ -260,7 +261,12 @@ export function PictureFrame({ content, opensAt, view, label, children, dockExtr
 
   const { fit, fitted } = view
   useEffect(() => {
-    if (fit) fitted(fitZoom(content, viewport))
+    if (!fit) return
+    // In the room the dock leaves: it floats beside the frame, over its foot.
+    const element = frame.current
+    const insets = element ? canvasInsets(element, element.parentElement ?? element) : undefined
+    const room = insets ? { width: viewport.width - insets.left - insets.right, height: viewport.height - insets.top - insets.bottom } : viewport
+    fitted(fitZoom(content, room))
   }, [fit, fitted, content, viewport])
 
   const start = (event: PointerEvent<HTMLDivElement>) => {

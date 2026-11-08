@@ -59,7 +59,7 @@ export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gri
     </Tooltip>
   )
   return (
-    <div className="kit-dock" data-corner={corner || undefined} role="group" aria-label={t('kit.dock.label')} data-testid={testId}>
+    <div className="kit-dock" data-canvas-float="" data-corner={corner || undefined} role="group" aria-label={t('kit.dock.label')} data-testid={testId}>
       <Tooltip title={zoom <= floor ? t('kit.dock.atFloor') : hint(t('kit.dock.zoomOut'), `${mod}−`)} placement="top">
         <Button variant="quiet" size="small" aria-label={t('kit.dock.zoomOut')} data-limit={zoom <= floor || undefined} onClick={onZoomOut} data-testid="zoom-out">−</Button>
       </Tooltip>

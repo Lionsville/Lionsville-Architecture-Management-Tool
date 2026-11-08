@@ -23,6 +23,7 @@ import type { LayoutAction } from './EditorToolbar';
 import type { EditorState } from './useEditorState';
 import type { SolutionDesignEditorProps } from './props';
 import { FIT_ALL, viewportOverNodes } from './canvas/fitAll';
+import { canvasInsets } from '../widgets/kit/canvasRoom';
 import type { ViewportMemory } from './canvas/viewportMemory';
 import { useAutoLayout } from './useAutoLayout';
 import { laidOutForReading, useReadingLayout } from './useReadingLayout';
@@ -192,8 +193,8 @@ function useFrameBoard() {
    */
   return useCallback(() => {
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const { width, height } = flow.getState();
-      const viewport = viewportOverNodes(getNodes(), width, height);
+      const { width, height, domNode } = flow.getState();
+      const viewport = viewportOverNodes(getNodes(), width, height, domNode ? canvasInsets(domNode) : undefined);
       if (viewport) void setViewport(viewport, { duration: 300 });
       else void fitView({ ...FIT_ALL, duration: 300 });
     }));

@@ -43,7 +43,12 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
       const pane = page.current
       const drawing = stage.current
       if (!pane || !drawing) return
-      setZoom(fitZoom({ width: pane.clientWidth, height: pane.clientHeight }, { width: drawing.scrollWidth, height: drawing.scrollHeight }))
+      // In the room the dock and the key leave: the chart pads its end by them (`clearOfFloats`),
+      // so the pane's own box less its padding is that room, and a stage no wider than it is 100%.
+      const style = getComputedStyle(pane)
+      const pad = (side: string) => Number.parseFloat(style.getPropertyValue(`padding-${side}`)) || 0
+      const room = { width: pane.clientWidth - pad('left') - pad('right'), height: pane.clientHeight - pad('top') - pad('bottom') }
+      setZoom(fitZoom(room, { width: drawing.scrollWidth, height: drawing.scrollHeight }))
       pane.scrollTo?.({ left: 0, top: 0 })
     })
   }, [page, stage])

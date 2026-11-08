@@ -40,7 +40,7 @@
  * the wrong things.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { KeyboardEvent, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
 import { isChartLines } from '../../agent/screen'
@@ -68,6 +68,9 @@ import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { Band } from '../../widgets/kit/Band'
 import { Button } from '../../widgets/kit/Button'
 import { CanvasDock } from '../../widgets/kit/CanvasDock'
+import { useCanvasInsets } from '../../widgets/kit/canvasRoom'
+import { FIT_GAP } from '../../widgets/kit/zoom'
+import type { Insets } from '../../widgets/kit/zoom'
 import { PageState } from '../../widgets/kit/PageState'
 import { useViewFacets } from '../../widgets/placeTab'
 import { locatedRing, useLocated } from '../../widgets/useLocated'
@@ -146,6 +149,14 @@ export type ChartPageProps = {
   moveAsked?: { unitId: ElementId; nonce: number }
 }
 
+/** The end of the chart scrolls clear of the dock and the key, so nothing under them is out of reach. */
+function clearOfFloats(insets: Insets): CSSProperties {
+  return {
+    ...(insets.bottom > FIT_GAP ? { paddingBottom: insets.bottom } : {}),
+    ...(insets.right > FIT_GAP ? { paddingRight: insets.right } : {}),
+  }
+}
+
 export function ChartPage(props: ChartPageProps) {
   const { t, language } = useStrings()
   const { here, diagram, today } = props
@@ -156,6 +167,8 @@ export function ChartPage(props: ChartPageProps) {
   const page = useRef<HTMLDivElement | null>(null)
   const stage = useRef<HTMLDivElement | null>(null)
   const zoom = useChartZoom(page, stage)
+  const work = useRef<HTMLDivElement | null>(null)
+  const insets = useCanvasInsets(page, work)
   const [reading, setReading] = useViewFacets(diagram.id)
   const focused = useMemo(() => focusedOn(chart, reading.focus), [chart, reading.focus])
   const lines = useChartLines(props, chart, day, folds, reading.lines)
@@ -187,8 +200,11 @@ export function ChartPage(props: ChartPageProps) {
         {moving.up === undefined && !empty && (
           <ChartOutlinePane props={props} chart={chart} units={drawnTop} folds={folds} going={going} moving={moving} names={names} day={day} language={language} t={t} />
         )}
-        <div className="chart-page__work">
-          <Box ref={zoom.attach} {...(empty ? {} : zoom.canvas)} data-testid="chart-body" className="chart-canvas" sx={locatedRing(going.locatedId)}>
+        <div className="chart-page__work" ref={work}>
+          <Box
+            ref={zoom.attach} {...(empty ? {} : { ...zoom.canvas, style: { ...zoom.canvas.style, ...clearOfFloats(insets) } })}
+            data-testid="chart-body" className="chart-canvas" sx={locatedRing(going.locatedId)}
+          >
             {empty
               ? <EmptyChart day={day} language={language} add={firstUnit(newUnit, props.make, t)} t={t} />
               : (

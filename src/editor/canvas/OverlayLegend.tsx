@@ -54,7 +54,7 @@ export function OverlayLegend({ colourBy, bands, aspectColumns, onClose, onKeep 
     focus.set(band ? { nodes: new Set(band.memberIds), lines: new Set() } : null);
   };
   return (
-    <Panel position="bottom-right">
+    <Panel position="bottom-right" data-canvas-float="">
       <KeyStrip
         data-testid="overlay-legend"
         title={t('overlay.legendTitle', { what: overlayTitle(colourBy, aspectColumns, t, bands) })}
@@ -78,7 +78,7 @@ export function BoardKey({ diagram }: { diagram: DesignDiagram }) {
   const legend = badgeLegend(diagram);
   if (legend.columns.length === 0) return null;
   return (
-    <Panel position="bottom-right">
+    <Panel position="bottom-right" data-canvas-float="">
       <KeyStrip
         data-testid="board-key"
         values={[...legend.statuses, 'unset' as const].map((status) => ({

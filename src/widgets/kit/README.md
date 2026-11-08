@@ -54,6 +54,7 @@ and behaves is said here, once.
 | `ColourMenu.tsx`, `KeyStrip.tsx` | the one Colour menu, its questions under headings with a long list one level down, and the key strip made from what is drawn, saying what it is of, with Keep and the way to take it down; `all` for a notation, which gathers nothing up |
 | `DayControl.tsx` | the one Day control |
 | `CanvasDock.tsx` | − n% + Fit 100% Grid Map, bottom left on every zoomable canvas; Grid may open what goes with it, and a note says what the canvas has to say |
+| `canvasRoom.ts` | the room a canvas's floating controls leave: the dock marks itself and a key says `data-canvas-float`; `canvasInsets` measures them, `frameInRoom` (`zoom.ts`) frames a drawing in what is left, centred where it fits and from its start where even the floor does not |
 | `Card.tsx`, `Zone.tsx`, `Line.tsx` | Card; Zone and boundary; Line and label, with a budget of two lines and a number where the words have no room (`data-labels`). Each holds its size on screen through `--canvas-zoom` |
 | `labelSpread.ts` | labels that keep clear of each other and of what they would cover, moving as little as they can |
 | `GuideDock.tsx`, `guidePlace.ts` | **Guide dock**: one card in one place, why, what to do, *Tell me more*, Back, Skip, Pause, Next; `GuideRing`, one ring on one target, with no scrim |
