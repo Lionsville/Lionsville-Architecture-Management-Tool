@@ -29,7 +29,13 @@
 .poster-title { position: relative; height: 26px; flex: none; display: flex; align-items: center; gap: var(--s-2); padding-inline: 10px; background: var(--poster-title); color: var(--on-poster-title); font-size: var(--canvas-t-md); font-weight: var(--fw-strong); white-space: nowrap; margin: 0; }
 .poster-title__name { appearance: none; flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; overflow: hidden; text-overflow: ellipsis; text-align: center; cursor: pointer; }
 .poster-title__name:focus-visible { outline: var(--focus-ring-width) solid var(--on-poster-title); outline-offset: -3px; }
-.poster-title__unit { max-width: 40%; overflow: hidden; text-overflow: ellipsis; font-size: var(--canvas-t-sm); font-weight: var(--fw-regular); }
+/*
+ * A block is told from its neighbours by its name: half the bar is the name's whatever else stands in it, and
+ * the unit gives way first. In Design, with its two adds beside them, the unit kept up to 300 px and left
+ * some blocks no name at all.
+ */
+.poster-title__name { min-width: 50%; }
+.poster-title__unit { flex: 0 10 auto; min-width: 0; max-width: 40%; overflow: hidden; text-overflow: ellipsis; font-size: var(--canvas-t-sm); font-weight: var(--fw-regular); }
 .poster-title__unit .sheet-unit { all: unset; cursor: pointer; }
 .poster-title__unit .sheet-unit:focus-visible { outline: var(--focus-ring-width) solid var(--on-poster-title); }
 .poster-line { flex: none; height: 16px; padding-inline: var(--s-2); overflow: hidden; color: var(--ink-2); font-size: var(--canvas-t-sm); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
