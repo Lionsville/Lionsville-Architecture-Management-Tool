@@ -622,6 +622,7 @@ export const EN = {
   'shell.placeGone': 'What the address pointed at is not there, so it opened the nearest place.',
   'shell.placeNoScope': 'There is no scope “{scope}”, so this is the organisation’s home.',
   'shell.pendingRecovered': 'Recovered a change that hadn’t finished saving.',
+  'shell.pendingPartly': 'A change from a tab that closed before it was saved could not be put back, because this scope has changed since.',
   'shell.decisions': 'Decisions',
   'shell.decisionsTip': 'Architecture decision records \u2014 for the group, the landscape and each application',
   'shell.observations': 'Observations',

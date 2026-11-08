@@ -319,13 +319,15 @@ let choseFrom: { readonly shell: typeof shell; readonly sourced: boolean; readon
  * and said once — over any other notice, because it is about the person's
  * work rather than an address.
  */
-async function recoveredPart(): Promise<{ notice?: 'shell.pendingRecovered' }> {
-  const put = await recoverPending(shell.repositories.scopes, shell.pendingSteps, (message, cause) => {
+async function recoveredPart(): Promise<{ notice?: 'shell.pendingRecovered' | 'shell.pendingPartly' }> {
+  const { put, dropped } = await recoverPending(shell.repositories.scopes, shell.pendingSteps, (message, cause) => {
     shell.diagnostics.report({ level: 'warn', where: 'source', message, ...(cause !== undefined ? { cause } : {}) })
   }).catch((cause: unknown) => {
     shell.diagnostics.report({ level: 'warn', where: 'source', message: 'held changes could not be read back', cause })
-    return 0
+    return { put: 0, dropped: 0 }
   })
+  // What could not be put back is said once, whatever was: a change the person was promised is not lost in silence.
+  if (dropped > 0) return { notice: 'shell.pendingPartly' }
   return put > 0 ? { notice: 'shell.pendingRecovered' } : {}
 }
 

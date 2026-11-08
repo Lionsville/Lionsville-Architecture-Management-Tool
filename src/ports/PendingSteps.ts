@@ -28,6 +28,13 @@ export type HeldSteps = {
   /** The revision the steps were made against: what they expect to land on. */
   base: Revision
   steps: readonly ScopeStep[]
+  /**
+   * Each record the steps change, by `kind:id`, with a print of what it was at
+   * `base` (`null` where it was not there): where the scope moved since, the
+   * steps that touch only records nobody else changed are still put back.
+   * Absent where the page could not say, and then none is.
+   */
+  touched?: Readonly<Record<string, string | null>>
   /** When it was held, epoch milliseconds. */
   at: number
 }
@@ -40,7 +47,7 @@ export type PendingSteps = {
    * and the scope's earlier line is cleared rather than left to say less than
    * is so.
    */
-  hold(scope: PendingScope, base: Revision, steps: readonly ScopeStep[]): boolean
+  hold(scope: PendingScope, base: Revision, steps: readonly ScopeStep[], touched?: HeldSteps['touched']): boolean
   /** Nothing is waiting for this scope any more: its write landed. */
   clear(scope: PendingScope): void
   /**

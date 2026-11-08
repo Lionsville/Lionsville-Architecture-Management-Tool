@@ -64,10 +64,10 @@ export function pendingSteps(source: string, storage: KeyValueStorage, options: 
   const forget = (key: string) => { try { storage.removeItem(key) } catch { /* nothing to let go of where nothing could be kept */ } }
 
   return {
-    hold: (scope, base, steps) => {
+    hold: (scope, base, steps, touched) => {
       const key = keyOf(scope)
       if (steps.length === 0) { forget(key); return true }
-      const line: Line = { page: page.id, source, scope, base, steps, at: now() }
+      const line: Line = { page: page.id, source, scope, base, steps, ...(touched ? { touched } : {}), at: now() }
       const text = JSON.stringify(line)
       if (text.length > MOST_HELD) { forget(key); return false }
       try {
@@ -91,7 +91,8 @@ export function pendingSteps(source: string, storage: KeyValueStorage, options: 
         if (line.page === page.id || line.source !== source) continue
         // A page still open writes its own; with no way to ask, only the page this one was.
         if (open ? open.has(line.page) : line.page !== page.before) continue
-        found.push({ scope: line.scope, base: line.base, steps: line.steps, at: line.at, release: () => forget(key) })
+        const touched = line.touched && typeof line.touched === 'object' ? { touched: line.touched } : {}
+        found.push({ scope: line.scope, base: line.base, steps: line.steps, ...touched, at: line.at, release: () => forget(key) })
       }
       return found.sort((a, b) => a.at - b.at)
     },

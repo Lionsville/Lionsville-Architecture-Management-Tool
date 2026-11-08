@@ -41,13 +41,14 @@ describe('pendingSteps', () => {
 
   it('reads back a page that is gone, never one still open, never its own and never another source', async () => {
     const storage = fakeStorage()
-    pendingSteps('browser', storage, { pageId: 'gone' }).hold(scope, 'r1', [step(1)])
+    pendingSteps('browser', storage, { pageId: 'gone' }).hold(scope, 'r1', [step(1)], { 'element:a': 'p1' })
     pendingSteps('browser', storage, { pageId: 'open' }).hold(scope, 'r1', [step(2)])
     pendingSteps('folder:x', storage, { pageId: 'gone' }).hold(scope, 'r1', [step(3)])
     const me = pendingSteps('browser', storage, { pageId: 'me', locks: locksOf('open', 'me') })
     me.hold(scope, 'r1', [step(4)])
     const left = await me.left()
     expect(left.map((one) => one.steps[0]!.stepId)).toEqual(['s1'])
+    expect(left[0]!.touched).toEqual({ 'element:a': 'p1' })
     left[0]!.release()
     expect(await me.left()).toEqual([])
     expect(storage.held.size).toBe(3)

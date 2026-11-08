@@ -17,6 +17,8 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
+import { fromArrays } from '../model/normalised'
+import type { Model } from '../model/normalised'
 import { act, cleanup, render } from '@testing-library/react'
 import { AUTOSAVE_IDLE_MS } from '../projects/documentSession'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -635,6 +637,9 @@ describe('what a write carries', () => {
 
   function writing(answer: (written: Written) => Promise<string> = () => Promise.resolve('r2'), pendingSteps?: PendingSteps) {
     const written: Written[] = []
+    // One indexed model per model, as the session keeps it: its records the same objects while unchanged.
+    const indexes = new WeakMap<object, Model>()
+    const indexedOf = (model: ScopeSnapshot['model']) => { const held = indexes.get(model) ?? fromArrays(model); indexes.set(model, held); return held }
     let pending: PendingStep[] = []
     let snapshot: ScopeSnapshot = { ...project(), revision: 'r1', images: [] }
     let hook!: DocumentSessionHook
@@ -654,7 +659,7 @@ describe('what a write carries', () => {
     }
     function Host({ model }: { model: unknown }) {
       hook = useDocumentSession({
-        session: { model, activeDiagramId: snapshot.activeDiagramId, logoLibrary: snapshot.logoLibrary, snapshot: () => snapshot, journal },
+        session: { model, activeDiagramId: snapshot.activeDiagramId, logoLibrary: snapshot.logoLibrary, snapshot: () => snapshot, journal, indexed: () => indexedOf(snapshot.model) },
         writer, onSaved: () => {}, onResult: () => {}, onAdopt: () => {},
         ...(pendingSteps ? { pendingSteps } : {}),
       })
@@ -680,9 +685,9 @@ describe('what a write carries', () => {
 
   /** A line that remembers what it was last told for the scope. */
   function line() {
-    const told: { scope: PendingScope; base?: string; steps: readonly ScopeStep[] }[] = []
+    const told: { scope: PendingScope; base?: string; steps: readonly ScopeStep[]; touched?: Readonly<Record<string, string | null>> }[] = []
     const pendingSteps: PendingSteps = {
-      hold: (scope, base, steps) => { told.push({ scope, base, steps }); return true },
+      hold: (scope, base, steps, touched) => { told.push({ scope, base, steps, ...(touched ? { touched } : {}) }); return true },
       clear: (scope) => { told.push({ scope, steps: [] }) },
       left: () => Promise.resolve([]),
     }
@@ -695,6 +700,8 @@ describe('what a write carries', () => {
     view.change({ model: { ...project().model, name: 'One' } }, rename('One'))
     expect(held.last()).toMatchObject({ scope: { address: 'acme/landscape' }, base: 'r1' })
     expect(held.last()!.steps.map((step) => step.command)).toEqual([rename('One')])
+    // With what it changed as it was at that revision, so a scope moved since still takes what nobody else touched.
+    expect(Object.keys(held.last()!.touched ?? {})).toContain('scope:')
     await act(async () => { await view.hook().forceSave() })
     expect(held.last()!.steps).toEqual([])
   })

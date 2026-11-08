@@ -52,7 +52,7 @@ export type BootLanding = {
   noticeWith?: Readonly<Record<string, string>>
 }
 
-export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone' | 'shell.placeNoScope' | 'shell.pendingRecovered' | 'example.kept' | 'example.keptUnder'
+export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone' | 'shell.placeNoScope' | 'shell.pendingRecovered' | 'shell.pendingPartly' | 'example.kept' | 'example.keptUnder'
 
 /**
  * The scope the boot read, turned into where the app starts.

@@ -45,6 +45,8 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { contentOf, stepOf } from '../projects/scopeAccess'
 import type { Revision, ScopeCommand, ScopeDescription, ScopeStep } from '../projects/scopeState'
 import type { PendingSteps } from '../ports/PendingSteps'
+import { touchedSince } from '../projects/pendingRecovery'
+import type { Model } from '../model/normalised'
 import type { SessionJournal } from './useModelSession'
 import type { KeepNotice } from './useKeepNotice'
 
@@ -83,6 +85,8 @@ export type SavableSession = {
   snapshot: () => ScopeSnapshot
   /** The changes made here that are still to be written. */
   journal: SessionJournal
+  /** The model as it stands, indexed: what a held line says its records were, compared by object. */
+  indexed?: () => Model
 }
 
 export type DocumentSessionHook = {
@@ -503,11 +507,13 @@ function useScopeWrites(
   session: SavableSession, writer: ScopeWriter, onAdopt: ((project: ScopeSnapshot) => void) | undefined,
   pending: PendingSteps | undefined, openedAt?: Revision,
 ) {
-  const { snapshot, journal } = session
+  const { snapshot, journal, indexed } = session
   const known = useRef<Known | undefined>(undefined)
   known.current ??= { revision: snapshot().revision, described: describedOf(snapshot()), adopted: journal.adopted() }
   /** The next write puts ours onto theirs, rather than expecting what we last saw. */
   const over = useRef(false)
+  /** The model as it stood at the revision last known with nothing unwritten: what a held line's records were at its base. */
+  const based = useRef<{ revision: Revision; model: Model } | undefined>(undefined)
 
   /** The scope as it is kept, put on screen; what is known of it is what was read. */
   const take = useCallback((project: ScopeSnapshot) => {
@@ -530,7 +536,12 @@ function useScopeWrites(
       const base = known.current!.revision ?? openedAt
       // A scope with no revision yet has nothing a put back could be held to.
       if (base === undefined || over.current) { pending.clear(scope); return }
-      pending.hold(scope, base, unwritten())
+      const steps = unwritten()
+      const model = indexed?.()
+      if (steps.length === 0) based.current = model && { revision: base, model }
+      // Where the scope moves before the line is put back, the steps that touch only what nobody else changed still go back.
+      const from = based.current
+      pending.hold(scope, base, steps, model && steps.length > 0 && from?.revision === base ? touchedSince(from.model, model) : undefined)
     }
     return {
       hold,
@@ -579,7 +590,7 @@ function useScopeWrites(
       pending: (): boolean => journal.pending().length > 0
         || changesOf(known.current!.described, describedOf(snapshot())).length > 0,
     }
-  }, [writer, journal, snapshot, take, pending, openedAt])
+  }, [writer, journal, snapshot, take, pending, openedAt, indexed])
 }
 
 /**
