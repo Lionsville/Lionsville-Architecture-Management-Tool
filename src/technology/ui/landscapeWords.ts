@@ -34,6 +34,14 @@ export const COLOUR_WORD: Record<LandscapeColour, StringKey> = {
   owner: 'landscape.colourOwner',
 }
 
+/** What the key calls the rows a lens has no value for, drawn as an empty square on them and in the key. */
+export const NONE_WORD: Record<LandscapeColour, StringKey> = {
+  technologyLifecycle: 'landscape.noneSaid',
+  lifecycle: 'landscape.noneSaid',
+  category: 'landscape.noneCategory',
+  owner: 'landscape.noneOwner',
+}
+
 export const PHASE_WORD: Record<Lifecycle, StringKey> = {
   planned: 'landscape.planned', live: 'landscape.live', retiring: 'landscape.retiring', retired: 'landscape.retired',
 }

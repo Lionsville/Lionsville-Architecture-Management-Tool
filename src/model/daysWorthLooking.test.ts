@@ -25,6 +25,15 @@ describe('the days worth looking at', () => {
     ])
   })
 
+  it('reads several scopes’ days together, a day said the same way twice offered once', () => {
+    const here = { elements: [{ name: 'Broker', lifecycleDates: { retired: '2027-06-01' } }] }
+    const there = { elements: [{ name: 'Yard', lifecycleDates: { live: '2027-03-01' } }, { name: 'Broker', lifecycleDates: { retired: '2027-06-01' } }] }
+    expect(daysWorthLooking([here, there], '2026-11-07', says)).toEqual([
+      { day: '2027-03-01', label: 'Yard live' },
+      { day: '2027-06-01', label: 'Broker retired' },
+    ])
+  })
+
   it('keeps to a few, what is ahead before what has passed, and never today itself', () => {
     const elements = Array.from({ length: 20 }, (_, at) => ({
       name: `E${at}`, lifecycleDates: { live: `20${10 + at}-01-01` },

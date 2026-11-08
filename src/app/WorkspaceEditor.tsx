@@ -487,6 +487,10 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
       {...(view.ownerText ? { ownerText: view.ownerText } : {})}
       onExport={(name, png) => savePicture(parts, name, png, 'landscapeExport')}
       today={parts.todayDay}
+      dayModelOf={(id) => {
+        const master = parts.readings.masterOf(id)
+        return master === undefined || master === here ? undefined : parts.props.tree.scopeModels?.find((one) => one.path === master)?.model
+      }}
       {...(diagram.colourBy !== undefined ? { kept: diagram.colourBy } : {})}
       onKeepColour={(colour) => session.dispatch({ type: 'diagram.update', id: diagram.id, patch: { colourBy: colour } })}
       onOpenElsewhere={(id) => {

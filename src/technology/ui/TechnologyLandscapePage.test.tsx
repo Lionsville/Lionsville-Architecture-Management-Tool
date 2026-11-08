@@ -477,6 +477,32 @@ describe('Day and Colour', () => {
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: /Event broker is gone/ }))
     expect(onDay).toHaveBeenCalledWith('2027-06-01')
   })
+  it('offers the days of the scopes that keep the applications drawn, as their boards do', () => {
+    const kept = {
+      elements: [{ name: 'Rating (legacy)', lifecycleDates: { retired: '2027-09-01' } }],
+      transitions: [{ title: 'Bring in yard management', milestones: [{ date: '2027-04-01', name: 'Live' }] }],
+    }
+    const dayModelOf = vi.fn((id: string) => (id === 'rater' || id === 'wms' ? kept : undefined))
+    open({ model: dated(), today: '2026-11-08', onDay: vi.fn(), dayModelOf })
+    fireEvent.click(screen.getByRole('button', { name: 'Day' }))
+    expect(screen.getByRole('menuitemcheckbox', { name: /Bring in yard management: Live/ })).toBeDefined()
+    expect(screen.getByRole('menuitemcheckbox', { name: /Rating \(legacy\)/ })).toBeDefined()
+    // This scope's own days as well, and a scope kept twice offers its days once.
+    expect(screen.getByRole('menuitemcheckbox', { name: /Event broker is gone/ })).toBeDefined()
+    expect(screen.getAllByRole('menuitemcheckbox', { name: /Bring in yard management: Live/ })).toHaveLength(1)
+  })
+  it('says in the key the rows a lens has no value for, drawn as the same empty square', () => {
+    open({ model: dated(), today: '2027-02-01' })
+    fireEvent.click(screen.getByRole('button', { name: 'Colour' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Owner' }))
+    expect(rowOf('OpenShift').querySelector('.tl-swatch[data-outline]')).not.toBeNull()
+    const key = screen.getByRole('group', { name: 'Key' })
+    const none = within(key).getByRole('button', { name: /No owner/ })
+    expect(none.querySelector('.tl-swatch[data-outline]')).not.toBeNull()
+    fireEvent.click(none)
+    // Pressed, it quiets the rows that have an owner and none of those without.
+    expect(rowOf('OpenShift').dataset.state ?? '').not.toContain('dim')
+  })
   it('colours by one question, with a key made of what is drawn, and writes nothing until kept', () => {
     const onKeepColour = vi.fn()
     open({ model: dated(), today: '2027-02-01', onKeepColour })

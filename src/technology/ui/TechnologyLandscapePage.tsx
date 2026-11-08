@@ -33,6 +33,7 @@ import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { Button } from '../../widgets/kit/Button'
 import { ColourMenu } from '../../widgets/kit/ColourMenu'
 import { daysWorthLooking } from '../../model/daysWorthLooking'
+import type { DaysModel } from '../../model/daysWorthLooking'
 import { DayControl } from '../../widgets/kit/DayControl'
 import type { DayGroup } from '../../widgets/kit/DayControl'
 import { FindField } from '../../widgets/kit/FindField'
@@ -55,7 +56,7 @@ import { LandscapeChain } from './LandscapeChain'
 import { LandscapeMatrix } from './LandscapeMatrix'
 import { LandscapeReader } from './LandscapeReader'
 import type { ReaderDoors } from './LandscapeReader'
-import { COLOUR_WORD, lensOf, LINE_KINDS, PHASE_SWATCH, PHASE_WORD } from './landscapeWords'
+import { COLOUR_WORD, lensOf, LINE_KINDS, NONE_WORD, PHASE_SWATCH, PHASE_WORD } from './landscapeWords'
 import { useLandscapeShowing } from './useLandscapeShowing'
 import './TechnologyLandscapePage.css'
 
@@ -116,6 +117,12 @@ export type TechnologyLandscapePageProps = {
   hasContainers?(id: ElementId): boolean
   onOpenServiceReport?(id: ElementId): void
   onOpenPlatformReport?(id: ElementId): void
+  /**
+   * The model of the scope that keeps an application drawn here, where that is
+   * not this one: the Day menu offers that scope's days too, as its board does,
+   * since the applications drawn carry them. Absent: this scope's days only.
+   */
+  dayModelOf?(id: ElementId): DaysModel | undefined
   /** Look at another day; nothing is today. Absent = no Day control. */
   onDay?(day: string | undefined): void
   /** What a lens kept with the view is, and keeping one. */
@@ -211,6 +218,16 @@ function LensCode({ code, swatch }: { code: number | undefined; swatch: ColourTo
   )
 }
 
+/** The key's id for the rows a lens has no value for: no value a row can have. */
+const NO_VALUE = '\u0000none'
+
+/** Every row a lens may colour. */
+const rowKeys = (landscape: TechnologyLandscape): NodeKey[] => [
+  ...applicationList(landscape).map((app) => nodeKey.application(app.id)),
+  ...serviceList(landscape).map(({ node }) => nodeKey.service(node.id)),
+  ...platformList(landscape).map(({ node }) => nodeKey.platform(node.id)),
+]
+
 function useColouring(landscape: TechnologyLandscape | undefined, lens: LandscapeColour | undefined, ownerText: ((owner: PersonRef) => string) | undefined) {
   const { t } = useStrings()
   const [pressed, setPressed] = useState<string | undefined>(undefined)
@@ -222,18 +239,21 @@ function useColouring(landscape: TechnologyLandscape | undefined, lens: Landscap
     const counts = new Map<string, number>()
     for (const value of colours?.values() ?? []) counts.set(value, (counts.get(value) ?? 0) + 1)
     // Each value has a number, on its rows and in the key, as the board's lens has: colour is never the only signal.
-    return [...counts].sort(([, a], [, b]) => b - a).map(([id, count], at) => {
+    const said: KeyValue[] = [...counts].sort(([, a], [, b]) => b - a).map(([id, count], at) => {
       const swatch = phases ? PHASE_SWATCH[id as keyof typeof PHASE_SWATCH] : lensOf(at)
       return { id, count, label: phases ? t(PHASE_WORD[id as keyof typeof PHASE_WORD]) : id, ...(swatch ? { swatch } : {}), shown: <LensCode code={at + 1} swatch={swatch} /> }
     })
-  }, [colours, phases, t])
+    // The rows it has no value for are an empty square, said in the key as they are drawn.
+    const unsaid = landscape && lens && colours ? rowKeys(landscape).filter((key) => !colours.has(key)).length : 0
+    return unsaid === 0 || !lens ? said : [...said, { id: NO_VALUE, count: unsaid, label: t(NONE_WORD[lens]), shown: <LensCode code={undefined} swatch={undefined} /> }]
+  }, [colours, phases, t, landscape, lens])
   const swatchOf = useCallback((key: NodeKey) => {
     const value = colours?.get(key)
     if (!lens) return null
-    const at = values.findIndex((one) => one.id === value)
+    const at = value === undefined ? -1 : values.findIndex((one) => one.id === value)
     return <LensCode code={at < 0 ? undefined : at + 1} swatch={values[at]?.swatch} />
   }, [colours, lens, values])
-  const quiet = useCallback((key: NodeKey) => pressed !== undefined && colours?.get(key) !== pressed, [pressed, colours])
+  const quiet = useCallback((key: NodeKey) => pressed !== undefined && (colours?.get(key) ?? NO_VALUE) !== pressed, [pressed, colours])
   return { values, pressed, setPressed, swatchOf, quiet }
 }
 
@@ -383,14 +403,16 @@ function LandscapeBar({ props, showing, landscape, groupLabel, reading, setReadi
 }) {
   const { t } = useStrings()
   // The days the board offers, from the same reading: a plan's milestones, when something goes live or goes, a view saved on a day.
+  const { dayModelOf } = props
   const days = useMemo<DayGroup[]>(() => {
-    const worth = daysWorthLooking(props.model, props.today ?? '', {
+    const kept = dayModelOf ? applicationList(landscape).flatMap((app) => { const one = dayModelOf(app.id); return one ? [one] : [] }) : []
+    const worth = daysWorthLooking([props.model, ...new Set(kept)], props.today ?? '', {
       plan: (plan, milestone) => t('landscape.dayPlan', { plan, milestone }),
       phase: (phase, name) => t(DAY_PHASE[phase], { name }),
       board: (name) => t('landscape.dayBoard', { name }),
     })
     return worth.length === 0 ? [] : [{ heading: t('landscape.dayHere'), days: worth }]
-  }, [props.model, props.today, t])
+  }, [props.model, props.today, t, landscape, dayModelOf])
   return (
     <ViewBar
       label={t('landscape.page')}

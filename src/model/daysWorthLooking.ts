@@ -15,6 +15,14 @@ import type { LifecycleDates } from './types'
 
 export type WorthLooking = { readonly day: string; readonly label: string }
 
+/** What the days are read off: a scope's model, or several laid together where a view draws what other scopes keep. */
+export type DaysModel = {
+  elements: readonly { name: string; lifecycleDates?: LifecycleDates }[]
+  transitions?: readonly { title: string; milestones: readonly { date: string; name: string }[] }[]
+  /** Absent where only the records were read, as the tree's index reads another scope. */
+  diagrams?: readonly { name: string; asOf?: string }[]
+}
+
 type Says = {
   plan: (plan: string, milestone: string) => string
   phase: (phase: keyof LifecycleDates, name: string) => string
@@ -24,22 +32,30 @@ type Says = {
 const SHOWN = 10
 
 export function daysWorthLooking(
-  model: {
-    elements: readonly { name: string; lifecycleDates?: LifecycleDates }[]
-    transitions?: readonly { title: string; milestones: readonly { date: string; name: string }[] }[]
-    diagrams: readonly { name: string; asOf?: string }[]
-  },
+  model: DaysModel | readonly DaysModel[],
   today: string,
   says: Says,
 ): readonly WorthLooking[] {
-  const all: WorthLooking[] = [
-    ...(model.transitions ?? []).flatMap((plan) => plan.milestones.map((one) => ({ day: one.date, label: says.plan(plan.title, one.name) }))),
-    ...model.elements.flatMap((element) => (Object.entries(element.lifecycleDates ?? {}) as [keyof LifecycleDates, string][])
-      .map(([phase, day]) => ({ day, label: says.phase(phase, element.name) }))),
-    ...model.diagrams.flatMap((one) => (one.asOf ? [{ day: one.asOf, label: says.board(one.name) }] : [])),
-  ].filter((one) => one.day !== '' && one.day !== today)
+  const models: readonly DaysModel[] = Array.isArray(model) ? model : [model as DaysModel]
+  // The same day said the same way twice, a stand-in beside its master, is one day to offer.
+  const seen = new Set<string>()
+  const all = models.flatMap((one) => worthIn(one, says)).filter((one) => {
+    const key = `${one.day}\u0000${one.label}`
+    if (one.day === '' || one.day === today || seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
   const ahead = all.filter((one) => one.day > today).sort((a, b) => a.day.localeCompare(b.day))
   const past = all.filter((one) => one.day < today).sort((a, b) => b.day.localeCompare(a.day))
   const shown = [...ahead, ...past].slice(0, SHOWN)
   return shown.sort((a, b) => a.day.localeCompare(b.day))
+}
+
+function worthIn(model: DaysModel, says: Says): WorthLooking[] {
+  return [
+    ...(model.transitions ?? []).flatMap((plan) => plan.milestones.map((one) => ({ day: one.date, label: says.plan(plan.title, one.name) }))),
+    ...model.elements.flatMap((element) => (Object.entries(element.lifecycleDates ?? {}) as [keyof LifecycleDates, string][])
+      .map(([phase, day]) => ({ day, label: says.phase(phase, element.name) }))),
+    ...(model.diagrams ?? []).flatMap((one) => (one.asOf ? [{ day: one.asOf, label: says.board(one.name) }] : [])),
+  ]
 }
