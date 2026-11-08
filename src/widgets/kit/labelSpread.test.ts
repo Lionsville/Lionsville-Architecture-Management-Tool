@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { spreadLabels } from './labelSpread'
+import { slideAlong, spreadLabels } from './labelSpread'
 
 const box = (id: string, x: number, y: number) => ({ id, x, y, width: 100, height: 30 })
 
@@ -34,5 +34,25 @@ describe('spreadLabels', () => {
     const moved = spreadLabels(pile, [], 50)
     for (const by of moved.values()) expect(Math.abs(by)).toBeLessThanOrEqual(50)
     expect(moved.size).toBeLessThan(5)
+  })
+})
+
+describe('slideAlong', () => {
+  const card = { id: 'card', x: 100, y: 0, width: 100, height: 100 }
+  const line = Array.from({ length: 41 }, (_, i) => ({ x: i * 10, y: 50 }))
+
+  it('leaves a label clear of every box where it is', () => {
+    expect(slideAlong({ id: 'a', x: 0, y: 40, width: 40, height: 20 }, line, [card])).toBeUndefined()
+  })
+
+  it('moves one that covers a box along its own line to the nearest clear point, not off it', () => {
+    const moved = slideAlong({ id: 'a', x: 160, y: 40, width: 40, height: 20 }, line, [card])
+    expect(moved?.dy).toBe(0)
+    // Its middle at 180: the first clear middle past the card's edge and the gap is 230.
+    expect(moved?.dx).toBe(50)
+  })
+
+  it('stays where no point of its line is clear', () => {
+    expect(slideAlong({ id: 'a', x: 120, y: 40, width: 40, height: 20 }, [{ x: 150, y: 50 }], [card])).toBeUndefined()
   })
 })

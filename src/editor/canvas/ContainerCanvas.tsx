@@ -49,7 +49,7 @@ export function ContainerCanvas(
   return (
     <ContainerBoardContext.Provider value={board}>
     <DiagramCanvas {...props} onAddByDrop={onAddByDrop}>
-      <LabelSpread />
+      <LabelSpread alongLine />
       <CategoryBands />
       {!props.readOnly && props.onRouteLines && (
         <LinesCrossing onRoute={props.onRouteLines} onMoveClear={(moves) => actions.movePlacements([...moves])} boundary={diagram.applicationElementId} />

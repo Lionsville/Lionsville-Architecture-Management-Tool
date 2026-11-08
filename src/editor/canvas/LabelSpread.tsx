@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { useStore, useStoreApi } from '@xyflow/react';
-import { spreadLabels } from '../../widgets/kit/labelSpread';
+import { slideAlong, spreadLabels } from '../../widgets/kit/labelSpread';
 import { useRouteEditing } from './RouteEditingContext';
 
 /** After the zoom has settled, not at each step of it. */
@@ -15,7 +15,11 @@ const SETTLE_MS = 80;
  * on the label, so that moving them renders no line. A label a person placed is one
  * like any other: it moves off another only as far as it must.
  */
-export function LabelSpread({ maxMove }: { /** On screen: how far from its line a label may go. */ maxMove?: number } = {}) {
+export function LabelSpread({ maxMove, alongLine = false }: {
+  /** On screen: how far from its line a label may go. */ maxMove?: number
+  /** A label that covers a box first slides along its own line to where it is clear, and only then spreads. */
+  alongLine?: boolean
+} = {}) {
   const flow = useStoreApi();
   const edges = useStore((state) => state.edges);
   // Turning the labels on adds them all with no line changing.
@@ -28,10 +32,10 @@ export function LabelSpread({ maxMove }: { /** On screen: how far from its line 
       // One the distance hides has no box to keep clear.
       const labels = [...root.querySelectorAll<HTMLElement>('.lv-edge-chip')].filter((label) => label.getClientRects().length > 0);
       const zoom = flow.getState().transform[2] || 1;
-      const nudged = (label: HTMLElement) => Number.parseFloat(label.style.getPropertyValue('--lv-nudge-y')) || 0;
-      const boxes = labels.map((label, index) => {
+      const nudged = (label: HTMLElement, axis: 'x' | 'y') => Number.parseFloat(label.style.getPropertyValue(`--lv-nudge-${axis}`)) || 0;
+      const unmoved = labels.map((label, index) => {
         const inner = (label.firstElementChild ?? label).getBoundingClientRect();
-        return { id: String(index), x: inner.x, y: inner.y - nudged(label) * zoom, width: inner.width, height: inner.height };
+        return { id: String(index), x: inner.x - nudged(label, 'x') * zoom, y: inner.y - nudged(label, 'y') * zoom, width: inner.width, height: inner.height };
       });
       const cards = [...root.querySelectorAll<HTMLElement>('.react-flow__node:not(.react-flow__node-applicationBoundary)')].map((card, index) => {
         const box = card.getBoundingClientRect();
@@ -42,11 +46,16 @@ export function LabelSpread({ maxMove }: { /** On screen: how far from its line 
         const box = pill.getBoundingClientRect();
         return { id: `pill${index}`, x: box.x, y: box.y, width: box.width, height: box.height };
       });
+      const slid = labels.map((label, index) => (alongLine ? slideAlong(unmoved[index], lineOf(root, label), cards) : undefined));
+      const boxes = unmoved.map((box, index) => ({ ...box, x: box.x + (slid[index]?.dx ?? 0), y: box.y + (slid[index]?.dy ?? 0) }));
       const moved = spreadLabels(boxes, [...cards, ...pills], maxMove);
       labels.forEach((label, index) => {
-        const by = moved.get(String(index));
-        if (by === undefined) label.style.removeProperty('--lv-nudge-y');
-        else label.style.setProperty('--lv-nudge-y', `${by / zoom}px`);
+        const x = slid[index]?.dx ?? 0;
+        const y = (slid[index]?.dy ?? 0) + (moved.get(String(index)) ?? 0);
+        if (x === 0) label.style.removeProperty('--lv-nudge-x');
+        else label.style.setProperty('--lv-nudge-x', `${x / zoom}px`);
+        if (y === 0) label.style.removeProperty('--lv-nudge-y');
+        else label.style.setProperty('--lv-nudge-y', `${y / zoom}px`);
       });
     };
     const soon = () => {
@@ -67,6 +76,22 @@ export function LabelSpread({ maxMove }: { /** On screen: how far from its line 
     });
     if (root) watch?.observe(root, { childList: true, subtree: true });
     return () => { clearTimeout(timer); unsubscribe(); watch?.disconnect(); };
-  }, [flow, edges, showLabels, maxMove]);
+  }, [flow, edges, showLabels, maxMove, alongLine]);
   return null;
+}
+
+/** How many points along a line a label may stand at. */
+const LINE_SAMPLES = 48;
+
+/** Points along the line a label says, on screen. */
+function lineOf(root: Element, label: HTMLElement): { x: number; y: number }[] {
+  const id = label.dataset.testid?.replace(/^edge-label-/u, '');
+  const path = id === undefined ? null : root.querySelector<SVGPathElement>(`[data-testid="rf__edge-${CSS.escape(id)}"] path.react-flow__edge-path`);
+  const matrix = path?.getScreenCTM();
+  if (!path || !matrix || typeof path.getTotalLength !== 'function') return [];
+  const length = path.getTotalLength();
+  return Array.from({ length: LINE_SAMPLES + 1 }, (_, i) => {
+    const point = path.getPointAtLength((length * i) / LINE_SAMPLES);
+    return { x: matrix.a * point.x + matrix.c * point.y + matrix.e, y: matrix.b * point.x + matrix.d * point.y + matrix.f };
+  });
 }

@@ -40,3 +40,20 @@ export function spreadLabels(boxes: readonly LabelBox[], keepOff: readonly Label
   }
   return moved
 }
+
+/**
+ * Where along its own line a label that covers a box can stand clear of every box: the
+ * point of the line nearest to where it is, as a move from there; none where it covers
+ * nothing, or where no point of the line is clear. A label moved only up or down to get
+ * off a box ended a hand's width under its line, on another's edge; along its line it
+ * still says which line it is.
+ */
+export function slideAlong(box: LabelBox, line: readonly { x: number; y: number }[], keepOff: readonly LabelBox[]): { dx: number; dy: number } | undefined {
+  const at = (x: number, y: number): LabelBox => ({ ...box, x: x - box.width / 2, y: y - box.height / 2 })
+  if (!keepOff.some((other) => overlaps(box, other))) return undefined
+  const middle = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+  const clear = line
+    .filter((point) => !keepOff.some((other) => overlaps(at(point.x, point.y), other)))
+    .sort((a, b) => Math.hypot(a.x - middle.x, a.y - middle.y) - Math.hypot(b.x - middle.x, b.y - middle.y))[0]
+  return clear ? { dx: clear.x - middle.x, dy: clear.y - middle.y } : undefined
+}
