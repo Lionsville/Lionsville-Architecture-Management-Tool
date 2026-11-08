@@ -288,6 +288,7 @@ export const EN = {
   'bar.map': 'Map of the board',
   'bar.find': 'Find',
   'bar.export': 'Export…',
+  'print.tooLarge': 'This board is too large to read on two sheets: Export… saves it as a picture at its full size.',
   'bar.more': 'More on this view',
   'add.label': 'Add to the board',
   'add.placeholder': 'Find what exists, or name something new',

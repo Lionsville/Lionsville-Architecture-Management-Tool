@@ -9,6 +9,8 @@ import { canvasRooms } from '../../widgets/kit/canvasRoom';
 import { frameInRooms, NO_INSETS, ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
 import type { Insets } from '../../widgets/kit/zoom';
 import { textScale } from '../../widgets/kit/tokens';
+import { useStrings } from '../../i18n/LanguageContext';
+import { PRINT_MARGIN, PRINT_SHEET, printLayout, printSheets } from './printBoard';
 
 /**
  * The options every "fit the board" shares.
@@ -104,55 +106,72 @@ export function useFitBoard(options: { onPrint?: boolean } = {}): (duration?: nu
   }, [flow, getNodes, setViewport]);
 }
 
-/**
- * The room a board is printed into, in CSS pixels: an A4 or Letter sheet
- * upright, inside the browser's own margins — the smallest sheet a person
- * prints on, so the board is whole on any of them.
- */
-export const PRINT_ROOM = { width: 700, height: 940 } as const;
+/** The room a board is framed into on the screen while it prints, so a canvas that draws only what is in view draws all of it for the copy. */
+export const PRINT_ROOM = PRINT_SHEET;
 
 /** Room left round a printed board, in the sheet's pixels: a band's heading drawn over its top edge stays on it. */
-const PRINT_MARGIN = 24;
+const PRINT_ROOM_MARGIN = PRINT_MARGIN;
 
 /** The viewport that puts these nodes — and the sheet drawn round them, where there is one — whole into the print's room, top left, never over 100%. */
 export function printViewport(nodes: readonly Node[], room: { width: number; height: number } = PRINT_ROOM, sheet?: Rect): Viewport | undefined {
+  const bounds = printBounds(nodes, sheet);
+  if (!bounds) return undefined;
+  const zoom = Math.min((room.width - 2 * PRINT_ROOM_MARGIN) / bounds.width, (room.height - 2 * PRINT_ROOM_MARGIN) / bounds.height, 1);
+  return { x: PRINT_ROOM_MARGIN - bounds.x * zoom, y: PRINT_ROOM_MARGIN - bounds.y * zoom, zoom };
+}
+
+function printBounds(nodes: readonly Node[], sheet?: Rect): Rect | undefined {
   if (nodes.length === 0) return undefined;
   const nodeBounds = getNodesBounds([...nodes]);
   const bounds = sheet ? union(nodeBounds, sheet) : nodeBounds;
-  if (!(bounds.width > 0) || !(bounds.height > 0)) return undefined;
-  const zoom = Math.min((room.width - 2 * PRINT_MARGIN) / bounds.width, (room.height - 2 * PRINT_MARGIN) / bounds.height, 1);
-  return { x: PRINT_MARGIN - bounds.x * zoom, y: PRINT_MARGIN - bounds.y * zoom, zoom };
+  return bounds.width > 0 && bounds.height > 0 ? bounds : undefined;
 }
 
 /**
  * The browser's own Print — File › Print, or ⌘P while a dialog keeps the key
- * from Export — over a board: the board is framed whole on the sheet while it
- * prints, and put back where the person had it after. Without it the canvas
- * printed as it stood on the screen, cut at the sheet's right edge.
+ * from Export — over a board: printed from a copy laid over landscape sheets
+ * (`printBoard`), its cards saying their names, and taken away after. The
+ * canvas is framed whole on the screen first, so a board that draws only the
+ * cards in view has drawn every one of them for the copy, and put back after.
  */
 export function usePrintFit(listening = true): void {
   const { getNodes, getViewport, setViewport } = useReactFlow();
   const flow = useStoreApi();
+  const { t } = useStrings();
   useEffect(() => {
     if (!listening) return undefined;
     let was: Viewport | undefined;
+    let release: (() => void) | undefined;
     const before = () => {
+      // A second print before the first one's end (a PDF asked for twice) prints one set of sheets, not two.
+      release?.();
+      release = undefined;
       const { domNode } = flow.getState();
-      const framed = printViewport(getNodes(), PRINT_ROOM, domNode ? sheetOf(domNode) : undefined);
-      if (!framed) return;
-      was = getViewport();
+      const nodes = getNodes();
+      const sheet = domNode ? sheetOf(domNode) : undefined;
+      const framed = printViewport(nodes, PRINT_ROOM, sheet);
+      const bounds = printBounds(nodes, sheet);
+      const board = domNode?.closest<HTMLElement>('[data-distance]') ?? domNode;
+      if (!framed || !bounds || !board) return;
+      was ??= getViewport();
       // Drawn before the handler returns: the print is laid out as soon as it has.
       flushSync(() => { void setViewport(framed); });
+      const cards = nodes.map((node) => ({ x: node.position.x, y: node.position.y, width: node.width ?? node.measured?.width ?? 0, height: node.height ?? node.measured?.height ?? 0 }));
+      const layout = printLayout(bounds, cards);
+      if (layout) release = printSheets(board, layout, layout.small ? t('print.tooLarge') : undefined);
     };
     const after = () => {
+      release?.();
+      release = undefined;
       if (was) void setViewport(was);
       was = undefined;
     };
     window.addEventListener('beforeprint', before);
     window.addEventListener('afterprint', after);
     return () => {
+      after();
       window.removeEventListener('beforeprint', before);
       window.removeEventListener('afterprint', after);
     };
-  }, [getNodes, getViewport, setViewport, listening, flow]);
+  }, [getNodes, getViewport, setViewport, listening, flow, t]);
 }

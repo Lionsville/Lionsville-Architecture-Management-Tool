@@ -11,7 +11,6 @@ describe('the board framed for the browser’s Print', () => {
   it('puts a wide board whole into the sheet’s room, from its top left', () => {
     const viewport = printViewport([card('a', 100, 50), card('b', 2900, 50)])!
     // 3000 wide in the board's units into the room's width, inside its margin.
-    expect(viewport.x).toBeGreaterThan(0)
     expect(100 * viewport.zoom + viewport.x).toBeGreaterThanOrEqual(0)
     expect((2900 + 200) * viewport.zoom + viewport.x).toBeLessThanOrEqual(PRINT_ROOM.width)
   })

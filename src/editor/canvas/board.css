@@ -401,3 +401,20 @@
 /* A group's heading, reached by the keyboard or handed the focus back by its colour popover: the kit's ring, not the system's. */
 .lv-group__name:focus { outline: none; }
 .lv-group__name:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+
+/*
+ * The browser's own Print over a board (`printBoard`): its copies on landscape sheets
+ * are all that prints, each cut to its part of the board.
+ */
+.lv-print-sheets { display: none; }
+@media print {
+  body:has(> .lv-print-sheets) > :not(.lv-print-sheets) { display: none !important; }
+  .lv-print-sheets { display: block; background: white; }
+  /* Size-contained, as `printPage` does: what the copy draws past its part cannot widen the page the browser shrinks to fit. */
+  .lv-print-sheet { position: relative; overflow: hidden; contain: strict; break-after: page; break-inside: avoid; }
+  .lv-print-sheet:last-child { break-after: auto; }
+  .lv-print-sheet__clip { position: absolute; overflow: hidden; }
+  .lv-print-sheet__clip > .lv-board { position: absolute !important; inset: 0; }
+  .lv-print-sheet .react-flow__background, .lv-print-sheet .react-flow__panel, .lv-print-sheet .react-flow__minimap { display: none !important; }
+  .lv-print-sheet__note { position: absolute; left: 12px; bottom: 0; margin: 0; font-size: var(--t-small); color: var(--ink-2); }
+}

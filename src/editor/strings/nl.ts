@@ -277,6 +277,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'bar.map': 'Kaart van het bord',
   'bar.find': 'Zoeken',
   'bar.export': 'Exporteren…',
+  'print.tooLarge': 'Dit bord is te groot om op twee vellen te lezen: Exporteren… bewaart het als afbeelding op volle grootte.',
   'bar.more': 'Meer over deze weergave',
   'add.label': 'Aan het bord toevoegen',
   'add.placeholder': 'Zoek wat bestaat, of geef iets nieuws een naam',

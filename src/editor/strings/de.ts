@@ -277,6 +277,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'bar.map': 'Minikarte',
   'bar.find': 'Suchen',
   'bar.export': 'Exportieren…',
+  'print.tooLarge': 'Dieses Board ist zu groß, um es auf zwei Blättern zu lesen: Exportieren… speichert es als Bild in voller Größe.',
   'bar.more': 'Mehr zu dieser Ansicht',
   'add.label': 'Zum Board hinzufügen',
   'add.placeholder': 'Vorhandenes suchen oder Neues benennen',

@@ -184,10 +184,11 @@ export function usePrinting(): boolean {
   useEffect(() => {
     const before = () => flushSync(() => setPrinting(true))
     const after = () => setPrinting(false)
-    window.addEventListener('beforeprint', before)
+    // In the capture phase, so the light theme is drawn before a board copies itself for the sheets (`editor/canvas/printBoard`).
+    window.addEventListener('beforeprint', before, true)
     window.addEventListener('afterprint', after)
     return () => {
-      window.removeEventListener('beforeprint', before)
+      window.removeEventListener('beforeprint', before, true)
       window.removeEventListener('afterprint', after)
     }
   }, [])
