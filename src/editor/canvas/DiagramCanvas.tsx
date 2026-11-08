@@ -600,6 +600,13 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
 
   const [nodes, setNodes] = useState<ElementNode[]>(derivedNodes);
   const [edges, setEdges] = useState<FloatingEdgeModel[]>(derivedEdges);
+  // Tab walks the cards, not every line first (React Flow draws the lines ahead of the
+  // cards): a line is reached from its card, so only the lines of what is selected take a tab.
+  const tabbableEdges = useMemo(() => edges.map((edge) => {
+    if (edge.focusable === false || edge.focusable === true) return edge;
+    const reached = selectedConnectionIds.has(edge.id) || selectedElementIds.has(edge.source) || selectedElementIds.has(edge.target);
+    return reached ? { ...edge, focusable: true } : edge;
+  }), [edges, selectedConnectionIds, selectedElementIds]);
   // The selection embedded in the nodes/edges we last handed React Flow. RF
   // echoes whatever it was given back through `onSelectionChange`, and a push
   // can be one render stale: a host model update landing while a click is in
@@ -1657,7 +1664,8 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         <NodeResizeContext.Provider value={nodeResize}>
         <ReactFlow
           nodes={nodes}
-          edges={edges}
+          edges={tabbableEdges}
+          edgesFocusable={false}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode={theme.palette.mode}

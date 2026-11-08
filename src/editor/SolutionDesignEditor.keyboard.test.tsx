@@ -75,13 +75,16 @@ function press(target: HTMLElement, key: string, init: { shiftKey?: boolean } = 
 }
 
 describe('the board without a mouse', () => {
-  it('puts every card and every line in the tab order, each told its keys, a line named by its ends', async () => {
+  it('puts every card in the tab order and the lines of the card selected, each told its keys, a line named by its ends', async () => {
     const { card, line } = renderEditor();
     for (const id of ['a1', 'a2', 'a3']) expect(card(id).tabIndex).toBe(0);
     const toldCard = document.getElementById(card('a1').getAttribute('aria-describedby')!);
     expect(toldCard?.textContent).toContain('The arrow keys move the selection');
     await waitFor(() => expect(line('c1')).not.toBeNull());
-    expect(line('c1').getAttribute('tabindex')).toBe('0');
+    // Tab walks the cards first: a line takes a tab once its card is selected.
+    expect(line('c1').getAttribute('tabindex')).not.toBe('0');
+    press(card('a1'), 'Enter');
+    await waitFor(() => expect(line('c1').getAttribute('tabindex')).toBe('0'));
     expect(line('c1').getAttribute('aria-label')).toBe('From Webshop to Billing: Sends orders');
     const told = document.getElementById(line('c1').getAttribute('aria-describedby')!);
     expect(told?.textContent).toContain('Shift+F10 opens its menu');

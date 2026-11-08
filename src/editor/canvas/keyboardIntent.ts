@@ -5,8 +5,9 @@
  * What Enter and Space mean on the board, read off whatever has the focus.
  *
  * React Flow's own keyboard handling is off (`disableKeyboardA11y`), because
- * the keymap owns the arrows and commits the move; Tab still walks the cards
- * and the lines, and this is what makes arriving at one worth something:
+ * the keymap owns the arrows and commits the move; Tab still walks the cards,
+ * and the lines of what is selected (`tabbableEdges` in the canvas), and this
+ * is what makes arriving at one worth something:
  *
  * - on a card, select it — or, with Shift, add it to the selection or take it
  *   out;
