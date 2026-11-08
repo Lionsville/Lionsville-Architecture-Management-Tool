@@ -68,39 +68,52 @@ export function MarkAsIntended({ words, sentence, onMark, inline = false }: {
   inline?: boolean
 }) {
   const { t } = useStrings()
+  const asking = useMarkAsIntended({ words, sentence, onMark })
+  return (
+    <Box sx={inline ? { flex: 'none' } : { mt: 1 }}>
+      <Button
+        size="small" variant="text" onClick={asking.open} aria-label={inline ? `${t(words.open)} ${sentence}` : undefined}
+        data-guide="findings.markIntended" data-testid="finding-mark" sx={{ fontSize: 'var(--t-small)', textTransform: 'none', px: 0.5 }}
+      >
+        {t(words.open)}
+      </Button>
+      {asking.dialog}
+    </Box>
+  )
+}
+
+/**
+ * The question *Mark as intended…* asks, without its button: for a screen
+ * that offers the mark as one of its answers, at the same weight as the others.
+ */
+export function useMarkAsIntended({ words, sentence, onMark }: { words: FindingMarkWords; sentence: string; onMark: (reason: string) => void }) {
+  const { t } = useStrings()
   const [asking, setAsking] = useState(false)
   const [reason, setReason] = useState('')
   const titleId = useId()
   const close = () => { setAsking(false); setReason('') }
   const confirm = () => { onMark(reason.trim()); close() }
-  return (
-    <Box sx={inline ? { flex: 'none' } : { mt: 1 }}>
-      <Button
-        size="small" variant="text" onClick={() => setAsking(true)} aria-label={inline ? `${t(words.open)} ${sentence}` : undefined}
-        data-guide="findings.markIntended" data-testid="finding-mark" sx={{ fontSize: 'var(--t-small)', textTransform: 'none', px: 0.5 }}
-      >
-        {t(words.open)}
-      </Button>
-      <FieldsDialog open={asking} onClose={close} maxWidth="xs" fullWidth aria-labelledby={titleId}>
-        <DialogTitle id={titleId} sx={{ fontSize: 'var(--t-large)' }}>{t(words.title)}</DialogTitle>
-        <DialogContent>
-          <Typography sx={{ fontSize: 'var(--t-body)', fontWeight: 600, mb: 1 }} data-testid="finding-mark-sentence">{sentence}</Typography>
-          <Typography sx={{ ...SMALL, color: 'text.secondary', mb: 1.5 }}>{t(words.about)}</Typography>
-          <FieldBox
-            autoFocus fullWidth label={t(words.reason)} helperText={t(words.reasonHelp)} value={reason}
-            onChange={(event) => setReason(event.target.value)}
-            // The Enter it acts on is consumed, so it cannot go on to press whatever takes the focus next.
-            onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); confirm() } }}
-            slotProps={{ htmlInput: { 'data-testid': 'finding-mark-reason', maxLength: 500 } }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={close}>{t(words.cancel)}</Button>
-          <Button variant="contained" onClick={confirm} data-testid="finding-mark-confirm">{t(words.confirm)}</Button>
-        </DialogActions>
-      </FieldsDialog>
-    </Box>
+  const dialog = (
+    <FieldsDialog open={asking} onClose={close} maxWidth="xs" fullWidth aria-labelledby={titleId}>
+      <DialogTitle id={titleId} sx={{ fontSize: 'var(--t-large)' }}>{t(words.title)}</DialogTitle>
+      <DialogContent>
+        <Typography sx={{ fontSize: 'var(--t-body)', fontWeight: 600, mb: 1 }} data-testid="finding-mark-sentence">{sentence}</Typography>
+        <Typography sx={{ ...SMALL, color: 'text.secondary', mb: 1.5 }}>{t(words.about)}</Typography>
+        <FieldBox
+          autoFocus fullWidth label={t(words.reason)} helperText={t(words.reasonHelp)} value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          // The Enter it acts on is consumed, so it cannot go on to press whatever takes the focus next.
+          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); confirm() } }}
+          slotProps={{ htmlInput: { 'data-testid': 'finding-mark-reason', maxLength: 500 } }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={close}>{t(words.cancel)}</Button>
+        <Button variant="contained" onClick={confirm} data-testid="finding-mark-confirm">{t(words.confirm)}</Button>
+      </DialogActions>
+    </FieldsDialog>
   )
+  return { open: () => setAsking(true), dialog }
 }
 
 /** One finding marked as intended, as *Accepted* lists it. */

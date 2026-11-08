@@ -25,7 +25,7 @@ import { applicationOnMap, linesOfPair, pairId, pairsUnder, unitOnMap } from '..
 import type { ConwaySum, PairReading } from '../../model/conwayReading'
 import { INTERACTION_MODE_LABEL } from '../../model/relations'
 import type { DesignElement, ElementId } from '../../model/types'
-import { MarkAsIntended } from '../../widgets/FindingMarks'
+import { useMarkAsIntended } from '../../widgets/FindingMarks'
 import { useSessionSet } from '../../widgets/sessionMemory'
 import type { FindingMarkWords } from '../../widgets/FindingMarks'
 import { Button } from '../../widgets/kit/Button'
@@ -322,11 +322,15 @@ function InteractionRows({ rows, here, acting, t }: { rows: readonly ConwayInter
 /** The words of *Mark as intended…* in the reader, where the button says what it answers. */
 const FINE_WORDS: FindingMarkWords = { ...CHECK_MARK_WORDS, open: 'conway.fine' }
 
-/** Mark every open finding of a pair as intended, as one question. */
-function MarkPair({ findings, sentence }: { findings: readonly ConwayFinding[]; sentence: string }) {
+/**
+ * Mark every open finding of a pair as intended, as one question: one of the pair's answers, a button as heavy as
+ * planning it away, where a quiet link beside a large button said which answer the page wanted.
+ */
+function useMarkPair(findings: readonly ConwayFinding[], sentence: string, t: Translate): { action?: NextAction; dialog: ReactNode } {
   const marking = useCheckMarking()
-  if (!marking || findings.length === 0 || findings.some((one) => marking.markableIn(one) === undefined)) return null
-  return <MarkAsIntended words={FINE_WORDS} sentence={sentence} onMark={(reason) => findings.forEach((one) => marking.mark(one, reason))} />
+  const asking = useMarkAsIntended({ words: FINE_WORDS, sentence, onMark: (reason) => findings.forEach((one) => marking?.mark(one, reason)) })
+  if (!marking || findings.length === 0 || findings.some((one) => marking.markableIn(one) === undefined)) return { dialog: null }
+  return { action: { label: t(FINE_WORDS.open), onPress: asking.open, dataGuide: 'findings.markIntended', testId: 'finding-mark' }, dialog: asking.dialog }
 }
 
 /** Everything the panel says of a pair, worked out once from the map and what is still shown. */
@@ -396,7 +400,8 @@ function PairReader({ props, chosen }: { props: ConwayReaderProps; chosen: { a?:
   const name = t('conway.pairName', { a: end(here, a, t), b: end(here, b, t) })
   const options = useUnitChoices(here, map)
   const canSay = unsettled && bothEnds && held === undefined ? acting?.sayHow(a, b) : undefined
-  const actions = pairAnswers(acting, facts, canSay, t)
+  const fine = useMarkPair(findings, name, t)
+  const actions = [...pairAnswers(acting, facts, canSay, t), ...(fine.action ? [fine.action] : [])]
   const question = standing ? PAIR_QUESTION[standing] : undefined
   return (
     <Panel helpAt={PANEL_HELP.conway}
@@ -416,7 +421,7 @@ function PairReader({ props, chosen }: { props: ConwayReaderProps; chosen: { a?:
       )}
       {held && <PairHeld held={held} onOpenOperating={onOpenOperating} here={here} acting={acting} t={t} />}
       {(actions.length > 0 || question) && <NextStep inline {...(question ? { question: t(question) } : {})} actions={actions} />}
-      <MarkPair findings={findings} sentence={name} />
+      {fine.dialog}
       {standing === 'unused' && modelApps.length > 0 && acting && (
         <div className="conway__stack"><MenuButton label={t('conway.modelInterface')} items={modelApps} data-guide="conway.modelInterface" /></div>
       )}
