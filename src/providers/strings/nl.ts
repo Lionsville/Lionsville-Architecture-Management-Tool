@@ -60,9 +60,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.storageNearlyFull':
     'Deze browser zit voor ongeveer {percent}% vol voor deze app. Bewaar je werk in een map '
     + 'of een bestand voordat de ruimte op is — een browser stopt zonder te vragen met bewaren.',
-  'folder.historyNote': 'Elke momentopname wordt in de map zelf vastgelegd, met git \u2014 er gaat niets van deze machine af. Ze verdwijnt met de gegevens van deze browser, dus ze is geen back-up: Kopie bewaren… is dat wel.',
-  'folder.historyNoteBrowser': 'Elke momentopname wordt in deze browser vastgelegd, naast de map \u2014 er wordt daarvoor niets in de map geschreven.',
-  'browser.historyNote': 'Elke momentopname wordt in deze browser vastgelegd \u2014 er gaat niets van deze machine af.',
+  'folder.historyNote': 'Elke momentopname wordt in de map zelf vastgelegd, met git \u2014 er gaat niets van deze machine af.',
+  'folder.historyNoteBrowser': 'Elke momentopname wordt in deze browser vastgelegd, naast de map \u2014 er wordt daarvoor niets in de map geschreven. Ze verdwijnt met de gegevens van deze browser, dus ze is geen back-up: Kopie bewaren… is dat wel.',
+  'browser.historyNote': 'Elke momentopname wordt in deze browser vastgelegd \u2014 er gaat niets van deze machine af. Ze verdwijnt met de gegevens van deze browser, dus ze is geen back-up: Kopie bewaren… is dat wel.',
   'memory.historyNote': 'Momentopnamen blijven bewaard zolang dit tabblad open is, en gaan ermee weg.',
   'browser.earlierAsking': 'Deze browser is het werk kwijtgeraakt dat hij bewaarde, en er staat nog een oudere kopie. De oudere kopie terugzetten, of verdergaan met wat hier nu staat?',
   'browser.earlierDiverged': '\u201c{path}\u201d is zowel hier als in de oudere kopie van deze browser veranderd. Welke blijft?',
