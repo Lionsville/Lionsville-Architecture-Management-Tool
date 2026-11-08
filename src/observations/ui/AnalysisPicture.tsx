@@ -616,7 +616,7 @@ export function PictureLegend({ size, local, s }: { size: PictureSize; local: bo
   return (
     <Box data-testid="analysis-legend" data-size={size} sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
       {rows}
-      {row(<><circle cx={13} cy={7} r={6} fill={palette.background.paper} stroke={palette.warning.main} /><text x={13} y={7} dy="0.35em" textAnchor="middle" fontSize={9} fontWeight={700} fill={palette.warning.main}>?</text></>, s('observation.legendOpenEnd'))}
+      {row(<><circle cx={13} cy={7} r={7} fill={palette.background.paper} stroke={palette.warning.main} /><text x={13} y={7} dy="0.35em" textAnchor="middle" fontWeight={700} fill={palette.warning.main} style={{ fontSize: 'var(--canvas-t-xs)' }}>?</text></>, s('observation.legendOpenEnd'))}
       {row(<><line x1={1} y1={3} x2={25} y2={3} stroke={palette.text.secondary} strokeWidth={3} /><line x1={1} y1={7} x2={25} y2={7} stroke={palette.text.secondary} strokeWidth={1.5} /><line x1={1} y1={11} x2={25} y2={11} stroke={palette.text.secondary} strokeDasharray="3 3" /></>, s('observation.legendStrength'))}
       {local && row(box(palette.info.main), s('observation.legendScopeBelow'))}
       {local && row(<line x1={1} y1={7} x2={25} y2={7} stroke={palette.info.main} strokeWidth={1.7} strokeDasharray="6 4" />, s('observation.legendAcross'))}

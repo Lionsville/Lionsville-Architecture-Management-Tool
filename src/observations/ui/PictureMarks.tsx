@@ -164,7 +164,7 @@ function OpenEnd({ x, y, r, s }: { x: number; y: number; r: number; s: Translate
     <g data-testid="picture-open-end">
       <title>{s('observation.pictureOpenEnd')}</title>
       <circle cx={x} cy={y} r={r} fill={theme.palette.background.paper} stroke={theme.palette.warning.main} strokeWidth={1.2} />
-      <text x={x} y={y} dy="0.35em" textAnchor="middle" fontSize={10} fontWeight={700} fill={theme.palette.warning.main}>?</text>
+      <text x={x} y={y} dy="0.35em" textAnchor="middle" fontWeight={700} fill={theme.palette.warning.main} style={{ fontSize: 'var(--canvas-t-xs)' }}>?</text>
     </g>
   )
 }
@@ -229,7 +229,7 @@ function SmallMark({ node, selected, matched, openEnd, marker, fill, s }: Record
       {node.kind === 'solution' && (
         <rect x={cx - 11} y={cy - 11} width={22} height={22} rx={5} fill={mix(theme.palette.primary.main, 0.12, paper)} stroke={line.stroke} strokeWidth={line.width} />
       )}
-      {openEnd && <OpenEnd x={cx + 14} y={cy - 11} r={6.5} s={s} />}
+      {openEnd && <OpenEnd x={cx + 14} y={cy - 11} r={7.5} s={s} />}
       <text x={cx} y={cy + 32} textAnchor="middle" fontSize={10.5} fontFamily={SCALE['font-mono']} fill={theme.palette.text.secondary}>{recordLabel(node)}</text>
       <text x={cx} y={cy + 47} textAnchor="middle" fontSize={11.5} fill={theme.palette.text.primary}>{shorten(recordTitle(node), 20)}</text>
       {marker && <text x={cx} y={cy - reach - 6} textAnchor="middle" fontSize={9.5} fill={theme.palette.info.main}>{marker}</text>}
