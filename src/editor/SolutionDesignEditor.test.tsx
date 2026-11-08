@@ -104,6 +104,29 @@ function placeFromPalette(label: string) {
   addFromBar(label, `New ${label.toLowerCase()}`);
 }
 
+describe('a scope with no views', () => {
+  /** Its last view removed, or never made: an empty place that offers one, not a complaint. */
+  it('offers a new view where the view would be, and none read-only', () => {
+    const onCreateLayer7Diagram = vi.fn();
+    const model = { ...baseModel(), diagrams: [] };
+    renderEditor({ model, activeDiagramId: 'd1', onCreateLayer7Diagram });
+    expect(screen.getByText('No view here yet')).toBeTruthy();
+    expect(screen.queryByText(/no view here to show/)).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'New view…' }));
+    expect(onCreateLayer7Diagram).toHaveBeenCalledOnce();
+    cleanup();
+    renderEditor({ model, activeDiagramId: 'd1', readOnly: true });
+    expect(screen.getByText('No view here yet')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'New view…' })).toBeNull();
+  });
+
+  it('still says a view is missing where the scope has others', () => {
+    renderEditor({ activeDiagramId: 'gone' });
+    expect(screen.getByText(/no view here to show/)).toBeTruthy();
+    expect(screen.queryByText('No view here yet')).toBeNull();
+  });
+});
+
 describe('an empty board', () => {
   it('says so with its two ways in, and the first card takes that away', async () => {
     const model = baseModel();

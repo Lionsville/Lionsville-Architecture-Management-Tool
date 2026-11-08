@@ -79,8 +79,9 @@ export type ServerIdentity = { name: string; version: string }
 /** The one sentence a client is handed on connect, so it knows what it is talking to. */
 export const INSTRUCTIONS =
   'This is Lionsville Architect, running on the person\'s screen. It holds an '
-  + 'organisation of scopes, each with views (boards, business sheets, enterprise maps, technology '
-  + 'landscapes), records, decisions and plans; one scope at a time is open in the workspace, or a scope\'s '
+  + 'organisation of scopes, each with records, decisions and plans and any number of views (boards, '
+  + 'business sheets, enterprise maps, technology landscapes) — none at all where a scope keeps only its '
+  + 'records; one scope at a time is open in the workspace, or a scope\'s '
   + 'home screen is up with nothing open. Start with app.current to see where the app is, scopes.list and '
   + 'views.list for what there is, and app.open to move it — to a scope, a view or a page — the way a '
   + 'person would with the tree and the tabs. A write, a picture or undo needs its scope open; a read with '

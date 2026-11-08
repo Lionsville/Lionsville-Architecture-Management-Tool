@@ -148,6 +148,25 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect(revision).not.toBe(before.revision)
       })
 
+      /** A scope may keep only its records: its last view goes, and it reads back with none, its records whole. */
+      it('keeps a scope whose last view was removed, with no views and its records, and brings the view back on the inverse', async () => {
+        const repositories = await fresh()
+        const acme = await repositories.scope('acme', 'Acme Logistics')
+        const decision: Command = {
+          type: 'decision.add',
+          decision: { id: 'adr-1', number: 1, title: 'Plan crews centrally', status: 'proposed', date: '2026-09-29', body: 'Why.\n', signers: [] },
+        }
+        await repositories.steps(acme, addLandscape, addCrews, decision)
+        const drawn = await repositories.state(acme)
+        await repositories.steps(acme, { type: 'diagram.delete', id: 'l7' })
+        const bare = await repositories.state(acme)
+        expect(bare.model.diagrams).toEqual([])
+        expect(bare.model.elements.map((e) => e.id)).toEqual(['crews'])
+        expect(bare.model.decisions?.map((d) => d.id)).toEqual(['adr-1'])
+        await repositories.steps(acme, { type: 'diagram.create', diagram: toDiagram(drawn.model.diagrams[0]), at: 0 })
+        expect((await repositories.state(acme)).model.diagrams).toEqual(drawn.model.diagrams)
+      })
+
       it('answers the same revision for two reads with nothing between them', async () => {
         const repositories = await fresh()
         const acme = await repositories.scope('acme', 'Acme Logistics')

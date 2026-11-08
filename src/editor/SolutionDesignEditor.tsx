@@ -36,6 +36,8 @@ import type { ArrangeActs } from './inspector/arrangeSeat';
 import type { EditorParts } from './editorParts';
 import { findContainerDiagram } from '../model/containerDiagram';
 import { levelUpOf } from './EditorToolbar';
+import { PageState } from '../widgets/kit/PageState';
+import { useHistoryKeys } from './useHistoryKeys';
 
 /**
  * The @lionsville/solution-design editor: toolbar (diagram tabs/breadcrumb,
@@ -61,6 +63,30 @@ export function SolutionDesignEditor(props: SolutionDesignEditorProps): JSX.Elem
         </LogoLibraryProvider>
       </LanguageProvider>
     </ReactFlowProvider>
+  );
+}
+
+/**
+ * Where a view would be, in a scope that has none: what the scope still is,
+ * and one first step — the host's own question of which kind, where it asks
+ * one, and a landscape otherwise. Read-only offers no step. ⌘Z works here as
+ * on a board, so the removal that left it empty is one key away.
+ */
+function NoView({ props, readOnly }: { props: SolutionDesignEditorProps; readOnly: boolean }) {
+  const { t } = useStrings();
+  const { onNewView, onCreateLayer7 } = props.diagrams;
+  const keys = useHistoryKeys(props.editing.history, readOnly);
+  return (
+    <Box ref={keys} data-testid="no-view" sx={{ p: 3, height: '100%' }}>
+      <PageState
+        state="empty"
+        title={t('board.noViewTitle')}
+        body={t('board.noViewBody')}
+        {...(readOnly ? {} : {
+          action: { label: t('board.noViewAdd'), onPress: () => (onNewView ? onNewView(onCreateLayer7) : onCreateLayer7()) },
+        })}
+      />
+    </Box>
   );
 }
 
@@ -91,15 +117,19 @@ function EditorBody(props: SolutionDesignEditorProps) {
   );
   if (!activeDiagram) {
     // A scope that draws nothing, opened for an element's page: the page is
-    // the whole of it. Without one there is nothing to show, said in words a
-    // reader can use rather than as the host's mistake.
+    // the whole of it. Without one, a scope with no views at all — its last
+    // one removed, or never made — is an empty place that offers a view; a
+    // view that is merely missing is said in words a reader can use rather
+    // than as the host's mistake.
     return (
       <>
-        {!parts.docs.element && (
-          <Box sx={{ p: 3 }}>
-            <Typography color="text.secondary">{t('error.diagramNotFound')}</Typography>
-          </Box>
-        )}
+        {!parts.docs.element && (state.model.diagrams.length === 0
+          ? <NoView props={props} readOnly={readOnly} />
+          : (
+            <Box sx={{ p: 3 }}>
+              <Typography color="text.secondary">{t('error.diagramNotFound')}</Typography>
+            </Box>
+          ))}
         {documentationPage}
       </>
     );

@@ -825,3 +825,36 @@ format before the format turns.
   exported alone carries stand-ins whose definitions are not in the zip. They
   open as dangling — which is true — and the question is whether the export
   should offer to inline them.
+
+## Amended, 8 November 2026 — a scope's last view may go
+
+*Accepted and built the same day.* A scope with no views already read, and a
+new scope is made without a board unless one is asked for (*Start it with a
+landscape view*, `withBoard`). One thing still assumed a view: the reducer
+refused to delete the last landscape of a scope (`command.lastLandscape`),
+and the tab menu, the delete dialog and the agent's refusals mirrored it. A
+scope whose work is its observations and decisions was then made to carry a
+board nobody draws on.
+
+**Any view may go, the last one too.** `diagram.delete` refuses nothing but a
+view that is not there; removing the last one asks the same question as any
+other, and is one step whose inverse brings it back. `command.lastLandscape`
+is gone from the refusals, and so are the menu's disabled entry and the
+dialog's dead button.
+
+**The scope stays open.** Removing the last view does not close the
+workspace: closing it would end the session and take ⌘Z for that removal
+with it. The workspace stays on the view that went, so ⌘Z puts it back on
+screen as well as in the model, and in its place the editor shows an empty
+place that says what the scope still keeps and offers *New view…* — the
+host's own question of which kind, where it asks one. ⌘Z and ⌘⇧Z work there
+as on a board (`editor/useHistoryKeys.ts`). The scope's pages — observations,
+decisions, the roadmap and the rest — are where they were, and a page closed
+over the empty place closes onto it. A scope opened with no views at all
+still opens on its home, and its pages still close there, as before.
+
+**What is deliberately not done.** The address of the empty place is not a
+place of its own: it keeps the address it had until the next move, and a
+reload of it lands on the scope's home and says the view is not there. No
+agent tool removes a view; an agent reads a scope with none, is refused what
+needs one, and makes one with `diagram.create`.

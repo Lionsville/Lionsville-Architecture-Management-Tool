@@ -91,7 +91,7 @@ export const DIAGRAM_COMMANDS = {
       if (!diagram) return gone
       // Any view may go, the last one too: a scope whose work is its
       // observations and decisions needs no board, and one with no views is
-      // a scope like any other (ADR-0002, amended).
+      // a scope like any other (ADR-0012, amended 8 November 2026).
       const at = model.order.diagrams.indexOf(command.id)
       return ok(
         withDiagrams(model, drop(model.diagrams, model.order.diagrams, command.id)),

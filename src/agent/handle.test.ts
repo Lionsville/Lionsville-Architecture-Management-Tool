@@ -577,3 +577,41 @@ describe('toBase64', () => {
     expect(toBase64(new TextEncoder().encode('any carnal pleasure'))).toBe('YW55IGNhcm5hbCBwbGVhc3VyZQ==')
   })
 })
+
+/**
+ * A scope whose last view a person removed: the session still names the
+ * view that went (so ⌘Z puts it back on screen), and the agent reads the
+ * scope, is refused what needs a view in words, and can make one again.
+ */
+describe('a scope with no views', () => {
+  const bare = () => {
+    const held = session()
+    held.dispatch({ type: 'diagram.delete', id: 'l7' })
+    return held
+  }
+
+  it('reads the scope, with no views and its records whole', async () => {
+    const held = bare()
+    expect(held.model().order.diagrams).toEqual([])
+    expect(parsed(await handle({ id: '1', tool: 'project.current', args: {} }, held))).toMatchObject({ name: 'Landscape', elements: 1 })
+    const listed = parsed(await handle({ id: '2', tool: 'diagrams.list', args: {} }, held))
+    expect(JSON.stringify(listed)).not.toContain('"l7"')
+    expect((await handle({ id: '3', tool: 'elements.list', args: {} }, held)).ok).toBe(true)
+    expect((await handle({ id: '4', tool: 'decisions.list', args: {} }, held)).ok).toBe(true)
+  })
+
+  it('refuses what needs a view as a refusal, never a failure', async () => {
+    const out = await handle({ id: '1', tool: 'diagram.inspect', args: {} }, bare())
+    expect(out.ok).toBe(false)
+  })
+
+  it('makes a view again, and the person’s undo of the removal is a step like any other', async () => {
+    const held = bare()
+    const made = await handle({ id: '1', tool: 'diagram.create', args: { kind: 'layer7', name: 'Again' } }, held)
+    expect(made.ok).toBe(true)
+    expect(held.model().order.diagrams).toHaveLength(1)
+    held.undo()
+    held.undo()
+    expect(held.model().order.diagrams).toEqual(['l7'])
+  })
+})

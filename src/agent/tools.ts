@@ -658,7 +658,8 @@ const SPECS = [
       + 'its id, name and kind, and which is on the tab '
       + 'in its scope. A drawing also says the element it is anchored to, when it has one, and the element ids its '
       + 'shapes point at. The overview a person gets from the organisation screen and the tabs, in one answer; '
-      + 'app.open takes a row\'s scope and id. Reads every scope that holds a view, so ask once and keep it.',
+      + 'app.open takes a row\'s scope and id. Reads every scope that holds a view, so ask once and keep it. '
+      + 'A scope may hold none — its observations, decisions and plans are all it keeps — and is then not listed.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -3809,7 +3810,7 @@ const SPECS = [
         scope: { type: 'string', description: 'Which scope, by path; "" is the organisation. Default: the one open.' },
         page: {
           type: 'string',
-          description: 'What to show there. Default: the canvas, or the home of a scope with no views.',
+          description: 'What to show there. Default: the canvas, or the home of a scope with no views — any scope may have none, its last one removed or never made.',
           // Read when the tools are listed: a source's own pages are registered after this table is built.
           get enum() { return pagesKnown() },
         },

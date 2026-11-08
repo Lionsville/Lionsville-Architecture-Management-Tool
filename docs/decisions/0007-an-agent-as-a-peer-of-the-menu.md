@@ -321,7 +321,9 @@ Everything about a call may say no, and each no is a key: `agent.off`,
 `agent.noProject`, `agent.readOnly`, `agent.conflict` for a session that is
 waiting on a person, `agent.unknownId`, `agent.tooLarge` for a board over the
 tidy cap, plus the reducer's own `command.gone` and `command.lastLandscape`
-passed through. The agent gets the key and one English sentence.
+passed through. The agent gets the key and one English sentence. (Since 8
+November 2026 the last landscape may go, and `command.lastLandscape` is no
+longer a refusal: ADR-0012, amended.)
 
 Tool descriptions and those sentences are English constants in `src/agent/`,
 deliberately outside `i18n`. They are a protocol contract for a machine, like

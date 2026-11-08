@@ -77,9 +77,14 @@ export function useWorkspacePages(deps: {
    * The canvas would show "diagram not found", which is true and useless: this
    * scope was opened FOR its decisions or its roadmap, and closing them means
    * going back to where they were opened from. A scope with a board closes its
-   * pages onto that board, as it always has.
+   * pages onto that board, as it always has. So does one whose last view was
+   * removed while it was open: its empty place offers a view, and going home
+   * would close the workspace and take ⌘Z for that removal with it.
    */
-  const drawsNothing = session.model.diagrams.length === 0
+  const viewCount = session.model.diagrams.length
+  const [drewHere, setDrewHere] = useState(viewCount > 0)
+  if (viewCount > 0 && !drewHere) setDrewHere(true)
+  const drawsNothing = viewCount === 0 && !drewHere
   const leaveIfNothingToDraw = useCallback(
     () => { if (drawsNothing) onGoHome(scope) },
     [drawsNothing, onGoHome, scope],
