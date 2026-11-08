@@ -15,7 +15,7 @@ export const SECTIONS: SectionTexts = {
     '← → durch die Einträge, Escape zum Schließen'],
   'decisions.find': ['Die Entscheidungen durchsuchen', 'Beschränkt die Liste auf Einträge, deren Titel, Text, Nummer oder Prüfende die getippten Wörter enthalten, auch Einträge aus Bereichen darüber; ein Treffer von oben sagt, welcher Bereich ihn führt.',
     'Das Suchfeld über der Liste der Entscheidungen.',
-    ['Öffnen Sie Entscheidungen.', 'Tippen Sie in Alle Entscheidungen durchsuchen.'],
+    ['Öffnen Sie Entscheidungen.', 'Tippen Sie in Eine Entscheidung suchen.'],
     'Tippen Sie Preis, um ADR-0001 Ein Ort, an dem ein Preis entschieden wird, zu finden.'],
   'decisions.about': ['Danach filtern, worum es in einer Entscheidung geht', 'Zeigt nur Einträge über den Bereich als Ganzes oder über eine Anwendung, Fähigkeit oder einen Schritt der Kundenreise. Jede Anwendung steht in der Liste, die mit Einträgen zuerst, dann die ohne, dann entfernte, deren Einträge als Verlauf bleiben.',
     'Filter, neben dem Suchfeld auf der Seite Entscheidungen.',

@@ -875,7 +875,7 @@ voor wat met de hosting meekomt; een druk selecteert, Spatie wijzigt een teken, 
 een kop zegt wie erop staat. **Tonen** bevat de rest: de diensten, alle lijnen
 tegelijk, verbergen wat de keuze niet raakt, hosting opvouwen in dienstlijnen, de
 gedeelde rij, een regel per scope, en applicaties groeperen op scope of categorie.
-Boven de veertig applicaties beginnen de groepen opgevouwen, en *Filteren op naam*
+Boven de veertig applicaties beginnen de groepen opgevouwen, en *Zoek op naam*
 opent wat past. **Kleur** stelt één vraag tegelijk (waar het op staat, de eigen
 levenscyclus, de categorie, wie verantwoordelijk is), met een legenda van wat er
 staat, en schrijft niets tot *Bewaren bij de weergave*. **Dag** leest de hele pagina

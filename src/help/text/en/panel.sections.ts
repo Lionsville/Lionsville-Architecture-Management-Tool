@@ -123,7 +123,7 @@ export const SECTIONS: SectionTexts = {
     'Enter on a selected card; Escape leaves'],
   'record.rail': ['Go to a neighbour on the same view', 'The list down the left holds the view\'s other elements by kind, with a filter that says how many there are; the open one is marked and scrolled to, and the list can be widened.',
     'The record page of an element, the list on the left',
-    ['Type in Filter … elements to narrow the list.', 'Press a name to open its record.', 'Drag the list\'s edge to widen it.'],
+    ['Type in Find among … elements to narrow the list.', 'Press a name to open its record.', 'Drag the list\'s edge to widen it.'],
     'Filter for ord and open Order Management from Billing\'s record.'],
   'record.step': ['Step to the previous or next record', 'Previous and Next walk the list in order; at either end they are refused and say why.',
     'The record page of an element, top right',

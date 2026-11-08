@@ -123,7 +123,7 @@ export const SECTIONS: SectionTexts = {
     'Eingabetaste auf einer gewählten Karte; Escape verlässt'],
   'record.rail': ['Zu einem Nachbarn auf derselben Ansicht gehen', 'Die Liste links enthält die anderen Elemente der Ansicht nach Art, mit einem Filter, der sagt, wie viele es sind; das offene ist markiert und ins Bild gescrollt, und die Liste lässt sich verbreitern.',
     'Die Eintragsseite eines Elements, die Liste links',
-    ['Tippen Sie in … Elemente filtern, um die Liste zu kürzen.', 'Drücken Sie einen Namen, um seinen Eintrag zu öffnen.', 'Ziehen Sie die Kante der Liste, um sie zu verbreitern.'],
+    ['Tippen Sie in In … Elementen suchen, um die Liste zu kürzen.', 'Drücken Sie einen Namen, um seinen Eintrag zu öffnen.', 'Ziehen Sie die Kante der Liste, um sie zu verbreitern.'],
     'Filtern Sie nach ord und öffnen Sie Order Management aus dem Eintrag von Billing.'],
   'record.step': ['Zum vorigen oder nächsten Eintrag gehen', 'Vorheriger und Nächster gehen der Reihe nach durch die Liste; an beiden Enden werden sie abgelehnt und sagen warum.',
     'Die Eintragsseite eines Elements, oben rechts',

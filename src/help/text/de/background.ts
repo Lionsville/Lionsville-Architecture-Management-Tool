@@ -924,7 +924,7 @@ wählt aus, die Leertaste ändert ein Zeichen, und eine Überschrift sagt, wer d
 **Anzeigen** enthält den Rest: die Dienste, alle Linien zugleich, Ausblenden, was die
 Auswahl nicht berührt, Hosting in Dienstlinien einklappen, die gemeinsame Zeile, eine
 Zeile je Bereich, und das Gruppieren der Anwendungen nach Bereich oder Kategorie. Ab
-vierzig Anwendungen beginnen die Gruppen eingeklappt, und *Nach Name filtern* öffnet die
+vierzig Anwendungen beginnen die Gruppen eingeklappt, und *Nach Name suchen* öffnet die
 Treffer. **Farbe** stellt eine Frage zugleich (worauf es steht, der eigene Lebenszyklus,
 die Kategorie, wer verantwortlich ist), mit einem Schlüssel aus dem, was gezeichnet ist,
 und schreibt nichts bis *Mit der Ansicht speichern*. **Tag** liest die ganze Seite an einem

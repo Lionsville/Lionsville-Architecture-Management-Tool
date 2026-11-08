@@ -816,7 +816,7 @@ a press there selects, Space changes a mark, and a heading says who stands on it
 **Show** holds the rest: the services, every line at once, hiding what the choice
 does not touch, folding hosting into service lines, the shared row, one line per
 scope, and grouping applications by scope or by category. Above forty applications
-the groups start folded, and *Filter by name* opens the matches. **Colour** asks one
+the groups start folded, and *Find by name* opens the matches. **Colour** asks one
 question at a time (what it stands on, its own lifecycle, its category, who answers)
 with a key made of what is drawn, and writes nothing until *Keep with the view*.
 **Day** reads the whole page on another day: what has gone is not drawn, and the page

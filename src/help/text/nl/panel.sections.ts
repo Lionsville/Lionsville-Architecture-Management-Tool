@@ -123,7 +123,7 @@ export const SECTIONS: SectionTexts = {
     'Enter op een geselecteerde kaart; Escape gaat weg'],
   'record.rail': ['Naar een buur op dezelfde weergave', 'De lijst links bevat de andere elementen van de weergave per soort, met een filter dat zegt hoeveel het er zijn; het open element is gemarkeerd en in beeld gescrold, en de lijst kan breder.',
     'De recordpagina van een element, de lijst links',
-    ['Typ in … elementen filteren om de lijst korter te maken.', 'Druk op een naam om het record te openen.', 'Sleep de rand van de lijst om haar breder te maken.'],
+    ['Typ in Zoek in … elementen om de lijst korter te maken.', 'Druk op een naam om het record te openen.', 'Sleep de rand van de lijst om haar breder te maken.'],
     'Filter op ord en open Order Management vanuit het record van Billing.'],
   'record.step': ['Naar het vorige of volgende record', 'Vorige en Volgende gaan op volgorde door de lijst; aan de uiteinden worden ze geweigerd en zeggen ze waarom.',
     'De recordpagina van een element, rechtsboven',
