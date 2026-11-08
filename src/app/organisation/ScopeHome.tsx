@@ -407,6 +407,7 @@ export function homeMeta(home: ScopeSummary, tree: ScopeSummary, typeWord: strin
     home.client?.trim() && home.client.trim() !== home.name.trim() ? s('org.forClient', { name: home.client.trim() }) : '',
     [typeWord, parentName ? s('org.underName', { name: parentName }) : ''].filter(Boolean).join(', '),
     below > 0 ? s('org.scopesUnder', { direct: home.children.length, all: below }) : '',
-    changed ? s('org.lastChanged', { when: new Date(changed).toLocaleString(LOCALE[language], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) }) : '',
+    // A moment held on one line: a day split across two ("8. / Nov.") reads as two facts.
+    changed ? s('org.lastChanged', { when: new Date(changed).toLocaleString(LOCALE[language], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\s/g, '\u00a0') }) : '',
   ].filter(Boolean).join('. ')
 }
