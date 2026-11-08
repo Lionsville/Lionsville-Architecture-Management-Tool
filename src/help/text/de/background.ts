@@ -15,7 +15,7 @@ export const BACKGROUND: Backgrounds = {
 Sie sieht im Hintergrund nach, ob es eine neuere Version gibt, und fragt, bevor
 sie etwas damit tut — **Download and Install** lädt sie, während Sie
 weiterarbeiten, **Skip This Version** sagt: diese nicht, und das
-Kontrollkästchen in diesem Dialog schaltet die automatische Prüfung aus. Ist der
+Kontrollkästchen in diesem Dialog schaltet die automatische Suche nach Updates aus. Ist der
 Download fertig, bittet die App um einen Neustart; **Later** installiert die
 Version beim nächsten Beenden. Wo die App sich nicht selbst ersetzen kann —
 direkt vom Disk-Image gestartet oder aus „Downloads“, ohne in „Programme“
@@ -39,12 +39,12 @@ Backend und keine Telemetrie.` },
   frame: [
     { title: `Der Organisationsbildschirm`, text: `Die App öffnet sich auf der **Organisation**: einem Bereich wie jedem anderen,
 und dem, unter dem alles andere abgelegt ist, was Sie aufbewahren. Ein **Bereich** ist ein Dokument: ein Name, eine Landschaft, die
-Container-Diagramme darunter, die Entscheidungen, die Pläne, die
+Containerdiagramme darunter, die Entscheidungen, die Pläne, die
 Geschäftsarchitektur, und alles, was darauf platziert ist. Bereiche sind
 **geschachtelt**, und jeder von ihnen ist dasselbe Dokument — die Organisation
 ganz oben, eine **Domäne** oder ein **Team** darunter, ein
 **Landschaftsbereich** darunter, so tief, wie Ihre Arbeit es braucht. Ein
-Landschaftsbereich ist ein Bereich; eine Landschaft ist auch eine Art Tafel,
+Landschaftsbereich ist ein Bereich; eine Landschaft ist auch eine Art Board,
 also eine Zeichnung in einem Bereich.
 
 **Bedient von**, unter den Karten, überall, wo die Organisation Einheiten hat
@@ -87,8 +87,8 @@ in der Warnfarbe *Typ Team, während die Einheiten, die ihn bedienen, vom Typ
 Division sind*; *Typ Team; noch keine Einheit bedient ihn*; oder, wo der
 Bereich keinen Typ aus dem Betriebsmodell sagt, welche Einheiten welcher
 Typen ihn bedienen, damit der Typ gesetzt werden kann. Das Abzeichen auf
-der Zeile des Bereichs im Baum warnt genauso, und die Prüfungen nennen die
-drei Fälle, die nicht stimmen (*Die Seite Prüfungen*).
+der Zeile des Bereichs im Baum warnt genauso, und die Checks nennen die
+drei Fälle, die nicht stimmen (*Die Seite Checks*).
 
 Einen Bereich umzubenennen gibt ihm ein neues Label und sonst nichts — wo er
 abgelegt ist, ist seine Adresse, und Umbenennen ist kein Verschieben. Einen zu
@@ -164,7 +164,7 @@ geschlossen, der nichts zeichnet, geht es zum Zuhause dieses Bereichs. Ein
 Link auf ein Element, das es nicht mehr gibt, öffnet den Bereich und sagt das.
 
 **Auf einer Ansicht wählt der Link aus, was Sie ausgewählt hatten.** Teilen Sie
-von einem Board, einem Blatt, einer Unternehmenskarte, der
+von einem Board, einem Blatt, einer Abdeckung, der
 Technologielandschaft oder einem Organigramm mit einem ausgewählten Element
 oder einer ausgewählten Einheit, öffnet der Link diese Ansicht mit ihr wieder
 ausgewählt — auf einem Organigramm die Einheit, zu der Sie gegangen sind, wo
@@ -272,7 +272,7 @@ Nichts ist in der App versteckt. Legen Sie den Ordner in OneDrive, in Dropbox,
 auf eine Netzwerkfreigabe oder in ein git-Repository, und er verhält sich so,
 wie alles andere dort. **Aus einem anderen Ordner arbeiten…** auf dem
 Organisationsbildschirm wechselt in einen anderen Ordner; die Ordner, die Sie
-vorher verwendet haben, stehen unter **File ▸ Open Recent Folder**, jeder unter
+vorher verwendet haben, stehen unter **Datei ▸ Zuletzt verwendeten Ordner öffnen**, jeder unter
 dem Namen, den seine Organisation sich selbst gibt.
 
 **Alles wird geschrieben, während es sich ändert**: drei Sekunden nachdem Sie
@@ -342,7 +342,7 @@ Wort in diesem Browser. Der Desktop ist derjenige, der wählen muss.` },
 Website. Das Etikett auf dem Zuhause der
 Organisation sagt **In diesem Browser**, und Ihre Arbeit bleibt dort über
 Neustarts hinweg, bis Sie oder der Browser die Daten der Website löschen. Nach
-dem ersten Speichern bittet die App den Browser, sie auch beim Aufräumen zu
+dem ersten Speichern bittet die App den Browser, sie auch beim Automatisch anordnen zu
 behalten; manche Browser, etwa Firefox, stellen Ihnen diese Frage.
 Browser-Speicher ist klein, deshalb sagt die App einmal, wenn er zu etwa vier
 Fünfteln voll ist: ein Browser hört ohne Nachfrage auf zu speichern. Hat ein
@@ -481,7 +481,7 @@ Leiste.` },
   Megapixel und braucht eine Weile zum Zeichnen, deshalb sagt der Dialog, wie
   groß das Bild wird, und seine Schaltfläche fragt, bevor sie beginnt.` },
     { title: `Voreinstellungen`, text: `Raster, Einrasten, Lebenszyklus-Abzeichen, eingeklappte Panels und ihre Breiten,
-die Übersichtskarte, die Aufräum-Einstellungen, die Sprache und das Design
+die Minikarte, die Aufräum-Einstellungen, die Sprache und das Design
 werden je Browser oder je Desktop-Installation gemerkt. Sie gehören Ihnen, nicht
 dem Projekt: sie reisen in keiner Datei mit. Dasselbe gilt für das, was dieser
 Rechner mit einem Ordner tut — beim Öffnen holen, nach einer Momentaufnahme
@@ -494,16 +494,16 @@ eine aus der Palette oder aus dem Menü der Zeichenfläche hinzu, geben Sie ihr
 eine Farbe, ziehen Sie Anwendungen hinein, räumen Sie sie für sich auf. Eine
 Gruppe zu entfernen lässt ihre Elemente, wo sie sind.
 
-**Container-Diagramme.** Eine Anwendung kann ein Container-Diagramm unter
+**Containerdiagramme.** Eine Anwendung kann ein Containerdiagramm unter
 sich haben: die Anwendung wird zur Grenze dieses Diagramms, und ihre
 Komponenten sitzen darin. Sie legen eines bewusst an — klicken Sie mit rechts
-auf die Anwendung und wählen Sie **Container-Diagramm erstellen**, oder drücken
+auf die Anwendung und wählen Sie **Containerdiagramm erstellen**, oder drücken
 Sie die Schaltfläche dieses Namens auf dem Reiter Allgemein des Inspektors —
 und es ist ein Schritt in der Aktivität wie jeder andere, den ⌘Z zurücknimmt.
 Eine Karte, die eines hat, trägt eine kleine Marke; doppelklicken Sie die
 Karte, um es zu öffnen. Ein Doppelklick legt nie eines an. Ein Landschaftsreiter
-listet seine Container-Diagramme unter einem Pfeil: klicken Sie dort mit rechts
-auf einen Eintrag, oder drücken Sie den Pfeil hinter dem Namen, sobald das
+listet seine Containerdiagramme unter einem Pfeil: klicken Sie dort mit rechts
+auf einen Eintrag, oder klicken Sie auf den Pfeil hinter dem Namen, sobald das
 Diagramm offen ist, um es umzubenennen, seine **Diagrammeinstellungen** zu
 öffnen oder es zu löschen. Löschen nimmt die Komponenten mit und lässt die
 Anwendung stehen. Klicken Sie mit rechts auf einen Landschaftsreiter für
@@ -538,12 +538,12 @@ der physischen Sicht, eine **Plattform**: ein Cluster, ein Broker, ein Bus,
 die Werkzeuge, worauf Anwendungen laufen und was sie nutzen. Wählen Sie eines
 aus, und das **Panel** rechts zeigt es: seine Art, einen Namen, der umbricht, eine
 Zeile Fakten und drei Reiter. Ist nichts ausgewählt, gibt es kein Panel und das
-Board hat die Breite; drücken Sie auf den Namen der offenen Ansicht für **Diese
+Board hat die Breite; klicken Sie auf den Namen der offenen Ansicht für **Diese
 Ansicht**, was sie ist und enthält und wie sie aufräumt. Jeder Fakt ist eine Zeile
 aus Beschriftung und Wert, und ein Druck macht aus dem Wert ein Feld: Enter oder
 Verlassen behält ihn, Escape setzt ihn zurück, und der Fuß sagt, wofür das Feld
 ist. Ein Feld ohne Inhalt bleibt aus dem Panel, bis **+ Verantwortlicher,
-Anbieter…** es hinzufügt. Die Seite des Elements, seine **Stammdaten**, zeigt
+Anbieter…** es hinzufügt. Die Seite des Elements, seine **Steckbrief**, zeigt
 dieselben Zeilen mit jedem Feld, ein leeres als Strich: beide entstehen aus einer
 Liste, sodass sie nicht auseinanderlaufen können.
 
@@ -566,12 +566,12 @@ als Auftakt der Karte für ein Diagramm, das aus der Entfernung gelesen wird.
 **Art ändern.** Klicken Sie mit rechts auf ein Element, **Art ändern ▸**, und
 wählen Sie, was es hätte sein sollen; Verbindungen, Beschreibung und Platz
 bleiben. Zwei Fälle werden mit dem Grund abgelehnt: eine Anwendung, die ein
-Container-Diagramm hat, und eine Komponente, die noch an einer Anwendung hängt.
+Containerdiagramm hat, und eine Komponente, die noch an einer Anwendung hängt.
 
 Elemente gehören zum Modell, nicht zu einem Diagramm: ein Element kann auf
 mehreren Diagrammen liegen, und **Aus dem Diagramm entfernen** ist eine andere
 Aktion als **Aus dem Modell löschen**. Löschen fragt zuerst und sagt, wie viele
-Verbindungen mitgehen. Eine Einheit zu löschen nimmt jede Zuweisung darin mit,
+Verbindungen mitgehen. Eine Einheit zu löschen nimmt jede Zuordnung darin mit,
 auch beendete, als wären sie nie gemacht worden: Die Frage nennt, wer was
 nicht mehr ist — *Ada Lovelace ist nicht mehr Product Owner in Webshop.* —,
 und ein Rückgängig bringt die Einheit und ihre Leute zurück. Um zu behalten,
@@ -587,7 +587,7 @@ einem anderen Bereich, und wohin sie gehen: eine Ebene höher, in ihr
 Möglichkeiten** darunter eingeklappt; wo nicht, in eine andere Einheit ihres
 Typs, aus einer Liste gewählt, mit **Eine Ebene höher setzen** als *falsch
 eingeordnet* markiert und **Ebenfalls löschen**, das alles darunter und die
-Zuweisungen ihrer Leute mitnimmt. Anwendungen, die sie als ihr Team nennen,
+Zuordnungen ihrer Leute mitnimmt. Anwendungen, die sie als ihr Team nennen,
 werden geleert und erscheinen als niemandes, und ihre Verknüpfungen zu den
 Domänen, die sie bedient, und den Fähigkeiten, für die sie verantwortlich
 ist, gehen mit, wo auch immer sie geführt werden. Es ist eine Änderung: Wo
@@ -604,7 +604,7 @@ Technologie.
 
 **Wo eine Schnittstelle landet.** Die Landkarte zeichnet eine Linie je
 Schnittstelle, und wo sie ankommt, liegt eine Ebene tiefer. Öffnen Sie das
-Container-Diagramm der Anwendung und greifen Sie das Ende der Linie dort, wo es
+Containerdiagramm der Anwendung und greifen Sie das Ende der Linie dort, wo es
 den Rahmen berührt: lassen Sie es auf einem Container los, und die
 Schnittstelle landet dort — mit ihrem Protokoll. Greifen Sie es erneut, um es
 auf einen anderen Container zu verschieben, oder lassen Sie es wieder auf dem
@@ -644,15 +644,15 @@ Kanal konkurrieren — lehnt das automatische Routing ab, statt Minuten darauf z
 verwenden, und sagt es in der unteren Leiste. Nichts geht verloren: die Linien
 behalten die Routen, die sie hatten, und alles, was Sie von Hand gezeichnet
 haben, bleibt genau so, wie Sie es hinterlassen haben.` },
-    { title: `Layout`, text: `**Aufräumen** lässt ein automatisches Layout über das Diagramm laufen, mit einer
+    { title: `Layout`, text: `**Automatisch anordnen** lässt ein automatisches Layout über das Diagramm laufen, mit einer
 Richtung (quer, abwärts, oder Gruppen quer und ihre Anwendungen abwärts), einer
 Dichte und Fixierungen für das, was Sie von Hand platziert haben.
 **Verbindungen routen** zeichnet nur die Linien neu und lässt jedes Element, wo
 es ist; **Alles neu routen** ignoriert Fixierungen. Eine Domänengruppe kann aus
 ihrem Menü für sich aufgeräumt werden.
 
-Aufräumen arbeitet neben der App statt in ihr, sodass das Fenster am Leben
-bleibt, während es läuft, und die Aufräumen-Schaltfläche derweil zu
+Automatisch anordnen arbeitet neben der App statt in ihr, sodass das Fenster am Leben
+bleibt, während es läuft, und die Schaltfläche Automatisch anordnen derweil zu
 **Abbrechen** wird. Auf einem Diagramm mit mehr als vierhundert Kästen lehnt es
 ab und sagt es, statt mehrere Minuten nachzudenken: verteilen Sie das Board auf
 mehrere Diagramme, oder räumen Sie eine Domänengruppe nach der anderen auf.
@@ -693,7 +693,7 @@ erscheint nur darin. Was an einem Tag wirklich gespeichert war, zeigt **Verlauf�
 
 Einen anderen Tag anzusehen ist ein Zustand des ganzen Fensters: Ein Band nennt den Tag, ein
 Rand läuft um die Leinwand, und das Board ist schreibgeschützt: Palette und Felder sind
-weggeräumt und Rückgängig ist aus. Es ist nur auf deinem Bildschirm, niemand sonst sieht es,
+weggeräumt und Rückgängig ist aus. Es ist nur auf Ihrem Bildschirm, niemand sonst sieht es,
 und die Adresse trägt es (\`?day=2027-06-01\`), also öffnet ein Link dieselbe Ansicht.
 **Zurück zu heute**, oder **Zurück zu** dem eigenen Tag des Boards, ist ein Druck. **Zum Tag
 der Ansicht machen** im Band ist der bewusste Schritt: eine Bearbeitung, ein Eintrag in der
@@ -712,13 +712,13 @@ PNG eines datierten Boards nennt den Tag in seinem Titel.
 **Ersetzt durch** auf einer Anwendung nennt ihren Nachfolger, und
 **Verantwortlicher** sagt, wer für sie einsteht. Der Verantwortliche war früher
 eine Zeile in der Dokumentationsvorlage; jetzt ist er ein Feld, damit die
-Prüfungen des Fahrplans eine Person nennen können.` },
+Checks der Roadmap eine Person nennen können.` },
   ],
   panel: [
     { title: `Elemente`, text: `- **Eigenschaften.** Lebenszyklus (geplant, aktiv, auslaufend, abgeschaltet; als
   Abzeichen dargestellt, abgeschaltete Elemente werden abgeblendet) und Kategorie,
   die ersten Zeilen der Beschreibung (siehe *Dokumentation*), wo es läuft, die
-  ausgefüllten Stammdaten, die **betrieblichen Aspekte** einer Anwendung, je eine
+  ausgefüllten Steckbrief, die **betrieblichen Aspekte** einer Anwendung, je eine
   Zeile mit einer Notiz auf einen Druck, und was darin ist. Die Spalten werden je
   Diagramm in dessen Einstellungen festgelegt.
 - **Darstellung.** Akzentfarbe, Form, Symbol, Symbolgröße, und wo es in dieser
@@ -729,7 +729,7 @@ Prüfungen des Fahrplans eine Person nennen können.` },
 löschen…**.` },
     { title: `Dokumentation`, text: `Jedes Element hat eine Markdown-Beschreibung, und sie kann eine ganze Seite sein.
 Die ersten Zeilen stehen im Panel; ein Druck schreibt sie dort mit demselben Editor,
-und **Seite öffnen** öffnet denselben Text auf den **Stammdaten** des Elements. Das
+und **Seite öffnen** öffnet denselben Text auf den **Steckbrief** des Elements. Das
 tun auch der Link neben dem Namen, **Dokumentation öffnen** im Menü des Elements,
 Enter auf dem ausgewählten Element und ein Doppelklick auf alles, was keine
 Anwendung ist.
@@ -800,7 +800,7 @@ neben ihrem Titel.
 - **Kommentieren.** Schreiben Sie in das Feld unter dem Verlauf und drücken
   Sie **Kommentieren** (⌘Enter tut dasselbe). Der Text nimmt das Markdown,
   das eine Beschreibung nimmt.
-- **Antworten.** Drücken Sie **Antworten** unter einem Kommentar. Ein Verlauf
+- **Antworten.** Klicken Sie auf **Antworten** unter einem Kommentar. Ein Verlauf
   ist eine Ebene tief: Eine Antwort auf eine Antwort antwortet auf den
   Kommentar, unter dem sie steht.
 - **Bearbeiten.** Nur Ihre eigenen Kommentare. Ein bearbeiteter Kommentar
@@ -808,7 +808,7 @@ neben ihrem Titel.
 - **Entfernen.** Ihre eigenen, oder die aller anderen, wo Sie den Bereich
   ändern dürfen. Ein entfernter Kommentar liest *Kommentar entfernt* an seiner
   Stelle, damit die Antworten darunter ihren Platz behalten. Seine Worte
-  bleiben in der Historie, wie bei jeder Änderung.
+  bleiben im Verlauf, wie bei jeder Änderung.
 
 **Wer ihn schrieb**, ist eine Person aus dem Register, nie ein eingetippter
 Name. Wenn Sie zum ersten Mal kommentieren und auf dieser Installation niemand
@@ -818,9 +818,9 @@ als *Das bin ich*. Eine Person auf der Seite Personen zu vergessen, erreicht
 jeden Kommentar, den sie schrieb; er liest sich dann als ihr Pseudonym.
 
 Jeder Kommentar, jede Bearbeitung und jedes Entfernen ist ein Schritt: in der
-Liste **Aktivität** (*Webshop kommentiert*), in der Historie und im Export,
-und ⌘Z macht ihn rückgängig. Ein Kommentar ändert seinen Eintrag nie, die
-Historie des Eintrags bleibt also seine eigene. Wo ein Bereich hier nur
+Liste **Aktivität** (*Webshop kommentiert*), im Verlauf und im Export,
+und ⌘Z macht ihn rückgängig. Ein Kommentar ändert seinen Eintrag nie, der
+Verlauf des Eintrags bleibt also sein eigener. Wo ein Bereich hier nur
 gelesen wird, kann nicht kommentiert werden — es sei denn, der Ort, an dem
 Ihre Arbeit aufbewahrt wird, lässt einen Leser kommentieren.
 
@@ -828,8 +828,8 @@ Ihre Arbeit aufbewahrt wird, lässt einen Leser kommentieren.
 mit, und Rückgängig bringt beide zurück. Beobachtungen oder Ursachen
 zusammenzuführen bringt die Kommentare jedes aufgenommenen Eintrags zum
 verbleibenden, jeder mit dem Eintrag, mit dem er kam; die Zusammenführung sagt,
-wie viele. Eine Beobachtung, die in einen anderen Scope verschoben wird, nimmt
-ihren Verlauf mit, jeder Kommentar mit dem Scope, aus dem er kam; die
+wie viele. Eine Beobachtung, die in einen anderen Bereich verschoben wird, nimmt
+ihren Verlauf mit, jeder Kommentar mit dem Bereich, aus dem er kam; die
 Verschiebe-Ansicht sagt, wie viele. Ein zusammengeführter oder archivierter
 Eintrag behält seine eigenen.
 
@@ -855,8 +855,8 @@ Plattformteam verantwortlich ist; eine Plattform ist, was ihn dieses Jahr
 liefert, und kann nächstes Jahr ersetzt werden, ohne dass der Dienst seinen
 Namen ändert. Eine Plattform kommt aus der untersten Reihe der Palette und
 landet als Chip im Management-Band; ein Dienst wird auf der
-Technologielandschaft angelegt, wo die Schicht gezeichnet wird, und eine
-Tafel zeichnet ihn als Chip mit einem eigenen Zeichen, damit die beiden auf
+Technologielandschaft angelegt, wo die Schicht gezeichnet wird, und ein
+Board zeichnet ihn als Chip mit einem eigenen Zeichen, damit die beiden auf
 einen Blick zu unterscheiden sind. Eine Plattform sagt im
 Inspektor, was sie ist — ein *Ort*, an dem etwas läuft, ein *Dienst*, den
 etwas nutzt, oder ein *Netzwerk*; ein Dienst, wenn nichts gesagt ist — und
@@ -864,16 +864,16 @@ wovon sie **Teil** ist, was einen Namespace in der App unter seinen Cluster
 bringt; eine Plattform **realisiert** die Dienste, die sie liefert. Eine
 gemeinsam genutzte Plattform oder ein solcher Dienst wird meist in einem
 eigenen Bereich definiert und anderswo als Stellvertreter gezeichnet, damit
-das Team, das sie betreibt, den Datensatz besitzt.
+das Team, das sie betreibt, den Eintrag besitzt.
 
 **Eine Anwendung sagt zu jeder Frage eines.** Wo ein Container läuft, ist
-*Läuft auf*, am Datensatz der Komponente, und einer Anwendung wird gesagt,
+*Läuft auf*, am Eintrag der Komponente, und einer Anwendung wird gesagt,
 was ihre Container sagen: *Läuft auf: OpenShift (3 Container)*. Was eine
 Anwendung nutzt, ist **Nutzt**, und das nennt den Dienst, nicht das Produkt:
 ein Team fragt Messaging an, und welcher Broker das liefert, ist Sache des
 Plattformteams, einmal gesagt als *Realisiert*. Von welchen Plattformen eine
 Anwendung tatsächlich abhängt, wird aus beidem abgeleitet — die Zeile *Stützt
-sich auf* am Datensatz liest *Containerplattform (OpenShift), Messaging
+sich auf* am Eintrag liest *Containerplattform (OpenShift), Messaging
 (Event broker)*, ohne dass an der Anwendung etwas getippt wurde. Eine
 Plattform direkt zu nutzen bleibt erlaubt, für das Team, das sich wirklich an
 eine Instanz bindet; der Inspektor bietet zuerst Dienste an.
@@ -913,10 +913,10 @@ beide werden bei jedem Öffnen aus den Zeilen abgeleitet.
 wenn ein Stück wegfällt. *Landschaft* auf der Technologiekarte legt eine in dem Bereich
 an, dessen Dienste und Plattformen sie zeigen soll, und sie steht unter den Tabs. Sie
 besteht aus drei Spalten einzeiliger Zeilen, die sich von links nach rechts lesen: jede
-Anwendung, die die Datensätze mit diesen Diensten und Plattformen verbinden, aus jeder
+Anwendung, die die Einträge mit diesen Diensten und Plattformen verbinden, aus jeder
 Landschaft der Organisation; die Dienste; und die Plattformen, verschachtelt wie der
 Baum, eine externe gestrichelt. Nichts wird gezeichnet oder platziert: Jede Zeile und
-Linie wird aus den Datensätzen gelesen. **Im Ruhezustand gibt es keine Linien.** Der
+Linie wird aus den Einträgen gelesen. **Im Ruhezustand gibt es keine Linien.** Der
 Mauszeiger auf einer Zeile zeigt ihre Linien, ein Druck hält sie fest, und nichts
 verschiebt sich dabei. **Matrix** zeigt dieselben Zeilen als Tabelle, ein gefülltes
 Zeichen für eine Nutzung und ein hohles für das, was mit dem Hosting kommt; ein Druck
@@ -930,7 +930,7 @@ die Kategorie, wer verantwortlich ist), mit einem Schlüssel aus dem, was gezeic
 und schreibt nichts bis *Mit der Ansicht speichern*. **Tag** liest die ganze Seite an einem
 anderen Tag: Was weg ist, steht nicht da, und die Seite ist schreibgeschützt, bis Sie
 zurückgehen. Der Leser rechts sagt, was eine Zeile ist. *Wenn es wegfiele…* öffnet den
-Bericht, wie ein Doppeldruck, und *Datensatz bearbeiten* öffnet den Datensatz in derselben
+Bericht, wie ein Doppeldruck, und *Eintrag bearbeiten* öffnet den Eintrag in derselben
 Spalte. Die Zahl in der Zeile einer Plattform ist die Zahl in ihrem Bericht: jede Anwendung,
 die darauf oder auf etwas darunter steht, jede einmal.
 
@@ -941,12 +941,12 @@ wählen schreibt den Platzhalter für Sie, im selben Schritt wie die Zeile.
 Die Bibliothek neben der Palette listet die Plattformen und Dienste des
 Baums nach den Anwendungen. Und **Hosting impliziert den Dienst**: ein
 Container auf Azure Cloud stützt sich auf den Cloud-Dienst, den Azure Cloud
-realisiert, ob jemand eine *Nutzt*-Zeile schrieb oder nicht — der Datensatz
+realisiert, ob jemand eine *Nutzt*-Zeile schrieb oder nicht — der Eintrag
 sagt *(durch Hosting impliziert)*, die Technologielandschaft zeichnet es
 gepunktet und zählt es, und eine später geschriebene *Nutzt*-Zeile ist
 dieselbe Tatsache, laut gesagt.
 
-**Festhalten, was eine Anwendung nutzt.** Der Datensatz einer Anwendung hat eine Auswahl
+**Festhalten, was eine Anwendung nutzt.** Der Eintrag einer Anwendung hat eine Auswahl
 **Nutzt** neben *Gehostet auf*, und der Leser der Landschaft hat dieselben zwei: *Läuft auf*
 und *Nutzt* mit einem ✕ bei jedem und *Einen Dienst oder eine Plattform hinzufügen…*, zuerst
 mit dem, was dieser Bereich hat, dann mit dem, was der Rest der Organisation anbietet; eine
@@ -958,9 +958,9 @@ Spalte ziehen**, und die Seite nennt das Verb vor dem Loslassen: Ein Ort nimmt d
 alles andere eine Nutzung. Eine Änderung geht in den Bereich, der die Anwendung führt, der Leser
 sagt welchen, und sie steht dort in der Aktivität. Das \`+\` an einer Spalte fragt nach einem Namen
 oder bietet an, was anderswo in der Organisation steht; das Symbol und der Rest stehen im
-Datensatz. *Auf der Technologielandschaft zeigen* im Datensatz eines Boards öffnet die Landschaft,
-die die Anwendung zeigt, auf dieser Zeile, in dem Scope, der sie führt — oft dem der Plattform,
-auf der sie läuft. Zeigen sie mehrere, nennt ein kleines Menü jede mit ihrem Scope; zeigt sie
+Eintrag. *Auf der Technologielandschaft zeigen* im Eintrag eines Boards öffnet die Landschaft,
+die die Anwendung zeigt, auf dieser Zeile, in dem Bereich, der sie führt — oft dem der Plattform,
+auf der sie läuft. Zeigen sie mehrere, nennt ein kleines Menü jede mit ihrem Bereich; zeigt sie
 keine, gibt es keinen Link. Das Board selbst zeichnet weiterhin nur Flüsse.
 
 Was Sie wählen, gehört Ihnen und schreibt nichts; **Mit der Ansicht behalten**, im selben Menü, macht es zu dem, was alle öffnen.
@@ -972,16 +972,16 @@ werden, die ganze Kette mitgezählt — oder nach **einer Plattform oder einem
 Dienst**: jede Anwendung, die ihn nutzt, darauf gehostet ist oder sich
 darauf stützt, wird eingefärbt und der Rest verblasst, die umgekehrte
 Frage: wer steht darauf. Seit 3.7.0 färbt es auch nach **dem, was der
-Datensatz sagt** — dem eigenen Lebenszyklus der Karte, ihrer Kategorie,
+Eintrag sagt** — dem eigenen Lebenszyklus der Karte, ihrer Kategorie,
 ihrem Eigentümer, Hersteller oder ihrer Technologie — und nach dem Status in
 **einem betrieblichen Aspekt**, sodass *welche davon hat keinen Eigentümer*
 und *welche stehen noch beim alten Hersteller* durch Hinsehen beantwortet
 werden. Jede Karte in einem Band trägt die Farbe des Bandes als Tönung, als
 Balken an ihrem linken Rand und als **Nummer**; die **Legende** in der Ecke
-der Tafel nennt jedes Band mit dieser Nummer und wie viele Karten es hält,
+des Boards nennt jedes Band mit dieser Nummer und wie viele Karten es hält,
 und bleibt stehen, während Sie lesen. Die Nummer ist der Punkt: zwei Farben
 sind nicht für jedes Auge verschieden, eine Nummer schon. Die Schaltfläche in
-der Werkzeugleiste sagt, wonach die Tafel eingefärbt ist, und ✕ auf der
+der Werkzeugleiste sagt, wonach das Board eingefärbt ist, und ✕ auf der
 Legende schaltet die Einfärbung aus. Ein Leser darf jede davon wählen, ohne
 zu schreiben; die Wahl bleibt auf der Ansicht, wo die Sitzung schreiben darf.
 Das Abzeichen **Plattform** liest ab,
@@ -1133,12 +1133,12 @@ Fähigkeit; **+ Einheit** unter **Zugewiesen an** macht eine Einheit für sie
 verantwortlich, gewählt aus der ganzen Organisation, wie **Bedient von** eines
 Bereichs eine wählt, mit den anderen Akteuren dieses Bereichs nach den
 Einheiten. Jedes ist ein eigener Schritt, und die Zeile unter dem Namen der
-Fähigkeit ändert sich, während Sie es tun. Die Zuweisung wird hier geführt;
+Fähigkeit ändert sich, während Sie es tun. Die Zuordnung wird hier geführt;
 eine Einheit, die in einem anderen Bereich eingeordnet ist, ist ihr fernes Ende
-und wird dafür hier auf keiner Tafel gezeichnet. Eine Einheit, die weder diese
+und wird dafür hier auf keinem Board gezeichnet. Eine Einheit, die weder diese
 Domäne bedient noch unter einer Einheit steht, die es tut, ist markiert und
-eine Prüfung (unten). **✕** auf einem Etikett nimmt eine hier geführte
-Zuweisung wieder weg.
+ein Befund (unten). **✕** auf einem Etikett nimmt eine hier geführte
+Zuordnung wieder weg.
 
 **Die verantwortliche Einheit** steht auf jedem Gebiet, jeder Gruppe und
 jeder Fähigkeit, die einer Einheit zugewiesen ist, immer: eine kleine
@@ -1211,7 +1211,7 @@ ein Schritt mit **Rückgängig**; eine Verknüpfung in einem anderen Bereich wir
 genannt und dort geändert.` },
   ],
   poster: [
-    { title: `Das Poster`, text: `**Poster**, zuerst auf dem Schalter, zeichnet das Blatt als eine Seite fester Größe: die Journey,
+    { title: `Das Poster`, text: `**Poster**, zuerst auf dem Schalter, zeichnet das Blatt als eine Seite fester Größe: die Kundenreise,
 die Stakeholder und jeden Bereich als Block, jede Fähigkeit als Kachel. Es ist die erste Lesart,
 wo das Blatt einen Bereich hat und das Fenster mindestens 900 Pixel breit ist. Es öffnet beim
 Größeren von Einpassen und 90 %, damit ein Name lesbar ist, von oben links, wo der Rest Schieben
@@ -1240,7 +1240,7 @@ Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
   des Panels abgelehnt;
 - ein Team, eine Anwendung oder einen Unterbereich aus der Ablage auf eine Kachel, Gruppierung oder
   einen Bereich ziehen. Sie schreiben, was das Panel schreibt. Ein Team zeigt sich auch als
-  Beschriftung auf diesem Poster; sie zu entfernen lässt die Zuweisung bestehen. Ein eingegebener
+  Beschriftung auf diesem Poster; sie zu entfernen lässt die Zuordnung bestehen. Ein eingegebener
   Name ist ein Akteur, als keine Einheit markiert. Eine Anwendung gehört auf eine Kachel, nicht auf
   einen Block. Wählen Sie mehrere mit ⇧ oder einem gezogenen Rahmen mit ⇧, und einmal Absetzen oder
   Drücken in der Ablage nimmt alle in einem Schritt. **L** und **A** auf einer Kachel öffnen dort
@@ -1253,8 +1253,8 @@ Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
 Kachel fließen, **Für dieses Papier anordnen** platziert alles in Papierform. Überlappungen sind
 erlaubt und stehen im Streifen; ein Bereich, der zu einer platzierten Seite hinzukommt, erhält den
 ersten freien Platz oder wartet unter der Seite und wird dort gezählt. Beim Blick auf einen anderen
-Tag kann nichts platziert werden. Die Kachelgröße und die Zeilen der Journey stehen unter **Was
-dieses Blatt zeigt**: eine Journey, die für ganze Wörter zu schmal ist, erhält zwei Zeilen, bis
+Tag kann nichts platziert werden. Die Kachelgröße und die Zeilen der Kundenreise stehen unter **Was
+dieses Blatt zeigt**: eine Kundenreise, die für ganze Wörter zu schmal ist, erhält zwei Zeilen, bis
 Sie eine sagen.
 
 **Exportieren…** unter ⋯ bringt es auf eine Seite, A4 bis A0, mit Titel, Fußzeile und
@@ -1296,23 +1296,23 @@ Agent, und Zurück führt heraus.
 das Organigramm. Eine Einheit dort zu wählen oder mit ihrem Pfeil aufzuklappen, klappt
 sie auch im Organigramm auf, mit jeder Einheit darüber, scrollt dorthin und wählt sie.
 Einklappen in der Gliederung klappt nur die Gliederung ein. Die Pfeiltasten gehen durch
-sie, rechts öffnet und links schließt. Die Breite gehört dir: Zieh die Naht rechts davon,
-oder gib der Naht den Fokus und nutze die Pfeiltasten. Unten verschieben **Hoch** und
-**Runter** die gewählte Einheit unter den Einheiten ihres Typs in derselben Einheit: ein
+sie, rechts öffnet und links schließt. Die Breite bestimmen Sie: Ziehen Sie die Naht rechts davon,
+oder geben Sie der Naht den Fokus und nutzen Sie die Pfeiltasten. Unten verschieben **Nach oben** und
+**Nach unten** die gewählte Einheit unter den Einheiten ihres Typs in derselben Einheit: ein
 Schritt in jedem Bereich, der eine davon führt. Wo alle in diesem Bereich liegen, nimmt
 Rückgängig die Verschiebung zurück; wo manche in anderen liegen, wird jeder Bereich für
 sich zurückgesetzt.
 
 **Suchen.** Das Feld über der Gliederung nimmt Einheiten und Personen, mit Treffern beim
 Tippen, und ⌘F führt dorthin. Bei einer gefundenen Person geht das Organigramm zur Einheit
-und öffnet die Zuweisung. **Ich** geht zur Einheit, in der du eine Rolle hast; sag zuerst,
-wer du bist, mit **Das bin ich** auf der Seite Personen. Im Organigramm gehen die Pfeile
+und öffnet die Zuordnung. **Mich finden** geht zur Einheit, in der Sie eine Rolle haben; sagen Sie zuerst,
+wer Sie sind, mit **Das bin ich** auf der Seite Personen. Im Organigramm gehen die Pfeile
 durch die Kästen, Enter wählt und geht nach unten, Umschalt und Enter nach oben, M
 verschiebt die Einheit und F setzt den Fokus darauf.
 
 **Ein Kasten** sagt Typ und Namen der Einheit und eine Zeile je Rolle: *Leitung: Anna de
 Vries*, mit dem Anteil, wo es nicht die ganze Zeit ist, *kommissarisch*, *ext* für jemanden
-von außerhalb der Organisation und *du*, oder **unbesetzt** in Worten, was mit einem Druck
+von außerhalb der Organisation und *Sie*, oder **unbesetzt** in Worten, was mit einem Druck
 in einer Einheit dieses Bereichs zuweist. Wer über der ganzen Zeit liegt, hat *200% ihrer
 Zeit* in Worten in der Zeile; wer eine Rolle außerhalb der Einheit hat, eine eigene Zeile
 mit *außerhalb ihrer Rollen*. Das eine steht nie für das andere. Eine Zeile unter dem Namen
@@ -1340,7 +1340,7 @@ Ein Feld öffnet sich neben dem Organigramm, das mit seinen hervorgehobenen Plä
 bleibt: jede Einheit der Organisation, welcher Bereich sie auch führt, gewählt durch Druck
 im Organigramm oder in der Liste, oder **Ganz oben**. Die Plätze, an denen ihr Typ sitzen
 darf, kommen zuerst; die anderen folgen unter eigener Überschrift, und ein Umzug dorthin ist
-erlaubt, lässt die Einheit in den Prüfungen aber als falsch platziert stehen. Die Einheit
+erlaubt, lässt die Einheit in den Checks aber als falsch platziert stehen. Die Einheit
 selbst und die Einheiten darin werden nicht angeboten, und ein Platz, den eine spätere
 Verschiebung eines Plans zur Schleife machte, wird abgelehnt, mit Grund. **Diese auch
 verschieben** nennt die Einheiten daneben unter derselben übergeordneten, keine angehakt.
@@ -1397,7 +1397,7 @@ Organigramm — ihre Personen, ihre Rollen, wer sie leitet und die Einheiten,
 mit denen sie arbeitet. Ein Klick auf eine Einheit, die ein anderer Bereich
 führt, geht in diesem Organigramm zu ihr; ein Doppelklick öffnet sie dort, im
 Organigramm dieses Bereichs, gewählt, mit demselben Inspektor daneben — oder
-auf ihrem Datensatz, wo dieser Bereich kein Organigramm hat. **Mich finden** geht zu der Einheit, in der Sie eine Rolle
+auf ihrem Eintrag, wo dieser Bereich kein Organigramm hat. **Mich finden** geht zu der Einheit, in der Sie eine Rolle
 haben; sagen Sie zuerst, wer Sie sind, mit **Das bin ich** auf der Seite
 Personen.
 
@@ -1411,7 +1411,7 @@ bleibt: Sie ist, was die Person innehatte. **Korrigieren…** öffnet für alles
 andere den Dialog der Einheit, und **In Personen öffnen** geht zur Seite
 Personen mit dieser Person gewählt.` },
     { title: `Die Conway-Karte`, text: `Eine **Conway-Karte** ist auch eine Ansicht: **+**, dann **Conway-Karte**. Sie fragt,
-ob deine Teams und deine Systeme zueinander passen, und sagt die Antwort in einem
+ob Ihre Teams und Ihre Systeme zueinander passen, und sagt die Antwort in einem
 Satz über der Karte, mit einer Summe, die aufgeht: von den Schnittstellen über
 Einheiten hinweg, wie viele sich beurteilen lassen und wie viele nicht, weil einem
 Ende der Eigentümer fehlt. Eine Anwendung gehört zu der Einheit, die sie als
@@ -1434,7 +1434,7 @@ hinzu. **Gruppieren nach** rollt die Spalten zu einem Einheitstyp über den
 Eigentümern auf, und sagt es, wo es nichts aufzurollen gibt. Lesart, Gruppierung
 und Paar stehen in der Adresse.
 
-Das Panel neben der Karte sagt **Worauf zu schauen ist**, nach Prüfung: die Paare,
+Das Panel neben der Karte sagt **Worauf zu schauen ist**, nach Check: die Paare,
 über die nichts gesagt ist, Anwendungen ohne Eigentümer, eine Einheit, die mehr
 besitzt, als ihr Typ erlaubt, und hinter **Hinweise zeigen**, was ohne System
 dazwischen gesagt ist, und ein Eigentümer, der ein Name und keine Einheit ist.
@@ -1453,8 +1453,8 @@ ohne System dazwischen sagte, wie es arbeitet, kann **Das Gesagte löschen** ode
 **Fehlende Schnittstelle zeichnen…**. Ein Druck auf den Namen einer Einheit liest,
 was ihr gehört, mit wem sie arbeitet und ihre offenen Paare, mit **Im Organigramm
 öffnen** für den Rest; ein Druck auf eine Anwendung liest ihren Eigentümer und ihre
-Schnittstellen. **Mich finden** geht zu deiner Einheit und sagt, warum nicht, wo du
-keine Rolle in einer Einheit auf der Karte hast. Wie das Organigramm ist sie an
+Schnittstellen. **Mich finden** geht zu Ihrer Einheit und sagt, warum nicht, wo Sie
+keine Rolle in einer Einheit auf der Karte haben. Wie das Organigramm ist sie an
 einem Tag gezeichnet. Eine Anwendung steht auf der Karte, solange sie am Tag der
 Karte live ist oder ausläuft: Eine noch nicht live oder schon weg wird nicht
 gezeichnet, ihre Schnittstellen und was die Karte darüber fände auch nicht; das
@@ -1489,10 +1489,10 @@ einer kommt.
 Auf dem Bild erhält jede Form, die auf ein Element zeigt, beim Überfahren oder im
 Fokus einen Rahmen und einen Namen. Ein Druck öffnet das Element im Panel neben dem
 Bild, mit **Seite öffnen**; das Bild bewegt sich nicht. **n Verknüpfungen** markiert
-alle und listet sie auf: welche im Gleichschritt sind, welche **zu prüfen** sind (das
+alle und listet sie auf: welche im Gleichschritt sind, welche **zur Durchsicht** sind (das
 Element ist nicht mehr in diesem Bereich, oder das Bild sagt noch einen alten Namen),
 und welche Formen nur gezeichnet sind. Eine Form, die auf ein Element zeigt, das
-dieser Bereich nicht hat, ist auch ein Befund in den Prüfungen. **Einpassen**, der Zoom
+dieser Bereich nicht hat, ist auch ein Befund in den Checks. **Einpassen**, der Zoom
 und **Exportieren…**, als SVG oder PNG aus dem gespeicherten Bild, sind für alle da,
 die lesen.
 
@@ -1532,11 +1532,11 @@ sagt das einmal. Ein Element zu löschen behält die daran verankerten Zeichnung
 den Anker; Rückgängig stellt es wieder her.
 
 Eine Zeichnung kann an einem Element verankert sein. Das Menü des Elements
-bietet **Zeichnung erstellen** neben **Container-Diagramm erstellen** oder
-**Container-Diagramm öffnen**, und der Inspektor hat dieselbe Schaltfläche.
+bietet **Zeichnung erstellen** neben **Containerdiagramm erstellen** oder
+**Containerdiagramm öffnen**, und der Inspektor hat dieselbe Schaltfläche.
 Das Anlegen ist ein Schritt, und Rückgängig nimmt sie weg. Ein Doppelklick
 auf das Element bietet die Zeichnungen, die daran verankert sind, neben dem
-Container-Diagramm, wenn es eines hat. Ein Doppelklick legt nie eine Zeichnung
+Containerdiagramm, wenn es eines hat. Ein Doppelklick legt nie eine Zeichnung
 an.
 
 Die Seite des Elements nennt diese Zeichnungen. Eine auswählen öffnet sie.
@@ -1551,7 +1551,7 @@ diesem Bereich ist, zeigt die Beschriftung und sagt, dass die Ansicht fehlt.` },
   decisions: [
     { title: `Entscheidungen`, text: `Die Entscheidungen dieses Bereichs sind **eine Liste**. Eine Entscheidung gehört zum
 Bereich als Ganzem oder betrifft eine Sache darin: eine Anwendung, eine Fähigkeit,
-einen Schritt einer Journey. **Filter** grenzt die Liste danach ein, was sie betrifft:
+einen Schritt einer Kundenreise. **Filter** grenzt die Liste danach ein, was sie betrifft:
 diesen Bereich als Ganzes, die Anwendungen mit Entscheidungen, jede andere Anwendung,
 und unter *Entfernte Anwendungen*, was das Modell verlassen hat und seine Entscheidungen
 behält.
@@ -1581,7 +1581,7 @@ wird zur Prüfung gesendet; **in Prüfung** wird sie angenommen oder abgelehnt. 
 der Weg: Danach kann sie nicht mehr bearbeitet oder gelöscht werden, denn eine
 Entscheidung, die sich nachträglich umschreiben lässt, ist kein Protokoll davon. Eine
 angenommene Entscheidung kann später unter ⋯ **als abgelöst markiert** werden, was nach
-der ablösenden fragt und die Verbindung in beide Richtungen zeigt. Eine Prüfung kann
+der ablösenden fragt und die Verbindung in beide Richtungen zeigt. Eine Entscheidung in Prüfung kann
 zurück zu Vorgeschlagen, und ein Vorschlag zurückgezogen werden, beides ebenfalls unter ⋯.
 
 **Was die Annahme verlangt** steht vom ersten Entwurf an neben der Entscheidung, mit
@@ -1592,8 +1592,8 @@ Das Suchfeld über der Liste durchsucht alle Entscheidungen auf einmal: Titel, T
 Prüfer, dieses Bereichs und der darüber. Der Text ist Markdown, mit denselben
 \`[[Name]]\`-Verweisen wie die Dokumentation, und Mermaid-Diagrammen. Änderungen werden mit
 diesem Bereich gespeichert.` },
-    { title: `Verlauf`, text: `Jeder Ort führt einen Verlauf Ihrer Arbeit. **Snapshot…** im Menü File (im
-Web im Menü **⋯**: **Snapshot erstellen…**) bietet eine Nachricht an, die schon
+    { title: `Verlauf`, text: `Jeder Ort führt einen Verlauf Ihrer Arbeit. **Eine Momentaufnahme festhalten…** im Menü Datei (im
+Web im Menü **⋯**: **Eine Momentaufnahme festhalten…**) bietet eine Nachricht an, die schon
 aus dem geschrieben ist, was Sie getan haben, etwa „Lagerverwaltung geändert,
 3 Elemente verschoben“, und die Sie bearbeiten können, bevor sie festgehalten
 wird. Die erste Momentaufnahme bietet **Verlauf führen** an und sagt, wo er
@@ -1661,41 +1661,41 @@ wiederhergestellt werden kann.` },
   ],
   observations: [
     { title: `Beobachtungen`, text: `**Lokal und global.** Die Beobachtungen, Ursachen, Lösungen und Experimente
-eines Scopes gehören ihm. Aus einem Scope gelesen sind die der Scopes
-darunter **lokal** in jenen Scopes; aus der Organisation gelesen ist, was der
+eines Bereiche gehören ihm. Aus einem Bereich gelesen sind die der Bereiche
+darunter **lokal** in jenen Bereiche; aus der Organisation gelesen ist, was der
 Organisation selbst gehört, die **globale** Analyse. Um dorthin zu kommen,
-wird nichts geteilt: Ein Scope liest die Analyse jedes Scopes darunter, und
-wer einen Scope lesen darf, wird dort entschieden, wo die Arbeit aufbewahrt
-wird, nie an einem Datensatz. **Lokal zeigen**, neben den anderen
-Bedienelementen des Bildes, ist an, wo der Scope Scopes darunter hat, und aus
-— mit dem Grund dazu —, wo er keine hat. An zeichnet das Bild jeden Scope
-darunter in einem eigenen Rahmen links von den Bahnen dieses Scopes,
+wird nichts geteilt: Ein Bereich liest die Analyse jedes Bereiche darunter, und
+wer einen Bereich lesen darf, wird dort entschieden, wo die Arbeit aufbewahrt
+wird, nie an einem Eintrag. **Lokal zeigen**, neben den anderen
+Bedienelementen des Bildes, ist an, wo der Bereich Bereiche darunter hat, und aus
+— mit dem Grund dazu —, wo er keine hat. An zeichnet das Bild jeden Bereich
+darunter in einem eigenen Rahmen links von den Bahnen dieses Bereiche,
 verschachtelt wie der Baum, und das Register, die Ursachen, die Lösungen und
-die Experimente führen die Datensätze jedes Scopes darunter nach denen dieses
-Scopes auf, unter *Lokal in …*. Die Zahlen über dem Bild — beobachtet,
+die Experimente führen die Einträge jedes Bereiche darunter nach denen dieses
+Bereiche auf, unter *Lokal in …*. Die Zahlen über dem Bild — beobachtet,
 analysiert, angenommen, verifiziert, Grundursachen, offene Enden — zählen,
-was das Bild zeigt, die Scopes darunter eingeschlossen. Aus zeigt die Seite
-nur diesen Scope und sagt, wie viele lokale Einträge sie ausblendet.
+was das Bild zeigt, die Bereiche darunter eingeschlossen. Aus zeigt die Seite
+nur diesen Bereich und sagt, wie viele lokale Einträge sie ausblendet.
 
-Ein Datensatz eines Scopes darunter wird **dort geändert, wo er lebt**. Sein
+Ein Eintrag eines Bereiche darunter wird **dort geändert, wo er lebt**. Sein
 Leser sagt das in einem Streifen — *Lokal in Application landscape* — mit
-einer Schaltfläche darunter, die die Seite jenes Scopes öffnet. Was Sie von
+einer Schaltfläche darunter, die die Seite jenes Bereiche öffnet. Was Sie von
 hier aus hinzufügen — eine Sichtung, eine Ursache, eine tiefere Ursache, eine
-Verknüpfung zwischen seinen eigenen Datensätzen, eine seiner Ursachen zur
-Grundursache machen —, wird in jenem Scope angelegt und dort sofort gespeichert, als Änderung jenes
-Scopes und nicht dieser Seite: Ein Hinweis danach sagt, wohin es ging, und ⌘Z
+Verknüpfung zwischen seinen eigenen Einträgen, eine seiner Ursachen zur
+Grundursache machen —, wird in jenem Bereich angelegt und dort sofort gespeichert, als Änderung jenes
+Bereiche und nicht dieser Seite: Ein Hinweis danach sagt, wohin es ging, und ⌘Z
 auf dieser Seite reicht nicht hin — zurücknehmen heißt, es zurückzuändern. Wo
-jener Scope von hier aus nicht geändert werden darf, oder seine eigenen
+jener Bereich von hier aus nicht geändert werden darf, oder seine eigenen
 Regeln die Änderung ablehnen, sagt der Hinweis, dass nichts angelegt wurde.
-Eine Lösung oder ein Experiment eines Scopes darunter wird hier gelesen und
+Eine Lösung oder ein Experiment eines Bereiche darunter wird hier gelesen und
 nicht geändert.
 
-Eine Beobachtung ist ein nummerierter Datensatz (\`OB-0007\`) mit Titel, Ort,
+Eine Beobachtung ist ein nummerierter Eintrag (\`OB-0007\`) mit Titel, Ort,
 wer sie gemacht hat — freier Text: ein Name, Initialen, ein Team —, dem Tag,
 an dem es zuerst gesehen wurde, einer Auswirkung — *gering*, *erheblich* oder
 *kritisch* — und einem Markdown-Text für das Gesehene, die Belege und wen
 oder was es betraf. **Erneut gesehen** zählt eins dazu und schreibt den Tag
-in die **Geschichte** des Datensatzes: das datierte Verzeichnis am Ende jeder
+in die **Geschichte** des Eintrags: das datierte Register am Ende jeder
 Beobachtung — festgehalten, erneut gesehen, zusammengeführt, archiviert. Auf
 einer großen Karte ist die Auswirkung ein Streifen am linken Rand und die
 Zahl steht in der Ecke; auf einer kleinen ist die Auswirkung die Größe des
@@ -1712,9 +1712,9 @@ Grundursache **verbreitet** es, mit denselben Fragen und demselben
 Experiment, bevor sie bewiesen ist. Ein Lichtblick hat ein eigenes Etikett im
 Register und im Leser und wird im Bild grün gezeichnet, mit den Linien der
 Kette, die nur hinter Lichtblicken liegt. Die Zahlen über dem Bild und auf
-der Startseite des Scopes zählen Lichtblicke für sich. Ein Problem und ein
+der Startseite des Bereiche zählen Lichtblicke für sich. Ein Problem und ein
 Lichtblick werden nie zusammengeführt: Die Zusammenführung bietet nur
-Datensätze der Art dessen an, der bestehen bleibt. Und ein Lichtblick, der
+Einträge der Art dessen an, der bestehen bleibt. Und ein Lichtblick, der
 erneut gesehen wird, nachdem eine Lösung gebaut wurde, ist diese Lösung, die
 wirkt, und wird darum nicht gegen sie gemeldet.
 
@@ -1739,104 +1739,104 @@ auf der Seite behält, was in ihm steht: Ein Klick daneben schließt ihn nicht,
 Escape nicht mehr, sobald etwas geschrieben ist, und Enter in einem
 einzeiligen Feld tut, was die Schaltfläche tut. Unter dem Titel stehen
 zwei Hinweise, die nie aufhalten: **Schon einmal gesehen?** nennt
-Beobachtungen des gewählten Scopes, deren Titel Wörter mit Ihrem teilt, jede
+Beobachtungen des gewählten Bereiche, deren Titel Wörter mit Ihrem teilt, jede
 mit **Erneut gesehen**, das wie im Leser nach dem Tag und einer Notiz fragt,
 eine Sichtung an jener festhält und nichts Neues anlegt — Abbrechen führt
 zurück zum Formular, wie Sie es verlassen haben; und ein Titel mit einem Wort, das nach einer Ursache, einer Abhilfe
 oder Schuld klingt — *weil*, *sollte*, *beheben*, *Schuld* —, erhält den
 Hinweis, beim Gesehenen zu bleiben und das Warum in eine Ursache zu setzen.
-Mit Lokal zeigen fragt das Formular zuerst, in welchen Scope die Beobachtung
+Mit Lokal zeigen fragt das Formular zuerst, in welchen Bereich die Beobachtung
 gehört; einer darunter macht sie dort lokal.
 
 Die **Ursachen** können mit der Beobachtung geschrieben werden. **Neue
 Ursache** öffnet die Felder einer Ursache im Formular — den Titel, *warum
 wir das annehmen*, ob es eine Grundursache ist, und wie stark sie die
 Beobachtung erklärt — mit *Schon aufgeschrieben?* über den Ursachen des
-Scopes. **Vorhandene Ursache** wählt eine, die schon aufgeschrieben ist. Jede
+Bereiche. **Vorhandene Ursache** wählt eine, die schon aufgeschrieben ist. Jede
 Zeile sagt, ob sie neu oder vorhanden ist, und lässt sich wieder
 herausnehmen, und nichts wird angelegt, bis Sie erfassen: Die Schaltfläche
 sagt, was sie anlegen wird, *Beobachtung erfassen mit 1 neuen Ursache und 1
 Verknüpfung*, und es ist ein Schritt — ⌘Z nimmt die Beobachtung, die neuen
-Ursachen und die Verknüpfungen zusammen zurück. Ein anderer Scope nimmt die
+Ursachen und die Verknüpfungen zusammen zurück. Ein anderer Bereich nimmt die
 Verknüpfungen zu Ursachen des vorher gewählten heraus und sagt das.
 
 Beobachtungen, die sich als dasselbe erweisen, werden **zusammengeführt**,
 und Ursachen, die zweimal aufgeschrieben wurden, ebenso. **Zusammenführen…**
 an einer Beobachtung oder einer Ursache — im Leser, per Rechtsklick oder an
-einer eines Scopes darunter — öffnet die **Zusammenführungsansicht** über der
-Seite, mit diesem Datensatz gewählt. Sie hat drei Teile:
+einer eines Bereiche darunter — öffnet die **Zusammenführungsansicht** über der
+Seite, mit diesem Eintrag gewählt. Sie hat drei Teile:
 
 - **Was zusammengeführt wird.** Eine Suche über die lebenden Beobachtungen,
-  oder die nicht zusammengeführten Ursachen, dieses Scopes; mit **Über Scopes
-  hinweg** wird in jedem Scope gesucht, den Sie lesen können, der nächste
-  zuerst, und jeder Treffer nennt seinen Scope. Haken Sie so viele an, wie
+  oder die nicht zusammengeführten Ursachen, dieses Bereiche; mit **Über Bereiche
+  hinweg** wird in jedem Bereich gesucht, den Sie lesen können, der nächste
+  zuerst, und jeder Treffer nennt seinen Bereich. Haken Sie so viele an, wie
   dasselbe sind. Einer der gewählten **bleibt bestehen**; bis Sie einen
-  anderen wählen, ist es der, von dem Sie ausgingen. Ein Datensatz eines
-  Scopes, den Sie lesen und nicht ändern dürfen, wird aufgeführt, kann nicht
+  anderen wählen, ist es der, von dem Sie ausgingen. Ein Eintrag eines
+  Bereiche, den Sie lesen und nicht ändern dürfen, wird aufgeführt, kann nicht
   angehakt werden und sagt, warum.
-- **Was der bleibende Datensatz sagt.** Eine Zeile je Wert — für eine
+- **Was der bleibende Eintrag sagt.** Eine Zeile je Wert — für eine
   Beobachtung der Titel, wo, beobachtet von, die Auswirkung und der Tag des
   ersten Sehens, der beim frühesten der gewählten beginnt; für eine Ursache
   der Titel, angenommen oder verifiziert, und ob sie eine Grundursache ist.
-  Daneben ist der Wert jedes gewählten Datensatzes eine Schaltfläche, die ihn
+  Daneben ist der Wert jedes gewählten Eintrags eine Schaltfläche, die ihn
   ins Feld setzt, oder Sie geben Ihren eigenen ein. Die Sichtungen werden
   addiert, nicht gewählt. Die Beschreibung ist die des bleibenden
-  Datensatzes, bearbeitbar; **Die Beschreibungen der anderen hinzufügen**
+  Eintrags, bearbeitbar; **Die Beschreibungen der anderen hinzufügen**
   hängt die jedes anderen an, unter *Zusammengeführt aus OB-0007* (mit seinem
-  Scope, wo das ein anderer ist). Die anderen behalten ihre eigene
+  Bereich, wo das ein anderer ist). Die anderen behalten ihre eigene
   Beschreibung in jedem Fall.
-- **Was mitgeht.** Jede Verknüpfung, die einen zusammengeführten Datensatz
-  nennt, eine Zeile je, angehakt, wo sie zum bleibenden Datensatz wandern
+- **Was mitgeht.** Jede Verknüpfung, die einen zusammengeführten Eintrag
+  nennt, eine Zeile je, angehakt, wo sie zum bleibenden Eintrag wandern
   darf. Haken Sie eine ab, um sie zu lassen, wo sie ist. Eine Verknüpfung, die
   der Baum nicht erlaubt — eine Schleife, eine Verknüpfung nach oben oder zur
-  Seite, eine Ursache, die eine Beobachtung eines anderen Scopes erklärt, eine
+  Seite, eine Ursache, die eine Beobachtung eines anderen Bereiche erklärt, eine
   Lösung und eine Ursache, die keine Grundursache sein wird — kann nicht
-  angehakt werden und sagt, warum. Wo beide Datensätze dieselbe Verknüpfung
+  angehakt werden und sagt, warum. Wo beide Einträge dieselbe Verknüpfung
   hatten, wählen Sie die Stärke; die stärkere wird angeboten.
 
 **Zusammenführen** sagt, was es macht — *2 Beobachtungen in OB-0002
 zusammenführen* — oder, ausgegraut, warum es nicht geht. Eine Zusammenführung
-innerhalb dieses Scopes ist ein Schritt, und ⌘Z nimmt sie zurück. Eine, die
-einen anderen Scope ändert — ein Datensatz von dort zusammengeführt, oder
-eine dort gehaltene Verknüpfung verschoben — schreibt jeden Scope, den sie
-ändert, als Schritt jenes Scopes, alles oder nichts, und ein Hinweis sagt,
-welche Scopes sie geändert hat; ⌘Z nimmt das hier nicht zurück, ändern Sie es
-also zurück. Die Ansicht schließt auf dem bleibenden Datensatz. Jeder
-zusammengeführte Datensatz bleibt — dort steht der ursprüngliche Wortlaut —
+innerhalb dieses Bereiche ist ein Schritt, und ⌘Z nimmt sie zurück. Eine, die
+einen anderen Bereich ändert — ein Eintrag von dort zusammengeführt, oder
+eine dort gehaltene Verknüpfung verschoben — schreibt jeden Bereich, den sie
+ändert, als Schritt jenes Bereiche, alles oder nichts, und ein Hinweis sagt,
+welche Bereiche sie geändert hat; ⌘Z nimmt das hier nicht zurück, ändern Sie es
+also zurück. Die Ansicht schließt auf dem bleibenden Eintrag. Jeder
+zusammengeführte Eintrag bleibt — dort steht der ursprüngliche Wortlaut —
 und wird als zusammengeführt gelesen, nicht gelöscht, und sagt, wohin er
-ging, auch wenn das ein anderer Scope ist; *Zusammengeführte zeigen* holt
+ging, auch wenn das ein anderer Bereich ist; *Zusammengeführte zeigen* holt
 zusammengeführte Beobachtungen und Ursachen ins Register zurück.
 
-**Eine Beobachtung zieht in den Scope, in den sie gehört.** Ihr Scope gab es
+**Eine Beobachtung zieht in den Bereich, in den sie gehört.** Ihr Bereich gab es
 noch nicht, als sie aufgeschrieben wurde, der Baum wurde neu geordnet, oder
 die Analyse zeigt, dass sie einen anderen Teil der Organisation betrifft:
-**In Scope verschieben…**, unter den selteneren Aktionen des Lesers einer
-Beobachtung dieses Scopes, öffnet die **Verschiebe-Ansicht** über der Seite.
+**In Bereich verschieben…**, unter den selteneren Aktionen des Lesers einer
+Beobachtung dieses Bereiche, öffnet die **Verschiebe-Ansicht** über der Seite.
 Sie hat drei Teile:
 
 - **Was verschoben wird.** Die Beobachtung, wie oft sie gesehen wurde, und
   wie viele Kommentare mitgehen.
-- **Wohin.** Jeder andere Scope, den Sie lesen dürfen, der nächste zuerst,
+- **Wohin.** Jeder andere Bereich, den Sie lesen dürfen, der nächste zuerst,
   jeder mit seinem Pfad von der Organisation abwärts; tippen Sie einen Teil
-  eines Pfads, um einen zu finden. Ein Scope, den Sie lesen, aber nicht
+  eines Pfads, um einen zu finden. Ein Bereich, den Sie lesen, aber nicht
   ändern dürfen, steht in der Liste, kann nicht gewählt werden und sagt,
   warum. Sobald einer gewählt ist, sagt die Ansicht, was die Beobachtung dort
-  wird: die nächste Nummer dieses Scopes, *Sie wird OB-0012 in Plattformen ›
+  wird: die nächste Nummer dieses Bereiche, *Sie wird OB-0012 in Plattformen ›
   Kameras*.
 - **Getrennte Verknüpfungen.** Eine Ursache erklärt nur Beobachtungen ihres
-  eigenen Scopes, daher verliert jede Ursache, die diese erklärt, diese
+  eigenen Bereiche, daher verliert jede Ursache, die diese erklärt, diese
   Verknüpfung. Jede steht in der Liste, mit den Lösungen auf einer
   Grundursache, zu der die Verknüpfung führt, bevor etwas geschrieben wird.
   Die Verknüpfungen bleiben als Geschichte an ihrer Ursache, und die Analyse
-  beginnt im Ziel-Scope von vorn.
+  beginnt im Zielbereich von vorn.
 
-**OB-0007 nach <Scope> verschieben** verschiebt sie als eine Änderung über
-beide Scopes, alles oder nichts. Sie behält Titel, Ort, Beobachter, Auswirkung,
+**OB-0007 nach <Bereich> verschieben** verschiebt sie als eine Änderung über
+beide Bereiche, alles oder nichts. Sie behält Titel, Ort, Beobachter, Auswirkung,
 Tag, Beschreibung, Sichtungen, Verlauf und Kommentare, und ihr Verlauf sagt,
 woher sie kam. Wo sie war, bleibt sie als Geschichte: gelesen wie ein
 zusammengeführter Eintrag, nicht im Register, im Bild und in den Zählungen,
 und unter *Zusammengeführte zeigen* gezeigt als *Verschoben nach OB-0012 in
-<Scope>*, das dorthin führt — so führt ein Link auf sie noch irgendwohin. Die
+<Bereich>*, das dorthin führt — so führt ein Link auf sie noch irgendwohin. Die
 Ansicht schließt auf der Beobachtung, wo sie hinging. ⌘Z nimmt ein Verschieben
 nicht zurück: Verschieben Sie sie zurück, und wo ihr alter Ort sie noch hat,
 kehrt sie unter ihrer alten Nummer zurück, und die Verknüpfungen, die beim
@@ -1847,12 +1847,12 @@ sagt, was es trennen würde, und \`observation.move\` verschiebt sie.
 
 Eine Beobachtung, die behoben, angegangen oder nicht mehr von Belang ist, wird
 **archiviert**: *Archivieren* fragt, unverbindlich, nach dem Warum und
-schreibt den Tag und die Notiz in die Geschichte. Der Datensatz bleibt, wo er
+schreibt den Tag und die Notiz in die Geschichte. Der Eintrag bleibt, wo er
 ist, für die Geschichte, und verlässt die Analyse — nicht gezeichnet, nicht in
 der Warteschlange, kein Ziel einer Zusammenführung — bis *Wiederherstellen*
 ihn zurückbringt. *Archivierte zeigen* listet die geschlossenen. Um eine
 Beobachtung zu schließen, wird nichts gelöscht; *Löschen* ist für einen
-Datensatz, der nie einer hätte sein sollen.
+Eintrag, der nie einer hätte sein sollen.
 
 Eine **Ursache** (\`CA-0003\`) ist, was das Team hinter einer oder mehreren
 Beobachtungen vermutet, oder hinter anderen Ursachen. Sie beginnt
@@ -1887,7 +1887,7 @@ Grundursache werden.
 und ein oder zwei Wörtern, und darüber zu fahren, oder sie mit Tab zu
 erreichen, sagt ausführlich, was sie tut und wofür sie abgelehnt wird. Eine
 Beobachtung bietet *Erneut gesehen*, *Ursache*, *Bearbeiten*,
-*Zusammenführen*, *In Scope verschieben*, *Archivieren* und *Löschen*; eine Ursache *Tiefere
+*Zusammenführen*, *In Bereich verschieben*, *Archivieren* und *Löschen*; eine Ursache *Tiefere
 Ursache*, *Grundursache*, *Zur Grundursache machen*, *Verifizieren* —
 *Verifizierung aufheben*, sobald sie verifiziert ist — und
 *Zusammenführen*; eine
@@ -1898,32 +1898,32 @@ Ursache**, der nur anbietet, was die Regeln erlauben. *Diese verwenden*
 neben einer schon aufgeschriebenen Ursache wählt sie unter Vorhandene
 Ursache, wo ihre Stärke gewählt wird, bevor sie mit **Verknüpfen** verknüpft
 wird. Wo der Leser schmal
-ist, wandern *Zusammenführen*, *In Scope verschieben*, *Archivieren* und *Löschen* in \`⋯\`.
+ist, wandern *Zusammenführen*, *In Bereich verschieben*, *Archivieren* und *Löschen* in \`⋯\`.
 
 **Durch den Baum erklärt eine Ursache nach unten und nie nach oben.** Eine
-Ursache darf eine Ursache eines Scopes unter ihrem eigenen erklären — einen
+Ursache darf eine Ursache eines Bereiche unter ihrem eigenen erklären — einen
 Grund für die ganze Organisation hinter einer Ursache einer Landschaft —,
-und die Verknüpfung steht an der Ursache darüber, im Scope darüber. Die
+und die Verknüpfung steht an der Ursache darüber, im Bereich darüber. Die
 Ursache darunter sagt in ihrem Leser, was sie erklärt, und das Bild zieht die
-Linie gestrichelt über die Grenze. An einer Ursache dieses Scopes verknüpft
-**Lokale Ursache** eine Ursache eines Scopes darunter, die sie erklärt; an
-einer Ursache darunter verknüpft **Org-Ursache** eine Ursache dieses Scopes,
+Linie gestrichelt über die Grenze. An einer Ursache dieses Bereiche verknüpft
+**Lokale Ursache** eine Ursache eines Bereiche darunter, die sie erklärt; an
+einer Ursache darunter verknüpft **Org-Ursache** eine Ursache dieses Bereiche,
 die sie erklärt. Abgelehnt: eine Ursache darunter, die eine darüber erklärt,
 eine Ursache, die eine eines Nachbarscopes erklärt, eine Ursache darüber, die
-eine **Beobachtung** darunter erklärt — der Scope darunter erklärt seine
+eine **Beobachtung** darunter erklärt — der Bereich darunter erklärt seine
 eigenen Beobachtungen —, und alles, was eine Grundursache erklärt: Um zu
 sagen, dass hinter einer lokalen Grundursache ein Grund für die ganze
 Organisation steckt, machen Sie jene Grundursache zuerst wieder zur Ursache,
-in ihrem eigenen Scope.
+in ihrem eigenen Bereich.
 
 **Die Filter.** *Filter* zeigt oder verbirgt eine Zeile unter den
-Bedienelementen des Bildes und zählt die Filter, die an sind. **Scopes** ist
-eine Liste mit einem Kästchen je Scope, die ein Feld eingrenzt. **Beob**
+Bedienelementen des Bildes und zählt die Filter, die an sind. **Bereiche** ist
+eine Liste mit einem Kästchen je Bereich, die ein Feld eingrenzt. **Beob**
 behält die Beobachtungen, deren Text passt, und die Kette dahinter — ihre
 Ursachen, Grundursachen und Lösungen. **Ursache** und **RC** behalten die
 Ursachen, oder die Grundursachen, deren Text passt, mit allem, was sie
 erklären, und allem, was dahintersteckt. **Alles durchsuchen** sucht in jedem
-Datensatz, Lösungen eingeschlossen, und behält, was gefunden wurde, und was
+Eintrag, Lösungen eingeschlossen, und behält, was gefunden wurde, und was
 damit verknüpft ist. Filter grenzen einander ein, und sie grenzen alle drei
 Reiter ein. Was passte, wird umrandet, und was mitkam, schlicht gezeichnet;
 die Zahl sagt *12 von 40 gezeigt*, und × neben *Filter* setzt alle zurück.
@@ -1934,10 +1934,10 @@ Grundursache hinter einem Problem und einem Lichtblick bleibt.
 Namen auf, den Sie wählen: Einer, der unter demselben Namen noch einmal
 gespeichert wird, ersetzt den alten, ein gespeicherter wird aus der Liste
 wieder angewendet, und einer wird daraus gelöscht. Sie gehören Ihnen — bei
-Ihren Einstellungen aufbewahrt und in jedem Scope angeboten —, und ein
-gespeicherter Scope, den es nicht mehr gibt, fällt beim Zurückholen weg.
+Ihren Einstellungen aufbewahrt und in jedem Bereich angeboten —, und ein
+gespeicherter Bereich, den es nicht mehr gibt, fällt beim Zurückholen weg.
 
-**Das Bild betrachten.** **Groß** zeichnet jeden Datensatz als Karte mit
+**Das Bild betrachten.** **Groß** zeichnet jeden Eintrag als Karte mit
 Kennung und Titel; **Klein** als Kreis mit der Kennung darunter — eine
 Beobachtung so groß wie ihre Auswirkung, eine Ursache hohl, eine Grundursache
 mit doppeltem Ring, eine Lösung als Quadrat. Gestrichelt heißt angenommen und
@@ -1945,11 +1945,11 @@ durchgezogen verifiziert, in beiden, und die Legende unter dem Bild folgt der
 Größe. Das Bild beginnt **eingepasst** ins Fenster und passt sich erneut an,
 wenn sich ändert, was es zeigt, bis Sie zoomen; die Zoom-Schaltflächen, und ⌘
 oder Strg mit dem Mausrad, zoomen, und Ziehen über den Hintergrund
-verschiebt es. **Über einem Datensatz verweilen** — oder ihn mit Tab
+verschiebt es. **Über einem Eintrag verweilen** — oder ihn mit Tab
 erreichen — verfolgt seine Kette in beide Richtungen: Alles, was damit
 verknüpft ist, bleibt, und der Rest verblasst, und der volle Titel, die
-Kennung und der Scope stehen darunter. Enter oder ein Klick liest ihn.
-Dieselben Datensätze unter denselben Filtern landen jedes Mal an derselben
+Kennung und der Bereich stehen darunter. Enter oder ein Klick liest ihn.
+Dieselben Einträge unter denselben Filtern landen jedes Mal an derselben
 Stelle.` },
     { title: `Lösungen`, text: `Der dritte Reiter, **Lösungen**, beginnt, wo die Analyse endet: was das Team
 gegen eine Ursache unternimmt, wie sich eine Idee eine Entscheidung verdient,
@@ -1970,7 +1970,7 @@ oder eine Lösung mit einer Frage.
 **Lösung** im Leser einer Grundursache oder **Neue Lösung** in der Leiste
 öffnet das Formular: einen Titel mit einem Beispiel darunter, eine
 optionale Beschreibung mit **Bearbeiten** und **Vorschau**, und eine Tabelle der
-Grundursachen dieses Scopes, an denen sie ansetzt, verknüpft, sobald Sie
+Grundursachen dieses Bereiche, an denen sie ansetzt, verknüpft, sobald Sie
 vorschlagen — die Schaltfläche sagt *Lösung für 1 Grundursache vorschlagen*.
 Es schreibt einen nummerierten Eintrag (\`SO-0003\`) und sonst nichts. Eine
 Lösung setzt nur an Grundursachen an: Eine Ursache, die etwas Tieferes
@@ -2015,8 +2015,8 @@ Der Leser einer Lösung hat dieselben kleinen Schaltflächen wie die Analyse:
 ausgearbeitet ist, *Experiment*, um eines zu planen, solange sie
 ausgearbeitet ist oder getestet wird, *Bearbeiten*, und *Verwerfen* und
 *Löschen*, die in \`⋯\` wandern, wo der Leser schmal ist. Eine Lösung eines
-Scopes darunter, bei Lokal zeigen in ihrem Rahmen gezeichnet, wird hier
-gelesen und in ihrem eigenen Scope bearbeitet.
+Bereiche darunter, bei Lokal zeigen in ihrem Rahmen gezeichnet, wird hier
+gelesen und in ihrem eigenen Bereich bearbeitet.
 
 Ein **Rechtsklick** auf etwas in der Analyse oder im Bild der Lösungen zeigt,
 was man damit tun kann — dieselben Aktionen wie im Leser, in derselben
@@ -2024,14 +2024,14 @@ Reihenfolge und mit denselben Wörtern, Bearbeiten darunter, und an einer
 Lösung die Schritte, die ihr Tor bietet; ein Menüeintrag endet auf „…“, wo ein
 Dialog oder eine Frage folgt — und auf einer Linie — die Verbindungen der Analyse, die Ursachen einer
 Lösung, die Linien in ein Experiment und aus ihm heraus —, wie stark die
-Verbindung ist, oder sie zu lösen. **Bearbeiten** gibt dem Datensatz die ganze
+Verbindung ist, oder sie zu lösen. **Bearbeiten** gibt dem Eintrag die ganze
 Breite: der Text links, wie er aussehen wird rechts, und das Bild kommt
 zurück, sobald man zu Lesen wechselt.` },
   ],
   roadmap: [
-    { title: `Der Fahrplan`, text: `**Fahrplan** in der oberen Leiste öffnet die Landschaft auf einer Zeitachse. Nur
+    { title: `Die Roadmap`, text: `**Roadmap** in der oberen Leiste öffnet die Landschaft auf einer Zeitachse. Nur
 was ein Datum hat, bekommt eine Zeile, also ist eine Landschaft aus viertausend
-Anwendungen mit neun Daten ein Fahrplan von wenigen Zeilen — der Rest steht auf der
+Anwendungen mit neun Daten eine Roadmap von wenigen Zeilen — der Rest steht auf der
 Fläche, wo er hingehört. Pläne stehen zuerst, dann Anwendungen, jede Zeile eine Folge
 von Abschnitten mit der Phase darauf: geplant, live, auslaufend, abgelöst. Verbindungen
 mit einem eigenen Zeitraum folgen, eingeklappt mit einer Zahl an der Überschrift, nach
@@ -2077,15 +2077,15 @@ der Einheiten umorganisiert, sagt, was das mit den Menschen darin macht (siehe
 Jeder Plan ist eine Markdown-Datei in \`transitions/\` in Ihrem Projektordner,
 nummeriert ab \`TR-0001\` aufwärts.
 
-**Initiativen.** Ein Plan gehört zu dem Bereich, der ihn schreibt, und der
-Fahrplan einer Domäne ist der der Domäne. Ist ein Plan zugleich Sache der
+**Initiativen.** Ein Plan gehört zu dem Bereich, der ihn schreibt, und die
+Roadmap einer Domäne ist die der Domäne. Ist ein Plan zugleich Sache der
 Organisation — eine Migration, der das ganze Unternehmen folgt — wählen Sie auf
 seiner Seite unter ⋯ **Auf den Roadmaps darüber verfolgen**. Er erscheint dann auf
-dem Fahrplan jedes Bereichs darüber, unter *Initiativen aus den Bereichen darunter*,
+der Roadmap jedes Bereichs darüber, unter *Initiativen aus den Bereichen darunter*,
 mit dem Bereich, zu dem er gehört, in Worten; dort wird er gelesen und bearbeitet
-wird er, wo er liegt, und der Leser öffnet ihn dort. Die Fahrplankarte auf dem
-Organisationsbildschirm zählt sie mit. Auf der Organisation selbst, die keinen
-Fahrplan über sich hat, gibt es die Wahl nicht.` },
+wird er, wo er liegt, und der Leser öffnet ihn dort. Die Roadmapkarte auf dem
+Organisationsbildschirm zählt sie mit. Auf der Organisation selbst, die keine
+Roadmap über sich hat, gibt es die Wahl nicht.` },
     { title: `Der Business Case`, text: `Der Text eines Plans kann einen **Business Case** halten: einen eingezäunten
 Block, dessen Eingabe eine lesbare Cashflow-Tabelle ist, mit den darunter
 ausgerechneten Zahlen.
@@ -2142,7 +2142,7 @@ benennt, ist diese Fähigkeit, wo immer eine Landschaft sie verfeinert — also 
 jedes Ding **einmal** aufgeschrieben, in einem Bereich, und jeder andere Bereich,
 der es verwendet, zeigt auf dasselbe.
 
-**Der Bereich, der es aufschreibt, verantwortet es.** Dieser Datensatz trägt die
+**Der Bereich, der es aufschreibt, verantwortet es.** Dieser Eintrag trägt die
 Details: in welcher Phase es ist und an welchen Daten, wer es verantwortet,
 welcher Anbieter es verkauft, worauf es gebaut ist, seine betrieblichen Aspekte. Ändern Sie
 davon etwas dort, und überall, wo es gezeichnet wird, steht das Neue.
@@ -2165,7 +2165,7 @@ nach unten verfeinert, also behält die Organisation sie. Anwendungen werden in
 der Landschaft geschrieben, die sie betreibt, also behält eine Domäne ihre
 eigenen — und eine Organisation, die eine Anwendung beim Namen nennt, bevor
 jemand sie ausgearbeitet hat, benennt einen Platzhalter, der in dem Moment
-beiseitetritt, in dem jemand tiefer den echten Datensatz schreibt.` },
+beiseitetritt, in dem jemand tiefer den echten Eintrag schreibt.` },
     { title: `Was ein Befund bedeutet`, text: `Die App verweigert deswegen nie ein Speichern. Sie liest beim Öffnen den ganzen
 Ordner — und wieder, wann immer der Ordner sich unter ihr ändert — und meldet,
 was sie findet. Jede Zeile des Baums auf dem Organisationsbildschirm trägt ihre
@@ -2181,7 +2181,7 @@ eigene Zeile.
   den Sie wie alles andere rückgängig machen können.
 - **Undefiniert** — ein Platzhalter für etwas, das nichts im Ordner aufschreibt.
   Die Karte wird gezeichnet und die Zeile behalten; was er braucht, ist
-  irgendwo ein Datensatz, auf den er zeigen kann.
+  irgendwo ein Eintrag, auf den er zeigen kann.
 - **Eine lose Zeile** — eine Linie, die an etwas endet, das nichts im Ordner
   hält. Behalten und als Stummel gezeichnet, nie von einem Speichern
   weggeworfen.
@@ -2190,19 +2190,19 @@ eigene Zeile.
 - **Ohne Eigentümer** — ein System, das als das von jemand anderem markiert ist,
   ohne dass jemand gesagt hat, wessen.
 
-Eines auf der Liste ist **Information und kein Fehler**: ein Datensatz, den
+Eines auf der Liste ist **Information und kein Fehler**: ein Eintrag, den
 nichts in seinem eigenen Bereich zeichnet — kein Board hält ihn, und keine
 Zeichnung dort zeigt auf ihn. Ein Ding kann echt, verantwortet und dokumentiert
 sein, ohne schon auf irgendjemandes Bild zu stehen, deshalb ist es ein
 Hinweis, wie ein Vorschlag, und wird nie wie ein Fehler eingefärbt.` },
-    { title: `Eine Liste von Befunden lesen`, text: `Jede Liste von Befunden ist dieselbe Liste: die **Prüfungen** einer Einheit,
+    { title: `Eine Liste von Befunden lesen`, text: `Jede Liste von Befunden ist dieselbe Liste: die **Checks** einer Einheit,
 die Zusammenfassung neben dem Organigramm, die Befunde der Conway-Karte,
 **Noch offen** bei einem Plan und **Wo sich die Daten widersprechen** auf der
 Roadmap. Eine Startseite zählt ihre Befunde unter **Braucht Aufmerksamkeit**
-und führt sie auf der Seite Prüfungen auf.
+und führt sie auf der Seite Checks auf.
 
-- **Eine Zeile je Prüfung**: das Zeichen ihres Gewichts, ihr Name und wie
-  viele, zugeklappt. Drücken Sie die Zeile, um jeden Befund darunter zu sehen,
+- **Eine Zeile je Check**: das Zeichen ihres Gewichts, ihr Name und wie
+  viele, zugeklappt. Klicken Sie auf die Zeile, um jeden Befund darunter zu sehen,
   in seinem eigenen Satz.
 - **Drei Gewichte**, in dieser Reihenfolge. **Beheben** (ein roter Punkt): das
   Modell widerspricht sich selbst oder kann nicht stimmen, und die Behebung
@@ -2213,12 +2213,12 @@ und führt sie auf der Seite Prüfungen auf.
 - **Die Hinweise sind verborgen** hinter **Hinweise zeigen (N)**. Was eine
   Liste aufgeklappt hat, und ob ihre Hinweise gezeigt werden, gilt, solange
   die App offen ist, und wird nie gespeichert.
-- **Drücken Sie einen Befund, um ihn zu lesen**: sein Satz, sein Gewicht und
+- **Klicken Sie auf einen Befund, um ihn zu lesen**: sein Satz, sein Gewicht und
   worum es geht, **Warum es wichtig ist**, **So beheben Sie es**, und die
-  Aktionen, die ihn beheben oder öffnen, wo er behoben wird — den Datensatz
+  Aktionen, die ihn beheben oder öffnen, wo er behoben wird — den Eintrag
   öffnen, die Zeichnung, die Einheit oder beide Einheiten, den Einheitstyp,
   den Plan, die Person in Personen; **Verknüpfen…**, **Übernehmen**,
-  **Zuweisen…**, **Zuweisung beenden…**, **Zuweisung entfernen**, **Eine
+  **Zuweisen…**, **Zuordnung beenden…**, **Zuordnung entfernen**, **Eine
   Zusammenarbeit festhalten…**,
   **Festlegung entfernen**. Eine Liste bietet die Aktionen, die sie dort tun
   kann, wo sie steht, und der Bildschirm, den sie öffnet, tut den Rest.
@@ -2228,7 +2228,7 @@ und führt sie auf der Seite Prüfungen auf.
 - **Als beabsichtigt markieren…**, unter der Erklärung eines Prüfpunkts oder
   eines Hinweises, sagt, dass es so gemeint ist: Es fragt nach dem Grund, und
   der Grund darf leer bleiben. Der Befund verschwindet aus der Liste und steht
-  unter **Akzeptiert (N)**, unter den Prüfungen, mit seinem Grund und dem Tag,
+  unter **Akzeptiert (N)**, unter den Checks, mit seinem Grund und dem Tag,
   an dem er markiert wurde. **Zurücknehmen** dort bringt ihn zurück. Eine
   Markierung ist ein Schritt im Modell, geführt in dem Bereich, um den es im
   Befund geht, also sieht sie jeder und die Aktivitätsliste nennt sie;
@@ -2240,28 +2240,28 @@ und führt sie auf der Seite Prüfungen auf.
   Antwort liegt im Modell. Wo Sie den Bereich, der sie führt, nur lesen
   dürfen, wird nichts angeboten. Ein Agent liest die Markierungen und setzt
   nie eine.` },
-    { title: `Die Seite Prüfungen`, text: `**Prüfungen** auf der Karte einer Startseite, oder eine Anzahl unter
-**Braucht Aufmerksamkeit**, öffnet die Seite Prüfungen über dieser Startseite:
-was die Prüfungen in oder unter ihr finden, und auf dem
+    { title: `Die Seite Checks`, text: `**Checks** auf der Karte einer Startseite, oder eine Anzahl unter
+**Braucht Aufmerksamkeit**, öffnet die Seite Checks über dieser Startseite:
+was die Checks in oder unter ihr finden, und auf dem
 Organisationsbildschirm im ganzen Baum.
 
-- **Jede Prüfung, nach Kategorie** — die Landschaft, Pläne und Daten, die
+- **Jeder Check, nach Kategorie** — die Landschaft, Pläne und Daten, die
   Organisation, Teams und Systeme, Analyse — mit dem Zeichen ihres Gewichts,
-  ihrem Namen und wie viele sie findet, null eingeschlossen: Eine Prüfung,
-  die nichts findet, ist trotzdem wissenswert. Beheben vor Prüfen vor Hinweis
+  ihrem Namen und wie viele sie findet, null eingeschlossen: Ein Check,
+  der nichts findet, ist trotzdem wissenswert. Beheben vor Prüfen vor Hinweis
   innerhalb jeder Kategorie.
 - **Zeigen** auf der Leiste wählt die gezeigten Gewichte. Die Hinweise sind
   verborgen, bis Sie sie zeigen, wie in jeder Liste, und was Sie wählen, gilt,
   solange die App geöffnet ist.
-- **Wählen Sie eine Prüfung**, um sie zu lesen: ihr Gewicht und ihre
+- **Wählen Sie einen Check**, um ihn zu lesen: sein Gewicht und seine
   Kategorie, **Warum es wichtig ist**, **So beheben Sie es**, und **Gefunden
   (N)** — jeder Befund davon, jeder in seinem Bereich. Ein Klick darauf öffnet
-  ihn dort, wo er behoben wird: den Datensatz, die Zeichnung, den Plan, die
+  ihn dort, wo er behoben wird: den Eintrag, die Zeichnung, den Plan, die
   Seite des Betriebsmodells, eine Person in Personen. **Als beabsichtigt
   markieren…** neben dem Befund eines Prüfpunkts oder eines Hinweises
   markiert ihn von hier aus, in dem Bereich, der ihn führt, und **Akzeptiert
   (N)** führt auf, was markiert wurde, jedes mit **Zurücknehmen**. Eine
-  Zuweisung in einer Einheit, die es nicht gibt, bietet daneben **Zuweisung
+  Zuordnung in einer Einheit, die es nicht gibt, bietet daneben **Zuordnung
   entfernen**, auf dieselbe Weise geschrieben: Es bleibt keine Einheit, von
   der aus sie zu beheben wäre. Eine hier
   gesetzte Markierung, mit nichts geöffnet, ist ein Schritt dieses Bereichs
@@ -2270,8 +2270,8 @@ Organisationsbildschirm im ganzen Baum.
 - Was die Seite zählt, stammt aus dem, was die App über den ganzen Baum schon
   weiß: die Befunde zwischen Bereichen, die Einheiten und Leute der
   Organisation, die Daten jedes Bereichs und die Conway-Karte über der
-  Startseite. Einige Prüfungen lesen das ganze Dokument eines Bereichs — ein
-  Datensatz auf keiner Ansicht, die Angaben des Eigentümers auf einem
+  Startseite. Einige Checks lesen das ganze Dokument eines Bereichs — ein
+  Eintrag auf keiner Ansicht, die Angaben des Eigentümers auf einem
   Platzhalter, eine Linie ins Nichts, der Link einer Zeichnung, die beiden der
   Geschäftsschicht, eine Ursache, die eine Beobachtung darunter erklärt — und
   finden etwas dort, wo dieser Bereich geöffnet ist: Die Seite führt sie mit
@@ -2291,19 +2291,19 @@ betritt den Bereich, der die Anwendung verantwortet, mit ausgewählter Karte —
 dort, wo ihre Details geändert werden können.
 
 Eine Zeile, die sagt, dass zwei Bereiche den Namen beide aufschreiben, bietet
-**Verknüpfen…**: es öffnet den Bereich, dessen Datensatz weichen soll, und fragt
-dort, weil ein Datensatz nur je von dem Bereich geändert wird, der ihn hält.` },
-    { title: `Einen Datensatz zwischen Bereichen verschieben`, text: `Wo ein Ding aufgeschrieben ist, ist eine Entscheidung, die Sie nachträglich
-ändern können. Wählen Sie die Karte aus und drücken Sie **Verschieben…** im
+**Verknüpfen…**: es öffnet den Bereich, dessen Eintrag weichen soll, und fragt
+dort, weil ein Eintrag nur je von dem Bereich geändert wird, der ihn hält.` },
+    { title: `Einen Eintrag zwischen Bereichen verschieben`, text: `Wo ein Ding aufgeschrieben ist, ist eine Entscheidung, die Sie nachträglich
+ändern können. Wählen Sie die Karte aus und klicken Sie auf **Verschieben…** im
 Inspektor; der Dialog bietet an, welche der vier in Frage kommen.
 
-- **Verknüpfen** — den Datensatz dieses Bereichs aufgeben und für einen
+- **Verknüpfen** — den Eintrag dieses Bereichs aufgeben und für einen
   einstehen, den ein anderer Bereich schon hält. Das ist, was einen Konflikt
   beilegt, und was eine Karte braucht, die gezeichnet wurde, bevor jemand den
-  echten Datensatz schrieb. Dieser Bereich behält seine eigene Beschreibung,
+  echten Eintrag schrieb. Dieser Bereich behält seine eigene Beschreibung,
   seine Farben und wo die Karte auf seinen Boards sitzt; er gibt die Details
   auf, die der andere Bereich von da an verantwortet.
-- **Hochziehen** — den Datensatz in einen Bereich hinaufschieben, unter dem
+- **Hochziehen** — den Eintrag in einen Bereich hinaufschieben, unter dem
   dieser abgelegt ist, und hier einen Platzhalter lassen. Was eine in einer
   Landschaft gezeichnete Anwendung braucht, wenn die Domäne darüber diejenige
   sein soll, die sie verantwortet.
@@ -2322,7 +2322,7 @@ viele mitgehen.
 
 Die letzten drei schreiben **zwei Bereiche**, deshalb fragen sie zuerst. Der
 Bereich, in den es geht, wird geschrieben, bevor sich dieser ändert, und das ist
-Absicht: geht auf halbem Weg etwas schief, bleibt Ihnen der Datensatz an *beiden*
+Absicht: geht auf halbem Weg etwas schief, bleibt Ihnen der Eintrag an *beiden*
 Stellen — ein Konflikt, den Sie sehen und mit **Verknüpfen** beilegen können —
 statt an keiner.
 
@@ -2330,11 +2330,11 @@ Das ist auch der Grund, warum **Rückgängig dort aufhört**. ⌘Z nimmt alles z
 was Sie seither getan haben, und verweigert dann diesen Schritt mit einer Zeile,
 die sagt, warum: nur seine Hälfte liegt auf dem Stapel dieses Fensters, und die
 andere Hälfte ist eine Datei in einem Bereich, für den hier nichts spricht. Um
-ihn zurückzuholen, verschieben Sie den Datensatz erneut in die andere Richtung.
+ihn zurückzuholen, verschieben Sie den Eintrag erneut in die andere Richtung.
 
 Ein Verschieben wird abgelehnt, mit dem Grund, wenn der Bereich, in den es ginge,
 den Namen bereits verantwortet, wenn ein Hochziehen einen Bereich nennt, unter
-dem dieser nicht abgelegt ist, und wenn das Entfernen des Datensatzes Dinge, die
+dem dieser nicht abgelegt ist, und wenn das Entfernen des Eintrags Dinge, die
 darunter abgelegt sind, ohne Halt ließe.` },
   ],
   operating: [
@@ -2369,7 +2369,7 @@ Höchstzahl der Anwendungen, die Reihenfolge und die Tage.
 
 Die Zeile einer Rolle drücken zeigt, an wen ihre Inhaber berichten und **woher das kommt**, die
 oberste Regel zuerst: die eigene Linie einer Person, der Einheit, dieses Typs, der Rolle, dann die
-Verschachtelung. **Linie ändern für** diesen Typ setzt hier eine Linie; **Zurück zu dem, was die
+Hierarchie. **Linie ändern für** diesen Typ setzt hier eine Linie; **Zurück zu dem, was die
 Rolle sagt** nimmt sie weg. Eine Linie, die einen Kreis schließen würde, wird abgelehnt, mit Grund.` },
     { title: `Rollen`, text: `**Rollen** zeigt jede Rolle: wo sie sitzt, die Führungskraft und den Anteil. Eine Rolle wählen
 öffnet sie groß: Zweck, Inhaber und freie Plätze, die Linien, wofür sie einsteht, wer an sie
@@ -2403,7 +2403,7 @@ Niederländisch und Deutsch geschrieben, in den eigenen Worten dieser App.
 stehen die Bibliotheken; die gewählte ist in der Mitte als die Struktur
 gezeichnet, die sie ergäbe, in denselben Bahnen wie Ihre eigene, nur lesbar:
 jeder Einheitstyp mit seinem Zweck und den Rollen, die er hat, und unter den
-Bahnen die Rollen, die keiner ihrer Typen hat. Drücken Sie auf eine Rolle, um
+Bahnen die Rollen, die keiner ihrer Typen hat. Klicken Sie auf eine Rolle, um
 zu sehen, wofür sie steht. Haken Sie einen Einheitstyp an, oder eine Rolle für
 sich: Was er braucht, kommt mit und ist gestrichelt gezeichnet — die Rollen
 eines Typs, die Typen, zu denen er in der Bibliothek gehört — und eine Rolle
@@ -2460,7 +2460,7 @@ einem Blatt, dem Organigramm oder ihrer Seite steht ihr Name zuerst, mit
 **Verschieben…** und **Zeichnung erstellen** im **⋯** daneben. Unter dem
 Namen stehen ihr Einheitstyp, darunter der Bereich, in dem sie eingeordnet
 ist, und dann die eigenen Abschnitte der Einheit. Zuletzt kommt **Element**,
-eingeklappt: die eigenen Felder des Akteurs — seine Stammdaten, Allgemein mit
+eingeklappt: die eigenen Felder des Akteurs — sein Steckbrief, Allgemein mit
 Lebenszyklus und Beschreibung, Darstellung und Daten. Es klappt
 wieder ein, sobald eine andere Einheit gewählt wird. Auf der Seite stehen
 dieselben Felder ausgeschrieben unter der Einheit. Ein Akteur ohne Typ behält
@@ -2501,14 +2501,14 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   an: Eine Person**, ihre Rolle eingetragen, wo sie eine hat, und erfragt, wo
   sie mehrere hat); Führungskraft oder fachlich,
   nur für diese Einheit, ab einem Tag und bis einschließlich einem Tag, wo es
-  nicht für immer gilt; **Hier über die Verschachtelung berichten** sagt,
+  nicht für immer gilt; **Hier über die Hierarchie berichten** sagt,
   dass die Rolle so berichtet, wie die Einheit verschachtelt ist, was ihr Typ
   oder die Rolle auch sagt; **Die eigene Linie dieser Einheit wegnehmen**
   lässt den Typ oder die Rolle wieder sprechen. **Eine
   Linie für …** gibt einer Rolle ohne Linie eine eigene. Die Inhaber einer
   Rolle mit der Linie einer Führungskraft werden von den Inhabern der Rolle
   geführt, bei der sie endet, und dann von dem, der diese führt; der Rest der
-  Einheit über die Verschachtelung. Eine Linie von einer Rolle zu sich selbst
+  Einheit über die Hierarchie. Eine Linie von einer Rolle zu sich selbst
   in derselben Einheit und eine, die eine Schleife schließen würde, werden
   abgelehnt, mit dem Grund. **Berichten hierher** nennt die Rollen anderswo,
   deren Linie bei einer Rolle dieser Einheit endet, und die Personen, deren
@@ -2524,17 +2524,17 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
 - **Besitzt**: jede Anwendung, die sie als den Akteur nennt, zu dem sie
   gehört.
 - **Verantwortlich für**: die Gebiete, Gruppen und Fähigkeiten, die ihr
-  zugewiesen sind, mit dem Bereich, der die Zuweisung führt, wo das ein
+  zugewiesen sind, mit dem Bereich, der die Zuordnung führt, wo das ein
   anderer ist. **+ Gebiet oder Fähigkeit** wählt eins aus der ganzen
-  Organisation, und die Zuweisung wird in dem Bereich geschrieben, der es
+  Organisation, und die Zuordnung wird in dem Bereich geschrieben, der es
   definiert — die dieses Bereichs als Schritt hier, die eines anderen als
   Schritt dort, wo Sie ihn ändern dürfen. **✕** auf einem Etikett nimmt eine
-  hier geführte Zuweisung weg.
+  hier geführte Zuordnung weg.
 - **Arbeitet mit**: die Einheiten, mit denen sie festgehalten hat
   zusammenzuarbeiten (siehe *Die Conway-Karte*).
 - **Im Lauf der Zeit**: der Tag, ab dem sie besteht, ihr letzter Tag und jede
   Verschiebung, die ein Plan mit ihr macht (siehe *Veränderung über die Zeit*).
-- **Prüfungen**: was die Organisation heute über diese Einheit widerspricht —
+- **Checks**: was die Organisation heute über diese Einheit widerspricht —
   eine Rolle mit zu wenigen Personen oder über ihrem Maximum, eine Einheit, wo
   ihr Typ nicht stehen darf, eine, die mehr Domänen bedient, als ihr Typ
   erlaubt, oder mehr Anwendungen besitzt als ihr Limit, jemand, der noch in
@@ -2549,7 +2549,7 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
   dem eine Linie beginnt oder ein Plan eine Einheit verschiebt. Eine Einheit bedient eine Domäne, wenn
   sie diesen Bereich bedient, einen darüber oder einen darin. In der Liste von
   Befunden bietet eine Rolle mit zu wenigen Personen **Zuweisen…** und eine
-  Zuweisung, die ihre Einheit oder Rolle überdauert hat, **Zuweisung
+  Zuordnung, die ihre Einheit oder Rolle überdauert hat, **Zuordnung
   beenden…**, wo Sie die Personen dieser Rolle ändern dürfen. Die Startseite
   der Organisation zeigt dieselben Befunde für jeden Bereich.
 
@@ -2557,7 +2557,7 @@ Die Abschnitte lesen den Tag, an dem das Board daneben betrachtet wird. Auf
 einem Board, das einen anderen Tag zeigt — seinen gespeicherten Tag oder einen
 unter **Tag** oder mit dem Schieberegler der Roadmap gewählten Tag —, sagt
 der Inspektor *Wie am* diesem Tag, und wer die Rollen innehat, wer sie führt
-und die Prüfungen sind die dieses Tages, die Verschiebungen der Pläne an
+und die Checks sind die dieses Tages, die Verschiebungen der Pläne an
 diesem Tag eingeschlossen. Was Sie von dort zuordnen oder beenden, beginnt an
 diesem Tag, wenn er noch kommt.
 
@@ -2581,16 +2581,16 @@ der Person an ihrem letzten Tag — ein Schritt in jedem Bereich, der eine führ
 und entfernt Zuordnungen, die erst danach begonnen hätten.
 
 **Eine Einheit zu löschen** ist eine Korrektur: Es sagt, dass die Einheit nie
-da war, also gehen ihre Zuweisungen im selben Schritt mit, auch beendete, und
+da war, also gehen ihre Zuordnungen im selben Schritt mit, auch beendete, und
 die Frage davor nennt, wer was nicht mehr ist. Eine Einheit, die an einem Tag
 aufhört zu bestehen, beenden Sie stattdessen an diesem Tag — über ihren
 Lebenszyklus oder einen Plan —, und die Rollen ihrer Leute enden dann und
-bleiben in deren Geschichte. **Eine Zuweisung in einer Einheit, die es nicht
+bleiben in deren Geschichte. **Eine Zuordnung in einer Einheit, die es nicht
 gibt** — zurückgelassen von einer Einheit, die gelöscht wurde, bevor Löschen
 sie mitnahm, oder von einem Akteur, der keine Einheit mehr ist — wiegt
-**Beheben**, *Eine Zuweisung in einer Einheit, die es nicht gibt*, was auch
+**Beheben**, *Eine Zuordnung in einer Einheit, die es nicht gibt*, was auch
 immer ihre Tage sind: Die Person zählt weiter als Inhaberin der Rolle. Auf
-der Seite Prüfungen öffnet sie die Person in Personen, und **Zuweisung
+der Seite Checks öffnet sie die Person in Personen, und **Zuordnung
 entfernen** nimmt sie weg. Die Einheiten in einer gelöschten Einheit gehen
 eine Ebene höher, oder in eine andere Einheit ihres Typs, wo ihr Typ dort nicht
 stehen darf, oder gehen mit; die Anwendungen, die ihr gehörten, erscheinen
@@ -2650,7 +2650,7 @@ Rolle, die so niemand innehat, geht sofort.
 übergeordnete Einheit — oder ganz nach oben, unter die Organisation selbst —,
 jede ein Schritt. **Verschieben…** verschiebt diese Tage mit dem Rest des Plans.
 Ab ihrem Tag gilt die Verschiebung überall, wo die Organisation gelesen wird:
-im Abschnitt einer Einheit, in den Prüfungen, bei wer eine Einheit führt. Ein
+im Abschnitt einer Einheit, in den Checks, bei wer eine Einheit führt. Ein
 aufgegebener Plan verschiebt nichts. Über den Schnittstellen des Plans sagt die
 Seite, wo der Plan Einheiten berührt:
 
@@ -2671,7 +2671,7 @@ Seite, wo der Plan Einheiten berührt:
   Wo nur der Bereich des Plans geschrieben wird, nimmt ⌘Z den ganzen Schritt
   zurück; wo auch andere Bereiche geschrieben wurden, wird er in jedem davon
   zurückgesetzt.
-- **Noch offen am** Tag, in der Liste von Befunden: was die Prüfungen dann in
+- **Noch offen am** Tag, in der Liste von Befunden: was die Checks dann in
   diesen Einheiten finden — einer zu einer Einheit öffnet sie —, jede
   Verantwortung, die ihr A verliert, weil
   die Rolle endet, die dafür rechenschaftspflichtig ist, und jede
@@ -2735,7 +2735,7 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   Eintrag über, außer dieser ist die andere der beiden. Kein Agent beantwortet
   sie, wie kein Agent zusammenführt.
 - **Zusammenführen…** fragt zuerst, welcher Eintrag bleibt — der mit einem
-  Konto verknüpfte, dann der mit den meisten Zuweisungen, ist vorgewählt, und
+  Konto verknüpfte, dann der mit den meisten Zuordnungen, ist vorgewählt, und
   Sie können den anderen wählen — und ist endgültig: Ein Eintrag
   bleibt, der andere wird zu einem Verweis ohne Namen, sodass alles, was
   darauf zeigte, den verbleibenden Eintrag zeigt. Wer aktiv ist und mit einem
@@ -2749,7 +2749,7 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   vorgewählt, wo eine dieser Rollen nach dem Tag des Gehens begann.
 - **CSV importieren…** nimmt eine Liste — eingefügt oder aus einer Datei — mit
   einem Namen, einer Adresse und *intern* oder *extern* in jeder Zeile, durch
-  Kommas oder Semikolons getrennt. Jede Zeile durchläuft dieselbe Prüfung:
+  Kommas oder Semikolons getrennt. Jede Zeile durchläuft denselben Abgleich:
   Eine Zeile, die eindeutig jemand Vorhandenes ist, fügt niemanden hinzu; eine,
   die es vielleicht ist, wird markiert und nur hinzugefügt, wenn Sie
   **Trotzdem hinzufügen** ankreuzen; der Rest wird hinzugefügt.
@@ -2777,7 +2777,7 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   vergessenen Eintrag.
 - **Jetzt entfernen** nimmt einen bereits vergessenen Eintrag aus dem
   Register; was darauf zeigte, lautet *eine ehemalige Person*.
-- **Verweist auf sie** nennt jeden Datensatz, dessen Felder die Person per ID
+- **Verweist auf sie** nennt jeden Eintrag, dessen Felder die Person per ID
   nennen — ein Element oder einen Plan, für den sie verantwortlich ist, eine
   Beobachtung, die sie gemacht hat, ein Experiment, das sie durchführt, eine
   Entscheidung, die sie vorgeschlagen oder unterzeichnet hat — mit dem
@@ -2790,7 +2790,7 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
 - **Was wir speichern** zeigt alles, was das Register über eine Person führt,
   und was auf sie zeigt, als ein Dokument zum Kopieren: die Antwort auf ein
   Auskunftsersuchen. Ein Ersuchen um Löschung beantworten Sie mit **Jetzt
-  vergessen**. Es sagt auch, wie viele Datensätze die Person in ihrem Text
+  vergessen**. Es sagt auch, wie viele Einträge die Person in ihrem Text
   nennen — Wörter, die in ein Feld eingegeben statt einer gewählten Person
   geschrieben wurden, die Vergessen nicht erreicht und die Suche findet.
 
@@ -2821,7 +2821,7 @@ beiden zusammenführen darf, und, wo die Quelle einer leitenden Rolle das Recht
 gibt, deren Menschen zu ändern, eine leitende Person, in deren Einheiten heute
 beide sind. Wo sie Ihnen eine Arbeitsadresse vorenthält, sagt die Seite
 *eine Adresse, die Ihnen nicht angezeigt wird*, statt dass es keine gäbe.
-Jemanden als ausgeschieden zu markieren kann dessen Zuweisungen sofort
+Jemanden als ausgeschieden zu markieren kann dessen Zuordnungen sofort
 beenden; die Seite sagt, wie viele. Und wo ihr Zeitplan jemanden, dessen Tag
 gekommen war, nicht vergessen hat, weil sich nach dem letzten Arbeitstag noch
 mit dessen Konto angemeldet wurde, sagt die Seite das neben dem Status, und
@@ -2852,7 +2852,7 @@ oder Text wie bisher — einen Namen, Initialen, ein Team.
   die Person zu verweisen, statt den Namen zu schreiben. Ein Name, der einem
   im Register ähnelt, wird erst geschrieben, wenn Sie das Feld verlassen,
   sodass ein Name, den Sie eingeben, um jemanden zu finden, nie in der
-  Historie landet.
+  Verlauf landet.
 - **Eine gewählte Person** wird als ID geführt. Das Feld zeigt, was das
   Register sagt: den Namen, oder *Ehemalige Person 7KQM*, sobald sie
   vergessen ist, oder *eine ehemalige Person*, sobald der Eintrag entfernt
@@ -2888,7 +2888,7 @@ oder Text wie bisher — einen Namen, Initialen, ein Team.
 - **Ein Stellvertreter** führt keinen eigenen Verantwortlichen; er zeigt den,
   den sein Master nennt, mit derselben ID.
 - **Die Suche** findet eine Person über das Register: Ein Name findet die
-  Datensätze, die auf die Person verweisen, und eine vergessene Person wird
+  Einträge, die auf die Person verweisen, und eine vergessene Person wird
   über ihr Pseudonym gefunden und nicht mehr über ihren Namen.` },
   ],
   guidance: [
@@ -2929,7 +2929,7 @@ Prinzipien, denen der Eintrag folgt oder von denen er mit einem Grund
 abweicht, oder — bei einer Beobachtung — dass ein Prinzip trägt, reibt oder
 fehlte. *Könnte gelten* schlägt die geltenden vor, deren Worte zu denen des
 Eintrags passen. Ein Verweis auf ein Prinzip, das es nicht mehr gibt, ist ein
-Befund auf der Seite Prüfungen, ebenso Prinzipien, die niemand nutzt, und
+Befund auf der Seite Checks, ebenso Prinzipien, die niemand nutzt, und
 Prinzipien, die reiben.` },
     { title: `Themen`, text: `Ein Thema zieht sich durch die Organisation — *Sicherheit*, *Integration*,
 *Daten* — und ist für manche Bereiche relevant und für andere nicht. Themen
@@ -3032,29 +3032,29 @@ zusammenführen und die Richtlinie nicht ändern: Das tun Sie, auf der Seite
 Personen. Das Register ist kein Schritt, was ein Agent dort tut, steht also
 nicht in der Aktivität und wird nicht mit ⌘Z rückgängig gemacht.
 
-Ein Agent kann auch den **Baum der Scopes** pflegen: einen Scope unter einem
-anderen anlegen — eine Domäne oder einen Landschafts-Scope mit seinem ersten
+Ein Agent kann auch den **Baum der Bereiche** pflegen: einen Bereich unter einem
+anderen anlegen — eine Domäne oder einen Landschaftsbereich mit seinem ersten
 Board, von Anfang an von einer Einheit bedient —, einen umbenennen und
 beschreiben, ihm einen Typ geben, ihn woanders einordnen und einen entfernen.
-Er entfernt einen Scope nach dem anderen und nie einen mit Scopes darunter.
-Ein Scope, in dem Arbeit steckt, geht erst, nachdem der Agent Ihnen gesagt hat,
+Er entfernt einen Bereich nach dem anderen und nie einen mit Bereiche darunter.
+Ein Bereich, in dem Arbeit steckt, geht erst, nachdem der Agent Ihnen gesagt hat,
 was darin ist, und Sie mit eigenen Worten gesagt haben, dass er mit allem
 darin gehen soll: Ihre Worte gehen mit der Entfernung, und ein Hinweis auf
 dem Bildschirm sagt, was gegangen ist. Dafür gibt es kein ⌘Z. Jede Änderung
-ist ein eigener Schritt dieses Scopes, in seiner Historie, wie eine Änderung
+ist ein eigener Schritt dieses Bereiche, in seinem Verlauf, wie eine Änderung
 von einer Startseite aus — keiner, den ⌘Z im Arbeitsbereich zurücknimmt. Der
-Agent lässt den im Arbeitsbereich geöffneten Scope an seinem Platz im Baum:
-Um diesen umzubenennen, zu verschieben oder zu entfernen, oder einen Scope
+Agent lässt den im Arbeitsbereich geöffneten Bereich an seinem Platz im Baum:
+Um diesen umzubenennen, zu verschieben oder zu entfernen, oder einen Bereich
 darüber zu verschieben oder zu entfernen, geht er zuerst auf die Startseite
-dieses Scopes, wie Sie es täten.
+dieses Bereiche, wie Sie es täten.
 
-Ein Agent liest die **Prinzipien**, die in einem Scope gelten, und wie jedes
+Ein Agent liest die **Prinzipien**, die in einem Bereich gelten, und wie jedes
 dort zu gelten kommt, die **Themen** und wo jedes gilt, und die **Bausteine**
-mit der Bewertung, die jeder Scope davon gemacht hat. Er kann ein Prinzip
-vorschlagen und ändern und eines aus einem Datensatz zitieren; ein Thema
-anlegen und mit den Scopes verknüpfen, für die es relevant ist; die
+mit der Bewertung, die jeder Bereich davon gemacht hat. Er kann ein Prinzip
+vorschlagen und ändern und eines aus einem Eintrag zitieren; ein Thema
+anlegen und mit den Bereiche verknüpfen, für die es relevant ist; die
 Fähigkeiten, Nutzungskontexte und den Katalog eines Bausteins ändern; die
-Bewertung eines Bausteins in einem Scope beginnen, seine Optionen bewerten und
+Bewertung eines Bausteins in einem Bereich beginnen, seine Optionen bewerten und
 die Entscheidung vorschlagen, die daraus folgt, wie **Eine
 Entscheidung vorschlagen…** auf der Seite des Bausteins — sie anzunehmen ist Ihre Sache.
 Schreibt er eine Beschreibung oder eine Entscheidung, verweist er auf eine
@@ -3079,7 +3079,7 @@ einer Rolle in einer Einheit oder zu einer Person (\`to.person\`), und
 ob sie eine Ausnahme ist, und die Zuordnungen als Ausnahme. Der Agent bekommt
 mit, sich an die Vorgaben des Modells zu halten, eine Ausnahme nur zu schreiben,
 wenn Sie darum bitten, und zu sagen, dass er es tat. Ein Agent vergisst, entfernt oder führt nie jemanden
-zusammen. \`element.remove\` auf einer Einheit nimmt auch ihre Zuweisungen mit
+zusammen. \`element.remove\` auf einer Einheit nimmt auch ihre Zuordnungen mit
 und nennt sie in der Antwort (\`assignmentsRemoved\`), setzt die Einheiten
 darin eine Ebene höher, wo ihr Typ dort stehen darf (\`unitsMoved\`), leert das
 Team der Anwendungen, die sie nennen (\`teamCleared\`), und nimmt ihre Zeilen in
@@ -3087,7 +3087,7 @@ anderen Bereichen mit (\`alsoChanged\`). Wo die Einheiten darin nicht höher
 dürfen, wird es abgelehnt, \`agent.unitsInside\`, mit den genannten
 Möglichkeiten: Der Agent fragt Sie und ruft erneut mit \`units\` auf —
 \`into:<id>\`, \`up\` oder \`delete\`; \`checks.list\` nennt eine
-zurückgelassene Zuweisung \`check.assignmentOrphaned\`, die eine Person
+zurückgelassene Zuordnung \`check.assignmentOrphaned\`, die eine Person
 entfernt. Wer einen Bereich bedient, ist das \`scopes\` der Einheit, geschrieben
 mit \`element.update\` in dem Bereich, der die Einheit führt — die Organisation,
 \`""\`, ist nie einer und wird aus dem Geschriebenen weggelassen; wer für eine
@@ -3099,7 +3099,7 @@ Fähigkeit, die außerhalb ihrer Domäne zugewiesen ist, \`check.unitNotServing\
 Rolle in einem Einheitstyp ist \`reportsTo\` in \`unitType.add\` und
 \`unitType.update\`; die eigene Linie einer Einheit ist \`reportingLine.set\` —
 zu einer Rolle in einer Einheit irgendwo, oder hier über die
-Verschachtelung — und \`reportingLine.remove\`, in dem Bereich, der die Einheit
+Hierarchie — und \`reportingLine.remove\`, in dem Bereich, der die Einheit
 führt; \`reportingLines.list\` nennt jede Linie an einem Tag, wo sie endet und
 was die Linien widersprechen. Eine Linie zu sich selbst wird mit
 \`reportingLine.self\` abgelehnt und eine, die eine Schleife schließt, mit
@@ -3118,7 +3118,7 @@ abgelehnt, und eine Stelle, an der ihr Typ nicht stehen darf, wird genannt
 die Einheiten mit den Inhabern jeder Rolle und den unbesetzten Stellen am Tag
 der Ansicht, in der Reihenfolge des Organigramms und nie eingeklappt, oder die
 Spalten, die Überschreitungen und die Befunde, jeder mit Schlüssel, Gewicht und
-Kategorie seiner Prüfung, wie \`checks.list\` sie nennt. Eine
+Kategorie seines Checks, wie \`checks.list\` sie nennt. Eine
 Zusammenarbeit hält er mit \`relation.add\` fest, Typ \`interacts\` und ein
 \`mode\`.` },
   ],

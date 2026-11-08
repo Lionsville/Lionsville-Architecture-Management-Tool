@@ -80,7 +80,7 @@ ongedaan maken ook. Onder **Bediend door** zegt een regel hoe de twee zich
 verhouden: *Type Divisie, zoals een eenheid die haar bedient*; in de
 waarschuwingskleur *Type Team, terwijl de eenheden die haar bedienen van
 type Divisie zijn*; *Type Team; nog geen eenheid bedient haar*; of, waar de
-scope geen type uit het operating model zegt, welke eenheden van welke
+scope geen type uit het besturingsmodel zegt, welke eenheden van welke
 types haar bedienen, zodat het type gezet kan worden. De badge op de regel
 van de scope in de boom waarschuwt op dezelfde manier, en de controles
 noemen de drie gevallen die niet kloppen (*De pagina Controles*).
@@ -97,7 +97,7 @@ het starten opent de app het onderdeel dat je open had.
 Zeven namen worden geweigerd, omdat de mappen van een onderdeel ze al gebruiken:
 \`diagrams\`, \`docs\`, \`decisions\`, \`transitions\`, \`observations\`, \`images\` en \`logos\`.` },
     { title: `Terug en Vooruit`, text: `**Terug gaat naar de plek waar je hiervoor was**, en Vooruit naar de plek
-waarvandaan je terugkwam. Een plek is het thuis van een onderdeel en de pagina
+waarvandaan je terugkwam. Een plek is de startpagina van een onderdeel en de pagina
 daarop, of een open onderdeel op zijn weergave of op de pagina daarover: zijn
 besluiten, zijn waarnemingen, zijn roadmap, een plan, het rapport van een
 platform of een dienst. Elke stap naar een andere plek telt, of je hem zette
@@ -122,7 +122,7 @@ Dezelfde stappen staan in het menu **Go** als **Back** en **Forward**, op
 terug- en vooruitknoppen van de muis werken ook, en vegen tussen pagina's op
 een Mac-trackpad als dat op *Veeg met twee of drie vingers* staat
 (Systeeminstellingen → Trackpad → Meer gebaren → Veeg tussen pagina's). Ze
-werken allemaal vanaf het thuis van de organisatie en met een onderdeel open.
+werken allemaal vanaf de startpagina van de organisatie en met een onderdeel open.
 Zolang er een dialoog open is, liggen de knoppen erachter en doen de toetsen,
 de menu-onderdelen en de muisknoppen niets. De geschiedenis hoort bij het
 venster: ze is weg als het venster sluit.
@@ -134,12 +134,12 @@ erin getypt was, wordt niet bewaard.
 **Een plek die er niet meer is** wordt vervangen door de dichtstbijzijnde die
 er wel is: een verwijderde weergave opent zijn onderdeel op de eerste weergave
 die over is, een verwijderd record opent zijn pagina zonder record, en een
-verwijderd onderdeel opent het thuis van het dichtstbijzijnde onderdeel erboven.
+verwijderd onderdeel opent de startpagina van het dichtstbijzijnde onderdeel erboven.
 De lijst Activiteit zegt wat er werd verwijderd.` },
     { title: `Delen met een link`, text: `**Wat een link zegt.** Na de \`#\` komt het pad van het onderdeel, een \`-\` die
 het afsluit, en dan de pagina en het record: \`#/acme/rail/-/board/landscape\`
 is het bord *landscape* van het onderdeel *acme/rail*, \`#/acme/-/document/billing\`
-de pagina van het element *billing* in *acme*, en \`#/-/home\` het thuis van de
+de pagina van het element *billing* in *acme*, en \`#/-/home\` de startpagina van de
 organisatie. Een tabblad of een selectie volgt als \`?tab=analysis\` of
 \`?select=billing\`. Een link van vóór versie 3.7.0, die met \`#place?\` begint,
 opent nog steeds dezelfde plek, en het adres wordt daarna in de nieuwe vorm
@@ -150,7 +150,7 @@ is, gaat daar ook heen.
 ook bewaard wordt: een element dat geen weergave tekent, een eenheid van een
 onderdeel dat niets tekent, en een element van een ander onderdeel, dat opent
 in het onderdeel dat het bewaart. Sluit je de pagina in een onderdeel dat niets
-tekent, dan kom je op het thuis van dat onderdeel. Een link naar een element
+tekent, dan kom je op de startpagina van dat onderdeel. Een link naar een element
 dat er niet meer is, opent het onderdeel en zegt dat.
 
 **Op een weergave selecteert de link wat jij geselecteerd had.** Deel je vanaf
@@ -165,20 +165,20 @@ of in het plaatje.
 **Een link heeft een adres nodig dat een ander kan bereiken.** Werk in een map,
 in deze browser of nergens heeft dat niet; dan zegt het venster waarom er geen
 link is, en wordt er niets gekopieerd. Het menu-onderdeel werkt vanaf elk
-scherm, ook vanaf het thuis van de organisatie.` },
+scherm, ook vanaf de startpagina van de organisatie.` },
     { title: `Zoeken`, text: `**Zoeken** in de bovenbalk, of ⌘K, doorzoekt alles in één keer: elementen op
 naam, categorie, leverancier, technologie en eigenaar; documentatie op wat erin
-geschreven staat; aanzichten op naam; relaties op label, protocol en
+geschreven staat; weergaven op naam; relaties op label, protocol en
 technologie; besluiten, plannen en hun mijlpalen; en waarnemingen, oorzaken,
 oplossingen en experimenten op hun titel en wat erin staat. Het leest de scope
-waarin u werkt, de besluiten van de scopes erboven, en wat de rest van de
+waarin je werkt, de besluiten van de scopes erboven, en wat de rest van de
 organisatie vastlegt aan elementen, relaties, plannen en waarnemingen. Elke
 treffer zegt wat hij is — een kop per soort, en de soort van het element of de
 status van de vastlegging ernaast — en in welke scope hij staat. Een element
 kiezen selecteert het en schuift ernaartoe, een documentatietreffer opent de
 pagina van dat element, een relatie opent het blok waar ze vertrekt, en een
 vastlegging opent op haar eigen pagina; een treffer uit een andere scope opent
-die scope daar, alleen-lezen waar uw bron dat is. ⌘F in de editor blijft de snelle zoeker als u alleen een blok op
+die scope daar, alleen-lezen waar je bron dat is. ⌘F in de editor blijft de snelle zoeker als je alleen een blok op
 het canvas zoekt.
 
 De startpagina van de organisatie en die van elk domein hebben dezelfde
@@ -214,7 +214,7 @@ alles daarna?") die ⌘Z al beantwoordt.` },
 Op Windows en Linux lees je Ctrl voor ⌘.` },
   ],
   work: [
-    { title: `Waar je werk wordt bewaard`, text: `Je werk staat op een van drie plekken, en de regel onder de naam op het thuis
+    { title: `Waar je werk wordt bewaard`, text: `Je werk staat op een van drie plekken, en de regel onder de naam op de startpagina
 van de organisatie zegt welke:
 
 - **in een map**: die van de desktop, of van een browsertabblad waar de
@@ -235,7 +235,7 @@ werken**, en alles wat je maakt staat daar als bestanden die je kunt lezen:
     warehouse-landscape/              en nog een keer
       scope.json                      hoe het heet, en wat erin zit
       model.json                      de elementen en de lijnen ertussen
-      diagrams/landscape.json         wat een aanzicht is
+      diagrams/landscape.json         wat een weergave is
       diagrams/landscape.geometry.json     waar de elementen staan
       docs/warehouse.md               de omschrijving van een element, als tekst
       decisions/0007-one-writer.md    een besluit
@@ -256,8 +256,8 @@ eerst vast hoe de map eruitzag. Nog een keer draaien doet niets.
 Er zit niets verstopt in de app. Zet de map in OneDrive, in Dropbox, op een
 netwerkschijf of in een git-repository en hij gedraagt zich zoals alles daar.
 **Vanuit een andere map werken…** op het organisatiescherm brengt je naar een
-andere map; de mappen die je eerder gebruikte staan in **File ▸ Open Recent
-Folder**, elk onder de naam die hun organisatie zichzelf geeft.
+andere map; de mappen die je eerder gebruikte staan in **Bestand ▸ Recente map openen**,
+elk onder de naam die hun organisatie zichzelf geeft.
 
 **Alles wordt geschreven zodra het verandert**: drie seconden nadat je stopt
 met bewerken, als je het venster verlaat, en als je het sluit. Alleen de
@@ -318,10 +318,10 @@ vragen vereist een klik. Een tabblad pakt een onthouden map dus alleen weer op
 als de toestemming nog geldt, en begint anders zonder iets te zeggen in deze
 browser. De desktop is degene die moet kiezen.` },
     { title: `Deze browser`, text: `Een tabblad zonder map bewaart je werk in deze browser, voor deze site. Het
-label op het thuis van de organisatie zegt **In deze browser**, en je werk
+label op de startpagina van de organisatie zegt **In deze browser**, en je werk
 blijft daar na een herstart staan tot jij of de browser de gegevens van de
 site wist. Na de eerste keer bewaren vraagt de app de browser om het ook bij
-een opruimbeurt te houden; sommige browsers, Firefox bijvoorbeeld, leggen die
+te ordenen; sommige browsers, Firefox bijvoorbeeld, leggen die
 vraag aan jou voor. Browseropslag is klein, dus
 de app zegt één keer dat hij voor ongeveer viervijfde vol zit: een browser
 stopt zonder te vragen met bewaren. Heeft een ander tabblad nog een oudere
@@ -342,7 +342,7 @@ het venster privé is: bewaar een bewaarde kopie om je werk te houden.
 
 **Waar de opslag van de browser niet opengaat**, werkt de app vanuit het
 geheugen en wordt niets wat je verandert bewaard. Een strook op elk scherm zegt
-dat. Het label op het thuis van de organisatie zegt **Nergens bewaard**, in de
+dat. Het label op de startpagina van de organisatie zegt **Nergens bewaard**, in de
 waarschuwingskleur. De regel onder de naam zegt *Alles hier wordt nog nergens
 bewaard — bewaar een bewaarde kopie om het te houden.*, en de eerste momentopname
 zegt *Momentopnamen blijven bewaard zolang dit tabblad open is, en gaan ermee
@@ -433,7 +433,7 @@ die balk onderin.` },
   Het bestand neemt ook het **personenregister** mee. Vink **Zonder namen**
   aan als je het wachtwoord kiest, en iedereen gaat als pseudoniem mee in de
   kopie, zonder adres, een getekend besluit zonder de namen waarmee het
-  getekend is, en een observatie zonder de naam van wie haar vastlegde — voor
+  getekend is, en een waarneming zonder de naam van wie haar vastlegde — voor
   een kopie die de organisatie verlaat. Een bestand
   openen geeft nooit een naam terug aan iemand die hier vergeten is, brengt
   nooit iemand terug die hier verwijderd is, en een bestand zonder namen
@@ -451,7 +451,7 @@ die balk onderin.` },
   tekenen, dus de dialoog zegt hoe groot de afbeelding wordt en de knop vraagt
   het eerst.` },
     { title: `Voorkeuren`, text: `Raster, uitlijnen op raster, levenscyclusbadges, ingeklapte panelen en hun
-breedte, het overzichtskaartje, de Tidy-instellingen, de taal en het thema
+breedte, de minikaart, de Tidy-instellingen, de taal en het thema
 worden per browser of per desktopinstallatie onthouden. Ze zijn van jou, niet
 van het project: ze reizen niet mee in een bestand. Hetzelfde geldt voor wat
 deze machine met een map doet — ophalen bij openen, pushen na een
@@ -466,17 +466,17 @@ erin, leg hem apart netjes. Een groep weghalen laat zijn elementen staan.
 **Containerdiagrammen.** Een applicatie kan een containerdiagram onder zich
 hebben: de applicatie wordt de grens van dat diagram en haar componenten staan
 erin. Je maakt er bewust een — rechtsklik de applicatie en kies
-**Containeraanzicht maken**, of druk op de knop met die naam op het tabblad
+**Containerdiagram maken**, of klik op de knop met die naam op het tabblad
 Algemeen van de inspector — en het is een stap in Activiteit als elke andere,
 dus ⌘Z neemt het terug. Een kaart die er een heeft draagt een klein merkteken;
 dubbelklik de kaart om het te openen. Dubbelklikken maakt er nooit een. Een
 landschapstabblad toont zijn containerdiagrammen onder een pijltje: rechtsklik
-daar op een regel, of druk op het pijltje achter de naam zodra het diagram open
+daar op een regel, of klik op het pijltje achter de naam zodra het diagram open
 is, om het te hernoemen, de **diagraminstellingen** te openen of het te
 verwijderen. Verwijderen neemt de componenten mee en laat de applicatie staan.
 Rechtsklik een landschapstabblad voor hetzelfde menu, met dupliceren erbij.
-**Terug naar het landschap** brengt je terug naar het aanzicht precies zoals je
-het verliet.
+**Terug naar het landschap** brengt je terug naar de weergave precies zoals je
+haar verliet.
 
 **Waar het draait** op de balk tekent gestippelde kaders om de containers,
 één per platform, genest zoals de platformen genest zijn
@@ -504,12 +504,12 @@ fysieke weergave, een **platform**: een cluster, een broker, een bus, de
 tooling, waar applicaties op draaien en wat ze gebruiken. Selecteer er een en
 het **paneel** rechts toont het: zijn soort, een naam die afbreekt, één regel
 feiten en drie tabbladen. Met niets geselecteerd is er geen paneel en heeft het
-bord de breedte; druk op de naam van de weergave die open staat voor **Deze
-weergave**, wat ze is en bevat en hoe ze opruimt. Elk feit is een rij van label en
+bord de breedte; klik op de naam van de weergave die open staat voor **Deze
+weergave**, wat ze is en bevat en hoe ze wordt geordend. Elk feit is een rij van label en
 waarde, en een druk maakt van de waarde een veld: Enter of verlaten bewaart,
 Escape zet terug, en de voet zegt waar het veld voor is. Een veld zonder inhoud
 blijft uit het paneel tot **+ Eigenaar, leverancier…** het toevoegt. De pagina van
-het element, zijn **stamgegevens**, toont dezelfde rijen met elk veld, een leeg
+het element, zijn **gegevenspagina**, toont dezelfde rijen met elk veld, een leeg
 veld als streepje: beide komen uit één lijst, dus ze kunnen niet uit elkaar
 groeien.
 
@@ -535,7 +535,7 @@ worden geweigerd, met de reden erbij: een applicatie met een containerdiagram,
 en een component dat nog aan een applicatie hangt.
 
 Elementen horen bij het model, niet bij een diagram: één element kan op
-meerdere diagrammen staan, en **Uit dit aanzicht halen** is iets anders dan
+meerdere diagrammen staan, en **Alleen hier weghalen** is iets anders dan
 **Uit het model verwijderen**. Verwijderen vraagt eerst, en zegt hoeveel
 koppelingen meegaan. Een eenheid verwijderen neemt elke toewijzing erin mee,
 ook beëindigde, alsof ze nooit gemaakt zijn: de vraag noemt wie wat niet
@@ -662,8 +662,8 @@ blijft daarop bewerkbaar, en wie een rol heeft, kan nog worden gewijzigd op de d
 naar kijkt. Een containerdiagram dat vanaf een bord wordt geopend, neemt de dag van dat
 bord mee, en de weg terug gaat naar dat bord.
 
-Zo maakt u een toekomstig diagram. Klik met rechts op een tab, kies **Dupliceren
-per datum…**, kies een dag, en u heeft een tweede bord van hetzelfde landschap
+Zo maak je een toekomstig diagram. Klik met rechts op een tab, kies **Dupliceren
+per datum…**, kies een dag, en je hebt een tweede bord van hetzelfde landschap
 zoals het er dan bij staat. Er is maar één model, dus de twee kunnen niet uit
 elkaar lopen. Een geëxporteerde PNG van een gedateerd bord noemt de dag in de
 titel.
@@ -675,7 +675,7 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.` },
   panel: [
     { title: `Elementen`, text: `- **Eigenschappen.** Levenscyclus (gepland, live, uitfaserend, uitgefaseerd; als
   badge, uitgefaseerde elementen dimmen) en categorie, de eerste regels van de
-  omschrijving (zie *Documentatie*), waar het draait, de ingevulde stamgegevens, de
+  omschrijving (zie *Documentatie*), waar het draait, de ingevulde gegevenspagina, de
   **operationele aspecten** van een applicatie, een rij per stuk met een notitie op
   een druk, en wat erin zit. De kolommen stel je per diagram in bij de
   diagraminstellingen.
@@ -687,13 +687,13 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.` },
 verwijderen…**.` },
     { title: `Documentatie`, text: `Elk element heeft een omschrijving in markdown, en die kan een hele pagina zijn.
 De eerste regels staan in het paneel; een druk schrijft ze daar met dezelfde
-editor, en **De pagina openen** opent dezelfde tekst op de **stamgegevens** van het
+editor, en **De pagina openen** opent dezelfde tekst op de **gegevenspagina** van het
 element. Dat doen ook de link naast de naam, **Documentatie openen** in het
 elementmenu, Enter op het geselecteerde element, en een dubbelklik op alles wat
 geen applicatie is.
 
 De pagina leest als één geheel: de tekst met haar inhoud, dan dezelfde rijen als
-in het paneel met elk veld getoond, in elke stand drukken om te bewerken, en waar
+in het paneel met elk veld getoond, in elke stand klikken om te bewerken, en waar
 het mee verbonden is: zijn plannen, elke lijn erin en eruit, de weergaven die het
 tekenen, wat erin zit, de principes die het volgt, zijn wijzigingen en zijn
 opmerkingen. Links staan de andere elementen van de weergave, met een filter (een
@@ -737,11 +737,11 @@ toont als bijschrift, en de app haalt nooit iets op.` },
     { title: `Verwijzingen in een document`, text: `Een document kan tonen waar het over gaat in plaats van het over te nemen.
 Typ \`[[\` of een losse \`@\` waar je schrijft, of kies een soort bij
 **Invoegen ▾**, en kies een principe, de eisen van een bouwsteen, de
-beoordeling van een scope, een besluit, een waarneming, een view of een
+beoordeling van een scope, een besluit, een waarneming, een weergave of een
 element. Het document bewaart een verwijzing, en bij het lezen wordt het
 getekend zoals het nu is: een principe als citaat, de eisen en de beoordeling
 als hun raster, een besluit of een waarneming als een regel die het opent, en
-een view live en alleen-lezen op zijn eigen grootte, met zijn naam eronder
+een weergave live en alleen-lezen op zijn eigen grootte, met zijn naam eronder
 die hem opent. Een beoordeling kan worden vastgezet op hoe ze was toen ernaar
 verwezen werd; ze zegt dan wanneer ze sindsdien veranderd is. Wat er niet
 meer is, zegt dat.` },
@@ -756,18 +756,18 @@ het register toont het aantal naast de titel.
 - **Reageren.** Schrijf in het veld onder de draad en druk op **Reageren**
   (⌘Enter doet hetzelfde). De tekst neemt de Markdown die een beschrijving
   neemt.
-- **Antwoorden.** Druk op **Antwoorden** onder een reactie. Een draad is één
+- **Antwoorden.** Klik op **Antwoorden** onder een reactie. Een draad is één
   niveau diep: een antwoord op een antwoord antwoordt op de reactie waaronder
   het staat.
-- **Bewerken.** Alleen uw eigen reacties. Een bewerkte reactie zegt
+- **Bewerken.** Alleen je eigen reacties. Een bewerkte reactie zegt
   *bewerkt*.
-- **Verwijderen.** Uw eigen reacties, of die van iedereen waar u de scope mag
+- **Verwijderen.** Je eigen reacties, of die van iedereen waar je de scope mag
   wijzigen. Een verwijderde reactie leest *Reactie verwijderd* op de plek waar
   ze stond, zodat de antwoorden eronder hun plek houden. Haar woorden blijven
   in de geschiedenis, zoals bij elke bewerking.
 
 **Wie het schreef** is een persoon uit het register, nooit een getypte naam.
-De eerste keer dat u reageert en niemand op deze installatie *Dit ben ik* is,
+De eerste keer dat je reageert en niemand op deze installatie *Dit ben ik* is,
 vraagt de draad één keer wie er schrijft — kies uzelf, of voeg uzelf toe met
 **Nieuwe persoon…** — en onthoudt het antwoord als *Dit ben ik*. Iemand
 vergeten op de pagina Mensen bereikt elke reactie die die persoon schreef, die
@@ -777,7 +777,7 @@ Elke reactie, bewerking en verwijdering is één stap: ze staat in de lijst
 **Activiteit** (*Gereageerd op Webshop*), in de geschiedenis en in de export,
 en ⌘Z maakt haar ongedaan. Een reactie verandert haar record nooit, dus de
 geschiedenis van het record blijft van het record. Waar een scope hier alleen
-gelezen wordt, kan niet worden gereageerd — tenzij de plek waar uw werk wordt
+gelezen wordt, kan niet worden gereageerd — tenzij de plek waar je werk wordt
 bewaard een lezer laat reageren.
 
 **Wat met een record meereist.** Een record verwijderen neemt de draad mee, en
@@ -790,12 +790,12 @@ Een samengevoegd of gearchiveerd record houdt zijn eigen reacties.
 
 Reacties worden bij de scope bewaard, in \`_comments/\`, één bestand per record
 waarop is gereageerd. **Zoeken** vindt wat een reactie zegt in de scope waarin
-u werkt, opent het record waar ze over gaat en markeert de reactie in haar
+je werkt, opent het record waar ze over gaat en markeert de reactie in haar
 draad. Een record dat vanuit een andere scope wordt getoond zegt dat de
 reacties daar worden bewaard, met een link naar die scope.
 
-Een agent reageert zoals u (\`comments.list\`, \`comment.add\`, \`comment.update\`,
-\`comment.remove\`): zijn reacties zijn door *u* ondertekend, zeggen welke agent
+Een agent reageert zoals jij (\`comments.list\`, \`comment.add\`, \`comment.update\`,
+\`comment.remove\`): zijn reacties zijn door *jou* ondertekend, zeggen welke agent
 ze schreef, en worden volgens dezelfde regels bewerkt en verwijderd.` },
   ],
   technology: [
@@ -913,7 +913,7 @@ bord opent het landschap dat de applicatie toont op die regel, in de scope die h
 vaak die van het platform waarop ze draait. Tonen er meer, dan noemt een klein menu elk met
 zijn scope; toont geen het, dan is er geen link. Het bord zelf tekent nog steeds alleen stromen.
 
-Wat u kiest is van u en schrijft niets; **Bewaren bij de weergave**, in hetzelfde menu, maakt het tot wat iedereen opent.
+Wat je kiest is van jou en schrijft niets; **Bewaren bij de weergave**, in hetzelfde menu, maakt het tot wat iedereen opent.
 
 **Kleuren op** in de werkbalk van het landschap kleurt de kaarten op platform
 — het cluster, niet de namespace — of op levenscyclus van de techniek, zodat
@@ -921,7 +921,7 @@ de kaarten die op iets staan dat uitgefaseerd wordt amber worden, de hele
 keten meegerekend — of op **één platform of dienst**: elke applicatie die
 het gebruikt, erop gehost is of erop steunt wordt gekleurd en de rest
 vervaagt, de omgekeerde vraag: wie staat hierop. Sinds 3.7.0 kleurt het ook
-op **wat de stamgegevens zeggen** — de eigen levenscyclus van de kaart, haar
+op **wat de gegevenspagina zegt** — de eigen levenscyclus van de kaart, haar
 categorie, eigenaar, leverancier of technologie — en op de status in **één
 operationeel aspect**, zodat *welke hiervan heeft geen eigenaar* en *welke
 staan nog bij de oude leverancier* door kijken beantwoord worden. Elke kaart
@@ -952,7 +952,7 @@ router: wat het toont zijn vier bomen — een klantreis, de gebieden eronder, de
 capabilities daarbinnen, en de belanghebbenden langs de zijkant — en de pagina
 wordt berekend uit hun volgorde en hun diepte. Het krijgt een tab naast de
 borden, en het openen laat het canvas staan waar het stond, zodat de tekening
-waaraan u werkte er nog is als u terugkomt.` },
+waaraan je werkte er nog is als je terugkomt.` },
     { title: `De klantreis, en de paden erdoorheen`, text: `Bovenaan loopt één **klantreis**: wat de organisatie doet, van begin tot eind. De
 fasen zijn de kolommen, van links naar rechts te lezen, en onder elke fase staan
 de stappen die erin gezet worden.
@@ -977,10 +977,10 @@ een item daarin weer een capability.
 Elke capability zegt wie hem invult:
 
 - **een applicatie**, of meerdere — wat hem ondersteunt. Een capability met er
-  twee waarvan er één uitfaseert is een migratie die u kunt zien.
+  twee waarvan er één uitfaseert is een migratie die je kunt zien.
 - **mensen** — niemands software, iemands werk. Een volledig antwoord en geen
-  gat: een pagina die dit als probleem tekende zou u aanraden software te kopen
-  voor wat u met de hand doet.
+  gat: een pagina die dit als probleem tekende zou je aanraden software te kopen
+  voor wat je met de hand doet.
 - **nog niets** — geen van beide, en dát is het gat waarvoor je de pagina tekent.
 
 Die staan in het model en niet op het kaartje: een capability is ingevuld omdat
@@ -994,7 +994,7 @@ zegt aan welke domeinen het is toegewezen: een chip per domein, weg te halen
 met het ×, en **+ Domein**, dat de scopes aanbiedt onder de scope van wie het
 blad is, op hun pad en hun type. Elk domein erbij of eraf is één stap, terug te
 draaien met ⌘Z. Daaronder noemt **Opgepakt door** elke scope eronder die het
-heeft opgepakt, elk een weg naar het thuisscherm van die scope: een scope die
+heeft opgepakt, elk een weg naar de startpagina van die scope: een scope die
 het oppakte zonder dat het was toegewezen staat in de waarschuwingskleur, en
 een domein dat het kreeg en het nog niet oppakte zegt *nog niet opgepakt*. Een
 capability waarvan het gebied is toegewezen zegt dat onder haar chips — *Met
@@ -1042,16 +1042,16 @@ nu in het organogram staat.` },
     { title: `Er een maken`, text: `Een blad op een project met niets boven de applicaties is leeg, en die lege
 pagina biedt de twee plekken om te beginnen: **Nieuwe klantreis** en **Nieuw
 gebied**. De rest is telkens een **+** op de plek waar het ding komt, en ze
-werken allemaal hetzelfde — wat u maakt verschijnt, is gekozen, en de cursor
-staat in de naam, dus u typt over wat het heette en drukt op Enter.
+werken allemaal hetzelfde — wat je maakt verschijnt, is gekozen, en de cursor
+staat in de naam, dus je typt over wat het heette en drukt op Enter.
 
 - **Nieuwe klantreis** maakt de klantreis én de eerste fase, *Begin*, en laat
-  dit blad hem tekenen; een band die een kop is met niets eronder is niet wat u
+  dit blad hem tekenen; een band die een kop is met niets eronder is niet wat je
   vroeg.
 - **+ fase**, aan het eind van de faserij, zet er een kolom achteraan.
 - **+ stap**, in elke cel, zet een stap in die fase op het pad van die rij.
 - **+ baan…**, onder de laatste rij, vraagt wiens pad het is — een
-  belanghebbende die u al hebt, of een naam die u typt, met de aantekening
+  belanghebbende die je al hebt, of een naam die je typt, met de aantekening
   buiten de organisatie als dat zo is — en bij welke fase hij splitst, want een
   baan wordt getekend waar zijn stappen staan en een baan zonder stappen wordt
   niet getekend.
@@ -1084,7 +1084,7 @@ staat er als waarschuwing. Het label is een knop: het opent de startpagina
 van het domein dat de eenheid bedient, een menu van domeinen waar ze er
 meerdere bedient of meerdere eenheden zijn toegewezen, en de eenheid waar ze
 wordt bijgehouden — op het organogram van die scope — waar ze er geen bedient.
-Erop drukken kiest de kaart niet.
+Erop klikken kiest de kaart niet.
 
 **Toon wie verantwoordelijk is**, in de bovenbalk, voegt de andere actoren toe
 waaraan het is toegewezen en die geen eenheid zijn, en markeert die waaraan
@@ -1093,7 +1093,7 @@ pagina open is.
 
 **Verwijderen**, onderaan het paneel, haalt weg wat gekozen is en elke regel die
 erop uitkwam. Het wordt geweigerd zolang er iets in zit, met hoeveel erbij: er
-cascadeert niets, dus een gebied dat u verwijdert is een gebied dat u eerst
+cascadeert niets, dus een gebied dat je verwijdert is een gebied dat je eerst
 leeggemaakt hebt. Een actor die een eenheid is vraagt eerst, dezelfde vraag
 als op een bord (*Elementen*): beëindigen eerst aangeboden, wie wat niet
 langer is, en waar de eenheden erin heen gaan — die het verwijderen dus niet
@@ -1114,8 +1114,8 @@ belanghebbenden, en het vergrootglas ernaast vindt alles op de pagina op naam �
 kies een treffer, of druk op Enter voor de eerste, en de pagina scrolt ernaartoe,
 selecteert het en omcirkelt het even.
 
-Een applicatie openen vanuit de invulling van een capability brengt u naar een
-bord dat hem ook echt tekent — desnoods een ander dan waar u stond — en naar de
+Een applicatie openen vanuit de invulling van een capability brengt je naar een
+bord dat hem ook echt tekent — desnoods een ander dan waar je stond — en naar de
 eigen pagina van de applicatie als geen enkel bord hem tekent.` },
     { title: `Dekking`, text: `**Dekking**, op de schakelaar naast **Poster** en **Namen**, is dezelfde laag
 andersom gelezen, in het tabblad van het blad zelf: elke functie aan de zijkant, een
@@ -1143,7 +1143,7 @@ daar gewijzigd.` },
   ],
   poster: [
     { title: `De poster`, text: `**Poster**, eerste op de schakelaar, tekent het blad als één pagina van vaste grootte: de
-journey, de stakeholders en elk gebied als blok, elke capability als tegel. Het is de eerste
+klantreis, de stakeholders en elk gebied als blok, elke capability als tegel. Het is de eerste
 lezing waar het blad een gebied heeft en het venster minstens 900 pixels breed is. Hij opent op
 het grootste van Passend en 90%, zodat een naam leesbaar is, vanaf linksboven waar de rest
 schuiven is; daarna opent hij waar je gebleven was. **Passend** in het dock toont het geheel.
@@ -1165,7 +1165,7 @@ op de pagina. Bij **Ontwerpen** (\`tab=design\`) kun je:
   eerste indeling niet meer volgt. Spatie pakt een blok op voor het toetsenbord, pijltjes
   verplaatsen, ⇧ verandert de grootte, Alt stapt per eenheid, spatie zet neer en Esc zet terug;
 - een tegel binnen zijn blok naar een cel slepen, en de andere stromen eromheen; of op een ander
-  gebied of andere groepering, wat haar in het model verplaatst, op elke view, zoals *Verplaatsen
+  gebied of andere groepering, wat haar in het model verplaatst, op elke weergave, zoals *Verplaatsen
   naar…* in het paneel. Wat een andere scope bewaart, wordt geweigerd in de woorden van het paneel;
 - een team, applicatie of subscope uit de lade op een tegel, groepering of gebied slepen. Ze
   schrijven wat het paneel schrijft. Een team toont ook als label op deze poster; het label
@@ -1173,7 +1173,7 @@ op de pagina. Bij **Ontwerpen** (\`tab=design\`) kun je:
   Een applicatie hoort op een tegel, niet op een blok. Selecteer meerdere met ⇧ of een getekend
   vak met ⇧, en één keer neerzetten of indrukken in de lade neemt ze allemaal in één stap. **L**
   en **A** op een tegel openen daar dezelfde lijsten;
-- een **notitie** of **afbeelding** toevoegen, die alleen bij deze view horen, meedrukken en door
+- een **notitie** of **afbeelding** toevoegen, die alleen bij deze weergave horen, meedrukken en door
   Zoeken gevonden worden. Dubbelklik op een notitie om te schrijven;
 - een stap of stakeholder een **pictogram** of logo geven, vanuit het paneel of de ◇ erop.
 
@@ -1181,8 +1181,8 @@ op de pagina. Bij **Ontwerpen** (\`tab=design\`) kun je:
 elke tegel stromen, **Indelen voor dit papier** plaatst alles in de vorm van papier. Overlappen
 mag en staat in de strook; een gebied dat aan een geplaatste pagina wordt toegevoegd, krijgt de
 eerste vrije plek, of wacht onder de pagina en wordt daar geteld. Er kan niets geplaatst worden
-terwijl je naar een andere dag kijkt. De tegelgrootte en de rijen van de journey staan bij **Wat
-dit blad tekent**: een journey die te smal is voor hele woorden krijgt twee rijen tot jij één zegt.
+terwijl je naar een andere dag kijkt. De tegelgrootte en de rijen van de klantreis staan bij **Wat
+dit blad tekent**: een klantreis die te smal is voor hele woorden krijgt twee rijen tot jij één zegt.
 
 **Exporteren…** onder ⋯ zet hem op één pagina, A4 tot A0, met een titel, een voet en de
 legenda, in een drukuiterlijk dat het thema negeert. Het zegt hoe groot een naam wordt en hoeveel
@@ -1207,7 +1207,7 @@ het hele organogram opent; **Mensen**, wie er staat: de leidinggevenden, de vere
 rollen of alle rollen; **Lijnen**, welke rapportagelijnen er staan; **+ Eenheid**; en
 de **Dag**. De eerste keer opent een organogram op twee niveaus. Een pijltje op een
 vak klapt alleen die eenheid in, en een ingeklapte eenheid zegt op één regel wat ze
-verbergt, *3 eenheden · 3 vacant*; een druk op die regel klapt haar open. **−**,
+verbergt, *3 eenheden · 3 vacant*; een klik op die regel klapt haar open. **−**,
 **+**, **Passend** en **100%** staan in de hoek van het canvas, met ⌘ of Ctrl en
 + − 0 en het wiel, en Passend stopt bij 60%, waar een vak zijn naam zegt en wat het
 verbergt en niets meer. Niets hiervan wordt ooit bewaard.
@@ -1263,7 +1263,7 @@ verhuist zonder opnieuw te koppelen: **Verplaatsen naar…** op het gekozen vak,
 het overzicht, **Valt onder** in haar inspector, M, of door haar op een andere te
 slepen. Er opent een paneel naast het organogram, dat in beeld blijft met zijn plekken
 opgelicht: elke eenheid in de organisatie, welke scope haar ook bewaart, te kiezen door
-erop te drukken op het organogram of in de lijst, of **Bovenaan**. De plekken waar haar
+erop te klikken op het organogram of in de lijst, of **Bovenaan**. De plekken waar haar
 type mag zitten komen eerst; de andere volgen onder een eigen kop, en een verplaatsing
 daarheen mag maar laat de eenheid als misplaatst staan in de controles. De eenheid zelf
 en de eenheden erin worden niet aangeboden, en een plek die door een latere verplaatsing
@@ -1288,7 +1288,7 @@ in**, de scope die haar bewaart: standaard die van de eenheid waarin ze zit, en 
 het domein dat ze bedient, anders de scope van dit organogram. **Maken** is één stap in
 die scope. De nieuwe eenheid wordt gekozen en haar vereiste rollen staan als **vacant**,
 dus toewijzen volgt meteen. Waar geen type mag zitten, zegt het dat en leidt het naar
-het **Operating model**; zonder unittypen naar **Beginnen vanuit een bibliotheek**. Een
+het **Besturingsmodel**; zonder unittypen naar **Beginnen vanuit een bibliotheek**. Een
 organogram dat alleen wordt gelezen, biedt niets hiervan.
 
 **Toewijzen** opent een popover naast de vacature, met het organogram nog in beeld: de
@@ -1336,7 +1336,7 @@ opent het venster van de eenheid voor al het andere, en **Openen in Mensen**
 gaat naar de pagina Mensen met die persoon gekozen.` },
     { title: `De Conway-kaart`, text: `Een **Conway-kaart** is ook een weergave: **+**, dan **Conway-kaart**. Hij vraagt
 of je teams en je systemen op elkaar aansluiten, en zegt het antwoord in een zin
-boven de kaart, met één som die klopt: van de interfaces die over een eenheid
+boven de kaart, met één som die klopt: van de koppelvlakken die over een eenheid
 heen gaan, hoeveel te beoordelen zijn en hoeveel niet, omdat een kant geen
 eigenaar heeft. Een applicatie hoort bij de eenheid die ze als eigenaar noemt.
 Waar de helft van de applicaties of meer er geen heeft, zegt de kaart dat hij nog
@@ -1345,12 +1345,12 @@ eenheid** bij elk, één stap per stuk.
 
 **Raster**, de eerste lezing, toont elke twee eenheden één keer. Een driehoek in
 een gemarkeerde cel is **systemen verbonden, niets gezegd**, met het aantal van
-die interfaces; een vinkje is **beide kloppen**; een ring is **gezegd, maar geen
+die koppelvlakken; een vinkje is **beide kloppen**; een ring is **gezegd, maar geen
 systeem verbindt**, met de letter van hoe ze zeiden te werken; een streepje is
 **niet te beoordelen, geen eigenaar**, in de rij met applicaties zonder eigenaar;
 en een punt is **gemarkeerd als bedoeld**. **Lijnen**, de tweede lezing, tekent
 elke eenheid als kolom in de volgorde van het organogram met haar applicaties
-eronder, en de interfaces in de goten en boven de kolommen, zodat geen naam wordt
+eronder, en de koppelvlakken in de goten en boven de kolommen, zodat geen naam wordt
 doorgestreept: zwaar en gestreept waar niets is gezegd, dun waar beide kloppen.
 **Toon** laat weg wat klopt, en **Toon hun lijnen** voegt die naar applicaties
 zonder eigenaar toe. **Groepeer op** rolt de kolommen op naar een eenheidstype
@@ -1362,8 +1362,8 @@ niets is gezegd, applicaties zonder eigenaar, een eenheid die meer bezit dan haa
 type toestaat, en achter **Toon notities** wat is gezegd zonder systeem ertussen,
 en een eigenaar die een naam is en geen eenheid. **Geaccepteerd** somt op wat als
 bedoeld is gemarkeerd. Niets op de pagina verandert iets tot je een knop in dit
-paneel indrukt. Een druk op een cel, lijn of rij leest dat paar, en tekent de twee
-eenheden en hun interfaces onder het raster. Het zegt waarom het ertoe doet en
+paneel indrukt. Een klik op een cel, lijn of rij leest dat paar, en tekent de twee
+eenheden en hun koppelvlakken onder het raster. Het zegt waarom het ertoe doet en
 biedt de antwoorden: **Zeg hoe ze samenwerken…**, **Ze horen niet van elkaar af te
 hangen: plan het weg…**, dat de applicaties op een plan van deze scope of een
 nieuw plan zet, en **Prima zo: markeer als bedoeld…**. Waar twee eenheden niet
@@ -1371,14 +1371,14 @@ kunnen zeggen hoe ze samenwerken zegt het waarom: een partij die nog geen eenhei
 is krijgt ter plekke een type met **Maak er eenheden van**, een partij buiten de
 organisatie kun je alleen markeren of wegplannen, en twee eenheden die een andere
 scope bijhoudt beantwoord je daar. Een paar dat zei hoe het werkt zonder systeem
-ertussen kan **Verwijder wat is gezegd** of **Teken de ontbrekende interface…**.
-Een druk op de naam van een eenheid leest wat ze bezit, met wie ze werkt en haar
-open paren, met **Open op het organogram** voor de rest; een druk op een applicatie
-leest haar eigenaar en interfaces. **Vind mij** gaat naar je eenheid, en zegt
+ertussen kan **Verwijder wat is gezegd** of **Teken het ontbrekende koppelvlak…**.
+Een klik op de naam van een eenheid leest wat ze bezit, met wie ze werkt en haar
+open paren, met **Open op het organogram** voor de rest; een klik op een applicatie
+leest haar eigenaar en koppelvlakken. **Vind mij** gaat naar je eenheid, en zegt
 waarom niet waar je geen rol hebt in een eenheid op de kaart. Net als het organogram
 is hij getekend op een dag. Een applicatie staat op de kaart zolang ze op de dag van
 de kaart live is of uitfaseert: een die nog niet live of al weg is wordt niet
-getekend, en haar interfaces en wat de kaart erover zou vinden ook niet; de limiet
+getekend, en haar koppelvlakken en wat de kaart erover zou vinden ook niet; de limiet
 van een eenheid telt wat ze die dag bezit.` },
     { title: `Wie met wie samenwerkt`, text: `De inspector van een eenheid heeft **Werkt samen met**: elke eenheid waarmee
 ze heeft vastgelegd samen te werken, op een van drie manieren —
@@ -1393,13 +1393,13 @@ draw.io-vak dat naar een eenheid wijst opent haar op het organogram van de
 scope, waar dat er is.` },
   ],
   drawing: [
-    { title: `Een tekening`, text: `Een **tekening** is het ene aanzicht dat jij tekent en het model niet. **+** in de
-diagramtabbladen vraagt welk soort aanzicht je wilt, gesplitst naar wie het
+    { title: `Een tekening`, text: `Een **tekening** is de ene weergave die jij tekent en het model niet. **+** in de
+diagramtabbladen vraagt welk soort weergave je wilt, gesplitst naar wie het
 tekent: onder **Deze teken je zelf** vraagt **Tekening** om een naam en, als je
 wilt, het element waarover hij gaat. De startpagina van een scope biedt hetzelfde.
 Hij heeft een eigen tabblad, zoals een landschap of een sheet.
 
-Een tekening wordt getoond als zijn afbeelding, met één balk zoals elk aanzicht:
+Een tekening wordt getoond als zijn afbeelding, met één balk zoals elke weergave:
 wat het is, hoeveel vormen naar het model wijzen, en wat je ermee kunt. Een latere
 pagina van een bestand wordt in de editor getekend en niet afgebeeld; de balk zegt
 dat. Zonder afbeelding zegt hij waarom: **Nog niet getekend**, met **Beginnen met
@@ -1446,25 +1446,25 @@ bij de downloads. Exporteren verandert niets aan de tekening, en het is geen bew
 De editor en de afbeelding volgen het thema van de app: licht, donker, of dat van
 het systeem. Het wijzigen terwijl de editor open is houdt wat getekend wordt.
 
-Een aanzicht dat niet gewijzigd mag worden biedt geen **Tekening bewerken**, en zegt
+Een weergave die niet gewijzigd mag worden biedt geen **Tekening bewerken**, en zegt
 dat één keer. Een element verwijderen houdt de tekeningen die eraan verankerd zijn,
 zonder het anker; ongedaan maken zet het terug.
 
 Een tekening kan aan een element verankerd zijn. Het menu van het element
-biedt **Tekening maken** naast **Containeraanzicht maken** of
-**Containeraanzicht openen**, en de inspector heeft dezelfde knop. Maken is
+biedt **Tekening maken** naast **Containerdiagram maken** of
+**Containerdiagram openen**, en de inspector heeft dezelfde knop. Maken is
 één stap, en ongedaan maken haalt haar weg. Een dubbelklik op het element
-biedt de tekeningen die eraan verankerd zijn, naast het containeraanzicht als
+biedt de tekeningen die eraan verankerd zijn, naast het containerdiagram als
 het er een heeft. Een dubbelklik maakt nooit een tekening.
 
 De pagina van het element noemt die tekeningen. Eén kiezen opent haar.
 
-In een document toont \`![bijschrift](view:id)\` het aanzicht met die id uit
+In een document toont \`![bijschrift](view:id)\` de weergave met die id uit
 deze scope. Een tekening wordt getoond als haar afbeelding, met een
 doorzichtige knop per vorm die naar een element wijst; de knop kiezen opent
-dat element. Een aanzicht van een andere soort toont het bijschrift en **Nog
-geen afbeelding**. Een aanzicht dat niet in deze scope staat toont het
-bijschrift en zegt dat het aanzicht ontbreekt.` },
+dat element. Een weergave van een andere soort toont het bijschrift en **Nog
+geen afbeelding**. Een weergave die niet in deze scope staat toont het
+bijschrift en zegt dat de weergave ontbreekt.` },
   ],
   decisions: [
     { title: `Besluiten`, text: `De besluiten van dit bereik zijn **één lijst**. Een besluit hoort bij het bereik als
@@ -1508,8 +1508,8 @@ Het zoekveld boven de lijst doorzoekt alle besluiten tegelijk: titel, tekst en
 beoordelaars, van dit bereik en die erboven. De tekst is markdown, met dezelfde
 \`[[Naam]]\`-koppelingen als de documentatie, en mermaid-diagrammen. Wijzigingen worden
 met dit bereik bewaard.` },
-    { title: `Geschiedenis`, text: `Elke plek houdt een geschiedenis van je werk bij. **Snapshot…** in het menu
-File (op het web **Momentopname…** in het menu **⋯**) komt met een tekst die al geschreven
+    { title: `Geschiedenis`, text: `Elke plek houdt een geschiedenis van je werk bij. **Een momentopname maken…** in het menu
+Bestand (op het web **Een momentopname maken…** in het menu **⋯**) komt met een tekst die al geschreven
 is uit wat je deed, zoals "Warehouse Management gewijzigd, 3 elementen
 verplaatst", en die je kunt aanpassen voor hij wordt vastgelegd. De eerste
 momentopname vraagt je om **Geschiedenis bijhouden**, en zegt waar die wordt
@@ -1532,10 +1532,10 @@ verplaatsing is ook een punt, *Verplaatst van X naar Y*, in de geschiedenis van
 elk onderdeel dat ze verplaatste.
 
 **De geschiedenis van één ding.** De keuzelijst bovenaan de pagina beperkt haar
-tot een aanzicht, een beschrijving of een besluit: de lijst wordt de
+tot een weergave, een beschrijving of een besluit: de lijst wordt de
 momentopnames die dat raakten, en de veranderingen de regels die erover gaan.
 Dezelfde pagina opent al beperkt via **Geschiedenis…** in het menu van een
-aanzicht-tab, op de documentatiepagina en op de pagina van een besluit.
+weergavetab, op de documentatiepagina en op de pagina van een besluit.
 
 Een beschrijving is het enige onderwerp dat niet van één onderdeel is: een naam
 betekent overal in de organisatie hetzelfde, dus de pagina van een element staat
@@ -1546,15 +1546,15 @@ Terugzetten blijft van dit onderdeel: het zet terug wat de pagina van dit
 onderdeel zei, de andere horen bij die onderdelen.
 
 **Terugzetten.** Met een momentopname gekozen maakt **Deze versie
-terugzetten…** het aanzicht, de beschrijving of het besluit weer wat het toen
+terugzetten…** de weergave, de beschrijving of het besluit weer wat het toen
 was; met de hele scope in beeld doet **De hele scope terugzetten…**
 hetzelfde voor alles. Terugzetten is een nieuwe wijziging bovenop alles wat
 sindsdien gebeurde, geen stap terug: de geschiedenis blijft groeien, de
-activiteitenlijst zegt *Aanzicht Warehouse teruggezet naar 3 sep*, ⌘Z maakt
+activiteitenlijst zegt *Weergave Warehouse teruggezet naar 3 sep*, ⌘Z maakt
 het ongedaan, en de volgende momentopname legt het vast. De app biedt die
 momentopname meteen aan. Een besluit dat aanvaard, afgewezen of vervangen is
 blijft zoals het is — schrijf een nieuw besluit dat het vervangt — en een
-teruggezet aanzicht laat elementen weg die niet meer bestaan, en zegt hoeveel.
+teruggezette weergave laat elementen weg die niet meer bestaan, en zegt hoeveel.
 
 **Labels.** **Label…** bij een gekozen momentopname geeft haar een eigen woord
 — "Aan de directie getoond" — naast haar boodschap, nooit in plaats ervan. Een
@@ -1934,7 +1934,7 @@ waar het thuishoort. Plannen staan bovenaan, dan applicaties, elke regel een ree
 stukken met de fase erop: gepland, live, uitfaserend, uitgefaseerd. Verbindingen met
 een eigen periode volgen, dichtgevouwen met een aantal op de kop, per plan dat ze
 verplaatst in oude lijnen die eindigen en nieuwe lijnen die beginnen, omdat een plan
-dat elke interface verplaatst elke lijn een datum geeft. Initiatieven uit de scopes
+dat elk koppelvlak verplaatst elke lijn een datum geeft. Initiatieven uit de scopes
 hieronder staan onderaan.` },
     { title: `Plannen`, text: `Een **plan** is hoe een verandering van het landschap wordt vastgelegd: een titel,
 een status, het venster waarin het loopt, wie het bezit, de applicaties die het
@@ -1947,7 +1947,7 @@ regel per stuk, dan de tekst, dan de borden die het wijzigt, de principes die he
 aanhaalt, de wijzigingen en de opmerkingen. Een overzicht links gaat naar elk daarvan.
 Een feit leest als woorden en een druk maakt van die ene regel een formulier. **Tekst
 bewerken** is alleen de tekst, in een eigen venster met voorbeeld, opgeslagen als één
-stap. **Interfaces** en **Eenheden** wachten tot je erom vraagt; **De rest een dag
+stap. **Koppelvlakken** en **Eenheden** wachten tot je erom vraagt; **De rest een dag
 geven…** verplaatst elke lijn zonder dag op één dag, en een regel opent om het hele
 label te lezen en een eigen dag te zetten. Een mijlpaal buiten de periode mag, en
 zegt dat.
@@ -1968,7 +1968,7 @@ van de applicaties die het invoert en uitfaseert — in één stap, want een pla
 dat uitloopt is één ding dat gebeurde. Een plan dat eenheden reorganiseert,
 zegt wat dat doet met de mensen erin (zie *Verandering in de tijd*).
 
-Elk plan is één markdownbestand in \`transitions/\` in uw projectmap, genummerd
+Elk plan is één markdownbestand in \`transitions/\` in je projectmap, genummerd
 vanaf \`TR-0001\`.
 
 **Initiatieven.** Een plan hoort bij het niveau dat het schrijft, en de roadmap
@@ -1997,13 +1997,13 @@ discount rate: 10%
 Een negatief getal is geld eruit, een positief geld erin, en een lege cel is nul.
 Daaronder berekent de app de netto en cumulatieve kasstroom, de netto contante
 waarde bij het opgegeven percentage, de interne rentabiliteit, de terugverdientijd
-in perioden, het rendement op de investering en de baten-kostenverhouding. Uw
+in perioden, het rendement op de investering en de baten-kostenverhouding. Je
 tabel wordt nooit herschreven.
 
 Een tweede tabel, \`Criterion | Weight | Score\`, geeft een gewogen score voor het
 deel dat geen geld is — beoordeeld van één tot vijf, van een maximum dat de app
-zelf afleidt in plaats van dat u het intypt. Alles daarbuiten hoort in een
-besluit, met de afwegingen en de opties die u tegen elkaar hebt gezet.
+zelf afleidt in plaats van dat je het intypt. Alles daarbuiten hoort in een
+besluit, met de afwegingen en de opties die je tegen elkaar hebt gezet.
 
 **Business case toevoegen** in het bewerkvenster zet een leeg blok bij de cursor.` },
     { title: `Waarover de datums het oneens zijn`, text: `Onder de as staat een lijst met bevindingen (zie *Een lijst met bevindingen
@@ -2084,7 +2084,7 @@ op de roadmap. Een startpagina telt haar bevindingen onder **Vraagt aandacht**
 en zet ze op de pagina Controles.
 
 - **Eén regel per controle**: het teken van haar gewicht, haar naam en
-  hoeveel, dichtgevouwen. Druk op de regel om elke bevinding eronder te zien,
+  hoeveel, dichtgevouwen. Klik op de regel om elke bevinding eronder te zien,
   in haar eigen zin.
 - **Drie gewichten**, in deze volgorde. **Herstellen** (een rode stip): het
   model spreekt zichzelf tegen of kan niet kloppen, en het herstel zit in het
@@ -2094,7 +2094,7 @@ en zet ze op de pagina Controles.
 - **De notities zijn verborgen** achter **Notities tonen (N)**. Wat een lijst
   heeft opengevouwen, en of haar notities te zien zijn, duurt zolang de app
   open is en wordt nooit bewaard.
-- **Druk op een bevinding om haar te lezen**: haar zin, haar gewicht en waar
+- **Klik op een bevinding om haar te lezen**: haar zin, haar gewicht en waar
   ze over gaat, **Waarom het ertoe doet**, **Hoe je het oplost**, en de acties
   die het oplossen of openen waar het wordt opgelost — het record openen, de
   tekening, de eenheid of de twee eenheden, het eenheidstype, het plan, de
@@ -2133,7 +2133,7 @@ vinden in of onder haar, en op het organisatiescherm in de hele boom.
   de app open is.
 - **Kies een controle** om haar te lezen: haar gewicht en categorie, **Waarom
   het ertoe doet**, **Hoe je het oplost**, en **Gevonden (N)** — elke
-  bevinding ervan, elk in haar onderdeel. Druk op een ervan om haar te openen
+  bevinding ervan, elk in haar onderdeel. Klik op een ervan om haar te openen
   waar ze wordt opgelost: het record, de tekening, het plan, de pagina van het
   besturingsmodel, een persoon in Mensen. **Markeren als bedoeld…** naast een
   bevinding van een nakijkpunt of een notitie markeert haar vanaf hier, in het
@@ -2148,7 +2148,7 @@ vinden in of onder haar, en op het organisatiescherm in de hele boom.
   bevindingen tussen onderdelen, de eenheden en mensen van de organisatie, de
   datums van elk onderdeel, en de Conway-kaart over de startpagina. Een paar
   controles lezen het hele document van een onderdeel — een record op geen
-  enkele view, de gegevens van de eigenaar op een stand-in, een lijn naar
+  enkele weergave, de gegevens van de eigenaar op een stand-in, een lijn naar
   niets, de link van een tekening, de twee van de bedrijfslaag, een oorzaak
   die een waarneming eronder verklaart — en vinden iets waar dat onderdeel
   open is: de pagina zet ze op een rij met hun uitleg en zegt *Hier niet
@@ -2170,7 +2170,7 @@ Een regel waar twee onderdelen dezelfde naam vastleggen biedt **Koppelen…**: d
 opent het onderdeel waarvan de vastlegging moet wijken en vraagt het dáár, want
 een vastlegging wordt alleen gewijzigd door het onderdeel dat haar heeft.` },
     { title: `Een vastlegging naar een ander onderdeel verplaatsen`, text: `Waar iets is vastgelegd is een keuze die je achteraf kunt wijzigen. Kies de kaart
-en druk op **Verplaatsen…** in de inspector; het venster biedt aan welke van de
+en klik op **Verplaatsen…** in de inspector; het venster biedt aan welke van de
 vier van toepassing zijn.
 
 - **Koppelen** — de eigen vastlegging opgeven en verwijzen naar die van een
@@ -2231,8 +2231,8 @@ een eenheid van het type kan zitten. Elke kaart noemt het type, hoeveel eenheden
 heeft en de rollen, elk op een regel, met *geeft leiding* bij een leidinggevende rol.
 Onder de niveaus zegt één regel wat nergens zit en welke rollen in geen type zitten.
 
-Op een kaart drukken kiest het type: waar het mag zitten, wat erin mag zitten en de
-rollen lichten op, de rest dimt, en rechts opent de lezer. Op een rol drukken kiest die
+Op een kaart klikken kiest het type: waar het mag zitten, wat erin mag zitten en de
+rollen lichten op, de rest dimt, en rechts opent de lezer. Op een rol klikken kiest die
 en tekent de rapportagelijnen, doorgetrokken voor een leidinggevende en gestippeld voor
 een functionele. Een leeg model toont de drie stappen op volgorde, met **Beginnen vanuit
 een bibliotheek** voorop.
@@ -2242,7 +2242,7 @@ regel: hoeveel, en waaraan de houders rapporteren. Alleen een lijn die dit type 
 valt op, als *eigen lijn hier*. **Meer** bevat of een eenheid meerdere domeinen mag
 bedienen, het maximum aan applicaties, de volgorde in het niveau en de dagen.
 
-Op de regel van een rol drukken toont aan wie de houders rapporteren en **waar dat
+Op de regel van een rol klikken toont aan wie de houders rapporteren en **waar dat
 vandaan komt**, de bovenste regel eerst: de eigen lijn van een houder, van de eenheid,
 van dit type, van de rol, dan de nesting. **Lijn wijzigen voor** dit type zet hier een
 lijn; **Terug naar wat de rol zegt** haalt hem weg. Een lijn die een kring zou sluiten
@@ -2262,7 +2262,7 @@ beperkt het raster tot de rollen van één eenheid en zegt wie ze vervult; een r
 buiten de eenheid zegt waar die zit. De lezer van een eenheid op het organigram leidt
 hierheen.
 
-Op een cel drukken selecteert en schrijft niets. R, A, C, I of – op het toetsenbord, of de
+Op een cel klikken selecteert en schrijft niets. R, A, C, I of – op het toetsenbord, of de
 knoppen onder het raster, zetten de letter als één stap. Elke verantwoordelijkheid wil
 precies één A: een rij zonder of met meer zegt dat onder **Nodig**, de boom telt wat eronder
 zit en de telling boven het raster geldt altijd de hele organisatie. **Filter** houdt rollen
@@ -2280,7 +2280,7 @@ Nederlands en Duits, in de eigen woorden van deze app.
 de bibliotheken; de gekozen bibliotheek staat in het midden getekend als de
 structuur die ze zou maken, in dezelfde banen als je eigen, alleen-lezen:
 elk eenheidstype met zijn doel en de rollen die het heeft, en onder de banen
-de rollen die in geen van haar typen zitten. Druk op een rol om te zien waar
+de rollen die in geen van haar typen zitten. Klik op een rol om te zien waar
 die voor staat. Vink een eenheidstype aan, of een losse rol: wat het nodig
 heeft komt mee en staat gestippeld — de rollen van een type, de typen waar het
 in de bibliotheek onder valt — en een rol neemt altijd de
@@ -2306,7 +2306,7 @@ is gebeurd. ⌘Z neemt hem ook terug.
 Wat binnenkomt is van de organisatie: hernoem het, herschrijf het, schrap
 het. Het tabblad **Bibliotheken** toont per bibliotheek **Wat binnenkwam**:
 het woord van de bibliotheek naast hoe het hier heet, dat je ter plekke kunt
-hernoemen — druk op het woord van de bibliotheek om het onderdeel te openen
+hernoemen — klik op het woord van de bibliotheek om het onderdeel te openen
 waar het wordt bewerkt — en wat er sindsdien veranderd is; en de onderdelen
 waarvoor een eigen onderdeel werd gebruikt, als **je eigen … gebruikt**. Een
 naam of een plek die bij het overnemen werd gekozen, is geen verandering; een
@@ -2334,7 +2334,7 @@ blad, het organogram of haar pagina komt haar naam eerst, met
 **Verplaatsen…** en **Tekening maken** in de **⋯** ernaast. Onder de naam
 staan haar eenheidstype, met daaronder de scope waarin ze is ingedeeld, en dan
 de eigen onderdelen van de eenheid. Als laatste komt **Element**, ingeklapt:
-de eigen velden van de actor — zijn stamgegevens, Algemeen met levenscyclus
+de eigen velden van de actor — zijn gegevenspagina, Algemeen met levenscyclus
 en beschrijving, Weergave en Gegevens. Het klapt weer in zodra je
 een andere eenheid kiest. Op de pagina staan dezelfde velden uitgeschreven
 onder de eenheid. Een actor zonder type houdt de inspector van een element
@@ -2518,7 +2518,7 @@ het verplaatst* een eenheid op een dag onder een nieuwe bovenliggende eenheid
 verplaatst die dagen met de rest van het plan. Vanaf haar dag geldt de
 verplaatsing overal waar de organisatie wordt gelezen: het onderdeel van een
 eenheid, de controles, wie een eenheid aanstuurt. Een gestaakt plan
-verplaatst niets. Boven de interfaces van het plan zegt de pagina, waar het
+verplaatst niets. Boven de koppelvlakken van het plan zegt de pagina, waar het
 plan eenheden raakt:
 
 - **Wat het met de organisatie doet**: de eenheden die het invoert en opheft,
@@ -2543,7 +2543,7 @@ plan eenheden raakt:
   omdat de rol die er verantwoording voor aflegt eindigt, en elke samenwerking
   die de eenheden van het plan nog moeten vastleggen: *Leg vast hoe* een
   eenheid die het plan invoert of verplaatst *samenwerkt met* een andere, waar
-  een interface tussen hun applicaties loopt zonder vastgelegde samenwerking —
+  een koppelvlak tussen hun applicaties loopt zonder vastgelegde samenwerking —
   zoals wanneer het cluster dat het plan opheft haar had vastgelegd. **Een
   samenwerking vastleggen…** opent de eenheid van het plan, waar **Werkt samen
   met** haar vastlegt.` },
@@ -2813,7 +2813,7 @@ maakt **Nieuw onderwerp…** er een met de getypte naam, relevant voor die scope
 
 Het type van een onderwerp is **Onderwerp**, en dat van de plek Onderwerpen
 ook. Een scope die al bestaat wordt een onderwerp in zijn **Instellingen**:
-kies **Onderwerp** onder *Wat dit is*, en opslaan zet hem onder Onderwerpen —
+kies **Onderwerp** onder *Wat dit is*, en bewaren zet hem onder Onderwerpen —
 of onder het onderwerp dat bij *Ondergebracht bij* gekozen is — met alles eronder.` },
     { title: `Bouwstenen`, text: `Een bouwsteen is wat veel oplossingen hergebruiken: een *message gateway*,
 een *identiteitsdienst*. Hij wordt bewaard in een onderwerp of een scope, en
@@ -2846,28 +2846,28 @@ oplossing vast, en zeggen de inspectors van haar elementen en de bibliotheek
 dat ze voor die scope gekozen zijn.` },
   ],
   agent: [
-    { title: `Werken met een agent`, text: `Uw codeeragent — Claude Code, Codex, Cursor of een andere MCP-client — kan
+    { title: `Werken met een agent`, text: `Je codeeragent — Claude Code, Codex, Cursor of een andere MCP-client — kan
 verbinding maken met de desktop-app (*Een agent koppelen…* op de balk, of
-het symbool naast het menu) en in de organisatie werken terwijl u meekijkt.
-De agent leest elke scope en kan de app bewegen zoals u dat doet: een scope
+het symbool naast het menu) en in de organisatie werken terwijl je meekijkt.
+De agent leest elke scope en kan de app bewegen zoals jij dat doet: een scope
 openen, naar een bord of een blad gaan, de besluiten of de roadmap openen,
 de waarnemingen openen op het tabblad Register, Analyse of Oplossingen, een
 rapport bekijken. Hij kan een bord, een blad, een kaart of een
 technologielandschap openen met één ding daarop geselecteerd, als die
-weergave het tekent. U hoeft er niets voor open te zetten, en een weergave
+weergave het tekent. Je hoeft er niets voor open te zetten, en een weergave
 openen maakt er nooit een: heeft een scope geen weergave van de soort die de
 agent vraagt, dan krijgt de agent dat te horen en blijft het scherm waar het
-is — er een maken is een wijziging als elke andere. Wat hij opent, ziet u
+is — er een maken is een wijziging als elke andere. Wat hij opent, zie je
 ook, dus de pagina van een record die over het bord open stond, gaat dicht.
 
 Zolang de agent de app beweegt of het model wijzigt, zegt een strook onder
 in het venster dat, met de naam van de agent en — als die dat heeft gezegd —
-waar hij mee bezig is. Wat u ondertussen aanklikt, kan veranderen wat de
-agent daarna ziet; daarom staat de strook er, zodat u het weet voordat u
+waar hij mee bezig is. Wat je ondertussen aanklikt, kan veranderen wat de
+agent daarna ziet; daarom staat de strook er, zodat je het weet voordat je
 klikt. **Stoppen** op die strook beëindigt de sessie van de agent: de strook
 verdwijnt, de agent hoort het bij zijn volgende aanroep en wordt geacht te
 melden hoe ver hij was in plaats van door te gaan. Hij kan vragen om verder
-te mogen; zegt u dat, dan begint een nieuwe sessie en is de strook terug.
+te mogen; zeg je dat, dan begint een nieuwe sessie en is de strook terug.
 
 Alles wat een agent wijzigt, staat in Activiteit onder zijn naam en wordt
 ongedaan gemaakt met ⌘Z, zoals altijd.
@@ -2904,8 +2904,8 @@ gebruikscontexten en catalogus van een bouwsteen wijzigen; de evaluatie van
 een bouwsteen in een scope beginnen, de opties beoordelen en het besluit
 voorstellen dat eruit volgt, zoals **Een besluit voorstellen…** op de pagina van
 de bouwsteen doet — aannemen doe jij. Als hij een beschrijving of een besluit
-schrijft, verwijst hij naar een view, een element, een principe, een
-evaluatie, een besluit of een observatie met dezelfde woorden die
+schrijft, verwijst hij naar een weergave, een element, een principe, een
+evaluatie, een besluit of een waarneming met dezelfde woorden die
 *Invoegen ▾* schrijft.` },
     { title: `Bibliotheken`, text: `Een agent leest het besturingsmodel met \`unitTypes.list\`, \`roles.list\` en
 \`responsibilities.list\`, vanuit de organisatie welke scope er ook open is, en
@@ -2932,7 +2932,7 @@ hoger waar hun type daar mag staan (\`unitsMoved\`), maakt het team leeg van de
 applicaties die haar noemen (\`teamCleared\`) en neemt haar regels in andere
 scopes mee (\`alsoChanged\`). Waar de eenheden erin niet hoger mogen, wordt het
 geweigerd, \`agent.unitsInside\`, met de keuzes genoemd: de agent vraagt het
-u, en roept opnieuw aan met \`units\` — \`into:<id>\`, \`up\` of \`delete\`; \`checks.list\` noemt een achtergelaten
+jou, en roept opnieuw aan met \`units\` — \`into:<id>\`, \`up\` of \`delete\`; \`checks.list\` noemt een achtergelaten
 toewijzing \`check.assignmentOrphaned\`, die een persoon verwijdert.
 Wie een scope bedient is de \`scopes\` van de eenheid, weggeschreven met
 \`element.update\` in de scope die de eenheid bijhoudt — de organisatie, \`""\`,

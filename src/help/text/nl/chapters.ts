@@ -12,23 +12,23 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Eerst rondkijken',
       steps: [
-        'Druk op de eerste pagina op **Voorbeeld openen**. Een balk op elk scherm zegt dat je het bezoekt.',
+        'Klik op de eerste pagina op **Voorbeeld openen**. Een strook op elk scherm zegt dat je het bezoekt.',
         'Open **Application landscape** onder Weergaven hier, verplaats een kaart en hernoem haar: probeer alles.',
-        'Druk op **Voorbeeld verlaten** in de balk. Niets van wat je probeerde blijft.',
-        'Typ de naam van je eigen organisatie, zoals *Acme Logistics*, en druk op **Beginnen**.',
+        'Klik op **Voorbeeld verlaten** in de strook. Niets van wat je probeerde blijft.',
+        'Typ de naam van je eigen organisatie, zoals *Acme Logistics*, en klik op **Beginnen**.',
       ],
     },
   },
   frame: {
     title: 'De weg vinden',
-    intro: 'Twee rijen staan boven elk scherm: rij één zegt waar je bent en of je werk veilig is, rij twee noemt de plekken in de scope waarin je bent. De boom van scopes staat naast elk thuis.',
-    picture: 'Het kader: rij één met Terug en Vooruit, het pad, Zoeken, ongedaan maken en het statuswoord; rij twee met Start en de plekken; links de boom van scopes en ernaast het thuis van een scope.',
+    intro: 'Twee rijen staan boven elk scherm: rij één zegt waar je bent en of je werk veilig is, rij twee noemt de plekken in de scope waarin je bent. De boom van scopes staat naast elke startpagina.',
+    picture: 'Het kader: rij één met Terug en Vooruit, het pad, Zoeken, ongedaan maken en het statuswoord; rij twee met Start en de plekken; links de boom van scopes en ernaast de startpagina van een scope.',
     worked: {
       title: 'Van de organisatie naar een bord en terug',
       steps: [
-        'Druk op het thuis van de organisatie op **Warehouse** in de boom links.',
-        'Druk onder **Weergaven hier** op **Application landscape**: het bord opent en rij twee toont het tabblad.',
-        'Druk op **Acme Logistics** in het pad in rij één om naar het thuis van de organisatie te gaan.',
+        'Klik op de startpagina van de organisatie op **Warehouse** in de boom links.',
+        'Klik onder **Weergaven hier** op **Application landscape**: het bord opent en rij twee toont het tabblad.',
+        'Klik op **Acme Logistics** in het pad in rij één om naar de startpagina van de organisatie te gaan.',
         'Druk op **‹** (of ⌘[ op de desktop) om terug te gaan naar het bord, precies zoals je het verliet.',
         'Druk op ⌘K, typ *roadmap* en druk op Enter om vanaf elke plek de roadmap te openen.',
       ],
@@ -41,8 +41,8 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Je organisatie naar een andere computer meenemen',
       steps: [
-        'Druk op het statuswoord in rij één om **Je werk** te openen.',
-        'Druk op **Kopie bewaren…** en geef twee keer een wachtwoord.',
+        'Klik op het statuswoord in rij één om **Je werk** te openen.',
+        'Klik op **Kopie bewaren…** en geef twee keer een wachtwoord.',
         'Neem het `.lvarch`-bestand mee naar de andere computer, open daar de app en kies **Een bestand openen…**.',
         'Typ het wachtwoord en kies waar het komt: een nieuwe map, of in plaats van wat daar open is.',
       ],
@@ -73,7 +73,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
         'Selecteer **Warehouse Management** op het bord.',
         'Druk in het paneel op **+ Eigenaar, leverancier…** en kies **Eigenaar**.',
         'Kies **Warehouse team** uit de eenheden, of typ een naam.',
-        'Druk op **Record ›** naast de naam om het hele record te lezen, met tekst en lijnen.',
+        'Klik op **Record ›** naast de naam om het hele record te lezen, met tekst en lijnen.',
       ],
     },
   },
@@ -85,16 +85,16 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       title: 'Uitzoeken wie op een platform staat',
       steps: [
         'Open de weergave **Technologielandschap** van de organisatie.',
-        'Druk op **OpenShift** in de kolom met platforms: de lijnen worden getekend en de lezer opent.',
+        'Klik op **OpenShift** in de kolom met platforms: de lijnen worden getekend en de lezer opent.',
         'Lees het getal op de regel: elke applicatie die erop staat of op iets eronder.',
-        'Druk op **Als het verdween…** voor het rapport van het platform: wat er overeind zou blijven.',
+        'Klik op **Als het verdween…** voor het rapport van het platform: wat er overeind zou blijven.',
       ],
     },
   },
   sheet: {
-    title: 'Het bedrijfsblad en de enterprisekaart',
-    intro: 'Een blad zegt wat de organisatie doet, voor wie, en hoeveel ervan door software wordt gedekt: een klantreis bovenaan, de gebieden met hun capabilities eronder, de belanghebbenden langs de zijkant. De enterprisekaart leest dezelfde laag als tabel van functies tegen applicaties.',
-    picture: 'Een bedrijfsblad: de fasen van de klantreis bovenaan, de gebieden met hun capabilities, elk met wat het dekt.',
+    title: 'De bedrijfsarchitectuur en de dekking',
+    intro: 'Een blad zegt wat de organisatie doet, voor wie, en hoeveel ervan door software wordt gedekt: een klantreis bovenaan, de gebieden met hun capabilities eronder, de belanghebbenden langs de zijkant. De dekking leest dezelfde laag als tabel van functies tegen applicaties.',
+    picture: 'Een bedrijfsarchitectuur: de fasen van de klantreis bovenaan, de gebieden met hun capabilities, elk met wat het dekt.',
     worked: {
       title: 'Zeggen welke applicatie een capability dekt',
       steps: [
@@ -128,8 +128,8 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       steps: [
         'Open de weergave **Organigram**.',
         'Zoek **Warehouse team** in het overzicht en druk erop.',
-        'Druk op **vacant** naast de rol die niemand heeft.',
-        'Kies de persoon, het aandeel en de eerste dag, en druk op **Toewijzen**.',
+        'Klik op **vacant** naast de rol die niemand heeft.',
+        'Kies de persoon, het aandeel en de eerste dag, en klik op **Toewijzen**.',
       ],
     },
   },
@@ -142,22 +142,22 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       steps: [
         'Druk op **+** in rij twee en kies **Tekening** onder *Dit teken je zelf*.',
         'Noem haar *Dock flow* en kies **Warehouse Management** als waar ze over gaat.',
-        'Druk op **Tekening bewerken**, sleep **Warehouse Management** uit het palet op de pagina en teken eromheen.',
-        'Druk op **Opslaan** en **Klaar**: de vorm is omlijnd op de afbeelding en opent haar element.',
+        'Klik op **Tekening bewerken**, sleep **Warehouse Management** uit het palet op de pagina en teken eromheen.',
+        'Klik op **Bewaren** en **Klaar**: de vorm is omlijnd op de afbeelding en opent haar element.',
       ],
     },
   },
   decisions: {
     title: 'Besluiten, geschiedenis en een andere dag',
-    intro: 'Besluitrecords zeggen wat werd besloten en waarom, in een werkstroom die eindigt in een record dat niemand kan herschrijven. De geschiedenis bewaart snapshots van het werk; een bord kan op een andere dag worden bekeken zonder iets te wijzigen.',
+    intro: 'Besluitrecords zeggen wat werd besloten en waarom, in een werkstroom die eindigt in een record dat niemand kan herschrijven. De geschiedenis bewaart momentopnamen van het werk; een bord kan op een andere dag worden bekeken zonder iets te wijzigen.',
     picture: 'Besluiten: de lijst onder Nog open, Van kracht en Beëindigd, en een record met bovenaan op een regel waar het staat.',
     worked: {
       title: 'Een besluit vastleggen en accepteren',
       steps: [
-        'Open **Besluiten** in rij twee en druk op **Nieuw besluit**.',
+        'Open **Besluiten** in rij twee en klik op **Nieuw besluit**.',
         'Geef het de titel *Eén schrijver per scope* en zeg waar het over gaat.',
-        'Schrijf de context en de opties in **Bewerken**, en druk op **Opslaan**.',
-        'Stuur het ter review, en als de reviewers hebben getekend, druk op **Accepteren**.',
+        'Schrijf de context en de opties in **Bewerken**, en klik op **Bewaren**.',
+        'Stuur het ter review, en als de reviewers hebben getekend, klik op **Accepteren**.',
       ],
     },
   },
@@ -168,9 +168,9 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Van een waarneming naar haar grondoorzaak',
       steps: [
-        'Open **Waarnemingen** en druk op **Nieuwe waarneming**.',
+        'Open **Waarnemingen** en klik op **Nieuwe waarneming**.',
         'Schrijf *Pickers wachten op aanvulling* met waar, wie het zag en wanneer, en leg het vast.',
-        'Druk op **Oorzaak** in de lezer en schrijf *Slotting draait één keer per nacht*.',
+        'Klik op **Oorzaak** in de lezer en schrijf *Slotting draait één keer per nacht*.',
         'Druk bij die oorzaak op **Tot grondoorzaak maken**, en dan op **Oplossing** om voor te stellen wat eraan te doen.',
       ],
     },
@@ -182,7 +182,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Het uitfaseren van een applicatie plannen',
       steps: [
-        'Open **Roadmap** en druk op **Nieuw plan**.',
+        'Open **Roadmap** en klik op **Nieuw plan**.',
         'Noem het *Oude tariefmotor uitfaseren*, met een venster van maart tot juni.',
         'Voeg onder wat het verandert **Rating (legacy)** toe als uitgefaseerd en **Tariff Engine** als ingevoerd.',
         'Lees **Waar de data het oneens zijn** onder de as: een lijn die na haar einde nog live is, wordt daar genoemd.',
@@ -196,9 +196,9 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Een naam regelen die twee scopes allebei vastleggen',
       steps: [
-        'Open **Controles** vanaf het thuis van de organisatie en kies de controle over een dubbel vastgelegde naam.',
+        'Open **Controles** vanaf de startpagina van de organisatie en kies de controle over een dubbel vastgelegde naam.',
         'Lees **Waarom het ertoe doet** en **Hoe je het oplost**.',
-        'Druk op de bevinding om het record te openen in de scope die moet wijken.',
+        'Klik op de bevinding om het record te openen in de scope die moet wijken.',
         'Kies **Koppelen…**: die scope is nu stand-in voor het record van de ander, en de bevinding verdwijnt.',
       ],
     },
@@ -210,10 +210,10 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Beginnen met een bibliotheek',
       steps: [
-        'Open **Besturingsmodel** vanaf het thuis van de organisatie en druk op **Begin met een bibliotheek**.',
+        'Open **Besturingsmodel** vanaf de startpagina van de organisatie en klik op **Begin met een bibliotheek**.',
         'Kies **Team Topologies** en vink de eenheidstypen aan die je wilt.',
         'Hernoem onder **Wat binnenkomt** *Stream-aligned team* naar het woord dat jullie gebruiken.',
-        'Druk op **Binnenhalen**: één stap, die ⌘Z terugneemt.',
+        'Klik op **Binnenhalen**: één stap, die ⌘Z terugneemt.',
       ],
     },
   },
@@ -224,10 +224,10 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Een collega toevoegen zonder dubbele',
       steps: [
-        'Open **Mensen** en druk op **Persoon toevoegen**.',
+        'Open **Mensen** en klik op **Persoon toevoegen**.',
         'Typ *Pia Schulz* en haar werkadres.',
-        'Staat *Pia Schultz* al in het register, dan zegt het dat: druk op **Deze gebruiken**, of **Toch toevoegen**.',
-        'Druk op **Dit ben ik** bij je eigen regel, zodat de app je overal markeert waar je staat.',
+        'Staat *Pia Schultz* al in het register, dan zegt het dat: klik op **Deze gebruiken**, of **Toch toevoegen**.',
+        'Klik op **Dit ben ik** bij je eigen regel, zodat de app je overal markeert waar je staat.',
       ],
     },
   },
@@ -238,7 +238,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Een principe schrijven en citeren',
       steps: [
-        'Open **Richtlijnen** en druk op **Principes** op **Nieuw principe**.',
+        'Open **Richtlijnen** en klik op **Principes** op **Nieuw principe**.',
         'Schrijf *Kopen voor bouwen*, flexibel, en accepteer het.',
         'Open een besluit en zeg onder **Principes** dat het *Kopen voor bouwen* volgt.',
       ],
@@ -249,11 +249,11 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     intro: 'Een coding agent die aan de desktop-app is gekoppeld, leest de organisatie, beweegt de app zoals jij dat doet en maakt wijzigingen die je ziet en ongedaan kunt maken. Terwijl hij werkt, zegt een balk dat, met Stoppen.',
     picture: 'Een agent aan het werk: de balk met de naam van de agent en wat hij doet, met Stoppen, en zijn wijzigingen in Activiteit.',
     worked: {
-      title: 'Een agent een bord laten opruimen terwijl je kijkt',
+      title: 'Een agent een bord laten ordenen terwijl je kijkt',
       steps: [
         'Kies op de desktop **Een agent koppelen…** en kopieer de instellingen naar je agent.',
         'Vraag hem *Application landscape* te openen en op te ruimen.',
-        'Kijk naar de balk onderaan; druk op **Stoppen** als hij ergens heen gaat dat je niet bedoelde.',
+        'Kijk naar de balk onderaan; klik op **Stoppen** als hij ergens heen gaat dat je niet bedoelde.',
         'Lees zijn stappen in **Activiteit**, en druk op ⌘Z om terug te nemen wat je niet wilt.',
       ],
     },

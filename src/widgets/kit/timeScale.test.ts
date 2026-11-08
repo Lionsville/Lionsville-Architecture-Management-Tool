@@ -149,6 +149,14 @@ describe('the ruler', () => {
   it('says the window in months', () => {
     expect(monthWords(year, 'en-GB')).toEqual({ from: 'Aug 2026', to: 'Jul 2027' })
   })
+
+  it('abbreviates a month one way: the window, the ruler and a date alike', () => {
+    expect(monthWords(year, 'de-DE')).toEqual({ from: 'Aug. 2026', to: 'Juli 2027' })
+    expect(cellWord({ unit: 'month', day: '2026-08-01', withYear: true }, 'de-DE')).toBe('Aug. 2026')
+    expect(cellWord({ unit: 'month', day: '2027-09-01', withYear: false }, 'de-DE')).toBe('Sept.')
+    expect(new Date(Date.UTC(2027, 8, 1)).toLocaleDateString('de-DE', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })).toBe('1. Sept. 2027')
+    expect(monthWords(year, 'nl-NL')).toEqual({ from: 'aug 2026', to: 'jul 2027' })
+  })
 })
 
 describe('milestones', () => {

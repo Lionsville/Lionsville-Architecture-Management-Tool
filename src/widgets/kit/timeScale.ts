@@ -223,6 +223,17 @@ export function mergedMilestones<T extends { day: string }>(view: AxisView, widt
   return clusters
 }
 
+/**
+ * A month's short name as the language writes it in a date: German "Aug." and
+ * "Sept.", as in "1. Sept. 2027", rather than the "Aug" and "Sep" ICU gives a
+ * month standing alone, so the axis, the window's words and every date beside
+ * them abbreviate a month the same way.
+ */
+export function shortMonth(date: Date, locale: string): string {
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .formatToParts(date).find((part) => part.type === 'month')?.value ?? ''
+}
+
 /** A ruler's word for a cell, in a language's own short month. */
 export function cellWord(cell: Pick<RulerCell, 'unit' | 'day' | 'withYear'>, locale: string): string {
   const date = new Date(dayNumber(cell.day) * MS)
@@ -230,7 +241,7 @@ export function cellWord(cell: Pick<RulerCell, 'unit' | 'day' | 'withYear'>, loc
   if (cell.unit === 'year') return String(year)
   if (cell.unit === 'quarter') return `Q${Math.floor(date.getUTCMonth() / 3) + 1}${cell.withYear ? ` ${year}` : ''}`
   if (cell.unit === 'month') {
-    const month = date.toLocaleDateString(locale, { month: 'short', timeZone: 'UTC' })
+    const month = shortMonth(date, locale)
     return cell.withYear ? `${month} ${year}` : month
   }
   return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', ...(cell.withYear ? { year: 'numeric' as const } : {}), timeZone: 'UTC' })
@@ -238,6 +249,9 @@ export function cellWord(cell: Pick<RulerCell, 'unit' | 'day' | 'withYear'>, loc
 
 /** The window in words: "Aug 2026" and "Jul 2027", for a sentence of the caller's. */
 export function monthWords(view: AxisView, locale: string): { from: string; to: string } {
-  const say = (day: string) => new Date(dayNumber(day) * MS).toLocaleDateString(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' })
+  const say = (day: string) => {
+    const date = new Date(dayNumber(day) * MS)
+    return `${shortMonth(date, locale)} ${date.getUTCFullYear()}`
+  }
   return { from: say(view.start), to: say(lastDayOf(view)) }
 }

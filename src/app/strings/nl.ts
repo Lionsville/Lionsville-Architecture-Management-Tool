@@ -1529,7 +1529,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.find': 'Zoek of voer een opdracht uit',
   'frame.findTip': 'Plekken, records, mensen en opdrachten',
   'frame.treeToggle': 'Scopeboom open houden',
-  'frame.treeOnHome': 'Een thuis toont de boom altijd',
+  'frame.treeOnHome': 'Een startpagina toont de boom altijd',
   'frame.switchScope': 'Andere scope kiezen',
   'frame.orderBy': 'Sorteren op',
   'frame.settingsOf': 'Instellingen van {name}…',

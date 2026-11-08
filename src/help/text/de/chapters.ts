@@ -12,10 +12,10 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Sich erst umsehen',
       steps: [
-        'Drücken Sie auf der ersten Seite **Beispiel öffnen**. Ein Band auf jedem Bildschirm sagt, dass Sie es besuchen.',
+        'Klicken Sie auf der ersten Seite auf **Beispiel öffnen**. Ein Band auf jedem Bildschirm sagt, dass Sie es besuchen.',
         'Öffnen Sie **Application landscape** unter Ansichten hier, verschieben Sie eine Karte und benennen Sie sie um: Probieren Sie alles.',
-        'Drücken Sie **Beispiel verlassen** im Band. Nichts von dem, was Sie probiert haben, bleibt.',
-        'Tippen Sie den Namen Ihrer eigenen Organisation, etwa *Acme Logistics*, und drücken Sie **Beginnen**.',
+        'Klicken Sie auf **Beispiel verlassen** im Band. Nichts von dem, was Sie probiert haben, bleibt.',
+        'Tippen Sie den Namen Ihrer eigenen Organisation, etwa *Acme Logistics*, und klicken Sie auf **Beginnen**.',
       ],
     },
   },
@@ -26,11 +26,11 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Von der Organisation zu einem Board und zurück',
       steps: [
-        'Drücken Sie auf der Startseite der Organisation **Warehouse** im Baum links.',
-        'Drücken Sie unter **Ansichten hier** **Application landscape**: Das Board öffnet sich, und die zweite Zeile zeigt seinen Reiter.',
-        'Drücken Sie **Acme Logistics** im Pfad der ersten Zeile, um zur Startseite der Organisation zu gehen.',
-        'Drücken Sie **‹** (oder ⌘[ auf dem Desktop), um zum Board zurückzukehren, genau wie Sie es verlassen haben.',
-        'Drücken Sie ⌘K, tippen Sie *Fahrplan* und drücken Sie die Eingabetaste, um von überall den Fahrplan zu öffnen.',
+        'Klicken Sie auf der Startseite der Organisation auf **Warehouse** im Baum links.',
+        'Klicken Sie unter **Ansichten hier** auf **Application landscape**: Das Board öffnet sich, und die zweite Zeile zeigt seinen Reiter.',
+        'Klicken Sie auf **Acme Logistics** im Pfad der ersten Zeile, um zur Startseite der Organisation zu gehen.',
+        'Klicken Sie auf **‹** (oder ⌘[ auf dem Desktop), um zum Board zurückzukehren, genau wie Sie es verlassen haben.',
+        'Drücken Sie ⌘K, tippen Sie *Roadmap* und drücken Sie die Eingabetaste, um von überall die Roadmap zu öffnen.',
       ],
     },
   },
@@ -41,17 +41,17 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Ihre Organisation auf einen anderen Computer mitnehmen',
       steps: [
-        'Drücken Sie das Statuswort in der ersten Zeile, um **Ihre Arbeit** zu öffnen.',
-        'Drücken Sie **Kopie speichern…** und geben Sie zweimal ein Passwort ein.',
+        'Klicken Sie auf das Statuswort in der ersten Zeile, um **Ihre Arbeit** zu öffnen.',
+        'Klicken Sie auf **Kopie speichern…** und geben Sie zweimal ein Passwort ein.',
         'Bringen Sie die `.lvarch`-Datei auf den anderen Computer, öffnen Sie dort die App und wählen Sie **Eine Datei öffnen…**.',
         'Geben Sie das Passwort ein und wählen Sie, wohin sie kommt: in einen neuen Ordner oder anstelle dessen, was dort offen ist.',
       ],
     },
   },
   board: {
-    title: 'Landschafts-Boards und Container-Diagramme',
-    intro: 'Ein Landschafts-Board zeichnet die Anwendungen in Bändern, mit den Linien zwischen ihnen; ein Container-Diagramm öffnet sich unter einer Anwendung und zeichnet, woraus sie besteht. Das Modell ist eines, und ein Board ist eine Ansicht davon.',
-    picture: 'Ein Landschafts-Board: die Bänder, Anwendungskarten mit ihrem Status, eine Linie mit ihrer Beschriftung und das Panel der gewählten Karte.',
+    title: 'Landschaftsboards und Containerdiagramme',
+    intro: 'Ein Landschaftsboard zeichnet die Anwendungen in Bändern, mit den Linien zwischen ihnen; ein Containerdiagramm öffnet sich unter einer Anwendung und zeichnet, woraus sie besteht. Das Modell ist eines, und ein Board ist eine Ansicht davon.',
+    picture: 'Ein Landschaftsboard: die Bänder, Anwendungskarten mit ihrem Status, eine Linie mit ihrer Beschriftung und das Panel der gewählten Karte.',
     worked: {
       title: 'Eine neue Anwendung zeichnen und verbinden',
       steps: [
@@ -71,9 +71,9 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       title: 'Festhalten, wem eine Anwendung gehört',
       steps: [
         'Wählen Sie **Warehouse Management** auf dem Board.',
-        'Drücken Sie im Panel **+ Eigentümer, Anbieter…** und wählen Sie **Eigentümer**.',
+        'Klicken Sie im Panel auf **+ Eigentümer, Anbieter…** und wählen Sie **Eigentümer**.',
         'Wählen Sie **Warehouse team** aus den Einheiten oder tippen Sie einen Namen.',
-        'Drücken Sie **Eintrag ›** neben dem Namen, um den ganzen Eintrag mit Text und Linien zu lesen.',
+        'Klicken Sie auf **Eintrag ›** neben dem Namen, um den ganzen Eintrag mit Text und Linien zu lesen.',
       ],
     },
   },
@@ -85,16 +85,16 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       title: 'Herausfinden, wer auf einer Plattform steht',
       steps: [
         'Öffnen Sie die Ansicht **Technologielandschaft** der Organisation.',
-        'Drücken Sie **OpenShift** in der Spalte Plattformen: Ihre Linien werden gezeichnet und der Leser öffnet sich.',
+        'Klicken Sie auf **OpenShift** in der Spalte Plattformen: Ihre Linien werden gezeichnet und der Leser öffnet sich.',
         'Lesen Sie die Zahl auf ihrer Zeile: jede Anwendung, die auf ihr oder auf etwas darunter steht.',
-        'Drücken Sie **Wenn sie ginge…** für den Bericht der Plattform: was stehen bliebe.',
+        'Klicken Sie auf **Wenn sie ginge…** für den Bericht der Plattform: was stehen bliebe.',
       ],
     },
   },
   sheet: {
-    title: 'Das Geschäftsblatt und die Unternehmenskarte',
-    intro: 'Ein Blatt sagt, was die Organisation tut, für wen und wie viel davon Software abdeckt: eine Kundenreise oben, die Gebiete mit ihren Fähigkeiten darunter, die Beteiligten am Rand. Die Unternehmenskarte liest dieselbe Schicht als Tabelle von Funktionen gegen Anwendungen.',
-    picture: 'Ein Geschäftsblatt: die Phasen der Kundenreise oben, die Gebiete mit ihren Fähigkeiten, jede mit dem, was sie abdeckt.',
+    title: 'Die Geschäftsarchitektur und die Abdeckung',
+    intro: 'Ein Blatt sagt, was die Organisation tut, für wen und wie viel davon Software abdeckt: eine Kundenreise oben, die Gebiete mit ihren Fähigkeiten darunter, die Beteiligten am Rand. Die Abdeckung liest dieselbe Schicht als Tabelle von Funktionen gegen Anwendungen.',
+    picture: 'Eine Geschäftsarchitektur: die Phasen der Kundenreise oben, die Gebiete mit ihren Fähigkeiten, jede mit dem, was sie abdeckt.',
     worked: {
       title: 'Sagen, welche Anwendung eine Fähigkeit abdeckt',
       steps: [
@@ -127,9 +127,9 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       title: 'Eine offene Rolle besetzen',
       steps: [
         'Öffnen Sie die Ansicht **Organigramm**.',
-        'Suchen Sie **Warehouse team** in der Gliederung und drücken Sie es.',
-        'Drücken Sie **offen** neben der Rolle, die niemand hält.',
-        'Wählen Sie die Person, ihren Anteil und den ersten Tag und drücken Sie **Zuordnen**.',
+        'Suchen Sie **Warehouse team** in der Gliederung und klicken Sie darauf.',
+        'Klicken Sie auf **offen** neben der Rolle, die niemand hält.',
+        'Wählen Sie die Person, ihren Anteil und den ersten Tag und klicken Sie auf **Zuordnen**.',
       ],
     },
   },
@@ -140,24 +140,24 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Eine Skizze eines Lagerablaufs zeichnen',
       steps: [
-        'Drücken Sie **+** in der zweiten Zeile und wählen Sie **Zeichnung** unter *Diese zeichnen Sie*.',
+        'Klicken Sie auf **+** in der zweiten Zeile und wählen Sie **Zeichnung** unter *Diese zeichnen Sie*.',
         'Nennen Sie sie *Dock flow* und wählen Sie **Warehouse Management** als das, worum es geht.',
-        'Drücken Sie **Zeichnung bearbeiten**, ziehen Sie **Warehouse Management** aus der Palette auf die Seite und zeichnen Sie darum herum.',
-        'Drücken Sie **Speichern** und **Fertig**: Die Form ist auf dem Bild umrandet und öffnet ihr Element.',
+        'Klicken Sie auf **Zeichnung bearbeiten**, ziehen Sie **Warehouse Management** aus der Palette auf die Seite und zeichnen Sie darum herum.',
+        'Klicken Sie auf **Speichern** und **Fertig**: Die Form ist auf dem Bild umrandet und öffnet ihr Element.',
       ],
     },
   },
   decisions: {
     title: 'Entscheidungen, Verlauf und ein anderer Tag',
-    intro: 'Entscheidungen sagen, was entschieden wurde und warum, in einem Ablauf, der in einem Eintrag endet, den niemand umschreiben kann. Der Verlauf hält Snapshots der Arbeit fest; ein Board lässt sich an einem anderen Tag ansehen, ohne etwas zu ändern.',
+    intro: 'Entscheidungen sagen, was entschieden wurde und warum, in einem Ablauf, der in einem Eintrag endet, den niemand umschreiben kann. Der Verlauf hält Momentaufnahmen der Arbeit fest; ein Board lässt sich an einem anderen Tag ansehen, ohne etwas zu ändern.',
     picture: 'Entscheidungen: die Liste unter Noch offen, In Kraft und Beendet und ein Eintrag mit seinem Stand in einer Zeile oben.',
     worked: {
       title: 'Eine Entscheidung festhalten und annehmen',
       steps: [
-        'Öffnen Sie **Entscheidungen** in der zweiten Zeile und drücken Sie **Neue Entscheidung**.',
+        'Öffnen Sie **Entscheidungen** in der zweiten Zeile und klicken Sie auf **Neue Entscheidung**.',
         'Geben Sie ihr den Titel *Ein Schreiber je Bereich* und sagen Sie, worum es geht.',
-        'Schreiben Sie Kontext und Optionen in **Bearbeiten** und drücken Sie **Speichern**.',
-        'Senden Sie sie zur Prüfung, und wenn die Prüfenden unterschrieben haben, drücken Sie **Annehmen**.',
+        'Schreiben Sie Kontext und Optionen in **Bearbeiten** und klicken Sie auf **Speichern**.',
+        'Senden Sie sie zur Prüfung, und wenn die Prüfenden unterschrieben haben, klicken Sie auf **Annehmen**.',
       ],
     },
   },
@@ -168,21 +168,21 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Von einer Sichtung zu ihrer Grundursache',
       steps: [
-        'Öffnen Sie **Beobachtungen** und drücken Sie **Neue Beobachtung**.',
+        'Öffnen Sie **Beobachtungen** und klicken Sie auf **Neue Beobachtung**.',
         'Schreiben Sie *Kommissionierer warten auf Nachschub* mit wo, wer es sah und wann, und halten Sie sie fest.',
-        'Drücken Sie **Ursache** in ihrem Leser und schreiben Sie *Die Lagerplatzvergabe läuft einmal pro Nacht*.',
-        'Drücken Sie bei dieser Ursache **Zur Grundursache machen**, dann **Lösung**, um vorzuschlagen, was zu tun ist.',
+        'Klicken Sie auf **Ursache** in ihrem Leser und schreiben Sie *Die Lagerplatzvergabe läuft einmal pro Nacht*.',
+        'Klicken Sie bei dieser Ursache auf **Zur Grundursache machen**, dann **Lösung**, um vorzuschlagen, was zu tun ist.',
       ],
     },
   },
   roadmap: {
-    title: 'Der Fahrplan und Pläne',
-    intro: 'Der Fahrplan legt die Landschaft auf eine Zeitachse: Alles mit einem Datum bekommt eine Zeile. Ein Plan hält eine Änderung der Landschaft fest, mit Fenster, Meilensteinen und dem, was er einführt und ablöst.',
-    picture: 'Der Fahrplan: das Lineal mit markiertem Heute, Pläne als Bänder mit Meilensteinen und Anwendungen als Folgen von Phasen.',
+    title: 'Die Roadmap und Pläne',
+    intro: 'Die Roadmap legt die Landschaft auf eine Zeitachse: Alles mit einem Datum bekommt eine Zeile. Ein Plan hält eine Änderung der Landschaft fest, mit Fenster, Meilensteinen und dem, was er einführt und ablöst.',
+    picture: 'Die Roadmap: das Lineal mit markiertem Heute, Pläne als Bänder mit Meilensteinen und Anwendungen als Folgen von Phasen.',
     worked: {
       title: 'Die Ablösung einer Anwendung planen',
       steps: [
-        'Öffnen Sie **Fahrplan** und drücken Sie **Neuer Plan**.',
+        'Öffnen Sie **Roadmap** und klicken Sie auf **Neuer Plan**.',
         'Nennen Sie ihn *Alten Tarifrechner ablösen*, mit einem Fenster von März bis Juni.',
         'Fügen Sie unter dem, was er ändert, **Rating (legacy)** als abgelöst und **Tariff Engine** als eingeführt hinzu.',
         'Lesen Sie **Worin sich die Daten widersprechen** unter der Achse: Eine Linie, die nach ihrem Ende noch aktiv ist, steht dort.',
@@ -190,15 +190,15 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     },
   },
   registers: {
-    title: 'Register und Prüfungen',
-    intro: 'Das Register listet jede Anwendung, jeden Dienst und jede Plattform der Organisation, aus den Bereichen selbst gelesen. Die Seite Prüfungen listet, was die Organisation sich selbst widerspricht, nach Gewicht, mit wie man jedes behebt.',
-    picture: 'Das Register: eine Zeile je Anwendung mit dem Bereich, der dafür antwortet, und ihren Befunden, und die Prüfungen nach Gewicht gezählt.',
+    title: 'Register und Checks',
+    intro: 'Das Register listet jede Anwendung, jeden Dienst und jede Plattform der Organisation, aus den Bereichen selbst gelesen. Die Seite Checks listet, was die Organisation sich selbst widerspricht, nach Gewicht, mit wie man jedes behebt.',
+    picture: 'Das Register: eine Zeile je Anwendung mit dem Bereich, der dafür antwortet, und ihren Befunden, und die Checks nach Gewicht gezählt.',
     worked: {
       title: 'Einen Namen klären, den zwei Bereiche festhalten',
       steps: [
-        'Öffnen Sie **Prüfungen** von der Startseite der Organisation und wählen Sie die Prüfung zu einem doppelt festgehaltenen Namen.',
+        'Öffnen Sie **Checks** von der Startseite der Organisation und wählen Sie den Check zu einem doppelt festgehaltenen Namen.',
         'Lesen Sie **Warum es wichtig ist** und **So beheben Sie es**.',
-        'Drücken Sie den Befund, um den Eintrag in dem Bereich zu öffnen, der weichen soll.',
+        'Klicken Sie auf den Befund, um den Eintrag in dem Bereich zu öffnen, der weichen soll.',
         'Wählen Sie **Verknüpfen…**: Dieser Bereich vertritt jetzt den Eintrag des anderen, und der Befund verschwindet.',
       ],
     },
@@ -210,10 +210,10 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Mit einer Bibliothek beginnen',
       steps: [
-        'Öffnen Sie **Betriebsmodell** von der Startseite der Organisation und drücken Sie **Mit einer Bibliothek beginnen**.',
+        'Öffnen Sie **Betriebsmodell** von der Startseite der Organisation und klicken Sie auf **Mit einer Bibliothek beginnen**.',
         'Wählen Sie **Team Topologies** und kreuzen Sie die Einheitstypen an, die Sie wollen.',
         'Benennen Sie unter **Was hereinkommt** *Stream-aligned team* in das Wort um, das Sie verwenden.',
-        'Drücken Sie **Hereinholen**: ein Schritt, den ⌘Z zurücknimmt.',
+        'Klicken Sie auf **Hereinholen**: ein Schritt, den ⌘Z zurücknimmt.',
       ],
     },
   },
@@ -224,10 +224,10 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Eine Kollegin ohne Doppelung hinzufügen',
       steps: [
-        'Öffnen Sie **Personen** und drücken Sie **Person hinzufügen**.',
+        'Öffnen Sie **Personen** und klicken Sie auf **Person hinzufügen**.',
         'Tippen Sie *Pia Schulz* und ihre Arbeitsadresse.',
-        'Steht *Pia Schultz* schon im Register, sagt es das: Drücken Sie **Diese verwenden** oder **Trotzdem hinzufügen**.',
-        'Drücken Sie **Das bin ich** auf Ihrem eigenen Eintrag, damit die App Sie überall markiert, wo Sie vorkommen.',
+        'Steht *Pia Schultz* schon im Register, sagt es das: Klicken Sie auf **Diese verwenden** oder **Trotzdem hinzufügen**.',
+        'Klicken Sie auf **Das bin ich** auf Ihrem eigenen Eintrag, damit die App Sie überall markiert, wo Sie vorkommen.',
       ],
     },
   },
@@ -238,7 +238,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
     worked: {
       title: 'Ein Prinzip schreiben und zitieren',
       steps: [
-        'Öffnen Sie **Leitlinien** und drücken Sie auf **Prinzipien** **Neues Prinzip**.',
+        'Öffnen Sie **Leitlinien** und klicken Sie auf **Prinzipien** **Neues Prinzip**.',
         'Schreiben Sie *Kaufen vor Bauen*, flexibel, und nehmen Sie es an.',
         'Öffnen Sie eine Entscheidung und sagen Sie unter **Prinzipien**, dass sie *Kaufen vor Bauen* folgt.',
       ],
@@ -253,7 +253,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       steps: [
         'Wählen Sie auf dem Desktop **Einen Agenten verbinden…** und kopieren Sie die Einstellungen in Ihren Agenten.',
         'Bitten Sie ihn, *Application landscape* zu öffnen und aufzuräumen.',
-        'Beobachten Sie das Band unten; drücken Sie **Stopp**, wenn er irgendwohin geht, wo Sie nicht hinwollten.',
+        'Beobachten Sie das Band unten; klicken Sie auf **Stopp**, wenn er irgendwohin geht, wo Sie nicht hinwollten.',
         'Lesen Sie seine Schritte in **Aktivität** und drücken Sie ⌘Z, um zurückzunehmen, was Sie nicht wollen.',
       ],
     },

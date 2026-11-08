@@ -20,17 +20,17 @@ export const START: GettingStartedText = {
     },
     {
       title: 'Een scope en een weergave openen',
-      text: 'Druk op een scope in de boom om de startpagina te lezen. Druk onder **Weergaven hier** op een weergave — het applicatielandschap, de bedrijfsarchitectuur, het organogram — en die opent met een tabblad in rij twee. **‹** in rij één gaat terug naar waar je was.',
+      text: 'Klik op een scope in de boom om de startpagina te lezen. Klik onder **Weergaven hier** op een weergave — het applicatielandschap, de bedrijfsarchitectuur, het organogram — en die opent met een tabblad in rij twee. **‹** in rij één gaat terug naar waar je was.',
       picture: 'De startpagina van een scope met de weergaven onder Weergaven hier.',
     },
     {
       title: 'Toevoegen en verbinden',
-      text: 'Druk op een bord op **Toevoegen** in de balk, of dubbeldruk op een lege plek, en typ een naam. Om twee kaarten te verbinden wijs je er één aan en sleep je van de stip aan de rand naar de andere. Selecteer iets om het in het paneel te lezen en te wijzigen. ⌘Z neemt elke stap terug.',
+      text: 'Klik op een bord op **Toevoegen** in de balk, of dubbeldruk op een lege plek, en typ een naam. Om twee kaarten te verbinden wijs je er één aan en sleep je van de stip aan de rand naar de andere. Selecteer iets om het in het paneel te lezen en te wijzigen. ⌘Z neemt elke stap terug.',
       picture: 'Een bord met twee kaarten en de lijn ertussen, en het paneel van de geselecteerde kaart.',
     },
     {
       title: 'Een waarneming vastleggen',
-      text: 'Iets opgemerkt — twee systemen die een andere prijs noemen, een trage overdracht? Open **Waarnemingen** in rij twee en druk op **Nieuwe waarneming**. Zeg in een paar woorden wat je zag. Druk later op **Vraag waarom** om de oorzaak te vinden, en stel een oplossing voor de grondoorzaak voor.',
+      text: 'Iets opgemerkt — twee systemen die een andere prijs noemen, een trage overdracht? Open **Waarnemingen** in rij twee en klik op **Nieuwe waarneming**. Zeg in een paar woorden wat je zag. Druk later op **Vraag waarom** om de oorzaak te vinden, en stel een oplossing voor de grondoorzaak voor.',
       picture: 'De waarnemingenpagina: wat er gezien is, de oorzaken erachter en de voorgestelde oplossing.',
     },
     {
