@@ -348,6 +348,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.rowChanged': 'Rij gewijzigd ({type})',
   'activity.rowDeleted': 'Rij verwijderd ({type})',
   'activity.usesSet': 'Vastgelegd wat {name} gebruikt ({count} rijen)',
+  'activity.usesSetOne': 'Vastgelegd wat {name} gebruikt (1 rij)',
   'activity.movedOne': 'Eén element verplaatst',
   'activity.movedMany': '{count} elementen verplaatst',
   'activity.removedOne': 'Eén element van de weergave gehaald',

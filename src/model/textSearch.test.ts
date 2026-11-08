@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest';
-import { fold, matchesQuery, queryTokens } from './textSearch';
+import { fold, matchesQuery, matchesStems, queryTokens, stemOf } from './textSearch';
 
 /**
  * The one definition of "found", shared by the icon grid, the palette filter and
@@ -61,3 +61,23 @@ describe('matchesQuery', () => {
     expect(matchesQuery('reis', ['Réisinformatie'])).toBe(true);
   });
 });
+
+describe('matchesStems', () => {
+  it('finds a Dutch or German word by the form a person types', () => {
+    expect(matchesStems('bewaar', ['Bewaren'], 'nl')).toBe(true)
+    expect(matchesStems('kopie bewaar', ['Kopie bewaren…'], 'nl')).toBe(true)
+    expect(matchesStems('orden', ['Bord ordenen'], 'nl')).toBe(true)
+    expect(matchesStems('öffne', ['Ordner öffnen…'], 'de')).toBe(true)
+    expect(matchesStems('speicher', ['Kopie speichern…'], 'de')).toBe(true)
+  })
+
+  it('still asks every word', () => {
+    expect(matchesStems('bewaar thema', ['Bewaren'], 'nl')).toBe(false)
+    expect(matchesStems('', ['Bewaren'], 'nl')).toBe(true)
+  })
+
+  it('stems one ending, and a Dutch long vowel once', () => {
+    expect(stemOf('Bewaren', 'nl')).toBe(stemOf('bewaar', 'nl'))
+    expect(stemOf('Öffnen', 'de')).toBe('offn')
+  })
+})

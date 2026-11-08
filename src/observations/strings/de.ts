@@ -528,7 +528,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.zoomIn': 'Vergrößern ({key:Mod} und das Mausrad)',
   'observation.zoomOut': 'Verkleinern ({key:Mod} und das Mausrad)',
   'observation.shownOf': '{shown} von {total} gezeigt',
-  'observation.shownAll': '{count} Einträge',
   'observation.filterScopes': 'Bereiche',
   'observation.filterScopesOn': '{on} von {total}',
   'observation.filterScopesTip': 'Wählen, welche Bereiche gezeigt werden. Tippen, um einen Bereich in einer langen Liste zu finden.',

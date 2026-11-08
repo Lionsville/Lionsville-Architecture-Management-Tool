@@ -53,6 +53,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.servedScopeGone': '{name} bedient {detail}, und dort gibt es keinen Bereich',
   'check.principleUnused': '{name} ist angenommen, und nichts zitiert es',
   'check.principleChafes': '{name} reibt in {count} Beobachtungen',
+  'check.principleChafesOne': '{name} reibt in 1 Beobachtung',
   'check.citationGone': 'Ein Eintrag zitiert {name}, das hier nicht gilt',
   'check.relevantGone': 'Eine Verknüpfung mit {name}, das nicht da ist',
 

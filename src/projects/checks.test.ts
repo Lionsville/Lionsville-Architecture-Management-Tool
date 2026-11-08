@@ -411,6 +411,11 @@ describe('findingSentence', () => {
   const s = translator('en')
   const scopeName = (path: string) => (path === '' ? 'the organisation' : path.toUpperCase())
 
+  it('says a count of one in the singular', () => {
+    expect(findingSentence({ key: 'check.principleChafes', scope: '', id: 'p', name: 'Buy first', count: 1 }, s, scopeName)).toBe('Buy first chafes in 1 observation')
+    expect(findingSentence({ key: 'check.principleChafes', scope: '', id: 'p', name: 'Buy first', count: 4 }, s, scopeName)).toBe('Buy first chafes in 4 observations')
+  })
+
   it('fills the name, the scope as the caller names it, and the detail', () => {
     expect(findingSentence({ key: 'check.conflict', scope: 'retail', id: 'erp', name: 'ERP', scopes: ['finance'] }, s, scopeName))
       .toBe('ERP is defined both here and in FINANCE — keep one definition and make the other a stand-in with Link…')

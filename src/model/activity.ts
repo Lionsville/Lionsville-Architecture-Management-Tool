@@ -104,7 +104,7 @@ function usesSet(flat: readonly CommandBody[], before: Model): StepSummary | und
     count += 1
   }
   if (source === undefined) return undefined
-  return { key: 'activity.usesSet', name: before.elements[source]?.name ?? source, count }
+  return { key: count === 1 ? 'activity.usesSetOne' : 'activity.usesSet', name: before.elements[source]?.name ?? source, count }
 }
 
 const RESTORED: Record<Restored['what'], StringKey> = {

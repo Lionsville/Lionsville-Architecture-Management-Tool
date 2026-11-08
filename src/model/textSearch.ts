@@ -40,3 +40,37 @@ export function matchesQuery(query: string, terms: readonly (string | undefined)
   const haystack = fold(terms.filter(Boolean).join(' '));
   return tokens.every((token) => haystack.includes(token));
 }
+
+/** The endings a Dutch or German word takes, longest first, that a stem leaves off. */
+const ENDINGS: Readonly<Record<'nl' | 'de', readonly string[]>> = {
+  nl: ['ingen', 'ing', 'en', 'e', 't', 's'],
+  de: ['ungen', 'ung', 'ern', 'en', 'er', 'es', 'e', 'n', 's'],
+}
+
+/**
+ * A word's stem, kept simple: folded, one ending off, and in Dutch a long
+ * vowel or a doubled consonant said once — so *bewaar* and *Bewaren* both
+ * stem to *bewar*, and *öffne* and *Öffnen* to *offn*. Not a linguist's stem:
+ * enough that a command is found by the form of its word a person types.
+ */
+export function stemOf(word: string, language: 'nl' | 'de'): string {
+  let stem = fold(word)
+  const ending = ENDINGS[language].find((one) => stem.length - one.length >= 3 && stem.endsWith(one))
+  if (ending) stem = stem.slice(0, -ending.length)
+  return language === 'nl' ? stem.replace(/([aeou])\1/g, '$1').replace(/([^aeiou])\1$/, '$1') : stem
+}
+
+/**
+ * Every token of `query` found by its stem among the words of `terms`: the
+ * same rule as {@link matchesQuery}, a word at a time, for a language whose
+ * words change their ending — Dutch and German. English has no need of it.
+ */
+export function matchesStems(query: string, terms: readonly (string | undefined)[], language: 'nl' | 'de'): boolean {
+  const tokens = queryTokens(query)
+  if (tokens.length === 0) return true
+  const words = terms.filter(Boolean).flatMap((term) => queryTokens(term!)).map((word) => stemOf(word, language))
+  return tokens.every((token) => {
+    const stem = stemOf(token, language)
+    return words.some((word) => word.includes(stem))
+  })
+}

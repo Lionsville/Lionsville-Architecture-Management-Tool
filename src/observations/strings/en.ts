@@ -547,7 +547,6 @@ export const EN = {
   'observation.zoomIn': 'Zoom in ({key:Mod} and the scroll wheel)',
   'observation.zoomOut': 'Zoom out ({key:Mod} and the scroll wheel)',
   'observation.shownOf': '{shown} of {total} shown',
-  'observation.shownAll': '{count} records',
   'observation.filterScopes': 'Scopes',
   'observation.filterScopesOn': '{on} of {total}',
   'observation.filterScopesTip': 'Choose which scopes are shown. Type to find a scope in a long list.',

@@ -69,6 +69,7 @@ export const EN = {
   'check.servedScopeGone': '{name} serves {detail}, and no scope is there',
   'check.principleUnused': '{name} is accepted, and nothing cites it',
   'check.principleChafes': '{name} chafes in {count} observations',
+  'check.principleChafesOne': '{name} chafes in 1 observation',
   'check.citationGone': 'A record cites {name}, which does not read here',
   'check.relevantGone': 'A link to {name}, which is not there',
 

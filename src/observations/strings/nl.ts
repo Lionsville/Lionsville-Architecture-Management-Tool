@@ -528,7 +528,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.zoomIn': 'Inzoomen ({key:Mod} en het scrollwiel)',
   'observation.zoomOut': 'Uitzoomen ({key:Mod} en het scrollwiel)',
   'observation.shownOf': '{shown} van {total} getoond',
-  'observation.shownAll': '{count} records',
   'observation.filterScopes': 'Scopes',
   'observation.filterScopesOn': '{on} van {total}',
   'observation.filterScopesTip': 'Kies welke scopes getoond worden. Typ om een scope in een lange lijst te vinden.',

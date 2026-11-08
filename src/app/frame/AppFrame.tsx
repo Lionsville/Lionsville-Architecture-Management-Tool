@@ -20,7 +20,7 @@ import { translator } from '../../i18n/strings'
 import type { Destination, Page, Screen } from '../../agent/screen'
 import { HOME_PAGES, viewPage } from '../../agent/screen'
 import type { DesignDiagram } from '../../model/types'
-import { matchesQuery } from '../../model/textSearch'
+import { matchesQuery, matchesStems } from '../../model/textSearch'
 import { isSheetReading } from '../../model/sheetReading'
 import { flattenScopes } from '../../projects/scope'
 import type { ScopeSummary } from '../../projects/scope'
@@ -507,7 +507,9 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     return (asked: string) => {
       if (asked.trim() === '') return rows
       want()
-      const named = rows.filter((row) => matchesQuery(asked, [row.label, alsoCalled.get(row.id) ?? ''])).map((row) => (startsWords(asked, row.label) ? { ...row, lead: true } : row))
+      // In Dutch and German a word is also found by its stem: *bewaar* finds Bewaren.
+      const found = (row: PaletteLine) => matchesQuery(asked, [row.label, alsoCalled.get(row.id) ?? '']) || (language !== 'en' && matchesStems(asked, [row.label], language))
+      const named = rows.filter(found).map((row) => (startsWords(asked, row.label) ? { ...row, lead: true } : row))
       // A command whose name starts with the words leads a scope that only contains them: "light" is Theme: Light.
       return [
         ...named.filter((row) => row.lead),

@@ -53,6 +53,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.servedScopeGone': '{name} bedient {detail}, en daar is geen scope',
   'check.principleUnused': '{name} is aanvaard, en niets haalt het aan',
   'check.principleChafes': '{name} schuurt in {count} waarnemingen',
+  'check.principleChafesOne': '{name} schuurt in 1 waarneming',
   'check.citationGone': 'Een record haalt {name} aan, dat hier niet geldt',
   'check.relevantGone': 'Een koppeling met {name}, dat er niet is',
 

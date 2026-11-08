@@ -348,6 +348,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.rowChanged': 'Zeile geändert ({type})',
   'activity.rowDeleted': 'Zeile gelöscht ({type})',
   'activity.usesSet': 'Festgelegt, was {name} nutzt ({count} Zeilen)',
+  'activity.usesSetOne': 'Festgelegt, was {name} nutzt (1 Zeile)',
   'activity.movedOne': 'Ein Element verschoben',
   'activity.movedMany': '{count} Elemente verschoben',
   'activity.removedOne': 'Ein Element von der Ansicht genommen',

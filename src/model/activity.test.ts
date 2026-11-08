@@ -141,7 +141,7 @@ describe('summarise', () => {
       .toEqual({ key: 'activity.usesSet', name: 'Billing', count: 2 })
     // One row alone is that step too; a row of another type, or from another
     // source, is not.
-    expect(summarise([use('u1', 'bus')], before())).toMatchObject({ key: 'activity.usesSet', count: 1 })
+    expect(summarise([use('u1', 'bus')], before())).toMatchObject({ key: 'activity.usesSetOne', count: 1 })
     expect(summarise([transaction([use('u1', 'bus'), { type: 'relation.create', relation: { id: 'u3', type: 'uses', sourceId: 'crm', targetId: 'bus' } }])], before()))
       .toMatchObject({ key: 'activity.rowAdded' })
   })

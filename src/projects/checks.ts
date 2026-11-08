@@ -189,6 +189,11 @@ export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.relevantGone': 'check.relevantGone',
 }
 
+/** A sentence that counts, said of one where the count can be one. */
+const CHECK_LABEL_ONE: Partial<Record<TreeCheckKey, StringKey>> = {
+  'check.principleChafes': 'check.principleChafesOne',
+}
+
 /**
  * The sentence where the finding has nothing to name beside it — no cause
  * below explains the observation yet — for the one finding whose repair
@@ -214,7 +219,8 @@ export function findingSentence(
   finding: Finding, s: Translate, scopeName: (path: ScopePath) => string,
   personName?: (id: string) => string,
 ): string {
-  const key = finding.detail === undefined ? CHECK_LABEL_BARE[finding.key] ?? CHECK_LABEL[finding.key] : CHECK_LABEL[finding.key]
+  const said = finding.detail === undefined ? CHECK_LABEL_BARE[finding.key] ?? CHECK_LABEL[finding.key] : CHECK_LABEL[finding.key]
+  const key = finding.count === 1 ? CHECK_LABEL_ONE[finding.key] ?? said : said
   return s(key, {
     // A finding about a person carries their id; the name is the register's (ADR-0036 §8).
     name: finding.person !== undefined && personName ? personName(finding.person) : finding.name,

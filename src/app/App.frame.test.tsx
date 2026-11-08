@@ -459,6 +459,16 @@ describe('⌘K', () => {
     expect(await screen.findByTestId('palette-help:menu.shortcuts')).toBeDefined()
   })
 
+  it('finds a command in Dutch by the form of its word a person types', async () => {
+    const agent = wire()
+    renderApp({ agent: agent.gateway, repositories: heldRepositories(TREE()), boot: { initialProject: undefined } }, { language: 'nl' })
+    await screen.findByTestId('organisation-cards')
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    const field = await screen.findByRole('combobox')
+    fireEvent.change(field, { target: { value: 'kopie bewaar' } })
+    expect((await screen.findAllByRole('option')).some((option) => option.textContent?.includes('Kopie bewaren'))).toBe(true)
+  })
+
   it('finds a scope by its name, ahead of the records, and opens its home', async () => {
     await home()
     fireEvent.click(screen.getByTestId('frame-find'))

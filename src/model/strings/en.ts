@@ -367,6 +367,7 @@ export const EN = {
   'activity.rowChanged': 'Changed a row ({type})',
   'activity.rowDeleted': 'Deleted a row ({type})',
   'activity.usesSet': 'Set what {name} uses ({count} rows)',
+  'activity.usesSetOne': 'Set what {name} uses (1 row)',
   'activity.movedOne': 'Moved one element',
   'activity.movedMany': 'Moved {count} elements',
   'activity.removedOne': 'Took one element off the view',
