@@ -124,7 +124,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.noUnit': 'Niemand mit diesem Namen',
   'sheet.assignedNobody': 'Noch niemand',
   'sheet.assignedOutside': 'außerhalb dieser Domäne',
-  'sheet.assignedFarEnd': 'Jede ist eine Zuordnung, die hier geführt wird. Eine Einheit, die in einem anderen Bereich eingeordnet ist, ist ihr fernes Ende und wird dafür hier auf keiner Tafel gezeichnet.',
+  'sheet.assignedFarEnd': 'Jede ist eine Zuordnung, die hier geführt wird. Eine Einheit, die in einem anderen Bereich eingeordnet ist, ist ihr fernes Ende und wird dafür hier auf keinem Board gezeichnet.',
   'sheet.showResponsible': 'Zeigen, wer verantwortlich ist',
   'sheet.responsibleNobody': 'niemand',
   'sheet.unitLabel': 'Verantwortlich: {units}. Öffnen, was sie bedienen',

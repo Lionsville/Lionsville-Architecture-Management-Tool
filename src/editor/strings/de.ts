@@ -277,7 +277,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'bar.always': 'Immer',
   'bar.onCanvas': 'Auf dem Board',
   'bar.key': 'Legende',
-  'bar.map': 'Übersichtskarte',
+  'bar.map': 'Minikarte',
   'bar.find': 'Suchen',
   'bar.export': 'Exportieren',
   'bar.more': 'Mehr zu dieser Ansicht',
