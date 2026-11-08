@@ -14,6 +14,12 @@ export type ZoomTarget = {
   go(how: ZoomHow, at?: Point): void
   /** Zoom by a factor, from the wheel or a pinch. */
   by(factor: number, at?: Point): void
+  /**
+   * Move what is drawn by `dx` pixels across the element, without a zoom. A
+   * canvas that pans by a viewport of its own says how; one that scrolls needs
+   * nothing, since its scroll is moved for it (`holdOnScreen`).
+   */
+  pan?(dx: number): void
 }
 
 /** The target of a canvas whose zoom is a number in the kit's range; the time axis's is not. */
@@ -21,8 +27,10 @@ export function steppedZoomTarget(canvas: {
   zoom(): number
   to(zoom: number, at?: Point): void
   fit(): void
+  pan?(dx: number): void
 }, range?: ZoomRange): ZoomTarget {
   return {
+    ...(canvas.pan ? { pan: canvas.pan } : {}),
     go(how, at) {
       if (how === 'fit') canvas.fit()
       else if (how === 'home') canvas.to(ZOOM_HOME, at)
@@ -36,6 +44,36 @@ export function steppedZoomTarget(canvas: {
 }
 
 type Live = { element: HTMLElement; target: () => ZoomTarget; pointer: Point | undefined }
+
+/**
+ * What is drawn stays where it was on the screen when the canvas's left edge
+ * moves: the tree docked or put away beside it, or its seam dragged. Without
+ * this a board slid by the tree's width under the person's eyes, its left lanes
+ * under the tree's edge and an empty band on the right. Only the edge counts: a
+ * window resized on its right, or a panel opened there, moves nothing.
+ * Returns what stops the watching.
+ */
+export function holdOnScreen(element: HTMLElement, target: () => ZoomTarget): () => void {
+  if (typeof ResizeObserver === 'undefined') return () => undefined
+  const edge = () => {
+    const box = element.getBoundingClientRect()
+    // Hidden, the box says nothing of where the canvas will stand when it is shown again.
+    return box.width > 0 ? box.left : undefined
+  }
+  let was = edge()
+  const watching = new ResizeObserver(() => {
+    const now = edge()
+    if (now === undefined) return
+    const moved = was === undefined ? 0 : now - was
+    was = now
+    if (Math.abs(moved) < 0.5) return
+    const pan = target().pan
+    if (pan) pan(-moved)
+    else if (element.scrollWidth > element.clientWidth) element.scrollLeft += moved
+  })
+  watching.observe(element)
+  return () => watching.disconnect()
+}
 
 const live = new Set<Live>()
 
@@ -140,8 +178,10 @@ export function useCanvasZoom(target: ZoomTarget, options: { wheel?: boolean; pl
     element.addEventListener('gesturestart', gesture)
     element.addEventListener('gesturechange', gesture)
     document.addEventListener('keydown', keydown, true)
+    const unhold = holdOnScreen(element, () => latest.current.target)
     detach.current = () => {
       live.delete(canvas)
+      unhold()
       element.removeEventListener('pointermove', moved)
       element.removeEventListener('pointerenter', moved)
       element.removeEventListener('pointerleave', left)

@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { setHostOwnsZoomKeys, steppedZoomTarget, useCanvasZoom, zoomCanvasInUse } from './useCanvasZoom'
+import { holdOnScreen, setHostOwnsZoomKeys, steppedZoomTarget, useCanvasZoom, zoomCanvasInUse } from './useCanvasZoom'
 import type { ZoomTarget } from './useCanvasZoom'
 
 function Canvas({ target, wheel, plainKeys }: { target: ZoomTarget; wheel?: boolean; plainKeys?: boolean }) {
@@ -167,5 +167,50 @@ describe('a target over a zoom in the range', () => {
     expect(fit).toHaveBeenCalledOnce()
     target.by(0.1)
     expect(to).toHaveBeenLastCalledWith(0.6, undefined)
+  })
+})
+
+describe('what is drawn holds still when the canvas\'s left edge moves', () => {
+  // A tree docked beside a canvas moves its left edge and narrows it; jsdom lays nothing out, so both are told.
+  function watched(scrolls = false) {
+    const observers: Array<() => void> = []
+    vi.stubGlobal('ResizeObserver', class { constructor(tell: () => void) { observers.push(tell) } observe() {} disconnect() {} })
+    const element = document.createElement('div')
+    let left = 0
+    element.getBoundingClientRect = () => ({ left, width: 800 } as DOMRect)
+    if (scrolls) {
+      Object.defineProperty(element, 'scrollWidth', { value: 2000 })
+      Object.defineProperty(element, 'clientWidth', { value: 800 })
+    }
+    return { element, moveTo: (to: number) => { left = to; observers.forEach((tell) => tell()) } }
+  }
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('pans a canvas with a viewport of its own back by as much as the edge moved', () => {
+    const { element, moveTo } = watched()
+    const pan = vi.fn()
+    const stop = holdOnScreen(element, () => ({ ...spy(), pan }))
+    moveTo(300)
+    expect(pan).toHaveBeenLastCalledWith(-300)
+    moveTo(0)
+    expect(pan).toHaveBeenLastCalledWith(300)
+    stop()
+  })
+
+  it('scrolls a canvas that scrolls, and leaves one alone whose edge stayed', () => {
+    const { element, moveTo } = watched(true)
+    element.scrollLeft = 500
+    const stop = holdOnScreen(element, () => spy())
+    moveTo(0)
+    expect(element.scrollLeft).toBe(500)
+    moveTo(300)
+    expect(element.scrollLeft).toBe(800)
+    stop()
+  })
+
+  it('passes a pan through a stepped target', () => {
+    const pan = vi.fn()
+    steppedZoomTarget({ zoom: () => 1, to: vi.fn(), fit: vi.fn(), pan }).pan?.(12)
+    expect(pan).toHaveBeenCalledWith(12)
   })
 })

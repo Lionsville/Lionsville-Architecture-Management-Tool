@@ -162,7 +162,7 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     else if (box.bottom > frame.bottom - CLEAR_OF_EDGE) dy = frame.bottom - CLEAR_OF_EDGE - box.bottom
     if (dx !== 0 || dy !== 0) panBy(dx, dy)
   }, [to, panBy])
-  const target = useMemo(() => steppedZoomTarget({ zoom: () => camera.current.zoom, to, fit }, POSTER_ZOOM), [to, fit])
+  const target = useMemo(() => steppedZoomTarget({ zoom: () => camera.current.zoom, to, fit, pan: (dx) => panBy(dx, 0) }, POSTER_ZOOM), [to, fit, panBy])
   const attachZoom = useCanvasZoom(target)
   const attach = useCallback((element: HTMLDivElement | null) => {
     pane.current = element

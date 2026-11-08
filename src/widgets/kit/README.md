@@ -200,6 +200,10 @@ is not a step Back walks through.
   (`setHostOwnsZoomKeys`), because a menu accelerator fires even when the page
   handled the key; its items reach the canvas in use through `zoomCanvasInUse`,
   and the window's own zoom when there is none.
+- **Holding still.** The same ref keeps what is drawn where it was on the screen when
+  the canvas's left edge moves — the tree docked beside it or put away, its seam
+  dragged (`holdOnScreen`). A canvas that scrolls needs nothing more; one with a
+  viewport of its own gives its target a `pan(dx)`.
 - **Distance.** The element round the drawing spreads `canvasZoomProps(zoom)`. That
   is all the Card, Zone, Line and label need: they hold their size on screen through
   `--canvas-zoom`, and `data-distance` says what each shows, in CSS, so a zoom

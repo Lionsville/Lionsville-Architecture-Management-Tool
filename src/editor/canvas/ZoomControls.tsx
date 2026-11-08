@@ -27,6 +27,10 @@ export function useBoardZoom(container: RefObject<HTMLDivElement | null>): (elem
       void setViewport(zoomAbout(getViewport(), about, zoom));
     },
     fit: () => fit(),
+    pan: (dx) => {
+      const at = getViewport();
+      void setViewport({ ...at, x: at.x + dx });
+    },
   }), { wheel: false, plainKeys: false });
   return useCallback((element: HTMLDivElement | null) => {
     container.current = element;
