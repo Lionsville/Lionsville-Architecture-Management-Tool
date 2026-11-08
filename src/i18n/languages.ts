@@ -93,3 +93,8 @@ export function detectBrowserLanguage(
 export function inSentence(word: string, language: Language): string {
   return language === 'de' ? word : word.toLowerCase()
 }
+
+/** A phrase that stands on its own, as a row's text does: its first letter a capital, *the same name* reading *The same name*. */
+export function standingAlone(phrase: string, language: Language): string {
+  return phrase.charAt(0).toLocaleUpperCase(language) + phrase.slice(1)
+}

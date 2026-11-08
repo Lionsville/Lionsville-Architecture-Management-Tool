@@ -32,6 +32,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.rolesMore': '+{count}',
   'people.rolesNone': 'Heeft niets',
   'people.colEmail': 'Werkadres',
+  'people.colFamily': 'Achternaam',
   'people.kindInternal': 'Intern',
   'people.kindExternal': 'Extern',
   'people.stateActive': 'Actief',

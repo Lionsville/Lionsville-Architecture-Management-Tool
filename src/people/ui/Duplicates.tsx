@@ -18,6 +18,8 @@
  * (`mayMerge`, `mayAnswer`), and offers only that.
  */
 import { useState } from 'react'
+import { useStrings } from '../../i18n/LanguageContext'
+import { standingAlone } from '../../i18n/languages'
 import type { PersonId } from '../../model/person'
 import { Button } from '../../widgets/kit/Button'
 import { List } from '../../widgets/kit/List'
@@ -145,6 +147,7 @@ function Answered({ answered, register, saying, s }: {
 
 /** The queue and the answers given, each offered only to whoever may act on it. */
 export function Duplicates({ pairs, register, saying, roles, onMerge, s }: DuplicatesProps) {
+  const { language } = useStrings()
   const { offered, answered } = reviewable(pairs, register)
   return (
     <section data-testid="people-duplicates" data-guide="people.duplicates" aria-label={s('people.duplicates')}>
@@ -163,7 +166,8 @@ export function Duplicates({ pairs, register, saying, roles, onMerge, s }: Dupli
                 const [keep, drop] = keptFirst(pair, register)
                 return {
                   id: `${keep.id}|${drop.id}`,
-                  text: s(SIGN_LABEL[pair.sign]),
+                  // The reason is a row's text here, on its own, where the dialogs say it inside a sentence.
+                  text: standingAlone(s(SIGN_LABEL[pair.sign]), language),
                   cells: {
                     one: <Side person={keep} register={register} roles={roles} s={s} />,
                     other: <Side person={drop} register={register} roles={roles} s={s} />,

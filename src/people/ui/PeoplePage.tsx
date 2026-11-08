@@ -23,6 +23,7 @@
  * person is said to be kept, not missing.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { familyName } from '../familyName'
 import type { PersonId } from '../../model/person'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
@@ -237,6 +238,8 @@ function PeopleList({ register, view, setView, rows, shown, me, day, selected, o
   const columnChoices = [
     ...(assignmentsOf ? [{ id: 'roles', label: day === register.today ? s('people.colRoles') : s('people.colRolesOn', { day: dayWords(day) }) }] : []),
     { id: 'kind', label: s('people.colKind') }, { id: 'state', label: s('people.colState') }, { id: 'email', label: s('people.colEmail') },
+    // Off until asked for: its sort files a name past the van and de that open it.
+    { id: 'family', label: s('people.colFamily') },
   ]
   const stateWord = (one: Person) => (one.state === 'left' ? s('people.stateLeft', { day: dayWords(one.leftOn) })
     : one.state === 'forgotten' ? s('people.stateForgotten', { day: dayWords(one.forgottenOn) }) : s('people.stateActive'))
@@ -277,6 +280,7 @@ function PeopleList({ register, view, setView, rows, shown, me, day, selected, o
                   kind: s(KIND_LABEL[row.person.kind]),
                   state: stateWord(row.person),
                   email: row.person.email ?? (register.withheld?.(row.person.id) ? s('people.emailWithheld') : ''),
+                  family: familyName(row.text).said,
                 },
               }
             }),
@@ -344,6 +348,7 @@ function useRows(register: PeopleRegisterAccess, day: string, view: ListView, s:
     sortBy: {
       name: ({ text }) => text, roles: ({ roles: held }) => held[0]?.role ?? null, kind: ({ person }) => s(KIND_LABEL[person.kind]),
       state: ({ person }) => person.state, email: ({ person }) => person.email ?? null,
+      family: ({ text }) => familyName(text).key,
     },
   }), [assignmentsOf, s])
   const shown = useMemo(() => listed(rows, view, how).flatMap((group) => group.rows), [rows, view, how])

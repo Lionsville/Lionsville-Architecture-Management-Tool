@@ -774,7 +774,8 @@ describe('To review', () => {
     expect(pair.dataset.guide).toBe('people.duplicatePair')
     const line = pair.closest('[data-kit-row]') as HTMLElement
     expect(line.textContent).toContain('Sam de VriesProduct owner, Booking +1sam.devries@acme.example')
-    expect(line.textContent).toContain('the same address')
+    // The reason stands on its own as the row's text, so it starts with a capital.
+    expect(line.textContent).toContain('The same address')
     expect(line.textContent).toContain('Samuel de Vries · External')
     expect(within(pair).getByRole('button', { name: 'Merge… Sam de Vries and Samuel de Vries' }).textContent).toBe('Merge…')
     expect(within(pair).getByRole('button', { name: 'Not the same person: Sam de Vries and Samuel de Vries' })).toBeTruthy()

@@ -40,6 +40,7 @@ export const EN = {
   'people.rolesMore': '+{count}',
   'people.rolesNone': 'Holds nothing',
   'people.colEmail': 'Work address',
+  'people.colFamily': 'Family name',
   'people.kindInternal': 'Internal',
   'people.kindExternal': 'External',
   'people.stateActive': 'Active',
