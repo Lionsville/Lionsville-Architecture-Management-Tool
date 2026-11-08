@@ -16,6 +16,8 @@ import type { ScopeSnapshot } from '../projects/scope'
 import type { AgentGateway } from '../ports/AgentGateway'
 import { heldRepositories } from './testing/heldRepositories'
 import { placePage, placePageNow } from './testing/placePage'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { renderApp } from './testing/renderShell'
 
 beforeAll(() => installReactFlowMocks())
@@ -104,6 +106,9 @@ describe('row two on a home', () => {
     const row = screen.getByTestId('frame-places')
     expect(within(row).getByTestId('frame-home').getAttribute('aria-current')).toBe('page')
     expect(within(row).getByTestId('frame-page-decisions')).toBeDefined()
+    // Places left to fold fold before the views give up width (Frame.css, `data-row-folds`).
+    expect(row.querySelector(':scope > [data-row-folds]')).not.toBeNull()
+    expect(readFileSync(join(process.cwd(), 'src/widgets/kit/Frame.css'), 'utf8')).toMatch(/:has\(> \[data-row-folds\]\)[^{]*kit-frame__views[^{]*\{ flex-shrink: 0; \}/)
     expect(within(row).getByRole('button', { name: 'More' })).toBeDefined()
     expect(within(row).queryByTestId(/^frame-view-/)).toBeNull()
     expect(within(row).queryByTestId('frame-new-view')).toBeNull()

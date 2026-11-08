@@ -607,7 +607,8 @@ function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page
   ))
   return (
     <>
-      <span ref={anchor} hidden />
+      {/* While a place is left to fold, the views keep their width and the places go into More first (`data-row-folds`). */}
+      <span ref={anchor} hidden data-row-folds={kept.length > 0 || undefined} />
       {kept.map((one) => (
         <button
           key={one.page} type="button" className="kit-frame__tab" aria-current={shows(one) ? 'page' : undefined} data-testid={`frame-page-${one.page}`}

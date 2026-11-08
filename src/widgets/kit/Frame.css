@@ -21,6 +21,8 @@
 .kit-frame__panel { flex: 0 0 auto; min-height: 0; display: flex; }
 .kit-frame__homeviews { flex: 0 1 auto; min-width: min(10rem, 30%); display: flex; align-items: center; overflow-x: auto; scrollbar-width: none; }
 .kit-frame__pages { display: contents; }
+/* A row with something of its own still to fold folds that first: what it names (`data-row-folds` on any child) goes into More before the views give up any width. */
+.kit-frame__row--two:has(> [data-row-folds]) :is(.kit-frame__views, .kit-frame__homeviews) { flex-shrink: 0; }
 
 /* A page, in the main column over the view: it pushes nothing and nothing shows through. */
 .kit-place { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; min-height: 0; overflow: auto; background: var(--ground); outline: none; }
