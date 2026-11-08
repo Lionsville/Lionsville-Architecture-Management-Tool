@@ -218,8 +218,8 @@ würde eine Frage aufwerfen („und alles danach?“), die {key:Mod+Z} bereits b
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Rückgängig, Wiederholen — ein Stapel über alles |
 | {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Kopieren, Ausschneiden, Einfügen, Duplizieren |
 | Pfeile, {key:Shift} Pfeile | Um einen Rasterschritt verschieben, um ein Pixel |
-| Shift+1, Shift+2, \`=\`, \`-\` | Einpassen, 100 %, Vergrößern, Verkleinern |
-| Shift+F10 | Das Menü für die Auswahl |
+| {key:Shift+1}, {key:Shift+2}, \`=\`, \`-\` | Einpassen, 100 %, Vergrößern, Verkleinern |
+| {key:Shift+F10} | Das Menü für die Auswahl |
 | {key:Mod+S} | Jetzt speichern |
 | {key:Cmd+[|Alt+Left} {key:Cmd+]|Alt+Right} | Zurück, Vorwärts, in der Desktop-App; im Browser die des Browsers |` },
   ],
@@ -516,16 +516,16 @@ Mitglieder sind. Sie sind aus, bis jemand danach fragt, denn das schlichte C4-Bi
 bleibt auf einer Ebene, und die Ansicht merkt es sich.
 
 **Tastatur.** Tab geht die Elemente auf der Zeichenfläche durch, Enter wählt das
-fokussierte aus, und Shift+Enter fügt es der Auswahl hinzu. Die Pfeiltasten
-verschieben die Auswahl um einen Rasterschritt, mit Shift um ein Pixel. \`?\`
+fokussierte aus, und {key:Shift+Enter} fügt es der Auswahl hinzu. Die Pfeiltasten
+verschieben die Auswahl um einen Rasterschritt, mit {key:Shift} um ein Pixel. \`?\`
 zeigt jedes Tastenkürzel.
 
 Verbindungen und die Namen von Domänengruppen liegen auf demselben Weg, und
-Enter wählt auch sie aus; Shift+F10 öffnet das Menü dessen, was ausgewählt ist,
+Enter wählt auch sie aus; {key:Shift+F10} öffnet das Menü dessen, was ausgewählt ist,
 und Enter auf dem bereits ausgewählten Element öffnet seine Dokumentation. Eine
 Verbindung ziehen Sie ohne Maus mit **Verbindung beginnen zu…** aus dem Menü
 eines Elements: mit Tab zum anderen Ende gehen und Enter drücken. Auf dem Tab
-einer Landschaft listet ↓ ihre Containerdiagramme, und Shift+F10 öffnet das
+einer Landschaft listet ↓ ihre Containerdiagramme, und {key:Shift+F10} öffnet das
 Menü des Tabs. Ein Element, ein Band oder eine Gruppe in der Größe ändern, eine
 Gruppe verschieben und einer Verbindung einen Knick geben braucht weiterhin
 einen Zeiger.` },
@@ -630,7 +630,7 @@ geführt, wenn sich etwas bewegt. Wenn automatisch nicht das ist, was Sie wollen
 - **Route fixieren** hält eine Linie genau so, wie sie ist, auch eine ohne
   Knicke.
 - **Anheften an ▸** wählt, an welcher Seite eines Elements jedes Ende austritt
-  oder ankommt, oder halten Sie Alt gedrückt, während Sie eine Verbindung von
+  oder ankommt, oder halten Sie {key:Alt} gedrückt, während Sie eine Verbindung von
   einem bestimmten Seitenanfasser ziehen. Eine gewählte Seite ist eine
   Randbedingung, die der Router einhält, keine handgezeichnete Route.
 - Ziehen Sie die Beschriftung von ihrer Standardposition weg;
@@ -1228,9 +1228,9 @@ kehrt zur Kachel zurück. **{key:Mod+F}** sucht und hebt hervor, was es findet.
 Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
 
 - einen Block am Titel ziehen oder an der Ecke aufziehen; er rastet auf einem Raster von 8 und an
-  den Kanten der Nachbarn ein, Alt lässt los. Die erste Bewegung schreibt jeden Block, sodass die
+  den Kanten der Nachbarn ein, {key:Alt} lässt los. Die erste Bewegung schreibt jeden Block, sodass die
   Seite der ersten Anordnung nicht mehr folgt. Die Leertaste nimmt einen Block für die Tastatur auf,
-  die Pfeile verschieben, {key:Shift} ändert die Größe, Alt geht einheitenweise, die Leertaste setzt ab und
+  die Pfeile verschieben, {key:Shift} ändert die Größe, {key:Alt} geht einheitenweise, die Leertaste setzt ab und
   Esc stellt zurück;
 - eine Kachel innerhalb ihres Blocks in eine Zelle ziehen, und die anderen fließen darum herum;
   oder auf ein anderes Gebiet oder eine Gruppierung, was sie im Modell verschiebt, auf jeder
@@ -1305,7 +1305,7 @@ sich zurückgesetzt.
 Tippen, und {key:Mod+F} führt dorthin. Bei einer gefundenen Person geht das Organigramm zur Einheit
 und öffnet die Zuordnung. **Mich finden** geht zur Einheit, in der Sie eine Rolle haben; sagen Sie zuerst,
 wer Sie sind, mit **Das bin ich** auf der Seite Personen. Im Organigramm gehen die Pfeile
-durch die Kästen, Enter wählt und geht nach unten, Umschalt und Enter nach oben, M
+durch die Kästen, Enter wählt und geht nach unten, {key:Shift} und Enter nach oben, M
 verschiebt die Einheit und F setzt den Fokus darauf.
 
 **Ein Kasten** sagt Typ und Namen der Einheit und eine Zeile je Rolle: *Leitung: Anna de

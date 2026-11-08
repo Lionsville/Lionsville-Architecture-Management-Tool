@@ -149,7 +149,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.staleness': 'Dies zeigt, wo die Daten einander widersprechen. Ob eine Landschaft veraltet ist, kann es nicht sagen.',
 
   // The roadmap on its ruler and the plan as one document (4.0).
-  'roadmap.help': 'Ziehen Sie den Griff, um das Board an einem Tag zu zeigen. Es wird nichts gespeichert. {key:Mod} mit dem Rad zoomt; Umschalt mit dem Rad verschiebt.',
+  'roadmap.help': 'Ziehen Sie den Griff, um das Board an einem Tag zu zeigen. Es wird nichts gespeichert. {key:Mod} mit dem Rad zoomt; {key:Shift} mit dem Rad verschiebt.',
   'roadmap.helpName': 'Wie das Lineal funktioniert',
   'roadmap.find': 'Eine Zeile suchen',
   'roadmap.plansUndated': '{count}, und {undated} ohne Datum',

@@ -134,7 +134,7 @@ export const EN = {
   'doc.refKindDecision': 'Decision',
   'doc.refKindObservation': 'Observation',
   'doc.refCompletion': 'Refer to',
-  'doc.refCompletionHint': '↑↓ to move · Enter to insert · Esc to close',
+  'doc.refCompletionHint': '↑↓ to move · {key:Enter} to insert · {key:Escape} to close',
   'doc.refGone': '{what} is no longer here.',
   'doc.refOpen': 'Open',
   'doc.viewOpen': 'Open {name} ↗',

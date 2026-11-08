@@ -149,7 +149,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'check.staleness': 'Dit toont waar de datums elkaar tegenspreken. Het kan niet zien of een landschap verouderd is.',
 
   // The roadmap on its ruler and the plan as one document (4.0).
-  'roadmap.help': 'Sleep de greep om het bord op een dag te tonen. Er wordt niets bewaard. {key:Mod} met het wiel zoomt; Shift met het wiel schuift.',
+  'roadmap.help': 'Sleep de greep om het bord op een dag te tonen. Er wordt niets bewaard. {key:Mod} met het wiel zoomt; {key:Shift} met het wiel schuift.',
   'roadmap.helpName': 'Hoe de liniaal werkt',
   'roadmap.find': 'Zoek een rij',
   'roadmap.plansUndated': '{count}, en {undated} zonder data',

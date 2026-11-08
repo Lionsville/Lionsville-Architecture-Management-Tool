@@ -233,7 +233,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.containerMenu': 'Dit containerdiagram hernoemen, instellen of verwijderen',
   'toolbar.containerMenuOf': 'Menu van het containerdiagram van {name}',
 
-  'canvas.connectHint': 'Klik een doelelement aan, of ga er met Tab heen en druk op Enter — Esc annuleert',
+  'canvas.connectHint': 'Klik een doelelement aan, of ga er met {key:Tab} heen en druk op {key:Enter} — {key:Escape} annuleert',
   'canvas.edgeName': 'Van {source} naar {target}',
   'canvas.gridToggle': 'Raster tonen',
   'canvas.snapToggle': 'Uitlijnen op raster',
@@ -287,7 +287,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'add.kind': 'Soort',
   'add.existingSame': 'Al in de organisatie',
   'add.existingOther': 'Andere soorten',
-  'add.how': 'Enter voegt toe · Tab wisselt soort · Esc annuleert',
+  'add.how': '{key:Enter} voegt toe · {key:Tab} wisselt soort · {key:Escape} annuleert',
   'board.keyColumns': 'Van links naar rechts: {columns}',
   'board.releaseToConnect': 'Loslaten om te verbinden',
   'board.selectionBar': '{count} geselecteerd op het bord',
@@ -404,7 +404,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.emptyRead': 'Kies een element of verbinding om de eigenschappen te lezen.',
   'inspector.empty':
     'Selecteer een element of koppeling om de eigenschappen te bewerken. Dubbelklik een applicatie om haar containerdiagram te openen.',
-  'inspector.emptyHint': 'Shift-klik om een element aan de selectie toe te voegen of er weer uit te halen.',
+  'inspector.emptyHint': '{key:Shift}-klik om een element aan de selectie toe te voegen of er weer uit te halen.',
   'inspector.selected': '{count} geselecteerd',
   'inspector.elementsOne': '{count} element',
   'inspector.elementsOther': '{count} elementen',
@@ -413,8 +413,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.groupsOne': '{count} domeingroep',
   'inspector.groupsOther': '{count} domeingroepen',
   'inspector.multiHint':
-    'Sleep een geselecteerde kaart om ze samen te verplaatsen. Shift-klik voegt toe of haalt weg; Escape maakt de selectie leeg.',
-  'inspector.multiHintLines': 'Shift-klik voegt toe of haalt weg; Escape maakt de selectie leeg.',
+    'Sleep een geselecteerde kaart om ze samen te verplaatsen. {key:Shift}-klik voegt toe of haalt weg; {key:Escape} maakt de selectie leeg.',
+  'inspector.multiHintLines': '{key:Shift}-klik voegt toe of haalt weg; {key:Escape} maakt de selectie leeg.',
   'inspector.bulkTitle': 'OP ALLES TOEPASSEN',
   'inspector.bulkLifecycle': 'Levenscyclus',
   'inspector.bulkColour': 'Accentkleur',

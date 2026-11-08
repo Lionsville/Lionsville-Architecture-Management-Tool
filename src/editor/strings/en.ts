@@ -244,7 +244,7 @@ export const EN = {
   'toolbar.containerMenuOf': 'Menu of the container view of {name}',
 
   // --- canvas --------------------------------------------------------------
-  'canvas.connectHint': 'Click a target element, or Tab to it and press Enter — Esc cancels',
+  'canvas.connectHint': 'Click a target element, or {key:Tab} to it and press {key:Enter} — {key:Escape} cancels',
   'canvas.edgeName': 'From {source} to {target}',
   'canvas.gridToggle': 'Show grid',
   'canvas.snapToggle': 'Snap to grid',
@@ -298,7 +298,7 @@ export const EN = {
   'add.kind': 'Kind',
   'add.existingSame': 'Already in the organisation',
   'add.existingOther': 'Other kinds',
-  'add.how': 'Enter adds · Tab changes kind · Esc cancels',
+  'add.how': '{key:Enter} adds · {key:Tab} changes kind · {key:Escape} cancels',
   'board.keyColumns': 'Left to right: {columns}',
   'board.releaseToConnect': 'Release to connect',
   'board.selectionBar': '{count} selected on the board',
@@ -416,7 +416,7 @@ export const EN = {
   'inspector.emptyRead': 'Select an element or connection to read its properties.',
   'inspector.empty':
     'Select an element or connection to edit its properties. Double-click an application to open its container diagram.',
-  'inspector.emptyHint': 'Shift-click to add an element to the selection or take it out again.',
+  'inspector.emptyHint': '{key:Shift}-click to add an element to the selection or take it out again.',
   'inspector.selected': '{count} selected',
   'inspector.elementsOne': '{count} element',
   'inspector.elementsOther': '{count} elements',
@@ -425,8 +425,8 @@ export const EN = {
   'inspector.groupsOne': '{count} domain group',
   'inspector.groupsOther': '{count} domain groups',
   'inspector.multiHint':
-    'Drag any selected card to move them together. Shift-click to add or remove items; Escape to clear.',
-  'inspector.multiHintLines': 'Shift-click to add or remove items; Escape to clear.',
+    'Drag any selected card to move them together. {key:Shift}-click to add or remove items; {key:Escape} to clear.',
+  'inspector.multiHintLines': '{key:Shift}-click to add or remove items; {key:Escape} to clear.',
   'inspector.bulkTitle': 'APPLY TO ALL',
   'inspector.bulkLifecycle': 'Lifecycle',
   'inspector.bulkColour': 'Accent colour',

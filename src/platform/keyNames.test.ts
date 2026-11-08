@@ -39,4 +39,10 @@ describe('a chord\'s name', () => {
     expect(acceleratorName('CmdOrCtrl+Plus', false, 'en')).toBe('Ctrl++')
     expect(acceleratorName('CmdOrCtrl+[', true, 'en')).toBe('⌘[')
   })
+
+  it('calls the space bar what the language calls it, on a Mac too', () => {
+    expect(keyName('Space', true, 'nl')).toBe('Spatie')
+    expect(keyName('Space', true, 'de')).toBe('Leertaste')
+    expect(keyName('Space', true, 'en')).toBe('Space')
+  })
 })

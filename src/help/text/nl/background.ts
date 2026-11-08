@@ -206,8 +206,8 @@ alles daarna?") die {key:Mod+Z} al beantwoordt.` },
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Ongedaan maken, opnieuw — één stapel over alles |
 | {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Kopiëren, knippen, plakken, dupliceren |
 | Pijltjes, {key:Shift} Pijltjes | Verplaatsen per rasterstap, per pixel |
-| Shift+1, Shift+2, \`=\`, \`-\` | Passend maken, 100 %, inzoomen, uitzoomen |
-| Shift+F10 | Het menu voor de selectie |
+| {key:Shift+1}, {key:Shift+2}, \`=\`, \`-\` | Passend maken, 100 %, inzoomen, uitzoomen |
+| {key:Shift+F10} | Het menu voor de selectie |
 | {key:Mod+S} | Nu bewaren |
 | {key:Cmd+[|Alt+Left} {key:Cmd+]|Alt+Right} | Terug, Vooruit, in de desktop-app; in een browser die van de browser |` },
   ],
@@ -484,16 +484,16 @@ verplaatsen: een kader staat waar zijn leden staan. Ze staan uit tot iemand erom
 de kale C4-plaat blijft op één niveau, en de weergave onthoudt het.
 
 **Toetsenbord.** Tab loopt langs de elementen op de plaat, Enter selecteert het
-element onder de focus en Shift+Enter voegt het toe aan de selectie. De pijltjes
-verplaatsen de selectie een rasterstap, met Shift één pixel. \`?\` toont alle
+element onder de focus en {key:Shift+Enter} voegt het toe aan de selectie. De pijltjes
+verplaatsen de selectie een rasterstap, met {key:Shift} één pixel. \`?\` toont alle
 sneltoetsen.
 
 Koppelingen en de namen van domeingroepen zitten in dezelfde rondgang, en Enter
-selecteert ze ook; Shift+F10 opent het menu van wat geselecteerd is, en Enter op
+selecteert ze ook; {key:Shift+F10} opent het menu van wat geselecteerd is, en Enter op
 het element dat al geselecteerd is opent de documentatie ervan. Een koppeling
 trek je zonder muis met **Koppeling starten naar…** uit het menu van een
 element: ga met Tab naar het andere eind en druk op Enter. Op een tab van een
-landschap toont ↓ de containerdiagrammen en opent Shift+F10 het menu van de tab.
+landschap toont ↓ de containerdiagrammen en opent {key:Shift+F10} het menu van de tab.
 Een element, een baan of een groep groter of kleiner maken, een groep
 verplaatsen en een koppeling een knik geven gaan nog met een aanwijzer.` },
     { title: `Elementen`, text: `Zeven soorten: applicatie, component, extern systeem, invoerkanaal,
@@ -592,7 +592,7 @@ als er iets verschuift. Als automatisch niet is wat je wilt:
   in het lijnmenu.
 - **Route vastzetten** houdt een lijn precies zoals hij is, ook zonder knikken.
 - **Aanhechten aan ▸** kiest aan welke kant van een element elk uiteinde
-  vertrekt of aankomt, of houd Alt ingedrukt terwijl je een verbinding vanaf
+  vertrekt of aankomt, of houd {key:Alt} ingedrukt terwijl je een verbinding vanaf
   een specifiek zijhandvat sleept. Een gekozen zijde is een randvoorwaarde die
   de router respecteert, geen handgetekende route.
 - Sleep het label van zijn standaardplek; **Labelpositie herstellen** zet het
@@ -1160,9 +1160,9 @@ komt terug op de tegel. **{key:Mod+F}** zoekt, en licht op wat het vindt.
 op de pagina. Bij **Ontwerpen** (\`tab=design\`) kun je:
 
 - een blok aan de titel slepen of aan de hoek trekken; het klikt op een raster van 8 en op de
-  randen van de buren, Alt laat los. De eerste beweging schrijft elk blok, zodat de pagina de
+  randen van de buren, {key:Alt} laat los. De eerste beweging schrijft elk blok, zodat de pagina de
   eerste indeling niet meer volgt. Spatie pakt een blok op voor het toetsenbord, pijltjes
-  verplaatsen, {key:Shift} verandert de grootte, Alt stapt per eenheid, spatie zet neer en Esc zet terug;
+  verplaatsen, {key:Shift} verandert de grootte, {key:Alt} stapt per eenheid, spatie zet neer en Esc zet terug;
 - een tegel binnen zijn blok naar een cel slepen, en de andere stromen eromheen; of op een ander
   gebied of andere groepering, wat haar in het model verplaatst, op elke weergave, zoals *Verplaatsen
   naar…* in het paneel. Wat een andere scope bewaart, wordt geweigerd in de woorden van het paneel;
@@ -1232,7 +1232,7 @@ scopes staan, wordt elke scope op zichzelf teruggezet.
 terwijl je typt, en {key:Mod+F} komt ernaartoe. Bij een gevonden persoon gaat het organogram
 naar de eenheid en opent de toewijzing. **Ik** gaat naar de eenheid waar jij een rol
 hebt; zeg eerst wie je bent, met **Dit ben ik** op de pagina Mensen. Op het organogram
-lopen de pijlen door de vakken, Enter kiest en gaat omlaag, Shift en Enter gaat
+lopen de pijlen door de vakken, Enter kiest en gaat omlaag, {key:Shift} en Enter gaat
 omhoog, M verplaatst de eenheid en F zet de focus erop.
 
 **Een vak** zegt het type en de naam van de eenheid en één regel per rol: *Hoofd:

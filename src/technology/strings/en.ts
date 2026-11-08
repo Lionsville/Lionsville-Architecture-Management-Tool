@@ -208,6 +208,6 @@ export const EN = {
   'landscape.matrixUses': 'uses it',
   'landscape.matrixImplied': 'comes with hosting',
   'landscape.matrixCount': '{count} stand on it',
-  'landscape.matrixHint': 'Press Space to change a mark. Press a heading for who stands on it.',
+  'landscape.matrixHint': 'Press {key:Space} to change a mark. Press a heading for who stands on it.',
   'landscape.matrixReadHint': 'Press a heading for who stands on it.',
 } as const

@@ -42,7 +42,8 @@ const ANYWHERE: Readonly<Record<string, string>> = {
 }
 
 const MAC_KEY: Readonly<Record<string, string>> = {
-  Delete: '⌫', Backspace: '⌫', Enter: '↩', Return: '↩', Escape: '⎋', Esc: '⎋', Tab: '⇥', Space: 'Space', ' ': 'Space',
+  // The space bar has no glyph and no word on a Mac's cap: it is called what the language calls it, below.
+  Delete: '⌫', Backspace: '⌫', Enter: '↩', Return: '↩', Escape: '⎋', Esc: '⎋', Tab: '⇥',
   // A Mac keyboard has no Menu key, and a list of keys leaves it out there (`noMacKey`); one plugged in is still named.
   ContextMenu: 'Menu',
 }
@@ -59,7 +60,7 @@ const isModifier = (token: string) => token in MAC_MODIFIER
 /** One key's name: a modifier or the key itself. */
 export function keyName(token: string, mac: boolean, language: Language = 'en'): string {
   if (isModifier(token)) return mac ? MAC_MODIFIER[token]! : OTHER_MODIFIER[language][token]!
-  const named = ANYWHERE[token] ?? (mac ? MAC_KEY[token] : OTHER_KEY[language][token])
+  const named = ANYWHERE[token] ?? (mac ? MAC_KEY[token] ?? (token === 'Space' || token === ' ' ? OTHER_KEY[language][token] : undefined) : OTHER_KEY[language][token])
   if (named !== undefined) return named
   return token.length === 1 ? token.toUpperCase() : token
 }

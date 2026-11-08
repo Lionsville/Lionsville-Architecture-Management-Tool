@@ -40,6 +40,16 @@ describe.each(['en', 'nl', 'de'] as const)('the %s strings', (language) => {
     const drawn = Object.entries(STRINGS[language]).filter(([, text]) => MODIFIER_GLYPHS.test(text)).map(([key, text]) => `${key}: ${text}`)
     expect(drawn).toEqual([])
   })
+
+  it('name a key as a placeholder, so a Mac shows ↩ and ⎋ and a German keyboard Umschalt', () => {
+    const KEY_IN_WORDS = /\b(Enter|Esc|Escape|Shift|Umschalt|Eingabetaste|Leertaste|Spatie)\b/
+    // Read aloud to a screen reader, where a glyph would be read as a symbol rather than as the key.
+    const SPOKEN = new Set(['canvas.a11yNode', 'canvas.a11yEdge'])
+    const worded = Object.entries(STRINGS[language])
+      .filter(([key, text]) => text.includes('{key:{') || (!SPOKEN.has(key) && !key.startsWith('shortcut.') && KEY_IN_WORDS.test(text.replace(/\{key:[^}]*\}/g, ''))))
+      .map(([key, text]) => `${key}: ${text}`)
+    expect(worded).toEqual([])
+  })
 })
 
 describe('a key with no name of its own', () => {

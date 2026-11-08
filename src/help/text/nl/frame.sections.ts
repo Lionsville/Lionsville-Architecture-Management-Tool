@@ -115,7 +115,7 @@ export const SECTIONS: SectionTexts = {
     'De dunne rand rechts van de boom.',
     ['Sleep de rand.', 'Of geef hem de focus en druk op ← of →; Home zet hem terug.'],
     'Maak de boom breder om lange scopenamen te lezen.',
-    '← → (Shift voor grotere stappen), Home'],
+    '← → ({key:Shift} voor grotere stappen), Home'],
   'tree.open': ['Een scope openen vanuit de boom', 'De boom naast elke startpagina toont elke scope, elk met hoeveel er hier en eronder staat. Op een regel klikken opent de startpagina van die scope.',
     'Het boompaneel links van een startpagina.',
     ['Klik op de naam van een scope.'],

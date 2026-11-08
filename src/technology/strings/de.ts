@@ -203,6 +203,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'landscape.matrixUses': 'nutzt es',
   'landscape.matrixImplied': 'kommt mit dem Hosting',
   'landscape.matrixCount': '{count} stehen darauf',
-  'landscape.matrixHint': 'Leertaste ändert eine Markierung. Eine Überschrift zeigt, wer darauf steht.',
+  'landscape.matrixHint': '{key:Space} ändert eine Markierung. Eine Überschrift zeigt, wer darauf steht.',
   'landscape.matrixReadHint': 'Eine Überschrift zeigt, wer darauf steht.',
 }

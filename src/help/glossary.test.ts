@@ -135,6 +135,14 @@ describe.each([['en', EN], ['nl', NL], ['de', DE]] as const)('the %s help', (_, 
     const drawn = helpStrings(text).filter(([, said]) => MODIFIER_GLYPHS.test(said)).map(([path, said]) => `${path}: ${said.slice(0, 80)}`)
     expect(drawn).toEqual([])
   })
+
+  it('names a modifier as a key placeholder, so a Mac shows ⇧ and ⌥ and a German keyboard Umschalt', () => {
+    // A role in the example is called Shift lead.
+    const worded = helpStrings(text)
+      .filter(([, said]) => /\b(Shift|Umschalt|Alt|Ctrl|Strg)\b(?! lead)|menu key|menutoets|Menütaste/.test(said.replace(/\{key:[^}]*\}/g, '')))
+      .map(([path, said]) => `${path}: ${said.slice(0, 80)}`)
+    expect(worded).toEqual([])
+  })
 })
 
 /**

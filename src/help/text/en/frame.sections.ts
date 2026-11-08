@@ -115,7 +115,7 @@ export const SECTIONS: SectionTexts = {
     'The thin edge right of the tree.',
     ['Drag the edge.', 'Or focus it and press ← or →; Home resets it.'],
     'Widen the tree to read long scope names.',
-    '← → (Shift for larger steps), Home'],
+    '← → ({key:Shift} for larger steps), Home'],
   'tree.open': ['Open a scope from the tree', 'The tree beside every home lists every scope, each with how much it holds here and below. Pressing a row opens that scope\'s home.',
     'The tree panel on the left of a home.',
     ['Press a scope\'s name.'],

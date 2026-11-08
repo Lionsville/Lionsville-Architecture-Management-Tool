@@ -192,8 +192,8 @@ everything after it?") that {key:Mod+Z} already answers.` },
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Undo, redo — one stack over everything |
 | {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Copy, cut, paste, duplicate |
 | Arrows, {key:Shift} Arrows | Nudge by a grid step, by a pixel |
-| Shift+1, Shift+2, \`=\`, \`-\` | Fit view, 100 %, zoom in, zoom out |
-| Shift+F10 | The menu for the selection |
+| {key:Shift+1}, {key:Shift+2}, \`=\`, \`-\` | Fit view, 100 %, zoom in, zoom out |
+| {key:Shift+F10} | The menu for the selection |
 | {key:Mod+S} | Save now |
 | {key:Cmd+[|Alt+Left} {key:Cmd+]|Alt+Right} | Back, Forward, in the desktop app; in a browser, the browser's own |` },
   ],
@@ -452,15 +452,15 @@ where its members are. It is off until asked for, as the plain C4 picture
 keeps to one level, and the view remembers.
 
 **Keyboard.** Tab walks the elements on the canvas, Enter selects the focused
-one and Shift+Enter adds it to the selection. The arrow keys nudge the
-selection by a grid step, Shift by one pixel. \`?\` shows every shortcut.
+one and {key:Shift+Enter} adds it to the selection. The arrow keys nudge the
+selection by a grid step, {key:Shift} by one pixel. \`?\` shows every shortcut.
 
 Lines and the names of domain groups are in the same walk, and Enter selects
-them too; Shift+F10 opens the menu of whatever is selected, and Enter on the
+them too; {key:Shift+F10} opens the menu of whatever is selected, and Enter on the
 element that is already selected opens its documentation. To draw a line
 without the mouse, choose **Start connection to…** from an element's menu, Tab
 to the other end and press Enter. On a landscape tab, ↓ lists its container
-diagrams and Shift+F10 opens the tab's menu. Resizing an element, a band or a
+diagrams and {key:Shift+F10} opens the tab's menu. Resizing an element, a band or a
 group, moving a group and bending a line still need a pointer.` },
     { title: `Elements`, text: `Seven kinds: application, component, external system, input channel,
 management tool, actor, and the domain group that holds them — and, since
@@ -521,9 +521,9 @@ part is its own step, and the step here cannot be taken back with undo.
 Deleting any actor moves what sits in it up into its parent.` },
     { title: `Connections`, text: `Point at an element and drag from the dot at its edge to another: the line shows
 the route it will get, what it may land on is ringed, and it lands on the side you
-let go by. Hold Alt to choose the side it leaves from too. Let go on open board and
+let go by. Hold {key:Alt} to choose the side it leaves from too. Let go on open board and
 the same field as a double-click asks what is to come, and what you choose arrives
-connected. Without the mouse, right-click or Shift+F10 and **Start
+connected. Without the mouse, right-click or {key:Shift+F10} and **Start
 connection to…**. A connection carries a label, a protocol (whatever you type:
 REST, EDI, Kafka), a technology, a direction that sets the arrowheads, a colour
 and a line style. Double-click the label to edit it in place.
@@ -554,7 +554,7 @@ moves. When automatic is not what you want:
 - **Add bend point here**, **Remove bend point**, **Reset to automatic route** in the line menu.
 - **Pin route** keeps a line exactly as it is, even one with no bends.
 - **Attach at ▸** chooses which side of an element each end leaves from or
-  arrives at, or hold Alt while dragging a connection from a specific side
+  arrives at, or hold {key:Alt} while dragging a connection from a specific side
   handle. A chosen side is a constraint the router honours, not a hand-drawn
   route.
 - Drag the label off its default position; **Reset label position** puts it
@@ -1083,9 +1083,9 @@ to the tile. **{key:Mod+F}** finds, and lights what it finds.
 moves. In **Design** (\`tab=design\`) you may:
 
 - drag a block by its title or pull its corner; it snaps to a grid of 8 and to its
-  neighbours' edges, Alt lets go. The first move writes every block, so the page stops
+  neighbours' edges, {key:Alt} lets go. The first move writes every block, so the page stops
   following the first layout. Space lifts a block for the keyboard, the arrows move it, {key:Shift}
-  resizes, Alt steps a unit, Space drops and Esc puts it back;
+  resizes, {key:Alt} steps a unit, Space drops and Esc puts it back;
 - drag a tile within its block to a cell, and the others flow round it; or onto another
   area or grouping, which moves it in the model, on every view, as *Move to…* in the panel
   does. What another scope keeps is refused, in the panel's words;
@@ -1151,7 +1151,7 @@ are kept in other scopes, each scope is put back on its own.
 you type, and {key:Mod+F} comes to it. A person found has their unit gone to and their
 assignment opened. **Me** goes to the unit where you hold a role; say who you are
 first, with **This is me** on the People page. On the chart, the arrows walk the
-boxes, Enter picks and goes down, Shift and Enter goes up, M moves the unit and F
+boxes, Enter picks and goes down, {key:Shift} and Enter goes up, M moves the unit and F
 focuses on it.
 
 **A box** says the unit's type and name and one line per role: *Head: Anna de

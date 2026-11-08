@@ -203,6 +203,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'landscape.matrixUses': 'gebruikt het',
   'landscape.matrixImplied': 'komt met de hosting',
   'landscape.matrixCount': '{count} staan erop',
-  'landscape.matrixHint': 'Druk op Spatie om een teken te wijzigen. Klik op een kop om te zien wie erop staat.',
+  'landscape.matrixHint': 'Druk op {key:Space} om een teken te wijzigen. Klik op een kop om te zien wie erop staat.',
   'landscape.matrixReadHint': 'Klik op een kop om te zien wie erop staat.',
 }

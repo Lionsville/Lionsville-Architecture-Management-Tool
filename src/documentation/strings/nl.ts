@@ -125,7 +125,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.refKindDecision': 'Besluit',
   'doc.refKindObservation': 'Waarneming',
   'doc.refCompletion': 'Verwijzen naar',
-  'doc.refCompletionHint': '↑↓ om te bewegen · Enter om in te voegen · Esc om te sluiten',
+  'doc.refCompletionHint': '↑↓ om te bewegen · {key:Enter} om in te voegen · {key:Escape} om te sluiten',
   'doc.refGone': '{what} is hier niet meer.',
   'doc.refOpen': 'Openen',
   'doc.viewOpen': '{name} openen ↗',

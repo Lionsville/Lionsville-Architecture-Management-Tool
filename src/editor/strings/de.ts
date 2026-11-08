@@ -233,7 +233,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.containerMenu': 'Dieses Containerdiagramm umbenennen, einstellen oder löschen',
   'toolbar.containerMenuOf': 'Menü des Containerdiagramms von {name}',
 
-  'canvas.connectHint': 'Klicken Sie ein Zielelement an, oder gehen Sie mit Tab dorthin und drücken Sie die Eingabetaste — Esc bricht ab',
+  'canvas.connectHint': 'Klicken Sie ein Zielelement an, oder gehen Sie mit {key:Tab} dorthin und drücken Sie {key:Enter} — {key:Escape} bricht ab',
   'canvas.edgeName': 'Von {source} nach {target}',
   'canvas.gridToggle': 'Raster anzeigen',
   'canvas.snapToggle': 'Am Raster ausrichten',
@@ -287,7 +287,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'add.kind': 'Art',
   'add.existingSame': 'Schon in der Organisation',
   'add.existingOther': 'Andere Arten',
-  'add.how': 'Enter fügt hinzu · Tab wechselt die Art · Esc bricht ab',
+  'add.how': '{key:Enter} fügt hinzu · {key:Tab} wechselt die Art · {key:Escape} bricht ab',
   'board.keyColumns': 'Von links nach rechts: {columns}',
   'board.releaseToConnect': 'Zum Verbinden loslassen',
   'board.selectionBar': '{count} auf dem Board ausgewählt',
@@ -404,7 +404,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.emptyRead': 'Wählen Sie ein Element oder eine Verbindung, um die Eigenschaften zu lesen.',
   'inspector.empty':
     'Wählen Sie ein Element oder eine Verbindung aus, um die Eigenschaften zu bearbeiten. Doppelklicken Sie eine Anwendung, um ihr Containerdiagramm zu öffnen.',
-  'inspector.emptyHint': 'Umschalt-Klick fügt ein Element der Auswahl hinzu oder nimmt es wieder heraus.',
+  'inspector.emptyHint': '{key:Shift}-Klick fügt ein Element der Auswahl hinzu oder nimmt es wieder heraus.',
   'inspector.selected': '{count} ausgewählt',
   'inspector.elementsOne': '{count} Element',
   'inspector.elementsOther': '{count} Elemente',
@@ -413,8 +413,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.groupsOne': '{count} Domänengruppe',
   'inspector.groupsOther': '{count} Domänengruppen',
   'inspector.multiHint':
-    'Ziehen Sie eine ausgewählte Karte, um alle gemeinsam zu verschieben. Umschalt-Klick fügt hinzu oder entfernt; Escape hebt die Auswahl auf.',
-  'inspector.multiHintLines': 'Umschalt-Klick fügt hinzu oder entfernt; Escape hebt die Auswahl auf.',
+    'Ziehen Sie eine ausgewählte Karte, um alle gemeinsam zu verschieben. {key:Shift}-Klick fügt hinzu oder entfernt; {key:Escape} hebt die Auswahl auf.',
+  'inspector.multiHintLines': '{key:Shift}-Klick fügt hinzu oder entfernt; {key:Escape} hebt die Auswahl auf.',
   'inspector.bulkTitle': 'AUF ALLE ANWENDEN',
   'inspector.bulkLifecycle': 'Lebenszyklus',
   'inspector.bulkColour': 'Akzentfarbe',

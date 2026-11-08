@@ -2080,7 +2080,7 @@ export const EN = {
   'chart.findLabel': 'Find a unit or person',
   /** The find field's placeholder where the field is narrow; its name stays chart.findLabel. */
   'chart.findShort': 'Find…',
-  'chart.findHint': "Enter goes to the first. The way there unfolds.",
+  'chart.findHint': "{key:Enter} goes to the first. The way there unfolds.",
   'chart.me': "Me",
   'chart.findMeTip': "Go to where you hold a role",
   'chart.orderNone': "Pick a unit first",
@@ -2115,7 +2115,7 @@ export const EN = {
   'unitMove.panelKind': "Move",
   'unitMove.panelName': "Move {name}",
   'unitMove.bandTitle': "Moving {name}",
-  'unitMove.bandDetail': "Pick a unit on the chart or in the list. Esc cancels.",
+  'unitMove.bandDetail': "Pick a unit on the chart or in the list. {key:Escape} cancels.",
   'unitMove.newPlace': "New place",
   'unitMove.sitsNowShort': "Where it sits now",
   'unitMove.alongNone': "no units beside it",
