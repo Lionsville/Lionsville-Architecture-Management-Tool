@@ -25,6 +25,7 @@ import { WINDOW_BAR } from './windowArea'
 import './Frame.css'
 // The density switch's measures: on the root, so whatever the frame draws follows them.
 import './density.css'
+import './glyphs.css'
 
 /** Enough for a name and its number, and never so much that the page beside it is what gives way. */
 const TREE_MIN = 220

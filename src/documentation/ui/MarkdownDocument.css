@@ -43,8 +43,10 @@
 .md-flow-bar .md-editor__bar { flex-wrap: wrap; }
 .md-flow-bar > .md-editor__count { flex: none; color: var(--ink-3); font-size: var(--t-small); line-height: var(--ctl-h); font-variant-numeric: tabular-nums; }
 .md-document li { font-size: inherit; }
+/* Narrow, beside the reading or under 1280 px, the count takes a line of its own under the tools rather than going. */
 @container (max-width: 36rem) {
-  .md-flow-bar > .md-editor__count { display: none; }
+  .md-flow-bar { flex-wrap: wrap; }
+  .md-flow-bar > .md-editor__count { flex-basis: 100%; text-align: end; line-height: var(--lh-body); }
 }
 
 /* --- written and read, beside each other ------------------------------------ */

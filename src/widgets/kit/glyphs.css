@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/*
+ * A glyph grows with the words beside it: an icon is drawn at a size in px
+ * (`size={14}`), and here that size is said again in rem, so at a person's
+ * 150% a ⋯, a chevron, an eye or a toolbar's B stands as large as the 22 px text
+ * it sits in, and not at 14 px beside it. A canvas keeps its own px: its zoom
+ * is what makes it larger.
+ */
+:where(svg[aria-hidden][width='10']):not(.react-flow *) { width: 0.625rem; height: 0.625rem; }
+:where(svg[aria-hidden][width='11']):not(.react-flow *) { width: 0.6875rem; height: 0.6875rem; }
+:where(svg[aria-hidden][width='12']):not(.react-flow *) { width: 0.75rem; height: 0.75rem; }
+:where(svg[aria-hidden][width='13']):not(.react-flow *) { width: 0.8125rem; height: 0.8125rem; }
+:where(svg[aria-hidden][width='14']):not(.react-flow *) { width: 0.875rem; height: 0.875rem; }
+:where(svg[aria-hidden][width='15']):not(.react-flow *) { width: 0.9375rem; height: 0.9375rem; }
+:where(svg[aria-hidden][width='16']):not(.react-flow *) { width: 1rem; height: 1rem; }
+:where(svg[aria-hidden][width='18']):not(.react-flow *) { width: 1.125rem; height: 1.125rem; }
+:where(svg[aria-hidden][width='20']):not(.react-flow *) { width: 1.25rem; height: 1.25rem; }
+
+/* The native ticks of a list and a form, which a browser draws at 13 px whatever the text. */
+input[type='checkbox']:not(.react-flow *):not(.kit-switch__input),
+input[type='radio']:not(.react-flow *) { width: 1em; height: 1em; }
