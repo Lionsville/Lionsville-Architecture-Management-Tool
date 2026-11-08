@@ -48,8 +48,10 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
       const style = getComputedStyle(pane)
       const pad = (side: string) => Number.parseFloat(style.getPropertyValue(`padding-${side}`)) || 0
       const room = { width: pane.clientWidth - pad('left') - pad('right'), height: pane.clientHeight - pad('top') - pad('bottom') }
-      setZoom(fitZoom(room, { width: drawing.scrollWidth, height: drawing.scrollHeight }))
-      pane.scrollTo?.({ left: 0, top: 0 })
+      const fitted = fitZoom(room, { width: drawing.scrollWidth, height: drawing.scrollHeight })
+      setZoom(fitted)
+      // Clamped at the floor, the chart is wider than the pane: its middle, where the top unit is, is what is shown.
+      requestAnimationFrame(() => pane.scrollTo?.({ left: Math.max(0, (pane.scrollWidth - pane.clientWidth) / 2), top: 0 }))
     })
   }, [page, stage])
   const target = useMemo(() => steppedZoomTarget({ zoom: () => latest.current, to, fit }), [to, fit])
