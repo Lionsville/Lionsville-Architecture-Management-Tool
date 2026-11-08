@@ -282,7 +282,13 @@ describe('a record, read', () => {
     }
     const { onProject, rerender } = mount({ model: withSuccessor, initialAdrId: 'l2' })
     await more('Mark as superseded…')
-    fireEvent.click(within(screen.getByRole('dialog', { name: /Mark as superseded/ })).getByRole('button', { name: 'Mark as superseded' }))
+    const dialog = screen.getByRole('dialog', { name: /Mark as superseded/ })
+    // Nothing is chosen for the person: the first press is refused until a successor is picked.
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Mark as superseded' }))
+    expect(onProject).not.toHaveBeenCalled()
+    fireEvent.click(within(dialog).getByRole('combobox', { name: 'Successor' }))
+    fireEvent.click(screen.getByRole('option', { name: /ADR-0004/ }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Mark as superseded' }))
     const next: Adr[] = onProject.mock.calls[0][0]
     const l2 = next.find((a) => a.id === 'l2')!
     expect(l2.status).toBe('superseded')
@@ -298,6 +304,16 @@ describe('a record, read', () => {
     expect(within(dialog).queryByLabelText('Successor')).toBeNull()
     expect(within(dialog).getByText(/no accepted decision/)).toBeTruthy()
     expect(onProject).not.toHaveBeenCalled()
+  })
+
+  it('writes the replacement from the question, naming the record it supersedes', async () => {
+    const { onProject } = mount({ initialAdrId: 'l2' })
+    await more('Mark as superseded…')
+    fireEvent.click(screen.getByTestId('adr-write-replacement'))
+    const next: Adr[] = onProject.mock.calls[0][0]
+    const fresh = next.at(-1)!
+    expect(fresh).toMatchObject({ status: 'proposed', supersedes: ['l2'] })
+    expect(fresh.title).toMatch(/^Replaces /)
   })
 
   it('shows what acceptance still needs from the first draft, and the verb says how much', () => {

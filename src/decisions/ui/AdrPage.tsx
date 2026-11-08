@@ -376,12 +376,12 @@ export function AdrPage(props: AdrPageProps) {
     onto: (target) => { setView(FRESH_VIEW); setSelectedId(target.id) },
   })
 
-  const create = (title: string, about: string) => {
+  const create = (title: string, about: string, replaces?: Adr) => {
     const fresh = newAdr({
       id: makeId('adr'), number: nextAdrNumber(projectDecisions), title, date: today(), t: s,
       ...(about !== ABOUT_THE_SCOPE ? { subjectId: about } : {}),
     })
-    onProjectDecisionsChange([...projectDecisions, fresh])
+    onProjectDecisionsChange([...projectDecisions, replaces ? { ...fresh, supersedes: [replaces.id] } : fresh])
     setCreating(false)
     setView(FRESH_VIEW)
     setSelectedId(fresh.id)
@@ -483,6 +483,7 @@ export function AdrPage(props: AdrPageProps) {
           candidates={superseding ? listOf(superseding).filter((a) => a.id !== superseding.id && a.status === 'accepted') : []}
           onCancel={() => changes.setSuperseding(undefined)}
           onConfirm={(id) => { if (superseding) changes.supersede(superseding, id) }}
+          {...(superseding && !aboveOf(superseding) ? { onWriteReplacement: () => { changes.setSuperseding(undefined); create(s('adr.replacementTitle', { name: superseding.title }), superseding.subjectId ?? ABOUT_THE_SCOPE, superseding) } } : {})}
           s={s}
         />
         <MoveDialogs

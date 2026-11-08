@@ -62,24 +62,24 @@ export type SupersedeDialogProps = {
   candidates: readonly Adr[]
   onCancel: () => void
   onConfirm: (successorId: string) => void
+  /** Write the replacement now: a new proposal that names this record under Supersedes. Absent where it cannot be written here. */
+  onWriteReplacement?: () => void
   s: Translate
 }
 
-export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: SupersedeDialogProps) {
+export function SupersedeDialog({ target, candidates, onCancel, onConfirm, onWriteReplacement, s }: SupersedeDialogProps) {
   const [successor, setSuccessor] = useState('')
-  // Afresh for each record superseded, not for each render: the page builds
-  // the candidates on every one, and following them sent the choice back to
-  // the first record a second after it was made. A choice the list no
-  // longer offers reads as the first one, so Confirm never names a record
-  // the picker does not show.
+  // Afresh for each record superseded, not for each render. Nothing is chosen
+  // until a person chooses: a successor nobody picked is not one.
   useFreshFor(target, (one) => one.id, () => setSuccessor(''))
-  const chosen = candidates.some((adr) => adr.id === successor) ? successor : candidates[0]?.id ?? ''
+  const chosen = candidates.some((adr) => adr.id === successor) ? successor : ''
   return (
     <Dialog
       open={Boolean(target)} size="m" title={s('adr.supersedeTitle')} onClose={onCancel}
       actions={{
         cancel: { onClick: onCancel, label: s('common.cancel') },
-        outcome: { disabled: !chosen, onClick: () => onConfirm(chosen), label: s('adr.supersedeConfirm') },
+        aside: [onWriteReplacement && { onClick: onWriteReplacement, label: s('adr.writeReplacement'), 'data-testid': 'adr-write-replacement' }],
+        outcome: candidates.length > 0 && { reason: chosen ? undefined : s('adr.chooseSuccessor'), onClick: () => onConfirm(chosen), label: s('adr.supersedeConfirm') },
       }}
     >
       <p>{s('adr.supersedeBody')}</p>
@@ -88,7 +88,7 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
         : (
           <SelectField
             label={s('adr.successor')} value={chosen} onChange={setSuccessor}
-            options={candidates.map((adr) => ({ value: adr.id, label: `${formatAdrNumber(adr.number)} · ${adr.title}` }))}
+            options={[{ value: '', label: s('adr.chooseSuccessor') }, ...candidates.map((adr) => ({ value: adr.id, label: `${formatAdrNumber(adr.number)} · ${adr.title}` }))]}
           />
         )}
     </Dialog>
