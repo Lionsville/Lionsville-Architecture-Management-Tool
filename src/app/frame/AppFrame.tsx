@@ -32,7 +32,7 @@ import { Faces } from '../../widgets/kit/Faces'
 import type { StackedBand } from '../../widgets/kit/Band'
 import { Button, IconButton } from '../../widgets/kit/Button'
 import { Frame } from '../../widgets/kit/Frame'
-import { MenuButton, MoreMenu } from '../../widgets/kit/Menu'
+import { closeMenus, MenuButton, MoreMenu } from '../../widgets/kit/Menu'
 import { HelpPlaceProvider } from '../../widgets/kit/HelpPress'
 import { takesText } from '../helpKeys'
 import type { MenuAct, MenuEntry, MenuSpacer } from '../../widgets/kit/Menu'
@@ -381,6 +381,8 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         const key = menuKey(event, canOf(parts, frame.get().screen), { boardUp, modal: modalUp() }, isMac())
         if (!key) return
         event.preventDefault()
+        // As a native menu does when its key equivalent fires: ⋯ goes before what the key opens.
+        closeMenus()
         if (key.run) send(key.run)
         else if (key.refused) parts.services.toasts.notify(parts.services.s(key.refused === 'menu.saveNothingOpen' && parts.props.visiting ? 'menu.saveExample' : key.refused), 'info')
       }

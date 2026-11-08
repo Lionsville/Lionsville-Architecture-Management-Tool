@@ -25,7 +25,7 @@
  * there: React sends it on through the portal to the menu above, which would take
  * the focus back.
  */
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import MenuItem from '@mui/material/MenuItem'
 import { useStrings } from '../../i18n/LanguageContext'
@@ -109,8 +109,28 @@ export type MenuProps = {
   nested?: boolean
 }
 
+/** The menus open now, each by the way it closes. */
+const openMenus = new Set<() => void>()
+
+/**
+ * Close every menu that is open: what a key equivalent does to a native menu
+ * when it runs one of the menu's commands, so the menu does not stand over
+ * the dialog the command opened.
+ */
+export function closeMenus(): void {
+  for (const close of [...openMenus]) close()
+}
+
 export function Menu({ open, anchorEl, label, items, onClose, placement = 'below', nested = false }: MenuProps) {
   const [sub, setSub] = useState<{ index: number; anchor: HTMLElement } | null>(null)
+  const closing = useRef(onClose)
+  closing.current = onClose
+  useEffect(() => {
+    if (!open) return undefined
+    const close = () => { setSub(null); closing.current() }
+    openMenus.add(close)
+    return () => { openMenus.delete(close) }
+  }, [open])
   const descriptionBase = useId()
   const beside = placement === 'beside'
 

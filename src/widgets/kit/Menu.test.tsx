@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
-import { Menu, MenuButton, MoreMenu, opensAbove, orderedEntries } from './Menu'
+import { closeMenus, Menu, MenuButton, MoreMenu, opensAbove, orderedEntries } from './Menu'
 import type { MenuEntry } from './Menu'
 
 afterEach(cleanup)
@@ -55,6 +55,14 @@ describe('Menu', () => {
     expect(moved).toHaveBeenCalledOnce()
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     expect(document.activeElement).toBe(more)
+  })
+
+  it('closes when a key equivalent runs one of its commands, as a native menu does', async () => {
+    renderShell(<MoreMenu items={[{ label: 'Save a copy…', shortcut: '⇧⌘E', onSelect: () => {} }]} />)
+    open('More')
+    expect(screen.getByRole('menu')).toBeTruthy()
+    closeMenus()
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
   })
 
   it('takes no press that is the second of a double-click on its button: what opened under the pointer is not chosen', async () => {
