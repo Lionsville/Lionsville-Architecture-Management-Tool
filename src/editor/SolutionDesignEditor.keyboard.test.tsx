@@ -90,6 +90,19 @@ describe('the board without a mouse', () => {
     expect(told?.textContent).toContain('Shift+F10 opens its menu');
   });
 
+  it('walks a selected card’s lines right after it with Tab, then on to the next card, and back with Shift+Tab', async () => {
+    const { card, line } = renderEditor();
+    press(card('a1'), 'Enter');
+    await waitFor(() => expect(line('c1').getAttribute('tabindex')).toBe('0'));
+    press(card('a1'), 'Tab');
+    expect(document.activeElement).toBe(line('c1'));
+    press(line('c1'), 'Tab', { shiftKey: true });
+    expect(document.activeElement).toBe(card('a1'));
+    press(card('a1'), 'Tab');
+    press(line('c1'), 'Tab');
+    expect(document.activeElement).toBe(card('a2'));
+  });
+
   it('selects a card with Enter, and another after it without opening the first one’s page', () => {
     const { card } = renderEditor();
     press(card('a1'), 'Enter');

@@ -459,7 +459,7 @@ export const GROWN = {
   'src/documentation/ui/BpmnBlock.tsx': { complexity: 41 },
   'src/documentation/ui/DocumentationPage.tsx': { complexity: 26 },
   'src/editor/EditorToolbar.tsx': { complexity: 26, lines: 181 },
-  'src/editor/canvas/DiagramCanvas.tsx': { complexity: 29, lines: 1015 },
+  'src/editor/canvas/DiagramCanvas.tsx': { complexity: 29, lines: 1014 },
   'src/editor/canvas/DomainGroupLayer.tsx': { lines: 188 },
   'src/editor/canvas/Layer7Canvas.tsx': { lines: 189 },
   'src/editor/canvas/ZoneLayer.tsx': { lines: 203 },

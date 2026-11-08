@@ -71,6 +71,7 @@ import { dispatchMenuAction, type MenuActionHost } from './useMenuActions';
 import { GRID_SIZE } from './gridSize';
 import { largestRoom, panInto, toRect } from './viewportFit';
 import { canvasRooms } from '../../widgets/kit/canvasRoom';
+import { useLinesAfterCard } from './linesAfterCard';
 import { keyboardIntent } from './keyboardIntent';
 import { ViewportMemory, type Viewport } from './viewportMemory';
 import { useBoardZoom } from './ZoomControls';
@@ -1082,7 +1083,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   // --- Context menus (see menuItems.ts for WHAT, useMenuActions.ts for HOW) ---
   const menu = useContextMenu();
   const platform = useMemo(() => detectPlatform(), []);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null); useLinesAfterCard(containerRef);
   const boardRef = useBoardZoom(containerRef);
   useReadingDistance(containerRef, props.diagram.kind === 'container' && derivedEdges.length > DENSE_LINES ? DENSE_LABEL_WORDS_FROM : undefined);
   const { focus, onNodeMouseEnter, onNodeMouseLeave } = useBoardFocusing(selectedElementIds, selectedConnectionIds, edges);
