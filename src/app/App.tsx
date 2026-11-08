@@ -66,6 +66,7 @@ import { useOpenIntoPrompt } from './useOpenIntoPrompt'
 import { useAgentServer } from './useAgentServer'
 import { AppDialogs, AppNotices, AppScreen, FramePages, HomeHistoryDialogs } from './AppPanels'
 import { AppFrame } from './frame/AppFrame'
+import { ClosingSaving } from './frame/ClosingSaving'
 import { firstRunUp, FirstRunScreen } from './organisation/FirstRunScreen'
 import { frameStore, FrameStoreContext } from './frame/frameStore'
 import { readFinding } from '../agent/place'
@@ -538,6 +539,7 @@ export function App(props: AppProps) {
         <AppNotices parts={parts} />
         <AppDialogs parts={parts} />
         <DraftQuestion />
+        <ClosingSaving on={parts.commands.bus.on} leave={props.host?.onLeaveAnyway} />
         <ToastBar
           toast={toasts.toast}
           open={toasts.open}

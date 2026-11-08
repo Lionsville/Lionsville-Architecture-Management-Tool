@@ -18,6 +18,18 @@ import { Dialog } from './Dialog'
 
 const held = new Set<symbol>()
 let asker: ((go: () => void) => void) | undefined
+const watchers = new Set<(holding: boolean) => void>()
+const told = () => { for (const watcher of [...watchers]) watcher(held.size > 0) }
+
+/**
+ * Whether anything holds a draft, now and whenever that changes: for a host
+ * that decides a window's close outside the page (the desktop's main process).
+ */
+export function watchDrafts(watcher: (holding: boolean) => void): () => void {
+  watchers.add(watcher)
+  watcher(held.size > 0)
+  return () => { watchers.delete(watcher) }
+}
 
 /** Says, while `holding`, that something written here would be lost by leaving. */
 export function useDraft(holding: boolean): void {
@@ -25,7 +37,8 @@ export function useDraft(holding: boolean): void {
     if (!holding) return undefined
     const draft = Symbol('draft')
     held.add(draft)
-    return () => { held.delete(draft) }
+    told()
+    return () => { held.delete(draft); told() }
   }, [holding])
 }
 
@@ -55,6 +68,7 @@ export function DraftQuestion() {
     const go = going
     setGoing(undefined)
     held.clear()
+    told()
     go?.()
   }
   return (

@@ -28,7 +28,7 @@ import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { openedDocuments } from './openedDocuments'
 import { keepsCrashDumps } from './crashDumps'
-import { guardWindow, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
+import { guardWindow, leaveAnyway, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand, setMenuLanguage, zoomWindow } from './appMenu'
 import { productName } from '../../package.json'
 import { swipeCommand } from '../../src/platform/menu'
@@ -564,7 +564,8 @@ void app.whenReady().then(() => {
   // Whether a window holds work closing would lose, told by its page whenever
   // that changes — only the page knows, and asking at close time would be a
   // round trip inside an event that has to decide at once (`windowGuard.ts`).
-  ipcMain.handle('app:unsaved', (event, held: unknown) => { reportUnsaved(event.sender, held === true) })
+  ipcMain.handle('app:unsaved', (event, holds: unknown) => { reportUnsaved(event.sender, holds) })
+  ipcMain.handle('app:leaveAnyway', (event) => { leaveAnyway(event.sender) })
 
   // The second fact the renderer reports, so the View menu's radio is right.
   ipcMain.handle('app:theme', (_event, held: unknown) => {
@@ -665,10 +666,23 @@ function appWindows(): BrowserWindow[] {
  * the first at the start, and one again where the app runs with none — the
  * Dock's click, or a document opened from Finder.
  */
+/** When the quit under way was first asked for; undefined where none is, or one was called off. */
+let quitAsked: number | undefined
+
 const windows = windowsOf({
   make: createWindow,
   guard: (window) => guardWindow(window, {
     save: () => sendCommand({ type: 'save' }), unattended: UNATTENDED,
+    saving: (saving) => sendCommand({ type: 'closing', saving }),
+    // A quit a window held for its write is called off by Electron: asked again once it has closed.
+    closed: () => { if (quitAsked !== undefined) app.quit() },
+    kept: () => {
+      if (quitAsked !== undefined) log('main', `quitting: called off after ${Date.now() - quitAsked} ms: a window stays open, or asks first`)
+      quitAsked = undefined
+    },
+    askDraft: () => sendCommand({ type: 'closeAsked' }),
+    quitting: () => quitAsked !== undefined,
+    quit: () => { app.quit() },
     dialog, log, logFile: logFilePath, echo: (line) => { process.stderr.write(`${line}\n`) },
     words: () => platformWords(language),
   }),
@@ -695,8 +709,13 @@ app.on('window-all-closed', () => {
  * asked for, and an exit with no line at all from a process that was killed or
  * crashed — whose dump, in a development run, is in Crashpad.
  */
-app.on('before-quit', () => { log('main', 'quitting: asked to quit') })
-app.on('will-quit', () => { log('main', 'quitting: every window has closed') })
+app.on('before-quit', () => {
+  // Asked again after a window held it for a write: said once, timed from the first ask.
+  if (quitAsked !== undefined) return
+  quitAsked = Date.now()
+  log('main', 'quitting: asked to quit')
+})
+app.on('will-quit', () => { log('main', `quitting: every window has closed${quitAsked === undefined ? '' : ` after ${Date.now() - quitAsked} ms`}`) })
 app.on('quit', (_event, exitCode) => { log('main', `quit with exit code ${exitCode}`) })
 process.on('exit', (code) => { log('main', `process exits with code ${code}`) })
 

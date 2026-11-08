@@ -363,6 +363,8 @@ export type AppHost = {
   hostMenu?: boolean
   /** Tell the host whether closing the window would lose something. */
   onUnsavedWork?: (unsaved: boolean) => void
+  /** The person left a draft at the question a closing window asked: the host closes it (`closeAsked`). */
+  onLeaveAnyway?: () => void
   /** Tell the host which theme is on, so its View menu's radio can be right. */
   onThemeMode?: (mode: ThemeMode) => void
   /** The zoom keys with no canvas under them, on a host whose menu bar owns them. */

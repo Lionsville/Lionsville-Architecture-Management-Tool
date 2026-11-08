@@ -33,6 +33,17 @@ export type HostCommand =
   | { type: 'reopen'; key: string }
   /** Write now, without waiting for the idle timer. */
   | { type: 'save' }
+  /**
+   * The window waits for that write before it closes, or (`false`) was kept
+   * open after all: said, so a window that closes late is not taken for a
+   * frozen one.
+   */
+  | { type: 'closing'; saving: boolean }
+  /**
+   * The window is closing over a draft: the page asks its own question (*Leave
+   * with a draft?*), and says `leaveAnyway` only where the person leaves it.
+   */
+  | { type: 'closeAsked' }
   /** Hand the project over as a working file. */
   | { type: 'export' }
   /** Ask for a file to open. The renderer has a picker; the host needs none. */
@@ -118,11 +129,20 @@ export type HostCommand =
  */
 export type ScreenOffers = { readonly picture?: boolean }
 
+/** What closing the window would lose: the handshake a close is decided by. */
+export type WindowHolds = 'clean' | 'write' | 'draft'
+
 export type HostCommands = {
   /** Every command, until the returned function is called. */
   on(listener: (command: HostCommand) => void): () => void
-  /** Is there work that closing the window would lose? */
-  reportUnsaved(unsaved: boolean): void
+  /**
+   * What closing the window would lose, said whenever it changes: nothing, a
+   * write not landed yet (closing waits for it), or a draft no write keeps
+   * (closing asks the page's own question).
+   */
+  reportUnsaved(holds: WindowHolds): void
+  /** The person left a draft at the page's question: the window closes. */
+  leaveAnyway(): void
   /** Which theme is on, so the View menu's radio can be right. */
   reportTheme(mode: ThemeMode): void
   /**

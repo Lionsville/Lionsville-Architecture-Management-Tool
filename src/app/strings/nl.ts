@@ -22,6 +22,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.saveRefused': 'Niet bewaard — opslag weigert',
   'shell.unsaved': 'Nog niet bewaarde wijzigingen',
   'shell.saving': 'Bezig met bewaren…',
+  'shell.savingBeforeClose': 'Het venster sluit zodra je wijzigingen zijn bewaard.',
   'shell.changedElsewhere': 'Elders gewijzigd',
   'shell.conflict': 'Hier én elders gewijzigd',
   'shell.stepsSending': 'Versturen\u2026',

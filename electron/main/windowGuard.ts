@@ -21,6 +21,20 @@
  * (`will-prevent-unload`): so *Close anyway* destroys the window, and a close
  * main has let go is not held by the page.
  *
+ * **Closing never freezes, and never stalls a quit.** The page says what
+ * closing would lose whenever it changes ({@link WindowHolds}), and a close is
+ * decided by it at once: nothing, and the window goes; a write not landed,
+ * and it says *Saving…* and goes when the write lands; a draft, and the page
+ * asks its own question (*Leave with a draft?*), the window going only where
+ * the person leaves it. Main asks its own question — a sheet, never a modal
+ * loop in main — only where a write did not land in time, which is the one
+ * time *could not be saved* is true. A close that was held and then goes
+ * ahead tells main (`closed`), because a quit a window held is called off by
+ * Electron and has to be asked again; one the person stopped calls it off
+ * (`kept`). Nothing of one close is left for the next. A page that holds
+ * nothing and does not answer within a second is closed without its answer.
+ * Every wait says on the log how long it took.
+ *
  * **A dead renderer is a window that will never paint again.** Without a word
  * it stays on screen showing the last frame it managed, and the only way to
  * tell it apart from a very slow app is to wait indefinitely. The log says
@@ -55,6 +69,20 @@ import { NL } from '../../src/platform/strings/nl'
 export const SAVE_BEFORE_CLOSE_MS = 5_000
 
 /**
+ * How long a page that holds a close main thought free is given to say what it
+ * holds, before it is closed anyway: its word is on its way, and a page that
+ * holds nothing it can say holds nothing a close loses.
+ */
+export const PAGE_SAYS_MS = 500
+
+/**
+ * How long a page holding nothing main heard of has to answer a close. Past
+ * it the window goes without the answer: a renderer busy or hung must not
+ * hold the quit, and nothing it had said was waiting to be written.
+ */
+export const PAGE_ANSWERS_MS = 1_000
+
+/**
  * What the renderer's own diagnostics lines start with
  * (`adapters/browser/ConsoleDiagnostics.ts`). Spelled out rather than imported:
  * this bundle compiles against Node and the DOM adapter it lives in does not.
@@ -69,12 +97,23 @@ export type GuardedWindow = Pick<BrowserWindow, 'on' | 'close' | 'destroy' | 'is
   webContents: Pick<BrowserWindow['webContents'], 'on' | 'reload'>
 }
 
-/** Per page, whether it holds work closing would lose; a page not heard from holds none. */
-const unsavedIn = new WeakMap<object, boolean>()
+/** What closing a window would lose: nothing, a write not landed yet, or a draft no write keeps. */
+export type WindowHolds = 'clean' | 'write' | 'draft'
 
-/** A page said whether it holds work that closing would lose (`app:unsaved`). */
-export function reportUnsaved(contents: object, unsaved: boolean): void {
-  unsavedIn.set(contents, unsaved)
+/** Per page, what it holds; a page not heard from holds nothing. */
+const holdsIn = new WeakMap<object, WindowHolds>()
+
+/** Per page, what main does when the person leaves a draft at the page's question. */
+const leavingIn = new WeakMap<object, () => void>()
+
+/** A page said what closing it would lose (`app:unsaved`); anything else it says is nothing. */
+export function reportUnsaved(contents: object, holds: unknown): void {
+  holdsIn.set(contents, holds === 'write' || holds === 'draft' ? holds : 'clean')
+}
+
+/** The person left a draft at the page's question (`app:leaveAnyway`): its window goes, where main asked. */
+export function leaveAnyway(contents: object): void {
+  leavingIn.get(contents)?.()
 }
 
 /** Windows that can still answer: neither gone, nor showing a renderer that died. */
@@ -85,9 +124,20 @@ export function liveWindows(windows: readonly Pick<BrowserWindow, 'isDestroyed' 
 export type WindowGuardDeps = {
   /** Ask the window to write now. */
   save: () => void
+  /** Tell the window it waits for that write before it closes, so it can say *Saving…*; and that it no longer does. */
+  saving?: (saving: boolean) => void
+  /** A close that was held went ahead after all: whatever it was part of, a quit, goes on. */
+  closed?: () => void
+  /** The person kept the window open: whatever the close was part of, a quit, is off. */
+  kept?: () => void
+  /** Ask the page its own question about the draft it holds. */
+  askDraft?: () => void
+  /** Whether a quit is under way, and to ask for it again: a draft left after the quit was called off. */
+  quitting?: () => boolean
+  quit?: () => void
   /** Under `--smoke`, where nobody is there to answer. */
   unattended: boolean
-  dialog: Pick<Dialog, 'showMessageBox' | 'showMessageBoxSync'>
+  dialog: Pick<Dialog, 'showMessageBox'>
   log: (where: string, line: string) => void
   logFile: () => string
   /** Where a smoke run says what the page said that the log file leaves out. */
@@ -106,13 +156,13 @@ export function platformWords(language: unknown): PlatformWords {
 
 export function guardWindow(window: GuardedWindow, deps: WindowGuardDeps): void {
   const { webContents: page } = window
-  const unsaved = () => unsavedIn.get(page) === true
+  const holds = (): WindowHolds => holdsIn.get(page) ?? 'clean'
   // A page replaced, or a renderer gone, holds nothing any more.
-  const forget = () => { unsavedIn.delete(page) }
+  const forget = () => { holdsIn.delete(page) }
   page.on('did-navigate', forget)
   page.on('render-process-gone', forget)
   page.on('destroyed', forget)
-  guardUnsavedWork(window, unsaved, deps)
+  guardUnsavedWork(window, holds, deps)
   relayConsole(window, deps)
   // A load that neither finishes nor fails is the hardest thing to read from
   // outside the process: no window, no error, no exit. Say what went wrong.
@@ -170,74 +220,163 @@ function relayConsole(window: GuardedWindow, deps: WindowGuardDeps): void {
   })
 }
 
-function guardUnsavedWork(window: GuardedWindow, unsaved: () => boolean, deps: WindowGuardDeps): void {
+function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps: WindowGuardDeps): void {
+  const page = window.webContents
   /** The close goes ahead: the work is saved, or the person said to close anyway. */
   let letting = false
-  /** A close main let through, which the page may still object to. */
-  let closing = false
-  let waiting = false
+  /** A close main let through, which the page may still object to; when it was let through. */
+  let closing: number | undefined
+  /** A close held for a write or a question: one at a time, and nothing of it left after. */
+  let held = false
 
-  /** Save, then close once saved — or ask, where saving did not work in time. */
-  const closeWhenSaved = () => {
-    if (waiting) return
-    waiting = true
+  const goAhead = (how: 'close' | 'destroy') => {
+    held = false
+    letting = true
+    if (window.isDestroyed()) return
+    if (how === 'close') window.close()
+    else window.destroy()
+    deps.closed?.()
+  }
+  /** The person stopped the close: the window is in use again, as if no close had been asked. */
+  const stay = () => {
+    held = false
+    deps.saving?.(false)
+    deps.kept?.()
+  }
+
+  /**
+   * The page's own question about its draft. The quit, where this close is
+   * part of one, is called off while it is asked — the person may write on for
+   * as long as they like — and asked again where they leave.
+   */
+  const askDraft = (started: number) => {
+    const quitting = deps.quitting?.() ?? false
+    deps.saving?.(false)
+    deps.kept?.()
+    deps.log('main', `closing: the page asks about a draft after ${Date.now() - started} ms`)
+    leavingIn.set(page, () => {
+      leavingIn.delete(page)
+      deps.log('main', 'closing: the draft was left')
+      held = false
+      letting = true
+      if (!window.isDestroyed()) window.destroy()
+      if (quitting) deps.quit?.()
+    })
+    // Asked once: a draft kept leaves the window as it was, for a later close to ask again.
+    held = false
+    deps.askDraft?.()
+  }
+
+  /**
+   * Save, then close once the write has landed — or ask, where it did not land
+   * in time. Never a frozen window: main polls and the question is a sheet, so
+   * the page goes on painting its *Saving…*, and a write that lands while the
+   * question is up closes the window and takes the question with it.
+   */
+  const closeWhenWritten = () => {
+    held = true
+    const started = Date.now()
+    deps.log('main', 'closing: waiting for the page to write')
     deps.save()
-    const deadline = Date.now() + SAVE_BEFORE_CLOSE_MS
+    deps.saving?.(true)
+    let asking: AbortController | undefined
     const poll = setInterval(() => {
-      if (!unsaved()) {
+      if (window.isDestroyed()) { clearInterval(poll); asking?.abort(); return }
+      const now = holds()
+      if (now !== 'write') {
         clearInterval(poll)
-        waiting = false
-        letting = true
-        window.close()
+        asking?.abort()
+        deps.log('main', `closing: written in ${Date.now() - started} ms`)
+        if (now === 'draft') askDraft(started)
+        else goAhead('close')
         return
       }
-      if (Date.now() <= deadline) return
-      clearInterval(poll)
-      waiting = false
-      const say = deps.words?.() ?? EN
-      const choice = deps.dialog.showMessageBoxSync(window as BrowserWindow, {
-        type: 'warning',
-        title: say['window.unsavedTitle'],
-        message: say['window.unsavedMessage'],
-        detail: say['window.unsavedDetail'],
-        buttons: [say['window.closeAnyway'], say['window.keepOpen']],
-        defaultId: 1,
-        cancelId: 1,
+      if (asking || Date.now() - started <= SAVE_BEFORE_CLOSE_MS) return
+      deps.log('main', `closing: not written in ${Date.now() - started} ms; asked`)
+      asking = new AbortController()
+      const signal = asking.signal
+      void askNotSaved(signal).then((closeAnyway) => {
+        if (signal.aborted) return
+        clearInterval(poll)
+        if (!closeAnyway) { stay(); return }
+        // Closed as the person said, and not asked of the page: its own
+        // `beforeunload` holds while work is unsaved, and would cancel a close
+        // without a word.
+        deps.log('main', `closing: closed anyway after ${Date.now() - started} ms`)
+        goAhead('destroy')
+      }, (error: unknown) => {
+        clearInterval(poll)
+        deps.log('main', `closing: the question failed: ${String(error)}`)
+        stay()
       })
-      if (choice !== 0) return
-      // Closed as the person said, and not asked of the page: its own
-      // `beforeunload` holds while work is unsaved, and would cancel a close
-      // without a word.
-      letting = true
-      window.destroy()
     }, 100)
+  }
+
+  /** The one question main asks itself: a write that did not land, which is when *could not be saved* is true. */
+  const askNotSaved = async (signal: AbortSignal): Promise<boolean> => {
+    const say = deps.words?.() ?? EN
+    const { response } = await deps.dialog.showMessageBox(window as BrowserWindow, {
+      type: 'warning',
+      title: say['window.unsavedTitle'],
+      message: say['window.unsavedMessage'],
+      detail: say['window.unsavedDetail'],
+      buttons: [say['window.closeAnyway'], say['window.keepOpen']],
+      defaultId: 1,
+      cancelId: 1,
+      signal,
+    })
+    return response === 0
+  }
+
+  /** Decided by what the page holds now. */
+  const decide = (started: number) => {
+    const now = holds()
+    if (now === 'write') closeWhenWritten()
+    else if (now === 'draft') askDraft(started)
+    else goAhead('close')
   }
 
   window.on('close', (event) => {
     if (letting || deps.unattended) return
-    if (!unsaved()) {
-      closing = true
+    if (held) { event.preventDefault(); return }
+    if (holds() === 'clean') {
+      // Let through, for the page to answer. A page that does not answer —
+      // its renderer busy or hung — holds nothing main heard of, and does not
+      // get to hold the quit with it: it is closed without its answer.
+      const at = Date.now()
+      closing = at
+      setTimeout(() => {
+        if (closing !== at || held || letting || window.isDestroyed()) return
+        closing = undefined
+        deps.log('main', `closing: the page did not answer in ${PAGE_ANSWERS_MS} ms; closed without it`)
+        goAhead('destroy')
+      }, PAGE_ANSWERS_MS)
       return
     }
     event.preventDefault()
-    closeWhenSaved()
+    decide(Date.now())
   })
-  // The page's own `beforeunload` holds the unload while it has work unsaved,
+  // The page's own `beforeunload` holds the unload while it holds something,
   // and Electron then cancels the close without a word. A close main has let
-  // go — saved, or closed anyway — goes on; one the page knows more about
-  // than main did is saved first, as any close with work unsaved is. A reload
-  // the page holds stays held, as it always was.
+  // go — written, or closed anyway — goes on. One main thought free is held
+  // for what the page says it holds, given a moment to say it: its word is on
+  // its way. A reload the page holds stays held, as it always was.
   window.webContents.on('will-prevent-unload', (event) => {
     if (letting || deps.unattended) {
       event.preventDefault()
       return
     }
-    if (!closing) return
-    closing = false
-    // The page knows of work main's flag did not: it stays unsaved until the
-    // page itself says otherwise again, and a flag from before is not trusted.
-    unsavedIn.set(window.webContents, true)
-    closeWhenSaved()
+    if (closing === undefined) return
+    closing = undefined
+    held = true
+    const started = Date.now()
+    const wait = setInterval(() => {
+      if (window.isDestroyed()) { clearInterval(wait); held = false; return }
+      if (holds() === 'clean' && Date.now() - started <= PAGE_SAYS_MS) return
+      clearInterval(wait)
+      if (holds() === 'clean') deps.log('main', `closing: the page held the close and said nothing in ${PAGE_SAYS_MS} ms; closed`)
+      decide(started)
+    }, 50)
   })
 }
 

@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
-import { DraftQuestion, draftHeld, leaveWithDrafts, useDraft } from './drafts'
+import { DraftQuestion, draftHeld, leaveWithDrafts, useDraft, watchDrafts } from './drafts'
 
 afterEach(() => cleanup())
 
@@ -48,5 +48,18 @@ describe('leaving with a draft', () => {
     expect(draftHeld()).toBe(true)
     unmount()
     expect(draftHeld()).toBe(false)
+  })
+})
+
+describe('whether a draft is held, for a host that closes the window', () => {
+  it('is said at once, as a box starts and stops holding one, and when one is left', () => {
+    const said: boolean[] = []
+    const stop = watchDrafts((holding) => { said.push(holding) })
+    const { unmount } = renderShell(<><DraftQuestion /><Box start="Who owns this?" /></>)
+    act(() => leaveWithDrafts(() => undefined))
+    fireEvent.click(screen.getByTestId('draft-leave'))
+    unmount()
+    stop()
+    expect(said).toEqual([false, true, false, false])
   })
 })

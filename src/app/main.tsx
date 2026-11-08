@@ -44,6 +44,7 @@
  * a decision belongs in `core/`; anything that draws belongs in `ui/`.
  */
 import { StrictMode } from 'react'
+import { watchDrafts } from '../widgets/kit/drafts'
 import { createRoot } from 'react-dom/client'
 import { configureElkWorker, configureLibavoidWasm, configureLibavoidWorker } from '../layout'
 import ElkWorker from 'elkjs/lib/elk-worker.min.js?worker'
@@ -157,6 +158,20 @@ function preloadWhenIdle(): void {
 
 /** The menu bar, and the documents the OS opens us with. Nothing in a browser tab. */
 const commands = desktopCommandChannel()
+
+/** Whether something being written is held as a draft no write keeps (`widgets/kit/drafts`). */
+let drafting = false
+
+/**
+ * What closing the window would lose, said to the host whenever either half
+ * changes: a write first, since a close waits for it before anything else.
+ */
+function sayWhatClosingLoses(): void {
+  commands?.reportUnsaved(unsaved ? 'write' : drafting ? 'draft' : 'clean')
+}
+if (commands) watchDrafts((holding) => { drafting = holding; sayWhatClosingLoses() })
+/** The person left a draft at the question a closing window asked: the window goes. */
+const leaveAnyway = commands ? () => commands.leaveAnyway() : undefined
 
 /**
  * What the boot read, kept where the failure handler can still see it.
@@ -749,8 +764,9 @@ function renderApp(
           hostMenu: Boolean(commands),
           onUnsavedWork: (held: boolean) => {
             unsaved = held
-            commands?.reportUnsaved(held)
+            sayWhatClosingLoses()
           },
+          onLeaveAnyway: leaveAnyway,
           onThemeMode: commands?.reportTheme,
           onWindowZoom: commands?.zoomWindow,
           onLanguage: commands?.reportLanguage,

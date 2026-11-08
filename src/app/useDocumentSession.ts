@@ -324,7 +324,9 @@ export function useDocumentSession(deps: {
     return () => window.removeEventListener('blur', onBlur)
   }, [save])
 
-  const outstanding = hasUnsavedWork(state)
+  // A write still landing is work closing would lose as much as one not started:
+  // the window that waits for it must not be told it may go the moment it starts.
+  const outstanding = hasUnsavedWork(state) || state.status === 'saving'
   useEffect(() => {
     onUnsavedWork?.(outstanding)
     // On the way out there is nothing left to lose in this workspace, whatever

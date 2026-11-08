@@ -22,6 +22,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.saveRefused': 'Nicht gespeichert — Speicher verweigert',
   'shell.unsaved': 'Ungespeicherte Änderungen',
   'shell.saving': 'Wird gespeichert…',
+  'shell.savingBeforeClose': 'Das Fenster schließt, sobald Ihre Änderungen gespeichert sind.',
   'shell.changedElsewhere': 'Anderswo geändert',
   'shell.conflict': 'Hier und anderswo geändert',
   'shell.stepsSending': 'Wird gesendet\u2026',

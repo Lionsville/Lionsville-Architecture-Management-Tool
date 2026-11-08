@@ -31,6 +31,7 @@ export const EN = {
    */
   'shell.unsaved': 'Unsaved changes',
   'shell.saving': 'Saving…',
+  'shell.savingBeforeClose': 'The window closes as soon as your changes are written.',
   'shell.changedElsewhere': 'Changed elsewhere',
   'shell.conflict': 'Changed here and elsewhere',
   /**

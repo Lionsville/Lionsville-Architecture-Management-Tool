@@ -8,7 +8,7 @@
  * what its page says reaches the log.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { guardWindow, liveWindows, platformWords, reportUnsaved, SAVE_BEFORE_CLOSE_MS, windowsOf } from './windowGuard'
+import { guardWindow, leaveAnyway, liveWindows, PAGE_ANSWERS_MS, PAGE_SAYS_MS, platformWords, reportUnsaved, SAVE_BEFORE_CLOSE_MS, windowsOf } from './windowGuard'
 import type { WindowGuardDeps } from './windowGuard'
 
 vi.mock('electron', () => ({}))
@@ -37,14 +37,30 @@ function window() {
 
 type Window = ReturnType<typeof window>
 
-function app(options: { answer?: number; unattended?: boolean; language?: string } = {}) {
-  const state = { saves: 0, asked: 0, logged: [] as string[], echoed: [] as string[], question: undefined as unknown }
+function app(options: { answer?: number; unattended?: boolean; language?: string; answerAfter?: number } = {}) {
+  const state = {
+    saves: 0, asked: 0, logged: [] as string[], echoed: [] as string[], question: undefined as unknown,
+    saying: [] as boolean[], closedAfterHold: 0, kept: 0, abandoned: 0, draftsAsked: 0, quits: 0, quitting: false,
+  }
   const deps: WindowGuardDeps = {
     save: () => { state.saves += 1 },
+    saving: (saying) => { state.saying.push(saying) },
+    closed: () => { state.closedAfterHold += 1 },
+    kept: () => { state.kept += 1; state.quitting = false },
+    askDraft: () => { state.draftsAsked += 1 },
+    quitting: () => state.quitting,
+    quit: () => { state.quits += 1 },
     unattended: options.unattended ?? false,
     dialog: {
-      showMessageBoxSync: (_window: unknown, question: unknown) => { state.asked += 1; state.question = question; return options.answer ?? 1 },
-      showMessageBox: () => Promise.resolve({ response: 0, checkboxChecked: false }),
+      showMessageBox: (_window: unknown, question: { signal?: AbortSignal }) => {
+        state.asked += 1
+        state.question = question
+        // A sheet: answered later, or taken away by main where the write lands first.
+        return new Promise((resolve) => {
+          question.signal?.addEventListener('abort', () => { state.abandoned += 1; resolve({ response: 1, checkboxChecked: false }) })
+          setTimeout(() => resolve({ response: options.answer ?? 1, checkboxChecked: false }), options.answerAfter ?? 0)
+        })
+      },
     } as unknown as WindowGuardDeps['dialog'],
     log: (where, line) => { state.logged.push(`${where} ${line}`) },
     logFile: () => 'main.log',
@@ -78,7 +94,7 @@ describe('a window made again, where the app ran with none', () => {
     held.allClosed()
     held.windows.again()
     const again = held.made[1]
-    reportUnsaved(again.webContents, true)
+    reportUnsaved(again.webContents, 'write')
     const event = held.closing(again)
     expect(event.preventDefault).toHaveBeenCalled()
     expect(held.state.saves).toBe(1)
@@ -91,16 +107,16 @@ describe('a window made again, where the app ran with none', () => {
     const held = app()
     held.windows.again()
     const [again] = held.made
-    reportUnsaved(again.webContents, true)
+    reportUnsaved(again.webContents, 'write')
     held.closing(again)
-    reportUnsaved(again.webContents, false)
+    reportUnsaved(again.webContents, 'clean')
     await vi.advanceTimersByTimeAsync(200)
     expect(again.closed).toBe(1)
     expect(held.state.asked).toBe(0)
   })
 
   it('offers to reload once its renderer is gone', async () => {
-    const held = app()
+    const held = app({ answer: 0 })
     held.windows.again()
     const [again] = held.made
     again.raise('render-process-gone', {}, { reason: 'crashed' })
@@ -126,7 +142,7 @@ describe('closing anyway, and what the page says about it', () => {
   it('closes anyway without asking the page, whose own unload handler would cancel it', async () => {
     const held = app({ answer: 0 })
     const first = held.windows.first()
-    reportUnsaved(first.webContents, true)
+    reportUnsaved(first.webContents, 'write')
     held.closing(first)
     await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS + 200)
     expect(held.state.asked).toBe(1)
@@ -137,28 +153,105 @@ describe('closing anyway, and what the page says about it', () => {
   it('does not let the page hold a close once the work is saved', async () => {
     const held = app()
     const first = held.windows.first()
-    reportUnsaved(first.webContents, true)
+    reportUnsaved(first.webContents, 'write')
     held.closing(first)
-    reportUnsaved(first.webContents, false)
+    reportUnsaved(first.webContents, 'clean')
     await vi.advanceTimersByTimeAsync(200)
     expect(first.closed).toBe(1)
     // The page had not heard yet, and holds the unload.
     expect(unloading(first).preventDefault).toHaveBeenCalled()
   })
 
-  it('saves first where the page knows of work main did not, and closes once the page says it is saved', async () => {
+  it('saves first where the page knows of work main did not, and closes once the page says it is written', async () => {
     const held = app()
     const first = held.windows.first()
-    reportUnsaved(first.webContents, false)
+    reportUnsaved(first.webContents, 'clean')
     expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
     expect(unloading(first).preventDefault).not.toHaveBeenCalled()
+    // The page says the write it held the close for, then that it landed.
+    reportUnsaved(first.webContents, 'write')
+    await vi.advanceTimersByTimeAsync(PAGE_SAYS_MS + 500)
     expect(held.state.saves).toBe(1)
-    // The saved flag from before the page held the close is not trusted.
-    await vi.advanceTimersByTimeAsync(500)
     expect(first.closed).toBe(0)
-    reportUnsaved(first.webContents, false)
+    reportUnsaved(first.webContents, 'clean')
     await vi.advanceTimersByTimeAsync(200)
     expect(first.closed).toBe(1)
+    expect(held.state.asked).toBe(0)
+  })
+
+  it('has the page ask its own question at once where it holds a draft, and never says it could not be saved', async () => {
+    const held = app()
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'draft')
+    expect(held.closing(first).preventDefault).toHaveBeenCalled()
+    expect(held.state.draftsAsked).toBe(1)
+    await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS * 2)
+    expect(held.state.asked).toBe(0)
+    expect(first.closed + first.forced).toBe(0)
+  })
+
+  it('asks about a draft the page held the close for before main had heard of it', async () => {
+    const held = app()
+    const first = held.windows.first()
+    held.closing(first)
+    unloading(first)
+    reportUnsaved(first.webContents, 'draft')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(held.state.draftsAsked).toBe(1)
+    expect(held.state.asked).toBe(0)
+  })
+
+  it('closes, and lets the quit go on, where the person leaves the draft', async () => {
+    const held = app()
+    const first = held.windows.first()
+    held.state.quitting = true
+    reportUnsaved(first.webContents, 'draft')
+    held.closing(first)
+    // The quit is off while the page asks: the person may write on.
+    expect(held.state.quitting).toBe(false)
+    leaveAnyway(first.webContents)
+    expect(first.forced).toBe(1)
+    expect(held.state.quits).toBe(1)
+  })
+
+  it('keeps nothing of a close the person stopped: close, keep writing, close with nothing held goes at once', async () => {
+    const held = app()
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'draft')
+    held.closing(first)
+    expect(held.state.draftsAsked).toBe(1)
+    // Keep writing, then the draft is sent or dropped.
+    reportUnsaved(first.webContents, 'clean')
+    expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
+    first.destroyed = true
+    await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS + 200)
+    expect(held.state.asked).toBe(0)
+    expect(held.state.draftsAsked).toBe(1)
+    // A leave said long after is nobody's answer.
+    leaveAnyway(first.webContents)
+    expect(first.forced).toBe(0)
+  })
+
+  it('keeps nothing of a close the person kept open at the could-not-be-saved question', async () => {
+    const held = app({ answer: 1 })
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'write')
+    held.closing(first)
+    await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS + 200)
+    expect(held.state.asked).toBe(1)
+    reportUnsaved(first.webContents, 'clean')
+    expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
+    expect(held.state.saves).toBe(1)
+  })
+
+  it('closes where the page held the close and said nothing it holds in time', async () => {
+    const held = app()
+    const first = held.windows.first()
+    held.closing(first)
+    unloading(first)
+    await vi.advanceTimersByTimeAsync(PAGE_SAYS_MS + 100)
+    expect(first.closed).toBe(1)
+    expect(held.state.asked + held.state.draftsAsked).toBe(0)
   })
 
   it('leaves a reload the page holds held, as it always was', () => {
@@ -173,7 +266,7 @@ describe('what a window holds unsaved', () => {
   it('is its own: a window closed anyway leaves nothing the next one must wait for', () => {
     const held = app({ answer: 0 })
     const first = held.windows.first()
-    reportUnsaved(first.webContents, true)
+    reportUnsaved(first.webContents, 'write')
     first.raise('destroyed')
     held.allClosed()
     held.windows.again()
@@ -183,10 +276,10 @@ describe('what a window holds unsaved', () => {
   it('is forgotten when its page is replaced or its renderer dies', () => {
     const held = app()
     const first = held.windows.first()
-    reportUnsaved(first.webContents, true)
+    reportUnsaved(first.webContents, 'write')
     first.raise('did-navigate')
     expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
-    reportUnsaved(first.webContents, true)
+    reportUnsaved(first.webContents, 'write')
     first.raise('render-process-gone', {}, { reason: 'crashed' })
     expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
   })
@@ -195,6 +288,66 @@ describe('what a window holds unsaved', () => {
     const held = app()
     const first = held.windows.first()
     expect(held.closing(first).preventDefault).not.toHaveBeenCalled()
+  })
+})
+
+describe('closing never freezes, and never stalls a quit', () => {
+  it('says Saving… while it waits for the write, and lets the quit go on once the window has gone', async () => {
+    const held = app()
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'write')
+    held.closing(first)
+    expect(held.state.saying).toEqual([true])
+    reportUnsaved(first.webContents, 'clean')
+    await vi.advanceTimersByTimeAsync(200)
+    expect(first.closed).toBe(1)
+    expect(held.state.closedAfterHold).toBe(1)
+    expect(held.state.logged.some((line) => /closing: written in \d+ ms/.test(line))).toBe(true)
+  })
+
+  it('closes a page that does not answer within a second where nothing was said to be pending', async () => {
+    const held = app()
+    const first = held.windows.first()
+    held.closing(first)
+    await vi.advanceTimersByTimeAsync(PAGE_ANSWERS_MS - 100)
+    expect(first.forced).toBe(0)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(first.forced).toBe(1)
+    expect(held.state.closedAfterHold).toBe(1)
+  })
+
+  it('leaves a page that answered in time to its own close', async () => {
+    const held = app()
+    const first = held.windows.first()
+    held.closing(first)
+    first.destroyed = true
+    await vi.advanceTimersByTimeAsync(PAGE_ANSWERS_MS + 200)
+    expect(first.forced).toBe(0)
+  })
+
+  it('takes the question away and closes where the write lands while it is asked', async () => {
+    const held = app({ answerAfter: 60_000 })
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'write')
+    held.closing(first)
+    await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS + 200)
+    expect(held.state.asked).toBe(1)
+    reportUnsaved(first.webContents, 'clean')
+    await vi.advanceTimersByTimeAsync(200)
+    expect(held.state.abandoned).toBe(1)
+    expect(first.closed).toBe(1)
+    expect(first.forced).toBe(0)
+  })
+
+  it('calls the quit off and stops saying Saving… where the person keeps the window open', async () => {
+    const held = app({ answer: 1 })
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'write')
+    held.closing(first)
+    await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS + 200)
+    expect(held.state.kept).toBe(1)
+    expect(held.state.saying).toEqual([true, false])
+    expect(first.closed + first.forced).toBe(0)
   })
 })
 
@@ -263,7 +416,7 @@ describe('the question closing asks', () => {
   async function asked(language?: string) {
     const held = app(language ? { language } : {})
     const first = held.windows.first()
-    reportUnsaved(first.webContents, true)
+    reportUnsaved(first.webContents, 'write')
     held.closing(first)
     await vi.advanceTimersByTimeAsync(SAVE_BEFORE_CLOSE_MS + 200)
     return held.state.question as { title: string; message: string; detail: string; buttons: string[] }
