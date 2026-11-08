@@ -21,6 +21,7 @@ import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
 import { inSentence } from '../../i18n/languages';
 import { Zone } from '../../widgets/kit/Zone';
+import { CANVAS_SHEET } from './fitAll';
 
 const HANDLE_THICKNESS = 8;
 
@@ -189,6 +190,7 @@ export function ZoneLayer({
         />
       )}
       <div
+        {...{ [CANVAS_SHEET]: `${board.x},${board.y},${board.width},${board.height}` }}
         style={{
           position: 'absolute',
           left: board.x,

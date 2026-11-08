@@ -2,8 +2,8 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { insetsFor } from './canvasRoom'
-import { FIT_GAP, frameInRoom } from './zoom'
+import { insetsFor, roomsFor } from './canvasRoom'
+import { FIT_GAP, frameInRoom, frameInRooms } from './zoom'
 
 const pane = { left: 0, top: 0, right: 1000, bottom: 800 }
 
@@ -29,6 +29,25 @@ describe('the room floating controls leave', () => {
     const key = { left: 600, top: 700, right: 984, bottom: 784 }
     const away = { left: 1200, top: 0, right: 1300, bottom: 50 }
     expect(insetsFor(pane, [dock, key, away])).toEqual({ top: FIT_GAP, right: FIT_GAP, bottom: 100 + FIT_GAP, left: FIT_GAP })
+  })
+})
+
+describe('the rooms a fit tries', () => {
+  const key = { left: 600, top: 700, right: 984, bottom: 784 }
+
+  it('lets each float take either strip, the cheapest room first', () => {
+    const rooms = roomsFor(pane, [key])
+    expect(rooms[0]).toEqual(insetsFor(pane, [key]))
+    expect(rooms).toHaveLength(2)
+    expect(rooms[1]).toMatchObject({ right: 1000 - 600 + FIT_GAP, bottom: FIT_GAP })
+  })
+
+  it('frames a tall drawing larger beside a key in a corner than over it', () => {
+    const tall = { x: 0, y: 0, width: 300, height: 1200 }
+    const rooms = roomsFor(pane, [key])
+    const over = frameInRoom(tall, { width: 1000, height: 800 }, rooms[0], { floor: 0.1, ceiling: 1 })!
+    const best = frameInRooms(tall, { width: 1000, height: 800 }, rooms, { floor: 0.1, ceiling: 1 })!
+    expect(best.zoom).toBeGreaterThan(over.zoom)
   })
 })
 

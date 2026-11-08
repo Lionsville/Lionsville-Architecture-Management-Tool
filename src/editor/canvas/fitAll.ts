@@ -4,8 +4,8 @@
 import { useCallback } from 'react';
 import { getNodesBounds, useReactFlow, useStoreApi, type Node, type Viewport } from '@xyflow/react';
 import type { Rect } from '../../model/types';
-import { canvasInsets } from '../../widgets/kit/canvasRoom';
-import { frameInRoom, NO_INSETS, ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
+import { canvasRooms } from '../../widgets/kit/canvasRoom';
+import { frameInRooms, NO_INSETS, ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
 import type { Insets } from '../../widgets/kit/zoom';
 
 /**
@@ -41,12 +41,31 @@ export function viewportOverNodes<N extends Node>(
   nodes: readonly N[],
   width: number,
   height: number,
-  insets: Insets = NO_INSETS,
+  rooms: Insets | readonly Insets[] = NO_INSETS,
+  sheet?: Rect,
 ): Viewport | undefined {
   if (nodes.length === 0 || !(width > 0) || !(height > 0)) return undefined;
   const bounds = getNodesBounds([...nodes]);
   if (!(bounds.width > 0) || !(bounds.height > 0)) return undefined;
-  return viewportOverRect(bounds, width, height, insets);
+  return viewportOverRect(sheet ? union(bounds, sheet) : bounds, width, height, rooms);
+}
+
+/** Both rectangles: a landscape's bands are drawn round its cards, and a frame that cut a band's top cut its heading. */
+function union(a: Rect, b: Rect): Rect {
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  return { x, y, width: Math.max(a.x + a.width, b.x + b.width) - x, height: Math.max(a.y + a.height, b.y + b.height) - y };
+}
+
+/** The attribute a board's sheet carries, its rectangle in the board's own units, for a fit to frame it whole. */
+export const CANVAS_SHEET = 'data-canvas-sheet';
+
+/** The sheet drawn on this board, where it draws one. */
+export function sheetOf(board: ParentNode): Rect | undefined {
+  const said = board.querySelector(`[${CANVAS_SHEET}]`)?.getAttribute(CANVAS_SHEET)?.split(',').map(Number);
+  if (!said || said.length !== 4 || said.some((one) => !Number.isFinite(one))) return undefined;
+  const [x, y, width, height] = said as [number, number, number, number];
+  return { x, y, width, height };
 }
 
 /**
@@ -54,8 +73,8 @@ export function viewportOverNodes<N extends Node>(
  * the room its dock and its key leave (`widgets/kit/canvasRoom`). A board too large
  * for the room even at the floor starts at its top left there, and the rest is a pan.
  */
-export function viewportOverRect(rect: Rect, width: number, height: number, insets: Insets = NO_INSETS): Viewport | undefined {
-  return frameInRoom(rect, { width, height }, insets, { floor: MIN_ZOOM, ceiling: FIT_ALL.maxZoom });
+export function viewportOverRect(rect: Rect, width: number, height: number, rooms: Insets | readonly Insets[] = NO_INSETS): Viewport | undefined {
+  return frameInRooms(rect, { width, height }, Array.isArray(rooms) ? rooms : [rooms as Insets], { floor: MIN_ZOOM, ceiling: FIT_ALL.maxZoom });
 }
 
 /**
@@ -69,7 +88,7 @@ export function useFitBoard(): (duration?: number) => void {
   const flow = useStoreApi();
   return useCallback((duration = 300) => {
     const { width, height, domNode } = flow.getState();
-    const viewport = viewportOverNodes(getNodes(), width, height, domNode ? canvasInsets(domNode) : NO_INSETS);
+    const viewport = viewportOverNodes(getNodes(), width, height, domNode ? canvasRooms(domNode) : NO_INSETS, domNode ? sheetOf(domNode) : undefined);
     if (viewport) void setViewport(viewport, { duration });
   }, [flow, getNodes, setViewport]);
 }

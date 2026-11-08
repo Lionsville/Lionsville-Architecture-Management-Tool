@@ -21,7 +21,7 @@ import { useStoreApi, type Node, type Viewport } from '@xyflow/react';
 import { canvasZoomProps } from '../../widgets/kit/zoom';
 import type { Rect } from '../../model/types';
 import { viewportOverNodes, viewportOverRect } from './fitAll';
-import { canvasInsets } from '../../widgets/kit/canvasRoom';
+import { canvasRooms } from '../../widgets/kit/canvasRoom';
 
 /** How long a board waits for a layout pass before it is shown as it stands. */
 const LAYOUT_WAIT_MS = 5000;
@@ -37,7 +37,7 @@ export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFr
   awaiting: boolean;
   /** React Flow can take a viewport. */
   ready: boolean;
-  /** What to frame on a board with nothing on it: its sheet. */
+  /** The board's sheet, framed with what is on it (a landscape's bands), and alone on a board with nothing on it. */
   emptyFrame?: Rect;
   setViewport: (viewport: Viewport) => unknown;
 }): { framed: boolean } {
@@ -67,10 +67,10 @@ export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFr
       if (width > 0 && height > 0) {
         // In the room the dock and the key leave, read off the board as it is drawn.
         const element = container.current;
-        const insets = element ? canvasInsets(element) : undefined;
+        const rooms = element ? canvasRooms(element) : undefined;
         const viewport = held.length > 0
-          ? viewportOverNodes(held, width, height, insets)
-          : sheet && viewportOverRect(sheet, width, height, insets);
+          ? viewportOverNodes(held, width, height, rooms, sheet)
+          : sheet && viewportOverRect(sheet, width, height, rooms);
         if (viewport) put(viewport);
       }
       setFramed(true);

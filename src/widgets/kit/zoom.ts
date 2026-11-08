@@ -171,3 +171,22 @@ export function frameInRoom(
   }
   return { x: place(insets.left, room.width, content.x, content.width), y: place(insets.top, room.height, content.y, content.height), zoom }
 }
+
+/**
+ * The largest of the frames these rooms give: a key in a corner may leave a row or a
+ * column, and which leaves the drawing more depends on the drawing's shape. On a tie
+ * the first room wins, which `roomsFor` makes the cheapest.
+ */
+export function frameInRooms(
+  content: { x: number; y: number; width: number; height: number },
+  pane: Size,
+  rooms: readonly Insets[],
+  range: { floor: number; ceiling: number } = { floor: ZOOM_FLOOR, ceiling: ZOOM_HOME },
+): Viewport | undefined {
+  let best: Viewport | undefined
+  for (const room of rooms.length > 0 ? rooms : [NO_INSETS]) {
+    const frame = frameInRoom(content, pane, room, range)
+    if (frame && (!best || frame.zoom > best.zoom + 1e-6)) best = frame
+  }
+  return best
+}

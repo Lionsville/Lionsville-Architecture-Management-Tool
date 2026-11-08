@@ -20,30 +20,58 @@ export const CANVAS_FLOAT = 'data-canvas-float'
 
 type Box = { left: number; top: number; right: number; bottom: number }
 
-/** The insets a pane of this box keeps clear of these floating boxes, in the same pixels. */
-export function insetsFor(pane: Box, floats: readonly Box[]): Insets {
+type Strip = { side: keyof Insets; size: number }
+
+/** The two strips a floating box may take off the pane: the row along its edge, and the column along its side. */
+function stripsOf(pane: Box, float: Box): { row: Strip; column: Strip; rowCheaper: boolean } | undefined {
   const width = pane.right - pane.left
   const height = pane.bottom - pane.top
+  const left = Math.max(pane.left, float.left)
+  const right = Math.min(pane.right, float.right)
+  const top = Math.max(pane.top, float.top)
+  const bottom = Math.min(pane.bottom, float.bottom)
+  // Not over the pane, or not drawn: it takes nothing.
+  if (right <= left || bottom <= top) return undefined
+  const low = top + bottom > pane.top + pane.bottom
+  const end = left + right > pane.left + pane.right
+  const row: Strip = { side: low ? 'bottom' : 'top', size: (low ? pane.bottom - top : bottom - pane.top) + FIT_GAP }
+  const column: Strip = { side: end ? 'right' : 'left', size: (end ? pane.right - left : right - pane.left) + FIT_GAP }
+  return { row, column, rowCheaper: row.size / height <= column.size / width }
+}
+
+function taking(strips: readonly Strip[]): Insets {
   const insets = { ...NO_INSETS }
-  if (!(width > 0) || !(height > 0)) return insets
-  for (const float of floats) {
-    const left = Math.max(pane.left, float.left)
-    const right = Math.min(pane.right, float.right)
-    const top = Math.max(pane.top, float.top)
-    const bottom = Math.min(pane.bottom, float.bottom)
-    // Not over the pane, or not drawn: it takes nothing.
-    if (right <= left || bottom <= top) continue
-    const low = top + bottom > pane.top + pane.bottom
-    const end = left + right > pane.left + pane.right
-    const row = (low ? pane.bottom - top : bottom - pane.top) + FIT_GAP
-    const column = (end ? pane.right - left : right - pane.left) + FIT_GAP
-    if (row / height <= column / width) {
-      if (low) insets.bottom = Math.max(insets.bottom, row)
-      else insets.top = Math.max(insets.top, row)
-    } else if (end) insets.right = Math.max(insets.right, column)
-    else insets.left = Math.max(insets.left, column)
-  }
+  for (const strip of strips) insets[strip.side] = Math.max(insets[strip.side], strip.size)
   return insets
+}
+
+/** The insets a pane of this box keeps clear of these floating boxes, in the same pixels: each takes its cheaper strip. */
+export function insetsFor(pane: Box, floats: readonly Box[]): Insets {
+  if (!(pane.right > pane.left) || !(pane.bottom > pane.top)) return { ...NO_INSETS }
+  return taking(floats.flatMap((float) => {
+    const strips = stripsOf(pane, float)
+    return strips ? [strips.rowCheaper ? strips.row : strips.column] : []
+  }))
+}
+
+/** Past this many floating boxes the rooms are not worth counting: each takes its cheaper strip. */
+const ROOMS_FROM_AT_MOST = 5
+
+/**
+ * Every room these floating boxes may leave, each taking either of its strips,
+ * the cheapest first: which one frames a drawing largest depends on the drawing's
+ * shape, so a fit tries them all (`frameInRooms`).
+ */
+export function roomsFor(pane: Box, floats: readonly Box[]): Insets[] {
+  if (!(pane.right > pane.left) || !(pane.bottom > pane.top)) return [{ ...NO_INSETS }]
+  const choices = floats.flatMap((float) => { const strips = stripsOf(pane, float); return strips ? [strips] : [] })
+  if (choices.length > ROOMS_FROM_AT_MOST) return [insetsFor(pane, floats)]
+  const rooms: Insets[] = []
+  for (let pick = 0; pick < 1 << choices.length; pick++) {
+    // Bit clear: the cheaper strip, so pick 0 is the room `insetsFor` gives.
+    rooms.push(taking(choices.map((one, at) => (((pick >> at) & 1) === 0) === one.rowCheaper ? one.row : one.column)))
+  }
+  return rooms
 }
 
 /**
@@ -54,6 +82,12 @@ export function insetsFor(pane: Box, floats: readonly Box[]): Insets {
 export function canvasInsets(pane: Element, within: ParentNode = pane): Insets {
   const floats = [...within.querySelectorAll(`[${CANVAS_FLOAT}]`)].map((one) => one.getBoundingClientRect())
   return insetsFor(pane.getBoundingClientRect(), floats)
+}
+
+/** Every room what floats over `pane` may leave, read from the page as it is drawn now. */
+export function canvasRooms(pane: Element, within: ParentNode = pane): Insets[] {
+  const floats = [...within.querySelectorAll(`[${CANVAS_FLOAT}]`)].map((one) => one.getBoundingClientRect())
+  return roomsFor(pane.getBoundingClientRect(), floats)
 }
 
 const same = (a: Insets, b: Insets) => a.top === b.top && a.right === b.right && a.bottom === b.bottom && a.left === b.left
