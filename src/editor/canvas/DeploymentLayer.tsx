@@ -6,7 +6,7 @@ import { useStrings } from '../../i18n/LanguageContext';
 import { deploymentBoxes } from '../../model/deployment';
 import type { PlatformTree } from '../../model/deployment';
 import { unionRects } from '../../model/placement';
-import { BOUNDARY_PADDING } from '../graph';
+import { BOUNDARY_PADDING, DEPLOYMENT_ROOM } from '../graph';
 import type { DesignDiagram, DesignModel, ElementId, Rect } from '../../model/types';
 
 /**
@@ -25,19 +25,20 @@ import type { DesignDiagram, DesignModel, ElementId, Rect } from '../../model/ty
  * The nesting is paid for in padding: an outer box is padded further out than
  * the one inside it, so a namespace whose members are the whole cluster\'s is
  * still visibly inside it rather than exactly on top of it. All of it stays
- * inside the application's boundary, a clear gap short of its edge: the outer box
- * once stood a few pixels from that edge, so three dashed borders ran along the
- * top together and the boundary crossed the outer box's name.
+ * inside the application's boundary, which stands further out while Where it
+ * runs is drawn (`DEPLOYMENT_ROOM`), clear of its edge and of its name: the
+ * outer box once stood a few pixels from that edge, so three dashed borders ran
+ * along the top together and the boundary crossed the outer box's name.
  */
-const PADDING = 12;
-const NESTING_STEP = 18;
+const PADDING = 26;
+const NESTING_STEP = 30;
 const LABEL_ROOM = 18;
-/** What the outer box keeps clear of the boundary's edge, in the canvas's units. */
-const BOUNDARY_GAP = 10;
+/** What the outer box keeps clear of the boundary's edge and its name's band, in the canvas's units: the band at the far distance, where it is drawn largest. */
+const BOUNDARY_GAP = 50;
 
 /** How far out a box at this depth is padded: a step a level, the steps shrunk where the boundary has no room for them all. */
 export function deploymentPadding(depth: number, deepest: number): number {
-  const room = BOUNDARY_PADDING - BOUNDARY_GAP - LABEL_ROOM - PADDING;
+  const room = BOUNDARY_PADDING + DEPLOYMENT_ROOM - BOUNDARY_GAP - LABEL_ROOM - PADDING;
   const step = deepest === 0 ? 0 : Math.min(NESTING_STEP, room / deepest);
   return PADDING + (deepest - depth) * step;
 }
@@ -85,6 +86,7 @@ export function DeploymentLayer(props: DeploymentLayerProps) {
             className="lv-deployment"
             data-testid="lv-deployment-box"
             data-platform={box.id}
+            data-nested={box.depth > 0 || undefined}
             // Under the cards and under the boundary box, deepest nearest the front,
             // so an inner box reads on top of the one it sits in.
             style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height, zIndex: -20 + box.depth }}

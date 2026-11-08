@@ -111,10 +111,14 @@ export interface BuildGraphArgs {
   overlayMarks?: ReadonlyMap<ElementId, OverlayMark>;
   /** The cards the overlay fades rather than washes (ADR-0020). */
   overlayFaded?: ReadonlySet<ElementId>;
+  /** Where it runs is drawn: the boundary stands further out, to hold the platforms' boxes and their names inside it. */
+  deployment?: boolean;
 }
 
 /** How far an application's boundary stands out from its containers; a platform's box on its diagram stays inside it. */
 export const BOUNDARY_PADDING = 56;
+/** What the boundary adds while Where it runs is drawn: the room the platforms' boxes are padded into. */
+export const DEPLOYMENT_ROOM = 72;
 const BOUNDARY_MIN: Rect = { x: 0, y: 0, width: 520, height: 360 };
 
 export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode[]): ElementNode[] {
@@ -149,7 +153,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
     const mark = args.overlayMarks?.get(element.id);
     const faded = args.overlayFaded?.has(element.id) === true;
     const rect = isBoundary
-      ? boundaryRect(args.diagram, elementsById)
+      ? boundaryRect(args.diagram, elementsById, args.deployment ? BOUNDARY_PADDING + DEPLOYMENT_ROOM : BOUNDARY_PADDING)
       : sayType(element.id, placementRect(figure, placement));
     nodes.push({
       id: element.id,
@@ -251,6 +255,7 @@ function withoutHelpOverContent(nodes: ElementNode[]): ElementNode[] {
 export function boundaryRect(
   diagram: DesignDiagram,
   elementsById: Map<ElementId, DesignElement>,
+  padding: number = BOUNDARY_PADDING,
 ): Rect {
   const appId = diagram.applicationElementId;
   const appPlacement = placedNodes(diagram).find((p) => p.id === appId);
@@ -267,7 +272,7 @@ export function boundaryRect(
     })
     .map((p) => placementRect('component', p));
   if (componentRects.length === 0) return stored;
-  const componentsBox = expandRect(unionRects(componentRects) as Rect, BOUNDARY_PADDING);
+  const componentsBox = expandRect(unionRects(componentRects) as Rect, padding);
   return unionRects([stored, componentsBox]) as Rect;
 }
 

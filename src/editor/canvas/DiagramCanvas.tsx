@@ -358,6 +358,8 @@ export interface DiagramCanvasProps {
   overlayMarks?: ReadonlyMap<ElementId, OverlayMark>;
   /** The cards the overlay fades rather than washes (ADR-0020). */
   overlayFaded?: ReadonlySet<ElementId>;
+  /** A container diagram draws where it runs: its boundary holds the platforms' boxes. */
+  showDeployment?: boolean;
   /** The overlay's legend, drawn on the canvas while an overlay is up. */
   overlayLegend?: OverlayLegendProps;
   /** "Open documentation" on an element: the editor shows its page. */
@@ -557,12 +559,12 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         asOfDay,
         overlayMarks: props.overlayMarks,
         overlayFaded: props.overlayFaded,
-        noteFor: props.noteFor,
+        noteFor: props.noteFor, deployment: props.showDeployment,
       }, lastNodes.current);
       lastNodes.current = next;
       return next;
     },
-    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay, props.noteFor, props.overlayMarks, props.overlayFaded],
+    [props.model, props.diagram, props.readOnly, selectedElementIds, selectedConnectionIds, tokens, props.showLifecycle, asOfDay, props.noteFor, props.overlayMarks, props.overlayFaded, props.showDeployment],
   );
   const derivedEdges = useMemo(
     () => {

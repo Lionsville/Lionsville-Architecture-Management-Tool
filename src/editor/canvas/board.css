@@ -189,6 +189,13 @@
   line-height: var(--lh-tight);
   white-space: nowrap;
 }
+/*
+ * A box inside another says its name at its top left: at the right, the outer box's name
+ * stood a step above it, and at a far distance, where names are drawn larger, the inner
+ * box's edge and name ran through it. The application's own name is the boundary's, a
+ * step further out.
+ */
+.lv-deployment[data-nested] .lv-deployment__name { right: auto; left: calc(var(--s-2) / var(--canvas-zoom, 1)); }
 
 /* A colour question, on a card: its wash, and the band's number. */
 .lv-tile[data-lens] { background: var(--lv-lens-wash); }
