@@ -764,9 +764,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'c4.emptyHow': 'Een container is iets dat op zichzelf draait: een app, een dienst, een database. Voeg de eerste toe, en de lijnen rond {name} kunnen erop landen.',
   'c4.emptyAdd': 'Container toevoegen',
   'c4.emptyRead': 'Aan deze applicatie is nog geen container toegevoegd.',
-  'node.containersNone': 'Nog geen containers ›',
-  'node.containersOne': '1 container ›',
-  'node.containersMany': '{count} containers ›',
+  'node.containersNone': 'Nog geen containers',
+  'node.containersOne': '1 container',
+  'node.containersMany': '{count} containers',
 
   'menu.openDocumentation': 'Gegevenspagina openen',
   'shortcut.open-documentation': 'Gegevenspagina openen',

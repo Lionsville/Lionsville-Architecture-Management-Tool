@@ -764,9 +764,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'c4.emptyHow': 'Ein Container läuft eigenständig: eine App, ein Dienst, eine Datenbank. Fügen Sie den ersten hinzu, und die Linien um {name} können darauf landen.',
   'c4.emptyAdd': 'Container hinzufügen',
   'c4.emptyRead': 'Dieser Anwendung wurde noch kein Container hinzugefügt.',
-  'node.containersNone': 'Noch keine Container ›',
-  'node.containersOne': '1 Container ›',
-  'node.containersMany': '{count} Container ›',
+  'node.containersNone': 'Noch keine Container',
+  'node.containersOne': '1 Container',
+  'node.containersMany': '{count} Container',
 
   'menu.openDocumentation': 'Steckbrief öffnen',
   'shortcut.open-documentation': 'Steckbrief öffnen',

@@ -782,9 +782,9 @@ export const EN = {
   'c4.emptyHow': 'A container is something that runs on its own: an app, a service, a database. Add the first, and the lines around {name} can land on it.',
   'c4.emptyAdd': 'Add a container',
   'c4.emptyRead': 'No container has been added to this application yet.',
-  'node.containersNone': 'No containers yet ›',
-  'node.containersOne': '1 container ›',
-  'node.containersMany': '{count} containers ›',
+  'node.containersNone': 'No containers yet',
+  'node.containersOne': '1 container',
+  'node.containersMany': '{count} containers',
 
   // The documentation page and its doors.
   'menu.openDocumentation': 'Open the record',
