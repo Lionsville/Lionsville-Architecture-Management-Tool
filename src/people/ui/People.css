@@ -68,3 +68,11 @@
 .people-csv { width: 100%; border-collapse: collapse; font-size: var(--t-body); }
 .people-csv th { color: var(--ink-2); font-weight: 400; text-align: start; }
 .people-csv th, .people-csv td { padding: var(--s-1) var(--s-2) var(--s-1) 0; border-bottom: 1px solid var(--line); text-align: start; }
+
+/* A person in a picker's list: the whole row is the mark, edge to edge, for the pointer, the keys and the one picked.
+   The button's ripple grew from the press and stopped short of the row's end. */
+.people-pickRow.MuiButton-root { justify-content: space-between; gap: var(--s-3); width: 100%; border-radius: 0; text-transform: none; font-weight: var(--fw-regular); border-inline-start: 2px solid transparent; }
+.people-pickRow.MuiButton-root:hover { background: var(--surface-2); }
+.people-pickRow.MuiButton-root.Mui-focusVisible,
+.people-pickRow.MuiButton-root[aria-current='true'] { background: var(--selected-soft); border-inline-start-color: var(--selected-edge); }
+.people-pickRow.MuiButton-root[aria-current='true'] { font-weight: var(--fw-strong); }

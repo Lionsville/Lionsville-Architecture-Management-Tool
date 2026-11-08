@@ -30,6 +30,7 @@ import type { Translate } from '../shown'
 import { mayDo } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
 import { AddPerson } from './AddPerson'
+import './People.css'
 
 /** How many matches the list shows: a picker, not the People page. */
 const SHOWN = 8
@@ -105,7 +106,7 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
         {found.slice(0, SHOWN).map((person) => (
           <Button
             key={person.id} size="small" onClick={() => pick(person.id)} data-testid={`person-pick-${person.id}`}
-            sx={{ justifyContent: 'space-between', textTransform: 'none', fontWeight: person.id === value ? 700 : 400 }}
+            className="people-pickRow" disableRipple aria-current={person.id === value || undefined}
           >
             <span>{shownText(shownEntry(person), s)}{person.id === me ? ` · ${s('people.you')}` : ''}</span>
             {note?.(person) && <Typography component="span" sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{note(person)}</Typography>}
