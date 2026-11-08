@@ -199,7 +199,7 @@ export function useReferenceCompletion(
  * business case, the record's template and its sections — under one heading, and
  * each kind of thing a document may refer to, picked by name, under another.
  */
-export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more = [] }: {
+export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more = [], writing }: {
   onPicture?: () => void
   /** Offered only where the source keeps attachments. */
   onAttach?: () => void
@@ -207,6 +207,8 @@ export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more
   onInsert: (referable: Referable) => void
   /** What this record has of its own to put in: its template, and the sections of it the text lacks. */
   more?: readonly { key: string; label: string; onPick(): void }[]
+  /** The box being written in: where the focus goes back once a link is picked, or the picking let go of, so the next letter lands in the text. */
+  writing?: () => HTMLElement | null | undefined
 }) {
   const access = useReferences()
   const { t } = useStrings()
@@ -214,6 +216,8 @@ export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more
   // Read when the menu is drawn: a list of kinds nobody can refer to is no list.
   const all = access?.referables() ?? []
   const kinds = REFERABLE_KINDS.filter((kind) => all.some((one) => one.kind === kind))
+  // After the dialog has gone and handed the focus back to Insert: the caret is where the link was put.
+  const backToWriting = () => { setTimeout(() => { const box = writing?.(); if (box?.isConnected) box.focus() }, 0) }
   const items: MenuEntry[] = [
     { heading: t('doc.insertGroupText') },
     ...(onPicture ? [{ label: t('doc.insertPictureMenu'), onSelect: onPicture }] : []),
@@ -229,7 +233,7 @@ export function InsertMenu({ onPicture, onAttach, onBusinessCase, onInsert, more
     <>
       <MenuButton size="small" label={t('doc.insertPicture')} items={items} data-testid="doc-insert" />
       {picking && (
-        <PickDialog kind={picking} options={all.filter((one) => one.kind === picking)} onClose={() => setPicking(undefined)} onPick={(one) => { setPicking(undefined); onInsert(one) }} />
+        <PickDialog kind={picking} options={all.filter((one) => one.kind === picking)} onClose={() => { setPicking(undefined); backToWriting() }} onPick={(one) => { setPicking(undefined); onInsert(one); backToWriting() }} />
       )}
     </>
   )

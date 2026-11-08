@@ -79,6 +79,8 @@ describe('referring while writing', () => {
     // Return in the field is the dialog's default button.
     fireEvent.submit(field.closest('form')!)
     await waitFor(() => expect(onChange).toHaveBeenLastCalledWith('```ref\ndecision: adr-1\n```\n\n'))
+    // The next letter lands in the text, not on Insert.
+    await waitFor(() => expect(document.activeElement?.tagName).toBe('TEXTAREA'))
   })
 })
 

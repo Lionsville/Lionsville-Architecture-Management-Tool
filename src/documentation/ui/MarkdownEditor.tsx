@@ -317,7 +317,7 @@ function useTaking({ files, selection, apply, canTake }: {
 }
 
 /** A pane's bar: the marks, what can be put in, and how the text is shown. */
-function PaneBar({ tools, switcher, canWrite, editor, images, showPictures, onPictures, pickFile, insert, put, headings, caret, moveTo }: {
+function PaneBar({ tools, switcher, canWrite, editor, images, showPictures, onPictures, pickFile, insert, put, headings, caret, moveTo, writingBox }: {
   tools: ReactNode
   switcher: ReactNode
   canWrite: boolean
@@ -331,6 +331,8 @@ function PaneBar({ tools, switcher, canWrite, editor, images, showPictures, onPi
   headings: readonly HeadingAt[]
   caret: number
   moveTo(heading: HeadingAt): void
+  /** The box written in, for the focus to go back to after Insert. */
+  writingBox?: () => HTMLElement | null
 }) {
   const { t } = useStrings()
   const { template, value } = editor
@@ -351,6 +353,7 @@ function PaneBar({ tools, switcher, canWrite, editor, images, showPictures, onPi
           {...(pickFile ? { onAttach: pickFile } : {})}
           onInsert={insert}
           more={more}
+          writing={writingBox}
         />
       )}
       {canWrite && template && blank && (
@@ -422,7 +425,8 @@ function EditorTop({ fieldId, seat, variant, canAttach, editor, take, ...bar }: 
     />
   )
   if (variant === 'field') return <><FieldBar fieldId={fieldId} label={editor.label} required={editor.required} note={editor.note} tools={bar.tools} switcher={bar.switcher} />{pictures}</>
-  if (variant === 'pane') return <><PaneBar {...bar} editor={editor} />{pictures}</>
+  const writingBox = () => document.getElementById(fieldId)
+  if (variant === 'pane') return <><PaneBar {...bar} editor={editor} writingBox={writingBox} />{pictures}</>
   const tip = t(canAttach ? 'md.hintFiles' : editor.onAddImage ? 'md.hintPictures' : 'md.hint')
   const help = <FlowHelp open={helpOpen} tip={tip} onPress={() => setHelpOpen((open) => !open)} />
   return (
@@ -430,7 +434,7 @@ function EditorTop({ fieldId, seat, variant, canAttach, editor, take, ...bar }: 
       <FlowHead fieldId={fieldId} hintId={`${fieldId}-hint`} editor={editor} />
       {seat?.slot && seat.mine && createPortal(
         <>
-          <PaneBar {...bar} editor={{ ...editor, extra: help }} />
+          <PaneBar {...bar} editor={{ ...editor, extra: help }} writingBox={writingBox} />
           {pictures}
           {helpOpen && <MarkdownGuide images={Boolean(editor.onAddImage)} attachments={canAttach} />}
         </>,
