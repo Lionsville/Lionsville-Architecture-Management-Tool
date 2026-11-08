@@ -142,16 +142,17 @@ export function useWorkspaceDocument(deps: {
    * was, and nothing here would read it — the place's own watch does not tell
    * a window of its own writes. Read now, where nothing of this session's is
    * waiting to be written; otherwise the next write meets the scope moved,
-   * and the person is asked.
+   * and the person is asked. Read once for the whole of a *Try all again*,
+   * after its last change has landed: a read on each landing put the first
+   * on screen and left the rest to a session that by then had a write of
+   * its own under way, so they stayed on disk alone.
    */
-  const path = session.snapshot().path
   const shown = useRef(document)
   shown.current = document
-  useEffect(() => writer.watchHandedLanded?.((scope) => {
-    if (scope !== path) return
+  useEffect(() => writer.watchHandedLanded?.(() => {
     const { state, takeTheirs: take } = shown.current
     if (!hasUnsavedWork(state) && state.status !== 'saving') void take()
-  }), [writer, path])
+  }), [writer])
 
   // Put back: the scope as it is kept, read over what was not written. Nothing is refused any more, so nothing is said.
   const { takeTheirs } = document
@@ -233,7 +234,10 @@ export function useScopeWriter(
     }
     return {
       handOver: (refusals) => { handOver(watchedScopes, refusals) },
-      watchHandedLanded: (listener) => watchLanded(watchedScopes, (landed) => listener(landed.scope)),
+      // Handed over by an earlier session of this scope, by its address; or a write to it from elsewhere — a view renamed on its home — by its identity.
+      watchHandedLanded: (listener) => watchLanded(watchedScopes, (landed) => {
+        if (landed.some((one) => one.scope === path || (known !== undefined && one.scopeIds?.includes(known) === true))) listener()
+      }),
       write: async (steps, expects) => {
         const scope = await identity()
         return landed(await scopes.apply([{ scope, steps, ...(expects !== undefined ? { expects } : {}) }])).revisions[0]

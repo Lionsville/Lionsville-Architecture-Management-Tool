@@ -61,6 +61,12 @@ export type WriteRefusal = {
    * read once it lands (`watchLanded`), since it holds the scope as it was.
    */
   readonly scope?: string
+  /**
+   * The scopes it wrote, by identity, where the write named them: a view
+   * renamed on a home is a change to a scope a session may have open, and
+   * that session has to read it once it lands as much as a handed-over one.
+   */
+  readonly scopeIds?: readonly string[]
 }
 
 export type WriteRefusals = {
@@ -91,8 +97,13 @@ export type WriteRefusals = {
    * row each, rather than going with the session. Answers their numbers.
    */
   readonly handOver: (refusals: readonly Omit<WriteRefusal, 'id'>[]) => readonly number[]
-  /** Word of each refused write that lands when made again, after it has. */
-  readonly watchLanded: (listener: (landed: WriteRefusal) => void) => () => void
+  /**
+   * Word of the refused writes that landed when made again, once per *Try
+   * again* or *Try all again*, after the last of them has been tried: a
+   * session that reads the scope on each landing reads it while the next is
+   * still to land, and then holds a scope that moves under it again.
+   */
+  readonly watchLanded: (listener: (landed: readonly WriteRefusal[]) => void) => () => void
 }
 
 /** The refusals that mean a write was not kept, rather than an answer to a question. */
@@ -116,7 +127,7 @@ export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => vo
   let held: readonly WriteRefusal[] = []
   let next = 0
   const listeners = new Set<() => void>()
-  const landing = new Set<(landed: WriteRefusal) => void>()
+  const landing = new Set<(landed: readonly WriteRefusal[]) => void>()
   const set = (to: readonly WriteRefusal[]) => { held = to; for (const listener of [...listeners]) listener() }
   const after = new Map<number, () => void>()
   const drop = (id?: number) => {
@@ -172,16 +183,18 @@ export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => vo
     retry: (id) => hold((async () => {
       // One after the other, in the order they were made: two changes to one scope are made as they were meant to land.
       const tried: boolean[] = []
+      const landedNow: WriteRefusal[] = []
       for (const one of held.filter((each) => id === undefined || each.id === id)) {
         const landed = await one.retry().catch(() => false)
         const then = after.get(one.id)
         if (landed) {
           drop(one.id)
           then?.()
-          for (const listener of [...landing]) listener(one)
+          landedNow.push(one)
         }
         tried.push(landed)
       }
+      if (landedNow.length > 0) for (const listener of [...landing]) listener(landedNow)
       if (tried.some(Boolean)) onLanded()
       return tried.every(Boolean)
     })()),
@@ -214,7 +227,12 @@ const refusedAtAll = (answer: unknown) => typeof answer === 'object' && answer !
 /** What a watched write was, from what it was handed: the words its row in *Your work* reads. */
 type Named<A> = (args: A) => StepSummary | undefined
 
-function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Promise<R>, loosen?: Loosen<A>, named?: Named<A>) {
+/** Which scopes a watched write was to, by identity, from what it was handed. */
+type Scoped<A> = (args: A) => readonly string[] | undefined
+
+function watched<A extends unknown[], R>(
+  store: Store, call: (...args: A) => Promise<R>, loosen?: Loosen<A>, named?: Named<A>, scoped?: Scoped<A>,
+) {
   const attempt = async (args: A): Promise<{ answer: R; key?: StringKey } | { cause: unknown }> => {
     try {
       const answer = await call(...args)
@@ -239,7 +257,10 @@ function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Pro
     // Words are a courtesy: a write that cannot be named still stands in the list, as a change.
     let summary: StepSummary | undefined
     try { summary = named?.(args) } catch { summary = undefined }
+    let scopeIds: readonly string[] | undefined
+    try { scopeIds = scoped?.(args) } catch { scopeIds = undefined }
     const id = store.add({
+      ...(scopeIds && scopeIds.length > 0 ? { scopeIds } : {}),
       ...('key' in first && first.key ? { key: first.key } : {}),
       cause: 'cause' in first ? first.cause : first.answer,
       retry,
@@ -268,6 +289,7 @@ const UNDERWAY = Symbol('underway')
 function watch<T extends object>(
   store: Store, repository: T, writes: readonly (keyof T & string)[],
   loosened: Partial<Record<string, Loosen<unknown[]>>> = {}, named: Partial<Record<string, Named<unknown[]>>> = {},
+  scoped: Partial<Record<string, Scoped<unknown[]>>> = {},
 ): T {
   const names = new Set<string | symbol>(writes)
   const made = new Map<string | symbol, unknown>()
@@ -280,7 +302,7 @@ function watch<T extends object>(
       if (typeof value !== 'function') return value
       if (!names.has(prop)) return (value as (...args: unknown[]) => unknown).bind(target)
       if (!made.has(prop)) {
-        made.set(prop, watched(store, (value as (...args: unknown[]) => Promise<unknown>).bind(target), loosened[String(prop)], named[String(prop)]))
+        made.set(prop, watched(store, (value as (...args: unknown[]) => Promise<unknown>).bind(target), loosened[String(prop)], named[String(prop)], scoped[String(prop)]))
       }
       return made.get(prop)
     },
@@ -307,8 +329,8 @@ export function refusalsOf(repository: object): WriteRefusals | undefined {
   return storeOf(repository)
 }
 
-/** Word of each refused write that lands when made again, where the repository is watched. */
-export function watchLanded(repository: object, listener: (landed: WriteRefusal) => void): () => void {
+/** Word of the refused writes that landed when made again, once per attempt, where the repository is watched. */
+export function watchLanded(repository: object, listener: (landed: readonly WriteRefusal[]) => void): () => void {
   return storeOf(repository)?.watchLanded(listener) ?? (() => {})
 }
 
@@ -366,6 +388,8 @@ export function watchRepositories(repositories: Repositories, store: Store): Rep
       create: (args) => said('work.refusedNewScope', (args[1] as { name?: unknown } | undefined)?.name)(args),
       move: said('work.refusedMoveScope'),
       remove: said('work.refusedRemoveScope'),
+    }, {
+      apply: ([work]) => (work as readonly StepsFor[]).map((one) => one.scope),
     }),
     images: watch(store, repositories.images, ['put'], {}, { put: (args) => said('work.refusedPicture', args[1])(args) }),
     settings: watch(store, repositories.settings, ['write'], {}, { write: said('work.refusedSetting') }),

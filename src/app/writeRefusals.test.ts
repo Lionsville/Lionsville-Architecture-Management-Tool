@@ -275,8 +275,8 @@ describe('watchRepositories', () => {
     const letGo = vi.fn()
     const store = writeRefusals(() => {}, letGo)
     const made: string[] = []
-    const heard: (string | undefined)[] = []
-    store.watchLanded((landed) => heard.push(landed.scope))
+    const heard: (string | undefined)[][] = []
+    store.watchLanded((landed) => heard.push(landed.map((one) => one.scope)))
     const ids = store.handOver([
       { cause: new Error('EACCES'), scope: 'rail', summary: { key: 'activity.elementRenamed', name: 'Fleet', to: 'Fleet QA' }, retry: () => { made.push('rename'); return Promise.resolve(true) } },
       { cause: new Error('EACCES'), summary: { key: 'activity.elementAdded', name: 'QA App' }, retry: () => Promise.resolve(false) },
@@ -285,7 +285,7 @@ describe('watchRepositories', () => {
     await expect(store.retry()).resolves.toBe(false)
     expect(made).toEqual(['rename'])
     // A session open on that scope again hears it landed, and reads it.
-    expect(heard).toEqual(['rail'])
+    expect(heard).toEqual([['rail']])
     expect(store.list().map((one) => one.summary?.name)).toEqual(['QA App'])
     store.forget(ids[1])
     expect(store.list()).toEqual([])
@@ -294,5 +294,25 @@ describe('watchRepositories', () => {
     const watched = watchRepositories(memoryRepositories(), store)
     expect(handOver(watched.scopes, [{ retry: () => Promise.resolve(true) }])).toHaveLength(1)
     expect(handOver(memoryRepositories().scopes, [{ retry: () => Promise.resolve(true) }])).toBeUndefined()
+  })
+
+  it('says what landed once for a whole Try all again, after the last, with the scopes each write named', async () => {
+    const refusing = { now: false }
+    const store = writeRefusals()
+    const watched = watchRepositories(refusingWhile(refusing), store)
+    await scopeAt(watched, 'rail')
+    const id = (await readScope(watched.scopes, 'rail'))!.id!
+    refusing.now = true
+    await changeScope(watched.scopes, 'rail', rename('One')).catch(() => undefined)
+    store.handOver([
+      { scope: 'rail', retry: () => Promise.resolve(true) },
+      { scope: 'rail', retry: () => Promise.resolve(true) },
+    ])
+    const heard: string[][] = []
+    // The second landing has not happened yet when the first is told of: nobody reads half a batch.
+    store.watchLanded((landed) => heard.push(landed.map((one) => one.scope ?? one.scopeIds?.join(',') ?? '?')))
+    refusing.now = false
+    await expect(store.retry()).resolves.toBe(true)
+    expect(heard).toEqual([[id, 'rail', 'rail']])
   })
 })

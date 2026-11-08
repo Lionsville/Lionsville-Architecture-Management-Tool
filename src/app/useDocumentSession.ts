@@ -77,8 +77,12 @@ export type ScopeWriter = {
   put(name: ImageName, bytes: Uint8Array): Promise<ImageEntry>
   /** Hand refused changes to the list that outlives this session (`writeRefusals`), where one watches the place. */
   handOver?(refusals: readonly Omit<WriteRefusal, 'id'>[]): void
-  /** Word of a handed-over change landing after all, with the scope it was to, where one watches the place: what is kept moved under the session. */
-  watchHandedLanded?(listener: (scope: string | undefined) => void): () => void
+  /**
+   * Word, once per *Try again* or *Try all again* from *Your work*, that
+   * changes to this very scope landed after all, where one watches the place:
+   * what is kept moved under the session.
+   */
+  watchHandedLanded?(listener: () => void): () => void
 }
 
 /**
