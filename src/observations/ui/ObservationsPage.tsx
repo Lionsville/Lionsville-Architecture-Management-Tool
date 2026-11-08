@@ -92,6 +92,7 @@ import { RecordFull, RecordPanel, RecordPreview } from './RecordViews'
 import { RecordEditor } from './RecordEditor'
 import type { RecordEditing } from './RecordEditor'
 import { useAnalysisForms } from './useAnalysisForms'
+import type { AnalysisForms } from './useAnalysisForms'
 import {
   addressCause, dropSolution, forgetCause, formatExperimentNumber, formatSolutionNumber, newExperiment,
   newSolution, nextExperimentNumber, nextSolutionNumber, planExperiment, removeExperiment, removeSolution,
@@ -751,7 +752,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   /** The readers' context, read by the ladder after the forms are made: what explains a cause from above is the page's to say. */
   const readerRef = useRef<ReaderContext | undefined>(undefined)
   /** The new observation, the ladder and the link dialog, and where what they make lands (ADR-0032 §2, §6). */
-  const forms = useAnalysisForms({
+  const forms = offTheRecordForms(useAnalysisForms({
     work, below, local: f.viewLocal, path: props.path, scopeName: model.name, commit, readOnly, onChangeBelow: props.onChangeBelow,
     makeId, today, s, scopeLabel, scopeTrail: props.scopeTrail, nameOf, select: setSelectedKey, renderMarkdown: props.renderMarkdown,
     rootStep: (id, scope) => {
@@ -761,7 +762,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       return ctx && cause ? crossScope(cause, scope, ctx).toggle : {}
     },
     onPropose: (causeId) => setProposing({ causeId }),
-  })
+  }), offTheRecord)
   /** Seen again, verified, an experiment concluded or reopened: the moves that ask first. */
   const lifecycle = useLifecycle({ lists: work, commit, today, nameOf, s, changeBelow: forms.changeBelow })
   const { dialogs } = lifecycle
@@ -869,7 +870,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }
   readerRef.current = readerCtx
   const pickOnMap = (key: string, then?: () => void) => pickThroughGuard(key === selectedKey || Boolean(forms.panel), () => { setSelectedKey(key); then?.() }, recordSurface)
-  const pageWrites = { edit: (key: string) => setEditingKey(key), ask: (key: string, panel: CausePanel) => setAsked({ key, panel }) }
+  // Ask why: the question takes the record's place.
+  const pageWrites = { edit: (key: string) => setEditingKey(key), ask: (key: string, panel: CausePanel) => offTheRecord(() => setAsked({ key, panel })) }
 
   // --- the right-click ------------------------------------------------------------------
 
@@ -879,7 +881,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   }
   const menuActions = (target: PictureTarget): MenuAction[] => pictureMenuActions(target, {
     readOnly, s, commit, analysis, causes, solutions, experiments, resolve, readerCtx,
-    edit: (key) => setEditingKey(key), ask: (key, panel) => setAsked({ key, panel }), unlink,
+    edit: (key) => setEditingKey(key), ask: pageWrites.ask, unlink,
   })
 
   // --- the maps -------------------------------------------------------------------------
@@ -929,7 +931,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       window={chainWindow}
       showOverview={chainsKept === CHAINS_ALL}
       onMore={(card) => {
-        if (card.more === 'pile') { setStage('register'); return }
+        if (card.more === 'pile') { offTheRecord(() => setStage('register')); return } // Seen: the record beside the map goes
         const { chain } = card
         if (chain) setOpened((held) => new Set(held).add(chain))
       }}
@@ -1237,4 +1239,19 @@ function HowToRead({ open, onClose, stage, size, local, phases, phaseCounts, lan
       </div>
     </Dialog>
   )
+}
+
+/**
+ * The forms that stand where the record stood — a new observation, the ladder
+ * asking why, a group asked at once — leave the record and a comment written on
+ * it: each asks first. A link across a scope boundary is a dialog over the
+ * record, which stays.
+ */
+function offTheRecordForms(forms: AnalysisForms, offTheRecord: (go: () => void) => void): AnalysisForms {
+  return {
+    ...forms,
+    openNew: () => offTheRecord(forms.openNew),
+    openLink: (target) => (target.mode === 'org' || target.mode === 'local' ? forms.openLink(target) : offTheRecord(() => forms.openLink(target))),
+    askGroup: (ids, scope) => offTheRecord(() => forms.askGroup(ids, scope)),
+  }
 }

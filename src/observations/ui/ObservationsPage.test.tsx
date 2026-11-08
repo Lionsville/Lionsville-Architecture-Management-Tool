@@ -210,6 +210,33 @@ describe('a draft and the ways off its record', () => {
     await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Comment draft' })).toBeNull())
     expect(draftHeld()).toBe(false)
   })
+
+  it('asks before Ask why, the map’s + and New observation put a form where the record and its comment were', async () => {
+    const keep = () => fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    const written = () => (screen.getByRole('textbox', { name: 'Comment draft' }) as HTMLTextAreaElement).value
+    mount({ beside: <DraftQuestion /> })
+    openRow('o1')
+    openFull()
+    writeComment()
+    fireEvent.click(screen.getByRole('button', { name: 'Ask why' }))
+    expect(asked()).toBeTruthy()
+    keep()
+    await waitFor(() => expect(asked()).toBeNull())
+    expect(written()).toBe('Who owns this?')
+    cleanup()
+    mount({ initialId: 'c1', initialTab: 'analysis-map', initialNonce: 1, beside: <DraftQuestion /> })
+    writeComment()
+    fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
+    expect(asked()).toBeTruthy()
+    keep()
+    await waitFor(() => expect(asked()).toBeNull())
+    expect(written()).toBe('Who owns this?')
+    fireEvent.click(screen.getByTestId('analysis-handle'))
+    expect(asked()).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Comment draft' })).toBeNull())
+    expect(draftHeld()).toBe(false)
+  })
 })
 
 describe('the chain', () => {
