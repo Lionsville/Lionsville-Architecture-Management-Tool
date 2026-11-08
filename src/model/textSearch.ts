@@ -44,7 +44,7 @@ export function matchesQuery(query: string, terms: readonly (string | undefined)
 /** The endings a Dutch or German word takes, longest first, that a stem leaves off. */
 const ENDINGS: Readonly<Record<'nl' | 'de', readonly string[]>> = {
   nl: ['ingen', 'ing', 'en', 'e', 't', 's'],
-  de: ['ungen', 'ung', 'ern', 'en', 'er', 'es', 'e', 'n', 's'],
+  de: ['ungen', 'ere', 'ung', 'ern', 'en', 'er', 'es', 'e', 'n', 's'],
 }
 
 /**

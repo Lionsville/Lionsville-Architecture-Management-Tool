@@ -69,6 +69,10 @@ describe('matchesStems', () => {
     expect(matchesStems('orden', ['Bord ordenen'], 'nl')).toBe(true)
     expect(matchesStems('öffne', ['Ordner öffnen…'], 'de')).toBe(true)
     expect(matchesStems('speicher', ['Kopie speichern…'], 'de')).toBe(true)
+    // A verb in -ern typed as a person says it: speichere, vergrößere, verkleinere.
+    expect(matchesStems('speichere', ['Speichern'], 'de')).toBe(true)
+    expect(matchesStems('vergrößere', ['Vergrößern'], 'de')).toBe(true)
+    expect(matchesStems('verkleinere', ['Verkleinern'], 'de')).toBe(true)
   })
 
   it('still asks every word', () => {
