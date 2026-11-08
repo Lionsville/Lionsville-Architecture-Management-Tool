@@ -27,3 +27,6 @@
 }
 /* A quiet button standing alone under the rows: its words line up with the labels above it, not its padding. */
 .kit-settings__flush > .kit-button[data-variant='quiet'][data-size='small'] { margin-inline-start: calc(0px - var(--s-2)); }
+
+/* A field a way in lands on: a name and no box, so the rows inside lay out as before. */
+.kit-settings__field { display: contents; }

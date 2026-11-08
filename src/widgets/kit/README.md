@@ -51,7 +51,7 @@ and behaves is said here, once.
 | `FirstRun.tsx` | **First-run page**: what this is, a small picture (`StructurePicture`), the real choices side by side |
 | `Frame.tsx`, `placeHost.ts` | **Frame**: two rows, the band, the tree, the main column and the panel, knowing no scope; where a page and a view's tabs are drawn. The rows' contents are `app/frame/` |
 | `FirstRunPage.tsx` | **First-run page**: one way forward per intent, and where work is kept, before any exists |
-| `SettingsPage.tsx`, `density.css` | **Settings page**: whose they are in its first line, a side list where it has sections, `PreferenceRow`, `SettingSwitch`; the density switch's measures |
+| `SettingsPage.tsx`, `density.css` | **Settings page**: whose they are in its first line, a side list where it has sections, `PreferenceRow`, `SettingSwitch`, `SettingsField` and `focusSettingsField` for a way in that lands on one field; the density switch's measures |
 | `Band.tsx` | **Band**: a state of the window in words with one way out; `BandStack` never shows two |
 | `zoom.ts` | how far a canvas zooms and what each input means; `canvasZoomProps`, the seam for the three reading distances |
 | `useCanvasZoom.ts` | one zoom behaviour for every canvas: ⌘ or Ctrl with + − 0, the wheel, a pinch, ⇧ 1, a board's = − and ⇧ 2 |

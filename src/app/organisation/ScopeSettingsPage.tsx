@@ -42,7 +42,7 @@ import { usePlaceTab } from '../../widgets/placeTab'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { Field, TextField, TextInput } from '../../widgets/kit/Field'
-import { PreferenceRow, SettingsPage, SettingsSection } from '../../widgets/kit/SettingsPage'
+import { focusSettingsField, PreferenceRow, SettingsField, SettingsPage, SettingsSection } from '../../widgets/kit/SettingsPage'
 import { MarkdownField } from '../../documentation/ui/MarkdownField'
 import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import type { ScopeSettingsPatch } from '../App'
@@ -78,6 +78,11 @@ export type ScopeSettingsPageProps = {
   /** *Served by*, drawn by the screen that has the index. */
   servedBy?: ReactNode
   unitTypes?: readonly { id: string; name: string }[]
+  /**
+   * The field to give the focus to as the page opens (`PAGE_FIELDS`), as the
+   * tree's *Move to…* lands on *Filed under*; the nonce says it is asked again.
+   */
+  field?: { readonly name: string; readonly nonce: number }
   s: Translate
 }
 
@@ -92,10 +97,22 @@ function patchOf(target: ScopeSummary): ScopeSettingsPatch {
 }
 
 export function ScopeSettingsPage({
-  open, onClose, target, document, tree, aboveClient, readOnly, onApply, onDelete, onCopyLink, onUndoChange, servedBy, unitTypes = [], s,
+  open, onClose, target, document, tree, aboveClient, readOnly, onApply, onDelete, onCopyLink, onUndoChange, servedBy, unitTypes = [], field, s,
 }: ScopeSettingsPageProps) {
   const [held, setTab] = usePlaceTab('general')
   const tab = held as SettingsTab
+  // Every field a way in names is on General: asked for one, the page is there,
+  // and the field has the focus once it is drawn, after the page's own first focus.
+  const general = useRef<HTMLDivElement | null>(null)
+  const landOn = open ? field?.name : undefined
+  const landNonce = field?.nonce
+  const onGeneral = tab === 'general'
+  useEffect(() => {
+    if (landOn === undefined) return undefined
+    if (!onGeneral) { setTab('general'); return undefined }
+    const frame = requestAnimationFrame(() => { if (general.current) focusSettingsField(general.current, landOn) })
+    return () => cancelAnimationFrame(frame)
+  }, [landOn, landNonce, onGeneral, setTab])
   const [asked, setAsked] = useState<ScopePath | undefined>(undefined)
   const steps = useRef<SettingsUndo[]>([])
   const path = target.path
@@ -134,25 +151,34 @@ export function ScopeSettingsPage({
         ]}
       >
         {tab === 'general' && (
+          <div ref={general} className="kit-settings__field">
           <SettingsSection title={s('settings.general')}>
+            <SettingsField name="name">
             <CommittedText
               key={`name:${path}`} label={s('group.name')} hint={s('settings.nameHelp')} held={target.name} readOnly={readOnly} required data-testid="settings-name"
               onCommit={(next) => apply({ name: next }, s('settings.undoName'), { name: target.name })}
             />
+            </SettingsField>
             {canMove && !readOnly && (
-              <ScopeField tree={tree} value={parent} onChange={(next) => { if (next !== parent) setAsked(next) }} label={s('org.filedUnder')} helperText={s('settings.filedUnderHelp')} excluding={path} s={s} />
+              <SettingsField name="filedUnder">
+                <ScopeField tree={tree} value={parent} onChange={(next) => { if (next !== parent) setAsked(next) }} label={s('org.filedUnder')} helperText={s('settings.filedUnderHelp')} excluding={path} s={s} />
+              </SettingsField>
             )}
+            <SettingsField name="type">
             <TypeField
               type={typeChoiceOf(target)} unitTypes={unitTypes} readOnly={readOnly} s={s}
               onChange={(type) => apply({ type }, s('settings.undoType'), { type: typeChoiceOf(target) })}
               // The organisation is served by no unit, so its help says nothing of Served by.
               {...(topicNext(typeChoiceOf(target)) ? { help: s('org.kindTopicMoves') } : !canMove && unitTypes.length > 0 ? { help: s('org.typeHelpUnserved') } : {})}
             />
+            </SettingsField>
             {servedBy}
+            <SettingsField name="description">
             <CommittedDescription
               key={`description:${path}`} held={target.description ?? ''} readOnly={readOnly} placeholder={s('group.descriptionPlaceholder')}
               onCommit={(description) => apply({ description }, s('settings.undoDescription'), { description: target.description ?? '' })}
             />
+            </SettingsField>
             <PreferenceRow label={s('settings.address')} hint={s('settings.addressHelp', { path: `#/${path ? `${path}/` : ''}-/home` })}>
               {onCopyLink && <Button size="small" variant="quiet" onClick={onCopyLink} data-testid="settings-copy-link">{s('share.copy')}</Button>}
             </PreferenceRow>
@@ -162,6 +188,7 @@ export function ScopeSettingsPage({
               </PreferenceRow>
             )}
           </SettingsSection>
+          </div>
         )}
         {tab === 'links' && (
           <SettingsSection title={s('settings.links')} note={s('group.linksHelp')}>

@@ -341,6 +341,15 @@ describe('with nothing open', () => {
     expect(opened).toEqual([])
   })
 
+  it('lands a scope\'s settings on a field of theirs, and refuses a field the page has not', async () => {
+    const { view, opened } = shell()
+    parsed(await handle(call('app.open', { scope: 'acme/retail', page: 'settings', field: 'filedUnder' }), undefined, view))
+    expect(opened.at(-1)).toEqual({ scope: 'acme/retail', page: 'settings', field: 'filedUnder' })
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'settings', field: 'colour' }), undefined, view))).toBe('agent.badArguments')
+    expect(refusal(await handle(call('app.open', { scope: 'acme/retail', page: 'decisions', field: 'filedUnder' }), undefined, view))).toBe('agent.badArguments')
+    expect(opened).toHaveLength(1)
+  })
+
   it('hands an element to select to the shell with the view it is selected on', async () => {
     const { view, opened } = shell()
     const out = parsed(await handle(call('app.open', { scope: 'acme/retail', page: 'board', id: 'r7b', select: 'wms' }), undefined, view))

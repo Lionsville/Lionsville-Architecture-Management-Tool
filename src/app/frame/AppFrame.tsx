@@ -555,7 +555,7 @@ function TreeFor({ parts, at, page, onDone, findFirst = false }: { parts: ShellP
       onHome={onHome} go={(to) => { onDone?.(); agent.openSomewhere(to) }}
       onSettings={(scope) => { onDone?.(); agent.openSomewhere({ scope: scope.path, page: 'settings' }) }} onDelete={fromHome(organisation.askDelete)}
       // Filed under is one of a scope's settings, so moving a scope is asked for there.
-      onMove={(scope) => { onDone?.(); agent.openSomewhere({ scope: scope.path, page: 'settings' }) }}
+      onMove={(scope) => { onDone?.(); agent.openSomewhere({ scope: scope.path, page: 'settings', field: 'filedUnder' }) }}
       onNewScopeUnder={(path) => atHome(() => organisation.addUnder(path))}
       newViewItems={(path) => newViewChoices(s, () => atHome(() => organisation.addBoard(path)), (kind) => { onDone?.(); organisation.open(path, { page: 'make', kind }) })}
       placeFact={(place) => placeFact(place, parts)}

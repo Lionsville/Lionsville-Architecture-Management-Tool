@@ -333,6 +333,15 @@ describe('the frame in a place (4.0.0)', () => {
     expect(readPlace('#/acme/-/settings')).toEqual({ scope: 'acme', page: 'settings' })
   })
 
+  it('lands a scope\'s settings on a field, read on arrival only, and only a field the page has', () => {
+    const place: Place = { scope: 'acme', page: 'settings', field: 'filedUnder' }
+    expect(writePlace(place)).toBe('#/acme/-/settings?field=filedUnder')
+    expect(readPlace('#/acme/-/settings?field=filedUnder')).toEqual(place)
+    expect(samePlace(place, { scope: 'acme', page: 'settings' })).toBe(true)
+    expect(readPlace('#/acme/-/settings?field=colour')).toBeUndefined()
+    expect(readPlace('#/acme/-/home?field=filedUnder')).toBeUndefined()
+  })
+
   it('carries a panel beside a view, and it is another place, so Back shuts it', () => {
     const place = { scope: 'acme', page: 'board', id: 'l7', panel: 'work' } as const
     expect(readPlace(writePlace(place))).toEqual(place)

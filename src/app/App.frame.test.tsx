@@ -325,6 +325,13 @@ describe('an agent reaches every place', () => {
     expect(await screen.findByTestId('scope-settings-page')).toBeDefined()
   })
 
+  it('lands a scope’s settings on the field asked for, as the tree’s Move to… does on Filed under', async () => {
+    const { ask } = await home()
+    await ask('app.open', { scope: 'retail', page: 'settings', field: 'filedUnder' })
+    const page = await screen.findByTestId('scope-settings-page')
+    await waitFor(() => expect(page.querySelector('[data-field="filedUnder"]')?.contains(document.activeElement)).toBe(true))
+  })
+
   it('names a tab of any page that has one, and is told the page’s own where it does not', async () => {
     const { ask } = await home()
     await ask('app.open', { scope: '', page: 'people', tab: 'privacy' })

@@ -205,7 +205,8 @@ function homePageLanding(place: Place): Pick<BootLanding, 'initialHomePage' | 'i
   const page = (merged ? 'register' : place.page) as NonNullable<BootLanding['initialHomePage']>
   const tab = merged ? place.tab ?? 'services' : place.tab
   // A block's or a topic's page, reloaded, is still that block's or topic's.
-  const pick = page === 'register' ? place.id ?? place.select : page === 'checks' || page === 'blocks' || page === 'topics' ? place.id : undefined
+  // The settings page picks a field to focus, where the address names one.
+  const pick = page === 'register' ? place.id ?? place.select : page === 'checks' || page === 'blocks' || page === 'topics' ? place.id : page === 'settings' ? place.field : undefined
   const initialList = { ...(tab !== undefined ? { tab } : {}), ...(place.list !== undefined ? { list: place.list } : {}), ...(pick !== undefined ? { pick } : {}) }
   const record = page === 'people' ? place.id ?? place.select : undefined
   return { initialHomePage: page, ...(Object.keys(initialList).length > 0 ? { initialList } : {}), ...(record !== undefined ? { initialHomeRecord: record } : {}) }

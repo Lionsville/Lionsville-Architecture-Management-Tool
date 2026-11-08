@@ -50,7 +50,9 @@
  * element to select and mark on the view the link opens. It is read on
  * arrival and nowhere else — it is no part of a place, so `samePlace`,
  * `placeOf` and the history's state never hold it, and choosing another
- * element is never a step.
+ * element is never a step. `field` is read the same way: the field of a page
+ * to give the focus to as it opens (`PAGE_FIELDS`), as the tree's *Move to…*
+ * lands on a scope's *Filed under*: `#/acme/-/settings?field=filedUnder`.
  *
  * A list keeps what it is showing the same way, as `q`, `group`, `sort`,
  * `cols` and `f.<field>` beside the rest (`widgets/kit/listView.ts`): a link and
@@ -74,7 +76,7 @@
  * the history (`app/placeHistory.ts`), and a test here says that every place
  * written is read back the same.
  */
-import { FRAME_PAGES, HOME_PAGES, isChartLines, isFramePanel, isPageTab, PAGE_TABS, pagesKnown, VIEW_PAGES, viewPage } from './screen'
+import { FRAME_PAGES, HOME_PAGES, isChartLines, isFramePanel, isPageField, isPageTab, PAGE_TABS, pagesKnown, VIEW_PAGES, viewPage } from './screen'
 import type { DesignDiagram } from '../model/types'
 import type { ChartLines, Destination, Page, Screen } from './screen'
 
@@ -96,7 +98,7 @@ export const PLACE_STATE_KEY = 'lvarch.place'
 /** The segment that ends a scope's path in a place's address. */
 const SCOPE_END = '-'
 
-const KEYS = new Set(['scope', 'page', 'id', 'tab', 'look', 'select', 'panel', 'colour', 'finding', 'day', 'group', 'pair', 'focus', 'lines', 'edit'])
+const KEYS = new Set(['scope', 'page', 'id', 'tab', 'look', 'select', 'field', 'panel', 'colour', 'finding', 'day', 'group', 'pair', 'focus', 'lines', 'edit'])
 
 /**
  * What a list says about itself in the address (`widgets/kit/listView.ts`):
@@ -110,7 +112,7 @@ const isListKey = (key: string) => key === 'q' || key === 'group' || key === 'so
 const isListKeyOn = (page: string | undefined, key: string) => isListKey(key) && !(page === 'conway' && key === 'group')
 
 /** What may follow the path, as a query: everything a place says beyond its scope, page and record. */
-const QUERY_KEYS = new Set(['id', 'tab', 'look', 'select', 'panel', 'colour', 'finding', 'day', 'group', 'pair', 'focus', 'lines', 'edit'])
+const QUERY_KEYS = new Set(['id', 'tab', 'look', 'select', 'field', 'panel', 'colour', 'finding', 'day', 'group', 'pair', 'focus', 'lines', 'edit'])
 
 /** One segment of the path, escaped: a scope's own segment that is the scope's end is written so it cannot be read as one. */
 function segment(text: string): string {
@@ -132,6 +134,7 @@ export function writePlace(place: Place): string {
   if (place.tab !== undefined) query.set('tab', place.tab)
   if (place.look !== undefined) query.set('look', place.look)
   if (place.select !== undefined) query.set('select', place.select)
+  if (place.field !== undefined) query.set('field', place.field)
   if (place.panel !== undefined) query.set('panel', place.panel)
   if (place.colour !== undefined) query.set('colour', place.colour)
   if (place.finding !== undefined) query.set('finding', place.finding)
@@ -218,7 +221,7 @@ function readQueryForm(text: string): Place | undefined {
 }
 
 /** Every key of a query once, and only the ones allowed: or nothing. */
-function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'look' | 'select' | 'panel' | 'colour' | 'finding' | 'day' | 'group' | 'pair' | 'focus' | 'lines' | 'edit', string>> | undefined {
+function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<Record<'scope' | 'page' | 'id' | 'tab' | 'look' | 'select' | 'field' | 'panel' | 'colour' | 'finding' | 'day' | 'group' | 'pair' | 'focus' | 'lines' | 'edit', string>> | undefined {
   const out: Record<string, string> = {}
   for (const [key, value] of query) {
     if (!allowed.has(key) || key in out) return undefined
@@ -229,9 +232,11 @@ function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<
 
 function placeFrom(
   scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined, panel?: string, day?: string,
-  onView: { readonly group?: string; readonly pair?: string; readonly look?: string; readonly colour?: string; readonly focus?: string; readonly lines?: string; readonly edit?: string } = {},
+  onView: { readonly group?: string; readonly pair?: string; readonly look?: string; readonly colour?: string; readonly focus?: string; readonly lines?: string; readonly edit?: string; readonly field?: string } = {},
 ): Place | undefined {
   if (page !== undefined && !isPage(page)) return undefined
+  // A field to focus is one of its page's, and a page with none has none.
+  if (onView.field !== undefined && !isPageField(page as Page | undefined, onView.field)) return undefined
   // A chart's reading, on a chart's address and nowhere else; the Lines menu has its own words.
   if ((onView.focus !== undefined || onView.lines !== undefined) && page !== 'chart') return undefined
   if (onView.lines !== undefined && !isChartLines(onView.lines)) return undefined
@@ -243,6 +248,7 @@ function placeFrom(
     ...(onView.look ? { look: onView.look } : {}),
     ...(panel !== undefined ? { panel } : {}),
     ...(select !== undefined && select !== '' ? { select } : {}),
+    ...(onView.field !== undefined ? { field: onView.field } : {}),
     // What a view is coloured by is a word the view itself judges.
     ...(onView.colour !== undefined && page !== undefined && READINGS.includes(page) ? { colour: onView.colour } : {}),
     ...(onView.group ? { group: onView.group } : {}), ...(onView.pair ? { pair: onView.pair } : {}),

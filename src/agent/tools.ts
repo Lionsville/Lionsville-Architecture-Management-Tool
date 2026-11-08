@@ -27,7 +27,7 @@
  */
 import type { CommandRefusal } from '../model/reducer'
 import type { MergeLinkRefusal } from '../observations/merge'
-import { CHART_LINES, PAGE_TABS, pagesKnown } from './screen'
+import { CHART_LINES, PAGE_FIELDS, PAGE_TABS, pagesKnown } from './screen'
 import { isPersonRef } from '../model/person'
 import { PERSON_KINDS, PERSON_STATES } from '../people/person'
 import type { PeopleRefusal } from '../people/person'
@@ -3822,6 +3822,11 @@ const SPECS = [
         },
         look: { type: 'string', description: 'What the page looks at within its tab. Operating model, on responsibilities: part=<group name>, part=* for the whole organisation, unit=<unit id>; select=<id> opens an item.' },
         select: { type: 'string', description: 'An element to select on the board, sheet, map, technology landscape, organisation chart or Conway map being opened.' },
+        field: {
+          type: 'string',
+          description: 'A field of the page to give the focus to as it opens. Settings: name, filedUnder (where the scope is filed, which moves it), type, description.',
+          get enum() { return [...new Set(Object.values(PAGE_FIELDS).flat())] },
+        },
         day: { type: 'string', description: 'A day to look at a view on, yyyy-mm-dd, or today for a view saved on another: the person\'s window only, read-only while it lasts, and nothing is written.' },
         group: { type: 'string', description: 'On a Conway map: the id of the unit type to group it by.' },
         pair: { type: 'string', description: 'On a Conway map: the pair to choose, its two unit ids with a comma between, the side nobody owns left empty.' },

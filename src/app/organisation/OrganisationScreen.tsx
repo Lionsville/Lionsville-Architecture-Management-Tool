@@ -68,7 +68,7 @@ import type { HomeStore } from './HomeRecords'
 import { RelevantTopics } from './RelevantTopics'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
 import type { PeopleAccess } from './usePeopleRegister'
-import type { OrgPage } from '../useShellAgent'
+import type { OrgPage, OrgPageRequest } from '../useShellAgent'
 import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import { technologySummary, technologyWithin } from '../../projects/technologyRegister'
 import type { TechnologyRow } from '../../projects/technologyRegister'
@@ -229,7 +229,7 @@ export type OrganisationScreenProps = {
    * request with a nonce, because the same page asked for twice is two
    * requests and a prop that did not change is none.
    */
-  pageRequest?: { page: OrgPage | 'home'; nonce: number; select?: string }
+  pageRequest?: OrgPageRequest
   /** Which of the pages is up, whenever that changes — so the shell can say where the app is. */
   onPageChange?: (page: OrgPage | undefined, record?: string) => void
   /**
@@ -447,6 +447,7 @@ export function OrganisationScreen({
 
       <ScopeSettingsPage
         open={homePages.openPage === 'settings'} onClose={homePages.close} target={home} document={root} tree={orderedTree}
+        {...(homePages.asked?.page === 'settings' && homePages.asked.field !== undefined ? { field: { name: homePages.asked.field, nonce: homePages.asked.nonce } } : {})}
         readOnly={!writable(home.path)} unitTypes={unitTypes} s={s} onUndoChange={setSettingsUndo}
         onApply={organisation.applySettings}
         {...(aboveClient(home, everyScope) ? { aboveClient: aboveClient(home, everyScope) } : {})}

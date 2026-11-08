@@ -59,6 +59,8 @@ export type OrgPageRequest = {
   evaluation?: string
   /** Opened from another screen — a reader, a reference — so closing it goes back there (ADR-0033), not to the register. */
   returns?: true
+  /** On the settings page, the field to give the focus to (`PAGE_FIELDS`): *Move to…* lands on *Filed under*. */
+  field?: string
 }
 
 /** Where a failure goes when the caller gave nowhere: a history that cannot say where a place lands still opens it. */
@@ -113,7 +115,8 @@ export function useShellAgent(deps: {
   const report = deps.report ?? NOBODY
   const { orgPage, orgRecord, setOrgPage } = useOrgPage()
   const [orgPageRequest, setOrgPageRequest] = useState<OrgPageRequest | undefined>(
-    () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1, ...(deps.initialPick !== undefined ? { select: deps.initialPick } : {}) } : undefined),
+    // On the settings page what an address picks is the field to focus.
+    () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1, ...(deps.initialPick !== undefined ? (deps.initialHomePage === 'settings' ? { field: deps.initialPick } : { select: deps.initialPick }) : {}) } : undefined),
   )
   /**
    * A home is opened as itself: the home asked for, and the page over it said
@@ -121,7 +124,7 @@ export function useShellAgent(deps: {
    * open over its cards, and a move to the home that left that page up would
    * not have arrived where it was sent.
    */
-  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string, evaluation?: string, returns?: true, finding?: string) => {
+  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string, evaluation?: string, returns?: true, finding?: string, field?: string) => {
     goHome(scope)
     const picks = page === 'people' || page === 'checks' || page === 'topics' || page === 'blocks' || page === 'register'
     setOrgPageRequest((prev) => ({
@@ -129,6 +132,7 @@ export function useShellAgent(deps: {
       ...(page === 'blocks' && evaluation !== undefined ? { evaluation } : {}),
       ...(returns ? { returns } : {}),
       ...(finding !== undefined ? { finding } : {}),
+      ...(page === 'settings' && field !== undefined ? { field } : {}),
     }))
   }, [goHome])
   /** A building block's page over the organisation's home, on a scope's evaluation where one is named (ADR-0043 §8). */
@@ -168,7 +172,7 @@ export function useShellAgent(deps: {
     const record = to.page === 'people' ? to.id ?? to.select : undefined
     if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
       // The Checks page picks the check its id names; the People page the person in the frame, set above.
-      homeAt(to.scope, listPage as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.page === 'people' ? record : to.select, undefined, undefined, to.page === 'checks' ? to.select : undefined)
+      homeAt(to.scope, listPage as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.page === 'people' ? record : to.select, undefined, undefined, to.page === 'checks' ? to.select : undefined, to.field)
       return
     }
     const open = agentSessionRef.current

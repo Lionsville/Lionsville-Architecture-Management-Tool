@@ -18,7 +18,7 @@ import { isCheckKey } from '../model/checkCatalogue'
 import type { HostModel } from '../model/hostModel'
 import type { DesignDiagram } from '../model/types'
 import type { Driving } from './driving'
-import { arrived, CHART_LINES, HOME_PAGES, isChartLines, isPageTab, NEEDS_ID, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
+import { arrived, CHART_LINES, HOME_PAGES, isChartLines, isPageField, isPageTab, NEEDS_ID, PAGE_FIELDS, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
 import { isLookDay } from './place'
 import type { AgentAnswer } from './tools'
@@ -173,7 +173,7 @@ function viewRow(scope: string, scopeName: string, diagram: DesignDiagram, activ
 
 // --- app.open --------------------------------------------------------------------
 
-type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string; colour?: string; day?: string }
+type Resolved = { page?: Page; id?: string; tab?: Destination['tab']; select?: string; field?: string; colour?: string; day?: string }
 
 export async function openApp(rawArgs: unknown, session: OpenScope | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell) return refused('agent.noScreen', 'there is no screen to move')
@@ -258,7 +258,7 @@ function unknownCheck(asked: Destination): AgentAnswer | undefined {
 /** A page of a home is opened as itself, with nothing more than what a picking page picks. */
 function asItsHome(target: Resolved): Resolved {
   if (target.page === undefined || !HOME_PAGES.includes(target.page) || PICKING_PAGES.has(target.page)) return target
-  return { page: target.page, ...(target.tab !== undefined ? { tab: target.tab } : {}) }
+  return { page: target.page, ...(target.tab !== undefined ? { tab: target.tab } : {}), ...(target.field !== undefined ? { field: target.field } : {}) }
 }
 
 /**
@@ -385,6 +385,10 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
       return refused('agent.unknownId', `element ${asked.select} in ${where}`)
     }
   }
+  if (asked.field !== undefined && !isPageField(target.page, asked.field)) {
+    const pages = Object.entries(PAGE_FIELDS).map(([page, fields]) => `${page} (${(fields ?? []).join(', ')})`).join('; ')
+    return refused('agent.badArguments', `"field" is a field of the page to focus: ${pages}`)
+  }
   if ((asked.focus !== undefined || asked.lines !== undefined) && target.page !== 'chart') {
     return refused('agent.badArguments', '"focus" and "lines" are for page chart')
   }
@@ -396,6 +400,7 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     ...(asked.tab !== undefined ? { tab: asked.tab } : {}),
     ...(asked.look !== undefined ? { look: asked.look } : {}),
     ...(asked.select !== undefined ? { select: asked.select } : {}),
+    ...(asked.field !== undefined ? { field: asked.field } : {}),
     ...(asked.day !== undefined ? { day: asked.day } : {}),
     ...(target.page === 'conway' && asked.group !== undefined ? { group: asked.group } : {}),
     ...(target.page === 'conway' && asked.pair !== undefined ? { pair: asked.pair } : {}),

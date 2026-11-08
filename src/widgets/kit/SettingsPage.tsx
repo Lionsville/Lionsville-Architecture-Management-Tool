@@ -54,6 +54,27 @@ export function SettingsPage<V extends string = string>({ title, owner, sections
   )
 }
 
+/**
+ * A field a way in can land on, by name (`focusSettingsField`): it adds no box
+ * of its own, so a row inside lays out as it would without it.
+ */
+export function SettingsField({ name, children }: { name: string; children: ReactNode }) {
+  return <div className="kit-settings__field" data-field={name}>{children}</div>
+}
+
+/**
+ * Give the focus to the named field's first control, which brings it into view.
+ * False where the page has no such field, or none of its controls takes the focus.
+ */
+export function focusSettingsField(within: ParentNode, name: string): boolean {
+  const field = [...within.querySelectorAll<HTMLElement>('[data-field]')].find((one) => one.dataset.field === name)
+  const control = field?.querySelector<HTMLElement>('input:not([type=hidden]):not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])')
+  if (!control) return false
+  control.focus()
+  control.scrollIntoView?.({ block: 'nearest' })
+  return true
+}
+
 /** A heading, what the section falls back on, and its rows. */
 export function SettingsSection({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (

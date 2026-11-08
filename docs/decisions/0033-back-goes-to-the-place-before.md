@@ -519,3 +519,7 @@ another scope, which then lands on that scope's home.
 ## Amended 7 November 2026: settings and preferences are places
 
 A scope's settings are a page of its home, `#/<scope>/-/settings`, with its section in `?tab=`; asked for from an open scope the home is the move. The preferences are `#/-/preferences`, a place over whatever is up, which any other move leaves. Neither opens a dialog any more. *Your work* and *Activity* stay panels.
+
+## Amended 8 November 2026: a way in may land on a field
+
+A way in that is about one field lands on it. The tree's *Move to…* opens a scope's settings on *Filed under*, `#/<scope>/-/settings?field=filedUnder`, with the focus in it. `field` is read on arrival, as `select` is, and is no part of the place: Back, `samePlace` and the history never hold it. A page says which fields it has in `PAGE_FIELDS` (`agent/screen.ts`), as it says its tabs in `PAGE_TABS`, and `app.open` takes the same word and refuses a field the page has not.

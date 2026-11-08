@@ -159,6 +159,22 @@ export function pagesKnown(): readonly string[] {
   return [...PAGES, ...sourcePages]
 }
 
+/**
+ * The fields a page can be asked to give the focus to as it opens: what
+ * `?field=` may say. A way in that is about one field lands on that field
+ * rather than at the top of the page — the tree's *Move to…* is about *Filed
+ * under*. Like `select`, it is read on arrival and is no part of the place:
+ * a field is added here, in the table, or nothing reaches it by address.
+ */
+export const PAGE_FIELDS: Partial<Record<Page, readonly string[]>> = {
+  settings: ['name', 'filedUnder', 'type', 'description'],
+}
+
+/** Whether a page has this field to give the focus to. */
+export function isPageField(page: Page | undefined, field: unknown): field is string {
+  return page !== undefined && typeof field === 'string' && (PAGE_FIELDS[page] ?? []).includes(field)
+}
+
 /** Whether a page has this tab; a page with none has no tab at all. */
 export function isPageTab(page: Page | undefined, tab: unknown): tab is string {
   return page !== undefined && typeof tab === 'string' && (PAGE_TABS[page] ?? []).includes(tab)
@@ -196,7 +212,10 @@ export type Destination = {
   readonly list?: string
   /** A finding carried by the band to where it is fixed (`place.ts`'s `writeFinding`). */
   readonly finding?: string
-  /** On an element's page, a line of it to select instead, and the field that puts a finding right to give the focus to. */
+  /**
+   * On an element's page, a line of it to select instead, and the field that puts a finding right to give the focus to.
+   * On a page of {@link PAGE_FIELDS}, the field to give the focus to as it opens: `?field=` in the address.
+   */
   readonly line?: string
   readonly field?: string
   /**
