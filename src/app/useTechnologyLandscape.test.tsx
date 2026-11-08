@@ -93,8 +93,17 @@ describe('opening and closing', () => {
 })
 
 describe('the door from a record (ADR-0020)', () => {
-  it('opens the scope\'s landscape on the application, making one where there is none, and lets the focus go on opening another view', () => {
+  it('makes no landscape where there is none: an open never makes a view', () => {
     const host = mount()
+    act(() => host.views().showOn('wms'))
+    expect(host.activeId()).toBe('d1')
+    expect(host.model().diagrams.filter((d) => d.kind === 'technology')).toHaveLength(0)
+  })
+
+  it('opens the scope\'s landscape on the application, and lets the focus go on opening another view', () => {
+    const host = mount()
+    act(() => host.views().create())
+    act(() => host.views().open('d1'))
     act(() => host.views().showOn('wms'))
     expect(host.activeId()).toBe('tl-1')
     expect(host.views().focus).toBe('application:wms')

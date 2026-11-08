@@ -33,6 +33,7 @@ import { hostCommands, useCommands } from '../model/technologyWrites'
 import type { WrittenIn } from './units/writeIn'
 import { handOver } from './handOver'
 import type { StringKey } from '../i18n'
+import { showOnDoor } from './pageLanding'
 
 /**
  * A drawing is a tab, never the first view: its picture and its editor arrive
@@ -184,7 +185,7 @@ function useEditorSeams(parts: WorkspaceParts) {
 }
 
 /** The tab strip's calls: a board made, renamed or removed, and a view of each kind opened or made. */
-function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts, tabMove: (id: string, go: () => void) => void) {
+function diagramCalls({ diagrams, sheets, pages, session }: WorkspaceParts, tabMove: (id: string, go: () => void) => void) {
   const opening = (open: (id: string) => void) => (id: string) => tabMove(id, () => open(id))
   return {
     onCreateContainer: diagrams.onCreateContainerDiagram,
@@ -207,7 +208,7 @@ function diagramCalls({ diagrams, sheets, pages }: WorkspaceParts, tabMove: (id:
     onOpenConway: opening(pages.openView),
     onCreateConway: () => pages.createUnitView('conway'),
     onCreateDrawingFor: pages.createDrawingFor,
-    onOpenTechnologyFor: pages.openTechnologyFor,
+    onOpenTechnologyFor: showOnDoor('technology', session.model.diagrams, pages.openTechnologyFor),
     onOpenPlatformReport: pages.openPlatformReport,
     onOpenServiceReport: pages.openServiceReport,
   }

@@ -27,7 +27,7 @@ export type TechnologyLandscapes = {
   create: () => void
   /** The card the page starts on, where a record's door opened it (ADR-0020). */
   focus: NodeKey | undefined
-  /** Open the scope's landscape — the first, made where there is none — on this application. */
+  /** Open the scope's landscape — the first — on this application; nothing where it has none. */
   showOn: (elementId: ElementId) => void
   /**
    * Choose the card this element is drawn as on the landscape that is up, as
@@ -54,13 +54,10 @@ export function useTechnologyLandscape(deps: { session: ModelSession; makeId: Ma
   }, [session])
   const showOn = useCallback((elementId: ElementId) => {
     setFocus(nodeKey.application(elementId))
+    // An open never makes a view: the door is drawn only while there is one (`showOnDoor`).
     const held = session.current().diagrams.find((diagram) => diagram.kind === 'technology')
     if (held) session.setActiveDiagramId(held.id)
-    else {
-      const view = seedTechnologyLandscape({ id: makeId('tl'), name: s('shell.newTechnology') })
-      session.dispatch({ type: 'diagram.create', diagram: toDiagram(view) }, { activeDiagramId: view.id })
-    }
-  }, [session, makeId, s])
+  }, [session])
 
   const select = useCallback((elementId: ElementId) => {
     const held = session.current().elements.find((element) => element.id === elementId)
