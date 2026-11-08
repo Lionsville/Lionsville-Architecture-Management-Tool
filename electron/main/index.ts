@@ -18,7 +18,7 @@
  * `app://` remains a *standard* scheme regardless, and not only for the
  * localStorage the browser fallback still uses; see below.
  */
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, protocol, net, shell } from 'electron'
+import { app, BrowserWindow, crashReporter, dialog, ipcMain, nativeTheme, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
 import { mkdirSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -27,6 +27,7 @@ import { pathToFileURL } from 'node:url'
 import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { openedDocuments } from './openedDocuments'
+import { keepsCrashDumps } from './crashDumps'
 import { guardWindow, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand, setMenuLanguage, zoomWindow } from './appMenu'
 import { productName } from '../../package.json'
@@ -408,6 +409,17 @@ if (UNATTENDED) {
   if (process.platform === 'darwin' && !showsWindow(UNATTENDED, process.env)) app.setActivationPolicy('accessory')
 }
 
+/**
+ * Minidumps kept on this machine and never sent (`crashDumps.ts`): after every
+ * override of `userData` above, so a run with a folder of its own keeps its
+ * dumps there too, and before `ready`, so Crashpad watches every process.
+ */
+const dumping = keepsCrashDumps(app.isPackaged, process.env)
+if (dumping) {
+  app.setPath('crashDumps', join(app.getPath('userData'), 'Crashpad'))
+  crashReporter.start({ uploadToServer: false })
+}
+
 
 /** A `.lvarch` among the arguments — how Windows and Linux say "open this". */
 function documentIn(argv: readonly string[]): string | undefined {
@@ -464,7 +476,10 @@ app.on('open-file', (event, path) => {
  * machine, and a smoke run that quietly quits into somebody's editor session
  * would report a pass it never made.
  */
-if (!UNATTENDED && !app.requestSingleInstanceLock()) app.exit(0)
+if (!UNATTENDED && !app.requestSingleInstanceLock()) {
+  log('main', 'another copy holds this userData, so this one exits and hands it the arguments')
+  app.exit(0)
+}
 
 app.on('second-instance', (_event, argv) => {
   const window = appWindows()[0]
@@ -480,6 +495,7 @@ void app.whenReady().then(() => {
   // The first line of every run, and the thing the smoke step looks for: a log
   // that exists but says nothing proves only that a file was created.
   log('main', `started ${app.getVersion()} on ${process.platform} ${process.arch}`)
+  if (dumping) log('main', 'crash dumps are kept in Crashpad beside the settings, and never sent')
   serveDrawing()
   if (!process.env['ELECTRON_RENDERER_URL']) serveRenderer()
 
@@ -658,8 +674,21 @@ function windowAgain(): void {
 app.on('activate', windowAgain)
 
 app.on('window-all-closed', () => {
+  log('main', `every window closed${process.platform !== 'darwin' ? ', so the app quits' : ''}`)
   if (process.platform !== 'darwin') app.quit()
 })
+
+/**
+ * Every way out of the process, said on the way: an app that went on its own
+ * once left a log that simply stopped. Which of these lines is last tells a
+ * quit asked for (the menu, the updater, the last window) from an exit nobody
+ * asked for, and an exit with no line at all from a process that was killed or
+ * crashed — whose dump, in a development run, is in Crashpad.
+ */
+app.on('before-quit', () => { log('main', 'quitting: asked to quit') })
+app.on('will-quit', () => { log('main', 'quitting: every window has closed') })
+app.on('quit', (_event, exitCode) => { log('main', `quit with exit code ${exitCode}`) })
+process.on('exit', (code) => { log('main', `process exits with code ${code}`) })
 
 // A watcher holds a handle on a folder and a callback into a window that is on
 // its way out. Neither is a leak worth arguing about in a process that is
