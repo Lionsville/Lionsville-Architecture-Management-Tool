@@ -40,9 +40,17 @@ export function factsOf(held: HeldScope): Required<Pick<PlaceFacts, 'views' | 'h
   return { views: model.diagrams, holds: (id) => ids.has(id) }
 }
 
-/** Does where a place lands depend on what its scope holds? A home's does not, nor a bare scope's while its views are not asked. */
+/**
+ * Does where a place lands depend on what its scope holds? A home's does not,
+ * nor a page's that names no record or view: a listed scope's Observations or
+ * Decisions page is there whatever the scope holds, and a view's page with no
+ * id is resolved once the scope is open (`viewFor`). Only a record or a view
+ * named, or a bare scope, which lands on its first view, asks. Asking reads
+ * the scope, which on a folder is the most of what an open waits on.
+ */
 export function asksTheScope(place: Place): boolean {
-  return !(place.page !== undefined && HOME_PAGES.includes(place.page))
+  if (place.page !== undefined && HOME_PAGES.includes(place.page)) return false
+  return place.page === undefined || place.id !== undefined
 }
 
 /**

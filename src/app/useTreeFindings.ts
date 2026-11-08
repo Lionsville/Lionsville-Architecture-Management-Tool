@@ -26,7 +26,7 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { technologyRows } from '../projects/technologyRegister'
-import { readScopes } from '../projects/scopeAccess'
+import { readScopesKnown } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { OrganisationIndex } from '../ports/OrganisationIndex'
 import { registerRows } from './organisation/register'
@@ -144,8 +144,10 @@ function useShellTree(
     findings: (day) => (day === undefined
       ? treeRef.current.identity
       : [...identityFindings(treeRef.current.index), ...organisationFindings(treeRef.current.index, day), ...topicalFindings(treeRef.current.index, treeRef.current.tree, day)]),
+    // By the identities the listing on screen holds: listing the tree again is most of a read on a folder.
     read: async (path) => {
-      const [held, ...above] = await readScopes(scopes, [path, ...ancestorScopes(path)])
+      const ids = new Map(flattenScopes(treeRef.current.tree).map((one) => [one.path, one.id]))
+      const [held, ...above] = await readScopesKnown(scopes, [path, ...ancestorScopes(path)], (address) => ids.get(address))
       if (!held) return undefined
       return {
         model: held.model,

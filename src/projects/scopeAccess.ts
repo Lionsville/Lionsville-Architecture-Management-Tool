@@ -118,6 +118,18 @@ export async function readScopeKnown(scopes: ScopeReader, address: ScopeAddress,
   return state && state.address === address ? snapshotOf(state) : readScope(scopes, address)
 }
 
+/**
+ * Several scopes by the identities a listing already held, each read at once,
+ * and by one read of the tree where the listing knew one of them by no identity.
+ */
+export async function readScopesKnown(
+  scopes: ScopeReader, addresses: readonly ScopeAddress[], idOf: (address: ScopeAddress) => ScopeId | undefined,
+): Promise<(ScopeSnapshot | undefined)[]> {
+  const ids = addresses.map(idOf)
+  if (ids.some((id) => id === undefined)) return readScopes(scopes, addresses)
+  return Promise.all(addresses.map((address, at) => readScopeKnown(scopes, address, ids[at])))
+}
+
 /** Several scopes, by their addresses, from one read of the tree; `undefined` for each that is not there. */
 export async function readScopes(
   scopes: ScopeReader, addresses: readonly ScopeAddress[],

@@ -5,7 +5,7 @@
  * The scopes above the open one: their decisions, the name and the client
  * they carry, and the crumbs on the bar.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import type { Translate } from '../i18n'
 import type { AncestorRecords } from '../decisions/adrScope'
@@ -14,7 +14,7 @@ import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { organisationLabel, scopeClient } from '../projects/scopeLabel'
 import { ancestorScopes } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import { readScopes } from '../projects/scopeAccess'
+import { readScopesKnown } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import { crumbsFor } from './ShellToolbar'
 import type { Failed } from './useShellServices'
@@ -48,8 +48,12 @@ export function useScopeAncestry(deps: {
   // How a failure is reported is not an input to reading a scope. `failed` is
   // read through the ref so it cannot re-trigger the read: a dependency that
   // changes identity on render is not a needless read but an endless one.
+  // By the identities the listing holds, read through a ref so a listing refreshed does not read them again.
+  const listing = useRef(tree)
+  listing.current = tree
   const readAncestors = useCallback(async (of: ScopePath): Promise<ScopeSnapshot[]> => {
-    const held = await readScopes(scopes, ancestorScopes(of))
+    const ids = new Map(flattenScopes(listing.current).map((one) => [one.path, one.id]))
+    const held = await readScopesKnown(scopes, ancestorScopes(of), (address) => ids.get(address))
     return held.filter((scope): scope is ScopeSnapshot => !!scope)
   }, [scopes])
   useEffect(() => {
