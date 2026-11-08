@@ -19,30 +19,37 @@ export type Look = {
   colour?: ColourToken
   /** A square with nothing in it: the value that says nothing is there. */
   hollow?: boolean
+  /**
+   * What a poster's tile is filled with for this value, and so what its key draws: a tile, not
+   * the rows' mark. Absent is a plain tile, the card's own surface.
+   */
+  tile?: ColourToken
+  /** A value the lens is asked for: first on the key, whatever its count. */
+  flag?: boolean
 }
 
 const COVERED: Record<string, Look> = {
-  apps: { mark: 'cov-apps', colour: 'cov-apps' },
-  moving: { mark: 'cov-moving', colour: 'cov-moving' },
-  people: { mark: 'cov-people', colour: 'cov-people' },
+  apps: { mark: 'cov-apps', colour: 'cov-apps', tile: 'cov-apps-soft' },
+  moving: { mark: 'cov-moving', colour: 'cov-moving', tile: 'cov-moving-soft' },
+  people: { mark: 'cov-people', colour: 'cov-people', tile: 'cov-people-soft' },
   none: { mark: 'cov-none', colour: 'cov-none', hollow: true },
 }
 const WHO: Record<string, Look> = {
   held: { mark: 'managed', colour: 'status-managed' },
-  nobody: { mark: 'none', colour: 'status-none', hollow: true },
+  nobody: { mark: 'none', colour: 'status-none', hollow: true, tile: 'warn-soft', flag: true },
 }
 const DOMAINS: Record<string, Look> = {
-  taken: { mark: 'agree', colour: 'ok' },
-  handed: { mark: 'partial', colour: 'status-partial' },
-  unasked: { mark: 'exception', colour: 'exception' },
+  taken: { mark: 'agree', colour: 'ok', tile: 'ok-soft' },
+  handed: { mark: 'partial', colour: 'status-partial', tile: 'warn-soft', flag: true },
+  unasked: { mark: 'exception', colour: 'exception', tile: 'exception-soft', flag: true },
   nobody: { mark: 'none', colour: 'status-none', hollow: true },
 }
 const LIFE: Record<string, Look> = {
-  planned: { colour: 'life-planned' }, live: { colour: 'life-live' },
-  retiring: { colour: 'life-retiring' }, retired: { colour: 'life-gone' },
+  planned: { colour: 'life-planned', tile: 'life-planned-soft' }, live: { colour: 'life-live' },
+  retiring: { colour: 'life-retiring', tile: 'life-retiring-soft', flag: true }, retired: { colour: 'life-gone', tile: 'life-gone-soft' },
 }
 const RETIRING: Record<string, Look> = {
-  retiring: { mark: 'cov-moving', colour: 'cov-moving' },
+  retiring: { mark: 'cov-moving', colour: 'cov-moving', tile: 'life-retiring-soft', flag: true },
   not: { colour: 'line-strong', hollow: true },
 }
 
@@ -55,7 +62,7 @@ export function lookOf(lens: SheetLens, value: LensValue): Look {
     case 'lifecycle': return LIFE[value.value] ?? {}
     case 'retiring': return RETIRING[value.value] ?? {}
     default:
-      return value.heat !== undefined ? { colour: `heat-${value.heat}` as ColourToken } : { colour: 'line-strong', hollow: true }
+      return value.heat !== undefined ? { colour: `heat-${value.heat}` as ColourToken, tile: `heat-${value.heat}` as ColourToken } : { colour: 'line-strong', hollow: true }
   }
 }
 

@@ -59,6 +59,7 @@ import { captureSheet } from '../../widgets/capturePage'
 import { posterShot, PosterWork } from './PosterWork'
 import type { PosterHostParts } from './PosterWork'
 import type { PosterHandle } from './SheetPoster'
+import { PosterKeyTile } from './PosterKeyTile'
 import type { PosterActions } from './PosterDesign'
 import { PRINT_PAPERS } from '../../widgets/printPage'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
@@ -308,13 +309,17 @@ function useLens(props: SheetPageProps, lensAsked: string | undefined, day: stri
   const liveModel = useMemo(() => ({ ...model, relations: live.relations }), [model, live.relations])
   const who = useWho(liveModel, live.elsewhere, props.responsible, lens === 'who')
   const byId = useMemo(() => new Map(model.elements.map((element) => [element.id, element])), [model.elements])
-  const keyOf = useCallback((leaves: readonly ElementId[]): KeyValue[] => {
+  /** The key's values, what the lens asks about first. On a poster each draws a tile in its tile's fill, since tiles show no row mark. */
+  const keyOf = useCallback((leaves: readonly ElementId[], poster = false): KeyValue[] => {
     if (!lens) return []
     const counts = lensCounts(leaves.flatMap((id) => { const element = byId.get(id); return element ? [lensValue(element, lens, facts)] : [] }))
-    return [...counts].map(([value, count]) => {
-      const look = lookOf(lens, { value, ...(lens.startsWith('aspect:') && value !== 'unrated' ? { heat: headingHeat(scales, lens, value) } : {}) })
-      return { id: value, label: valueWord(lens, value, t), count, ...(look.mark ? { mark: look.mark } : {}), ...(look.colour && !look.hollow ? { swatch: look.colour } : {}) }
+    const values = [...counts].map(([value, count]) => {
+      const said = { value, ...(lens.startsWith('aspect:') && value !== 'unrated' ? { heat: headingHeat(scales, lens, value) } : {}) }
+      const look = lookOf(lens, said)
+      const one: KeyValue = { id: value, label: valueWord(lens, value, t), count, ...(look.mark ? { mark: look.mark } : {}), ...(look.colour && !look.hollow ? { swatch: look.colour } : {}) }
+      return { one: poster ? { ...one, shown: <PosterKeyTile lens={lens} value={said} /> } : one, flag: look.flag === true }
     })
+    return [...values.filter((held) => held.flag), ...values.filter((held) => !held.flag)].map((held) => held.one)
   }, [lens, byId, facts, scales, t])
   const canKeep = lens !== sheet?.colourBy && !(sheet?.colourBy === undefined && lens === DEFAULT_LENS)
   return { scales, lens, asOf, live, coverageAt, retiring, valueOf, who, byId, keyOf, canKeep }
@@ -474,6 +479,9 @@ function onNamedRow(at: {
   }
 }
 
+/** Up to this many, a key keeps its values in the lens's order, flagged first; more are gathered by size. */
+const KEY_IN_ORDER = 6
+
 /** The key, and the jump to what waits at the end of the page. */
 function KeyRow({ values, only, onOnly, onKeep, unmapped, onJump, t }: {
   values: readonly KeyValue[]
@@ -486,7 +494,7 @@ function KeyRow({ values, only, onOnly, onKeep, unmapped, onJump, t }: {
 }) {
   return (
     <div className="sheet-page__keyRow">
-      <KeyStrip values={values} pressed={only} onPress={onOnly} data-guide="sheet.key" {...(onKeep ? { onKeep } : {})} />
+      <KeyStrip values={values} all={values.length <= KEY_IN_ORDER} pressed={only} onPress={onOnly} data-guide="sheet.key" {...(onKeep ? { onKeep } : {})} />
       {unmapped > 0 && (
         <button type="button" className="sheet-page__link sheet-page__keyEnd" onClick={onJump}>
           {plural(t, { one: 'sheet.unmappedJumpOne', other: 'sheet.unmappedJumpOther' }, unmapped)}
@@ -739,14 +747,14 @@ function SheetLook({ day, at, props }: { day: string; at: ReturnType<typeof useP
 }
 
 /** The key, where there is something coloured for it to explain. */
-function SheetKey({ at, props, onJump }: { at: ReturnType<typeof usePage>; props: SheetPageProps; onJump(): void }) {
+function SheetKey({ at, props, onJump, poster = false }: { at: ReturnType<typeof usePage>; props: SheetPageProps; onJump(): void; poster?: boolean }) {
   const { t } = useStrings()
   const { laidOut, lensed } = at
   if (!laidOut || laidOut.areas.length === 0 || !lensed.lens) return null
   const leaves = [...at.areaRows.entries()].flatMap(([area, rows]) => { const held = leavesOfArea(rows); return held.length > 0 ? held : [area] })
   return (
     <KeyRow
-      values={lensed.keyOf(leaves)} only={at.only} onOnly={at.setOnly} unmapped={laidOut.unmapped.length} onJump={onJump} t={t}
+      values={lensed.keyOf(leaves, poster)} only={at.only} onOnly={at.setOnly} unmapped={laidOut.unmapped.length} onJump={onJump} t={t}
       {...(!props.readOnly && props.sheet && lensed.canKeep ? { onKeep: () => props.actions.updateSheet({ colourBy: lensed.lens as DesignDiagram['colourBy'] }) } : {})}
     />
   )
@@ -915,7 +923,7 @@ function PosterPart({ at, props, jump, full, onFull, exporting, onExported, onLa
     <PosterWork
       parts={posterParts(props, sheet, lensed.retiring)} laidOut={laidOut} designing={at.designing} lens={lensed.lens} valueOf={lensed.valueOf} coverageAt={lensed.coverageAt}
       nameOf={at.context.named} selectedId={selection.selectedId} onSelect={selection.select} made={selection.made} only={at.only} lit={finder.lit} who={lensed.who}
-      day={lensed.asOf} kept={at.rail.options.kept} keyStrip={<SheetKey at={at} props={props} onJump={jump} />} handle={at.posterHandle} author={author}
+      day={lensed.asOf} kept={at.rail.options.kept} keyStrip={<SheetKey at={at} props={props} onJump={jump} poster />} handle={at.posterHandle} author={author}
       dockExtra={<Button variant="quiet" size="small" aria-pressed={full} onClick={() => onFull(!full)} data-testid="poster-full">{t(full ? 'sheet.poster.back' : 'sheet.poster.fullWindow')}</Button>}
       exporting={exporting} onExported={onExported} keyWords={keyWordsOf(at)} today={props.today ?? ''} scopeName={props.scopeName} onLane={onLane}
       iconAsked={iconAsked} t={t}

@@ -26,6 +26,7 @@ import { Button } from '../../widgets/kit/Button'
 import { CanvasDock } from '../../widgets/kit/CanvasDock'
 import { Menu } from '../../widgets/kit/Menu'
 import { tokenVar } from '../../widgets/kit/tokens'
+import type { ColourToken } from '../../widgets/kit/tokens'
 import { locatedSelector } from '../../widgets/useLocated'
 import type { FunctionCoverage } from '../coverage'
 import type { LensValue, SheetLens } from '../lens'
@@ -60,6 +61,8 @@ type Facts = {
   label?: string
   /** The label names something that is not a unit. */
   labelTyped?: boolean
+  /** The label says nobody answers for it: its mark is hollow, as no unit's is. */
+  labelNone?: boolean
 }
 
 export type PosterHandle = {
@@ -138,7 +141,7 @@ function TileWords({ element, inside, value, facts, labelled, mark, t }: {
       {value?.heat !== undefined && <span className="poster-tile__value">{value.said}</span>}
       <span className="poster-tile__name">{element.name}</span>
       {facts?.apps && <span className="poster-tile__near">{facts.apps}</span>}
-      {labelled && facts?.label !== undefined && <span className="poster-tile__label" data-tile-label={element.id} data-typed={facts.labelTyped ? '' : undefined}>{facts.label}</span>}
+      {labelled && facts?.label !== undefined && <span className="poster-tile__label" data-tile-label={element.id} data-typed={facts.labelTyped ? '' : undefined} data-none={facts.labelNone ? '' : undefined}>{facts.label}</span>}
       {last && <span className="poster-tile__near" data-via={facts?.via ? '' : undefined}>{last}</span>}
       {inside > 0 && <span className="poster-tile__inside" title={t('sheet.poster.inside', { count: inside })}>+{inside}</span>}
     </>
@@ -146,6 +149,16 @@ function TileWords({ element, inside, value, facts, labelled, mark, t }: {
 }
 
 const flag = (on: boolean) => (on ? '' : undefined)
+
+/** Where a hand placed it, and its fill: the lens's tile colour, the one the key draws too (`sheetLook`). */
+function tileStyle(cell: PosterCell | undefined, fill: ColourToken | undefined): CSSProperties | undefined {
+  if (!cell && !fill) return undefined
+  return {
+    ...(cell ? { gridColumn: `${cell.col + 1} / span ${cell.span ?? 1}`, gridRow: cell.row + 1 } : {}),
+    ...(fill ? { '--poster-tile-fill': tokenVar(fill) } : {}),
+  } as CSSProperties
+}
+
 
 const Tile = memo(function Tile({ capability, inside, lens, value, facts, cell, labelled, standIn, life, say, t }: {
   capability: SheetCapability
@@ -168,7 +181,7 @@ const Tile = memo(function Tile({ capability, inside, lens, value, facts, cell, 
         type="button" tabIndex={-1} className="poster-tile" title={element.name} data-element-id={element.id} data-testid={`poster-tile-${element.id}`}
         data-value={value?.value} data-heat={value?.heat} data-hand={flag(cell !== undefined)} data-labelled={flag(labelled)} data-stand-in={flag(standIn)} data-life={life}
         aria-label={say ? `${element.name}, ${say}` : undefined}
-        style={cell ? { gridColumn: `${cell.col + 1} / span ${cell.span ?? 1}`, gridRow: cell.row + 1 } : undefined}
+        style={tileStyle(cell, look?.tile)}
       >
         <TileWords element={element} inside={inside} value={value} facts={facts} labelled={labelled} mark={look?.mark !== undefined} t={t} />
       </button>
@@ -544,7 +557,7 @@ function useFactsOf(props: SheetPosterProps) {
       facts.set(element.id, {
         apps: held.supportedBy.map((one) => named.current(one)).join(', '),
         unit, via,
-        ...(showsLabel ? { label: unit || t('sheet.lens.who.nobody'), labelTyped: unit !== '' && units.length === 0 && typed.current !== undefined } : {}),
+        ...(showsLabel ? { label: unit || t('sheet.lens.who.nobody'), labelTyped: unit !== '' && units.length === 0 && typed.current !== undefined, labelNone: unit === '' } : {}),
       })
     }
     for (const area of laidOut.areas) {

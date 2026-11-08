@@ -45,7 +45,7 @@
 .poster-grouping__label { font-weight: var(--fw-regular); }
 .poster-grouping__label[data-typed] { font-style: italic; }
 
-.poster-tile { position: relative; appearance: none; height: var(--poster-tile-h); box-sizing: border-box; min-width: 0; margin: 0; padding: 1px 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--card-edge); border-radius: 0; background: var(--card-surface); color: var(--ink); font: inherit; text-align: center; cursor: pointer; contain: strict; }
+.poster-tile { position: relative; appearance: none; height: var(--poster-tile-h); box-sizing: border-box; min-width: 0; margin: 0; padding: 1px 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--card-edge); border-radius: 0; background: var(--poster-tile-fill, var(--card-surface)); color: var(--ink); font: inherit; text-align: center; cursor: pointer; contain: strict; }
 .poster-tile > * { flex: none; }
 .poster-tile:hover { border-color: var(--ink); }
 .poster-tile:focus-visible, .poster-step:focus-visible, .poster-person:focus-visible, .poster-band__phase:focus-visible, .poster-column__group button:focus-visible, .poster-item:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 0; }
@@ -70,30 +70,26 @@
 .poster-tile__label::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-inline-end: 3px; background: var(--line-ink); vertical-align: 1px; }
 .poster-tile__label[data-typed] { font-style: italic; }
 .poster-tile__label[data-typed]::before { background: none; outline: 1px dashed var(--line-ink); outline-offset: -1px; }
+.poster-tile__label[data-none]::before { background: none; outline: 1px solid var(--line-ink); outline-offset: -1px; }
 .poster-tile__value { position: absolute; inset-inline-end: 3px; inset-block-start: 0; font: var(--fw-strong) var(--canvas-t-label)/12px var(--font-mono); }
 .poster-tile__inside { position: absolute; inset-inline-end: 2px; inset-block-end: 0; color: var(--ink-2); font-size: var(--canvas-t-label); line-height: 12px; }
 .poster-tile__mark { position: absolute; inset-block-start: 2px; inset-inline-start: 2px; width: 6px; height: 6px; box-sizing: border-box; border: 1.5px solid var(--ink-3); border-radius: 50%; }
-.poster-tile[data-value="apps"] { background: var(--cov-apps-soft); }
-.poster-tile[data-value="apps"] .poster-tile__mark { background: var(--cov-apps); border-color: var(--cov-apps); }
-.poster-tile[data-value="moving"] { background: var(--cov-moving-soft); }
-.poster-tile[data-value="moving"] .poster-tile__mark { background: linear-gradient(90deg, var(--cov-moving) 50%, transparent 50%); border-color: var(--cov-moving); }
-.poster-tile[data-value="people"] { background: var(--cov-people-soft); }
-.poster-tile[data-value="people"] .poster-tile__mark { border-radius: 0; background: var(--cov-people); border-color: var(--cov-people); }
+/* A tile's fill per value is `sheetLook`'s `tile`, set as --poster-tile-fill, so the key draws the same fill. */
+:is(.poster-tile, .poster-key-tile)[data-value="apps"] .poster-tile__mark { background: var(--cov-apps); border-color: var(--cov-apps); }
+:is(.poster-tile, .poster-key-tile)[data-value="moving"] .poster-tile__mark { background: linear-gradient(90deg, var(--cov-moving) 50%, transparent 50%); border-color: var(--cov-moving); }
+:is(.poster-tile, .poster-key-tile)[data-value="people"] .poster-tile__mark { border-radius: 0; background: var(--cov-people); border-color: var(--cov-people); }
+.poster-key-tile { position: relative; flex: none; width: 22px; height: 14px; box-sizing: border-box; border: 1px solid var(--card-edge); background: var(--poster-tile-fill, var(--card-surface)); }
+.poster-key-tile .poster-tile__mark { inset-block-start: 1px; inset-inline-start: 1px; }
 /* One question at a time: the place never moves for it, and each value has words on the key and a tile's name. */
-[data-lens="who"] .poster-tile[data-value="nobody"] { background: var(--warn-soft); }
 /* The corner mark is Covered by's: under another question its hollow ring would say *nothing yet* or *in no domain* on every tile. */
 [data-lens="who"] .poster-tile__mark, [data-lens="domains"] .poster-tile__mark, [data-lens="lifecycle"] .poster-tile__mark, [data-lens="retiring"] .poster-tile__mark, [data-lens="aspect"] .poster-tile__mark { display: none; }
-[data-lens="retiring"] .poster-tile[data-value="retiring"], [data-lens="lifecycle"] .poster-tile[data-value="retiring"] { background: var(--life-retiring-soft); }
-[data-lens="lifecycle"] .poster-tile[data-value="planned"] { border-style: dashed; background: var(--life-planned-soft); }
-[data-lens="lifecycle"] .poster-tile[data-value="retired"] { background: var(--life-gone-soft); color: var(--ink-3); text-decoration: line-through; }
-[data-lens="domains"] .poster-tile[data-value="taken"] { background: var(--ok-soft); }
-[data-lens="domains"] .poster-tile[data-value="handed"] { background: var(--warn-soft); }
-[data-lens="domains"] .poster-tile[data-value="unasked"] { background: var(--exception-soft); }
-.poster-tile[data-heat="1"] { background: var(--heat-1); color: var(--on-heat-1); }
-.poster-tile[data-heat="2"] { background: var(--heat-2); color: var(--on-heat-2); }
-.poster-tile[data-heat="3"] { background: var(--heat-3); color: var(--on-heat-3); }
-.poster-tile[data-heat="4"] { background: var(--heat-4); color: var(--on-heat-4); }
-.poster-tile[data-heat="5"] { background: var(--heat-5); color: var(--on-heat-5); }
+[data-lens="lifecycle"] .poster-tile[data-value="planned"] { border-style: dashed; }
+[data-lens="lifecycle"] .poster-tile[data-value="retired"] { color: var(--ink-3); text-decoration: line-through; }
+.poster-tile[data-heat="1"] { color: var(--on-heat-1); }
+.poster-tile[data-heat="2"] { color: var(--on-heat-2); }
+.poster-tile[data-heat="3"] { color: var(--on-heat-3); }
+.poster-tile[data-heat="4"] { color: var(--on-heat-4); }
+.poster-tile[data-heat="5"] { color: var(--on-heat-5); }
 .poster-tile[data-heat] .poster-tile__near, .poster-tile[data-heat] .poster-tile__label { color: inherit; }
 
 .poster-column { padding: 4px 6px; gap: 3px; overflow: hidden; background: var(--surface); }
