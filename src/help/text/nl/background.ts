@@ -108,7 +108,7 @@ waarop een bord wordt getoond, een filter en een open dialoog horen niet bij
 een plek, en een ander record kiezen op de pagina met besluiten of
 waarnemingen, of een ander tabblad van de waarnemingen, is ook geen stap: het
 adres noemt het tabblad dat open is, dus herladen blijft daarop. Terug is geen ongedaan maken: het verplaatst
-het scherm en verandert niets, en ⌘Z blijft hoe je een wijziging terugdraait.
+het scherm en verandert niets, en {key:Mod+Z} blijft hoe je een wijziging terugdraait.
 
 **In een browser** doen de knoppen Terug en Vooruit van de browser dit, met
 hun toetsen en gebaren. Het adres noemt de plek waar je bent, na een \`#\`, dus
@@ -117,8 +117,8 @@ voor iedereen die hem mag lezen. De rest van het adres blijft zoals het was.
 
 **In de desktop-app** begint de balk met een knop **‹** en een knop **›** (op
 macOS na de knoppen van het venster), grijs als er nergens heen te gaan is.
-Dezelfde stappen staan in het menu **Go** als **Back** en **Forward**, op
-**⌘[** en **⌘]** op macOS en **Alt+←** en **Alt+→** op Windows en Linux. De
+Dezelfde stappen staan in het menu **Ga** als **Terug** en **Vooruit**, op
+**{key:Cmd+[|Alt+Left}** en **{key:Cmd+]|Alt+Right}**. De
 terug- en vooruitknoppen van de muis werken ook, en vegen tussen pagina's op
 een Mac-trackpad als dat op *Veeg met twee of drie vingers* staat
 (Systeeminstellingen → Trackpad → Meer gebaren → Veeg tussen pagina's). Ze
@@ -166,7 +166,7 @@ of in het plaatje.
 in deze browser of nergens heeft dat niet; dan zegt het venster waarom er geen
 link is, en wordt er niets gekopieerd. Het menu-onderdeel werkt vanaf elk
 scherm, ook vanaf de startpagina van de organisatie.` },
-    { title: `Zoeken`, text: `**Zoeken** in de bovenbalk, of ⌘K, doorzoekt alles in één keer: elementen op
+    { title: `Zoeken`, text: `**Zoeken** in de bovenbalk, of {key:Mod+K}, doorzoekt alles in één keer: elementen op
 naam, categorie, leverancier, technologie en eigenaar; documentatie op wat erin
 geschreven staat; weergaven op naam; relaties op label, protocol en
 technologie; besluiten, plannen en hun mijlpalen; en waarnemingen, oorzaken,
@@ -178,15 +178,15 @@ status van de vastlegging ernaast — en in welke scope hij staat. Een element
 kiezen selecteert het en schuift ernaartoe, een documentatietreffer opent de
 pagina van dat element, een relatie opent het blok waar ze vertrekt, en een
 vastlegging opent op haar eigen pagina; een treffer uit een andere scope opent
-die scope daar, alleen-lezen waar je bron dat is. ⌘F in de editor blijft de snelle zoeker als je alleen een blok op
+die scope daar, alleen-lezen waar je bron dat is. {key:Mod+F} in de editor blijft de snelle zoeker als je alleen een blok op
 het canvas zoekt.
 
 De startpagina van de organisatie en die van elk domein hebben dezelfde
-**Zoeken** in hun balk, en ⌘K werkt daar ook, zonder dat er iets open is: het
+**Zoeken** in hun balk, en {key:Mod+K} werkt daar ook, zonder dat er iets open is: het
 leest eerst de scope van die startpagina en dan de rest van de organisatie, en
 een treffer opent de scope die hem bevat, op dezelfde pagina als een treffer van
 binnen de scope.` },
-    { title: `Ongedaan maken`, text: `**⌘Z** dekt alles, in de volgorde waarin je het deed: een blok verplaatst, een
+    { title: `Ongedaan maken`, text: `**{key:Mod+Z}** dekt alles, in de volgorde waarin je het deed: een blok verplaatst, een
 diagram hernoemd, een besluit aanvaard, een projectinstelling gewist. Een naam
 typen is één stap in plaats van één per letter, en een sleep met de lijnen die
 erna opnieuw worden gelegd is één stap — dus één keer terug geeft je wat je had,
@@ -194,24 +194,22 @@ niet wat je een toetsaanslag geleden had.
 
 **Activiteit** in de bovenbalk toont die stappen met hun naam en tijd. Het is
 een verslag, geen weg terug: naar een regel springen roept een vraag op ("en
-alles daarna?") die ⌘Z al beantwoordt.` },
+alles daarna?") die {key:Mod+Z} al beantwoordt.` },
     { title: `Sneltoetsen om te kennen`, text: `| Toetsen | Doet |
 |---|---|
 | \`?\` | Alle sneltoetsen |
 | F1 | De help, bij het scherm waar je bent |
-| ⌘F / Ctrl+F | Element zoeken |
+| {key:Mod+F} | Element zoeken |
 | Enter | Documentatie van het geselecteerde element openen |
 | F2 | Selectie hernoemen |
 | Delete | Selectie weghalen, na navraag |
-| ⌘Z, ⌘⇧Z | Ongedaan maken, opnieuw — één stapel over alles |
-| ⌘C ⌘X ⌘V, ⌘D | Kopiëren, knippen, plakken, dupliceren |
-| Pijltjes, ⇧Pijltjes | Verplaatsen per rasterstap, per pixel |
+| {key:Mod+Z}, {key:Mod+Shift+Z} | Ongedaan maken, opnieuw — één stapel over alles |
+| {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Kopiëren, knippen, plakken, dupliceren |
+| Pijltjes, {key:Shift} Pijltjes | Verplaatsen per rasterstap, per pixel |
 | Shift+1, Shift+2, \`=\`, \`-\` | Passend maken, 100 %, inzoomen, uitzoomen |
 | Shift+F10 | Het menu voor de selectie |
-| ⌘S / Ctrl+S | Nu bewaren |
-| ⌘[ ⌘] op macOS, elders Alt+← Alt+→ | Terug, Vooruit, in de desktop-app; in een browser die van de browser |
-
-Op Windows en Linux lees je Ctrl voor ⌘.` },
+| {key:Mod+S} | Nu bewaren |
+| {key:Cmd+[|Alt+Left} {key:Cmd+]|Alt+Right} | Terug, Vooruit, in de desktop-app; in een browser die van de browser |` },
   ],
   work: [
     { title: `Waar je werk wordt bewaard`, text: `Je werk staat op een van drie plekken, en de regel onder de naam op de startpagina
@@ -468,7 +466,7 @@ hebben: de applicatie wordt de grens van dat diagram en haar componenten staan
 erin. Je maakt er bewust een — rechtsklik de applicatie en kies
 **Containerdiagram maken**, of klik op de knop met die naam op het tabblad
 Algemeen van de inspector — en het is een stap in Activiteit als elke andere,
-dus ⌘Z neemt het terug. Een kaart die er een heeft draagt een klein merkteken;
+dus {key:Mod+Z} neemt het terug. Een kaart die er een heeft draagt een klein merkteken;
 dubbelklik de kaart om het te openen. Dubbelklikken maakt er nooit een. Een
 landschapstabblad toont zijn containerdiagrammen onder een pijltje: rechtsklik
 daar op een regel, of klik op het pijltje achter de naam zodra het diagram open
@@ -656,7 +654,7 @@ weggeborgen en ongedaan maken staat uit. Het is alleen op jouw scherm, niemand a
 het, en het adres draagt het (\`?day=2027-06-01\`), dus een koppeling opent dezelfde blik.
 **Terug naar vandaag**, of **Terug naar** de eigen dag van het bord, is één druk. **Maak dit
 de dag van de weergave** in de band is de bewuste stap: één bewerking, één regel in
-Activiteit, en ⌘Z neemt hem terug. Het werkt ook voor vandaag, wat een gedateerd bord terug
+Activiteit, en {key:Mod+Z} neemt hem terug. Het werkt ook voor vandaag, wat een gedateerd bord terug
 op de kalender zet. Een bord dat op zijn dag is bewaard, zegt die dag op zijn tabblad en
 blijft daarop bewerkbaar, en wie een rol heeft, kan nog worden gewijzigd op de dag waar je
 naar kijkt. Een containerdiagram dat vanaf een bord wordt geopend, neemt de dag van dat
@@ -701,7 +699,7 @@ teken toont wie al een pagina heeft). *Vormgeving* blijft naast het bord, waar d
 kaart is.
 
 **Bewerken** opent een venster met niets dan de bron en het resultaat ernaast;
-**Velden** haalt de rijen erbij. ⌘B en ⌘I omhullen de selectie. De tekst wordt
+**Velden** haalt de rijen erbij. {key:Mod+B} en {key:Mod+I} omhullen de selectie. De tekst wordt
 bewaard na een korte pauze, één stap in Ongedaan maken voor het geheel. **Klaar**
 beëindigt het schrijven, en **Annuleren**, of Escape, zet haar terug op wat ze was,
 en vraagt het eerst als er iets is veranderd.
@@ -754,7 +752,7 @@ antwoordt. Een kop zegt hoeveel het er zijn, en de rij van een waarneming in
 het register toont het aantal naast de titel.
 
 - **Reageren.** Schrijf in het veld onder de draad en druk op **Reageren**
-  (⌘Enter doet hetzelfde). De tekst neemt de Markdown die een beschrijving
+  ({key:Mod+Enter} doet hetzelfde). De tekst neemt de Markdown die een beschrijving
   neemt.
 - **Antwoorden.** Klik op **Antwoorden** onder een reactie. Een draad is één
   niveau diep: een antwoord op een antwoord antwoordt op de reactie waaronder
@@ -775,7 +773,7 @@ dan als pseudoniem leest.
 
 Elke reactie, bewerking en verwijdering is één stap: ze staat in de lijst
 **Activiteit** (*Gereageerd op Webshop*), in de geschiedenis en in de export,
-en ⌘Z maakt haar ongedaan. Een reactie verandert haar record nooit, dus de
+en {key:Mod+Z} maakt haar ongedaan. Een reactie verandert haar record nooit, dus de
 geschiedenis van het record blijft van het record. Waar een scope hier alleen
 gelezen wordt, kan niet worden gereageerd — tenzij de plek waar je werk wordt
 bewaard een lezer laat reageren.
@@ -993,7 +991,7 @@ vanaf maart ingevuld.
 zegt aan welke domeinen het is toegewezen: een chip per domein, weg te halen
 met het ×, en **+ Domein**, dat de scopes aanbiedt onder de scope van wie het
 blad is, op hun pad en hun type. Elk domein erbij of eraf is één stap, terug te
-draaien met ⌘Z. Daaronder noemt **Opgepakt door** elke scope eronder die het
+draaien met {key:Mod+Z}. Daaronder noemt **Opgepakt door** elke scope eronder die het
 heeft opgepakt, elk een weg naar de startpagina van die scope: een scope die
 het oppakte zonder dat het was toegewezen staat in de waarschuwingskleur, en
 een domein dat het kreeg en het nog niet oppakte zegt *nog niet opgepakt*. Een
@@ -1008,7 +1006,7 @@ Een domein pakt een functie op vanaf zijn eigen blad: **Van boven…**, naast
 erboven, gegroepeerd naar de scope die ze definieert en met waar elk in zit.
 Kies er een en het blad van het domein houdt hem als stand-in — onder
 zijn gebied waar het domein dat gebied heeft, anders als een eigen gebied — één
-stap, terug te draaien met ⌘Z, en in de scope erboven wordt niets geschreven.
+stap, terug te draaien met {key:Mod+Z}, en in de scope erboven wordt niets geschreven.
 Een gebied dat wordt opgepakt na een van zijn capabilities neemt die capability
 in dezelfde stap onder zich. Een keuze die niets oplevert — al opgepakt, of niet
 meer van boven — zegt dat. Wat het domein eronder zet is zijn eigen verfijning. Een functie toewijzen en
@@ -1149,13 +1147,13 @@ het grootste van Passend en 90%, zodat een naam leesbaar is, vanaf linksboven wa
 schuiven is; daarna opent hij waar je gebleven was. **Passend** in het dock toont het geheel.
 Onder 70% verdwijnen de namen en is elke capability een vierkant onder de kleur die aanstaat,
 wat Overzicht vroeger was; boven 120% zegt elke tegel ook wat haar dekt en wie ervoor staat.
-De toetsen zijn die van de andere canvassen: ⌘ of Ctrl met + − 0, het wiel, knijpen, ⇧ 1. Een
+De toetsen zijn die van de andere canvassen: {key:Mod} met + − 0, het wiel, knijpen, {key:Shift+1}. Een
 adres dat nog \`tab=overview\` zegt, komt hier uit.
 
 Kleur en Dag zijn die van het blad, en er beweegt niets voor: een functie die er op die dag
 nog niet is, is gestippeld, een die weg is doorgestreept. Tab gaat per blok, de pijltjes van
 tegel naar tegel over blokken heen terwijl de pagina meeloopt, Enter opent het paneel en Esc
-komt terug op de tegel. **⌘F** zoekt, en licht op wat het vindt.
+komt terug op de tegel. **{key:Mod+F}** zoekt, en licht op wat het vindt.
 
 **Lezen** en **Ontwerpen** zijn twee houdingen. Bij Lezen schuift een sleep, en beweegt er niets
 op de pagina. Bij **Ontwerpen** (\`tab=design\`) kun je:
@@ -1163,15 +1161,15 @@ op de pagina. Bij **Ontwerpen** (\`tab=design\`) kun je:
 - een blok aan de titel slepen of aan de hoek trekken; het klikt op een raster van 8 en op de
   randen van de buren, Alt laat los. De eerste beweging schrijft elk blok, zodat de pagina de
   eerste indeling niet meer volgt. Spatie pakt een blok op voor het toetsenbord, pijltjes
-  verplaatsen, ⇧ verandert de grootte, Alt stapt per eenheid, spatie zet neer en Esc zet terug;
+  verplaatsen, {key:Shift} verandert de grootte, Alt stapt per eenheid, spatie zet neer en Esc zet terug;
 - een tegel binnen zijn blok naar een cel slepen, en de andere stromen eromheen; of op een ander
   gebied of andere groepering, wat haar in het model verplaatst, op elke weergave, zoals *Verplaatsen
   naar…* in het paneel. Wat een andere scope bewaart, wordt geweigerd in de woorden van het paneel;
 - een team, applicatie of subscope uit de lade op een tegel, groepering of gebied slepen. Ze
   schrijven wat het paneel schrijft. Een team toont ook als label op deze poster; het label
   weghalen laat de toewijzing staan. Een getypte naam is een actor gemarkeerd als geen eenheid.
-  Een applicatie hoort op een tegel, niet op een blok. Selecteer meerdere met ⇧ of een getekend
-  vak met ⇧, en één keer neerzetten of indrukken in de lade neemt ze allemaal in één stap. **L**
+  Een applicatie hoort op een tegel, niet op een blok. Selecteer meerdere met {key:Shift} of een getekend
+  vak met {key:Shift}, en één keer neerzetten of indrukken in de lade neemt ze allemaal in één stap. **L**
   en **A** op een tegel openen daar dezelfde lijsten;
 - een **notitie** of **afbeelding** toevoegen, die alleen bij deze weergave horen, meedrukken en door
   Zoeken gevonden worden. Dubbelklik op een notitie om te schrijven;
@@ -1208,7 +1206,7 @@ rollen of alle rollen; **Lijnen**, welke rapportagelijnen er staan; **+ Eenheid*
 de **Dag**. De eerste keer opent een organogram op twee niveaus. Een pijltje op een
 vak klapt alleen die eenheid in, en een ingeklapte eenheid zegt op één regel wat ze
 verbergt, *3 eenheden · 3 vacant*; een klik op die regel klapt haar open. **−**,
-**+**, **Passend** en **100%** staan in de hoek van het canvas, met ⌘ of Ctrl en
+**+**, **Passend** en **100%** staan in de hoek van het canvas, met {key:Mod} en
 + − 0 en het wiel, en Passend stopt bij 60%, waar een vak zijn naam zegt en wat het
 verbergt en niets meer. Niets hiervan wordt ooit bewaard.
 
@@ -1230,7 +1228,7 @@ deze scope staan, neemt ongedaan maken de verplaatsing terug; waar sommige in an
 scopes staan, wordt elke scope op zichzelf teruggezet.
 
 **Zoeken.** Het vak boven het overzicht neemt eenheden en mensen, met resultaten
-terwijl je typt, en ⌘F komt ernaartoe. Bij een gevonden persoon gaat het organogram
+terwijl je typt, en {key:Mod+F} komt ernaartoe. Bij een gevonden persoon gaat het organogram
 naar de eenheid en opent de toewijzing. **Ik** gaat naar de eenheid waar jij een rol
 hebt; zeg eerst wie je bent, met **Dit ben ik** op de pagina Mensen. Op het organogram
 lopen de pijlen door de vakken, Enter kiest en gaat omlaag, Shift en Enter gaat
@@ -1274,7 +1272,7 @@ de verplaatsing, en wordt een verplaatsing door een plan met haar dag genoemd. N
 wordt geschreven tot **Verplaatsen**, en Esc laat het. De eenheid houdt haar id, dus
 haar mensen, rapportagelijnen, bediende scopes en opmerkingen blijven bij haar, en de
 eenheden erin gaan mee. Het is één stap in elke scope die een verplaatste eenheid
-bewaart, allemaal of geen; waar dat alleen deze scope is, neemt ⌘Z het terug, en waar
+bewaart, allemaal of geen; waar dat alleen deze scope is, neemt {key:Mod+Z} het terug, en waar
 ook andere scopes zijn geschreven, wordt elke op zichzelf teruggezet. Een verplaatsing
 is een correctie, zonder dag: een verplaatsing vanaf een dag is van een plan. Een
 organogram dat alleen wordt gelezen, biedt niets hiervan.
@@ -1550,7 +1548,7 @@ terugzetten…** de weergave, de beschrijving of het besluit weer wat het toen
 was; met de hele scope in beeld doet **De hele scope terugzetten…**
 hetzelfde voor alles. Terugzetten is een nieuwe wijziging bovenop alles wat
 sindsdien gebeurde, geen stap terug: de geschiedenis blijft groeien, de
-activiteitenlijst zegt *Weergave Warehouse teruggezet naar 3 sep*, ⌘Z maakt
+activiteitenlijst zegt *Weergave Warehouse teruggezet naar 3 sep*, {key:Mod+Z} maakt
 het ongedaan, en de volgende momentopname legt het vast. De app biedt die
 momentopname meteen aan. Een besluit dat aanvaard, afgewezen of vervangen is
 blijft zoals het is — schrijf een nieuw besluit dat het vervangt — en een
@@ -1594,7 +1592,7 @@ daaronder een knop die de pagina van die scope opent. Wat je er vanaf hier
 aan toevoegt — opnieuw gezien, een oorzaak, een diepere oorzaak, een
 koppeling tussen de eigen records, een van de oorzaken tot grondoorzaak
 maken — wordt in die scope gemaakt en daar meteen opgeslagen, als wijziging van
-die scope en niet van deze pagina: een melding zegt waar het heen ging, en ⌘Z
+die scope en niet van deze pagina: een melding zegt waar het heen ging, en {key:Mod+Z}
 op deze pagina komt er niet bij — terugnemen is het terugzetten. Waar die
 scope vanaf hier niet gewijzigd mag worden, of haar eigen regels de wijziging
 weigeren, zegt de melding dat er niets gemaakt is. Een
@@ -1664,7 +1662,7 @@ waarneming verklaart — met *Al opgeschreven?* over de oorzaken van de scope.
 **Bestaande oorzaak** kiest er een die al opgeschreven is. Elke regel zegt of
 hij nieuw of bestaand is en kan er weer af, en er wordt niets gemaakt tot je
 vastlegt: de knop zegt wat hij gaat maken, *Waarneming vastleggen met 1
-nieuwe oorzaak en 1 koppeling*, en het is één stap — ⌘Z neemt de waarneming,
+nieuwe oorzaak en 1 koppeling*, en het is één stap — {key:Mod+Z} neemt de waarneming,
 de nieuwe oorzaken en de koppelingen samen terug. Een andere scope kiezen
 haalt de koppelingen naar oorzaken van de eerder gekozen scope eraf, en zegt
 dat.
@@ -1703,10 +1701,10 @@ gekozen. Het heeft drie delen:
 
 **Samenvoegen** zegt wat het maakt — *2 waarnemingen samenvoegen in OB-0002* —
 of, grijs, waarom het niet kan. Een samenvoeging binnen deze scope is één
-stap, en ⌘Z neemt haar terug. Een die een andere scope wijzigt — een record
+stap, en {key:Mod+Z} neemt haar terug. Een die een andere scope wijzigt — een record
 ervan samengevoegd, of een koppeling die daar staat verplaatst — schrijft elke
 scope die ze wijzigt als stap van die scope, alles of niets, en een melding
-zegt welke scopes ze wijzigde; ⌘Z neemt dat hier niet terug, verander het dus
+zegt welke scopes ze wijzigde; {key:Mod+Z} neemt dat hier niet terug, verander het dus
 terug. Het scherm sluit op het blijvende record. Elk samengevoegd record
 blijft — daar staat de oorspronkelijke tekst — en wordt als samengevoegd
 gelezen, niet verwijderd, met waar het heen ging, ook als dat een andere scope
@@ -1742,7 +1740,7 @@ geschiedenis zegt waar ze vandaan kwam. Waar ze stond, blijft ze als
 geschiedenis: gelezen zoals een samengevoegd record, buiten het register, het
 beeld en de tellingen, en onder *Samengevoegde tonen* getoond als *Verplaatst
 naar OB-0012 in <scope>*, dat erheen gaat — zo leidt een link ernaar nog
-ergens heen. Het scherm sluit op de waarneming waar ze heen ging. ⌘Z neemt een
+ergens heen. Het scherm sluit op de waarneming waar ze heen ging. {key:Mod+Z} neemt een
 verplaatsing niet terug: verplaats haar terug, en waar haar oude plek haar nog
 heeft, komt ze terug onder haar oude nummer en verklaren de koppelingen die
 doorgeknipt werden toen ze vertrok haar weer. Een gearchiveerde waarneming
@@ -1843,8 +1841,7 @@ waarneming zo groot als haar impact, een oorzaak hol, een grondoorzaak met
 een dubbele ring, een oplossing als een vierkant. Gestreept is aangenomen en
 doorgetrokken geverifieerd, in beide, en de legenda onder de tekening volgt
 de grootte. De tekening begint **passend** in het venster, en past zich
-opnieuw aan als wat ze toont verandert, tot je zoomt; de zoomknoppen, en ⌘ of
-Ctrl met het scrollwiel, zoomen, en slepen over de achtergrond verschuift
+opnieuw aan als wat ze toont verandert, tot je zoomt; de zoomknoppen, en {key:Mod} met het scrollwiel, zoomen, en slepen over de achtergrond verschuift
 haar. **Boven een record hangen** — of er met Tab op komen — volgt de keten
 beide kanten op: alles wat eraan gekoppeld is blijft en de rest vervaagt, en
 de volledige titel, het label en de scope staan eronder. Enter of een klik
@@ -2112,7 +2109,7 @@ en zet ze op de pagina Controles.
   gemarkeerd. **Terugnemen** daar brengt haar terug. Een markering is een stap
   in het model, bijgehouden in het onderdeel waar de bevinding over gaat, dus
   iedereen ziet haar en de Activiteitenlijst noemt haar; gemarkeerd waar dat
-  onderdeel open is, neemt ⌘Z haar terug zoals elke andere stap. Een markering
+  onderdeel open is, neemt {key:Mod+Z} haar terug zoals elke andere stap. Een markering
   gaat over de bevinding zoals ze is: verander waar ze over gaat — een andere
   eenheid aan de samenwerking, een andere rol eindverantwoordelijk — en de
   bevinding komt terug. **Herstellen** kan niet worden gemarkeerd: het model
@@ -2200,7 +2197,7 @@ dat is met opzet: gaat er halverwege iets mis, dan staat de vastlegging op
 *beide* plaatsen — een conflict dat je ziet en met **Koppelen** oplost — en niet
 op geen van beide.
 
-Daarom **stopt ongedaan maken daar**. ⌘Z neemt alles terug wat je sindsdien deed
+Daarom **stopt ongedaan maken daar**. {key:Mod+Z} neemt alles terug wat je sindsdien deed
 en weigert dan die stap, met een regel die zegt waarom: maar de helft ervan staat
 op de stapel van dit venster, en de andere helft is een bestand in een onderdeel
 waar hier niemand voor spreekt. Verplaats de vastlegging opnieuw, de andere kant
@@ -2217,7 +2214,7 @@ de organisatie zichzelf heeft ingericht: de soorten eenheden die ze heeft, de
 rollen die elke soort heeft, en waar elke rol verantwoordelijk voor is — in
 haar eigen woorden. Het wordt bij de organisatie bijgehouden en daar bewerkt;
 geopend boven een andere scope kun je het alleen lezen, en dat staat er ook.
-Elke wijziging is een stap: ze staat in Activiteit, ⌘Z draait haar terug, en
+Elke wijziging is een stap: ze staat in Activiteit, {key:Mod+Z} draait haar terug, en
 elk eenheidstype, elke rol en elke verantwoordelijkheid heeft een eigen
 geschiedenis.` },
     { title: `Structuur`, text: `De pagina heeft vijf tabbladen, naar de vraag die elk beantwoordt: **Structuur**,
@@ -2301,7 +2298,7 @@ namen gelijk zijn — en dan wordt er niets voor overgenomen. **Overnemen** zegt
 hoeveel onderdelen de stap maakt en schrijft ze als één stap: de pagina
 markeert daarna wat nieuw is tot je haar verlaat, en het bericht onderaan
 biedt **Ongedaan maken**, dat die stap terugneemt zolang er sindsdien niets
-is gebeurd. ⌘Z neemt hem ook terug.
+is gebeurd. {key:Mod+Z} neemt hem ook terug.
 
 Wat binnenkomt is van de organisatie: hernoem het, herschrijf het, schrap
 het. Het tabblad **Bibliotheken** toont per bibliotheek **Wat binnenkwam**:
@@ -2535,7 +2532,7 @@ plan eenheden raakt:
   zet elke rij terug op haar voorstel, en **Schrijf als één stap** schrijft
   elk einde op de laatste dag en elk begin de dag erna, in elke scope die er
   een bijhoudt, tegelijk. Waar alleen de scope van het plan wordt geschreven,
-  neemt ⌘Z de hele stap terug; waar ook andere scopes werden geschreven, wordt
+  neemt {key:Mod+Z} de hele stap terug; waar ook andere scopes werden geschreven, wordt
   het in elk daarvan teruggezet.
 - **Nog open op** de dag, in de lijst met bevindingen: wat de controles dan in
   die eenheden vinden — een over een eenheid opent die — elke
@@ -2555,7 +2552,7 @@ werkadres als je dat weet, en of iemand van de organisatie is of van buiten.
 Meer wordt er niet bewaard — geen notities, geen foto.
 
 Het register staat **buiten de geschiedenis**. Een wijziging hier is geen
-stap: er is geen ⌘Z voor en geen regel in Activiteit, en de pagina zegt dat
+stap: er is geen {key:Mod+Z} voor en geen regel in Activiteit, en de pagina zegt dat
 ook, onder **Over het register** aan het eind van haar ene regel inleiding.
 Daardoor kan een naam vergeten worden. De geschiedenis bewaart het id
 van een persoon, nooit de naam, en elk scherm vraagt het register om de naam
@@ -2870,7 +2867,7 @@ melden hoe ver hij was in plaats van door te gaan. Hij kan vragen om verder
 te mogen; zeg je dat, dan begint een nieuwe sessie en is de strook terug.
 
 Alles wat een agent wijzigt, staat in Activiteit onder zijn naam en wordt
-ongedaan gemaakt met ⌘Z, zoals altijd.
+ongedaan gemaakt met {key:Mod+Z}, zoals altijd.
 
 Een agent kan het **personenregister** lezen, er iemand aan toevoegen — hij
 hoort het als er al iemand vergelijkbaars in staat — en iemand als vertrokken
@@ -2878,7 +2875,7 @@ markeren. Hij ziet namen, of pseudoniemen waar het beleid van de organisatie
 dat zegt, en hoort of iemand een adres heeft, nooit het adres zelf. Hij kan
 niemand vergeten, verwijderen of samenvoegen, en het beleid niet wijzigen:
 dat doe jij, op de pagina Mensen. Het register is geen stap, dus wat een agent
-daar doet staat niet in Activiteit en is niet ongedaan te maken met ⌘Z.
+daar doet staat niet in Activiteit en is niet ongedaan te maken met {key:Mod+Z}.
 
 Een agent kan ook de **boom van scopes** bijhouden: een scope onder een andere
 maken — een domein, of een landschapsscope met zijn eerste bord, vanaf het
@@ -2888,8 +2885,8 @@ aan geven, hem ergens anders opbergen, en er een verwijderen. Hij verwijdert
 gaat pas weg nadat de agent je heeft verteld wat erin zit en jij in je eigen
 woorden hebt gezegd dat hij met alles erin weg mag: je woorden gaan mee met de
 verwijdering, en een melding op het scherm zegt wat er weg is. Daarvoor is er
-geen ⌘Z. Elke wijziging is een eigen stap van die scope, in zijn
-geschiedenis, zoals een wijziging vanaf een startpagina — geen stap die ⌘Z in
+geen {key:Mod+Z}. Elke wijziging is een eigen stap van die scope, in zijn
+geschiedenis, zoals een wijziging vanaf een startpagina — geen stap die {key:Mod+Z} in
 de werkruimte terugdraait. De agent laat de scope die in de werkruimte open
 is op zijn plek in de boom: om die te hernoemen, te verplaatsen of te
 verwijderen, of een scope erboven te verplaatsen of te verwijderen, gaat hij

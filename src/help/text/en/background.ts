@@ -101,7 +101,7 @@ board is shown on, a filter and an open dialog are not part of a place, and
 choosing another record on the decisions or the observations page, or another
 tab of the observations page, is not a step either: the address names the tab
 that is up, so a reload stays on it. Back is not undo: it moves the screen and changes nothing, and
-⌘Z is still how a change is taken back.
+{key:Mod+Z} is still how a change is taken back.
 
 **In a browser** the browser's own Back and Forward do this, with their keys
 and gestures. The address names the place you are on, after a \`#\`, so a reload
@@ -110,8 +110,8 @@ who may read it. The rest of the address is left as it was.
 
 **In the desktop app** the bar starts with a **‹** and a **›** button (after
 the window's buttons on macOS), greyed out when there is nowhere to go. The
-same moves are in the **Go** menu as **Back** and **Forward**, on **⌘[** and
-**⌘]** on macOS and **Alt+←** and **Alt+→** on Windows and Linux. The mouse's
+same moves are in the **Go** menu as **Back** and **Forward**, on **{key:Cmd+[|Alt+Left}** and
+**{key:Cmd+]|Alt+Right}**. The mouse's
 back and forward buttons work too, and so does swiping between pages on a Mac
 trackpad when it is set to *Swipe with two or three fingers* (System
 Settings → Trackpad → More Gestures → Swipe between pages). They all work from
@@ -154,7 +154,7 @@ into view and outlined the same way, in the list or in the picture.
 this browser or nowhere at all has none, so there the dialog says why there is
 no link, and nothing is copied. The menu item works from every screen, the
 organisation's home included.` },
-    { title: `Search`, text: `**Search** in the top bar, or ⌘K, searches everything at once: elements by
+    { title: `Search`, text: `**Search** in the top bar, or {key:Mod+K}, searches everything at once: elements by
 name, category, vendor, technology and owner; documentation by what is written
 in it; views by name; relations by label, protocol and technology; decision
 records, plans and their milestones; and observations, causes, solutions and
@@ -165,14 +165,14 @@ says what it is — a heading per kind, and the element's kind or the record's
 status beside it — and which scope holds it. Choosing an element selects it
 and pans to it, a documentation hit opens that element's page, a relation
 opens the box it leaves, and a record opens on its own page; a hit from
-another scope opens that scope there, read-only where your source is. ⌘F inside the editor remains the quick
+another scope opens that scope there, read-only where your source is. {key:Mod+F} inside the editor remains the quick
 finder when all you want is a box on the canvas.
 
 The organisation's home and every domain's home have the same **Search** in
-their bar, and ⌘K works there too, with nothing open: it reads that home's
+their bar, and {key:Mod+K} works there too, with nothing open: it reads that home's
 scope first and then the rest of the organisation, and a hit opens the scope
 that holds it, on the same page a hit from inside the scope would.` },
-    { title: `Undo`, text: `**⌘Z** covers everything, in the order you did it: a box moved, a diagram
+    { title: `Undo`, text: `**{key:Mod+Z}** covers everything, in the order you did it: a box moved, a diagram
 renamed, a decision accepted, a scope setting cleared. Typing a name is one
 step rather than one per letter, and a drag and the lines that re-route after it
 are one step — so going back once gives you what you had rather than what you
@@ -180,24 +180,22 @@ had a keystroke ago.
 
 **Activity** in the top bar lists those steps with their names and times. It is
 a record, not a way back: stepping to an entry would raise a question ("and
-everything after it?") that ⌘Z already answers.` },
+everything after it?") that {key:Mod+Z} already answers.` },
     { title: `Shortcuts worth knowing`, text: `| Keys | Does |
 |---|---|
 | \`?\` | Every shortcut |
 | F1 | The help, at the screen you are on |
-| ⌘F / Ctrl+F | Find an element |
+| {key:Mod+F} | Find an element |
 | Enter | Open the selected element's documentation |
 | F2 | Rename the selection |
 | Delete | Remove the selection, after asking |
-| ⌘Z, ⌘⇧Z | Undo, redo — one stack over everything |
-| ⌘C ⌘X ⌘V, ⌘D | Copy, cut, paste, duplicate |
-| Arrows, ⇧Arrows | Nudge by a grid step, by a pixel |
+| {key:Mod+Z}, {key:Mod+Shift+Z} | Undo, redo — one stack over everything |
+| {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Copy, cut, paste, duplicate |
+| Arrows, {key:Shift} Arrows | Nudge by a grid step, by a pixel |
 | Shift+1, Shift+2, \`=\`, \`-\` | Fit view, 100 %, zoom in, zoom out |
 | Shift+F10 | The menu for the selection |
-| ⌘S / Ctrl+S | Save now |
-| ⌘[ ⌘] on macOS, Alt+← Alt+→ elsewhere | Back, Forward, in the desktop app; in a browser, the browser's own |
-
-On Windows and Linux, read Ctrl for ⌘.` },
+| {key:Mod+S} | Save now |
+| {key:Cmd+[|Alt+Left} {key:Cmd+]|Alt+Right} | Back, Forward, in the desktop app; in a browser, the browser's own |` },
   ],
   work: [
     { title: `Where your work is kept`, text: `Your work is kept in one of three places, and the organisation's home says
@@ -434,15 +432,15 @@ underneath it: the application becomes the boundary of that diagram and its
 components sit inside. You make one on purpose — right-click the application
 and choose **Create container diagram**, or press **Create** beside *Container view* in
 the panel — and it is a step in Activity like any other, so
-⌘Z takes it back. A card that has one carries a small mark; double-click the
+{key:Mod+Z} takes it back. A card that has one carries a small mark; double-click the
 card to open it. Double-clicking never creates one. A landscape tab lists its
 container diagrams under a chevron: right-click an entry there, or press the
 chevron after the name once the diagram is open, to rename it, open its
 **diagram settings** or delete it. Deleting one takes its components with it
 and keeps the application. Right-click a landscape tab for the same menu, with
-duplicate as well. **‹** with the name of the board you came from, or ⌘↑ / Ctrl+↑, returns to it
+duplicate as well. **‹** with the name of the board you came from, or {key:Mod+Up}, returns to it
 on its day, with its zoom and what was selected; a diagram opened from a board on
-another day opens on that day. ⌘↓ / Ctrl+↓ on an application goes in, as does a
+another day opens on that day. {key:Mod+Down} on an application goes in, as does a
 double-click or **Open container diagram** in its panel; its card says how many
 containers it holds.
 
@@ -617,7 +615,7 @@ runs round the canvas, and the board is read-only — the palette and the fields
 away and undo is off. It is only on your screen, nobody else sees it, and the address
 carries it (\`?day=2027-06-01\`), so a link opens the same look. **Back to today**, or
 **Back to** the board's own day, is one press. **Make this the view's day** in the
-band is the deliberate step: one edit, one entry in Activity, and ⌘Z takes it back. It
+band is the deliberate step: one edit, one entry in Activity, and {key:Mod+Z} takes it back. It
 works for today as well, which puts a dated board back on the calendar. A board
 saved on its day says that day on its tab and stays editable on it, and who holds a role
 can still be changed on the day you are looking at. A container diagram opened from a
@@ -658,7 +656,7 @@ are the view's other elements, with a filter (a mark shows who has a page
 already). *Appearance* stays beside the board, where the card is.
 
 **Edit** opens a window with nothing but the source and the result beside it;
-**Fields** brings the rows back beside it. ⌘B and ⌘I wrap the selection. The text
+**Fields** brings the rows back beside it. {key:Mod+B} and {key:Mod+I} wrap the selection. The text
 is saved after a short pause, one undo step for the whole of it. **Done** ends the
 writing, and **Cancel**, or Escape, takes it back to what it was, asking first if
 anything changed.
@@ -706,7 +704,7 @@ how many there are, and an observation's row in the register shows the count
 beside its title.
 
 - **Comment.** Write in the field under the thread and press **Comment**
-  (⌘Enter does the same). The body takes the Markdown a description takes.
+  ({key:Mod+Enter} does the same). The body takes the Markdown a description takes.
 - **Reply.** Press **Reply** under a comment. A thread is one level deep:
   replying to a reply answers the comment it is under.
 - **Edit.** Your own comments only. An edited comment says *edited*.
@@ -721,7 +719,7 @@ and remembers the answer as *This is me*. Forgetting a person on the People
 page reaches every comment they wrote, which then reads as their pseudonym.
 
 Each comment, edit and removal is one step: it is in the **Activity** list
-(*Commented on Webshop*), in the history and in the export, and ⌘Z undoes it.
+(*Commented on Webshop*), in the history and in the export, and {key:Mod+Z} undoes it.
 A comment never changes its record, so the record's own history stays its
 own. Where a scope is only read here, nothing can be commented — unless the
 place your work is kept lets a reader comment.
@@ -934,7 +932,7 @@ from March.
 which domains it is handed to: a chip for each, taken off with its ×, and
 **+ Domain**, which offers the scopes below the one whose sheet it is, by
 their path and their type. Each one added or taken off is one step, undone
-with ⌘Z. Under it, **Taken up by** names every scope below that took it up,
+with {key:Mod+Z}. Under it, **Taken up by** names every scope below that took it up,
 each a way to that scope's home: one that took it up without being handed it
 is marked in the warning colour, and a domain it was handed to that has not
 taken it up yet says *not started*. A capability whose area was handed on says
@@ -948,7 +946,7 @@ A domain takes a function up from its own sheet: **From above…**, beside
 it, grouped by the scope that defines them and saying what each sits in. Pick
 one and the domain's sheet holds it as a stand-in — under its area where the
 domain holds the area, as an area of its own otherwise — one step, undone
-with ⌘Z, and nothing is written in the scope above. An area taken up after one
+with {key:Mod+Z}, and nothing is written in the scope above. An area taken up after one
 of its capabilities takes that capability in under it, in the same step. A
 pick that lands nothing — taken up already, or no longer above — says so. What
 the domain files under it is its own refinement. Handing a function on and taking it up are two
@@ -1073,20 +1071,20 @@ the larger of Fit and 90%, so a name can be read, from the top left where the re
 after that it opens where you left it. **Fit** in the dock shows the whole. Below 70% the
 names go and each capability is a square under the Colour that is up, which is what
 Overview used to be; above 120% each tile also says what covers it and who answers. The keys
-are the other canvases': ⌘ or Ctrl with + − 0, the wheel, a pinch, ⇧ 1. An address that
+are the other canvases': {key:Mod} with + − 0, the wheel, a pinch, {key:Shift+1}. An address that
 still says \`tab=overview\` lands here.
 
 Colour and Day are the sheet's, and nothing moves for them: a function not there yet on the
 day is dashed, one gone is struck through. Tab goes block by block, the arrows go from
 tile to tile across blocks with the page following, Enter opens the panel and Esc comes back
-to the tile. **⌘F** finds, and lights what it finds.
+to the tile. **{key:Mod+F}** finds, and lights what it finds.
 
 **Read** and **Design** are two postures. In Read a drag pans, and nothing on the page
 moves. In **Design** (\`tab=design\`) you may:
 
 - drag a block by its title or pull its corner; it snaps to a grid of 8 and to its
   neighbours' edges, Alt lets go. The first move writes every block, so the page stops
-  following the first layout. Space lifts a block for the keyboard, the arrows move it, ⇧
+  following the first layout. Space lifts a block for the keyboard, the arrows move it, {key:Shift}
   resizes, Alt steps a unit, Space drops and Esc puts it back;
 - drag a tile within its block to a cell, and the others flow round it; or onto another
   area or grouping, which moves it in the model, on every view, as *Move to…* in the panel
@@ -1094,8 +1092,8 @@ moves. In **Design** (\`tab=design\`) you may:
 - drag a team, an application or a subscope from the tray onto a tile, a grouping or an
   area. They write what the panel writes. A team also shows as a label on this poster;
   taking the label off leaves the assignment. A name you type is an actor flagged as not a
-  unit. An application goes on a tile, not on a block. Select several with ⇧ or a drawn box
-  with ⇧, and one drop or a press in the tray takes all of them as one step. **L** and **A** on
+  unit. An application goes on a tile, not on a block. Select several with {key:Shift} or a drawn box
+  with {key:Shift}, and one drop or a press in the tray takes all of them as one step. **L** and **A** on
   a tile open the same lists there;
 - add a **note** or a **picture**, which belong to this view only, print with the poster
   and are found by Find. Double press a note to write it;
@@ -1130,7 +1128,7 @@ roles; **Lines**, which reporting lines are drawn; **+ Unit**; and the **Day**.
 The first time a chart is opened it shows two levels. A caret on a box folds that
 unit alone, and a folded unit says what it hides on one line, *3 units · 3
 vacant*; pressing that line opens it. **−**, **+**, **Fit** and **100%** are in
-the corner of the canvas, with ⌘ or Ctrl and + − 0 and the wheel, and Fit stops at
+the corner of the canvas, with {key:Mod} and + − 0 and the wheel, and Fit stops at
 60%, where a box says its name and what it hides and no more. None of this is ever
 saved.
 
@@ -1150,7 +1148,7 @@ them. Where they are all kept in this scope, undo takes the move back; where som
 are kept in other scopes, each scope is put back on its own.
 
 **Finding.** The box on top of the outline takes units and people, with results as
-you type, and ⌘F comes to it. A person found has their unit gone to and their
+you type, and {key:Mod+F} comes to it. A person found has their unit gone to and their
 assignment opened. **Me** goes to the unit where you hold a role; say who you are
 first, with **This is me** on the People page. On the chart, the arrows walk the
 boxes, Enter picks and goes down, Shift and Enter goes up, M moves the unit and F
@@ -1194,7 +1192,7 @@ after the move, and a plan's move of the unit is named with its day. Nothing is
 written until **Move**, and Esc leaves it. The unit keeps its id, so its people, its
 reporting lines, the scopes it serves and its comments stay with it, and the units
 inside it come along. It is one step in each scope that keeps a unit moved, all of
-them or none; where that is only this scope, ⌘Z takes it back, and where other
+them or none; where that is only this scope, {key:Mod+Z} takes it back, and where other
 scopes were written too, each is put back on its own. A move is a correction, with
 no day: a move from a day on is a plan's (*A reorganisation is a plan*). A chart
 that is only read offers none of it.
@@ -1458,7 +1456,7 @@ diagram, description or decision what it was then; with the whole scope
 shown, **Restore the whole scope…** does the same for everything. A restore
 is a new change on top of everything that happened since, not a step back: the
 history keeps growing, the Activity list says *Restored the view Warehouse
-as of 3 Sep*, ⌘Z undoes it, and the next snapshot records it. The app offers
+as of 3 Sep*, {key:Mod+Z} undoes it, and the next snapshot records it. The app offers
 that snapshot on the spot. A decision that has been accepted, rejected or
 superseded stays as it is — write a new one that supersedes it — and a
 restored diagram leaves out elements that no longer exist, and says how many.
@@ -1498,7 +1496,7 @@ in a strip — *Local to Application landscape* — with a button under it that
 opens that scope's page. What you add to it from here — a sighting, a cause,
 a deeper cause, a link between its own records, making one of its causes a
 root cause — is made in that scope and saved there at once, as that scope's change
-rather than this page's: a note after it says where it went, and ⌘Z on this
+rather than this page's: a note after it says where it went, and {key:Mod+Z} on this
 page does not reach it — to take it back, change it back. Where that scope
 may not be changed from here, or its own rules refuse the change, the note
 says nothing was made. A solution or an experiment of a scope below
@@ -1562,7 +1560,7 @@ written down?* over the causes of the scope. **Existing cause** picks one
 already written down. Each row says whether it is new or existing and can be
 taken off again, and nothing is made until you record: the button says what
 it will make, *Record observation with 1 new cause and 1 link*, and it is one
-step — ⌘Z takes the observation, the new causes and the links back together.
+step — {key:Mod+Z} takes the observation, the new causes and the links back together.
 Changing the scope takes off the links to causes of the scope chosen before,
 and says so.
 
@@ -1594,10 +1592,10 @@ screen** over the page, with that record picked. It has three parts:
   records had the same link, choose its strength; the stronger is offered.
 
 **Merge** says what it will make — *Merge 2 observations into OB-0002* — or,
-greyed, why it cannot. A merge inside this scope is one step, and ⌘Z takes it
+greyed, why it cannot. A merge inside this scope is one step, and {key:Mod+Z} takes it
 back. One that changes another scope — a record of it merged, or a link kept
 there moved — writes every scope it changes as that scope's own step, all or
-nothing, and a note says which scopes it changed; ⌘Z here does not take that
+nothing, and a note says which scopes it changed; {key:Mod+Z} here does not take that
 back, so change it back. The screen closes on the survivor. Every merged
 record stays — it is where the original wording is — and is read as merged
 rather than deleted, saying where it went, also when that is another scope;
@@ -1628,7 +1626,7 @@ sightings, history and comments, and its history says where it came from.
 Where it was, it stays as history: read as a merged record is, left out of
 the register, the picture and the counts, and shown under *Show merged* as
 *Moved to OB-0012 in <scope>*, which goes there — so a link to it still
-leads somewhere. The screen closes on the observation where it went. ⌘Z does
+leads somewhere. The screen closes on the observation where it went. {key:Mod+Z} does
 not take a move back: move it back, and where its old place still holds it,
 it comes back under its old number and the links cut when it left explain it
 again. An archived observation is restored before it moves, and a merged one
@@ -1717,7 +1715,7 @@ observation sized by its impact, a cause hollow, a root cause with a double
 ring, a solution as a square. Dashed is assumed and solid verified, in both,
 and the legend under the picture follows the size. The picture starts
 **fitted** to the window, and fits again when what it draws changes until you
-zoom; the zoom buttons, and ⌘ or Ctrl with the scroll wheel, zoom it, and dragging the
+zoom; the zoom buttons, and {key:Mod} with the scroll wheel, zoom it, and dragging the
 background pans it. **Hovering a record** — or reaching it with Tab — traces
 its chain both ways: everything linked to it stays and the rest dims, and its
 full title, its label and its scope show under it. Enter or a click reads
@@ -1968,7 +1966,7 @@ findings on the **Checks** line and lists them on the Checks page.
   checks, with its reason and the day it was marked. **Take back** there
   brings it back. A mark is a step in the model, kept in the scope the
   finding is about, so everybody sees it and the Activity list names it;
-  marked where that scope is open, ⌘Z takes it back like any other step. A
+  marked where that scope is open, {key:Mod+Z} takes it back like any other step. A
   mark is about the finding as it is: change what it is about — another unit
   on the interaction, another role accountable — and the finding comes back.
   A **fix** cannot be marked: the model contradicts itself, and the answer is
@@ -2045,7 +2043,7 @@ is written before this one changes, which is deliberate: if something goes wrong
 halfway you are left with the record in *both* places — a conflict you can see
 and settle with **Link** — rather than in neither.
 
-That is also why **undo stops there**. ⌘Z takes back everything you have done
+That is also why **undo stops there**. {key:Mod+Z} takes back everything you have done
 since, and then refuses that step with a line saying why: only half of it is on
 this window's stack, and the other half is a file in a scope nothing here speaks
 for. To put it back, move the record again the other way.
@@ -2061,7 +2059,7 @@ organisation's own design of how it is organised: the kinds of unit it has,
 the roles each kind holds, and what each role is responsible for — in its own
 words. It is kept at the organisation and edited there; opened over any other
 scope it reads the organisation's model in full, says so once, and offers the way there. Every change is a step: it shows in
-Activity, ⌘Z takes it back, and each unit type, role and responsibility has a
+Activity, {key:Mod+Z} takes it back, and each unit type, role and responsibility has a
 history of its own.` },
     { title: `Structure`, text: `The page has five tabs, by the question each answers: **Structure**, **Roles**,
 **Responsibilities**, **Exceptions** and **Libraries**. Which tab, part and unit
@@ -2154,7 +2152,7 @@ alike, or where the names are the same — and then nothing is brought in for
 it but its letters on what the step makes, so those rows arrive with their A. **Bring in** says how many items the step makes and writes them as one
 step: the page then marks what is new until you leave it, and the message at
 the bottom offers **Undo**, which takes back that step while nothing has
-happened since. ⌘Z takes it back too.
+happened since. {key:Mod+Z} takes it back too.
 
 What comes in belongs to the organisation: rename it, rewrite it, cut it. The
 **Libraries** tab shows, for each library, **What came in**: the library's
@@ -2358,7 +2356,7 @@ plan's interfaces, where the plan touches units, the page says:
   suggestion only ends. **Accept every suggestion** sets every row back to its
   suggestion, and **Write as one step** writes every end on its last day and
   every beginning the day after, in every scope that keeps one, together.
-  Where the plan's scope is the only one written, ⌘Z takes the whole step
+  Where the plan's scope is the only one written, {key:Mod+Z} takes the whole step
   back; where other scopes were written too, it is put back in each.
 - **Still open on** its day, in the list of findings: what the checks find in
   those units then — one about a unit opens it — every responsibility that
@@ -2376,7 +2374,7 @@ one, and whether they are of the organisation or from outside it. Nothing
 else is kept — no notes, no photo.
 
 The register is kept **outside the history**. A change here is not a step:
-there is no ⌘Z for it and no line in Activity, and the page says so under
+there is no {key:Mod+Z} for it and no line in Activity, and the page says so under
 **About the register**, at the end of its one line of introduction. That is
 what lets a name be forgotten. The history keeps a person's id, never their
 name, and every screen asks the register for the name when it draws one —
@@ -2669,7 +2667,7 @@ is expected to report where it got to rather than carry on. It may ask you
 to continue; when you say so, it starts a new session and the strip is back.
 
 Everything an agent changes shows in Activity under its name and is undone
-with ⌘Z, as before.
+with {key:Mod+Z}, as before.
 
 An agent can read the **people register**, add someone to it — it is told
 when somebody similar is there already — and mark someone as left. It sees
@@ -2677,7 +2675,7 @@ names, or pseudonyms where the organisation's policy says so, and it is told
 whether a person has an address, never the address. It cannot forget,
 remove or merge anyone, or change the policy: those are yours, on the People
 page. The register is no step, so what an agent does there is not in
-Activity and is not undone with ⌘Z.
+Activity and is not undone with {key:Mod+Z}.
 
 An agent can also keep the **tree of scopes**: make a scope under another — a
 domain, or a landscape scope with its first board, served by a unit from the
@@ -2686,8 +2684,8 @@ remove one. It removes one scope at a time, and never one with scopes under
 it. A scope that holds work goes only after the agent has told you what is in
 it and you have said, in your own words, that it is to go with all of it: your
 words go with the removal, and a notice on screen says what went. There is no
-⌘Z for that. Each change is that scope's own step, in its history, as a change
-made from a home is — not one the workspace's ⌘Z takes back. The agent leaves
+{key:Mod+Z} for that. Each change is that scope's own step, in its history, as a change
+made from a home is — not one the workspace's {key:Mod+Z} takes back. The agent leaves
 the scope open in the workspace where it is in the tree: to rename, move or
 remove that one, or to move or remove a scope above it, it goes to that
 scope's home first, as you would.

@@ -15,7 +15,7 @@ export const START: GettingStartedText = {
     },
     {
       title: 'Het kader',
-      text: 'Elk scherm staat in hetzelfde kader. **Rij één** zegt waar je bent, vindt alles (⌘K), maakt ongedaan en zegt of je werk veilig is. **Rij twee** bevat de plekken van deze scope: Start, de weergaven, Besluiten, Waarnemingen, Roadmap. De **boom** van scopes staat links; het **paneel** rechts toont wat je selecteert.',
+      text: 'Elk scherm staat in hetzelfde kader. **Rij één** zegt waar je bent, vindt alles ({key:Mod+K}), maakt ongedaan en zegt of je werk veilig is. **Rij twee** bevat de plekken van deze scope: Start, de weergaven, Besluiten, Waarnemingen, Roadmap. De **boom** van scopes staat links; het **paneel** rechts toont wat je selecteert.',
       picture: 'Het kader: rij één, rij twee met de plekken van de scope, de boom links en het paneel rechts.',
     },
     {
@@ -25,7 +25,7 @@ export const START: GettingStartedText = {
     },
     {
       title: 'Toevoegen en verbinden',
-      text: 'Klik op een bord op **Toevoegen** in de balk, of dubbeldruk op een lege plek, en typ een naam. Om twee kaarten te verbinden wijs je er één aan en sleep je van de stip aan de rand naar de andere. Selecteer iets om het in het paneel te lezen en te wijzigen. ⌘Z neemt elke stap terug.',
+      text: 'Klik op een bord op **Toevoegen** in de balk, of dubbeldruk op een lege plek, en typ een naam. Om twee kaarten te verbinden wijs je er één aan en sleep je van de stip aan de rand naar de andere. Selecteer iets om het in het paneel te lezen en te wijzigen. {key:Mod+Z} neemt elke stap terug.',
       picture: 'Een bord met twee kaarten en de lijn ertussen, en het paneel van de geselecteerde kaart.',
     },
     {

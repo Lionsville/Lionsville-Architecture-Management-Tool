@@ -116,7 +116,7 @@ gezeigt wird, ein Filter und ein offener Dialog gehören nicht zu einem Ort, und
 einen anderen Eintrag auf der Seite der Entscheidungen oder der Beobachtungen
 oder einen anderen Reiter der Beobachtungen zu wählen ist auch kein Schritt:
 Die Adresse nennt den offenen Reiter, sodass ein Neuladen auf ihm bleibt. Zurück ist kein Rückgängig: Es bewegt den
-Bildschirm und ändert nichts, und ⌘Z bleibt der Weg, eine Änderung
+Bildschirm und ändert nichts, und {key:Mod+Z} bleibt der Weg, eine Änderung
 zurückzunehmen.
 
 **Im Browser** tun das Zurück und Vorwärts des Browsers, mit ihren Tasten und
@@ -127,8 +127,7 @@ jeden öffnet, der ihn lesen darf. Der Rest der Adresse bleibt, wie er war.
 **In der Desktop-App** beginnt die Leiste mit einer Schaltfläche **‹** und
 einer Schaltfläche **›** (unter macOS nach den Schaltflächen des Fensters),
 ausgegraut, wenn es nirgendwohin geht. Dieselben Schritte stehen im Menü
-**Go** als **Back** und **Forward**, auf **⌘[** und **⌘]** unter macOS und
-**Alt+←** und **Alt+→** unter Windows und Linux. Die Zurück- und
+**Gehe zu** als **Zurück** und **Vorwärts**, auf **{key:Cmd+[|Alt+Left}** und **{key:Cmd+]|Alt+Right}**. Die Zurück- und
 Vorwärtstasten der Maus funktionieren auch, ebenso das Wischen zwischen Seiten
 auf einem Mac-Trackpad, wenn es auf *Mit zwei oder drei Fingern streichen*
 steht (Systemeinstellungen → Trackpad → Weitere Gesten → Zwischen Seiten
@@ -177,7 +176,7 @@ umrandet, in der Liste oder im Bild.
 in diesem Browser oder nirgends hat keine; dort sagt der Dialog, warum es keinen
 Link gibt, und nichts wird kopiert. Der Menüeintrag wirkt auf jedem Bildschirm,
 auch auf dem Zuhause der Organisation.` },
-    { title: `Suchen`, text: `**Suchen** in der oberen Leiste, oder ⌘K, durchsucht alles auf einmal: Elemente
+    { title: `Suchen`, text: `**Suchen** in der oberen Leiste, oder {key:Mod+K}, durchsucht alles auf einmal: Elemente
 nach Name, Kategorie, Anbieter, Technologie und Verantwortlichem; Dokumentation
 nach dem, was darin geschrieben steht; Ansichten nach Name; Beziehungen nach
 Beschriftung, Protokoll und Technologie; Entscheidungen, Pläne und ihre
@@ -190,15 +189,15 @@ und in welchem Bereich er liegt. Ein Element zu wählen wählt es aus und
 schwenkt dorthin, ein Dokumentationstreffer öffnet die Seite dieses Elements,
 eine Beziehung öffnet den Kasten, von dem sie ausgeht, und ein Eintrag öffnet
 sich auf seiner eigenen Seite; ein Treffer aus einem anderen Bereich öffnet
-diesen Bereich dort, schreibgeschützt, wo Ihre Quelle es ist. ⌘F im Editor bleibt der schnelle
+diesen Bereich dort, schreibgeschützt, wo Ihre Quelle es ist. {key:Mod+F} im Editor bleibt der schnelle
 Sucher, wenn alles, was Sie wollen, ein Kasten auf der Zeichenfläche ist.
 
 Die Startseite der Organisation und die jeder Domäne haben dasselbe **Suchen**
-in ihrer Leiste, und ⌘K wirkt dort auch, ohne dass etwas offen ist: Es liest
+in ihrer Leiste, und {key:Mod+K} wirkt dort auch, ohne dass etwas offen ist: Es liest
 zuerst den Bereich dieser Startseite und dann den Rest der Organisation, und
 ein Treffer öffnet den Bereich, der ihn enthält, auf derselben Seite wie ein
 Treffer von innerhalb des Bereichs.` },
-    { title: `Rückgängig`, text: `**⌘Z** deckt alles ab, in der Reihenfolge, in der Sie es getan haben: einen
+    { title: `Rückgängig`, text: `**{key:Mod+Z}** deckt alles ab, in der Reihenfolge, in der Sie es getan haben: einen
 verschobenen Kasten, ein umbenanntes Diagramm, eine angenommene Entscheidung,
 eine geleerte Projekteinstellung. Einen Namen zu tippen ist ein Schritt statt
 einer je Buchstabe, und ein Ziehen und die Linien, die sich danach neu führen,
@@ -207,24 +206,22 @@ nicht das, was Sie einen Tastendruck vorher hatten.
 
 **Aktivität** in der oberen Leiste listet diese Schritte mit ihren Namen und
 Zeiten auf. Es ist ein Protokoll, kein Weg zurück: zu einem Eintrag zu springen
-würde eine Frage aufwerfen („und alles danach?“), die ⌘Z bereits beantwortet.` },
+würde eine Frage aufwerfen („und alles danach?“), die {key:Mod+Z} bereits beantwortet.` },
     { title: `Tastenkürzel, die man kennen sollte`, text: `| Tasten | Tut |
 |---|---|
 | \`?\` | Jedes Tastenkürzel |
 | F1 | Die Hilfe, beim Bildschirm, auf dem Sie sind |
-| ⌘F / Ctrl+F | Ein Element suchen |
+| {key:Mod+F} | Ein Element suchen |
 | Enter | Die Dokumentation des ausgewählten Elements öffnen |
 | F2 | Die Auswahl umbenennen |
 | Delete | Die Auswahl entfernen, nach Rückfrage |
-| ⌘Z, ⌘⇧Z | Rückgängig, Wiederholen — ein Stapel über alles |
-| ⌘C ⌘X ⌘V, ⌘D | Kopieren, Ausschneiden, Einfügen, Duplizieren |
-| Pfeile, ⇧Pfeile | Um einen Rasterschritt verschieben, um ein Pixel |
+| {key:Mod+Z}, {key:Mod+Shift+Z} | Rückgängig, Wiederholen — ein Stapel über alles |
+| {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Kopieren, Ausschneiden, Einfügen, Duplizieren |
+| Pfeile, {key:Shift} Pfeile | Um einen Rasterschritt verschieben, um ein Pixel |
 | Shift+1, Shift+2, \`=\`, \`-\` | Einpassen, 100 %, Vergrößern, Verkleinern |
 | Shift+F10 | Das Menü für die Auswahl |
-| ⌘S / Ctrl+S | Jetzt speichern |
-| ⌘[ ⌘] unter macOS, sonst Alt+← Alt+→ | Zurück, Vorwärts, in der Desktop-App; im Browser die des Browsers |
-
-Unter Windows und Linux lesen Sie Ctrl für ⌘.` },
+| {key:Mod+S} | Jetzt speichern |
+| {key:Cmd+[|Alt+Left} {key:Cmd+]|Alt+Right} | Zurück, Vorwärts, in der Desktop-App; im Browser die des Browsers |` },
   ],
   work: [
     { title: `Wo Ihre Arbeit aufbewahrt wird`, text: `Ihre Arbeit liegt an einem von drei Orten, und die Zeile unter dem Namen auf
@@ -499,7 +496,7 @@ sich haben: die Anwendung wird zur Grenze dieses Diagramms, und ihre
 Komponenten sitzen darin. Sie legen eines bewusst an — klicken Sie mit rechts
 auf die Anwendung und wählen Sie **Containerdiagramm erstellen**, oder drücken
 Sie die Schaltfläche dieses Namens auf dem Reiter Allgemein des Inspektors —
-und es ist ein Schritt in der Aktivität wie jeder andere, den ⌘Z zurücknimmt.
+und es ist ein Schritt in der Aktivität wie jeder andere, den {key:Mod+Z} zurücknimmt.
 Eine Karte, die eines hat, trägt eine kleine Marke; doppelklicken Sie die
 Karte, um es zu öffnen. Ein Doppelklick legt nie eines an. Ein Landschaftsreiter
 listet seine Containerdiagramme unter einem Pfeil: klicken Sie dort mit rechts
@@ -697,7 +694,7 @@ weggeräumt und Rückgängig ist aus. Es ist nur auf Ihrem Bildschirm, niemand s
 und die Adresse trägt es (\`?day=2027-06-01\`), also öffnet ein Link dieselbe Ansicht.
 **Zurück zu heute**, oder **Zurück zu** dem eigenen Tag des Boards, ist ein Druck. **Zum Tag
 der Ansicht machen** im Band ist der bewusste Schritt: eine Bearbeitung, ein Eintrag in der
-Aktivität, und ⌘Z nimmt ihn zurück. Das geht auch für heute, was ein datiertes Board zurück
+Aktivität, und {key:Mod+Z} nimmt ihn zurück. Das geht auch für heute, was ein datiertes Board zurück
 in den Kalender setzt. Ein auf seinen Tag gespeichertes Board nennt diesen Tag auf seinem Tab
 und bleibt darauf bearbeitbar, und wer eine Rolle innehat, lässt sich am angesehenen Tag noch
 ändern. Ein von einem Board geöffnetes Containerdiagramm nimmt dessen Tag mit, und sein Weg
@@ -743,7 +740,7 @@ seine Kommentare. Links stehen die anderen Elemente der Ansicht, mit einem Filte
 wo die Karte ist.
 
 **Bearbeiten** öffnet ein Fenster mit nichts als dem Quelltext und dem Ergebnis
-daneben; **Felder** holt die Zeilen dazu. ⌘B und ⌘I umschließen die Auswahl. Der Text
+daneben; **Felder** holt die Zeilen dazu. {key:Mod+B} und {key:Mod+I} umschließen die Auswahl. Der Text
 wird nach einer kurzen Pause gespeichert, ein Rückgängig-Schritt für das Ganze.
 **Fertig** beendet das Schreiben, und **Abbrechen** oder Escape setzt ihn auf das
 zurück, was er war, und fragt zuerst, wenn sich etwas geändert hat.
@@ -798,7 +795,7 @@ viele es sind, und die Zeile einer Beobachtung im Register zeigt die Zahl
 neben ihrem Titel.
 
 - **Kommentieren.** Schreiben Sie in das Feld unter dem Verlauf und drücken
-  Sie **Kommentieren** (⌘Enter tut dasselbe). Der Text nimmt das Markdown,
+  Sie **Kommentieren** ({key:Mod+Enter} tut dasselbe). Der Text nimmt das Markdown,
   das eine Beschreibung nimmt.
 - **Antworten.** Klicken Sie auf **Antworten** unter einem Kommentar. Ein Verlauf
   ist eine Ebene tief: Eine Antwort auf eine Antwort antwortet auf den
@@ -819,7 +816,7 @@ jeden Kommentar, den sie schrieb; er liest sich dann als ihr Pseudonym.
 
 Jeder Kommentar, jede Bearbeitung und jedes Entfernen ist ein Schritt: in der
 Liste **Aktivität** (*Webshop kommentiert*), im Verlauf und im Export,
-und ⌘Z macht ihn rückgängig. Ein Kommentar ändert seinen Eintrag nie, der
+und {key:Mod+Z} macht ihn rückgängig. Ein Kommentar ändert seinen Eintrag nie, der
 Verlauf des Eintrags bleibt also sein eigener. Wo ein Bereich hier nur
 gelesen wird, kann nicht kommentiert werden — es sei denn, der Ort, an dem
 Ihre Arbeit aufbewahrt wird, lässt einen Leser kommentieren.
@@ -1051,7 +1048,7 @@ sodass eine ab März abgedeckte Fähigkeit ab März abgedeckt ist.
 sagt, welchen Domänen es zugeordnet ist: ein Chip für jede, mit seinem ×
 entfernt, und **+ Domäne**, das die Bereiche unter dem anbietet, dessen Blatt
 es ist, mit ihrem Pfad und ihrem Typ. Jede hinzugefügte oder entfernte ist ein
-Schritt, mit ⌘Z rückgängig. Darunter nennt **Aufgegriffen von** jeden Bereich
+Schritt, mit {key:Mod+Z} rückgängig. Darunter nennt **Aufgegriffen von** jeden Bereich
 darunter, der es aufgegriffen hat, jeder ein Weg zu dessen Startseite: einer,
 der es aufgriff, ohne dass es ihm zugeordnet wurde, steht in der Warnfarbe, und
 eine Domäne, der es zugeordnet wurde und die es noch nicht aufgriff, sagt
@@ -1067,7 +1064,7 @@ neben **+ Gebiet** listet die Gebiete, Gruppierungen und Fähigkeiten jedes
 Blatts darüber, gruppiert nach dem Bereich, der sie definiert, und mit dem, worin
 jede sitzt. Wählen Sie eine, und das Blatt der Domäne hält sie als
 Stellvertreter — unter ihrem Gebiet, wo die Domäne das Gebiet hält, sonst als
-eigenes Gebiet —, ein Schritt, mit ⌘Z rückgängig, und im Bereich darüber wird
+eigenes Gebiet —, ein Schritt, mit {key:Mod+Z} rückgängig, und im Bereich darüber wird
 nichts geschrieben. Ein Gebiet, das nach einer seiner Fähigkeiten aufgegriffen
 wird, nimmt diese Fähigkeit im selben Schritt unter sich. Eine Wahl, die nichts
 bewirkt — schon aufgegriffen, oder nicht mehr darüber —, sagt das. Was die
@@ -1218,13 +1215,13 @@ Größeren von Einpassen und 90 %, damit ein Name lesbar ist, von oben links, wo
 ist; danach öffnet es, wo Sie es verlassen haben. **Einpassen** im Dock zeigt das Ganze. Unter 70 %
 verschwinden die Namen und jede Fähigkeit ist ein Quadrat unter der eingestellten Farbe, was früher
 der Überblick war; über 120 % sagt jede Kachel auch, was sie abdeckt und wer sie verantwortet. Die
-Tasten sind die der anderen Leinwände: ⌘ oder Strg mit + − 0, das Rad, Zusammenziehen, ⇧ 1. Eine
+Tasten sind die der anderen Leinwände: {key:Mod} mit + − 0, das Rad, Zusammenziehen, {key:Shift+1}. Eine
 Adresse, die noch \`tab=overview\` sagt, landet hier.
 
 Farbe und Tag sind die des Blatts, und nichts bewegt sich dafür: eine Funktion, die es an dem Tag
 noch nicht gibt, ist gestrichelt, eine, die weg ist, durchgestrichen. Tab geht blockweise, die
 Pfeile von Kachel zu Kachel über Blöcke hinweg, die Seite folgt, Enter öffnet das Panel und Esc
-kehrt zur Kachel zurück. **⌘F** sucht und hebt hervor, was es findet.
+kehrt zur Kachel zurück. **{key:Mod+F}** sucht und hebt hervor, was es findet.
 
 **Lesen** und **Gestalten** sind zwei Haltungen. Beim Lesen schiebt ein Ziehen, und nichts auf der
 Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
@@ -1232,7 +1229,7 @@ Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
 - einen Block am Titel ziehen oder an der Ecke aufziehen; er rastet auf einem Raster von 8 und an
   den Kanten der Nachbarn ein, Alt lässt los. Die erste Bewegung schreibt jeden Block, sodass die
   Seite der ersten Anordnung nicht mehr folgt. Die Leertaste nimmt einen Block für die Tastatur auf,
-  die Pfeile verschieben, ⇧ ändert die Größe, Alt geht einheitenweise, die Leertaste setzt ab und
+  die Pfeile verschieben, {key:Shift} ändert die Größe, Alt geht einheitenweise, die Leertaste setzt ab und
   Esc stellt zurück;
 - eine Kachel innerhalb ihres Blocks in eine Zelle ziehen, und die anderen fließen darum herum;
   oder auf einen anderen Bereich oder eine Gruppierung, was sie im Modell verschiebt, auf jeder
@@ -1242,7 +1239,7 @@ Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
   einen Bereich ziehen. Sie schreiben, was das Panel schreibt. Ein Team zeigt sich auch als
   Beschriftung auf diesem Poster; sie zu entfernen lässt die Zuordnung bestehen. Ein eingegebener
   Name ist ein Akteur, als keine Einheit markiert. Eine Anwendung gehört auf eine Kachel, nicht auf
-  einen Block. Wählen Sie mehrere mit ⇧ oder einem gezogenen Rahmen mit ⇧, und einmal Absetzen oder
+  einen Block. Wählen Sie mehrere mit {key:Shift} oder einem gezogenen Rahmen mit {key:Shift}, und einmal Absetzen oder
   Drücken in der Ablage nimmt alle in einem Schritt. **L** und **A** auf einer Kachel öffnen dort
   dieselben Listen;
 - eine **Notiz** oder ein **Bild** hinzufügen, die nur zu dieser Ansicht gehören, mitgedruckt und
@@ -1282,7 +1279,7 @@ werden; **+ Einheit**; und den **Tag**. Beim ersten Öffnen zeigt ein Organigram
 Ebenen. Ein Pfeil auf einem Kasten klappt nur diese Einheit ein, und eine eingeklappte
 Einheit sagt in einer Zeile, was sie verbirgt, *3 Einheiten · 3 unbesetzt*; ein Druck auf
 diese Zeile öffnet sie. **−**, **+**, **Einpassen** und **100%** stehen in der Ecke der
-Fläche, dazu ⌘ oder Strg mit + − 0 und das Rad, und Einpassen stoppt bei 60%, wo ein
+Fläche, dazu {key:Mod} mit + − 0 und das Rad, und Einpassen stoppt bei 60%, wo ein
 Kasten seinen Namen sagt und was er verbirgt und nichts weiter. Nichts davon wird je
 gespeichert.
 
@@ -1304,7 +1301,7 @@ Rückgängig die Verschiebung zurück; wo manche in anderen liegen, wird jeder B
 sich zurückgesetzt.
 
 **Suchen.** Das Feld über der Gliederung nimmt Einheiten und Personen, mit Treffern beim
-Tippen, und ⌘F führt dorthin. Bei einer gefundenen Person geht das Organigramm zur Einheit
+Tippen, und {key:Mod+F} führt dorthin. Bei einer gefundenen Person geht das Organigramm zur Einheit
 und öffnet die Zuordnung. **Mich finden** geht zur Einheit, in der Sie eine Rolle haben; sagen Sie zuerst,
 wer Sie sind, mit **Das bin ich** auf der Seite Personen. Im Organigramm gehen die Pfeile
 durch die Kästen, Enter wählt und geht nach unten, Umschalt und Enter nach oben, M
@@ -1349,7 +1346,7 @@ und nach dem Umzug, und eine Verschiebung durch einen Plan wird mit ihrem Tag ge
 wird geschrieben bis **Verschieben**, und Esc verlässt es. Die Einheit behält ihre Id, also
 bleiben ihre Personen, Berichtslinien, bedienten Bereiche und Kommentare bei ihr, und die
 Einheiten darin kommen mit. Es ist ein Schritt in jedem Bereich, der eine verschobene Einheit
-führt, alle oder keiner; wo das nur dieser Bereich ist, nimmt ⌘Z es zurück, und wo auch andere
+führt, alle oder keiner; wo das nur dieser Bereich ist, nimmt {key:Mod+Z} es zurück, und wo auch andere
 geschrieben wurden, wird jeder für sich zurückgesetzt. Ein Umzug ist eine Korrektur, ohne Tag:
 Ein Umzug ab einem Tag gehört einem Plan. Ein nur gelesenes Organigramm bietet nichts davon.
 
@@ -1638,7 +1635,7 @@ zu dem, was es damals war; wenn der ganze Bereich gezeigt wird, tut **Den ganzen
 Bereich wiederherstellen…** dasselbe für alles. Eine Wiederherstellung ist eine
 neue Änderung über allem, was seither geschah, kein Schritt zurück: der Verlauf
 wächst weiter, die Aktivitätsliste sagt *Diagramm Lager wiederhergestellt auf
-den Stand vom 3. Sep*, ⌘Z macht es rückgängig, und die nächste Momentaufnahme
+den Stand vom 3. Sep*, {key:Mod+Z} macht es rückgängig, und die nächste Momentaufnahme
 hält es fest. Die App bietet diese Momentaufnahme an Ort und Stelle an. Eine
 Entscheidung, die angenommen, abgelehnt oder abgelöst wurde, bleibt, wie sie ist
 — schreiben Sie eine neue, die sie ablöst — und ein wiederhergestelltes Diagramm
@@ -1683,7 +1680,7 @@ einer Schaltfläche darunter, die die Seite jenes Bereiche öffnet. Was Sie von
 hier aus hinzufügen — eine Sichtung, eine Ursache, eine tiefere Ursache, eine
 Verknüpfung zwischen seinen eigenen Einträgen, eine seiner Ursachen zur
 Grundursache machen —, wird in jenem Bereich angelegt und dort sofort gespeichert, als Änderung jenes
-Bereiche und nicht dieser Seite: Ein Hinweis danach sagt, wohin es ging, und ⌘Z
+Bereiche und nicht dieser Seite: Ein Hinweis danach sagt, wohin es ging, und {key:Mod+Z}
 auf dieser Seite reicht nicht hin — zurücknehmen heißt, es zurückzuändern. Wo
 jener Bereich von hier aus nicht geändert werden darf, oder seine eigenen
 Regeln die Änderung ablehnen, sagt der Hinweis, dass nichts angelegt wurde.
@@ -1756,7 +1753,7 @@ Bereiche. **Vorhandene Ursache** wählt eine, die schon aufgeschrieben ist. Jede
 Zeile sagt, ob sie neu oder vorhanden ist, und lässt sich wieder
 herausnehmen, und nichts wird angelegt, bis Sie erfassen: Die Schaltfläche
 sagt, was sie anlegen wird, *Beobachtung erfassen mit 1 neuen Ursache und 1
-Verknüpfung*, und es ist ein Schritt — ⌘Z nimmt die Beobachtung, die neuen
+Verknüpfung*, und es ist ein Schritt — {key:Mod+Z} nimmt die Beobachtung, die neuen
 Ursachen und die Verknüpfungen zusammen zurück. Ein anderer Bereich nimmt die
 Verknüpfungen zu Ursachen des vorher gewählten heraus und sagt das.
 
@@ -1796,11 +1793,11 @@ Seite, mit diesem Eintrag gewählt. Sie hat drei Teile:
 
 **Zusammenführen** sagt, was es macht — *2 Beobachtungen in OB-0002
 zusammenführen* — oder, ausgegraut, warum es nicht geht. Eine Zusammenführung
-innerhalb dieses Bereiche ist ein Schritt, und ⌘Z nimmt sie zurück. Eine, die
+innerhalb dieses Bereiche ist ein Schritt, und {key:Mod+Z} nimmt sie zurück. Eine, die
 einen anderen Bereich ändert — ein Eintrag von dort zusammengeführt, oder
 eine dort gehaltene Verknüpfung verschoben — schreibt jeden Bereich, den sie
 ändert, als Schritt jenes Bereiche, alles oder nichts, und ein Hinweis sagt,
-welche Bereiche sie geändert hat; ⌘Z nimmt das hier nicht zurück, ändern Sie es
+welche Bereiche sie geändert hat; {key:Mod+Z} nimmt das hier nicht zurück, ändern Sie es
 also zurück. Die Ansicht schließt auf dem bleibenden Eintrag. Jeder
 zusammengeführte Eintrag bleibt — dort steht der ursprüngliche Wortlaut —
 und wird als zusammengeführt gelesen, nicht gelöscht, und sagt, wohin er
@@ -1837,7 +1834,7 @@ woher sie kam. Wo sie war, bleibt sie als Geschichte: gelesen wie ein
 zusammengeführter Eintrag, nicht im Register, im Bild und in den Zählungen,
 und unter *Zusammengeführte zeigen* gezeigt als *Verschoben nach OB-0012 in
 <Bereich>*, das dorthin führt — so führt ein Link auf sie noch irgendwohin. Die
-Ansicht schließt auf der Beobachtung, wo sie hinging. ⌘Z nimmt ein Verschieben
+Ansicht schließt auf der Beobachtung, wo sie hinging. {key:Mod+Z} nimmt ein Verschieben
 nicht zurück: Verschieben Sie sie zurück, und wo ihr alter Ort sie noch hat,
 kehrt sie unter ihrer alten Nummer zurück, und die Verknüpfungen, die beim
 Weggehen getrennt wurden, erklären sie wieder. Eine archivierte Beobachtung
@@ -1943,8 +1940,7 @@ Beobachtung so groß wie ihre Auswirkung, eine Ursache hohl, eine Grundursache
 mit doppeltem Ring, eine Lösung als Quadrat. Gestrichelt heißt angenommen und
 durchgezogen verifiziert, in beiden, und die Legende unter dem Bild folgt der
 Größe. Das Bild beginnt **eingepasst** ins Fenster und passt sich erneut an,
-wenn sich ändert, was es zeigt, bis Sie zoomen; die Zoom-Schaltflächen, und ⌘
-oder Strg mit dem Mausrad, zoomen, und Ziehen über den Hintergrund
+wenn sich ändert, was es zeigt, bis Sie zoomen; die Zoom-Schaltflächen, und {key:Mod} mit dem Mausrad, zoomen, und Ziehen über den Hintergrund
 verschiebt es. **Über einem Eintrag verweilen** — oder ihn mit Tab
 erreichen — verfolgt seine Kette in beide Richtungen: Alles, was damit
 verknüpft ist, bleibt, und der Rest verblasst, und der volle Titel, die
@@ -2232,7 +2228,7 @@ und führt sie auf der Seite Checks auf.
   an dem er markiert wurde. **Zurücknehmen** dort bringt ihn zurück. Eine
   Markierung ist ein Schritt im Modell, geführt in dem Bereich, um den es im
   Befund geht, also sieht sie jeder und die Aktivitätsliste nennt sie;
-  markiert, wo dieser Bereich geöffnet ist, nimmt ⌘Z sie zurück wie jeden
+  markiert, wo dieser Bereich geöffnet ist, nimmt {key:Mod+Z} sie zurück wie jeden
   anderen Schritt. Eine Markierung gilt dem Befund, wie er ist: Ändern Sie,
   worum es geht — eine andere Einheit an der Zusammenarbeit, eine andere
   Rolle rechenschaftspflichtig —, und der Befund kommt zurück. **Beheben**
@@ -2326,7 +2322,7 @@ Absicht: geht auf halbem Weg etwas schief, bleibt Ihnen der Eintrag an *beiden*
 Stellen — ein Konflikt, den Sie sehen und mit **Verknüpfen** beilegen können —
 statt an keiner.
 
-Das ist auch der Grund, warum **Rückgängig dort aufhört**. ⌘Z nimmt alles zurück,
+Das ist auch der Grund, warum **Rückgängig dort aufhört**. {key:Mod+Z} nimmt alles zurück,
 was Sie seither getan haben, und verweigert dann diesen Schritt mit einer Zeile,
 die sagt, warum: nur seine Hälfte liegt auf dem Stapel dieses Fensters, und die
 andere Hälfte ist eine Datei in einem Bereich, für den hier nichts spricht. Um
@@ -2344,7 +2340,7 @@ hat, die Rollen, die jede Art hat, und wofür jede Rolle verantwortlich ist —
 in ihren eigenen Worten. Es wird bei der Organisation geführt und dort
 bearbeitet; über einem anderen Bereich geöffnet, lässt es sich nur lesen, und
 das steht dann auch da. Jede Änderung ist ein Schritt: Sie steht in der
-Aktivität, ⌘Z nimmt sie zurück, und jeder Einheitstyp, jede Rolle und jede
+Aktivität, {key:Mod+Z} nimmt sie zurück, und jeder Einheitstyp, jede Rolle und jede
 Verantwortung hat einen eigenen Verlauf.` },
     { title: `Struktur`, text: `Die Seite hat fünf Reiter, nach der Frage, die jeder beantwortet: **Struktur**, **Rollen**,
 **Verantwortungen**, **Ausnahmen** und **Bibliotheken**. Welcher Reiter, Teil und welche
@@ -2425,7 +2421,7 @@ sind, oder wo die Namen gleich sind — und dann wird nichts dafür übernommen.
 **Übernehmen** sagt, wie viele Einträge der Schritt anlegt, und schreibt sie
 als einen Schritt: Die Seite markiert danach, was neu ist, bis Sie sie
 verlassen, und die Meldung unten bietet **Rückgängig**, das diesen Schritt
-zurücknimmt, solange seitdem nichts geschehen ist. ⌘Z nimmt ihn ebenfalls
+zurücknimmt, solange seitdem nichts geschehen ist. {key:Mod+Z} nimmt ihn ebenfalls
 zurück.
 
 Was hereinkommt, gehört der Organisation: umbenennen, umschreiben, streichen.
@@ -2668,7 +2664,7 @@ Seite, wo der Plan Einheiten berührt:
   **Jeden Vorschlag übernehmen** setzt jede Zeile auf ihren Vorschlag zurück,
   und **Als einen Schritt schreiben** schreibt jedes Ende an seinem letzten Tag
   und jeden Beginn am Tag danach, in jedem Bereich, der eine führt, zusammen.
-  Wo nur der Bereich des Plans geschrieben wird, nimmt ⌘Z den ganzen Schritt
+  Wo nur der Bereich des Plans geschrieben wird, nimmt {key:Mod+Z} den ganzen Schritt
   zurück; wo auch andere Bereiche geschrieben wurden, wird er in jedem davon
   zurückgesetzt.
 - **Noch offen am** Tag, in der Liste von Befunden: was die Checks dann in
@@ -2689,7 +2685,7 @@ Arbeitsadresse, wo Sie eine kennen, und ob die Person zur Organisation gehört
 oder von außen kommt. Mehr wird nicht geführt — keine Notizen, kein Foto.
 
 Das Register liegt **außerhalb des Verlaufs**. Eine Änderung hier ist kein
-Schritt: Es gibt kein ⌘Z dafür und keine Zeile in der Aktivität, und die
+Schritt: Es gibt kein {key:Mod+Z} dafür und keine Zeile in der Aktivität, und die
 Seite sagt das auch, unter **Über das Register** am Ende ihrer einen Zeile
 Einleitung. Das ist es, was einen Namen vergessen lässt. Der Verlauf
 behält die ID einer Person, nie ihren Namen, und jede Ansicht fragt das
@@ -3021,7 +3017,7 @@ weiterzumachen. Er kann fragen, ob er fortfahren darf; sagen Sie ja, beginnt
 eine neue Sitzung und der Streifen ist wieder da.
 
 Alles, was ein Agent ändert, steht unter seinem Namen in der Aktivität und
-wird wie bisher mit ⌘Z rückgängig gemacht.
+wird wie bisher mit {key:Mod+Z} rückgängig gemacht.
 
 Ein Agent kann das **Personenregister** lesen, jemanden hinzufügen — er
 erfährt es, wenn schon jemand Ähnliches darin steht — und jemanden als
@@ -3030,7 +3026,7 @@ der Organisation es so will, und erfährt, ob eine Person eine Adresse hat,
 nie die Adresse selbst. Er kann niemanden vergessen, entfernen oder
 zusammenführen und die Richtlinie nicht ändern: Das tun Sie, auf der Seite
 Personen. Das Register ist kein Schritt, was ein Agent dort tut, steht also
-nicht in der Aktivität und wird nicht mit ⌘Z rückgängig gemacht.
+nicht in der Aktivität und wird nicht mit {key:Mod+Z} rückgängig gemacht.
 
 Ein Agent kann auch den **Baum der Bereiche** pflegen: einen Bereich unter einem
 anderen anlegen — eine Domäne oder einen Landschaftsbereich mit seinem ersten
@@ -3040,9 +3036,9 @@ Er entfernt einen Bereich nach dem anderen und nie einen mit Bereiche darunter.
 Ein Bereich, in dem Arbeit steckt, geht erst, nachdem der Agent Ihnen gesagt hat,
 was darin ist, und Sie mit eigenen Worten gesagt haben, dass er mit allem
 darin gehen soll: Ihre Worte gehen mit der Entfernung, und ein Hinweis auf
-dem Bildschirm sagt, was gegangen ist. Dafür gibt es kein ⌘Z. Jede Änderung
+dem Bildschirm sagt, was gegangen ist. Dafür gibt es kein {key:Mod+Z}. Jede Änderung
 ist ein eigener Schritt dieses Bereiche, in seinem Verlauf, wie eine Änderung
-von einer Startseite aus — keiner, den ⌘Z im Arbeitsbereich zurücknimmt. Der
+von einer Startseite aus — keiner, den {key:Mod+Z} im Arbeitsbereich zurücknimmt. Der
 Agent lässt den im Arbeitsbereich geöffneten Bereich an seinem Platz im Baum:
 Um diesen umzubenennen, zu verschieben oder zu entfernen, oder einen Bereich
 darüber zu verschieben oder zu entfernen, geht er zuerst auf die Startseite

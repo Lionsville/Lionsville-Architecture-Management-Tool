@@ -74,7 +74,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   'docHelp.markdown': 'Hilfe zu Markdown',
   'docHelp.heading': 'Überschriften; die ersten drei Ebenen erscheinen in der Gliederung',
-  'docHelp.emphasis': 'Fett und kursiv, auch mit ⌘B und ⌘I auf einer Auswahl',
+  'docHelp.emphasis': 'Fett und kursiv, auch mit {key:Mod+B} und {key:Mod+I} auf einer Auswahl',
   'docHelp.lists': 'Aufzählungen und nummerierte Listen; Tab rückt ein',
   'docHelp.tasks': 'Eine Aufgabenliste',
   'docHelp.elementLink': 'Ein Verweis auf ein anderes Element, über seinen Namen',

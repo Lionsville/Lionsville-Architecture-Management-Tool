@@ -10,6 +10,7 @@
  * `bootHelp`). Core knows nothing of what they say; it reads them as it reads
  * its own, searches them and links to them by the same ids.
  */
+import { fillKeys } from '../i18n/keyNames'
 import type { Language } from '../i18n/languages'
 import { CHAPTERS } from './outline'
 import { loadCoreText } from './text/load'
@@ -35,7 +36,8 @@ export function helpOutline(): readonly HelpChapterOutline[] {
 
 /** Everything the help says in a language, every chapter's words together. */
 export async function loadHelpText(language: Language): Promise<HelpText> {
-  const parts = await Promise.all([loadCoreText(language), ...added.map((one) => one.text(language))])
+  const parts = (await Promise.all([loadCoreText(language), ...added.map((one) => one.text(language))]))
+    .map((part) => keysSaid(part, language))
   return {
     ...(parts[0].start ? { start: parts[0].start } : {}),
     chapters: Object.assign({}, ...parts.map((part) => part.chapters)),
@@ -45,6 +47,19 @@ export async function loadHelpText(language: Language): Promise<HelpText> {
 }
 
 /** For a test: the help as core alone has it. */
+/**
+ * Every key the words name (`{key:Mod+K}`) said for this platform, once, as
+ * the text arrives: what is searched is then what is read.
+ */
+function keysSaid<T>(value: T, language: Language): T {
+  if (typeof value === 'string') return fillKeys(value, language) as T
+  if (Array.isArray(value)) return value.map((item: unknown) => keysSaid(item, language)) as T
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, keysSaid(item, language)])) as T
+  }
+  return value
+}
+
 export function forgetHelpChapters(): void {
   added.length = 0
 }

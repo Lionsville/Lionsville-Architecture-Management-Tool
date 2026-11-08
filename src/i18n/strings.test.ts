@@ -32,6 +32,7 @@ import {
   type StringKey,
 } from './strings';
 import { CANVAS_SHORTCUTS } from '../editor/keymap';
+import { fillKeys } from './keyNames';
 import { EN as adaptersEn } from '../adapters/strings/en';
 import { EN as providersEn } from '../providers/strings/en';
 import { EN as appEn } from '../app/strings/en';
@@ -124,7 +125,7 @@ describe.each(languages)('the %s table is complete', (language) => {
 
   it('is reachable through t() for every key', () => {
     for (const key of keys) {
-      expect(t(language, key), `${language}.${key}`).toBe(table[key]);
+      expect(t(language, key), `${language}.${key}`).toBe(fillKeys(table[key], language));
     }
   });
 });

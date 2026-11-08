@@ -19,6 +19,7 @@ import { CANVAS_SHORTCUTS } from '../../editor/keymap'
 import { TEXT as EN } from '../../help/text/en'
 import { TEXT as NL } from '../../help/text/nl'
 import { TEXT as DE } from '../../help/text/de'
+import { fillKeys } from '../../i18n/keyNames'
 import { FRAME_KEYS, commandsTable } from './commandsTable'
 
 type Chord = string
@@ -125,7 +126,8 @@ describe('the keys the help names', () => {
     for (const [id, said] of Object.entries(tables[language].sections)) {
       const keys = said[5]
       if (!keys) continue
-      for (const one of chordsIn(keys)) {
+      // The help names a key as `{key:Mod+K}`: read it as a Mac and as everything else says it.
+      for (const one of [true, false].flatMap((mac) => chordsIn(fillKeys(keys, language, mac)))) {
         if (ANSWERED.has(one)) continue
         const local = LOCAL[one]
         if (local && local.shows.test(read(local.file))) continue
@@ -136,7 +138,7 @@ describe('the keys the help names', () => {
   })
 
   it('every key the frame lists is one the help says', () => {
-    const said = Object.values(EN.sections).flatMap((one) => (one[5] ? chordsIn(one[5]) : []))
+    const said = Object.values(EN.sections).flatMap((one) => (one[5] ? chordsIn(fillKeys(one[5], 'en', true)) : []))
     for (const [, keys] of FRAME_KEYS(true)) for (const one of chordsIn(keys)) expect(said, one).toContain(one)
   })
 })

@@ -36,7 +36,7 @@ export const SECTIONS: SectionTexts = {
     'The box at the top of the outline.',
     ['Type part of a name in Find a unit or person.', 'Choose a result, or press Enter for the first.'],
     'Type dock and choose Dock crew in Terminal.',
-    '⌘F (Ctrl+F) on the chart'],
+    '{key:Mod+F} on the chart'],
   'chart.findMe': ['Go to your own place', 'Goes to the first unit in which you hold a role on the chart\'s day; says so when the register does not know who you are or you hold nothing.',
     'Me, beside the find box on the outline.',
     ['Press Me.'],

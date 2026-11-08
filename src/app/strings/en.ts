@@ -332,9 +332,9 @@ export const EN = {
   'history.restoreTitle': 'Restore {name} as of {date}?',
   'history.restoreProjectTitle': 'Restore the whole scope as of {date}?',
   'history.restoreBody':
-    'This makes {name} what it was at that snapshot, as a new change — the history keeps everything that happened since, and this step goes on top of it. It can be undone with ⌘Z until the next snapshot records it.',
+    'This makes {name} what it was at that snapshot, as a new change — the history keeps everything that happened since, and this step goes on top of it. It can be undone with {key:Mod+Z} until the next snapshot records it.',
   'history.restoreProjectBody':
-    'Every element, connection, diagram and decision becomes what it was at that snapshot, as one new change on top of everything that happened since. Decisions that have been accepted, rejected or superseded stay as they are. It can be undone with ⌘Z until the next snapshot records it.',
+    'Every element, connection, diagram and decision becomes what it was at that snapshot, as one new change on top of everything that happened since. Decisions that have been accepted, rejected or superseded stay as they are. It can be undone with {key:Mod+Z} until the next snapshot records it.',
   'history.restoreConfirm': 'Restore',
   'history.restored': 'Restored {name} as of {date}.',
   'history.restoredProject': 'Restored the whole scope as of {date}.',
@@ -529,7 +529,7 @@ export const EN = {
   'agent.what':
     'Your coding agent — Claude Code, Codex, Cursor or any other MCP client — can read this landscape, '
     + 'propose changes and look at diagrams while you work. Everything it does shows in Activity under its '
-    + 'name and is undone with ⌘Z. It connects over the standard Model Context Protocol, on this machine only. '
+    + 'name and is undone with {key:Mod+Z}. It connects over the standard Model Context Protocol, on this machine only. '
     + 'Nothing leaves the computer.',
   'agent.enable': 'Accept agent connections',
   'agent.listening': 'Listening on port {port}.',
@@ -654,7 +654,7 @@ export const EN = {
   /** The desktop bar's two (ADR-0033): the window's own Back and Forward, pressed from inside the page. */
   'shell.back': 'Back',
   'shell.forward': 'Forward',
-  'shell.searchTip': 'Search elements, documentation and decisions (\u2318K)',
+  'shell.searchTip': 'Search elements, documentation and decisions ({key:Mod+K})',
 
   // The organisation screen: the root scope's home, which replaced the picker.
   // What a scope IS, as a word this screen shows and nothing branches on.
@@ -1893,7 +1893,7 @@ export const EN = {
   'frame.lookBack': 'Look back',
   'frame.appliesToAll': 'Applies to the whole organisation',
   'frame.sessionChanges': 'Changes this session: {count}',
-  'frame.activityUndo': 'Your newest change is undone with ⌘Z.',
+  'frame.activityUndo': 'Your newest change is undone with {key:Mod+Z}.',
   'frame.lookingAt': 'Looking at {day}',
   'frame.lookingDetail': 'Only on your screen. Nothing can be changed while you look, so undo is off.',
   'frame.lookingToday': 'Back to today',

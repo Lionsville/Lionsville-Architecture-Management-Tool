@@ -36,7 +36,7 @@ export const SECTIONS: SectionTexts = {
     'Das Feld oben in der Gliederung.',
     ['Tippen Sie einen Teil eines Namens in Eine Einheit oder Person suchen.', 'Wählen Sie ein Ergebnis oder drücken Sie die Eingabetaste für das erste.'],
     'Tippen Sie dock und wählen Sie Dock crew in Terminal.',
-    '⌘F (Strg+F) im Organigramm'],
+    '{key:Mod+F} im Organigramm'],
   'chart.findMe': ['Zum eigenen Platz gehen', 'Geht zur ersten Einheit, in der Sie am Tag des Organigramms eine Rolle halten; sagt es, wenn das Register nicht weiß, wer Sie sind, oder Sie nichts halten.',
     'Ich, neben dem Suchfeld der Gliederung.',
     ['Klicken Sie auf Ich.'],

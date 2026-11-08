@@ -15,7 +15,7 @@ export const START: GettingStartedText = {
     },
     {
       title: 'Der Rahmen',
-      text: 'Jeder Bildschirm steht im selben Rahmen. **Zeile eins** sagt, wo Sie sind, findet alles (⌘K), macht rückgängig und sagt, ob Ihre Arbeit sicher ist. **Zeile zwei** enthält die Orte dieses Bereichs: Start, seine Ansichten, Entscheidungen, Beobachtungen, Roadmap. Der **Baum** der Bereiche steht links; das **Panel** rechts zeigt, was Sie auswählen.',
+      text: 'Jeder Bildschirm steht im selben Rahmen. **Zeile eins** sagt, wo Sie sind, findet alles ({key:Mod+K}), macht rückgängig und sagt, ob Ihre Arbeit sicher ist. **Zeile zwei** enthält die Orte dieses Bereichs: Start, seine Ansichten, Entscheidungen, Beobachtungen, Roadmap. Der **Baum** der Bereiche steht links; das **Panel** rechts zeigt, was Sie auswählen.',
       picture: 'Der Rahmen: Zeile eins, Zeile zwei mit den Orten des Bereichs, links der Baum und rechts das Panel.',
     },
     {
@@ -25,7 +25,7 @@ export const START: GettingStartedText = {
     },
     {
       title: 'Hinzufügen und verbinden',
-      text: 'Klicken Sie auf einem Board **Hinzufügen** in der Leiste, oder doppelt auf eine leere Stelle, und tippen Sie einen Namen. Um zwei Karten zu verbinden, zeigen Sie auf eine und ziehen vom Punkt an ihrem Rand zur anderen. Wählen Sie etwas aus, um es im Panel zu lesen und zu ändern. ⌘Z nimmt jeden Schritt zurück.',
+      text: 'Klicken Sie auf einem Board **Hinzufügen** in der Leiste, oder doppelt auf eine leere Stelle, und tippen Sie einen Namen. Um zwei Karten zu verbinden, zeigen Sie auf eine und ziehen vom Punkt an ihrem Rand zur anderen. Wählen Sie etwas aus, um es im Panel zu lesen und zu ändern. {key:Mod+Z} nimmt jeden Schritt zurück.',
       picture: 'Ein Board mit zwei Karten und der Linie zwischen ihnen, und das Panel der ausgewählten Karte.',
     },
     {

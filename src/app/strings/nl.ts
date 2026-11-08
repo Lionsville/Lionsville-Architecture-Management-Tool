@@ -205,9 +205,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.restoreTitle': '{name} terugzetten naar {date}?',
   'history.restoreProjectTitle': 'De hele scope terugzetten naar {date}?',
   'history.restoreBody':
-    'Dit maakt {name} weer wat het bij die momentopname was, als een nieuwe wijziging — de geschiedenis houdt alles wat sindsdien gebeurde, en deze stap komt daar bovenop. Tot de volgende momentopname het vastlegt is het met ⌘Z ongedaan te maken.',
+    'Dit maakt {name} weer wat het bij die momentopname was, als een nieuwe wijziging — de geschiedenis houdt alles wat sindsdien gebeurde, en deze stap komt daar bovenop. Tot de volgende momentopname het vastlegt is het met {key:Mod+Z} ongedaan te maken.',
   'history.restoreProjectBody':
-    'Elk element, elke verbinding, elke weergave en elk besluit wordt weer wat het bij die momentopname was, als één nieuwe wijziging bovenop alles wat sindsdien gebeurde. Besluiten die aanvaard, afgewezen of vervangen zijn blijven zoals ze zijn. Tot de volgende momentopname het vastlegt is het met ⌘Z ongedaan te maken.',
+    'Elk element, elke verbinding, elke weergave en elk besluit wordt weer wat het bij die momentopname was, als één nieuwe wijziging bovenop alles wat sindsdien gebeurde. Besluiten die aanvaard, afgewezen of vervangen zijn blijven zoals ze zijn. Tot de volgende momentopname het vastlegt is het met {key:Mod+Z} ongedaan te maken.',
   'history.restoreConfirm': 'Terugzetten',
   'history.restored': '{name} teruggezet naar {date}.',
   'history.restoredProject': 'De hele scope teruggezet naar {date}.',
@@ -383,7 +383,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'agent.tipListening': 'Wacht op een agent op poort {port}',
   'agent.tipConnected': '{name} gekoppeld',
   'agent.what':
-    'Je codeeragent — Claude Code, Codex, Cursor of een andere MCP-client — kan dit landschap lezen, wijzigingen voorstellen en naar diagrammen kijken terwijl jij werkt. Alles wat hij doet staat onder zijn naam in Activiteit en is met ⌘Z ongedaan te maken. Hij koppelt via het standaard Model Context Protocol, alleen op deze machine. Er verlaat niets de computer.',
+    'Je codeeragent — Claude Code, Codex, Cursor of een andere MCP-client — kan dit landschap lezen, wijzigingen voorstellen en naar diagrammen kijken terwijl jij werkt. Alles wat hij doet staat onder zijn naam in Activiteit en is met {key:Mod+Z} ongedaan te maken. Hij koppelt via het standaard Model Context Protocol, alleen op deze machine. Er verlaat niets de computer.',
   'agent.enable': 'Agentverbindingen toestaan',
   'agent.listening': 'Luistert op poort {port}.',
   'agent.connected': '{name} is gekoppeld.',
@@ -467,7 +467,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.search': 'Zoeken',
   'shell.back': 'Terug',
   'shell.forward': 'Vooruit',
-  'shell.searchTip': 'Zoek elementen, documentatie en besluiten (\u2318K)',
+  'shell.searchTip': 'Zoek elementen, documentatie en besluiten ({key:Mod+K})',
 
   // Het organisatiescherm: het thuis van de hoofdonderdeel, dat de kiezer verving.
   'org.kind': 'Wat dit is',
@@ -1661,7 +1661,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.lookBack': 'Terugkijken',
   'frame.appliesToAll': 'Geldt voor de hele organisatie',
   'frame.sessionChanges': 'Wijzigingen deze sessie: {count}',
-  'frame.activityUndo': 'Je nieuwste wijziging maak je ongedaan met ⌘Z.',
+  'frame.activityUndo': 'Je nieuwste wijziging maak je ongedaan met {key:Mod+Z}.',
   'frame.lookingAt': 'Je kijkt naar {day}',
   'frame.lookingDetail': 'Alleen op jouw scherm. Er kan niets veranderen terwijl je kijkt, dus ongedaan maken staat uit.',
   'frame.lookingToday': 'Terug naar vandaag',

@@ -206,9 +206,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'history.restoreTitle': '{name} auf den Stand vom {date} zurücksetzen?',
   'history.restoreProjectTitle': 'Den ganzen Bereich auf den Stand vom {date} zurücksetzen?',
   'history.restoreBody':
-    'Dies macht {name} wieder zu dem, was es bei jener Momentaufnahme war, als neue Änderung — der Verlauf behält alles, was seither geschah, und dieser Schritt kommt obendrauf. Bis die nächste Momentaufnahme ihn festhält, lässt er sich mit ⌘Z rückgängig machen.',
+    'Dies macht {name} wieder zu dem, was es bei jener Momentaufnahme war, als neue Änderung — der Verlauf behält alles, was seither geschah, und dieser Schritt kommt obendrauf. Bis die nächste Momentaufnahme ihn festhält, lässt er sich mit {key:Mod+Z} rückgängig machen.',
   'history.restoreProjectBody':
-    'Jedes Element, jede Verbindung, jedes Diagramm und jede Entscheidung wird wieder zu dem, was es bei jener Momentaufnahme war, als eine neue Änderung über allem, was seither geschah. Entscheidungen, die angenommen, abgelehnt oder abgelöst wurden, bleiben wie sie sind. Bis die nächste Momentaufnahme es festhält, lässt es sich mit ⌘Z rückgängig machen.',
+    'Jedes Element, jede Verbindung, jedes Diagramm und jede Entscheidung wird wieder zu dem, was es bei jener Momentaufnahme war, als eine neue Änderung über allem, was seither geschah. Entscheidungen, die angenommen, abgelehnt oder abgelöst wurden, bleiben wie sie sind. Bis die nächste Momentaufnahme es festhält, lässt es sich mit {key:Mod+Z} rückgängig machen.',
   'history.restoreConfirm': 'Wiederherstellen',
   'history.restored': '{name} auf den Stand vom {date} zurückgesetzt.',
   'history.restoredProject': 'Den ganzen Bereich auf den Stand vom {date} zurückgesetzt.',
@@ -386,7 +386,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'agent.what':
     'Ihr Coding-Agent — Claude Code, Codex, Cursor oder ein anderer MCP-Client — kann diese Landschaft lesen, '
     + 'Änderungen vorschlagen und Diagramme ansehen, während Sie arbeiten. Alles, was er tut, steht unter seinem '
-    + 'Namen in Aktivität und lässt sich mit ⌘Z rückgängig machen. Er verbindet sich über das Standard-Model-Context-Protocol, '
+    + 'Namen in Aktivität und lässt sich mit {key:Mod+Z} rückgängig machen. Er verbindet sich über das Standard-Model-Context-Protocol, '
     + 'nur auf diesem Rechner. Nichts verlässt den Computer.',
   'agent.enable': 'Agentenverbindungen annehmen',
   'agent.listening': 'Lauscht an Port {port}.',
@@ -471,7 +471,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.search': 'Suchen',
   'shell.back': 'Zurück',
   'shell.forward': 'Vorwärts',
-  'shell.searchTip': 'Elemente, Dokumentation und Entscheidungen durchsuchen (⌘K)',
+  'shell.searchTip': 'Elemente, Dokumentation und Entscheidungen durchsuchen ({key:Mod+K})',
 
   // Der Organisationsbildschirm: das Zuhause des Wurzelbereichs, der die Auswahl ersetzt hat.
   'org.kind': 'Art',
@@ -1665,7 +1665,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.lookBack': 'Zurückblicken',
   'frame.appliesToAll': 'Gilt für die ganze Organisation',
   'frame.sessionChanges': 'Änderungen in dieser Sitzung: {count}',
-  'frame.activityUndo': 'Ihre neueste Änderung machen Sie mit ⌘Z rückgängig.',
+  'frame.activityUndo': 'Ihre neueste Änderung machen Sie mit {key:Mod+Z} rückgängig.',
   'frame.lookingAt': 'Sie sehen {day}',
   'frame.lookingDetail': 'Nur auf Ihrem Bildschirm. Beim Ansehen lässt sich nichts ändern, deshalb ist Rückgängig aus.',
   'frame.lookingToday': 'Zurück zu heute',

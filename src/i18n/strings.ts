@@ -26,6 +26,7 @@
  */
 import { DE } from './strings.de';
 import { interpolate } from './interpolate';
+import { fillKeys } from './keyNames';
 import { EN } from './strings.en';
 import { NL } from './strings.nl';
 import type { Language } from './languages';
@@ -165,12 +166,13 @@ export const LOCALE: Record<Language, string> = {
  * whatever a build registered for English — the app's own words first at every
  * step, because a registration may only add. An unknown key still returns
  * itself rather than throwing: a missing string is a blemish, never a blank
- * editor.
+ * editor. A key it names, `{key:Mod+Z}`, is said for this platform here, so
+ * every screen gets ⌘Z on a Mac and Strg+Z on a German keyboard elsewhere.
  */
 export function t(language: Language, key: StringKey, params?: StringParams): string {
   const table = STRINGS[language] ?? STRINGS.en;
   const found = table[key] ?? REGISTERED[language]?.[key] ?? STRINGS.en[key] ?? REGISTERED.en?.[key];
-  return interpolate(found ?? key, params);
+  return fillKeys(interpolate(found ?? key, params), language);
 }
 
 /** What every pure label table takes instead of reaching for React context. */

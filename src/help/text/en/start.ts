@@ -15,7 +15,7 @@ export const START: GettingStartedText = {
     },
     {
       title: 'The frame',
-      text: 'Every screen stands in the same frame. **Row one** says where you are, finds anything (⌘K), undoes, and says whether your work is safe. **Row two** holds this scope\'s places: Home, its views, Decisions, Observations, Roadmap. The **tree** of scopes is on the left; the **panel** on the right shows whatever you select.',
+      text: 'Every screen stands in the same frame. **Row one** says where you are, finds anything ({key:Mod+K}), undoes, and says whether your work is safe. **Row two** holds this scope\'s places: Home, its views, Decisions, Observations, Roadmap. The **tree** of scopes is on the left; the **panel** on the right shows whatever you select.',
       picture: 'The frame: row one, row two with the scope\'s places, the tree on the left and the panel on the right.',
     },
     {
@@ -25,7 +25,7 @@ export const START: GettingStartedText = {
     },
     {
       title: 'Add and connect',
-      text: 'On a board, press **Add** in the bar, or double-press an empty place, and type a name. To connect two cards, point at one and drag from the dot on its edge to the other. Select anything to read and change it in the panel. ⌘Z takes back any step.',
+      text: 'On a board, press **Add** in the bar, or double-press an empty place, and type a name. To connect two cards, point at one and drag from the dot on its edge to the other. Select anything to read and change it in the panel. {key:Mod+Z} takes back any step.',
       picture: 'A board with two cards and the line between them, and the panel of the card that is selected.',
     },
     {

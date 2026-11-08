@@ -12,6 +12,8 @@
  */
 import { describe, expect, it } from 'vitest'
 import { refusedIn } from '../i18n/glossary'
+import { MODIFIER_GLYPHS } from '../i18n/keyNames'
+import { TEXT as EN } from './text/en'
 import { TEXT as NL } from './text/nl'
 import { TEXT as DE } from './text/de'
 
@@ -77,5 +79,12 @@ describe('a press that is a key', () => {
     expect(pressedNotKey('Druk op Nieuwe weergave…', PRESS.nl)).toHaveLength(1)
     expect(pressedNotKey('Drücken Sie Esc.', PRESS.de)).toEqual([])
     expect(pressedNotKey('Drücken Sie auf Speichern.', PRESS.de)).toHaveLength(1)
+  })
+})
+
+describe.each([['en', EN], ['nl', NL], ['de', DE]] as const)('the %s help', (_, text) => {
+  it('names keys rather than draw ⌘, ⇧, ⌥ or ⌃, so Windows and Linux read their own', () => {
+    const drawn = helpStrings(text).filter(([, said]) => MODIFIER_GLYPHS.test(said)).map(([path, said]) => `${path}: ${said.slice(0, 80)}`)
+    expect(drawn).toEqual([])
   })
 })

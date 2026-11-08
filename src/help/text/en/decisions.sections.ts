@@ -5,7 +5,7 @@ import type { SectionTexts } from '../../types'
 
 export const SECTIONS: SectionTexts = {
   'decisions.open': ['Open the decisions of a scope', 'Lists every decision record kept in this scope, grouped under Still open, In force and Ended, one line each: number and title.',
-    'Row two of the frame: Decisions. Also from a scope home\'s Kept here row, ⌘K, or the address #/<scope>/-/decisions.',
+    'Row two of the frame: Decisions. Also from a scope home\'s Kept here row, {key:Mod+K}, or the address #/<scope>/-/decisions.',
     ['Open a scope.', 'Press Decisions in the second row.'],
     'In Application landscape, press Decisions to see that ADR-0002 Buy a yard system rather than extend the warehouse system is in force.'],
   'decisions.read': ['Read a decision', 'Opens one record large over the list: a stepper showing where it stands, one sentence with its status and date, what it is linked to, the text, reviewers, principles cited, its changes and comments. An outline beside it jumps to each heading.',

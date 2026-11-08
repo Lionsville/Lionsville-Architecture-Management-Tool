@@ -36,7 +36,7 @@ export const SECTIONS: SectionTexts = {
     'Het vak bovenaan het overzicht.',
     ['Typ een deel van een naam in Een eenheid of persoon zoeken.', 'Kies een resultaat, of druk op Enter voor de eerste.'],
     'Typ dock en kies Dock crew in Terminal.',
-    '⌘F (Ctrl+F) op het organigram'],
+    '{key:Mod+F} op het organigram'],
   'chart.findMe': ['Naar je eigen plek gaan', 'Gaat naar de eerste eenheid waarin jij op de dag van het organigram een rol hebt; zegt het als het register niet weet wie je bent of je niets hebt.',
     'Ik, naast het zoekvak op het overzicht.',
     ['Klik op Ik.'],

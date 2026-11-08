@@ -87,7 +87,7 @@ export const EN = {
   // translated.
   'docHelp.markdown': 'Markdown help',
   'docHelp.heading': 'Headings; the first three levels appear in the contents',
-  'docHelp.emphasis': 'Bold and italic, also ⌘B and ⌘I on a selection',
+  'docHelp.emphasis': 'Bold and italic, also {key:Mod+B} and {key:Mod+I} on a selection',
   'docHelp.lists': 'Bulleted and numbered lists; Tab indents',
   'docHelp.tasks': 'A task list',
   'docHelp.elementLink': 'A link to another element, by its name',

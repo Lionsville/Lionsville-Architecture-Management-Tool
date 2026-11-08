@@ -74,7 +74,7 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'docHelp.markdown': 'Hulp bij markdown',
   'docHelp.heading': 'Koppen; de eerste drie niveaus staan in de inhoudsopgave',
-  'docHelp.emphasis': 'Vet en cursief, ook met ⌘B en ⌘I op een selectie',
+  'docHelp.emphasis': 'Vet en cursief, ook met {key:Mod+B} en {key:Mod+I} op een selectie',
   'docHelp.lists': 'Opsommingen en genummerde lijsten; Tab springt in',
   'docHelp.tasks': 'Een takenlijst',
   'docHelp.elementLink': 'Een verwijzing naar een ander element, op naam',

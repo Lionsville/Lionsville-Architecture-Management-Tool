@@ -5,7 +5,7 @@ import type { SectionTexts } from '../../types'
 
 export const SECTIONS: SectionTexts = {
   'decisions.open': ['Die Entscheidungen eines Bereichs öffnen', 'Listet jede Entscheidung dieses Bereichs, gruppiert unter Noch offen, In Kraft und Beendet, eine Zeile je Eintrag: Nummer und Titel.',
-    'Zweite Zeile des Rahmens: Entscheidungen. Auch über die Zeile Hier festgehalten auf der Startseite eines Bereichs, ⌘K oder die Adresse #/<scope>/-/decisions.',
+    'Zweite Zeile des Rahmens: Entscheidungen. Auch über die Zeile Hier festgehalten auf der Startseite eines Bereichs, {key:Mod+K} oder die Adresse #/<scope>/-/decisions.',
     ['Öffnen Sie einen Bereich.', 'Klicken Sie auf Entscheidungen in der zweiten Zeile.'],
     'Klicken Sie in Application landscape auf Entscheidungen und sehen Sie, dass ADR-0002 Ein Yard-System kaufen, statt das Lagersystem zu erweitern in Kraft ist.'],
   'decisions.read': ['Eine Entscheidung lesen', 'Öffnet einen Eintrag groß über der Liste: eine Schrittleiste, die zeigt, wo er steht, ein Satz mit Status und Datum, womit er verknüpft ist, der Text, die Prüfenden, zitierte Prinzipien, seine Änderungen und Kommentare. Eine Gliederung daneben springt zu jeder Überschrift.',

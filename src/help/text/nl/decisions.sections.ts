@@ -5,7 +5,7 @@ import type { SectionTexts } from '../../types'
 
 export const SECTIONS: SectionTexts = {
   'decisions.open': ['De besluiten van een scope openen', 'Toont elk besluitrecord van deze scope, gegroepeerd onder Nog open, Van kracht en Beëindigd, één regel per record: nummer en titel.',
-    'Rij twee van het kader: Besluiten. Ook vanaf de regel Hier vastgelegd op de startpagina van een scope, ⌘K, of het adres #/<scope>/-/decisions.',
+    'Rij twee van het kader: Besluiten. Ook vanaf de regel Hier vastgelegd op de startpagina van een scope, {key:Mod+K}, of het adres #/<scope>/-/decisions.',
     ['Open een scope.', 'Klik op Besluiten in de tweede rij.'],
     'Druk in Application landscape op Besluiten en zie dat ADR-0002 Een yardsysteem kopen in plaats van het magazijnsysteem uitbreiden van kracht is.'],
   'decisions.read': ['Een besluit lezen', 'Opent één record groot over de lijst: een stappenbalk die toont waar het staat, één zin met de status en de datum, waaraan het gekoppeld is, de tekst, de reviewers, de geciteerde principes, de wijzigingen en de reacties. Een overzicht ernaast springt naar elke kop.',

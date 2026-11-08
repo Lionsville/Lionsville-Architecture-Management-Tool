@@ -24,13 +24,11 @@
  *   selection on the window last of all. A gesture under way (a drag, a line
  *   being drawn) is the innermost thing there is and may listen in capture.
  */
+import { onMac } from '../../i18n/keyNames'
 
 /** Is this a Mac (or an iPad with a keyboard), where the command key is ⌘? */
 export function isMac(): boolean {
-  if (typeof navigator === 'undefined') return false
-  const nav = navigator as Navigator & { userAgentData?: { platform?: string } }
-  const raw = nav.userAgentData?.platform || navigator.platform || ''
-  return /mac|iphone|ipad/i.test(raw)
+  return onMac()
 }
 
 /** The modifiers a key event carries, as much as these rules read. */
