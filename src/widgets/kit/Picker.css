@@ -1,4 +1,6 @@
 .kit-picker { min-width: 0; font-size: var(--t-body); line-height: var(--lh-tight); color: var(--ink); }
+/* Standing in a bar as a find field, as wide as one (`FindField`): its words are its name. */
+.kit-picker[data-posture='popup'] { min-width: min(14rem, 100%); }
 .kit-picker__field {
   display: flex;
   align-items: center;

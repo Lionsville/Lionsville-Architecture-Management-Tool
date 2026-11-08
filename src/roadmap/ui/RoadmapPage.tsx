@@ -24,7 +24,8 @@ import { PageDialog } from '../../widgets/PageDialog'
 import { PageClose } from '../../widgets/PageClose'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { TextField, TextInput } from '../../widgets/kit/Field'
+import { TextField } from '../../widgets/kit/Field'
+import { FindField } from '../../widgets/kit/FindField'
 import { PageState } from '../../widgets/kit/PageState'
 import { TimeAxis } from '../../widgets/kit/TimeAxis'
 import { dayNumber, openingView } from '../../widgets/kit/timeScale'
@@ -225,7 +226,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                     names={{ width: names, onWidth: setNames }}
                     data-guide="roadmap.axis"
                     head={rowCount >= FIND_FROM_ROWS
-                      ? <TextInput type="search" value={find} placeholder={t('roadmap.find')} aria-label={t('roadmap.find')} onChange={(event) => setFind(event.target.value)} />
+                      ? <FindField fill label={t('roadmap.find')} value={find} onChange={setFind} />
                       : <span>{t('roadmap.help')}</span>}
                   >
                     <PlanRows plans={roadmap.transitions} hideEnded={hideEnded} onHideEnded={setHideEnded} context={context} />

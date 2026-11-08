@@ -35,7 +35,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.done': 'Klaar',
   'doc.fields': 'Velden',
   'doc.text': 'Tekst',
-  'doc.filter': '{count} elementen filteren',
+  'doc.filter': 'Zoek in {count} elementen',
   'doc.noMatch': 'Niets met die naam.',
   'doc.statusOn': '{kind} · op {view}',
   'doc.editing': '{name} bewerken',

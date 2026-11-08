@@ -33,7 +33,7 @@ import { Button } from '../../widgets/kit/Button'
 import { ColourMenu } from '../../widgets/kit/ColourMenu'
 import { DayControl } from '../../widgets/kit/DayControl'
 import type { DayGroup } from '../../widgets/kit/DayControl'
-import { TextInput } from '../../widgets/kit/Field'
+import { FindField } from '../../widgets/kit/FindField'
 import { KeyStrip } from '../../widgets/kit/KeyStrip'
 import type { KeyValue } from '../../widgets/kit/KeyStrip'
 import { PageState } from '../../widgets/kit/PageState'
@@ -371,7 +371,7 @@ function LandscapeBar({ props, showing, landscape, groupLabel, reading, setReadi
       show={<ViewBarMenu label={t('landscape.show')} items={showMenu(showing, showing.grouped?.groups ?? [], landscape.services.some((one) => one.where !== undefined), t, groupLabel)} data-guide="landscape.show" />}
       colour={<ColourMenu questions={LANDSCAPE_COLOURS.map((id) => ({ id, label: t(COLOUR_WORD[id]) }))} value={showing.lens} onChange={(id) => showing.setLens(id as LandscapeColour | undefined)} data-guide="landscape.colour" />}
       {...(props.onDay ? { day: <DayControl day={props.diagram?.asOf} groups={days} onChange={props.onDay} data-guide="landscape.day" /> } : {})}
-      find={<span className="tl-find"><TextInput aria-label={t('landscape.filter')} placeholder={t('landscape.filter')} value={showing.query} onChange={(event) => showing.setQuery(event.target.value)} data-testid="landscape-filter" /></span>}
+      find={<span className="tl-find"><FindField label={t('landscape.filter')} value={showing.query} onChange={showing.setQuery} data-testid="landscape-filter" /></span>}
       {...(onExport ? { exportAs: <ViewBarButton data-testid="landscape-export" onClick={onExport}>{t('landscape.export')}</ViewBarButton> } : {})}
     />
   )

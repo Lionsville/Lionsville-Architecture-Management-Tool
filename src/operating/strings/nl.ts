@@ -332,7 +332,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'operating.noPartLine': '{count} rollen hebben hier geen aandeel: {names}{more}. Druk op de +-kolom om ze te zien.',
   'operating.andMore': ' en nog {count}',
   'operating.addColumn': 'Eén als kolom toevoegen',
-  'operating.findResponsibility': 'Verantwoordelijkheid zoeken',
+  'operating.findResponsibility': 'Zoek een verantwoordelijkheid',
   'operating.partsLabel': 'Groepen verantwoordelijkheden',
   'operating.scopeLabel': 'Hoeveel tonen',
   'operating.thisPart': 'Dit deel',

@@ -24,6 +24,7 @@ and behaves is said here, once.
 | `Toast.tsx` | **Toast**: one, six seconds, Undo or Put back; goes when any dialog opens |
 | `Field.tsx` | **Field** with the label above (`TextField`, `SelectField`, `TextInput`, `TextArea`, `Select`) and **PropertyRow** in `PropertyRows`: 24 px, press to edit, one at a time, a date as a kind of edit, `help` said while edited (`onHelp`), `startOpen` for a row just asked for |
 | | `GrowingTextArea`, a box as tall as its text with no scroll of its own, and `TitleField` and `TitleRead`, a record's title written and read in one place and size, for a form that reads as a page |
+| `FindField.tsx` | **FindField**, the one field that narrows a page by what is typed: *Find …* as its name and its words, a width its words fit in, Escape to empty it; `fill` where it heads a column |
 | `Picker.tsx` | **Picker**, in a panel or a form, `PickerAt` where a canvas landed and `PickerMany` for several in a row; `matching` is its search |
 | `Segmented.tsx` | **Segmented switch**: a radio group, a menu when it runs out of room below 1024 px |
 | `Mark.tsx` | **Mark**: the closed set of sixteen, `MARK_KINDS` |

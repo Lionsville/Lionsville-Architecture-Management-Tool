@@ -8,7 +8,7 @@ export const EN = {
   'principles.cardDescribe': 'What guides designs and decisions here.',
   'principles.cardCount': '{own} here · {inForce} in force',
   'principles.cardNone': 'None written yet',
-  'principles.search': 'Search principles',
+  'principles.search': 'Find a principle',
   'principles.statusFilter': 'Status',
   'principles.manageGroups': 'Groups',
   'principles.new': 'New principle',

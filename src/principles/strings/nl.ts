@@ -10,7 +10,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'principles.cardDescribe': 'Wat ontwerpen en besluiten hier stuurt.',
   'principles.cardCount': '{own} hier · {inForce} van kracht',
   'principles.cardNone': 'Nog geen geschreven',
-  'principles.search': 'Principes zoeken',
+  'principles.search': 'Zoek een principe',
   'principles.statusFilter': 'Status',
   'principles.manageGroups': 'Groepen',
   'principles.new': 'Nieuw principe',

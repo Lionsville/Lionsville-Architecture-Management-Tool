@@ -12,7 +12,7 @@ import { formatDay } from '../../i18n/dates';
 import { useStrings } from '../../i18n/LanguageContext';
 import type { DesignDiagram } from '../../model/types';
 import { Button } from '../../widgets/kit/Button';
-import { TextInput } from '../../widgets/kit/Field';
+import { FindField } from '../../widgets/kit/FindField';
 import { List } from '../../widgets/kit/List';
 import { howWords } from '../../widgets/kit/Line';
 import { PageState } from '../../widgets/kit/PageState';
@@ -42,7 +42,7 @@ export function LinesTab({ parts, diagram }: { parts: EditorParts; diagram: Desi
   if (lines.length === 0) return <PageState state="empty" compact title={t('c4.linesEmpty')} />;
   return (
     <div className="lv-lines" data-testid="lines-list">
-      <TextInput value={words} onChange={(event) => setWords(event.target.value)} placeholder={t('c4.linesFilter')} aria-label={t('c4.linesFilter')} />
+      <FindField fill label={t('c4.linesFilter')} value={words} onChange={setWords} />
       {kept.length === 0 && <PageState state="empty" compact title={t('c4.linesNone')} />}
       {kept.length > 0 && (
         <List

@@ -12,7 +12,7 @@ import { useStrings } from '../../i18n/LanguageContext'
 import { matchesQuery } from '../../model/textSearch'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { TextInput } from '../../widgets/kit/Field'
+import { FindField } from '../../widgets/kit/FindField'
 import { formatPrincipleNumber } from '../principle'
 import type { Principle } from '../principle'
 import { usePrinciples } from './PrinciplesContext'
@@ -36,7 +36,7 @@ export function MergeDialog({ open, scope, into, onClose }: { open: boolean; sco
       )}
     >
       <p>{t('principles.mergeIntro')}</p>
-      <TextInput autoFocus type="search" value={find} onChange={(event) => setFind(event.target.value)} placeholder={t('principles.search')} aria-label={t('principles.search')} />
+      <FindField fill autoFocus label={t('principles.search')} value={find} onChange={setFind} />
       <div className="guidance-form__ticks">
         {shown.map((one) => (
           <label className="guidance-form__tick" key={one.id}>

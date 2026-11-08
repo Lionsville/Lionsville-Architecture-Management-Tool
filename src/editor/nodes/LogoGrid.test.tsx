@@ -39,7 +39,7 @@ function renderGrid(props: Partial<React.ComponentProps<typeof LogoGrid>> = {}, 
   return { onChange: onChange as ReturnType<typeof vi.fn> };
 }
 
-const search = () => screen.getByLabelText('Search icons');
+const search = () => screen.getByLabelText('Find an icon');
 
 describe('LogoGrid — the grid', () => {
   it('groups the built-ins under their category headings, None first', () => {

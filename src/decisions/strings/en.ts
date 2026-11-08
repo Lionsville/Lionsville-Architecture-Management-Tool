@@ -72,7 +72,7 @@ export const EN = {
   'adr.newTitleField': 'Title',
   'adr.newTitleHelp': 'State the decision as a short sentence: \u201cUse PostgreSQL for the order store\u201d.',
   'adr.create': 'Create and write',
-  'adr.searchPlaceholder': 'Search all decisions',
+  'adr.searchPlaceholder': 'Find a decision',
   'adr.searchField': 'Search decisions',
   'adr.listEmpty': 'No decisions recorded here yet.',
   'adr.searchEmpty': 'No decision matches \u201c{query}\u201d.',

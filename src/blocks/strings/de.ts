@@ -114,7 +114,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'blocks.howPlaceholder': 'Ein Modul, ein Umweg, ein Roadmap-Eintrag…',
   'blocks.save': 'Speichern',
   'blocks.registerTitle': 'Bausteine',
-  'blocks.search': 'Bausteine suchen',
+  'blocks.search': 'Einen Baustein suchen',
   'blocks.searchEmpty': 'Nichts passt zu „{query}“.',
   'blocks.colKeptIn': 'Gehalten in',
   'blocks.colEvaluatedIn': 'Bewertet in',

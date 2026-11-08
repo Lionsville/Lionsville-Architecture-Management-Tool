@@ -30,7 +30,7 @@ import { PageClose } from '../../widgets/PageClose';
 import { SeamResizer } from '../../widgets/SeamResizer';
 import { RECORD_RAIL } from './DocumentationPage.rail';
 import { Button } from '../../widgets/kit/Button';
-import { TextInput } from '../../widgets/kit/Field';
+import { FindField } from '../../widgets/kit/FindField';
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow';
 import { List } from '../../widgets/kit/List';
 import type { ListGroup } from '../../widgets/kit/List';
@@ -178,7 +178,7 @@ function RecordRail({ groups, current, onOpen }: {
   return (
     <nav className="doc-record__rail" data-testid="doc-nav" aria-label={t('doc.neighbours')}>
       <div className="doc-record__find">
-        <TextInput type="search" aria-label={t('doc.filter', { count: total })} placeholder={t('doc.filter', { count: total })} value={find} onChange={(event) => setFind(event.target.value)} />
+        <FindField fill label={t('doc.filter', { count: total })} value={find} onChange={setFind} />
       </div>
       <List
         label={t('doc.neighbours')} groups={listed} wrap density="compact" selectedId={current}

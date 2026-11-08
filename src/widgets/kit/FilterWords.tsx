@@ -13,12 +13,13 @@
  * and it belongs in the address (`listView.ts`).
  */
 import { useCallback, useRef, useState } from 'react'
-import type { KeyboardEvent, ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { SurfacePopover as Popover } from './Surface'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon, CloseIcon } from '../icons'
 import { Button } from './Button'
 import type { ListDensity } from './List'
+import { FindField } from './FindField'
 import './FilterWords.css'
 
 export type FilterOption = {
@@ -232,21 +233,12 @@ export function FilterWords({
   }
   const label = findLabel ?? t('kit.filter.find')
   const saidOn = on.length + words.length
-  const onFindKey = (event: KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Escape' && find) {
-      event.stopPropagation()
-      onFind('')
-    }
-  }
 
   return (
     <div className="kit-filter" data-guide={dataGuide}>
       <div className="kit-filter__bar">
         {!noFind && (
-          <input
-            type="search" className="kit-filter__find" aria-label={label} placeholder={label}
-            value={find} onChange={(event) => onFind(event.target.value)} onKeyDown={onFindKey}
-          />
+          <FindField label={label} value={find} onChange={onFind} />
         )}
         {(fields.length > 0 || filterExtra) && (
           <Pop label={t('kit.filter.filter')} active={saidOn > 0} guide={filterGuide} face={saidOn ? `${t('kit.filter.filter')} · ${saidOn}` : t('kit.filter.filter')}>

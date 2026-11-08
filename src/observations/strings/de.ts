@@ -726,7 +726,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.hiddenBoth': '{count} von Filter und Scopes darunter ausgeblendet',
   'observation.showLabel': 'Auch zeigen',
   'observation.scopesOffWord': '{count} Scopes aus',
-  'observation.findEvery': 'Alle Einträge durchsuchen',
+  'observation.findEvery': 'In allen Einträgen suchen',
   'observation.stageSeen': 'Gesehen',
   'observation.stageWhy': 'Warum',
   'observation.stageSolve': 'Lösen',

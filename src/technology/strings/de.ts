@@ -73,7 +73,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'landscape.platformsNote': 'was es liefert, wo Dinge laufen',
   'landscape.thisScope': 'Dieser Bereich',
   'landscape.noCategory': 'Keine Kategorie',
-  'landscape.filter': 'Nach Name filtern',
+  'landscape.filter': 'Nach Name suchen',
   'landscape.reading': 'Wie diese Seite zu lesen ist',
   'landscape.chain': 'Kette',
   'landscape.matrix': 'Matrix',

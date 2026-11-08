@@ -73,7 +73,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'landscape.platformsNote': 'wat het levert, waar dingen draaien',
   'landscape.thisScope': 'Deze scope',
   'landscape.noCategory': 'Geen categorie',
-  'landscape.filter': 'Filteren op naam',
+  'landscape.filter': 'Zoek op naam',
   'landscape.reading': 'Hoe deze pagina lezen',
   'landscape.chain': 'Keten',
   'landscape.matrix': 'Matrix',

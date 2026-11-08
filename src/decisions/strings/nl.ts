@@ -73,7 +73,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'adr.newTitleField': 'Titel',
   'adr.newTitleHelp': 'Formuleer het besluit als korte zin: \u201cGebruik PostgreSQL voor de orderopslag\u201d.',
   'adr.create': 'Maken en schrijven',
-  'adr.searchPlaceholder': 'Zoek in alle besluiten',
+  'adr.searchPlaceholder': 'Zoek een besluit',
   'adr.searchField': 'Besluiten zoeken',
   'adr.listEmpty': 'Hier zijn nog geen besluiten vastgelegd.',
   'adr.searchEmpty': 'Geen besluit komt overeen met \u201c{query}\u201d.',

@@ -171,7 +171,7 @@ describe('the principles page (ADR-0041)', () => {
 
   it('leaves retired ones out of a search, and says how to include them', () => {
     renderShell(<Harness initial={blank} steps={[]} />)
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search principles' }), { target: { value: 'tariff' } })
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find a principle' }), { target: { value: 'tariff' } })
     expect(screen.getByText('Nothing here says “tariff”.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Include retired' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Write it as a new principle' })).toBeTruthy()

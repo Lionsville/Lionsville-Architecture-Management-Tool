@@ -51,7 +51,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.list.bulk': 'Wat geselecteerd is',
   'kit.list.ticked': '{count} geselecteerd',
   'kit.list.clearTicks': 'Selectie wissen',
-  'kit.filter.find': 'Zoeken in deze lijst',
+  'kit.filter.find': 'Zoek in deze lijst',
   'kit.filter.filter': 'Filteren',
   'kit.filter.group': 'Groeperen',
   'kit.filter.groupOn': 'Groeperen: {group}',

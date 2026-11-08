@@ -78,7 +78,7 @@ export const EN = {
   'landscape.platformsNote': 'what delivers it, where things run',
   'landscape.thisScope': 'This scope',
   'landscape.noCategory': 'No category',
-  'landscape.filter': 'Filter by name',
+  'landscape.filter': 'Find by name',
   'landscape.reading': 'How to read this page',
   'landscape.chain': 'Chain',
   'landscape.matrix': 'Matrix',

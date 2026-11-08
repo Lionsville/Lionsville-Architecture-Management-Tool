@@ -600,7 +600,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'tidy.pinGroupContents': 'Wat er in elke groep staat',
   'tidy.pinGroupContentsNote': 'Wat er in elke groep zit houdt zijn indeling.',
 
-  'logo.search': 'Pictogrammen zoeken',
+  'logo.search': 'Zoek een pictogram',
   'logo.none': 'Geen',
   'logo.upload': 'Een logo uploaden',
   'logo.picker': 'Pictogramkiezer',
@@ -727,7 +727,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'c4.aboutDiagram': 'Over dit diagram',
   'c4.facts': '{containers} containers, {around} eromheen, {lines} lijnen. Toont {day}.',
   'c4.lines': 'Lijnen',
-  'c4.linesFilter': 'Filter op naam, woorden of protocol',
+  'c4.linesFilter': 'Zoek op naam, woorden of protocol',
   'c4.linesNone': 'Geen lijn zegt dat.',
   'c4.linesEmpty': 'Op dit diagram is nog niets verbonden.',
   'c4.lineEdit': 'Deze lijn bewerken',

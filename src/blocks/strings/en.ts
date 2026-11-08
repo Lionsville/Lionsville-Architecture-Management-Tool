@@ -112,7 +112,7 @@ export const EN = {
   'blocks.howPlaceholder': 'A module, a workaround, a roadmap item…',
   'blocks.save': 'Save',
   'blocks.registerTitle': 'Building blocks',
-  'blocks.search': 'Search building blocks',
+  'blocks.search': 'Find a building block',
   'blocks.searchEmpty': 'Nothing matches “{query}”.',
   'blocks.colKeptIn': 'Kept in',
   'blocks.colEvaluatedIn': 'Evaluated in',

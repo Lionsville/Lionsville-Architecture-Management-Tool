@@ -36,7 +36,7 @@ export const EN = {
   'doc.done': 'Done',
   'doc.fields': 'Fields',
   'doc.text': 'Text',
-  'doc.filter': 'Filter {count} elements',
+  'doc.filter': 'Find among {count} elements',
   'doc.noMatch': 'Nothing by that name.',
   'doc.statusOn': '{kind} · on {view}',
   'doc.editing': 'Editing {name}',

@@ -93,7 +93,7 @@ const toList = () => fireEvent.click(screen.getByRole('radio', { name: 'List' })
 
 describe('what is kept back', () => {
   const toSeen = () => fireEvent.click(screen.getByTestId('observation-tab-register'))
-  const search = (value: string) => fireEvent.change(screen.getByRole('searchbox', { name: 'Search every record' }), { target: { value } })
+  const search = (value: string) => fireEvent.change(screen.getByRole('searchbox', { name: 'Find in every record' }), { target: { value } })
 
   it('leads the list with this scope’s own observations, whatever filter is on', () => {
     mount()
@@ -253,9 +253,9 @@ describe('the filters', () => {
 
   it('searches every record from the bar, and takes one word off the line by its ×', async () => {
     mount()
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search every record' }), { target: { value: 'policyholder' } })
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find in every record' }), { target: { value: 'policyholder' } })
     expect(drawn()).toEqual(['c2', 'o2'])
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search every record' }), { target: { value: '' } })
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find in every record' }), { target: { value: '' } })
     openFilter()
     setFilter('observations', 'batch')
     await closeFilter()
@@ -357,7 +357,7 @@ describe('the picture', () => {
 
   it('is clean for axe with a filter on and in the small size', async () => {
     mount()
-    fireEvent.change(screen.getByRole('searchbox', { name: 'Search every record' }), { target: { value: 'batch' } })
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find in every record' }), { target: { value: 'batch' } })
     fireEvent.click(screen.getByRole('radio', { name: 'Small' }))
     expect(await axeFindings()).toEqual([])
   })

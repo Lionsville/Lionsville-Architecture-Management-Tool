@@ -9,19 +9,6 @@
   gap: var(--s-2);
   padding: var(--s-2) var(--s-3);
 }
-.kit-filter__find {
-  flex: 0 1 300px;
-  min-width: 120px;
-  height: var(--ctl-h);
-  padding-inline: var(--s-2);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-2);
-  background: var(--surface);
-  color: var(--ink);
-  font: inherit;
-}
-.kit-filter__find::placeholder { color: var(--ink-3); opacity: 1; }
-.kit-filter__find:focus-visible { outline: var(--focus-ring-width) solid var(--field-focus); outline-offset: calc(0px - var(--focus-ring-width)); }
 .kit-filter__anchor { display: inline-flex; }
 .kit-filter__shown { color: var(--ink-3); font-size: var(--t-small); }
 .kit-filter__actions { display: inline-flex; gap: var(--s-2); margin-inline-start: auto; }

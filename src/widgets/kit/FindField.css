@@ -1,0 +1,26 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* The Picker's field, so that finding one thing and narrowing a list look like the same act. */
+.kit-find {
+  --find-min: 14rem;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  width: 18rem;
+  max-width: 100%;
+  min-width: min(var(--find-min), 100%);
+  height: var(--ctl-h);
+  padding-inline: var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface);
+  color: var(--ink-3);
+  font-size: var(--t-body);
+}
+.kit-find[data-fill] { width: 100%; }
+.kit-find > svg { flex: none; }
+.kit-find:focus-within { outline: var(--focus-ring-width) solid var(--field-focus); outline-offset: var(--focus-ring-offset); border-color: var(--field-focus); }
+.kit-find__input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; text-overflow: ellipsis; }
+.kit-find__input::placeholder { color: var(--ink-3); opacity: 1; }

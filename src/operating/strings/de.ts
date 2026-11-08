@@ -332,7 +332,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'operating.noPartLine': '{count} Rollen haben hier keinen Anteil: {names}{more}. Drücken Sie die +-Spalte, um sie zu sehen.',
   'operating.andMore': ' und {count} weitere',
   'operating.addColumn': 'Eine als Spalte hinzufügen',
-  'operating.findResponsibility': 'Verantwortung suchen',
+  'operating.findResponsibility': 'Eine Verantwortung suchen',
   'operating.partsLabel': 'Gruppen von Verantwortungen',
   'operating.scopeLabel': 'Wie viel zeigen',
   'operating.thisPart': 'Dieser Teil',

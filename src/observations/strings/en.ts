@@ -745,7 +745,7 @@ export const EN = {
   'observation.hiddenBoth': '{count} hidden by the filter and the scopes below',
   'observation.showLabel': 'Also show',
   'observation.scopesOffWord': '{count} scopes off',
-  'observation.findEvery': 'Search every record',
+  'observation.findEvery': 'Find in every record',
   'observation.stageSeen': 'Seen',
   'observation.stageWhy': 'Why',
   'observation.stageSolve': 'Solve',

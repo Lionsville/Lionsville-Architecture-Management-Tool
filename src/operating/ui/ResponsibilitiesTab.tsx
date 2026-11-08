@@ -17,7 +17,8 @@ import type { MakeId } from '../../model/keys'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
-import { Select, TextInput } from '../../widgets/kit/Field'
+import { Select } from '../../widgets/kit/Field'
+import { FindField } from '../../widgets/kit/FindField'
 import { FilterWords } from '../../widgets/kit/FilterWords'
 import type { MatrixPick } from '../../widgets/kit/Matrix'
 import { MenuButton } from '../../widgets/kit/Menu'
@@ -166,7 +167,7 @@ function RaciTree({ model, parts, unitName, readOnly, selectedNode, onPick, onNe
   const nodes = useMemo(() => treeNodes(model, parts, unitName, folks, t), [model, parts, unitName, folks, t])
   return (
     <div className="op-tree" data-testid="operating-tree">
-      <TextInput type="search" aria-label={t('operating.findResponsibility')} placeholder={t('operating.findResponsibility')} value={find} onChange={(event) => setFind(event.target.value)} />
+      <FindField fill label={t('operating.findResponsibility')} value={find} onChange={setFind} />
       {!readOnly && <div className="op-actions"><Button variant="plain" data-guide="operating.newResponsibility" onClick={onNew}>{t('operating.newResponsibility')}</Button></div>}
       <TreeList
         label={t('operating.partsLabel')} nodes={nodes} selectedId={selectedNode} onSelect={onPick} open={folks ? new Set(nodes.map((one) => one.id)) : opened} dataGuide="operating.raciTree"

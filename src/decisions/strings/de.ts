@@ -73,7 +73,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'adr.newTitleField': 'Titel',
   'adr.newTitleHelp': 'Formulieren Sie die Entscheidung als kurzen Satz: \u201ePostgreSQL für den Auftragsspeicher verwenden\u201c.',
   'adr.create': 'Anlegen und schreiben',
-  'adr.searchPlaceholder': 'Alle Entscheidungen durchsuchen',
+  'adr.searchPlaceholder': 'Eine Entscheidung suchen',
   'adr.searchField': 'Entscheidungen suchen',
   'adr.listEmpty': 'Hier sind noch keine Entscheidungen festgehalten.',
   'adr.searchEmpty': 'Keine Entscheidung passt zu \u201e{query}\u201c.',

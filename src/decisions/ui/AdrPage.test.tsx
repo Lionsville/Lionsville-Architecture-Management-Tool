@@ -149,7 +149,7 @@ describe('the list', () => {
 
   it('searches every list at once, and a hit from above says where it lives', () => {
     mount()
-    const find = screen.getByLabelText('Search all decisions')
+    const find = screen.getByLabelText('Find a decision')
     fireEvent.change(find, { target: { value: 'system' } })
     expect(within(list()).getByText('One warehouse system')).toBeTruthy()
     expect(within(list()).getByText('CRM stays system of record')).toBeTruthy()

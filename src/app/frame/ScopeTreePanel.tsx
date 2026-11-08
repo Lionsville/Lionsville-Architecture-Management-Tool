@@ -25,7 +25,7 @@ import type { TypeLink } from '../../projects/scopeType'
 import { matchesQuery } from '../../model/textSearch'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
-import { TextInput } from '../../widgets/kit/Field'
+import { FindField } from '../../widgets/kit/FindField'
 import { LinkLine } from '../../widgets/kit/Section'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { heldInWords, RootRow, ScopeTree, TopicTreeRow } from '../organisation/ScopeTree'
@@ -136,11 +136,9 @@ export function ScopeTreePanel({
   return (
     <div className="kit-tree" data-testid="scope-tree-panel">
       <div className="kit-tree__find">
-        <TextInput
-          aria-label={s('frame.findScope')} placeholder={s('frame.findScope')} value={find} data-testid="tree-find"
-          onChange={(event) => setFind(event.target.value)}
+        <FindField
+          fill label={s('frame.findScope')} value={find} data-testid="tree-find" onChange={setFind}
           onKeyDown={(event) => {
-            if (event.key === 'Escape' && find !== '') { event.stopPropagation(); event.preventDefault(); setFind('') }
             const first = matching?.[0]
             if (event.key === 'Enter' && first !== undefined) { event.preventDefault(); onHome(first) }
           }}

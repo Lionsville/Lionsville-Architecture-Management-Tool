@@ -619,7 +619,7 @@ export const EN = {
   'tidy.pinGroupContentsNote': "What's inside each group keeps its arrangement.",
 
   // --- logo picker ---------------------------------------------------------
-  'logo.search': 'Search icons',
+  'logo.search': 'Find an icon',
   'logo.none': 'None',
   'logo.upload': 'Upload a logo',
   'logo.picker': 'Icon picker',
@@ -743,7 +743,7 @@ export const EN = {
   'c4.aboutDiagram': 'About this diagram',
   'c4.facts': '{containers} containers, {around} around them, {lines} lines. Shows {day}.',
   'c4.lines': 'Lines',
-  'c4.linesFilter': 'Filter by name, words or protocol',
+  'c4.linesFilter': 'Find by name, words or protocol',
   'c4.linesNone': 'No line says that.',
   'c4.linesEmpty': 'Nothing is connected on this diagram yet.',
   'c4.lineEdit': 'Edit this line',

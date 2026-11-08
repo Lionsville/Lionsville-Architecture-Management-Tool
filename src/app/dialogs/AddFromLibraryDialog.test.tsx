@@ -41,7 +41,7 @@ describe('AddFromLibraryDialog', () => {
     expect(screen.getByText('In this scope, not on this board')).toBeTruthy()
     expect(screen.getByText('Defined in acme/retail/stores')).toBeTruthy()
     expect(screen.getByText('Nobody defines it')).toBeTruthy()
-    fireEvent.change(screen.getByLabelText('Search the register'), { target: { value: 'shelf' } })
+    fireEvent.change(screen.getByLabelText('Find in the register'), { target: { value: 'shelf' } })
     expect(screen.queryByText('CRM')).toBeNull()
     fireEvent.click(screen.getByText('Shelf planner'))
     expect(props.onPick).toHaveBeenCalledWith('shelf')
@@ -50,7 +50,7 @@ describe('AddFromLibraryDialog', () => {
   it('says so when everything is on the board already', () => {
     mount({ kind: 'picking', rows: [] })
     expect(screen.getByText('Every application in the organisation is on this board already.')).toBeTruthy()
-    expect(screen.queryByLabelText('Search the register')).toBeNull()
+    expect(screen.queryByLabelText('Find in the register')).toBeNull()
   })
 
   it('asks the one question with both answers, and only the yes where no address is on offer', () => {

@@ -114,7 +114,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'blocks.howPlaceholder': 'Een module, een omweg, een roadmap-item…',
   'blocks.save': 'Opslaan',
   'blocks.registerTitle': 'Bouwstenen',
-  'blocks.search': 'Bouwstenen zoeken',
+  'blocks.search': 'Zoek een bouwsteen',
   'blocks.searchEmpty': 'Niets past bij “{query}”.',
   'blocks.colKeptIn': 'Bewaard in',
   'blocks.colEvaluatedIn': 'Beoordeeld in',
