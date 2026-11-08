@@ -3,8 +3,8 @@
 // @vitest-environment jsdom
 
 import { readFileSync } from 'node:fs'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
 import { axeFindings } from '../../app/testing/axe'
 import { PageDialog } from '../PageDialog'
@@ -114,6 +114,8 @@ describe('the docked tree', () => {
   )
   const seam = () => screen.getByRole('separator', { name: /tree/i })
   const width = () => screen.getByTestId('frame-tree').style.width
+  beforeEach(() => { Object.defineProperty(window, 'innerWidth', { value: 1440, configurable: true }) })
+  afterEach(() => { delete document.documentElement.dataset.textSize })
 
   it('starts at the sensible width whatever it holds', () => {
     docked()
@@ -140,6 +142,22 @@ describe('the docked tree', () => {
     expect(width()).toBe('410px')
     fireEvent.keyDown(seam(), { key: 'ArrowRight' })
     expect(keep).toHaveBeenCalledWith('frame.tree', 418)
+  })
+
+  it('grows and comes back with the text size, a width dragged included', async () => {
+    const held = new Map<string, number>([['frame.tree', 320]])
+    docked({ widthOf: (key) => held.get(key), keep: (key, next) => { held.set(key, next) } })
+    expect(width()).toBe('320px')
+    document.documentElement.dataset.textSize = '150'
+    await waitFor(() => expect(width()).toBe('480px'))
+    document.documentElement.dataset.textSize = '100'
+    await waitFor(() => expect(width()).toBe('320px'))
+  })
+
+  it('leaves the work most of a small window', () => {
+    Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true })
+    docked({ widthOf: () => 500, keep: () => {} })
+    expect(width()).toBe('350px')
   })
 
   it('has no seam with no tree', () => {

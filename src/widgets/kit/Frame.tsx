@@ -13,7 +13,7 @@
  * It knows no scope and no model. What the rows hold is handed in, and where a
  * page or a view's tabs go is said to whoever asks through {@link PlaceHostContext}.
  */
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { SeamResizer } from '../SeamResizer'
@@ -45,16 +45,54 @@ export type FrameProps = {
   readonly children: ReactNode
 }
 
-/** The docked tree and the seam that gives it more room. */
+/**
+ * The text scale on the root, followed as a person changes it: what the tree's
+ * width is measured in.
+ */
+function useTextScale(): number {
+  const [scale, setScale] = useState(textScale)
+  useEffect(() => {
+    if (typeof MutationObserver === 'undefined') return undefined
+    const watch = new MutationObserver(() => setScale(textScale()))
+    watch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-text-size'] })
+    return () => watch.disconnect()
+  }, [])
+  return scale
+}
+
+function useWindowWidth(): number {
+  const [width, setWidth] = useState(() => window.innerWidth)
+  useEffect(() => {
+    const onResize = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return width
+}
+
+/** At most this share of the window, so at a large text size in a small window the work keeps the most of it. */
+const TREE_SHARE = 0.35
+
+/**
+ * The docked tree and the seam that gives it more room.
+ *
+ * Its width is kept in the text's own measure — what it would be at 100 % —
+ * so it grows and comes back with the text size, the person's drag included,
+ * and never past {@link TREE_SHARE} of the window unless its least is more.
+ */
 function DockedTree({ children }: { readonly children: ReactNode }) {
   const { t } = useStrings()
-  // Grows with the text, and never past what leaves the work beside it room.
-  const fallback = Math.min(px('panel-w-tree') * textScale(), TREE_MAX)
-  const [width, setWidth] = useSeamWidth('frame.tree', fallback)
+  const scale = useTextScale()
+  const room = useWindowWidth()
+  const [base, setBase] = useSeamWidth('frame.tree', px('panel-w-tree'))
+  const min = TREE_MIN * scale
+  const max = Math.max(min, Math.min(TREE_MAX * scale, room * TREE_SHARE))
+  const width = Math.round(Math.min(Math.max(base * scale, min), max))
+  const fallback = Math.min(Math.max(px('panel-w-tree') * scale, min), max)
   return (
     <>
       <aside className="kit-frame__tree" data-testid="frame-tree" style={{ width }}>{children}</aside>
-      <SeamResizer orientation="vertical" region="before" value={width} min={TREE_MIN} max={TREE_MAX} defaultValue={fallback} onChange={setWidth} label={t('kit.frame.treeWidth')} />
+      <SeamResizer orientation="vertical" region="before" value={width} min={min} max={max} defaultValue={fallback} onChange={(next) => setBase(next / scale)} label={t('kit.frame.treeWidth')} />
     </>
   )
 }
