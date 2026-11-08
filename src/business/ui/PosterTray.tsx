@@ -74,7 +74,7 @@ export function applyTray(work: TrayWork, kind: TrayMode, value: { id?: string; 
   say(t('sheet.poster.labelled', { name: value.name, count: own.length }))
 }
 
-type Row = { id?: string; name: string; note?: string; detail?: string; typed?: boolean; group?: string; why?: string }
+type Row = { id?: string; name: string; note?: string; /** What the note means, said on hover. */ noteSays?: string; detail?: string; typed?: boolean; group?: string; why?: string }
 
 /** The teams in the rail's words: those on this sheet with why, the rest kept short, those that are not units. */
 function teamRows(work: TrayWork, typed: readonly string[], allOthers: boolean): { rows: Row[]; more: number } {
@@ -87,7 +87,9 @@ function teamRows(work: TrayWork, typed: readonly string[], allOthers: boolean):
   })
   const others = (responsible?.choices ?? []).filter((choice) => !seen.has(choice.id) && responsible?.unit?.(choice.id) !== undefined)
   const shown = allOthers ? others : others.slice(0, OTHER_UNITS)
-  rows.push(...shown.map((choice): Row => ({ id: choice.id, name: choice.label, group: t('sheet.unitsOther') })))
+  // *Other* only where there is a first group for them to be other than.
+  const otherGroup = used.length > 0 ? t('sheet.unitsOther') : t('sheet.poster.teams')
+  rows.push(...shown.map((choice): Row => ({ id: choice.id, name: choice.label, group: otherGroup })))
   const assigned = new Set(model.relations.filter((row) => row.type === 'assigned').map((row) => row.sourceId))
   const notUnits = model.elements.filter((element: DesignElement) => element.kind === 'actor' && element.unitTypeId === undefined && assigned.has(element.id))
   const why = t('sheet.poster.teamsTypedWhy')
@@ -108,6 +110,7 @@ function applicationRows(work: TrayWork): Row[] {
   return [...list].sort((a, b) => a.name.localeCompare(b.name)).map((one) => ({
     id: one.id, name: one.name,
     note: `${retiring?.(one.id) ? `${t('lifecycle.retiring')} · ` : ''}${used.get(one.id) ?? 0}`,
+    noteSays: t('sheet.poster.coversHere', { count: used.get(one.id) ?? 0 }),
   }))
 }
 
@@ -121,7 +124,7 @@ function Item({ row, on, onDown }: { row: Row; on: boolean; onDown(event: ReactP
   return (
     <button type="button" className="poster-tray__item" data-typed={row.typed ? '' : undefined} data-on={on ? '' : undefined} data-testid={`poster-tray-${row.id ?? row.name}`} onPointerDown={onDown} aria-pressed={on}>
       <span title={row.detail ? `${row.name}. ${row.detail}` : row.name}>{row.name}</span>
-      {row.note !== undefined && <span className="poster-tray__note">{row.note}</span>}
+      {row.note !== undefined && <span className="poster-tray__note" title={row.noteSays}>{row.note}</span>}
     </button>
   )
 }
