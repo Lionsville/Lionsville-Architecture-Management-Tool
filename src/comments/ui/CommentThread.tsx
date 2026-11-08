@@ -47,6 +47,7 @@ import { PersonPicker } from '../../people/ui/PersonPicker'
 import { Button } from '../../widgets/kit/Button'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import { Toast } from '../../widgets/kit/Toast'
+import { useDraft } from '../../widgets/kit/drafts'
 import type { ToastWords } from '../../widgets/kit/Toast'
 import { commentCount, replyTarget, threadOf } from '../thread'
 import { useComments } from './CommentsContext'
@@ -225,6 +226,8 @@ function Composer({ label, submit, initial = '', testId, onSubmit, onCancel, cle
 }) {
   const { t } = useStrings()
   const [body, setBody] = useState(initial)
+  // A comment typed and not sent is a draft: leaving the page asks first (`kit/drafts`).
+  useDraft(body.trim() !== initial.trim())
   // A frame on: the menu Edit was chosen from hands the focus back to its button as it closes.
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {

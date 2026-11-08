@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * **Leave with a draft?** — one rule for every place a person writes something not
+ * yet sent or saved: a comment box, a new record's form, an editor. Whatever holds
+ * a draft says so (`useDraft`), and whatever leaves a page asks first
+ * (`leaveWithDrafts`), with one question the shell draws once (`DraftQuestion`).
+ * Leaving drops the draft; *Keep writing* is the default and stays.
+ *
+ * The drafts are a module's set and not a context: a page is left from places
+ * that share no tree with the box being written in — a key on the window, a press
+ * in the frame, the window's own close — and each must hear the same answer.
+ */
+import { useEffect, useState } from 'react'
+import { useStrings } from '../../i18n/LanguageContext'
+import { Button } from './Button'
+import { Dialog } from './Dialog'
+
+const held = new Set<symbol>()
+let asker: ((go: () => void) => void) | undefined
+
+/** Says, while `holding`, that something written here would be lost by leaving. */
+export function useDraft(holding: boolean): void {
+  useEffect(() => {
+    if (!holding) return undefined
+    const draft = Symbol('draft')
+    held.add(draft)
+    return () => { held.delete(draft) }
+  }, [holding])
+}
+
+/** Whether anything on screen holds a draft. */
+export function draftHeld(): boolean {
+  return held.size > 0
+}
+
+/** Leave, asking first where a draft would be lost: `go` runs at once, after a yes, or not at all. */
+export function leaveWithDrafts(go: () => void): void {
+  if (!draftHeld() || !asker) { go(); return }
+  asker(go)
+}
+
+/** The question, drawn once by the shell; with none drawn, leaving does not wait on one. */
+export function DraftQuestion() {
+  const { t } = useStrings()
+  const [going, setGoing] = useState<(() => void) | undefined>(undefined)
+  useEffect(() => {
+    asker = (go) => setGoing(() => go)
+    // The window itself closing: the browser's own question, the only one it allows there.
+    const onUnload = (event: BeforeUnloadEvent) => { if (draftHeld()) event.preventDefault() }
+    window.addEventListener('beforeunload', onUnload)
+    return () => { asker = undefined; window.removeEventListener('beforeunload', onUnload) }
+  }, [])
+  const leave = () => {
+    const go = going
+    setGoing(undefined)
+    held.clear()
+    go?.()
+  }
+  return (
+    <Dialog
+      open={going !== undefined} title={t('kit.draft.title')} onClose={() => setGoing(undefined)} onSubmit={() => setGoing(undefined)}
+      data-testid="draft-question"
+      actions={(
+        <>
+          <Button variant="danger" onClick={leave} data-testid="draft-leave">{t('kit.draft.leave')}</Button>
+          <Button variant="primary" type="submit" autoFocus>{t('kit.draft.keep')}</Button>
+        </>
+      )}
+    >
+      <p>{t('kit.draft.body')}</p>
+    </Dialog>
+  )
+}

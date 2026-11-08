@@ -19,6 +19,7 @@ import Tooltip from '@mui/material/Tooltip'
 import { useStrings } from '../i18n/LanguageContext'
 import { CloseIcon } from './icons'
 import { usePlaceHost } from './kit/placeHost'
+import { leaveWithDrafts } from './kit/drafts'
 
 export function PageClose({ onClose, label }: { onClose: () => void; label?: string | undefined }) {
   const { t } = useStrings()
@@ -28,7 +29,7 @@ export function PageClose({ onClose, label }: { onClose: () => void; label?: str
   if (usePlaceHost()?.page && said !== t('common.backToReading')) return null
   return (
     <Tooltip title={said}>
-      <IconButton size="small" aria-label={said} onClick={onClose} data-testid="page-close" sx={{ ml: 'auto', color: 'text.secondary' }}>
+      <IconButton size="small" aria-label={said} onClick={() => leaveWithDrafts(onClose)} data-testid="page-close" sx={{ ml: 'auto', color: 'text.secondary' }}>
         <CloseIcon size={16} />
       </IconButton>
     </Tooltip>
@@ -41,7 +42,7 @@ export function PageBack({ onBack, label, children }: { onBack: () => void; labe
   if (usePlaceHost()?.page && label !== t('common.backToReading')) return null
   return (
     <Tooltip title={label}>
-      <IconButton size="small" aria-label={label} onClick={onBack} data-testid="page-back">
+      <IconButton size="small" aria-label={label} onClick={() => leaveWithDrafts(onBack)} data-testid="page-back">
         {children ?? <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 'var(--t-large)', lineHeight: 1 }}>‹</Box>}
       </IconButton>
     </Tooltip>

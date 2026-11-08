@@ -27,6 +27,7 @@ import { personNames, PersonNamesProvider } from '../../people/ui/names'
 import { CommentsProvider } from './CommentsContext'
 import { CommentThread } from './CommentThread'
 import { CommentBadge } from './CommentBadge'
+import { draftHeld } from '../../widgets/kit/drafts'
 
 afterEach(() => cleanup())
 
@@ -108,6 +109,14 @@ describe('a thread', () => {
     expect(held()).toEqual([{ id: 'cm-new-1', about: web, by: { person: 'pe-eva' }, at: AT, body: 'Who owns this?' }])
     expect(screen.getByTestId('comment-count').textContent).toBe('Comments (1)')
     expect(screen.getByTestId('comment-cm-new-1').textContent).toContain('Eva Lind · you')
+  })
+
+  it('holds a typed comment as a draft until it is sent, so leaving the page asks first', () => {
+    renderShell(<Harness start={scope()} me="pe-eva" />)
+    fireEvent.change(screen.getByTestId('comment-new'), { target: { value: 'Who owns this?' } })
+    expect(draftHeld()).toBe(true)
+    fireEvent.click(screen.getByTestId('comment-new-send'))
+    expect(draftHeld()).toBe(false)
   })
 
   it('leaves its heading and landmark to a screen that already names it', () => {

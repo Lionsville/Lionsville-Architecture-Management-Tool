@@ -30,6 +30,7 @@
  * **What holds the save** is said by the save button (`saveRefused`) and at the
  * field, which is the screen's. Save is one step for Undo, also the screen's.
  */
+import { useDraft } from './drafts'
 import { createContext, useContext, useId, useState } from 'react'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ReactNode } from 'react'
@@ -106,6 +107,8 @@ export function FocusedWindow({
   const { t } = useStrings()
   const titleId = useId()
   const [asking, setAsking] = useState(false)
+  // A change not saved is a draft for whatever else would leave the page under the window.
+  useDraft(open && changed)
   const [asideFolded, setAsideFolded] = useState(false)
 
   const cancel = () => {

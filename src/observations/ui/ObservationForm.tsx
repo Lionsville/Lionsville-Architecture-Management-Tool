@@ -58,6 +58,7 @@ import type { PersonRef } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { claimKey } from '../../widgets/kit/keys'
+import { useDraft } from '../../widgets/kit/drafts'
 
 /** A scope an observation may be recorded in, and what the form reads of it. */
 export type FormScope = {
@@ -137,6 +138,13 @@ function formKey(event: KeyboardEvent, cancel: () => void, record: () => void) {
   if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); record() }
 }
 
+/** Cancel asks first where something was written, and leaving the page does too (`kit/drafts`). */
+function useDiscardAsk(dirty: boolean, onCancel: () => void) {
+  const [asking, setAsking] = useState(false)
+  useDraft(dirty)
+  return { asking, setAsking, cancel: () => { if (dirty) setAsking(true); else onCancel() } }
+}
+
 /** What the Record button says it will make: *Record observation with 1 new cause and 1 link*. */
 export function recordLabel(rows: readonly CauseChoice[], s: Translate): string {
   const made = rows.filter((one) => one.kind === 'new').length
@@ -158,7 +166,6 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
   const [shown, setShown] = useState<Partial<Record<Refused, 'missing' | 'future'>>>({})
   const [rows, setRows] = useState<Row[]>([])
   const [dropped, setDropped] = useState(false)
-  const [asking, setAsking] = useState(false)
   const [more, setMore] = useState(false)
   const [knowing, setKnowing] = useState(false)
 
@@ -209,7 +216,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
   }
   const dirty = rows.length > 0 || !isBlankRef(fields.by)
     || [fields.title, fields.where, ...Object.values(sections)].some((one) => one.trim() !== '')
-  const cancel = () => { if (dirty) setAsking(true); else props.onCancel() }
+  const { asking, setAsking, cancel } = useDiscardAsk(dirty, props.onCancel)
   const affected = SECTIONS[2]
   const refused = problemsLine(Object.keys(shown).length, s)
 

@@ -59,6 +59,7 @@ import { ErrorBoundary, ProblemOfferContext } from './ErrorBoundary'
 import { idAt, useOrganisation } from './organisation/useOrganisation'
 import { useAgentScopes } from './agentScopes'
 import { ToastBar } from './ToastBar'
+import { DraftQuestion } from '../widgets/kit/drafts'
 import type { ShellPreferences } from './useShellPreferences'
 import { usePasswordPrompt } from './usePasswordPrompt'
 import { useOpenIntoPrompt } from './useOpenIntoPrompt'
@@ -536,6 +537,7 @@ export function App(props: AppProps) {
         </ErrorBoundary>
         <AppNotices parts={parts} />
         <AppDialogs parts={parts} />
+        <DraftQuestion />
         <ToastBar
           toast={toasts.toast}
           open={toasts.open}

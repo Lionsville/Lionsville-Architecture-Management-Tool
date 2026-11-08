@@ -27,6 +27,7 @@ import Dialog from '@mui/material/Dialog'
 import type { DialogProps } from '@mui/material/Dialog'
 import { usePlaceHost } from './kit/placeHost'
 import { claimKey, keyClaimed } from './kit/keys'
+import { leaveWithDrafts } from './kit/drafts'
 
 export type PageDialogProps = Omit<DialogProps, 'fullScreen' | 'hideBackdrop'> & {
   /** How much of the top of the window belongs to the host, in px. */
@@ -80,7 +81,8 @@ function PlacePage({ host, open, onClose, children, slotProps, sx, ...rest }: Om
       // Claimed either way, so the board under the page does not let go of its selection with the same key.
       claimKey(event)
       if (leavesFieldFirst(event)) return
-      latestClose.current?.(event, 'escapeKeyDown')
+      // A draft in a box on the page is asked about first (`kit/drafts`).
+      leaveWithDrafts(() => latestClose.current?.(event, 'escapeKeyDown'))
     }
     window.addEventListener('keydown', onKey)
     return () => {
@@ -132,7 +134,7 @@ export function PageDialog({ topInset = 0, slotProps, sx, onClose, ...rest }: Pa
       }}
       onClose={(event, reason) => {
         if (reason === 'escapeKeyDown' && leavesFieldFirst(event)) return
-        onClose?.(event, reason)
+        leaveWithDrafts(() => onClose?.(event, reason))
       }}
       {...rest}
     />
