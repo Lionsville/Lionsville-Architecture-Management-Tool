@@ -557,6 +557,16 @@ function phaseRows(counted: PictureCounts): PhaseRow[] {
  * page. Innermost first: it claims the key it acted on (`claimKey`), which the
  * page's own Escape leaves alone.
  */
+/**
+ * A card picked on a map swaps the side panel for its own, and a comment being
+ * written in the panel would go with it: ask first, as every other way out does.
+ * The card already shown, or a form's panel (which a pick does not swap), is not asked about.
+ */
+function pickThroughGuard(keepsPanel: boolean, go: () => void) {
+  if (keepsPanel) go()
+  else leaveWithDrafts(go)
+}
+
 function escapeClosesPanel(event: ReactKeyboardEvent, onMap: boolean, selectedKey: string | undefined, setSelectedKey: (key: string | undefined) => void) {
   if (event.key !== 'Escape' || keyClaimed(event) || !onMap || selectedKey === undefined) return
   claimKey(event)
@@ -840,25 +850,14 @@ export function ObservationsPage(props: ObservationsPageProps) {
     copyLink: copyLinkOf(props, stage),
   }
   readerRef.current = readerCtx
-  /**
-   * A card picked on a map swaps the side panel for its own, and a comment being
-   * written in the panel would go with it: ask first, as every other way out does.
-   * A form's panel is not swapped by a pick, so it is not asked about.
-   */
-  const pickOnMap = (key: string, then?: () => void) => {
-    const swaps = key !== selectedKey && (forms.panel === undefined || forms.panel === null)
-    const go = () => { setSelectedKey(key); then?.() }
-    if (swaps) leaveWithDrafts(go)
-    else go()
-  }
+  const pickOnMap = (key: string, then?: () => void) => pickThroughGuard(key === selectedKey || Boolean(forms.panel), () => { setSelectedKey(key); then?.() })
   const pageWrites = { edit: (key: string) => setEditingKey(key), ask: (key: string, panel: CausePanel) => setAsked({ key, panel }) }
 
   // --- the right-click ------------------------------------------------------------------
 
   /** A right-click selects what it landed on, the way a click does, and offers what can be done with it. */
   const openMenu = (target: PictureTarget, at: { x: number; y: number }) => {
-    if (target.kind !== 'node' || target.key === selectedKey) { setMenu({ target, at }); return }
-    pickOnMap(target.key, () => setMenu({ target, at }))
+    if (target.kind === 'node') pickOnMap(target.key, () => setMenu({ target, at })); else setMenu({ target, at })
   }
   const menuActions = (target: PictureTarget): MenuAction[] => pictureMenuActions(target, {
     readOnly, s, commit, analysis, causes, solutions, experiments, resolve, readerCtx,
