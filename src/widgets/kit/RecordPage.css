@@ -89,3 +89,5 @@
 .kit-record__section > p { max-width: var(--measure-reader); }
 .kit-record__section { outline: none; scroll-margin-top: var(--s-2); }
 .kit-record__sectionHead h2 { scroll-margin-top: var(--s-2); }
+
+.kit-record__next { margin-top: var(--s-3); }

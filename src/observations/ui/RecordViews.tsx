@@ -17,12 +17,12 @@ import { useStrings } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { usePersonNames } from '../../people/ui/names'
 import { Button } from '../../widgets/kit/Button'
-import { MoreMenu } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { NextStep, StepLadder } from '../../widgets/kit/NextStep'
 import type { NextAction, Step } from '../../widgets/kit/NextStep'
 import { Panel } from '../../widgets/kit/Panel'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
+import { RecordActions } from '../../widgets/kit/RecordActions'
 import { RecordPage } from '../../widgets/kit/RecordPage'
 import { CHAIN_STEPS, standingOf } from '../chain'
 import type { ChainStep } from '../chain'
@@ -183,17 +183,11 @@ function PreviewFacts({ held, ctx }: { held: Selected; ctx: ReaderContext }) {
   )
 }
 
-/** The everyday actions, drawn; the others, the copy link among them, under the one ⋯. */
-function BarButtons({ view, ctx, held, editApart = false }: {
-  view: RecordView
-  ctx: ReaderContext
-  held: Selected
-  /** Edit is drawn elsewhere: in a preview's head. */
-  editApart?: boolean
-}) {
+/** The everyday actions, drawn, then ✎ Edit, then the others, the copy link among them, under the one ⋯: the kit's one order (`RecordActions`). */
+function BarButtons({ view, ctx, held }: { view: RecordView; ctx: ReaderContext; held: Selected }) {
   const { s } = ctx
   const everyday = view.bar.filter((one) => EVERYDAY.has(one.key) && one.key !== 'edit')
-  const edit = editApart ? undefined : view.bar.find((one) => one.key === 'edit')
+  const edit = view.bar.find((one) => one.key === 'edit')
   const others = view.bar.filter((one) => !EVERYDAY.has(one.key))
   const steps_ = held.kind === 'solution' ? solutionSteps(solutionProps(held.solution, ctx), s) : []
   const { copyLink } = ctx
@@ -209,13 +203,14 @@ function BarButtons({ view, ctx, held, editApart = false }: {
     ...(copyLink ? [{ label: s('common.copyLink'), hint: s('observation.tipCopyLink'), onSelect: () => copyLink(held), 'data-testid': 'reader-copy-link' }] : []),
   ]
   return (
-    <>
-      {everyday.map((one) => (
+    <RecordActions
+      verbs={everyday.length > 0 && everyday.map((one) => (
         <Button key={one.key} variant={one.key === 'restore' ? 'primary' : 'quiet'} title={one.tip} onClick={one.onClick} data-testid={one.testId} data-guide={one.guide}>{one.label}</Button>
       ))}
-      {items.length > 0 && <MoreMenu items={items} label={s('observation.more')} />}
-      {edit && <Button onClick={edit.onClick} title={edit.tip} data-testid={edit.testId}>{edit.label}</Button>}
-    </>
+      {...(edit ? { edit: { onPress: edit.onClick, ...(edit.tip ? { tip: edit.tip } : {}), ...(edit.testId ? { testId: edit.testId } : {}), ...(edit.guide ? { guide: edit.guide } : {}) } } : {})}
+      more={items}
+      moreLabel={s('observation.more')}
+    />
   )
 }
 
@@ -235,19 +230,13 @@ export function RecordPreview({ held, heldKey, ctx, page, ids, listWord, onSelec
 }) {
   const view = recordViewOf(held, heldKey, ctx, page)
   const isObservation = held.kind === 'observation' || held.kind === 'below'
-  const edit = view.bar.find((one) => one.key === 'edit')
   return (
     <Preview
       ids={ids} currentId={heldKey} onSelect={onSelect} title={view.title} code={view.code} {...(listWord ? { listWord } : {})}
       openFull={{ label: ctx.s('observation.openFull'), onPress: onFull }}
-      {...(edit ? { edit: { label: edit.label, onPress: edit.onClick, ...(edit.tip ? { title: edit.tip } : {}), ...(edit.testId ? { testId: edit.testId } : {}) } } : {})}
+      actions={<BarButtons view={view} ctx={ctx} held={held} />}
+      {...(view.next ? { next: <NextStep inline {...view.next} /> } : {})}
       {...(isObservation ? { facts: <PreviewFacts held={held} ctx={ctx} /> } : {})}
-      foot={(
-        <div className="chain-foot">
-          {view.next && <NextStep inline {...view.next} />}
-          <span className="chain-foot__end"><BarButtons view={view} ctx={ctx} held={held} editApart /></span>
-        </div>
-      )}
       dataGuide="observations.preview"
     >
       <RecordBody selected={held} selectedKey={heldKey} ctx={ctx} part="preview" />
@@ -275,14 +264,12 @@ export function RecordFull({ held, heldKey, ctx, page, backLabel, onBack }: Reco
       code={view.code}
       title={view.title}
       actions={<BarButtons view={view} ctx={ctx} held={held} />}
+      {...(view.next ? { next: <NextStep inline {...view.next} /> } : {})}
       sections={[{
         // The record's title is the page's heading: the text starts straight under the question, as a document does.
         id: 'record', heading: ctx.s('observation.fullRecord'), headless: true,
         children: (
-          <>
-            {view.next && <div className="chain-read__next"><NextStep inline {...view.next} /></div>}
-            <RecordBody selected={held} selectedKey={heldKey} ctx={ctx} part="full" />
-          </>
+          <RecordBody selected={held} selectedKey={heldKey} ctx={ctx} part="full" />
         ),
       }]}
     />

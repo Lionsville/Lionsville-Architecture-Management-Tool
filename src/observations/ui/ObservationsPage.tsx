@@ -990,7 +990,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
       <LanguageProvider language={props.language}>
         <Box className="chain-page" ref={located.ref} sx={located.ring}>
           <div className="chain-page__tabs" data-testid="observation-topbar">
-            <PageBack onBack={leaving.leave} label={leaving.said} />
+            {/* The whole record has one way back, its named crumb (‹ Seen); Escape goes the same way. */}
+            {!full && <PageBack onBack={leaving.leave} label={leaving.said} />}
             <Tabs<Tab>
               label={s('observation.title')} value={stage} onChange={setStage}
               items={[
@@ -1001,7 +1002,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
               ]}
             />
             <span className="chain-page__tabsGrow" />
-            <PageClose onClose={leaving.leave} label={leaving.closeSaid} />
+            {!full && <PageClose onClose={leaving.leave} label={leaving.closeSaid} />}
           </div>
           {full && selected && selectedKey ? (
             <RecordFull held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} backLabel={s(STAGE_WORD[stage])} onBack={() => setFull(false)} />

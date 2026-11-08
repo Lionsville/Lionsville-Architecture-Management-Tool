@@ -21,8 +21,6 @@
 .chain-mono { font-family: var(--font-mono); font-size: var(--t-body); }
 .chain-tone { display: inline-flex; align-items: center; gap: var(--s-1); }
 
-.chain-foot { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; flex: 1; min-width: 0; }
-.chain-foot__end { margin-inline-start: auto; display: inline-flex; align-items: center; gap: var(--s-2); }
 
 .chain-form { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
 .chain-form__hint { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); font-size: var(--t-small); color: var(--ink-2); }
@@ -49,7 +47,6 @@
 .chain-editor__plain { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* A whole record read: the text at a width that reads, the facts in a quiet column. */
-.chain-read__next { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); max-width: calc(var(--w-document) + 18rem + var(--s-6)); margin: 0 auto var(--s-4); padding-bottom: var(--s-3); border-bottom: 1px solid var(--line); }
 .chain-read { container-type: inline-size; min-width: 0; }
 .chain-read__page { display: flex; flex-direction: column; gap: var(--s-4); margin-inline: auto; min-width: 0; }
 .chain-read__text { min-width: 0; overflow-wrap: anywhere; }

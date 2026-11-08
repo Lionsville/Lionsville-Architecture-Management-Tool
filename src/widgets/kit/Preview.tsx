@@ -7,10 +7,12 @@
  * characters and more, so the text reads at full measure with the facts wrapping
  * beside it; as tall as what it holds, up to the window less a margin, so a
  * record of one sentence is not a sentence in an empty sheet. The title and the
- * foot stay put while the body scrolls.
+ * next step stay put while the body scrolls.
  *
- * What can be done sits in two places and no more: Edit at the top right, and
- * the rest in one row at the foot, *Open full record* last.
+ * What can be done sits where it sits on every record surface (`RecordActions`):
+ * at the end of the head, *Open full record*, the other verbs, ✎ Edit and ⋯, then
+ * ×; the next step in one band under the title. Nothing of the record's own is in
+ * a foot.
  *
  * ‹ › and the arrow keys walk the list, Esc goes back to the row. Which record
  * is up belongs in the address, so a link reaches it and Back lets go of it: the
@@ -26,7 +28,7 @@ import { useEffect, useId, useRef } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 import Modal from '@mui/material/Modal'
 import { useStrings } from '../../i18n/LanguageContext'
-import { BackIcon, CloseIcon, ForwardIcon, PencilIcon } from '../icons'
+import { BackIcon, CloseIcon, ForwardIcon } from '../icons'
 import './Preview.css'
 
 export type PreviewProps = {
@@ -41,13 +43,15 @@ export type PreviewProps = {
   readonly code?: string
   /** What the count is a count of: *waiting*. The position reads *1 of 17 waiting*. */
   readonly listWord?: string
-  /** *Open full record*, at the end of the foot with what else can be done. */
+  /** *Open full record*, in the head, quiet, before what can be done. */
   readonly openFull?: { readonly label: string; readonly onPress: () => void }
-  /** *Edit*, with its pencil, at the top right: the one act on the record itself. */
-  readonly edit?: { readonly label: string; readonly onPress: () => void; readonly title?: string; readonly testId?: string }
+  /** What can be done to the record, at the end of the head before ×: a `RecordActions` (verbs · ✎ Edit · ⋯). */
+  readonly actions?: ReactNode
+  /** The record's next step: one band under the title, the same place on every surface (`NextStep`). */
+  readonly next?: ReactNode
   /** The facts beside the text. They wrap; they are not clipped. */
   readonly facts?: ReactNode
-  /** The next question and what can be done: stays in view. */
+  /** A preview that is not a record's: what can be done with what it shows, in view at its foot. A record's actions are `actions` and `next`. */
   readonly foot?: ReactNode
   readonly children: ReactNode
   readonly dataGuide?: string
@@ -55,7 +59,7 @@ export type PreviewProps = {
 
 const WRITES = 'input, textarea, select, [contenteditable="true"]'
 
-export function Preview({ ids, currentId, onSelect, title, code, listWord, openFull, edit, facts, foot, children, dataGuide }: PreviewProps) {
+export function Preview({ ids, currentId, onSelect, title, code, listWord, openFull, actions, next: nextStep, facts, foot, children, dataGuide }: PreviewProps) {
   const { t } = useStrings()
   const titleId = useId()
   const body = useRef<HTMLDivElement>(null)
@@ -99,25 +103,17 @@ export function Preview({ ids, currentId, onSelect, title, code, listWord, openF
           )}
           {code && <span className="kit-preview__code">{code}</span>}
           <span className="kit-preview__grow" />
-          {edit && (
-            <button type="button" className="kit-preview__edit" title={edit.title} data-testid={edit.testId} onClick={edit.onPress}>
-              <PencilIcon size={14} />
-              {edit.label}
-            </button>
-          )}
+          {openFull && <button type="button" className="kit-preview__link" onClick={openFull.onPress}>{openFull.label}</button>}
+          {actions}
           <button type="button" className="kit-preview__icon" aria-label={t('common.close')} onClick={() => onSelect(null)}><CloseIcon /></button>
         </div>
         <h2 className="kit-preview__title" id={titleId}>{title}</h2>
+        {nextStep && <div className="kit-preview__next">{nextStep}</div>}
         <div className="kit-preview__body" ref={body} tabIndex={0} role="region" aria-labelledby={titleId}>
           <div className="kit-preview__text">{children}</div>
           {facts && <div className="kit-preview__facts">{facts}</div>}
         </div>
-        {(foot || openFull) && (
-          <div className="kit-preview__foot">
-            {foot}
-            {openFull && <button type="button" className="kit-preview__link" onClick={openFull.onPress}>{openFull.label}</button>}
-          </div>
-        )}
+        {foot && <div className="kit-preview__foot">{foot}</div>}
       </div>
     </Modal>
   )

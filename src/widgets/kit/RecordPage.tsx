@@ -46,8 +46,10 @@ export type RecordPageProps = {
   readonly onRename?: (name: string) => string | void
   /** One sentence: *Accepted 10 Feb 2026. Locked: to change it, write a decision that replaces it.* */
   readonly status?: ReactNode
-  /** The ⋯ and whatever else belongs at the end of the head. */
+  /** What can be done to the record, at the end of the head: a `RecordActions` (verbs · ✎ Edit · ⋯). A page has no ×. */
   readonly actions?: ReactNode
+  /** The record's next step: one band under the head, where a preview and a panel have it too (`NextStep`). */
+  readonly next?: ReactNode
   /** A band for this record: *Kept in …*. */
   readonly band?: ReactNode
   /** The section to be at, said by the address: the page goes there when this changes. */
@@ -82,7 +84,7 @@ function useCurrentSection(root: React.RefObject<HTMLDivElement | null>, ids: re
   return [current, setCurrent] as const
 }
 
-export function RecordPage({ back, code, title, onRename, status, actions, band, section, onSection, sections, outlineFrom = 4, dataGuide }: RecordPageProps) {
+export function RecordPage({ back, code, title, onRename, status, actions, next, band, section, onSection, sections, outlineFrom = 4, dataGuide }: RecordPageProps) {
   const { t } = useStrings()
   const scroller = useRef<HTMLDivElement>(null)
   const outlined = sections.length >= outlineFrom
@@ -132,6 +134,7 @@ export function RecordPage({ back, code, title, onRename, status, actions, band,
           {actions && <span className="kit-record__actions">{actions}</span>}
         </div>
         {status && <div className="kit-record__status">{status}</div>}
+        {next && <div className="kit-record__next">{next}</div>}
       </header>
       {band}
       <div className="kit-record__scroll" ref={scroller} tabIndex={0} role="region" aria-label={t('kit.record.content')}>

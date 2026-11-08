@@ -135,22 +135,21 @@ describe('the preview', () => {
     expect(onPress).toHaveBeenCalled()
   })
 
-  it('puts Edit with its pencil at the top, and Open full record at the end of the one row at the foot', () => {
+  it('puts Open full record, what can be done and × at the end of the head, and the next step under the title', () => {
     const edit = vi.fn()
     renderShell(
       <Preview
         ids={['x']} currentId="x" onSelect={() => undefined} title="T"
-        edit={{ label: 'Edit', onPress: edit }} openFull={{ label: 'Open full record', onPress: () => undefined }}
-        foot={<button type="button">Ask why</button>}
+        actions={<button type="button" onClick={edit}>Edit</button>} openFull={{ label: 'Open full record', onPress: () => undefined }}
+        next={<button type="button">Ask why</button>}
       >
         body
       </Preview>,
     )
     const head = document.querySelector('.kit-preview__head')!
-    const foot = document.querySelector('.kit-preview__foot')!
-    expect(head.contains(screen.getByRole('button', { name: 'Edit' }))).toBe(true)
-    expect(head.querySelector('svg')).not.toBeNull()
-    expect([...foot.querySelectorAll('button')].map((one) => one.textContent)).toEqual(['Ask why', 'Open full record'])
+    expect([...head.querySelectorAll('button')].slice(-3).map((one) => one.getAttribute('aria-label') ?? one.textContent)).toEqual(['Open full record', 'Edit', 'Close'])
+    expect(document.querySelector('.kit-preview__next')?.textContent).toBe('Ask why')
+    expect(document.querySelector('.kit-preview__foot')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     expect(edit).toHaveBeenCalled()
   })

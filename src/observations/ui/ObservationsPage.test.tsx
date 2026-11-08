@@ -889,18 +889,19 @@ describe('the map’s right-click, and the whole record', () => {
     expect(refused.onChange).not.toHaveBeenCalled()
   })
 
-  it('goes back to the list from ‹, × or Escape on the whole record, and closes on the next press (ADR-0044 §2)', () => {
+  it('goes back to the list from its one named crumb or Escape on the whole record, and closes on the next press (ADR-0044 §2)', () => {
     const onClose = vi.fn()
     mount({ onClose, below: [] })
     const full = () => {
       openRow('o1')
       openFull()
       expect(screen.getByTestId('observation-history')).toBeTruthy()
-      expect(screen.getByTestId('page-back').getAttribute('aria-label')).toBe('Back to reading')
+      // One way back: the crumb, and no second ‹ or × on the tab row.
+      expect(screen.queryByTestId('page-back')).toBeNull()
+      expect(screen.queryByTestId('page-close')).toBeNull()
     }
     for (const leave of [
-      () => fireEvent.click(screen.getByTestId('page-back')),
-      () => fireEvent.click(screen.getByTestId('page-close')),
+      () => fireEvent.click(screen.getByRole('button', { name: 'Seen' })),
       () => fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' }),
     ]) {
       full()
