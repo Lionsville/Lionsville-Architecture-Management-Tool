@@ -96,6 +96,13 @@ const section = (name: string) => screen.getByRole('region', { name })
 const outlineTo = (name: RegExp) => fireEvent.click(within(screen.getByRole('navigation')).getByRole('button', { name }))
 
 describe('a plan, as axe reads it', () => {
+  it('says its next step in the band under the head, held while anything holds it', () => {
+    setup()
+    const move = screen.getByTestId('plan-move-next')
+    expect(move.closest('.kit-next')).toBeTruthy()
+    expect(move.textContent).toMatch(/^Move to /)
+  })
+
   it('finds nothing, reading or with a row pressed', async () => {
     setup()
     expect(await axeFindings()).toEqual([])

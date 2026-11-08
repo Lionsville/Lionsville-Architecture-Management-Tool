@@ -49,7 +49,7 @@ import { TimeStrip } from '../../widgets/kit/TimeStrip'
 import type { DescribeElsewhere } from '../planGateHints'
 import { boardsOfPlan, dayToShow } from '../planReading'
 import type { PlanBoard } from '../planReading'
-import { deleteAnswers, PlanStatusLine } from './PlanFacts'
+import { deleteAnswers, PlanNext, PlanStatusLine } from './PlanFacts'
 import type { GateWay } from './PlanFacts'
 import { PlanInterfaces } from './PlanInterfaces'
 import { PlanMoveDialog } from './PlanMoveDialog'
@@ -344,6 +344,14 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
             goTo={(way: GateWay) => { if (way === 'window' || way === 'owner') setHeadRow(way); else goTo(way) }}
           />
         )}
+        {...(readOnly ? {} : {
+          next: (
+            <PlanNext
+              plan={plan} model={model} decisions={decided} today={today} readOnly={readOnly} describe={props.describe} set={set}
+              goTo={(way: GateWay) => { if (way === 'window' || way === 'owner') setHeadRow(way); else goTo(way) }}
+            />
+          ),
+        })}
         actions={(
           <>
             <RecordActions

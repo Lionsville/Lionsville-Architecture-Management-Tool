@@ -186,6 +186,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'plan.noOwner': 'Nog niemand staat ervoor',
   'plan.window': 'Periode',
   'plan.statusNot': 'Nog niet',
+  'plan.moveTo': 'Naar {status}',
   'plan.ready': 'Klaar om naar {status} te gaan',
   'plan.holds': '{count} dingen houden het tegen voor {status}',
   'plan.holdsOne': '1 ding houdt het tegen voor {status}',

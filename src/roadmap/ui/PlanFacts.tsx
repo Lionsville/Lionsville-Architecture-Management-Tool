@@ -9,6 +9,7 @@
  * Each writes through the one patch it is handed and holds no more state than what
  * is being typed. A reader sees the same words with nothing to press.
  */
+import { NextStep } from '../../widgets/kit/NextStep'
 import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { TRANSITION_STATUSES, portsOf, transitionStatusesFrom, unplannedPorts } from '../../model'
@@ -22,7 +23,6 @@ import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import type { DialogAnswers } from '../../widgets/kit/Dialog'
 import { PropertyRow, PropertyRows, DateInput } from '../../widgets/kit/Field'
-import { Mark } from '../../widgets/kit/Mark'
 import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PLAN_STATUS_LABEL as STATUS_LABEL } from '../labels'
@@ -118,17 +118,25 @@ function StatusControl({ plan, model, decisions, today, readOnly, describe, set,
   return <MenuButton label={said} menuLabel={t('roadmap.status')} items={items} size="small" data-guide="plan.status" />
 }
 
-/** One line on where it stands: *Ready to move to Running*, or how many things hold it. A forward move is the question; the rest are always open. */
-function Standing({ plan, model, decisions, today, describe }: Pick<StatusProps, 'plan' | 'model' | 'decisions' | 'today' | 'describe'>) {
+/**
+ * The plan's next step, in the band under the head where every record has it: the
+ * move forward as the accent button, held while anything holds it, each hold a way
+ * to where it is cleared. The status menu still offers every other move.
+ */
+export function PlanNext({ plan, model, decisions, today, describe, set, goTo }: StatusProps) {
   const { t } = useStrings()
   const [next] = [...gatesFor(plan, model, decisions, today, describe).values()]
   if (!next) return null
-  const open = openPlanItems(next).length
+  const open = openPlanItems(next)
   const to = t(STATUS_LABEL[next.to])
   return (
-    <span className="plan-standing" data-testid="plan-standing">
-      <Mark kind={open === 0 ? 'agree' : 'review'} />
-      {open === 0 ? t('plan.ready', { status: to }) : t(open === 1 ? 'plan.holdsOne' : 'plan.holds', { count: open, status: to })}
+    <span data-testid="plan-standing">
+      <NextStep
+        inline
+        question={open.length === 0 ? t('plan.ready', { status: to }) : t(open.length === 1 ? 'plan.holdsOne' : 'plan.holds', { count: open.length, status: to })}
+        actions={[{ label: t('plan.moveTo', { status: to }), primary: true, held: open.length > 0, onPress: () => set(statusPatch(plan, next.to, today)), testId: 'plan-move-next' }]}
+        holds={open.map((item) => ({ label: t(GATE_LABEL[item]), onPress: () => goTo(WAY_OF[item]) }))}
+      />
     </span>
   )
 }
@@ -216,7 +224,6 @@ export function PlanStatusLine(props: StatusProps & { editing: string | undefine
           )}
         />
       </PropertyRows>
-      {!readOnly && <Standing {...props} />}
       {initiative && plan.initiative && <span className="plan-standing">{t('plan.initiativeOn')}</span>}
     </div>
   )

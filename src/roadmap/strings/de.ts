@@ -186,6 +186,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'plan.noOwner': 'Noch niemand verantwortet ihn',
   'plan.window': 'Zeitraum',
   'plan.statusNot': 'Noch nicht',
+  'plan.moveTo': 'Auf „{status}“ wechseln',
   'plan.ready': 'Kann auf „{status}“ wechseln',
   'plan.holds': '{count} Dinge halten es von {status} ab',
   'plan.holdsOne': '1 Ding hält es von {status} ab',

@@ -203,6 +203,7 @@ export const EN = {
   'plan.noOwner': 'Nobody answers for it yet',
   'plan.window': 'Window',
   'plan.statusNot': 'Not yet',
+  'plan.moveTo': 'Move to {status}',
   'plan.ready': 'Ready to move to {status}',
   'plan.holds': '{count} things hold it from {status}',
   'plan.holdsOne': '1 thing holds it from {status}',
