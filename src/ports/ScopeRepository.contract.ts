@@ -763,11 +763,12 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         .replaceAll(`"${FROM}`, `"${to}`)
         .replaceAll(`"${FROM.replaceAll('/', '.')}~`, `"${to.replaceAll('/', '.')}~`))
 
-      it.each([
+      // A loop rather than `it.each`: a host's runner may wrap `it` and not its table.
+      for (const [how, parent, to] of [
         ['down, under a sibling\'s child', 'beta/deep', 'beta/deep/moved'],
         ['up, to the organisation', '', 'moved'],
         ['sideways, under a sibling', 'beta', 'beta/moved'],
-      ])('%s', async (_how, parent, to) => {
+      ] as const) it(how, async () => {
         const repositories = await fresh()
         await repositories.scope(`${FROM}/below`, 'Below')
         await repositories.scope('beta/deep', 'Deep')
