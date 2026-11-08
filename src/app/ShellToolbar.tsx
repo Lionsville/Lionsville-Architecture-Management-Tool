@@ -310,25 +310,27 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, s }: {
   after?: ReactNode
   s: Translate
 }) {
-  // Within the trail, where it has to give way, the names between give way
-  // first, then the organisation's, the open scope's last — an ancestor's name
-  // is the one a reader can most afford to lose — each to an ellipsis rather
-  // than a wrap.
+  // Within the trail, where it has to give way, the organisation's name gives
+  // way first, then the ones between, the open scope's last — an ancestor's
+  // name is the one a reader can most afford to lose — each to an ellipsis
+  // rather than a wrap.
   const pressed = useContext(CrumbPressContext)
   const go = (path: ScopePath) => { pressed(); onGoHome(path) }
-  // The name between gives way first, but only down to a few readable letters:
-  // then the organisation gives way, down to as many, and the open scope last.
+  // The organisation gives way first, but only down to a few readable letters:
+  // then the name between gives way, down to as many, and the open scope last.
+  // The organisation is the name a reader knows best and reads least — it is
+  // the same on every screen — while the one between says where in it this is;
+  // with the middle first, it was cut to six letters at 1100 px while the
+  // organisation still stood at twenty.
   // The order is a flex-shrink apart by orders of magnitude, so that while one
   // name gives way the next loses under a hundredth of a pixel, which no
   // ellipsis shows; and the open scope's is 1, not a fraction, because a line
   // whose only shrinking item has a factor under 1 takes only that part of its
-  // shortfall and spills the rest over its neighbours. With the organisation
-  // never giving way, a long one cut the name between to one letter at 900 px
-  // and pushed the open scope's over the find field.
+  // shortfall and spills the rest over its neighbours.
   const shrinking = (order: number, least: string | 0 = 0) => ({
     minWidth: least, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
-  const giveWay = { between: 1e8, organisation: 1e4, open: 1 }
+  const giveWay = { organisation: 1e8, between: 1e4, open: 1 }
   // About six letters and an ellipsis, with the crumb's padding and its ›.
   const fewLetters = 'calc(5ch + 2.25rem)'
   // Deep in the tree the scopes between the organisation and the one above
