@@ -43,6 +43,8 @@ export const DE: Record<keyof typeof EN, string> = {
     'Dieser Browser konnte Ihre Arbeit nicht speichern (Speicher voll oder blockiert). Speichern Sie eine Kopie, sonst ist sie beim Schließen des Tabs verloren.',
   'shell.keptAgain': 'Speichern in diesem Browser funktioniert wieder.',
   'shell.sourceNotOpened': 'Diese Quelle konnte nicht geöffnet werden: {message}',
+  'shell.sourceNotOpenedFault': 'Diese Quelle konnte nicht geöffnet werden: In der App ist etwas schiefgegangen. Laden Sie neu, und melden Sie es, wenn es wieder geschieht.',
+  'shell.problemDetails': 'Details',
   'shell.crashed': 'Auf diesem Bildschirm ist etwas schiefgegangen.',
   'shell.crashedNote':
     'Ihre Arbeit bis zum letzten Speichern ist noch da. Laden Sie neu, um weiterzumachen; die Diagnose sagt, was passiert ist.',

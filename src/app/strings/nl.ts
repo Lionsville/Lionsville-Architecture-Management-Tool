@@ -43,6 +43,8 @@ export const NL: Record<keyof typeof EN, string> = {
     'Deze browser kon je werk niet bewaren (opslag vol of geblokkeerd). Bewaar een kopie, anders is het bij het sluiten van het tabblad weg.',
   'shell.keptAgain': 'Bewaren in deze browser lukt weer.',
   'shell.sourceNotOpened': 'Die bron kon niet worden geopend: {message}',
+  'shell.sourceNotOpenedFault': 'Die bron kon niet worden geopend: er ging iets mis in de app. Laad opnieuw, en meld het als het weer gebeurt.',
+  'shell.problemDetails': 'Details',
   'shell.crashed': 'Er ging iets mis op dit scherm.',
   'shell.crashedNote':
     'Je werk tot het laatste bewaarmoment staat er nog. Herlaad om verder te gaan; de diagnostiek zegt wat er gebeurde.',

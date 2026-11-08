@@ -90,6 +90,8 @@ export const EN = {
    * knows and this is the shell talking.
    */
   'shell.sourceNotOpened': 'That source could not be opened: {message}',
+  'shell.sourceNotOpenedFault': 'That source could not be opened: something went wrong in the app. Reload, and report it if it happens again.',
+  'shell.problemDetails': 'Details',
   /**
    * The crash fallback. One key for both boundaries — the one around the whole
    * app and the one around the canvas — because what the reader can do about it

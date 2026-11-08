@@ -18,10 +18,10 @@
 import Alert from '@mui/material/Alert'
 import AlertTitle from '@mui/material/AlertTitle'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../i18n'
 import { describeCause } from '../platform/diagnostics'
+import { Button } from '../widgets/kit/Button'
 
 export type BootFailureProps = {
   s: Translate
@@ -37,14 +37,14 @@ export function BootFailure({ s, error, onStartFresh, onReload }: BootFailurePro
       <Alert severity="error" sx={{ maxWidth: 640, width: '100%' }} data-testid="boot-failure">
         <AlertTitle>{s('shell.bootFailed')}</AlertTitle>
         <Typography sx={{ fontSize: 'var(--t-body)' }}>{s('shell.bootFailedNote')}</Typography>
-        <Typography sx={{ fontSize: 'var(--t-small)', mt: 1, color: 'text.secondary' }}>
+        {/* The technical words, for a report, behind a disclosure rather than inside the sentence. */}
+        <Box component="details" sx={{ fontSize: 'var(--t-small)', mt: 1, color: 'text.secondary' }}>
+          <summary>{s('shell.problemDetails')}</summary>
           {describeCause(error)}
-        </Typography>
+        </Box>
         <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <Button size="small" variant="contained" onClick={onStartFresh}>
-            {s('shell.startFresh')}
-          </Button>
-          <Button size="small" onClick={onReload}>{s('shell.reload')}</Button>
+          <Button variant="primary" onClick={onStartFresh}>{s('shell.startFresh')}</Button>
+          <Button variant="quiet" onClick={onReload}>{s('shell.reload')}</Button>
         </Box>
       </Alert>
     </Box>

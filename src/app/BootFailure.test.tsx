@@ -12,6 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { translator } from '../i18n'
 import { BootFailure } from './BootFailure'
+import { isFault } from './useShellServices'
 import { renderShell } from './testing/renderShell'
 
 afterEach(() => cleanup())
@@ -23,6 +24,14 @@ describe('BootFailure', () => {
       onStartFresh={() => {}} onReload={() => {}} />)
     expect(screen.getByTestId('boot-failure').textContent).toContain('The app could not start.')
     expect(screen.getByText('Error: storage refused')).toBeTruthy()
+    // The technical words sit behind Details, not inside the sentence.
+    expect(screen.getByText('Details').tagName).toBe('SUMMARY')
+  })
+
+  it('tells a fault in the app\'s code from a refusal a person can act on', () => {
+    expect(isFault(new TypeError('crypto.randomUUID is not a function'))).toBe(true)
+    expect(isFault(new Error('storage refused'))).toBe(false)
+    expect(isFault('nope')).toBe(false)
   })
 
   it('offers the way out, and takes it', () => {

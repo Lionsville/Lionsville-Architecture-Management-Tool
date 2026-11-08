@@ -160,6 +160,8 @@ export function useOpeningFailures(deps: {
   useEffect(() => {
     if (failure === undefined) return
     const { notify: tell, s: words, failureKey: key } = say.current
+    // A fault in the app's own code says nothing a person can act on, and in English: it goes to the diagnostics, not into the sentence.
+    if (isFault(failure)) { tell(words('shell.sourceNotOpenedFault'), 'error'); return }
     tell(words((key ?? 'shell.sourceNotOpened') as StringKey, { message: reasonOf(failure) }), 'error')
   }, [failure])
 }
@@ -221,4 +223,9 @@ export function useSavedFilters(prefs: ShellPreferences): SavedFilters {
     prefs.writePreference({ [SAVED_FILTERS_KEY]: next })
   }, [prefs])
   return useMemo(() => ({ list, onChange }), [list, onChange])
+}
+
+/** A JavaScript fault rather than a refusal with words: what no sentence for a person should quote. */
+export function isFault(failure: unknown): boolean {
+  return failure instanceof Error && ['TypeError', 'ReferenceError', 'SyntaxError', 'RangeError'].includes(failure.name)
 }
