@@ -26,4 +26,14 @@ describe('TimeStrip', () => {
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.getByRole('img', { name: /Contract signed/ })).toBeTruthy()
   })
+
+  it('says today on a row of its own, off the month row, and turns it inward at the right end', () => {
+    const { container, rerender } = render(<TimeStrip label="Time" today="2026-11-07" from="2026-06-01" to="2027-03-31" items={ITEMS} />)
+    const today = () => container.querySelector('.kit-strip__today') as HTMLElement
+    expect(today().textContent).toBe('Today')
+    expect(today().closest('.kit-strip__ruler')).toBeNull()
+    expect(today().hasAttribute('data-flip')).toBe(false)
+    rerender(<TimeStrip label="Time" today="2027-03-25" from="2026-06-01" to="2027-03-31" items={ITEMS} />)
+    expect(today().hasAttribute('data-flip')).toBe(true)
+  })
 })

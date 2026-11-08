@@ -17,7 +17,10 @@
 .kit-strip__today { position: absolute; top: 0; bottom: 0; padding-inline-start: var(--s-1); border-left: 2px solid var(--axis-today); margin-left: -1px; color: var(--axis-today); font-weight: var(--fw-strong); line-height: 18px; pointer-events: none; }
 /* Today's word stands on its own line at the foot, under the milestones' two, so it covers no month's name and no milestone's words. */
 .kit-strip__today { z-index: 1; height: 1.25rem; top: auto; bottom: 0; background: var(--surface); }
-.kit-strip__todayline { position: absolute; top: 0; bottom: 0; border-left: 2px solid var(--axis-today); margin-left: -1px; pointer-events: none; }
+/* From under the month row, so its words are not struck through, down to today's word. */
+.kit-strip__todayline { position: absolute; top: 1.25rem; bottom: 0; border-left: 2px solid var(--axis-today); margin-left: -1px; pointer-events: none; }
+/* Near the right end the word stands to the left of its line. */
+.kit-strip__today[data-flip] { transform: translateX(-100%); border-left: 0; border-right: 2px solid var(--axis-today); margin-left: 1px; }
 .kit-strip__band { position: absolute; top: 1.375rem; height: 10px; border: 1px solid var(--accent); border-radius: var(--r-1); background: var(--accent-soft); box-sizing: border-box; }
 .kit-strip__item { position: absolute; top: 1.25rem; width: 0; height: 3.75rem; padding: 0; border: 0; background: none; color: inherit; font: inherit; }
 button.kit-strip__item { cursor: pointer; }
