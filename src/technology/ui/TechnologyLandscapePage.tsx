@@ -32,6 +32,7 @@ import { captureSheet } from '../../widgets/capturePage'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { Button } from '../../widgets/kit/Button'
 import { ColourMenu } from '../../widgets/kit/ColourMenu'
+import { daysWorthLooking } from '../../model/daysWorthLooking'
 import { DayControl } from '../../widgets/kit/DayControl'
 import type { DayGroup } from '../../widgets/kit/DayControl'
 import { FindField } from '../../widgets/kit/FindField'
@@ -44,6 +45,7 @@ import { PickerAt } from '../../widgets/kit/Picker'
 import type { PickerOption } from '../../widgets/kit/Picker'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { tokenVar } from '../../widgets/kit/tokens'
+import type { ColourToken } from '../../widgets/kit/tokens'
 import { ViewBar, ViewBarButton, ViewBarMenu } from '../../widgets/kit/ViewBar'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PageDialog } from '../../widgets/PageDialog'
@@ -198,6 +200,15 @@ function usePick(landscape: TechnologyLandscape | undefined, props: Pick<Technol
 
 type Adding = { kind: 'platform' | 'platformService'; parentId?: ElementId; at: { x: number; y: number } }
 
+/** A value's colour with its number in it, on a row and in the key alike; a value with no colour is an outline round its number. */
+function LensCode({ code, swatch }: { code: number | undefined; swatch: ColourToken | undefined }) {
+  return (
+    <span className="tl-swatch" data-code={code} data-outline={swatch ? undefined : true} style={swatch ? { background: tokenVar(swatch) } : undefined}>
+      {code}
+    </span>
+  )
+}
+
 function useColouring(landscape: TechnologyLandscape | undefined, lens: LandscapeColour | undefined, ownerText: ((owner: PersonRef) => string) | undefined) {
   const { t } = useStrings()
   const [pressed, setPressed] = useState<string | undefined>(undefined)
@@ -208,16 +219,17 @@ function useColouring(landscape: TechnologyLandscape | undefined, lens: Landscap
   const values = useMemo<KeyValue[]>(() => {
     const counts = new Map<string, number>()
     for (const value of colours?.values() ?? []) counts.set(value, (counts.get(value) ?? 0) + 1)
+    // Each value has a number, on its rows and in the key, as the board's lens has: colour is never the only signal.
     return [...counts].sort(([, a], [, b]) => b - a).map(([id, count], at) => {
       const swatch = phases ? PHASE_SWATCH[id as keyof typeof PHASE_SWATCH] : lensOf(at)
-      return { id, count, label: phases ? t(PHASE_WORD[id as keyof typeof PHASE_WORD]) : id, ...(swatch ? { swatch } : {}) }
+      return { id, count, label: phases ? t(PHASE_WORD[id as keyof typeof PHASE_WORD]) : id, ...(swatch ? { swatch } : {}), shown: <LensCode code={at + 1} swatch={swatch} /> }
     })
   }, [colours, phases, t])
   const swatchOf = useCallback((key: NodeKey) => {
     const value = colours?.get(key)
     if (!lens) return null
-    const token = values.find((one) => one.id === value)?.swatch
-    return <span className="tl-swatch" data-outline={token ? undefined : true} style={token ? { background: tokenVar(token) } : undefined} />
+    const at = values.findIndex((one) => one.id === value)
+    return <LensCode code={at < 0 ? undefined : at + 1} swatch={values[at]?.swatch} />
   }, [colours, lens, values])
   const quiet = useCallback((key: NodeKey) => pressed !== undefined && colours?.get(key) !== pressed, [pressed, colours])
   return { values, pressed, setPressed, swatchOf, quiet }
@@ -361,15 +373,22 @@ function useExport(props: TechnologyLandscapePageProps, capture: PageHandle['cap
   return { open: () => setAsking(true), dialog }
 }
 
+const DAY_PHASE = { live: 'landscape.dayLive', retiring: 'landscape.dayRetiring', retired: 'landscape.dayRetired' } as const
+
 function LandscapeBar({ props, showing, landscape, groupLabel, reading, setReading, onExport }: {
   props: TechnologyLandscapePageProps; showing: ReturnType<typeof useLandscapeShowing>; landscape: TechnologyLandscape
   groupLabel(key: string, label?: string): string; reading: string; setReading(tab: string): void; onExport: (() => void) | undefined
 }) {
   const { t } = useStrings()
+  // The days the board offers, from the same reading: a plan's milestones, when something goes live or goes, a view saved on a day.
   const days = useMemo<DayGroup[]>(() => {
-    const goes = props.model.elements.filter((one) => (one.kind === 'platform' || one.kind === 'platformService') && one.lifecycleDates?.retired)
-    return goes.length === 0 ? [] : [{ heading: t('landscape.dayGoes'), days: goes.map((one) => ({ day: one.lifecycleDates!.retired!, label: t('landscape.dayGoesOne', { name: one.name }) })) }]
-  }, [props.model.elements, t])
+    const worth = daysWorthLooking(props.model, props.today ?? '', {
+      plan: (plan, milestone) => t('landscape.dayPlan', { plan, milestone }),
+      phase: (phase, name) => t(DAY_PHASE[phase], { name }),
+      board: (name) => t('landscape.dayBoard', { name }),
+    })
+    return worth.length === 0 ? [] : [{ heading: t('landscape.dayHere'), days: worth }]
+  }, [props.model, props.today, t])
   return (
     <ViewBar
       label={t('landscape.page')}

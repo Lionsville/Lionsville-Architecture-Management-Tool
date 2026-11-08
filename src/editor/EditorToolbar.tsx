@@ -32,7 +32,7 @@ import { AddIcon, CaretIcon, RadarIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { DayControl } from '../widgets/kit/DayControl';
 import { formatDay } from '../i18n/dates';
-import { daysWorthLooking } from './daysWorthLooking';
+import { daysWorthLooking } from '../model/daysWorthLooking';
 import { type Language, type StringKey } from '../i18n/strings';
 
 /**

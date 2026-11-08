@@ -45,6 +45,12 @@
 
 .tl-swatch { display: inline-block; width: var(--mark-size); height: var(--mark-size); border-radius: 2px; }
 .tl-swatch[data-outline] { border: 1px solid var(--line-strong); box-sizing: border-box; }
+/* A value's number in its colour: the ground's ink reads on every lens colour in both modes, as the board's tag does. */
+.tl-swatch[data-code] {
+  flex: none; box-sizing: border-box; width: auto; min-width: calc(var(--mark-size) + 6px); height: auto; padding: 0 3px;
+  color: var(--surface); font-size: var(--t-small); font-weight: var(--fw-strong); line-height: 1.35; text-align: center; font-variant-numeric: tabular-nums;
+}
+.tl-swatch[data-code][data-outline] { color: var(--ink); }
 .tl-tick { display: inline-block; width: var(--s-3); height: var(--s-3); box-sizing: border-box; border: 1px solid var(--line-strong); background: var(--surface); }
 .tl-tick[data-tick='use'] { background: var(--ink); box-shadow: inset 0 0 0 2px var(--surface); }
 .tl-tick[data-tick='runs'] { border-radius: 50%; background: var(--ink); box-shadow: inset 0 0 0 2px var(--surface); }

@@ -429,11 +429,14 @@ describe('Day and Colour', () => {
     expect(namesIn('landscape-band-platforms')).not.toContain('Event broker')
     expect(screen.getByRole('button', { name: /^Day: / })).toBeDefined()
   })
-  it('asks for another day through the host', () => {
+  it('asks for another day through the host, offering the days the board offers: a plan’s milestones and when things go', () => {
     const onDay = vi.fn()
-    open({ model: dated(), onDay })
+    // The model the workspace hands in is the scope's, plans and all.
+    const planned = { ...dated(), transitions: [{ id: 'p1', number: 1, title: 'Move the broker', milestones: [{ id: 'm1', date: '2027-03-01', name: 'Cut over' }] }] } as DesignModel
+    open({ model: planned, today: '2026-11-08', onDay })
     fireEvent.click(screen.getByRole('button', { name: 'Day' }))
-    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: /Event broker goes/ }))
+    expect(screen.getByRole('menuitemcheckbox', { name: /Move the broker: Cut over/ })).toBeDefined()
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: /Event broker is gone/ }))
     expect(onDay).toHaveBeenCalledWith('2027-06-01')
   })
   it('colours by one question, with a key made of what is drawn, and writes nothing until kept', () => {
@@ -443,6 +446,10 @@ describe('Day and Colour', () => {
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'What it stands on' }))
     expect(screen.getByRole('button', { name: /^Colour: / })).toBeDefined()
     expect(rowOf('Event broker').querySelector('.tl-swatch')).not.toBeNull()
+    // Colour is not the only signal: the row carries its value's number, and the key says it beside the same colour.
+    const code = rowOf('Event broker').querySelector('.tl-swatch')?.textContent
+    expect(code).toMatch(/^\d+$/)
+    expect([...screen.getByRole('group', { name: 'Key' }).querySelectorAll('.tl-swatch')].map((one) => one.textContent)).toContain(code)
     const key = screen.getByRole('group', { name: 'Key' })
     expect(within(key).getByRole('button', { name: /retiring/ })).toBeDefined()
     expect(onKeepColour).not.toHaveBeenCalled()

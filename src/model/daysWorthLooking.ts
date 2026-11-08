@@ -11,7 +11,7 @@
  *
  * Pure, and no words but the ones it is handed.
  */
-import type { LifecycleDates } from '../model/types'
+import type { LifecycleDates } from './types'
 
 export type WorthLooking = { readonly day: string; readonly label: string }
 
