@@ -2449,7 +2449,7 @@ so when a name goes from the register, it goes from every screen at once.
   The register keeps no history of a name, so nothing brings it back. A
   signed decision keeps the name it was signed with, shown there alone:
   nothing links it to the forgotten entry.
-- **Remove now**, on an entry already forgotten, takes it out of the register;
+- **Delete now**, on an entry already forgotten, deletes it from the register;
   whatever pointed at it reads *a former colleague*.
 - **Points at them** lists every record whose fields name the person by id —
   an element or a plan they own, an observation they saw, an experiment they
@@ -2483,7 +2483,7 @@ which is then not offered.
 Such a source may also know who may do what. The page then offers each
 change only to whoever may make it: **Add person**, **Correct…** and **Mark
 as left** perhaps for the people of your own units only, and **Merge…**,
-**Forget now**, **Remove now** and the policy only to the organisation's
+**Forget now**, **Delete now** and the policy only to the organisation's
 administrators. **Not the same person** and **Take back** are offered to
 whoever may merge the two, and, where the source gives a managing role the
 right to change its people, to a manager whose units hold both of them

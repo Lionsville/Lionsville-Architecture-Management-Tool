@@ -2641,7 +2641,7 @@ verdwijnt hij in één keer van elk scherm.
   bewaart geen geschiedenis van een naam, dus niets brengt hem terug. Een
   ondertekend besluit houdt de naam waarmee het is ondertekend, en toont die
   daar los: niets koppelt haar aan de vergeten vermelding.
-- **Nu weghalen**, bij een vermelding die al vergeten is, haalt haar uit
+- **Nu verwijderen**, bij een vermelding die al vergeten is, verwijdert haar uit
   het register; wat ernaar wees leest *een oud-collega*.
 - **Verwijst naar hen** noemt elke vastlegging waarvan een veld de persoon
   bij id noemt — een element of plan waarvan ze eigenaar zijn, een
@@ -2678,7 +2678,7 @@ gemarkeerd wordt zonder **Dit ben ik**, dat dan niet wordt aangeboden.
 Zo'n bron kan ook weten wie wat mag. De pagina biedt dan elke wijziging
 alleen aan wie haar mag doen: **Persoon toevoegen**, **Corrigeren…** en
 **Markeren als vertrokken** bijvoorbeeld alleen voor de mensen van je eigen
-eenheden, en **Samenvoegen…**, **Nu vergeten**, **Nu weghalen** en het
+eenheden, en **Samenvoegen…**, **Nu vergeten**, **Nu verwijderen** en het
 beleid alleen voor de beheerders van de organisatie. **Niet dezelfde
 persoon** en **Terugnemen** krijgt wie de twee mag samenvoegen, en, waar de
 bron een leidinggevende rol het recht geeft de mensen ervan te wijzigen, een

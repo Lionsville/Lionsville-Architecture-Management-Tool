@@ -416,7 +416,7 @@ describe('a person', () => {
   it('shows where a leaver stands as three dates, and what held them back', () => {
     renderShell(<Harness source={{ held: (id) => (id === 'pe-gijs' ? 'signedInSinceLeaving' : undefined) }} />)
     pick('pe-gijs')
-    expect(screen.getByTestId('people-steps').textContent).toBe('Left14 Aug 2026 · Take back leaving…Name forgotten12 Nov 2026Entry removed11 Nov 2028')
+    expect(screen.getByTestId('people-steps').textContent).toBe('Left14 Aug 2026 · Take back leaving…Name forgotten12 Nov 2026Entry deleted11 Nov 2028')
     expect(screen.getByTestId('people-held-back').textContent).toContain(s('people.heldSignedIn'))
     expect(within(screen.getByTestId('people-held-back')).getByRole('button', { name: 'Forget now…' })).toBeDefined()
     expect(screen.queryByText(s('people.leftDue'))).toBeNull()
@@ -521,7 +521,7 @@ describe('leaving', () => {
     expect(effects).toContain('Ends 2 roles on that day: Lead in Dock crew, Member in Parcel.')
     expect(within(dialog).getAllByTestId('people-leave-vacancy').map((one) => one.textContent?.trim())).toEqual(['Dock crew then has no Lead.'])
     expect(effects).toContain('Keeps the name on every screen until 29 Jan 2027, then shows a pseudonym.')
-    expect(effects).toContain('Removes the entry on 28 Jan 2029.')
+    expect(effects).toContain('Deletes the entry on 28 Jan 2029.')
     expect(dialog.textContent).toContain('can be taken back until the name is forgotten')
     fireEvent.click(within(dialog).getByTestId('people-leave-confirm'))
     await waitFor(() => expect(row('pe-pia').textContent).toContain('Left 31 Oct 2026'))
@@ -589,11 +589,11 @@ describe('forgetting and removing', () => {
     }
   })
 
-  it('removes a forgotten entry after asking', async () => {
+  it('deletes a forgotten entry after asking', async () => {
     renderShell(<Harness />)
     pick('pe-gone')
-    await fromMenu('Remove now…')
-    const dialog = await answerDialog('Remove Former colleague 7KQM?')
+    await fromMenu('Delete now…')
+    const dialog = await answerDialog('Delete Former colleague 7KQM?')
     fireEvent.click(within(dialog).getByTestId('people-remove-confirm'))
     await waitFor(() => expect(rowOf('pe-gone')).toBeNull())
     await waitFor(() => expect(screen.queryByTestId('people-person')).toBeNull())

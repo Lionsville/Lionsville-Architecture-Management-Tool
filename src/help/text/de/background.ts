@@ -2779,7 +2779,7 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   zurück. Eine unterzeichnete Entscheidung behält den Namen, mit dem sie
   unterzeichnet wurde, und zeigt ihn dort allein: Nichts verbindet ihn mit dem
   vergessenen Eintrag.
-- **Jetzt entfernen** nimmt einen bereits vergessenen Eintrag aus dem
+- **Jetzt löschen** löscht einen bereits vergessenen Eintrag aus dem
   Register; was darauf zeigte, lautet *eine ehemalige Person*.
 - **Verweist auf sie** nennt jeden Eintrag, dessen Felder die Person per ID
   nennen — ein Element oder einen Plan, für den sie verantwortlich ist, eine
@@ -2819,7 +2819,7 @@ Eine solche Quelle kann auch wissen, wer was darf. Die Seite bietet dann jede
 Änderung nur dem an, der sie vornehmen darf: **Person hinzufügen**,
 **Korrigieren…** und **Als ausgeschieden markieren** etwa nur für die
 Menschen Ihrer eigenen Einheiten, und **Zusammenführen…**, **Jetzt vergessen**,
-**Jetzt entfernen** und die Richtlinie nur den Administratoren der
+**Jetzt löschen** und die Richtlinie nur den Administratoren der
 Organisation. **Nicht dieselbe Person** und **Zurücknehmen** bekommt, wer die
 beiden zusammenführen darf, und, wo die Quelle einer leitenden Rolle das Recht
 gibt, deren Menschen zu ändern, eine leitende Person, in deren Einheiten heute
@@ -2859,7 +2859,7 @@ oder Text wie bisher — einen Namen, Initialen, ein Team.
   Verlauf landet.
 - **Eine gewählte Person** wird als ID geführt. Das Feld zeigt, was das
   Register sagt: den Namen, oder *Ehemalige Person 7KQM*, sobald sie
-  vergessen ist, oder *eine ehemalige Person*, sobald der Eintrag entfernt
+  vergessen ist, oder *eine ehemalige Person*, sobald der Eintrag gelöscht
   ist. Ein zusammengeführter Eintrag zeigt den, in den er aufging. Das Kreuz
   nimmt die Person aus dem Feld.
 - **Text** bleibt Text. Text, der geschrieben wurde, bevor es das Register
