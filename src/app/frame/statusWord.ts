@@ -28,6 +28,8 @@ export type StatusFacts = {
   readonly connected?: boolean | undefined
   /** Where the work is, in the source's word: said after the state, so one word answers both questions. */
   readonly place?: string | undefined
+  /** The place is the one this window started in: the panel says it, so a save says its time alone. */
+  readonly placeAsStarted?: boolean | undefined
   /** Nothing here outlives this tab, so that is what the word says while nothing is wrong. */
   readonly transient?: boolean | undefined
   /** ...which is nothing to worry about in the example, where nothing being kept is the point. */
@@ -78,7 +80,10 @@ export function statusWord(facts: StatusFacts, language: Language, s: Translate)
   }
   const word = WORDS[status]
   if (word) return said(s(word), 'busy')
-  if (savedAt) return said(at(s('shell.saved', { time: clockTime(savedAt, language) })), 'saved')
+  if (savedAt) {
+    const saved = s('shell.saved', { time: clockTime(savedAt, language) })
+    return said(facts.placeAsStarted ? saved : at(saved), 'saved')
+  }
   // Clean and not written this session is what was read: kept where it is, which is the one thing to say.
   return said(place ?? s('shell.notSaved'), 'saved')
 }

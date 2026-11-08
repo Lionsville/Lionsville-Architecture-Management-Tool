@@ -322,11 +322,12 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   const shrinking = (order: number) => ({
     minWidth: order === 0 ? '6ch' : 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
-  // In the frame the trail shares the row with two spacers around the find field;
-  // grown as one of three it was cut to a third of the room at any width. It takes
-  // the room its names need first, and the spacers share what is left.
+  // In the frame the trail shares the row with two spacers around the find field
+  // and the status word. It starts at the width its names need, so the spacers
+  // share only what is left, and where the row is short the status word, which
+  // shrinks a hundred times faster, gives way before a name does.
   return (
-    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '1000 1 0', maxWidth: 'max-content' }}>
+    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '0 1 auto', maxWidth: 'max-content' }}>
       {crumbs.map((crumb, index) => (
         <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(index === 0 ? 0 : 40 - index) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>

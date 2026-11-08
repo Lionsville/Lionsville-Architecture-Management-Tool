@@ -52,6 +52,8 @@
 .kit-frame__status {
   appearance: none; border: 0; background: none; font: inherit; cursor: pointer; color: var(--ink-2); white-space: nowrap;
   height: var(--ctl-h); padding-inline: var(--s-2); border-radius: var(--r-3); max-width: 24rem; overflow: hidden; text-overflow: ellipsis;
+  /* Where the row is short it gives way before what stands left of it (the trail): the panel behind it says the rest. */
+  flex: 0 100 auto; min-width: 6rem;
 }
 .kit-frame__status { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--t-body); }
 .kit-frame__status-word { overflow: hidden; text-overflow: ellipsis; }
@@ -115,7 +117,7 @@
 @container kit-frame (max-width: 75rem) {
   .kit-frame__find span { display: none; }
   .kit-frame__find { flex: 0 0 36px; justify-content: center; padding-inline: 0; }
-  .kit-frame__status { max-width: 8rem; min-width: 5rem; flex-shrink: 1; }
+  .kit-frame__status { max-width: 8rem; min-width: 5rem; }
   .kit-frame__status:has(.kit-frame__status-short) .kit-frame__status-word { display: none; }
   .kit-frame__status-short { display: inline; }
 }

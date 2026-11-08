@@ -48,6 +48,12 @@ describe('the status word', () => {
     expect(word({ status: 'clean', savedAt: new Date('2026-11-07T10:23:00'), place: 'Folder · work1' }).text).toMatch(/10:23.* · Folder · work1$/)
   })
 
+  it('says a save’s time alone in the place the window started in, which the panel names', () => {
+    const facts = { status: 'clean', savedAt: new Date('2026-11-07T10:23:00'), place: 'Folder · work1' } as const
+    expect(word({ ...facts, placeAsStarted: true }).text).toBe(s('shell.saved', { time: '10:23' }))
+    expect(word({ ...facts, placeAsStarted: false }).text).toMatch(/ · Folder · work1$/)
+  })
+
   it('says nothing is waiting where nothing is open', () => {
     expect(word({}).text).toBe(s('frame.nothingWaiting'))
   })

@@ -30,15 +30,20 @@ import { useFrameState } from './frameStore'
 import type { OwnWork, ScreenFacts } from './frameStore'
 import { PANEL_HELP } from '../../platform/helpPlaces'
 
+/** The place each window's word first said, kept by its frame: a save there needs no more than its time. */
+const firstPlace = new WeakMap<object, string>()
+
 /** The word on row one: the work's state and, where the source has a word for it, its place. */
 export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, language: Language, s: Translate, own?: OwnWork) {
   const { props, provider, source } = parts
   // A source of the provider's own says its own place, on its own chip: the word is for the three that have none.
   const named = provider.chip === undefined && !provider.ChipPanel && !provider.ChipFace && !facts?.publishesSteps
+  const place = named && !props.provider?.publishesSteps ? sourceLabel(source, s, undefined, props.provider?.sayings?.labelKey) : undefined
+  if (place !== undefined && !firstPlace.has(parts.frame)) firstPlace.set(parts.frame, place)
   return statusWord({
     status: facts?.status, saveFailed: facts?.saveFailed, savedAt: facts?.savedAt, publishesSteps: facts?.publishesSteps,
     sourceStatus: facts?.sourceStatus, connected: props.provider?.connected?.(), source: props.provider?.frame?.word?.(), own,
-    ...(named && !props.provider?.publishesSteps ? { place: sourceLabel(source, s, undefined, props.provider?.sayings?.labelKey), transient: source.transient, visiting: props.visiting !== undefined } : {}),
+    ...(place !== undefined ? { place, placeAsStarted: firstPlace.get(parts.frame) === place, transient: source.transient, visiting: props.visiting !== undefined } : {}),
   }, language, s)
 }
 
