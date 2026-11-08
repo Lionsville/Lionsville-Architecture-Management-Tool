@@ -39,6 +39,7 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { ListPage } from '../../widgets/kit/ListPage'
+import { leaveWithDrafts } from '../../widgets/kit/drafts'
 import type { ListPageCreate } from '../../widgets/kit/ListPage'
 import { List } from '../../widgets/kit/List'
 import type { ListGroup } from '../../widgets/kit/List'
@@ -559,7 +560,10 @@ function phaseRows(counted: PictureCounts): PhaseRow[] {
 function escapeClosesPanel(event: ReactKeyboardEvent, onMap: boolean, selectedKey: string | undefined, setSelectedKey: (key: string | undefined) => void) {
   if (event.key !== 'Escape' || keyClaimed(event) || !onMap || selectedKey === undefined) return
   claimKey(event)
-  setSelectedKey(undefined)
+  // Escape in a box being written leaves the box, as on a page; the next one closes the panel, asking first where a draft would go.
+  const field = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('input, textarea, select, [contenteditable="true"]') : null
+  if (field) { field.blur(); return }
+  leaveWithDrafts(() => setSelectedKey(undefined))
 }
 
 /** *5 causes · 1 open end*: each count in its own number. */

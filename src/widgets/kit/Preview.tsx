@@ -29,6 +29,7 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import Modal from '@mui/material/Modal'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon, CloseIcon, ForwardIcon } from '../icons'
+import { leaveWithDrafts } from './drafts'
 import './Preview.css'
 
 export type PreviewProps = {
@@ -69,6 +70,9 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
   const previous = index > 0 ? ids[index - 1] : undefined
   const next = index >= 0 && index < ids.length - 1 ? ids[index + 1] : undefined
 
+  // Every way off this record — ‹ ›, the arrows, ×, Escape, Open full record — asks first where a draft would be lost (`drafts`).
+  const select = (id: string | null) => leaveWithDrafts(() => onSelect(id))
+
   // A new record reads from its top, whatever the last one was scrolled to.
   useEffect(() => { body.current?.scrollTo?.({ top: 0 }) }, [currentId])
 
@@ -80,14 +84,19 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
       : event.key === 'ArrowRight' || event.key === 'ArrowDown' ? next : undefined
     if (to) {
       event.preventDefault()
-      onSelect(to)
+      select(to)
     }
   }
 
   return (
     <Modal
       open={currentId !== null}
-      onClose={() => onSelect(null)}
+      onClose={(event: { target?: EventTarget | null }, reason) => {
+        // Escape in a box being written only leaves the box, as on a page; the next one closes.
+        const field = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>(WRITES) : null
+        if (reason === 'escapeKeyDown' && field) { field.blur(); return }
+        select(null)
+      }}
       disableRestoreFocus
       slotProps={{ backdrop: { className: 'kit-preview__scrim' } }}
     >
@@ -96,8 +105,8 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
         onKeyDown={onKeyDown} data-guide={dataGuide}
       >
         <div className="kit-preview__head">
-          <button type="button" className="kit-preview__icon" aria-label={t('kit.preview.previous')} disabled={!previous} onClick={() => previous && onSelect(previous)}><BackIcon /></button>
-          <button type="button" className="kit-preview__icon" aria-label={t('kit.preview.next')} disabled={!next} onClick={() => next && onSelect(next)}><ForwardIcon /></button>
+          <button type="button" className="kit-preview__icon" aria-label={t('kit.preview.previous')} disabled={!previous} onClick={() => previous && select(previous)}><BackIcon /></button>
+          <button type="button" className="kit-preview__icon" aria-label={t('kit.preview.next')} disabled={!next} onClick={() => next && select(next)}><ForwardIcon /></button>
           {index >= 0 && (
             <span className="kit-preview__position" aria-live="polite">
               {t('kit.preview.position', { at: index + 1, total: ids.length })}{listWord && ids.length > 1 ? ` ${listWord}` : ''}
@@ -105,9 +114,9 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
           )}
           {code && <span className="kit-preview__code">{code}</span>}
           <span className="kit-preview__grow" />
-          {openFull && <button type="button" className="kit-preview__link" data-testid={openFull.testId} onClick={openFull.onPress}>{openFull.label ?? t('kit.preview.openFull')}</button>}
+          {openFull && <button type="button" className="kit-preview__link" data-testid={openFull.testId} onClick={() => leaveWithDrafts(openFull.onPress)}>{openFull.label ?? t('kit.preview.openFull')}</button>}
           {actions}
-          <button type="button" className="kit-preview__icon" aria-label={t('common.close')} onClick={() => onSelect(null)}><CloseIcon /></button>
+          <button type="button" className="kit-preview__icon" aria-label={t('common.close')} onClick={() => select(null)}><CloseIcon /></button>
         </div>
         {kind && <div className="kit-preview__kind">{kind}</div>}
         <h2 className="kit-preview__title" id={titleId} data-kinded={kind ? '' : undefined}>{title}</h2>

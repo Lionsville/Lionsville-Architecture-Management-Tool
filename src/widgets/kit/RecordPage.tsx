@@ -15,6 +15,7 @@ import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon } from '../icons'
 import { PressName } from './PressName'
+import { leaveWithDrafts } from './drafts'
 import './RecordPage.css'
 
 export type RecordSection = {
@@ -76,9 +77,9 @@ function useCurrentSection(root: React.RefObject<HTMLDivElement | null>, ids: re
   const pressed = useRef(false)
   useEffect(() => {
     const scroller = root.current
-    if (!scroller || typeof IntersectionObserver === 'undefined') return undefined
+    if (!scroller) return undefined
     const atEnd = () => scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2
-    const observer = new IntersectionObserver((seen) => {
+    const observer = typeof IntersectionObserver === 'undefined' ? undefined : new IntersectionObserver((seen) => {
       if (pressed.current) return
       const shown = seen.filter((one) => one.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
       const pick = atEnd() ? shown.at(-1) : shown[0]
@@ -86,15 +87,20 @@ function useCurrentSection(root: React.RefObject<HTMLDivElement | null>, ids: re
     }, { root: scroller, rootMargin: '0px 0px -70% 0px' })
     for (const id of ids) {
       const section = document.getElementById(sectionDom(id))
-      if (section) observer.observe(section)
+      if (section) observer?.observe(section)
     }
     // The person's own scroll lets go of a pressed section.
     const own = () => { pressed.current = false }
+    // The observer hears a section cross the top band only: a short last section never does, so the end is heard on its own.
+    const last = ids.at(-1)
+    const onScroll = () => { if (!pressed.current && last !== undefined && atEnd()) setCurrentRaw(last) }
+    scroller.addEventListener('scroll', onScroll, { passive: true })
     scroller.addEventListener('wheel', own, { passive: true })
     scroller.addEventListener('touchmove', own, { passive: true })
     scroller.addEventListener('keydown', own)
     return () => {
-      observer.disconnect()
+      observer?.disconnect()
+      scroller.removeEventListener('scroll', onScroll)
       scroller.removeEventListener('wheel', own)
       scroller.removeEventListener('touchmove', own)
       scroller.removeEventListener('keydown', own)
@@ -143,7 +149,7 @@ export function RecordPage({ back, code, title, onRename, status, actions, next,
       <header className="kit-record__head">
         <div className="kit-record__line">
           {back && (
-            <button type="button" className="kit-record__back" onClick={back.onPress}>
+            <button type="button" className="kit-record__back" onClick={() => leaveWithDrafts(back.onPress)}>
               <BackIcon size={12} /> {back.label}
             </button>
           )}

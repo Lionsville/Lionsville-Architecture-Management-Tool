@@ -53,6 +53,26 @@ describe('the record page', () => {
     expect(within(nav).getByRole('button', { name: 'Section 0' }).getAttribute('aria-current')).toBeNull()
   })
 
+  it('marks the last section once the scroll reaches its end, short as it is', () => {
+    renderShell(<RecordPage title="T" sections={sections(4)} />)
+    const scroll = screen.getByRole('region', { name: 'The record' })
+    Object.defineProperties(scroll, { scrollHeight: { value: 1000 }, clientHeight: { value: 400 } })
+    scroll.scrollTop = 600
+    fireEvent.scroll(scroll)
+    expect(within(screen.getByRole('navigation')).getByRole('button', { name: 'Section 3' }).getAttribute('aria-current')).toBe('location')
+  })
+
+  it('asks before the way back drops a draft on the page', async () => {
+    const { DraftQuestion, useDraft } = await import('./drafts')
+    const onPress = vi.fn()
+    function Draft() { useDraft(true); return null }
+    renderShell(<><DraftQuestion /><Draft /><RecordPage back={{ label: 'Roadmap', onPress }} title="T" sections={sections(1)} /></>)
+    fireEvent.click(screen.getByRole('button', { name: 'Roadmap' }))
+    expect(onPress).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('draft-leave'))
+    expect(onPress).toHaveBeenCalledOnce()
+  })
+
   it('passes axe', async () => {
     renderShell(<RecordPage back={{ label: 'Back', onPress: () => undefined }} title="T" code="X" status="S" actions={<button type="button">More</button>} sections={sections(5)} />)
     expect(await axeFindings()).toEqual([])

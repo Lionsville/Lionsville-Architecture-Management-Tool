@@ -24,6 +24,7 @@ import { HelpPress } from './HelpPress'
 import { PressName } from './PressName'
 import { Tabs } from './Tabs'
 import type { TabItem } from './Tabs'
+import { leaveWithDrafts } from './drafts'
 import './Panel.css'
 
 /**
@@ -128,7 +129,7 @@ export function Panel({
             {actions}
             {helpAt && <HelpPress at={helpAt} about={kind} />}
             {onCollapse && <button type="button" className="kit-panel__icon" aria-label={t('kit.panel.collapse')} aria-expanded onClick={() => onCollapse(true)}><ForwardIcon /></button>}
-            {onClose && <button type="button" className="kit-panel__icon" aria-label={t('common.close')} onClick={onClose}><CloseIcon /></button>}
+            {onClose && <button type="button" className="kit-panel__icon" aria-label={t('common.close')} onClick={() => leaveWithDrafts(onClose)}><CloseIcon /></button>}
           </span>
         </div>
         <PanelName name={name} onRename={onRename} renameRequest={renameRequest} renameAtOnce={renameAtOnce} />

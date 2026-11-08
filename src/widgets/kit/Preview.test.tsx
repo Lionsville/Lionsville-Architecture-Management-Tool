@@ -7,12 +7,13 @@
  * address, walked by ‹ › and the arrows, left by Esc with the focus back on the row.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { useState } from 'react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { List } from './List'
 import { Preview, PreviewFact } from './Preview'
+import { DraftQuestion, useDraft } from './drafts'
 import { FRESH_VIEW, readListView, writeListView } from './listView'
 
 afterEach(() => cleanup())
@@ -167,5 +168,38 @@ describe('the preview', () => {
 
   it('writes nothing fresh into an address it was not given', () => {
     expect(writeListView(FRESH_VIEW).toString()).toBe('')
+  })
+})
+
+describe('a draft written in the preview', () => {
+  function Writing({ onSelect }: { readonly onSelect: (id: string | null) => void }) {
+    const [text, setText] = useState('')
+    useDraft(text !== '')
+    return (
+      <>
+        <DraftQuestion />
+        <Preview ids={['a', 'b']} currentId="a" onSelect={onSelect} title="The first record">
+          <textarea aria-label="Write a comment" value={text} onChange={(event) => setText(event.target.value)} />
+        </Preview>
+      </>
+    )
+  }
+
+  it('is asked about before ×, › or Escape leaves the record, and Escape in the box only leaves the box', async () => {
+    const onSelect = vi.fn()
+    renderShell(<Writing onSelect={onSelect} />)
+    const box = screen.getByRole('textbox', { name: 'Write a comment' })
+    fireEvent.change(box, { target: { value: 'Who owns this?' } })
+    box.focus()
+    fireEvent.keyDown(box, { key: 'Escape' })
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('draft-question')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Next' }))
+    expect(onSelect).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    await waitFor(() => expect(screen.queryByTestId('draft-question')).toBeNull())
+    fireEvent.click(await screen.findByRole('button', { name: 'Close' }))
+    fireEvent.click(await screen.findByTestId('draft-leave'))
+    expect(onSelect).toHaveBeenCalledWith(null)
   })
 })
