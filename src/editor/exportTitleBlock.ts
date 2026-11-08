@@ -58,8 +58,8 @@ export function titleBlockFor(options: ExportOptions, context: TitleBlockContext
     // The day on the screen is the day in the picture: a PNG exported while
     // looking at 2028 says 2028, saved or not.
     title: lookingAt
-      ? `${model.name} — ${diagram.name} · ${t('export.asOf', { date: lookingAt })}`
-      : `${model.name} — ${diagram.name}`,
+      ? `${scopeAndView(model.name, diagram.name)} · ${t('export.asOf', { date: lookingAt })}`
+      : scopeAndView(model.name, diagram.name),
     author: diagram.author ?? host?.author,
     // Absent = the day of export, which is the exporter's own default.
     date: diagram.documentDate || undefined,
@@ -139,4 +139,9 @@ export function pngFilename(client: string, diagram: DesignDiagram): string {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
   return `${slug(client) || 'design'}-${slug(diagram.name) || 'diagram'}.png`;
+}
+
+/** The scope and the view, said once where the view is named after its scope. */
+function scopeAndView(scope: string, view: string): string {
+  return scope.trim().toLowerCase() === view.trim().toLowerCase() ? view : `${scope} — ${view}`;
 }

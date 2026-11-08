@@ -116,6 +116,11 @@ describe('what an exported picture says about itself', () => {
       .toBe(`Acme — Shop · ${t('export.asOf', { date: '2028-01-01' })}`);
   });
 
+  it('says the scope once where the board is named after it', () => {
+    const named = context({ model: { ...model, name: 'Application landscape' }, diagram: board({ name: 'Application landscape' }) });
+    expect(titleBlockFor(options, named)?.title).toBe('Application landscape');
+  });
+
   it('slugs the file name, with a word for a half that slugs to nothing', () => {
     expect(pngFilename('Acme Logistics', board({ name: 'Order flow!' }))).toBe('acme-logistics-order-flow.png');
     expect(pngFilename('—', board({ name: '' }))).toBe('design-diagram.png');
