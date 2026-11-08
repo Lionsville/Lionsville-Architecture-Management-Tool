@@ -149,6 +149,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     go({ scope: at, page: 'home' })
     openAgentDialog()
   }, [noAgentsPage, at, go, openAgentDialog])
+  useAgentDialogFollowsPlace(parts, placeKey(at, screen))
   const sendCommand = parts.commands.bus.send
   const openHelpAt = useMemo(() => (at: string) => sendCommand({ type: 'manual', section: at }), [sendCommand])
   const tree = (onHomeBare || state.pinned) && !facts?.bare && !holding && <TreeFor parts={parts} at={at} page={page} />
@@ -186,6 +187,27 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
 }
 
 /** A place worth coming back to is written down as it is arrived at, for *Continue*: a preference of this computer's. */
+/**
+ * The agent dialog belongs to the place it was opened on. An address that lands
+ * on the agents page opens it over the home, and a person who then goes
+ * anywhere else — Back, a link, a tab — has left it: it shuts rather than
+ * staying over every page until Close is pressed.
+ */
+/** A place as one key: the scope, the page over it and the view open. */
+function placeKey(at: ScopePath, screen: Screen): string {
+  return `${at}\u0000${screen.page?.page ?? ''}\u0000${screen.open?.view?.id ?? ''}`
+}
+
+export function useAgentDialogFollowsPlace(parts: Pick<ShellParts, 'agentServer'>, place: string) {
+  const { dialogOpen, closeDialog } = parts.agentServer
+  const openedOn = useRef<string | undefined>(undefined)
+  useEffect(() => {
+    if (!dialogOpen) { openedOn.current = undefined; return }
+    if (openedOn.current === undefined) { openedOn.current = place; return }
+    if (openedOn.current !== place) closeDialog()
+  }, [dialogOpen, place, closeDialog])
+}
+
 function useRememberPlace(parts: ShellParts, screen: Screen) {
   const { services: { prefs }, source } = parts
   const place = recentOf(screen, new Date().toISOString())
