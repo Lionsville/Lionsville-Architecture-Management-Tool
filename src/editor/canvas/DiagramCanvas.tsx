@@ -1776,7 +1776,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       )}
       <ContextMenu
         open={menu.state !== null}
-        position={menu.state?.screen ?? null}
+        position={menu.state?.screen ?? null} pointer={menu.state?.byPointer === true}
         items={menuItems}
         onSelect={handleMenuSelect}
         onClose={menu.close}

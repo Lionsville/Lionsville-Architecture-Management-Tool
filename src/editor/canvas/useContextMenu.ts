@@ -13,6 +13,8 @@ export interface ContextMenuState {
   screen: Point;
   /** The same point in flow coordinates — where "Add here" and "Paste here" land. */
   flowPosition: Point;
+  /** Opened with the pointer: no item takes the focus ring until a key moves to one. */
+  byPointer?: boolean;
 }
 
 /** The subset of a mouse event the menu needs; real events satisfy it. */
@@ -49,9 +51,10 @@ export function useContextMenu(): ContextMenuApi {
   const open = useCallback(
     (target: MenuTarget, event: MenuOpenEvent) => {
       event.preventDefault();
-      openAt(target, { x: event.clientX, y: event.clientY });
+      const screen = { x: event.clientX, y: event.clientY };
+      setState({ target, screen, flowPosition: screenToFlowPosition(screen), byPointer: true });
     },
-    [openAt],
+    [screenToFlowPosition],
   );
   const close = useCallback(() => setState(null), []);
 

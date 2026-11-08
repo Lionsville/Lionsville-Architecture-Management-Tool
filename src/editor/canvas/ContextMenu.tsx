@@ -30,6 +30,12 @@ export interface ContextMenuProps {
   renderIcon?(icon: string): ReactNode;
   /** Accessible name of the root menu. */
   ariaLabel?: string;
+  /**
+   * Opened with the pointer: the menu takes the focus but no item does, so the
+   * first item does not wear the keyboard's ring while another wears the hover.
+   * From the keyboard (Shift+F10, the Menu key) the first item is focused.
+   */
+  pointer?: boolean;
 }
 
 /**
@@ -50,6 +56,7 @@ export function ContextMenu({
   onClose,
   renderIcon,
   ariaLabel,
+  pointer = false,
 }: ContextMenuProps) {
   const { t } = useStrings();
   const rendered = useLevelItems({
@@ -66,6 +73,7 @@ export function ContextMenu({
       open={open && position !== null}
       onClose={onClose}
       anchorReference="anchorPosition"
+      disableAutoFocusItem={pointer}
       anchorPosition={position ? { top: position.y, left: position.x } : undefined}
       slotProps={{
         list: { dense: true, 'aria-label': ariaLabel ?? t('menu.contextLabel') },
