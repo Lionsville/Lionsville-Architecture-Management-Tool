@@ -1782,6 +1782,7 @@ export const EN = {
   'frame.treeToggle': 'Keep the scope tree open',
   'frame.treeOnHome': 'A home always shows the tree',
   'frame.treeOnPage': 'This page always shows the tree, counting its records by scope',
+  'frame.treeOnEmpty': 'A scope with no view yet always shows the tree, the way on from it',
   'frame.tallyElements': 'Elements',
   'frame.tallyDecisions': 'Decisions',
   'frame.tallyObservations': 'Observations',

@@ -1542,6 +1542,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.treeToggle': 'Scopeboom open houden',
   'frame.treeOnHome': 'Een startpagina toont de boom altijd',
   'frame.treeOnPage': 'Deze pagina toont altijd de boom, met haar records per scope geteld',
+  'frame.treeOnEmpty': 'Een scope zonder weergave toont altijd de boom, de weg verder',
   'frame.tallyElements': 'Elementen',
   'frame.tallyDecisions': 'Besluiten',
   'frame.tallyObservations': 'Waarnemingen',

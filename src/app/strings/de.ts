@@ -1546,6 +1546,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.treeToggle': 'Bereichsbaum geöffnet halten',
   'frame.treeOnHome': 'Eine Startseite zeigt den Baum immer',
   'frame.treeOnPage': 'Diese Seite zeigt den Baum immer, mit ihren Einträgen je Bereich gezählt',
+  'frame.treeOnEmpty': 'Ein Bereich ohne Ansicht zeigt den Baum immer, den Weg weiter',
   'frame.tallyElements': 'Elemente',
   'frame.tallyDecisions': 'Entscheidungen',
   'frame.tallyObservations': 'Beobachtungen',

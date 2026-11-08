@@ -103,7 +103,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const pageUp = page !== undefined
   // A phone has no room for the tree beside a home: it is the toggle's to bring, over the page. Asked here so a turn of the phone draws again.
   useMediaQuery(PHONE, { noSsr: true })
-  const onHomeBare = treeAlwaysOn(parts, page)
+  const onHomeBare = treeAlwaysOn(parts, screen)
   const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts)
   useExampleCommand(parts)
   useFrameKeys(parts, state)
@@ -750,11 +750,16 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
 /**
  * A home with no page over it docks the tree whatever the preference says, and
  * so does a page of records kept per scope, whose tree counts them by scope
- * (`pageTally`) — but not on a phone, which has no room beside either.
+ * (`pageTally`), and so does a scope open with no view at all: that empty place
+ * is a place in the frame like a home, and the tree is the way on from it —
+ * but not on a phone, which has no room beside any of them.
  */
-function treeAlwaysOn(parts: ShellParts, page = (parts.agent.screen ?? parts.agent.screenNow()).page?.page): boolean {
+function treeAlwaysOn(parts: ShellParts, screen: Screen = parts.agent.screen ?? parts.agent.screenNow()): boolean {
   if (window.matchMedia?.(PHONE).matches ?? false) return false
-  return talliedPage(page) !== undefined || (!parts.nav.project && page === undefined)
+  const page = screen.page?.page
+  if (talliedPage(page) !== undefined) return true
+  if (page !== undefined) return false
+  return !parts.nav.project || screen.open?.noView === true
 }
 
 /**
@@ -768,13 +773,19 @@ function TreeToggle({ parts, pinned, onHome }: { parts: ShellParts; pinned: bool
   return (
     <IconButton
       label={label} size="small" pressed={onHome || pinned} data-testid="frame-tree-toggle" data-guide="frame.tree"
-      reason={onHome ? s(talliedPage((parts.agent.screen ?? parts.agent.screenNow()).page?.page) ? 'frame.treeOnPage' : 'frame.treeOnHome') : undefined}
+      reason={onHome ? s(treeReason(parts.agent.screen ?? parts.agent.screenNow())) : undefined}
       tip={`${label} (${isMac() ? '⌘\\' : 'Ctrl \\'})`}
       onClick={() => { frame.set({ pinned: !pinned }); prefs.writePreference({ treePinned: !pinned }) }}
     >
       <TreeGlyph />
     </IconButton>
   )
+}
+
+/** Why the toggle does nothing here: a page that counts by scope, a scope with no view, or a home. */
+function treeReason(screen: Screen): StringKey {
+  if (talliedPage(screen.page?.page)) return 'frame.treeOnPage'
+  return screen.page === undefined && screen.open?.noView === true ? 'frame.treeOnEmpty' : 'frame.treeOnHome'
 }
 
 /** `least`: nothing is left to fold, so its short word goes to the glass before a name in the trail loses a letter. */
