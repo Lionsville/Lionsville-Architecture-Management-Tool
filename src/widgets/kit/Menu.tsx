@@ -59,12 +59,23 @@ export type MenuAct = Act & {
   checked?: boolean
   /** With `checked`: one of a group, of which one is on (an order, a size), said as a radio. */
   radio?: boolean
+  /**
+   * With `checked`: a lone setting among actions, drawn as a box that is empty when
+   * off, so it reads as a choice either way. A tick alone said nothing while off.
+   */
+  box?: boolean
   /** What holds a refused choice, line by line, drawn under it. Each is a way to the thing to clear. */
   holds?: readonly MenuHold[]
 }
 
 /** A line under a refused choice: what holds it, going to where it is cleared. */
 export type MenuHold = { label: string; ok?: boolean; hint?: string; onSelect?: () => void }
+
+/** The tick's room on a row: a tick where it is on, and for a lone setting a box round it, empty while off. */
+function MenuCheck({ act }: { act: MenuAct | undefined }) {
+  const box = act?.checked !== undefined && act.box === true
+  return <span className="kit-menu__check" data-box={box || undefined}>{act?.checked && <CheckIcon size={box ? 12 : 14} />}</span>
+}
 
 export type MenuEntry =
   | MenuAct
@@ -177,7 +188,7 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
       >
         <span className="kit-menu__row">
           {/* Every row keeps the room a tick takes where any row has one, so the words line up. */}
-          {(checkable || ticks) && <span className="kit-menu__check">{act?.checked && <CheckIcon size={14} />}</span>}
+          {(checkable || ticks) && <MenuCheck act={act} />}
           <span className="kit-menu__label">{entry.label}</span>
           {' '}
           {act?.shortcut && <kbd className="kit-menu__key">{act.shortcut}</kbd>}

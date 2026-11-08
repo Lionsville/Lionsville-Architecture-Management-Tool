@@ -144,6 +144,22 @@ describe('Menu', () => {
     expect(await axeFindings()).toEqual([])
   })
 
+  it('draws a lone setting among actions as a box, empty while it is off', () => {
+    renderShell(<MoreMenu label="Add" items={[
+      { label: 'Application', onSelect: () => {} },
+      { line: true },
+      { label: 'Keep beside', checked: false, box: true, onSelect: () => {} },
+    ]} />)
+    open('Add')
+    const off = screen.getByRole('menuitemcheckbox', { name: 'Keep beside' }).querySelector('.kit-menu__check')!
+    expect(off.getAttribute('data-box')).toBe('true')
+    expect(off.querySelector('svg')).toBeNull()
+    cleanup()
+    renderShell(<MoreMenu label="Add" items={[{ label: 'Keep beside', checked: true, box: true, onSelect: () => {} }]} />)
+    open('Add')
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Keep beside' }).querySelector('.kit-menu__check[data-box] svg')).not.toBeNull()
+  })
+
   it('goes one level down and back by the arrows, and a leaf closes both', async () => {
     const picked = vi.fn()
     renderShell(<MoreMenu items={[{ label: 'Move to', items: [{ label: 'North', onSelect: picked }, { label: 'South', onSelect: () => {} }] }, { label: 'History', onSelect: () => {} }]} />)

@@ -24,6 +24,7 @@
 .kit-menu__row { display: flex; align-items: center; gap: var(--s-2); min-height: 20px; }
 .kit-menu__label { flex: 1; min-width: 0; }
 .kit-menu__check { flex: none; display: inline-flex; width: 14px; }
+.kit-menu__check[data-box] { box-sizing: border-box; height: 14px; align-items: center; justify-content: center; border: 1px solid var(--line-strong); border-radius: var(--r-1); }
 .kit-menu__key {
   flex: none;
   padding-inline: var(--s-1);

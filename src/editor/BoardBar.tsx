@@ -250,7 +250,7 @@ export function BoardBar({ props, framed, pageBar, day, add, show }: {
                 ...add.kinds.map((kind) => ({ label: kind.label, onSelect: kind.onPress })),
                 ...(add.onExisting ? [{ line: true } as const, { label: t('palette.existing'), onSelect: add.onExisting }] : []),
                 { line: true },
-                { label: t('bar.keepOpen'), checked: add.keepOpen, onSelect: () => add.onKeepOpen(!add.keepOpen) },
+                { label: t('bar.keepOpen'), checked: add.keepOpen, box: true, onSelect: () => add.onKeepOpen(!add.keepOpen) },
               ]}
             />
           </span>
