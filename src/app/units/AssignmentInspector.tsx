@@ -122,7 +122,7 @@ export function AssignmentInspector(props: AssignmentInspectorProps) {
           others={organisation.roles.filter((role) => roleOn(role, day) && (!props.readOnly || mayChangeIn(people.manages, unit.id, role.id)))}
           register={people} today={day > props.today ? day : props.today} endOn={endDay(held, day, props.today)}
           makeId={props.makeId} dispatch={props.dispatch} scopeName={props.scopeName}
-          loadOf={(one) => t('assign.load', { share: Math.round(load(one.id) * 100), day })}
+          loadOf={(one) => t('assign.load', { share: Math.round(load(one.id) * 100), day: formatDay(day, language) })}
           onClose={() => setCorrecting(false)} s={t}
         />
       )}

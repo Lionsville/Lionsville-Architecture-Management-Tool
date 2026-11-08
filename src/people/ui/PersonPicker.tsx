@@ -13,7 +13,8 @@
  * is made, and adding anyway is the person's choice. What is picked is an id;
  * the name is the register's.
  */
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
@@ -64,6 +65,23 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
     setAdding(false)
     setQuery('')
   }
+  // Typing in the field walks into the list with ↓, and Enter takes the one match there is.
+  const list = useRef<HTMLDivElement>(null)
+  const results = () => [...(list.current?.querySelectorAll<HTMLElement>('[data-testid^="person-pick-"]') ?? [])]
+  const onSearchKey = (event: KeyboardEvent<HTMLElement>) => {
+    const only = found.length === 1 ? found[0] : undefined
+    if (event.key === 'Enter' && only) { event.preventDefault(); event.stopPropagation(); pick(only.id) }
+    if (event.key === 'ArrowDown') { event.preventDefault(); results()[0]?.focus() }
+  }
+  const onListKey = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    event.preventDefault()
+    const all = results()
+    const at = all.indexOf(document.activeElement as HTMLElement)
+    const next = event.key === 'ArrowDown' ? all[at + 1] : at <= 0 ? undefined : all[at - 1]
+    if (next) next.focus()
+    else if (event.key === 'ArrowUp') list.current?.parentElement?.querySelector<HTMLElement>('[data-testid="person-picker-search"]')?.focus()
+  }
   if (adding) {
     return <AddPerson register={register} saying={saying} onAdded={pick} onUse={pick} onCancel={() => setAdding(false)} initialName={query} s={s} />
   }
@@ -80,9 +98,10 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
       )}
       <FieldBox
         size="small" label={s('people.search')} value={query} onChange={(event) => setQuery(event.target.value)}
+        autoFocus={picked === undefined} onKeyDown={onSearchKey}
         slotProps={{ htmlInput: { 'data-testid': 'person-picker-search' } }}
       />
-      <Box sx={{ display: 'grid', maxHeight: 220, overflowY: 'auto' }}>
+      <Box ref={list} onKeyDown={onListKey} sx={{ display: 'grid', maxHeight: 220, overflowY: 'auto' }}>
         {found.slice(0, SHOWN).map((person) => (
           <Button
             key={person.id} size="small" onClick={() => pick(person.id)} data-testid={`person-pick-${person.id}`}

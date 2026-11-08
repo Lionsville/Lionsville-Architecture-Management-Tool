@@ -187,7 +187,7 @@ export function AssignDialog(props: AssignDialogProps) {
   const { held, form, role, done, save } = state
   return (
     <Dialog
-      open size="s" onClose={onClose} onSubmit={save} data-testid="assign-dialog"
+      open size="s" steady onClose={onClose} onSubmit={save} data-testid="assign-dialog"
       title={s(held ? 'assign.editTitle' : 'assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}
       actions={(
         <>

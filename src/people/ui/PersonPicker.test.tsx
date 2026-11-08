@@ -141,3 +141,17 @@ describe('the person picker', () => {
     expect(screen.queryByTestId('person-picker-new')).toBeNull()
   })
 })
+
+describe('typing in the search', () => {
+  it('starts in the search, walks into the list with ↓, and takes the one match with Enter', () => {
+    const onChange = vi.fn()
+    renderShell(<Harness onPicked={onChange} />)
+    const search = screen.getByTestId('person-picker-search')
+    expect(document.activeElement).toBe(search)
+    fireEvent.keyDown(search, { key: 'ArrowDown' })
+    expect((document.activeElement as HTMLElement).dataset.testid?.startsWith('person-pick-')).toBe(true)
+    fireEvent.change(search, { target: { value: 'Pia' } })
+    fireEvent.keyDown(search, { key: 'Enter' })
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
+})

@@ -23,6 +23,9 @@
 .kit-dialog__body { display: flex; flex-direction: column; gap: var(--s-3); min-height: 0; overflow-y: auto; color: var(--ink-2); }
 .kit-dialog__body > p { margin: 0; }
 .kit-dialog__error { margin: 0; color: var(--bad); }
+/* A steady dialog hangs from a fixed place near the top, so a list changing under its field does not move the field. */
+.MuiDialog-container:has(> .kit-dialog[data-steady]) { align-items: flex-start; }
+.kit-dialog[data-steady] { margin-block-start: 12vh; }
 .kit-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--s-2); }
 /* What is not the dialog's answer, the destructive first, at the far start: Cancel and the answer keep the end. */
 .kit-dialog__start { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-inline-end: auto; }

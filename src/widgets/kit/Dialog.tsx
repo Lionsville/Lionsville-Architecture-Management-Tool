@@ -41,12 +41,17 @@ export type DialogProps = {
   error?: string
   working?: boolean
   onSubmit?: () => void
+  /**
+   * Stands at a fixed place from the top rather than in the middle: for a dialog whose
+   * list grows and shrinks while somebody types, so the field they type in stays put.
+   */
+  steady?: boolean
   'data-guide'?: string
   'data-testid'?: string
 }
 
 export function Dialog({
-  open, size = 's', title, children, actions, onClose, error, working = false, onSubmit, 'data-guide': guide, 'data-testid': testId,
+  open, size = 's', title, children, actions, onClose, error, working = false, onSubmit, steady = false, 'data-guide': guide, 'data-testid': testId,
 }: DialogProps) {
   const titleId = useId()
   const parts = (
@@ -64,7 +69,7 @@ export function Dialog({
       aria-labelledby={titleId}
       onClose={() => { if (!working) onClose() }}
       slotProps={{
-        paper: { className: 'kit-dialog', 'data-size': size, 'data-guide': guide, 'data-testid': testId } as object,
+        paper: { className: 'kit-dialog', 'data-size': size, 'data-steady': steady ? '' : undefined, 'data-guide': guide, 'data-testid': testId } as object,
         backdrop: { className: 'kit-dialog__scrim' },
       }}
     >
