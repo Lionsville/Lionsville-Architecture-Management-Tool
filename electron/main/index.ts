@@ -45,7 +45,7 @@ import { registerFolderSettingsChannel } from './folderSettings'
 import { useHooksFolder } from '../../src/platform/node/git'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
 import { showsWindow } from './smokeWindow'
-import { closeHelpWindow, isHelpWindow, openHelpWindow } from './helpWindow'
+import { closeHelpWindow, isHelpWindow, openHelpWindow, opensInBrowser } from './helpWindow'
 import { helpAddress } from '../../src/platform/helpAddress'
 import { isLanguage } from '../../src/i18n/languages'
 
@@ -246,12 +246,16 @@ function createWindow(): BrowserWindow {
   // Nothing but the help: the app's ways into it open its address, and main
   // gives it the one window of its own (`helpWindow.ts`).
   window.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://')) void shell.openExternal(url)
+    if (opensInBrowser(url)) void shell.openExternal(url)
     else openHelpWindow(url, RENDERER_URL, helpLook())
     return { action: 'deny' }
   })
+  // A link pressed without a new window still leaves for the system's browser,
+  // as it would have left the tab; it never takes the app's own window with it.
   window.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith(RENDERER_URL)) event.preventDefault()
+    if (url.startsWith(RENDERER_URL)) return
+    event.preventDefault()
+    if (opensInBrowser(url)) void shell.openExternal(url)
   })
   // A frame stays on the drawing scheme, and a frame the editor makes inside
   // itself on a document that never leaves the machine. The main frame is the

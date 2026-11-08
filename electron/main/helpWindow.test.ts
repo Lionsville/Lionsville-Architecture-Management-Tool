@@ -31,7 +31,7 @@ vi.mock('electron', () => ({
   },
 }))
 
-const { helpNavigation, helpWindowOptions, openHelpWindow } = await import('./helpWindow')
+const { helpNavigation, helpWindowOptions, openHelpWindow, opensInBrowser } = await import('./helpWindow')
 const BASE = 'app://local/'
 
 describe('the help window', () => {
@@ -48,6 +48,15 @@ describe('the help window', () => {
     expect(helpNavigation('https://app.architecture.lionsville.nl/', BASE)).toBe('browser')
     expect(helpNavigation('app://local/', BASE)).toBe('refuse')
     expect(helpNavigation('file:///etc/passwd', BASE)).toBe('refuse')
+  })
+
+  it('hands the system the web and a mail address, as a tab would, and nothing else', () => {
+    expect(opensInBrowser('https://example.org/')).toBe(true)
+    expect(opensInBrowser('http://intranet.example/page')).toBe(true)
+    expect(opensInBrowser('mailto:someone@example.org')).toBe(true)
+    expect(opensInBrowser('file:///etc/passwd')).toBe(false)
+    expect(opensInBrowser('app://local/')).toBe(false)
+    expect(opensInBrowser('javascript:alert(1)')).toBe(false)
   })
 
   it('is one window, reused, and opens nothing that is not the help', () => {

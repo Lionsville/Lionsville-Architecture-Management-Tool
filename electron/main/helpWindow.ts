@@ -43,10 +43,21 @@ export function helpWindowOptions(background: string): BrowserWindowConstructorO
   }
 }
 
+/**
+ * What a link may hand to the system: the web, and a mail address. A link a
+ * person wrote in a document or on a scope's home is as often `http:` or
+ * `mailto:` as `https:`, and in a tab the browser opens all three; a window of
+ * ours that answered only one left the others pressed and nothing happening.
+ * Anything else — `file:`, a custom scheme — never leaves the app.
+ */
+export function opensInBrowser(url: string): boolean {
+  return /^(?:https?:\/\/|mailto:)/i.test(url)
+}
+
 /** Where a navigation inside the help may go: the help itself; the web leaves for the system's browser; nothing else. */
 export function helpNavigation(url: string, base: string): 'stay' | 'browser' | 'refuse' {
   if (isHelpUrl(url, base)) return 'stay'
-  return /^https?:\/\//.test(url) ? 'browser' : 'refuse'
+  return opensInBrowser(url) ? 'browser' : 'refuse'
 }
 
 /** Open the help at `url` (an address `isHelpUrl` accepts), in its one window. */
