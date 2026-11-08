@@ -128,7 +128,12 @@ export function useHomeParts(deps: {
   // boot landed on is not in the empty tree the first paint has, and a scope
   // made a moment ago and landed on — one made without a board — is not in
   // the listing read before it was made. Neither is gone for that.
-  useEffect(() => { if (organisation.listedNow && !homeListed) setHome(ROOT_SCOPE) }, [organisation.listedNow, homeListed, setHome])
+  useEffect(() => {
+    if (!organisation.listedNow || homeListed) return
+    setHome(ROOT_SCOPE)
+    // An address, a link or Back named it: say which scope was not there, rather than land somewhere else in silence.
+    notify(s('shell.placeNoScope', { scope: home }), 'info')
+  }, [organisation.listedNow, homeListed, setHome, notify, s, home])
   /** What the home that is up is called, for the window's title and the agent. */
   const name = useMemo(
     () => flattenScopes(organisation.tree).find((scope) => scope.path === home)?.name,

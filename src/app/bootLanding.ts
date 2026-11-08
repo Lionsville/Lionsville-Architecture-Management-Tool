@@ -52,7 +52,7 @@ export type BootLanding = {
   noticeWith?: Readonly<Record<string, string>>
 }
 
-export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone' | 'example.kept' | 'example.keptUnder'
+export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone' | 'shell.placeNoScope' | 'example.kept' | 'example.keptUnder'
 
 /**
  * The scope the boot read, turned into where the app starts.
@@ -155,6 +155,12 @@ export function placeToRead(place: Place): ScopePath | undefined {
  * not read, is the organisation's home — where an address that names one
  * lands now, and where a refused open leaves a person who had nothing open.
  */
+/** Where an address's scope is not there: the organisation's home, saying what was asked for where it asked for something. */
+function scopeNotThere(place: Place): BootLanding {
+  if (place.page === undefined && place.id === undefined) return {}
+  return place.scope === '' ? { notice: 'shell.placeGone' } : { notice: 'shell.placeNoScope', noticeWith: { scope: place.scope } }
+}
+
 export function placeLanding(held: PlaceScope | undefined, place: Place): BootLanding {
   const { scope, page } = place
   if (page !== undefined && FRAME_PAGES.includes(page)) return { ...homeOf(scope), initialFramePage: page as 'work' | 'activity' | 'preferences' | 'history' }
@@ -162,8 +168,8 @@ export function placeLanding(held: PlaceScope | undefined, place: Place): BootLa
     return { ...homeOf(scope), ...(page === 'home' ? {} : homePageLanding(place)) }
   }
   // A scope that is not there lands on the organisation's home, and says so
-  // where the address pointed at something in it.
-  if (held === undefined) return page !== undefined || place.id !== undefined ? { notice: 'shell.placeGone' } : {}
+  // where the address pointed at something in it: by the scope's name, where that is what is missing.
+  if (held === undefined) return scopeNotThere(place)
   const near = nearestPlace(place, { scopeIs: () => true, ...factsOf(held) })
   // Said once the app is up, where the place in the address is not the one
   // landed on: the nearest place is the right landing and the wrong silence.

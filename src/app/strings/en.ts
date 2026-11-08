@@ -611,6 +611,7 @@ export const EN = {
   /** The address the app opened from named a page it has no such thing as, or a view or record that is not there (ADR-0033). */
   'shell.placeUnknown': 'The address names a page this app does not have, so it opened where it was.',
   'shell.placeGone': 'What the address pointed at is not there, so it opened the nearest place.',
+  'shell.placeNoScope': 'There is no scope “{scope}”, so this is the organisation’s home.',
   'shell.decisions': 'Decisions',
   'shell.decisionsTip': 'Architecture decision records \u2014 for the group, the landscape and each application',
   'shell.observations': 'Observations',

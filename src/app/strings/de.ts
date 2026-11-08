@@ -451,6 +451,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.noElements': 'Es gibt noch nichts zu dokumentieren — fügen Sie zuerst ein Element hinzu.',
   'shell.placeUnknown': 'Die Adresse nennt eine Seite, die diese App nicht hat, deshalb wurde geöffnet, was zuletzt offen war.',
   'shell.placeGone': 'Worauf die Adresse zeigte, ist nicht da, deshalb wurde die nächstgelegene Stelle geöffnet.',
+  'shell.placeNoScope': 'Es gibt keinen Bereich „{scope}“, also ist das die Startseite der Organisation.',
   'shell.decisions': 'Entscheidungen',
   'shell.decisionsTip': 'Architekturentscheidungen — für die Gruppe, die Landschaft und jede Anwendung',
   'shell.observations': 'Beobachtungen',

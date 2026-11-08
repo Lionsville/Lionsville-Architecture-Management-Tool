@@ -159,7 +159,7 @@ describe('a place in the address (ADR-0033)', () => {
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'chart' }).notice).toBe('shell.placeGone')
     expect(placeLanding(held(rail), { scope: 'acme/rail', page: 'decisions', id: 'ADR-9' }).notice).toBe('shell.placeGone')
     // A scope that is not there: the organisation's home, said where the address pointed into it.
-    expect(placeLanding(undefined, { scope: 'acme/gone', page: 'board', id: 'x' })).toEqual({ notice: 'shell.placeGone' })
+    expect(placeLanding(undefined, { scope: 'acme/gone', page: 'board', id: 'x' })).toEqual({ notice: 'shell.placeNoScope', noticeWith: { scope: 'acme/gone' } })
     expect(placeLanding(undefined, { scope: 'acme/gone' })).toEqual({})
   })
 
@@ -220,8 +220,8 @@ describe('a place in the address (ADR-0033)', () => {
 
   it('lands a scope that is not there, or that may not be read, on the organisation’s home', async () => {
     // And says so, where the address pointed into the scope that is gone.
-    expect(placeLanding(undefined, { scope: 'gone', page: 'board', id: 'x' })).toEqual({ notice: 'shell.placeGone' })
-    expect(await landedAt(Promise.resolve(undefined), { scope: 'gone', page: 'decisions' })).toEqual({ notice: 'shell.placeGone' })
+    expect(placeLanding(undefined, { scope: 'gone', page: 'board', id: 'x' })).toEqual({ notice: 'shell.placeNoScope', noticeWith: { scope: 'gone' } })
+    expect(await landedAt(Promise.resolve(undefined), { scope: 'gone', page: 'decisions' })).toEqual({ notice: 'shell.placeNoScope', noticeWith: { scope: 'gone' } })
   })
 
   it('lands on the scope’s home where the read keeps the first paint waiting', async () => {

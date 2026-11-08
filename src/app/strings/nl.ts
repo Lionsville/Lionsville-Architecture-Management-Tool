@@ -447,6 +447,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.noElements': 'Er is nog niets om te documenteren \u2014 voeg eerst een element toe.',
   'shell.placeUnknown': 'Het adres noemt een pagina die deze app niet heeft, dus hij is geopend waar hij was.',
   'shell.placeGone': 'Waar het adres naar wees is er niet, dus de dichtstbijzijnde plek is geopend.',
+  'shell.placeNoScope': 'Er is geen scope “{scope}”, dus dit is het begin van de organisatie.',
   'shell.decisions': 'Besluiten',
   'shell.decisionsTip': 'Architectuurbesluiten \u2014 voor de groep, het landschap en elke applicatie',
   'shell.observations': 'Waarnemingen',
