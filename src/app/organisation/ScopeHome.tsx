@@ -286,7 +286,8 @@ function Continue({ recent, at, onContinue, language, s }: { recent: readonly Re
     id: key(place),
     text: place.name ?? s(PAGE_WORD[place.page] ?? 'frame.home'),
     mark: isViewPage(place.page) ? <BoardKindIcon kind={place.page === 'board' ? 'layer7' : place.page as DesignDiagram['kind']} size={16} /> : <DocumentIcon />,
-    fact: place.scope === at ? s('org.continueHere') : place.in,
+    // Where it is, where that is not this home: a row here needs no word for it.
+    fact: place.scope === at ? undefined : place.in,
     note: formatDay(place.at.slice(0, 10), language),
   }))
   return (

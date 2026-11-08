@@ -158,7 +158,7 @@ describe('who serves a scope, on its home', () => {
     await waitFor(async () => expect((await repositories.read('shipping'))?.unitTypeId).toBe('ut-cluster'))
     expect((await repositories.read('warehouse'))?.model.elements.find((one) => one.id === 'fulfilment')?.scopes).toEqual(['warehouse', 'shipping'])
     expect(await screen.findByText('Fulfilment now serves Shipping: one step in Warehouse. Shipping is now a Cluster.')).toBeTruthy()
-    await waitFor(() => expect(screen.getByTestId('served-by-type').textContent).toBe('Typed Cluster, as a unit that serves it is.'))
+    await waitFor(() => expect(screen.getByTestId('served-by-type').textContent).toBe('Typed Cluster, the type of a unit that serves it.'))
     expect(screen.getByTestId('served-by-type').getAttribute('data-link')).toBe('agrees')
     // Taking a cluster off leaves the type: another cluster still serves it, and the type says what the scope is.
     fireEvent.click(screen.getByRole('button', { name: 'Stop Data & Integration serving Shipping' }))
