@@ -8,11 +8,12 @@
  * floor below which a name cannot be read. The stage is zoomed by CSS rather than
  * scaled, so the boxes lay out again and their words wrap for the distance.
  */
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
 import { CANVAS_FLOAT, canvasRooms } from '../../widgets/kit/canvasRoom'
 import { canvasZoomProps, clampZoom, NO_INSETS, ZOOM_HOME } from '../../widgets/kit/zoom'
 import { textScale } from '../../widgets/kit/tokens'
+import { useTextScale } from '../../widgets/kit/useTextScale'
 import type { Insets, Point } from '../../widgets/kit/zoom'
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom'
 
@@ -104,6 +105,15 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
     })
   }, [page, stage])
   const target = useMemo(() => steppedZoomTarget({ zoom: () => latest.current, to, fit }), [to, fit])
+  // A text size changed while the chart is up grows or shrinks it as an open at that size would have: one meaning for
+  // the readout, live or after a reload (the poster's camera does the same).
+  const scale = useTextScale()
+  const scaledAt = useRef(scale)
+  useEffect(() => {
+    const was = scaledAt.current
+    scaledAt.current = scale
+    if (was !== scale) to(clampZoom(latest.current * (scale / was)))
+  }, [scale, to])
   const attachZoom = useCanvasZoom(target, { plainKeys: false })
   const attach = useCallback((element: HTMLDivElement | null) => {
     page.current = element
