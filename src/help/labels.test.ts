@@ -5,8 +5,8 @@
  * The help quotes the screen, and a quote the screen no longer says sends a
  * reader looking for a control that is gone. Two holds on that:
  *
- * - a label the help quotes as a menu item — in double quotes, ending in an
- *   ellipsis — is a string the app has in some language, or the start of one;
+ * - a label the help quotes as a menu item — in double quotes or bold, ending
+ *   in an ellipsis — is a string the app has in some language, or the start of one;
  * - the board's labels a version renamed (8 November 2026: Remove from view
  *   and Delete from model, the selection's bar gone into the panel and the
  *   right-click menu, View settings…, the Arrange menu's Tidy the board and
@@ -30,14 +30,18 @@ const RETIRED: Record<Language, RegExp> = {
   de: /Entfernen \/ Löschen…|Von dieser Ansicht\b|Aus dem Diagramm nehmen|Auswahlleiste|Leiste über der Auswahl|schwebende\w* Werkzeugleiste|Board-Einstellungen…|Verbindungen führen|Diagrammeinstellungen|Verbindungen routen|Alles neu routen|\*\*Automatisch anordnen\*\*/,
 }
 
+/** A label the panel composes from the names of the rows it holds back (`addLabel`), which no one string holds. */
+const COMPOSED = /^\+ (Owner, vendor|Eigenaar, leverancier|Eigentümer, Anbieter)$/
+
 describe.each([['en', EN], ['nl', NL], ['de', DE]] as const)('the %s help', (language, text) => {
   const strings = helpStrings(text)
   // Every language's words: the help shows what the first page says in another one.
   const said = Object.values(STRINGS).flatMap((table) => Object.values(table)).join('\n')
 
   it('quotes a menu item the app has', () => {
-    const missing = strings.flatMap(([path, help]) => [...help.matchAll(/"([^"\n]{2,60})…"/g)]
-      .filter(([, label]) => !said.includes(label!))
+    const missing = strings.flatMap(([path, help]) => [...help.matchAll(/"([^"\n]{2,60})…"|\*\*([^*\n]{2,60})…\*\*/g)]
+      .map(([quoted, inQuotes, inBold]) => [quoted, (inQuotes ?? inBold)!.split(' › ').pop()] as const)
+      .filter(([, label]) => !said.includes(label!) && !COMPOSED.test(label!))
       .map(([quoted]) => `${path}: ${quoted}`))
     expect(missing).toEqual([])
   })
@@ -58,10 +62,16 @@ function labelsByWord(): Map<string, string[]> {
   return keys
 }
 
-/** Where the English help names a label it quotes from the screen: after Press, Click, Choose or Pick, ending where the label does. */
-const PRESSED = /\b(?:[Pp]ress|[Cc]lick|[Cc]hoose|[Pp]ick)\s+/g
-const LABEL_ENDS = /^($|[.,;:!?)'"…]| (and|or|to|in|on|under|beside|next|for|from|at|with|then|again|if|when|until|so|instead|\())/
+/**
+ * Where the English help names a label it quotes from the screen: after Press,
+ * Click, Choose or Pick, or the *then* of a step that presses two, ending where
+ * the label does.
+ */
+const PRESSED = /\b(?:[Pp]ress|[Cc]lick|[Cc]hoose|[Pp]ick|[Cc]lick on|then)\s+/g
+const LABEL_ENDS = /^($|[.,;:!?)"…*]|'(?!s\b)| (and|or|to|in|on|under|beside|next|for|from|at|with|then|again|if|when|until|so|instead|of|is|\())/
 const KEYS = /^(Delete|Enter|Escape|Esc|Tab|Backspace|Space|Return)$/
+/** Where a place in the help is said, a list of places, or of a menu's items: each part may start with a label. */
+const PART_STARTS = /(?:^|; |: |, | or | and | \/ )(?=[A-Z+⋯])/g
 
 /**
  * A label pressed in the English that is the start of a longer one with a name
@@ -73,18 +83,41 @@ const NAMED_LABELS = new Set([
   'sections.principles.keptElsewhere[3][1]', 'sections.blocks.about[3][2]', 'sections.plan.move[3][2]', 'sections.plan.giveTheRest[3][1]',
 ])
 
-/** The labels the English quotes at a place, read off its words. */
-function quotedLabels(text: string, labels: Map<string, string[]>, longestFirst: string[]): string[] {
+/**
+ * Words the help keeps in English that are also a label somewhere: names in
+ * the shipped example, and the desktop updater's dialog, which speaks English.
+ */
+const UNTRANSLATED = new Set(['Application landscape', 'Topics', 'Later'])
+
+/** A label read at `at` in `text`: the longest the screen has that ends where a label may. */
+function labelAt(text: string, at: number, longestFirst: string[]): string | undefined {
+  const rest = text.slice(at)
+  return longestFirst.find((one) => rest.startsWith(one) && LABEL_ENDS.test(rest.slice(one.length)))
+}
+
+/**
+ * The labels the English quotes at a place, read off its words: pressed, in
+ * bold, in double quotes, a menu item with its ellipsis anywhere, and the
+ * start of each part of a list where a section says where to find it. A label
+ * of one word counts only where it is pressed, bold or quoted, so a sentence
+ * starting with an ordinary word is not taken for a control.
+ */
+function quotedLabels(text: string, labels: Map<string, string[]>, longestFirst: string[], where: boolean): string[] {
   const found: string[] = []
-  for (const match of text.matchAll(PRESSED)) {
-    const rest = text.slice((match.index ?? 0) + match[0].length)
-    const label = longestFirst.find((one) => rest.startsWith(one) && LABEL_ENDS.test(rest.slice(one.length)))
-    if (label && !/^[a-z]/.test(label) && !KEYS.test(label)) found.push(label)
+  const take = (label: string | undefined, oneWord: boolean) => {
+    if (!label || /^[a-z]/.test(label) || KEYS.test(label)) return
+    if (!oneWord && !/\s/.test(label) && !label.endsWith('…')) return
+    found.push(label)
   }
-  for (const [, label] of text.matchAll(/\*\*([^*\n]{3,60})\*\*/g)) {
-    if (labels.has(label!) && /\s/.test(label!) && !/^[a-z]/.test(label!)) found.push(label!)
+  for (const match of text.matchAll(PRESSED)) take(labelAt(text, (match.index ?? 0) + match[0].length, longestFirst), true)
+  for (const [, label] of text.matchAll(/\*\*([^*\n]{3,60})\*\*/g)) if (labels.has(label!)) take(label, true)
+  for (const [, label] of text.matchAll(/"([^"\n]{3,60})"/g)) if (labels.has(label!)) take(label, true)
+  // A menu item whose ellipsis the screen draws apart from its words is named by them.
+  for (const [, label] of text.matchAll(/(?:^|[\s(*"])([A-Z+][^\n,;:.()*"]{1,58}…)/g)) {
+    take(labels.has(label!) ? label : labels.has(label!.slice(0, -1)) ? label!.slice(0, -1) : undefined, labels.has(label!))
   }
-  return found
+  if (where) for (const match of text.matchAll(PART_STARTS)) take(labelAt(text, (match.index ?? 0) + match[0].length, longestFirst), false)
+  return [...new Set(found)]
 }
 
 describe.each([['nl', NL], ['de', DE]] as const)('the %s help', (language, text) => {
@@ -93,12 +126,11 @@ describe.each([['nl', NL], ['de', DE]] as const)('the %s help', (language, text)
     const longestFirst = [...labels.keys()].sort((a, b) => b.length - a.length)
     const here = new Map(helpStrings(text))
     const table = STRINGS[language] as Record<string, string>
-    // The reference's long accounts are not held to this yet: their labels are checked in the tasks that quote them.
-    const wrong = helpStrings(EN).filter(([path]) => !path.startsWith('background.') && !NAMED_LABELS.has(path)).flatMap(([path, english]) => {
+    const wrong = helpStrings(EN).filter(([path]) => !NAMED_LABELS.has(path)).flatMap(([path, english]) => {
       const said = here.get(path) ?? ''
-      return quotedLabels(english, labels, longestFirst)
-        // The example's own names stay English in every language.
-        .filter((label) => !said.includes(label))
+      return quotedLabels(english, labels, longestFirst, /^sections\.[^[]+\[2\]$/.test(path))
+        // The example's own names stay English in every language, and so does a label the screen says in English too.
+        .filter((label) => !said.includes(label) || !(UNTRANSLATED.has(label) || labels.get(label)!.some((key) => table[key] === label)))
         .filter((label) => !labels.get(label)!.some((key) => table[key] && said.includes(table[key]!)))
         .map((label) => `${path}: "${label}" is ${[...new Set(labels.get(label)!.map((key) => table[key]))].join(' or ')} on screen`)
     })

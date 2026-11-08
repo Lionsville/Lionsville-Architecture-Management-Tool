@@ -19,7 +19,7 @@ the automatic check off. When the download is done it asks you to restart;
 **Later** installs it the next time you quit. Where the app cannot replace
 itself — run straight from the disk image, or from Downloads without being
 moved to Applications — it says so and opens the download page instead.
-**Check for Updates…** in the Help menu asks on request.
+**Check for updates…** in the Help menu asks on request.
 
 **Browser.** [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
 is the newest release, with nothing installed. You can also run it from a
@@ -341,14 +341,14 @@ Nothing is overwritten without asking.` },
     { title: `When a scope cannot be read whole`, text: `If part of a scope cannot be read, because a file of it is damaged or was
 changed by hand, the scope opens to be looked at and not changed, and a notice
 names what could not be read. Where you may write where the scope is kept, it
-offers **Bring in a saved copy…**, and **Put back from the history…** where a
+offers **Bring in a saved file…**, and **Put back from the history…** where a
 history is kept; in a folder it also says you can mend the file and open the
 scope again.
 - **Put back from the history…** opens the History page, where **Put back the
   whole scope…** makes all of it what it was at the snapshot you chose. What
   could not be read is kept first, as an entry of the history or set aside
   beside the scope, and where it cannot be kept, nothing is put back.
-- **Bring in a saved copy…**, or opening one onto the scope, puts it back
+- **Bring in a saved file…**, or opening one onto the scope, puts it back
   from the file the same way, and the question before it says so.
 
 An entry that kept what could not be read offers **Save what could not be
@@ -369,7 +369,7 @@ otherwise the work is gone when the tab closes.
 Every notice (saved, loaded, failed) appears in that bottom bar.` },
     { title: `Saving, exporting, sharing`, text: `Two ways out, for two purposes.
 
-- **The saved copy** (\`.lvarch\`, **File › Save a Copy…**) is everything and is what you hand to someone who will edit
+- **The saved copy** (\`.lvarch\`, **File › Save a copy…**) is everything and is what you hand to someone who will edit
   further. It is your **whole organisation** in one file, **under a password**: you are asked for one when you save the copy — twice, because
   a lost password cannot be recovered — and whoever opens the file is asked
   for it again. Nothing about what is inside can be read without it. It holds
@@ -2424,7 +2424,7 @@ so when a name goes from the register, it goes from every screen at once.
   because a role never ends before it began — and the question says how
   many of each first. *Still here* is chosen to start with where any of those
   roles began after the leaving day.
-- **Import CSV…** takes a list — pasted, or a file — with a name, an address
+- **Import a list…** takes a list — pasted, or a file — with a name, an address
   and *internal* or *external* on each row, separated by commas or
   semicolons. Every row goes through the same check: one that is plainly
   somebody already there adds nobody, one that only may be is flagged and

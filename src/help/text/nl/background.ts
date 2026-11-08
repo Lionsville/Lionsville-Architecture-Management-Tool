@@ -20,7 +20,7 @@ de app je opnieuw te starten; **Later** installeert hem de volgende keer dat je
 de app afsluit. Waar de app zichzelf niet kan vervangen — rechtstreeks gestart
 vanaf de schijfkopie, of vanuit Downloads zonder naar Programma's verplaatst te
 zijn — zegt hij dat en opent hij in plaats daarvan de downloadpagina.
-**Check for Updates…** in het Help-menu vraagt het op verzoek.
+**Zoeken naar updates…** in het Help-menu vraagt het op verzoek.
 
 **Browser.** [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
 is de nieuwste release, zonder iets te installeren. Je kunt hem ook draaien
@@ -377,7 +377,7 @@ het onderdeel opnieuw kunt openen.
   momentopname die je kiest. Wat niet te lezen was, wordt eerst bewaard, als
   een punt in de geschiedenis of apart gezet naast het onderdeel, en waar dat
   niet kan, wordt niets teruggezet.
-- **Een bewaarde kopie binnenhalen…**, of er een openen op het onderdeel, zet het
+- **Een bewaard bestand binnenhalen…**, of er een openen op het onderdeel, zet het
   op dezelfde manier terug uit het bestand, en de vraag vooraf zegt dat.
 
 Een punt in de geschiedenis dat bewaarde wat niet te lezen was, biedt **Bewaar
@@ -2608,7 +2608,7 @@ verdwijnt hij in één keer van elk scherm.
   rol eindigt nooit voordat hij begon — en de vraag zegt eerst hoeveel van
   elk. *Er nog* staat vooraf gekozen als een van die rollen na de vertrekdag
   begon.
-- **CSV importeren…** neemt een lijst — geplakt, of uit een bestand — met op
+- **Lijst importeren…** neemt een lijst — geplakt, of uit een bestand — met op
   elke rij een naam, een adres en *intern* of *extern*, gescheiden door
   komma's of puntkomma's. Elke rij gaat door dezelfde controle: een rij die
   duidelijk iemand is die er al staat voegt niemand toe, een rij die dat

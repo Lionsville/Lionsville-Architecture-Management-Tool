@@ -20,7 +20,7 @@ Download fertig, bittet die App um einen Neustart; **Later** installiert die
 Version beim nächsten Beenden. Wo die App sich nicht selbst ersetzen kann —
 direkt vom Disk-Image gestartet oder aus „Downloads“, ohne in „Programme“
 verschoben zu sein — sagt sie das und öffnet stattdessen die Download-Seite.
-**Check for Updates…** im Hilfe-Menü fragt auf Wunsch nach.
+**Nach Updates suchen…** im Hilfe-Menü fragt auf Wunsch nach.
 
 **Browser.** [app.architecture.lionsville.nl](https://app.architecture.lionsville.nl/)
 ist die neueste Version, ohne etwas zu installieren. Sie können sie auch aus
@@ -400,7 +400,7 @@ Bereich erneut öffnen können.
   gewählten Momentaufnahme war. Was nicht lesbar war, wird zuerst aufbewahrt,
   als Eintrag im Verlauf oder neben dem Bereich beiseitegelegt, und wo das
   nicht geht, wird nichts zurückgeholt.
-- **Eine gespeicherte Kopie einbringen…**, oder eine auf den Bereich zu öffnen, holt
+- **Eine gespeicherte Datei einbringen…**, oder eine auf den Bereich zu öffnen, holt
   ihn auf dieselbe Weise aus der Datei zurück, und die Frage davor sagt das.
 
 Ein Eintrag im Verlauf, der aufbewahrt hat, was nicht lesbar war, bietet
@@ -2744,7 +2744,7 @@ Register, verschwindet er also auf einmal aus jeder Ansicht.
   diesem Tag begann, entfällt, denn eine Rolle endet nie, bevor sie begonnen
   hat —, und die Frage sagt zuerst, wie viele es jeweils sind. *Noch da* ist
   vorgewählt, wo eine dieser Rollen nach dem Tag des Gehens begann.
-- **CSV importieren…** nimmt eine Liste — eingefügt oder aus einer Datei — mit
+- **Liste importieren…** nimmt eine Liste — eingefügt oder aus einer Datei — mit
   einem Namen, einer Adresse und *intern* oder *extern* in jeder Zeile, durch
   Kommas oder Semikolons getrennt. Jede Zeile durchläuft denselben Abgleich:
   Eine Zeile, die eindeutig jemand Vorhandenes ist, fügt niemanden hinzu; eine,
@@ -2977,7 +2977,7 @@ vier Reitern:
 - **Optionen** — der Katalog: Produkte, Dienste und Eigenentwicklungen, die
   ihn liefern könnten, je mit Anbieter und Status, und die Elemente in der
   Landschaft, die sie sind.
-- **Wo verwendet** — die **Bewertung** jedes Bereichs. **Bewerten für…**
+- **Wo verwendet** — die **Bewertung** jedes Bereichs. **Für einen Bereich bewerten…**
   beginnt eine für einen Bereich, mit den dort geltenden Kontexten, auf Wunsch
   mit den Bewertungen eines anderen Bereichs als Ausgangspunkt. Im Raster wird
   jede Option gegen jede Fähigkeit bewertet; die **Passung** ist, wie viel von
