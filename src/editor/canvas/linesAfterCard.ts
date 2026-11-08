@@ -12,6 +12,7 @@
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 import { useStoreApi } from '@xyflow/react';
+import { chordHeld } from '../../widgets/kit/keys';
 
 const quoted = (id: string) => `"${id.replace(/["\\]/g, '\\$&')}"`;
 
@@ -36,7 +37,7 @@ export function useLinesAfterCard(container: RefObject<HTMLDivElement | null>): 
     const element = container.current;
     if (!element) return undefined;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab' || event.altKey || event.metaKey || event.ctrlKey || event.defaultPrevented) return;
+      if (event.key !== 'Tab' || event.altKey || chordHeld(event) || event.defaultPrevented) return;
       const active = document.activeElement as HTMLElement | null;
       const node = active?.closest<HTMLElement>('.react-flow__node');
       const edge = active?.closest<HTMLElement>('.react-flow__edge');
