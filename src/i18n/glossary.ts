@@ -82,7 +82,9 @@ export const GLOSSARY: Record<Exclude<Language, 'en'>, readonly Refused[]> = {
     { word: /Unternehmenskarte/, use: 'Abdeckung' },
     { word: /Übersichtskarte/, use: 'Minikarte' },
     { word: /\bJourneys?\b|^Ablauf$/, use: 'Kundenreise' },
-    { word: /zu prüfen/, use: 'zur Durchsicht', except: (key) => key === 'drawing.silentAsk' },
+    // A finding to review is zur Durchsicht, as a count and as a heading; the People page's tab of
+    // possible duplicates is Zu prüfen, a list of pairs to answer rather than a weight of finding.
+    { word: /[Zz]u prüfen/, use: 'zur Durchsicht', except: (key) => key === 'drawing.silentAsk' || /^(people\.|sections\.people\.)/.test(key) },
     // Under review is a decision's state and stays In Prüfung (sent Zur Prüfung); the checks are Checks.
     { word: /(?<!\b[Ii]n |\b[Zz]ur )Prüfung/, use: 'Check', except: (key) => key.startsWith('adr.') },
     { word: /Verschachtelung/, use: 'Hierarchie' },

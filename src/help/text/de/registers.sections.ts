@@ -73,7 +73,7 @@ export const SECTIONS: SectionTexts = {
     'Die Auswahl neben dem Titel Checks, mit Gesamte Organisation oder <Bereich> und darunter.',
     ['Klicken Sie auf die Auswahl neben Checks.', 'Wählen Sie Gesamte Organisation oder einen Bereich.'],
     'Wählen Sie Application landscape und darunter, um nur die Befunde in dieser Landschaft zu sehen.'],
-  'checks.group': ['Die Checks gruppieren', 'Gruppe: Gewicht (der Standard) zeigt das Gefundene als Zu beheben, Zu prüfen und Hinweise, mit den Checks, die nichts fanden, und denen, die nur in einem offenen Bereich gezählt werden, in je einer Zeile. Gruppe: Kategorie listet jeden Check des Katalogs nach Kategorie, auch die ohne Fund. Gruppe: Bereich listet sie je Bereich. Keine ist eine Liste. Hinweise bleiben eingeklappt, bis Sie sie zeigen, für die Sitzung gemerkt.',
+  'checks.group': ['Die Checks gruppieren', 'Gruppe: Gewicht (der Standard) zeigt das Gefundene als Zu beheben, Zur Durchsicht und Hinweise, mit den Checks, die nichts fanden, und denen, die nur in einem offenen Bereich gezählt werden, in je einer Zeile. Gruppe: Kategorie listet jeden Check des Katalogs nach Kategorie, auch die ohne Fund. Gruppe: Bereich listet sie je Bereich. Keine ist eine Liste. Hinweise bleiben eingeklappt, bis Sie sie zeigen, für die Sitzung gemerkt.',
     'Die Schaltfläche Gruppe unter dem Titel Checks. In der Adresse als f.by= gehalten.',
     ['Klicken Sie auf Gruppe: Gewicht.', 'Wählen Sie Kategorie, um jeden Check der App zu sehen.', 'Klicken Sie auf eine eingeklappte Zeile wie Hinweise, um sie aufzuklappen.'],
     'Gruppieren Sie nach Kategorie und sehen Sie, dass Pläne und Daten drei Checks enthält, von denen eine zwei Verbindungen fand.'],
