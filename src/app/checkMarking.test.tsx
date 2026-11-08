@@ -97,6 +97,18 @@ describe('where a mark is written', () => {
     expect(marking.markableIn(unused)).toBe('')
   })
 
+  it('takes several back as one step per scope, answers which, and puts them back as they were', async () => {
+    const kept = { check: 'check.applicationUnowned' as const, key: 'pos', on: '2026-10-01', reason: 'Came with the example' }
+    const { writeIn, written } = writing({ retail: { ...RETAIL, checkMarks: [kept] } })
+    const marking = checkMarking({ index, writable: () => true, writeIn, today: TODAY })
+    expect(await marking.takeBackAll([{ scope: 'retail', mark: kept }])).toEqual([{ scope: 'retail', mark: kept }])
+    await marking.putBackAll([{ scope: 'retail', mark: kept }])
+    expect(written).toEqual([
+      { path: 'retail', commands: [{ type: 'checkMark.remove', id: 'check.applicationUnowned pos' }] },
+      { path: 'retail', commands: [{ type: 'checkMark.add', mark: kept }] },
+    ])
+  })
+
   it('says where a mark did not land', async () => {
     const onRefused = vi.fn()
     const writeIn: WriteIn = () => Promise.resolve({ ok: false, reason: 'shell.scopeReadOnly' })
@@ -151,7 +163,7 @@ describe('a list split by the marks', () => {
     { text: 'Declare an interaction with Sales' },
   ]
   const marked = (over: Partial<CheckMarking> = {}): CheckMarking => ({
-    marks: [], markableIn: () => 'retail', mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(), mayChange: () => true, markAll: vi.fn(() => Promise.resolve([])), takeBackAll: vi.fn(() => Promise.resolve()), write: vi.fn(() => Promise.resolve(true)), removeAssignment: vi.fn(), ...over,
+    marks: [], markableIn: () => 'retail', mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(), mayChange: () => true, markAll: vi.fn(() => Promise.resolve([])), takeBackAll: vi.fn(() => Promise.resolve([])), putBackAll: vi.fn(() => Promise.resolve()), write: vi.fn(() => Promise.resolve(true)), removeAssignment: vi.fn(), ...over,
   })
 
   it('offers Mark as intended… on a line said from a finding, and never on one said from none', () => {

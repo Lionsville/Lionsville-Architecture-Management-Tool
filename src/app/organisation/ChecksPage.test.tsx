@@ -56,7 +56,7 @@ function page(over: Partial<ChecksPageProps> = {}, marks: KeptCheckMark[] = [], 
   }
   const handed: CheckMarking = {
     marks, markableIn: (finding) => ('scope' in finding ? finding.scope : ''), mark: vi.fn(), mayTakeBack: () => true, takeBack: vi.fn(),
-    mayChange: () => true, removeAssignment: vi.fn(), markAll: vi.fn(() => Promise.resolve([])), takeBackAll: vi.fn(() => Promise.resolve()), write: vi.fn(() => Promise.resolve(true)), ...marking,
+    mayChange: () => true, removeAssignment: vi.fn(), markAll: vi.fn(() => Promise.resolve([])), takeBackAll: vi.fn(() => Promise.resolve([])), putBackAll: vi.fn(() => Promise.resolve()), write: vi.fn(() => Promise.resolve(true)), ...marking,
   }
   renderShell(<CheckMarkingContext.Provider value={handed}><ChecksPage {...props} /></CheckMarkingContext.Provider>)
   return { props, marking: handed }
@@ -141,17 +141,36 @@ describe('the Checks page', () => {
     expect(within(screen.getByTestId('checks-row-actions')).queryByRole('button', { name: /intended/ })).toBeNull()
   })
 
-  it('lists what was marked under Accepted, with Take back', () => {
+  it('lists what was marked under Accepted, with Take back on every line, and puts it back from the toast', async () => {
     const mark = { check: 'check.interactionUnused' as const, key: 'i-1 ops sales', on: '2026-10-02', reason: 'They design the API together' }
-    const { marking } = page({ request: { select: 'check.interactionUnused' } }, [{ scope: '', mark }])
+    const taken = [{ scope: '', mark }]
+    const { marking } = page({ request: { select: 'check.interactionUnused' } }, [{ scope: '', mark }], { takeBackAll: vi.fn(() => Promise.resolve(taken)) })
     fireEvent.click(within(detail()).getByRole('tab', { name: /Accepted/ }))
     const accepted = within(detail()).getByTestId('checks-accepted')
     expect(within(accepted).getByTestId('accepted-reason').textContent).toContain('“They design the API together”')
-    // The sentence and Take back come with the line pressed, as on Found.
-    fireEvent.click(within(accepted).getAllByRole('row')[1] as HTMLElement)
-    expect(accepted.textContent).toContain('Operations and Sales declare As a service, and no interface runs between them.')
+    // Take back is on the line itself, nothing pressed first.
     fireEvent.click(within(accepted).getByTestId('finding-take-back'))
-    expect(marking.takeBack).toHaveBeenCalledWith({ scope: '', mark })
+    expect(marking.takeBackAll).toHaveBeenCalledWith(taken)
+    expect(await screen.findByText(/1 taken back to Found/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Put back/ }))
+    expect(marking.putBackAll).toHaveBeenCalledWith(taken)
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('takes back the lines ticked under Accepted at once, and offers no Take back to a reader', () => {
+    const one = { check: 'check.interactionUnused' as const, key: 'i-1 ops sales', on: '2026-10-02' }
+    const two = { check: 'check.interactionUnused' as const, key: 'i-2 ops finance', on: '2026-10-02' }
+    const { marking } = page({ request: { select: 'check.interactionUnused' } }, [{ scope: '', mark: one }, { scope: '', mark: two }])
+    fireEvent.click(within(detail()).getByRole('tab', { name: /Accepted/ }))
+    const accepted = within(detail()).getByTestId('checks-accepted')
+    for (const box of within(accepted).getAllByRole('checkbox').filter((box) => box.getAttribute('aria-label')?.includes(':'))) fireEvent.click(box)
+    fireEvent.click(within(accepted).getByTestId('accepted-take-back-ticked'))
+    expect(marking.takeBackAll).toHaveBeenCalledWith(expect.arrayContaining([{ scope: '', mark: one }]))
+    cleanup()
+    page({ request: { select: 'check.interactionUnused' } }, [{ scope: '', mark: one }], { mayTakeBack: () => false })
+    fireEvent.click(within(detail()).getByRole('tab', { name: /Accepted/ }))
+    expect(within(detail()).queryByTestId('finding-take-back')).toBeNull()
+    expect(within(detail()).queryByRole('checkbox')).toBeNull()
   })
 
   it('keeps what was accepted in sight: the head counts it, its check is listed under Accepted as intended, and a press opens it there', () => {

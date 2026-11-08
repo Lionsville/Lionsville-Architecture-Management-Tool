@@ -711,6 +711,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'checks.markN': '{count} als gewollt markieren',
   'checks.markReturns': 'Ein Schritt in jedem Bereich, der sie führt. Ändert sich der Gegenstand, kommt der Befund zurück.',
   'checks.marked': '{count} als gewollt markiert.',
+  'checks.takenBack': '{count} zurück unter Gefunden.',
   'checks.openWhereFixed': 'Dort öffnen, wo es behoben wird',
   'checks.openToCount': 'Bereich öffnen, um zu zählen',
   'checks.ownerField': 'Eigentümer: Einheit wählen oder Namen eingeben',

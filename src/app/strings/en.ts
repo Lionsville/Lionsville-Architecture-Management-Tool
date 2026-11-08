@@ -916,6 +916,7 @@ export const EN = {
   'checks.markN': 'Mark {count} as intended',
   'checks.markReturns': 'One step in each scope that keeps them. If what one is about changes, it returns.',
   'checks.marked': 'Marked {count} as intended.',
+  'checks.takenBack': '{count} taken back to Found.',
   'checks.openWhereFixed': 'Open where it is fixed',
   'checks.openToCount': 'Open the scope to count',
   'checks.ownerField': 'Owner: pick a unit, or type a name',

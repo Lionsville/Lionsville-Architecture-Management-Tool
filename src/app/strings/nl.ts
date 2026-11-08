@@ -707,6 +707,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'checks.markN': '{count} markeren als bedoeld',
   'checks.markReturns': 'Eén stap in elke scope die ze bewaart. Verandert waar het over gaat, dan komt het terug.',
   'checks.marked': '{count} gemarkeerd als bedoeld.',
+  'checks.takenBack': '{count} teruggezet naar Gevonden.',
   'checks.openWhereFixed': 'Openen waar het wordt opgelost',
   'checks.openToCount': 'Open de scope om te tellen',
   'checks.ownerField': 'Eigenaar: kies een eenheid of typ een naam',

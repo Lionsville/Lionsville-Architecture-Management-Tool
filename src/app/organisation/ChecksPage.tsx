@@ -256,56 +256,67 @@ function FoundList({ row, view, setView, ask, marking, index, today, onGo, onLin
 
 /**
  * What was marked as intended under one check, as the same list Found is: one line
- * a finding, its reason and day beside it, and *Take back* with the sentence once
- * the line is pressed rather than a button on every line.
+ * a finding, its reason and day beside it, and *Take back* at the end of every line
+ * the person may change — and, ticked, for several at once. Each is one step in the
+ * scope that keeps the marks, and the toast after it puts them back as they were.
  */
-function AcceptedList({ row, index, marking, scopeName, s }: {
-  row: CheckRow; index: ChecksPageProps['index']; marking: CheckMarking | undefined; scopeName: (path: ScopePath) => string; s: Translate
+function AcceptedList({ row, index, marking, scopeName, onTakenBack, s }: {
+  row: CheckRow; index: ChecksPageProps['index']; marking: CheckMarking | undefined; scopeName: (path: ScopePath) => string
+  onTakenBack: (marks: readonly KeptCheckMark[]) => void; s: Translate
 }) {
   const { language } = useStrings()
   const [density] = useDensity()
   const [pressed, setPressed] = useState<string | null>(null)
-  const rows = row.marked.map(({ instance, mark, keptIn }): ListRow => {
-    const takeBack = marking?.mayTakeBack(keptIn) ? () => { void marking.takeBack({ scope: keptIn, mark }) } : undefined
-    return {
-      id: `${keptIn}\u0000${checkMarkId(mark)}\u0000${instance.id}`, text: instance.subject ?? instance.text,
-      cells: {
-        reason: <span data-testid="accepted-reason">{mark.reason ? `\u201c${mark.reason}\u201d` : s(CHECK_MARK_WORDS.noReason)}</span>,
-        on: formatDay(mark.on, language),
-        master: instance.scope !== undefined ? scopeName(instance.scope) : undefined,
-      },
-      actions: (
-        <span className="org-finding">
-          <p className="checks-page__text">{instance.text}</p>
-          {takeBack && (
-            <span className="org-finding__acts">
-              <Button data-guide="findings.takeBack" data-testid="finding-take-back" onClick={takeBack}>{s(CHECK_MARK_WORDS.takeBack)}</Button>
-            </span>
-          )}
-        </span>
-      ),
-    }
-  })
+  const [ticked, setTicked] = useState<ReadonlySet<string>>(() => new Set())
+  const kept = new Map(row.marked.map((one) => [`${one.keptIn}\u0000${checkMarkId(one.mark)}\u0000${one.instance.id}`, one]))
+  const mayTakeBack = (scope: ScopePath) => marking?.mayTakeBack(scope) === true
+  const takeBack = (ids: readonly string[]) => {
+    if (!marking) return
+    const marks = ids.flatMap((id) => { const one = kept.get(id); return one && mayTakeBack(one.keptIn) ? [{ scope: one.keptIn, mark: one.mark }] : [] })
+    void marking.takeBackAll(marks).then((taken) => {
+      setTicked(new Set())
+      if (taken.length > 0) onTakenBack(taken)
+      return undefined
+    })
+  }
+  const rows = [...kept].map(([id, { instance, mark, keptIn }]): ListRow => ({
+    id, text: instance.subject ?? instance.text,
+    cells: {
+      reason: <span data-testid="accepted-reason">{mark.reason ? `\u201c${mark.reason}\u201d` : s(CHECK_MARK_WORDS.noReason)}</span>,
+      on: formatDay(mark.on, language),
+      master: instance.scope !== undefined ? scopeName(instance.scope) : undefined,
+    },
+    ...(mayTakeBack(keptIn) ? {
+      end: <Button variant="quiet" size="small" data-guide="findings.takeBack" data-testid="finding-take-back" onClick={() => takeBack([id])}>{s(CHECK_MARK_WORDS.takeBack)}</Button>,
+    } : {}),
+    actions: <span className="org-finding"><p className="checks-page__text">{instance.text}</p></span>,
+  }))
   const columns: readonly ListColumn[] = [
     { id: 'reason', label: s('checks.colReason') },
     { id: 'on', label: s('checks.colMarked'), width: 'minmax(96px, 140px)' },
     { id: 'master', label: s('register.colMaster') },
   ]
+  const canTick = row.marked.some((one) => mayTakeBack(one.keptIn))
   return (
     <div data-testid="checks-accepted">
       <List
         label={s('checks.tabAccepted')} groups={[{ id: 'all', label: '', rows }]} density={density} columns={columns} itemLabel={s(subjectWord(row, index))}
         selectedId={pressed} onOpen={(id) => setPressed((was) => (was === id ? null : id))}
+        {...(canTick ? {
+          checked: ticked, onCheckedChange: setTicked,
+          bulkActions: <Button data-testid="accepted-take-back-ticked" onClick={() => takeBack([...ticked])}>{s(CHECK_MARK_WORDS.takeBack)}</Button>,
+        } : {})}
       />
     </div>
   )
 }
 
 /** The check picked: what the catalogue says of it, what is found, and what was marked as intended. */
-function CheckReader({ row, tab, setTab, view, setView, finding, marking, index, today, onGo, onLink, fixes, onOpenScope, onFixed, onMarked, scopeName, s }: {
+function CheckReader({ row, tab, setTab, view, setView, finding, marking, index, today, onGo, onLink, fixes, onOpenScope, onFixed, onMarked, onTakenBack, scopeName, s }: {
   row: CheckRow; tab: string; setTab: (tab: string) => void; view: ListView; setView: (next: ListView) => void; finding: string | undefined
   marking: CheckMarking | undefined; index: ChecksPageProps['index']; today: string; onGo: ChecksPageProps['onGo']; onLink: ChecksPageProps['onLink']; fixes: ChecksPageProps['fixes']; onOpenScope: ChecksPageProps['onOpenScope']
-  onFixed: (done: FixDone) => void; onMarked: (marks: readonly KeptCheckMark[]) => void; scopeName: (path: ScopePath) => string; s: Translate
+  onFixed: (done: FixDone) => void; onMarked: (marks: readonly KeptCheckMark[]) => void; onTakenBack: (marks: readonly KeptCheckMark[]) => void
+  scopeName: (path: ScopePath) => string; s: Translate
 }) {
   const { entry } = row
   const fix = entry.weight === 'fix'
@@ -332,7 +343,7 @@ function CheckReader({ row, tab, setTab, view, setView, finding, marking, index,
             {onOpenScope && <Button onClick={onOpenScope}>{s('checks.openToCount')}</Button>}
           </PanelSection>
         ) : accepted ? (
-          <AcceptedList row={row} index={index} marking={marking} scopeName={scopeName} s={s} />
+          <AcceptedList row={row} index={index} marking={marking} scopeName={scopeName} onTakenBack={onTakenBack} s={s} />
         ) : row.shown.length === 0 ? (
           <PanelSection><p className="checks-page__text checks-page__quiet">{s('checks.none')}</p></PanelSection>
         ) : (
@@ -418,6 +429,9 @@ export function ChecksPage(props: ChecksPageProps) {
     if (current && view.select !== current.key) setView({ ...view, select: current.key })
     setToast({ key: Date.now(), message: s('checks.marked', { count: made.length }), undo: { onPress: () => { void marking?.takeBackAll(made) }, shared: true } })
   }
+  const onTakenBack = (taken: readonly KeptCheckMark[]) => {
+    setToast({ key: Date.now(), message: s('checks.takenBack', { count: taken.length }), undo: { onPress: () => { void marking?.putBackAll(taken) }, shared: true } })
+  }
   const chooseCheck = (id: string) => {
     const key = id.includes('@') ? id.slice(0, id.indexOf('@')) as CheckKey : id as CheckKey
     // What narrowed one check's list means nothing on the next.
@@ -459,7 +473,7 @@ export function ChecksPage(props: ChecksPageProps) {
             <CheckReader
               row={current} tab={tab} setTab={setTab} view={view} setView={setView} finding={request?.finding}
               marking={marking} index={index} today={today} onGo={onGo} onLink={onLink} fixes={props.fixes} onOpenScope={onOpenScope}
-              onFixed={onFixed} onMarked={onMarked} scopeName={scopeName} s={s}
+              onFixed={onFixed} onMarked={onMarked} onTakenBack={onTakenBack} scopeName={scopeName} s={s}
             />
           ) : (
             <div className="checks-page__reader">

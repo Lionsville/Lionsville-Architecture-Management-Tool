@@ -75,8 +75,10 @@ export type CheckMarking = {
    * them, and each mark made, so the marks can be taken back as they were made.
    */
   markAll: (findings: readonly { finding: AnyFinding; checkedIn?: ScopePath | undefined }[], reason: string) => Promise<readonly KeptCheckMark[]>
-  /** Those marks taken back: one step in each scope. */
-  takeBackAll: (kept: readonly KeptCheckMark[]) => Promise<void>
+  /** Those marks taken back: one step in each scope; answers the ones that were. */
+  takeBackAll: (kept: readonly KeptCheckMark[]) => Promise<readonly KeptCheckMark[]>
+  /** Marks taken back put back as they were, reason and day: one step in each scope. What undoes a take back. */
+  putBackAll: (kept: readonly KeptCheckMark[]) => Promise<void>
   /** A fix of one field, written as that scope's one step; false where it did not land, which has been said. */
   write: (scope: ScopePath, commands: readonly Command[]) => Promise<boolean>
 }
@@ -109,6 +111,13 @@ function heldHere(model: OpenForMarking['model'], finding: ConwayFinding): boole
     case 'ownerNamed': return own(finding.applicationId)
     case 'overLimit': return own(finding.unitId)
   }
+}
+
+/** Kept marks by the scope that keeps them, which is what one step writes. */
+function byScopeOf(kept: readonly KeptCheckMark[]): Map<ScopePath, CheckMark[]> {
+  const byScope = new Map<ScopePath, CheckMark[]>()
+  for (const { scope, mark } of kept) byScope.set(scope, [...byScope.get(scope) ?? [], mark])
+  return byScope
 }
 
 const isConway = (finding: AnyFinding): finding is ConwayFinding => !('scope' in finding && 'key' in finding) && !('subject' in finding)
@@ -196,9 +205,15 @@ export function checkMarking(deps: {
       return made
     },
     takeBackAll: async (kept) => {
-      const byScope = new Map<ScopePath, CheckMark[]>()
-      for (const { scope, mark } of kept) byScope.set(scope, [...byScope.get(scope) ?? [], mark])
-      for (const [scope, marks] of byScope) await writeMany(scope, marks.map((mark): Command => ({ type: 'checkMark.remove', id: checkMarkId(mark) })))
+      const taken: KeptCheckMark[] = []
+      for (const [scope, marks] of byScopeOf(kept)) {
+        const landed = await writeMany(scope, marks.map((mark): Command => ({ type: 'checkMark.remove', id: checkMarkId(mark) })))
+        if (landed) taken.push(...marks.map((mark) => ({ scope, mark })))
+      }
+      return taken
+    },
+    putBackAll: async (kept) => {
+      for (const [scope, marks] of byScopeOf(kept)) await writeMany(scope, marks.map((mark): Command => ({ type: 'checkMark.add', mark })))
     },
     removeAssignment: (scope, id) => {
       if (!mayWrite(scope)) return
