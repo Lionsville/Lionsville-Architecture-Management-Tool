@@ -234,7 +234,7 @@ function MatrixHead({ rowHeading, answerLabels, drawn, columns, row, column, ope
   readonly column: number
   readonly opens: boolean
   readonly lit: string | undefined
-  readonly hoverColumn: number | null
+  readonly hoverColumn: number
 }) {
   const { t } = useStrings()
   return (
@@ -306,6 +306,31 @@ function headPresses({ columns, columnGroups, drawn, toggleGroup, toggleRow, onO
   }
 }
 
+type At = { row: number; column: number }
+
+/** Where the pointer is: a second crosshair, so a cell under rotated headings can be read before it is pressed. */
+function usePointerCell() {
+  const [hover, setHover] = useState<At | null>(null)
+  const onPointerOver = (event: { target: EventTarget | null }) => {
+    const address = (event.target as HTMLElement).closest?.<HTMLElement>('[data-kit-cell]')?.dataset.kitCell?.split(':').map(Number)
+    const next = address ? { row: address[0] ?? 0, column: address[1] ?? 0 } : null
+    setHover((was) => (was?.row === next?.row && was?.column === next?.column ? was : next))
+  }
+  // NaN where the pointer is off the grid: no row or column index equals it.
+  return { hover, rowAt: hover ? hover.row : NaN, columnAt: hover ? hover.column : NaN, onPointerOver, leave: () => setHover(null) }
+}
+
+/** What the line under the grid says of the cell under the pointer, or of the heading it is on. */
+function pointerLine(
+  hover: At | null, rows: readonly { row: MatrixRowDef }[], drawn: readonly Drawn[],
+  cellOf: MatrixProps['cellOf'], absent: MatrixProps['absent'], empty: string,
+): string | undefined {
+  const row = hover && hover.row >= 0 ? rows[hover.row]?.row : undefined
+  const column = hover && hover.column >= 0 ? drawn[hover.column] : undefined
+  if (row && column?.kind === 'column' && !absent?.(row.id, column.id)) return `${row.label} × ${column.label}: ${cellOf(row.id, column.id)?.meaning ?? empty}.`
+  return row?.label ?? column?.label
+}
+
 export function Matrix({
   label, rowHeading, rows, columns, columnGroups, cellOf, answer, answers: moreAnswers, selected, onSelect, keys, onKey, hint,
   defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, openFoldable, onOpenColumn, absent, litColumn, wrapRows, groupBand, rotateHeads, dataGuide,
@@ -322,8 +347,7 @@ export function Matrix({
   const row = Math.min(at.row, shownRows.length - 1)
   const column = Math.min(at.column, drawn.length - 1)
   const wantFocus = useRef(false)
-  // Where the pointer is: a second crosshair, so a cell under rotated headings can be read before it is pressed.
-  const [hover, setHover] = useState<{ row: number; column: number } | null>(null)
+  const { hover, rowAt, columnAt, onPointerOver, leave } = usePointerCell()
 
   useLayoutEffect(() => {
     if (!wantFocus.current) return
@@ -431,18 +455,7 @@ export function Matrix({
     if (address) setAt({ row: address[0] ?? 0, column: address[1] ?? 0 })
   }
 
-  const onPointerOver = (event: { target: EventTarget | null }) => {
-    const address = (event.target as HTMLElement).closest?.<HTMLElement>('[data-kit-cell]')?.dataset.kitCell?.split(':').map(Number)
-    const next = address ? { row: address[0] ?? 0, column: address[1] ?? 0 } : null
-    setHover((was) => (was?.row === next?.row && was?.column === next?.column ? was : next))
-  }
-
-  const hoverRow = hover && hover.row >= 0 ? shownRows[hover.row]?.row : undefined
-  const hoverColumnDef = hover && hover.column >= 0 ? drawn[hover.column] : undefined
-  const hoverLine = hoverRow && hoverColumnDef?.kind === 'column' && !absent?.(hoverRow.id, hoverColumnDef.id)
-    ? `${hoverRow.label} × ${hoverColumnDef.label}: ${cellOf(hoverRow.id, hoverColumnDef.id)?.meaning ?? t('kit.matrix.empty')}.`
-    : hoverRow?.label ?? hoverColumnDef?.label
-
+  const hoverLine = pointerLine(hover, shownRows, drawn, cellOf, absent, t('kit.matrix.empty'))
   const line = hoverLine !== undefined ? hoverLine : hereRow
     ? [
         here && !absent?.(here.row, here.column) ? `${hereRow.label} × ${hereColumn?.label}: ${hereCell?.meaning ?? t('kit.matrix.empty')}.` : hereRow.label,
@@ -453,15 +466,15 @@ export function Matrix({
   return (
     <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-wrap={wrapRows || undefined} data-band={(groupBand && columnGroups) ? '' : undefined} data-guide={dataGuide}>
       <div className="kit-matrix__scroll">
-        <table ref={table} role="grid" aria-label={label} className="kit-matrix__table" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocus} onPointerOver={onPointerOver} onPointerLeave={() => setHover(null)}>
+        <table ref={table} role="grid" aria-label={label} className="kit-matrix__table" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocus} onPointerOver={onPointerOver} onPointerLeave={leave}>
           <colgroup>
             <col />
             {answers.map((one) => <col key={one.label} />)}
-            {drawn.map((one, index) => <col key={one.id} data-crossed={index === column || litColumn === one.id || undefined} data-hover={index === hover?.column || undefined} />)}
+            {drawn.map((one, index) => <col key={one.id} data-crossed={index === column || litColumn === one.id || undefined} data-hover={index === columnAt || undefined} />)}
           </colgroup>
           <MatrixHead
             rowHeading={rowHeading} answerLabels={answers.map((one) => one.label)} drawn={drawn} columns={columns} row={row} column={column}
-            opens={onOpenColumn !== undefined} lit={litColumn} hoverColumn={hover?.column ?? null}
+            opens={onOpenColumn !== undefined} lit={litColumn} hoverColumn={columnAt}
             band={groupBand && columnGroups ? <GroupBand answers={answers.length} drawn={drawn} columns={columns} groups={columnGroups} /> : undefined}
           />
           <tbody>
@@ -469,7 +482,7 @@ export function Matrix({
               <MatrixRowView
                 key={rowDef.id} row={rowDef} depth={depth} foldable={foldable} folded={folded} columns={drawn} rowIndex={index}
                 answers={answers} cellOf={cellOf} absent={absent} focusColumn={row === index ? column : null}
-                selectedColumn={selected?.row === rowDef.id ? selected.column : null} crossed={row === index} hovered={hover?.row === index}
+                selectedColumn={selected?.row === rowDef.id ? selected.column : null} crossed={row === index} hovered={rowAt === index}
                 foldWord={t('kit.matrix.foldable')} emptyWord={t('kit.matrix.empty')}
               />
             ))}
