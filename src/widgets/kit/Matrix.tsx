@@ -335,7 +335,7 @@ function pointerLine(
  * Whether the columns run on past the matrix's end, so the edge says there is more
  * to scroll to: a seventh column cut off under a panel looked like the last one.
  */
-function useMoreAtEnd(): [(element: HTMLDivElement | null) => void, boolean] {
+function useMoreAtEnd(): { ref: (element: HTMLDivElement | null) => void; 'data-more-end': true | undefined } {
   const [more, setMore] = useState(false)
   const watching = useRef<() => void>(undefined)
   const ref = useCallback((element: HTMLDivElement | null) => {
@@ -350,7 +350,7 @@ function useMoreAtEnd(): [(element: HTMLDivElement | null) => void, boolean] {
     if (element.firstElementChild) observer?.observe(element.firstElementChild)
     watching.current = () => { element.removeEventListener('scroll', measure); observer?.disconnect() }
   }, [])
-  return [ref, more]
+  return { ref, 'data-more-end': more || undefined }
 }
 
 export function Matrix({
@@ -360,7 +360,7 @@ export function Matrix({
   const answers = useMemo(() => [...(answer ? [answer] : []), ...(moreAnswers ?? [])], [answer, moreAnswers])
   const { t } = useStrings()
   const table = useRef<HTMLTableElement>(null)
-  const [scroll, moreAtEnd] = useMoreAtEnd()
+  const scrolling = useMoreAtEnd()
   const [foldedRows, toggleRow] = useFolded(defaultFoldedRows, onFoldRow)
   const [foldedGroups, toggleGroup] = useFolded(defaultFoldedGroups, onFoldGroup)
   const drawn = useMemo(() => drawnColumns(columns, columnGroups, foldedGroups), [columns, columnGroups, foldedGroups])
@@ -488,7 +488,7 @@ export function Matrix({
 
   return (
     <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-wrap={wrapRows || undefined} data-band={(groupBand && columnGroups) ? '' : undefined} data-guide={dataGuide}>
-      <div className="kit-matrix__scroll" ref={scroll} data-more-end={moreAtEnd || undefined}>
+      <div className="kit-matrix__scroll" {...scrolling}>
         <table ref={table} role="grid" aria-label={label} className="kit-matrix__table" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocus} onPointerOver={onPointerOver} onPointerLeave={leave}>
           <colgroup>
             <col />
