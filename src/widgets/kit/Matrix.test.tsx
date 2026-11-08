@@ -7,7 +7,7 @@
  * walks by the arrows through the headings too, and the line says where you are.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { Matrix } from './Matrix'
@@ -92,7 +92,12 @@ describe('the matrix', () => {
 
   it('says an empty cell is empty, and says nothing of keys where none write', () => {
     renderShell(<Matrix label="RACI" {...BASE} hint="Press R." />)
+    // Quiet until the focus is in the grid: a cell left long ago is not where the person is.
+    expect(screen.getByRole('status').textContent).toBe('')
+    act(() => cell('Way of working, Plan: nothing').focus())
     expect(screen.getByRole('status').textContent).toBe('Way of working × Plan: nothing.')
+    act(() => (document.activeElement as HTMLElement).blur())
+    expect(screen.getByRole('status').textContent).toBe('')
     expect(cell('Way of working, Plan: nothing').textContent).toBe('')
   })
 

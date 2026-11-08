@@ -14,7 +14,7 @@
  * The rows are memoised and the column's crosshair is a `<col>`'s background, so a
  * step of the arrow redraws two rows of a grid that may have thousands of cells.
  */
-import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon } from '../icons'
@@ -353,6 +353,38 @@ function useMoreAtEnd(): { ref: (element: HTMLDivElement | null) => void; 'data-
   return { ref, 'data-more-end': more || undefined }
 }
 
+/** What the line says of the cell the focus is on, and how a key writes there where one does. */
+function focusLine({ hereRow, hereColumn, here, hereCell, absent, hint, empty }: {
+  hereRow: MatrixRowDef | undefined; hereColumn: { label: string } | undefined; here: MatrixPick | null; hereCell: MatrixCell | null
+  absent: MatrixProps['absent']; hint: string | undefined; empty: string
+}): string {
+  if (!hereRow) return ''
+  return [
+    here && !absent?.(here.row, here.column) ? `${hereRow.label} × ${hereColumn?.label}: ${hereCell?.meaning ?? empty}.` : hereRow.label,
+    here ? hint : undefined,
+  ].filter(Boolean).join(' ')
+}
+
+/**
+ * Whether the focus is in the grid. The line says the cell the focus is on, and
+ * only while it is there: with the focus in a panel beside, a cell it left long
+ * ago is not where the person is.
+ */
+function useFocusWithin(table: { current: HTMLElement | null }): boolean {
+  const [inside, setInside] = useState(false)
+  useEffect(() => {
+    const held = table.current
+    if (!held) return
+    const look = () => setInside(held.contains(document.activeElement))
+    look()
+    const left = (event: FocusEvent) => setInside(held.contains(event.relatedTarget as Node | null))
+    held.addEventListener('focusin', look)
+    held.addEventListener('focusout', left)
+    return () => { held.removeEventListener('focusin', look); held.removeEventListener('focusout', left) }
+  }, [table])
+  return inside
+}
+
 /** A cell focused under the stuck heads is out of sight: brought out past them (the scroll's padding is their width). */
 function intoSight(cell: HTMLElement) {
   cell.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
@@ -376,6 +408,7 @@ export function Matrix({
   const column = Math.min(at.column, drawn.length - 1)
   const wantFocus = useRef(false)
   const { hover, rowAt, columnAt, onPointerOver, leave } = usePointerCell()
+  const inside = useFocusWithin(table)
 
   useLayoutEffect(() => {
     if (!wantFocus.current) return
@@ -484,12 +517,7 @@ export function Matrix({
   }
 
   const hoverLine = pointerLine(hover, shownRows, drawn, cellOf, absent, t('kit.matrix.empty'))
-  const line = hoverLine !== undefined ? hoverLine : hereRow
-    ? [
-        here && !absent?.(here.row, here.column) ? `${hereRow.label} × ${hereColumn?.label}: ${hereCell?.meaning ?? t('kit.matrix.empty')}.` : hereRow.label,
-        here && keys?.length ? hint : undefined,
-      ].filter(Boolean).join(' ')
-    : ''
+  const line = hoverLine ?? (inside ? focusLine({ hereRow, hereColumn, here, hereCell, absent, hint: keys?.length ? hint : undefined, empty: t('kit.matrix.empty') }) : '')
 
   return (
     <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-wrap={wrapRows || undefined} data-band={(groupBand && columnGroups) ? '' : undefined} data-guide={dataGuide}>
