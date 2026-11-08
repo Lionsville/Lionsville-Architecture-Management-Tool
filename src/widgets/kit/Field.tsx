@@ -25,6 +25,7 @@ import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, u
 import type { ChangeEvent, ComponentPropsWithRef, CSSProperties, KeyboardEvent, ReactNode, RefObject } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
+import { PencilIcon } from '../icons'
 import { MenuButton } from './Menu'
 import { Select } from './Select'
 import type { SelectOption, SelectProps } from './Select'
@@ -367,6 +368,7 @@ function RowReading({ label, value = '', display, empty, action, inherited, mixe
             onClick={onPress}
           >
             {words}
+            <span className="kit-prop__pen"><PencilIcon size={12} /></span>
           </button>
         )
         : <span className="kit-prop__read" data-quiet={quiet || undefined}>{words}</span>}

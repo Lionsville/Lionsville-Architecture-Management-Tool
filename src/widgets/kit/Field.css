@@ -83,8 +83,13 @@
   background: transparent;
   font: inherit;
   text-align: start;
-  cursor: text;
+  cursor: pointer;
 }
+/* A press opens the field: the pencil says so where the pointer or the focus is, and nowhere else. */
+.kit-prop__press { display: inline-flex; align-items: baseline; gap: var(--s-1); }
+.kit-prop__pen { flex: none; align-self: center; display: inline-flex; color: var(--ink-3); opacity: 0; }
+.kit-prop__press:hover .kit-prop__pen,
+.kit-prop__press:focus-visible .kit-prop__pen { opacity: 1; }
 .kit-prop__press:hover { background: var(--surface-2); }
 .kit-prop__press:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
 [data-quiet].kit-prop__read, [data-quiet].kit-prop__press { color: var(--ink-3); }
