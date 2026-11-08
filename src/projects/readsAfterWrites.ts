@@ -15,7 +15,8 @@
  * before it answered.
  */
 import type { Repositories } from '../ports/Repositories'
-import type { ScopeId, ScopeRepository, StepsFor } from '../ports/ScopeRepository'
+import type { ScopeRepository, StepsFor } from '../ports/ScopeRepository'
+import type { ScopeId } from './scopeState'
 
 type Writes = {
   /** The applies to a scope still under way. */

@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Applied, ScopeRepository } from '../ports/ScopeRepository'
-import type { ScopeState } from '../ports/ScopeRepository'
+import type { ScopeState } from './scopeState'
 import { readsAfterWrites } from './readsAfterWrites'
 
 /** A repository whose writes land when the test says, and whose reads answer what has landed by then. */
