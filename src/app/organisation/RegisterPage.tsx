@@ -117,7 +117,7 @@ function applicationColumns(words: RegisterWords, found: ReadonlyMap<string, rea
   const keptIn = (row: RegisterRow) => (row.master !== undefined ? words.scopeName(row.master) : words.nobody)
   return [
     { id: 'master', label: s('register.colMaster'), sortable: true, guide: 'register.colMaster', cell: keptIn },
-    { id: 'category', label: s('register.colCategory'), sortable: true, cell: (row) => row.category },
+    { id: 'category', label: s('register.colCategory'), sortable: true, startsHidden: true, cell: (row) => row.category },
     { id: 'lifecycle', label: s('register.colLifecycle'), sortable: true, cell: (row) => words.lifecycle(row) },
     { id: 'owner', label: s('register.colOwner'), sortable: true, cell: (row) => words.owner(row) },
     { id: 'vendor', label: s('register.colVendor'), sortable: true, startsHidden: true, cell: (row) => row.vendor },

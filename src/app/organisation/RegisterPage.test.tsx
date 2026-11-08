@@ -39,11 +39,22 @@ describe('the register', () => {
     expect(screen.getByTestId('register-findings').textContent).toContain('2 applications, all kept in 1 of 3 scopes.')
     expect(screen.getByRole('tab', { name: /Applications/ }).getAttribute('aria-selected')).toBe('true')
     const billing = screen.getByRole('row', { name: /Billing/ })
-    expect(billing.textContent).toContain('Money')
     expect(billing.textContent).toContain('Nobody')
     expect(within(billing).queryByRole('button')).toBeNull()
     expect(screen.getByRole('row', { name: /Customs/ }).textContent).toContain('Authority (outside)')
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('shows Kept in, Lifecycle, Owner and Findings beside the name, and the rest behind View', () => {
+    page()
+    const heads = screen.getAllByRole('columnheader').map((one) => one.textContent?.trim())
+    expect(heads.slice(1)).toEqual([s('register.colMaster'), s('register.colLifecycle'), s('register.colOwner'), s('register.colFindings')])
+    expect(screen.getByRole('row', { name: /Billing/ }).textContent).not.toContain('Money')
+    fireEvent.click(screen.getByRole('button', { name: 'View' }))
+    const category = screen.getByRole('checkbox', { name: s('register.colCategory') })
+    fireEvent.click(category)
+    fireEvent.keyDown(category, { key: 'Escape' })
+    expect(screen.getByText('Money')).toBeTruthy()
   })
 
   it('opens the preview on a press, which says what opening does in words, and its findings', () => {
