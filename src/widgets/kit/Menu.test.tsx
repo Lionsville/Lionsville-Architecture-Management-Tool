@@ -101,6 +101,20 @@ describe('Menu', () => {
     expect(await axeFindings()).toEqual([])
   })
 
+  it('says one of a group as a radio, and keeps every row’s words in line where any has a tick', async () => {
+    renderShell(<MoreMenu label="Order" items={[
+      { heading: 'Order by' },
+      { label: 'Name', checked: true, radio: true, onSelect: () => {} },
+      { label: 'Recently changed', checked: false, radio: true, onSelect: () => {} },
+      { line: true },
+      { label: 'Unfold all', onSelect: () => {} },
+    ]} />)
+    open('Order')
+    expect(screen.getByRole('menuitemradio', { name: 'Name' }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('menuitem', { name: 'Unfold all' }).querySelector('.kit-menu__check')).not.toBeNull()
+    expect(await axeFindings()).toEqual([])
+  })
+
   it('goes one level down and back by the arrows, and a leaf closes both', async () => {
     const picked = vi.fn()
     renderShell(<MoreMenu items={[{ label: 'Move to', items: [{ label: 'North', onSelect: picked }, { label: 'South', onSelect: () => {} }] }, { label: 'History', onSelect: () => {} }]} />)

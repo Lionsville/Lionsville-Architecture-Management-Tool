@@ -94,18 +94,18 @@ describe('the tree', () => {
   })
 
   /** One press for the whole tree, offered only where there is something below to fold. */
-  it('shows all of the tree and folds it again', async () => {
+  it('unfolds all of the tree and folds it again', async () => {
     show([...TREE(), scope('retail/warehouse/dock', 'Dock')])
     await screen.findByTestId('scope-retail')
     fireEvent.click(screen.getByRole('button', { name: 'Tree options' }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Show all' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Unfold all' }))
     expect(screen.getByTestId('scope-retail/warehouse/dock').dataset.depth).toBe('3')
     fireEvent.click(screen.getByRole('button', { name: 'Tree options' }))
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Fold all' }))
     expect(screen.queryByTestId('scope-retail/warehouse')).toBeNull()
   })
 
-  it('offers no Show all on a tree with nothing to fold', async () => {
+  it('offers no Unfold all on a tree with nothing to fold', async () => {
     show([scope('', 'Acme Logistics', false), scope('finance', 'Finance')])
     await screen.findByTestId('scope-finance')
     expect(screen.queryByTestId('tree-fold-all')).toBeNull()

@@ -52,6 +52,8 @@ export type MenuAct = Act & {
   detail?: string
   /** A choice that is on or off, for a menu of settings. */
   checked?: boolean
+  /** With `checked`: one of a group, of which one is on (an order, a size), said as a radio. */
+  radio?: boolean
   /** What holds a refused choice, line by line, drawn under it. Each is a way to the thing to clear. */
   holds?: readonly MenuHold[]
 }
@@ -68,6 +70,12 @@ export type MenuEntry =
 export type MenuSpacer = { line: true } | { heading: string }
 
 const isLine = (entry: MenuEntry): entry is { line: true } => 'line' in entry
+
+/** A choice with a state is a checkbox, or a radio where it is one of a group; anything else a plain item. */
+function roleOf(act: MenuAct | undefined): 'menuitem' | 'menuitemcheckbox' | 'menuitemradio' {
+  if (act?.checked === undefined) return 'menuitem'
+  return act.radio ? 'menuitemradio' : 'menuitemcheckbox'
+}
 const isHeading = (entry: MenuEntry): entry is { heading: string } => 'heading' in entry
 const isSubmenu = (entry: MenuEntry): entry is Act & { items: readonly (MenuAct | MenuSpacer)[] } => 'items' in entry
 
@@ -99,6 +107,7 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
   const beside = placement === 'beside'
 
   const ordered = orderedEntries(items)
+  const ticks = items.some((entry) => 'checked' in entry && entry.checked !== undefined)
   const opened = sub ? ordered[sub.index] : undefined
 
   const rowOf = (entry: Exclude<MenuEntry, MenuSpacer>, index: number): ReactNode => {
@@ -118,7 +127,7 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
         title={entry.hint}
         {...(entry.href ? { component: 'a' as const, href: entry.href, target: '_blank', rel: 'noreferrer' } : {})}
         disableRipple
-        role={checkable ? 'menuitemcheckbox' : 'menuitem'}
+        role={roleOf(act)}
         aria-checked={checkable ? act.checked : undefined}
         aria-disabled={refused || undefined}
         aria-describedby={refused ? reasonId : undefined}
@@ -138,7 +147,8 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
         }}
       >
         <span className="kit-menu__row">
-          {checkable && <span className="kit-menu__check">{act.checked && <CheckIcon size={14} />}</span>}
+          {/* Every row keeps the room a tick takes where any row has one, so the words line up. */}
+          {(checkable || ticks) && <span className="kit-menu__check">{act?.checked && <CheckIcon size={14} />}</span>}
           <span className="kit-menu__label">{entry.label}</span>
           {' '}
           {act?.shortcut && <kbd className="kit-menu__key">{act.shortcut}</kbd>}

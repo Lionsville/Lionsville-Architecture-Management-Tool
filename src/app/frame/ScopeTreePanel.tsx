@@ -216,8 +216,9 @@ export function ScopeTreePanel({
         <MoreMenu
           size="small" label={s('frame.treeMenu')}
           items={[
-            { label: s('picker.orderName'), checked: order === 'name', onSelect: () => onOrderChange('name') },
-            { label: s('picker.orderUpdated'), checked: order === 'updated', onSelect: () => onOrderChange('updated') },
+            { heading: s('frame.orderBy') },
+            { label: s('picker.orderName'), checked: order === 'name', radio: true, onSelect: () => onOrderChange('name') },
+            { label: s('picker.orderUpdated'), checked: order === 'updated', radio: true, onSelect: () => onOrderChange('updated') },
             { line: true },
             { label: s('org.openAll'), onSelect: folds.openAll },
             { label: s('org.foldAll'), onSelect: folds.foldAll },

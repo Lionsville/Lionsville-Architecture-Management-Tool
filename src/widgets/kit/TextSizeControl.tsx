@@ -33,7 +33,7 @@ function neighbours<S extends number>({ size, steps }: Pick<TextSizeProps<S>, 's
 
 function stepEntries<S extends number>({ size, steps, normal, onChoose }: TextSizeProps<S>, t: Say): MenuEntry[] {
   return [
-    ...steps.map((step): MenuEntry => ({ label: t('kit.textSize.percent', { size: step }), checked: step === size, onSelect: () => onChoose(step) })),
+    ...steps.map((step): MenuEntry => ({ label: t('kit.textSize.percent', { size: step }), checked: step === size, radio: true, onSelect: () => onChoose(step) })),
     { line: true },
     {
       label: t('kit.textSize.back'), 'data-guide': 'frame.textSizeReset', 'data-testid': 'text-size-reset', onSelect: () => onChoose(normal),
