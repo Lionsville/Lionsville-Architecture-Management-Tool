@@ -31,7 +31,7 @@
 .op-steps li strong { display: block; font-weight: var(--fw-strong); }
 
 /* The structure's cards */
-.op-card { padding: var(--s-2); border: 1px solid var(--line); border-radius: var(--r-2, 4px); background: var(--surface); font-size: var(--t-body); }
+.op-card { padding: var(--s-2); border: 1px solid var(--line); border-radius: var(--r-2, 4px); background: var(--surface); font-size: var(--t-body); overflow-wrap: anywhere; }
 .op-card[data-dashed] { border-style: dashed; }
 .op-card[data-fresh] { border-color: var(--ok); }
 .op-card[data-look='picked'] { border-color: var(--selected-edge); box-shadow: 0 0 0 1px var(--selected-edge); }

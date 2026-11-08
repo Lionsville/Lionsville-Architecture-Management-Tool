@@ -78,9 +78,10 @@ export function StructureLanes({ structure, label, organisation, laneLabel, card
 
 /** One lane: its heading, said once as the list's name, and its cards one under the other. */
 function Lane({ heading, lane, width, children }: { heading: string; lane: number; width: number; children: ReactNode }) {
+  // In rem, so a larger text size widens the lane with its words; the heading keeps to one line, cut with an ellipsis.
   return (
-    <Box sx={{ width, flexShrink: 0, position: 'relative', zIndex: 1 }} data-lane={lane}>
-      <Typography aria-hidden sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', height: 16, mb: 0.5 }}>
+    <Box sx={{ width: `${width / 16}rem`, flexShrink: 0, position: 'relative', zIndex: 1 }} data-lane={lane}>
+      <Typography aria-hidden title={heading} sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
         {heading}
       </Typography>
       <Box role="list" aria-label={heading} sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
