@@ -24,6 +24,9 @@
   container-type: inline-size;
 }
 
+/* A line or two (`size="compact"`): a dialog's width, and the facts under the text, as the narrow container query below lays them. */
+.kit-preview[data-size='compact'] { width: min(var(--w-dialog-m), calc(100vw - 2 * var(--s-4))); }
+
 .kit-preview__head {
   display: flex;
   flex: none;

@@ -58,11 +58,18 @@ export type PreviewProps = {
   readonly foot?: ReactNode
   readonly children: ReactNode
   readonly dataGuide?: string
+  /**
+   * How wide it opens. `record` (the default) is a record's measure, with the
+   * facts beside the text; `compact` is for what is a line or two — a change, a
+   * step, a milestone — at a dialog's width, the facts under the text, so a
+   * sentence is not a sentence in an empty sheet.
+   */
+  readonly size?: 'record' | 'compact'
 }
 
 const WRITES = 'input, textarea, select, [contenteditable="true"]'
 
-export function Preview({ ids, currentId, onSelect, title, kind, code, listWord, openFull, actions, next: nextStep, facts, foot, children, dataGuide }: PreviewProps) {
+export function Preview({ ids, currentId, onSelect, title, kind, code, listWord, openFull, actions, next: nextStep, facts, foot, children, dataGuide, size = 'record' }: PreviewProps) {
   const { t } = useStrings()
   const titleId = useId()
   const body = useRef<HTMLDivElement>(null)
@@ -104,7 +111,7 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
     >
       <div
         className="kit-preview" role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1}
-        onKeyDown={onKeyDown} data-guide={dataGuide}
+        onKeyDown={onKeyDown} data-guide={dataGuide} data-size={size === 'compact' ? 'compact' : undefined}
       >
         <div className="kit-preview__head">
           <button type="button" className="kit-preview__icon" aria-label={t('kit.preview.previous')} disabled={!previous} onClick={() => previous && select(previous)}><BackIcon /></button>

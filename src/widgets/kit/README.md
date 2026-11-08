@@ -42,7 +42,7 @@ and behaves is said here, once.
 | `density.ts` | how much a screen holds: the person's one choice, Comfortable or Compact, named once and offered by Preferences and a list's View alike; the app keeps it and sets it on the root (`density.css`) |
 | `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
 | `ListPage.tsx` | **List page**: every page of records laid out once: the head (its name and count where no tab row names it, what it covers, its tabs), the bar (`FilterWords`, the page's quiet tools, New last as the one accent) and the quiet `List` in the gutter, a `Preview` on select |
-| `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address |
+| `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address; `size="compact"` for a line or two, at a dialog's width |
 | `TreeList.tsx` | **Tree list**: a short tree to choose a part by: nodes that fold and can be picked, a note and a count, one tab stop |
 | `Panel.tsx` | **Panel**: the one reader and inspector: identity, tabs, body, a foot that helps or undoes. `PanelDockProvider`: the column holding it says its width and its fold, so a screen hands a panel in without knowing it is docked. `PanelName`, a name pressed to edit, for a record's title too; `PanelLink`, a word that goes somewhere |
 | `Matrix.tsx` | **Matrix**: fixed headings, a press selects, a key writes, a crosshair and a line in words, rows and columns that fold |

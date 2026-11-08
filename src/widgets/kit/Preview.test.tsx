@@ -57,6 +57,14 @@ describe('the preview', () => {
     expect(title.previousElementSibling?.textContent).toBe('Unit type')
   })
 
+  it('opens at a record\'s measure, or compact for a line or two where asked', () => {
+    renderShell(<Preview ids={['a']} currentId="a" onSelect={() => {}} title="A change"><p>Body</p></Preview>)
+    expect(dialog().getAttribute('data-size')).toBeNull()
+    cleanup()
+    renderShell(<Preview ids={['a']} currentId="a" onSelect={() => {}} title="A change" size="compact"><p>Body</p></Preview>)
+    expect(dialog().getAttribute('data-size')).toBe('compact')
+  })
+
   it('is not there until a row is selected, and a press writes the address', () => {
     renderShell(<Host />)
     expect(screen.queryByRole('dialog')).toBeNull()
