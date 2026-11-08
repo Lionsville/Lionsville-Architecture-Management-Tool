@@ -200,7 +200,7 @@ export function TopicDetail({ topic, access, ids, onSelect, onSubtopic }: {
             verbs={<Button variant="quiet" onClick={() => access.openHome(topic.id)} data-testid="topic-home">{t('topics.openHome')}</Button>}
             {...(may ? { edit: { onPress: () => setEditing(true), testId: 'topic-edit' } } : {})}
             more={may ? [{
-              label: t('topics.remove'), final: true, onSelect: () => setRemoving(true),
+              label: `${t('topics.remove')}…`, final: true, onSelect: () => setRemoving(true), 'data-testid': 'topic-delete',
               ...(refused ? { refused: t('topics.removeRefusedShort') } : {}),
             }] : []}
           />

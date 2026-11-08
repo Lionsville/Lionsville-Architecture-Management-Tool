@@ -106,7 +106,7 @@ describe('the catalogue', () => {
     cleanup()
     renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/data" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'More' }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: s('topics.remove') }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: `${s('topics.remove')}…` }))
     fireEvent.click(await screen.findByRole('button', { name: s('topics.remove') }))
     await waitFor(() => expect(access.remove).toHaveBeenCalledWith('topics/data'))
   })
