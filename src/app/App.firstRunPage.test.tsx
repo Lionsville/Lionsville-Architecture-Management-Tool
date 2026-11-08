@@ -39,6 +39,21 @@ describe('an organisation nobody has started', () => {
     expect(await axeFindings()).toEqual([])
   })
 
+  it('claims the keys a browser would take the page away with: ⌘O and ⇧⌘O open, ⌘S and ⌘, do nothing', async () => {
+    const connect = vi.fn()
+    renderApp({
+      repositories: heldRepositories([]), offersFirstRun: true,
+      provider: { waysIn: [{ kind: 'folder', labelKey: 'picker.chooseFolder', onConnect: connect, hostMenu: true }] },
+    })
+    await screen.findByTestId('first-run-page')
+    const press = (key: string, shiftKey = false) => !fireEvent.keyDown(window, { key, ctrlKey: true, shiftKey })
+    expect(press('o', true)).toBe(true)
+    expect(connect).toHaveBeenCalledTimes(1)
+    expect(press('s')).toBe(true)
+    expect(press(',')).toBe(true)
+    expect(press('o')).toBe(true)
+  })
+
   it('leaves for the first steps as soon as it has a name', async () => {
     const { repositories } = start()
     fireEvent.change(await screen.findByTestId('organisation-name-field'), { target: { value: 'Northline' } })

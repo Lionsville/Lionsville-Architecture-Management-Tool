@@ -9,7 +9,7 @@
  */
 import { TextSizeControl } from '../../widgets/kit/TextSizeControl'
 import { DEFAULT_TEXT_SIZE, TEXT_SIZES } from '../../platform/textSize'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { LANGUAGES, LANGUAGE_NAME } from '../../i18n'
 import type { Language, StringKey } from '../../i18n'
 import { DESKTOP_APP_LINK } from '../../platform/menu'
@@ -19,6 +19,8 @@ import { Button } from '../../widgets/kit/Button'
 import { TextInput, Select } from '../../widgets/kit/Field'
 import { FirstRunPage, FirstRunWay } from '../../widgets/kit/FirstRunPage'
 import type { ShellParts } from '../shellParts'
+import { modalUp } from '../frame/AppFrame'
+import { commandKey } from '../../widgets/kit/keys'
 
 /**
  * An organisation with nothing in it and no name, that this person may start, and
@@ -49,6 +51,7 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
   const said = (key: string) => s(key as StringKey)
   const sayings = props.provider?.sayings
   const place = sayings?.labelKey ? s(sayings.labelKey as StringKey, { name: parts.source.name }) : parts.source.name
+  useFirstRunKeys(parts, ways)
   const start = () => {
     if (!name.trim()) return
     // Started, and where that is kept: in the warning colour where it is kept nowhere.
@@ -108,4 +111,29 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
       </FirstRunWay>
     </FirstRunPage>
   )
+}
+
+/**
+ * The page's own keys, on the web where no menu bar has them: ⌘O opens a file
+ * and ⇧⌘O the host's own way in (the folder), as the buttons below do, and ⌘S and ⌘, are kept from the
+ * browser — whose Open File would put a file in place of the app in this tab,
+ * and whose Save Page As saves nothing of anybody's work.
+ */
+function useFirstRunKeys(parts: ShellParts, ways: readonly { hostMenu?: boolean; onConnect: () => void }[]) {
+  const send = parts.commands.bus.send
+  const hostMenu = parts.hostMenu
+  useEffect(() => {
+    if (hostMenu) return undefined
+    const onKey = (event: KeyboardEvent) => {
+      if (!commandKey(event) || event.altKey || modalUp()) return
+      const key = event.key.toLowerCase()
+      if (key === 'o') {
+        event.preventDefault()
+        if (!event.shiftKey) send({ type: 'open' })
+        else (ways.find((way) => way.hostMenu) ?? ways[0])?.onConnect()
+      } else if ((key === 's' || key === ',') && !event.shiftKey) event.preventDefault()
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [send, hostMenu, ways])
 }
