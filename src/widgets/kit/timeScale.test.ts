@@ -32,6 +32,16 @@ describe('the window', () => {
     }
   })
 
+  it('keeps today where it stood when the scale changes with today in view, and the middle without', () => {
+    const today = dayString(dayNumber(year.start) + 60)
+    const weeks = viewAtScale(year, 'weeks', today)
+    expect(Math.abs(fractionOf(weeks, today) - fractionOf(year, today))).toBeLessThan(0.02)
+    const away = dayString(dayNumber(year.start) - 400)
+    const middle = dayNumber(year.start) + year.days / 2
+    const next = viewAtScale(year, 'weeks', away)
+    expect(Math.abs(dayNumber(next.start) + next.days / 2 - middle)).toBeLessThanOrEqual(1)
+  })
+
   it('scrolls by the ruler’s pixels', () => {
     const next = scrolledView({ start: '2027-01-01', days: 100 }, 250, 1000)
     expect(next).toEqual({ start: '2027-01-26', days: 100 })

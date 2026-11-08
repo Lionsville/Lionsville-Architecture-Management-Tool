@@ -56,10 +56,15 @@ export function scaleOf(view: AxisView): AxisScale {
   return AXIS_SCALES.reduce((best, scale) => (distance(scale) < distance(best) ? scale : best))
 }
 
-/** The same middle at another scale. */
-export function viewAtScale(view: AxisView, scale: AxisScale): AxisView {
+/**
+ * The same window at another scale: anchored on today where today is in view, so
+ * the day a person reads from stays where it stood, and on the middle otherwise.
+ */
+export function viewAtScale(view: AxisView, scale: AxisScale, today?: string): AxisView {
   const days = SCALE_DAYS[scale]
-  return { start: dayString(dayNumber(view.start) + (view.days - days) / 2), days }
+  const at = today === undefined ? undefined : fractionOf(view, today)
+  const anchor = at !== undefined && at >= 0 && at <= 1 ? at : 0.5
+  return { start: dayString(dayNumber(view.start) + (view.days - days) * anchor), days }
 }
 
 /** The window moved by some pixels of a ruler this wide. */

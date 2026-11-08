@@ -171,7 +171,7 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
               label={t('kit.axis.scale')}
               options={AXIS_SCALES.map((value) => ({ value, label: scaleWords[value] }))}
               value={scaleOf(view)}
-              onChange={(scale) => onViewChange(viewAtScale(view, scale))}
+              onChange={(scale) => onViewChange(viewAtScale(view, scale, today))}
             />
           </div>
           <div ref={ruler} className="kit-time__ruler" role="group" tabIndex={0} aria-label={t('kit.axis.ruler')} onKeyDown={onRulerKey}>
