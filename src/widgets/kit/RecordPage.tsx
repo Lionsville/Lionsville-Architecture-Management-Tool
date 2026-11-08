@@ -10,7 +10,7 @@
  * Being edited, the same record is a `FocusedWindow`: a full window with nothing
  * else on screen. Only the prose has an *Edit text*; facts are pressed where they stand.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon } from '../icons'
@@ -66,21 +66,41 @@ const NAME_CLASSES = { heading: 'kit-record__title', press: 'kit-record__titlePr
 
 const sectionDom = (id: string) => `kit-record-${id}`
 
+/**
+ * The section the outline marks: the one at the top of the scroll, the last one at
+ * the scroll's end — a short last section never reaches the top — and, after a
+ * press in the outline, the one pressed, until the person scrolls themselves.
+ */
 function useCurrentSection(root: React.RefObject<HTMLDivElement | null>, ids: readonly string[]) {
-  const [current, setCurrent] = useState(ids[0])
+  const [current, setCurrentRaw] = useState(ids[0])
+  const pressed = useRef(false)
   useEffect(() => {
     const scroller = root.current
     if (!scroller || typeof IntersectionObserver === 'undefined') return undefined
+    const atEnd = () => scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2
     const observer = new IntersectionObserver((seen) => {
-      const top = seen.filter((one) => one.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0]
-      if (top) setCurrent(top.target.id.replace('kit-record-', ''))
+      if (pressed.current) return
+      const shown = seen.filter((one) => one.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
+      const pick = atEnd() ? shown.at(-1) : shown[0]
+      if (pick) setCurrentRaw(pick.target.id.replace('kit-record-', ''))
     }, { root: scroller, rootMargin: '0px 0px -70% 0px' })
     for (const id of ids) {
       const section = document.getElementById(sectionDom(id))
       if (section) observer.observe(section)
     }
-    return () => observer.disconnect()
+    // The person's own scroll lets go of a pressed section.
+    const own = () => { pressed.current = false }
+    scroller.addEventListener('wheel', own, { passive: true })
+    scroller.addEventListener('touchmove', own, { passive: true })
+    scroller.addEventListener('keydown', own)
+    return () => {
+      observer.disconnect()
+      scroller.removeEventListener('wheel', own)
+      scroller.removeEventListener('touchmove', own)
+      scroller.removeEventListener('keydown', own)
+    }
   }, [root, ids])
+  const setCurrent = useCallback((id: string) => { pressed.current = true; setCurrentRaw(id) }, [])
   return [current, setCurrent] as const
 }
 
