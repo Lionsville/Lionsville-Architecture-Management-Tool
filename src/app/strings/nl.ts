@@ -653,7 +653,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'register.noFindings': 'Geen controle vindt hier iets over.',
   'register.nothingYet': 'Nog niets',
   'register.coverAll': '{what}, alle bewaard in {kept} van {scopes} scopes.',
-  'register.coverMost': '{what}, waarvan {most} in 1 van {scopes} scopes; {kept} scopes bewaren er een.',
+  'register.coverMost': '{what}, waarvan {most} in één scope; {kept} van de {scopes} scopes bewaren er een.',
   'register.coverOutsideOne': '{count} staat buiten de organisatie.',
   'register.coverOutsideOther': '{count} staan buiten de organisatie.',
   'register.coverUnownedOne': '{count} heeft geen eigenaar.',

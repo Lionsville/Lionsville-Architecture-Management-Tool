@@ -859,7 +859,7 @@ export const EN = {
   'register.noFindings': 'No check finds anything about this.',
   'register.nothingYet': 'Nothing yet',
   'register.coverAll': '{what}, all kept in {kept} of {scopes} scopes.',
-  'register.coverMost': '{what}, {most} of them kept in 1 of {scopes} scopes; {kept} scopes keep any.',
+  'register.coverMost': '{what}, {most} of them in one scope; {kept} of the {scopes} scopes keep any.',
   'register.coverOutsideOne': '{count} is outside.',
   'register.coverOutsideOther': '{count} are outside.',
   'register.coverUnownedOne': '{count} has no owner.',

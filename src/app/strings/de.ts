@@ -654,7 +654,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'register.noFindings': 'Keine Prüfung findet hierzu etwas.',
   'register.nothingYet': 'Noch nichts',
   'register.coverAll': '{what}, alle in {kept} von {scopes} Bereichen geführt.',
-  'register.coverMost': '{what}, davon {most} in 1 von {scopes} Bereichen; {kept} Bereiche führen welche.',
+  'register.coverMost': '{what}, davon {most} in einem Bereich; {kept} der {scopes} Bereiche führen welche.',
   'register.coverOutsideOne': '{count} liegt außerhalb.',
   'register.coverOutsideOther': '{count} liegen außerhalb.',
   'register.coverUnownedOne': '{count} hat keinen Eigentümer.',

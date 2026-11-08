@@ -27,7 +27,7 @@ describe('the register, said in one sentence', () => {
   it('does not read one scope among many as coverage', () => {
     const rows = [row('a'), row('b'), row('c'), row('d', { master: 'z' })]
     expect(keptIn(rows)).toEqual({ scopes: 2, most: 3 })
-    expect(coverageSentence('applications', rows, [], 67, s)).toContain('3 of them kept in 1 of 67 scopes')
+    expect(coverageSentence('applications', rows, [], 67, s)).toContain('3 of them in one scope; 2 of the 67 scopes keep any')
   })
 })
 
