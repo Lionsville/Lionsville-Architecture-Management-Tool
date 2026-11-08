@@ -38,6 +38,7 @@ import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
+import { inSentence } from '../../i18n/languages'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import {
@@ -211,7 +212,7 @@ export function SolutionReader(props: SolutionReaderProps) {
             )}
             {!gate && solution.state === 'adopted' && canEdit && back && (
               <Box sx={{ mt: 2 }}>
-                <KitButton variant="quiet" size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</KitButton>
+                <KitButton variant="quiet" size="small" onClick={() => props.onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: inSentence(s(PHASE_LABEL[back]), language) })}</KitButton>
               </Box>
             )}
             {!back && props.reopenBy && !dropped && (
@@ -248,7 +249,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                       links={props.addresses.map((one) => ({
                         key: one.id,
                         label: one.label,
-                        note: `${s(STRENGTH_LABEL[one.strength]).toLowerCase()}${one.root ? ` · ${s('observation.rootCause').toLowerCase()}` : ''}`,
+                        note: `${inSentence(s(STRENGTH_LABEL[one.strength]), language)}${one.root ? ` · ${inSentence(s('observation.rootCause'), language)}` : ''}`,
                         ...(canEdit ? { onRemove: () => props.onUnaddress(one.id), removeLabel: s('solution.tipUnaddress', { from: label, to: one.label }) } : {}),
                       }))}
                     />
@@ -320,7 +321,7 @@ export function SolutionReader(props: SolutionReaderProps) {
               <Value testId="solution-experiments">
                 {props.experiments.length === 0
                   ? <Muted>{s('solution.none')}</Muted>
-                  : <LinkList onOpen={props.onOpen} links={props.experiments.map((one) => ({ key: one.key, label: one.label, note: s(OUTCOME_LABEL[one.outcome]).toLowerCase() }))} />}
+                  : <LinkList onOpen={props.onOpen} links={props.experiments.map((one) => ({ key: one.key, label: one.label, note: inSentence(s(OUTCOME_LABEL[one.outcome]), language) }))} />}
                 {solution.waived && <Typography sx={{ fontSize: 'var(--t-body)', mt: 0.5 }}>{s('solution.waived', { reason: solution.waived })}</Typography>}
               </Value>
               <Term>{s('solution.decision')}</Term>
@@ -341,7 +342,7 @@ export function SolutionReader(props: SolutionReaderProps) {
               <Value testId="solution-alternatives">
                 {props.alternatives.length === 0
                   ? <Muted>{s('solution.none')}</Muted>
-                  : <LinkList onOpen={props.onOpen} links={props.alternatives.map((one) => ({ key: one.key, label: one.label, note: s(PHASE_LABEL[one.phase]).toLowerCase() }))} />}
+                  : <LinkList onOpen={props.onOpen} links={props.alternatives.map((one) => ({ key: one.key, label: one.label, note: inSentence(s(PHASE_LABEL[one.phase]), language) }))} />}
               </Value>
             </Box>
 
@@ -375,7 +376,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                   <Box component="span" sx={{ color: 'text.secondary', whiteSpace: 'nowrap' }}>{day(event.date)}</Box>
                   <Box component="span">
                     {event.kind === 'moved' && event.to
-                      ? s('solution.eventMoved', { state: s(PHASE_LABEL[event.to as SolutionState] ?? 'solution.phaseIdea').toLowerCase() })
+                      ? s('solution.eventMoved', { state: inSentence(s(PHASE_LABEL[event.to as SolutionState] ?? 'solution.phaseIdea'), language) })
                       : event.kind === 'linked'
                         ? s('solution.eventLinked', { name: props.nameOf(event.id ?? '') })
                         : s(EVENT_KEY[event.kind])}
@@ -420,13 +421,14 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
   onWaive: (reason: string) => void
   onMove: (to: SolutionState) => void
 }) {
+  const { language } = useStrings()
   const [waiver, setWaiver] = useState('')
   const open = gate.items.filter((one) => !one.ok)
   const label = (item: GateItem) => (
     item === 'whyNow' && solution.attempts.length === 0 ? s('solution.gateWhyNowNoneKnown') : s(GATE_LABEL[item])
   )
   return (
-    <Section title={s('solution.gateTitle', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })} testId="solution-gate">
+    <Section title={s('solution.gateTitle', { state: inSentence(s(PHASE_LABEL[gate.to]), language) })} testId="solution-gate">
       <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0, fontSize: 'var(--t-body)' }}>
         {gate.items.map((one) => (
           <Box component="li" key={one.item} data-testid={`solution-gate-${one.item}`} data-ok={one.ok ? 'true' : 'false'} sx={{ display: 'flex', gap: 1, py: 0.5, borderBottom: 1, borderColor: 'divider' }}>
@@ -452,10 +454,10 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
       {canEdit && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1.5 }}>
           <KitButton variant="primary" reason={open.length > 0 ? s('solution.toGo', { count: open.length }) : undefined} reasonAt="beside" onClick={() => onMove(gate.to)} data-testid="solution-move" data-guide="solution.move">
-            {s('solution.moveOn', { state: s(PHASE_LABEL[gate.to]).toLowerCase() })}
+            {s('solution.moveOn', { state: inSentence(s(PHASE_LABEL[gate.to]), language) })}
           </KitButton>
           <Box sx={{ flex: 1 }} />
-          {back && <KitButton variant="quiet" onClick={() => onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: s(PHASE_LABEL[back]).toLowerCase() })}</KitButton>}
+          {back && <KitButton variant="quiet" onClick={() => onMove(back)} data-testid="solution-back">{s('solution.moveBack', { state: inSentence(s(PHASE_LABEL[back]), language) })}</KitButton>}
         </Box>
       )}
     </Section>

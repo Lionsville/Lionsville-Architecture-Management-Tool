@@ -19,6 +19,7 @@ import type { BoardGeometry } from '../../model/zones';
 import type { Layer7Zone, Rect, ResizableZone } from '../../model/types';
 import { usePointerDrag } from './usePointerDrag';
 import { useStrings } from '../../i18n/LanguageContext';
+import { inSentence } from '../../i18n/languages';
 import { Zone } from '../../widgets/kit/Zone';
 
 const HANDLE_THICKNESS = 8;
@@ -53,7 +54,7 @@ export function ZoneLayer({
   onCanvasResize(size: { width: number; height: number }): void;
 }) {
   const theme = useTheme();
-  const { t } = useStrings();
+  const { t, language } = useStrings();
   // Remembered so the outline fades out over the band it was on, rather than
   // vanishing the moment the pointer leaves it.
   const lastDropZone = useRef<Layer7Zone | null>(null);
@@ -219,7 +220,7 @@ export function ZoneLayer({
             {!readOnly && (
               <div
                 className="nodrag nopan" role="separator" aria-orientation={zone === 'actors' || zone === 'management' ? 'horizontal' : 'vertical'}
-                aria-label={t('zone.resizeBand', { name: zoneLabel(zone, t).toLowerCase() })}
+                aria-label={t('zone.resizeBand', { name: inSentence(zoneLabel(zone, t), language) })}
                 onPointerDown={beginResize(zone)}
                 style={{
                   position: 'absolute',

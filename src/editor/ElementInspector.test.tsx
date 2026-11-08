@@ -303,6 +303,8 @@ describe('ElementInspector: empty stays out of the panel', () => {
     expect(rowsShown(rows, 'panel', new Set(['b'])).shown.map((one) => one.key)).toEqual(['a', 'b', 'c']);
     expect(rowsShown(rows, 'record', new Set()).held).toEqual([]);
     expect(addLabel([{ label: 'Owner' }, { label: 'Vendor' }, { label: 'Technology' }, { label: 'Dates' }])).toBe('Owner, vendor, technology…');
+    // German keeps its nouns' capitals inside the line.
+    expect(addLabel([{ label: 'Verantwortlicher' }, { label: 'Anbieter' }, { label: 'Technologie' }], 'de')).toBe('Verantwortlicher, Anbieter…');
   });
 });
 

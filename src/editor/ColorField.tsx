@@ -6,6 +6,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useStrings } from '../i18n/LanguageContext';
+import { inSentence } from '../i18n/languages';
 
 /**
  * Shared colour control (U7a, D4). Extracted from the two verbatim-duplicated
@@ -28,7 +29,7 @@ export interface ColorFieldProps {
 }
 
 export function ColorField({ label, ariaLabel, value, readOnly, onChange }: ColorFieldProps) {
-  const { t } = useStrings();
+  const { t, language } = useStrings();
   return (
     <Box>
       <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
@@ -55,7 +56,7 @@ export function ColorField({ label, ariaLabel, value, readOnly, onChange }: Colo
           <span>
             <IconButton
               size="small"
-              aria-label={t('field.clear', { name: label.toLowerCase() })}
+              aria-label={t('field.clear', { name: inSentence(label, language) })}
               disabled={readOnly || !value}
               onClick={() => onChange(undefined)}
             >

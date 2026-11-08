@@ -11,6 +11,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useStrings } from '../i18n/LanguageContext';
+import { inSentence } from '../i18n/languages';
 import { allowedKindsOn } from '../model/kindChange';
 import type { DesignDiagram, ElementId, Layer7Zone, Point } from '../model/types';
 import { PickerAt, type PickerOption } from '../widgets/kit/Picker';
@@ -45,7 +46,7 @@ export function addableKinds(diagram: DesignDiagram): PaletteKey[] {
 }
 
 export function AddPicker({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
-  const { t } = useStrings();
+  const { t, language } = useStrings();
   const { adding, state, props } = parts;
   const { request } = adding;
   const kinds = useMemo(() => addableKinds(diagram), [diagram]);
@@ -103,7 +104,7 @@ export function AddPicker({ parts, diagram }: { parts: EditorParts; diagram: Des
       options={existing}
       onPick={pick}
       onCreate={create}
-      createLabel={(typed) => t('add.new', { kind: name.toLowerCase(), name: typed })}
+      createLabel={(typed) => t('add.new', { kind: inSentence(name, language), name: typed })}
       onTab={stepKind}
       foot={(
         <>

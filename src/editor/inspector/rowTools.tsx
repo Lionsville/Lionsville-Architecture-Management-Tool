@@ -13,6 +13,9 @@
  */
 import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useStrings } from '../../i18n/LanguageContext';
+import { inSentence } from '../../i18n/languages';
+import type { Language } from '../../i18n/languages';
 import { PanelSection } from '../../widgets/kit/Panel';
 import { PropertyRows } from '../../widgets/kit/Field';
 import type { PropertyRowEdit } from '../../widgets/kit/Field';
@@ -41,11 +44,11 @@ export function rowsShown(rows: readonly RowSpec[], surface: Surface, added: Rea
 }
 
 /** *Owner, vendor, technology…*: the first few of what is left out, and that there is more. */
-export function addLabel(held: readonly { readonly label: string }[]): string {
+export function addLabel(held: readonly { readonly label: string }[], language: Language = 'en'): string {
   // As many as fit on the panel's one line.
   const said: string[] = [];
   for (const { label } of held.slice(0, 3)) {
-    const word = said.length === 0 ? label : label.toLocaleLowerCase();
+    const word = said.length === 0 ? label : inSentence(label, language);
     if (said.length > 0 && [...said, word].join(', ').length > 28) break;
     said.push(word);
   }
@@ -64,6 +67,7 @@ export function RowSet({ rows, surface, title, aside, readOnly, onHelp, after }:
 }) {
   const [added, setAdded] = useState<ReadonlySet<string>>(new Set());
   const [opening, setOpening] = useState<string>();
+  const { language } = useStrings();
   const { shown, held } = rowsShown(rows, surface, added);
   if (shown.length === 0 && (readOnly || held.length === 0) && !after) return null;
   return (
@@ -72,7 +76,7 @@ export function RowSet({ rows, surface, title, aside, readOnly, onHelp, after }:
         readOnly={readOnly}
         onHelp={onHelp}
         add={held.length > 0 ? {
-          label: addLabel(held),
+          label: addLabel(held, language),
           items: held.map((row) => ({
             label: row.label,
             onSelect: () => { setAdded(new Set([...added, row.key])); setOpening(row.key); },

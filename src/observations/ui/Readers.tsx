@@ -27,6 +27,7 @@ import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
+import { inSentence } from '../../i18n/languages'
 import { fillEmptySections } from '../../documentation/documentation'
 import { MarkdownDocument } from '../../documentation/ui/MarkdownDocument'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
@@ -466,6 +467,7 @@ function ExplainedBy({ links, label, s, onOpen, onUnlink }: {
   /** What unlinking one does, or nothing where it may not be. */
   onUnlink: (causeId: string, scope?: string) => (() => void) | undefined
 }) {
+  const { language } = useStrings()
   if (links.length === 0) return <Box component="span" sx={{ color: 'text.secondary' }}>{s('observation.noLinks')}</Box>
   return (
     <LinkList
@@ -475,7 +477,7 @@ function ExplainedBy({ links, label, s, onOpen, onUnlink }: {
         return {
           key: scope === undefined ? cause.id : `${scope}#${cause.id}`,
           label: `${causeLabel(cause)} ${cause.title}`,
-          note: s(STRENGTH_LABEL[link.strength]).toLowerCase(),
+          note: inSentence(s(STRENGTH_LABEL[link.strength]), language),
           ...(remove ? { onRemove: remove, removeLabel: s('observation.tipUnlink', { from: causeLabel(cause), to: label }) } : {}),
         }
       })}
@@ -653,6 +655,7 @@ function CauseLinks({ cause, explainedBy, mayAdd, props }: {
   mayAdd: boolean
   props: CauseReaderProps
 }) {
+  const { language } = useStrings()
   const { s, nameOf, readOnly, fromScope } = props
   const keyOf = props.keyOf ?? ((id: string, scope?: string) => (scope === undefined ? id : `${scope}#${id}`))
   const root = isRootCause(cause)
@@ -670,7 +673,7 @@ function CauseLinks({ cause, explainedBy, mayAdd, props }: {
                       links={cause.explains.map((link) => ({
                         key: keyOf(link.id, link.scope),
                         label: nameOf(link.id, link.scope),
-                        note: s(STRENGTH_LABEL[link.strength]).toLowerCase(),
+                        note: inSentence(s(STRENGTH_LABEL[link.strength]), language),
                         ...(mayAdd ? { onRemove: () => props.onUnlink(link), removeLabel: s('observation.tipUnlink', { from: label, to: nameOf(link.id, link.scope) }) } : {}),
                       }))}
                     />
