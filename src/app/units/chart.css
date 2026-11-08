@@ -173,9 +173,13 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .chart-assign__over { margin: 0; padding: var(--s-1) var(--s-2); border: 1px solid var(--warn); border-radius: var(--r-2); background: var(--warn-soft); color: var(--ink); }
 .chart-assign__two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
 .chart-assign__check { display: flex; align-items: center; gap: var(--s-1); }
+/* The tick grows with the text size, as the words beside it do. */
+.chart-assign__check input { width: 1rem; height: 1rem; margin: 0; flex: none; accent-color: var(--accent); }
 .chart-assign__said { margin: 0; color: var(--ink-3); font-size: var(--t-small); }
 .chart-assign__said[data-tone='error'] { color: var(--bad); }
 .chart-assign__foot { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--s-2); }
+/* Where the popover is taller than the window and scrolls (a large text size, a new person's fields), Assign stays in sight. */
+.chart-assign > .chart-assign__foot { position: sticky; inset-block-end: 0; padding-block: var(--s-2); background: var(--surface); }
 .chart-assign__foot .chart-assign__said { flex-basis: 100%; }
 .chart-read__sample { display: inline-block; }
 .chart-read__box { display: inline-block; width: 40px; height: 18px; border: 1px dashed var(--ink-3); border-radius: var(--r-2); vertical-align: middle; }
