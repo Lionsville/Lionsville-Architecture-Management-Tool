@@ -50,7 +50,7 @@ function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; ro
   return (
     <Preview
       ids={ids} currentId={block.id} onSelect={onSelect} title={block.name} listWord={t('blocks.listWord')}
-      openFull={{ label: t('blocks.openBlock'), onPress: () => { onSelect(null); access.openBlock(block.id) } }}
+      openFull={{ onPress: () => { onSelect(null); access.openBlock(block.id) } }}
       facts={(
         <>
           <PreviewFact label={t('blocks.colKeptIn')}>{access.scopeLabel(scope)}</PreviewFact>

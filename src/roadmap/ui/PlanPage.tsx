@@ -39,7 +39,7 @@ import { usePlaceTab } from '../../widgets/placeTab'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogDanger } from '../../widgets/kit/Dialog'
 import { FocusedWindow, useWritingView } from '../../widgets/kit/FocusedWindow'
-import { MoreMenu } from '../../widgets/kit/Menu'
+import { RecordActions } from '../../widgets/kit/RecordActions'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PageState } from '../../widgets/kit/PageState'
 import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
@@ -231,10 +231,9 @@ function movesSections(on: Sections): RecordSection[] {
   ]
 }
 
-function documentSection({ props: { plan, model, readOnly, actions, renderMarkdown }, t, setWriting }: Sections): RecordSection {
+function documentSection({ props: { plan, model, actions, renderMarkdown }, t }: Sections): RecordSection {
   return {
     id: 'document', heading: t('plan.document'), group: t('plan.document'),
-    aside: !readOnly ? <Button size="small" onClick={() => setWriting(true)} data-guide="plan.editText">{t('plan.editText')}</Button> : undefined,
     within: outline(plan.body).filter((entry) => entry.level <= 2).map((entry) => ({
       id: entry.id, label: entry.text,
       onPress: () => {
@@ -326,8 +325,9 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
       label: t(plan.initiative ? 'plan.initiativeTurnOff' : 'plan.initiativeTurnOn'), checked: plan.initiative === true,
       onSelect: () => set({ initiative: plan.initiative ? undefined : true }),
     }] : []),
-    { label: t('roadmap.delete'), final: true, onSelect: () => setDeleting(true) },
+    { label: `${t('roadmap.delete')}…`, final: true, onSelect: () => setDeleting(true) },
   ]
+  const copy: MenuEntry[] = props.onCopyLink ? [{ label: t('common.copyLink'), onSelect: props.onCopyLink, 'data-testid': 'plan-copy-link' }] : []
   const decided = [...(props.decisions ?? []), ...(props.ancestorDecisions ?? [])]
   return (
     <>
@@ -346,9 +346,11 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
         )}
         actions={(
           <>
-            {!readOnly && <Button size="small" onClick={() => setMoving(true)} data-guide="plan.move">{t('roadmap.shift')}</Button>}
-            {props.onCopyLink && <Button size="small" onClick={props.onCopyLink} data-testid="plan-copy-link">{t('common.copyLink')}</Button>}
-            {more.length > 0 && <MoreMenu items={more} label={t('plan.page')} />}
+            <RecordActions
+              verbs={!readOnly && <Button variant="quiet" onClick={() => setMoving(true)} data-guide="plan.move">{t('roadmap.shift')}</Button>}
+              {...(readOnly ? {} : { edit: { onPress: () => setWriting(true), guide: 'plan.editText' } })}
+              more={[...copy, ...more]} moreLabel={t('plan.page')}
+            />
             <PageClose onClose={props.onClose} />
           </>
         )}

@@ -86,7 +86,7 @@ describe('the register of building blocks', () => {
     expect(reader.textContent).toContain('Many partners, Filings')
     expect(reader.textContent).toContain('Sales ✓')
     expect(reader.textContent).toContain('Broker A, Managed bus')
-    fireEvent.click(within(reader).getByRole('button', { name: s('blocks.openBlock') }))
+    fireEvent.click(within(reader).getByRole('button', { name: 'Open full record' }))
     expect(access.openBlock).toHaveBeenCalledWith('blk-gw')
   })
 

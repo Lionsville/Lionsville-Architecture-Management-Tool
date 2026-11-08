@@ -669,7 +669,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'register.listServices': 'diensten',
   'register.listPlatforms': 'platforms',
   'register.openOnBoard': 'Openen op het bord',
-  'register.recordPage': 'Recordpagina',
   'register.serviceReport': 'Dienstrapport',
   'register.platformReport': 'Platformrapport',
   'register.seeInChecks': 'Bekijken in Controles',

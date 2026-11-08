@@ -147,7 +147,6 @@ export const EN = {
   'blocks.backToList': '‹ All building blocks',
   'blocks.keptInScope': 'Kept in {scope}',
   'blocks.listWord': 'building blocks',
-  'blocks.openBlock': 'Open the building block',
   'blocks.noteChosenOne': 'Chosen in 1 scope',
   'blocks.noteChosen': 'Chosen in {count} scopes',
   'blocks.noteEvaluateOne': '1 scope evaluates',

@@ -203,7 +203,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'plan.principles': 'Prinzipien',
   'plan.changesLog': 'Änderungen',
   'plan.comments': 'Kommentare',
-  'plan.editText': 'Text bearbeiten',
   'plan.editing': 'Den Text eines Plans bearbeiten',
   'plan.interfacesRow': '{done} von {total} haben einen Tag',
   'plan.setDays': 'Tage setzen',

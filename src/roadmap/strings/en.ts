@@ -220,7 +220,6 @@ export const EN = {
   'plan.principles': 'Principles',
   'plan.changesLog': 'Changes',
   'plan.comments': 'Comments',
-  'plan.editText': 'Edit text',
   'plan.editing': 'Editing the text of a plan',
   'plan.interfacesRow': '{done} of {total} have a day',
   'plan.setDays': 'Set days',

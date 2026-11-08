@@ -44,7 +44,7 @@ export type PreviewProps = {
   /** What the count is a count of: *waiting*. The position reads *1 of 17 waiting*. */
   readonly listWord?: string
   /** *Open full record*, in the head, quiet, before what can be done. */
-  readonly openFull?: { readonly label: string; readonly onPress: () => void }
+  readonly openFull?: { readonly label?: string; readonly onPress: () => void; readonly testId?: string }
   /** What can be done to the record, at the end of the head before ×: a `RecordActions` (verbs · ✎ Edit · ⋯). */
   readonly actions?: ReactNode
   /** The record's next step: one band under the title, the same place on every surface (`NextStep`). */
@@ -103,7 +103,7 @@ export function Preview({ ids, currentId, onSelect, title, code, listWord, openF
           )}
           {code && <span className="kit-preview__code">{code}</span>}
           <span className="kit-preview__grow" />
-          {openFull && <button type="button" className="kit-preview__link" onClick={openFull.onPress}>{openFull.label}</button>}
+          {openFull && <button type="button" className="kit-preview__link" data-testid={openFull.testId} onClick={openFull.onPress}>{openFull.label ?? t('kit.preview.openFull')}</button>}
           {actions}
           <button type="button" className="kit-preview__icon" aria-label={t('common.close')} onClick={() => onSelect(null)}><CloseIcon /></button>
         </div>

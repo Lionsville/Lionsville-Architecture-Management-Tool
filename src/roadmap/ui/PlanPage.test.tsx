@@ -396,7 +396,7 @@ describe('the text', () => {
   it('turns [[Name]] into a link through the renderer, and is edited with nothing else on screen, saved as one step', () => {
     const { actions } = setup({ plan: { ...PLAN, body: 'See [[Billing]].' } })
     expect(screen.getByTestId('rendered').textContent).toContain('element:billing')
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     const area = screen.getByLabelText('Plan source (markdown)') as HTMLTextAreaElement
     fireEvent.change(area, { target: { value: 'Other words' } })
     expect(actions.updateTransition).not.toHaveBeenCalled()
@@ -407,7 +407,7 @@ describe('the text', () => {
 
   it('asks before Cancel drops what was typed', () => {
     setup()
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     fireEvent.change(screen.getByLabelText('Plan source (markdown)'), { target: { value: 'Other words' } })
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.getByRole('button', { name: 'Leave and drop changes' })).toBeTruthy()
@@ -416,7 +416,7 @@ describe('the text', () => {
   it('takes a picture in', async () => {
     const onAddImage = vi.fn(async () => 'screenshot-k1.png')
     setup({ onAddImage })
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     const area = screen.getByLabelText('Plan source (markdown)') as HTMLTextAreaElement
     const file = new File([new Uint8Array([1, 2])], 'Screenshot.png', { type: 'image/png' })
     fireEvent.paste(area, { clipboardData: { files: [file], items: [], types: ['Files'], getData: () => '' } })
@@ -442,7 +442,7 @@ describe('deleting', () => {
     const onClose = vi.fn()
     const { actions } = setup({ onClose })
     fireEvent.click(screen.getByRole('button', { name: 'Plan' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete this plan' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete this plan…' }))
     expect(actions.removeTransition).not.toHaveBeenCalled()
     fireEvent.click(within(screen.getByRole('dialog', { name: /Delete/ })).getByRole('button', { name: 'Delete this plan' }))
     expect(actions.removeTransition).toHaveBeenCalledWith('tr-1')
@@ -455,7 +455,7 @@ describe('read-only', () => {
     const { actions } = setup({ readOnly: true })
     expect(screen.queryByRole('button', { name: /^\+/ })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Move by…' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Edit text' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Edit / })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Plan' })).toBeNull()
     fireEvent.click(within(section('What it changes')).getByRole('button', { name: 'Warehouse Management' }))
@@ -464,9 +464,10 @@ describe('read-only', () => {
 })
 
 describe('a link to the plan', () => {
-  it('is offered in the head, read-only too, and only where the host makes links', () => {
+  it('is offered under the head’s ⋯, read-only too, and only where the host makes links', () => {
     const onCopyLink = vi.fn()
     setup({ readOnly: true, onCopyLink })
+    fireEvent.click(screen.getByRole('button', { name: 'Plan' }))
     fireEvent.click(screen.getByTestId('plan-copy-link'))
     expect(onCopyLink).toHaveBeenCalled()
     cleanup()

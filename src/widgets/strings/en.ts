@@ -75,6 +75,7 @@ export const EN = {
   'kit.preview.previous': 'Previous',
   'kit.preview.next': 'Next',
   'kit.preview.position': '{at} of {total}',
+  'kit.preview.openFull': 'Open full record',
   'kit.panel.rename': 'Change the name',
   'kit.panel.expand': 'Show the panel',
   'kit.panel.collapse': 'Fold the panel away',

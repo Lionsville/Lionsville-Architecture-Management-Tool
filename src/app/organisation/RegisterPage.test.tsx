@@ -52,7 +52,7 @@ describe('the register', () => {
     expect(within(preview).getByText('Billing has no unit: nobody owns it.')).toBeTruthy()
     fireEvent.click(within(preview).getByRole('button', { name: 'Open on its board' }))
     expect(props.onOpen).toHaveBeenCalledWith('retail', 'Billing')
-    fireEvent.click(within(preview).getByRole('button', { name: 'Record page' }))
+    fireEvent.click(within(preview).getByRole('button', { name: 'Open full record' }))
     expect(props.onOpenPage).toHaveBeenCalledWith('retail', 'Billing')
     fireEvent.click(within(preview).getByRole('button', { name: 'See in Checks' }))
     expect(props.onSeeInChecks).toHaveBeenCalledOnce()

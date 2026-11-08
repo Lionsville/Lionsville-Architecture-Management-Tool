@@ -76,6 +76,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.preview.previous': 'Zurück',
   'kit.preview.next': 'Weiter',
   'kit.preview.position': '{at} von {total}',
+  'kit.preview.openFull': 'Ganzen Eintrag öffnen',
   'kit.panel.rename': 'Den Namen ändern',
   'kit.panel.expand': 'Das Panel anzeigen',
   'kit.panel.collapse': 'Das Panel einklappen',

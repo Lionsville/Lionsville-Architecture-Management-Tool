@@ -76,6 +76,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.preview.previous': 'Vorige',
   'kit.preview.next': 'Volgende',
   'kit.preview.position': '{at} van {total}',
+  'kit.preview.openFull': 'Open het hele record',
   'kit.panel.rename': 'De naam wijzigen',
   'kit.panel.expand': 'Het paneel tonen',
   'kit.panel.collapse': 'Het paneel wegvouwen',

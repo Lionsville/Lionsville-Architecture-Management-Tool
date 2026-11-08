@@ -46,6 +46,7 @@ import type { ListHow, ListView } from '../../widgets/kit/listView'
 import { Mark } from '../../widgets/kit/Mark'
 import { PageState } from '../../widgets/kit/PageState'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
+import { RecordActions } from '../../widgets/kit/RecordActions'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { Toast } from '../../widgets/kit/Toast'
 import type { ToastWords } from '../../widgets/kit/Toast'
@@ -404,19 +405,25 @@ function RecordPreview({ tab, ids, current, words, onSelect, onOpen, onOpenPage,
   const openGuide = tab === 'applications' ? 'register.openRow' : 'technologyRegister.openRow'
   return (
     <Preview
-      ids={ids} currentId={current ? current.id : null} onSelect={onSelect} title={current?.name ?? ''} code={current?.id} listWord={s(LIST_WORD[tab])}
+      ids={ids} currentId={current ? current.id : null} onSelect={onSelect} title={current?.name ?? ''} listWord={s(LIST_WORD[tab])}
       facts={current ? factsOf(tab, current, words, s) : undefined}
-      foot={current && master !== undefined ? (
-        <span className="org-preview__foot">
-          {tab !== 'applications' && onReport && (
-            <Button variant="primary" onClick={() => onReport(tab === 'services' ? 'service' : 'platform', master, current.id)} data-testid="register-report">
-              {s(tab === 'services' ? 'register.serviceReport' : 'register.platformReport')}
-            </Button>
-          )}
-          {onOpen && <Button data-guide={openGuide} data-testid={`register-open-${current.id}`} onClick={() => onOpen(master, current.id)}>{s('register.openOnBoard')}</Button>}
-          {onOpenPage && <Button data-testid={`register-page-${current.id}`} onClick={() => onOpenPage(master, current.id)}>{s('register.recordPage')}</Button>}
-        </span>
-      ) : undefined}
+      {...(current && master !== undefined && onOpenPage ? { openFull: { onPress: () => onOpenPage(master, current.id), testId: `register-page-${current.id}` } } : {})}
+      {...(current && master !== undefined ? {
+        actions: (
+          <RecordActions
+            verbs={(
+              <>
+                {tab !== 'applications' && onReport && (
+                  <Button variant="quiet" onClick={() => onReport(tab === 'services' ? 'service' : 'platform', master, current.id)} data-testid="register-report">
+                    {s(tab === 'services' ? 'register.serviceReport' : 'register.platformReport')}
+                  </Button>
+                )}
+                {onOpen && <Button variant="quiet" data-guide={openGuide} data-testid={`register-open-${current.id}`} onClick={() => onOpen(master, current.id)}>{s('register.openOnBoard')}</Button>}
+              </>
+            )}
+          />
+        ),
+      } : {})}
     >
       {children}
     </Preview>

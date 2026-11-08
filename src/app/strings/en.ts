@@ -875,7 +875,6 @@ export const EN = {
   'register.listServices': 'services',
   'register.listPlatforms': 'platforms',
   'register.openOnBoard': 'Open on its board',
-  'register.recordPage': 'Record page',
   'register.serviceReport': 'Service report',
   'register.platformReport': 'Platform report',
   'register.seeInChecks': 'See in Checks',

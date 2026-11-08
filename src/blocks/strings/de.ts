@@ -149,7 +149,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'blocks.backToList': '‹ Alle Bausteine',
   'blocks.keptInScope': 'Gehalten in {scope}',
   'blocks.listWord': 'Bausteine',
-  'blocks.openBlock': 'Baustein öffnen',
   'blocks.noteChosenOne': 'In 1 Bereich gewählt',
   'blocks.noteChosen': 'In {count} Bereichen gewählt',
   'blocks.noteEvaluateOne': '1 Bereich bewertet',
