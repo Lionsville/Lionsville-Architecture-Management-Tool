@@ -95,8 +95,9 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .org-lines .kit-line__path { stroke-width: var(--line-width-emphasis); }
 .kit-line.org-line[data-direction='up'] { --kit-line-ink: var(--line-reports-to); }
 .kit-line.org-line[data-direction='into'] { --kit-line-ink: var(--line-reports-from); }
-.kit-line.org-line[data-override='true'] { --kit-line-ink: var(--line-exception); }
+/* An exception keeps its colour whatever its end: a role nobody holds there is said in the tag's words. */
 .kit-line.org-line[data-tone='vacant'] { --kit-line-ink: var(--warn); }
+.kit-line.org-line[data-override='true'] { --kit-line-ink: var(--line-exception); }
 .kit-line.org-line[data-tone='loop'] { --kit-line-ink: var(--bad); }
 .org-line__tag { position: absolute; z-index: 3; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; }
 

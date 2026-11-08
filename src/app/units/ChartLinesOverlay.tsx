@@ -163,14 +163,17 @@ const TAG_CHAR = 7
 const TAG_PAD = 14
 const TAG_HEIGHT = 20
 
-/** The words on a line that is not the plain case. */
-function tagOf(line: ChartLine, folded: string | undefined, unitName: (id: string) => string, t: Translate): { words: string; exception?: string } | undefined {
+/**
+ * The words on a line that is not the plain case. An exception says so first,
+ * since spotting one is what its colour is for; a role nobody holds at its end
+ * is said after it, in words, and never in a colour of its own over the exception's.
+ */
+function tagOf(line: ChartLine, folded: string | undefined, unitName: (id: string) => string, t: Translate): { words: string } | undefined {
   if (line.tone === 'loop') return { words: t('chart.lineLoop') }
-  if (line.tone === 'vacant') return { words: t('chart.lineVacant') }
-  if (folded !== undefined) return { words: t('chart.lineFoldedShort', { unit: folded }) }
-  if (line.source === 'person') return { words: t('chart.lineOwnPerson') }
-  if (line.override) return { words: t('chart.lineOwnUnit', { unit: unitName(line.at.unitId) }) }
-  return undefined
+  const own = line.source === 'person' ? t('chart.lineOwnPerson') : line.override ? t('chart.lineOwnUnit', { unit: unitName(line.at.unitId) }) : undefined
+  const after = line.tone === 'vacant' ? t('chart.lineVacant') : folded !== undefined ? t('chart.lineFoldedShort', { unit: folded }) : undefined
+  const words = [own, after].filter((one): one is string => one !== undefined)
+  return words.length > 0 ? { words: words.join(' · ') } : undefined
 }
 
 /** The lines asked for, over the stage they were measured on. `redraw` changes whenever the boxes may have moved. */
@@ -236,7 +239,7 @@ export function ChartLinesLegend({ t }: { t: Translate }) {
           { id: 'up', label: t('chart.legendReportsTo'), sample: <Sample line={{ direction: 'up', override: false, kind: 'solid' }} /> },
           { id: 'into', label: t('chart.legendReportedBy'), sample: <Sample line={{ direction: 'into', override: false, kind: 'solid' }} /> },
           { id: 'dotted', label: t('chart.legendDotted'), sample: <Sample line={{ direction: 'into', override: false, kind: 'dotted' }} arrow={false} /> },
-          { id: 'override', label: t('chart.legendOverride'), sample: <Sample line={{ direction: 'up', override: true, kind: 'dotted' }} /> },
+          { id: 'override', label: t('chart.legendOverride'), sample: <Sample line={{ direction: 'up', override: true, kind: 'solid' }} /> },
           // Drawn on the chart in the warning ink, so it is said here too.
           { id: 'vacant', label: t('chart.legendVacant'), sample: <Sample line={{ direction: 'up', override: false, kind: 'solid' }} tone="vacant" /> },
         ]}
