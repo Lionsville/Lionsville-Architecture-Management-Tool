@@ -63,7 +63,7 @@ export const SECTIONS: SectionTexts = {
     'Ein Doppelklick öffnet ein vorhandenes Containerdiagramm'],
   'panel.appearance': ['Ändern, wie eine Karte aussieht und wo sie steht', 'Der Reiter Darstellung enthält Akzentfarbe, Form, Symbol (gesucht oder ein hochgeladenes Logo), Symbolgröße und auf dieser Ansicht ihre Zone und Domänengruppe; ein ungesetzter Wert sagt, was gilt, etwa Von der Art.',
     'Das Panel rechts von einem Board, Reiter Darstellung',
-    ['Wählen Sie die Karte.', 'Öffnen Sie den Reiter Darstellung.', 'Klicken Sie auf einen Wert, etwa Symbol, und wählen Sie einen anderen; das Symbolraster öffnet sich erst, wenn Symbol gedrückt wird.'],
+    ['Wählen Sie die Karte.', 'Öffnen Sie den Reiter Darstellung.', 'Klicken Sie auf einen Wert, etwa Symbol, und wählen Sie einen anderen; das Symbolraster öffnet sich erst, wenn Sie auf Symbol klicken.'],
     'Geben Sie Payment provider ein Zahlungssymbol und setzen Sie es in die Zone Extern.',
     '← → wechseln zwischen den Reitern des Panels'],
   'panel.comments': ['Ein Element kommentieren', 'Der Reiter Kommentare, mit seiner Zahl, enthält den Strang zum Element; ein Kommentar ändert das Element nie.',

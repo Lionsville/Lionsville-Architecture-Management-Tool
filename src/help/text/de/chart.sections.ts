@@ -110,7 +110,7 @@ export const SECTIONS: SectionTexts = {
     'Der Inspektor der Einheit: das Menü ⋯ neben Eintrag.',
     ['Wählen Sie die Einheit.', 'Öffnen Sie ⋯ in ihrem Inspektor und wählen Sie Löschen.', 'Lesen Sie, was mitgeht, oder wählen Sie stattdessen An einem Tag beenden….', 'Bestätigen Sie.'],
     'Löschen Sie Yard crew und legen Sie ihre Personen unter Terminal ab.'],
-  'conway.make': ['Eine Conway-Karte anlegen', 'Fügt einem Bereich eine Conway-Karte hinzu: ob die Teams und die Systeme, die ihnen gehören, zusammenpassen. Sie schreibt nichts, bis eine Schaltfläche in ihrem Panel gedrückt wird.',
+  'conway.make': ['Eine Conway-Karte anlegen', 'Fügt einem Bereich eine Conway-Karte hinzu: ob die Teams und die Systeme, die ihnen gehören, zusammenpassen. Sie schreibt nichts, bis Sie auf eine Schaltfläche in ihrem Panel klicken.',
     'Die Startseite eines Bereichs: Neue Ansicht… > Conway-Karte; oder das + neben den Reitern.',
     ['Öffnen Sie die Startseite des Bereichs.', 'Klicken Sie auf Neue Ansicht… und wählen Sie Conway-Karte.'],
     'Legen Sie bei Acme Logistics eine Conway-Karte an, um zu sehen, ob das Commercial team und das Warehouse team gesagt haben, wie sie zusammenarbeiten.'],

@@ -1283,7 +1283,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'conway.notesLabel': 'Notities',
   'conway.showNotes': 'Toon notities ({count})',
   'conway.hideNotes': 'Verberg notities ({count})',
-  'conway.help.look': 'Kies een paar om de applicaties te zien en wat je kunt doen. Deze pagina verandert niets tot je een knop in dit paneel indrukt.',
+  'conway.help.look': 'Kies een paar om de applicaties te zien en wat je kunt doen. Deze pagina verandert niets tot je op een knop in dit paneel klikt.',
   'conway.help.owners': 'Eén stap per stuk, en ongedaan maken neemt het terug.',
   'conway.readMore': 'Lees meer',
   'conway.giveOwners': 'Geef ze een eigenaar',

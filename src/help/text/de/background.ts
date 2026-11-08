@@ -1323,7 +1323,7 @@ und die niemand innehat, steht nur unter **Personen: Alle Rollen**, und der Insp
 Einheit nennt immer jede Rolle.
 
 **Linien** zeichnet Berichtslinien auf vier Arten: **Aus**; **Gewählte Person**, die
-Linien, die für die gedrückte Person gelten, und die Linien zu ihr; **Gepunktet**, jede
+Linien, die für die angeklickte Person gelten, und die Linien zu ihr; **Gepunktet**, jede
 fachliche Linie im Organigramm; und **Ausnahmen**, jede Abweichung vom Modell, auch in
 einem Feld gelistet, aus dem jede Zeile zu ihrer Einheit führt. Es öffnet auf Gewählte
 Person, wo die Organisation Linien hat. Eine Pfeilspitze sagt immer, in welche Richtung
@@ -1440,7 +1440,7 @@ Das Panel neben der Karte sagt **Worauf zu schauen ist**, nach Check: die Paare,
 besitzt, als ihr Typ erlaubt, und hinter **Hinweise zeigen**, was ohne System
 dazwischen gesagt ist, und ein Eigentümer, der ein Name und keine Einheit ist.
 **Akzeptiert** listet, was als beabsichtigt markiert wurde. Nichts auf der Seite
-ändert etwas, bis eine Schaltfläche in diesem Panel gedrückt wird. Ein Klick auf
+ändert etwas, bis Sie auf eine Schaltfläche in diesem Panel klicken. Ein Klick auf
 eine Zelle, Linie oder Zeile liest dieses Paar und zeichnet seine zwei Einheiten
 und Schnittstellen unter das Raster. Es sagt, warum es wichtig ist, und bietet die
 Antworten: **Sagen, wie sie zusammenarbeiten…**, **Sie sollten nicht voneinander

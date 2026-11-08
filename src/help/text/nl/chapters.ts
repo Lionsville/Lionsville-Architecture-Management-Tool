@@ -37,7 +37,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
   work: {
     title: 'Je werk, bestanden en instellingen',
     intro: 'Je werk wordt bewaard terwijl je werkt, in een map of in deze browser. Het statuswoord in rij één zegt waar en of het veilig is; van daaruit, en vanuit de menu’s, open je, kopieer je, deel je en kijk je terug.',
-    picture: 'Je werk: het statuswoord in rij één, ingedrukt om het paneel te openen dat zegt waar het werk staat en wat het kan verplaatsen.',
+    picture: 'Je werk: het statuswoord in rij één, aangeklikt om het paneel te openen dat zegt waar het werk staat en wat het kan verplaatsen.',
     worked: {
       title: 'Je organisatie naar een andere computer meenemen',
       steps: [

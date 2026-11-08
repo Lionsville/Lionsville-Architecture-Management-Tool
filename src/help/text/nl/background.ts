@@ -1173,7 +1173,7 @@ op de pagina. Bij **Ontwerpen** (\`tab=design\`) kun je:
   schrijven wat het paneel schrijft. Een team toont ook als label op deze poster; het label
   weghalen laat de toewijzing staan. Een getypte naam is een actor gemarkeerd als geen eenheid.
   Een applicatie hoort op een tegel, niet op een blok. Selecteer meerdere met {key:Shift} of een getekend
-  vak met {key:Shift}, en één keer neerzetten of indrukken in de lade neemt ze allemaal in één stap. **L**
+  vak met {key:Shift}, en één keer neerzetten of klikken in de lade neemt ze allemaal in één stap. **L**
   en **A** op een tegel openen daar dezelfde lijsten;
 - een **notitie** of **afbeelding** toevoegen, die alleen bij deze weergave horen, meedrukken en door
   Zoeken gevonden worden. Dubbelklik op een notitie om te schrijven;
@@ -1250,7 +1250,7 @@ doet. Een rol die het type niet vereist en die niemand vervult, staat alleen ond
 **Mensen: Alle rollen**, en de inspector van de eenheid noemt altijd elke rol.
 
 **Lijnen** tekent rapportagelijnen op vier manieren: **Uit**; **Gekozen persoon**, de
-lijnen die gelden voor de persoon die je indrukt en de lijnen naar die persoon toe;
+lijnen die gelden voor de persoon waarop je klikt en de lijnen naar die persoon toe;
 **Stippellijnen**, elke functionele lijn op het organogram; en **Uitzonderingen**, elke afwijking van het model, ook in een paneel, waar elke regel naar zijn eenheid
 gaat. Het opent op Gekozen persoon waar de organisatie lijnen heeft. Een pijlpunt zegt
 altijd welke kant een lijn opgaat: de accentkleur loopt omhoog naar wie iemand aan
@@ -1363,8 +1363,8 @@ Het paneel naast de kaart zegt **Waar je naar kijkt**, per check: de paren waaro
 niets is gezegd, applicaties zonder eigenaar, een eenheid die meer bezit dan haar
 type toestaat, en achter **Toon notities** wat is gezegd zonder systeem ertussen,
 en een eigenaar die een naam is en geen eenheid. **Geaccepteerd** somt op wat als
-bedoeld is gemarkeerd. Niets op de pagina verandert iets tot je een knop in dit
-paneel indrukt. Een klik op een cel, lijn of rij leest dat paar, en tekent de twee
+bedoeld is gemarkeerd. Niets op de pagina verandert iets tot je op een knop in
+dit paneel klikt. Een klik op een cel, lijn of rij leest dat paar, en tekent de twee
 eenheden en hun koppelvlakken onder het raster. Het zegt waarom het ertoe doet en
 biedt de antwoorden: **Zeg hoe ze samenwerken…**, **Ze horen niet van elkaar af te
 hangen: plan het weg…**, dat de applicaties op een plan van deze scope of een
@@ -2111,7 +2111,7 @@ en zet ze op de pagina Controles.
   (N)**, onder de controles, met haar reden en de dag waarop ze is
   gemarkeerd. **Terugnemen** daar brengt haar terug. Een markering is een stap
   in het model, bijgehouden in de scope waar de bevinding over gaat, dus
-  iedereen ziet haar en de Activiteitenlijst noemt haar; gemarkeerd waar dat
+  iedereen ziet haar en de Activiteitenlijst noemt haar; gemarkeerd waar de
   scope open is, neemt {key:Mod+Z} haar terug zoals elke andere stap. Een markering
   gaat over de bevinding zoals ze is: verander waar ze over gaat — een andere
   eenheid aan de samenwerking, een andere rol eindverantwoordelijk — en de

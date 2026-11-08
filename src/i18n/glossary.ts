@@ -149,14 +149,29 @@ const IS_KEY: Record<'nl' | 'de', { press: RegExp; key: (before: string, word: s
   },
 }
 
+/**
+ * A press said as a participle or after its object (*de persoon die je indrukt*,
+ * *die gedrückte Person*): a key's only where a key is named just before it, as in
+ * *houd {key:Shift} ingedrukt* and *halten Sie {key:Alt} gedrückt*.
+ */
+const PARTICIPLE: Record<'nl' | 'de', RegExp> = {
+  nl: /\b(ingedrukt|indrukt|indrukken)\b/g,
+  de: /\bgedrückt(e[nmrs]?)?\b/g,
+}
+
 /** A press of something that is not a key, in `text`: a control is clicked. */
 export function pressedNotKey(text: string, language: 'nl' | 'de'): string[] {
   const { press, key } = IS_KEY[language]
   const found: string[] = []
+  const say = (at: number, word: string, after: string) => found.push(`${text.slice(Math.max(0, at - 20), at)}${word}${after.slice(0, 30)}`)
   for (const match of text.matchAll(press)) {
     const at = match.index ?? 0
     const after = text.slice(at + match[0].length, at + match[0].length + 120)
-    if (!key(text.slice(Math.max(0, at - 60), at), match[0], after)) found.push(`${text.slice(Math.max(0, at - 20), at)}${match[0]}${after.slice(0, 30)}`)
+    if (!key(text.slice(Math.max(0, at - 60), at), match[0], after)) say(at, match[0], after)
+  }
+  for (const match of text.matchAll(PARTICIPLE[language])) {
+    const at = match.index ?? 0
+    if (!KEY_WORD.test(text.slice(Math.max(0, at - 30), at))) say(at, match[0], text.slice(at + match[0].length, at + match[0].length + 30))
   }
   return found
 }
