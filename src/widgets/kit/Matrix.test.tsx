@@ -36,6 +36,19 @@ describe('the matrix', () => {
     expect(document.querySelectorAll('[data-kit-cell][tabindex="0"]')).toHaveLength(1)
   })
 
+  it('crosses the row and the column under the pointer, and says the cell on its line without moving the focus', () => {
+    renderShell(<Matrix label="RACI" {...BASE} />)
+    const under = cell(/Order the backlog, Run/)
+    fireEvent.pointerOver(under)
+    expect(under.closest('tr')?.hasAttribute('data-hover')).toBe(true)
+    expect(document.querySelectorAll('col[data-hover]')).toHaveLength(1)
+    expect(screen.getByRole('columnheader', { name: 'Run' }).hasAttribute('data-hover')).toBe(true)
+    expect(screen.getByRole('status').textContent).toBe('Order the backlog × Run: responsible.')
+    expect(document.activeElement).not.toBe(under)
+    fireEvent.pointerLeave(screen.getByRole('grid'))
+    expect(document.querySelector('[data-hover]')).toBeNull()
+  })
+
   it('selects on a press and writes nothing', () => {
     const onSelect = vi.fn()
     const onKey = vi.fn()

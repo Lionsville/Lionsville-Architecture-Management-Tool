@@ -47,6 +47,11 @@
   font-weight: var(--fw-regular);
   vertical-align: bottom;
 }
+.kit-matrix col[data-hover],
+.kit-matrix tr[data-hover] > td,
+.kit-matrix tr[data-hover] > .kit-matrix__rowHead,
+.kit-matrix .kit-matrix__colHead[data-hover] { background: var(--crosshair); color: var(--ink); }
+.kit-matrix__cell:not([data-absent]):hover { box-shadow: inset 0 0 0 1px var(--line-strong); }
 .kit-matrix:focus-within .kit-matrix__colHead[data-crossed] { background: var(--crosshair); color: var(--ink); }
 .kit-matrix__colHead[data-folded] { color: var(--ink); cursor: pointer; }
 .kit-matrix__colName { display: block; width: max-content; max-width: 6.5rem; hyphens: auto; }
@@ -117,9 +122,19 @@
 .kit-matrix__cell[data-absent] { border-color: transparent; }
 .kit-matrix tr[data-crossed] > .kit-matrix__cell[data-absent] { background: transparent; }
 .kit-matrix__headMark { display: inline-flex; align-items: center; margin-inline-start: var(--s-1); vertical-align: middle; font-weight: var(--fw-regular); }
-.kit-matrix tr .kit-matrix__cell[data-tone='solid'] { background: var(--raci-a); color: var(--raci-a-ink); }
-.kit-matrix tr .kit-matrix__cell[data-tone='soft'] { background: var(--raci-r); }
-.kit-matrix tr .kit-matrix__cell[data-attention] {
+/* A cell's own fill outranks the crosshair, so the letter keeps the ground its ink was proved on: the crossing,
+   the hover and the focus all pass over a toned cell without repainting it (the A once vanished at 1.1:1). */
+.kit-matrix tr > td.kit-matrix__cell[data-tone='solid'],
+.kit-matrix:focus-within tr[data-crossed] > td.kit-matrix__cell[data-tone='solid'],
+.kit-matrix tr[data-hover] > td.kit-matrix__cell[data-tone='solid'] { background: var(--raci-a); color: var(--raci-a-ink); }
+.kit-matrix tr > td.kit-matrix__cell[data-tone='soft'],
+.kit-matrix:focus-within tr[data-crossed] > td.kit-matrix__cell[data-tone='soft'],
+.kit-matrix tr[data-hover] > td.kit-matrix__cell[data-tone='soft'] { background: var(--raci-r); }
+/* The ring on a solid cell: an inner edge in the cell's own ink, the one colour proved against its fill. */
+.kit-matrix td.kit-matrix__cell[data-tone='solid'][data-kit-cell]:focus-visible { box-shadow: inset 0 0 0 2px var(--raci-a), inset 0 0 0 4px var(--raci-a-ink); }
+.kit-matrix tr .kit-matrix__cell[data-attention],
+.kit-matrix:focus-within tr[data-crossed] > td.kit-matrix__cell[data-attention],
+.kit-matrix tr[data-hover] > td.kit-matrix__cell[data-attention] {
   background: var(--warn-soft);
   box-shadow: inset 0 0 0 1px var(--state-attention-border);
 }
