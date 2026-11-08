@@ -16,6 +16,7 @@ import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ComponentProps, ReactNode } from 'react'
 import { SurfacePopover as Popover } from '../../widgets/kit/Surface'
 import type { StringKey, Translate } from '../../i18n'
+import { translator } from '../../i18n/strings'
 import type { Destination, Page, Screen } from '../../agent/screen'
 import { HOME_PAGES, viewPage } from '../../agent/screen'
 import type { DesignDiagram } from '../../model/types'
@@ -472,6 +473,9 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
   const hasAgentsPage = parts.props.provider?.frame?.Agents !== undefined
   return useMemo(() => {
     const rows: PaletteLine[] = []
+    // A command is found by its English name too, so *zoom* and *save* find it in any language.
+    const english = translator('en')
+    const alsoCalled = new Map<string, string>()
     const place = (one: FramePlace, scope: ScopePath) => rows.push({ id: `place:${one.page}`, group: s('frame.places'), label: s(one.label), run: () => go({ scope, page: one.page }) })
     rows.push({ id: 'place:home', group: s('frame.places'), label: s('frame.home'), run: () => go({ scope: at, page: 'home' }) })
     SCOPE_PLACES.forEach((one) => place(one, at))
@@ -495,6 +499,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     commandsTable(JSON.parse(canKey), mac ? 'darwin' : 'other').forEach((row: CommandRow) => {
       // Light, Dark and System are a menu's radio under Theme; on a line of their own they need the word, and a person types it.
       const label = row.command.type === 'theme' ? `${s('prefs.theme')}: ${s(row.label)}` : s(row.label)
+      if (language !== 'en') alsoCalled.set(row.id, english(row.label))
       rows.push({ id: row.id, group: s('frame.commands'), label, ...(row.keys ? { keys: keyCap(row.keys, mac, language) } : {}), run: () => send(row.command) })
     })
     return (asked: string) => {
