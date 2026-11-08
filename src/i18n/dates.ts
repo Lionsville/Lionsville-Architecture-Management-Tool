@@ -31,10 +31,18 @@ export function parseDay(day: string): Date | undefined {
 }
 
 /** A day to show: "28 Sept 2026". What is not a day is shown as it came. */
+/** One formatter per language, kept: `toLocaleDateString` builds one per call, and a list of a hundred dated rows paid for a hundred. */
+const DAY_FORMAT = new Map<Language, Intl.DateTimeFormat>()
+
 export function formatDay(day: string, language: Language): string {
   const date = parseDay(day)
   if (!date) return day
-  return date.toLocaleDateString(LOCALE[language], { day: 'numeric', month: 'short', year: 'numeric' })
+  let format = DAY_FORMAT.get(language)
+  if (!format) {
+    format = new Intl.DateTimeFormat(LOCALE[language], { day: 'numeric', month: 'short', year: 'numeric' })
+    DAY_FORMAT.set(language, format)
+  }
+  return format.format(date)
 }
 
 /** A moment to show: "28 Sept, 06:39", with the year when it is not this one. */

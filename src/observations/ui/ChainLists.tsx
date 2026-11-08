@@ -52,6 +52,8 @@ export type StageData = {
   names: PersonNames
   language: Language
   s: Translate
+  /** Only how many rows there are: a count builds no cells. */
+  countOnly?: boolean
 }
 
 /** The columns somebody can turn on: everything the register's table had. */
@@ -70,6 +72,7 @@ const RAIL: Record<ObservationTone, ListTone> = { bright: 'good', problem: 'bad'
 function observationRow(one: Observation, scope: string | undefined, d: StageData, note?: string): ListRow {
   const { s } = d
   const key = nodeKey(one.id, scope)
+  if (d.countOnly) return { id: key, text: one.title }
   const into = d.analysedInto(one.id, scope)
   const recorder = one.recordedBy ? recordedByText(one.recordedBy, d.names, s) : ''
   const tone = toneOf(one)
@@ -207,8 +210,9 @@ const rowsIn = (groups: readonly ListGroup[]) => groups.reduce((sum, one) => sum
 export function hiddenRows(
   stage: ObservationStage, d: StageData, allBelow: StageData['below'], allAnalysisBelow: StageData['analysisBelow'],
 ): number {
-  const everything: StageData = { ...d, shows: () => true, below: allBelow, analysisBelow: allAnalysisBelow }
-  return rowsIn(stageGroups(stage, everything)) - rowsIn(stageGroups(stage, d))
+  const counted: StageData = { ...d, countOnly: true }
+  const everything: StageData = { ...counted, shows: () => true, below: allBelow, analysisBelow: allAnalysisBelow }
+  return rowsIn(stageGroups(stage, everything)) - rowsIn(stageGroups(stage, counted))
 }
 
 /**
