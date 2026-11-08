@@ -34,6 +34,19 @@
 .lv-tile .kit-card__marks { flex: none; }
 .lv-board[data-hide-descriptions] .lv-tile__description { display: none; }
 .lv-board[data-hide-status] .lv-statuses { display: none; }
+/*
+ * A colour lens says its own key, and the status key gives way to it: the status dots
+ * go with their key rather than standing unexplained. The lens's number sits on the
+ * card's top edge, as a container box's marks do, so it takes no width from the name.
+ */
+.lv-board[data-lens] .lv-statuses { display: none; }
+.lv-board[data-lens] .lv-tile .kit-card__name { padding-right: 0; }
+.lv-board[data-lens] .lv-tile__corner {
+  top: calc(-1 * var(--s-2) / var(--canvas-zoom, 1));
+  padding-inline: 2px;
+  border-radius: var(--r-2);
+  background: var(--canvas-ground);
+}
 
 /* A logo holds its size on screen, as the words do. */
 .lv-tile__icon { display: flex; zoom: calc(1 / var(--canvas-zoom, 1)); }
