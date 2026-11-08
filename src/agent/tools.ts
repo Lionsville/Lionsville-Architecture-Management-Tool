@@ -4009,6 +4009,12 @@ export type AgentRefusal =
   | 'agent.busy'
   | 'agent.cancelled'
   | 'agent.noAnswer'
+  /**
+   * The call was taken and threw where it was answered: not slow, broken.
+   * Not `agent.noAnswer`, which is a call nobody answered in time and worth
+   * trying again; this one fails the same way until it is put right.
+   */
+  | 'agent.failed'
   | 'agent.planned'
   | 'agent.stale'
   | 'agent.notYours'
@@ -4164,6 +4170,7 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
     'This build has no window, so it draws nothing, has nowhere to move and keeps no pictures. The read tier '
     + 'answers everything about the landscape; app.current says what there is.',
   'agent.noAnswer': 'The app did not answer in time.',
+  'agent.failed': 'The call failed where it was answered. Asking again fails the same way; tell the person, with the detail, so it can be put right.',
   'agent.planned': 'That interface was already dated by another plan, or by hand. Take that port back first.',
   'agent.stale': 'The project has changed since the revision this call named. Read it again and decide again.',
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
