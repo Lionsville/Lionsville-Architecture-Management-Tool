@@ -46,6 +46,19 @@ describe('a page on paper', () => {
     held.release()
     expect(document.querySelector('.print-page')).toBeNull()
     expect(document.head.querySelector('style')).toBeNull()
+    expect(document.body.dataset.printPage).toBeUndefined()
+  })
+
+  it('marks the body while a copy is up, so its print rules outrank the window\'s own, until the last copy goes', () => {
+    const first = printPage(document.createElement('div'), { width: 10, height: 10 }, PRINT_PAPERS.A1)
+    const second = printPage(document.createElement('div'), { width: 10, height: 10 }, PRINT_PAPERS.A1)
+    expect(document.body.dataset.printPage).toBe('')
+    expect(document.head.textContent).toContain('body[data-print-page] > :not(.print-page) { display: none !important; }')
+    expect(first.node.style.getPropertyValue('--print-width')).toBe(`${841 - 2 * printMarginMm(PRINT_PAPERS.A1)}mm`)
+    first.release()
+    expect(document.body.dataset.printPage).toBe('')
+    second.release()
+    expect(document.body.dataset.printPage).toBeUndefined()
   })
 
   it('says its title, its foot and its key as text, in the look asked for, and leaves room for them', () => {

@@ -1,5 +1,26 @@
 import { playwright } from '@vitest/browser-playwright'
+import type { BrowserCommand } from 'vitest/node'
 import { defineConfig } from 'vitest/config'
+import { readPdf } from './build/pdfText'
+
+/**
+ * A page's HTML printed by Chromium at its `@page` size, as the desktop's `printToPDF`
+ * prints, and read back. A test runs in a frame and only a page prints, so the HTML
+ * is served as a page of its own at the frame's origin, where its fonts are.
+ */
+const printPdf: BrowserCommand<[html: string]> = async (context, html) => {
+  if (context.provider.name !== 'playwright') throw new Error('printPdf: playwright only')
+  const address = new URL('/__print__.html', (await context.frame()).url()).href
+  const page = await context.context.newPage()
+  try {
+    await page.route(address, (route) => route.fulfill({ contentType: 'text/html', body: html }))
+    await page.goto(address)
+    await page.evaluate(() => document.fonts.ready.then(() => undefined))
+    return readPdf(await page.pdf({ preferCSSPageSize: true, printBackground: true }))
+  } finally {
+    await page.close()
+  }
+}
 
 /**
  * The tests that need a real browser, and so a runner of their own.
@@ -38,6 +59,7 @@ export default defineConfig({
       enabled: true,
       headless: true,
       provider: playwright(),
+      commands: { printPdf },
       instances: [{ browser: 'chromium' }, { browser: 'webkit' }],
     },
   },

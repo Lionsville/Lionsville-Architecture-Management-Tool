@@ -94,28 +94,56 @@ function dressUp(host: HTMLElement, dress: PrintDress, bands: { head: number; fo
   }
 }
 
+/**
+ * What the print shows: the copy alone, at its paper's size. Every rule wins over the
+ * window's own print rules, which put an open dialog or a whole frame on paper and
+ * size each child of the body by its content: the export dialog is still open
+ * when the PDF is made, and a size-contained sheet sized by its content is no sheet.
+ */
+const PRINT_RULES = `@media print {
+  html, body { background: white !important; height: auto !important; min-height: 0 !important; overflow: visible !important; margin: 0 !important; padding: 0 !important; }
+  body[data-print-page] > :not(.print-page) { display: none !important; }
+  body[data-print-page] > .print-page { display: block !important; position: relative !important; inset: auto !important; width: var(--print-width) !important; height: var(--print-height) !important; min-height: 0 !important; overflow: hidden !important; visibility: visible !important; }
+  body[data-print-page] > .print-page > .print-page__copy { display: var(--print-display) !important; position: absolute !important; width: var(--print-copy-width) !important; height: var(--print-copy-height) !important; overflow: visible !important; }
+}
+@media screen { .print-page { pointer-events: none; } .print-page:not([data-capturing]) { visibility: hidden; } .print-page[data-capturing] { position: fixed !important; z-index: -1; } }`
+
 export function printPage(page: HTMLElement, size: { width: number; height: number }, paper: PrintPaper, dress?: PrintDress): PrintPage {
   const scale = printScale(size, paper, dress !== undefined)
   const margin = printMarginMm(paper)
   const bands = bandsOf(paper)
   const host = document.createElement('div')
   host.className = 'print-page'
-  host.style.cssText = `position:absolute;left:0;top:0;width:${paper.widthMm - 2 * margin}mm;height:${paper.heightMm - 2 * margin}mm;overflow:hidden;contain:strict;background:white`
+  host.style.cssText = `position:absolute;left:0;top:0;width:var(--print-width);height:var(--print-height);overflow:hidden;contain:strict;background:white`
+  host.style.setProperty('--print-width', `${paper.widthMm - 2 * margin}mm`)
+  host.style.setProperty('--print-height', `${paper.heightMm - 2 * margin}mm`)
   for (const [name, value] of Object.entries(tokenVariables('light'))) host.style.setProperty(name, value)
+  // How the page lays itself out is read before it is copied: the copy is cut off from the rules that place the page.
+  const display = page.isConnected ? getComputedStyle(page).display || 'block' : 'block'
   const copy = page.cloneNode(true) as HTMLElement
+  copy.classList.add('print-page__copy')
   copy.style.transform = dress ? `translateY(${bands.head}px) scale(${scale})` : `scale(${scale})`
   copy.style.transformOrigin = '0 0'
   copy.style.position = 'absolute'
   copy.style.width = `${size.width}px`
   copy.style.height = `${size.height}px`
+  copy.style.setProperty('--print-display', display === 'none' || display === 'contents' ? 'block' : display)
+  copy.style.setProperty('--print-copy-width', `${size.width}px`)
+  copy.style.setProperty('--print-copy-height', `${size.height}px`)
   copy.removeAttribute('data-testid')
   host.append(copy)
   if (dress) dressUp(host, dress, bands)
   const style = document.createElement('style')
-  style.textContent = `@page { size: ${paper.widthMm}mm ${paper.heightMm}mm; margin: ${margin}mm; }
-@media print { html, body { background: white; height: auto; overflow: visible; } body > :not(.print-page) { display: none !important; } .print-page { position: static !important; } }
-@media screen { .print-page { pointer-events: none; } .print-page:not([data-capturing]) { visibility: hidden; } .print-page[data-capturing] { position: fixed !important; z-index: -1; } }`
+  style.textContent = `@page { size: ${paper.widthMm}mm ${paper.heightMm}mm; margin: ${margin}mm; }\n${PRINT_RULES}`
   document.head.append(style)
   document.body.append(host)
-  return { node: host, release: () => { host.remove(); style.remove() } }
+  document.body.dataset.printPage = ''
+  return {
+    node: host,
+    release: () => {
+      host.remove()
+      style.remove()
+      if (!document.body.querySelector(':scope > .print-page')) delete document.body.dataset.printPage
+    },
+  }
 }

@@ -279,7 +279,15 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
   // The page says its own paper with `@page`; the numbers are only checked as numbers.
   ipcMain.handle('files:printToPdf', async (event, widthMm: unknown, heightMm: unknown): Promise<Uint8Array> => {
     if (typeof widthMm !== 'number' || typeof heightMm !== 'number') throw new Error('shell.pathRefused')
-    return new Uint8Array(await event.sender.printToPDF({ printBackground: true, preferCSSPageSize: true }))
+    // The paper's margin is painted in the window's ground, night blue in the dark theme: white while the PDF is made.
+    const owner = BrowserWindow.fromWebContents(event.sender)
+    const ground = owner?.getBackgroundColor()
+    owner?.setBackgroundColor('white')
+    try {
+      return new Uint8Array(await event.sender.printToPDF({ printBackground: true, preferCSSPageSize: true }))
+    } finally {
+      if (owner && ground && !owner.isDestroyed()) owner.setBackgroundColor(ground)
+    }
   })
 
   // --- history (ADR-0003, layer two) ----------------------------------------
