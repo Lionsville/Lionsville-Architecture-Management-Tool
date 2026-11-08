@@ -43,4 +43,11 @@ describe('a board laid over printed sheets', () => {
     expect(seam(0, 1000, [[0, 1000], [300, 700]])).toBe(500)
     expect(seam(0, 1000, [[0, 1000], [100, 450], [460, 900]])).toBe(450)
   })
+
+  it('keeps a group whole, with its title, where a cut between its cards would halve it', () => {
+    // Two groups side by side; between the cards of the second is the place nearest the middle.
+    const cards: [number, number][] = [[100, 300], [420, 540], [580, 700]]
+    expect(seam(0, 1000, cards)).toBe(540)
+    expect(seam(0, 1000, [...cards, [400, 720]])).toBe(400)
+  })
 })

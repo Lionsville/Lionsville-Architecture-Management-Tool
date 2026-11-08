@@ -10,7 +10,7 @@ import { frameInRooms, NO_INSETS, ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets
 import type { Insets } from '../../widgets/kit/zoom';
 import { textScale } from '../../widgets/kit/tokens';
 import { useStrings } from '../../i18n/LanguageContext';
-import { PRINT_MARGIN, PRINT_SHEET, printLayout, printSheets } from './printBoard';
+import { PRINT_MARGIN, PRINT_SHEET, printLayout, printObstacles, printSheets } from './printBoard';
 
 /**
  * The options every "fit the board" shares.
@@ -168,7 +168,8 @@ export function usePrintFit(listening = true): void {
       // Drawn before the handler returns: the print is laid out as soon as it has.
       flushSync(() => { void setViewport(framed); });
       const cards = nodes.map((node) => ({ x: node.position.x, y: node.position.y, width: node.width ?? node.measured?.width ?? 0, height: node.height ?? node.measured?.height ?? 0 }));
-      const layout = printLayout(bounds, cards);
+      // Nor through a group's title or a line's label, where the cut halved "Order to delivery".
+      const layout = printLayout(bounds, [...cards, ...printObstacles(board)]);
       if (layout) release = printSheets(board, layout, layout.small ? t('print.tooLarge') : undefined);
     };
     const after = () => {
