@@ -69,7 +69,6 @@ import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { Band } from '../../widgets/kit/Band'
 import { Button } from '../../widgets/kit/Button'
 import { CanvasDock } from '../../widgets/kit/CanvasDock'
-import { useCanvasInsets } from '../../widgets/kit/canvasRoom'
 import { FIT_GAP } from '../../widgets/kit/zoom'
 import type { Insets } from '../../widgets/kit/zoom'
 import { PageState } from '../../widgets/kit/PageState'
@@ -100,7 +99,7 @@ import { useMovePlan } from './MoveUnitDialog'
 import type { UnitViewsHere } from './unitViewsHere'
 import { useChartFolds } from './useChartFolds'
 import type { ChartFolds } from './useChartFolds'
-import { useChartZoom } from './useChartZoom'
+import { useChartRoom, useChartZoom } from './useChartZoom'
 import { movedText, UNIT_MOVE_BARRIER } from './useMoveUnit'
 import { useNewUnit } from './useNewUnit'
 import type { NewUnit, UnitMaking } from './useNewUnit'
@@ -177,7 +176,7 @@ export function ChartPage(props: ChartPageProps) {
   const stage = useRef<HTMLDivElement | null>(null)
   const zoom = useChartZoom(page, stage)
   const work = useRef<HTMLDivElement | null>(null)
-  const insets = useCanvasInsets(page, work)
+  const insets = useChartRoom(page, work, stage, zoom.zoom)
   const [reading, setReading] = useViewFacets(diagram.id)
   const focused = useMemo(() => focusedOn(chart, reading.focus), [chart, reading.focus])
   const lines = useChartLines(props, chart, day, folds, reading.lines)
