@@ -82,6 +82,9 @@ function roleOf(act: MenuAct | undefined): 'menuitem' | 'menuitemcheckbox' | 'me
   return act.radio ? 'menuitemradio' : 'menuitemcheckbox'
 }
 const isHeading = (entry: MenuEntry): entry is { heading: string } => 'heading' in entry
+/** The room a submenu takes beside its row: about the width of a menu. */
+const SUBMENU_ROOM = 240
+
 const isSubmenu = (entry: MenuEntry): entry is Act & { items: readonly (MenuAct | MenuSpacer)[] } => 'items' in entry
 
 /** The list as it is drawn: final acts moved to the end behind one line. */
@@ -168,14 +171,16 @@ export function Menu({ open, anchorEl, label, items, onClose, placement = 'below
   }
 
   const above = !beside && open && opensAbove(anchorEl, ordered.length)
+  // A menu beside one at the window's right edge opens to its left rather than over it.
+  const toLeft = beside && anchorEl instanceof HTMLElement && anchorEl.getBoundingClientRect().right + SUBMENU_ROOM > window.innerWidth
   return (
     <>
       <MuiMenu
         open={open}
         anchorEl={anchorEl}
         onClose={() => { setSub(null); onClose() }}
-        anchorOrigin={beside ? { vertical: 'top', horizontal: 'right' } : { vertical: above ? 'top' : 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: above ? 'bottom' : 'top', horizontal: 'left' }}
+        anchorOrigin={beside ? { vertical: 'top', horizontal: toLeft ? 'left' : 'right' } : { vertical: above ? 'top' : 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: above ? 'bottom' : 'top', horizontal: beside && toLeft ? 'right' : 'left' }}
         slotProps={{
           paper: { className: 'kit-menu' },
           list: { 'aria-label': label, disabledItemsFocusable: true, dense: true },

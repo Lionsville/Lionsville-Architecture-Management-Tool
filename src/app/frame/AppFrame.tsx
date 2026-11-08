@@ -641,7 +641,8 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   const foldedEntries: MenuEntry[] = [
     ...(gone >= 1 ? [{ label: s('shell.activity'), checked: state.panel === 'activity', onSelect: () => togglePanel('activity') }] : []),
     ...(gone >= 2 ? [agentEntry(parts)] : []),
-    ...(gone >= 3 ? [{ label: s('frame.help'), items: helpEntries(parts) }] : []),
+    // In ⋯, which says Lionsville Architect Help itself, the folded Help leaves that line out.
+    ...(gone >= 3 ? [{ label: s('frame.help'), items: helpEntries(parts, !parts.hostMenu) }] : []),
     ...(gone >= 4 ? textSizeEntries(sizing, t) : []),
   ]
   const overflow = frameOverflow(parts, scopeOpen)
@@ -783,13 +784,15 @@ function AgentButton({ parts }: { parts: ShellParts }) {
 }
 
 /** The ? in row one: the manual, the keys, and the two ways out of this build on a host with no menu bar. */
-function helpEntries(parts: ShellParts): (MenuAct | MenuSpacer)[] {
+function helpEntries(parts: ShellParts, besideManual = false): (MenuAct | MenuSpacer)[] {
   const { services: { s }, commands: { bus } } = parts
   const help = offered(HELP_MENU, 'web', { history: false, connect: false, scope: true, example: exampleOffered(parts) })
+    .filter((entry) => !(besideManual && entry.kind === 'item' && entry.command.type === 'manual' && entry.command.section === undefined))
   const items: (MenuAct | MenuSpacer)[] = [...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : entry.accelerator ? { shortcut: keyCap(entry.accelerator, isMac(), parts.services.prefs.language) } : {}) }] : []))]
   if (!parts.hostMenu) {
     const open = (href: string) => () => parts.props.hostControls.openExternal(href)
-    items.push({ line: true }, { label: s(DESKTOP_APP_LINK.label), onSelect: open(DESKTOP_APP_LINK.href) }, { label: s(WEBSITE_LINK.label), onSelect: open(WEBSITE_LINK.href), 'data-guide': 'shell.website' })
+    // ↗: these two leave the app, as the agent dialog's own link to the desktop app says.
+    items.push({ line: true }, { label: `${s(DESKTOP_APP_LINK.label)} ↗`, onSelect: open(DESKTOP_APP_LINK.href) }, { label: `${s(WEBSITE_LINK.label)} ↗`, onSelect: open(WEBSITE_LINK.href), 'data-guide': 'shell.website' })
   }
   return items
 }
