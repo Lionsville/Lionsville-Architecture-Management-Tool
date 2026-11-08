@@ -46,7 +46,7 @@ export const SECTIONS: SectionTexts = {
     '⋯ Mehr am Fuß des Lesers: Ein anderes hierin zusammenführen…',
     ['Öffnen Sie das Prinzip, das bleibt.', 'Klicken Sie auf ⋯ und Ein anderes hierin zusammenführen….', 'Suchen Sie, kreuzen Sie die anderen an und klicken Sie auf Zusammenführen.'],
     'Führen Sie ein doppeltes \'Vergleiche ein Produkt, bevor Sie bauen\' in PR-0001 Buy before build zusammen.'],
-  'principles.remove': ['Ein Prinzip löschen', 'Löscht es nach einer Frage; abgelehnt, solange ein Eintrag es zitiert, und das Menü sagt warum vor dem Druck.',
+  'principles.remove': ['Ein Prinzip löschen', 'Löscht es nach einer Frage; abgelehnt, solange ein Eintrag es zitiert, und das Menü sagt warum, bevor Sie klicken.',
     '⋯ Mehr am Fuß des Lesers: Löschen.',
     ['Öffnen Sie das Prinzip.', 'Klicken Sie auf ⋯ und Löschen.', 'Bestätigen Sie mit Löschen.'],
     'Löschen Sie ein versehentlich geschriebenes Prinzip, das nichts zitiert.'],
