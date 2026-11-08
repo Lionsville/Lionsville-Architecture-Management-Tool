@@ -42,6 +42,9 @@ describe('holdingsOf', () => {
     const held = holdingsOf(withOwn, MODELS)
     expect(held.count('mine')).toBe(3)
     expect(held.count('')).toBe(6)
+    // …and is no scope With work, nor one the tree counts: it is listed apart.
+    expect(held.withWork.has('mine')).toBe(false)
+    expect([...held.personal]).toEqual(['mine'])
   })
 
   it('reads an absent index as the views alone', () => {

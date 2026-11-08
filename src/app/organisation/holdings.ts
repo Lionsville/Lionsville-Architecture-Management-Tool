@@ -50,8 +50,10 @@ export type Holdings = {
   count: (path: ScopePath) => number
   /** What a row says it holds: {@link all} without the principles (`workOf`). */
   work: (path: ScopePath) => number
-  /** Every scope with something at or below it: the tree's *With work*. */
+  /** Every scope with something at or below it: the tree's *With work*. Never one only its reader sees. */
   withWork: ReadonlySet<ScopePath>
+  /** The scopes only their reader sees, and what is filed under them: listed, and counted nowhere. */
+  personal: ReadonlySet<ScopePath>
 }
 
 function heldBy(views: number, model: ScopeModel['model'] | undefined): Held {
@@ -78,12 +80,14 @@ export function holdingsOf(tree: ScopeSummary, models: readonly ScopeModel[]): H
   const modelAt = new Map(models.map((one) => [one.path, one.model]))
   const own = new Map<ScopePath, Held>()
   const all = new Map<ScopePath, Held>()
-  const walk = (scope: ScopeSummary): Held => {
+  const personal = new Set<ScopePath>()
+  const walk = (scope: ScopeSummary, apart = false): Held => {
     const here = heldBy(scope.diagrams, modelAt.get(scope.path))
     own.set(scope.path, here)
+    if (apart || scope.personal) personal.add(scope.path)
     // A scope only its reader sees keeps its own counts and adds nothing to the organisation's.
     const whole = scope.children.reduce((sum, child) => {
-      const theirs = walk(child)
+      const theirs = walk(child, apart || child.personal === true)
       return child.personal ? sum : added(sum, theirs)
     }, here)
     all.set(scope.path, whole)
@@ -96,7 +100,8 @@ export function holdingsOf(tree: ScopeSummary, models: readonly ScopeModel[]): H
     all: allAt,
     count: (path) => totalOf(allAt(path)),
     work: (path) => workOf(allAt(path)),
-    withWork: new Set([...all].filter(([, held]) => totalOf(held) > 0).map(([path]) => path)),
+    withWork: new Set([...all].filter(([path, held]) => totalOf(held) > 0 && !personal.has(path)).map(([path]) => path)),
+    personal,
   }
 }
 

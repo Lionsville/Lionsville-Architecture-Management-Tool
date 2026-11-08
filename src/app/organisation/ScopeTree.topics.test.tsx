@@ -36,7 +36,7 @@ const TREE = scope('', 'Org', {
 })
 
 const HOLDINGS = {
-  count: () => 0, work: () => 0, all: () => ({ views: 0, observations: 0, causes: 0, solutions: 0, decisions: 0, plans: 0, principles: 0 }), withWork: new Set<string>(),
+  count: () => 0, work: () => 0, all: () => ({ views: 0, observations: 0, causes: 0, solutions: 0, decisions: 0, plans: 0, principles: 0 }), withWork: new Set<string>(), personal: new Set<string>(),
 } as unknown as Holdings
 
 const s = translateFrom({ 'org.treeTopicRow': 'Topic relevant here: {name}', 'org.expand': 'Show {name}', 'org.collapse': 'Hide {name}' }) as unknown as Translate

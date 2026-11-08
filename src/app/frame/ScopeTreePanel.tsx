@@ -209,7 +209,8 @@ export function ScopeTreePanel({
           label={s('org.treeShow')} value={show} onChange={setShow}
           items={[
             // While a name is typed, what each tab would show of what was found.
-            { value: 'all', label: s('org.treeAll'), count: matching ? matching.length : flattenScopes(tree).length },
+            // A scope only its reader sees is listed, and counted in neither.
+            { value: 'all', label: s('org.treeAll'), count: (matching ?? flattenScopes(tree).map((one) => one.path)).filter((path) => !holdings.personal.has(path)).length },
             { value: 'work', label: s('org.treeWithWork'), count: matching ? matching.filter((path) => holdings.withWork.has(path)).length : holdings.withWork.size },
           ]}
         />
