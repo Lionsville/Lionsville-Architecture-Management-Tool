@@ -70,6 +70,11 @@ export function sheetOf(board: ParentNode): Rect | undefined {
   return { x, y, width, height };
 }
 
+/** Where Fit stops at this text size: the floor, scaled as the drawing is. */
+export function fitFloorAt(scale: number): number {
+  return Math.min(MIN_ZOOM * scale, MAX_ZOOM);
+}
+
 /**
  * The viewport that frames this rectangle of the board in a pane of this size, in
  * the room its dock and its key leave (`widgets/kit/canvasRoom`). A board too large
@@ -78,7 +83,7 @@ export function sheetOf(board: ParentNode): Rect | undefined {
 export function viewportOverRect(rect: Rect, width: number, height: number, rooms: Insets | readonly Insets[] = NO_INSETS): Viewport | undefined {
   // At a larger text size the drawing is framed larger, all of it (`canvasZoomProps`): its floor and its 100% scale with it.
   const scale = textScale();
-  return frameInRooms(rect, { width, height }, Array.isArray(rooms) ? rooms : [rooms as Insets], { floor: Math.min(MIN_ZOOM * scale, MAX_ZOOM), ceiling: Math.min(FIT_ALL.maxZoom * scale, MAX_ZOOM) });
+  return frameInRooms(rect, { width, height }, Array.isArray(rooms) ? rooms : [rooms as Insets], { floor: fitFloorAt(scale), ceiling: Math.min(FIT_ALL.maxZoom * scale, MAX_ZOOM) });
 }
 
 /**

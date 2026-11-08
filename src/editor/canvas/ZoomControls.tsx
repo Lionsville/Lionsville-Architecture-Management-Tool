@@ -7,7 +7,8 @@ import { Panel, useReactFlow, useStore } from '@xyflow/react';
 import { CanvasDock } from '../../widgets/kit/CanvasDock';
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom';
 import { stepZoom, zoomAbout, ZOOM_HOME } from '../../widgets/kit/zoom';
-import { useFitBoard } from './fitAll';
+import { fitFloorAt, useFitBoard } from './fitAll';
+import { useTextScale } from '../../widgets/kit/useTextScale';
 import { useStrings } from '../../i18n/LanguageContext';
 
 /**
@@ -51,10 +52,13 @@ export function ZoomControls({ grid, map, note }: {
   const { zoomTo, getZoom } = useReactFlow();
   const fit = useFitBoard();
   const zoom = useStore((state) => state.transform[2]);
+  // Fit stops where the drawing's floor is at this text size, and its hint says so.
+  const fitFloor = fitFloorAt(useTextScale());
   return (
     <Panel position="bottom-left">
       <CanvasDock
         corner={false}
+        fitFloor={fitFloor}
         data-testid="zoom-controls"
         zoom={zoom}
         onZoomIn={() => void zoomTo(stepZoom(getZoom(), 'in'))}
