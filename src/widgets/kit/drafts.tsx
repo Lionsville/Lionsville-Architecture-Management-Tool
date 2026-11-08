@@ -12,7 +12,7 @@
  * that share no tree with the box being written in — a key on the window, a press
  * in the frame, the window's own close — and each must hear the same answer.
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Dialog } from './Dialog'
 
@@ -21,6 +21,27 @@ const held = new Set<symbol>()
 type Asked = { go: () => void; stay?: (() => void) | undefined }
 let asker: ((asked: Asked) => void) | undefined
 const watchers = new Set<(holding: boolean) => void>()
+
+/**
+ * The box last written in: the question is often asked after an Escape has left
+ * it (the first Escape leaves the box, the second the page), and Keep writing
+ * goes back to it rather than to wherever the focus was left.
+ */
+let writtenIn: HTMLElement | undefined
+let listening = false
+function listenForWriting() {
+  if (listening || typeof document === 'undefined') return
+  listening = true
+  document.addEventListener('input', (event) => {
+    if (event.target instanceof HTMLElement && event.target.closest('textarea, input, [contenteditable="true"], [contenteditable=""]')) writtenIn = event.target
+  }, true)
+}
+/** Where Keep writing puts the focus: the box written in, if it is still on screen and not where the focus already is. */
+function boxWrittenIn(): HTMLElement | undefined {
+  const box = writtenIn
+  if (!box?.isConnected || box === document.activeElement) return undefined
+  return box
+}
 const told = () => { for (const watcher of [...watchers]) watcher(held.size > 0) }
 
 /**
@@ -90,17 +111,25 @@ export function DraftQuestion() {
  * leaving a page, Cancel in an editor, closing a new record's form: one title,
  * one sentence, and one order through the kit's footer. *Keep writing* is the
  * quiet Cancel, focused, so Return and Escape keep; *Leave and drop it* is the
- * danger to its right, never the default.
+ * danger to its right, never the default. Keep writing puts the focus back in
+ * the box last written in, which an Escape may have left.
  */
 export function LeaveQuestion({ open, onKeep, onLeave }: { readonly open: boolean; readonly onKeep: () => void; readonly onLeave: () => void }) {
   const { t } = useStrings()
+  useEffect(listenForWriting, [])
+  // Leaving drops the box: the focus goes back where it was, not into what is being dropped.
+  const left = useRef(false)
+  const shown = useRef(open)
+  if (open && !shown.current) left.current = false
+  shown.current = open
+  const returnFocus = useCallback(() => (left.current ? undefined : boxWrittenIn()), [])
   return (
     <Dialog
-      open={open} title={t('kit.draft.title')} onClose={onKeep} onSubmit={onKeep}
+      open={open} title={t('kit.draft.title')} onClose={onKeep} onSubmit={onKeep} returnFocus={returnFocus}
       data-testid="draft-question"
       actions={{
         cancel: { type: 'submit', autoFocus: true, label: t('kit.draft.keep'), 'data-testid': 'draft-keep' },
-        outcome: { danger: true, onClick: onLeave, 'data-testid': 'draft-leave', label: t('kit.draft.leave') },
+        outcome: { danger: true, onClick: () => { left.current = true; onLeave() }, 'data-testid': 'draft-leave', label: t('kit.draft.leave') },
       }}
     >
       <p>{t('kit.draft.body')}</p>

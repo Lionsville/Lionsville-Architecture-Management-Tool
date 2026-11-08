@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
-import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
 import { DraftQuestion, draftHeld, leaveWithDrafts, useDraft, watchDrafts } from './drafts'
 
@@ -56,6 +56,32 @@ describe('leaving with a draft', () => {
     const answers = within(screen.getByTestId('draft-question')).getAllByRole('button').map((one) => one.textContent)
     expect(answers.slice(-2)).toEqual(['Keep writing', 'Leave and drop it'])
     expect(document.activeElement?.textContent).toBe('Keep writing')
+  })
+})
+
+describe('Keep writing', () => {
+  it('puts the focus back in the box written in, which an Escape had left', async () => {
+    renderShell(<><DraftQuestion /><Box /><button type="button">Elsewhere</button></>)
+    const box = screen.getByLabelText('Write a comment')
+    box.focus()
+    fireEvent.input(box, { target: { value: 'Who owns this?' } })
+    fireEvent.change(box, { target: { value: 'Who owns this?' } })
+    screen.getByRole('button', { name: 'Elsewhere' }).focus()
+    act(() => leaveWithDrafts(() => {}))
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    await waitFor(() => expect(document.activeElement).toBe(box))
+  })
+
+  it('leaves the focus where it was on Leave and drop it', async () => {
+    renderShell(<><DraftQuestion /><Box /><button type="button">Elsewhere</button></>)
+    const box = screen.getByLabelText('Write a comment')
+    fireEvent.input(box, { target: { value: 'Who owns this?' } })
+    fireEvent.change(box, { target: { value: 'Who owns this?' } })
+    const elsewhere = screen.getByRole('button', { name: 'Elsewhere' })
+    elsewhere.focus()
+    act(() => leaveWithDrafts(() => {}))
+    fireEvent.click(screen.getByTestId('draft-leave'))
+    await waitFor(() => expect(document.activeElement).toBe(elsewhere))
   })
 })
 

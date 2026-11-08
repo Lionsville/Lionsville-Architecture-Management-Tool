@@ -20,7 +20,7 @@
  * what the question is about (`DialogFacts`), and the block that says there is no
  * way back (`DialogDanger`).
  */
-import { useId } from 'react'
+import { useEffect, useId, useRef } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import MuiDialog from '@mui/material/Dialog'
 import { Button } from './Button'
@@ -107,14 +107,35 @@ export type DialogProps = {
    * list grows and shrinks while somebody types, so the field they type in stays put.
    */
   steady?: boolean
+  /**
+   * Where the focus goes once the question closes, when that is not where it was
+   * when it opened: the box a person was writing in, which an Escape had left.
+   * Asked as it opens and as it closes; nothing at the close puts the focus back
+   * where it was.
+   */
+  returnFocus?: () => HTMLElement | undefined
   'data-guide'?: string
   'data-testid'?: string
 }
 
 export function Dialog({
-  open, size = 's', title, children, actions, onClose, error, working = false, onSubmit, steady = false, 'data-guide': guide, 'data-testid': testId,
+  open, size = 's', title, children, actions, onClose, error, working = false, onSubmit, steady = false, returnFocus, 'data-guide': guide, 'data-testid': testId,
 }: DialogProps) {
   const titleId = useId()
+  // Asked as the question opens, whether to take the focus back by itself rather than
+  // leave it to MUI; and asked again once it has closed, after MUI's trap has let go.
+  const returning = useRef<{ was: Element | null } | undefined>(undefined)
+  const wasOpen = useRef(open)
+  if (open && !wasOpen.current) returning.current = returnFocus?.() ? { was: document.activeElement } : undefined
+  useEffect(() => {
+    const closed = wasOpen.current && !open
+    wasOpen.current = open
+    const held = returning.current
+    if (!closed || !held) return
+    returning.current = undefined
+    const to = returnFocus?.() ?? (held.was instanceof HTMLElement ? held.was : undefined)
+    if (to?.isConnected) to.focus()
+  }, [open, returnFocus])
   const parts = (
     <>
       <h2 className="kit-dialog__title" id={titleId}>{title}</h2>
@@ -128,6 +149,7 @@ export function Dialog({
       open={open}
       maxWidth={false}
       aria-labelledby={titleId}
+      disableRestoreFocus={returning.current !== undefined}
       onClose={() => { if (!working) onClose() }}
       slotProps={{
         paper: { className: 'kit-dialog', 'data-size': size, 'data-steady': steady ? '' : undefined, 'data-guide': guide, 'data-testid': testId } as object,
