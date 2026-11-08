@@ -12,10 +12,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
 import type { ScopeModel, ScopeSnapshot } from './scope'
-import {
-  carryAddresses,
-  analysisNamesWithin, applyRefPatch, linesNameWithin, principlesNameWithin, readdressAnalysis, readdressLines, readdressPrinciples, readdressRef, readdressRefs,
-} from './readdress'
+import { addressesNameWithin, applyRefPatch, carryAddresses, readdressHeld, readdressRef, readdressRefs, readdressScope } from './readdress'
 import type { Cause, Observation } from '../model/observation'
 
 function element(id: string, ref?: string): DesignElement {
@@ -24,6 +21,9 @@ function element(id: string, ref?: string): DesignElement {
     ...(ref !== undefined ? { ref } : {}),
   }
 }
+
+/** A model with no elements of its own, for a test about another kind of record. */
+const held = (model: object) => ({ elements: [], ...model }) as never
 
 const scope = (path: string, elements: DesignElement[]): ScopeModel =>
   ({ path, model: { elements, relations: [] } })
@@ -126,17 +126,17 @@ describe('the addresses an analysis holds (ADR-0032 §4, §5)', () => {
   })
 
   it('says whether a scope names an address in the subtree, never for the root', () => {
-    expect(analysisNamesWithin({ causes: [cause('ca-1', [undefined, 'acme/rail/stock'])] }, 'acme/rail')).toBe(true)
-    expect(analysisNamesWithin({ observations: [observation('ob-1', 'acme/rail')] }, 'acme/rail')).toBe(true)
-    expect(analysisNamesWithin({ causes: [cause('ca-1', ['acme/railway'])], observations: [observation('ob-1')] }, 'acme/rail')).toBe(false)
-    expect(analysisNamesWithin({ causes: [cause('ca-1', ['acme'])] }, '')).toBe(false)
+    expect(addressesNameWithin(held({ causes: [cause('ca-1', [undefined, 'acme/rail/stock'])] }), 'acme/rail')).toBe(true)
+    expect(addressesNameWithin(held({ observations: [observation('ob-1', 'acme/rail')] }), 'acme/rail')).toBe(true)
+    expect(addressesNameWithin(held({ causes: [cause('ca-1', ['acme/railway'])], observations: [observation('ob-1')] }), 'acme/rail')).toBe(false)
+    expect(addressesNameWithin(held({ causes: [cause('ca-1', ['acme'])] }), '')).toBe(false)
   })
 
   it('patches each cause’s links and each observation’s history that name one, and nothing else', () => {
-    const commands = readdressAnalysis({
+    const commands = readdressHeld(held({
       causes: [cause('ca-1', [undefined, 'acme/rail', 'globex']), cause('ca-2', ['globex'])],
       observations: [observation('ob-1', 'acme/rail/stock'), observation('ob-2')],
-    }, 'acme/rail', 'group/rail')
+    }), 'acme/rail', 'group/rail')
     expect(commands).toEqual([
       { type: 'cause.update', id: 'ca-1', patch: { explains: [
         { id: 'x-0', strength: 'normal' }, { id: 'x-1', strength: 'normal', scope: 'group/rail' }, { id: 'x-2', strength: 'normal', scope: 'globex' },
@@ -145,13 +145,13 @@ describe('the addresses an analysis holds (ADR-0032 §4, §5)', () => {
         { date: '2026-09-01', kind: 'recorded' }, { date: '2026-09-02', kind: 'absorbed', id: 'ob-below', scope: 'group/rail/stock' },
       ] } },
     ])
-    expect(readdressAnalysis({ causes: [cause('ca-1', ['acme/rail'])] }, 'acme/rail', 'acme/rail')).toEqual([])
+    expect(readdressHeld(held({ causes: [cause('ca-1', ['acme/rail'])] }), 'acme/rail', 'acme/rail')).toEqual([])
   })
 
   it('carries the scope a merged cause names on its history, and its links only where they moved (ADR-0035 §4)', () => {
     const merged: Cause = { ...cause('ca-3', [undefined]), history: [{ date: '2026-10-01', kind: 'merged', id: 'ca-9', scope: 'acme/rail' }] }
-    expect(analysisNamesWithin({ causes: [merged] }, 'acme/rail')).toBe(true)
-    expect(readdressAnalysis({ causes: [merged] }, 'acme/rail', 'group/rail')).toEqual([
+    expect(addressesNameWithin(held({ causes: [merged] }), 'acme/rail')).toBe(true)
+    expect(readdressHeld(held({ causes: [merged] }), 'acme/rail', 'group/rail')).toEqual([
       { type: 'cause.update', id: 'ca-3', patch: { history: [{ date: '2026-10-01', kind: 'merged', id: 'ca-9', scope: 'group/rail' }] } },
     ])
   })
@@ -161,9 +161,9 @@ describe('the addresses an analysis holds (ADR-0032 §4, §5)', () => {
     const came = { id: 'cm-1', about: { kind: 'observation' as const, id: 'ob-1' }, by: { person: 'pe-1' }, at, body: 'Hi', from: { kind: 'observation' as const, id: 'ob-9', scope: 'acme/rail' } }
     const here = { ...came, id: 'cm-2', from: { kind: 'observation' as const, id: 'ob-8' } }
     const plain = { ...came, id: 'cm-3', from: undefined }
-    expect(analysisNamesWithin({ comments: [came] }, 'acme/rail')).toBe(true)
-    expect(analysisNamesWithin({ comments: [here, plain] }, 'acme/rail')).toBe(false)
-    expect(readdressAnalysis({ comments: [came, here, plain] }, 'acme/rail', 'group/rail')).toEqual([
+    expect(addressesNameWithin(held({ comments: [came] }), 'acme/rail')).toBe(true)
+    expect(addressesNameWithin(held({ comments: [here, plain] }), 'acme/rail')).toBe(false)
+    expect(readdressHeld(held({ comments: [came, here, plain] }), 'acme/rail', 'group/rail')).toEqual([
       { type: 'comment.put', comment: { ...came, from: { kind: 'observation', id: 'ob-9', scope: 'group/rail' } } },
     ])
   })
@@ -179,14 +179,14 @@ describe('a unit\'s reporting lines (ADR-0039 §3)', () => {
 
   it('carries a line naming the moved subtree, and nothing else, as one patch of the unit\'s lines', () => {
     const model = { elements: [unit('one', ['acme/rail/ops', undefined]), unit('two', ['globex']), unit('stand', ['acme/rail'], 'acme')] }
-    expect(linesNameWithin(model, 'acme/rail')).toBe(true)
-    expect(linesNameWithin(model, 'initech')).toBe(false)
-    expect(linesNameWithin(model, '')).toBe(false)
-    expect(readdressLines(model, 'acme/rail', 'group/rail')).toEqual([{
+    expect(addressesNameWithin(held(model), 'acme/rail')).toBe(true)
+    expect(addressesNameWithin(held(model), 'initech')).toBe(false)
+    expect(addressesNameWithin(held(model), '')).toBe(false)
+    expect(readdressHeld(held(model), 'acme/rail', 'group/rail')).toEqual([{
       type: 'element.update', id: 'one',
       patch: { reportingLines: [{ role: 'ro-a', kind: 'dotted', to: { scope: 'group/rail/ops', unit: 'u', role: 'ro-b' } }, { role: 'ro-a', kind: 'solid' }] },
     }])
-    expect(readdressLines(model, 'acme/rail', 'acme/rail')).toEqual([])
+    expect(readdressHeld(held(model), 'acme/rail', 'acme/rail')).toEqual([])
   })
 })
 
@@ -196,9 +196,9 @@ describe('a holder\'s own reporting lines (ADR-0039, amended 17 October 2026)', 
 
   it('carries a line naming the moved subtree as one patch of the holder\'s lines, and nothing else', () => {
     const model = { elements: [], assignments: [holder('as-1', ['acme/rail', 'globex']), holder('as-2', ['globex']), { ...holder('as-3', []), reportsTo: undefined }] }
-    expect(linesNameWithin(model, 'acme/rail')).toBe(true)
-    expect(linesNameWithin(model, 'initech')).toBe(false)
-    expect(readdressLines(model, 'acme/rail', 'group/rail')).toEqual([
+    expect(addressesNameWithin(held(model), 'acme/rail')).toBe(true)
+    expect(addressesNameWithin(held(model), 'initech')).toBe(false)
+    expect(readdressHeld(held(model), 'acme/rail', 'group/rail')).toEqual([
       { type: 'assignment.update', id: 'as-1', patch: { reportsTo: [line('group/rail'), line('globex')] } },
     ])
   })
@@ -217,17 +217,17 @@ describe('a move carries the principles a scope cites and relates to (ADR-0041 �
   } as const
 
   it('finds a scope that names a principle kept inside the moved subtree, and none for the organisation', () => {
-    expect(principlesNameWithin(model as never, 'acme/rail')).toBe(true)
-    expect(principlesNameWithin(model as never, 'acme/road')).toBe(false)
-    expect(principlesNameWithin(model as never, '')).toBe(false)
+    expect(addressesNameWithin(held(model), 'acme/rail')).toBe(true)
+    expect(addressesNameWithin(held(model), 'acme/road')).toBe(false)
+    expect(addressesNameWithin(held(model), '')).toBe(false)
   })
 
   it('rewrites each citation and relation that names one, and nothing else', () => {
-    expect(readdressPrinciples(model as never, 'acme/rail', 'freight/rail')).toEqual([
+    expect(readdressHeld(held(model), 'acme/rail', 'freight/rail')).toEqual([
       { type: 'citation.update', id: 'c1', patch: { principle: { scope: 'freight/rail', id: 'pr-1' } } },
       { type: 'principle.update', id: 'pr-5', patch: { relations: [{ kind: 'refines', to: { scope: 'freight/rail/yard', id: 'pr-2' } }] } },
     ])
-    expect(readdressPrinciples(model as never, 'acme/rail', 'acme/rail')).toEqual([])
+    expect(readdressHeld(held(model), 'acme/rail', 'acme/rail')).toEqual([])
   })
 })
 
@@ -279,5 +279,63 @@ describe('every address a scope holds, carried', () => {
     expect(model.principles).toMatchObject([{ relations: [{ to: { scope: 'kept', id: 'p1' } }] }])
     // An evaluation's id is said from its block's scope, and moves with it.
     expect(model.evaluations).toMatchObject([{ id: 'kept~block', block: { scope: 'kept', id: 'block' } }])
+  })
+})
+
+/**
+ * A move carries by the same list a copy does: what `carryAddresses` carries
+ * a move finds (`addressesNameWithin`) and writes (`readdressScope`), field
+ * for field — the evaluations' blocks and the building blocks' aspects too,
+ * which a move once left naming the old place.
+ */
+describe('a move carries every address a scope holds, by the one list', () => {
+  const at = (base: string) => ({
+    path: 'beta',
+    activeDiagramId: '',
+    logoLibrary: [],
+    relevantTo: [{ path: `${base}/below`, from: '2026-01-01' }, { path: 'beta', from: '2026-01-01' }],
+    model: {
+      name: 'Beta', diagrams: [], relations: [],
+      elements: [
+        { id: 'standin', kind: 'application', name: 'Billing', ref: base },
+        { id: 'unit', kind: 'actor', name: 'Ops', scopes: [`${base}/below`, 'beta'] },
+        { id: 'block', kind: 'buildingBlock', name: 'Gateway', capabilities: [{ id: 'c', text: 'Routes', aspect: { scope: base, id: 'p1', number: 1 } }, { id: 'd', text: 'Logs' }] },
+        { id: 'plain', kind: 'application', name: 'Plain' },
+      ],
+      evaluations: [
+        { id: '-~other', block: { scope: '', id: 'other' }, contexts: [], options: [], coverage: {} },
+        { id: `${base.replaceAll('/', '.')}~block`, block: { scope: base, id: 'block' }, contexts: ['x'], options: [], coverage: {} },
+      ],
+    },
+  } as unknown as ScopeSnapshot)
+
+  it('finds a scope that names the subtree by any field, and none that names only its siblings', () => {
+    const one = (model: object) => ({ elements: [], ...model })
+    expect(addressesNameWithin(one({ evaluations: at('acme/rail').model.evaluations }), 'acme/rail')).toBe(true)
+    expect(addressesNameWithin({ elements: [at('acme/rail').model.elements[2]] }, 'acme/rail')).toBe(true)
+    expect(addressesNameWithin(at('acme/rail').model, 'acme/road')).toBe(false)
+    expect(addressesNameWithin(at('acme/rail').model, '')).toBe(false)
+  })
+
+  it('writes what carryAddresses says, as patches of the records that name the subtree and nothing for the rest', () => {
+    const commands = readdressScope(at('acme/rail'), 'acme/rail', 'group/rail')
+    expect(commands).toEqual([
+      { type: 'transaction', commands: [
+        { type: 'standin.refresh', entries: [{ id: 'standin', ref: 'group/rail', name: 'Billing' }] },
+        { type: 'element.update', id: 'unit', patch: { scopes: ['group/rail/below', 'beta'] } },
+        { type: 'element.update', id: 'block', patch: { capabilities: [{ id: 'c', text: 'Routes', aspect: { scope: 'group/rail', id: 'p1', number: 1 } }, { id: 'd', text: 'Logs' }] } },
+        // An evaluation's id is said from its block's scope: taken, and put back where it stood under the new one.
+        { type: 'evaluation.remove', id: 'acme.rail~block' },
+        { type: 'evaluation.add', evaluation: { id: 'group.rail~block', block: { scope: 'group/rail', id: 'block' }, contexts: ['x'], options: [], coverage: {} }, at: 1 },
+      ] },
+      { type: 'scope.describe', patch: { relevantTo: [{ path: 'group/rail/below', from: '2026-01-01' }, { path: 'beta', from: '2026-01-01' }] } },
+    ])
+    expect(readdressScope(at('acme/rail'), 'acme/road', 'group/road')).toEqual([])
+    expect(readdressScope(at('acme/rail'), 'acme/rail', 'acme/rail')).toEqual([])
+  })
+
+  it('lands on what carryAddresses makes of the scope', () => {
+    const moved = carryAddresses(at('acme/rail'), (path) => readdressRef(path, 'acme/rail', 'group/rail'))
+    expect(moved).toEqual(at('group/rail'))
   })
 })

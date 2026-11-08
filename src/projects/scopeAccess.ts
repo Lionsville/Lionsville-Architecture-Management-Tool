@@ -16,7 +16,7 @@
  * earlier: the repository answers one as a value, and the screens above have
  * always been handed a refusal they can say (`app/messageFor.ts`).
  */
-import type { Command, UploadedLogo } from '../model'
+import type { UploadedLogo } from '../model'
 import { imageEntryOf } from '../model/imageEntry'
 import { isImageName } from '../model/imageName'
 import type { ContentAddress, ImageEntry, ImageName } from '../model/imageName'
@@ -26,11 +26,7 @@ import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/Organi
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
 import { dataUrl, readDataUrl } from './dataUrl'
 import { holdsWorkBeyondItsName } from './organisationWork'
-import { readdressLinks } from './topics'
-import {
-  analysisNamesWithin, linesNameWithin, principlesNameWithin, readdressAnalysis, readdressLines, readdressPrinciples, readdressRef, readdressRefs,
-  readdressServed, servedNamesWithin,
-} from './readdress'
+import { addressesNameWithin, readdressRef, readdressScope } from './readdress'
 import { SCOPE_MOVED, scopeMoved } from './revision'
 import { resolveActive } from './scope'
 import { isWithinScope, ROOT_SCOPE } from './scopePath'
@@ -298,8 +294,9 @@ export async function placeWhole(
 /**
  * A scope, and everything filed under it, to another address — and the
  * stand-ins elsewhere that named it by its old one, named by its new, and so
- * the causes and observations that name a scope in it (ADR-0032 §4, §5),
- * and the units that serve a scope in it (3.7.5).
+ * every other field that names a scope in it, inside the subtree and out:
+ * one rule, `readdress.carryModel`, which a copy filed under the
+ * organisation carries by too.
  *
  * The repository moves the subtree whole, identities and all; what it cannot
  * know is who else points into it, which the index says. Those stand-ins are
@@ -330,32 +327,22 @@ export async function moveScope(
   const models = modelsOf(await index.read())
   const carried = carriedBy(models, from, to, topicsNamingWithin(tree, from))
   const inside = (address: ScopeAddress) => isWithinScope(address, from)
-  const carry = async (address: ScopeAddress, refs: readonly { id: string; ref: string }[]) => {
+  // Every field that names a scope, carried by the one rule (`readdressScope`); whether it wrote anything is answered.
+  const carry = async (address: ScopeAddress) => {
+    let wrote = false
     await changeScope(scopes, address, (held) => {
-      const names = new Map(held.model.elements.map((element) => [element.id, element.name]))
-      const entries = refs.filter((one) => names.has(one.id)).map((one) => ({ ...one, name: names.get(one.id)! }))
-      const commands: Command[] = [
-        ...(entries.length ? [{ type: 'standin.refresh', entries } as const] : []),
-        ...readdressAnalysis(held.model, from, to),
-        ...readdressLines(held.model, from, to),
-        ...readdressServed(held.model, from, to),
-        ...readdressPrinciples(held.model, from, to),
-      ]
-      // A topic's links name scopes by their paths (ADR-0042 §5): carried as the topic's own record.
-      const links = held.relevantTo ?? []
-      const relinked = readdressLinks(links, from, to)
-      const describe: ScopeCommand[] = relinked.some((one, at) => one.path !== links[at]?.path) ? [{ type: 'scope.describe', patch: { relevantTo: relinked } }] : []
-      if (commands.length === 0 && describe.length === 0) return undefined
-      return [...(commands.length === 0 ? [] : [commands.length === 1 ? commands[0] : { type: 'transaction' as const, commands }]), ...describe]
+      const commands = readdressScope(held, from, to)
+      wrote = commands.length > 0
+      return wrote ? commands : undefined
     })
+    return wrote
   }
   landed(await scopes.move(node.id, to, expects))
-  for (const [path, refs] of carried) {
+  for (const path of carried) {
     const at = inside(path) ? readdressRef(path, from, to) : path
-    if (!carrying) { await carry(at, refs); continue }
+    if (!carrying) { await carry(at); continue }
     try {
-      await carry(at, refs)
-      carrying.carried(at)
+      if (await carry(at)) carrying.carried(at)
     } catch (cause) {
       if (!(cause instanceof ShellError)) throw cause
       carrying.refused(at, cause.key)
@@ -383,23 +370,17 @@ export type Carrying = {
 }
 
 /**
- * Every scope that names an address in the subtree at `from`, by where it is
- * before the move, with the stand-ins it holds there: the scopes outside the
- * subtree first, as `readdressRefs` orders them, then those inside it.
+ * Every scope that names an address in the subtree at `from` — by the one
+ * rule a move carries (`addressesNameWithin`), and the topics that link into
+ * it — by where it is before the move: the scopes outside the subtree first,
+ * since they are written where they stand, then those inside it, written at
+ * their new addresses.
  */
-function carriedBy(
-  models: readonly ScopeModel[], from: ScopeAddress, to: ScopeAddress, topics: readonly ScopeAddress[] = [],
-): Map<ScopeAddress, readonly { id: string; ref: string }[]> {
-  const carried = new Map<ScopeAddress, readonly { id: string; ref: string }[]>()
-  for (const patch of readdressRefs(models, from, to)) carried.set(patch.path, patch.refs)
-  if (from === to) return carried
-  for (const topic of topics) if (!carried.has(topic)) carried.set(topic, [])
-  for (const one of models) {
-    if (!carried.has(one.path) && (analysisNamesWithin(one.model, from) || linesNameWithin(one.model, from) || servedNamesWithin(one.model, from)
-      || principlesNameWithin(one.model, from))) carried.set(one.path, [])
-  }
+function carriedBy(models: readonly ScopeModel[], from: ScopeAddress, to: ScopeAddress, topics: readonly ScopeAddress[] = []): ScopeAddress[] {
+  if (from === ROOT_SCOPE || from === to) return []
+  const carried = new Set([...models.filter((one) => addressesNameWithin(one.model, from)).map((one) => one.path), ...topics])
   const inside = (address: ScopeAddress) => Number(isWithinScope(address, from))
-  return new Map([...carried].sort(([a], [b]) => inside(a) - inside(b) || a.localeCompare(b)))
+  return [...carried].sort((a, b) => inside(a) - inside(b) || a.localeCompare(b))
 }
 
 /** A picture a whole content carries: its name in the library, and its bytes. */

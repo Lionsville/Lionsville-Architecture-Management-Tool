@@ -20,6 +20,9 @@ import type { DesignDiagram } from '../model/types'
 import type { ScopeNode } from './ScopeRepository'
 import { emptyContent } from '../projects/scopeState'
 import type { ScopeContent, ScopeId } from '../projects/scopeState'
+import { moveScopeUnder } from '../projects/scopeTree'
+import { evaluationId } from '../model/evaluation'
+import type { HostModel } from '../model/hostModel'
 import {
   addCrews, addDepot, addLandscape, element, held, ok, over, refusal, renameCrews, replayed, step,
 } from './Repositories.contract'
@@ -714,6 +717,78 @@ export function describeScopeRepository(name: string, make: MakeRepositories): v
         expect((await repositories.state(acme)).address).toBe('acme')
         ok(await repositories.remove(acme))
         expect(refusal(await repositories.move(acme, 'globex'))).toBe('shell.scopeGone')
+      })
+    })
+
+    /**
+     * A move as the app, the agent and a server make it (`moveScopeUnder`):
+     * the repository's move and the carry after it, over this repository and
+     * its index. Two scopes hold one of every field that names a scope by its
+     * path, each naming the one that moves: one beside it and one inside it.
+     * Read back, each holds exactly what it held with the old address said as
+     * the new — and an evaluation's id, said from its block's scope, with it.
+     */
+    describe('moving a scope carries every address that names it', () => {
+      const FROM = 'acme/moved'
+      const day = '2026-10-01'
+      const holding = (base: string): HostModel => ({
+        ...emptyContent('Holder').model,
+        elements: [
+          { ...element('standin', 'Billing'), ref: base },
+          {
+            ...element('unit', 'Operations'), kind: 'actor', scopes: [`${base}/below`],
+            reportingLines: [{ role: 'ro-a', kind: 'solid', to: { scope: base, unit: 'top', role: 'ro-b' } }],
+          },
+          { ...element('block', 'Gateway'), kind: 'buildingBlock', capabilities: [{ id: 'cap', text: 'Routes', aspect: { scope: base, id: 'pr-1', number: 1 } }] },
+        ],
+        assignments: [{ id: 'as-1', unitId: 'unit', roleId: 'ro-a', person: { person: 'pe-a' }, reportsTo: [{ kind: 'solid', to: { scope: base, unit: 'top', role: 'ro-b' } }] }],
+        causes: [{
+          id: 'ca-1', number: 1, title: 'Why', state: 'assumed', body: '',
+          explains: [{ id: 'ob-9', strength: 'normal', scope: `${base}/below` }], history: [{ date: day, kind: 'merged', id: 'ca-9', scope: base }],
+        }],
+        observations: [{
+          id: 'ob-1', number: 1, title: 'Seen', date: day, impact: 'minor', seen: 1, body: '',
+          history: [{ date: day, kind: 'recorded' }, { date: day, kind: 'absorbed', id: 'ob-9', scope: base }],
+        }],
+        comments: [{ id: 'cm-1', about: { kind: 'observation', id: 'ob-1' }, by: { person: 'pe-a' }, at: `${day}T09:00:00Z`, body: 'Seen there.', from: { kind: 'observation', id: 'ob-9', scope: base } }],
+        citations: [{ id: 'ct-1', about: { kind: 'observation', id: 'ob-1' }, principle: { scope: base, id: 'pr-1' }, stance: 'holds', on: day }],
+        principles: [{
+          id: 'pr-5', number: 5, title: 'Route once', statement: '', aspects: [{ id: 'a', number: 1, text: 'One gateway.', nature: 'design' }], lastAspect: 1,
+          groups: [], regime: 'flexible', status: 'accepted', relations: [{ kind: 'refines', to: { scope: base, id: 'pr-1' } }],
+        }],
+        evaluations: [{ id: evaluationId({ scope: base, id: 'block' }), block: { scope: base, id: 'block' }, contexts: [], options: [], coverage: {} }],
+      } as unknown as HostModel)
+      /** What a scope read before the move holds after it: every address in the subtree said from its new place. */
+      const carried = (value: unknown, to: string) => JSON.parse(JSON.stringify(value)
+        .replaceAll(`"${FROM}`, `"${to}`)
+        .replaceAll(`"${FROM.replaceAll('/', '.')}~`, `"${to.replaceAll('/', '.')}~`))
+
+      it.each([
+        ['down, under a sibling\'s child', 'beta/deep', 'beta/deep/moved'],
+        ['up, to the organisation', '', 'moved'],
+        ['sideways, under a sibling', 'beta', 'beta/moved'],
+      ])('%s', async (_how, parent, to) => {
+        const repositories = await fresh()
+        await repositories.scope(`${FROM}/below`, 'Below')
+        await repositories.scope('beta/deep', 'Deep')
+        const beside = await repositories.scope('beta/holder', 'Holder')
+        const inside = await repositories.scope(`${FROM}/below/holder`, 'Holder')
+        for (const scope of [beside, inside]) {
+          await repositories.steps(scope, { type: 'scope.replace', content: { ...emptyContent('Holder'), model: holding(FROM), relevantTo: [{ path: `${FROM}/below`, from: day }] } })
+        }
+        const before = await Promise.all([beside, inside].map((scope) => repositories.state(scope)))
+        // Each address was kept as written, or a carry would have nothing to show.
+        const named = (value: unknown) => JSON.stringify(value).split(`"${FROM}`).length - 1
+        for (const one of before) expect(named(one.model)).toBe(named(holding(FROM)))
+        const moved = await moveScopeUnder(repositories.scopes, repositories.index, FROM, parent, { strict: true })
+        expect(moved?.to).toBe(to)
+        const after = await Promise.all([beside, inside].map((scope) => repositories.state(scope)))
+        expect(after[1].address).toBe(`${to}/below/holder`)
+        after.forEach((one, at) => {
+          expect(one.model).toEqual(carried(before[at].model, to))
+          expect(one.relevantTo).toEqual([{ path: `${to}/below`, from: day }])
+          expect(JSON.stringify(one.model)).not.toContain(`"${FROM}`)
+        })
       })
     })
 

@@ -33,7 +33,7 @@ import type { RecordLink } from './links'
 import { bareScope, emptyScope, flattenScopes, namesUnder, unreadableAt } from './scope'
 import type { ScopeKind, ScopeSnapshot, ScopeSummary } from './scope'
 import { changeScope, changeScopes, ensureScope, landed, modelsOf, moveScope, nodeAt, nodesOf, summaryOf } from './scopeAccess'
-import { analysisNamesWithin, linesNameWithin, principlesNameWithin, readdressRef, servedNamesWithin } from './readdress'
+import { addressesNameWithin, readdressRef } from './readdress'
 import type { ScopeReader } from './scopeAccess'
 import { TOPICS_PLACE } from './topics'
 import type { TopicLink } from './topics'
@@ -301,16 +301,13 @@ export type MovedUnder = {
 
 /**
  * The scopes outside the subtree at `from` that a move of it writes: those
- * whose stand-ins, causes, observations, reporting lines or units' served
- * scopes name an address
- * in it (`scopeAccess.moveScope`'s carry), by where they are. What a host
+ * whose records name an address in it (`readdress.addressesNameWithin`,
+ * `scopeAccess.moveScope`'s carry), by where they are. What a host
  * asks before a move that must not write behind a session open on one.
  */
 export async function scopesAMoveWrites(index: Pick<OrganisationIndex, 'read'>, from: ScopePath): Promise<ScopePath[]> {
   return modelsOf(await index.read())
-    .filter(({ path, model }) => !isWithinScope(path, from) && (
-      model.elements.some((element) => element.ref !== undefined && isWithinScope(element.ref, from))
-      || analysisNamesWithin(model, from) || linesNameWithin(model, from) || servedNamesWithin(model, from) || principlesNameWithin(model, from)))
+    .filter(({ path, model }) => !isWithinScope(path, from) && addressesNameWithin(model, from))
     .map(({ path }) => path)
 }
 

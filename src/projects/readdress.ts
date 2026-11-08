@@ -28,6 +28,8 @@ import type { Assignment } from '../model/units'
 import type { Citation } from '../model/citable'
 import type { Principle } from '../model/principle'
 import { evaluationId } from '../model/evaluation'
+import type { Evaluation } from '../model/evaluation'
+import type { ScopeCommand } from './scopeState'
 import type { ScopeModel, ScopeSnapshot } from './scope'
 import { isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -106,179 +108,41 @@ export function applyRefPatch(scope: ScopeSnapshot, patch?: RefPatch): ScopeSnap
 }
 
 /**
- * The other addresses a scope may hold, in its analysis (ADR-0032 §4, §5): a
- * cause that explains a cause of a scope below names that scope's path on
- * the link, and an observation that absorbed one of a scope below names that
- * scope's path on its `absorbed` event — and, since ADR-0035, a merged
- * observation or cause names its survivor's scope on its `merged` event, and
- * a cause the scope of what it absorbed. A move carries them as it carries a
- * stand-in's `ref`, or the link and the history point at a folder that is not
- * there. A comment that a merge or a move brought from another scope names
- * that scope on its `from` (ADR-0037 §6), and is carried the same way.
+ * What of a scope's model may name another scope by its path: every record
+ * kind {@link carryModel} carries. A store's index answers what it reads, and
+ * a field it leaves out is simply not found there.
  */
-type AnalysisHeld = { causes?: readonly Cause[]; observations?: readonly Observation[]; comments?: readonly Comment[] }
-
-/** Whether a scope's analysis names an address inside the subtree at `from`. */
-export function analysisNamesWithin(model: AnalysisHeld, from: ScopePath): boolean {
-  if (from === ROOT_SCOPE) return false
-  const within = (scope: string | undefined) => scope !== undefined && isWithinScope(scope, from)
-  return (model.causes ?? []).some((one) => (
-    one.explains.some((link) => within(link.scope)) || (one.history ?? []).some((event) => within(event.scope))
-  ))
-    || (model.observations ?? []).some((one) => one.history.some((event) => within(event.scope)))
-    || (model.comments ?? []).some((one) => within(one.from?.scope))
+export type AddressesHeld = {
+  elements: readonly DesignElement[]
+  assignments?: readonly Assignment[]
+  causes?: readonly Cause[]
+  observations?: readonly Observation[]
+  comments?: readonly Comment[]
+  citations?: readonly Citation[]
+  principles?: readonly Principle[]
+  evaluations?: readonly Evaluation[]
 }
 
 /**
- * The commands that carry what a scope's analysis names inside the subtree at
- * `from` to `to`: a patch of each cause's links, and of each observation's
- * history, that names an address there — and nothing for one that names none.
- * Worked out from the scope as it is read, so what it holds by then is what
- * is carried.
- */
-export function readdressAnalysis(model: AnalysisHeld, from: ScopePath, to: ScopePath): Command[] {
-  if (from === ROOT_SCOPE || from === to) return []
-  const carry = <T extends { scope?: string }>(held: T): T => (
-    held.scope === undefined ? held : { ...held, scope: readdressRef(held.scope, from, to) }
-  )
-  const causes = (model.causes ?? []).flatMap((one): Command[] => {
-    const explains = one.explains.map(carry)
-    // A merge across the tree names the other cause's scope on both records' history (ADR-0035 §4).
-    const history = one.history?.map(carry)
-    const linksMoved = explains.some((link, at) => link.scope !== one.explains[at].scope)
-    const historyMoved = history?.some((event, at) => event.scope !== one.history![at].scope) ?? false
-    if (!linksMoved && !historyMoved) return []
-    return [{ type: 'cause.update', id: one.id, patch: { ...(linksMoved ? { explains } : {}), ...(historyMoved ? { history } : {}) } }]
-  })
-  const observations = (model.observations ?? []).flatMap((one): Command[] => {
-    const history = one.history.map(carry)
-    return history.some((event, at) => event.scope !== one.history[at].scope)
-      ? [{ type: 'observation.update', id: one.id, patch: { history } }]
-      : []
-  })
-  // A comment is put back as it was with its `from` carried: its body and author are not touched.
-  const comments = (model.comments ?? []).flatMap((one): Command[] => {
-    if (!one.from) return []
-    const from = carry(one.from)
-    return from.scope !== one.from.scope ? [{ type: 'comment.put', comment: { ...one, from } }] : []
-  })
-  return [...causes, ...observations, ...comments]
-}
-
-/**
- * A unit's own reporting lines name the scope that keeps the unit each
- * lands on (ADR-0039 §3), and so does a holder's own line on an assignment
- * (ADR-0039, amended 17 October 2026): a move carries that address as it
- * carries a stand-in's `ref`. Only a definition's: a stand-in holds none of
- * the owner's detail.
- */
-type LinesHeld = { elements: readonly DesignElement[]; assignments?: readonly Assignment[] }
-
-/** Whether a scope's units, or the holders in them, name an address inside the subtree at `from` on a line of their own. */
-export function linesNameWithin(model: LinesHeld, from: ScopePath): boolean {
-  if (from === ROOT_SCOPE) return false
-  return model.elements.some((element) => element.ref === undefined
-    && (element.reportingLines ?? []).some((line) => line.to !== undefined && isWithinScope(line.to.scope, from)))
-    || (model.assignments ?? []).some((one) => (one.reportsTo ?? []).some((line) => isWithinScope(line.to.scope, from)))
-}
-
-/**
- * The commands that carry each line naming an address inside the subtree at
- * `from` to `to`: one patch of a unit's lines, and one of a holder's, each.
- */
-export function readdressLines(model: LinesHeld, from: ScopePath, to: ScopePath): Command[] {
-  if (from === ROOT_SCOPE || from === to) return []
-  const units = model.elements.flatMap((element): Command[] => {
-    if (element.ref !== undefined || !element.reportingLines?.length) return []
-    const reportingLines = element.reportingLines.map((line) => (
-      line.to === undefined ? line : { ...line, to: { ...line.to, scope: readdressRef(line.to.scope, from, to) } }
-    ))
-    const moved = reportingLines.some((line, at) => line.to?.scope !== element.reportingLines![at].to?.scope)
-    return moved ? [{ type: 'element.update', id: element.id, patch: { reportingLines } }] : []
-  })
-  const holders = (model.assignments ?? []).flatMap((one): Command[] => {
-    if (!one.reportsTo?.length) return []
-    const reportsTo = one.reportsTo.map((line) => ({ ...line, to: { ...line.to, scope: readdressRef(line.to.scope, from, to) } }))
-    const moved = reportsTo.some((line, at) => line.to.scope !== one.reportsTo![at].to.scope)
-    return moved ? [{ type: 'assignment.update', id: one.id, patch: { reportsTo } }] : []
-  })
-  return [...units, ...holders]
-}
-
-/**
- * A unit names the scopes it serves by their paths (`DesignElement.scopes`,
- * ADR-0036 §4): a move carries them as it carries a stand-in's `ref`, or the
- * moved scopes read unserved and the unit serves addresses that are not
- * there (3.7.5). Only a definition's: a stand-in holds none of the owner's
- * detail.
- */
-export function servedNamesWithin(model: { elements: readonly DesignElement[] }, from: ScopePath): boolean {
-  if (from === ROOT_SCOPE) return false
-  return model.elements.some((element) => element.ref === undefined
-    && (element.scopes ?? []).some((scope) => isWithinScope(scope, from)))
-}
-
-/** One `element.update` per unit of the scope whose served scopes name an address inside the subtree at `from`, carried to `to`. */
-export function readdressServed(model: { elements: readonly DesignElement[] }, from: ScopePath, to: ScopePath): Command[] {
-  if (from === ROOT_SCOPE || from === to) return []
-  return model.elements.flatMap((element): Command[] => {
-    if (element.ref !== undefined || !element.scopes?.length) return []
-    const scopes = element.scopes.map((scope) => readdressRef(scope, from, to))
-    return scopes.some((scope, at) => scope !== element.scopes![at]) ? [{ type: 'element.update', id: element.id, patch: { scopes } }] : []
-  })
-}
-
-/**
- * A citation names the principle it cites by the path of the scope that keeps
- * it, and a principle names the one it relates to the same way (ADR-0041 §5,
- * §7): a move carries both, or a citation reads a principle that is not there.
- */
-type PrinciplesHeld = { principles?: readonly Principle[]; citations?: readonly Citation[] }
-
-/** Whether a scope's citations or principles name a principle kept inside the subtree at `from`. */
-export function principlesNameWithin(model: PrinciplesHeld, from: ScopePath): boolean {
-  if (from === ROOT_SCOPE) return false
-  return (model.citations ?? []).some((one) => isWithinScope(one.principle.scope, from))
-    || (model.principles ?? []).some((one) => (one.relations ?? []).some((relation) => isWithinScope(relation.to.scope, from)))
-}
-
-/** One update per citation and per principle naming a principle inside the subtree at `from`, carried to `to`. */
-export function readdressPrinciples(model: PrinciplesHeld, from: ScopePath, to: ScopePath): Command[] {
-  if (from === ROOT_SCOPE || from === to) return []
-  const citations = (model.citations ?? []).flatMap((one): Command[] => {
-    const scope = readdressRef(one.principle.scope, from, to)
-    return scope === one.principle.scope ? [] : [{ type: 'citation.update', id: one.id, patch: { principle: { ...one.principle, scope } } }]
-  })
-  const principles = (model.principles ?? []).flatMap((one): Command[] => {
-    if (!one.relations?.length) return []
-    const relations = one.relations.map((relation) => ({ ...relation, to: { ...relation.to, scope: readdressRef(relation.to.scope, from, to) } }))
-    return relations.some((relation, at) => relation.to.scope !== one.relations![at].to.scope)
-      ? [{ type: 'principle.update', id: one.id, patch: { relations } }] : []
-  })
-  return [...citations, ...principles]
-}
-
-/**
- * Every address a scope holds, carried by `carry`: the whole of what this
- * module carries a piece at a time for a move, said once for a scope that
- * lands somewhere new whole — an example, or a visit kept, filed under the
- * organisation rather than as it (`examples/copy`).
+ * Every address a scope's model holds, carried by `carry` — **the one list**
+ * of fields that name a scope by its path, which a scope landing somewhere new
+ * whole ({@link carryAddresses}) and a move of the tree ({@link readdressHeld})
+ * both read, so neither can carry a field the other forgets:
  *
- * The list is every field that names a scope by its path: a stand-in's
- * `ref`; a unit's own reporting lines, the scopes it serves, and a holder's
- * own line; a cause's links and history, an observation's history, a
- * comment's `from`; a citation's principle, a principle's relations; an
- * evaluation's block — and its id, which is said from that block's scope
- * (`evaluationId`) — and a building block's capability's aspect; and a
- * topic's links. A field added that names a scope belongs here, or a copy
- * filed under the organisation points at the organisation's own scopes.
+ * a stand-in's `ref`; a unit's own reporting lines, the scopes it serves
+ * (ADR-0036 §4), and a holder's own line (ADR-0039); a cause's links and
+ * history, an observation's history (ADR-0032 §4, §5, ADR-0035), a comment's
+ * `from` (ADR-0037 §6); a citation's principle and a principle's relations
+ * (ADR-0041 §5, §7); an evaluation's block — and its id, which is said from
+ * that block's scope (`evaluationId`) — and a building block's capability's
+ * aspect (ADR-0043). A field added that names a scope belongs here.
  *
- * The scope's own `path` is not among them: where it lands is the caller's.
+ * Records are rebuilt where they hold an address and the rest kept as they
+ * were; the scope's own `path`, and a topic's links, are the snapshot's.
  */
-export function carryAddresses(scope: ScopeSnapshot, carry: (path: ScopePath) => ScopePath): ScopeSnapshot {
+export function carryModel<M extends AddressesHeld>(model: M, carry: (path: ScopePath) => ScopePath): M {
   const at = <T extends { scope: string }>(held: T): T => ({ ...held, scope: carry(held.scope) })
   const maybe = <T extends { scope?: string }>(held: T): T => (held.scope === undefined ? held : { ...held, scope: carry(held.scope) })
-  const { model } = scope
   const elements = model.elements.map((element): DesignElement => ({
     ...element,
     ...(element.ref !== undefined ? { ref: carry(element.ref) } : {}),
@@ -293,18 +157,117 @@ export function carryAddresses(scope: ScopeSnapshot, carry: (path: ScopePath) =>
     return { ...one, id: evaluationId(block), block }
   })
   return {
+    ...model,
+    elements,
+    ...(model.assignments ? { assignments: model.assignments.map((one) => (one.reportsTo ? { ...one, reportsTo: one.reportsTo.map((line) => ({ ...line, to: at(line.to) })) } : one)) } : {}),
+    ...(model.causes ? { causes: model.causes.map((one) => ({ ...one, explains: one.explains.map(maybe), ...(one.history ? { history: one.history.map(maybe) } : {}) })) } : {}),
+    ...(model.observations ? { observations: model.observations.map((one) => ({ ...one, history: one.history.map(maybe) })) } : {}),
+    ...(model.comments ? { comments: model.comments.map((one) => (one.from ? { ...one, from: maybe(one.from) } : one)) } : {}),
+    ...(model.citations ? { citations: model.citations.map((one) => ({ ...one, principle: at(one.principle) })) } : {}),
+    ...(model.principles ? { principles: model.principles.map((one) => (one.relations ? { ...one, relations: one.relations.map((relation) => ({ ...relation, to: at(relation.to) })) } : one)) } : {}),
+    ...(evaluations ? { evaluations } : {}),
+  }
+}
+
+/**
+ * Every address a scope holds, carried by `carry`: its model's
+ * ({@link carryModel}) and its topic's links (ADR-0042 §5) — what an example,
+ * or a visit kept, filed under the organisation rather than as it carries
+ * (`examples/copy`). Where it lands is the caller's.
+ */
+export function carryAddresses(scope: ScopeSnapshot, carry: (path: ScopePath) => ScopePath): ScopeSnapshot {
+  return {
     ...scope,
-    model: {
-      ...model,
-      elements,
-      ...(model.assignments ? { assignments: model.assignments.map((one) => (one.reportsTo ? { ...one, reportsTo: one.reportsTo.map((line) => ({ ...line, to: at(line.to) })) } : one)) } : {}),
-      ...(model.causes ? { causes: model.causes.map((one) => ({ ...one, explains: one.explains.map(maybe), ...(one.history ? { history: one.history.map(maybe) } : {}) })) } : {}),
-      ...(model.observations ? { observations: model.observations.map((one) => ({ ...one, history: one.history.map(maybe) })) } : {}),
-      ...(model.comments ? { comments: model.comments.map((one) => (one.from ? { ...one, from: maybe(one.from) } : one)) } : {}),
-      ...(model.citations ? { citations: model.citations.map((one) => ({ ...one, principle: at(one.principle) })) } : {}),
-      ...(model.principles ? { principles: model.principles.map((one) => (one.relations ? { ...one, relations: one.relations.map((relation) => ({ ...relation, to: at(relation.to) })) } : one)) } : {}),
-      ...(evaluations ? { evaluations } : {}),
-    },
+    model: carryModel(scope.model, carry),
     ...(scope.relevantTo ? { relevantTo: scope.relevantTo.map((link) => ({ ...link, path: carry(link.path) })) } : {}),
   }
+}
+
+/** Whether anything a scope's model holds names an address inside the subtree at `from`; never for the root, which every address is within. */
+export function addressesNameWithin(model: AddressesHeld, from: ScopePath): boolean {
+  if (from === ROOT_SCOPE) return false
+  let named = false
+  carryModel(model, (path) => {
+    if (isWithinScope(path, from)) named = true
+    return path
+  })
+  return named
+}
+
+const differ = (one: unknown, other: unknown) => JSON.stringify(one) !== JSON.stringify(other)
+
+/**
+ * The commands that carry what a scope's model names inside the subtree at
+ * `from` to `to`, as patches of the records that name one and nothing for the
+ * rest — worked out from the scope as it is read, so what it holds by then is
+ * what is carried. A stand-in is refreshed (`standin.refresh`); a definition's
+ * lines, served scopes and capabilities are one patch of it; and an
+ * evaluation, whose id is said from its block's scope, is taken and put back
+ * where it stood under its new id.
+ */
+export function readdressHeld(model: AddressesHeld, from: ScopePath, to: ScopePath): Command[] {
+  if (from === ROOT_SCOPE || from === to) return []
+  const now = carryModel(model, (path) => readdressRef(path, from, to))
+  const entries: { id: ElementId; ref: string; name: string }[] = []
+  const units: Command[] = []
+  model.elements.forEach((element, at) => {
+    const next = now.elements[at]
+    if (element.ref !== undefined) {
+      if (next.ref !== element.ref) entries.push({ id: element.id, ref: next.ref!, name: element.name })
+      // A stand-in holds none of the owner's detail.
+      return
+    }
+    const patch: Partial<DesignElement> = {}
+    for (const field of ['reportingLines', 'scopes', 'capabilities'] as const) {
+      if (differ(element[field], next[field])) Object.assign(patch, { [field]: next[field] })
+    }
+    if (Object.keys(patch).length > 0) units.push({ type: 'element.update', id: element.id, patch })
+  })
+  const each = <T,>(was: readonly T[] | undefined, next: readonly T[] | undefined, say: (one: T, now: T, at: number) => Command[]): Command[] => (
+    (was ?? []).flatMap((one, at) => say(one, next![at], at))
+  )
+  return [
+    ...(entries.length ? [{ type: 'standin.refresh', entries } as const] : []),
+    ...units,
+    ...each(model.assignments, now.assignments, (one, next) => (
+      differ(one.reportsTo, next.reportsTo) ? [{ type: 'assignment.update', id: one.id, patch: { reportsTo: next.reportsTo } }] : []
+    )),
+    ...each(model.causes, now.causes, (one, next) => {
+      const links = differ(one.explains, next.explains)
+      const history = differ(one.history, next.history)
+      return links || history
+        ? [{ type: 'cause.update', id: one.id, patch: { ...(links ? { explains: next.explains } : {}), ...(history ? { history: next.history } : {}) } }]
+        : []
+    }),
+    ...each(model.observations, now.observations, (one, next) => (
+      differ(one.history, next.history) ? [{ type: 'observation.update', id: one.id, patch: { history: next.history } }] : []
+    )),
+    // A comment is put back as it was with its `from` carried: its body and author are not touched.
+    ...each(model.comments, now.comments, (one, next) => (differ(one.from, next.from) ? [{ type: 'comment.put', comment: next }] : [])),
+    ...each(model.citations, now.citations, (one, next) => (
+      differ(one.principle, next.principle) ? [{ type: 'citation.update', id: one.id, patch: { principle: next.principle } }] : []
+    )),
+    ...each(model.principles, now.principles, (one, next) => (
+      differ(one.relations, next.relations) ? [{ type: 'principle.update', id: one.id, patch: { relations: next.relations } }] : []
+    )),
+    ...each(model.evaluations, now.evaluations, (one, next, at) => {
+      if (next.id === one.id) return []
+      return [{ type: 'evaluation.remove', id: one.id }, { type: 'evaluation.add', evaluation: next, at }]
+    }),
+  ]
+}
+
+/**
+ * What a move writes in one scope that names an address inside the subtree at
+ * `from`: its records' addresses ({@link readdressHeld}) as one change, and
+ * its topic's links (ADR-0042 §5) as the topic's own record. Nothing where it
+ * names none.
+ */
+export function readdressScope(held: Pick<ScopeSnapshot, 'model' | 'relevantTo'>, from: ScopePath, to: ScopePath): ScopeCommand[] {
+  if (from === ROOT_SCOPE || from === to) return []
+  const commands = readdressHeld(held.model, from, to)
+  const links = held.relevantTo ?? []
+  const relinked = links.map((link) => ({ ...link, path: readdressRef(link.path, from, to) }))
+  const describe: ScopeCommand[] = differ(links, relinked) ? [{ type: 'scope.describe', patch: { relevantTo: relinked } }] : []
+  return [...(commands.length === 0 ? [] : [commands.length === 1 ? commands[0] : { type: 'transaction' as const, commands }]), ...describe]
 }
