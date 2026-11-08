@@ -174,8 +174,11 @@ function NamedOn({ found, apart, go, s }: { found: PointsAt; apart: boolean; go:
 }
 
 /** Where somebody is in leaving, in plain dates, and what holds it back. */
-export function LeavingSteps({ person, register, onForget, s }: {
-  person: Person; register: PeopleRegisterAccess; onForget?: () => void; s: Translate
+export function LeavingSteps({ person, register, onForget, onTakeBack, s }: {
+  person: Person; register: PeopleRegisterAccess; onForget?: () => void
+  /** *Take back leaving…*, beside the day they left, where it is found by whoever is reading that day. */
+  onTakeBack?: () => void
+  s: Translate
 }) {
   const dayWords = useDayWords()
   if (person.state === 'active') return null
@@ -186,7 +189,10 @@ export function LeavingSteps({ person, register, onForget, s }: {
   return (
     <>
       <ol className="people-steps" data-testid="people-steps">
-        <li className="people-steps__step" data-done=""><span className="people-steps__label">{s('people.stepLeft')}</span>{dayWords(person.leftOn)}</li>
+        <li className="people-steps__step" data-done="">
+          <span className="people-steps__label">{s('people.stepLeft')}</span>{dayWords(person.leftOn)}
+          {person.state === 'left' && onTakeBack && <> · <Button size="small" variant="quiet" onClick={onTakeBack} data-testid="people-take-back-here">{s('people.takeBackLeavingAsk')}</Button></>}
+        </li>
         <li className="people-steps__step" data-done={person.state === 'forgotten' || undefined}><span className="people-steps__label">{s('people.stepForgotten')}</span>{dayWords(forget)}</li>
         <li className="people-steps__step"><span className="people-steps__label">{s('people.stepRemoved')}</span>{dayWords(remove)}</li>
       </ol>
@@ -218,7 +224,7 @@ export function PersonFacts({ person, register, s }: { person: Person; register:
   )
 }
 
-export function PersonReader({ person, register, day, go, onPerson, onForget, s }: {
+export function PersonReader({ person, register, day, go, onPerson, onForget, onTakeBack, s }: {
   person: Person
   register: PeopleRegisterAccess
   /** The day read: today, or the one looked at. */
@@ -227,6 +233,8 @@ export function PersonReader({ person, register, day, go, onPerson, onForget, s 
   onPerson: (id: string) => void
   /** *Forget now…* beside what holds a forgetting back, where this person may. */
   onForget?: () => void
+  /** *Take back leaving…* beside the day they left, where this person may. */
+  onTakeBack?: () => void
   s: Translate
 }) {
   const dayWords = useDayWords()
@@ -242,7 +250,7 @@ export function PersonReader({ person, register, day, go, onPerson, onForget, s 
   const lineItems = (list: readonly ReportingPerson[]) => list.map((line) => <ReportingLine line={line} people={register.people ?? []} onPerson={onPerson} go={go} s={s} />)
   return (
     <div data-testid="people-person">
-      <LeavingSteps person={person} register={register} {...(onForget ? { onForget } : {})} s={s} />
+      <LeavingSteps person={person} register={register} {...(onForget ? { onForget } : {})} {...(onTakeBack ? { onTakeBack } : {})} s={s} />
       <PropertyRows readOnly>
         <PropertyRow
           label={onToday ? s('people.holdsToday') : s('people.holdsOn', { day: dayWords(day) })}

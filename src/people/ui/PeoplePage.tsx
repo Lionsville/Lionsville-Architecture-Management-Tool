@@ -321,6 +321,7 @@ function PersonUp({ person, ids, register, day, saying, copyText, onSelect, onPi
         <PersonReader
           person={person} register={register} day={day} go={go} onPerson={onPick} s={s}
           {...(mayDo(register, 'forget', person.id) && person.state === 'left' ? { onForget: () => onAsk({ kind: 'forget', person }) } : {})}
+          {...(mayDo(register, 'leave', person.id) && person.state === 'left' && register.takeBackLeaving !== undefined ? { onTakeBack: () => onAsk({ kind: 'takeBack', person }) } : {})}
         />
       )}
     </Preview>

@@ -405,7 +405,7 @@ describe('a person', () => {
   it('shows where a leaver stands as three dates, and what held them back', () => {
     renderShell(<Harness source={{ held: (id) => (id === 'pe-gijs' ? 'signedInSinceLeaving' : undefined) }} />)
     pick('pe-gijs')
-    expect(screen.getByTestId('people-steps').textContent).toBe('Left14 Aug 2026Name forgotten12 Nov 2026Entry removed11 Nov 2028')
+    expect(screen.getByTestId('people-steps').textContent).toBe('Left14 Aug 2026 · Take back leaving…Name forgotten12 Nov 2026Entry removed11 Nov 2028')
     expect(screen.getByTestId('people-held-back').textContent).toContain(s('people.heldSignedIn'))
     expect(within(screen.getByTestId('people-held-back')).getByRole('button', { name: 'Forget now…' })).toBeDefined()
     expect(screen.queryByText(s('people.leftDue'))).toBeNull()
@@ -535,6 +535,13 @@ describe('leaving', () => {
     fireEvent.click(within(dialog).getByTestId('people-take-back-confirm'))
     await waitFor(() => expect(screen.getByTestId('people-counts').textContent).toBe('4 active · 0 left · 1 forgotten'))
     await waitFor(() => expect(said()).toContain('Gijs Mulder is active again; 2 roles restored.'))
+  })
+
+  it('offers taking back beside the day somebody left, as well as in ⋯', async () => {
+    renderShell(<Harness />)
+    pick('pe-gijs')
+    fireEvent.click(screen.getByTestId('people-take-back-here'))
+    expect(await answerDialog('Take back that Gijs Mulder left on 14 Aug 2026?')).toBeTruthy()
   })
 
   it('offers no taking back on anybody active or forgotten', async () => {
