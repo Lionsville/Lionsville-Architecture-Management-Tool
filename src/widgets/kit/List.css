@@ -91,6 +91,8 @@
   background: var(--ink);
 }
 .kit-list__mark { flex: none; align-self: center; display: inline-flex; }
+/* A mark that has nothing to say this time (a record with no comments) takes no room, or its row's words stand a gap to the right of its neighbours'. */
+.kit-list__mark:empty { display: none; }
 .kit-list__code {
   flex: none;
   color: var(--ink-3);
@@ -116,7 +118,8 @@
 }
 .kit-list__tick { display: flex; align-items: center; }
 .kit-list__tick input,
-.kit-list__headCell input { margin: 0; accent-color: var(--accent); }
+.kit-list__headCell input { width: 0.8125rem; height: 0.8125rem; margin: 0; accent-color: var(--accent); }
+/* In rem, so the boxes grow with the person's text size as the words beside them do: the browser's own stayed 13px at 150%. */
 
 .kit-list__head {
   min-height: var(--row-h);
