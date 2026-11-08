@@ -26,6 +26,29 @@ describe('what closing the window would lose', () => {
   })
 })
 
+describe('what the place refused, told apart from a write to come', () => {
+  it('counts refused writes outside the open scope, and the open scope’s refused changes in place of a write', () => {
+    const report = vi.fn()
+    const refused = vi.fn()
+    const frame = frameStore()
+    let held: readonly unknown[] = []
+    const listeners = new Set<() => void>()
+    const refusals = { list: () => held as never, subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } } }
+    const { result } = renderHook(() => useHostWithOwnWork({ onUnsavedWork: report, onRefusedWork: refused }, frame, undefined, refusals))
+    act(() => { held = [{ id: 1 }]; for (const listener of listeners) listener() })
+    expect(refused).toHaveBeenLastCalledWith(1)
+    expect(report).not.toHaveBeenCalled()
+    // The session refused: its document is dirty, but no write is coming for what it holds.
+    act(() => { result.current.onUnsavedWork?.(true) })
+    expect(report).toHaveBeenLastCalledWith(true)
+    act(() => {
+      frame.set({ screen: { kind: 'workspace', path: 'a', name: 'A', notWritten: { rows: () => [{ key: 'activity.nothing' }, { key: 'activity.nothing' }], retry: () => Promise.resolve(false), putBack: () => Promise.resolve(true) } } })
+    })
+    expect(report).toHaveBeenLastCalledWith(false)
+    expect(refused).toHaveBeenLastCalledWith(3)
+  })
+})
+
 describe('a move through the guard', () => {
   it('is made where nothing guards it, or the guard lets it by, and held where it takes it', () => {
     const go = vi.fn()

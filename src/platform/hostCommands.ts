@@ -131,7 +131,7 @@ export type HostCommand =
 export type ScreenOffers = { readonly picture?: boolean }
 
 /** What closing the window would lose: the handshake a close is decided by. */
-export type WindowHolds = 'clean' | 'write' | 'draft'
+export type WindowHolds = 'clean' | 'write' | 'draft' | 'refused'
 
 export type HostCommands = {
   /** Every command, until the returned function is called. */
@@ -139,9 +139,10 @@ export type HostCommands = {
   /**
    * What closing the window would lose, said whenever it changes: nothing, a
    * write not landed yet (closing waits for it), or a draft no write keeps
-   * (closing asks the page's own question).
+   * (closing asks the page's own question), or changes the place refused,
+   * `refused` of them (closing asks at once whether to close anyway).
    */
-  reportUnsaved(holds: WindowHolds): void
+  reportUnsaved(holds: WindowHolds, refused?: number): void
   /** The person left a draft at the page's question: the window closes. */
   leaveAnyway(): void
   /** The person kept writing at that question: the window stays, and the host's log says so. */

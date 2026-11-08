@@ -302,6 +302,11 @@ export function handOver(repository: object, refusals: readonly Omit<WriteRefusa
   return storeOf(repository)?.handOver(refusals)
 }
 
+/** The list of refused writes a watched repository keeps, or none for one nobody watches. */
+export function refusalsOf(repository: object): WriteRefusals | undefined {
+  return storeOf(repository)
+}
+
 /** Word of each refused write that lands when made again, where the repository is watched. */
 export function watchLanded(repository: object, listener: (landed: WriteRefusal) => void): () => void {
   return storeOf(repository)?.watchLanded(listener) ?? (() => {})

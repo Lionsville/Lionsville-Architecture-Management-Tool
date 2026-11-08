@@ -394,6 +394,46 @@ describe('closing never freezes, and never stalls a quit', () => {
   })
 })
 
+describe('closing over changes the place refused', () => {
+  it('asks at once rather than waiting for a write that will not come, and logs what closing anyway left', async () => {
+    const held = app({ answer: 0 })
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'refused', 2)
+    expect(held.closing(first).preventDefault).toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(held.state.asked).toBe(1)
+    expect(held.state.saves).toBe(0)
+    expect(held.state.saying).toEqual([])
+    expect(first.forced).toBe(1)
+    expect(held.state.logged).toContain('main closing: 2 refused changes left')
+  })
+
+  it('keeps the window open where the person says so', async () => {
+    const held = app({ answer: 1 })
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'refused', 1)
+    held.closing(first)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(held.state.kept).toBe(1)
+    expect(first.closed + first.forced).toBe(0)
+  })
+
+  it('asks once a write under way has landed and refused changes are what is left', async () => {
+    const held = app({ answerAfter: 60_000 })
+    const first = held.windows.first()
+    reportUnsaved(first.webContents, 'write')
+    held.closing(first)
+    reportUnsaved(first.webContents, 'refused', 1)
+    await vi.advanceTimersByTimeAsync(200)
+    expect(held.state.asked).toBe(1)
+    // Made again or put back while asked: the question goes and the window closes.
+    reportUnsaved(first.webContents, 'clean')
+    await vi.advanceTimersByTimeAsync(0)
+    expect(held.state.abandoned).toBe(1)
+    expect(first.closed).toBe(1)
+  })
+})
+
 describe('what a window’s page says', () => {
   it('reaches the log from every window, filtered, and all of it on stderr under the smoke', () => {
     const held = app({ unattended: true })

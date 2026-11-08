@@ -370,6 +370,8 @@ export type AppHost = {
   hostMenu?: boolean
   /** Tell the host whether closing the window would lose something. */
   onUnsavedWork?: (unsaved: boolean) => void
+  /** Tell the host how many changes the place refused, which closing would leave: none of them will land by waiting. */
+  onRefusedWork?: (refused: number) => void
   /** The person left a draft at the question a closing window asked: the host closes it (`closeAsked`). */
   onLeaveAnyway?: () => void
   /** The person kept writing at that question: the host says so on its log. */

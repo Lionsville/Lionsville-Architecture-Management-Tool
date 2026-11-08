@@ -95,7 +95,7 @@ import { FIRST_RUN_HELP } from '../platform/helpPlaces'
 import { useShareLink } from './useShareLink'
 import { useGuardedNavigation, useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices } from './useShellServices'
-import { watchRepositories, writeRefusals, WriteRefusalsContext, writesUnderway } from './writeRefusals'
+import { refusalsOf, watchRepositories, writeRefusals, WriteRefusalsContext, writesUnderway } from './writeRefusals'
 import type { WriteRefusals } from './writeRefusals'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
@@ -833,7 +833,7 @@ function useShellBase(props: AppProps) {
       ...(props.boot.initialFacets ? { facets: props.boot.initialFacets } : {}),
     })
   })
-  const host = useHostWithOwnWork(given, frame, writesUnderway(repositories.scopes))
+  const host = useHostWithOwnWork(given, frame, writesUnderway(repositories.scopes), refusalsOf(repositories.scopes))
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])

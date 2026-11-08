@@ -564,7 +564,7 @@ void app.whenReady().then(() => {
   // Whether a window holds work closing would lose, told by its page whenever
   // that changes — only the page knows, and asking at close time would be a
   // round trip inside an event that has to decide at once (`windowGuard.ts`).
-  ipcMain.handle('app:unsaved', (event, holds: unknown) => { reportUnsaved(event.sender, holds) })
+  ipcMain.handle('app:unsaved', (event, holds: unknown, refused: unknown) => { reportUnsaved(event.sender, holds, refused) })
   ipcMain.handle('app:leaveAnyway', (event) => { leaveAnyway(event.sender) })
   ipcMain.handle('app:keepWriting', (event) => { keepWriting(event.sender) })
 

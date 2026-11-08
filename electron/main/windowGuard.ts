@@ -97,11 +97,18 @@ export type GuardedWindow = Pick<BrowserWindow, 'on' | 'close' | 'destroy' | 'is
   webContents: Pick<BrowserWindow['webContents'], 'on' | 'reload'>
 }
 
-/** What closing a window would lose: nothing, a write not landed yet, or a draft no write keeps. */
-export type WindowHolds = 'clean' | 'write' | 'draft'
+/**
+ * What closing a window would lose: nothing, a write not landed yet, a draft
+ * no write keeps, or changes the place they are kept refused — which no wait
+ * will land, so the person is asked at once.
+ */
+export type WindowHolds = 'clean' | 'write' | 'draft' | 'refused'
 
 /** Per page, what it holds; a page not heard from holds nothing. */
 const holdsIn = new WeakMap<object, WindowHolds>()
+
+/** Per page, how many refused changes it holds, for the log of a close that leaves them. */
+const refusedIn = new WeakMap<object, number>()
 
 /** Per page, what main does when the person leaves a draft at the page's question. */
 const leavingIn = new WeakMap<object, () => void>()
@@ -113,8 +120,9 @@ const heardIn = new WeakMap<object, () => void>()
 const keepingIn = new WeakMap<object, () => void>()
 
 /** A page said what closing it would lose (`app:unsaved`); anything else it says is nothing. */
-export function reportUnsaved(contents: object, holds: unknown): void {
-  holdsIn.set(contents, holds === 'write' || holds === 'draft' ? holds : 'clean')
+export function reportUnsaved(contents: object, holds: unknown, refused?: unknown): void {
+  holdsIn.set(contents, holds === 'write' || holds === 'draft' || holds === 'refused' ? holds : 'clean')
+  refusedIn.set(contents, typeof refused === 'number' && refused > 0 ? refused : 0)
   heardIn.get(contents)?.()
 }
 
@@ -234,6 +242,43 @@ function relayConsole(window: GuardedWindow, deps: WindowGuardDeps): void {
   })
 }
 
+/**
+ * Changes the place refused, which waiting will not land: asked at once,
+ * rather than after the five seconds a write is given. A page that lets go of
+ * them while it asks — made again, or put back — closes the window and takes
+ * the question with it.
+ */
+function askOverRefused(page: object, started: number, how: {
+  holds: () => WindowHolds
+  ask: (signal: AbortSignal) => Promise<boolean>
+  goAhead: (how: 'close' | 'destroy') => void
+  stay: () => void
+  log: (line: string) => void
+}): void {
+  const count = refusedIn.get(page) ?? 0
+  how.log(`closing: ${count} refused changes; asked`)
+  const asking = new AbortController()
+  const settled = () => { heardIn.delete(page) }
+  heardIn.set(page, () => {
+    if (how.holds() !== 'clean' || asking.signal.aborted) return
+    asking.abort()
+    settled()
+    how.log(`closing: the refused changes were settled after ${Date.now() - started} ms`)
+    how.goAhead('close')
+  })
+  void how.ask(asking.signal).then((closeAnyway) => {
+    if (asking.signal.aborted) return
+    settled()
+    if (!closeAnyway) { how.stay(); return }
+    how.log(`closing: ${refusedIn.get(page) ?? count} refused changes left`)
+    how.goAhead('destroy')
+  }, (error: unknown) => {
+    settled()
+    how.log(`closing: the question failed: ${String(error)}`)
+    how.stay()
+  })
+}
+
 function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps: WindowGuardDeps): void {
   const page = window.webContents
   /** The close goes ahead: the work is saved, or the person said to close anyway. */
@@ -318,6 +363,7 @@ function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps:
         finish()
         deps.log('main', `closing: written in ${Date.now() - started} ms`)
         if (now === 'draft') askDraft(started)
+        else if (now === 'refused') askRefused(started)
         else goAhead('close')
         return
       }
@@ -360,11 +406,17 @@ function guardUnsavedWork(window: GuardedWindow, holds: () => WindowHolds, deps:
     return response === 0
   }
 
+  const askRefused = (started: number) => {
+    held = true
+    askOverRefused(page, started, { holds, ask: askNotSaved, goAhead, stay, log: (line) => deps.log('main', line) })
+  }
+
   /** Decided by what the page holds now. */
   const decide = (started: number) => {
     const now = holds()
     if (now === 'write') closeWhenWritten()
     else if (now === 'draft') askDraft(started)
+    else if (now === 'refused') askRefused(started)
     else goAhead('close')
   }
 

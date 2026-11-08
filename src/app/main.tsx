@@ -162,13 +162,15 @@ const commands = desktopCommandChannel()
 
 /** Whether something being written is held as a draft no write keeps (`widgets/kit/drafts`). */
 let drafting = false
+/** How many changes the place refused, which closing would leave: asked about at once, since waiting lands none. */
+let refusedChanges = 0
 
 /**
  * What closing the window would lose, said to the host whenever either half
  * changes: a write first, since a close waits for it before anything else.
  */
 function sayWhatClosingLoses(): void {
-  commands?.reportUnsaved(unsaved ? 'write' : drafting ? 'draft' : 'clean')
+  commands?.reportUnsaved(unsaved ? 'write' : refusedChanges > 0 ? 'refused' : drafting ? 'draft' : 'clean', refusedChanges)
 }
 if (commands) watchDrafts((holding) => { drafting = holding; sayWhatClosingLoses() })
 /** The person left a draft at the question a closing window asked: the window goes. */
@@ -790,6 +792,10 @@ function renderApp(
           hostMenu: Boolean(commands),
           onUnsavedWork: (held: boolean) => {
             unsaved = held
+            sayWhatClosingLoses()
+          },
+          onRefusedWork: (refused: number) => {
+            refusedChanges = refused
             sayWhatClosingLoses()
           },
           onLeaveAnyway: leaveAnyway,

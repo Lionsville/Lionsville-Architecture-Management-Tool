@@ -94,7 +94,7 @@ const commands: DesktopCommands = {
     void ipcRenderer.invoke('app:listening')
     return () => { ipcRenderer.off('app:command', relay) }
   },
-  reportUnsaved: (holds) => { void ipcRenderer.invoke('app:unsaved', holds) },
+  reportUnsaved: (holds, refused) => { void ipcRenderer.invoke('app:unsaved', holds, refused) },
   leaveAnyway: () => { void ipcRenderer.invoke('app:leaveAnyway') },
   keepWriting: () => { void ipcRenderer.invoke('app:keepWriting') },
   reportTheme: (mode: ThemeMode) => { void ipcRenderer.invoke('app:theme', mode) },
