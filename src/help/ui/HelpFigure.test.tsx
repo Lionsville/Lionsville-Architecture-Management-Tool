@@ -48,7 +48,7 @@ describe('a figure', () => {
     lines.getClientRects = () => []
     onTestFinished(() => { lines.getClientRects = had })
     const watched: Array<() => void> = []
-    vi.stubGlobal('ResizeObserver', class { constructor(private readonly then: () => void) { watched.push(then) } observe() {} disconnect() {} })
+    vi.stubGlobal('ResizeObserver', class { constructor(then: () => void) { watched.push(then) } observe() {} disconnect() {} })
     const Picture = () => <div data-crop=""><span>Views here</span></div>
     const { rerender } = render(<HelpFigure Picture={Picture} caption="A scope's home" t={translator('en')} width={560} />)
     rerender(<HelpFigure Picture={Picture} caption="A scope's home, again" t={translator('en')} width={560} />)

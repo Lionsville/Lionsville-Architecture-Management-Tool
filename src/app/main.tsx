@@ -72,6 +72,7 @@ import { BootFailure } from './BootFailure'
 import type { ChooseDestination } from './workingFileFlows'
 import { keepAsks, keepVisit } from '../projects/examples/copy'
 import type { ExampleOffer } from '../projects/examples/catalogue'
+import { preferencesHere } from './preferencesHere'
 
 /**
  * The edge router runs on WebAssembly, and not on this thread.
@@ -165,6 +166,9 @@ const commands = desktopCommandChannel()
  * the theme are perfectly good and only the address has to go.
  */
 let stored: unknown = undefined
+
+/** The store the app is handed: what it writes is what a fresh mount of it starts from (`preferencesHere`). */
+const preferencesKept = preferencesHere((preferences) => { stored = preferences })
 
 /** A preference that could not be written: nothing is lost now, and the next start asks again. */
 function reportPreferences(cause: unknown): void {
@@ -677,7 +681,7 @@ function renderApp(
         // `workFrom` and `sourceKey`.
         key={sourceKey(shell.source)}
         repositories={shell.repositories}
-        preferences={shell.preferences}
+        preferences={preferencesKept(shell.preferences)}
         documents={shell.documents}
         interchange={INTERCHANGE}
         diagnostics={shell.diagnostics}
