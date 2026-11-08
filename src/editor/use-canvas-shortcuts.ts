@@ -7,7 +7,8 @@ import { useReactFlow } from '@xyflow/react';
 import { useFitBoard } from './canvas/fitAll';
 import { stepZoom } from '../widgets/kit/zoom';
 import { GRID_SIZE } from './canvas/DiagramCanvas';
-import { serializeSelection, type ClipboardPayload } from '../model/clipboard';
+import { namedAsCopies, pasteOffsetFor, serializeSelection, type ClipboardPayload } from '../model/clipboard';
+import { NODE_SIZES } from '../model/placement';
 import type {
   DesignConnection,
   DesignDiagram,
@@ -52,6 +53,8 @@ export interface CanvasShortcutHandlers {
   clipboardRef: RefObject<ClipboardPayload | null>;
   /** Cmd+V cascade counter (shared with U4a); Mod+D must not touch it. */
   pasteCountRef: RefObject<number>;
+  /** What a pasted or duplicated element is called where its name is taken already. */
+  copyName?(name: string): string;
   onForceSave?(): void;
   onShowHelp(): void;
   /** Opens the delete-confirm dialog for a single selected element. */
@@ -193,15 +196,18 @@ const ARROW_DELTAS: Record<string, Point> = {
 export function useCanvasShortcuts(
   handlers: CanvasShortcutHandlers,
 ): (node: HTMLElement | null) => void {
-  const { getZoom, zoomTo } = useReactFlow();
+  const { getZoom, zoomTo, screenToFlowPosition } = useReactFlow();
   const fitView = useFitBoard();
+  // Where the pointer last rested on the canvas, so a paste lands there; nothing once it has left.
+  const pointerRef = useRef<{ x: number; y: number } | null>(null);
 
   // Latest closures reach the stable listener through refs, so the callback ref
   // stays stable and only re-binds when the DOM node itself changes.
   const handlersRef = useRef(handlers);
   handlersRef.current = handlers;
-  const viewRef = useRef({ fitView, getZoom, zoomTo });
-  viewRef.current = { fitView, getZoom, zoomTo };
+  const pointerOnCanvas = () => (pointerRef.current ? screenToFlowPosition(pointerRef.current) : undefined);
+  const viewRef = useRef<ViewActions>({ fitView, getZoom, zoomTo, pointerOnCanvas });
+  viewRef.current = { fitView, getZoom, zoomTo, pointerOnCanvas };
   const platformRef = useRef(detectPlatform());
   const detachRef = useRef<(() => void) | null>(null);
   // The currently-attached wrapper node, read by the document force-save
@@ -361,15 +367,39 @@ export function useCanvasShortcuts(
       }
     };
 
+    const onPointerMove = (event: PointerEvent) => {
+      const onCanvas = (event.target as Element | null)?.closest?.('.react-flow') != null;
+      pointerRef.current = onCanvas ? { x: event.clientX, y: event.clientY } : null;
+    };
+    const onPointerLeave = () => { pointerRef.current = null; };
     node.addEventListener('keydown', onKeyDown);
-    detachRef.current = () => node.removeEventListener('keydown', onKeyDown);
+    node.addEventListener('pointermove', onPointerMove);
+    node.addEventListener('pointerleave', onPointerLeave);
+    detachRef.current = () => {
+      node.removeEventListener('keydown', onKeyDown);
+      node.removeEventListener('pointermove', onPointerMove);
+      node.removeEventListener('pointerleave', onPointerLeave);
+    };
   }, []);
 }
 
 type ViewActions = Pick<
   ReturnType<typeof useReactFlow>,
   'getZoom' | 'zoomTo'
-> & { fitView: () => void };
+> & { fitView: () => void; pointerOnCanvas: () => { x: number; y: number } | undefined };
+
+/**
+ * Where ⌘V puts what was copied: its top left at the pointer, where the pointer is
+ * on the canvas, and a little further on each press after; with the pointer away,
+ * a card's width to the side, so the copy never lies over the name it copies.
+ */
+function pasteOffset(payload: ClipboardPayload, step: number, view: ViewActions) {
+  const at = view.pointerOnCanvas();
+  if (at) return pasteOffsetFor(payload, { x: at.x + GRID_SIZE * (step - 1), y: at.y + GRID_SIZE * (step - 1) });
+  return { x: (NODE_SIZES.application.width + GRID_SIZE) * step, y: 0 };
+}
+
+const asCopies = (h: CanvasShortcutHandlers, payload: ClipboardPayload) => (h.copyName ? namedAsCopies(payload, h.model, h.copyName) : payload);
 
 function dispatch(
   id: string,
@@ -404,7 +434,7 @@ function dispatch(
     case 'paste':
       if (h.clipboardRef.current) {
         const step = h.pasteCountRef.current + 1;
-        h.actions.pasteClipboard(h.clipboardRef.current, { x: GRID_SIZE * step, y: GRID_SIZE * step });
+        h.actions.pasteClipboard(asCopies(h, h.clipboardRef.current), pasteOffset(h.clipboardRef.current, step, view));
         h.pasteCountRef.current = step;
       }
       return;
@@ -416,7 +446,7 @@ function dispatch(
       // Serialize the CURRENT selection and paste at a fixed +grid offset,
       // independent of the Cmd+V cascade counter (never read/mutated here).
       const payload = serializeSelection(h.model, diagram, h.selection.elementIds);
-      if (payload) h.actions.pasteClipboard(payload, { x: GRID_SIZE, y: GRID_SIZE });
+      if (payload) h.actions.pasteClipboard(asCopies(h, payload), { x: NODE_SIZES.application.width + GRID_SIZE, y: 0 });
       return;
     }
     case 'nudge':

@@ -4,6 +4,7 @@
 import type { ElementId, Layer7Zone } from '../../../model/types';
 import { serializeSelection } from '../../../model/clipboard';
 import {
+  NODE_SIZES,
   placedNodes,
   domainGroupRectMap,
   freeSlotIn,
@@ -15,6 +16,7 @@ import { nodeFigure } from '../../../model/kinds';
 import { GRID_SIZE } from '../gridSize';
 import { occupiedRects } from './geometry';
 import type { MenuActionFamily, MenuActionHost } from './types';
+import { asCopies } from './copies';
 
 /** What a right-click on a box offers. */
 export const NODE_ACTIONS = {
@@ -60,7 +62,8 @@ export const NODE_ACTIONS = {
   },
   duplicate: ({ host, elementIds }) => {
     const payload = serializeSelection(host.model, host.diagram, elementIds);
-    if (payload) host.actions.pasteClipboard(payload, { x: GRID_SIZE, y: GRID_SIZE });
+    // A card's width to the side, so the copy never lies over the name it copies.
+    if (payload) host.actions.pasteClipboard(asCopies(host, payload), { x: NODE_SIZES.application.width + GRID_SIZE, y: 0 });
   },
   copy: ({ host, elementIds }) => {
     copy(host, elementIds);

@@ -82,6 +82,7 @@ export const EN = {
   'menu.domainGroup': 'Domain group',
   'menu.duplicate': 'Duplicate',
   'menu.copy': 'Copy',
+  'menu.copyName': '{name} (copy)',
   'menu.cut': 'Cut',
   'menu.removeFromDiagram': 'Remove from view',
   'menu.deleteFromModel': 'Delete from model…',

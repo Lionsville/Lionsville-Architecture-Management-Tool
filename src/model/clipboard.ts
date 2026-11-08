@@ -164,3 +164,19 @@ export function pasteOffsetFor(payload: ClipboardPayload, point: Point): Point {
   const minY = Math.min(...payload.placements.map((p) => p.y));
   return { x: point.x - minX, y: point.y - minY };
 }
+
+/**
+ * A pasted or duplicated element whose name is already in the model, said to be
+ * a copy (`copyName`, the screen's words), so the register does not hold two
+ * records under one name with nothing to tell them apart. A cut pasted back,
+ * whose original is gone, keeps its name.
+ */
+export function namedAsCopies(
+  payload: ClipboardPayload,
+  model: { readonly elements: readonly { readonly name: string }[] },
+  copyName: (name: string) => string,
+): ClipboardPayload {
+  const taken = new Set(model.elements.map((element) => element.name));
+  if (!payload.elements.some((element) => taken.has(element.name))) return payload;
+  return { ...payload, elements: payload.elements.map((element) => (taken.has(element.name) ? { ...element, name: copyName(element.name) } : element)) };
+}

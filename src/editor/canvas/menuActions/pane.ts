@@ -4,12 +4,13 @@
 import { selectAllContent } from '../../useEditorState';
 import { pasteOffsetFor } from '../../../model/clipboard';
 import type { MenuActionFamily } from './types';
+import { asCopies } from './copies';
 
 /** What a right-click on the empty board offers. */
 export const PANE_ACTIONS = {
   'paste-here': ({ host, state }) => {
     const payload = host.clipboardRef?.current;
-    if (payload) host.actions.pasteClipboard(payload, pasteOffsetFor(payload, state.flowPosition));
+    if (payload) host.actions.pasteClipboard(asCopies(host, payload), pasteOffsetFor(payload, state.flowPosition));
   },
   'add-here': ({ host, state, args }) => {
     if (args.kind) host.addElementAt(args.kind, state.flowPosition);

@@ -283,6 +283,7 @@ function useKeyboard(
   wrapperRef: RefObject<HTMLDivElement | null>,
 ) {
   const { props, state, requests, deletes, dialogs } = parts;
+  const { t } = useStrings();
   const setShortcutContainer = useCanvasShortcuts({
     readOnly: parts.readOnly,
     model: state.model,
@@ -296,6 +297,7 @@ function useKeyboard(
     setSelection: state.setSelection,
     clipboardRef: parts.clipboardRef,
     pasteCountRef: parts.pasteCountRef,
+    copyName: (name) => t('menu.copyName', { name }),
     onForceSave: props.onForceSave,
     onShowHelp: dialogs.openHelp,
     onRequestDeleteElement: deletes.setDeleteTarget,

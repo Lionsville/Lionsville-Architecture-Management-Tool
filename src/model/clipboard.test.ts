@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest';
-import { pasteOffsetFor, remapClipboard, serializeSelection, type ClipboardPayload } from './clipboard';
+import { namedAsCopies, pasteOffsetFor, remapClipboard, serializeSelection, type ClipboardPayload } from './clipboard';
 import { connection, diagram, element, model, placement } from './testFixtures';
 
 /** Deterministic id minters for assertions. */
@@ -178,5 +178,18 @@ describe('pasteOffsetFor', () => {
       x: 0,
       y: 0,
     });
+  });
+});
+
+describe('namedAsCopies', () => {
+  const payload: ClipboardPayload = { elements: [element('a', { name: 'Route Planner' }), element('b', { name: 'Fresh' })], relations: [], placements: [] };
+
+  it('says a copy is one where its name is taken, and leaves a free name alone', () => {
+    const named = namedAsCopies(payload, model({ elements: [element('x', { name: 'Route Planner' })] }), (name) => `${name} (copy)`);
+    expect(named.elements.map((one) => one.name)).toEqual(['Route Planner (copy)', 'Fresh']);
+  });
+
+  it('hands a cut pasted back the same payload, its original gone', () => {
+    expect(namedAsCopies(payload, model({ elements: [] }), (name) => `${name} (copy)`)).toBe(payload);
   });
 });

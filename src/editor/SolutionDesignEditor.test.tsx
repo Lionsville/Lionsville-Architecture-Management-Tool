@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 // @vitest-environment jsdom
+import { NODE_SIZES } from '../model/placement';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { addFromBar, pressRoute, pressShow, showLineLabels } from './testing/boardBar';
 import { diagramWithRoutes, edgeRoutesOf } from '../model/routes';
@@ -594,7 +595,7 @@ describe('SolutionDesignEditor — route provenance and handles', () => {
 // ── Copy / paste cascade (U4a) ───────────────────────────────────────────────
 
 describe('SolutionDesignEditor — paste cascade', () => {
-  it('offsets each successive paste one grid step further, and a fresh copy resets it', () => {
+  it('offsets each successive paste a card further, and a fresh copy resets it', () => {
     const { landed, rerenderWith } = renderEditor({ model: modelWithPlacement('d1') });
     // Select the placed application (a1 sits at x:400 on the landscape).
     rerenderWith({ focusElement: { id: 'a1', nonce: 1 } });
@@ -606,17 +607,19 @@ describe('SolutionDesignEditor — paste cascade', () => {
     const copy = () => fireEvent.keyDown(target, { key: 'c', ctrlKey: true });
     const paste = () => fireEvent.keyDown(target, { key: 'v', ctrlKey: true });
     // The x of every pasted placement on the board. A copy is anything that was
-    // not in the model to begin with.
+    // not in the model to begin with. With the pointer off the canvas a copy goes
+    // a card's width and a grid step to the side, so it never covers the name it copies.
+    const step = NODE_SIZES.application.width + GRID_SIZE;
     const pastedXs = () =>
       landed().placements
         .filter((p) => p.id !== 'a1').map((p) => p.x).sort((a, b) => a - b);
 
     copy();
     paste();
-    expect(pastedXs()).toEqual([400 + GRID_SIZE]);
+    expect(pastedXs()).toEqual([400 + step]);
 
     paste();
-    expect(pastedXs()).toEqual([400 + GRID_SIZE, 400 + GRID_SIZE * 2]);
+    expect(pastedXs()).toEqual([400 + step, 400 + step * 2]);
 
     // Re-select a1 and copy again: a fresh copy resets the cascade, so the next
     // paste lands one step out again and a second placement shares that x.
@@ -624,7 +627,7 @@ describe('SolutionDesignEditor — paste cascade', () => {
     rerenderWith({ focusElement: { id: 'a1', nonce: 2 } });
     copy();
     paste();
-    expect(pastedXs().filter((x) => x === 400 + GRID_SIZE)).toHaveLength(2);
+    expect(pastedXs().filter((x) => x === 400 + step)).toHaveLength(2);
   });
 });
 

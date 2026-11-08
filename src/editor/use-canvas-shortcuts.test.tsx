@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 // @vitest-environment jsdom
+import { NODE_SIZES } from '../model/placement';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { laidOut } from '../model/testFixtures';
 import { type RefObject } from 'react';
@@ -332,13 +333,13 @@ describe('useCanvasShortcuts — dispatch', () => {
     expect(pasteCountRef.current).toBe(0);
   });
 
-  it('Mod+V pastes the clipboard with a cascading offset', () => {
+  it('Mod+V pastes the clipboard a card to the side where the pointer is off the canvas, cascading', () => {
     const { view, actions, clipboardRef, pasteCountRef } = setup();
     clipboardRef.current = { elements: [], relations: [], placements: [] };
     fireEvent.keyDown(node(view), { key: 'v', ...MOD });
     expect(actions.pasteClipboard).toHaveBeenCalledWith(clipboardRef.current, {
-      x: GRID_SIZE,
-      y: GRID_SIZE,
+      x: NODE_SIZES.application.width + GRID_SIZE,
+      y: 0,
     });
     expect(pasteCountRef.current).toBe(1);
   });
@@ -355,13 +356,13 @@ describe('useCanvasShortcuts — dispatch', () => {
     });
   });
 
-  it('Mod+D duplicates in place at a fixed grid offset, untouched by the paste cascade', () => {
+  it('Mod+D duplicates a card to the side, untouched by the paste cascade', () => {
     const { view, actions, clipboardRef, pasteCountRef } = setup();
     pasteCountRef.current = 5;
     const event = new KeyboardEvent('keydown', { key: 'd', ctrlKey: true, bubbles: true, cancelable: true });
     node(view).dispatchEvent(event);
     expect(actions.pasteClipboard).toHaveBeenCalledTimes(1);
-    expect(actions.pasteClipboard).toHaveBeenCalledWith(expect.anything(), { x: GRID_SIZE, y: GRID_SIZE });
+    expect(actions.pasteClipboard).toHaveBeenCalledWith(expect.anything(), { x: NODE_SIZES.application.width + GRID_SIZE, y: 0 });
     // Independent of the Cmd+V cascade: neither the counter nor the clipboard move.
     expect(pasteCountRef.current).toBe(5);
     expect(clipboardRef.current).toBeNull();

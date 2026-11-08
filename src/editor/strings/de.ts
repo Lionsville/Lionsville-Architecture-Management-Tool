@@ -77,6 +77,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.domainGroup': 'Domänengruppe',
   'menu.duplicate': 'Duplizieren',
   'menu.copy': 'Kopieren',
+  'menu.copyName': '{name} (Kopie)',
   'menu.cut': 'Ausschneiden',
   'menu.removeFromDiagram': 'Aus der Ansicht entfernen',
   'menu.deleteFromModel': 'Aus dem Modell löschen…',
