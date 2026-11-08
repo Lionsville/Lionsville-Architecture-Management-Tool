@@ -38,7 +38,7 @@ import {
   parentScope, ROOT_SCOPE, scopePathLabel,
 } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
-import { changeScope, ensureScope, readScope, summaryOf } from '../../projects/scopeAccess'
+import { changeScope, ensureScope, readScope, readScopeKnown, summaryOf } from '../../projects/scopeAccess'
 import { createScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt, writeSettings } from '../../projects/scopeTree'
 import type { Repositories } from '../../ports/Repositories'
 import { opensOnNothing } from '../useShellNavigation'
@@ -46,6 +46,7 @@ import { useScopeFolds } from './useScopeFolds'
 import type { ToastUndo } from '../useToasts'
 import { useHomeViews } from './useHomeViews'
 import type { HomeViews } from './useHomeViews'
+import { usePreloadViews } from './preloadViews'
 import type { InitialPage, ScopeSettingsPatch } from '../App'
 import { isTopic, TOPICS_PLACE, topicFiledUnder } from '../../projects/topics'
 import { typeChosen } from '../../projects/scopeType'
@@ -223,6 +224,9 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
    */
   const failedRef = useRef(onFailure)
   failedRef.current = onFailure
+  /** The listing on screen, read through a ref: the home's own read takes an identity from it where it has one, and is not read again for it. */
+  const listing = useRef(tree)
+  listing.current = tree
 
   /**
    * The listing, and the home scope's own document beside it.
@@ -256,7 +260,7 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
     let live = true
     if (!active) return () => { live = false }
     setReady(false)
-    void readScope(scopes, at).then(
+    void readScopeKnown(scopes, at, idAt(listing.current, at)).then(
       (held) => { if (live) { setRoot(held); setReady(true) } },
       (cause: unknown) => {
         if (!live) return
@@ -270,7 +274,14 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
     return () => { live = false }
   }, [scopes, active, at, revision])
 
+  // What this home lists, fetched while it is idle, so the first press on one is not a download.
+  usePreloadViews(ready, root, at)
   return { tree, root, ready, listed, listFailed, listedNow: listed && listedAt === revision }
+}
+
+/** A scope's identity in a listing held, where the listing came from a repository that keeps one. */
+export function idAt(tree: ScopeSummary, path: ScopePath): string | undefined {
+  return flattenScopes(tree).find((one) => one.path === path)?.id
 }
 
 /**
@@ -477,7 +488,8 @@ export function useOrganisation({
    */
   const open = useCallback((path: ScopePath, page?: InitialPage) => {
     void (async () => {
-      const found = await readScope(scopes, path)
+      // A view of the home's own scope opens from the document read at the revision on screen; another by the listing's identity.
+      const found = ready && root?.path === path ? root : await readScopeKnown(scopes, path, idAt(tree, path))
       if (found) { onEnter(found, page); return }
       if (!opensOnNothing(page)) {
         // Nothing there, and nothing asked for that a scope has before it is
@@ -501,7 +513,7 @@ export function useOrganisation({
       refresh()
       onTreeChanged?.()
     })().catch((cause: unknown) => onFailure('organisation.open', cause, 'picker.loadFailed'))
-  }, [scopes, tree, writable, onEnter, refresh, onTreeChanged, onFailure])
+  }, [scopes, tree, root, ready, writable, onEnter, refresh, onTreeChanged, onFailure])
 
   /**
    * The root's name, from the field a fresh folder shows instead of a heading.

@@ -13,7 +13,7 @@ import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { InitialPage } from './App'
 import { pageLanding } from './pageLanding'
-import { ensureScope, readScope } from '../projects/scopeAccess'
+import { ensureScope, readScope, readScopeKnown } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import type { SourceChanges } from '../ports/ProviderParts'
@@ -100,8 +100,13 @@ export function useShellNavigation(deps: {
    * scope with no document asks before it writes one. Every scope where absent.
    */
   writable?: (path: ScopePath) => boolean
+  /**
+   * A scope's identity in the listing the shell holds, so an open reads that
+   * scope and not the whole tree first. A ref for the reason `refreshTree` is.
+   */
+  idOf?: RefObject<(path: ScopePath) => string | undefined>
 }) {
-  const { initialProject, initialHome, scopes, changes, prefs, failedRef, refreshTree, refreshIndex, writable } = deps
+  const { initialProject, initialHome, scopes, changes, prefs, failedRef, refreshTree, refreshIndex, writable, idOf } = deps
   const [project, setProject] = useState<ScopeSnapshot | undefined>(initialProject)
 
   /**
@@ -206,7 +211,7 @@ export function useShellNavigation(deps: {
    */
   const openScopeAt = useCallback((path: ScopePath, page?: InitialPage, ends: OpenEnds = {}) => {
     void (async () => {
-      const found = await readScope(scopes, path)
+      const found = await readScopeKnown(scopes, path, idOf?.current(path))
       if (found) { enter(found, page, ends); return }
       // A view of a scope with no document: it has none, and none is made.
       if (viewWithNoId(page)) { (ends.home ?? goHome)(path); return }
@@ -225,7 +230,7 @@ export function useShellNavigation(deps: {
       ends.nothing?.()
       failedRef.current('openScopeAt', cause, 'picker.loadFailed')
     })
-  }, [scopes, enter, goHome, refreshTree, refreshIndex, writable, failedRef])
+  }, [scopes, enter, goHome, refreshTree, refreshIndex, writable, failedRef, idOf])
 
   return {
     project, watchOpenProject, reloadKey, reloadOpenProject, initialPage, enter, home, setHome, openScopeAt, goHome,

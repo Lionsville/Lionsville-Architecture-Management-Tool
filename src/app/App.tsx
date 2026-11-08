@@ -54,7 +54,7 @@ import type {
 } from '../ports/ProviderParts'
 import { useMouseHistoryButtons } from './BackForward'
 import { ErrorBoundary, ProblemOfferContext } from './ErrorBoundary'
-import { useOrganisation } from './organisation/useOrganisation'
+import { idAt, useOrganisation } from './organisation/useOrganisation'
 import { useAgentScopes } from './agentScopes'
 import { ToastBar } from './ToastBar'
 import type { ShellPreferences } from './useShellPreferences'
@@ -797,9 +797,10 @@ function useShellBase(props: AppProps) {
     (path: ScopePath) => !(sourceIsReadOnly(source) || (readOnlyAt?.(path) ?? false)),
     [source, readOnlyAt],
   )
+  const idOf = useRef<(path: ScopePath) => string | undefined>(() => undefined)
   const nav = useGuardedNavigation(useShellNavigation({
     initialProject: boot.initialProject, initialHome: boot.initialHome, initialPage: boot.initialPage, scopes: repositories.scopes,
-    changes, prefs, failedRef, refreshTree, refreshIndex, writable,
+    changes, prefs, failedRef, refreshTree, refreshIndex, writable, idOf,
   }), frame)
   const { project, enter } = nav
   const tree = useTreeIndex(repositories.index, changes, failed)
@@ -860,6 +861,7 @@ function useShellBase(props: AppProps) {
     s,
   })
   refreshTree.current = organisation.refresh
+  idOf.current = (path) => idAt(organisation.tree, path)
   return {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
     savedFilters, organisation, refreshTree, screenRef, selectedRef, openAgentRef, share, writable, frame, copies,

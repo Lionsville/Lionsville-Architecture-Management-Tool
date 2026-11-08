@@ -356,6 +356,29 @@ export class FileSystemScopeStore implements ScopeStore {
     for (const child of children) await this.walk(child, [...segments, child.name], visit, unlisted)
   }
 
+  /** What {@link walk} visits, in its order, with the folders under each listed together rather than in turn. */
+  private async headersUnder(
+    folder: DirectoryHandleLike, segments: string[], unlisted: (path: ScopePath, cause: unknown) => void,
+  ): Promise<{ folder: DirectoryHandleLike; path: ScopePath; header: FileHandleLike; current: boolean }[]> {
+    const children: DirectoryHandleLike[] = []
+    let header: FileHandleLike | undefined
+    let older: FileHandleLike | undefined
+    try {
+      for await (const entry of folder.values()) {
+        if (entry.kind === 'directory') {
+          if (!entry.name.startsWith('.') && !SCOPE_FOLDERS.includes(entry.name)) children.push(entry)
+        } else if (entry.name === SCOPE_FILE) header = entry
+        else if (isSupersededPath(entry.name)) older = entry
+      }
+    } catch (cause) {
+      unlisted(segments.join('/'), cause)
+      return []
+    }
+    const held = header ?? older
+    const below = await Promise.all(children.map((child) => this.headersUnder(child, [...segments, child.name], unlisted)))
+    return [...(held ? [{ folder, path: segments.join('/'), header: held, current: header !== undefined }] : []), ...below.flat()]
+  }
+
   /** See {@link ScopeStore.outdated}. */
   async outdated(): Promise<ScopePath[]> {
     const found: ScopePath[] = []
@@ -646,16 +669,20 @@ export class FileSystemScopeStore implements ScopeStore {
       this.fault(path === ROOT_SCOPE ? 'the folder\'s listing' : 'a folder of the tree', cause)
       unreadable.push(path)
     }
-    await this.walk(this.root, [], async ({ folder, path, header, current }) => {
+    // Every folder listed and every header read and dated at once, in the walk's order: on the desktop each is a
+    // call to main, and one scope after another made a home of sixty-seven scopes wait over half a second.
+    const found = await this.headersUnder(this.root, [], unlisted)
+    const read = await Promise.all(found.map(async ({ folder, path, header, current }): Promise<ScopeHeader | undefined> => {
       const text = await header.getFile().then((file) => file.text()).catch((cause: unknown) => {
         // Gone since the listing is an ordinary answer: there is no scope there.
         if (!isAbsent(cause)) unlisted(path, cause)
         return undefined
       })
-      if (text === undefined) return
+      if (text === undefined) return undefined
       const updatedAt = dated ? await this.latestIn(folder) : undefined
-      headers.push({ path, text, current, ...(updatedAt ? { updatedAt } : {}) })
-    }, unlisted)
+      return { path, text, current, ...(updatedAt ? { updatedAt } : {}) }
+    }))
+    for (const one of read) if (one) headers.push(one)
     return { headers, unreadable }
   }
 
@@ -670,9 +697,9 @@ export class FileSystemScopeStore implements ScopeStore {
   private async latestIn(folder: DirectoryHandleLike): Promise<string | undefined> {
     let latest = 0
     try {
-      for (const entry of await this.entries(folder)) {
-        latest = Math.max(latest, await this.stampOf(entry.handle))
-      }
+      // Asked together: on the desktop each stamp is a call to main, and one after another they were most of a listing.
+      const stamps = await Promise.all((await this.entries(folder)).map((entry) => this.stampOf(entry.handle)))
+      latest = Math.max(0, ...stamps)
     } catch (cause) {
       this.fault('a scope\'s dates', cause)
     }

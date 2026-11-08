@@ -106,6 +106,18 @@ export async function readScope(scopes: ScopeReader, address: ScopeAddress): Pro
   return state && snapshotOf(state)
 }
 
+/**
+ * One scope, by its address, where the caller already knows its identity from
+ * a listing it holds: no second listing of the tree, which a folder answers by
+ * walking every scope and dating every file in it. A scope that has moved or
+ * gone since the listing is read by its address after all.
+ */
+export async function readScopeKnown(scopes: ScopeReader, address: ScopeAddress, id: ScopeId | undefined): Promise<ScopeSnapshot | undefined> {
+  if (id === undefined) return readScope(scopes, address)
+  const state = await scopes.state(id)
+  return state && state.address === address ? snapshotOf(state) : readScope(scopes, address)
+}
+
 /** Several scopes, by their addresses, from one read of the tree; `undefined` for each that is not there. */
 export async function readScopes(
   scopes: ScopeReader, addresses: readonly ScopeAddress[],
