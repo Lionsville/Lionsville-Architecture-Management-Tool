@@ -191,6 +191,9 @@ export const SET_ASIDE = '.unread'
 type AnalysisList = 'observations' | 'causes' | 'solutions' | 'experiments'
 type OrganisationList = 'unitTypes' | 'roles' | 'responsibilities' | 'operatingRules' | 'assignments' | 'checkMarks'
 
+/** A turn of the event loop: what follows runs in a task of its own. */
+const nextTask = () => new Promise<void>((resolve) => { setTimeout(resolve, 0) })
+
 /** When each file a read handed back was last written, as the read found it. */
 const writtenAt = new WeakMap<FolderFile, number>()
 
@@ -731,6 +734,9 @@ export class FileSystemScopeStore implements ScopeStore {
       // Dated by the files that read: one that did not has been said once already.
       // By when each was written as it was read: asking each file again was a second call to main per file.
       const latest = Math.max(0, ...files.map((file) => writtenAt.get(file) ?? 0))
+      // The fingerprint in a task of its own: the reads of an open land together, and hashing them in the task
+      // that took them in made one task of 50 ms on a landscape's open, long enough to hold a key press back.
+      await nextTask()
       const revision = folderRevision(files)
       return latest
         ? { ...scope, updatedAt: new Date(latest).toISOString(), revision }

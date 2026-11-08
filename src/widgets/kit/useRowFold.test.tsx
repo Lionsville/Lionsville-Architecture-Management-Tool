@@ -55,4 +55,14 @@ describe('a row that folds', () => {
     rerender(<Row again="125" />)
     expect(screen.getByRole('status').textContent).toBe('1')
   })
+
+  it('measures nothing on a render that changes nothing in the row', () => {
+    measured()
+    const asked = vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => needs(folded))
+    const { rerender } = render(<Row again="100" />)
+    const before = asked.mock.calls.length
+    rerender(<Row again="100" />)
+    rerender(<Row again="100" />)
+    expect(asked.mock.calls.length).toBe(before)
+  })
 })

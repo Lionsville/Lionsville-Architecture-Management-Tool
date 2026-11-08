@@ -35,13 +35,18 @@ export function useRowFold(most: number, again: unknown) {
 
   // A language or a text size changes what the row needs at the same width: everything back, and fold again.
   useLayoutEffect(() => { widths.current = []; setFolded(0) }, [again])
-  useLayoutEffect(look)
+  // Measured when the row or what is folded changes, and when something in it does — never on every render:
+  // the frame draws again often, and a measure each time made the browser lay the page out mid-render.
+  useLayoutEffect(look, [look, folded, again])
   useLayoutEffect(() => {
-    if (!row || typeof ResizeObserver === 'undefined') return
-    const watching = new ResizeObserver(look)
-    watching.observe(row)
-    return () => watching.disconnect()
-  }, [row, look])
+    if (!row) return undefined
+    const sized = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(look)
+    sized?.observe(row)
+    for (const child of Array.from(row.children)) sized?.observe(child)
+    const changed = typeof MutationObserver === 'undefined' ? undefined : new MutationObserver(look)
+    changed?.observe(row, { childList: true, subtree: true, characterData: true })
+    return () => { sized?.disconnect(); changed?.disconnect() }
+  }, [row, look, folded])
 
   return { folded, anchor }
 }
