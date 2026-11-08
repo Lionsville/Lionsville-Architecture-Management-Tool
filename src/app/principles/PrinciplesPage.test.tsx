@@ -23,8 +23,21 @@ import { PrinciplesPage } from '../../principles/ui/PrinciplesPage'
 import { PrinciplesProvider } from '../../principles/ui/PrinciplesContext'
 import type { ScopePrinciples } from '../../projects/scopeIndex'
 import { usePrinciplesAccess } from './usePrinciplesAccess'
+import { DraftQuestion, draftHeld } from '../../widgets/kit/drafts'
 
 afterEach(cleanup)
+
+/** A principle's thread, as a box whose text is a draft (`kit/drafts`), so a test writes a comment without the comments' host. */
+vi.mock('../../comments/ui/threadPart', async () => {
+  const { useState } = await import('react')
+  const { useDraft } = await import('../../widgets/kit/drafts')
+  function CommentThread() {
+    const [text, setText] = useState('')
+    useDraft(text !== '')
+    return <textarea aria-label="Comment draft" value={text} onChange={(event) => setText(event.target.value)} />
+  }
+  return { CommentThread }
+})
 
 const above: Principle = {
   id: 'pr-org', number: 1, title: 'Data is owned where it is made', statement: 'The scope that makes data answers for it.',
@@ -159,6 +172,23 @@ describe('the principles page (ADR-0041)', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete…' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.queryByRole('row', { name: /Reuse is cheaper/, hidden: true })).toBeNull())
+  })
+
+  it('asks before a related principle takes the place of one with a comment being written', async () => {
+    const own: Principle = { ...above, id: 'pr-own', title: 'Buy before build', statement: 'Buy first.', relations: [{ kind: 'tension', to: { scope: '', id: 'pr-org' } }] }
+    renderShell(<><DraftQuestion /><Harness initial={{ ...blank, principles: [own] }} steps={[]} /></>)
+    fireEvent.click(screen.getByRole('row', { name: /Buy before build/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Write a comment' }))
+    fireEvent.change(screen.getByRole('textbox', { name: 'Comment draft' }), { target: { value: 'Who decides?' } })
+    fireEvent.click(screen.getByRole('button', { name: /Data is owned where it is made/ }))
+    expect(screen.getByRole('heading', { name: 'Leave with a draft?' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Leave with a draft?' })).toBeNull())
+    expect((screen.getByRole('textbox', { name: 'Comment draft' }) as HTMLTextAreaElement).value).toBe('Who decides?')
+    fireEvent.click(screen.getByRole('button', { name: /Data is owned where it is made/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
+    await waitFor(() => expect(screen.getByTestId('principle-reader').textContent).toContain('Kept in Organisation'))
+    expect(draftHeld()).toBe(false)
   })
 
   it('reads a principle from above, says where it is kept, and offers nothing that would write it', async () => {

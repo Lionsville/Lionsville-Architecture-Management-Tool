@@ -360,7 +360,8 @@ function OpenRecord({ selected, above, ids, listOf, subjects, changes, onWrite, 
       {...(above ? {
         above: {
           name: above.name || above.path || groupName || s('adr.scopeGroup'), path: above.path,
-          ...(onOpenScope && selected ? { onOpen: () => { onClose(); onOpenScope(above.path, selected.id) } } : {}),
+          // The page closes on the way, and a comment being written on the record with it: asked first.
+          ...(onOpenScope && selected ? { onOpen: () => leaveWithDrafts(() => { onClose(); onOpenScope(above.path, selected.id) }) } : {}),
         },
       } : {})}
       {...(subject ? { about: subjects.find((one) => one.id === subject)?.name ?? subject } : {})}

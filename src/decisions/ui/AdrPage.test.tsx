@@ -21,9 +21,21 @@ import type { AdrPageProps } from './AdrPage'
 import { madrTemplate } from '../adr'
 import { renderShell } from '../../app/testing/renderShell'
 import { chooseValue } from '../../widgets/kit/testing/select'
-import { DraftQuestion, useDraft } from '../../widgets/kit/drafts'
+import { DraftQuestion, draftHeld, useDraft } from '../../widgets/kit/drafts'
 
 afterEach(() => cleanup())
+
+/** A record's thread, as a box whose text is a draft (`kit/drafts`): a comment written on the record's own surface. */
+vi.mock('../../comments/ui/threadPart', async () => {
+  const { useState } = await import('react')
+  const { useDraft: holds } = await import('../../widgets/kit/drafts')
+  function CommentThread() {
+    const [text, setText] = useState('')
+    holds(text !== '')
+    return <textarea aria-label="Comment draft" value={text} onChange={(event) => setText(event.target.value)} />
+  }
+  return { CommentThread }
+})
 
 const element = (id: string, name: string, kind = 'application') => ({
   id, name, kind, lifecycle: 'live', isManaged: true, aspects: {},
@@ -436,6 +448,25 @@ describe('a record, read', () => {
     }
     mount({ model: broken, initialAdrId: 'l2' })
     expect(screen.getByTestId('adr-broken-successor')).toBeTruthy()
+  })
+
+  it('asks before a successor or a record it replaces takes the place of one with a comment being written', async () => {
+    const replaced = {
+      ...model,
+      decisions: model.decisions!.map((one) => (one.id === 'l2' ? { ...one, status: 'superseded' as const, supersededBy: 'l1' } : one)),
+    }
+    renderShell(<><DraftQuestion />{page({ model: replaced, initialAdrId: 'l2' })}</>)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Comment draft' }), { target: { value: 'Why not both?' } })
+    const successor = () => within(screen.getByTestId('adr-superseded-by')).getByRole('button', { name: /ADR-0001/ })
+    fireEvent.click(successor())
+    expect(screen.getByRole('heading', { name: 'Leave with a draft?' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Leave with a draft?' })).toBeNull())
+    expect(titled()).toBe('One warehouse system')
+    fireEvent.click(successor())
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
+    await waitFor(() => expect(titled()).toBe('Event-driven integration'))
+    expect(draftHeld()).toBe(false)
   })
 
   it('names the solution a record was decided for, and opens it through the host', () => {

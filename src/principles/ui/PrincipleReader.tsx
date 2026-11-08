@@ -18,6 +18,7 @@ import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { CommentThread } from '../../comments/ui/threadPart'
 import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { Band } from '../../widgets/kit/Band'
+import { useLeaveSurface, useLeaveThrough } from '../../widgets/kit/drafts'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { SelectField } from '../../widgets/kit/Field'
@@ -183,6 +184,8 @@ function KeptElsewhere({ from, scope, open, label }: { from: PrincipleSource; sc
 function Use({ found, citations }: { found: PrincipleInForce; citations: readonly Citation[] }) {
   const access = usePrinciples()
   const { t } = useStrings()
+  // A record that cites it is somewhere else: leaving for it asks about a draft first.
+  const leave = useLeaveThrough()
   if (!access) return null
   const { principle, scope } = found
   const use = principleUse({ scope, id: principle.id }, citations)
@@ -194,7 +197,7 @@ function Use({ found, citations }: { found: PrincipleInForce; citations: readonl
             <div className="guidance-read__line" key={citation.id}>
               <span className="guidance-read__grow">
                 {access.openRecord
-                  ? <button type="button" className="guidance__link" onClick={() => access.openRecord?.(citation)}>{access.recordLabel(citation)}</button>
+                  ? <button type="button" className="guidance__link" onClick={() => leave(() => access.openRecord?.(citation))}>{access.recordLabel(citation)}</button>
                   : access.recordLabel(citation)}
                 {citation.aspect !== undefined && <> <span className="guidance-read__code">{formatAspectNumber(principle.number, citation.aspect)}</span></>}
                 {citation.reason && <span className="guidance-read__quiet">: {citation.reason}</span>}
@@ -214,6 +217,8 @@ function Relations({ found, onPick }: { found: PrincipleInForce; onPick: (ref: P
   const { t } = useStrings()
   const [adding, setAdding] = useState(false)
   const [kind, setKind] = useState<PrincipleRelationKind>('tension')
+  // Another principle takes this one's place in the preview, and a comment being written on it with it: asked first.
+  const leave = useLeaveSurface()
   if (!access) return null
   const { principle, scope } = found
   const relations = principle.relations ?? []
@@ -230,7 +235,7 @@ function Relations({ found, onPick }: { found: PrincipleInForce; onPick: (ref: P
             <span className="guidance-read__quiet">{word(relation.kind)}</span>
             <span className="guidance-read__grow">
               {other
-                ? <button type="button" className="guidance__link" onClick={() => onPick(relation.to)}>{formatPrincipleNumber(other.principle.number)} {other.principle.title}</button>
+                ? <button type="button" className="guidance__link" onClick={() => leave(() => onPick(relation.to))}>{formatPrincipleNumber(other.principle.number)} {other.principle.title}</button>
                 : t('principles.citationGone')}
             </span>
             {may && <Button variant="quiet" size="small" onClick={() => access.unrelate(scope, principle.id, relation)}>{t('principles.unrelate')}</Button>}

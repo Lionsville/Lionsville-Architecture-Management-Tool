@@ -35,6 +35,7 @@ import type { MenuEntry } from '../../widgets/kit/Menu'
 import { NextStep, StepLadder } from '../../widgets/kit/NextStep'
 import type { NextAction } from '../../widgets/kit/NextStep'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
+import { useLeaveSurface } from '../../widgets/kit/drafts'
 import { AdrGateList, proposerText, SignersRead, stillOpen } from './AdrParts'
 
 export type AdrRecordProps = {
@@ -128,7 +129,9 @@ function LinkLine({ term, links, testId }: { term: string; links: readonly { key
 /** What the record is tied to, both ways: its successor and what it replaces, what it was decided for, what rests on it. */
 function Links({ adr, list, onSelect, plans, solutions, s }: Pick<AdrRecordProps, 'list' | 'onSelect' | 'plans' | 'solutions' | 's'> & { adr: Adr }) {
   const nameOf = namer(list)
-  const to = (id: string) => ({ key: id, label: nameOf(id), onOpen: () => onSelect(id) })
+  // Another record takes this one's place in the preview, and a comment being written on it with it: asked first.
+  const leave = useLeaveSurface()
+  const to = (id: string) => ({ key: id, label: nameOf(id), onOpen: () => leave(() => onSelect(id)) })
   const pending = adr.status === 'accepted' || adr.status === 'superseded' ? [] : adr.supersedes ?? []
   return (
     <>
