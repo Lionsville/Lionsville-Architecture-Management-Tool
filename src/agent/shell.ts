@@ -210,7 +210,7 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
     target = resolved
     model = document.model
   }
-  const refined = withTabAndSelect(asked, target, model, scope)
+  const refined = withField(asked, withTabAndSelect(asked, target, model, scope))
   if ('ok' in refined) return refined
   target = refined
   // A scope that draws nothing has no canvas to open on: its home is the
@@ -385,10 +385,6 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
       return refused('agent.unknownId', `element ${asked.select} in ${where}`)
     }
   }
-  if (asked.field !== undefined && !isPageField(target.page, asked.field)) {
-    const pages = Object.entries(PAGE_FIELDS).map(([page, fields]) => `${page} (${(fields ?? []).join(', ')})`).join('; ')
-    return refused('agent.badArguments', `"field" is a field of the page to focus: ${pages}`)
-  }
   if ((asked.focus !== undefined || asked.lines !== undefined) && target.page !== 'chart') {
     return refused('agent.badArguments', '"focus" and "lines" are for page chart')
   }
@@ -400,7 +396,6 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     ...(asked.tab !== undefined ? { tab: asked.tab } : {}),
     ...(asked.look !== undefined ? { look: asked.look } : {}),
     ...(asked.select !== undefined ? { select: asked.select } : {}),
-    ...(asked.field !== undefined ? { field: asked.field } : {}),
     ...(asked.day !== undefined ? { day: asked.day } : {}),
     ...(target.page === 'conway' && asked.group !== undefined ? { group: asked.group } : {}),
     ...(target.page === 'conway' && asked.pair !== undefined ? { pair: asked.pair } : {}),
@@ -408,6 +403,14 @@ function withTabAndSelect(asked: Destination, target: Resolved, model: HostModel
     ...(asked.focus !== undefined ? { focus: asked.focus } : {}),
     ...(asked.lines !== undefined ? { lines: asked.lines } : {}),
   }
+}
+
+/** The field a destination asks the page to focus, held to the page's own (`PAGE_FIELDS`). */
+function withField(asked: Destination, target: Resolved | AgentAnswer): Resolved | AgentAnswer {
+  if ('ok' in target || asked.field === undefined) return target
+  if (isPageField(target.page, asked.field)) return { ...target, field: asked.field }
+  const pages = Object.entries(PAGE_FIELDS).map(([page, fields]) => `${page} (${(fields ?? []).join(', ')})`).join('; ')
+  return refused('agent.badArguments', `"field" is a field of the page to focus: ${pages}`)
 }
 
 /**

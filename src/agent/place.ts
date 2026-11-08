@@ -207,7 +207,7 @@ function readPath(text: string): Place | undefined {
   // and on the path at once, is not a place.
   if (said.id !== undefined && page !== undefined) return undefined
   const scope = scopeParts.join('/')
-  const place = placeFrom(scope, page, id ?? said.id, said.tab, said.select, said.panel, said.day, said)
+  const place = withField(placeFrom(scope, page, id ?? said.id, said.tab, said.select, said.panel, said.day, said), said.field)
   if (!place) return undefined
   return { ...place, ...(list !== '' ? { list } : {}), ...(said.finding !== undefined ? { finding: said.finding } : {}) }
 }
@@ -217,7 +217,13 @@ function readQueryForm(text: string): Place | undefined {
   const said = queryOf(new URLSearchParams(text), KEYS)
   if (said === undefined || said.scope === undefined) return undefined
   if (said.page !== undefined && !isPage(said.page)) return undefined
-  return placeFrom(said.scope, said.page, said.id, said.tab, said.select, said.panel, said.day, said)
+  return withField(placeFrom(said.scope, said.page, said.id, said.tab, said.select, said.panel, said.day, said), said.field)
+}
+
+/** A field to focus, where one was said: one of its page's, and a page with none has none. */
+function withField(place: Place | undefined, field: string | undefined): Place | undefined {
+  if (place === undefined || field === undefined) return place
+  return isPageField(place.page, field) ? { ...place, field } : undefined
 }
 
 /** Every key of a query once, and only the ones allowed: or nothing. */
@@ -232,11 +238,9 @@ function queryOf(query: URLSearchParams, allowed: ReadonlySet<string>): Partial<
 
 function placeFrom(
   scope: string, page: string | undefined, id: string | undefined, tab: string | undefined, select: string | undefined, panel?: string, day?: string,
-  onView: { readonly group?: string; readonly pair?: string; readonly look?: string; readonly colour?: string; readonly focus?: string; readonly lines?: string; readonly edit?: string; readonly field?: string } = {},
+  onView: { readonly group?: string; readonly pair?: string; readonly look?: string; readonly colour?: string; readonly focus?: string; readonly lines?: string; readonly edit?: string } = {},
 ): Place | undefined {
   if (page !== undefined && !isPage(page)) return undefined
-  // A field to focus is one of its page's, and a page with none has none.
-  if (onView.field !== undefined && !isPageField(page as Page | undefined, onView.field)) return undefined
   // A chart's reading, on a chart's address and nowhere else; the Lines menu has its own words.
   if ((onView.focus !== undefined || onView.lines !== undefined) && page !== 'chart') return undefined
   if (onView.lines !== undefined && !isChartLines(onView.lines)) return undefined
@@ -248,7 +252,6 @@ function placeFrom(
     ...(onView.look ? { look: onView.look } : {}),
     ...(panel !== undefined ? { panel } : {}),
     ...(select !== undefined && select !== '' ? { select } : {}),
-    ...(onView.field !== undefined ? { field: onView.field } : {}),
     // What a view is coloured by is a word the view itself judges.
     ...(onView.colour !== undefined && page !== undefined && READINGS.includes(page) ? { colour: onView.colour } : {}),
     ...(onView.group ? { group: onView.group } : {}), ...(onView.pair ? { pair: onView.pair } : {}),

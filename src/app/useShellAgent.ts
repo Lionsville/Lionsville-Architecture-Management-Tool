@@ -63,6 +63,12 @@ export type OrgPageRequest = {
   field?: string
 }
 
+/** What an address picks on a home's page: on the settings page, the field to focus. */
+function pickOf(page: OrgPage, pick: string | undefined): Pick<OrgPageRequest, 'select' | 'field'> {
+  if (pick === undefined) return {}
+  return page === 'settings' ? { field: pick } : { select: pick }
+}
+
 /** Where a failure goes when the caller gave nowhere: a history that cannot say where a place lands still opens it. */
 const NOBODY = () => {}
 
@@ -115,8 +121,7 @@ export function useShellAgent(deps: {
   const report = deps.report ?? NOBODY
   const { orgPage, orgRecord, setOrgPage } = useOrgPage()
   const [orgPageRequest, setOrgPageRequest] = useState<OrgPageRequest | undefined>(
-    // On the settings page what an address picks is the field to focus.
-    () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1, ...(deps.initialPick !== undefined ? (deps.initialHomePage === 'settings' ? { field: deps.initialPick } : { select: deps.initialPick }) : {}) } : undefined),
+    () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1, ...pickOf(deps.initialHomePage, deps.initialPick) } : undefined),
   )
   /**
    * A home is opened as itself: the home asked for, and the page over it said
@@ -131,8 +136,7 @@ export function useShellAgent(deps: {
       page, nonce: (prev?.nonce ?? 0) + 1, ...(picks && select !== undefined ? { select } : {}),
       ...(page === 'blocks' && evaluation !== undefined ? { evaluation } : {}),
       ...(returns ? { returns } : {}),
-      ...(finding !== undefined ? { finding } : {}),
-      ...(page === 'settings' && field !== undefined ? { field } : {}),
+      ...(finding !== undefined ? { finding } : {}), ...(page === 'settings' && field !== undefined ? { field } : {}),
     }))
   }, [goHome])
   /** A building block's page over the organisation's home, on a scope's evaluation where one is named (ADR-0043 §8). */
