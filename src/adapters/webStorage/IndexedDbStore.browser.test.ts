@@ -208,7 +208,7 @@ describe(`IndexedDbStore in ${server.browser}`, () => {
     })
     expect(await store.transaction(['folderData'], 'read', (tx) => tx.get('folderData', 'k\u0000step\u0000one'))).toEqual(['s-1', 1])
     const now = await holdOpen(thisPage(), name, DATABASE_VERSION)
-    expect([now.version, [...now.objectStoreNames].sort()]).toEqual([4, [...SHELVES].sort()])
+    expect([now.version, [...now.objectStoreNames].sort()]).toEqual([6, [...SHELVES].sort()])
     now.close()
   })
 
