@@ -100,6 +100,39 @@ function inUse(canvas: Live): boolean {
   return canvas.pointer !== undefined || canvas.element.contains(document.activeElement)
 }
 
+/**
+ * Drawn, in the window and not under a page laid over it: a canvas in a tab not
+ * shown, scrolled away, or kept mounted under a document opened over the board is
+ * not the one on screen. Where the browser cannot say what is on top, being drawn is enough.
+ */
+function onScreen(canvas: Live): boolean {
+  const box = canvas.element.getBoundingClientRect()
+  if (!(box.width > 0 && box.height > 0 && box.bottom > 0 && box.right > 0 && box.top < window.innerHeight && box.left < window.innerWidth)) return false
+  if (typeof document.elementFromPoint !== 'function') return true
+  const seen = (x: number, y: number) => {
+    const top = document.elementFromPoint(x, y)
+    return top === null || canvas.element.contains(top)
+  }
+  const left = Math.max(box.left, 0), right = Math.min(box.right, window.innerWidth)
+  const upper = Math.max(box.top, 0), lower = Math.min(box.bottom, window.innerHeight)
+  return [[0.5, 0.5], [0.25, 0.25], [0.75, 0.75]].some(([fx, fy]) => seen(left + (right - left) * fx, upper + (lower - upper) * fy))
+}
+
+/**
+ * The canvas a zoom chord is for: the one in use, or else the one canvas on
+ * screen while no dialog holds the focus. After a press on a board's own rows —
+ * row three, the dock, the key — the pointer and the focus are both outside it,
+ * and ⌘+ grew the whole window while the board, the only thing on the page that
+ * zooms, stood still.
+ */
+function canvasForZoom(): Live | undefined {
+  const using = [...live].find(inUse)
+  if (using) return using
+  if (document.activeElement?.closest('[aria-modal="true"]')) return undefined
+  const shown = [...live].filter(onScreen)
+  return shown.length === 1 ? shown[0] : undefined
+}
+
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   return target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)
@@ -110,7 +143,7 @@ function isTyping(target: EventTarget | null): boolean {
  * and the keys then keep their usual meaning, which is the window's.
  */
 export function zoomCanvasInUse(how: ZoomHow): boolean {
-  const canvas = [...live].find(inUse)
+  const canvas = canvasForZoom()
   if (!canvas) return false
   canvas.target().go(how, canvas.pointer)
   return true
@@ -147,10 +180,13 @@ export function useCanvasZoom(target: ZoomTarget, options: { wheel?: boolean; pl
     // In the capture phase on the document, so a browser's page zoom and a
     // listener further in cannot get there first, wherever the focus sits.
     const keydown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || !inUse(canvas)) return
+      if (event.defaultPrevented) return
+      const using = inUse(canvas)
+      // ⌘ + − 0 reach the one canvas on screen from anywhere but a dialog, as the menu's do; the plain keys only one in use.
+      if (!using && canvasForZoom() !== canvas) return
       const { plainKeys = true } = latest.current.options
       const mod = hostOwnsZoomKeys ? undefined : modZoomKey(event)
-      const how = mod ?? (plainKeys && !isTyping(event.target) ? plainZoomKey(event) : undefined)
+      const how = mod ?? (using && plainKeys && !isTyping(event.target) ? plainZoomKey(event) : undefined)
       if (!how) return
       event.preventDefault()
       latest.current.target.go(how, canvas.pointer)

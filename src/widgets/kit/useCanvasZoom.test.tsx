@@ -143,6 +143,36 @@ describe('one zoom behaviour', () => {
     expect(target.by).toHaveBeenLastCalledWith(2, expect.anything())
   })
 
+  it('sends the menu and ⌘ + − 0 to the one canvas on screen after a press on its rows outside it, but not past a dialog', () => {
+    const target = spy()
+    const shown = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const on = this.dataset.testid === 'canvas'
+      return { x: 0, y: 0, left: 0, top: 0, right: on ? 800 : 0, bottom: on ? 600 : 0, width: on ? 800 : 0, height: on ? 600 : 0, toJSON: () => ({}) } as DOMRect
+    })
+    render(<><button>row three</button><Canvas target={target} /><Canvas target={spy()} /></>)
+    act(() => screen.getByRole('button', { name: 'row three' }).focus())
+    // Two canvases, one on screen: the menu's zoom is that one's, and so is the chord, though neither pointer nor focus is in it.
+    const [one, other] = screen.getAllByTestId('canvas')
+    other.dataset.testid = 'hidden'
+    expect(zoomCanvasInUse('in')).toBe(true)
+    expect(target.go).toHaveBeenLastCalledWith('in', undefined)
+    expect(fireEvent.keyDown(document.body, { key: '-', metaKey: true })).toBe(false)
+    expect(target.go).toHaveBeenLastCalledWith('out', undefined)
+    // The plain keys stay the canvas's own, for when it is in use.
+    target.go.mockClear()
+    fireEvent.keyDown(document.body, { key: '=' })
+    expect(target.go).not.toHaveBeenCalled()
+    expect(one).toBeDefined()
+    shown.mockRestore()
+  })
+
+  it('leaves the menu to the window where two canvases are on screen and neither is in use', () => {
+    const shown = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ x: 0, y: 0, left: 0, top: 0, right: 400, bottom: 300, width: 400, height: 300, toJSON: () => ({}) } as DOMRect)
+    render(<><Canvas target={spy()} /><Canvas target={spy()} /></>)
+    expect(zoomCanvasInUse('in')).toBe(false)
+    shown.mockRestore()
+  })
+
   it('stops listening when the canvas goes', () => {
     const target = spy()
     const { unmount } = render(<Canvas target={target} />)
