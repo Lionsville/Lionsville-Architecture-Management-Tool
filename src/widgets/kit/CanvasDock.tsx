@@ -79,22 +79,31 @@ export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gri
       <Tooltip title={hint(t('kit.dock.homeHint'), `${mod}0`)} placement="top">
         <Button variant="quiet" size="small" onClick={onHome} data-testid="zoom-home">{t('kit.dock.home')}</Button>
       </Tooltip>
-      {(grid || gridItems || map) && <span className="kit-dock__rule" />}
-      {(grid || gridItems || map) && (
-        <span className="kit-dock__wide">
-          {gridItems && <MenuButton variant="quiet" size="small" label={t('kit.dock.grid')} items={gridItems} />}
-          {grid && !gridItems && toggle(t('kit.dock.grid'), grid)}
-          {map && toggle(t('kit.dock.map'), map, t('kit.dock.mapHint'))}
-        </span>
-      )}
-      {(grid || gridItems || map) && (
-        <span className="kit-dock__narrow">
-          <MoreMenu size="small" label={t('kit.dock.more')} items={folded(t('kit.dock.grid'), t('kit.dock.map'), grid, gridItems, map)} />
-        </span>
-      )}
+      {(grid || gridItems || map) && <DockViews grid={grid} gridItems={gridItems} map={map} toggle={toggle} />}
       {extra && <><span className="kit-dock__rule" />{extra}</>}
       {note && <span className="kit-dock__note" role="note">{note}</span>}
     </div>
+  )
+}
+
+/** Grid and Map, after a rule: as words, and folded into the dock's own ⋯ at a phone's width. */
+function DockViews({ grid, gridItems, map, toggle }: {
+  grid: Toggle | undefined; gridItems: readonly MenuEntry[] | undefined; map: Toggle | undefined
+  toggle: (word: string, held: Toggle, about?: string) => ReactNode
+}) {
+  const { t } = useStrings()
+  return (
+    <>
+      <span className="kit-dock__rule" />
+      <span className="kit-dock__wide">
+        {gridItems && <MenuButton variant="quiet" size="small" label={t('kit.dock.grid')} items={gridItems} />}
+        {grid && !gridItems && toggle(t('kit.dock.grid'), grid)}
+        {map && toggle(t('kit.dock.map'), map, t('kit.dock.mapHint'))}
+      </span>
+      <span className="kit-dock__narrow">
+        <MoreMenu size="small" label={t('kit.dock.more')} items={folded(t('kit.dock.grid'), t('kit.dock.map'), grid, gridItems, map)} />
+      </span>
+    </>
   )
 }
 
