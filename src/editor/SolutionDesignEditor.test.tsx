@@ -740,16 +740,9 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     }
   });
 
-  it('puts a hovered label where the pointer is, and follows it along the line', async () => {
+  it('puts a hovered label where it stands, and leaves it there as the pointer moves along the line', async () => {
     renderEditor({ model: modelWithConnection(), initialPreferences: { showEdgeLabels: false } });
     const path = await linePath();
-    const toFlow = (client: { x: number; y: number }) => {
-      const viewport = document.querySelector('.react-flow__viewport') as HTMLElement;
-      const m = /translate\((-?[\d.]+)px,\s*(-?[\d.]+)px\)\s*scale\(([\d.]+)\)/.exec(viewport.style.transform);
-      if (!m) throw new Error(`unexpected viewport transform: ${viewport.style.transform}`);
-      const [tx, ty, k] = [Number(m[1]), Number(m[2]), Number(m[3])];
-      return { x: (client.x - tx) / k, y: (client.y - ty) / k, k };
-    };
     const chipAt = () => {
       const t = /translate\(-50%, -50%\) translate\((-?[\d.]+)px, (-?[\d.]+)px\)/.exec(
         screen.getByTestId('edge-label-c1').style.transform,
@@ -761,15 +754,10 @@ describe('SolutionDesignEditor — line labels hidden', () => {
     fireEvent.mouseEnter(path, { clientX: 300, clientY: 200 });
     fireEvent.mouseMove(path, { clientX: 300, clientY: 200 });
     await screen.findByTestId('edge-label-c1');
-    let expected = toFlow({ x: 300, y: 200 });
-    expect(chipAt().x).toBeCloseTo(expected.x, 5);
-    // Lifted 18 screen pixels above the pointer, so it never sits under the cursor.
-    expect(chipAt().y).toBeCloseTo(expected.y - 18 / expected.k, 5);
-
+    const first = chipAt();
+    // A label that followed the pointer lay over the card the line ran into, and jumped when the line was picked.
     fireEvent.mouseMove(path, { clientX: 340, clientY: 260 });
-    expected = toFlow({ x: 340, y: 260 });
-    expect(chipAt().x).toBeCloseTo(expected.x, 5);
-    expect(chipAt().y).toBeCloseTo(expected.y - 18 / expected.k, 5);
+    expect(chipAt()).toEqual(first);
   });
 
   it('lights a selected card\'s lines without showing their labels while the setting says on hover', async () => {
