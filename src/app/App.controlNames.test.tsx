@@ -405,7 +405,10 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // A landscape's own sheet, which may take up what the organisation's sheet holds (ADR-0040 §5).
   [['a sheet below the organisation’s', ['sheet.fromAbove'], async () => {
     const sheeted = example.map((one) => (one.path === landscape.path ? sheetBelow(one) : one))
-    renderApp({ repositories: heldRepositories(sheeted), boot: { initialProject: sheeted.find((one) => one.path === landscape.path)! } })
+    const below = sheeted.find((one) => one.path === landscape.path)!
+    renderApp({ repositories: heldRepositories(sheeted), boot: { initialProject: below } })
+    // The scope is read and open first, and its sheet drawn after: two things a loaded machine takes its time over.
+    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe(below.model.name))
     await screen.findByTestId('sheet-canvas')
   }]],
   [['the enterprise map', ['map.grid', 'map.summary', 'page.seam', 'map.reading', 'map.filter', 'map.levels', 'map.day', 'map.matrix'], async () => {
