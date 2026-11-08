@@ -19,8 +19,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useStrings } from '../../i18n/LanguageContext';
-import { Button } from '../../widgets/kit/Button';
-import { Dialog } from '../../widgets/kit/Dialog';
+import { PictureDialog, PictureGroup } from '../../widgets/kit/PictureDialog';
 import { TextField } from '../../widgets/kit/Field';
 import { Segmented } from '../../widgets/kit/Segmented';
 import { SettingSwitch } from '../../widgets/kit/SettingsPage';
@@ -91,51 +90,51 @@ export function ExportDialog(props: ExportDialogProps) {
   const { t } = useStrings();
   const { options, onChange, titleFields, exporting } = props;
   const large = props.size.megapixels > LARGE_EXPORT_MEGAPIXELS;
-
+  const warning = props.outOfSight ? t('export.outOfSight') : large ? t('export.largeBody') : undefined;
   return (
-    <Dialog
-      open={props.open} size="l" title={props.name ? t('export.dialogTitleOf', { name: props.name }) : t('export.dialogTitle')} onClose={props.onClose} working={exporting}
-      actions={(
+    <PictureDialog
+      open={props.open} name={props.name ?? ''} onSave={props.onExport} onClose={props.onClose} working={exporting} closesItself
+      saveWord={large ? t('export.largeConfirm') : t('export.confirm')}
+      {...(warning ? { warning } : {})}
+      facts={<p className="export-dialog__size">{t('export.size', props.size)}</p>}
+      titleBlock={{
+        on: options.titleBlock, label: t('export.titleBlock'), hint: t('export.titleBlockHelp'),
+        onChange: (titleBlock) => onChange({ ...options, titleBlock }),
+        fields: (disabled) => (
+          <>
+            {titleFields && (
+              <>
+                <TitleField label={t('diagramSettings.client')} hint={t('diagramSettings.clientHelp', { name: titleFields.clientFrom })} held={titleFields.client} disabled={disabled} onCommit={(client) => titleFields.onChange({ client })} />
+                <TitleField label={t('diagramSettings.author')} hint={t('export.authorHelp')} held={titleFields.author} disabled={disabled} onCommit={(author) => titleFields.onChange({ author })} />
+                <TitleField label={t('diagramSettings.date')} hint={t('diagramSettings.dateHelp')} held={titleFields.date} disabled={disabled} onCommit={(documentDate) => titleFields.onChange({ documentDate })} />
+              </>
+            )}
+            {/* The key lives on the strip: without one there is nowhere to draw it. */}
+            <SettingSwitch boxFirst label={t('export.legend')} hint={t(props.offersLineList ? 'export.keyHelp' : 'export.legendHelp')} checked={options.legend && options.titleBlock} disabled={disabled} onChange={(legend) => onChange({ ...options, legend })} />
+            {props.offersLineList && (
+              <SettingSwitch boxFirst label={t('export.lineList')} hint={t('export.lineListHelp')} checked={options.lineList === true} disabled={disabled} onChange={(lineList) => onChange({ ...options, lineList })} />
+            )}
+          </>
+        ),
+      }}
+      // The preview sits on the export's own background, so a light picture previewed in a dark window is seen as it will be seen.
+      preview={(
         <>
-          <Button onClick={props.onClose} disabled={exporting}>{t('common.cancel')}</Button>
-          <Button variant="primary" onClick={props.onExport} working={exporting}>{large ? t('export.largeConfirm') : t('export.confirm')}</Button>
-        </>
-      )}
-    >
-      <div className="export-dialog">
-        <div className="export-dialog__options">
-          <Segmented
-            label={t('export.theme')} value={options.theme}
-            onChange={(theme) => { if (!exporting) onChange({ ...options, theme }); }}
-            options={[{ value: 'light', label: t('export.themeLight') }, { value: 'dark', label: t('export.themeDark') }]}
-          />
-          <SettingSwitch boxFirst label={t('export.labels')} hint={t('export.labelsHelp')} checked={options.showLabels} disabled={exporting} onChange={(showLabels) => onChange({ ...options, showLabels })} />
-          <SettingSwitch boxFirst label={t('export.titleBlock')} hint={t('export.titleBlockHelp')} checked={options.titleBlock} disabled={exporting} onChange={(titleBlock) => onChange({ ...options, titleBlock })} />
-          {options.titleBlock && titleFields && (
-            <div className="export-dialog__title-fields">
-              <TitleField label={t('diagramSettings.client')} hint={t('diagramSettings.clientHelp', { name: titleFields.clientFrom })} held={titleFields.client} disabled={exporting} onCommit={(client) => titleFields.onChange({ client })} />
-              <TitleField label={t('diagramSettings.author')} hint={t('export.authorHelp')} held={titleFields.author} disabled={exporting} onCommit={(author) => titleFields.onChange({ author })} />
-              <TitleField label={t('diagramSettings.date')} hint={t('diagramSettings.dateHelp')} held={titleFields.date} disabled={exporting} onCommit={(documentDate) => titleFields.onChange({ documentDate })} />
-            </div>
-          )}
-          {/* The key lives on the strip: without one there is nowhere to draw it. */}
-          <SettingSwitch boxFirst label={t('export.legend')} hint={t(props.offersLineList ? 'export.keyHelp' : 'export.legendHelp')} checked={options.legend && options.titleBlock} disabled={exporting || !options.titleBlock} onChange={(legend) => onChange({ ...options, legend })} />
-          {props.offersLineList && (
-            <SettingSwitch boxFirst label={t('export.lineList')} hint={t('export.lineListHelp')} checked={options.lineList === true} disabled={exporting || !options.titleBlock} onChange={(lineList) => onChange({ ...options, lineList })} />
-          )}
-          <p className="export-dialog__size">{t('export.size', props.size)}</p>
-          {large && <p className="export-dialog__large" role="status">{t('export.largeBody')}</p>}
-          {props.outOfSight && <p className="export-dialog__large" role="status">{t('export.outOfSight')}</p>}
-        </div>
-        {/* The preview sits on the export's own background, so a light picture
-            previewed in a dark window is seen as it will be seen. */}
-        <div className="export-dialog__preview">
           {props.preview
             ? <img src={props.preview} alt={t('export.preview')} />
             : <p role="status">{t('export.previewBusy')}</p>}
           {props.previewBusy && props.preview && <span className="export-dialog__busy" role="status">{t('export.previewBusy')}</span>}
-        </div>
-      </div>
-    </Dialog>
+        </>
+      )}
+    >
+      <PictureGroup label={t('export.theme')}>
+        <Segmented
+          label={t('export.theme')} value={options.theme}
+          onChange={(theme) => { if (!exporting) onChange({ ...options, theme }); }}
+          options={[{ value: 'light', label: t('export.themeLight') }, { value: 'dark', label: t('export.themeDark') }]}
+        />
+      </PictureGroup>
+      <SettingSwitch boxFirst label={t('export.labels')} hint={t('export.labelsHelp')} checked={options.showLabels} disabled={exporting} onChange={(showLabels) => onChange({ ...options, showLabels })} />
+    </PictureDialog>
   );
 }

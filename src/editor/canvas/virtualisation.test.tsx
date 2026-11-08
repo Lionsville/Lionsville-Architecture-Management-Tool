@@ -120,7 +120,7 @@ describe('what the canvas asks React Flow to draw', () => {
     // A board this size is tens of megapixels, so the dialog says so and its
     // button asks to go anyway. The preview is the first capture, and it
     // already has to see every box: it is drawn by the export's own code.
-    const go = await screen.findByRole('button', { name: 'Export anyway' }, SLOWLY);
+    const go = await screen.findByRole('button', { name: 'Save anyway' }, SLOWLY);
     await waitFor(() => expect(captured.length).toBeGreaterThan(0), SLOWLY);
     expect(downloads).not.toHaveBeenCalled();
     fireEvent.click(go);

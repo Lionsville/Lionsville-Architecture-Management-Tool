@@ -13,15 +13,13 @@ import { LOCALE, useStrings } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { plural } from '../../i18n/strings'
 import type { DesignDiagram, ElementId } from '../../model'
-import { Button } from '../../widgets/kit/Button'
-import { Dialog } from '../../widgets/kit/Dialog'
+import { PictureDialog, PictureGroup } from '../../widgets/kit/PictureDialog'
 import { TextField } from '../../widgets/kit/Field'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { useOutOfSight } from '../../widgets/outOfSight'
 import { PRINT_PAPERS, printScale } from '../../widgets/printPage'
 import type { PrintLook, PrintPaper } from '../../widgets/printPage'
 import { POSTER_WIDTH } from '../posterLayout'
-import type { ReactNode } from 'react'
 
 type PaperName = keyof typeof PRINT_PAPERS
 const NAMES = Object.keys(PRINT_PAPERS) as PaperName[]
@@ -43,16 +41,6 @@ export type PosterExport = {
 
 /** Under this a name is hard to read on paper: said as a warning, not only as where it reads. */
 const SMALL_PT = DESK_PT
-
-/** A segmented choice with its name shown above it, as a field's is: its own name stays its accessible one. */
-function Labelled({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="kit-field">
-      <span className="kit-field__label" aria-hidden="true">{label}</span>
-      {children}
-    </div>
-  )
-}
 
 export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames, waiting, canWrite, onSheet, onSave, onSelectCut, onClose, today }: {
   sheet: DesignDiagram
@@ -80,7 +68,6 @@ export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames,
   const [foot, setFoot] = useState(sheet.poster?.foot ?? '')
   const date = sheet.documentDate ?? (today !== '' ? formatDay(today, language) : '')
   const [busy, setBusy] = useState(false)
-  const [failure, setFailure] = useState<string | undefined>(undefined)
   const outOfSight = useOutOfSight(busy, { title: t('export.outOfSightTitle'), body: t('export.outOfSight') })
   const paper = PRINT_PAPERS[paperName]
   const cut = useMemo(() => cutNames(paper), [cutNames, paper])
@@ -89,54 +76,50 @@ export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames,
   const reach = named < DESK_PT ? t('sheet.poster.reachDesk') : named < TABLE_PT ? t('sheet.poster.reachTable') : t('sheet.poster.reachWall')
   const save = async () => {
     setBusy(true)
-    setFailure(undefined)
     try {
       if (canWrite && foot !== (sheet.poster?.foot ?? '')) onSheet({ poster: { ...sheet.poster, ...(foot !== '' ? { foot } : { foot: undefined }) } })
       await onSave({ paper, file, look, title, foot, date })
-      onClose()
-    } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error))
     } finally {
       setBusy(false)
     }
   }
+  const points = new Intl.NumberFormat(LOCALE[language], { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(named)
   return (
-    <Dialog
-      open size="m" title={t('sheet.poster.exportTitle')} onClose={onClose} working={busy}
-      {...(failure !== undefined ? { error: t('sheet.exportFailed', { message: failure }) } : {})}
-      actions={(
+    <PictureDialog
+      name={sheet.name} onSave={save} onClose={onClose} saveTestId="poster-export-save" data-testid="poster-export"
+      saveWord={t(file === 'pdf' ? 'sheet.poster.savePdf' : 'sheet.poster.savePng')}
+      failed={(message) => t('sheet.exportFailed', { message })}
+      {...(named < SMALL_PT ? { warning: t('sheet.poster.exportSmall') } : {})}
+      facts={(
         <>
-          <Button onClick={onClose} disabled={busy}>{t('common.cancel')}</Button>
-          <Button variant="primary" working={busy} data-testid="poster-export-save" onClick={() => { void save() }}>{busy ? t('sheet.exportBusy') : t('sheet.exportSave')}</Button>
+          <p data-testid="poster-export-size">{t('sheet.poster.exportSize', { points, reach })}</p>
+          {keyWords.length > 0 && <p>{t('sheet.poster.exportKey', { key: keyWords.join(', ') })}</p>}
+          <p>{t('sheet.poster.exportDate', { date })}</p>
+          {cut.length > 0
+            ? (
+              <p data-testid="poster-export-cut">
+                {plural(t, { one: 'sheet.poster.cutOne', other: 'sheet.poster.cutOther' }, cut.length)}{' '}
+                <button type="button" className="sheet-page__link" onClick={() => { onSelectCut(cut); onClose() }}>{t('sheet.poster.cutSelect')}</button>
+              </p>
+            )
+            : <p data-testid="poster-export-cut">{t('sheet.poster.cutNone')}</p>}
+          {waiting > 0 && <p>{plural(t, { one: 'sheet.poster.waitingOne', other: 'sheet.poster.waitingOther' }, waiting)}</p>}
+          {page.width > POSTER_WIDTH && <p>{t('sheet.poster.exportWider')}</p>}
+          {outOfSight && <p role="status">{t('export.outOfSight')}</p>}
         </>
       )}
     >
-      <Labelled label={t('sheet.exportPaper')}>
+      <PictureGroup label={t('sheet.exportPaper')}>
         <Segmented label={t('sheet.exportPaper')} value={paperName} onChange={setPaperName} options={NAMES.map((name) => ({ value: name, label: name }))} />
-      </Labelled>
-      <p data-testid="poster-export-size">{t('sheet.poster.exportSize', { points: new Intl.NumberFormat(LOCALE[language], { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(named), reach })}</p>
-      {named < SMALL_PT && <p className="poster-export__warn" role="note" data-testid="poster-export-small">{t('sheet.poster.exportSmall')}</p>}
-      <Labelled label={t('sheet.poster.exportFile')}>
+      </PictureGroup>
+      <PictureGroup label={t('sheet.poster.exportFile')}>
         <Segmented label={t('sheet.poster.exportFile')} value={file} onChange={setFile} options={[{ value: 'pdf', label: 'PDF' }, { value: 'png', label: 'PNG' }]} />
-      </Labelled>
-      <Labelled label={t('sheet.poster.exportLook')}>
+      </PictureGroup>
+      <PictureGroup label={t('sheet.poster.exportLook')}>
         <Segmented label={t('sheet.poster.exportLook')} value={look} onChange={setLook} options={[{ value: 'print', label: t('sheet.poster.lookPrint') }, { value: 'screen', label: t('sheet.poster.lookScreen') }]} />
-      </Labelled>
-      {keyWords.length > 0 && <p>{t('sheet.poster.exportKey', { key: keyWords.join(', ') })}</p>}
+      </PictureGroup>
       <TextField label={t('sheet.poster.exportTitleField')} value={title} onChange={setTitle} />
       <TextField label={t('sheet.poster.exportFoot')} value={foot} onChange={setFoot} />
-      <p>{t('sheet.poster.exportDate', { date })}</p>
-      {cut.length > 0
-        ? (
-          <p data-testid="poster-export-cut">
-            {plural(t, { one: 'sheet.poster.cutOne', other: 'sheet.poster.cutOther' }, cut.length)}{' '}
-            <button type="button" className="sheet-page__link" onClick={() => { onSelectCut(cut); onClose() }}>{t('sheet.poster.cutSelect')}</button>
-          </p>
-        )
-        : <p data-testid="poster-export-cut">{t('sheet.poster.cutNone')}</p>}
-      {waiting > 0 && <p>{plural(t, { one: 'sheet.poster.waitingOne', other: 'sheet.poster.waitingOther' }, waiting)}</p>}
-      {page.width > POSTER_WIDTH && <p>{t('sheet.poster.exportWider')}</p>}
-      {outOfSight && <p role="status">{t('export.outOfSight')}</p>}
-    </Dialog>
+    </PictureDialog>
   )
 }

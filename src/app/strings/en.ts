@@ -2049,6 +2049,8 @@ export const EN = {
   'chart.overWords': "{share}% of their time",
   'chart.barLabel': "The chart's view",
   'chart.levels': "Levels",
+  'chart.export': 'Export…',
+  'chart.exportAbout': 'The chart as it is drawn now, as a PNG picture.',
   'chart.levelsAll': "All",
   'chart.people': "People",
   'chart.peopleOn': "People: {which}",

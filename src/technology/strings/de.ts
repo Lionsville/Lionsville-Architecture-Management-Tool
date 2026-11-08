@@ -102,6 +102,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'landscape.scopesOther': '{count} Bereiche',
   'landscape.place': 'Ort',
   'landscape.export': 'Exportieren…',
+  'landscape.exportAbout': 'Die Seite, wie sie jetzt gezeichnet ist, als PNG-Bild.',
   'landscape.exportFailed': 'Das Bild konnte nicht erstellt werden.',
   'landscape.assumed': 'vermutet',
   'landscape.outside': 'extern',

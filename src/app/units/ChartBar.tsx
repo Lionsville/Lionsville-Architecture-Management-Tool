@@ -14,7 +14,7 @@ import type { StringKey, Translate } from '../../i18n'
 import { CHART_LEVELS } from '../../model/orgChart'
 import { DayControl } from '../../widgets/kit/DayControl'
 import { Segmented } from '../../widgets/kit/Segmented'
-import { ViewBar, ViewBarLabelled, ViewBarMenu } from '../../widgets/kit/ViewBar'
+import { ViewBar, ViewBarButton, ViewBarLabelled, ViewBarMenu } from '../../widgets/kit/ViewBar'
 import { CHART_PEOPLE } from './useChartFolds'
 import type { ChartPeople } from './useChartFolds'
 
@@ -30,7 +30,7 @@ export type ChartDay = {
 const PEOPLE_WORD: Record<ChartPeople, StringKey> = { leaders: 'chart.peopleLeaders', required: 'chart.peopleRequired', all: 'chart.peopleAll' }
 const LINES_WORD: Record<ChartLines, StringKey> = { off: 'chart.linesOff', person: 'chart.linesPerson', dotted: 'chart.linesDotted', exceptions: 'chart.linesExceptions' }
 
-export function ChartBar({ level, onLevel, people, onPeople, lines, onLines, add, day, shownDay, t }: {
+export function ChartBar({ level, onLevel, people, onPeople, lines, onLines, add, day, shownDay, onExport, t }: {
   level: number | 'all' | undefined
   onLevel: (levels: number | undefined) => void
   people: ChartPeople
@@ -40,6 +40,8 @@ export function ChartBar({ level, onLevel, people, onPeople, lines, onLines, add
   add: ReactNode
   day: ChartDay | undefined
   shownDay: string | undefined
+  /** Export…, where the chart may be saved as a picture. */
+  onExport?: (() => void) | undefined
   t: Translate
 }) {
   return (
@@ -67,6 +69,7 @@ export function ChartBar({ level, onLevel, people, onPeople, lines, onLines, add
         </>
       )}
       add={add}
+      {...(onExport ? { exportAs: <ViewBarButton data-testid="chart-export" data-guide="chart.export" onClick={onExport}>{t('chart.export')}</ViewBarButton> } : {})}
       {...(day ? {
         day: <DayControl day={shownDay} onChange={day.onChange} data-guide="chart.day" {...(day.onKeep ? { onKeep: day.onKeep, keepLabel: t('chart.dayKeep') } : {})} />,
       } : {})}

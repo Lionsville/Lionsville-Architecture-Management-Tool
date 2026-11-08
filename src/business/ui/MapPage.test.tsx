@@ -251,11 +251,11 @@ describe('what a person can do from it', () => {
 
   it('offers Export only where the host can take a picture', () => {
     open()
-    expect(screen.queryByRole('button', { name: 'Export' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Export…' })).toBeNull()
     cleanup()
     open({ onSave: vi.fn() })
-    fireEvent.click(screen.getByRole('button', { name: 'Export' }))
-    expect(screen.getByRole('dialog', { name: 'Save Coverage as a picture' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Export…' }))
+    expect(screen.getByRole('dialog', { name: /^Export / })).toBeTruthy()
   })
 })
 

@@ -152,7 +152,7 @@ describe.each(ways)('on %s', (_name, way) => {
     }
     renderApp({ boot: { initialProject: withSheet }, ...(source ? { source } : {}), ...(provider ? { provider } : {}) })
     fireEvent.click(await screen.findByRole('button', { name: 'More for this sheet' }))
-    await screen.findByRole('menuitem', { name: 'Save as a picture…' })
+    await screen.findByRole('menuitem', { name: 'Export…' })
     expect(screen.queryByRole('menuitem', { name: 'What this sheet draws' })).toBeNull()
   })
 

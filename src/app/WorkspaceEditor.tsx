@@ -31,7 +31,7 @@ import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
 import { hostCommands, useCommands } from '../model/technologyWrites'
 import type { WrittenIn } from './units/writeIn'
-import { handOver } from './handOver'
+import { savePicture } from './savePicture'
 import type { StringKey } from '../i18n'
 
 /**
@@ -448,17 +448,6 @@ function technologyWrites(parts: WorkspaceParts, view: PageView) {
 }
 
 /** Keep the picture where a person says, and say so once it is kept; a failure is said, and goes on the trail. */
-function saveLandscapePicture(parts: WorkspaceParts, name: string, png: Uint8Array) {
-  const { files: { documents }, shell: { notify, s }, host: { diagnostics } } = parts.props
-  void handOver(() => documents.save({ name, mediaType: 'image/png', bytes: png }), {
-    saved: () => notify(s('shell.savedPicture'), 'success'),
-    failed: (cause) => {
-      diagnostics.report({ level: 'error', where: 'landscapeExport', message: 'shell.saveFileFailed', cause })
-      notify(s('shell.saveFileFailed', { message: cause instanceof Error ? cause.message : String(cause) }), 'error')
-    },
-  })
-}
-
 /** The settings a view has now, for one to change: the rest stay as they are. */
 function settingsOf(diagram: DesignDiagram): DiagramSettings {
   const { name, author, client, documentDate, showTitleBlock, aspectConfig, showAspects } = diagram
@@ -493,7 +482,7 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
       {...(view.record !== undefined ? { record: view.record } : {})}
       {...(view.onDay ? { onDay: view.onDay } : {})}
       {...(view.ownerText ? { ownerText: view.ownerText } : {})}
-      onExport={(name, png) => saveLandscapePicture(parts, name, png)}
+      onExport={(name, png) => savePicture(parts, name, png, 'landscapeExport')}
       today={parts.todayDay}
       {...(diagram.colourBy !== undefined ? { kept: diagram.colourBy } : {})}
       onKeepColour={(colour) => session.dispatch({ type: 'diagram.update', id: diagram.id, patch: { colourBy: colour } })}

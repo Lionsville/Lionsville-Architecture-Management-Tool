@@ -675,7 +675,7 @@ function SheetTopBar({ at, props, onLevel, onPosterExport, full }: { at: ReturnT
       {settingsOpen && sheet && <SheetSettingsDialog model={props.model} sheet={sheet} actions={props.actions} onClose={() => setSettingsOpen(false)} />}
       {exportOpen && sheet && (
         <SheetExportDialog
-          initial={isPaperSize(sheet.paper) ? sheet.paper : 'screen'} onExport={picture.exportPng} onClose={() => setExportOpen(false)}
+          name={sheet.name} initial={isPaperSize(sheet.paper) ? sheet.paper : 'screen'} onExport={picture.exportPng} onClose={() => setExportOpen(false)}
           {...(!props.readOnly ? { sheet, actions: props.actions } : {})}
         />
       )}

@@ -233,4 +233,3 @@
 .print-page__key i { display: inline-block; width: 0.8em; height: 0.8em; margin-inline-end: 0.3em; border: 1px solid black; vertical-align: -0.05em; }
 
 /* The export's warning that a name will be too small on the paper chosen. */
-.poster-export__warn { margin: 0; padding: var(--s-1) var(--s-2); background: var(--warn-soft); color: var(--warn); }

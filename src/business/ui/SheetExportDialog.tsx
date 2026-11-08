@@ -19,8 +19,7 @@
 import { useState } from 'react'
 import { useStrings } from '../../i18n'
 import type { DesignDiagram, SheetPaper } from '../../model'
-import { Button } from '../../widgets/kit/Button'
-import { Dialog } from '../../widgets/kit/Dialog'
+import { PictureDialog } from '../../widgets/kit/PictureDialog'
 import { SelectField, TextField } from '../../widgets/kit/Field'
 import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperHeight, paperWidth } from '../grid'
 import type { PaperSize } from '../grid'
@@ -40,84 +39,55 @@ export type SheetExportDialogProps = {
   actions?: Pick<SheetActions, 'updateSheet'>
   /** A map's title block: its name stays on the tab and the other words of a picture live here (a map has no tab menu of its own). */
   titleBlock?: { map: DesignDiagram; onChange(patch: Partial<Pick<DesignDiagram, 'author' | 'client' | 'documentDate' | 'showTitleBlock'>>): void }
-  /** What the dialog is called, where it is not the sheet's. */
-  title?: string
+  /** The view's name: the dialog is Export <name>, as every export is. */
+  name: string
+  /** What the picture is, where it is not the sheet's whole page. */
   hint?: string
 }
 
 /** One to twice the widest an area may be: an A0 holds about fourteen columns, and nobody reads that. */
 const COLUMN_CHOICES = Array.from({ length: MAX_SPAN * 2 }, (_, index) => index + 1)
 
-export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, titleBlock, title, hint }: SheetExportDialogProps) {
+export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, titleBlock, name, hint }: SheetExportDialogProps) {
   const { t } = useStrings()
   const [layout, setLayout] = useState<ExportLayout>(initial ?? 'A1')
-  const [busy, setBusy] = useState(false)
-  const [failure, setFailure] = useState<string | undefined>(undefined)
-
-  const save = async () => {
-    setBusy(true)
-    setFailure(undefined)
-    try {
-      await onExport(layout)
-      onClose()
-    } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error))
-    } finally {
-      setBusy(false)
-    }
-  }
-
+  const papers = PAPER_SIZES.map((paper) => ({ value: paper, label: `${paper} · ${paperWidth(paper)} × ${paperHeight(paper)} px` }))
+  const map = titleBlock?.map
   return (
-    <Dialog
-      open size="m" title={title ?? t('sheet.exportTitle')} onClose={onClose} working={busy}
-      {...(failure !== undefined ? { error: t('sheet.exportFailed', { message: failure }) } : {})}
-      actions={(
-        <>
-          <Button onClick={onClose} disabled={busy}>{t('common.cancel')}</Button>
-          <Button variant="primary" working={busy} onClick={() => { void save() }}>{busy ? t('sheet.exportBusy') : t('sheet.exportSave')}</Button>
-        </>
-      )}
+    <PictureDialog
+      name={name} onSave={() => onExport(layout)} onClose={onClose} about={<p>{hint ?? t('sheet.exportHint')}</p>}
+      failed={(message) => t('sheet.exportFailed', { message })}
+      {...(titleBlock && map ? {
+        titleBlock: {
+          on: map.showTitleBlock === true, label: t('map.titleBlock'), onChange: (on: boolean) => titleBlock.onChange({ showTitleBlock: on }),
+          fields: (disabled: boolean) => (
+            <>
+              <TextField label={t('map.author')} disabled={disabled} value={map.author ?? ''} onChange={(author) => titleBlock.onChange({ author })} />
+              <TextField label={t('map.client')} disabled={disabled} value={map.client ?? ''} onChange={(client) => titleBlock.onChange({ client })} />
+              <TextField label={t('map.date')} disabled={disabled} value={map.documentDate ?? ''} onChange={(documentDate) => titleBlock.onChange({ documentDate })} />
+            </>
+          ),
+        },
+      } : {})}
     >
-      <p>{hint ?? t('sheet.exportHint')}</p>
       <SelectField
-        label={t('sheet.exportPaper')} value={layout} disabled={busy} onChange={(value) => setLayout(value as ExportLayout)}
-        options={[
-          { value: 'screen', label: t('sheet.exportScreen') },
-          ...PAPER_SIZES.map((paper) => ({ value: paper, label: `${paper} · ${paperWidth(paper)} × ${paperHeight(paper)} px` })),
-        ]}
+        label={t('sheet.exportPaper')} value={layout} onChange={(value) => setLayout(value as ExportLayout)}
+        options={[{ value: 'screen', label: t('sheet.exportScreen') }, ...papers]}
       />
-      {titleBlock && (
-        <>
-          <label className="sheet-held">
-            <input
-              type="checkbox" checked={titleBlock.map.showTitleBlock === true} aria-label={t('map.titleBlock')}
-              onChange={(event) => titleBlock.onChange({ showTitleBlock: event.target.checked })}
-            />
-            {t('map.titleBlock')}
-          </label>
-          {/* What the title block says, open only while it is drawn. */}
-          <TextField label={t('map.author')} disabled={titleBlock.map.showTitleBlock !== true} value={titleBlock.map.author ?? ''} onChange={(author) => titleBlock.onChange({ author })} />
-          <TextField label={t('map.client')} disabled={titleBlock.map.showTitleBlock !== true} value={titleBlock.map.client ?? ''} onChange={(client) => titleBlock.onChange({ client })} />
-          <TextField label={t('map.date')} disabled={titleBlock.map.showTitleBlock !== true} value={titleBlock.map.documentDate ?? ''} onChange={(documentDate) => titleBlock.onChange({ documentDate })} />
-        </>
-      )}
       {sheet && actions && (
         <>
           <SelectField
-            label={t('sheet.settingsPaper')} value={isSheetPaper(sheet.paper) ? sheet.paper : DEFAULT_PAPER} disabled={busy}
+            label={t('sheet.settingsPaper')} value={isSheetPaper(sheet.paper) ? sheet.paper : DEFAULT_PAPER}
             onChange={(value) => actions.updateSheet({ paper: value === DEFAULT_PAPER ? undefined : value as SheetPaper })}
-            options={[
-              ...PAPER_SIZES.map((paper) => ({ value: paper, label: `${paper} · ${paperWidth(paper)} × ${paperHeight(paper)} px` })),
-              { value: 'fit', label: t('sheet.paperFit') },
-            ]}
+            options={[...papers, { value: 'fit', label: t('sheet.paperFit') }]}
           />
           <SelectField
-            label={t('sheet.settingsColumns')} value={sheet.columns === undefined ? '' : String(sheet.columns)} disabled={busy}
+            label={t('sheet.settingsColumns')} value={sheet.columns === undefined ? '' : String(sheet.columns)}
             onChange={(value) => actions.updateSheet({ columns: value === '' ? undefined : Number(value) })}
             options={[{ value: '', label: t('sheet.columnsFit') }, ...COLUMN_CHOICES.map((count) => ({ value: String(count), label: String(count) }))]}
           />
         </>
       )}
-    </Dialog>
+    </PictureDialog>
   )
 }

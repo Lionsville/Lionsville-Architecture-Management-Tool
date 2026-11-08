@@ -1821,6 +1821,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'chart.overWords': "{share}% ihrer Zeit",
   'chart.barLabel': "Ansicht des Organigramms",
   'chart.levels': "Ebenen",
+  'chart.export': 'Exportieren…',
+  'chart.exportAbout': 'Das Organigramm, wie es jetzt gezeichnet ist, als PNG-Bild.',
   'chart.levelsAll': "Alle",
   'chart.people': "Personen",
   'chart.peopleOn': "Personen: {which}",

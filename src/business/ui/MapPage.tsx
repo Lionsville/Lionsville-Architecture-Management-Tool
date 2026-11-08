@@ -508,7 +508,7 @@ function MapDialogs({ map, props, exportOpen, onExportClose, exportPng, renaming
     <>
       {exportOpen && map && (
         <SheetExportDialog
-          initial="screen" onExport={exportPng} onClose={onExportClose} title={t('map.exportTitle')} hint={t('map.exportHint')}
+          name={map.name} initial="screen" onExport={exportPng} onClose={onExportClose} hint={t('map.exportHint')}
           {...(!readOnly && props.onUpdate ? { titleBlock: { map, onChange: props.onUpdate } } : {})}
         />
       )}

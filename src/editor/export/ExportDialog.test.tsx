@@ -73,10 +73,10 @@ describe('ExportDialog', () => {
   it('says what the bitmap will measure, and asks twice when it is large', () => {
     open();
     expect(screen.getByText('2000 × 1200 pixels, about 2 megapixels.')).toBeDefined();
-    expect(screen.getByRole('button', { name: 'Export' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Save PNG' })).toBeDefined();
     cleanup();
     open({ size: { width: 9000, height: 8000, megapixels: LARGE_EXPORT_MEGAPIXELS + 1 } });
-    expect(screen.getByRole('button', { name: 'Export anyway' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Save anyway' })).toBeDefined();
     expect(screen.getByText(/That is a large image/)).toBeDefined();
   });
 
@@ -90,7 +90,7 @@ describe('ExportDialog', () => {
 
   it('holds still while the export runs', () => {
     const { onExport, onClose } = open({ exporting: true });
-    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save PNG' }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onExport).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe('ExportDialog', () => {
 
   it('exports and closes on its two buttons', () => {
     const { onExport, onClose } = open();
-    fireEvent.click(screen.getByRole('button', { name: 'Export' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save PNG' }));
     expect(onExport).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onClose).toHaveBeenCalledTimes(1);

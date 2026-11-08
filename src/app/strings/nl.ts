@@ -1817,6 +1817,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'chart.overWords': "{share}% van hun tijd",
   'chart.barLabel': "Weergave van het organogram",
   'chart.levels': "Niveaus",
+  'chart.export': 'Exporteren…',
+  'chart.exportAbout': 'Het organogram zoals het nu getekend is, als PNG-afbeelding.',
   'chart.levelsAll': "Alle",
   'chart.people': "Mensen",
   'chart.peopleOn': "Mensen: {which}",

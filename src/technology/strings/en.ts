@@ -107,6 +107,7 @@ export const EN = {
   'landscape.scopesOther': '{count} scopes',
   'landscape.place': 'place',
   'landscape.export': 'Export…',
+  'landscape.exportAbout': 'The page as it is drawn now, as a PNG picture.',
   'landscape.exportFailed': 'The picture could not be made.',
   'landscape.assumed': 'assumed',
   'landscape.outside': 'outside',

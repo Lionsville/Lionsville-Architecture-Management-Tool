@@ -142,7 +142,7 @@ export const CONTROL_NAMES = [
   'conway.reading', 'conway.groupBy', 'conway.findMe', 'conway.verdict', 'conway.grid', 'conway.show', 'conway.showUnowned', 'conway.reader',
   'conway.finding', 'conway.owners', 'conway.sayHow', 'conway.planAway', 'conway.removeSaid', 'conway.modelInterface', 'conway.makeUnits', 'conway.addInteraction',
   // The organisation chart (ADR-0036, amended): its outline; its View bar, Levels and the unit's way to fold them all or none.
-  'chart.outline', 'chart.bar', 'chart.foldAll',
+  'chart.outline', 'chart.bar', 'chart.foldAll', 'chart.export',
   // …its find, for units and people, and Me.
   'chart.find', 'chart.findMe',
   // …who it draws (the People menu), and the line under it that opens its summary (3.6.1).

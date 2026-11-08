@@ -1257,7 +1257,7 @@ Tag kann nichts platziert werden. Die Kachelgröße und die Zeilen der Journey s
 dieses Blatt zeigt**: eine Journey, die für ganze Wörter zu schmal ist, erhält zwei Zeilen, bis
 Sie eine sagen.
 
-**Speichern oder drucken…** unter ⋯ bringt es auf eine Seite, A4 bis A0, mit Titel, Fußzeile und
+**Exportieren…** unter ⋯ bringt es auf eine Seite, A4 bis A0, mit Titel, Fußzeile und
 Legende, in einem Druckbild, das das Design ignoriert. Es sagt, wie groß ein Name wird und wie viele
 diese Seite abschneidet, mit einem Weg, sie auszuwählen. Ein PDF auf dem Desktop wird direkt
 gespeichert; im Browser ist es dessen Druckdialog, in dem Sie **Als PDF speichern** wählen. PNG geht

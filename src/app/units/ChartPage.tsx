@@ -64,6 +64,7 @@ import type { PersonNames } from '../../people/ui/names'
 import type { PeopleRegisterAccess } from '../../people/ui/access'
 import type { ScopePath } from '../../projects/scopePath'
 import { captureSheet } from '../../widgets/capturePage'
+import { PictureDialog } from '../../widgets/kit/PictureDialog'
 import type { PageCaptureOptions, PageHandle } from '../../widgets/capturePage'
 import { Band } from '../../widgets/kit/Band'
 import { Button } from '../../widgets/kit/Button'
@@ -107,6 +108,9 @@ import { useSiblingOrder } from './useSiblingOrder'
 import { claimKey, commandKey, keyClaimed } from '../../widgets/kit/keys'
 import './chart.css'
 
+/** As large a picture as the landscape's: a chart of a large organisation is wide. */
+const EXPORT_PIXELS = 16_000_000
+
 export type ChartPageProps = {
   /** The view, with the day it is looked at on (`asOf`; absent is today). */
   diagram: DesignDiagram
@@ -128,6 +132,8 @@ export type ChartPageProps = {
   onChoose?(assignmentId: string | undefined): void
   select?: SelectRequest
   onHandle?(handle: PageHandle | undefined): void
+  /** Export…: the chart as a PNG picture, handed to the host to save. Absent = no Export…. */
+  onExport?(name: string, png: Uint8Array): void
   /** The scope open in this window: what the chart's folds are kept under with the view, and whose step a move writes through its session. */
   scope?: ScopePath
   /** Where the chart's folds are kept for the session (`sessionFolds.ts`). Absent: they last while the page is on screen. */
@@ -191,11 +197,14 @@ export function ChartPage(props: ChartPageProps) {
   )
   const ownPanel = useChartDock(props, moving.up !== undefined, lines.lines === 'exceptions', going.summaryAsked)
   const closeExceptions = () => setReading({ lines: 'person' })
+  const [exportAsked, setExportAsked] = useState(false)
+  const onExport = props.onExport
   return (
     <div data-testid="chart-page" className="chart-page" data-own-walk="">
       <ChartHead
         props={props} chart={chart} folds={folds} lines={lines.lines} onLines={(next) => setReading({ lines: next })} moving={moving.up} empty={empty}
         focused={moving.up === undefined ? focused : undefined} organisation={organisationName} onFocus={going.focus} newUnit={newUnit} language={language} t={t}
+        onExport={onExport ? () => setExportAsked(true) : undefined}
       />
       <div className="chart-page__main">
         {moving.up === undefined && !empty && (
@@ -236,6 +245,12 @@ export function ChartPage(props: ChartPageProps) {
       </div>
       {assigning && <AssignThere held={assigning} props={props} day={day} names={names} onClose={() => setAssigning(undefined)} t={t} />}
       {newUnit.dialog}
+      {exportAsked && onExport && (
+        <PictureDialog
+          name={diagram.name} onClose={() => setExportAsked(false)} about={<p>{t('chart.exportAbout')}</p>} data-testid="chart-export-dialog"
+          onSave={async () => { const shot = await going.capture({ maxPixels: EXPORT_PIXELS }); onExport(`${diagram.name}.png`, shot.png) }}
+        />
+      )}
     </div>
   )
 }
@@ -306,7 +321,7 @@ function useChartGoing(
   }, [here, onSelect, onChoose, goTo])
   useSelectRequest(props.select, (id) => [...walk(chart.roots)].some((unit) => unit.id === id), goTo)
   // What a link made here selects (ADR-0033, amended 17 October 2026): the unit gone to, kept here or elsewhere, while no person is chosen.
-  usePageHandle(page, diagram.id, chosen === undefined ? current : selectedId, props.onHandle, theme.palette.background.default)
+  const capture = usePageHandle(page, diagram.id, chosen === undefined ? current : selectedId, props.onHandle, theme.palette.background.default)
   const focusOn = useCallback((id: ElementId | undefined) => {
     setReading({ focus: id })
     if (id !== undefined) folds.expandBoth(id)
@@ -316,7 +331,7 @@ function useChartGoing(
     onChoose?.(undefined)
     setSummaryAsked((was) => !was)
   }, [onSelect, onChoose])
-  return { open, choose, locatedId, current, goTo, pick, focus: focusOn, summaryAsked, toggleSummary }
+  return { open, choose, locatedId, current, goTo, pick, focus: focusOn, summaryAsked, toggleSummary, capture }
 }
 
 type Going = ReturnType<typeof useChartGoing>
@@ -378,9 +393,9 @@ function useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, 
 }
 
 /** What is over the chart: the bar, or the word that a move is under way; and the bands for another day and a focus. */
-function ChartHead({ props, chart, folds, lines, onLines, moving, empty, focused, organisation, onFocus, newUnit, language, t }: {
+function ChartHead({ props, chart, folds, lines, onLines, moving, empty, focused, organisation, onFocus, newUnit, onExport, language, t }: {
   props: ChartPageProps; chart: OrgChart; folds: ChartFolds; lines: ChartLines; onLines: (lines: ChartLines) => void; moving: ElementId | undefined; empty: boolean
-  focused: ChartUnit | undefined; organisation: string; onFocus: (id: ElementId | undefined) => void; newUnit: NewUnit; language: Language; t: Translate
+  focused: ChartUnit | undefined; organisation: string; onFocus: (id: ElementId | undefined) => void; newUnit: NewUnit; onExport: (() => void) | undefined; language: Language; t: Translate
 }) {
   const { here, selectedId, diagram } = props
   const picked = selectedId !== undefined && here.heldHere(selectedId) ? [...walk(chart.roots)].find((unit) => unit.id === selectedId) : undefined
@@ -391,6 +406,7 @@ function ChartHead({ props, chart, folds, lines, onLines, moving, empty, focused
         <ChartBar
           level={levelOfFolds(chart, folds.folded)} onLevel={folds.setLevels} people={folds.people} onPeople={folds.setPeople} lines={lines} onLines={onLines}
           add={addOnBar(newUnit, props.make, picked, t)} day={props.day} shownDay={diagram.asOf} t={t}
+          {...(onExport ? { onExport } : {})}
         />
       )}
       <ShownDayBand day={props.day} asOf={diagram.asOf} language={language} t={t} />
@@ -671,4 +687,5 @@ function usePageHandle(
     onHandle({ diagramId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
     return () => onHandle(undefined)
   }, [onHandle, diagramId, capture, selectedId])
+  return capture
 }

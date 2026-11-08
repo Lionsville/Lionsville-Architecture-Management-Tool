@@ -25,6 +25,7 @@ import type { PlatformDescribe } from '../../model/platformReport'
 import type { PlatformTree } from '../../model/hosting'
 import { refText } from '../../model/person'
 import type { PersonRef } from '../../model/person'
+import { PictureDialog } from '../../widgets/kit/PictureDialog'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { captureSheet } from '../../widgets/capturePage'
@@ -341,14 +342,23 @@ function useHandle(props: TechnologyLandscapePageProps, page: React.RefObject<HT
   return capture
 }
 
+/** Export…: the kit's one export dialog, then the picture of the page as it is drawn. */
 function useExport(props: TechnologyLandscapePageProps, capture: PageHandle['capture']) {
   const { t } = useStrings()
-  const { onExport, notify } = props
+  const { onExport } = props
+  const [asking, setAsking] = useState(false)
   const name = props.diagram?.name ?? t('landscape.page')
-  if (!onExport) return undefined
-  return () => {
-    capture({ maxPixels: EXPORT_PIXELS }).then((shot) => onExport(`${name}.png`, shot.png), () => notify?.(t('landscape.exportFailed')))
-  }
+  if (!onExport) return { open: undefined, dialog: null }
+  const dialog = asking
+    ? (
+      <PictureDialog
+        name={name} onClose={() => setAsking(false)} about={<p>{t('landscape.exportAbout')}</p>} data-testid="landscape-export-dialog"
+        onSave={async () => { const shot = await capture({ maxPixels: EXPORT_PIXELS }); onExport(`${name}.png`, shot.png) }}
+        failed={() => t('landscape.exportFailed')}
+      />
+    )
+    : null
+  return { open: () => setAsking(true), dialog }
 }
 
 function LandscapeBar({ props, showing, landscape, groupLabel, reading, setReading, onExport }: {
@@ -506,7 +516,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
   const gestures = useGestures(props, landscape, selected, choose, setUndo)
   const { ticking, setTicking, recordUp, setRecordUp, writes, appOf } = gestures
   const capture = useHandle(props, page, selected)
-  const exportPicture = useExport(props, capture)
+  const exporting = useExport(props, capture)
 
   const { onOpenServiceReport, onOpenPlatformReport, onOpenContainers, onOpenElsewhere } = props
   const open = useCallback((key: NodeKey) => {
@@ -543,7 +553,8 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
           <h2>{t('landscape.question')}</h2>
           <span data-testid="landscape-summary">{t('landscape.summary', landscape.counts)}</span>
         </div>
-        <LandscapeBar props={props} showing={showing} landscape={landscape} groupLabel={groupLabel} reading={reading} setReading={setReading} onExport={exportPicture} />
+        <LandscapeBar props={props} showing={showing} landscape={landscape} groupLabel={groupLabel} reading={reading} setReading={setReading} onExport={exporting.open} />
+        {exporting.dialog}
         <div className="tl-work">
           <div className="tl-main">
             {isEmpty ? <EmptyLandscape add={add} /> : (

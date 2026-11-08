@@ -346,12 +346,12 @@ describe('the way out', () => {
   it('offers a picture only where the host can take one, under the ⋯', () => {
     open()
     fireEvent.click(screen.getByRole('button', { name: 'More for this sheet' }))
-    expect(screen.queryByRole('menuitem', { name: 'Save as a picture…' })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'Export…' })).toBeNull()
     cleanup()
     open({ onSave: vi.fn() })
     fireEvent.click(screen.getByRole('button', { name: 'More for this sheet' }))
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Save as a picture…' }))
-    expect(screen.getByRole('dialog', { name: 'Save the business architecture as a picture' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Export…' }))
+    expect(screen.getByRole('dialog', { name: 'Export Business architecture' })).toBeTruthy()
   })
 })
 

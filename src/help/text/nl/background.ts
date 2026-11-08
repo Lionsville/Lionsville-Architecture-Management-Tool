@@ -1184,7 +1184,7 @@ eerste vrije plek, of wacht onder de pagina en wordt daar geteld. Er kan niets g
 terwijl je naar een andere dag kijkt. De tegelgrootte en de rijen van de journey staan bij **Wat
 dit blad tekent**: een journey die te smal is voor hele woorden krijgt twee rijen tot jij één zegt.
 
-**Opslaan of afdrukken…** onder ⋯ zet hem op één pagina, A4 tot A0, met een titel, een voet en de
+**Exporteren…** onder ⋯ zet hem op één pagina, A4 tot A0, met een titel, een voet en de
 legenda, in een drukuiterlijk dat het thema negeert. Het zegt hoe groot een naam wordt en hoeveel
 namen deze pagina afkapt, met een manier om ze te selecteren. Een PDF op de desktop wordt direct
 opgeslagen; in een browser is het de afdrukdialoog van de browser, waar je **Opslaan als PDF**

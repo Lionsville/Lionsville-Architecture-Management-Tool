@@ -715,7 +715,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   const exists = (directory: DesktopDirectory, path: string) =>
     stat(join(directory.root, path)).then(() => true, () => false)
 
-  // The export test presses the real Export PNG button, and the real button
+  // The export test presses the real Save PNG button, and the real button
   // downloads. Cancel it in the session rather than in the page: the DOM trick
   // that used to do this depended on the editor using an anchor, and when it
   // did not, macOS put a save panel in front of the window and the run sat there
@@ -996,7 +996,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
       const started = Date.now()
       button.click()
       const confirm = () => [...document.querySelectorAll('[role="dialog"] button')]
-        .find((b) => /^(Export|Export anyway|Exporteren|Toch exporteren)$/.test((b.textContent || '').trim()))
+        .find((b) => /^(Save PNG|Save anyway|PNG bewaren|Toch bewaren)$/.test((b.textContent || '').trim()))
       await ${waitFor("confirm() && 'open'", 'the export dialog')}
       confirm().click()
       await ${waitFor("!document.querySelector('[role=\"dialog\"]') && seen.some((b) => b.type === 'image/png') && 'arrived'", 'the export to leave')}

@@ -1108,7 +1108,7 @@ page, and is counted there. Nothing can be placed while looking at another day. 
 size and the journey's rows are in **What this sheet draws**: a journey too narrow for
 whole words takes two rows until you say one.
 
-**Save or print…** under ⋯ puts it on one page, A4 to A0, with a title, a foot and the key,
+**Export…** under ⋯ puts it on one page, A4 to A0, with a title, a foot and the key,
 in a print look that ignores the theme. It says how large a name comes out and how many this
 page cuts, with a way to select them. A PDF on the desktop is saved directly; in a browser it
 is the browser's print dialog, where you choose **Save as PDF**. PNG is on both.` },
