@@ -46,7 +46,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'principles.implications': 'Gevolgen',
   'principles.keywords': 'Trefwoorden',
   'principles.keywordsHelp': 'Gescheiden door komma’s: woorden waarop zoeken en de suggesties het ook vinden.',
-  'principles.edit': 'Bewerken',
   'principles.accept': 'Aanvaarden',
   'principles.retire': 'Intrekken',
   'principles.restore': 'Opnieuw aanvaarden',

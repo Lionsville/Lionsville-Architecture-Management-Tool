@@ -30,7 +30,7 @@ import { CommentThread } from '../../comments/ui/threadPart'
 import { RecordChanges } from '../../comments/ui/RecordChanges'
 import { CitationsSection } from '../../principles/ui/CitationsSection'
 import { Button } from '../../widgets/kit/Button'
-import { MoreMenu } from '../../widgets/kit/Menu'
+import { RecordActions } from '../../widgets/kit/RecordActions'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { NextStep, StepLadder } from '../../widgets/kit/NextStep'
 import type { NextAction } from '../../widgets/kit/NextStep'
@@ -149,8 +149,8 @@ function Links({ adr, list, onSelect, plans, solutions, s }: Pick<AdrRecordProps
   )
 }
 
-/** The one verb, what ranks below it, the way to History, and the rest under ⋯. */
-function RecordFoot({ adr, list, props }: { adr: Adr; list: readonly Adr[]; props: AdrRecordProps }) {
+/** The next step under the title; History, ✎ Edit and the rest under ⋯ at the end of the head (`RecordActions`). */
+function recordHead({ adr, list, props }: { adr: Adr; list: readonly Adr[]; props: AdrRecordProps }): { next: ReactNode; actions: ReactNode } {
   const { locked, s, above, onStatus, onHistory, onCopyLink, onWrite, onDelete } = props
   const open = locked ? 0 : stillOpen(adr, list)
   const moves = locked ? [] : movesOf(adr.status)
@@ -161,7 +161,6 @@ function RecordFoot({ adr, list, props }: { adr: Adr; list: readonly Adr[]; prop
       label: label(one.label, one.to), primary: one.primary, held: one.to === 'accepted' && open > 0,
       onPress: () => onStatus(one.to), dataGuide: 'decision.move', testId: `adr-move-${one.to}`,
     })),
-    ...(canWrite ? [{ label: s('adr.write'), onPress: () => onWrite(), testId: 'adr-write' }] : []),
     ...(above?.onOpen ? [{ label: s('adr.openScope', { scope: above.name }), primary: true, onPress: above.onOpen }] : []),
   ]
   const more: MenuEntry[] = [
@@ -170,14 +169,16 @@ function RecordFoot({ adr, list, props }: { adr: Adr; list: readonly Adr[]; prop
     ...(!locked && isAdrDeletable(adr) ? [{ label: s('adr.verbDelete'), onSelect: onDelete, final: true }] : []),
   ]
   const holds = open > 0 ? Array.from({ length: open }, (_, at) => ({ label: String(at) })) : undefined
-  return (
-    <div className="adr-foot">
-      {actions.length > 0 && <NextStep inline actions={actions} holds={holds} dataGuide="decision.next" />}
-      <span className="adr-foot__grow" />
-      {onHistory && <Button onClick={onHistory}>{s('common.history')}</Button>}
-      {more.length > 0 && <MoreMenu items={more} data-guide="decision.more" />}
-    </div>
-  )
+  return {
+    next: actions.length > 0 && <NextStep inline actions={actions} holds={holds} dataGuide="decision.next" />,
+    actions: (
+      <RecordActions
+        verbs={onHistory && <Button variant="quiet" onClick={onHistory}>{s('common.history')}</Button>}
+        {...(canWrite ? { edit: { onPress: () => onWrite(), testId: 'adr-write' } } : {})}
+        more={more} moreGuide="decision.more"
+      />
+    ),
+  }
 }
 
 const onPageHeadings = (text: string) => outline(text).filter((heading) => heading.level <= 3)
@@ -251,6 +252,7 @@ export function AdrRecord(props: AdrRecordProps) {
   // An open record reads as what has been written; the template's words look like content, and are only a start.
   const written = useMemo(() => (adr && !isAdrLocked(adr) ? writtenBody(adr.body, s) : adr?.body ?? ''), [adr, s])
   const number = adr && formatAdrNumber(adr.number)
+  const head = adr && recordHead({ adr, list: props.list, props })
   return (
     <Preview
       ids={ids}
@@ -258,7 +260,7 @@ export function AdrRecord(props: AdrRecordProps) {
       onSelect={onSelect}
       title={adr?.title ?? ''}
       code={above && number ? s('adr.numberOf', { number, scope: above.name }) : number}
-      foot={adr && <RecordFoot adr={adr} list={props.list} props={props} />}
+      {...(head ? { actions: head.actions, ...(head.next ? { next: head.next } : {}) } : {})}
       dataGuide="decision.record"
       facts={adr && <RecordFacts adr={adr} written={written} root={root} props={props} />}
     >

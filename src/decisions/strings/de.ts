@@ -35,7 +35,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'adr.verbWithdraw': 'Zurückziehen…',
   'adr.verbSupersede': 'Als abgelöst markieren…',
   'adr.verbDelete': 'Löschen…',
-  'adr.write': 'Text bearbeiten',
   'adr.writing': 'Eine Entscheidung schreiben',
   'adr.titleNeeded': 'Eine Entscheidung braucht einen Titel.',
   'adr.writeHow': 'Wie Sie schreiben',

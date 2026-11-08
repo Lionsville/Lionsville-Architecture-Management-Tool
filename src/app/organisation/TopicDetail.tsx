@@ -19,6 +19,7 @@ import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { DateField, TextField } from '../../widgets/kit/Field'
 import { MoreMenu } from '../../widgets/kit/Menu'
+import { RecordActions } from '../../widgets/kit/RecordActions'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { Picker } from '../../widgets/kit/Picker'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
@@ -200,22 +201,19 @@ export function TopicDetail({ topic, access, ids, onSelect, onSubtopic }: {
             <PreviewFact label={t('topics.relevantTo')}>{plural(t, { one: 'topics.scopesOne', other: 'topics.scopesOther' }, access.relevantPlaces(topic.id).length)}</PreviewFact>
           </>
         )}
-        foot={(
-          <div className="guidance-read__foot">
-            <span className="guidance-read__quiet">{t('topics.isScope')}</span>
-            <span className="guidance-read__spring" />
-            <Button variant="plain" onClick={() => access.openHome(topic.id)} data-testid="topic-home">{t('topics.openHome')}</Button>
-            {may && <Button variant="plain" onClick={() => setEditing(true)} data-testid="topic-edit">{t('topics.edit')}</Button>}
-            {may && (
-              <MoreMenu items={[{
-                label: t('topics.remove'), final: true, onSelect: () => setRemoving(true),
-                ...(refused ? { refused: t('topics.removeRefusedShort') } : {}),
-              }]} />
-            )}
-          </div>
+        actions={(
+          <RecordActions
+            verbs={<Button variant="quiet" onClick={() => access.openHome(topic.id)} data-testid="topic-home">{t('topics.openHome')}</Button>}
+            {...(may ? { edit: { onPress: () => setEditing(true), testId: 'topic-edit' } } : {})}
+            more={may ? [{
+              label: t('topics.remove'), final: true, onSelect: () => setRemoving(true),
+              ...(refused ? { refused: t('topics.removeRefusedShort') } : {}),
+            }] : []}
+          />
         )}
       >
         <div className="guidance-read" data-testid="topic-detail">
+          <p className="guidance-read__quiet">{t('topics.isScope')}</p>
           {topic.description && <MarkdownView markdown={topic.description} />}
           <p className="guidance-read__status">{t('topics.applies')}</p>
           <Links topic={topic} access={access} />

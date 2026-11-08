@@ -1700,7 +1700,6 @@ export const EN = {
   'topics.chooseAddOther': 'Add {count} topics',
   'topics.treeLabel': 'topic',
   'topics.description': 'Description',
-  'topics.edit': 'Edit',
   'topics.editTitle': 'Edit {name}',
   'topics.remove': 'Remove',
   'topics.removeRefused': 'This topic still keeps something — a principle, a building block or a subtopic. Move or remove that first.',

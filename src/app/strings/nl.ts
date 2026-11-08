@@ -1471,7 +1471,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'topics.chooseAddOther': '{count} onderwerpen toevoegen',
   'topics.treeLabel': 'onderwerp',
   'topics.description': 'Beschrijving',
-  'topics.edit': 'Bewerken',
   'topics.editTitle': '{name} bewerken',
   'topics.remove': 'Verwijderen',
   'topics.removeRefused': 'Dit onderwerp houdt nog iets vast: een principe, een bouwsteen of een subonderwerp. Verplaats of verwijder dat eerst.',

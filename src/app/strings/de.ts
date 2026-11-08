@@ -1472,7 +1472,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'topics.chooseAddOther': '{count} Themen hinzufügen',
   'topics.treeLabel': 'Thema',
   'topics.description': 'Beschreibung',
-  'topics.edit': 'Bearbeiten',
   'topics.editTitle': '{name} bearbeiten',
   'topics.remove': 'Entfernen',
   'topics.removeRefused': 'Dieses Thema hält noch etwas fest: ein Prinzip, einen Baustein oder ein Unterthema. Verschieben oder entfernen Sie das zuerst.',

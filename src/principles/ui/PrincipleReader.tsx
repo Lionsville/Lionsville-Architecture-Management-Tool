@@ -21,7 +21,7 @@ import { Band } from '../../widgets/kit/Band'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { SelectField } from '../../widgets/kit/Field'
-import { MoreMenu } from '../../widgets/kit/Menu'
+import { RecordActions } from '../../widgets/kit/RecordActions'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { Picker } from '../../widgets/kit/Picker'
@@ -72,14 +72,10 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
         ids={ids} currentId={currentId} onSelect={onSelect} title={principle.title} listWord={t('principles.listWord')}
         code={from.kind === 'here' ? number : t('principles.numberIn', { number, scope: access.scopeLabel(scope) })}
         facts={<Facts found={found} />}
-        foot={may ? (
-          <div className="guidance-read__foot">
-            <span className="guidance-read__spring" />
-            <Button variant="plain" onClick={onEdit} data-testid="principle-edit">{t('principles.edit')}</Button>
-            {principle.status === 'candidate' && <Button variant="primary" onClick={() => setStatus('accepted')} data-testid="principle-accept">{t('principles.accept')}</Button>}
-            <MoreMenu items={more} />
-          </div>
-        ) : undefined}
+        {...(may ? { actions: <RecordActions edit={{ onPress: onEdit, testId: 'principle-edit' }} more={more} /> } : {})}
+        {...(may && principle.status === 'candidate' ? {
+          next: <Button variant="primary" onClick={() => setStatus('accepted')} data-testid="principle-accept">{t('principles.accept')}</Button>,
+        } : {})}
       >
         <div className="guidance-read" data-testid="principle-reader">
           <KeptElsewhere from={from} scope={scope} open={access.open ? () => access.open?.({ scope, id: principle.id }) : undefined} label={access.scopeLabel} />

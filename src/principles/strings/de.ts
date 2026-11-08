@@ -46,7 +46,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'principles.implications': 'Folgen',
   'principles.keywords': 'Schlagwörter',
   'principles.keywordsHelp': 'Durch Kommas getrennt: Wörter, über die Suche und Vorschläge es auch finden.',
-  'principles.edit': 'Bearbeiten',
   'principles.accept': 'Annehmen',
   'principles.retire': 'Zurückziehen',
   'principles.restore': 'Wieder annehmen',

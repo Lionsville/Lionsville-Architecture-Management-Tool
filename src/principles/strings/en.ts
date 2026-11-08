@@ -44,7 +44,6 @@ export const EN = {
   'principles.implications': 'Implications',
   'principles.keywords': 'Keywords',
   'principles.keywordsHelp': 'Separated by commas: words a search and the suggestions also find it by.',
-  'principles.edit': 'Edit',
   'principles.accept': 'Accept',
   'principles.retire': 'Retire',
   'principles.restore': 'Accept again',

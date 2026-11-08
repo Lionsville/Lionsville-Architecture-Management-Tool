@@ -34,8 +34,6 @@
 .adr-outline button:hover { color: var(--accent); }
 .adr-outline button[data-level='3'] { padding-inline-start: var(--s-2); }
 
-.adr-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); width: 100%; }
-.adr-foot__grow { flex: 1; }
 
 /* By section it is as tall as what it holds and the column scrolls; the source fills the column and scrolls its text. */
 .adr-write { flex: 1 0 auto; display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }

@@ -221,7 +221,7 @@ describe('a record, read', () => {
     const { onProject, onOpenScope } = mount({ initialAdrId: 'g1' })
     expect(screen.getByTestId('adr-from-ancestor').textContent).toContain('Acme Logistics')
     expect(within(record()).getByText('ADR-0001 of Acme Logistics')).toBeTruthy()
-    expect(within(record()).queryByRole('button', { name: 'Edit text' })).toBeNull()
+    expect(within(record()).queryByRole('button', { name: 'Edit' })).toBeNull()
     expect(within(record()).queryByRole('button', { name: 'Send for review' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Open Acme Logistics' }))
     expect(onOpenScope).toHaveBeenCalledExactlyOnceWith('acme', 'g1')
@@ -266,7 +266,7 @@ describe('a record, read', () => {
       decisions: [...model.decisions!, adr({ id: 'l3', number: 4, title: 'Event-driven integration, decided', status: 'accepted' })],
     }
     mount({ model: withSuccessor, initialAdrId: 'l2' })
-    expect(within(record()).queryByRole('button', { name: 'Edit text' })).toBeNull()
+    expect(within(record()).queryByRole('button', { name: 'Edit' })).toBeNull()
     expect(screen.getByTestId('adr-status').textContent).toContain('Locked: to change it, write a decision that replaces it.')
     await more('Mark as superseded…')
     const dialog = screen.getByRole('dialog', { name: /Mark as superseded/ })
@@ -457,7 +457,7 @@ describe('a record, read', () => {
 describe('a record, written', () => {
   const writing = (over: Partial<AdrPageProps> = {}) => {
     const utils = mount({ initialAdrId: 'l1', ...over })
-    fireEvent.click(within(record()).getByRole('button', { name: 'Edit text' }))
+    fireEvent.click(within(record()).getByRole('button', { name: 'Edit' }))
     return utils
   }
 
@@ -486,7 +486,7 @@ describe('a record, written', () => {
     const { onProject } = writing()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
-    fireEvent.click(within(record()).getByRole('button', { name: 'Edit text' }))
+    fireEvent.click(within(record()).getByRole('button', { name: 'Edit' }))
     fireEvent.change(screen.getByLabelText('Context'), { target: { value: 'Changed.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Leave and drop changes' }))
