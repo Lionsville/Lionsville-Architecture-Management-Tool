@@ -146,7 +146,7 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         onAddExistingAt={writable(props.ownership?.onAddExisting)}
         onAskAdd={writable(parts.adding.ask)}
         showStatus={diagram.kind === 'container' ? view.containerStatus : view.showStatus}
-        showDescriptions={view.showDescriptions}
+        showDescriptions={view.cardDescriptions}
         showKey={view.showKey}
         routeNote={layout.autoRouteNote}
       />

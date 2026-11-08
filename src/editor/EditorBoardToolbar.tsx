@@ -51,7 +51,7 @@ export function BoardToolbar({ parts, diagram, laidOut, onPageBar }: { parts: Ed
         ...(diagram.kind === 'container'
           ? { status: view.containerStatus, onStatus: view.setContainerStatus }
           : { status: view.showStatus, onStatus: view.setShowStatus }),
-        descriptions: view.showDescriptions, onDescriptions: view.setShowDescriptions,
+        descriptions: view.cardDescriptions, onDescriptions: view.setShowDescriptions,
         showKey: view.showKey, onKey: view.setShowKey,
       }}
       autoRoute={layout.autoRoute}

@@ -32,8 +32,14 @@ export interface EditorPreferences {
   keepRail: boolean;
   /** The status dots on a card. */
   showStatus: boolean;
-  /** A card's description, once the reader is close enough. */
-  showDescriptions: boolean;
+  /**
+   * A card's description, once the reader is close enough: off unless the
+   * person asks, since a landscape's cards say their names and nothing more
+   * (owner, 7 November 2026). Kept under a new key: the old one,
+   * `showDescriptions`, was written as `true` by default, and a stored `true`
+   * cannot say whether anybody chose it.
+   */
+  cardDescriptions: boolean;
   /** The key on the canvas. */
   showKey: boolean;
   /** Right inspector collapsed (U7b). */
@@ -97,7 +103,7 @@ export const DEFAULT_EDITOR_PREFERENCES: EditorPreferences = {
   showLifecycle: true,
   keepRail: false,
   showStatus: true,
-  showDescriptions: true,
+  cardDescriptions: false,
   showKey: true,
   inspectorCollapsed: false,
   inspectorWidth: PANEL_LIMITS.inspector.default,
@@ -152,7 +158,7 @@ export function mergePreferences(stored: unknown): EditorPreferences {
     showLifecycle: bool(raw.showLifecycle, defaults.showLifecycle),
     keepRail: bool(raw.keepRail, defaults.keepRail),
     showStatus: bool(raw.showStatus, defaults.showStatus),
-    showDescriptions: bool(raw.showDescriptions, defaults.showDescriptions),
+    cardDescriptions: bool(raw.cardDescriptions, defaults.cardDescriptions),
     showKey: bool(raw.showKey, defaults.showKey),
     inspectorCollapsed: bool(raw.inspectorCollapsed, defaults.inspectorCollapsed),
     // Widths go through the panel clamp rather than a type check: a stored 9000
@@ -192,7 +198,7 @@ export function preferencesEqual(a: EditorPreferences, b: EditorPreferences): bo
     a.showLifecycle === b.showLifecycle &&
     a.keepRail === b.keepRail &&
     a.showStatus === b.showStatus &&
-    a.showDescriptions === b.showDescriptions &&
+    a.cardDescriptions === b.cardDescriptions &&
     a.showKey === b.showKey &&
     a.inspectorCollapsed === b.inspectorCollapsed &&
     a.inspectorWidth === b.inspectorWidth &&

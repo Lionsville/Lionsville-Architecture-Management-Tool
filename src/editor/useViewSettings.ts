@@ -30,7 +30,7 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
   // panel, clamped by `model/panels`.
   const [keepRail, setKeepRail] = useState(initial.keepRail);
   const [showStatus, setShowStatus] = useState(initial.showStatus);
-  const [showDescriptions, setShowDescriptions] = useState(initial.showDescriptions);
+  const [showDescriptions, setShowDescriptions] = useState(initial.cardDescriptions);
   const [showKey, setShowKey] = useState(initial.showKey);
   const [inspectorCollapsed, setInspectorCollapsed] = useState(initial.inspectorCollapsed);
   const [inspectorWidth, setInspectorWidth] = useState(initial.inspectorWidth);
@@ -45,7 +45,7 @@ export function useViewSettings(preferences: EditorPreferencesSeam | undefined) 
   const [containerStatus, setContainerStatus] = useState(initial.containerStatus);
 
   const settings: EditorPreferences = {
-    snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
+    snapToGrid, showGrid, showLifecycle, keepRail, showStatus, cardDescriptions: showDescriptions, showKey, inspectorCollapsed,
     inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, containerLabels, containerStatus, tidyOptions, groupTidyOptions,
   };
   useReportPreferences(settings, initial, preferences?.onChange);
@@ -102,20 +102,20 @@ function useReportPreferences(
 ) {
   const last = useRef<EditorPreferences>(initial);
   const {
-    snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
+    snapToGrid, showGrid, showLifecycle, keepRail, showStatus, cardDescriptions, showKey, inspectorCollapsed,
     inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, containerLabels, containerStatus, tidyOptions, groupTidyOptions,
   } = next;
   useEffect(() => {
     if (!onChange) return;
     const settings: EditorPreferences = {
-      snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
+      snapToGrid, showGrid, showLifecycle, keepRail, showStatus, cardDescriptions, showKey, inspectorCollapsed,
       inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, containerLabels, containerStatus, tidyOptions, groupTidyOptions,
     };
     if (preferencesEqual(last.current, settings)) return;
     last.current = settings;
     onChange(settings);
   }, [
-    onChange, snapToGrid, showGrid, showLifecycle, keepRail, showStatus, showDescriptions, showKey, inspectorCollapsed,
+    onChange, snapToGrid, showGrid, showLifecycle, keepRail, showStatus, cardDescriptions, showKey, inspectorCollapsed,
     inspectorWidth, outlineWidth, showMinimap, showEdgeLabels, containerLabels, containerStatus, tidyOptions, groupTidyOptions,
   ]);
 }

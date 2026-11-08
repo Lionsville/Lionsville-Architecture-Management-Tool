@@ -37,6 +37,13 @@ describe('mergePreferences', () => {
     });
   });
 
+  it('shows no descriptions on cards unless asked, whatever the old default left stored', () => {
+    expect(DEFAULT_EDITOR_PREFERENCES.cardDescriptions).toBe(false);
+    // The old key was written `true` by default, so a stored `true` there says nothing.
+    expect(mergePreferences({ showDescriptions: true }).cardDescriptions).toBe(false);
+    expect(mergePreferences({ cardDescriptions: true }).cardDescriptions).toBe(true);
+  });
+
   it('falls back per field, so one bad value does not cost the rest', () => {
     const merged = mergePreferences({ snapToGrid: 'yes', showGrid: false });
     expect(merged.snapToGrid).toBe(DEFAULT_EDITOR_PREFERENCES.snapToGrid);
