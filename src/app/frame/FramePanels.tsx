@@ -62,10 +62,13 @@ export function useWriteRefusals(parts: ShellParts): readonly WriteRefusal[] {
   return useSyncExternalStore(refusals?.subscribe ?? NEVER, refusals?.list ?? (() => NONE))
 }
 
-/** Where focus goes once a section of *Your work* is gone from under it: the panel's own body, which a keyboard reads on from. */
-function focusPanelBody(from: HTMLElement | null): void {
-  const body = from?.closest<HTMLElement>('.kit-panel__body')
-  // After the section is drawn away: the body stays.
+/** The panel's own body, which a keyboard reads on from once a section of *Your work* is gone from under it: found while the section is there. */
+function panelBodyOf(from: HTMLElement | null): HTMLElement | null {
+  return from?.closest<HTMLElement>('.kit-panel__body') ?? null
+}
+
+/** Focus on the panel's body, after the section is drawn away: the body stays. */
+function focusPanelBody(body: HTMLElement | null): void {
   if (body) window.setTimeout(() => body.focus(), 0)
 }
 
@@ -95,11 +98,11 @@ function NotKeptSection({ parts, said, reason, rows, lead, retry, putBack, testI
     parts.frame.set({ workFocus: undefined })
   }, [asked, parts.frame])
   const several = rows.length > 1
-  const tried = (landed: boolean) => {
+  const tried = (landed: boolean, body: HTMLElement | null) => {
     setTrying(false)
     setStill(!landed)
     // Where the section is gone with what it said, the panel takes the focus; otherwise it stays on the button.
-    if (landed) focusPanelBody(again.current)
+    if (landed) focusPanelBody(body)
   }
   return (
     <PanelSection title={s('work.couldNotSave')}>
@@ -120,7 +123,7 @@ function NotKeptSection({ parts, said, reason, rows, lead, retry, putBack, testI
                       {s('common.tryAgain')}
                     </Button>
                   )}
-                  {row.putBack && <Button size="small" variant="quiet" onClick={(event) => { focusPanelBody(event.currentTarget); row.putBack!() }} data-testid="work-put-back-one">{s('work.putBack')}</Button>}
+                  {row.putBack && <Button size="small" variant="quiet" onClick={(event) => { focusPanelBody(panelBodyOf(event.currentTarget)); row.putBack!() }} data-testid="work-put-back-one">{s('work.putBack')}</Button>}
                 </span>
               )}
             </li>
@@ -131,11 +134,15 @@ function NotKeptSection({ parts, said, reason, rows, lead, retry, putBack, testI
       <div className="kit-work__acts">
         <Button
           ref={again} size="small" variant="primary" working={trying} data-testid="work-retry"
-          onClick={() => { setTrying(true); void retry().then(tried, () => tried(false)) }}
+          onClick={(event) => {
+            const body = panelBodyOf(event.currentTarget)
+            setTrying(true)
+            void retry().then((landed) => tried(landed, body), () => tried(false, body))
+          }}
         >
           {s(several ? 'work.tryAgainAll' : 'common.tryAgain')}
         </Button>
-        <Button size="small" variant="plain" onClick={(event) => { focusPanelBody(event.currentTarget); putBack() }} data-testid="work-put-back">
+        <Button size="small" variant="plain" onClick={(event) => { focusPanelBody(panelBodyOf(event.currentTarget)); putBack() }} data-testid="work-put-back">
           {s(several ? 'work.putBackAll' : 'work.putBack')}
         </Button>
       </div>

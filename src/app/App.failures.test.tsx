@@ -240,6 +240,8 @@ describe('a view renamed on a home, where the folder refuses', () => {
     refusing.now = false
     fireEvent.click(await screen.findByTestId('work-retry'))
     await waitFor(() => expect(screen.queryByTestId('work-not-kept')).toBeNull())
+    // Landed, the section is gone: the panel holds the focus.
+    await waitFor(() => expect(document.activeElement?.classList.contains('kit-panel__body')).toBe(true))
     expect(await nameKept(held)).toBe('Order flow')
     await waitFor(() => expect(document.querySelector('[aria-label="More for Order flow"]')).not.toBeNull())
     await waitFor(() => expect(word().getAttribute('data-tone')).not.toBe('problem'))
