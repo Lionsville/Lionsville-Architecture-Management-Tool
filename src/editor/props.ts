@@ -792,6 +792,12 @@ export interface SolutionDesignEditorProps {
   logos?: EditorLogos;
   exportTitleBlock?: { client: string; author?: string };
   /**
+   * Where an exported picture is handed: the host's own save, which on the desktop is its
+   * save dialog and a file where the person said. Absent, the browser downloads it, which on
+   * the desktop wrote hidden part-files into Downloads before its dialog came up.
+   */
+  savePicture?: (name: string, png: Uint8Array) => void;
+  /**
    * Optional markdown renderer for element descriptions. The package stays
    * dependency-free here: without it, the preview falls back to a plain
    * <pre> block. The host passes its themed renderer.

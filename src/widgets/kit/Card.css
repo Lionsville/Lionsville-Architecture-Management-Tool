@@ -34,6 +34,12 @@
 /* A name breaks at its spaces and nowhere else; a word wider than its line ends in an ellipsis (`CanvasName`). */
 .kit-name { overflow-wrap: normal; word-break: normal; hyphens: manual; }
 .kit-name__word { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: top; }
+/*
+ * A picture being taken lets each word show whole: the rasteriser copies each word's
+ * box at the width it measured on screen and draws the words again in its own frame,
+ * where a hair wider ended every word of every name in an ellipsis ("Wareho… le…").
+ */
+[data-capturing] .kit-name__word { overflow: visible; text-overflow: clip; }
 .kit-card__body { display: grid; gap: 1px; min-width: 0; font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); line-height: var(--lh-tight); }
 [data-distance='far'] .kit-card__over { display: none; }
 .kit-card__over,

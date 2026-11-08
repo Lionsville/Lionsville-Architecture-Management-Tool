@@ -6,7 +6,10 @@
  * a laid-out view in the middle, the inspector docked right.
  */
 import Box from '@mui/material/Box';
-import { ThemeProvider } from '@mui/material/styles';
+import { ThemeProvider, useTheme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
+import type { CSSProperties, ReactNode } from 'react';
+import { tokenVariables } from '../widgets/kit/tokens';
 import type { DesignDiagram } from '../model/types';
 import type { AttachSidesPatch } from '../model/routes';
 import { aspectConfigFor } from '../model/aspects';
@@ -93,8 +96,10 @@ export function LaidOutView({ parts, diagram, pageBar, onDock }: { parts: Editor
 export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: DesignDiagram }) {
   const { props, state, readOnly, view, board, layout, requests, deletes, exports, clicks } = parts;
   const writable = <T,>(handler: T) => (readOnly ? undefined : handler);
+  const windowMode = useTheme().palette.mode;
   return (
     <ThemeProvider theme={exports.exportTheme}>
+      <ExportTokens theme={exports.exportTheme} windowMode={windowMode}>
       <CanvasForDiagram
         diagram={diagram}
         state={state}
@@ -151,6 +156,18 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
         showKey={view.showKey}
         routeNote={layout.autoRouteNote}
       />
+      </ExportTokens>
     </ThemeProvider>
   );
+}
+
+/**
+ * The board's tokens in the picture's own mode while it is the other one: the
+ * cards, bands and groups paint with the custom properties the window's root
+ * sets, so a dark picture taken from a light window kept the light fills on a
+ * dark ground. Set on a box that lays nothing out, from which they are inherited.
+ */
+function ExportTokens({ theme, windowMode, children }: { theme: Theme; windowMode: Theme['palette']['mode']; children: ReactNode }) {
+  if (theme.palette.mode === windowMode) return <>{children}</>;
+  return <div data-testid="export-tokens" style={{ display: 'contents', ...tokenVariables(theme.palette.mode, theme.tokens?.shades) } as CSSProperties}>{children}</div>;
 }

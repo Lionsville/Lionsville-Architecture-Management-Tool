@@ -59,7 +59,7 @@ function downloadBlob(blob: Blob, filename: string): void {
 }
 
 export interface ExportArgs {
-  props: Pick<SolutionDesignEditorProps, 'logos' | 'exportTitleBlock' | 'themeFor'>;
+  props: Pick<SolutionDesignEditorProps, 'logos' | 'exportTitleBlock' | 'themeFor' | 'savePicture'>;
   wrapperRef: RefObject<HTMLDivElement | null>;
   theme: Theme;
   showEdgeLabels: boolean;
@@ -148,14 +148,16 @@ function useConfirmExport(
       // The editor can be gone by the time that frame arrives — a diagram
       // switched, a project closed, a window shut. Nothing to hand over.
       if (!blob) return;
-      downloadBlob(blob, pngFilename(props.exportTitleBlock?.client ?? titleBlock.model.name, shot));
+      const name = pngFilename(props.exportTitleBlock?.client ?? titleBlock.model.name, shot);
+      if (props.savePicture) props.savePicture(name, new Uint8Array(await blob.arrayBuffer()));
+      else downloadBlob(blob, name);
       closeExport();
     })().catch((error: unknown) => {
       reportLayoutError(t('error.export'), error);
     }).finally(() => {
       setExporting(false);
     });
-  }, [exportOptions, diagram, titleBlock.model.name, props.exportTitleBlock, closeExport, reportLayoutError, t, renderExportRef, setExporting]);
+  }, [exportOptions, diagram, titleBlock.model.name, props.exportTitleBlock, props.savePicture, closeExport, reportLayoutError, t, renderExportRef, setExporting]);
 }
 
 /**
