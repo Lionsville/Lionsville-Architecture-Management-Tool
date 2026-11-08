@@ -1359,10 +1359,11 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     [],
   );
 
+  const manyLines = selectedConnectionIds.size > 1;
   const routeEditing = useMemo<RouteEditingApi>(
     () => ({
       readOnly,
-      showLabels: showEdgeLabels,
+      showLabels: showEdgeLabels, manyLines,
       setWaypoints: (connectionId, waypoints) => actions.setEdgeRoute(connectionId, waypoints),
       setLabelPosition: (connectionId, position) =>
         actions.setEdgeLabelPosition(connectionId, position),
@@ -1379,7 +1380,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       setSides: (connectionId, sides) => onSetRouteSides?.(connectionId, sides),
       labelEditRequest,
     }),
-    [readOnly, showEdgeLabels, actions, screenToFlowPosition, onSelectionChange, onResetRoute, onSetRouteSides, labelEditRequest],
+    [readOnly, showEdgeLabels, manyLines, actions, screenToFlowPosition, onSelectionChange, onResetRoute, onSetRouteSides, labelEditRequest],
   );
 
   const requestLabelEdit = useCallback((connectionId: string) => {
@@ -1736,16 +1737,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
               style={{ border: `1px solid ${tokens.card.border}`, borderRadius: 4 }}
             />
           )}
-          <BoardChrome
-            diagram={props.diagram}
-            readOnly={props.readOnly}
-            view={props}
-            selected={selectedElementIds}
-            onAlign={handleAlign}
-            onDistribute={handleDistribute}
-            {...(onAddDomainGroupByDrop ? { onGroup: () => groupIntoNewDomainGroup(menuHost, [...selectedElementIds]) } : {})}
-            startedFrom={connectFrom}
-          />
+          <BoardChrome diagram={props.diagram} readOnly={props.readOnly} view={props} startedFrom={connectFrom} />
           <HelperLines
             horizontal={helperLines.horizontal}
             vertical={helperLines.vertical}

@@ -206,6 +206,9 @@ interface SegmentGesture {
  * persists per diagram on the edge route) and double-click opens an inline
  * multiline editor (Enter = newline, blur commits, Esc cancels).
  */
+/** Whether a selected line offers its handles: not to a reader, and not while many lines are selected at once. */
+const routeEditable = (api: { readOnly: boolean; manyLines?: boolean }) => !api.readOnly && !api.manyLines;
+
 /** A dash is measured in the canvas's units too, so it keeps its pattern on screen. */
 function scaledDash(dash: string, scale: number): string {
   return dash.split(' ').map((part) => Number(part) * scale).join(' ');
@@ -497,7 +500,7 @@ export const FloatingEdge = memo(function FloatingEdge({
   // lines — router output above all — show nothing, which is what keeps a
   // routed board clean; the moment somebody picks a line up it becomes theirs
   // to reshape, and the first edit claims it.
-  const showHandles = Boolean(selected) && !routeEditing.readOnly;
+  const editable = routeEditable(routeEditing), showHandles = Boolean(selected) && editable;
   // Chip anchor: live drag position > stored per-diagram anchor > path midpoint.
   // A chip up only because the line is under the pointer follows the pointer
   // instead, lifted clear of the cursor; the moment the line is selected or the
@@ -511,7 +514,7 @@ export const FloatingEdge = memo(function FloatingEdge({
   // the pointer, selected, or being edited — a busy board reads its lines bare, and
   // a card in focus lights its lines without overruling that. Where labels are on,
   // the focus brings its lines' labels back from a distance that hides the rest.
-  const chipWanted = hasLabel || editing || (selected && !routeEditing.readOnly);
+  const chipWanted = hasLabel || editing || (selected && editable);
   const up = Boolean(hovered || selected || editing || (inFocus && routeEditing.showLabels));
   const showChip = chipWanted && (routeEditing.showLabels || up);
   // The chip's own segment handle collision check needs to know whether a chip is

@@ -286,18 +286,6 @@
   background: var(--selected-edge);
 }
 
-.lv-selection-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--s-1);
-  padding: 2px var(--s-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-2);
-  background: var(--surface-raised);
-  box-shadow: var(--shadow);
-}
-.lv-selection-bar__count { color: var(--ink-2); font-size: var(--canvas-t-sm); }
-
 .lv-empty {
   position: absolute;
   top: 40%;

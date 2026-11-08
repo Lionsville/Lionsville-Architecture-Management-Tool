@@ -8,19 +8,17 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
-import { getSmoothStepPath, Panel, useReactFlow, ViewportPortal, type ConnectionLineComponentProps, type FinalConnectionState } from '@xyflow/react';
+import { getSmoothStepPath, useReactFlow, ViewportPortal, type ConnectionLineComponentProps, type FinalConnectionState } from '@xyflow/react';
 import { useStrings } from '../../i18n/LanguageContext';
 import { Button, IconButton } from '../../widgets/kit/Button';
 import { CloseIcon } from '../../widgets/icons';
 import { useSessionSet } from '../../widgets/sessionMemory';
 import { usePlaceHost } from '../../widgets/kit/placeHost';
-import { MenuButton } from '../../widgets/kit/Menu';
 import type { DesignDiagram, ElementId, Point } from '../../model/types';
 import type { EditorActions } from '../useEditorState';
 import type { DiagramCanvasProps } from './DiagramCanvas';
 import { BoardKey, OverlayLegend } from './OverlayLegend';
 import { ZoomControls } from './ZoomControls';
-import type { AlignAxis, DistributeAxis } from '../../layout/alignDistribute';
 
 /**
  * The line in hand: the elbow route it will get, dashed in the focus ink so it stands
@@ -72,50 +70,6 @@ function StartedLine({ startedFrom }: { startedFrom: ElementId | null }) {
         />
       </svg>
     </ViewportPortal>
-  );
-}
-
-/** Align and distribute over a selection, where it is: it needs no reaching for a dock. */
-function SelectionBar({ count, onAlign, onDistribute, onGroup }: {
-  count: number;
-  onAlign(axis: AlignAxis): void;
-  onDistribute(axis: DistributeAxis): void;
-  onGroup?(): void;
-}) {
-  const { t } = useStrings();
-  if (count < 2) return null;
-  return (
-    <Panel position="top-center">
-      <div className="lv-selection-bar" role="group" aria-label={t('board.selectionBar', { count })}>
-        <span className="lv-selection-bar__count">{t('board.selected', { count })}</span>
-        <MenuButton
-          variant="quiet"
-          size="small"
-          label={t('board.align')}
-          items={[
-            { label: t('canvas.alignLeft'), onSelect: () => onAlign('left') },
-            { label: t('canvas.alignCenterX'), onSelect: () => onAlign('centerX') },
-            { label: t('canvas.alignRight'), onSelect: () => onAlign('right') },
-            { line: true },
-            { label: t('canvas.alignTop'), onSelect: () => onAlign('top') },
-            { label: t('canvas.alignCenterY'), onSelect: () => onAlign('centerY') },
-            { label: t('canvas.alignBottom'), onSelect: () => onAlign('bottom') },
-          ]}
-        />
-        {count >= 3 && (
-          <MenuButton
-            variant="quiet"
-            size="small"
-            label={t('board.distribute')}
-            items={[
-              { label: t('canvas.distributeHorizontally'), onSelect: () => onDistribute('horizontal') },
-              { label: t('canvas.distributeVertically'), onSelect: () => onDistribute('vertical') },
-            ]}
-          />
-        )}
-        {onGroup && <Button variant="quiet" size="small" onClick={onGroup}>{t('board.group')}</Button>}
-      </div>
-    </Panel>
   );
 }
 
@@ -210,15 +164,15 @@ export function boardAttributes(props: Pick<DiagramCanvasProps, 'overlayLegend' 
   };
 }
 
-/** The dock, the one key that is up, the bar over a selection, and a started line. */
-export function BoardChrome({ diagram, readOnly, view, selected, onAlign, onDistribute, onGroup, startedFrom }: {
+/**
+ * The dock, the one key that is up, and a started line. A selection's Align and
+ * Group are the panel's and its right-click menu's: a bar over the board said them
+ * a third time, over the top row and far from what was selected.
+ */
+export function BoardChrome({ diagram, readOnly, view, startedFrom }: {
   diagram: DesignDiagram;
   readOnly: boolean;
   view: Pick<DiagramCanvasProps, 'onToggleMinimap' | 'showMinimap' | 'onToggleSnapToGrid' | 'onToggleShowGrid' | 'showGrid' | 'snapToGrid' | 'routeNote' | 'overlayLegend' | 'showKey'>;
-  selected: ReadonlySet<ElementId>;
-  onAlign(axis: AlignAxis): void;
-  onDistribute(axis: DistributeAxis): void;
-  onGroup?(): void;
   startedFrom: ElementId | null;
 }) {
   return (
@@ -236,9 +190,6 @@ export function BoardChrome({ diagram, readOnly, view, selected, onAlign, onDist
       {view.overlayLegend
         ? <OverlayLegend {...view.overlayLegend} />
         : view.showKey !== false && diagram.kind === 'layer7' && diagram.members.length > 0 && <BoardKey diagram={diagram} />}
-      {!readOnly && (
-        <SelectionBar count={selected.size} onAlign={onAlign} onDistribute={onDistribute} {...(onGroup ? { onGroup } : {})} />
-      )}
       <StartedLine startedFrom={startedFrom} />
     </>
   );

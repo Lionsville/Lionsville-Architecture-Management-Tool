@@ -19,6 +19,11 @@ export interface RouteEditingApi {
    * data would make every edge "changed" when it flips.
    */
   showLabels: boolean;
+  /**
+   * More than one line is selected (⌘A, say): a selected line then draws no bend
+   * handles and no editing chip, since every line's at once cannot be read.
+   */
+  manyLines?: boolean;
   /** Replace a connection's waypoints on the active diagram (label anchor kept). */
   setWaypoints(connectionId: string, waypoints: Point[]): void;
   /** Move (or reset, with undefined) a connection's label anchor on the active diagram. */
