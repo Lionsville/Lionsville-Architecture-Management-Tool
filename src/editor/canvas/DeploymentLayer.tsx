@@ -6,6 +6,7 @@ import { useStrings } from '../../i18n/LanguageContext';
 import { deploymentBoxes } from '../../model/deployment';
 import type { PlatformTree } from '../../model/deployment';
 import { unionRects } from '../../model/placement';
+import { BOUNDARY_PADDING } from '../graph';
 import type { DesignDiagram, DesignModel, ElementId, Rect } from '../../model/types';
 
 /**
@@ -23,11 +24,23 @@ import type { DesignDiagram, DesignModel, ElementId, Rect } from '../../model/ty
  *
  * The nesting is paid for in padding: an outer box is padded further out than
  * the one inside it, so a namespace whose members are the whole cluster\'s is
- * still visibly inside it rather than exactly on top of it.
+ * still visibly inside it rather than exactly on top of it. All of it stays
+ * inside the application's boundary, a clear gap short of its edge: the outer box
+ * once stood a few pixels from that edge, so three dashed borders ran along the
+ * top together and the boundary crossed the outer box's name.
  */
-const PADDING = 26;
+const PADDING = 12;
 const NESTING_STEP = 18;
 const LABEL_ROOM = 18;
+/** What the outer box keeps clear of the boundary's edge, in the canvas's units. */
+const BOUNDARY_GAP = 10;
+
+/** How far out a box at this depth is padded: a step a level, the steps shrunk where the boundary has no room for them all. */
+export function deploymentPadding(depth: number, deepest: number): number {
+  const room = BOUNDARY_PADDING - BOUNDARY_GAP - LABEL_ROOM - PADDING;
+  const step = deepest === 0 ? 0 : Math.min(NESTING_STEP, room / deepest);
+  return PADDING + (deepest - depth) * step;
+}
 
 export interface DeploymentLayerProps {
   model: DesignModel;
@@ -59,7 +72,7 @@ export function DeploymentLayer(props: DeploymentLayerProps) {
         const members = box.memberIds.map((id) => rects.get(id)).filter((rect): rect is Rect => rect !== undefined);
         const union = unionRects(members);
         if (!union) return null;
-        const pad = PADDING + (deepest - box.depth) * NESTING_STEP;
+        const pad = deploymentPadding(box.depth, deepest);
         const rect = {
           x: union.x - pad,
           y: union.y - pad - LABEL_ROOM,

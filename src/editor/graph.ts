@@ -113,7 +113,8 @@ export interface BuildGraphArgs {
   overlayFaded?: ReadonlySet<ElementId>;
 }
 
-const BOUNDARY_PADDING = 56;
+/** How far an application's boundary stands out from its containers; a platform's box on its diagram stays inside it. */
+export const BOUNDARY_PADDING = 56;
 const BOUNDARY_MIN: Rect = { x: 0, y: 0, width: 520, height: 360 };
 
 export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode[]): ElementNode[] {

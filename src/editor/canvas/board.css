@@ -111,6 +111,8 @@
   border-radius: 50%;
   box-sizing: border-box;
 }
+/* Far off, the lid takes the room of a line: the name keeps one, so the type line under it is whole, not cut through by the box's foot. */
+.lv-board[data-kind='container'][data-distance='far'] .lv-tile[data-store] .kit-card__name { -webkit-line-clamp: 1; }
 .lv-tile__type { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lv-tile__under { color: var(--ink-2); font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); line-height: var(--lh-tight); white-space: nowrap; }
 
