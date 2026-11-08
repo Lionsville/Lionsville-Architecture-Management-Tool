@@ -882,7 +882,6 @@ function SheetInside({ at, props, jump, room, full, onFull, posterExport, onPost
         selectedId={selectedId} onSelect={selection.select} onNewLane={() => onLane()} author={author} t={t}
       />
     )}
-    {at.tab !== 'poster' && <SheetKey at={at} props={props} onJump={jump} />}
     <div className="sheet-page__work">
       {at.tab === 'poster' && <PosterPart at={at} props={props} jump={jump} full={full} onFull={onFull} exporting={posterExport} onExported={onPosterExported} onLane={onLane} iconAsked={iconAsked} />}
       {at.tab !== 'poster' && <RailPart at={at} props={props} />}
@@ -899,6 +898,8 @@ function SheetInside({ at, props, jump, room, full, onFull, posterExport, onPost
         />
       )}
     </div>
+    {/* The key stands under the work on every tab, where the poster's dock has it, not over the rows on Names alone. */}
+    {at.tab !== 'poster' && <SheetKey at={at} props={props} onJump={jump} />}
     </>
   )
 }
