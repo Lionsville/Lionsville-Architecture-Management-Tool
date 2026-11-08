@@ -358,16 +358,16 @@ export function observationFacts(one: Observation, facts: { names: PersonNames; 
   return [
     { label: s('observation.toneField'), value: s(TONE_WORD[toneOf(one)]), testId: `observation-tone-${toneOf(one)}` },
     { label: s('observation.impactField'), value: s(IMPACT_LABEL[one.impact]), testId: 'observation-impact' },
-    { label: s('observation.colSeen'), value: lastSeen ? s('observation.seenLast', { times: seen, date: day(lastSeen) }) : seen, testId: 'observation-seen' },
     { label: s('observation.dateField'), value: day(one.date) },
     { label: s('observation.whereField'), value: one.where || '—' },
     { label: s('observation.byField'), value: names.text(one.by) || '—', testId: 'observation-by' },
     ...(one.recordedBy ? [{ label: s('observation.colRecordedBy'), value: recordedByText(one.recordedBy, names, s) || s('observation.recordedByUnknown'), testId: 'observation-recorded-by' }] : []),
+    { label: s('observation.colSeen'), value: lastSeen ? s('observation.seenLast', { times: seen, date: day(lastSeen) }) : seen, testId: 'observation-seen' },
     ...(facts.fromScope ? [{ label: s('observation.colScope'), value: facts.fromScope }] : []),
   ]
 }
 
-/** The facts of an observation as its reader lists them: when, where, who, how much, who recorded it, and what explains it. */
+/** The facts of an observation as its reader lists them, in the order every surface and the editor say them (`observationFacts`), then what explains it. */
 function ObservationFacts({ observation, names, s, day, fromScope, label, explainedBy, onOpen, unlink }: {
   observation: Observation
   names: PersonNames
@@ -383,12 +383,12 @@ function ObservationFacts({ observation, names, s, day, fromScope, label, explai
   return (
     <dl className="chain-facts">
       <Term>{s('observation.toneField')}</Term><Value testId={`observation-tone-${toneOf(observation)}`}><ToneWord tone={toneOf(observation)} s={s} /></Value>
+      <Term>{s('observation.impactField')}</Term><Value testId="observation-impact">{s(IMPACT_LABEL[observation.impact])}</Value>
       <Term>{s('observation.dateField')}</Term><Value>{day(observation.date)}</Value>
       <Term>{s('observation.whereField')}</Term>
       <Value><Box component="span" sx={quiet(Boolean(observation.where))}>{observation.where || '—'}</Box></Value>
       <Term>{s('observation.byField')}</Term>
       <Value testId="observation-by"><Box component="span" sx={quiet(Boolean(observation.by))}>{names.text(observation.by) || '—'}</Box></Value>
-      <Term>{s('observation.impactField')}</Term><Value testId="observation-impact">{s(IMPACT_LABEL[observation.impact])}</Value>
       <Term>{s('observation.colRecordedBy')}</Term>
       <Value testId="observation-recorded-by">
         <Box component="span" sx={quiet(Boolean(observation.recordedBy))}>
