@@ -18,6 +18,7 @@ import type { FunctionInspectorProps, SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
 import { shippingScope } from '../testFixtures'
 import type { DesignElement, DesignModel } from '../../model'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -262,11 +263,11 @@ describe('a function’s ratings', () => {
 
   it('offers each scale of the organisation’s, writes one step, and takes a rating off again', () => {
     const { actions } = open('picking', false, undefined, undefined, { scales })
-    fireEvent.change(screen.getByLabelText('Maturity'), { target: { value: '3' } })
+    chooseValue(screen.getByLabelText('Maturity'), '3')
     expect(actions.updateElement).toHaveBeenCalledWith('picking', { ratings: { maturity: 3 } })
     cleanup()
     const rated = open({ ...held('picking'), ratings: { maturity: 3 } }, false, undefined, undefined, { scales })
-    fireEvent.change(screen.getByLabelText('Maturity'), { target: { value: '' } })
+    chooseValue(screen.getByLabelText('Maturity'), '')
     expect(rated.actions.updateElement).toHaveBeenCalledWith('picking', { ratings: undefined })
   })
 

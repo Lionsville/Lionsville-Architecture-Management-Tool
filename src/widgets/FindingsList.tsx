@@ -39,10 +39,9 @@ import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import ButtonBase from '@mui/material/ButtonBase'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import { SurfaceMenu as Menu } from './kit/Surface'
 import MenuItem from '@mui/material/MenuItem'
-import Switch from '@mui/material/Switch'
+import { Switch } from './kit/Switch'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../i18n'
 import type { StringKey, Translate } from '../i18n'
@@ -205,11 +204,9 @@ function Groups<F, A extends string>(props: FindingsListProps<F, A> & {
       </Box>
       {props.accepted}
       {notes > 0 && (
-        <FormControlLabel
+        <Switch
           data-guide="findings.showNotes" data-testid="findings-show-notes"
-          control={<Switch size="small" checked={notesShown} onChange={() => props.onToggle(NOTES_SHOWN)} />}
-          label={<Typography sx={SMALL}>{t(words.showNotes, { count: notes })}</Typography>}
-          sx={{ mt: 0.5, ml: 0 }}
+          checked={notesShown} onChange={() => props.onToggle(NOTES_SHOWN)} label={t(words.showNotes, { count: notes })}
         />
       )}
       <Box component="ul" data-testid="findings-legend" sx={{ listStyle: 'none', p: 0, m: 0, mt: 0.5, display: 'flex', flexWrap: 'wrap', columnGap: 1.5 }}>

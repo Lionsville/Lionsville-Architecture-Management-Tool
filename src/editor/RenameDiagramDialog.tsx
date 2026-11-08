@@ -7,7 +7,7 @@ import { FieldsDialog } from '../widgets/CompactForms';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import TextField from '@mui/material/TextField';
+import { FieldBox } from '../widgets/kit/FieldBox'
 import { useStrings } from '../i18n/LanguageContext';
 
 export interface RenameDiagramDialogProps {
@@ -52,7 +52,7 @@ export function RenameDiagramDialog({ target, onRename, onClose }: RenameDiagram
     <FieldsDialog open={target !== undefined} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>{t('dialog.renameDiagram')}</DialogTitle>
       <DialogContent>
-        <TextField
+        <FieldBox
           autoFocus
           inputRef={inputRef}
           label={t('field.name')}

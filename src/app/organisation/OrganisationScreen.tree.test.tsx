@@ -22,6 +22,7 @@ import type { ScopeSnapshot } from '../../projects/scope'
 import { renderApp } from '../testing/renderShell'
 import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
 import { pressRowMenu } from '../testing/rowMenu'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 // A home's *Open* mounts the canvas, which asks jsdom for the pieces it has
@@ -249,7 +250,7 @@ describe('the tree', () => {
     fireEvent.click(screen.getAllByTestId('new-scope')[0] as HTMLElement)
     fireEvent.change(await screen.findByLabelText('Name'), { target: { value: 'Returns' } })
     fireEvent.click(screen.getByRole('checkbox', { name: 'Start it with a landscape view' }))
-    fireEvent.change(within(screen.getByRole('dialog')).getByLabelText(/What this is/), { target: { value: 'kind:team' } })
+    chooseValue(within(screen.getByRole('dialog')).getByLabelText(/What this is/), 'kind:team')
     fireEvent.click(screen.getByRole('button', { name: 'Create' }))
     await waitFor(async () => expect((await store.read('returns'))?.kind).toBe('team'))
     expect((await store.read('returns'))?.model.diagrams).toHaveLength(1)
@@ -313,7 +314,7 @@ describe('the tree', () => {
     const before = [(await store.read('retail'))?.id, (await store.read('retail/warehouse'))?.id]
 
     await pressRowMenu('Retail', 'Settings…')
-    fireEvent.change(await screen.findByLabelText('Filed under'), { target: { value: 'finance' } })
+    chooseValue(await screen.findByLabelText('Filed under'), 'finance')
     fireEvent.click(await screen.findByTestId('settings-move'))
 
     await waitFor(async () => expect(await store.read('finance/retail')).toBeDefined())

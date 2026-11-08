@@ -12,7 +12,7 @@ import { FieldsDialog } from '../../widgets/CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import type { Translate } from '../../i18n'
 
 export type NewDiagramDialogProps = {
@@ -29,7 +29,7 @@ export function NewDiagramDialog({ name, onNameChange, onConfirm, s }: NewDiagra
     <FieldsDialog open={name !== null} onClose={() => onNameChange(null)} maxWidth="xs" fullWidth>
       <DialogTitle>{s('shell.newDiagram')}</DialogTitle>
       <DialogContent>
-        <TextField
+        <FieldBox
           autoFocus
           fullWidth
           margin="dense"

@@ -40,7 +40,8 @@ function dialog(): HTMLElement {
 
 /** Every field of the open dialog, as the person would read it back. */
 export function dialogFields(): string[] {
-  return [...dialog().querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>('input, textarea, select')]
+  // The kit's select is a button that holds its value as a select did.
+  return [...dialog().querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | HTMLButtonElement>('input, textarea, select, button[role="combobox"]')]
     .filter((field) => !(field instanceof HTMLTextAreaElement && field.readOnly))
     .map((field) => (field instanceof HTMLInputElement && (field.type === 'checkbox' || field.type === 'radio')
       ? String(field.checked)
@@ -49,7 +50,9 @@ export function dialogFields(): string[] {
 
 /** Take the last choice a select offers. */
 export function chooseLast(combobox: HTMLElement): void {
-  fireEvent.mouseDown(combobox)
+  // MUI's select opens on the press going down, the kit's on the click.
+  if (combobox instanceof HTMLButtonElement) fireEvent.click(combobox)
+  else fireEvent.mouseDown(combobox)
   const lists = document.querySelectorAll<HTMLElement>('[role="listbox"]')
   const options = within(lists[lists.length - 1]!).getAllByRole('option')
   fireEvent.click(options[options.length - 1]!)
@@ -61,7 +64,7 @@ export function answerEverything(): void {
     .filter((field) => !(field instanceof HTMLTextAreaElement && field.readOnly))
     .filter((field) => !(field instanceof HTMLInputElement && ['checkbox', 'radio', 'hidden'].includes(field.type)))
   fields.forEach((field, index) => {
-    fireEvent.change(field, { target: { value: field.type === 'date' ? `2020-01-0${index + 1}` : `typed ${index}` } })
+    fireEvent.change(field, { target: { value: field.type === 'date' || field.hasAttribute('data-date') ? `2020-01-0${index + 1}` : `typed ${index}` } })
   })
   for (const combobox of within(dialog()).queryAllByRole('combobox')) {
     // A native select has its options to hand; a list that opens is pressed for them.

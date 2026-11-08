@@ -22,7 +22,8 @@ import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
+import { DateField } from '../../widgets/kit/Field'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { LineKind } from '../../model/operatingModel'
@@ -122,52 +123,50 @@ export function LineTargetForm(props: LineTargetFormProps) {
   return (
     <Box data-testid={`${testId}-form`} sx={{ border: 1, borderColor: 'divider', borderRadius: 1, p: 1, mt: 0.75, display: 'grid', gap: 0.75 }}>
       <Typography sx={{ fontSize: 'var(--t-small)', fontWeight: 600 }}>{props.title}</Typography>
-      <TextField select label={s('line.toWhat')} value={mode} onChange={(event) => setMode(event.target.value === 'person' ? 'person' : 'role')} slotProps={field('mode')}>
+      <FieldBox select label={s('line.toWhat')} value={mode} onChange={(event) => setMode(event.target.value === 'person' ? 'person' : 'role')} slotProps={field('mode')}>
         <MenuItem value="role">{s('line.toRole')}</MenuItem>
         <MenuItem value="person">{s('line.toPerson')}</MenuItem>
-      </TextField>
+      </FieldBox>
       {mode === 'role' && (
         <>
-          <TextField select label={s('line.unit')} value={unitId} onChange={(event) => { setUnitId(event.target.value); setTarget(''); setHolder(ANY) }} slotProps={field('unit')}>
+          <FieldBox select label={s('line.unit')} value={unitId} onChange={(event) => { setUnitId(event.target.value); setTarget(''); setHolder(ANY) }} slotProps={field('unit')}>
             {units.map(({ unit, path }) => (
               <MenuItem key={unit.id} value={unit.id}>{unit.id === props.fromUnit ? s('unit.lineThisUnit', { unit: path }) : path}</MenuItem>
             ))}
-          </TextField>
-          <TextField select label={s('unit.lineTargetRole')} value={target} disabled={!picked} onChange={(event) => { setTarget(event.target.value); setHolder(ANY) }} slotProps={field('role')}>
+          </FieldBox>
+          <FieldBox select label={s('unit.lineTargetRole')} value={target} disabled={!picked} onChange={(event) => { setTarget(event.target.value); setHolder(ANY) }} slotProps={field('role')}>
             {roles.map((role) => <MenuItem key={role} value={role}>{roleName(role)}</MenuItem>)}
-          </TextField>
+          </FieldBox>
           {holders.length > 0 && (
-            <TextField select label={s('line.holder')} value={holder} onChange={(event) => setHolder(event.target.value)} slotProps={field('holder')}>
+            <FieldBox select label={s('line.holder')} value={holder} onChange={(event) => setHolder(event.target.value)} slotProps={field('holder')}>
               <MenuItem value={ANY}>{s('line.anyHolder')}</MenuItem>
               {[...new Set(holders.map((one) => personOf(one)))].map((id) => <MenuItem key={id} value={id}>{names.text(pickedPerson(id))}</MenuItem>)}
-            </TextField>
+            </FieldBox>
           )}
         </>
       )}
       {mode === 'person' && (
         <>
-          <TextField select label={s('line.person')} value={person} onChange={(event) => { setPerson(event.target.value); setPosition('') }} slotProps={field('person')}>
+          <FieldBox select label={s('line.person')} value={person} onChange={(event) => { setPerson(event.target.value); setPosition('') }} slotProps={field('person')}>
             {people.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-          </TextField>
+          </FieldBox>
           {whose && whose.places.length === 1 && (
             <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid={`${testId}-place`}>{placeLabel(whose.places[0])}</Typography>
           )}
           {whose && whose.places.length > 1 && (
-            <TextField select label={s('line.position')} value={position} onChange={(event) => setPosition(event.target.value)} slotProps={field('position')}>
+            <FieldBox select label={s('line.position')} value={position} onChange={(event) => setPosition(event.target.value)} slotProps={field('position')}>
               {whose.places.map((one) => <MenuItem key={`${one.unitId}/${one.roleId}`} value={`${one.unitId}\u0000${one.roleId}`}>{placeLabel(one)}</MenuItem>)}
-            </TextField>
+            </FieldBox>
           )}
         </>
       )}
-      <TextField select label={s('unit.lineKind')} value={kind} onChange={(event) => setKind(event.target.value === 'dotted' ? 'dotted' : 'solid')} slotProps={field('kind')}>
+      <FieldBox select label={s('unit.lineKind')} value={kind} onChange={(event) => setKind(event.target.value === 'dotted' ? 'dotted' : 'solid')} slotProps={field('kind')}>
         <MenuItem value="solid">{s('unit.lineSolid')}</MenuItem>
         <MenuItem value="dotted">{s('unit.lineDotted')}</MenuItem>
-      </TextField>
+      </FieldBox>
       <Box sx={{ display: 'flex', gap: 0.75 }}>
-        <TextField type="date" label={s('unit.lineFrom')} value={from} onChange={(event) => setFrom(event.target.value)} sx={{ flex: 1 }}
-          slotProps={{ inputLabel: { shrink: true }, ...field('from') }} />
-        <TextField type="date" label={s('unit.lineUntil')} value={until} onChange={(event) => setUntil(event.target.value)} sx={{ flex: 1 }}
-          slotProps={{ inputLabel: { shrink: true }, ...field('until') }} />
+        <Box sx={{ flex: 1 }}><DateField label={s('unit.lineFrom')} value={from} onChange={setFrom} data-testid={`${testId}-from`} /></Box>
+        <Box sx={{ flex: 1 }}><DateField label={s('unit.lineUntil')} value={until} onChange={setUntil} data-testid={`${testId}-until`} /></Box>
       </Box>
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
         <Button size="small" onClick={props.onCancel}>{s('common.cancel')}</Button>

@@ -22,7 +22,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { PersonId, PersonRef } from '../../model/person'
 import { isPicked, pickedPerson } from '../../model/person'
@@ -171,7 +171,7 @@ export function PersonRefField(props: PersonRefFieldProps) {
   return (
     <Box data-testid={testId} sx={{ display: 'grid', gap: 0.5 }}>
       <Box sx={{ display: 'flex', gap: 0.5, alignItems: variant === 'standard' ? 'flex-end' : 'center' }}>
-        <TextField
+        <FieldBox
           variant={variant === 'standard' ? 'standard' : 'outlined'} size="small" fullWidth label={variant === 'standard' ? undefined : label}
           value={draft} disabled={disabled} required={required} error={props.error} helperText={props.helperText}
           placeholder={props.placeholder}

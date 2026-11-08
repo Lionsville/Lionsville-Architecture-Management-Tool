@@ -24,7 +24,7 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import IconButton from '@mui/material/IconButton'
 import Radio from '@mui/material/Radio'
 import Snackbar from '@mui/material/Snackbar'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
@@ -81,7 +81,7 @@ function WhatMoves({ state, s }: { state: MoveScreenState; s: Translate }) {
 function WhereTo({ state, s }: { state: MoveScreenState; s: Translate }) {
   return (
     <Section title={s('observation.moveTarget')} guide="move.target" hint={s('observation.moveTargetHint')}>
-      <TextField
+      <FieldBox
         size="small" sx={{ maxWidth: 520 }} value={state.query} onChange={(event) => state.setQuery(event.target.value)}
         label={s('observation.moveSearch')}
         slotProps={{ htmlInput: { 'data-guide': 'move.search', 'data-testid': 'move-search' } }}

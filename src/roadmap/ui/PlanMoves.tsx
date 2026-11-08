@@ -24,7 +24,7 @@ import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
-import { PropertyRow, PropertyRows, Select, TextInput } from '../../widgets/kit/Field'
+import { PropertyRow, PropertyRows, Select, DateInput, TextInput } from '../../widgets/kit/Field'
 import { Mark } from '../../widgets/kit/Mark'
 import { Picker } from '../../widgets/kit/Picker'
 import { OrderedDateFields } from '../../widgets/OrderedDateFields'
@@ -97,7 +97,7 @@ export function ChangesRows({ plan, model, readOnly, describe, set, onOpen, onDa
                   <Select
                     autoFocus aria-label={t('plan.role')} value={one.role}
                     options={ROLES.map((role) => ({ value: role, label: t(`plan.${role}` as StringKey) }))}
-                    onChange={(event) => setElements(plan.elements.map((row, at) => (at === index ? { ...row, role: event.target.value as TransitionRole } : row)))}
+                    onChange={(value) => setElements(plan.elements.map((row, at) => (at === index ? { ...row, role: value as TransitionRole } : row)))}
                   />
                   <span className="plan-form__grow">
                     {element
@@ -161,7 +161,7 @@ function AddElement({ plan, model, onAdd, onClose }: {
         />
       </span>
       <Select
-        aria-label={t('plan.role')} value={role} onChange={(event) => setRole(event.target.value as TransitionRole)}
+        aria-label={t('plan.role')} value={role} onChange={(value) => setRole(value as TransitionRole)}
         options={ROLES.map((one) => ({ value: one, label: t(`plan.${one}` as StringKey) }))}
       />
       <Button size="small" variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
@@ -183,7 +183,7 @@ function MilestoneForm({ held, onSave, onRemove, onLook, onClose }: {
   const save = () => { if (draft.name !== held.name || draft.date !== held.date) onSave(draft) }
   return (
     <PressedForm onClose={onClose} onLeave={save}>
-      <TextInput type="date" aria-label={t('plan.milestoneDate')} value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} />
+      <DateInput aria-label={t('plan.milestoneDate')} value={draft.date} onChange={(value) => setDraft({ ...draft, date: value })} />
       <span className="plan-form__grow">
         <TextInput autoFocus aria-label={t('plan.milestoneName')} value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} />
       </span>

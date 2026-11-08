@@ -17,7 +17,7 @@ import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { useBlocks } from '../../blocks/ui/BlocksContext'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { TextField } from '../../widgets/kit/Field'
+import { DateField, TextField } from '../../widgets/kit/Field'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { Picker } from '../../widgets/kit/Picker'
@@ -53,8 +53,8 @@ function DaysDialog({ mode, topic, link, access, onClose }: { mode: 'end' | 'edi
         </>
       )}
     >
-      {mode === 'edit' && <TextField type="date" label={t('topics.from')} value={from} onChange={setFrom} />}
-      {(mode === 'end' || link.until !== undefined) && <TextField type="date" label={t('topics.until')} value={until} onChange={setUntil} />}
+      {mode === 'edit' && <DateField label={t('topics.from')} value={from} onChange={setFrom} />}
+      {(mode === 'end' || link.until !== undefined) && <DateField label={t('topics.until')} value={until} onChange={setUntil} />}
     </Dialog>
   )
 }
@@ -101,7 +101,7 @@ function AddLink({ topic, access, current, onClose }: { topic: TopicSummary; acc
       )}
     >
       {adding ? <p>{t('topics.pickedScope', { scope: adding.label })}</p> : <Picker label={t('topics.pickScope')} autoFocus options={options} recent={options.slice(0, 8)} onPick={setAdding} />}
-      <TextField type="date" label={t('topics.from')} value={from} onChange={setFrom} />
+      <DateField label={t('topics.from')} value={from} onChange={setFrom} />
     </Dialog>
   )
 }

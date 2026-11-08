@@ -21,6 +21,7 @@ import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { ObservationsPage } from './ObservationsPage'
 import type { ChangeBelow, ObservationWork, ObservationsPageProps } from './ObservationsPage'
 import { renderShell } from '../../app/testing/renderShell'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -105,7 +106,10 @@ describe('the new observation form', { timeout: 20_000 }, () => {
     expect(onChange).not.toHaveBeenCalled()
     expect(form().getByText('The day can’t be in the future. It is the day it was first seen.')).toBeTruthy()
     expect(screen.getByTestId('form-problems').textContent).toBe('1 field needs filling in.')
-    expect((screen.getByTestId('form-date') as HTMLInputElement).max).toBe('2026-09-20')
+    // The calendar offers no day after today.
+    fireEvent.click(within(screen.getByTestId('form-date').parentElement!).getByRole('button', { name: 'Choose a day' }))
+    expect((screen.getByRole('button', { name: /^21 Sep/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole('button', { name: /^20 Sep/ }) as HTMLButtonElement).disabled).toBe(false)
   })
 
   it('asks the tone first, neutral chosen, and records the one chosen (ADR-0038, amended §9)', () => {
@@ -293,9 +297,9 @@ describe('a tone, read and changed (ADR-0038, amended §9)', () => {
     fireEvent.click(screen.getAllByTestId(/^observation-row-/)[0])
     expect(screen.getByTestId('observation-tone-neutral')).toBeTruthy()
     fireEvent.click(screen.getByTestId('reader-edit'))
-    const tone = screen.getByRole('combobox', { name: 'What it is' }) as HTMLSelectElement
+    const tone = screen.getByRole('combobox', { name: 'What it is' }) as HTMLButtonElement
     expect(tone.value).toBe('neutral')
-    fireEvent.change(tone, { target: { value: 'bright' } })
+    chooseValue(tone, 'bright')
     fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
     expect(lastChange(onChange).observations[0]).toMatchObject({ id: 'o1', tone: 'bright' })
   })

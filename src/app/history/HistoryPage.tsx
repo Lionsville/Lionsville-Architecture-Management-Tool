@@ -25,7 +25,7 @@
  * model's — nothing here knows a path — the page only chooses which rows to
  * speak.
  */
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import { countChanges, diffModels } from '../../model/diff'
 import type { ModelChange } from '../../model/diff'
 import type { HostModel } from '../../model/hostModel'
@@ -36,6 +36,7 @@ import { LOCALE } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { PageDialog } from '../../widgets/PageDialog'
 import { Button } from '../../widgets/kit/Button'
+import { Select } from '../../widgets/kit/Select'
 import { List } from '../../widgets/kit/List'
 import type { ListGroup } from '../../widgets/kit/List'
 import { MoreMenu } from '../../widgets/kit/Menu'
@@ -154,18 +155,20 @@ function SubjectPicker({ current, subject, onChange, s }: {
     { what: 'description' as const, label: s('history.descriptions'), held: current.elements.filter((one) => one.description !== undefined).map((one) => ({ id: one.id, name: one.name })) },
     { what: 'decision' as const, label: s('history.decisions'), held: (current.decisions ?? []).map((one) => ({ id: one.id, name: one.title })) },
   ], [current, s])
+  const labelId = useId()
   return (
-    <label className="history-subject">
-      {s('history.subject')}
-      <select value={encode(subject)} onChange={(event) => onChange(decode(event.target.value))}>
-        <option value="">{s('history.everything')}</option>
-        {groups.filter((group) => group.held.length > 0).map((group) => (
-          <optgroup key={group.what} label={group.label}>
-            {group.held.map((one) => <option key={one.id} value={encode({ what: group.what, id: one.id })}>{one.name}</option>)}
-          </optgroup>
-        ))}
-      </select>
-    </label>
+    <span className="history-subject">
+      <span id={labelId}>{s('history.subject')}</span>
+      <Select
+        aria-labelledby={labelId}
+        value={encode(subject)}
+        onChange={(value) => onChange(decode(value))}
+        options={[
+          { value: '', label: s('history.everything') },
+          ...groups.flatMap((group) => group.held.map((one) => ({ value: encode({ what: group.what, id: one.id }), label: one.name, group: group.label }))),
+        ]}
+      />
+    </span>
   )
 }
 

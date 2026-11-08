@@ -38,6 +38,7 @@ import { checkMarking, CheckMarkingContext } from '../checkMarking'
 import type { WriteIn } from './writeIn'
 import type { LandPeopleMoves } from './landPeopleMoves'
 import { UNIT_MOVE_BARRIER } from './useMoveUnit'
+import { chooseValue, optionLabels } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -425,7 +426,7 @@ describe('a unit in its inspector', () => {
     renderShell(<Harness more={[{ path: 'shipping', model: shipping }]} commands={[]} />)
     fireEvent.click(screen.getByTestId('unit-interaction-add'))
     const dialog = await screen.findByTestId('interact-dialog')
-    expect(within(within(dialog).getByTestId('interact-with')).getAllByRole('option').map((one) => one.textContent)).toEqual(['Choose a unit', 'Customer', 'Zeta', 'Accounts'])
+    expect(optionLabels(within(dialog).getByTestId('interact-with'))).toEqual(['Choose a unit', 'Customer', 'Zeta', 'Accounts'])
   })
 
   it('declares an interaction with another unit as one row, and corrects and removes one kept here (ADR-0036 §7)', async () => {
@@ -436,7 +437,7 @@ describe('a unit in its inspector', () => {
     const dialog = await screen.findByTestId('interact-dialog')
     // Nothing is chosen for the person: a hurried press records nothing.
     expect((within(dialog).getByTestId('interact-save') as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.change(within(dialog).getByTestId('interact-with'), { target: { value: 'customer' } })
+    chooseValue(within(dialog).getByTestId('interact-with'), 'customer')
     fireEvent.click(within(dialog).getByRole('radio', { name: /As a service/ }))
     fireEvent.change(within(dialog).getByTestId('interact-from'), { target: { value: '2026-11-01' } })
     fireEvent.click(within(dialog).getByTestId('interact-save'))
@@ -511,7 +512,7 @@ describe('a unit a manager changes the people of, where the scope is only read',
     fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))
     const dialog = await screen.findByTestId('assign-dialog')
     // The unit's slots first; the organisation's other roles after them, each said to be an exception.
-    const offered = within(within(dialog).getByTestId('assign-role')).getAllByRole('option').map((one) => one.textContent)
+    const offered = optionLabels(within(dialog).getByTestId('assign-role'))
     expect(offered.slice(0, 2)).toEqual(['Product owner', 'Developer'])
     expect(offered.slice(2).every((one) => one?.endsWith('(an exception)'))).toBe(true)
     fireEvent.click(within(dialog).getByTestId('person-pick-pe-ivo'))
@@ -572,7 +573,7 @@ describe('a unit whose role reports to a manager by a line, where the scope is o
     expect(screen.queryByTestId('assign-dialog')).toBeNull()
     fireEvent.click(within(screen.getByTestId('unit-slot-ro-dev')).getByTestId('unit-vacant'))
     const dialog = await screen.findByTestId('assign-dialog')
-    expect(within(within(dialog).getByTestId('assign-role')).getAllByRole('option').map((one) => one.textContent)).toEqual(['Developer'])
+    expect(optionLabels(within(dialog).getByTestId('assign-role'))).toEqual(['Developer'])
     fireEvent.click(within(dialog).getByTestId('person-pick-pe-gijs'))
     fireEvent.click(within(dialog).getByTestId('assign-save'))
     expect(commands).toEqual([{

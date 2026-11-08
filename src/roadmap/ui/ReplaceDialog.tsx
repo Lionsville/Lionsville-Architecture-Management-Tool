@@ -26,7 +26,8 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import MenuItem from '@mui/material/MenuItem'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
+import { DateField } from '../../widgets/kit/Field'
 import Typography from '@mui/material/Typography'
 import { isDay } from '../../model'
 import type { DesignElement, DesignModel, ElementId, ReplacementRequest } from '../../model'
@@ -103,20 +104,20 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
           <RadioGroup value={arrives} onChange={(e) => setArrives(e.target.value as 'new' | 'existing')}>
             <FormControlLabel value="new" control={<Radio />} label={t('replace.newApplication')} />
             {arrives === 'new' && (
-              <TextField
+              <FieldBox
                 autoFocus label={t('common.name')} value={name} sx={{ ml: 4, mb: 1 }}
                 onChange={(e) => setName(e.target.value)}
               />
             )}
             <FormControlLabel value="existing" control={<Radio />} label={t('replace.existing')} />
             {arrives === 'existing' && (
-              <TextField
+              <FieldBox
                 select label={t('replace.which')} value={existingId} sx={{ ml: 4, mb: 1 }}
                 slotProps={{ htmlInput: { 'aria-label': t('replace.which') } }}
                 onChange={(e) => setExistingId(e.target.value)}
               >
                 {others.map((element) => <MenuItem key={element.id} value={element.id}>{element.name}</MenuItem>)}
-              </TextField>
+              </FieldBox>
             )}
           </RadioGroup>
         </Box>
@@ -139,7 +140,7 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
           ))}
           {others.filter((element) => element.id !== existingId).length > 0 && (
             <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
-              <TextField
+              <FieldBox
                 select label={t('plan.addApplication')} value={adding} sx={{ flex: 1 }}
                 // MUI 9 names a select by its visible label alone; the fuller
                 // name is the one that says what the field is for.
@@ -152,7 +153,7 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
                 {others.filter((element) => element.id !== existingId).map((element) => (
                   <MenuItem key={element.id} value={element.id}>{element.name}</MenuItem>
                 ))}
-              </TextField>
+              </FieldBox>
               <Button size="small" disabled={!adding} onClick={() => { setAlso((list) => [...list, adding]); setAdding('') }}>
                 {t('plan.add')}
               </Button>
@@ -161,17 +162,13 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1 }}>
-          <TextField
-            type="date" fullWidth label={t('replace.shadowFrom')} value={shadowFrom}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('replace.shadowFrom') } }}
-            onChange={(e) => setShadowFrom(e.target.value)}
-          />
-          <TextField
-            type="date" fullWidth label={t('replace.cutover')} value={cutover}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'aria-label': t('replace.cutover') } }}
-            onChange={(e) => setCutover(e.target.value)}
-            error={isDay(shadowFrom) && isDay(cutover) && !datesInOrder}
-          />
+          <Box sx={{ flex: 1 }}><DateField label={t('replace.shadowFrom')} value={shadowFrom} onChange={setShadowFrom} /></Box>
+          <Box sx={{ flex: 1 }}>
+            <DateField
+              label={t('replace.cutover')} value={cutover} onChange={setCutover}
+              aria-invalid={isDay(shadowFrom) && isDay(cutover) && !datesInOrder ? true : undefined}
+            />
+          </Box>
         </Box>
         <Typography variant="caption" color="text.secondary">{t('replace.help')}</Typography>
       </DialogContent>

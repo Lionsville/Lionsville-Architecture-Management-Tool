@@ -32,6 +32,7 @@ import { PersonNamesProvider, personNames } from '../people/ui/names'
 import { PlanPage } from '../roadmap/ui/PlanPage'
 import type { PlanActions } from '../roadmap/ui/PlanPage'
 import { renderShell } from './testing/renderShell'
+import { chooseValue } from '../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -197,7 +198,7 @@ describe('who proposed and who signed a decision', () => {
     )))
     fireEvent.click(await screen.findByRole('button', { name: 'Edit text' }))
     const table = screen.getAllByTestId('adr-signers').at(-1)!
-    fireEvent.change(within(table).getByRole('combobox', { name: 'Verdict' }), { target: { value: 'approved' } })
+    chooseValue(within(table).getByRole('combobox', { name: 'Verdict' }), 'approved')
     fireEvent.click(screen.getByRole('button', { name: 'Done' }))
     const [next] = changed.mock.calls.at(-1)! as [Adr[]]
     expect(next[0].signers[0]).toMatchObject({ name: { person: 'pe-kim' }, verdict: 'approved', signedAs: 'Kim Bakker' })

@@ -1,0 +1,64 @@
+/* A day: the kit's box, with the calendar's press at its end inside it. */
+.kit-date { position: relative; display: inline-flex; align-items: center; width: 100%; min-width: 0; }
+.kit-date__text.kit-input { padding-inline-end: calc(var(--s-2) + 20px); font-variant-numeric: tabular-nums; }
+.kit-date__open {
+  position: absolute;
+  inset-inline-end: var(--s-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-1);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.kit-date__open:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.kit-date__open:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 0; }
+.kit-date__open:disabled { cursor: default; }
+
+.kit-date__calendar { padding: var(--s-2); }
+.kit-date__head { display: flex; align-items: center; gap: var(--s-1); margin-bottom: var(--s-1); }
+.kit-date__title { flex: 1; text-align: center; color: var(--ink); font-size: var(--t-body); font-weight: var(--fw-strong); }
+.kit-date__step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--ctl-h);
+  height: var(--ctl-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-1);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  transform: rotate(-90deg);
+}
+.kit-date__step[data-back] { transform: rotate(90deg); }
+.kit-date__step:hover { background: var(--surface-2); color: var(--ink); }
+.kit-date__step:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.kit-date__grid { border-collapse: collapse; }
+.kit-date__grid th { padding-block: var(--s-1); color: var(--ink-3); font-size: var(--t-small); font-weight: var(--fw-regular); }
+.kit-date__grid td { padding: 1px; }
+.kit-date__day {
+  width: var(--ctl-h);
+  height: var(--ctl-h);
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-1);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--t-body);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.kit-date__day[data-other] { color: var(--ink-3); }
+.kit-date__day[aria-current='date'] { box-shadow: inset 0 0 0 1px var(--line-strong); }
+.kit-date__day:hover:not(:disabled) { background: var(--surface-2); }
+.kit-date__day[data-held] { background: var(--accent); color: var(--on-accent); }
+.kit-date__day:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 0; }
+.kit-date__day:disabled { color: var(--ink-3); opacity: 0.4; cursor: default; }

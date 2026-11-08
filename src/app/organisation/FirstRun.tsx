@@ -59,7 +59,7 @@ export function FirstRun({ waysIn, language, onLanguageChange, textSize, onTextS
           <>
           {textSize !== undefined && onTextSizeChange && <TextSizeControl size={textSize} steps={TEXT_SIZES} normal={DEFAULT_TEXT_SIZE} onChoose={onTextSizeChange} />}
           <Select
-            aria-label={s('prefs.language')} value={language} onChange={(event) => onLanguageChange(event.target.value as Language)}
+            aria-label={s('prefs.language')} value={language} onChange={(value) => onLanguageChange(value as Language)}
             options={LANGUAGES.map((held) => ({ value: held, label: s(LANGUAGE_NAME[held]) }))} data-guide="first.language"
           />
           </>

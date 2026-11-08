@@ -11,15 +11,16 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { SheetExportDialog } from './SheetExportDialog'
 import { renderShell } from '../../app/testing/renderShell'
+import { chooseValue, optionLabels } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
 describe('SheetExportDialog', () => {
   it('offers the window and the five paper sizes, A1 first', () => {
     renderShell(<SheetExportDialog onExport={vi.fn(async () => {})} onClose={vi.fn()} />)
-    const field = screen.getByLabelText('Laid out for') as HTMLSelectElement
-    expect([...field.options].map((one) => one.text)).toContain('The window as it is')
-    expect([...field.options].map((one) => one.text)).toContain('A0 · 4494 × 3179 px')
+    const field = screen.getByLabelText('Laid out for') as HTMLButtonElement
+    expect(optionLabels(field)).toContain('The window as it is')
+    expect(optionLabels(field)).toContain('A0 · 4494 × 3179 px')
     expect(field.value).toBe('A1')
   })
 
@@ -28,7 +29,7 @@ describe('SheetExportDialog', () => {
     const onExport = vi.fn(() => new Promise<void>((resolve) => { finish = resolve }))
     const onClose = vi.fn()
     renderShell(<SheetExportDialog onExport={onExport} onClose={onClose} />)
-    fireEvent.change(screen.getByLabelText('Laid out for'), { target: { value: 'A0' } })
+    chooseValue(screen.getByLabelText('Laid out for'), 'A0')
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onExport).toHaveBeenCalledWith('A0')
     // Drawing: said so, and nothing else to press meanwhile.
@@ -54,9 +55,9 @@ describe('where the picture’s own layout lives', () => {
     const updateSheet = vi.fn()
     const sheet: DesignDiagram = { id: 's', kind: 'sheet', name: 'S', members: [], geometry: { nodes: [] } }
     renderShell(<SheetExportDialog onExport={vi.fn(async () => {})} onClose={vi.fn()} sheet={sheet} actions={{ updateSheet }} />)
-    fireEvent.change(screen.getByLabelText('Canvas'), { target: { value: 'fit' } })
+    chooseValue(screen.getByLabelText('Canvas'), 'fit')
     expect(updateSheet).toHaveBeenCalledWith({ paper: 'fit' })
-    fireEvent.change(screen.getByLabelText('Columns'), { target: { value: '3' } })
+    chooseValue(screen.getByLabelText('Columns'), '3')
     expect(updateSheet).toHaveBeenCalledWith({ columns: 3 })
   })
 })

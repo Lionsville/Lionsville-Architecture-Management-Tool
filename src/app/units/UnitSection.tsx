@@ -54,7 +54,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
 import type { Command } from '../../model/commands'
@@ -394,13 +394,13 @@ function TypeField({ element, types, editable, onChange, filedIn, s }: {
   }
   return (
     <>
-      <TextField select fullWidth label={s('unit.type')} value={types.some((one) => one.id === current) || !current ? current : ''}
+      <FieldBox select fullWidth label={s('unit.type')} value={types.some((one) => one.id === current) || !current ? current : ''}
         onChange={(event) => onChange(event.target.value || undefined)}
         helperText={filedIn ? <span data-testid="unit-filed-in">{filedIn}</span> : undefined}
         slotProps={{ htmlInput: { 'data-testid': 'unit-type' } }} sx={{ mt: 0.5 }}>
         <MenuItem value="">{s('unit.notAUnit')}</MenuItem>
         {types.map((type) => <MenuItem key={type.id} value={type.id}>{type.name}</MenuItem>)}
-      </TextField>
+      </FieldBox>
       {types.length === 0 && <Typography sx={QUIET}>{s('unit.noTypes')}</Typography>}
       {!current && types.length > 0 && <Typography sx={QUIET}>{s('unit.notAUnitHint')}</Typography>}
     </>
@@ -581,11 +581,11 @@ function ExtraRole({ element, type, roles, onAdd, s }: {
   const free = roles.filter((role) => !held.has(role.id))
   if (free.length === 0) return null
   return (
-    <TextField select fullWidth label={s('unit.extraRole')} value="" sx={{ mt: 0.75 }}
+    <FieldBox select fullWidth label={s('unit.extraRole')} value="" sx={{ mt: 0.75 }}
       onChange={(event) => onAdd([...(element.extraSlots ?? []), { role: event.target.value, min: 0, max: 1 }])}
       slotProps={{ htmlInput: { 'data-testid': 'unit-extra-role' } }}>
       {free.map((role) => <MenuItem key={role.id} value={role.id}>{role.name}</MenuItem>)}
-    </TextField>
+    </FieldBox>
   )
 }
 

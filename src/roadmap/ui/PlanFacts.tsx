@@ -21,7 +21,7 @@ import type { StringKey } from '../../i18n'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { Button } from '../../widgets/kit/Button'
-import { PropertyRow, PropertyRows, TextInput } from '../../widgets/kit/Field'
+import { PropertyRow, PropertyRows, DateInput } from '../../widgets/kit/Field'
 import { Mark } from '../../widgets/kit/Mark'
 import { MenuButton } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
@@ -181,8 +181,8 @@ function WindowForm({ plan, set, onClose }: { plan: Transition; set: StatusProps
   return (
     <PressedForm onClose={onClose}>
       <span className="plan-window">
-        <TextInput type="date" autoFocus aria-label={t('roadmap.planFrom')} value={plan.from ?? ''} onChange={(event) => setWindow({ from: event.target.value || undefined })} />
-        <TextInput type="date" aria-label={t('roadmap.planTo')} aria-invalid={wrong || undefined} value={plan.to ?? ''} onChange={(event) => setWindow({ to: event.target.value || undefined })} />
+        <DateInput autoFocus aria-label={t('roadmap.planFrom')} value={plan.from ?? ''} onChange={(value) => setWindow({ from: value || undefined })} />
+        <DateInput aria-label={t('roadmap.planTo')} aria-invalid={wrong || undefined} value={plan.to ?? ''} onChange={(value) => setWindow({ to: value || undefined })} />
       </span>
       {wrong && <p className="plan-refused" role="alert">{t('plan.windowBackwards')}</p>}
     </PressedForm>

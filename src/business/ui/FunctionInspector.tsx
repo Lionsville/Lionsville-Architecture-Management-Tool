@@ -24,7 +24,7 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import { DATED_PHASES, LIFECYCLE_ORDER, datesInOrder } from '../../model'
 import type { Command, DesignDiagram, DesignElement, DesignModel, ElementId, Lifecycle, Relation } from '../../model'
 import type { AspectScale } from '../../model/aspectScale'
@@ -388,12 +388,12 @@ function FoldedLines({ props, owned }: { props: FunctionInspectorProps & { eleme
   return (
     <>
       <FoldLine label={t('sheet.lifecycle')} value={dated ? `${lifeWord} · ${formatDay(element.lifecycleDates![dated]!, language)}` : lifeWord} testId="sheet-fold-lifecycle">
-        <TextField
+        <FieldBox
           select fullWidth label={t('sheet.lifecycle')} value={element.lifecycle} disabled={readOnly || owned('lifecycle')}
           onChange={(e) => actions.updateElement(element.id, { lifecycle: e.target.value as Lifecycle })}
         >
           {LIFECYCLE_ORDER.map((phase) => <MenuItem key={phase} value={phase}>{t(`lifecycle.${phase}` as StringKey)}</MenuItem>)}
-        </TextField>
+        </FieldBox>
         <OrderedDateFields
           keys={DATED_PHASES} values={element.lifecycleDates}
           label={(phase) => t(`sheet.date.${phase}` as StringKey)}
@@ -411,7 +411,7 @@ function FoldedLines({ props, owned }: { props: FunctionInspectorProps & { eleme
             <Select
               aria-label={t('sheet.widthInPrint')} value={String(print.span)}
               options={Array.from({ length: MAX_SPAN }, (_, index) => ({ value: String(index + 1), label: String(index + 1) }))}
-              onChange={(event) => print.onSpan(withSpan(print.spans, element.id, Number(event.target.value)))}
+              onChange={(value) => print.onSpan(withSpan(print.spans, element.id, Number(value)))}
             />
           </label>
         )}
@@ -554,8 +554,8 @@ function Ratings({ element, readOnly, actions, scales }: {
                 <Select
                   aria-label={scale.label} value={value === undefined ? '' : String(value)}
                   options={[{ value: '', label: t('sheet.lens.unrated') }, ...steps.map((step) => ({ value: step, label: step }))]}
-                  onChange={(event) => actions.updateElement(element.id, {
-                    ratings: withRating(element.ratings, scale.key, event.target.value === '' ? undefined : Number(event.target.value)),
+                  onChange={(value) => actions.updateElement(element.id, {
+                    ratings: withRating(element.ratings, scale.key, value === '' ? undefined : Number(value)),
                   })}
                 />
               )}
@@ -658,7 +658,7 @@ function ParentField({ element, model, readOnly, actions, keptIn }: {
 
   return (
     <>
-      <TextField
+      <FieldBox
         select fullWidth
         label={t(element.kind === 'function' ? 'sheet.moveTo' : 'sheet.parent')}
         value={element.parentId ?? ''}
@@ -680,7 +680,7 @@ function ParentField({ element, model, readOnly, actions, keptIn }: {
             </MenuItem>
           )
         })}
-      </TextField>
+      </FieldBox>
       {!readOnly && siblings.length > 1 && (
         <div className="sheet-held">
           <span className="sheet-held__name">{t('sheet.order')}</span>
@@ -780,7 +780,7 @@ function LaneField({ element, model, readOnly, actions }: {
   const { t } = useStrings()
   const actors = model.elements.filter((held) => held.kind === 'actor')
   return (
-    <TextField
+    <FieldBox
       select fullWidth
       label={t('sheet.lane')}
       value={element.lane ?? ''}
@@ -793,7 +793,7 @@ function LaneField({ element, model, readOnly, actions }: {
       {actors.map((actor) => (
         <MenuItem key={actor.id} value={actor.id}>{actor.name}</MenuItem>
       ))}
-    </TextField>
+    </FieldBox>
   )
 }
 

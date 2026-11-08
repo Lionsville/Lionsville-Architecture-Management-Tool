@@ -20,7 +20,7 @@ import { createPortal } from 'react-dom';
 import { BoardBar, type BoardBarAdd, type BoardBarShow } from './BoardBar';
 import { Button as KitButton } from '../widgets/kit/Button';
 import { usePlaceHost } from '../widgets/kit/placeHost';
-import TextField from '@mui/material/TextField';
+import { DateField } from '../widgets/kit/Field';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import type { TidyOptions } from '../layout/tidy';
@@ -493,15 +493,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
               <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mb: 1.5 }}>
                 {t('toolbar.asOfHelp')}
               </Typography>
-              <TextField
-                type="date"
-                size="small"
-                fullWidth
+              <DateField
                 autoFocus
                 label={t('toolbar.asOf')}
                 value={duplicateAsOf?.day ?? ''}
-                onChange={(e) => setDuplicateAsOf((held) => (held ? { ...held, day: e.target.value } : held))}
-                slotProps={{ inputLabel: { shrink: true } }}
+                onChange={(day) => setDuplicateAsOf((held) => (held ? { ...held, day } : held))}
               />
             </DialogContent>
             <DialogActions>

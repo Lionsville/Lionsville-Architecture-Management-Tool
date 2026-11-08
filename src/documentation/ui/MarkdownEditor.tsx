@@ -55,6 +55,7 @@ import { caretRect, InsertMenu, useReferenceCompletion } from './ReferenceComple
 import type { Completion, SlashBlock } from './ReferenceCompletion'
 import type { Referable } from '../references'
 import { commandKey } from '../../widgets/kit/keys'
+import { focusLeaves } from '../../widgets/kit/Surface'
 import './MarkdownEditor.css'
 
 /**
@@ -507,7 +508,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
     setCaret(heading.at)
   }
   const leaving = (event: FocusEvent<HTMLElement>) => {
-    if (!event.currentTarget.contains(event.relatedTarget)) setActive(false)
+    if (focusLeaves(event)) setActive(false)
   }
 
   const canWrite = !disabled && view !== 'preview'

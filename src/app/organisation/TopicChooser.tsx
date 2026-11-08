@@ -21,7 +21,7 @@ import Chip from '@mui/material/Chip'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { ScopePath } from '../../projects/scopePath'
@@ -61,7 +61,7 @@ export function TopicChooser({ at, access, onClose }: { at: ScopePath; access: T
       <DialogTitle>{t('topics.chooseTitle', { scope: access.scopeLabel(at) })}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, minHeight: 0 }}>
         <Typography sx={QUIET}>{t('topics.chooseIntro')}</Typography>
-        <TextField
+        <FieldBox
           autoFocus size="small" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t('topics.chooseFind')}
           helperText={t('topics.chooseShown', { shown: rows.filter((row) => row.matched).length, count: total })}
           slotProps={{ htmlInput: { 'aria-label': t('topics.chooseFind'), 'data-testid': 'topic-chooser-find' } }}

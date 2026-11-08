@@ -24,7 +24,7 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { UnitType } from '../../model/operatingModel'
@@ -123,14 +123,14 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
   return (
     <>
       <DialogContent sx={{ display: 'grid', gap: 1.25, pt: '8px !important' }}>
-        <TextField
+        <FieldBox
           select label={s('chart.addType')} value={typeId} onChange={(event) => setTypeId(event.target.value)}
           helperText={parent ? s('chart.addTypesIn', { type: parent.typeName }) : s('chart.addTypesTop')}
           slotProps={{ htmlInput: { 'data-testid': 'new-unit-type' } }}
         >
           {types.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-        </TextField>
-        <TextField
+        </FieldBox>
+        <FieldBox
           label={s('chart.addName')} value={name} autoFocus onChange={(event) => setName(event.target.value)}
           // Consumed: an Enter left to the browser becomes a press of whatever button takes the focus next.
           onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); create() } }}
@@ -139,7 +139,7 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
         {asked
           ? <ServesField serves={servesNow} spans={spans} scopes={scopes} scopeLabel={scopeLabel} onChange={setServes} s={s} />
           : <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid="new-unit-through">{s('chart.addServesThrough', { name: parent?.name ?? '' })}</Typography>}
-        <TextField
+        <FieldBox
           select label={s('chart.addFiledIn')} value={filedIn === undefined ? '' : choiceOf(filedIn)} onChange={(event) => setFiled(pathOf(event.target.value))}
           disabled={filedIn === undefined}
           helperText={filedIn === undefined ? s('chart.addFiledNowhere') : s(parent ? 'chart.addFiledInParent' : 'chart.addFiledInTop')}
@@ -148,7 +148,7 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
           {writable.map((path) => (
             <MenuItem key={path} value={choiceOf(path)}>{path === preferred ? s('chart.addDefault', { scope: scopeTrail(path, scopeLabel) }) : scopeTrail(path, scopeLabel)}</MenuItem>
           ))}
-        </TextField>
+        </FieldBox>
         {said && <Typography role="status" data-testid="new-unit-said" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }}>{said}</Typography>}
       </DialogContent>
       <DialogActions>

@@ -49,6 +49,7 @@ import type { ScopeSettingsPatch } from '../App'
 import { ScopeField } from './ScopeField'
 import { TypeField } from './TypeField'
 import { claimKey } from '../../widgets/kit/keys'
+import { focusLeaves } from '../../widgets/kit/Surface'
 
 export const SETTINGS_TABS = ['general', 'links', 'exports', 'landscapes'] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
@@ -260,7 +261,7 @@ function CommittedDescription({ held, onCommit, readOnly, placeholder }: { held:
   const [typed, setTyped] = useState(held)
   useEffect(() => setTyped(held), [held])
   return (
-    <div onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget) && typed.trim() !== held.trim()) onCommit(typed.trim()) }}>
+    <div onBlur={(event) => { if (focusLeaves(event) && typed.trim() !== held.trim()) onCommit(typed.trim()) }}>
       <MarkdownField value={typed} onChange={setTyped} disabled={readOnly} renderMarkdown={renderMarkdown} placeholder={placeholder} />
     </div>
   )
@@ -278,7 +279,7 @@ function AspectsNow({ held, onCommit, readOnly }: { held: readonly AspectConfigE
   }
   if (readOnly) return <ul>{held.map((column) => <li key={column.key}>{column.label}</li>)}</ul>
   return (
-    <div onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) commit() }}>
+    <div onBlur={(event) => { if (focusLeaves(event)) commit() }}>
       <AspectColumnsEditor columns={columns} fresh={fresh} onChange={(next, nextFresh) => { setColumns(next); setFresh(nextFresh); latest.current = { columns: next, fresh: nextFresh } }} />
     </div>
   )
@@ -299,7 +300,7 @@ function LinksField({ links, onCommit, readOnly, s }: { links: readonly RecordLi
   }
   const edit = (index: number, patch: Partial<RecordLink>) => setRows(rows.map((link, at) => (at === index ? { ...link, ...patch } : link)))
   const leftRow = (event: { currentTarget: HTMLElement; relatedTarget: EventTarget | null }) => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) commit()
+    if (focusLeaves(event)) commit()
   }
   return (
     <div className="kit-settings__section" onBlur={leftRow}>

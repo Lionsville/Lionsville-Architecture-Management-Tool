@@ -17,7 +17,7 @@ import type { ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import NativeSelect from '@mui/material/NativeSelect'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
@@ -123,7 +123,7 @@ function RowFrame({ row, rows, t, children }: { row: ComingInRow; children: Reac
 function NameField({ row, edits, onEdit, t }: { row: ComingInRow } & Pick<RowContext, 'edits' | 'onEdit' | 't'>) {
   const typed = edits.names && Object.hasOwn(edits.names, row.entry) ? edits.names[row.entry] : row.name
   return (
-    <TextField
+    <FieldBox
       size="small" fullWidth value={typed} placeholder={row.term} sx={{ '& .MuiInputBase-input': { py: 0.5, fontSize: 'var(--t-body)' } }}
       slotProps={{ htmlInput: { 'aria-label': t('operating.calledHere', { term: row.term }) } }}
       onChange={(event) => onEdit({ ...edits, names: { ...edits.names, [row.entry]: event.target.value } })}

@@ -267,7 +267,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
           <summary data-testid="form-more">{s('observation.formMore')}</summary>
           <div className="chain-form">
             <ExampleField
-              required type="date" max={today} label={s('observation.dateField')} value={fields.date} onChange={(value) => set('date', value)}
+              required date max={today} label={s('observation.dateField')} value={fields.date} onChange={(value) => set('date', value)}
               example={exampleFor('date', s)} problem={problemText('date', shown.date, s)} testId="form-date"
             />
             <ExampleField

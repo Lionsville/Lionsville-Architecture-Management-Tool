@@ -22,6 +22,7 @@ import { OperatingModelPage } from './OperatingModelPage'
 import type { SlotTakeOut } from './OperatingModelPage'
 import { organisationFacts } from '../organisationFacts'
 import type { OrganisationFacts } from '../organisationFacts'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -141,7 +142,7 @@ describe('the operating model\'s page', () => {
     expect(screen.getByTestId('operating-slot-answer').textContent).toBe('By nesting')
     expect(screen.queryByTestId('operating-line-back')).toBeNull()
     fireEvent.click(screen.getByTestId('operating-change-line'))
-    fireEvent.change(screen.getByLabelText('Planner: Reports to (Line manager)'), { target: { value: 'ro-2' } })
+    chooseValue(screen.getByLabelText('Planner: Reports to (Line manager)'), 'ro-2')
     expect(screen.getByTestId('operating-slot-answer').textContent).toBe('Biller')
   })
 
@@ -150,7 +151,7 @@ describe('the operating model\'s page', () => {
     fireEvent.click(screen.getAllByTestId('operating-slot')[0])
     fireEvent.click(screen.getByTestId('operating-change-line'))
     const before = sent.length
-    fireEvent.change(screen.getByLabelText('Planner: Reports to (Line manager)'), { target: { value: 'ro-2' } })
+    chooseValue(screen.getByLabelText('Planner: Reports to (Line manager)'), 'ro-2')
     expect(sent).toHaveLength(before)
     expect(screen.getByTestId('operating-line-refused').textContent).toBe('It would close a loop.')
   })
@@ -237,7 +238,7 @@ describe('the operating model\'s page', () => {
     })
     show(start, { facts })
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
-    fireEvent.change(screen.getByLabelText('Unit'), { target: { value: 'u-1' } })
+    chooseValue(screen.getByLabelText('Unit'), 'u-1')
     expect(screen.getByTestId('operating-grid-title').textContent).toBe('Depot North')
     expect(screen.getByRole('treeitem', { name: /All for Depot North/ })).toBeTruthy()
     expect(screen.getByRole('columnheader', { name: /Planner/ }).textContent).toContain('Anna')
@@ -288,7 +289,7 @@ describe('the operating model\'s page', () => {
     const sent = show(MODEL())
     fireEvent.click(screen.getByRole('tab', { name: 'Roles' }))
     expect(screen.getByTestId('operating-rule-domainOwner').textContent).toContain('Domains show no owner until this is set.')
-    fireEvent.change(within(screen.getByTestId('operating-rule-domainOwner')).getByRole('combobox'), { target: { value: 'ro-1' } })
+    chooseValue(within(screen.getByTestId('operating-rule-domainOwner')).getByRole('combobox'), 'ro-1')
     expect(sent.at(-1)).toEqual({ type: 'operatingRule.add', rule: { id: 'domainOwner', role: 'ro-1' } })
     expect(screen.getByTestId('operating-rule-domainOwner').textContent).not.toContain('Domains show no owner')
   })

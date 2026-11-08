@@ -25,7 +25,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import MenuItem from '@mui/material/MenuItem'
 import Stack from '@mui/material/Stack'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
 import type { ElementId } from '../../model'
@@ -95,7 +95,7 @@ export function MoveRecordDialog({
       <DialogTitle>{s('gesture.title', { name: target.name })}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 0.5 }}>
-          <TextField
+          <FieldBox
             select
             label={s('gesture.what')}
             value={gesture}
@@ -108,14 +108,14 @@ export function MoveRecordDialog({
             {order.map((one) => (
               <MenuItem key={one} value={one}>{s(GESTURE_LABEL[one])}</MenuItem>
             ))}
-          </TextField>
+          </FieldBox>
           {gesture !== '' && (
             <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>
               {s(GESTURE_WHAT[gesture])}
             </Typography>
           )}
           {gesture !== '' && choices.length > 0 && (
-            <TextField
+            <FieldBox
               select
               label={s('gesture.to')}
               value={to ?? ''}
@@ -125,7 +125,7 @@ export function MoveRecordDialog({
               {choices.map((path) => (
                 <MenuItem key={path} value={path}>{scopeLabel(path)}</MenuItem>
               ))}
-            </TextField>
+            </FieldBox>
           )}
           {gesture === 'transfer' && (
             <FormControlLabel

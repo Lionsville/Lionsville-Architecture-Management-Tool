@@ -22,7 +22,7 @@ import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogChoices } from '../../widgets/kit/Dialog'
-import { SelectField, TextField } from '../../widgets/kit/Field'
+import { SelectField, DateField } from '../../widgets/kit/Field'
 import './Interactions.css'
 import type { Translate } from '../../i18n'
 import type { Command } from '../../model/commands'
@@ -134,9 +134,8 @@ export function InteractDialog({ interacting, units, newRowId, dispatch, scopeNa
         options={INTERACTION_MODES.map((mode) => ({ value: mode, label: s(MODE_NAME[mode]), effect: s(MODE_HELP[mode]) }))}
       />
       <div className="interact__days">
-        <TextField type="date" label={s('interacts.from')} value={form.from} data-testid="interact-from" onChange={(value) => set({ from: value })} />
-        <TextField
-          type="date" label={s('interacts.until')} value={form.until} data-testid="interact-until" onChange={(value) => set({ until: value })}
+        <DateField label={s('interacts.from')} value={form.from} data-testid="interact-from" onChange={(value) => set({ from: value })} />
+        <DateField label={s('interacts.until')} value={form.until} data-testid="interact-until" onChange={(value) => set({ until: value })}
           {...(backwards ? { error: s('interacts.backwards') } : {})}
         />
       </div>

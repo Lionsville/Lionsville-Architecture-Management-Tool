@@ -31,7 +31,7 @@ import type { Language } from '../i18n/languages';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey, Translate } from '../i18n/strings';
 import { Button } from '../widgets/kit/Button';
-import { PropertyRow, PropertyRows, Select, TextInput } from '../widgets/kit/Field';
+import { PropertyRow, PropertyRows, Select, DateInput } from '../widgets/kit/Field';
 import type { RowEditor } from '../widgets/kit/Field';
 import { MoreMenu } from '../widgets/kit/Menu';
 import { Panel, PanelLink, PanelSection } from '../widgets/kit/Panel';
@@ -41,6 +41,7 @@ import { DASH, RowSet, pickEdit } from './inspector/rowTools';
 import type { RowSpec } from './inspector/rowTools';
 import type { EditorActions } from './useEditorState';
 import { claimKey } from '../widgets/kit/keys';
+import { focusLeaves } from '../widgets/kit/Surface';
 import './inspector/inspector.css';
 import { PANEL_HELP } from '../platform/helpPlaces';
 
@@ -93,11 +94,11 @@ export function ValidEditor({ editor, connection, onWrite, t }: {
   return (
     <div
       className="inspector-aspect"
-      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}
+      onBlur={(event) => { if (focusLeaves(event)) editor.cancel(); }}
       onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); editor.cancel(); } }}
     >
-      <TextInput autoFocus type="date" data-fit aria-label={t('field.validFrom')} value={connection.validFrom ?? ''} onChange={(event) => onWrite({ validFrom: event.target.value || undefined })} />
-      <TextInput type="date" data-fit aria-label={t('field.validUntil')} value={connection.validUntil ?? ''} onChange={(event) => onWrite({ validUntil: event.target.value || undefined })} />
+      <DateInput autoFocus data-fit aria-label={t('field.validFrom')} value={connection.validFrom ?? ''} onChange={(value) => onWrite({ validFrom: value || undefined })} />
+      <DateInput data-fit aria-label={t('field.validUntil')} value={connection.validUntil ?? ''} onChange={(value) => onWrite({ validUntil: value || undefined })} />
     </div>
   );
 }
@@ -213,16 +214,16 @@ function ConnectionAppearance({ connection, route, routeStatus, badge, bends, re
                 edit={(editor) => (
                   <div
                     className="inspector-aspect"
-                    onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}
+                    onBlur={(event) => { if (focusLeaves(event)) editor.cancel(); }}
                     onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); editor.cancel(); } }}
                   >
                     <Select
                       autoFocus data-fit aria-label={t('field.source')} value={connection.sourceArrowhead ?? ''} options={options(ARROWHEAD_OPTIONS, t)}
-                      onChange={(event) => update({ sourceArrowhead: event.target.value === '' ? undefined : event.target.value as EdgeArrowhead })}
+                      onChange={(value) => update({ sourceArrowhead: value === '' ? undefined : value as EdgeArrowhead })}
                     />
                     <Select
                       data-fit aria-label={t('field.target')} value={connection.targetArrowhead ?? ''} options={options(ARROWHEAD_OPTIONS, t)}
-                      onChange={(event) => update({ targetArrowhead: event.target.value === '' ? undefined : event.target.value as EdgeArrowhead })}
+                      onChange={(value) => update({ targetArrowhead: value === '' ? undefined : value as EdgeArrowhead })}
                     />
                   </div>
                 )}

@@ -1,0 +1,30 @@
+.kit-switch { position: relative; display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--target-min); color: var(--ink); font-size: var(--t-body); cursor: pointer; }
+.kit-switch[data-disabled] { color: var(--ink-3); cursor: default; }
+/* The checkbox stays where it is pressed and read, and the track is what is seen. */
+.kit-switch__input { position: absolute; inset-inline-start: 0; width: 32px; height: 18px; margin: 0; opacity: 0; cursor: inherit; }
+.kit-switch__track {
+  flex: none;
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface-2);
+  transition: background-color 120ms, border-color 120ms;
+}
+.kit-switch__knob {
+  position: absolute;
+  top: 2px;
+  inset-inline-start: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  transition: transform 120ms, background-color 120ms;
+}
+.kit-switch__input:checked + .kit-switch__track { border-color: var(--accent); background: var(--accent); }
+.kit-switch__input:checked + .kit-switch__track .kit-switch__knob { background: var(--on-accent); transform: translateX(14px); }
+.kit-switch__input:focus-visible + .kit-switch__track { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+.kit-switch__input:disabled + .kit-switch__track { opacity: 0.5; }
+@media (prefers-reduced-motion: reduce) { .kit-switch__track, .kit-switch__knob { transition: none; } }
+:dir(rtl) .kit-switch__input:checked + .kit-switch__track .kit-switch__knob { transform: translateX(-14px); }

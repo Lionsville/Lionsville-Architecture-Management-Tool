@@ -22,7 +22,7 @@ import { plural } from '../../i18n/strings'
 import { addDays } from '../../model/transition'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogChoices, DialogDanger } from '../../widgets/kit/Dialog'
-import { TextField } from '../../widgets/kit/Field'
+import { DateField } from '../../widgets/kit/Field'
 import { Picker } from '../../widgets/kit/Picker'
 import { heldOn, keptName, leavingOn, vacancyOf } from '../hold'
 import type { MergeLeaving, Person } from '../person'
@@ -80,7 +80,7 @@ function Leave({ person, day, register, saying, onClose, s }: Asked & { person: 
       )}
     >
       <div className="people-stack">
-        <TextField label={s('people.lastDay')} type="date" value={lastDay} onChange={setLastDay} autoFocus data-testid="people-last-day" />
+        <DateField label={s('people.lastDay')} value={lastDay} onChange={setLastDay} autoFocus data-testid="people-last-day" />
         <div>
           <p className="people-heading">{s('people.leaveEffects')}</p>
           <ul className="people-effects" data-testid="people-leave-effects">

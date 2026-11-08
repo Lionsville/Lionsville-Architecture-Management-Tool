@@ -30,7 +30,8 @@ import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
+import { DateField } from '../../widgets/kit/Field'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { Command } from '../../model/commands'
@@ -158,18 +159,17 @@ function AddMove({ units, on: start, parentName, loops, onAdd, s }: {
   const [on, setOn] = useState(start)
   return (
     <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0.75, mt: 0.75 }}>
-      <TextField select size="small" label={s('move.unit')} value={unitId} onChange={(event) => setUnitId(event.target.value)}
+      <FieldBox select size="small" label={s('move.unit')} value={unitId} onChange={(event) => setUnitId(event.target.value)}
         slotProps={{ htmlInput: { 'data-testid': 'plan-move-unit' } }}>
         {units.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-      </TextField>
-      <TextField select size="small" label={s('move.parent')} value={parentId} onChange={(event) => setParentId(event.target.value)}
+      </FieldBox>
+      <FieldBox select size="small" label={s('move.parent')} value={parentId} onChange={(event) => setParentId(event.target.value)}
         slotProps={{ htmlInput: { 'data-testid': 'plan-move-parent' } }}>
         <MenuItem value={TOP}>{parentName(undefined)}</MenuItem>
         {units.filter((one) => one.id !== unitId && !(unitId && isDay(on) && loops(unitId, one.id, on)))
           .map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-      </TextField>
-      <TextField size="small" type="date" label={s('move.on')} value={on} onChange={(event) => setOn(event.target.value)}
-        slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'plan-move-on' } }} />
+      </FieldBox>
+      <DateField label={s('move.on')} value={on} onChange={setOn} data-testid="plan-move-on" />
       <Button size="small" variant="outlined" disabled={!unitId || !isDay(on)} data-testid="plan-move-add"
         onClick={() => { onAdd(unitId, parentId === TOP ? undefined : parentId, on); setUnitId(''); setParentId(TOP) }}>
         {s('move.add')}

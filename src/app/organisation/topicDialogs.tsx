@@ -8,7 +8,7 @@
  */
 import { useState } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
-import MuiTextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import { useStrings } from '../../i18n/LanguageContext'
 import { isWithinScope } from '../../projects/scopePath'
 import { Button } from '../../widgets/kit/Button'
@@ -55,7 +55,7 @@ export function NewTopicDialog({ access, parent, name: named = '', relevantTo = 
       <Autocomplete
         multiple options={access.scopeChoices() as ScopeChoice[]} value={places} onChange={(_event, next) => setPlaces(next)}
         getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.path === b.path} renderOption={renderScopeOption}
-        renderInput={(params) => <MuiTextField {...params} label={t('topics.relevantTo')} />}
+        renderInput={(params) => <FieldBox {...params} label={t('topics.relevantTo')} />}
       />
     </Dialog>
   )

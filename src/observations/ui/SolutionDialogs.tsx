@@ -13,7 +13,8 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
 import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
+import { DateField } from '../../widgets/kit/Field'
 import Box from '@mui/material/Box'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
@@ -215,7 +216,7 @@ export function DropDialog({ subject, onCancel, onConfirm, s }: DropDialogProps)
       dirty={note.trim() !== ''} onCancel={onCancel} onSubmit={submit} submitLabel={s('solution.dropConfirm')} submitTestId="drop-confirm"
       problem={problemsLine(missing ? 1 : 0, s)} s={s}
     >
-      <TextField
+      <FieldBox
         autoFocus fullWidth size="small" multiline required label={s('solution.dropNote')} value={note} onChange={(event) => setNote(event.target.value)}
         error={missing} helperText={missing ? s('solution.dropNoteMissing') : undefined}
         slotProps={{ htmlInput: { 'data-testid': 'drop-note' } }}
@@ -258,18 +259,16 @@ export function ConcludeDialog({ subject, today, onCancel, onConfirm, s }: Concl
       submitLabel={s('solution.concludeConfirm')} submitTestId="conclude-confirm"
       problem={problemsLine(pressed ? Number(!result.trim()) + Number(badDay) : 0, s)} s={s}
     >
-      <TextField
+      <FieldBox
         autoFocus fullWidth multiline required size="small"
         label={s('solution.result')} helperText={missing ? s('solution.resultMissing') : s('solution.concludeResultHelp')} error={missing}
         value={result} onChange={(event) => setResult(event.target.value)}
         slotProps={{ htmlInput: { 'data-testid': 'conclude-result' } }}
       />
-      <TextField
-        type="date" size="small" required label={s('solution.toField')} value={to}
-        error={early}
-        helperText={early && subject?.from ? s('solution.concludeBeforeFrom', { date: formatDay(subject.from, language) }) : undefined}
-        onChange={(event) => setTo(event.target.value)}
-        slotProps={{ inputLabel: { shrink: true }, htmlInput: { min: subject?.from, 'data-testid': 'conclude-to' } }}
+      <DateField
+        required label={s('solution.toField')} value={to} min={subject?.from} data-testid="conclude-to"
+        error={early && subject?.from ? s('solution.concludeBeforeFrom', { date: formatDay(subject.from, language) }) : undefined}
+        onChange={setTo}
       />
     </FormDialog>
   )

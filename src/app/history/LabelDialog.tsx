@@ -13,7 +13,7 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import type { Translate } from '../../i18n'
 
 export type LabelDialogProps = {
@@ -32,7 +32,7 @@ export function LabelDialog({ open, onCancel, onLabel, s }: LabelDialogProps) {
       <DialogTitle sx={{ fontSize: 'var(--t-large)' }}>{s('history.labelTitle')}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 'var(--t-body)', mb: 2 }}>{s('history.labelBody')}</DialogContentText>
-        <TextField
+        <FieldBox
           autoFocus
           fullWidth
           label={s('history.labelField')}

@@ -17,6 +17,7 @@ import type { EditorActions } from './useEditorState';
 import type { DesignDiagram, DesignElement, DesignModel, ElementKind } from '../model/types';
 import type { LeverageLine } from '../model/leverage';
 import { axeFindings } from '../app/testing/axe';
+import { chooseValue } from '../widgets/kit/testing/select';
 
 /**
  * The one panel for an element, and its rows on the record: every field an element
@@ -150,7 +151,7 @@ function typeIn(testId: string, label: string, value: string) {
 }
 const choose = (testId: string, label: string, value: string) => {
   press(testId);
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  chooseValue(screen.getByLabelText(label), value);
 };
 const pick = (testId: string, option: string | RegExp) => {
   press(testId);

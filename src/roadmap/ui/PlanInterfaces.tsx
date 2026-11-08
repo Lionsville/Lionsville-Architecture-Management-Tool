@@ -19,7 +19,7 @@ import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { SelectField, TextField } from '../../widgets/kit/Field'
+import { SelectField, DateField } from '../../widgets/kit/Field'
 import { FilterWords } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
 import { FRESH_VIEW, listed } from '../../widgets/kit/listView'
@@ -145,8 +145,7 @@ export function PlanInterfaces({ plan, model, today, readOnly, actions }: {
                     }}
                   />
                 )}
-                <TextField
-                  type="date" label={t('plan.onDay')} value={current.on ?? ''} disabled={!targetFor(current)}
+                <DateField label={t('plan.onDay')} value={current.on ?? ''} disabled={!targetFor(current)}
                   hint={targetFor(current) ? undefined : t('plan.pickTargetFirst')}
                   onChange={(day) => {
                     if (day) actions.port(plan.id, current.from.id, targetFor(current), day)
@@ -195,7 +194,7 @@ function GiveTheRest({ count, targets, name, start, onGive, onClose }: {
           options={[{ value: '', label: '' }, ...targets.map((id) => ({ value: id, label: name(id) }))]}
         />
       )}
-      <TextField type="date" label={t('plan.onDay')} hint={t('plan.giveHelp')} value={on} onChange={setOn} />
+      <DateField label={t('plan.onDay')} hint={t('plan.giveHelp')} value={on} onChange={setOn} />
     </Dialog>
   )
 }

@@ -19,7 +19,8 @@
  * every path that does not come through here.
  */
 import { useState } from 'react'
-import TextField from '@mui/material/TextField'
+import Box from '@mui/material/Box'
+import { DateField } from './kit/Field'
 import type { SxProps, Theme } from '@mui/material/styles'
 
 export type OrderedDateFieldsProps<K extends string> = {
@@ -51,7 +52,7 @@ function withDay<K extends string>(
 }
 
 export function OrderedDateFields<K extends string>(props: OrderedDateFieldsProps<K>) {
-  const { keys, values, label, ariaLabel, disabled, accepts, refusal, onChange, size, fullWidth, sx } = props
+  const { keys, values, label, ariaLabel, disabled, accepts, refusal, onChange, fullWidth, sx } = props
   // The one day typed and not written, shown where it was typed until a day
   // that can be written replaces it.
   const [held, setHeld] = useState<{ key: K; day: string } | undefined>(undefined)
@@ -66,23 +67,16 @@ export function OrderedDateFields<K extends string>(props: OrderedDateFieldsProp
       {keys.map((key) => {
         const wrong = held?.key === key
         return (
-          <TextField
-            key={key}
-            type="date"
-            size={size}
-            fullWidth={fullWidth}
-            label={label(key)}
-            value={wrong ? held.day : values?.[key] ?? ''}
-            disabled={disabled}
-            error={wrong}
-            helperText={wrong ? refusal : undefined}
-            sx={sx}
-            slotProps={{
-              inputLabel: { shrink: true },
-              ...(ariaLabel ? { htmlInput: { 'aria-label': ariaLabel(key) } } : {}),
-            }}
-            onChange={(e) => type(key, e.target.value)}
-          />
+          <Box key={key} sx={[fullWidth ? { width: '100%' } : {}, ...(Array.isArray(sx) ? sx : [sx])]}>
+            <DateField
+              label={label(key)}
+              value={wrong ? held.day : values?.[key] ?? ''}
+              disabled={disabled}
+              error={wrong ? refusal : undefined}
+              {...(ariaLabel ? { 'aria-label': ariaLabel(key) } : {})}
+              onChange={(day) => type(key, day)}
+            />
+          </Box>
         )
       })}
     </>

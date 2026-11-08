@@ -1,0 +1,35 @@
+/* The closed select reads as the kit's box, its choice and a caret, in the app's colours in both modes. */
+.kit-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-1);
+  min-width: 0;
+  text-align: start;
+  cursor: pointer;
+}
+.kit-select:hover:not(:disabled) { border-color: var(--ink-3); }
+.kit-select:disabled { cursor: default; }
+.kit-select[aria-expanded='true'] { border-color: var(--field-focus); }
+.kit-select__value { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kit-select__caret { flex: none; display: inline-flex; color: var(--ink-3); }
+
+.MuiPaper-root.kit-select__list { max-height: min(60vh, 360px); overflow-y: auto; }
+.kit-select__options { margin: 0; padding: var(--s-1); list-style: none; outline: none; }
+.kit-select__option {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: var(--row-h);
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--r-1);
+  color: var(--ink);
+  font-size: var(--t-body);
+  line-height: var(--lh-tight);
+  cursor: pointer;
+}
+.kit-select__option[data-active] { background: var(--surface-2); }
+.kit-select__options:focus-visible .kit-select__option[data-active] { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: -2px; }
+.kit-select__option[aria-selected='true'] { font-weight: var(--fw-strong); }
+.kit-select__check { flex: none; display: inline-flex; width: 14px; color: var(--accent); }
+.kit-select__label { flex: 1; min-width: 0; }
+.kit-select__group { padding: var(--s-2) var(--s-2) var(--s-1); color: var(--ink-3); font-size: var(--t-small); }

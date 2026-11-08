@@ -38,12 +38,11 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
-import FormControlLabel from '@mui/material/FormControlLabel'
 import Stack from '@mui/material/Stack'
-import Switch from '@mui/material/Switch'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
+import { Switch } from '../../widgets/kit/Switch'
 import type { StringKey, Translate } from '../../i18n'
 import type { AgentServerStatus } from '../../platform/agentServer'
 import { agentEndpoint } from '../../platform/agentServer'
@@ -136,17 +135,7 @@ export function ConnectAgentDialog({
           )) : !readOnly && (
             <>
               <Divider />
-              <FormControlLabel
-                control={(
-                  <Switch
-                    size="small"
-                    checked={on}
-                    onChange={(event) => onEnabledChange(event.target.checked)}
-                    slotProps={{ input: { 'aria-label': s('agent.enable') } }}
-                  />
-                )}
-                label={<Typography sx={{ fontSize: 'var(--t-body)' }}>{s('agent.enable')}</Typography>}
-              />
+              <Switch checked={on} onChange={onEnabledChange} label={s('agent.enable')} />
               {on && (
                 <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }} data-testid="agent-state">
                   {status.kind === 'connected'

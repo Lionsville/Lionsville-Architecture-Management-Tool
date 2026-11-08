@@ -52,8 +52,8 @@ export function OwnerRules({ model, readOnly, dispatch }: { model: OperatingMode
                 <Select
                   aria-label={t(before)} value={role}
                   options={[{ value: NONE, label: t('operating.rule.none') }, ...model.roles.map((one) => ({ value: one.id, label: one.name }))]}
-                  onChange={(event) => {
-                    const next = setRule(model.operatingRules, kind, event.target.value === NONE ? undefined : event.target.value)
+                  onChange={(value) => {
+                    const next = setRule(model.operatingRules, kind, value === NONE ? undefined : value)
                     if (next) dispatch(next)
                   }}
                 />

@@ -24,6 +24,7 @@ import { renderShell } from '../../app/testing/renderShell'
 import { axeFindings } from '../../app/testing/axe'
 import { actor, shippingScope } from '../testFixtures'
 import type { DesignDiagram, DesignModel, Relation } from '../../model'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -209,7 +210,7 @@ describe('the grid', () => {
   it('moves an area’s width in print to its panel, as a change to the sheet', () => {
     const { actions: acts } = open({ sheet: { ...SHEET, areaSpans: { billing: 2 } } })
     fireEvent.click(within(screen.getByTestId('sheet-area-fulfilment')).getByRole('button', { name: 'Fulfilment' }))
-    fireEvent.change(screen.getByLabelText('Width in print, in columns'), { target: { value: '2' } })
+    chooseValue(screen.getByLabelText('Width in print, in columns'), '2')
     expect(acts.updateSheet).toHaveBeenCalledWith({ areaSpans: { billing: 2, fulfilment: 2 } })
   })
 

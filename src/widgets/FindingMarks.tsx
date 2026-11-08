@@ -29,7 +29,7 @@ import { FieldsDialog } from './CompactForms'
 import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from './kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../i18n'
 import type { StringKey } from '../i18n'
@@ -86,7 +86,7 @@ export function MarkAsIntended({ words, sentence, onMark, inline = false }: {
         <DialogContent>
           <Typography sx={{ fontSize: 'var(--t-body)', fontWeight: 600, mb: 1 }} data-testid="finding-mark-sentence">{sentence}</Typography>
           <Typography sx={{ ...SMALL, color: 'text.secondary', mb: 1.5 }}>{t(words.about)}</Typography>
-          <TextField
+          <FieldBox
             autoFocus fullWidth label={t(words.reason)} helperText={t(words.reasonHelp)} value={reason}
             onChange={(event) => setReason(event.target.value)}
             // The Enter it acts on is consumed, so it cannot go on to press whatever takes the focus next.

@@ -22,7 +22,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { matchesQuery } from '../../model'
@@ -111,7 +111,7 @@ export function AddFromLibraryDialog({
       <DialogContent sx={{ pt: 0 }}>
         <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mb: 1 }}>{s('library.hint')}</Typography>
         {rows.length > 0 && (
-          <TextField
+          <FieldBox
             autoFocus
             fullWidth
             value={query}

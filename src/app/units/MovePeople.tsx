@@ -21,7 +21,7 @@ import { useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { addDays } from '../../model/transition'
@@ -151,7 +151,7 @@ function Row({ move, choice, places, names, readOnly, placeable, onChoose, s }: 
       <td>{names.person(personOf(assignment))}</td>
       <td>{label({ unitId: assignment.unitId, roleId: assignment.roleId })}{share < 1 ? ` · ${Math.round(share * 100)}%` : ''}</td>
       <td>
-        <TextField select size="small" variant="standard" value={valueOf(choice)} disabled={readOnly} sx={{ minWidth: 200 }}
+        <FieldBox select size="small" variant="standard" value={valueOf(choice)} disabled={readOnly} sx={{ minWidth: 200 }}
           onChange={(event) => onChoose(choiceOf(event.target.value))}
           slotProps={{ htmlInput: { 'aria-label': s('move.nextFor', { person: names.person(personOf(assignment)), day: addDays(lastDay, 1) }) } }}>
           {offered.map((place) => (
@@ -160,7 +160,7 @@ function Row({ move, choice, places, names, readOnly, placeable, onChoose, s }: 
             </MenuItem>
           ))}
           <MenuItem value={END}>{s('move.endOnly', { day: lastDay })}</MenuItem>
-        </TextField>
+        </FieldBox>
       </td>
       <td style={{ color: 'inherit' }}><Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{why.join(' · ')}</Typography></td>
     </tr>

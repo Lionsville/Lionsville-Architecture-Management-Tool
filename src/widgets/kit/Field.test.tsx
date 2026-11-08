@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
+import { chooseOption } from './testing/select'
 import { renderShell } from '../../app/testing/renderShell'
 import { Field, GrowingTextArea, PropertyRow, PropertyRows, SelectField, TextField, TextInput, TitleField, TitleRead } from './Field'
 import type { PropertyRowProps } from './Field'
@@ -50,9 +51,9 @@ describe('Field', () => {
   it('offers a short closed list', async () => {
     const chose = vi.fn()
     renderShell(<SelectField label="Impact" value="low" options={[{ value: 'low', label: 'Low' }, { value: 'high', label: 'High' }]} onChange={chose} />)
-    fireEvent.change(screen.getByRole('combobox', { name: 'Impact' }), { target: { value: 'high' } })
-    expect(chose).toHaveBeenCalledWith('high')
     expect(await axeFindings()).toEqual([])
+    chooseOption(screen.getByRole('combobox', { name: 'Impact' }), 'High')
+    expect(chose).toHaveBeenCalledWith('high')
   })
 
   it('takes any control through its render function', () => {
@@ -208,8 +209,7 @@ describe('PropertyRow', () => {
     const kept = vi.fn()
     renderShell(<PropertyRows><PropertyRow label="Impact" value="low" display="Low" edit={{ options: [{ value: 'low', label: 'Low' }, { value: 'high', label: 'High' }] }} onCommit={kept} /></PropertyRows>)
     press('Edit Impact: Low')
-    const select = screen.getByRole('combobox', { name: 'Impact' })
-    fireEvent.change(select, { target: { value: 'high' } })
+    chooseOption(screen.getByRole('combobox', { name: 'Impact' }), 'High')
     expect(kept).toHaveBeenCalledWith('high')
     press('Edit Impact: Low')
     fireEvent.blur(screen.getByRole('combobox', { name: 'Impact' }))
@@ -332,7 +332,7 @@ describe('a row, for a panel', () => {
     renderShell(<PropertyRows><PropertyRow label="Live from" value="" edit="date" onCommit={onCommit} /></PropertyRows>)
     fireEvent.click(screen.getByRole('button'))
     const field = screen.getByLabelText('Live from')
-    expect(field.getAttribute('type')).toBe('date')
+    expect(field.hasAttribute('data-date')).toBe(true)
     expect(field.closest('[data-shortcuts-ignore]')).not.toBeNull()
     fireEvent.change(field, { target: { value: '2027-03-01' } })
     fireEvent.keyDown(field, { key: 'Enter' })

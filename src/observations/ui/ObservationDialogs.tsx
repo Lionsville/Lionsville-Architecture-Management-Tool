@@ -15,7 +15,8 @@
  */
 import { useState } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
+import { DateField } from '../../widgets/kit/Field'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
@@ -43,7 +44,7 @@ export function ArchiveDialog({ subject, onCancel, onConfirm, s }: ArchiveDialog
       open={Boolean(subject)} title={s('observation.archiveTitle', { name: subject?.label ?? '' })} intro={s('observation.archiveBody')}
       dirty={note.trim() !== ''} onCancel={onCancel} onSubmit={() => onConfirm(note.trim())} submitLabel={s('observation.archiveConfirm')} s={s}
     >
-      <TextField autoFocus fullWidth size="small" label={s('observation.archiveNote')} value={note} onChange={(event) => setNote(event.target.value)} />
+      <FieldBox autoFocus fullWidth size="small" label={s('observation.archiveNote')} value={note} onChange={(event) => setNote(event.target.value)} />
     </FormDialog>
   )
 }
@@ -82,18 +83,16 @@ export function SeenDialog({ subject, today, onCancel, onConfirm, s }: SeenDialo
       dirty={note.trim() !== '' || date !== today} onCancel={onCancel} onSubmit={submit}
       submitLabel={s('observation.seenAgain')} submitTestId="seen-confirm" problem={pressed && problem ? problemsLine(1, s) : undefined} s={s}
     >
-      <TextField
-        type="date"
-        size="small"
+      <DateField
         required
         label={s('observation.seenDate')}
         value={date}
-        error={problem !== undefined}
-        helperText={help}
-        onChange={(event) => setDate(event.target.value)}
-        slotProps={{ inputLabel: { shrink: true }, htmlInput: { max: today, min: subject?.firstSeen, 'data-testid': 'seen-date' } }}
+        hint={help}
+        error={problem !== undefined ? help : undefined}
+        onChange={setDate}
+        max={today} min={subject?.firstSeen} data-testid="seen-date"
       />
-      <TextField
+      <FieldBox
         autoFocus
         fullWidth
         size="small"
@@ -132,7 +131,7 @@ export function VerifyDialog({ subject, onCancel, onConfirm, s }: VerifyDialogPr
       dirty={answer.trim() !== ''} onCancel={onCancel} onSubmit={submit}
       submitLabel={s('observation.verify')} submitTestId="verify-confirm" problem={missing ? problemsLine(1, s) : undefined} s={s}
     >
-      <TextField
+      <FieldBox
         autoFocus
         fullWidth
         multiline

@@ -26,7 +26,7 @@
  */
 import { useId, useMemo, useRef, useState } from 'react'
 import type { ComponentPropsWithRef, KeyboardEvent, ReactNode } from 'react'
-import { SurfacePopover as Popover, SurfacePopper as Popper } from './Surface'
+import { focusLeaves, SurfacePopover as Popover, SurfacePopper as Popper } from './Surface'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
 import { AddIcon, CloseIcon, SearchIcon } from '../icons'
@@ -307,7 +307,7 @@ export function PickerMany({ label, chosen, options, onAdd, onRemove, onDone, pl
     <div
       className="kit-picker__many"
       data-guide={guide}
-      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) onDone() }}
+      onBlur={(event) => { if (focusLeaves(event)) onDone() }}
     >
       {chosen.length > 0 && (
         <ul className="kit-picker__chosen">

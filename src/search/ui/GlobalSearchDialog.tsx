@@ -25,7 +25,7 @@ import Chip from '@mui/material/Chip'
 import Dialog from '@mui/material/Dialog'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListSubheader from '@mui/material/ListSubheader'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { StringKey, Translate } from '../../i18n'
 import type { DesignDiagram } from '../../model'
@@ -232,7 +232,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
       sx={{ '& .MuiDialog-container': { alignItems: 'flex-start', pt: '10vh' } }}
     >
       <Box sx={{ p: 1.5, pb: 1 }}>
-        <TextField
+        <FieldBox
           autoFocus
           fullWidth
           size="small"

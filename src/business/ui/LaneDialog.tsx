@@ -28,7 +28,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import type { DesignElement, DesignModel } from '../../model'
 import { useStrings } from '../../i18n'
 import type { NewLane } from './FunctionInspector'
@@ -68,7 +68,7 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
     <FieldsDialog open onClose={onCancel} maxWidth="xs" fullWidth>
       <DialogTitle>{t('sheet.laneTitle')}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-        <TextField
+        <FieldBox
           select fullWidth
           label={t('sheet.laneWho')}
           value={actorId}
@@ -79,11 +79,11 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
             <MenuItem key={actor.id} value={actor.id}>{actor.name}</MenuItem>
           ))}
           <MenuItem value={SOMEBODY_NEW}>{t('sheet.laneSomebodyNew')}</MenuItem>
-        </TextField>
+        </FieldBox>
 
         {fresh && (
           <Box>
-            <TextField
+            <FieldBox
               fullWidth autoFocus
               label={t('sheet.laneName')}
               value={name}
@@ -102,7 +102,7 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
           </Box>
         )}
 
-        <TextField
+        <FieldBox
           select fullWidth
           label={t('sheet.laneWhere')}
           value={phaseId}
@@ -112,7 +112,7 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
           {phases.map((phase) => (
             <MenuItem key={phase.id} value={phase.id}>{phase.name}</MenuItem>
           ))}
-        </TextField>
+        </FieldBox>
       </DialogContent>
       <DialogActions>
         <Button size="small" onClick={onCancel}>{t('common.cancel')}</Button>

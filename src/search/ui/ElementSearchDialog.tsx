@@ -5,7 +5,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import Box from '@mui/material/Box';
 import Dialog from '@mui/material/Dialog';
 import ListItemButton from '@mui/material/ListItemButton';
-import TextField from '@mui/material/TextField';
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography';
 import { kindLabel } from '../../model/kinds';
 import { useStrings } from '../../i18n/LanguageContext';
@@ -117,7 +117,7 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
       sx={{ '& .MuiDialog-container': { alignItems: 'flex-start', pt: '12vh' } }}
     >
       <Box sx={{ p: 1.5, pb: 1 }}>
-        <TextField
+        <FieldBox
           autoFocus
           fullWidth
           size="small"

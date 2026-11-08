@@ -29,6 +29,7 @@ import { indexScopes } from '../../projects/scopeIndex'
 import type { SelectRequest } from '../../widgets/useSelectRequest'
 import { ConwayPage } from './ConwayPage'
 import { conwayInputHere, unitViewsHere } from './unitViewsHere'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -246,9 +247,9 @@ describe('the Conway map', () => {
     expect(screen.getByTestId('conway-held').textContent).toContain('not a unit yet')
     expect(screen.queryByRole('button', { name: 'Say how they work together…' })).toBeNull()
     const make = screen.getByTestId('conway-make-units')
-    fireEvent.change(within(make).getByRole('combobox', { name: 'Finance is a' }), { target: { value: 'ut-team' } })
+    chooseValue(within(make).getByRole('combobox', { name: 'Finance is a' }), 'ut-team')
     expect((within(make).getByTestId('conway-make-units-go') as HTMLButtonElement).disabled).toBe(true)
-    fireEvent.change(within(make).getByRole('combobox', { name: 'Operations is a' }), { target: { value: 'ut-team' } })
+    chooseValue(within(make).getByRole('combobox', { name: 'Operations is a' }), 'ut-team')
     fireEvent.click(within(make).getByTestId('conway-make-units-go'))
     expect(commands).toEqual(expect.arrayContaining([
       { type: 'element.update', id: 'ops', patch: { unitTypeId: 'ut-team' } },

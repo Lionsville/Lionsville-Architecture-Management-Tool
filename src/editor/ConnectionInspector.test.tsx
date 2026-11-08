@@ -10,6 +10,7 @@ import { ConnectionInspector } from './ConnectionInspector';
 import type { EditorActions } from './useEditorState';
 import type { DesignDiagram, DesignModel, EdgeRoute, Relation } from '../model/types';
 import type { AttachSidesPatch } from '../model/routes';
+import { chooseValue } from '../widgets/kit/testing/select';
 
 /**
  * U7a connection inspector: General / Appearance two-tab split. General owns the
@@ -104,7 +105,7 @@ const text = (testId: string) => row(testId).textContent ?? '';
 /** A row that opens as a short list: its select changed is its commit. */
 function choose(testId: string, label: string, value: string) {
   press(testId);
-  fireEvent.change(screen.getByLabelText(label), { target: { value } });
+  chooseValue(screen.getByLabelText(label), value);
 }
 function typeIn(testId: string, label: string, value: string) {
   press(testId);
@@ -154,7 +155,7 @@ describe('ConnectionInspector: the same shell as an element', () => {
     expect(screen.queryByTestId('row-certainty')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: /^\+ Certainty/ }));
     fireEvent.click(screen.getByRole('menuitem', { name: 'Certainty' }));
-    fireEvent.change(screen.getByLabelText('Certainty'), { target: { value: 'assumed' } });
+    chooseValue(screen.getByLabelText('Certainty'), 'assumed');
     expect(updateConnection).toHaveBeenCalledWith('c1', { certainty: 'assumed' });
     cleanup();
     renderInspector(connection({ certainty: 'assumed' }));
@@ -180,10 +181,15 @@ describe('ConnectionInspector: Direction is the one source of truth (D2)', () =>
     openAppearance();
     expect(text('connection-arrowheads')).toContain('Follow the direction');
     press('connection-arrowheads');
-    fireEvent.change(screen.getByLabelText('Source'), { target: { value: 'arrow' } });
+    chooseValue(screen.getByLabelText('Source'), 'arrow');
     expect(updateConnection).toHaveBeenCalledWith('c1', { sourceArrowhead: 'arrow' });
-    fireEvent.change(screen.getByLabelText('Target'), { target: { value: '' } });
-    expect(updateConnection).toHaveBeenCalledWith('c1', { targetArrowhead: undefined });
+    cleanup();
+    // Following the direction again is a choice of its own: an end that says one is cleared.
+    const again = renderInspector(connection({ targetArrowhead: 'arrow' }));
+    openAppearance();
+    press('connection-arrowheads');
+    chooseValue(screen.getByLabelText('Target'), '');
+    expect(again.updateConnection).toHaveBeenCalledWith('c1', { targetArrowhead: undefined });
   });
 });
 

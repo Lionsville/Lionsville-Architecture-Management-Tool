@@ -32,7 +32,8 @@ import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
+import { DateField } from '../../widgets/kit/Field'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
@@ -55,7 +56,8 @@ export function ExampleField(props: {
   /** What is wrong, in place of the example; absent where nothing is. */
   problem?: string
   required?: boolean
-  type?: 'date'
+  /** A day: the kit's date field. */
+  date?: boolean
   max?: string
   autoFocus?: boolean
   /** Several lines: Enter starts a new one rather than answering the dialog. */
@@ -66,12 +68,19 @@ export function ExampleField(props: {
   select?: boolean
   children?: ReactNode
 }) {
+  if (props.date) {
+    return (
+      <DateField
+        required={props.required} autoFocus={props.autoFocus} label={props.label} value={props.value} max={props.max}
+        hint={props.example} error={props.problem} onChange={props.onChange} onBlur={props.onBlur} data-testid={props.testId}
+      />
+    )
+  }
   return (
-    <TextField
+    <FieldBox
       size="small"
       fullWidth
       select={props.select}
-      type={props.type}
       required={props.required}
       autoFocus={props.autoFocus}
       multiline={props.multiline}
@@ -83,17 +92,15 @@ export function ExampleField(props: {
       onBlur={props.onBlur}
       onKeyDown={props.onEnter ? (event) => { if (event.key === 'Enter') { event.preventDefault(); props.onEnter?.() } } : undefined}
       slotProps={{
-        ...(props.type === 'date' ? { inputLabel: { shrink: true } } : {}),
         htmlInput: {
           autoComplete: 'off',
-          ...(props.max ? { max: props.max } : {}),
           ...(props.testId ? { 'data-testid': props.testId } : {}),
           ...(props.select ? { 'aria-label': props.label } : {}),
         },
       }}
     >
       {props.children}
-    </TextField>
+    </FieldBox>
   )
 }
 
@@ -211,7 +218,7 @@ export function StrengthSelect({ value, onChange, label, helperText, compact, s 
   s: Translate
 }) {
   return (
-    <TextField
+    <FieldBox
       select size="small" fullWidth={!compact} label={compact ? undefined : label} value={value}
       helperText={helperText}
       onChange={(event) => onChange(event.target.value as CauseStrength)}
@@ -219,7 +226,7 @@ export function StrengthSelect({ value, onChange, label, helperText, compact, s 
       sx={compact ? { minWidth: 110 } : undefined}
     >
       {CAUSE_STRENGTHS.map((one) => <MenuItem key={one} value={one}>{s(STRENGTH_LABEL[one])}</MenuItem>)}
-    </TextField>
+    </FieldBox>
   )
 }
 
@@ -305,7 +312,7 @@ export function CausePicker({ candidates, taken, onPick, s, heading, onClose }: 
   const shown = candidates.filter((one) => !q || one.label.toLowerCase().includes(q))
   return (
     <SubPanel heading={heading} onClose={onClose} closeLabel={s('common.close')} testId="cause-picker">
-      <TextField
+      <FieldBox
         autoFocus size="small" fullWidth placeholder={s('observation.causeFind')} value={query}
         onChange={(event) => setQuery(event.target.value)}
         // A search that only filters: Enter does not answer the dialog around it.
@@ -351,7 +358,7 @@ export function ExistingCause({ candidates, picked, onPick, label, empty, s }: {
   const shown = candidates.filter((one) => !q || one.label.toLowerCase().includes(q))
   return (
     <>
-      <TextField
+      <FieldBox
         autoFocus size="small" fullWidth placeholder={s('observation.causeFind')} value={query}
         onChange={(event) => setQuery(event.target.value)}
         slotProps={{ htmlInput: { 'aria-label': s('observation.causeFind') } }}

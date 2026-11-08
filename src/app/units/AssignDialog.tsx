@@ -34,7 +34,7 @@ import type { PeopleRegisterAccess } from '../../people/ui/access'
 import { PersonPicker } from '../../people/ui/PersonPicker'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { SelectField, TextField } from '../../widgets/kit/Field'
+import { SelectField, DateField, TextField } from '../../widgets/kit/Field'
 import './chart.css'
 
 /** What the dialog is asked to do: put someone in a role, or look again at an assignment. */
@@ -167,8 +167,8 @@ function AssignFields({ props, state }: { props: AssignDialogProps; state: Retur
       )}
       <div className="chart-assign__two">
         <TextField ref={share} type="number" label={s('assign.share')} value={form.share} onChange={(next) => set({ share: next })} min={1} max={100} data-testid="assign-share" />
-        <TextField type="date" label={s('assign.from')} value={from} onChange={(next) => set({ from: next })} data-testid="assign-from" />
-        {held && <TextField type="date" label={s('assign.until')} value={until} onChange={(next) => set({ until: next })} data-testid="assign-until" />}
+        <DateField label={s('assign.from')} value={from} onChange={(next) => set({ from: next })} data-testid="assign-from" />
+        {held && <DateField label={s('assign.until')} value={until} onChange={(next) => set({ until: next })} data-testid="assign-until" />}
       </div>
       <label className="chart-assign__check">
         <input type="checkbox" checked={acting} onChange={(event) => set({ acting: event.target.checked })} />

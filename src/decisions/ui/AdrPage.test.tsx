@@ -20,6 +20,7 @@ import { AdrPage } from './AdrPage'
 import type { AdrPageProps } from './AdrPage'
 import { madrTemplate } from '../adr'
 import { renderShell } from '../../app/testing/renderShell'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -176,7 +177,7 @@ describe('a new decision', () => {
     const { onProject, rerender } = mount()
     fireEvent.click(screen.getByRole('button', { name: 'New decision' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Retire the legacy sync' } })
-    fireEvent.change(screen.getByLabelText('About'), { target: { value: 'crm' } })
+    chooseValue(screen.getByLabelText('About'), 'crm')
     fireEvent.click(screen.getByRole('button', { name: 'Create and write' }))
     const next: Adr[] = onProject.mock.calls[0][0]
     expect(next).toHaveLength(4)
@@ -530,7 +531,7 @@ describe('a record, written', () => {
   it('dates a verdict today', () => {
     const decisions = model.decisions!.map((one) => (one.id === 'c1' ? { ...one, signers: [{ name: 'Kim' }] } : one))
     const { onProject } = writing({ model: { ...model, decisions }, initialAdrId: 'c1' })
-    fireEvent.change(screen.getByLabelText('Verdict'), { target: { value: 'approved' } })
+    chooseValue(screen.getByLabelText('Verdict'), 'approved')
     fireEvent.click(screen.getByRole('button', { name: 'Done' }))
     expect(onProject.mock.calls[0][0].find((a: Adr) => a.id === 'c1').signers[0]).toMatchObject({ verdict: 'approved', signedAt: '2026-09-05' })
   })

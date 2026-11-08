@@ -17,6 +17,7 @@ import { renderApp } from '../testing/renderShell'
 import { readScope } from '../../projects/scopeAccess'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { pressRowMenu } from '../testing/rowMenu'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -98,7 +99,7 @@ describe('topics on the homes', () => {
     const repositories = heldRepositories(TREE.slice(0, 2))
     renderApp({ repositories, today: TODAY })
     await pressRowMenu('Sales', 'Settings…')
-    fireEvent.change(await screen.findByLabelText('What this is'), { target: { value: 'kind:topic' } })
+    chooseValue(await screen.findByLabelText('What this is'), 'kind:topic')
     await waitFor(async () => expect((await readScope(repositories.scopes, 'topics/sales'))?.kind).toBe('topic'))
     expect((await readScope(repositories.scopes, 'topics'))?.kind).toBe('topic')
     expect(await readScope(repositories.scopes, 'sales')).toBeUndefined()

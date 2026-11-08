@@ -89,7 +89,7 @@ function ApplicationBody({ app, landscape, writes, nameOf, t }: {
             aria-label={t('landscape.runsOn')}
             data-testid="landscape-runs-on"
             value={app.saysHosted ?? ''}
-            onChange={(event) => writes.setHost(app.id, event.target.value || undefined)}
+            onChange={(value) => writes.setHost(app.id, value || undefined)}
             options={[
               { value: '', label: t('landscape.runsNowhere') },
               ...places.map(({ node }) => ({ value: node.id, label: node.name })),

@@ -17,7 +17,7 @@ import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import { matchesQuery } from '../../model/textSearch'
 import type { PersonId } from '../../model/person'
@@ -78,7 +78,7 @@ export function PersonPicker({ register, saying, value, onChange, note, initialQ
           />
         </Box>
       )}
-      <TextField
+      <FieldBox
         size="small" label={s('people.search')} value={query} onChange={(event) => setQuery(event.target.value)}
         slotProps={{ htmlInput: { 'data-testid': 'person-picker-search' } }}
       />

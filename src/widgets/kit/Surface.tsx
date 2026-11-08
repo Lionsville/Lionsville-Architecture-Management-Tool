@@ -114,3 +114,20 @@ export function SurfacePopover(props: PopoverProps) {
 export function SurfacePopper(props: PopperProps) {
   return <MuiPopper {...pressStaysHere} {...props} />
 }
+
+/** What a surface carries to say which control opened it: that control's id. */
+export const SURFACE_OWNER = 'data-surface-owner'
+
+/**
+ * Whether a blur takes the focus out of what is listening. A list or a calendar a
+ * control in it opened is in a portal, and so not inside it to the page, but the
+ * focus going there has not left: the surface names its control
+ * (`SURFACE_OWNER`), and that control is looked for here.
+ */
+export function focusLeaves(event: { currentTarget: HTMLElement; relatedTarget: EventTarget | null }): boolean {
+  const to = event.relatedTarget as Element | null
+  if (!to) return true
+  if (event.currentTarget.contains(to)) return false
+  const owner = to.closest<HTMLElement>(`[${SURFACE_OWNER}]`)?.getAttribute(SURFACE_OWNER)
+  return !(owner && [...event.currentTarget.querySelectorAll('[id]')].some((one) => one.id === owner))
+}

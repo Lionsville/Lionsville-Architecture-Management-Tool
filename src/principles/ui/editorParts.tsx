@@ -8,7 +8,7 @@
  * it holds.
  */
 import Autocomplete, { createFilterOptions } from '@mui/material/Autocomplete'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import type { Translate } from '../../i18n'
 import { CloseIcon } from '../../widgets/icons'
 import { Button, IconButton } from '../../widgets/kit/Button'
@@ -62,7 +62,7 @@ export function GroupPicker({ groups, picked, made, onChange, t }: {
       renderOption={(props, one) => (
         <li {...props} key={keyOf(one)}>{one.id === undefined ? t('principles.newGroupOption', { name: one.name }) : one.name}</li>
       )}
-      renderInput={(params) => <TextField {...params} label={t('principles.groupsField')} helperText={t('principles.groupsHelp')} />}
+      renderInput={(params) => <FieldBox {...params} label={t('principles.groupsField')} helperText={t('principles.groupsHelp')} />}
       data-testid="principle-groups"
     />
   )
@@ -85,7 +85,7 @@ export function AspectList({ number, aspects, onAdd, onChange, onRemove, t }: {
           <span className="guidance-read__code">{number !== undefined ? formatAspectNumber(number, aspect.number) : `.${aspect.number}`}</span>
           <TextInput value={aspect.text} onChange={(event) => onChange(aspect.id, { text: event.target.value })} placeholder={t('principles.aspectText')} aria-label={t('principles.aspectText')} />
           <Select
-            value={aspect.nature} onChange={(event) => onChange(aspect.id, { nature: event.target.value as AspectNature })} aria-label={t('principles.natureField')}
+            value={aspect.nature} onChange={(value) => onChange(aspect.id, { nature: value as AspectNature })} aria-label={t('principles.natureField')}
             options={ASPECT_NATURES.map((one) => ({ value: one, label: t(NATURE_WORD[one]) }))}
           />
           <TextInput value={aspect.signal ?? ''} onChange={(event) => onChange(aspect.id, { signal: event.target.value || undefined })} placeholder={t('principles.signalField')} aria-label={t('principles.signalField')} />

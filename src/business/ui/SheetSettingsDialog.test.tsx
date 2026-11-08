@@ -17,6 +17,7 @@ import type { SheetActions } from './FunctionInspector'
 import { renderShell } from '../../app/testing/renderShell'
 import { shippingScope } from '../testFixtures'
 import type { DesignDiagram, DesignModel } from '../../model'
+import { chooseValue, optionLabels } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -58,21 +59,21 @@ function open(sheet: DesignDiagram = SHEET, over: Partial<DesignModel> = {}) {
 }
 
 describe('the journey it draws', () => {
-  const field = () => screen.getByLabelText('The journey across the top') as HTMLSelectElement
+  const field = () => screen.getByLabelText('The journey across the top')
 
   it('offers every journey the scope holds, and none', () => {
     open()
-    expect([...field().options].map((one) => one.text)).toEqual(['None', 'Ship a consignment'])
+    expect(optionLabels(field())).toEqual(['None', 'Ship a consignment'])
   })
 
   it('points the sheet at the journey that is chosen, and clears it again', () => {
     // A scope with two journeys seeds none, which is the case this exists for.
     const { actions } = open({ ...SHEET, journeyId: undefined })
-    fireEvent.change(field(), { target: { value: 'ship' } })
+    chooseValue(field(), 'ship')
     expect(actions.updateSheet).toHaveBeenCalledWith({ journeyId: 'ship' })
     cleanup()
     const { actions: actions2 } = open()
-    fireEvent.change(field(), { target: { value: '' } })
+    chooseValue(field(), '')
     expect(actions2.updateSheet).toHaveBeenCalledWith({ journeyId: undefined })
   })
 })

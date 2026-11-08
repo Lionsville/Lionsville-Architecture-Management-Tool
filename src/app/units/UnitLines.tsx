@@ -24,7 +24,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import type { LineKind, UnitType } from '../../model/operatingModel'
@@ -130,11 +130,11 @@ export function UnitLines(props: UnitLinesProps) {
         </Box>
       ))}
       {editable && editing === undefined && free.length > 0 && (
-        <TextField select fullWidth label={s('unit.lineAdd')} value="" sx={{ mt: 0.75 }}
+        <FieldBox select fullWidth label={s('unit.lineAdd')} value="" sx={{ mt: 0.75 }}
           onChange={(event) => { setRefused(undefined); setEditing(event.target.value) }}
           slotProps={{ htmlInput: { 'data-testid': 'unit-line-add' } }}>
           {free.map((role) => <MenuItem key={role} value={role}>{roleName(role)}</MenuItem>)}
-        </TextField>
+        </FieldBox>
       )}
       {editable && editing !== undefined && (
         <LineTargetForm

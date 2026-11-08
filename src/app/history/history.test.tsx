@@ -28,6 +28,7 @@ import type { HostCommand } from '../../platform/hostCommands'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { renderApp } from '../testing/renderShell'
 import { WINDOW_BAR } from '../../widgets/kit/windowArea'
+import { chooseValue } from '../../widgets/kit/testing/select';
 
 vi.mock('../../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../editor')>()
@@ -376,9 +377,9 @@ describe('the history of one thing (ADR-0008)', () => {
     fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
     const list = await screen.findByTestId('history-list')
     await waitFor(() => expect(within(list).getByText('Moved everything')).toBeDefined())
-    fireEvent.change(screen.getByLabelText('Show the history of'), { target: { value: '' } })
+    chooseValue(screen.getByLabelText('Show the history of'), '')
     await waitFor(() => expect(within(screen.getByTestId('history-list')).getByText('Wrote about billing')).toBeDefined())
-    fireEvent.change(screen.getByLabelText('Show the history of'), { target: { value: 'description:billing' } })
+    chooseValue(screen.getByLabelText('Show the history of'), 'description:billing')
     await waitFor(() => expect(within(screen.getByTestId('history-list')).queryByText('Moved everything')).toBeNull())
     expect(within(screen.getByTestId('history-list')).getByText('Wrote about billing')).toBeDefined()
   })
@@ -415,7 +416,7 @@ describe('the history of one thing (ADR-0008)', () => {
     ])
     renderApp({ repositories, boot: { initialProject: drawing() } })
     fireEvent.click(await screen.findByTestId('history-of-the-diagram'))
-    fireEvent.change(await screen.findByLabelText('Show the history of'), { target: { value: 'description:billing' } })
+    chooseValue(await screen.findByLabelText('Show the history of'), 'description:billing')
     const list = await screen.findByTestId('history-list')
     await waitFor(() => expect(within(list).getByText('What billing means to us')).toBeDefined())
     expect(within(list).getByText('What billing is')).toBeDefined()

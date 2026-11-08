@@ -21,7 +21,7 @@ import { useState } from 'react';
 import { Button } from '../widgets/kit/Button';
 import { Card } from '../widgets/kit/Card';
 import { Dialog } from '../widgets/kit/Dialog';
-import { TextField } from '../widgets/kit/Field';
+import { DateField, TextField } from '../widgets/kit/Field';
 import { Tabs } from '../widgets/kit/Tabs';
 import { ViewBarCheck } from '../widgets/kit/ViewBar';
 import { AspectBadgeRow } from './nodes/AspectBadgeRow';
@@ -172,8 +172,7 @@ export function DiagramSettingsDialog({
           onChange={(client) => edit({ client })}
         />
       </div>
-      <TextField
-        type="date"
+      <DateField
         label={t('diagramSettings.date')}
         hint={t('diagramSettings.dateHelp')}
         value={draft.documentDate}

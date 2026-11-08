@@ -13,7 +13,7 @@ import { useStrings } from '../../i18n'
 import type { MarkdownEditor as MarkdownEditorShape } from '../../documentation/ui/MarkdownEditor'
 import { lazyPart } from '../../widgets/lazyPart'
 import { Button } from '../../widgets/kit/Button'
-import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
+import { DateInput, PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { setDay, setSuccessors } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
 import { entryOf } from '../library'
@@ -103,7 +103,7 @@ export function OverTime({ kind, item, others, readOnly, dispatch }: {
   const successors = item.successors ?? []
   const day = (field: 'from' | 'until') => ({
     value: item[field] ?? '', empty: t('operating.noDay'), edit: ((editor: { value: string; onChange(value: string): void; commit(value?: string): void; ties: object }) => (
-      <input {...editor.ties} className="kit-input" type="date" data-testid={`operating-${field}`} value={editor.value} onChange={(event) => editor.onChange(event.target.value)} onBlur={() => editor.commit()} />
+      <DateInput {...editor.ties} data-fit data-testid={`operating-${field}`} value={editor.value} onChange={editor.onChange} onBlur={() => editor.commit()} />
     )),
     onCommit: (value: string) => dispatch(setDay(kind, item.id, field, value)),
   })

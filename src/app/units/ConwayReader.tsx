@@ -284,7 +284,7 @@ function MakeUnits({ parties, here, acting, onOpenOperating, t }: {
           <span className="conway__ownerName">{t('conway.isA', { name: party.name })}</span>
           <Select
             aria-label={t('conway.isA', { name: party.name })} options={options} value={chosen.get(party.id) ?? ''}
-            onChange={(event) => { const next = new Map(chosen); next.set(party.id, event.target.value); setChosen(next) }}
+            onChange={(value) => { const next = new Map(chosen); next.set(party.id, value); setChosen(next) }}
           />
         </div>
       ))}

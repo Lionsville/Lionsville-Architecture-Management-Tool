@@ -20,6 +20,7 @@ import { BlockPage } from './BlockPage'
 import { BlocksProvider } from './BlocksContext'
 import type { BlocksAccess, BlockRow, EvaluationRow } from './BlocksContext'
 import { BlocksRegisterPage } from './BlocksRegisterPage'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(cleanup)
 
@@ -290,7 +291,7 @@ describe('a building block\'s page', () => {
     expect(screen.getByRole('row', { name: /Sales/ }).textContent).toContain('Managed bus')
     fireEvent.click(screen.getByTestId('block-evaluate'))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Filings' }))
-    fireEvent.change(screen.getByRole('combobox', { name: s('blocks.copyFrom') }), { target: { value: 'sales' } })
+    chooseValue(screen.getByRole('combobox', { name: s('blocks.copyFrom') }), 'sales')
     fireEvent.click(screen.getByTestId('evaluate-start'))
     await waitFor(() => expect(access.evaluate).toHaveBeenCalledWith('blk-gw', 'stock', ['cx-filings'], 'sales'))
   })

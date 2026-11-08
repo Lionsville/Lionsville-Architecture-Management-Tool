@@ -13,6 +13,7 @@ import { SurfacePopover as Popover } from './Surface'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Button } from './Button'
+import { DateInput } from './DateInput'
 import { ViewBarMenu } from './ViewBar'
 import './DayControl.css'
 
@@ -78,13 +79,7 @@ export function DayControl({ day, groups = [], onChange, onKeep, keepLabel, outs
           {note && <p className="kit-day__note">{note}</p>}
           <label className="kit-day__label">
             {t('kit.day.field')}
-            <input
-              className="kit-day__field"
-              type="date"
-              autoFocus
-              value={typed}
-              onChange={(event) => setTyped(event.target.value)}
-            />
+            <DateInput autoFocus value={typed} onChange={setTyped} />
           </label>
           <Button type="submit" variant="primary" size="small" disabled={!typed}>{t('kit.day.show')}</Button>
         </form>

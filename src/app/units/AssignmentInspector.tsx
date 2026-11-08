@@ -33,7 +33,7 @@ import { useMemo, useState } from 'react'
 import { useStrings } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { TextField } from '../../widgets/kit/Field'
+import { DateField } from '../../widgets/kit/Field'
 import type { Language, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import type { Command } from '../../model/commands'
@@ -238,8 +238,7 @@ function EndOn({ held, day, today, person, role, language, t, onEnd }: {
           </>
         )}
       >
-        <TextField
-          type="date" label={t('chart.assignmentLastDay')} value={until} onChange={setUntil} data-testid="assignment-until" autoFocus
+        <DateField label={t('chart.assignmentLastDay')} value={until} onChange={setUntil} data-testid="assignment-until" autoFocus
           hint={t('chart.assignmentEndBody')} {...(early && held.from !== undefined ? { error: t('chart.assignmentEndEarly', { day: formatDay(held.from, language) }) } : {})}
         />
       </Dialog>

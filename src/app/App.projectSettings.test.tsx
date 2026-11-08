@@ -16,6 +16,7 @@ import type { HeldRepositories } from './testing/heldRepositories'
 import { bareScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
+import { chooseValue } from '../widgets/kit/testing/select'
 
 vi.mock('../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../editor')>()
@@ -48,7 +49,7 @@ async function openSettings() {
 
 async function moveUnderGlobex() {
   await openSettings()
-  fireEvent.change(await screen.findByLabelText('Filed under'), { target: { value: 'globex' } })
+  chooseValue(await screen.findByLabelText('Filed under'), 'globex')
   fireEvent.click(await screen.findByTestId('settings-move'))
 }
 

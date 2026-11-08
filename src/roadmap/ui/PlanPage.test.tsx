@@ -21,6 +21,7 @@ import type { PlanActions, PlanPageProps } from './PlanPage'
 import { renderShell } from '../../app/testing/renderShell'
 import type { DesignElement, DesignModel, Transition } from '../../model'
 import type { Adr } from '../../model/adr'
+import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
 
@@ -218,7 +219,7 @@ describe('what it changes', () => {
     pressRow('Retires', 'Warehouse Management')
     fireEvent.change(screen.getByLabelText('Warehouse Management: Gone on'), { target: { value: '2028-02-01' } })
     expect(actions.updateElementDates).toHaveBeenCalledWith('wms-old', expect.objectContaining({ retired: '2028-02-01' }))
-    fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'changes' } })
+    chooseValue(screen.getByLabelText('Role'), 'changes')
     expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { elements: [{ elementId: 'wms-old', role: 'changes' }, PLAN.elements[1]] })
     fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
     expect(actions.updateTransition).toHaveBeenLastCalledWith('tr-1', { elements: [PLAN.elements[1]] })
@@ -241,7 +242,9 @@ describe('what it changes', () => {
     fireEvent.focus(field)
     fireEvent.change(field, { target: { value: 'capab' } })
     expect(screen.queryByRole('option', { name: /A capability/ })).toBeNull()
-    fireEvent.change(within(adding).getByLabelText('Role'), { target: { value: 'changes' } })
+    chooseValue(within(adding).getByLabelText('Role'), 'changes')
+    // Choosing took the focus to the role's list and back; the search's own list comes with the focus.
+    fireEvent.focus(field)
     fireEvent.click(screen.getByRole('option', { name: /A capability/ }))
     expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { elements: [...PLAN.elements, { elementId: 'cap', role: 'changes' }] })
   })

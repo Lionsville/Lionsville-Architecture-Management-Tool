@@ -16,7 +16,7 @@ import DialogActions from '@mui/material/DialogActions'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
@@ -81,7 +81,7 @@ export function CiteDialog({ open, about, here, initial, deviating = false, onCl
           getOptionLabel={(one) => `${formatPrincipleNumber(one.principle.number)} ${one.principle.title}`}
           isOptionEqualToValue={(a, b) => a.scope === b.scope && a.principle.id === b.principle.id}
           groupBy={(one) => sourceLine(one) || t('principles.hereGroup')}
-          renderInput={(params) => <TextField {...params} autoFocus label={t('principles.principleField')} />}
+          renderInput={(params) => <FieldBox {...params} autoFocus label={t('principles.principleField')} />}
           renderOption={(props, one) => (
             <li {...props} key={`${one.scope}/${one.principle.id}`}>
               <Box sx={{ display: 'flex', gap: 1, alignItems: 'baseline', width: '100%' }}>
@@ -94,7 +94,7 @@ export function CiteDialog({ open, about, here, initial, deviating = false, onCl
           data-testid="cite-principle"
         />
         {picked && picked.principle.aspects.length > 0 && (
-          <TextField
+          <FieldBox
             select label={t('principles.aspectField')} value={aspect} onChange={(event) => setAspect(event.target.value === '' ? '' : Number(event.target.value))}
             slotProps={{ inputLabel: { shrink: true }, select: { displayEmpty: true } }}
           >
@@ -105,7 +105,7 @@ export function CiteDialog({ open, about, here, initial, deviating = false, onCl
                 {one.text}
               </MenuItem>
             ))}
-          </TextField>
+          </FieldBox>
         )}
         <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{t('principles.stanceField')}</Typography>
@@ -121,7 +121,7 @@ export function CiteDialog({ open, about, here, initial, deviating = false, onCl
           <Alert severity="warning" data-testid="cite-fixed">{t('principles.refusedFixed', { number: formatPrincipleNumber(picked.principle.number) })}</Alert>
         )}
         {(stance === 'deviates' || about.kind === 'observation') && !(stance === 'deviates' && fixed) && (
-          <TextField
+          <FieldBox
             label={stance === 'deviates' ? t('principles.reasonRequired') : t('principles.reasonField')}
             value={reason} onChange={(event) => setReason(event.target.value)} multiline minRows={2}
             required={stance === 'deviates'} data-testid="cite-reason"

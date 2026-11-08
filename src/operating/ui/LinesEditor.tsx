@@ -14,7 +14,7 @@ import { useState } from 'react'
 import { linesWith } from '../../model/operatingModel'
 import type { LineKind, ReportsTo, Role, RoleId } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
-import { Field, Select, TextInput } from '../../widgets/kit/Field'
+import { Field, Select, DateInput } from '../../widgets/kit/Field'
 
 export type LinesEditorProps = {
   /** The role whose holders report: its lines are never offered to itself in the same unit. */
@@ -64,8 +64,8 @@ export function LinesEditor({ roleId, name, said, kind, inherited, roles, onChan
               ...(inherited !== undefined ? [{ value: NESTING, label: t('operating.reportsToNesting') }] : []),
               ...roles.map((role) => ({ value: role.id, label: role.name })),
             ]}
-            onChange={(event) => {
-              const picked = event.target.value
+            onChange={(value) => {
+              const picked = value
               if (picked === '') write(undefined)
               else if (picked === NESTING) write({ kind })
               else write({ ...(line ?? { kind }), role: picked, kind })
@@ -83,16 +83,16 @@ export function LinesEditor({ roleId, name, said, kind, inherited, roles, onChan
                   { value: 'up', label: t('operating.lineUp') },
                   ...(line.role === roleId ? [] : [{ value: 'within', label: t('operating.lineWithin') }]),
                 ]}
-                onChange={(event) => change({ within: event.target.value === 'within' ? true : undefined })}
+                onChange={(value) => change({ within: value === 'within' ? true : undefined })}
               />
             )}
           </Field>
           <div className="op-editor__two">
             <Field label={t('operating.lineFrom')}>
-              {(ties) => <TextInput {...ties} type="date" aria-label={`${name}: ${t('operating.lineFrom')} (${kindWord})`} value={line.from ?? ''} onChange={(event) => change({ from: event.target.value })} />}
+              {(ties) => <DateInput {...ties} aria-label={`${name}: ${t('operating.lineFrom')} (${kindWord})`} value={line.from ?? ''} onChange={(value) => change({ from: value })} />}
             </Field>
             <Field label={t('operating.lineUntil')}>
-              {(ties) => <TextInput {...ties} type="date" aria-label={`${name}: ${t('operating.lineUntil')} (${kindWord})`} value={line.until ?? ''} onChange={(event) => change({ until: event.target.value })} />}
+              {(ties) => <DateInput {...ties} aria-label={`${name}: ${t('operating.lineUntil')} (${kindWord})`} value={line.until ?? ''} onChange={(value) => change({ until: value })} />}
             </Field>
           </div>
         </>

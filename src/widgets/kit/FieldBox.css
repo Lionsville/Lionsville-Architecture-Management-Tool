@@ -1,0 +1,3 @@
+/* As wide as MUI's field would be, or the row's whole width; the label goes with it. */
+.kit-fieldBox { display: inline-flex; vertical-align: top; }
+.kit-fieldBox[data-full] { display: flex; width: 100%; }

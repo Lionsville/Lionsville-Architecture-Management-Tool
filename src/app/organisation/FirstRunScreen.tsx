@@ -60,7 +60,7 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
         <>
           <TextSizeControl size={prefs.textSize} steps={TEXT_SIZES} normal={DEFAULT_TEXT_SIZE} onChoose={prefs.chooseTextSize} />
           <Select
-            aria-label={s('prefs.language')} value={prefs.language} onChange={(event) => prefs.chooseLanguage(event.target.value as Language)}
+            aria-label={s('prefs.language')} value={prefs.language} onChange={(value) => prefs.chooseLanguage(value as Language)}
             options={LANGUAGES.map((held) => ({ value: held, label: s(LANGUAGE_NAME[held]) }))} data-guide="first.language"
           />
           <Button size="small" variant="quiet" onClick={() => bus.send({ type: 'manual' })}>{s('menu.userManual')}</Button>

@@ -224,7 +224,7 @@ function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrang
               <Select
                 aria-label={t('operating.unit')} value={look.unit ?? ''}
                 options={[{ value: '', label: t('operating.allUnits') }, ...facts.units.map((one) => ({ value: one.id, label: one.name }))]}
-                onChange={(event) => { const { unit: _was, whole: _all, part: _part, row: _row, ...rest } = look; onLook({ ...rest, ...(event.target.value ? { unit: event.target.value } : {}) }) }}
+                onChange={(value) => { const { unit: _was, whole: _all, part: _part, row: _row, ...rest } = look; onLook({ ...rest, ...(value ? { unit: value } : {}) }) }}
               />
             </span>
           )}

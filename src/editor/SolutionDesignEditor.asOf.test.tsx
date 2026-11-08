@@ -55,7 +55,7 @@ function renderEditor(document: DesignModel, overrides: Partial<HostedEditorProp
 
 // `hidden`: an open popover hides the bar under it from the accessibility tree.
 const control = () => screen.getByRole('button', { name: /^Day/, hidden: true });
-const dateField = () => document.querySelector('input[type="date"]') as HTMLInputElement;
+const dateField = () => document.querySelector('input[data-date]') as HTMLInputElement;
 const asOfWrites = (host: { current: EditorHostState }) => host.current.commands.filter(
   (command) => command.type === 'diagram.update' && 'asOf' in command.patch,
 );

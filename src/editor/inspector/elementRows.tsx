@@ -57,6 +57,7 @@ import { useUsesPicker } from '../useInspectorState';
 import { DASH, RowSet, pickEdit } from './rowTools';
 import type { RowSpec, Surface } from './rowTools';
 import { claimKey } from '../../widgets/kit/keys';
+import { focusLeaves } from '../../widgets/kit/Surface';
 import './inspector.css';
 
 /** Parts a row opens or only the record shows: not in the first download, which every board pays for. */
@@ -346,7 +347,7 @@ function ownerRow(ctx: Ctx): RowSpec {
         label={label} data-testid="record-owner" readOnly={owned('owner')} startOpen={opening}
         value={text} empty={worked ?? empty(ctx)}
         edit={(editor) => (
-          <div onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}>
+          <div onBlur={(event) => { if (focusLeaves(event)) editor.cancel(); }}>
             <PersonRefField
               value={shown} names={names} label={label} s={t} testId="record-owner-field" inputTestId="record-owner-text"
               onChange={(owner) => typed('owner', { owner })}
@@ -476,16 +477,16 @@ function AspectEditor({ editor, entryLabel, field, entryKey, t }: {
   return (
     <div
       className="inspector-aspect"
-      onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) editor.cancel(); }}
+      onBlur={(event) => { if (focusLeaves(event)) editor.cancel(); }}
       onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); editor.cancel(); } }}
     >
       <Select
         autoFocus aria-label={entryLabel} data-fit value={aspect?.status ?? ''}
         options={[{ value: '', label: t('field.notSet') }, ...STATUSES.map((one) => ({ value: one.value, label: t(one.labelKey) }))]}
-        onChange={(event) => {
+        onChange={(value) => {
           const next = { ...element.aspects };
-          if (event.target.value === '') delete next[entryKey];
-          else next[entryKey] = { ...next[entryKey], status: event.target.value as AspectStatus };
+          if (value === '') delete next[entryKey];
+          else next[entryKey] = { ...next[entryKey], status: value as AspectStatus };
           update({ aspects: next });
         }}
       />

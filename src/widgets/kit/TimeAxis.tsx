@@ -26,6 +26,7 @@ import { useStrings } from '../../i18n/LanguageContext'
 import { LOCALE } from '../../i18n/strings'
 import { SeamResizer } from '../SeamResizer'
 import { Button } from './Button'
+import { DateInput } from './DateInput'
 import { Segmented } from './Segmented'
 import { Tooltip } from './Tooltip'
 import { useCanvasZoom } from './useCanvasZoom'
@@ -273,10 +274,10 @@ function RangeField({ view, onViewChange }: { view: AxisView; onViewChange: (vie
         {held && (
           <>
             <label className="kit-time__rangefield">{t('kit.axis.from')}
-              <input type="date" value={held.from} aria-invalid={refused || undefined} onChange={(event) => type({ ...held, from: event.target.value })} />
+              <DateInput value={held.from} aria-invalid={refused || undefined} onChange={(day) => type({ ...held, from: day })} />
             </label>
             <label className="kit-time__rangefield">{t('kit.axis.to')}
-              <input type="date" value={held.to} aria-invalid={refused || undefined} onChange={(event) => type({ ...held, to: event.target.value })} />
+              <DateInput value={held.to} aria-invalid={refused || undefined} onChange={(day) => type({ ...held, to: day })} />
             </label>
             {refused && <p className="kit-time__refused" role="alert">{t('kit.axis.rangeRefused')}</p>}
           </>

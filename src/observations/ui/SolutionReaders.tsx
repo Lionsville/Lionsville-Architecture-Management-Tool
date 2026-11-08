@@ -30,7 +30,7 @@ import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Link from '@mui/material/Link'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import ToggleButton from '@mui/material/ToggleButton'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import Tooltip from '@mui/material/Tooltip'
@@ -85,7 +85,7 @@ function AnswerField(props: { label: string; value: string; onSave: (value: stri
   const [draft, setDraft] = useState(props.value)
   useEffect(() => setDraft(props.value), [props.value])
   return (
-    <TextField
+    <FieldBox
       fullWidth
       multiline={props.multiline}
       label={props.label}
@@ -265,7 +265,7 @@ export function SolutionReader(props: SolutionReaderProps) {
                   ))}
                   {canEdit && (
                     <>
-                      <TextField
+                      <FieldBox
                         placeholder={s('solution.validatedField')} value={name}
                         onChange={(event) => setName(event.target.value)}
                         onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addName() } }}
@@ -298,9 +298,9 @@ export function SolutionReader(props: SolutionReaderProps) {
                   <Term>{null}</Term>
                   <Value>
                     <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 0.5, alignItems: 'center' }}>
-                      <TextField placeholder={s('solution.attemptWhen')} value={attempt.when} onChange={(e) => setAttempt((a) => ({ ...a, when: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhen') } }} />
-                      <TextField placeholder={s('solution.attemptWhat')} value={attempt.what} onChange={(e) => setAttempt((a) => ({ ...a, what: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhat'), 'data-testid': 'solution-attempt-what' } }} />
-                      <TextField placeholder={s('solution.attemptWhy')} value={attempt.why} onChange={(e) => setAttempt((a) => ({ ...a, why: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhy'), 'data-testid': 'solution-attempt-why' } }} />
+                      <FieldBox placeholder={s('solution.attemptWhen')} value={attempt.when} onChange={(e) => setAttempt((a) => ({ ...a, when: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhen') } }} />
+                      <FieldBox placeholder={s('solution.attemptWhat')} value={attempt.what} onChange={(e) => setAttempt((a) => ({ ...a, what: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhat'), 'data-testid': 'solution-attempt-what' } }} />
+                      <FieldBox placeholder={s('solution.attemptWhy')} value={attempt.why} onChange={(e) => setAttempt((a) => ({ ...a, why: e.target.value }))} slotProps={{ htmlInput: { 'aria-label': s('solution.attemptWhy'), 'data-testid': 'solution-attempt-why' } }} />
                       <Button sx={{ textTransform: 'none' }} size="small" onClick={addAttempt} data-testid="solution-attempt-add">{s('solution.attemptAdd')}</Button>
                     </Box>
                   </Value>
@@ -445,7 +445,7 @@ function SolutionGate({ gate, solution, canEdit, back, s, onPlanExperiment, onDe
       </Box>
       {canEdit && gate.items.some((one) => one.item === 'experimentConfirmed' && !one.ok) && (
         <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
-          <TextField fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
+          <FieldBox fullWidth label={s('solution.waiveField')} value={waiver} onChange={(event) => setWaiver(event.target.value)} slotProps={{ htmlInput: { 'data-testid': 'solution-waive-field' } }} />
           <KitButton size="small" reason={waiver.trim() ? undefined : s('solution.waiveField')} onClick={() => { onWaive(waiver); setWaiver('') }} data-testid="solution-waive">{s('solution.waive')}</KitButton>
         </Box>
       )}

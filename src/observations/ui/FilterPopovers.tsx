@@ -17,7 +17,7 @@ import ListItem from '@mui/material/ListItem'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
 import { SurfacePopover as Popover } from '../../widgets/kit/Surface'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
@@ -91,7 +91,7 @@ export function ScopesPopover({ scopes, off, onChange, s }: {
     >
       {() => (
         <>
-          <TextField
+          <FieldBox
             size="small"
             fullWidth
             autoFocus
@@ -182,7 +182,7 @@ export function SavedPopover({ list, canSave, onSave, onRecall, onDelete, s }: {
           >
             <Typography component="label" htmlFor="saved-filter-name" variant="caption">{s('observation.savedName')}</Typography>
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <TextField
+              <FieldBox
                 id="saved-filter-name"
                 size="small"
                 fullWidth

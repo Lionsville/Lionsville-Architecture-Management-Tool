@@ -23,7 +23,7 @@ import type { ReactNode } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from './kit/FieldBox'
 import Typography from '@mui/material/Typography'
 
 /** One thing on offer. */
@@ -163,7 +163,7 @@ export function GroupedPicker({ options, field, nothing, onPick, onClose, testId
         </li>
       )}
       renderInput={(params) => (
-        <TextField
+        <FieldBox
           {...params} autoFocus label={field}
           slotProps={{ ...params.slotProps, htmlInput: { ...params.slotProps.htmlInput, ...(testId ? { 'data-testid': testId } : {}) } }}
         />

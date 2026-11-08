@@ -11,7 +11,7 @@
  */
 import { useState } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
-import MuiTextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import type { StringKey } from '../../i18n'
 import { useStrings } from '../../i18n/LanguageContext'
 import { SOLUTION_SORTS, SOLUTION_STATUSES } from '../../model/buildingBlock'
@@ -48,7 +48,7 @@ export function BlockSolutions({ row }: { row: BlockRow }) {
         supplier: sbb.supplier ?? '—',
         sort: t(SORT_WORD[sbb.sort]),
         status: may
-          ? <Select value={sbb.status} aria-label={t('blocks.statusOf', { name: sbb.name })} onChange={(event) => setStatus(sbb.id, event.target.value as SolutionBlockStatus)} options={SOLUTION_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]) }))} />
+          ? <Select value={sbb.status} aria-label={t('blocks.statusOf', { name: sbb.name })} onChange={(value) => setStatus(sbb.id, value as SolutionBlockStatus)} options={SOLUTION_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]) }))} />
           : t(STATUS_WORD[sbb.status]),
         weighed: weighed.join(', ') || '—',
         chosen: chosen.join(', ') || '—',
@@ -110,7 +110,7 @@ function ElementsDialog({ row, sbb, onClose }: { row: BlockRow; sbb: SolutionBlo
       <Autocomplete
         multiple options={choices} value={value} onChange={(_event, next) => setValue(next)}
         getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.id === b.id}
-        renderInput={(params) => <MuiTextField {...params} autoFocus label={t('blocks.isElement')} helperText={t('blocks.isElementHelp')} />}
+        renderInput={(params) => <FieldBox {...params} autoFocus label={t('blocks.isElement')} helperText={t('blocks.isElementHelp')} />}
       />
     </Dialog>
   )
@@ -149,7 +149,7 @@ export function SolutionDialog({ row, onClose }: { row: BlockRow; onClose: (made
       <Autocomplete
         multiple options={access.elementChoices() as { id: string; name: string }[]} value={elements} onChange={(_event, next) => setElements(next)}
         getOptionLabel={(one) => one.name} isOptionEqualToValue={(a, b) => a.id === b.id}
-        renderInput={(params) => <MuiTextField {...params} label={t('blocks.isElement')} helperText={t('blocks.isElementHelp')} />}
+        renderInput={(params) => <FieldBox {...params} label={t('blocks.isElement')} helperText={t('blocks.isElementHelp')} />}
       />
     </Dialog>
   )

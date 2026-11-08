@@ -23,7 +23,7 @@ import IconButton from '@mui/material/IconButton'
 import MenuItem from '@mui/material/MenuItem'
 import Radio from '@mui/material/Radio'
 import Snackbar from '@mui/material/Snackbar'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
@@ -111,7 +111,7 @@ function WhatToMerge({ state, s }: { state: MergeScreenState; s: Translate }) {
         ))}
       </Box>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        <TextField
+        <FieldBox
           size="small" sx={{ flex: 1, minWidth: 260 }} value={state.query} onChange={(event) => state.setQuery(event.target.value)}
           label={s(state.kind === 'cause' ? 'observation.mergeSearchCauses' : 'observation.mergeSearchObservations')}
           slotProps={{ htmlInput: { 'data-guide': 'merge.search', 'data-testid': 'merge-search' } }}
@@ -162,7 +162,7 @@ function FieldControl({ field, onChange, s }: { field: MergeField; onChange: (va
     ? OBSERVATION_IMPACTS.map((one) => ({ value: one, label: s(IMPACT_LABEL[one]) }))
     : field.key === 'state' ? (['assumed', 'verified'] as const).map((one) => ({ value: one, label: s(STATE_LABEL[one]) })) : undefined
   return (
-    <TextField
+    <FieldBox
       size="small" fullWidth label={field.label} value={field.value} select={choices !== undefined}
       type={field.key === 'date' ? 'date' : undefined}
       onChange={(event) => onChange(event.target.value)}
@@ -172,7 +172,7 @@ function FieldControl({ field, onChange, s }: { field: MergeField; onChange: (va
       }}
     >
       {choices?.map((one) => <MenuItem key={one.value} value={one.value}>{one.label}</MenuItem>)}
-    </TextField>
+    </FieldBox>
   )
 }
 
@@ -242,13 +242,13 @@ function LinkRow({ link, state, s }: { link: MergeLink; state: MergeScreenState;
         )}
       />
       {link.both && link.moves && (
-        <TextField
+        <FieldBox
           select size="small" sx={{ width: 160 }} label={s('observation.mergeLinkStrength')} value={link.offered}
           onChange={(event) => state.setLink(link.key, { strength: event.target.value as MergeLink['offered'] })}
           slotProps={{ htmlInput: { 'aria-label': s('observation.mergeLinkStrength') } }}
         >
           {STRENGTHS.map((one) => <MenuItem key={one} value={one}>{s(STRENGTH_LABEL[one])}</MenuItem>)}
-        </TextField>
+        </FieldBox>
       )}
     </Box>
   )

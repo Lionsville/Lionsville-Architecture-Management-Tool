@@ -26,6 +26,10 @@ import type { ChangeEvent, ComponentPropsWithRef, CSSProperties, KeyboardEvent, 
 import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
 import { MenuButton } from './Menu'
+import { Select } from './Select'
+import type { SelectOption, SelectProps } from './Select'
+import { DateInput } from './DateInput'
+import type { DateInputProps } from './DateInput'
 import type { MenuEntry } from './Menu'
 import { commandKey } from './keys'
 import './Field.css'
@@ -68,7 +72,6 @@ export function Field({ label, hint, error, required, children }: FieldProps) {
 
 type InputProps = Omit<ComponentPropsWithRef<'input'>, 'className' | 'style'>
 type TextAreaProps = Omit<ComponentPropsWithRef<'textarea'>, 'className' | 'style'>
-type SelectProps = Omit<ComponentPropsWithRef<'select'>, 'className' | 'style'>
 
 /** The kit's text box. In a row it fits the row's 24 px (`data-fit`). */
 export function TextInput(props: InputProps) {
@@ -79,19 +82,10 @@ export function TextArea(props: TextAreaProps) {
   return <textarea {...props} className="kit-input" data-long />
 }
 
-export type SelectOption = { value: string; label: string }
-
-/**
- * The browser's own select, drawn in the kit's box. For a short closed list; a
- * long list or anything to search is a Picker.
- */
-export function Select({ options, ...props }: SelectProps & { options: readonly SelectOption[] }) {
-  return (
-    <select {...props} className="kit-input" data-select>
-      {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-    </select>
-  )
-}
+export { Select } from './Select'
+export type { SelectOption, SelectProps } from './Select'
+export { DateInput } from './DateInput'
+export type { DateInputProps } from './DateInput'
 
 /**
  * A box as tall as its text, for a form that is read as a page: it has no scroll of
@@ -163,14 +157,26 @@ export function TextField({ label, hint, error, required, rows, value, onChange,
 }
 
 /** A label above a short closed list. */
-export function SelectField({ label, hint, error, required, value, options, onChange, ...rest }: Words & Omit<SelectProps, 'value' | 'onChange'> & {
+export function SelectField({ label, hint, error, required, value, options, onChange, ...rest }: Words & Omit<SelectProps, 'value' | 'onChange' | 'options'> & {
   value: string
   options: readonly SelectOption[]
   onChange: (value: string) => void
 }) {
   return (
     <Field label={label} hint={hint} error={error} required={required}>
-      {(ties) => <Select {...rest} {...ties} value={value} options={options} onChange={(event) => onChange(event.target.value)} />}
+      {(ties) => <Select {...rest} {...ties} value={value} options={options} onChange={onChange} />}
+    </Field>
+  )
+}
+
+/** A label above a day: `YYYY-MM-DD`, or `''` for none. */
+export function DateField({ label, hint, error, required, value, onChange, ...rest }: Words & Omit<DateInputProps, 'value' | 'onChange'> & {
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <Field label={label} hint={hint} error={error} required={required}>
+      {(ties) => <DateInput {...rest} {...ties} value={value} onChange={onChange} />}
     </Field>
   )
 }
@@ -409,7 +415,7 @@ function RowEditing({ label, edit, startsFrom, refusal, check, onCommit, onClose
     autoFocus: true as const,
     ...(said ? { 'aria-invalid': true as const, 'aria-describedby': errorId } : {}),
   }
-  const onKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (event.key === 'Escape') {
       event.preventDefault()
       event.stopPropagation()
@@ -429,12 +435,16 @@ function RowEditing({ label, edit, startsFrom, refusal, check, onCommit, onClose
   const field = (): ReactNode => {
     if (typeof edit === 'function') return edit({ value: draft, onChange: setDraft, commit: (next) => commit(next ?? draft, true), cancel, ties })
     if (edit === 'long') return <TextArea {...ties} {...typing} rows={3} />
-    if (edit === 'date') return <TextInput {...ties} {...typing} type="date" data-fit />
+    if (edit === 'date') {
+      return <DateInput {...ties} data-fit value={draft} onChange={setDraft} onKeyDown={onKeyDown} onBlur={() => commit(draft, false)} />
+    }
     if (edit !== 'text') {
+      // Enter and Space open the list; only Escape is the row's.
       return (
         <Select
-          {...ties} data-fit options={edit.options} value={draft} onKeyDown={onKeyDown}
-          onChange={(event) => commit(event.target.value, true)} onBlur={() => onClose(false)}
+          {...ties} data-fit options={edit.options} value={draft}
+          onKeyDown={(event) => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); cancel() } }}
+          onChange={(value) => commit(value, true)} onBlur={() => onClose(false)}
         />
       )
     }

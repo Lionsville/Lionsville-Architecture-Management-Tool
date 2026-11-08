@@ -10,6 +10,7 @@ import { EN as en } from './strings/en';
 import { MultiSelectionInspector } from './MultiSelectionInspector';
 import type { Selection } from './useEditorState';
 import type { DesignElement, DesignModel } from '../model/types';
+import { chooseValue } from '../widgets/kit/testing/select';
 
 afterEach(() => cleanup());
 
@@ -198,7 +199,7 @@ describe('MultiSelectionInspector: bulk edit', () => {
 
   it('sets the lifecycle on the whole selection in one call', () => {
     const { actions } = renderBulk();
-    fireEvent.change(lifecycle(), { target: { value: 'retiring' } });
+    chooseValue(lifecycle(), 'retiring');
     expect(actions.updateElements).toHaveBeenCalledTimes(1);
     expect(actions.updateElements).toHaveBeenCalledWith(['a1', 'a2'], { lifecycle: 'retiring' });
   });

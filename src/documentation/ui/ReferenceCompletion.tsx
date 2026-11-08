@@ -25,7 +25,7 @@ import ListItemButton from '@mui/material/ListItemButton'
 import { SurfaceMenu as Menu, SurfacePopper as Popper } from '../../widgets/kit/Surface'
 import MenuItem from '@mui/material/MenuItem'
 import Paper from '@mui/material/Paper'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { StringKey } from '../../i18n'
@@ -249,7 +249,7 @@ function PickDialog({ kind, options, onClose, onPick }: { kind: ReferableKind; o
               <Box><Typography sx={{ fontSize: 'var(--t-small)' }}>{one.label}</Typography>{one.detail && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{one.detail}</Typography>}</Box>
             </li>
           )}
-          renderInput={(params) => <TextField {...params} autoFocus label={t(KIND_WORD[kind])} />}
+          renderInput={(params) => <FieldBox {...params} autoFocus label={t(KIND_WORD[kind])} />}
         />
       </DialogContent>
       <DialogActions>

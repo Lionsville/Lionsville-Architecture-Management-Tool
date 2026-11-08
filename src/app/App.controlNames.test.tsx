@@ -370,7 +370,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await onBoard()
     fireEvent.click(document.querySelector<HTMLElement>('[data-guide="board.day"]')!)
     fireEvent.click(await screen.findByText('Choose a day…'))
-    fireEvent.change(document.querySelector('input[type="date"]')!, { target: { value: '2031-01-01' } })
+    fireEvent.change(document.querySelector('input[data-date]')!, { target: { value: '2031-01-01' } })
     fireEvent.click(screen.getByRole('button', { name: 'Show this day' }))
     await screen.findByText(/Only on your screen/)
   }]],

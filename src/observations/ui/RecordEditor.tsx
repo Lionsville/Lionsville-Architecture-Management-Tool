@@ -35,7 +35,7 @@ import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { isBlankRef } from '../../model/person'
 import type { PersonRef } from '../../model/person'
-import { SelectField, TextField, TitleField, TitleRead } from '../../widgets/kit/Field'
+import { SelectField, DateField, TextField, TitleField, TitleRead } from '../../widgets/kit/Field'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
 import { PreviewFact } from '../../widgets/kit/Preview'
 import { Segmented } from '../../widgets/kit/Segmented'
@@ -307,8 +307,8 @@ function RecordFacts({ editing, draft, set, by, onBy, today, shown, reading, s }
             options={OBSERVATION_IMPACTS.map((one: ObservationImpact) => ({ value: one, label: s(IMPACT_LABEL[one]) }))}
             onChange={(value) => set('impact', value)}
           />
-          <TextField
-            label={s('observation.dateField')} type="date" max={today} required value={draft.date} onChange={(value) => set('date', value)}
+          <DateField
+            label={s('observation.dateField')} max={today} required value={draft.date} onChange={(value) => set('date', value)}
             {...(shown('date') ? { error: shown('date') as string } : {})} data-testid="editor-date"
           />
           <TextField
@@ -329,8 +329,8 @@ function RecordFacts({ editing, draft, set, by, onBy, today, shown, reading, s }
         <>
           <TextField label={s('solution.whereField')} value={draft.where} onChange={(value) => set('where', value)} />
           {personField(s('solution.byField'), 'experiment-by-field')}
-          <TextField label={s('solution.fromField')} type="date" value={draft.from} onChange={(value) => set('from', value)} />
-          <TextField label={s('solution.toField')} type="date" value={draft.to} onChange={(value) => set('to', value)} />
+          <DateField label={s('solution.fromField')} value={draft.from} onChange={(value) => set('from', value)} />
+          <DateField label={s('solution.toField')} value={draft.to} onChange={(value) => set('to', value)} />
         </>
       )
   }

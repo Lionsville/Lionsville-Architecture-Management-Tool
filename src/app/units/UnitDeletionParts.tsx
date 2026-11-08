@@ -25,7 +25,8 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import MenuItem from '@mui/material/MenuItem'
 import Radio from '@mui/material/Radio'
 import RadioGroup from '@mui/material/RadioGroup'
-import TextField from '@mui/material/TextField'
+import { FieldBox } from '../../widgets/kit/FieldBox'
+import { DateField } from '../../widgets/kit/Field'
 import Typography from '@mui/material/Typography'
 import type { Translate } from '../../i18n'
 import { rolesEndedSentences } from '../../model/deletion'
@@ -81,8 +82,7 @@ function EndFirst({ plan, today, onEnd, s }: UnitDeletionPartsProps) {
       )}
       {one && onEnd && open && (
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 1 }}>
-          <TextField size="small" type="date" label={s('unitDelete.lastDay')} value={last} onChange={(event) => setLast(event.target.value)}
-            slotProps={{ inputLabel: { shrink: true }, htmlInput: { 'data-testid': 'unit-delete-last-day' } }} />
+          <DateField label={s('unitDelete.lastDay')} value={last} onChange={setLast} data-testid="unit-delete-last-day" />
           <Button size="small" variant="contained" sx={{ textTransform: 'none' }} disabled={!/^\d{4}-\d{2}-\d{2}$/.test(last)}
             data-testid="unit-delete-end-it" onClick={() => onEnd(last)}>
             {s('unitDelete.endIt')}
@@ -128,10 +128,10 @@ function Inside({ plan, choice, onChoice, names, s }: UnitDeletionPartsProps) {
     <Box key="into" sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
       <FormControlLabel value={`into:${target}`} control={<Radio size="small" />} data-testid="unit-delete-into"
         label={s('unitDelete.into', { type: unitType })} sx={{ mr: 0 }} />
-      <TextField select size="small" value={target} data-testid="unit-delete-into-pick" label={s('unitDelete.intoPick', { type: unitType })}
+      <FieldBox select size="small" value={target} data-testid="unit-delete-into-pick" label={s('unitDelete.intoPick', { type: unitType })}
         onChange={(event) => onChoice(`into:${event.target.value}`)} sx={{ minWidth: 160 }}>
         {plan.into.map((one) => <MenuItem key={one.id} value={one.id}>{one.name}</MenuItem>)}
-      </TextField>
+      </FieldBox>
     </Box>
   )
   const remove = (
