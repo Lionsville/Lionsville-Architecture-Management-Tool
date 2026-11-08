@@ -205,7 +205,7 @@ export function ChartLinesOverlay({ stage, lines, zoom, redraw, unitName, t }: {
 }
 
 /** A stretch of line in the legend, drawn by the same component as the real one. */
-function Sample({ line, arrow = true }: { line: Pick<ChartLine, 'direction' | 'override' | 'kind'> | undefined; arrow?: boolean }) {
+function Sample({ line, arrow = true, tone }: { line: Pick<ChartLine, 'direction' | 'override' | 'kind'> | undefined; arrow?: boolean; tone?: ChartLine['tone'] }) {
   const end = { x: 28, y: 5 }
   return (
     <svg className="chart-legend__sample" width={30} height={10} aria-hidden="true">
@@ -213,6 +213,7 @@ function Sample({ line, arrow = true }: { line: Pick<ChartLine, 'direction' | 'o
         d="M1,5 L28,5" className={line ? 'org-line' : undefined} ink={line ? (line.override ? 'exception' : line.direction === 'up' ? 'signal' : 'ink') : 'quiet'}
         pattern={line?.kind === 'dotted' ? 'functional' : 'solid'} {...(arrow ? { arrow: arrowAt({ x: 1, y: 5 }, end) } : {})}
         {...(line ? { 'data-direction': line.direction, 'data-override': line.override ? 'true' : undefined } : {})}
+        {...(tone ? { 'data-tone': tone } : {})}
       />
     </svg>
   )
@@ -229,6 +230,8 @@ export function ChartLinesLegend({ t }: { t: Translate }) {
           { id: 'into', label: t('chart.legendReportedBy'), sample: <Sample line={{ direction: 'into', override: false, kind: 'solid' }} /> },
           { id: 'dotted', label: t('chart.legendDotted'), sample: <Sample line={{ direction: 'into', override: false, kind: 'dotted' }} arrow={false} /> },
           { id: 'override', label: t('chart.legendOverride'), sample: <Sample line={{ direction: 'up', override: true, kind: 'dotted' }} /> },
+          // Drawn on the chart in the warning ink, so it is said here too.
+          { id: 'vacant', label: t('chart.legendVacant'), sample: <Sample line={{ direction: 'up', override: false, kind: 'solid' }} tone="vacant" /> },
         ]}
       />
     </div>

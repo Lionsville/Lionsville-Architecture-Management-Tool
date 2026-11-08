@@ -1645,6 +1645,7 @@ export const EN = {
   'chart.legendReportsTo': 'Reports to',
   'chart.legendReportedBy': 'Reports to them',
   'chart.legendOverride': 'An exception to the model',
+  'chart.legendVacant': 'To a role nobody holds',
   'chart.legendDotted': 'Dotted: functional',
   'topics.title': 'Topics',
   'topics.card': 'Topics',

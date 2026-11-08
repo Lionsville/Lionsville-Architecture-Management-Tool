@@ -1417,6 +1417,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'chart.legendReportsTo': 'Berichtet an',
   'chart.legendReportedBy': 'Berichtet an sie',
   'chart.legendOverride': 'Eine Ausnahme vom Modell',
+  'chart.legendVacant': 'Zu einer Rolle, die niemand innehat',
   'chart.legendDotted': 'Gepunktet: fachlich',
   'topics.title': 'Themen',
   'topics.card': 'Themen',

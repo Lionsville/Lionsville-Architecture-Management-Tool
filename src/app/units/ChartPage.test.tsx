@@ -533,7 +533,7 @@ describe('the reporting lines over the chart (ADR-0039 §7)', () => {
       fireEvent.click(holder('tt', 'ro-po'))
       const lines = () => [...document.querySelectorAll<SVGGElement>('[data-testid^="chart-line-"]')].map((one) => [one.dataset.direction, one.dataset.override ?? ''])
       expect(lines()).toEqual([['up', ''], ['into', '']])
-      expect(screen.getByTestId('chart-lines-legend').textContent).toBe('Where a unit sitsReports toReports to themDotted: functionalAn exception to the model')
+      expect(screen.getByTestId('chart-lines-legend').textContent).toBe('Where a unit sitsReports toReports to themDotted: functionalAn exception to the modelTo a role nobody holds')
       cleanup()
       // The developer reports to the cluster lead by a line of her own: drawn in place of the role's, as an override.
       const own: HostModel = { ...SHIPPING, assignments: SHIPPING.assignments!.map((one) => (one.id === 'as-4' ? { ...one, reportsTo: [{ to: { scope: 'shipping', unit: 'pf', role: 'ro-lead' }, kind: 'solid' as const }] } : one)) }
