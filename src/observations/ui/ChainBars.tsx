@@ -146,7 +146,7 @@ export function ChainEmpty({ onNew, s }: { onNew?: (() => void) | undefined; s: 
       </ol>
       {onNew && (
         <div className="chain-empty__do">
-          <Button variant="primary" onClick={onNew} data-testid="observation-empty-new">{s('observation.new')}</Button>
+          <Button variant="primary" onClick={onNew} data-testid="observation-empty-new" data-guide="observations.new">{s('observation.new')}</Button>
           <span className="chain-note">{s('observation.emptyOnlyFirst')}</span>
         </div>
       )}

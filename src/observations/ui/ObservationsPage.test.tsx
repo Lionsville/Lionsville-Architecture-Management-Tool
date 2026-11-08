@@ -138,8 +138,10 @@ describe('the chain', () => {
     mount({ model: { ...model, observations: [], causes: [] }, below: [] })
     expect(screen.getByTestId('chain-empty').textContent).toContain('Write down what you see, before anyone explains it')
     const start = screen.getByTestId('observation-empty-new')
-    // The bar's button carries the guide's name; this one is a second way in, and has none.
-    expect(start.getAttribute('data-guide')).toBeNull()
+    // The bar is not drawn over an empty scope, so this is the one way in, and carries the guide's
+    // name: a learning path's step that points at New observation finds it here (version 4).
+    expect(start.getAttribute('data-guide')).toBe('observations.new')
+    expect(document.querySelectorAll('[data-guide="observations.new"]')).toHaveLength(1)
     fireEvent.click(start)
     expect(screen.getByRole('form', { name: 'New observation' })).toBeTruthy()
     cleanup()
