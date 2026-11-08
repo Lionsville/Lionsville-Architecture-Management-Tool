@@ -1762,6 +1762,7 @@ export const EN = {
   'org.technologyLandscapeView': 'Technology landscape',
   // --- the frame (decision 1) --------------------------------------------------
   'frame.find': 'Find or run a command',
+  'frame.findShort': 'Find…',
   'frame.findTip': 'Places, records, people and commands',
   'frame.treeToggle': 'Keep the scope tree open',
   'frame.treeOnHome': 'A home always shows the tree',

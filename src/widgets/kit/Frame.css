@@ -45,29 +45,40 @@
 .kit-frame__tab[aria-current='page'] { color: var(--ink); font-weight: var(--fw-strong); border-bottom-color: var(--accent); }
 .kit-frame__tab:focus-visible, .kit-frame__find:focus-visible, .kit-frame__status:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .kit-frame__find {
-  appearance: none; font: inherit; cursor: pointer; flex: 0 1 300px; min-width: 36px; height: var(--ctl-h); display: inline-flex; align-items: center; gap: var(--s-2);
+  appearance: none; font: inherit; cursor: pointer; flex: 0 1 300px; min-width: 6.5rem; height: var(--ctl-h); display: inline-flex; align-items: center; gap: var(--s-2);
   padding-inline: var(--s-2); color: var(--ink-2); background: var(--ground); border: 1px solid var(--line-strong); border-radius: var(--r-3);
   overflow: hidden; white-space: nowrap;
   /*
    * It gives way by its own width, not at a width of the row: where the row is
    * short it shrinks before the trail does, and its words go only once it is
-   * too narrow to hold them, the glass then alone at its start. Collapsed at a fixed
-   * 75rem of the row it was a bare glass at 150 % beside room nobody used.
+   * too narrow to hold them — to a short word first (Find…, Suchen…), which it
+   * keeps down to its floor, so a long language never leaves an empty box.
+   * A phone's row, or a row with nothing left to fold (`--least`), takes it to
+   * the glass alone. Its name is the whole phrase whatever it shows.
    */
   container: kit-find / inline-size;
 }
-@container kit-find (max-width: 10rem) {
-  .kit-frame__find span { display: none; }
+.kit-frame__find--least { min-width: 36px; }
+.kit-frame__find-word, .kit-frame__find-short { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: start; }
+.kit-frame__find-short { display: none; }
+@container kit-find (max-width: 13rem) {
+  .kit-frame__find-word, .kit-frame__find .kit-frame__kbd { display: none; }
+  .kit-frame__find-short { display: block; }
 }
-.kit-frame__find span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: start; }
+/* In its content box, inside the border and padding: under 4 rem a short word no longer fits beside the glass. */
+@container kit-find (max-width: 4rem) {
+  .kit-frame__find-short { display: none; }
+}
 .kit-frame__status {
   appearance: none; border: 0; background: none; font: inherit; cursor: pointer; color: var(--ink-2); white-space: nowrap;
-  height: var(--ctl-h); padding-inline: var(--s-2); border-radius: var(--r-3); max-width: 24rem; overflow: hidden; text-overflow: ellipsis;
-  /* Where the row is short it gives way before the trail does: the panel behind it says the rest. */
-  flex: 0 1 auto; min-width: 6rem;
+  height: var(--ctl-h); padding-inline: var(--s-2); border-radius: var(--r-3); max-width: 24rem; overflow: hidden;
+  display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--t-body);
+  /* It keeps its width: where the row runs out its word folds whole, to the mark (`data-folded`), rather than being cut to a few letters. */
+  flex: 0 0 auto;
 }
-.kit-frame__status { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--t-body); }
-.kit-frame__status-word { overflow: hidden; text-overflow: ellipsis; }
+.kit-frame__status-say { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* Folded, the word is out of sight and still read out as it changes; the button is named by it and shows it on hover. */
+.kit-frame__status[data-folded='true'] .kit-frame__status-say { max-width: 0; margin-inline-start: calc(-1 * var(--s-1)); }
 .kit-frame__status-short { display: none; }
 .kit-frame__status-mark { flex: 0 0 auto; }
 .kit-frame__status[data-tone='saved'] .kit-frame__status-mark { color: var(--ok); }
@@ -142,7 +153,7 @@
 
 /* Under 75 rem the word gives way to its icon and count before anything overlaps. In rem and on the frame, since a media query knows neither the text size nor what the frame was given. The find field gives way by its own width (above). */
 @container kit-frame (max-width: 75rem) {
-  .kit-frame__status { max-width: 8rem; min-width: 5rem; }
+  .kit-frame__status { max-width: 8rem; }
   .kit-frame__status:has(.kit-frame__status-short) .kit-frame__status-word { display: none; }
   .kit-frame__status-short { display: inline; }
 }
@@ -153,12 +164,12 @@
   .kit-frame__tree { max-width: 45cqw; }
 }
 
-/* A phone's width: row one keeps where you are, whether it is safe and ⋯, and lets the rest go; the tree stands over the page when it is asked for. */
+/* A phone's width: row one keeps Back, where you are, whether it is safe and ⋯, and lets the rest go; the tree stands over the page when it is asked for. */
 @container kit-frame (max-width: 37.5rem) {
   .kit-frame__steps { display: none; }
   .kit-frame__row--one { gap: 0; padding-inline: var(--s-1); }
   .kit-frame__row--one > :last-child { flex-shrink: 0; }
-  .kit-frame__status { min-width: 0; flex-shrink: 0; }
+  .kit-frame__find { min-width: 36px; }
   .kit-frame__tree { position: absolute; inset-block: 0; inset-inline-start: 0; z-index: 5; width: min(var(--panel-w-tree), 85cqw); max-width: 85cqw; box-shadow: var(--shadow); }
 }
 

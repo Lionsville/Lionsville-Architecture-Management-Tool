@@ -1534,6 +1534,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.technologyLandscapeView': 'Technologielandschaft',
   // --- the frame (decision 1) --------------------------------------------------
   'frame.find': 'Suchen oder Befehl ausführen',
+  'frame.findShort': 'Suchen…',
   'frame.findTip': 'Orte, Einträge, Personen und Befehle',
   'frame.treeToggle': 'Bereichsbaum geöffnet halten',
   'frame.treeOnHome': 'Eine Startseite zeigt den Baum immer',

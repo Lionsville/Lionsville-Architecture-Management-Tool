@@ -1530,6 +1530,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.technologyLandscapeView': 'Technologielandschap',
   // --- the frame (decision 1) --------------------------------------------------
   'frame.find': 'Zoek of voer een opdracht uit',
+  'frame.findShort': 'Zoeken…',
   'frame.findTip': 'Plekken, records, mensen en opdrachten',
   'frame.treeToggle': 'Scopeboom open houden',
   'frame.treeOnHome': 'Een startpagina toont de boom altijd',

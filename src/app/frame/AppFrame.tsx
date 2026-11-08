@@ -581,7 +581,7 @@ function placeFact(place: Page, parts: ShellParts): { count: string; words: stri
   }
 }
 
-function Trail({ parts, at, name }: { parts: ShellParts; at: ScopePath; name: string }) {
+function Trail({ parts, at, name, capped }: { parts: ShellParts; at: ScopePath; name: string; capped: boolean }) {
   const { organisation: { tree }, services: { s } } = parts
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const crumbs = useMemo(() => crumbsFor(at, flattenScopes(tree), s), [at, tree, s])
@@ -590,7 +590,7 @@ function Trail({ parts, at, name }: { parts: ShellParts; at: ScopePath; name: st
     <>
       {/* The switcher stands right after the open scope's name, whatever room the trail keeps. */}
       <Crumbs
-        crumbs={crumbs} current={name} currentPath={at} onGoHome={(path) => parts.agent.openSomewhere({ scope: path, page: 'home' })} s={s}
+        crumbs={crumbs} current={name} currentPath={at} onGoHome={(path) => parts.agent.openSomewhere({ scope: path, page: 'home' })} s={s} capped={capped}
         after={(
           <IconButton
             label={s('frame.switchScope')} size="small" data-testid="scope-switcher-open" data-guide="frame.switcher"
@@ -626,6 +626,17 @@ export function AlsoHere({ names, s }: { names: readonly string[]; s: Translate 
   return <span className="kit-frame__also" data-testid="also-here" data-guide="shell.alsoHere">{s('shell.alsoHere', { names: names.join(', ') })}</span>
 }
 
+/**
+ * What row one lets go of when it runs out, in order, each measured
+ * (`useRowFold`) rather than set at a width: the words beside the work; the
+ * status word, to its mark; Help and the size, since the size is what makes
+ * room for reading; and Forward, beside a Back that never goes, Back being the
+ * press people miss most. Once all of these are gone the find field may go to
+ * its glass, and only then is a name in the trail cut (`Crumbs`' `capped`).
+ */
+const ROW_ONE_FOLDS = ['activity', 'agent', 'status', 'help', 'size', 'forward'] as const
+type RowOneFold = typeof ROW_ONE_FOLDS[number]
+
 function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at: ScopePath }) {
   const { services: { s }, organisation: { tree } } = parts
   const facts = state.screen
@@ -633,38 +644,38 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   const chip = frameChip(parts)
   const scopeOpen = facts?.kind === 'workspace'
   const { prefs } = parts.services
-  // What goes first when the row runs out: the words beside the work, the size, since it is what makes room for reading,
-  // and Forward after everything, beside a Back that never goes: Back is the press people miss most.
-  const { folded: gone, anchor } = useRowFold(5, `${prefs.textSize} ${prefs.language}`)
+  const { folded: gone, anchor } = useRowFold(ROW_ONE_FOLDS.length, `${prefs.textSize} ${prefs.language}`)
+  const folded = (what: RowOneFold) => gone > ROW_ONE_FOLDS.indexOf(what)
+  const allFolded = gone === ROW_ONE_FOLDS.length
   const { t } = useStrings()
   const sizing = { size: prefs.textSize, steps: TEXT_SIZES, normal: DEFAULT_TEXT_SIZE, onChoose: prefs.chooseTextSize }
   const togglePanel = (panel: 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
   const foldedEntries: MenuEntry[] = [
-    ...(gone >= 1 ? [{ label: s('shell.activity'), checked: state.panel === 'activity', onSelect: () => togglePanel('activity') }] : []),
-    ...(gone >= 2 ? [agentEntry(parts)] : []),
+    ...(folded('activity') ? [{ label: s('shell.activity'), checked: state.panel === 'activity', onSelect: () => togglePanel('activity') }] : []),
+    ...(folded('agent') ? [agentEntry(parts)] : []),
     // In ⋯, which says Lionsville Architect Help itself, the folded Help leaves that line out.
-    ...(gone >= 3 ? [{ label: s('frame.help'), items: helpEntries(parts, !parts.hostMenu) }] : []),
-    ...(gone >= 4 ? textSizeEntries(sizing, t) : []),
-    ...(gone >= 5 ? [{ label: s('shell.forward'), onSelect: () => goInHistory('forward') }] : []),
+    ...(folded('help') ? [{ label: s('frame.help'), items: helpEntries(parts, !parts.hostMenu) }] : []),
+    ...(folded('size') ? textSizeEntries(sizing, t) : []),
+    ...(folded('forward') ? [{ label: s('shell.forward'), onSelect: () => goInHistory('forward') }] : []),
   ]
   const overflow = frameOverflow(parts, scopeOpen)
   return (
     <>
       <span ref={anchor} hidden />
       {/* Back stays at every width; Forward folds into ⋯ last of all (above). */}
-      <BackForward s={s} forward={gone < 5} />
+      <BackForward s={s} forward={!folded('forward')} />
       <TreeToggle parts={parts} pinned={state.pinned} onHome={treeAlwaysOn(parts)} />
-      <Trail parts={parts} at={at} name={name} />
+      <Trail parts={parts} at={at} name={name} capped={allFolded} />
       <div className="kit-frame__grow" />
-      <FindField openSearch={facts?.openSearch} s={s} />
+      <FindField openSearch={facts?.openSearch} s={s} least={allFolded} />
       <div className="kit-frame__grow" />
       {/* An editor has an undo of its own, for shapes; the model's here would take back the wrong thing. A phone's row has no room for them: its ⌘Z is a menu away. */}
       {!state.work && <span className="kit-frame__steps"><UndoRedo facts={facts} s={s} /></span>}
-      <SafeWords parts={parts} state={state} activity={gone < 1} />
-      {gone < 2 && <AgentButton parts={parts} />}
+      <SafeWords parts={parts} state={state} activity={!folded('activity')} word={!folded('status')} />
+      {!folded('agent') && <AgentButton parts={parts} />}
       <BarEnd button={frameBarButton(parts, scopeOpen ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
-      {gone < 4 && <TextSizeControl {...sizing} />}
-      {gone < 3 && <HelpMenu parts={parts} />}
+      {!folded('size') && <TextSizeControl {...sizing} />}
+      {!folded('help') && <HelpMenu parts={parts} />}
       {overflow && <BarEnd overflow={{ ...overflow, folded: foldedEntries }} s={s} />}
       {/* A host with a menu bar has no ⋯ of its own, and needs one only for what has folded. */}
       {!overflow && foldedEntries.length > 0 && <MoreMenu items={foldedEntries} size="small" />}
@@ -697,13 +708,19 @@ function TreeToggle({ parts, pinned, onHome }: { parts: ShellParts; pinned: bool
   )
 }
 
-function FindField({ openSearch, s }: { openSearch: (() => void) | undefined; s: Translate }) {
+/** `least`: nothing is left to fold, so its short word goes to the glass before a name in the trail loses a letter. */
+function FindField({ openSearch, s, least }: { openSearch: (() => void) | undefined; s: Translate; least: boolean }) {
   return (
     <Tooltip title={s('frame.findTip')}>
-      <button type="button" className="kit-frame__find" data-testid="frame-find" data-guide="frame.find" onClick={() => openSearch?.()}>
+      {/* Named in full whatever it shows: the words, a short word where they will not fit, or the glass alone (`Frame.css`). */}
+      <button
+        type="button" className={least ? 'kit-frame__find kit-frame__find--least' : 'kit-frame__find'} data-testid="frame-find" data-guide="frame.find" onClick={() => openSearch?.()}
+        aria-label={s('frame.find')} aria-keyshortcuts={isMac() ? 'Meta+K' : 'Control+K'}
+      >
         <SearchIcon size={14} />
-        <span>{s('frame.find')}</span>
-        <span className="kit-frame__kbd">{isMac() ? '⌘K' : 'Ctrl K'}</span>
+        <span className="kit-frame__find-word" aria-hidden>{s('frame.find')}</span>
+        <span className="kit-frame__find-short" aria-hidden>{s('frame.findShort')}</span>
+        <span className="kit-frame__kbd" aria-hidden>{isMac() ? '⌘K' : 'Ctrl K'}</span>
       </button>
     </Tooltip>
   )
@@ -721,7 +738,7 @@ function UndoRedo({ facts, s }: { facts: ScreenFacts | undefined; s: Translate }
 }
 
 /** Whether work is safe, who else is here, and what was lately done: the word and the two panels behind it. */
-function SafeWords({ parts, state, activity }: { parts: ShellParts; state: FrameState; activity: boolean }) {
+function SafeWords({ parts, state, activity, word: wordShown }: { parts: ShellParts; state: FrameState; activity: boolean; word: boolean }) {
   const { services: { s, prefs } } = parts
   const facts = state.screen
   const word = statusOf(parts, facts, prefs.language, s, state.work)
@@ -731,13 +748,15 @@ function SafeWords({ parts, state, activity }: { parts: ShellParts; state: Frame
     <>
       {word.text !== '' && (
         <button
-          type="button" className="kit-frame__status" data-testid="saved-indicator" data-guide="frame.status" data-alarm={word.alarm || undefined} data-tone={word.tone}
+          type="button" className="kit-frame__status" data-testid="saved-indicator" data-guide="frame.status" data-alarm={word.alarm || undefined} data-tone={word.tone} data-folded={wordShown ? undefined : true}
           aria-expanded={state.panel === 'work'} aria-label={word.text} title={word.text} onClick={() => togglePanel('work')}
         >
           <span className="kit-frame__status-mark" aria-hidden>{TONE_MARK[word.tone]}</span>
-          {/* Below 1100 px the word goes to icon and count, never to a bare dot. */}
-          <span className="kit-frame__status-word" aria-live="polite">{word.text}</span>
-          {word.short !== undefined && <span className="kit-frame__status-short" aria-hidden>{word.short}</span>}
+          {/* Below 75 rem the word goes to icon and count; on a row with no room for either, to the mark alone, still read out. */}
+          <span className="kit-frame__status-say">
+            <span className="kit-frame__status-word" aria-live="polite">{word.text}</span>
+            {word.short !== undefined && <span className="kit-frame__status-short" aria-hidden>{word.short}</span>}
+          </span>
           <CaretIcon size={12} />
         </button>
       )}

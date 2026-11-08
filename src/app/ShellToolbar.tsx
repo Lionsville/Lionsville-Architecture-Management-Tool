@@ -300,7 +300,7 @@ export function crumbsFor(
  */
 export const CrumbPressContext = createContext<() => void>(() => undefined)
 
-export function Crumbs({ crumbs, current, currentPath, onGoHome, after, s }: {
+export function Crumbs({ crumbs, current, currentPath, onGoHome, after, capped = true, s }: {
   crumbs: readonly Crumb[]
   current: string
   /** The open scope's path: its own crumb leads to its home too. */
@@ -308,6 +308,11 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, s }: {
   onGoHome: (path: ScopePath) => void
   /** What follows the open scope's name and goes with it: the frame's switcher. */
   after?: ReactNode
+  /**
+   * Whether a name may be cut. The frame says so only once its row has folded
+   * everything it can into ⋯; until then the trail keeps every name whole.
+   */
+  capped?: boolean
   s: Translate
 }) {
   // Within the trail, where it has to give way, the organisation's name gives
@@ -340,23 +345,26 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, s }: {
   const shown = folded.length > 0 ? [crumbs[0], crumbs[crumbs.length - 1]] : crumbs
   // In the frame the trail shares the row with two spacers around the find field
   // and the status word. It starts at the width its names need, so the spacers
-  // share only what is left. Where the row is short it barely shrinks while
-  // anything else still can — the status word and the find field give way
-  // first — and takes the rest of the shortfall once they are at their least:
-  // a shrink of 1 cut a name by a pixel, and so to an ellipsis, beside a long word.
-  // Its floor is its names, up to two fifths of the row: until then the row
-  // folds its words into ⋯ before it cuts a name, and a trail shorter than its
-  // cap keeps no empty room after it — a floor of 13rem sent the switcher a
-  // hand's width off a short name, took the find field's room, and still cut
-  // the open scope's name at 150 % while Help stood whole. A browser without
-  // calc-size keeps the old floor, and the room it leaves stands after the
-  // switcher, as part of the row's spacing.
+  // share only what is left. Its floor is its names, whole, while the row still
+  // has something to fold: so the find field gives way to its short word, and
+  // the row folds its words — the status word to its mark among them — and
+  // Forward into ⋯, before a name loses a letter. A cap of two fifths of the row
+  // had the open scope's name cut at 900 px and 150 % while the status word and
+  // Help stood whole. Once nothing is left to fold, the floor is the names up
+  // to two fifths of the row, and the trail takes the shortfall: barely
+  // shrinking while the find field still can, since a shrink of 1 cut a name by
+  // a pixel, and so to an ellipsis, beside a long word. A trail shorter than
+  // its floor keeps no empty room after it; a browser without calc-size keeps
+  // a floor of 13 rem there, and the room it leaves stands after the switcher,
+  // as part of the row's spacing.
   return (
     <Box
       data-testid="crumbs" data-guide="shell.crumbs"
       sx={{
-        display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '0 0.001 auto', maxWidth: 'max-content',
-        '@supports (min-width: calc-size(max-content, size))': { minWidth: 'calc-size(max-content, min(size, 40cqw))' },
+        display: 'flex', alignItems: 'center', gap: 0.25, flex: '0 0.001 auto', maxWidth: 'max-content',
+        ...(capped
+          ? { minWidth: 'min(13rem, 40cqw)', '@supports (min-width: calc-size(max-content, size))': { minWidth: 'calc-size(max-content, min(size, 40cqw))' } }
+          : { minWidth: 'max-content' }),
       }}
     >
       {shown.map((crumb, index) => (

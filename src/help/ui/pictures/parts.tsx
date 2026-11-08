@@ -36,7 +36,7 @@ export function Screen({ trail, tabs, on, children, tree, height = 300, crop }: 
         <span className="hp-glyph">‹</span><span className="hp-glyph">›</span><span className="hp-glyph hp-glyph--tree" />
         <span className="hp-trail">{trail.map((name, at) => <span key={at} data-last={at === trail.length - 1 || undefined}>{name}</span>)}</span>
         <span className="kit-frame__grow" />
-        <span className="kit-frame__find hp-find"><span><Say k="frame.find" /></span><span className="kit-frame__kbd">⌘K</span></span>
+        <span className="kit-frame__find hp-find"><span className="kit-frame__find-word"><Say k="frame.find" /></span><span className="kit-frame__find-short"><Say k="frame.findShort" /></span><span className="kit-frame__kbd">⌘K</span></span>
         <span className="kit-frame__grow" />
         <span className="hp-glyph">↶</span><span className="hp-glyph">↷</span>
         <span className="hp-status"><span className="hp-dot" /> <Say k="frame.yourWork" /></span>

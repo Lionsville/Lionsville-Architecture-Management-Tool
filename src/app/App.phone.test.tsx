@@ -45,7 +45,7 @@ describe('a phone', () => {
     expect(document.querySelector('.kit-frame__steps [data-testid="back-forward"], .kit-frame__steps [data-testid="overflow-button"], .kit-frame__steps [data-testid="saved-indicator"]')).toBeNull()
   })
 
-  it('folds Forward into ⋯ last, where it goes forward, and keeps Back on a row with room for nothing', async () => {
+  it('folds the status word to its mark and Forward into ⋯ last, where it goes forward, and keeps Back on a row with room for nothing', async () => {
     // A row that never fits: everything that may fold, folds.
     vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockImplementation(() => 300)
     vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => 2000)
@@ -55,6 +55,11 @@ describe('a phone', () => {
       await screen.findAllByText('Acme')
       expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy()
       expect(screen.queryByRole('button', { name: 'Forward' })).toBeNull()
+      // The status word folds whole to its mark and keeps its name; the find field is named in full whatever it shows.
+      const status = screen.getByTestId('saved-indicator')
+      expect(status.dataset.folded).toBe('true')
+      expect(status.getAttribute('aria-label')).not.toBe('')
+      expect(screen.getByTestId('frame-find').getAttribute('aria-label')).toBe('Find or run a command')
       fireEvent.click(screen.getAllByTestId('overflow-button')[0])
       fireEvent.click(await screen.findByRole('menuitem', { name: 'Forward' }))
       expect(forward).toHaveBeenCalledTimes(1)
