@@ -87,7 +87,7 @@ import { AT_THE_TOP } from './choices'
 import { ChartFind } from './ChartFind'
 import { chartKey, stepInTree } from './chartKeys'
 import { chartExceptions, chartWideLines, holderLines } from './chartLines'
-import { ChartConnectors, ChartLinesLegend, ChartLinesOverlay } from './ChartLinesOverlay'
+import { ChartConnectors, ChartLinesLegend, ChartLinesOverlay, ChartMoveLegend } from './ChartLinesOverlay'
 import { ChartOutline } from './ChartOutline'
 import { ORGANISATION, OrgTree } from './ChartUnitBox'
 import type { Drawing, DropState, TreeMove } from './ChartUnitBox'
@@ -228,7 +228,7 @@ export function ChartPage(props: ChartPageProps) {
           {!empty && (
             <>
               <CanvasDock zoom={zoom.zoom} onZoomIn={() => zoom.target.go('in')} onZoomOut={() => zoom.target.go('out')} onFit={() => zoom.target.go('fit')} onHome={() => zoom.target.go('home')} data-testid="chart-dock" />
-              <ChartLinesLegend t={t} />
+              {moving.up === undefined ? <ChartLinesLegend t={t} /> : <ChartMoveLegend t={t} />}
               <SummaryLine chart={chart} byUnit={byUnit} asked={going.summaryAsked} onPress={going.toggleSummary} t={t} />
             </>
           )}

@@ -185,8 +185,12 @@ describe('a unit moved from the chart', () => {
 
   it('moves the unit picked by M, and says it comes back from the keyboard', () => {
     renderShell(<Harness landed={[]} />)
+    expect(screen.getByTestId('chart-lines-legend')).toBeTruthy()
     fireEvent.keyDown(within(boxOf('lob-a')).getByTestId('chart-unit-open'), { key: 'm' })
     expect(dialog().getByTestId('move-unit-now').textContent).toBe('It sits under Technology now.')
+    // While moving, the key says what the rings on the boxes mean, not the lines.
+    expect(screen.queryByTestId('chart-lines-legend')).toBeNull()
+    expect(screen.getByTestId('chart-move-legend').textContent).toContain('Where its type may not sit')
   })
 
   it('opens the same panel when the unit\'s inspector asks, with the chart in view', () => {

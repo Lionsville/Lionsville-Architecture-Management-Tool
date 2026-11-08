@@ -1886,6 +1886,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'unitMove.newPlace': "Nieuwe plek",
   'unitMove.sitsNowShort': "Waar ze nu zit",
   'unitMove.alongNone': "geen eenheden ernaast",
+  'unitMove.legend': "Wat de randen betekenen",
+  'unitMove.legendMoving': "Wordt verplaatst",
   'unitMove.pickFirst': "Kies eerst waar ze heen gaat",
   'assign.otherRole': "{role} (een uitzondering)",
   'assign.over': "{person} zou {share}% van de tijd vervullen.",

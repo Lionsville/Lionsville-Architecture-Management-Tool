@@ -2119,6 +2119,8 @@ export const EN = {
   'unitMove.newPlace': "New place",
   'unitMove.sitsNowShort': "Where it sits now",
   'unitMove.alongNone': "no units beside it",
+  'unitMove.legend': "What the rings mean",
+  'unitMove.legendMoving': "Being moved",
   'unitMove.pickFirst': "Pick where it goes first",
   'assign.otherRole': "{role} (an exception)",
   'assign.over': "{person} would hold {share}% of their time.",

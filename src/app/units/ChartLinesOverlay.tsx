@@ -247,3 +247,23 @@ export function ChartLinesLegend({ t }: { t: Translate }) {
     </div>
   )
 }
+
+/**
+ * While a unit is being moved the chart rings where it may go, not lines: the key
+ * says what those rings mean in place of the lines' key, drawn as the boxes are.
+ */
+export function ChartMoveLegend({ t }: { t: Translate }) {
+  const ring = (drop: 'ok' | 'warn' | 'current' | 'moving') => <span className="chart-legend__ring org-node" data-drop={drop} aria-hidden="true" />
+  return (
+    <div className="chart-legend" data-canvas-float="" data-testid="chart-move-legend" aria-label={t('unitMove.legend')}>
+      <KeyStrip
+        values={[
+          { id: 'ok', label: t('unitMove.fitting'), sample: ring('ok') },
+          { id: 'warn', label: t('unitMove.misfitting'), sample: ring('warn') },
+          { id: 'current', label: t('unitMove.sitsNowShort'), sample: ring('current') },
+          { id: 'moving', label: t('unitMove.legendMoving'), sample: ring('moving') },
+        ]}
+      />
+    </div>
+  )
+}

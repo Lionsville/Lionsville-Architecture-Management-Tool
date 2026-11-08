@@ -17,6 +17,8 @@
 .chart-legend .kit-key__values { flex-direction: column; align-items: flex-start; gap: 0; }
 .chart-legend .kit-key__value { min-height: 18px; font-size: var(--t-small); gap: var(--s-2); }
 .chart-legend__sample { display: block; flex: none; overflow: visible; }
+/* A box's ring in small, as a moving chart draws it on the boxes. */
+.chart-legend__ring.org-node { display: block; flex: none; box-sizing: border-box; width: 30px; min-width: 0; height: 12px; min-height: 0; padding: 0; border-width: 2px; }
 @media (max-width: 899px) { .chart-legend { display: none; } }
 /* Beside a panel the chart is narrow, and the legend would lie on the zoom: it stands over the zoom instead. */
 @container chart-work (max-width: 620px) { .chart-legend { bottom: calc(2 * var(--target-min) + 2 * var(--s-3) + var(--s-2)); } }
