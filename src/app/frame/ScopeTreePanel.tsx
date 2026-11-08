@@ -177,10 +177,12 @@ export function ScopeTreePanel({
   const [show, setShow] = useState<Show>('all')
   // The path to where you are, and what is filed under it, stands open, whichever way you arrived.
   const { collapsed, toggleCollapsed } = folds
+  // Arriving by an address, the listing may come after the place: the path opens once the tree holds it.
+  const listedAt = useMemo(() => flattenScopes(tree).some((one) => one.path === at), [tree, at])
   useEffect(() => {
     for (const above of [at, ...ancestorScopes(at)]) if (collapsed.has(above)) toggleCollapsed(above)
     // On arrival only: a person may fold what they like after it.
-  }, [at])
+  }, [at, listedAt])
   const { tree: listed, unread } = useMemo(() => withUnread(sortTree(tree, order)), [tree, order])
   const asked = find.trim()
   const matching = useMemo(() => (asked === '' ? undefined : scopesFound(listed, asked, today)), [listed, asked, today])
