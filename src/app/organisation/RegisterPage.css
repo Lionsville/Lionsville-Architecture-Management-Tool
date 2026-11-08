@@ -7,7 +7,8 @@
 .org-page__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); margin: 0; }
 .org-page__name { margin: 0; font-size: var(--t-large); font-weight: var(--fw-strong); color: var(--ink); }
 .org-page__covers { font-size: var(--t-small); color: var(--ink-2); }
-.org-page__body { flex: 1; min-height: 0; overflow-y: auto; }
+/* The page's gutter on both sides, so the last column does not touch the window's edge. */
+.org-page__body { flex: 1; min-height: 0; overflow-y: auto; padding-inline: var(--s-4); }
 .org-page__nomatch { padding: var(--s-3) var(--s-4); font-size: var(--t-body); color: var(--ink-2); }
 .org-weights { display: inline-flex; align-items: center; gap: var(--s-2); }
 .org-weights__one { display: inline-flex; align-items: center; gap: var(--s-1); font-variant-numeric: tabular-nums; }
