@@ -361,9 +361,9 @@ describe('what the organisation says needs attention', () => {
 
   it('counts the findings by weight under the cards, and no row counts them', async () => {
     show(withFindings())
-    const attention = await screen.findByTestId('needs-attention')
+    // The count grows as the tree's scopes are read: it is the whole tree's once it says three.
     // Two definitions of one id, each a fix of its scope, and a stand-in of nothing.
-    expect(attention.textContent).toContain('3 to fix')
+    await waitFor(() => expect(screen.getByTestId('needs-attention').textContent).toContain('3 to fix'))
     expect(screen.queryByTestId('findings-finance')).toBeNull()
   })
 
@@ -402,8 +402,7 @@ describe('what the organisation says needs attention', () => {
     // Eight stand-ins of things nobody defines: eight findings on one scope.
     at('finance').model.elements = Array.from({ length: 8 }, (_, n) => element(`ghost-${n}`, `Ghost ${n}`, 'nowhere'))
     show(held)
-    const attention = await screen.findByTestId('needs-attention')
-    expect(attention.textContent).toContain('8 to fix')
+    await waitFor(() => expect(screen.getByTestId('needs-attention').textContent).toContain('8 to fix'))
     const dangling = await checkOnPage('fix', 'check.dangling')
     expect(screen.getByTestId('checks-row-check.dangling').textContent).toMatch(/A stand-in of something nothing defines\s*8$/)
     expect(within(dangling).getAllByTestId(/^attention-finance-/)).toHaveLength(8)
