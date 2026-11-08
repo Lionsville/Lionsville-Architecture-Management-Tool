@@ -70,7 +70,7 @@ in the settings, **Served by** in the new-scope dialog, **+ Domain** on a
 unit's inspector on the chart, a new unit's domains, or the assistant —
 gives the scope that unit's type in the same change, unless the type it
 already has is still that of a unit serving it: a scope served by a division
-keeps saying *Division* when a team under it is added. Taking a unit off
+keeps saying *Division* when a team under it is added. Removing a unit
 leaves the type as it is, and so does undoing the link. Under **Served by**
 a line says how the two stand: *Typed Division, as a unit that serves it is*;
 in the warning colour, *Typed Team, while the units that serve it are:
@@ -870,7 +870,7 @@ corner of the board names each band with that number and how many cards it
 holds, and stays while you read; pressing a band there keeps its cards and lets
 the rest recede. The number is the point: two colours are
 not apart to every eye, and a number is. The word on the bar says what
-the board is coloured by, and ✕ on the key takes the colouring off. Colouring
+the board is coloured by, and ✕ on the key removes the colouring. Colouring
 belongs to the reader and writes nothing, until **Keep with the view** on the key,
 for whoever may write. The
 **platform** badge reads off the roll-up where nobody set it, and the
@@ -929,9 +929,9 @@ anything else with a date on it, so a capability covered from March is covered
 from March.
 
 **Domains**, in the inspector of an area, a grouping or a capability, says
-which domains it is handed to: a chip for each, taken off with its ×, and
+which domains it is handed to: a chip for each, removed with its ×, and
 **+ Domain**, which offers the scopes below the one whose sheet it is, by
-their path and their type. Each one added or taken off is one step, undone
+their path and their type. Each one added or removed is one step, undone
 with {key:Mod+Z}. Under it, **Taken up by** names every scope below that took it up,
 each a way to that scope's home: one that took it up without being handed it
 is marked in the warning colour, and a domain it was handed to that has not
@@ -1091,7 +1091,7 @@ moves. In **Design** (\`tab=design\`) you may:
   does. What another scope keeps is refused, in the panel's words;
 - drag a team, an application or a subscope from the tray onto a tile, a grouping or an
   area. They write what the panel writes. A team also shows as a label on this poster;
-  taking the label off leaves the assignment. A name you type is an actor flagged as not a
+  removing the label leaves the assignment. A name you type is an actor flagged as not a
   unit. An application goes on a tile, not on a block. Select several with {key:Shift} or a drawn box
   with {key:Shift}, and one drop or a press in the tray takes all of them as one step. **L** and **A** on
   a tile open the same lists there;
@@ -1558,10 +1558,10 @@ cause's fields in the form — its title, *why we think so*, whether it is a
 root cause, and how strongly it explains the observation — with *Already
 written down?* over the causes of the scope. **Existing cause** picks one
 already written down. Each row says whether it is new or existing and can be
-taken off again, and nothing is made until you record: the button says what
+removed again, and nothing is made until you record: the button says what
 it will make, *Record observation with 1 new cause and 1 link*, and it is one
 step — {key:Mod+Z} takes the observation, the new causes and the links back together.
-Changing the scope takes off the links to causes of the scope chosen before,
+Changing the scope removes the links to causes of the scope chosen before,
 and says so.
 
 Observations that turn out to be the same thing are **merged**, and so are
@@ -2327,11 +2327,11 @@ that ends lists its units still there afterwards, with who holds a role in
 each: what each is now is for you to decide, by giving it another type or
 ending it. A unit still of a type that has ended is a finding.
 
-**Taking a role out of a unit type** — the ✕ beside it under *Roles it holds*
+**Removing a role from a unit type** — the ✕ beside it under *Roles it holds*
 — first lists who holds that role in a unit of the type, where the unit has no
 slot of its own for it: *Move the people*, under the slots, each with the
 role's successor the unit still holds as the suggestion, their last day in it
-today. **Write as one step** takes the role out of the type together with
+today. **Write as one step** removes the role from the type together with
 their ends and beginnings, all of it or none of it, so nobody is left in a
 role their unit's type does not hold; **Keep**, with the role's name, leaves
 the type as it is. A role nobody holds that way goes at once.
@@ -2519,7 +2519,7 @@ did — a name, initials, a team.
 - **A person picked** is kept as their id. The field shows what the register
   says: their name, or *Former colleague 7KQM* once they are forgotten, or *a
   former colleague* once the entry is removed. A merged entry shows the one it
-  went into. The cross takes the person off the field.
+  went into. The cross removes the person from the field.
 - **Text** stays text. Text written before the register existed is still
   there, still shown as typed, and still found by a search; a forget does not
   reach it, and **What we hold** counts it.

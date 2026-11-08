@@ -78,7 +78,7 @@ export const SECTIONS: SectionTexts = {
     'Where the dates disagree, under the axis; the red or amber mark beside a row\'s name.',
     ['Press a finding to unfold its instances.', 'Use the action an instance offers.'],
     'Unfold A connection outlives one of its ends to see the line still valid after Rating (legacy) is retired.'],
-  'roadmap.markIntended': ['Mark a finding as intended', 'Takes a review finding off the list with a reason, as a step; Accepted (N) lists them with Take back.',
+  'roadmap.markIntended': ['Mark a finding as intended', 'Clears a review finding from the list with a reason, as a step; Accepted (N) lists them with Take back.',
     'Mark as intended… on a review instance; Accepted (N) under the list.',
     ['Unfold a Review finding.', 'Press Mark as intended… and give the reason.', 'To undo it, open Accepted (N) and press Take back.'],
     'Mark Retires while others still depend on it as intended: the two contracts move by hand.'],

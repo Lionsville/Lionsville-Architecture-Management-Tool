@@ -1287,7 +1287,7 @@ export const EN = {
   'move.typeEndsHint': 'Each is still there after its type has ended. Give it another type in its inspector, or end it.',
   'move.whySlot': 'Its type no longer holds {role}',
   'move.slotOut': 'Removing {role} from this unit type',
-  'move.slotOutHint': 'These people hold {role} in a unit of this type. Their last day in it is today, {day}: choose where each goes from tomorrow, or let it only end. Write as one step ends them and takes {role} out of the unit type, together.',
+  'move.slotOutHint': 'These people hold {role} in a unit of this type. Their last day in it is today, {day}: choose where each goes from tomorrow, or let it only end. Write as one step ends them and removes {role} from the unit type, together.',
   'move.slotOutDone': '{role} is removed from this unit type',
   'move.slotKeep': 'Keep {role}',
   'assign.title': '{role} in {unit}',

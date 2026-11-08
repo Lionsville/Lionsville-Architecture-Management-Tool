@@ -11,7 +11,7 @@
  * address would read as a second author for pages on end.
  */
 import { describe, expect, it } from 'vitest'
-import { pressedNotKey, refusedIn } from '../i18n/glossary'
+import { pressedNotKey, refusedIn, takeOffIn } from '../i18n/glossary'
 import { MODIFIER_GLYPHS } from '../i18n/keyNames'
 import { TEXT as EN } from './text/en'
 import { TEXT as NL } from './text/nl'
@@ -48,6 +48,13 @@ describe.each([['nl', NL], ['de', DE]] as const)('the %s help', (language, text)
 
   it('clicks a control and presses a key', () => {
     const wrong = strings.flatMap(([path, said]) => pressedNotKey(said, language).map((press) => `${path}: ${press}`))
+    expect(wrong).toEqual([])
+  })
+})
+
+describe('the en help', () => {
+  it('says Remove, never take off or out, as the screen does', () => {
+    const wrong = helpStrings(EN).flatMap(([path, said]) => takeOffIn(path, said))
     expect(wrong).toEqual([])
   })
 })

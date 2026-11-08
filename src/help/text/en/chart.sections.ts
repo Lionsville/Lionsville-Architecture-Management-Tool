@@ -148,7 +148,7 @@ export const SECTIONS: SectionTexts = {
     'A chosen pair: They should not depend on each other: plan it away….',
     ['Choose the pair.', 'Press plan it away….', 'Pick a plan, or type a name to make a new one.'],
     'Put Order Management and Warehouse Management on a plan called Decouple picking.'],
-  'conway.markIntended': ['Mark a pair as intended', 'Takes a finding off the list as meant to be so, with an optional reason everybody reads; it is listed under Accepted, where anybody takes it back, and comes back if what it is about changes.',
+  'conway.markIntended': ['Mark a pair as intended', 'Clears a finding from the list as meant to be so, with an optional reason everybody reads; it is listed under Accepted, where anybody takes it back, and comes back if what it is about changes.',
     'A chosen pair: Fine as it is: mark as intended…; Accepted at the foot of the panel\'s list.',
     ['Choose the pair.', 'Press Fine as it is: mark as intended….', 'Say why, if you like, and confirm.'],
     'Mark the Commercial team and Customs authority as intended: the authority sets the interface.'],

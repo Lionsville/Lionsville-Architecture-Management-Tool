@@ -64,7 +64,7 @@ export const SECTIONS: SectionTexts = {
     'The checkbox at the start of each row and of each group; the bar that appears over the list.',
     ['Tick the observations one cause explains.', 'Press Ask why for these N.', 'Write the cause and press Add cause and N links.'],
     'Tick OB-0001 and OB-0002 and answer Carriers send their data in many formats once for both.'],
-  'obs-noted': ['Mark an observation as noted', 'Takes an observation off the waiting list when it is a fact worth keeping that nobody needs to explain. An optional reason is kept in its history; it stays live, searchable and explainable. Back on the waiting list takes the mark off.',
+  'obs-noted': ['Mark an observation as noted', 'Clears an observation from the waiting list when it is a fact worth keeping that nobody needs to explain. An optional reason is kept in its history; it stays live, searchable and explainable. Back on the waiting list removes the mark.',
     'More (⋯) in an observation\'s preview: Noted…; Back on the waiting list on a noted one.',
     ['Open an observation that waits for a why.', 'Press ⋯ and choose Noted….', 'Write why, if it helps, and press Mark as noted.'],
     'Mark Gate staff retype each truck plate twice as noted with the reason A fact to keep; it moves to the Noted group.'],

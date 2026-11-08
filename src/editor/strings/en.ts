@@ -414,7 +414,7 @@ export const EN = {
   'inspector.emptyRead': 'Select an element or connection to read its properties.',
   'inspector.empty':
     'Select an element or connection to edit its properties. Double-click an application to open its container diagram.',
-  'inspector.emptyHint': '{key:Shift}-click to add an element to the selection or take it out again.',
+  'inspector.emptyHint': '{key:Shift}-click to add an element to the selection or remove it again.',
   'inspector.selected': '{count} selected',
   'inspector.elementsOne': '{count} element',
   'inspector.elementsOther': '{count} elements',

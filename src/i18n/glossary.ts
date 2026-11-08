@@ -181,6 +181,18 @@ export const ENGLISH_REFUSED: readonly Refused[] = [
   { word: /^(Take|Took|Taking)\b[^.]*\b(off|out)\b/, use: 'Remove' },
 ]
 
+/**
+ * The same stand-in anywhere in running text — a help page, a hint, a check's
+ * advice: *takes it off*, *taken out of the selection*. Remove says it.
+ */
+export const TAKE_OFF_IN_PROSE = /\b(take|takes|taken|taking|took)\s+(?:[^\s.,;:]+\s+){0,3}?(off|out)\b/i
+
+/** Every stand-in for Remove in English running text, with where it sits. */
+export function takeOffIn(path: string, text: string): string[] {
+  const found = TAKE_OFF_IN_PROSE.exec(prose(text))
+  return found ? [`${path}: "…${found[0]}…" — use Remove`] : []
+}
+
 /** What a label says against the two acts: one line where Dutch or German uses the other act's word, or English a stand-in for Remove. */
 export function actsIn(language: Language, key: string, english: string, text: string): string[] {
   if (language === 'en') {

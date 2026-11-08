@@ -19,7 +19,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { STRINGS } from './strings'
-import { SAME_EVERYWHERE, SHARED, actsIn, pressedNotKey, prose, refusedIn } from './glossary'
+import { SAME_EVERYWHERE, SHARED, actsIn, pressedNotKey, prose, refusedIn, takeOffIn } from './glossary'
 
 describe.each(['nl', 'de'] as const)('the %s words', (language) => {
   const table = STRINGS[language]
@@ -59,6 +59,18 @@ describe('remove and delete', () => {
       wrong.push(...actsIn(language, key, en[key], text))
     }
     expect(wrong).toEqual([])
+  })
+
+  it('never says take off or out for Remove in English running text either', () => {
+    const wrong = Object.entries(STRINGS.en as Record<string, string>).flatMap(([key, text]) => takeOffIn(key, text))
+    expect(wrong).toEqual([])
+  })
+
+  it('finds take off and take out wherever they stand in a sentence', () => {
+    expect(takeOffIn('x', 'Press × beside one to take it off.')).toHaveLength(1)
+    expect(takeOffIn('x', 'taken out of the selection')).toHaveLength(1)
+    expect(takeOffIn('x', 'Take back the mark, and take part in the review.')).toEqual([])
+    expect(takeOffIn('x', 'Remove it from the selection.')).toEqual([])
   })
 
   it('refuses the other act\'s word, and lets a choice between the two say both', () => {
