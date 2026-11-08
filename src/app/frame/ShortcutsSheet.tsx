@@ -20,10 +20,10 @@ export function ShortcutsSheet({ open, onClose, rows, mac, language = 'en', s }:
     ...FRAME_KEYS(mac, language).map(([label, key]) => ({ label: s(label), keys: [key] })),
     ...(['file', 'edit', 'go', 'view', 'help'] as const)
       .flatMap((name) => rows.filter((row) => row.group === name && row.keys !== undefined))
-      .map((row) => ({ label: s(row.label), keys: [keyCap(row.keys!, mac)] })),
+      .map((row) => ({ label: s(row.label), keys: [keyCap(row.keys!, mac, language)] })),
   // A key that is both the frame's own and on a menu (F1, Help on this page) is said once.
   ].filter((row, at, all) => all.findIndex((other) => other.label === row.label) === at)
-  const board = canvasKeyRows(detectPlatform()).map((row) => ({ label: s(row.labelKey as StringKey), keys: row.keys }))
+  const board = canvasKeyRows(detectPlatform(), undefined, language).map((row) => ({ label: s(row.labelKey as StringKey), keys: row.keys }))
   return (
     <KeySheet
       open={open} onClose={onClose} title={s('frame.shortcutsTitle')} closeLabel={s('frame.close')} orWord={s('frame.keysOr')}

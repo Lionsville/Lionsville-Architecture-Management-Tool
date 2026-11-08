@@ -131,7 +131,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.containerDiagram': '{name} · Container',
   'shell.deleteDiagramTitle': 'Ansicht „{name}“ löschen?',
   'shell.deleteBody.layer7':
-    'Die Platzierungen, Gruppen und Routen dieser Landschaft gehen verloren. Die Elemente selbst bleiben im Modell, und Containeransichten bleiben bestehen.',
+    'Die Platzierungen, Gruppen und Routen dieser Landschaft gehen verloren. Die Elemente selbst bleiben im Modell, und Containerdiagramme bleiben bestehen.',
   'shell.deleteBody.container':
     'Die Container dieser Ansicht gehen mit, und die Schnittstellen, die sie trugen, wandern auf die Anwendung. Die Anwendung selbst bleibt auf der Landschaft.',
   'shell.deleteBody.sheet':
@@ -684,7 +684,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'checks.section.fix': 'Zu beheben · das Modell widerspricht sich',
   'checks.section.review': 'Zu prüfen · wohl eine Lücke oder ein Risiko',
   'checks.section.note': 'Hinweise · vielleicht so gewollt',
-  'checks.section.nothing': 'Prüfungen ohne Befund',
+  'checks.section.nothing': 'Checks ohne Befund',
   'checks.section.accepted': 'Als beabsichtigt akzeptiert',
   'checks.acceptedN': '{count} als beabsichtigt akzeptiert',
   'checks.acceptedShort': '{count} akzeptiert',
@@ -1529,7 +1529,7 @@ export const DE: Record<keyof typeof EN, string> = {
   // --- the frame (decision 1) --------------------------------------------------
   'frame.find': 'Suchen oder Befehl ausführen',
   'frame.findTip': 'Orte, Einträge, Personen und Befehle',
-  'frame.treeToggle': 'Scope-Baum geöffnet halten',
+  'frame.treeToggle': 'Bereichsbaum geöffnet halten',
   'frame.treeOnHome': 'Eine Startseite zeigt den Baum immer',
   'frame.switchScope': 'Bereich wechseln',
   'frame.orderBy': 'Sortieren nach',

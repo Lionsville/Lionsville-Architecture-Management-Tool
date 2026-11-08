@@ -128,9 +128,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.logoAdded': 'Logo “{name}” toegevoegd aan de eigen bibliotheek.',
   'shell.copyOf': '{name} (kopie)',
   'shell.containerDiagram': '{name} · containers',
-  'shell.deleteDiagramTitle': 'Aanzicht “{name}” verwijderen?',
+  'shell.deleteDiagramTitle': 'Weergave “{name}” verwijderen?',
   'shell.deleteBody.layer7':
-    'De plaatsingen, groepen en routes van dit landschap gaan verloren. De elementen zelf blijven in het model, en containerweergaven blijven staan.',
+    'De plaatsingen, groepen en routes van dit landschap gaan verloren. De elementen zelf blijven in het model, en containerdiagrammen blijven staan.',
   'shell.deleteBody.container':
     'De containers op deze weergave gaan mee, en de koppelvlakken die zij droegen verhuizen naar de applicatie. De applicatie zelf blijft op het landschap.',
   'shell.deleteBody.sheet':
@@ -480,8 +480,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.kindTopicMoves': 'Een onderwerp staat onder Onderwerpen: bewaren verplaatst het daarheen, met alles eronder.',
   'org.typeFromModel': 'Uit het besturingsmodel',
   'org.typeBuiltIn': 'Ingebouwde soorten',
-  'org.typeHelp': 'Een eenheidstype uit het operating model, of een ingebouwd soort. Een label; een eenheid koppelen onder Bediend door zet het op het type van die eenheid.',
-  'org.typeHelpUnserved': 'Een eenheidstype uit het operating model, of een ingebouwd soort. Een label; het verandert verder niets.',
+  'org.typeHelp': 'Een eenheidstype uit het besturingsmodel, of een ingebouwd soort. Een label; een eenheid koppelen onder Bediend door zet het op het type van die eenheid.',
+  'org.typeHelpUnserved': 'Een eenheidstype uit het besturingsmodel, of een ingebouwd soort. Een label; het verandert verder niets.',
   'org.typeGoneBadge': 'Onbekend type',
   'org.typeGroupUnits': 'Eenheidstypen',
   'org.typeGroupKinds': 'Soorten',
@@ -1726,7 +1726,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'org.emptyTitle': 'In deze scope is nog niets vastgelegd',
   'org.emptyBody': 'Dat is prima. Een scope kan gewoon een plek in de organisatie markeren totdat er iets over te zeggen valt.',
   'org.stepView': 'Nieuwe weergave\u2026',
-  'org.stepObservation': 'Een observatie vastleggen\u2026',
+  'org.stepObservation': 'Een waarneming vastleggen…',
   'org.stepDecision': 'Een besluit schrijven\u2026',
   'org.stepPlan': 'Een plan toevoegen\u2026',
   'org.stepScope': 'Nieuwe scope\u2026',

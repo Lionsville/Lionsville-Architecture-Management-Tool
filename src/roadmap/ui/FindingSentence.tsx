@@ -20,12 +20,12 @@ import type { Language, Translate } from '../../i18n'
 import { CHECK_SENTENCE, CHECK_SENTENCE_ONE } from '../labels'
 
 /** A finding's sentence, filled in: what a link here says, and an instance in the roadmap's list of findings. */
-export function findingWords(problem: Finding, t: Translate, language: Language): string {
+export function findingWords(problem: Finding, t: Translate, language?: Language): string {
   const key = (problem.count === 1 ? CHECK_SENTENCE_ONE[problem.kind] : undefined) ?? CHECK_SENTENCE[problem.kind]
   return t(key, {
     name: problem.name,
     // A day in a sentence written for people reads as a person would write it.
-    detail: isDay(problem.detail) ? formatDay(problem.detail, language) : problem.detail ?? '',
+    detail: language && isDay(problem.detail) ? formatDay(problem.detail, language) : problem.detail ?? '',
     count: String(problem.count ?? 0),
     // Which kind of row it was (ADR-0012 §5), in words: *supports* where
     // the finding means supports.

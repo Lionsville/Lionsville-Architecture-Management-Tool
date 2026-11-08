@@ -230,8 +230,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'toolbar.diagramSettings': 'Weergave-instellingen, met de operationele aspecten',
   'toolbar.diagramSettingsOf': 'Instellingen van {name}',
   'toolbar.backTo': 'Terug naar {name}',
-  'toolbar.containerMenu': 'Deze containerweergave hernoemen, instellen of verwijderen',
-  'toolbar.containerMenuOf': 'Menu van de containerweergave van {name}',
+  'toolbar.containerMenu': 'Dit containerdiagram hernoemen, instellen of verwijderen',
+  'toolbar.containerMenuOf': 'Menu van het containerdiagram van {name}',
 
   'canvas.connectHint': 'Klik een doelelement aan, of ga er met Tab heen en druk op Enter — Esc annuleert',
   'canvas.edgeName': 'Van {source} naar {target}',
@@ -687,7 +687,7 @@ export const NL: Record<keyof typeof EN, string> = {
 
   'error.diagramNotFound': 'Er is hier geen weergave om te tonen. Open er een vanaf de startpagina van de scope.',
   'error.overCap':
-    'Dit aanzicht heeft een groep van {total} koppelingen; routeren gaat tot {max} tegelijk, dus die lijnen konden niet automatisch worden gerouteerd.',
+    'Deze weergave heeft een groep van {total} koppelingen; routeren gaat tot {max} tegelijk, dus die lijnen konden niet automatisch worden gerouteerd.',
   'error.tidyRoutingUnattended': 'Deze weergave is ingedeeld, maar de koppelingen konden niet worden gerouteerd.',
   'error.tidyRouting':
     'De elementen zijn ingedeeld, maar de koppelingen konden niet worden gerouteerd. Ververs de pagina en probeer het opnieuw.',
@@ -704,7 +704,7 @@ export const NL: Record<keyof typeof EN, string> = {
     'De koppeling kon niet worden gerouteerd. Ververs de pagina en probeer het opnieuw.',
   'error.export': 'De PNG-export is mislukt. Ververs de pagina en probeer het opnieuw.',
   'note.overCap': 'deze weergave heeft meer koppelingen dan routeren aankan',
-  'note.reclassify': 'druk één keer op ‘Koppelingen routeren’ zodat de bestaande lijnen van deze weergave mogen bewegen',
+  'note.reclassify': 'klik één keer op ‘Koppelingen routeren’ zodat de bestaande lijnen van deze weergave mogen bewegen',
 
   'format.perMonth': '{amount}/mnd',
   'export.client': 'KLANT',

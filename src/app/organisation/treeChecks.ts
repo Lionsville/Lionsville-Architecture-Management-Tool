@@ -105,8 +105,6 @@ export type TreeChecksInput = {
   /** The index, and the home's own document: the Conway map over the home. Absent while either is being read, and then the map's are not yet listed. */
   index?: ScopeIndex | undefined
   home?: HostModel | undefined
-  /** The language a day in a finding's sentence is written in. */
-  language: Language
   t: Translate
   /** A day in a finding's sentence, said as the person reads days; absent: as stored. */
   language?: Language

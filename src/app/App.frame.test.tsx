@@ -449,6 +449,16 @@ describe('⌘K', () => {
     expect(await screen.findByTestId('shortcuts-sheet')).toBeDefined()
   })
 
+  it('finds a command by its English name in German too', async () => {
+    const agent = wire()
+    renderApp({ agent: agent.gateway, repositories: heldRepositories(TREE()), boot: { initialProject: undefined } }, { language: 'de' })
+    await screen.findByTestId('organisation-cards')
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    const field = await screen.findByRole('combobox')
+    fireEvent.change(field, { target: { value: 'keyboard' } })
+    expect(await screen.findByTestId('palette-help:menu.shortcuts')).toBeDefined()
+  })
+
   it('finds a scope by its name, ahead of the records, and opens its home', async () => {
     await home()
     fireEvent.click(screen.getByTestId('frame-find'))

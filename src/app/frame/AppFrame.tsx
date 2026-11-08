@@ -74,6 +74,7 @@ import { NewViewDialog } from '../NewViewDialog'
 import { DESKTOP_APP_LINK, FILE_MENU, PREFERENCES_ITEM, WEBSITE_LINK, HELP_MENU, acceleratorMatches, offered } from '../../platform/menu'
 import type { KeyPress, MenuItemSpec, MenuNeed } from '../../platform/menu'
 import { chordHeld, claimKey, commandKey, isMac, keyClaimed } from '../../widgets/kit/keys'
+import { chordName } from '../../platform/keyNames'
 
 
 /** A window a phone gives: under it the row keeps the place, the word and ⋯, and the tree stands over the page. */
@@ -463,6 +464,7 @@ function useTreeViews(parts: ShellParts): { views: readonly TreeView[]; want: ()
 function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent']['openSomewhere']) {
   const { services: { s }, commands: { bus }, organisation, writable } = parts
   const { tree } = organisation
+  const language = parts.services.prefs.language
   const mayFile = writable(at)
   const latest = useRef(parts)
   latest.current = parts
@@ -488,7 +490,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     if (hasAgentsPage) rows.push({ id: 'place:agents', group: s('frame.places'), label: s('frame.agents'), run: () => go({ scope: ROOT_SCOPE, page: 'agents' }) })
     // The frame's own acts, which are on no menu: the tree's key, and a scope filed under the one here.
     const mac = isMac()
-    rows.push({ id: 'frame:tree', group: s('frame.commands'), label: s('frame.treeToggle'), keys: mac ? '⌘\\' : 'Ctrl \\', run: () => {
+    rows.push({ id: 'frame:tree', group: s('frame.commands'), label: s('frame.treeToggle'), keys: chordName(['Mod', '\\'], mac, language), run: () => {
       const now = latest.current
       if (treeAlwaysOn(now)) return
       const pinned = !now.frame.get().pinned
@@ -505,7 +507,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     return (asked: string) => {
       if (asked.trim() === '') return rows
       want()
-      const named = rows.filter((row) => matchesQuery(asked, [row.label])).map((row) => (startsWords(asked, row.label) ? { ...row, lead: true } : row))
+      const named = rows.filter((row) => matchesQuery(asked, [row.label, alsoCalled.get(row.id) ?? ''])).map((row) => (startsWords(asked, row.label) ? { ...row, lead: true } : row))
       // A command whose name starts with the words leads a scope that only contains them: "light" is Theme: Light.
       return [
         ...named.filter((row) => row.lead),
@@ -514,7 +516,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
         ...named.filter((row) => !row.lead),
       ]
     }
-  }, [s, at, go, send, canKey, hasAgentsPage, tree, views, want, organisation, mayFile])
+  }, [s, language, at, go, send, canKey, hasAgentsPage, tree, views, want, organisation, mayFile])
 }
 
 /** The source's own page for agents: a place like any other, with an address and a way in with nothing open. */

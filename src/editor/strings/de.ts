@@ -230,8 +230,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'toolbar.diagramSettings': 'Ansichtseinstellungen, einschließlich der betrieblichen Aspekte',
   'toolbar.diagramSettingsOf': 'Einstellungen von {name}',
   'toolbar.backTo': 'Zurück zu {name}',
-  'toolbar.containerMenu': 'Diese Containeransicht umbenennen, einstellen oder löschen',
-  'toolbar.containerMenuOf': 'Menü der Containeransicht von {name}',
+  'toolbar.containerMenu': 'Dieses Containerdiagramm umbenennen, einstellen oder löschen',
+  'toolbar.containerMenuOf': 'Menü des Containerdiagramms von {name}',
 
   'canvas.connectHint': 'Klicken Sie ein Zielelement an, oder gehen Sie mit Tab dorthin und drücken Sie die Eingabetaste — Esc bricht ab',
   'canvas.edgeName': 'Von {source} nach {target}',
@@ -692,8 +692,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'error.tidyRouting':
     'Die Elemente wurden aufgeräumt, aber die Verbindungen konnten nicht geroutet werden. Laden Sie die Seite neu und versuchen Sie es erneut.',
   'error.tidyUnattended': 'Diese Ansicht konnte nicht automatisch angeordnet werden.',
-  'error.tidy': 'Aufräumen ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es erneut.',
-  'error.tidyTooLarge': 'Diese Ansicht ist zu groß zum Aufräumen: sie hat {count} Kästen, und Aufräumen ordnet höchstens {limit} an. Fassen Sie sie in Gruppen zusammen oder verteilen Sie sie auf mehrere Ansichten.',
+  'error.tidy': 'Das automatische Anordnen ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es erneut.',
+  'error.tidyTooLarge': 'Diese Ansicht ist zu groß zum automatischen Anordnen: sie hat {count} Kästen, und das Anordnen schafft höchstens {limit}. Fassen Sie sie in Gruppen zusammen oder verteilen Sie sie auf mehrere Ansichten.',
   'error.tidyGroup':
     'Die Gruppe wurde aufgeräumt, aber die Verbindungen konnten nicht geroutet werden. Laden Sie die Seite neu und versuchen Sie es erneut.',
   'error.tidyGroupFailed':
@@ -704,7 +704,7 @@ export const DE: Record<keyof typeof EN, string> = {
     'Die Verbindung konnte nicht geroutet werden. Laden Sie die Seite neu und versuchen Sie es erneut.',
   'error.export': 'Der PNG-Export ist fehlgeschlagen. Laden Sie die Seite neu und versuchen Sie es erneut.',
   'note.overCap': 'diese Ansicht hat mehr Verbindungen, als das Routing bewältigt',
-  'note.reclassify': 'drücken Sie einmal auf „Verbindungen routen“, damit sich die bestehenden Linien dieser Ansicht bewegen dürfen',
+  'note.reclassify': 'klicken Sie einmal auf „Verbindungen routen“, damit sich die bestehenden Linien dieser Ansicht bewegen dürfen',
 
   'format.perMonth': '{amount}/Mon.',
   'export.client': 'KUNDE',

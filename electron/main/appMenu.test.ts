@@ -266,3 +266,29 @@ describe('View › Theme', () => {
     vi.mocked((await import('electron')).MenuItem).mockReset()
   })
 })
+
+describe('the menu bar\'s words', () => {
+  it('says each item in the language the page said: English in Title Case, Dutch and German as they write', async () => {
+    const { menuLabel } = await fresh()
+    expect(menuLabel('en', 'menu.snapshot')).toBe('Take a Snapshot…')
+    expect(menuLabel('nl', 'menu.file')).toBe('Bestand')
+    expect(menuLabel('de', 'menu.edit')).toBe('Bearbeiten')
+    expect(menuLabel('de', 'menubar.quit', { app: 'Lionsville Architect' })).toBe('Lionsville Architect beenden')
+    expect(menuLabel('nl', 'menubar.window')).toBe('Venster')
+  })
+
+  it('builds the menu again when the language changes, and not when it stays', async () => {
+    const electron = await import('electron')
+    const menu = await fresh()
+    const set = vi.mocked(electron.Menu.setApplicationMenu)
+    set.mockClear()
+    menu.setMenuLanguage('nl')
+    expect(set).not.toHaveBeenCalled()
+    menu.installAppMenu({ recents: [], packaged: true })
+    expect(set).toHaveBeenCalledTimes(1)
+    menu.setMenuLanguage('de')
+    expect(set).toHaveBeenCalledTimes(2)
+    menu.setMenuLanguage('de')
+    expect(set).toHaveBeenCalledTimes(2)
+  })
+})

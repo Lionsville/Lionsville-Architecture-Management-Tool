@@ -24,7 +24,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'search.hint': 'Enter opent het eerste resultaat; Esc sluit.',
 
   'gsearch.title': 'Zoek of voer een opdracht uit',
-  'gsearch.placeholder': 'Scopes, aanzichten, records, mensen en opdrachten…',
+  'gsearch.placeholder': 'Scopes, weergaven, records, mensen en opdrachten…',
   'gsearch.field': 'Zoek of voer een opdracht uit',
   'gsearch.results': 'Resultaten',
   'gsearch.more': 'Meer',
