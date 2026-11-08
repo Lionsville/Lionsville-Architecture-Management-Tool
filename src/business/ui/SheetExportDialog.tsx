@@ -95,9 +95,10 @@ export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, 
             />
             {t('map.titleBlock')}
           </label>
-          <TextField label={t('map.author')} value={titleBlock.map.author ?? ''} onChange={(author) => titleBlock.onChange({ author })} />
-          <TextField label={t('map.client')} value={titleBlock.map.client ?? ''} onChange={(client) => titleBlock.onChange({ client })} />
-          <TextField label={t('map.date')} value={titleBlock.map.documentDate ?? ''} onChange={(documentDate) => titleBlock.onChange({ documentDate })} />
+          {/* What the title block says, open only while it is drawn. */}
+          <TextField label={t('map.author')} disabled={titleBlock.map.showTitleBlock !== true} value={titleBlock.map.author ?? ''} onChange={(author) => titleBlock.onChange({ author })} />
+          <TextField label={t('map.client')} disabled={titleBlock.map.showTitleBlock !== true} value={titleBlock.map.client ?? ''} onChange={(client) => titleBlock.onChange({ client })} />
+          <TextField label={t('map.date')} disabled={titleBlock.map.showTitleBlock !== true} value={titleBlock.map.documentDate ?? ''} onChange={(documentDate) => titleBlock.onChange({ documentDate })} />
         </>
       )}
       {sheet && actions && (

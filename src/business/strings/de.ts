@@ -288,6 +288,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.poster.exportFoot': 'Fußzeile',
   'sheet.poster.exportDate': 'Datum: {date} (der gezeigte Tag)',
   'sheet.poster.exportSize': 'Ein Name wird {points} pt groß: {reach}.',
+  'sheet.poster.exportSmall': 'Unter 7 pt ist ein Name auf Papier schwer zu lesen: Wählen Sie zum Drucken ein größeres Papier.',
   'sheet.poster.reachDesk': 'nur für den Schreibtisch',
   'sheet.poster.reachTable': 'für den Tisch',
   'sheet.poster.reachWall': 'für die Wand',

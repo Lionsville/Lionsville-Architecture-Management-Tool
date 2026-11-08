@@ -312,6 +312,7 @@ export const EN = {
   'sheet.poster.exportFoot': 'Foot',
   'sheet.poster.exportDate': 'Date: {date} (the day shown)',
   'sheet.poster.exportSize': 'A name comes out at {points} pt: {reach}.',
+  'sheet.poster.exportSmall': 'Under 7 pt a name is hard to read on paper: choose a larger paper for print.',
   'sheet.poster.reachDesk': 'for a desk only',
   'sheet.poster.reachTable': 'for a table',
   'sheet.poster.reachWall': 'for a wall',

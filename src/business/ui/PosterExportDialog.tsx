@@ -21,6 +21,7 @@ import { useOutOfSight } from '../../widgets/outOfSight'
 import { PRINT_PAPERS, printScale } from '../../widgets/printPage'
 import type { PrintLook, PrintPaper } from '../../widgets/printPage'
 import { POSTER_WIDTH } from '../posterLayout'
+import type { ReactNode } from 'react'
 
 type PaperName = keyof typeof PRINT_PAPERS
 const NAMES = Object.keys(PRINT_PAPERS) as PaperName[]
@@ -38,6 +39,19 @@ export type PosterExport = {
   title: string
   foot: string
   date: string
+}
+
+/** Under this a name is hard to read on paper: said as a warning, not only as where it reads. */
+const SMALL_PT = DESK_PT
+
+/** A segmented choice with its name shown above it, as a field's is: its own name stays its accessible one. */
+function Labelled({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="kit-field">
+      <span className="kit-field__label" aria-hidden="true">{label}</span>
+      {children}
+    </div>
+  )
 }
 
 export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames, waiting, canWrite, onSheet, onSave, onSelectCut, onClose, today }: {
@@ -97,10 +111,17 @@ export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames,
         </>
       )}
     >
-      <Segmented label={t('sheet.exportPaper')} value={paperName} onChange={setPaperName} options={NAMES.map((name) => ({ value: name, label: name }))} />
+      <Labelled label={t('sheet.exportPaper')}>
+        <Segmented label={t('sheet.exportPaper')} value={paperName} onChange={setPaperName} options={NAMES.map((name) => ({ value: name, label: name }))} />
+      </Labelled>
       <p data-testid="poster-export-size">{t('sheet.poster.exportSize', { points: named.toFixed(1), reach })}</p>
-      <Segmented label={t('sheet.poster.exportFile')} value={file} onChange={setFile} options={[{ value: 'pdf', label: 'PDF' }, { value: 'png', label: 'PNG' }]} />
-      <Segmented label={t('sheet.poster.exportLook')} value={look} onChange={setLook} options={[{ value: 'print', label: t('sheet.poster.lookPrint') }, { value: 'screen', label: t('sheet.poster.lookScreen') }]} />
+      {named < SMALL_PT && <p className="poster-export__warn" role="note" data-testid="poster-export-small">{t('sheet.poster.exportSmall')}</p>}
+      <Labelled label={t('sheet.poster.exportFile')}>
+        <Segmented label={t('sheet.poster.exportFile')} value={file} onChange={setFile} options={[{ value: 'pdf', label: 'PDF' }, { value: 'png', label: 'PNG' }]} />
+      </Labelled>
+      <Labelled label={t('sheet.poster.exportLook')}>
+        <Segmented label={t('sheet.poster.exportLook')} value={look} onChange={setLook} options={[{ value: 'print', label: t('sheet.poster.lookPrint') }, { value: 'screen', label: t('sheet.poster.lookScreen') }]} />
+      </Labelled>
       {keyWords.length > 0 && <p>{t('sheet.poster.exportKey', { key: keyWords.join(', ') })}</p>}
       <TextField label={t('sheet.poster.exportTitleField')} value={title} onChange={setTitle} />
       <TextField label={t('sheet.poster.exportFoot')} value={foot} onChange={setFoot} />

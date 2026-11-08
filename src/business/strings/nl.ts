@@ -288,6 +288,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.poster.exportFoot': 'Voet',
   'sheet.poster.exportDate': 'Datum: {date} (de getoonde dag)',
   'sheet.poster.exportSize': 'Een naam wordt {points} pt: {reach}.',
+  'sheet.poster.exportSmall': 'Onder 7 pt is een naam op papier moeilijk te lezen: kies een groter papierformaat om te drukken.',
   'sheet.poster.reachDesk': 'alleen voor op een bureau',
   'sheet.poster.reachTable': 'voor op tafel',
   'sheet.poster.reachWall': 'voor aan de muur',
