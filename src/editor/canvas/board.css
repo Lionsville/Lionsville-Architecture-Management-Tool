@@ -79,6 +79,17 @@
 .lv-board:not([data-kind='container']) .lv-tile--low .kit-card__head { align-items: center; }
 .lv-board:not([data-kind='container']) .lv-tile--low .kit-card__name { -webkit-line-clamp: 2; line-height: var(--lh-close); }
 
+/*
+ * A person's larger text grows the names and not the boxes (platform/textSize), so where two
+ * lines no longer fit a box, its name keeps the one that does and ends it in an ellipsis: two
+ * lines in a band's low tile at 125% and over were cut through at top and foot, and at 150%
+ * an application whose foot says more than its dots (its containers, its phase) dropped its
+ * second word with nothing to say so.
+ */
+:root[data-text-size='125'] .lv-board:not([data-kind='container']) .lv-tile--low .kit-card__name,
+:root[data-text-size='150'] .lv-board:not([data-kind='container']) .lv-tile--low .kit-card__name,
+:root[data-text-size='150'] .lv-board:not([data-kind='container']) .lv-tile:not(.lv-tile--low):has(.kit-card__marks > :nth-child(2)) .kit-card__name { -webkit-line-clamp: 1; }
+
 /* A container diagram: boxes say what they are at every distance, and the context recedes. */
 .lv-board[data-kind='container'] .lv-tile { text-align: center; }
 .lv-board[data-kind='container'] .lv-tile:not([data-context]) { background: var(--c4-container-fill); border-color: var(--c4-container-line); }
