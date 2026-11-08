@@ -723,8 +723,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'c4.applicationTag': '{name} [Applicatie]',
   'shortcut.level-in': 'Containerdiagram openen',
   'shortcut.level-out': 'Een niveau terug',
-  'bar.labelsOn': 'Labels aan',
-  'bar.labelsOff': 'Labels uit',
   'c4.aboutDiagram': 'Over deze weergave',
   'c4.facts': '{containers} containers, {around} eromheen, {lines} lijnen. Toont {day}.',
   'c4.lines': 'Lijnen',

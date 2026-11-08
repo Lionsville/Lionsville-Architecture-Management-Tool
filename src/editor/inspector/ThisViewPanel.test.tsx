@@ -83,10 +83,11 @@ describe('a container diagram, about itself', () => {
   it('says labels in words on the bar, on by default, and turning them off takes the words away', () => {
     openContainers();
     const labels = screen.getByTestId('container-labels');
-    expect(labels.textContent).toBe('Labels on');
+    expect(labels.textContent).toBe('Line labels');
+    expect(labels.getAttribute('aria-pressed')).toBe('true');
     expect(labels.getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(labels);
-    expect(screen.getByTestId('container-labels').textContent).toBe('Labels off');
+    expect(screen.getByTestId('container-labels').getAttribute('aria-pressed')).toBe('false');
   });
 });
 

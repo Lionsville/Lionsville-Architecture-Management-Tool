@@ -723,8 +723,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'c4.applicationTag': '{name} [Anwendung]',
   'shortcut.level-in': 'Containerdiagramm öffnen',
   'shortcut.level-out': 'Eine Ebene zurück',
-  'bar.labelsOn': 'Beschriftung an',
-  'bar.labelsOff': 'Beschriftung aus',
   'c4.aboutDiagram': 'Über diese Ansicht',
   'c4.facts': '{containers} Container, {around} darum herum, {lines} Linien. Zeigt {day}.',
   'c4.lines': 'Linien',

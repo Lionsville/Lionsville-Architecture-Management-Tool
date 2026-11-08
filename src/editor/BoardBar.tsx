@@ -107,13 +107,13 @@ function ArrangeBar({ props }: { props: EditorToolbarProps }) {
   );
 }
 
-/** What on a container diagram changes what a reader believes, in words on the bar and each saying its state. */
+/** What on a container diagram changes what a reader believes, in words on the bar, each a fixed name with its state pressed. */
 function ContainerWords({ props }: { props: EditorToolbarProps }) {
   const { t } = useStrings();
   return (
     <>
       <ViewBarButton on={props.showEdgeLabels} aria-pressed={props.showEdgeLabels} onClick={props.onToggleEdgeLabels} data-guide="board.labels" data-testid="container-labels">
-        {t(props.showEdgeLabels ? 'bar.labelsOn' : 'bar.labelsOff')}
+        {t('bar.lineLabels')}
       </ViewBarButton>
       {props.onToggleDeployment && (
         <ViewBarButton on={props.showDeployment === true} aria-pressed={props.showDeployment === true} onClick={props.onToggleDeployment} data-guide="board.deployment" data-testid="container-deployment">

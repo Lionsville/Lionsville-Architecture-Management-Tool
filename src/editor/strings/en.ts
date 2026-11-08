@@ -741,8 +741,6 @@ export const EN = {
   'c4.applicationTag': '{name} [Application]',
   'shortcut.level-in': 'Open the container diagram',
   'shortcut.level-out': 'Back up a level',
-  'bar.labelsOn': 'Labels on',
-  'bar.labelsOff': 'Labels off',
   'c4.aboutDiagram': 'About this view',
   'c4.facts': '{containers} containers, {around} around them, {lines} lines. Shows {day}.',
   'c4.lines': 'Lines',
