@@ -20,10 +20,12 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { LanguageProvider } from '../i18n'
-import type { Translate } from '../i18n'
+import type { StringKey, Translate } from '../i18n'
 import '../widgets/kit/fonts/fonts.css'
 import type { Command, ElementId } from '../model'
 import type { ObservationTab, Page, Screen } from '../agent/screen'
+import { VIEW_PAGES } from '../agent/screen'
+import { FOUND_PLACES, ORGANISATION_PLACES, SCOPE_PLACES } from './frame/places'
 import { isViewPageName } from './pageLanding'
 import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf, ShellError } from '../platform/errors'
@@ -705,6 +707,7 @@ function useShellParts(props: AppProps): ShellParts {
   useWindowTitle({
     onTitle: host.onTitle, project, groupName: ancestry.groupName, organisationName: organisation.tree.name,
     home: nav.home, homeName: home.name,
+    here: screenWord(shellAgent.screen ?? shellAgent.screenNow(), s), before: props.visiting ? s('example.titleWord') : undefined,
   })
   if (props.provider?.frame?.Agents) base.openAgentRef.current = () => shellAgent.openSomewhere({ scope: ROOT_SCOPE, page: 'agents', tab: 'connect' })
   const provider = useProviderParts({
@@ -866,4 +869,18 @@ function useShellBase(props: AppProps) {
     source, host, services, todayDay, nav, tree, agentServer, machine, commands, order,
     savedFilters, organisation, refreshTree, screenRef, selectedRef, openAgentRef, share, writable, frame, copies,
   }
+}
+
+/** The places a title names by their word: the frame's own table, and the frame's pages beside it. */
+const PAGE_WORDS: Partial<Record<Page, StringKey>> = {
+  ...Object.fromEntries([...SCOPE_PLACES, ...ORGANISATION_PLACES, ...FOUND_PLACES].flatMap((place) => [place.page, ...(place.also ?? [])].map((page) => [page, place.label]))),
+  preferences: 'prefs.title', settings: 'settings.title', history: 'history.title', work: 'frame.yourWork', activity: 'shell.activity',
+}
+
+/** What is on screen, for the window's title: the page that is up by its word, or the view by its name. */
+export function screenWord(screen: Screen, s: Translate): string | undefined {
+  const page = screen.page?.page
+  if (page === undefined || VIEW_PAGES.includes(page)) return screen.open?.view?.name
+  const word = PAGE_WORDS[page]
+  return word ? s(word) : undefined
 }

@@ -27,4 +27,9 @@ describe('windowTitleFor', () => {
   it('trims what it is given', () => {
     expect(windowTitleFor('  Acme  ', '  Rail  ')).toBe('Rail — Acme — Lionsville Architect')
   })
+
+  it('names what is on screen first, and marks the example before the whole', () => {
+    expect(windowTitleFor('Acme', 'Rail', 'Decisions')).toBe('Decisions — Rail — Acme — Lionsville Architect')
+    expect(windowTitleFor('Acme', undefined, 'Register', 'Example')).toBe('Example · Register — Acme — Lionsville Architect')
+  })
 })

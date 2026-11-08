@@ -26,15 +26,19 @@
 export const PRODUCT_NAME = 'Lionsville Architect'
 
 /**
- * `Warehouse — Acme Logistics — Lionsville Architect`, with each part
- * left out when there is nothing to say.
+ * `Decisions — Warehouse — Acme Logistics — Lionsville Architect`, with each
+ * part left out when there is nothing to say.
  *
  * The organisation is the root scope's name (ADR-0012 §1) and the scope is the
  * one that is open; a scope with nothing above it says its own name once rather
- * than twice, which is the same rule the top bar follows.
+ * than twice, which is the same rule the top bar follows. What is on screen
+ * comes first — the page or the view — so a tab, a bookmark and the browser's
+ * history tell two places apart, and `before` marks the whole, as the example's
+ * word does.
  */
-export function windowTitleFor(organisation: string, scope?: string): string {
-  const parts = [scope?.trim(), organisation.trim(), PRODUCT_NAME]
+export function windowTitleFor(organisation: string, scope?: string, here?: string, before?: string): string {
+  const parts = [here?.trim(), scope?.trim(), organisation.trim(), PRODUCT_NAME]
     .filter((part): part is string => !!part)
-  return [...new Set(parts)].join(' — ')
+  const title = [...new Set(parts)].join(' — ')
+  return before ? `${before} · ${title}` : title
 }

@@ -1918,6 +1918,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'example.keepAskDetail': 'Het wordt een eigen scope, en aan jouw werk verandert niets. Zijn besturingsmodel en beoordelingsschalen blijven achter: alleen een organisatie heeft die, en die van jou vorm je zelf. Zijn eenheden komen mee als gewone actoren, zonder type of rapportagelijnen. Al het andere komt mee, ook zijn principes.',
   'example.keepUnder': 'Onder mijn organisatie houden',
   'example.keepNot': 'Niet nu',
+  'example.titleWord': 'Voorbeeld',
   'example.keepUnwritten': 'Er is niets bewaard: de laatste wijziging kon niet eerst worden weggeschreven. {reason}',
   'example.markedBecause': 'Kwam mee met het voorbeeld',
   'work.today': 'Vandaag, {time}',

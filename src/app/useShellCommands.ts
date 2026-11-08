@@ -130,17 +130,21 @@ export function useHostFacts(deps: {
  * it is would name a window after nothing.
  */
 export function useWindowTitle(deps: {
-  onTitle: ((organisation: string, scope?: string) => void) | undefined
+  onTitle: ((organisation: string, scope?: string, here?: string, before?: string) => void) | undefined
   project: ScopeSnapshot | undefined
   groupName: string
   organisationName: string
   home: ScopePath
   homeName: string | undefined
+  /** What is on screen in the scope: a page's name or the view's. */
+  here?: string | undefined
+  /** The example's word, while it is visited. */
+  before?: string | undefined
 }): void {
-  const { onTitle, project, groupName, organisationName, home, homeName } = deps
+  const { onTitle, project, groupName, organisationName, home, homeName, here, before } = deps
   useEffect(() => {
-    if (project) onTitle?.(groupName, project.model.name)
-    else if (home === ROOT_SCOPE) onTitle?.(organisationName)
-    else onTitle?.(organisationName, homeName)
-  }, [onTitle, project, groupName, organisationName, home, homeName])
+    if (project) onTitle?.(groupName, project.model.name, here, before)
+    else if (home === ROOT_SCOPE) onTitle?.(organisationName, undefined, here, before)
+    else onTitle?.(organisationName, homeName, here, before)
+  }, [onTitle, project, groupName, organisationName, home, homeName, here, before])
 }

@@ -134,7 +134,7 @@ export type Shell = ProviderParts & {
    * organisation it sits in. A browser tab shows it in the tab strip and the
    * desktop reads it off the page, so one call serves both.
    */
-  showTitle: (organisation: string, scope?: string) => void
+  showTitle: (organisation: string, scope?: string, here?: string, before?: string) => void
 }
 
 /** What opening a source gives the shell: its provider's parts (`ports/ProviderParts.ts`). */

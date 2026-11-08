@@ -52,6 +52,6 @@ export function watchWindowArea(show: ShowWindowArea): () => void {
  * rather than needing to be told. Writing it is a browser global, which is why
  * it lives here and the sentence it writes lives in `platform/windowTitle.ts`.
  */
-export function showWindowTitle(organisation: string, scope?: string): void {
-  document.title = windowTitleFor(organisation, scope)
+export function showWindowTitle(organisation: string, scope?: string, here?: string, before?: string): void {
+  document.title = windowTitleFor(organisation, scope, here, before)
 }

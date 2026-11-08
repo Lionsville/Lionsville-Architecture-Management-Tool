@@ -377,7 +377,7 @@ export type AppHost = {
    * Say what this window is about. Absent in a test, which has no window to
    * name and would otherwise rename the runner's.
    */
-  onTitle?: (organisation: string, scope?: string) => void
+  onTitle?: (organisation: string, scope?: string, here?: string, before?: string) => void
   /** The desktop's own update settings. Absent on the web, and the section with it. */
   updateSettings?: UpdateSettingsStore
 }

@@ -9,7 +9,7 @@
  * pressed while a dialog is up does nothing at all.
  */
 import { afterEach, describe, expect, it } from 'vitest'
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import type { ScopeSnapshot } from '../projects/scope'
 import { heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
@@ -71,5 +71,18 @@ describe('the web’s own words', () => {
   it('says the preferences are this browser’s, for this site', async () => {
     renderApp({ repositories: heldRepositories(organisation), boot: { initialFramePage: 'preferences' } })
     expect(await screen.findByText(/Yours, in this browser and for this site only/)).toBeTruthy()
+  })
+})
+
+describe('the window’s title', () => {
+  it('puts the page on screen first, and the example’s word before it while it is visited', async () => {
+    const titles: string[] = []
+    renderApp({
+      repositories: heldRepositories(organisation), boot: { initialFramePage: 'preferences' },
+      visiting: { name: 'One', onKeep: () => {}, onLeave: () => {} },
+      host: { onTitle: (organisation: string, scope?: string, here?: string, before?: string) => { titles.push([before, here, scope, organisation].filter(Boolean).join('|')) } },
+    })
+    await screen.findByTestId('preferences-page')
+    await waitFor(() => expect(titles.at(-1)).toBe('Example|Preferences|Acme'))
   })
 })
