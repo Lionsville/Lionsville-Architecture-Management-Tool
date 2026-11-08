@@ -28,6 +28,9 @@ describe('a band', () => {
     expect(container.querySelector('.kit-mark')?.getAttribute('data-kind')).toBe('review')
     rerender(<Band tone="looking" title="T" />)
     expect(container.querySelector('.kit-mark')?.getAttribute('data-kind')).toBe('look')
+    // Something to know is an i in a ring, not the hollow circle that reads as an empty choice.
+    rerender(<Band tone="info" title="T" />)
+    expect(container.querySelector('.kit-mark')?.getAttribute('data-kind')).toBe('info')
   })
 
   it('keeps its mark in the run of words, the title alone in bold, so a long sentence wraps beside it', () => {

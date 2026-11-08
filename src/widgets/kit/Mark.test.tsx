@@ -15,7 +15,7 @@ describe('Mark', () => {
   it('is the closed set the design system lists', () => {
     expect(MARK_KINDS).toEqual([
       'managed', 'partial', 'risk', 'none', 'unset', 'fix', 'review', 'note',
-      'cov-apps', 'cov-moving', 'cov-people', 'cov-none', 'agree', 'agent', 'look', 'exception',
+      'cov-apps', 'cov-moving', 'cov-people', 'cov-none', 'agree', 'agent', 'look', 'exception', 'info',
     ])
   })
 

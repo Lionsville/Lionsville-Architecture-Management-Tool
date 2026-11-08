@@ -32,7 +32,7 @@ and behaves is said here, once.
 | `FieldBox.tsx` | **FieldBox**: MUI's text field with the kit's label above, for what only MUI's field does (an Autocomplete's input, a select of MUI items); the one place MUI's text field is imported |
 | `Picker.tsx` | **Picker**, in a panel or a form, `PickerAt` where a canvas landed and `PickerMany` for several in a row; `matching` is its search |
 | `Segmented.tsx` | **Segmented switch**: a radio group, a menu when it runs out of room below 1024 px |
-| `Mark.tsx` | **Mark**: the closed set of sixteen, `MARK_KINDS` |
+| `Mark.tsx` | **Mark**: the closed set of seventeen, `MARK_KINDS` |
 | `roving.ts` | the arrows of a row of choices, shared by tabs and the switch |
 | `keys.ts` | the two rules every key handler keeps: the command key is the platform's (`commandKey`: ⌘ on a Mac, Ctrl elsewhere, never either; `chordHeld` where any chord means stand aside; `build/platformModifier.test.ts` holds the tree to it), and one Escape does one thing, innermost first (`claimKey`, `keyClaimed`; the outer listeners hear it in the bubble phase) |
 | `listView.ts` | what a list shows as data: find, filters, group, sort, columns, selection; read from and written to the address; the rows a view keeps; *Did you mean* |

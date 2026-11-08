@@ -7,7 +7,8 @@
  * colours apart.
  *
  * The set is closed: how something is run (5), a finding's weight (3), what it is
- * covered by (4), agreement, an agent, another day, an exception. A new meaning
+ * covered by (4), agreement, an agent, another day, an exception, something to
+ * know (an *i* in a ring, so it never reads as an empty choice). A new meaning
  * takes an existing shape with a word beside it, or comes here and asks for a new
  * mark. The word is the caller's: a mark with none near it needs `label`, which
  * is then its accessible name; beside a word that says the same it stays out of
@@ -51,6 +52,13 @@ const DRAWN = {
     <>
       <rect x="2" y="2" width="8" height="8" fill="none" stroke="var(--exception)" strokeWidth="1.6" />
       <path d="M4.5 6h3" stroke="var(--exception)" strokeWidth="1.4" />
+    </>
+  ),
+  info: (
+    <>
+      <circle cx="6" cy="6" r="4.8" fill="none" stroke="var(--info)" strokeWidth="1.2" />
+      <circle cx="6" cy="3.7" r="0.85" fill="var(--info)" />
+      <path d="M6 5.4v3.4" stroke="var(--info)" strokeWidth="1.4" strokeLinecap="round" />
     </>
   ),
 } satisfies Record<string, ReactNode>
