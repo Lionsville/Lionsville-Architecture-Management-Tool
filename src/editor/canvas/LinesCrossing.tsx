@@ -7,6 +7,8 @@ import { useStrings } from '../../i18n/LanguageContext';
 import { Button } from '../../widgets/kit/Button';
 
 const STEP = 12;
+/** How long the lines are still before a redrawn one is checked: a box dragged redraws them every frame. */
+const REDRAWN_MS = 120;
 /** A line runs along a box's edge when it enters it: only its inside counts. */
 const INSET = 6;
 
@@ -22,6 +24,13 @@ export function linesThroughBoxes(
   return routes.filter((route) => boxes.some((box) => box.id !== route.source && box.id !== route.target && route.points.some((at) => inside(box, at)))).map((route) => route.id);
 }
 
+/** A change to a line's drawing: one added or taken away, or its path drawn again. */
+export function isLine(change: MutationRecord): boolean {
+  if (change.type === 'attributes') return change.target instanceof Element && change.target.classList.contains('react-flow__edge-path');
+  const lineIn = (node: Node) => node instanceof Element && (node.classList.contains('react-flow__edge') || node.querySelector('.react-flow__edge') !== null);
+  return Array.from(change.addedNodes).some(lineIn) || Array.from(change.removedNodes).some(lineIn);
+}
+
 /**
  * A line through a box reads as a connection to it, and hides its words. The router
  * treats boxes as obstacles, so what is left is a stored route or a box moved since:
@@ -34,11 +43,14 @@ export function LinesCrossing({ onRoute, boundary }: { onRoute: (lines: readonly
   const edges = useStore((state) => state.edges);
   const nodes = useStore((state) => state.nodes);
   const [lines, setLines] = useState<readonly string[]>([]);
-  // Checked in the frame after the boxes are measured and the lines drawn, never on a timer: a fixed wait
-  // landed the notice about half a second into an open, after the page had looked done (15–20 ms of work).
+  // Checked in the frame after the boxes are measured, never on a fixed timer: a fixed wait landed the notice
+  // about half a second into an open, after the page had looked done (15–20 ms of work). The lines may be drawn
+  // after the boxes, though, and routed again after that: a board opened from another of the same scope had its
+  // boxes measured before a line was drawn, found nothing and was never asked again. So a line drawn or redrawn
+  // asks again, once the drawing has been still for a moment.
   useEffect(() => {
     if (!nodes.every((node) => node.measured?.width !== undefined || node.width !== undefined)) return undefined;
-    const frame = requestAnimationFrame(() => {
+    const check = () => {
       const root = flow.getState().domNode;
       if (!root) return;
       const boxes = nodes.filter((node) => node.id !== boundary).map((node) => ({
@@ -57,8 +69,23 @@ export function LinesCrossing({ onRoute, boundary }: { onRoute: (lines: readonly
       });
       const through = linesThroughBoxes(routes, boxes);
       setLines((held) => (held.length === through.length && held.every((id, at) => id === through[at]) ? held : through));
-    });
-    return () => cancelAnimationFrame(frame);
+    };
+    const frame = requestAnimationFrame(check);
+    let later: ReturnType<typeof setTimeout> | undefined;
+    const root = flow.getState().domNode;
+    const redrawn = root && typeof MutationObserver !== 'undefined'
+      ? new MutationObserver((changes) => {
+        if (!changes.some(isLine)) return;
+        clearTimeout(later);
+        later = setTimeout(check, REDRAWN_MS);
+      })
+      : undefined;
+    if (redrawn && root) redrawn.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['d'] });
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(later);
+      redrawn?.disconnect();
+    };
   }, [edges, nodes, flow, boundary]);
   if (lines.length === 0) return null;
   return (
