@@ -123,13 +123,18 @@ type SignersProps = {
   day: (value: string) => string
 }
 
-/** Who the decision was put to, what they said, and when. */
-export function SignersRead({ signers, names, s, day }: SignersProps) {
+/** Who the decision was put to, what they said, and when; with nobody asked yet, the way to ask somebody, where it may be written. */
+export function SignersRead({ signers, names, s, day, onAdd }: SignersProps & { onAdd?: () => void }) {
   return (
     <>
       <p className="adr-note">{s('adr.signersHelp')}</p>
       {signers.length === 0
-        ? <p className="adr-note">{s('adr.noSigners')}</p>
+        ? (
+          <p className="adr-note">
+            {s('adr.noSigners')}
+            {onAdd && <>{' '}<Button variant="quiet" size="small" onClick={onAdd} data-testid="adr-add-reviewer">{`${s('adr.addSigner')}…`}</Button></>}
+          </p>
+        )
         : (
           <table className="adr-table">
             <thead>

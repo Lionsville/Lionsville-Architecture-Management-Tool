@@ -240,6 +240,37 @@ function useAdrList(view: ListView, props: Pick<AdrPageProps, 'model' | 'groupNa
   return { subjects, aboutFilter, groups, ids, folds, finding }
 }
 
+/**
+ * The record being written. A new one is held here, `fresh`, until Save makes
+ * it, so Cancel on a record that was never saved leaves nothing behind: no empty
+ * proposal in the list and no step to undo.
+ */
+function useAdrPen(deps: {
+  projectDecisions: readonly Adr[]
+  update: (adr: Adr, patch: AdrPatch) => void
+  write: (next: Adr[]) => void
+  nameOf: Parameters<typeof updateAdr>[3]
+  onMade: (id: string) => void
+}) {
+  const [writing, setWriting] = useState<{ id: string; at?: AdrGateItem; fresh?: Adr } | undefined>(undefined)
+  const written = writing?.fresh ?? (writing ? deps.projectDecisions.find((adr) => adr.id === writing.id) : undefined)
+  return {
+    writing,
+    written,
+    write: (id: string, at?: AdrGateItem) => setWriting({ id, ...(at ? { at } : {}) }),
+    startFresh: (fresh: Adr) => setWriting({ id: fresh.id, fresh }),
+    save: (adr: Adr, patch: AdrPatch) => {
+      if (writing?.fresh === undefined) deps.update(adr, patch)
+      else {
+        deps.write(updateAdr([...deps.projectDecisions, adr], adr.id, patch, deps.nameOf))
+        deps.onMade(adr.id)
+      }
+      setWriting(undefined)
+    },
+    cancel: () => setWriting(undefined),
+  }
+}
+
 /** The moves and the changes, each said to the page's dialogs or written whole. A record is edited where it lives (ADR-0012 §7). */
 function useAdrChanges(deps: {
   projectDecisions: readonly Adr[]
@@ -353,7 +384,6 @@ export function AdrPage(props: AdrPageProps) {
   const projectDecisions = useMemo(() => model.decisions ?? [], [model.decisions])
   const [view, setView] = useState<ListView>(FRESH_VIEW)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [writing, setWriting] = useState<{ id: string; at?: AdrGateItem } | undefined>(undefined)
   const [creating, setCreating] = useState(false)
   const { subjects, aboutFilter, groups, ids, folds, finding } = useAdrList(view, props)
 
@@ -369,6 +399,7 @@ export function AdrPage(props: AdrPageProps) {
   const listOf = useCallback((adr: Adr) => aboveOf(adr)?.decisions ?? projectDecisions, [aboveOf, projectDecisions])
   const selected = selectedId ? allRecords.find((a) => a.id === selectedId) : undefined
   const changes = useAdrChanges({ projectDecisions, aboveOf, listOf, write: onProjectDecisionsChange, today, nameOf: names.nameOf })
+  const pen = useAdrPen({ projectDecisions, update: changes.update, write: onProjectDecisionsChange, nameOf: names.nameOf, onMade: (id) => { setView(FRESH_VIEW); setSelectedId(id) } })
 
   useOpening({
     open, request: { id: initialAdrId, nonce: initialNonce }, records: allRecords, selectedId, onShown: props.onShown,
@@ -381,15 +412,11 @@ export function AdrPage(props: AdrPageProps) {
       id: makeId('adr'), number: nextAdrNumber(projectDecisions), title, date: today(), t: s,
       ...(about !== ABOUT_THE_SCOPE ? { subjectId: about } : {}),
     })
-    onProjectDecisionsChange([...projectDecisions, replaces ? { ...fresh, supersedes: [replaces.id] } : fresh])
     setCreating(false)
-    setView(FRESH_VIEW)
-    setSelectedId(fresh.id)
-    // Ready to write: the first thing a person does with a new record.
-    setWriting({ id: fresh.id })
+    pen.startFresh(replaces ? { ...fresh, supersedes: [replaces.id] } : fresh)
   }
 
-  const written = writing ? projectDecisions.find((adr) => adr.id === writing.id) : undefined
+  const { writing, written } = pen
   // A record locked while it is written, by somebody else: there is nothing left to type into.
   const stillWriting = written !== undefined && !readOnly && !isAdrLocked(written)
   const onlyAbout = view.filters.about?.length === 1 ? view.filters.about[0] : undefined
@@ -447,7 +474,7 @@ export function AdrPage(props: AdrPageProps) {
           listOf={listOf}
           subjects={subjects}
           changes={changes}
-          onWrite={(id, at) => setWriting({ id, ...(at ? { at } : {}) })}
+          onWrite={pen.write}
           onSelect={setSelectedId}
           page={props}
         />
@@ -465,8 +492,9 @@ export function AdrPage(props: AdrPageProps) {
             renderMarkdown={props.renderMarkdown}
             {...(props.onAddImage ? { onAddImage: props.onAddImage } : {})}
             {...(props.images ? { images: props.images } : {})}
-            onSave={(patch) => { changes.update(written, patch); setWriting(undefined) }}
-            onCancel={() => setWriting(undefined)}
+            unsaved={writing?.fresh !== undefined}
+            onSave={(patch) => pen.save(written, patch)}
+            onCancel={pen.cancel}
           />
         )}
 

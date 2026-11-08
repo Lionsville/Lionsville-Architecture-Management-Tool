@@ -195,7 +195,7 @@ function RecordBody({ adr, written, root, props }: { adr: Adr; written: string; 
   const reviewers = (
     <section className="adr-section" data-testid="adr-signers" data-guide="decision.signers">
       <h3>{s('adr.signers')}</h3>
-      <SignersRead signers={adr.signers} names={names} s={s} day={day} />
+      <SignersRead signers={adr.signers} names={names} s={s} day={day} {...(open && !locked ? { onAdd: () => props.onWrite('approved') } : {})} />
     </section>
   )
   return (

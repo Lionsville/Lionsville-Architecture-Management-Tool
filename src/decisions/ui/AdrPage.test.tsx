@@ -173,20 +173,32 @@ describe('the list', () => {
 })
 
 describe('a new decision', () => {
-  it('files it where the dialog says, with the next number, and opens ready to write', async () => {
-    const { onProject, rerender } = mount()
+  it('files it where the dialog says, with the next number, once it is saved', async () => {
+    const { onProject } = mount()
     fireEvent.click(screen.getByRole('button', { name: 'New decision' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Retire the legacy sync' } })
     chooseValue(screen.getByLabelText('About'), 'crm')
     fireEvent.click(screen.getByRole('button', { name: 'Create and write' }))
+    // Ready to write, and nothing made yet.
+    expect(onProject).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
+    expect((screen.getByLabelText('Context and Problem Statement') as HTMLTextAreaElement).value).toBe('')
+    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Context and Problem Statement')))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     const next: Adr[] = onProject.mock.calls[0][0]
     expect(next).toHaveLength(4)
     expect(next[3]).toMatchObject({ title: 'Retire the legacy sync', subjectId: 'crm', number: 4, status: 'proposed', date: '2026-09-05' })
     expect(next[3].body).toContain('## Decision Outcome')
-    rerender(page({ model: { ...model, decisions: next } }))
-    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
-    expect((screen.getByLabelText('Context and Problem Statement') as HTMLTextAreaElement).value).toBe('')
-    await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Context and Problem Statement')))
+  })
+
+  it('leaves nothing behind when the new record is cancelled before it was ever saved', () => {
+    const { onProject } = mount()
+    fireEvent.click(screen.getByRole('button', { name: 'New decision' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'One way to log in' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create and write' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(onProject).not.toHaveBeenCalled()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
   it('lands about the scope itself unless somebody said otherwise', () => {
@@ -194,11 +206,19 @@ describe('a new decision', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New decision' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'One way to log in' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create and write' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onProject.mock.calls[0][0][3].subjectId).toBeUndefined()
   })
 })
 
 describe('a record, read', () => {
+  it('offers Add a reviewer… where nobody has been asked yet, opening the writer at the reviewers', () => {
+    const decisions = model.decisions!.map((one) => (one.id === 'l1' ? { ...one, signers: [] } : one))
+    mount({ model: { ...model, decisions }, initialAdrId: 'l1', initialNonce: 1 })
+    fireEvent.click(screen.getByTestId('adr-add-reviewer'))
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
+  })
+
   it('says where it stands once, and a stepper with the step it is on', () => {
     mount({ initialAdrId: 'c1', initialNonce: 1 })
     expect(screen.getByTestId('adr-status').textContent).toContain('Under review since 1 Sept 2026.')
@@ -310,6 +330,7 @@ describe('a record, read', () => {
     const { onProject } = mount({ initialAdrId: 'l2' })
     await more('Mark as superseded…')
     fireEvent.click(screen.getByTestId('adr-write-replacement'))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     const next: Adr[] = onProject.mock.calls[0][0]
     const fresh = next.at(-1)!
     expect(fresh).toMatchObject({ status: 'proposed', supersedes: ['l2'] })

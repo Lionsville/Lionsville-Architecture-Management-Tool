@@ -46,6 +46,8 @@ export type AdrWritingProps = {
   images?: DocumentImages
   onSave: (patch: AdrPatch) => void
   onCancel: () => void
+  /** Never saved yet: Save makes it, even with nothing changed since the title. */
+  unsaved?: boolean
 }
 
 type Mode = 'sections' | 'source'
@@ -104,7 +106,7 @@ function SectionBoxes({ body, onBody, s, preview, editor }: {
   )
 }
 
-export function AdrWriting({ adr, list, at, s, language, today, elements, renderMarkdown, onAddImage, images, onSave, onCancel }: AdrWritingProps) {
+export function AdrWriting({ adr, list, at, s, language, today, elements, renderMarkdown, onAddImage, images, onSave, onCancel, unsaved = false }: AdrWritingProps) {
   const names = usePersonNames()
   const [title, setTitle] = useState(adr.title)
   const [body, setBody] = useState(adr.body)
@@ -154,7 +156,7 @@ export function AdrWriting({ adr, list, at, s, language, today, elements, render
       title={s('adr.writing')}
       number={formatAdrNumber(adr.number)}
       changed={changed}
-      onSave={() => { if (changed) onSave(patch); else onCancel() }}
+      onSave={() => { if (changed || unsaved) onSave(patch); else onCancel() }}
       saveRefused={title.trim() ? undefined : s('adr.titleNeeded')}
       onCancel={onCancel}
       middle={(
