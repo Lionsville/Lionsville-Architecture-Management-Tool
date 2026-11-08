@@ -101,8 +101,10 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 /* The outline: the units as a tree, with its find on top and its order at the foot. */
 .chart-outline { position: relative; flex: none; display: flex; flex-direction: column; min-height: 0; border-inline-end: 1px solid var(--line); background: var(--surface); }
 @media (max-width: 899px) { .chart-outline { max-height: 200px; width: auto !important; border-inline-end: 0; border-bottom: 1px solid var(--line); } }
-.chart-outline__find { flex: none; display: flex; flex-wrap: wrap; gap: var(--s-2); padding: var(--s-2); position: relative; }
-.chart-outline__find .kit-picker { flex: 1 1 auto; }
+/* One row however narrow the outline is dragged: wrapped, *Me* stood under the field where the chart's bar covers it. The field gives way, to its glass and the start of its words. */
+.chart-outline__find { flex: none; display: flex; align-items: center; gap: var(--s-2); padding: var(--s-2); position: relative; }
+.chart-outline__find > .kit-picker[data-posture] { flex: 1 1 0; min-width: 0; }
+.chart-outline__find > :not(.kit-picker) { flex: none; }
 .chart-outline__note { position: absolute; inset-inline: var(--s-2); top: 100%; z-index: 6; margin: 0; padding: var(--s-1) var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--ink-2); font-size: var(--t-small); }
 .chart-outline__tree { flex: 1 1 auto; min-height: 0; overflow: auto; margin: 0; padding: 0 var(--s-1) var(--s-2); list-style: none; }
 .chart-outline__tree ul { margin: 0; padding: 0; list-style: none; }
