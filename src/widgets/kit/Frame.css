@@ -106,7 +106,10 @@
 .kit-frame__accent { flex: 0 0 auto; height: 4px; background: var(--accent); }
 .kit-frame__status:hover { background: var(--surface-2); color: var(--ink); }
 .kit-frame__status[data-alarm='true'] { color: var(--bad); font-weight: var(--fw-strong); }
-.kit-frame__kbd { font-family: var(--font-mono); font-size: var(--t-small); color: var(--ink-2); border: 1px solid var(--line); border-radius: 3px; padding-inline: 4px; flex: 0 0 auto; }
+/* A key as the menu draws one (`.kit-menu__key`): in the UI's face, whose ⌘ and ⇧ stand as tall as the letters beside them. */
+.kit-frame__kbd { font-family: var(--font-ui); font-variant-numeric: tabular-nums; font-size: var(--t-small); color: var(--ink-2); border: 1px solid var(--line-strong); border-radius: var(--r-1); padding-inline: var(--s-1); line-height: 1.3; flex: 0 0 auto; }
+/* A screen with no keyboard to press it on shows no key on the find field. */
+@media (hover: none) { .kit-frame__find .kit-frame__kbd { display: none; } }
 
 .kit-tree { --kit-tree-menu: 28px; --kit-tree-end: calc(var(--kit-tree-menu) + var(--s-2)); flex: 1 1 auto; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
 .kit-tree__find { padding: var(--s-2); display: flex; gap: var(--s-1); align-items: center; }
