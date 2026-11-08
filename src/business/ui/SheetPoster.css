@@ -48,6 +48,8 @@
 
 .poster-tile { position: relative; appearance: none; height: var(--poster-tile-h); box-sizing: border-box; min-width: 0; margin: 0; padding: 1px 7px; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--card-edge); border-radius: 0; background: var(--poster-tile-fill, var(--card-surface)); color: var(--ink); font: inherit; text-align: center; cursor: pointer; contain: strict; }
 .poster-tile > * { flex: none; }
+/* Where a tile draws its corner mark, its words keep clear of it on both sides, so they stay centred. */
+[data-lens="coveredBy"] .poster-tile { padding-inline: calc(var(--canvas-mark) + 3px); }
 .poster-tile:hover { border-color: var(--ink); }
 .poster-tile:focus-visible, .poster-step:focus-visible, .poster-person:focus-visible, .poster-band__phase:focus-visible, .poster-column__group button:focus-visible, .poster-item:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 0; }
 .poster-tile[aria-current="true"], .poster-tile[data-picked] { outline: 2px solid var(--selected-edge); outline-offset: -1px; background: var(--selected-soft); }
@@ -74,7 +76,8 @@
 .poster-tile__label[data-none]::before { background: none; outline: 1px solid var(--line-ink); outline-offset: -1px; }
 .poster-tile__value { position: absolute; inset-inline-end: 3px; inset-block-start: 0; font: var(--fw-strong) var(--canvas-t-label)/12px var(--font-mono); }
 .poster-tile__inside { position: absolute; inset-inline-end: 2px; inset-block-end: 0; color: var(--ink-2); font-size: var(--canvas-t-label); line-height: 12px; }
-.poster-tile__mark { position: absolute; inset-block-start: 2px; inset-inline-start: 2px; width: 6px; height: 6px; box-sizing: border-box; border: 1.5px solid var(--ink-3); border-radius: 50%; }
+/* The kit's mark size: at 6px it fell to 5px on screen, and in dark it alone carried the lens between tints 1.2:1 apart. */
+.poster-tile__mark { position: absolute; inset-block-start: 2px; inset-inline-start: 2px; width: var(--canvas-mark); height: var(--canvas-mark); box-sizing: border-box; border: 1.5px solid var(--ink-3); border-radius: 50%; }
 /* A tile's fill per value is `sheetLook`'s `tile`, set as --poster-tile-fill, so the key draws the same fill. */
 :is(.poster-tile, .poster-key-tile)[data-value="apps"] .poster-tile__mark { background: var(--cov-apps); border-color: var(--cov-apps); }
 :is(.poster-tile, .poster-key-tile)[data-value="moving"] .poster-tile__mark { background: linear-gradient(90deg, var(--cov-moving) 50%, transparent 50%); border-color: var(--cov-moving); }
@@ -141,7 +144,7 @@
 [data-distance="far"] .poster-band__phase, [data-distance="far"] .poster-column__group { font-size: min(15px, calc(10px / var(--canvas-zoom, 1))); }
 
 /* Near: says more, in the same 46. No padding, or 24 + 10 + 10 does not fit. */
-[data-distance="near"] .poster-tile { justify-content: flex-start; align-items: flex-start; padding: 0 3px 0 11px; text-align: start; }
+[data-distance="near"] .poster-tile { justify-content: flex-start; align-items: flex-start; padding: 0 3px 0 calc(var(--canvas-mark) + 5px); text-align: start; }
 [data-distance="near"] .poster-tile__name { -webkit-line-clamp: 2; font-size: var(--canvas-t-label); font-weight: var(--fw-strong); line-height: 12px; text-wrap: wrap; }
 [data-distance="near"] .poster-tile__near { display: block; max-width: 100%; overflow: hidden; color: var(--ink-2); font-size: var(--canvas-t-near); line-height: 10px; text-overflow: ellipsis; white-space: nowrap; }
 [data-distance="near"] .poster-tile__near[data-via] { font-style: italic; }
