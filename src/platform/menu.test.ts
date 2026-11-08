@@ -126,8 +126,12 @@ describe('with no scope open', () => {
     expect(labels(offered(HELP_MENU, 'web', { ...nothing, scope: true }))).toEqual(['menu.userManual', 'menu.shortcuts'])
   })
 
-  it('makes every Edit item one that needs a scope, with the accelerator the key had', () => {
-    for (const spec of Object.values(EDIT_ITEMS)) expect(spec.needs).toEqual(['scope'])
+  it('makes Delete and Select All need a scope, and Undo and Redo none, with the accelerator the key had', () => {
+    // A home has steps of its own to take back (a scope's settings).
+    expect(EDIT_ITEMS.undo.needs).toBeUndefined()
+    expect(EDIT_ITEMS.redo.needs).toBeUndefined()
+    expect(EDIT_ITEMS.delete.needs).toEqual(['scope'])
+    expect(EDIT_ITEMS.selectAll.needs).toEqual(['scope'])
     expect(EDIT_ITEMS.undo.accelerator).toBe('CmdOrCtrl+Z')
     // No chord on these two: a menu accelerator fires whether or not the
     // page handled the key, and Delete and ⌘A are the canvas's and a field's.

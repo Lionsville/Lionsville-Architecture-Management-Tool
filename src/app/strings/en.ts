@@ -2173,7 +2173,7 @@ export const EN = {
   'prefs.densityCompact': 'Compact',
   'settings.nameHelp': 'Renaming keeps the address. Links to this scope go on working.',
   'settings.pageTitle': 'Settings of this scope',
-  'settings.owner': 'Kept with the scope. They travel in a saved file, and every change can be undone.',
+  'settings.owner': 'Kept with the scope. They travel in a saved file, and every change here can be undone but Filed under and Served by, which are changed back by hand.',
   'settings.general': 'General',
   'settings.links': 'Links',
   'settings.exports': 'On exports',

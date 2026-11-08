@@ -1946,7 +1946,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'prefs.densityCompact': 'Kompakt',
   'settings.nameHelp': 'Umbenennen behält die Adresse. Links zu diesem Bereich funktionieren weiter.',
   'settings.pageTitle': 'Einstellungen dieses Bereichs',
-  'settings.owner': 'Beim Bereich gespeichert. Sie reisen in einer gespeicherten Datei mit, und jede Änderung lässt sich rückgängig machen.',
+  'settings.owner': 'Beim Bereich gespeichert. Sie reisen in einer gespeicherten Datei mit, und jede Änderung hier lässt sich rückgängig machen, außer Abgelegt unter und Bedient von: Diese stellen Sie selbst zurück.',
   'settings.general': 'Allgemein',
   'settings.links': 'Links',
   'settings.exports': 'Auf Exporten',

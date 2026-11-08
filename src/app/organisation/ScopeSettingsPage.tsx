@@ -7,7 +7,10 @@
  * every level, because every scope is the same document (ADR-0012 §1).
  *
  * **Each change lands by itself, as a step**, so there is no Save and no Cancel
- * and the frame's undo takes it back. A field lands as the person leaves it.
+ * and the frame's undo, the Edit menu's and ⌘Z take it back, on the page and on
+ * the home after it closes. A field lands as the person leaves it. *Filed
+ * under* and *Served by* are not on that stack — a move, and a unit's own
+ * `scopes` written where the unit is kept — and the page's first line says so.
  *
  * **Renaming is not moving.** `acme/rail` is how everything under it is filed;
  * renaming relabels and leaves the address alone. *Filed under* changes the
@@ -96,7 +99,7 @@ export function ScopeSettingsPage({
   const steps = useRef<SettingsUndo[]>([])
   const path = target.path
   useEffect(() => { steps.current = []; onUndoChange?.(undefined) }, [path, onUndoChange])
-  useEffect(() => { if (!open) onUndoChange?.(undefined) }, [open, onUndoChange])
+  // Closing the page keeps its steps: a rename read on the home is still a step its undo takes back.
 
   const apply = useCallback((patch: Partial<ScopeSettingsPatch>, name: string, back: Partial<ScopeSettingsPatch>) => {
     const whole = patchOf(target)
@@ -161,7 +164,8 @@ export function ScopeSettingsPage({
         {tab === 'links' && (
           <SettingsSection title={s('settings.links')} note={s('group.linksHelp')}>
             <LinksField
-              key={path} links={target.links ?? []} readOnly={readOnly} s={s}
+              // Keyed by what is held, so an undo that puts the links back is shown.
+              key={`${path}:${JSON.stringify(target.links ?? [])}`} links={target.links ?? []} readOnly={readOnly} s={s}
               onCommit={(links) => apply({ links }, s('settings.undoLinks'), { links: [...(target.links ?? [])] })}
             />
           </SettingsSection>
@@ -218,7 +222,7 @@ function LandscapesSection({ path, model, readOnly, apply, s }: {
     <SettingsSection title={s('settings.landscapes')} note={s('settings.defaultColumns')}>
       {model && (
         <AspectsNow
-          key={path} held={held} readOnly={readOnly}
+          key={`${path}:${JSON.stringify(held)}`} held={held} readOnly={readOnly}
           onCommit={(defaultAspectConfig) => apply({ defaultAspectConfig }, s('settings.undoAspects'), { defaultAspectConfig: [...held] })}
         />
       )}

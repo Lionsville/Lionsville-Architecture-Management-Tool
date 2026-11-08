@@ -297,6 +297,27 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
     return () => window.removeEventListener('keydown', onKey, true)
   }, [frame, send, boardUp, parts])
   usePanelEscape(parts, hasPanel)
+  useScreenUndo(parts)
+}
+
+/**
+ * Undo and Redo on a screen that is not a workspace: the home's own steps, such
+ * as a scope's settings, which it says in its facts (`ScreenFacts.undo`). The
+ * Edit menu's item reaches them as it reaches a session's stack in a workspace
+ * (`useWorkspaceCommands`), a focused text field keeping its own; on the web
+ * the frame's keys above run them by ⌘Z and ⌘Y.
+ */
+function useScreenUndo(parts: ShellParts) {
+  const { frame } = parts
+  const { bus } = parts.commands
+  const hostControls = parts.props.hostControls
+  useEffect(() => bus.on((command) => {
+    if (command.type !== 'undo' && command.type !== 'redo') return
+    const screen = frame.get().screen
+    if (!screen || screen.kind === 'workspace' || hostControls.editInField(command.type)) return
+    const step = command.type === 'undo' ? screen.undo : screen.redo
+    if (step?.can) step.run()
+  }), [bus, frame, hostControls])
 }
 
 /**

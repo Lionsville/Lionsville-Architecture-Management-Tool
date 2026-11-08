@@ -17,7 +17,9 @@ describe('the one table of commands', () => {
   it('offers with nothing open only what works with nothing open, the sheet of keys included', () => {
     const types = commandsTable({ history: true, connect: false, scope: false }, 'linux').map((row) => row.command.type)
     expect(types).not.toContain('save')
-    expect(types).not.toContain('undo')
+    expect(types).not.toContain('selectAll')
+    // A home's own steps are taken back with nothing open.
+    expect(types).toContain('undo')
     expect(types).toContain('shortcuts')
     expect(types).toContain('export')
   })

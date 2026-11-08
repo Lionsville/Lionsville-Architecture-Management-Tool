@@ -137,8 +137,10 @@ export const EDIT_ITEMS: {
   readonly undo: MenuItemSpec; readonly redo: MenuItemSpec
   readonly delete: MenuItemSpec; readonly selectAll: MenuItemSpec
 } = {
-  undo: item('menu.undo', { type: 'undo' }, 'CmdOrCtrl+Z', ['scope']),
-  redo: item('menu.redo', { type: 'redo' }, 'Shift+CmdOrCtrl+Z', ['scope']),
+  // Undo and Redo need no scope: a home has steps of its own to take back (a
+  // scope's settings), which the frame runs where no workspace is up.
+  undo: item('menu.undo', { type: 'undo' }, 'CmdOrCtrl+Z'),
+  redo: item('menu.redo', { type: 'redo' }, 'Shift+CmdOrCtrl+Z'),
   delete: item('menu.editDelete', { type: 'deleteSelection' }, undefined, ['scope']),
   selectAll: item('menu.editSelectAll', { type: 'selectAll' }, undefined, ['scope']),
 }

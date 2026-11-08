@@ -1945,7 +1945,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'prefs.densityCompact': 'Compact',
   'settings.nameHelp': 'Hernoemen houdt het adres. Links naar deze scope blijven werken.',
   'settings.pageTitle': 'Instellingen van deze scope',
-  'settings.owner': 'Bewaard bij de scope. Ze reizen mee in een bewaard bestand, en elke wijziging is ongedaan te maken.',
+  'settings.owner': 'Bewaard bij de scope. Ze reizen mee in een bewaard bestand, en elke wijziging hier is ongedaan te maken, behalve Ondergebracht bij en Bediend door: die zet je zelf terug.',
   'settings.general': 'Algemeen',
   'settings.links': 'Links',
   'settings.exports': 'Op exports',
