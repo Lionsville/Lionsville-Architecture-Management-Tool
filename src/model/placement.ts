@@ -511,6 +511,28 @@ export function containerBoxSize(
   };
 }
 
+/**
+ * The boxes of a container diagram as they are drawn, by id: each at least
+ * {@link CONTAINER_BOX_MIN}, grown down and right where that covers nothing it
+ * did not already cover, else up, left or both. A box stored at its landscape
+ * size beside another — a person 56 high with an application 40 under it — is
+ * then drawn whole without lying over its neighbour.
+ */
+export function containerBoxes(stored: ReadonlyMap<string, Rect>): Map<string, Rect> {
+  const drawn = new Map<string, Rect>()
+  for (const [id, rect] of stored) {
+    const width = Math.max(rect.width, CONTAINER_BOX_MIN.width);
+    const height = Math.max(rect.height, CONTAINER_BOX_MIN.height);
+    const wider = width - rect.width;
+    const taller = height - rect.height;
+    const others = [...stored].filter(([other]) => other !== id).map(([, box]) => box);
+    const covers = (box: Rect) => others.filter((other) => rectsIntersect(box, other) && !rectsIntersect(rect, other)).length;
+    const ways = [[0, 0], [0, taller], [wider, 0], [wider, taller]].map(([left, up]) => ({ x: rect.x - left!, y: rect.y - up!, width, height }));
+    drawn.set(id, ways.find((box) => covers(box) === 0) ?? ways[0]!);
+  }
+  return drawn
+}
+
 export function placementRect(figure: NodeFigure, placement: Omit<NodeGeometry, 'id'>): Rect {
   const size = placementSize(figure, placement);
   return { x: placement.x, y: placement.y, width: size.width, height: size.height };

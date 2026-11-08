@@ -13,6 +13,7 @@ import {
   cascadeSlot,
   clampPlacementIntoZone,
   containerBoxSize,
+  containerBoxes,
   defaultContainerPosition,
   defaultZonePosition,
   seedPlacement,
@@ -628,3 +629,16 @@ describe('a box on a container diagram', () => {
     expect(second.y - first.y).toBeGreaterThan(containerBoxSize('actor').height);
   });
 });
+
+describe('the boxes of a container diagram as drawn', () => {
+  it('grow to say their type, up where growing down would cover the box under them', () => {
+    const drawn = containerBoxes(new Map([
+      ['person', { x: 0, y: 0, width: 150, height: 56 }],
+      ['app', { x: 0, y: 93, width: 200, height: 130 }],
+      ['alone', { x: 600, y: 0, width: 150, height: 56 }],
+    ]))
+    expect(drawn.get('person')).toEqual({ x: 0, y: -44, width: 150, height: 100 })
+    expect(drawn.get('alone')).toEqual({ x: 600, y: 0, width: 150, height: 100 })
+    expect(drawn.get('app')).toEqual({ x: 0, y: 93, width: 200, height: 130 })
+  })
+})

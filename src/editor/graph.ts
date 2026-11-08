@@ -11,7 +11,7 @@ import { aspectConfigFor, withDerivedAspects } from '../model/aspects';
 import { resolveArrowheads, resolveEdgeStroke } from './edges/edgeStyle';
 import { assignEdgeAnchors } from '../model/floatingEdgeMath';
 import { placedNodes,
-  CONTAINER_BOX_MIN,
+  containerBoxes,
   expandRect,
   nodeMaxSize,
   nodeMinSize,
@@ -133,6 +133,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
   }
 
   const aspectConfig = aspectConfigFor(args.diagram);
+  const sayType = roomToSayItsType(args.diagram, elementsById);
   const nodes: ElementNode[] = [];
   for (const placement of placedNodes(args.diagram)) {
     const element = elementsById.get(placement.id);
@@ -148,7 +149,7 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
     const faded = args.overlayFaded?.has(element.id) === true;
     const rect = isBoundary
       ? boundaryRect(args.diagram, elementsById)
-      : roomToSayItsType(args.diagram, placementRect(figure, placement));
+      : sayType(element.id, placementRect(figure, placement));
     nodes.push({
       id: element.id,
       // What a box looks like is the figure, not the kind (ADR-0012 §4): the
@@ -274,9 +275,15 @@ export function boundaryRect(
  * placed at: an actor placed as a low tile on a landscape would have no room for
  * [Person]. Lines attach to the same rectangle.
  */
-function roomToSayItsType(diagram: DesignDiagram, rect: Rect): Rect {
-  if (diagram.kind !== 'container') return rect;
-  return { ...rect, width: Math.max(rect.width, CONTAINER_BOX_MIN.width), height: Math.max(rect.height, CONTAINER_BOX_MIN.height) };
+function roomToSayItsType(diagram: DesignDiagram, elementsById: ReadonlyMap<ElementId, DesignElement>): (id: ElementId, rect: Rect) => Rect {
+  if (diagram.kind !== 'container') return (_id, rect) => rect;
+  const stored = new Map<string, Rect>();
+  for (const placement of placedNodes(diagram)) {
+    const element = elementsById.get(placement.id);
+    if (element && element.id !== diagram.applicationElementId) stored.set(element.id, placementRect(nodeFigure(element, placement.zone), placement));
+  }
+  const drawn = containerBoxes(stored);
+  return (id, rect) => drawn.get(id) ?? rect;
 }
 
 export type FloatingEdgeModel = Edge<FloatingEdgeData>;
@@ -313,6 +320,7 @@ export function buildEdges(
   // anchor slotter so edges sharing a node side fan out; re-derived on every
   // commit — including drags — so the slots stay live.
   const rectById = new Map<ElementId, Rect>();
+  const sayType = roomToSayItsType(args.diagram, elementsById);
   for (const placement of placedNodes(args.diagram)) {
     const element = elementsById.get(placement.id);
     if (!element) continue;
@@ -322,7 +330,7 @@ export function buildEdges(
       element.id,
       isBoundary
         ? boundaryRect(args.diagram, elementsById)
-        : roomToSayItsType(args.diagram, placementRect(nodeFigure(element, placement.zone), placement)),
+        : sayType(element.id, placementRect(nodeFigure(element, placement.zone), placement)),
     );
   }
   // Where an interface lands on this diagram, and therefore what it does NOT

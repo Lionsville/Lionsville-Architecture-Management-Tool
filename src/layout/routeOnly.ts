@@ -11,7 +11,7 @@ import type {
   Point,
   Rect,
 } from '../model/types';
-import { containerBoxSize, placedNodes, placementSize } from '../model/placement';
+import { containerBoxes, placedNodes, placementSize } from '../model/placement';
 import { nodeFigure } from '../model/kinds';
 import { edgeRoutesOf, routeSides } from '../model/routes';
 import { edgeLabelSize } from './edgeLabelSize';
@@ -120,17 +120,18 @@ export async function routeDiagramEdges(
   for (const placement of placedNodes(diagram)) {
     const element = elementsById.get(placement.id);
     if (!element) continue;
-    const figure = nodeFigure(element, placement.zone);
-    // A container diagram draws every box but its boundary at least large enough to say its type; route round that.
-    const size = diagram.kind === 'container' && placement.id !== diagram.applicationElementId
-      ? containerBoxSize(figure, placement)
-      : placementSize(figure, placement);
+    const size = placementSize(nodeFigure(element, placement.zone), placement);
     rectById.set(placement.id, {
       x: placement.x,
       y: placement.y,
       width: size.width,
       height: size.height,
     });
+  }
+  // A container diagram draws every box but its boundary large enough to say its type, clear of its neighbours; route round that.
+  if (diagram.kind === 'container') {
+    const stored = new Map([...rectById].filter(([id]) => id !== diagram.applicationElementId));
+    for (const [id, rect] of containerBoxes(stored)) rectById.set(id, rect);
   }
 
   // The boxes the ROUTER groups nodes into: a layer7 diagram's domain groups. A
