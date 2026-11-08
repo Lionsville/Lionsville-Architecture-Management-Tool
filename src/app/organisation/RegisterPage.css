@@ -16,6 +16,8 @@
 
 /* A finding in a record's preview: its sentence, why and how, and what puts it right. */
 .org-finding { padding: var(--s-2) 0; border-top: 1px solid var(--line); }
+/* Opened under a list's row, the row's own ground already holds it together: a rule there stopped half way across the row. */
+.kit-list .org-finding { border-top: 0; padding-top: 0; }
 .org-finding__line { display: flex; align-items: baseline; gap: var(--s-2); font-weight: var(--fw-strong); }
 .org-finding__why { margin: var(--s-1) 0 var(--s-2); color: var(--ink-2); }
 .org-finding__acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
