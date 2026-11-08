@@ -40,6 +40,8 @@
 .kit-picker__row[data-active] { background: var(--selected-soft); border-inline-start-color: var(--selected-edge); }
 .kit-picker__row[data-create] { justify-content: flex-start; align-items: center; gap: var(--s-1); color: var(--accent); }
 .kit-picker__row[data-refused] { color: var(--ink-3); cursor: not-allowed; }
+/* A row that cannot be picked is never drawn as picked: the arrows may stand on it, and its words say why, with no tint. */
+.kit-picker__row[data-refused][data-active] { background: transparent; border-inline-start-color: var(--line-strong); }
 .kit-picker__name { min-width: 0; overflow-wrap: anywhere; }
 .kit-picker__detail { flex: 0 1 auto; min-width: 0; color: var(--ink-2); font-size: var(--t-small); text-align: end; }
 .kit-picker__heading { padding: var(--s-1) var(--s-2) 2px; color: var(--ink-3); font-size: var(--t-small); }

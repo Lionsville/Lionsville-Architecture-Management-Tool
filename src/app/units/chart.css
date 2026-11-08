@@ -62,6 +62,8 @@
 .org-row__said { display: block; color: var(--exception); }
 .org-row__said[data-over] { color: var(--bad); }
 .org-person { all: unset; cursor: pointer; }
+/* The people are what the card is read for: in the ink, with the role words before them kept grey. */
+.org-row .org-person { color: var(--ink); }
 .org-person:hover { text-decoration: underline; }
 .org-person[data-chosen] { outline: var(--line-width-emphasis) solid var(--selected-edge); border-radius: var(--r-1); }
 .org-person[data-over] { color: var(--bad); }
