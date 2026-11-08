@@ -1226,7 +1226,7 @@ ook op het organogram open, met elke eenheid erboven, scrollt ernaartoe en kiest
 haar. Inklappen in het overzicht klapt alleen het overzicht in. De pijltoetsen lopen
 erdoorheen, rechts opent en links sluit. De breedte is van jou: sleep de naad rechts
 ervan, of geef de naad de focus en gebruik de pijltoetsen. Onderaan verplaatsen
-**Hoger** en **Lager** de gekozen eenheid onder de eenheden van haar type in
+**Omhoog** en **Omlaag** de gekozen eenheid onder de eenheden van haar type in
 dezelfde eenheid: één stap in elke scope die er een bewaart. Waar ze allemaal in
 deze scope staan, neemt ongedaan maken de verplaatsing terug; waar sommige in andere
 scopes staan, wordt elke scope op zichzelf teruggezet.
