@@ -64,6 +64,9 @@
 .org-row__said { display: block; color: var(--exception); }
 .org-row__said[data-over] { color: var(--bad); }
 .org-person { all: unset; cursor: pointer; }
+/* A holder and the comma after it in one unbreakable run, the holder free to wrap within itself: a comma never stands alone on a line. */
+.org-held { white-space: nowrap; }
+.org-held > * { white-space: normal; }
 /* The people are what the card is read for: in the ink, with the role words before them kept grey. */
 /* ...and at the unit name's reading size: they are the content of the card, the role words its small print. */
 .org-row .org-person { color: var(--ink); font-size: calc(var(--t-canvas-name) / var(--canvas-zoom, 1)); }

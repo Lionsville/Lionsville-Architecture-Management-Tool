@@ -52,14 +52,22 @@ export type CardProps = Omit<ComponentPropsWithRef<'div'>, 'children' | 'about'>
  * a word too long for its line ends in an ellipsis instead. Each word is a box of
  * its own for that, so a space is the only place a line may break — and after a
  * slash, which joins two words a line may part ("Intake/Review"): each side is a
- * box of its own, the slash kept with the first.
+ * box of its own, the slash kept with the first. A mark said `after` it — a label's
+ * colon — is in its last word's box, so it never starts a line.
  */
-export function CanvasName({ text }: { text: string }) {
+export function CanvasName({ text, after }: { text: string; after?: string }) {
+  const words = text.split(/(\s+)/).flatMap((part, at) => (/^\s*$/.test(part)
+    ? [{ key: `${at}`, part, word: false }]
+    : part.split(/(?<=\/)(?=.)/).map((piece, within) => ({ key: `${at}.${within}`, part: piece, word: true }))))
+  // A mark after the name — a label's colon — goes in the last word's box: a box is where a line may part, so
+  // the mark beside it would be free to start the next line on its own.
+  const last = words.findLastIndex((one) => one.word)
   return (
     <span className="kit-name">
-      {text.split(/(\s+)/).flatMap((part, at): ReactNode[] => (/^\s*$/.test(part)
-        ? [part]
-        : part.split(/(?<=\/)(?=.)/).map((piece, within) => <span key={`${at}.${within}`} className="kit-name__word">{piece}</span>)))}
+      {words.map(({ key, part, word }, at) => (word
+        ? <span key={key} className="kit-name__word">{at === last && after ? `${part}${after}` : part}</span>
+        : part))}
+      {last < 0 && after ? after : null}
     </span>
   )
 }

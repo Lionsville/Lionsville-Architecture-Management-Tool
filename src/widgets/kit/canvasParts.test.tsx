@@ -6,7 +6,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axeFindings } from '../../app/testing/axe'
-import { Card } from './Card'
+import { CanvasName, Card } from './Card'
 import { arrowAt, labelWords, Line, howWords, LineLabel } from './Line'
 import { Zone } from './Zone'
 
@@ -42,6 +42,11 @@ describe('a card', () => {
     const words = [...container.querySelectorAll('.kit-name__word')].map((word) => word.textContent)
     expect(words).toEqual(['Intake/', 'Review', 'desk', '/'])
     expect(container.querySelector('.kit-name')?.textContent).toBe('Intake/Review desk /')
+  })
+
+  it('keeps a mark said after the name in its last word\'s box', () => {
+    const { container } = render(<CanvasName text="Product owner" after=":" />)
+    expect([...container.querySelectorAll('.kit-name__word')].map((word) => word.textContent)).toEqual(['Product', 'owner:'])
   })
 
   it('says each state as an attribute, for its CSS to draw', () => {

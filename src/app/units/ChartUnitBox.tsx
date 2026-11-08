@@ -29,6 +29,7 @@
  * (`chartKeys`), and a right-click or the menu key opens them as the unit's own
  * menu. A folded box that hides the unit picked is ringed and says so.
  */
+import { Fragment } from 'react'
 import type { DragEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import type { Language, Translate } from '../../i18n'
 import type { Role } from '../../model/operatingModel'
@@ -324,9 +325,6 @@ function slotDrawn(slot: ChartSlot, role: Role | undefined, drawing: Drawing): b
   return role?.manages === true || slot.holders.some((holder) => holder.assignment.id === drawing.chosen)
 }
 
-/** A word joiner: no line breaks between a word and the mark after it. */
-const JOINED = '\u2060'
-
 /** One role of a unit, on one line: who holds it, and what its slot still asks for. */
 function SlotRow({ unit, slot, drawing, tabbable }: { unit: ChartUnit; slot: ChartSlot; drawing: Drawing; tabbable: boolean }) {
   const { t } = drawing
@@ -344,9 +342,18 @@ function SlotRow({ unit, slot, drawing, tabbable }: { unit: ChartUnit; slot: Cha
   }
   return (
     <div className="org-row" data-testid={`chart-slot-${slot.roleId}`} title={role?.manages ? t('chart.readManages') : undefined}>
-      {/* The role in whole words, as a name on a canvas is; its colon and each comma held to the word before them, so none stands alone on a line. */}
-      <span data-testid="chart-role-name"><CanvasName text={role?.name ?? slot.roleId} />{JOINED}:</span>{' '}
-      {parts.map((part, at) => <span key={at}>{part}{at < parts.length - 1 ? `${JOINED}, ` : ''}</span>)}
+      {/*
+        The role in whole words, as a name on a canvas is. Its colon is in its last word's box, and each comma in one
+        box with the holder before it: a word joiner does not hold across a word's box or a button, and at the whole
+        organisation's distance a colon started the next line and a comma stood alone on one.
+      */}
+      <span data-testid="chart-role-name"><CanvasName text={role?.name ?? slot.roleId} after=":" /></span>{' '}
+      {parts.map((part, at) => (
+        <Fragment key={at}>
+          <span className="org-held">{part}{at < parts.length - 1 ? ',' : ''}</span>
+          {at < parts.length - 1 ? ' ' : ''}
+        </Fragment>
+      ))}
       {slot.holders.filter((holder) => holder.overloaded).map((holder) => <Over key={holder.assignment.id} holder={holder} drawing={drawing} />)}
     </div>
   )
