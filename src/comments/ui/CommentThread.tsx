@@ -223,9 +223,10 @@ function Composer({ label, submit, initial = '', testId, onSubmit, onCancel, cle
         label={label} value={body} onChange={setBody} minRows={2} attachable={false} testId={testId} onSubmit={send}
         renderPreview={(text) => renderMarkdown(text)}
       />
-      <Box sx={{ display: 'flex', gap: 1 }}>
-        <Button size="small" variant="contained" disabled={body.trim() === ''} onClick={send} data-testid={`${testId}-send`}>{submit}</Button>
+      {/* Trailing, as GitHub's comment box and a macOS sheet: Cancel, then the button that sends, at the right. */}
+      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
         {onCancel && <Button size="small" onClick={onCancel}>{t('comments.cancel')}</Button>}
+        <Button size="small" variant="contained" disabled={body.trim() === ''} onClick={send} data-testid={`${testId}-send`}>{submit}</Button>
       </Box>
     </Box>
   )

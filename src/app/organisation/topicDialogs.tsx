@@ -44,7 +44,7 @@ export function NewTopicDialog({ access, parent, name: named = '', relevantTo = 
       open size="m" title={under ? t('topics.newSubtopic') : t('topics.new')} onClose={() => onClose()}
       actions={(
         <>
-          <Button variant="plain" onClick={() => onClose()}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={() => onClose()}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!name.trim() || busy} onClick={make} data-testid="topic-create">{t('topics.create')}</Button>
         </>
       )}

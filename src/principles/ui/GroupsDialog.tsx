@@ -38,7 +38,7 @@ export function GroupsDialog({ open, scope, onClose }: { open: boolean; scope: s
       open={open} size="m" title={t('principles.groupsTitle')} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" onClick={() => { access.setGroups(scope, list.filter((one) => one.name.trim())); onClose() }} data-testid="groups-save">{t('principles.save')}</Button>
         </>
       )}

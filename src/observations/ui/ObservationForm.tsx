@@ -296,9 +296,9 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
         )}
         {refused && <p className="chain-form__refused" role="alert" data-testid="form-problems">{refused}</p>}
         <div className="chain-form__foot">
-          <KitButton variant="primary" type="submit" data-testid="form-record" data-guide="observationForm.record">{recordLabel(rows, s)}</KitButton>
-          <KitButton variant="quiet" onClick={cancel}>{s('common.cancel')}</KitButton>
           <span className="chain-form__said">{s('observation.formOneStep')}</span>
+          <KitButton variant="quiet" onClick={cancel}>{s('common.cancel')}</KitButton>
+          <KitButton variant="primary" type="submit" data-testid="form-record" data-guide="observationForm.record">{recordLabel(rows, s)}</KitButton>
         </div>
       </form>
       <KitDialog

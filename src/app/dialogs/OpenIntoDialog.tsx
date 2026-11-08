@@ -61,7 +61,7 @@ export function OpenIntoDialog({
   const hereEffect = puttingBack
     ? s('openInto.herePutsBack', { scope: here })
     : keepsHistory ? `${writesOver} ${s('openInto.snapshotFirst')}` : `${writesOver} ${s('openInto.noWayBack')}`
-  const cancel = <Button onClick={onCancel}>{s('common.cancel')}</Button>
+  const cancel = <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
 
   if (canGoElsewhere) {
     return (

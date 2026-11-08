@@ -190,7 +190,7 @@ export function DiagramSettingsDialog({
       onSubmit={commit}
       actions={(
         <>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" type="submit" disabled={!canSave}>{t('common.save')}</Button>
         </>
       )}

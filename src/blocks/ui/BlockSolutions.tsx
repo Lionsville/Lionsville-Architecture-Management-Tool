@@ -102,7 +102,7 @@ function ElementsDialog({ row, sbb, onClose }: { row: BlockRow; sbb: SolutionBlo
       open size="m" title={t('blocks.elementsOf', { name: sbb.name })} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" onClick={save} data-testid="sbb-elements-save">{t('blocks.save')}</Button>
         </>
       )}
@@ -138,7 +138,7 @@ export function SolutionDialog({ row, onClose }: { row: BlockRow; onClose: (made
       open size="m" title={t('blocks.addSbbTitle')} onClose={() => onClose()}
       actions={(
         <>
-          <Button variant="plain" onClick={() => onClose()}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={() => onClose()}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!name.trim()} onClick={add} data-testid="sbb-add">{t('blocks.add')}</Button>
         </>
       )}

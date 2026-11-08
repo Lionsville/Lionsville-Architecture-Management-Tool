@@ -51,7 +51,7 @@ export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, note, o
       open={open} size="m" title={title} onClose={onCancel} onSubmit={() => { if (ready) onTake(message.trim()) }}
       actions={(
         <>
-          <Button onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
           <Button type="submit" variant="primary" disabled={!ready} data-testid="snapshot-take">{s('history.take')}</Button>
         </>
       )}

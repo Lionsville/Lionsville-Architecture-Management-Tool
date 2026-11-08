@@ -712,7 +712,7 @@ function RenameDialog({ name, onChange, onCancel, onDone, t }: { name: string; o
   return (
     <Dialog
       open title={t('map.rename')} onClose={onCancel} onSubmit={onDone}
-      actions={<><Button onClick={onCancel}>{t('common.cancel')}</Button><Button variant="primary" type="submit">{t('common.save')}</Button></>}
+      actions={<><Button variant="quiet" onClick={onCancel}>{t('common.cancel')}</Button><Button variant="primary" type="submit">{t('common.save')}</Button></>}
     >
       <TextField label={t('common.name')} value={name} onChange={onChange} autoFocus />
     </Dialog>

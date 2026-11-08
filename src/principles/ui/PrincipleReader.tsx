@@ -97,7 +97,7 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
         open={removing} title={t('principles.removeTitle', { number })} onClose={() => setRemoving(false)}
         actions={(
           <>
-            <Button variant="plain" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
+            <Button variant="quiet" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
             <Button variant="danger" onClick={() => { setRemoving(false); access.remove(scope, principle.id); onSelect(null) }}>{t('common.delete')}</Button>
           </>
         )}
@@ -238,7 +238,7 @@ function Relations({ found, onPick }: { found: PrincipleInForce; onPick: (ref: P
       })}
       <Dialog
         open={adding} size="m" title={t('principles.relate')} onClose={() => setAdding(false)}
-        actions={<Button variant="plain" onClick={() => setAdding(false)}>{t('common.cancel')}</Button>}
+        actions={<Button variant="quiet" onClick={() => setAdding(false)}>{t('common.cancel')}</Button>}
       >
         <SelectField
           label={t('principles.relationKind')} value={kind} onChange={(next) => setKind(next as PrincipleRelationKind)}

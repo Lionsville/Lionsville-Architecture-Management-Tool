@@ -36,7 +36,7 @@ export function PlanMoveDialog({ plan, model, onMove, onClose }: {
       open size="m" title={t('plan.moveTitle')} onClose={onClose}
       actions={(
         <>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={days === 0} onClick={() => onMove(days)}>{t('plan.moveAct', { count })}</Button>
         </>
       )}

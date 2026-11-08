@@ -109,7 +109,7 @@ export function PosterPictureDialog({ onAdd, onClose, addImage }: {
       open size="s" title={t('sheet.poster.pictureTitle')} onClose={onClose}
       actions={(
         <>
-          <Button onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!ready} onClick={() => { if (image !== undefined) onAdd(image, alt.trim()); onClose() }}>{t('sheet.poster.addPicture')}</Button>
         </>
       )}

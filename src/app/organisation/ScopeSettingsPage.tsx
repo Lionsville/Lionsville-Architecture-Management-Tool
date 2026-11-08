@@ -179,7 +179,7 @@ export function ScopeSettingsPage({
         open={asked !== undefined} title={s('settings.moveTitle', { name })} onClose={() => setAsked(undefined)}
         actions={(
           <>
-            <Button onClick={() => setAsked(undefined)}>{s('common.cancel')}</Button>
+            <Button variant="quiet" onClick={() => setAsked(undefined)}>{s('common.cancel')}</Button>
             <Button
               variant="primary" data-testid="settings-move"
               onClick={() => { if (asked !== undefined) onApply(path, { ...patchOf(target), parent: asked }); setAsked(undefined) }}

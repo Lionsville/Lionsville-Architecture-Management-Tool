@@ -29,7 +29,7 @@ export function EditTopicDialog({ topic, access, onClose }: { topic: TopicSummar
       open size="m" title={t('topics.editTitle', { name: topic.name })} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!name.trim()} onClick={save}>{t('topics.save')}</Button>
         </>
       )}

@@ -146,7 +146,7 @@ function NewBlockDialog({ access, at, onClose }: { access: BlocksAccess; at: str
       open size="m" title={t('blocks.new')} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={busy || !name.trim() || places.length === 0} onClick={make} data-testid="block-create">{t('blocks.create')}</Button>
         </>
       )}

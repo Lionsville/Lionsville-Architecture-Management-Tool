@@ -50,7 +50,7 @@ export function ConwayPlanDialog({ ids, model, here, declare, onClose, onOpenPla
   return (
     <Dialog
       open size="s" title={t('conway.plan.title')} onClose={onClose}
-      actions={<Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>}
+      actions={<Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>}
     >
       <p className="conway__quiet">{t('conway.plan.about')}</p>
       <Picker

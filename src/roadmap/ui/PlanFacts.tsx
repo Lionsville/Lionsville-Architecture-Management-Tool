@@ -226,7 +226,7 @@ export function DeleteActions({ onCancel, onDelete }: { onCancel: () => void; on
   const { t } = useStrings()
   return (
     <>
-      <Button onClick={onCancel}>{t('common.cancel')}</Button>
+      <Button variant="quiet" onClick={onCancel}>{t('common.cancel')}</Button>
       <Button variant="danger" onClick={onDelete}>{t('roadmap.delete')}</Button>
     </>
   )

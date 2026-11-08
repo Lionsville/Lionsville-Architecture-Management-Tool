@@ -75,7 +75,7 @@ export function PasswordDialog({ open, mode, error, about, onCancel, onConfirm, 
       open={open} size={setting ? 'm' : 's'} title={title} onClose={onCancel}
       actions={(
         <>
-          <Button onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
           <Button variant="primary" disabled={!ready} onClick={confirm} data-testid="password-confirm">
             {s(setting ? 'seal.confirmSet' : 'seal.confirmEnter')}
           </Button>

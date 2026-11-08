@@ -161,10 +161,11 @@ export function WhyLadder(props: WhyLadderProps) {
               </div>
             </details>
             <div className="chain-form__foot">
-              <Button variant="primary" onClick={add} data-testid="ladder-add" data-guide="observations.newCause">{addLabel}</Button>
               {candidates.length > 0 && <Button onClick={() => setPicking(true)} data-testid="ladder-existing">{s('observation.linkExistingOne')}</Button>}
               {step && (step.onRoot || step.rootRefused) && <Button onClick={makeRoot} data-testid="ladder-is-root">{s('observation.thisIsRoot')}</Button>}
+              <span className="chain-form__grow" />
               <Button variant="quiet" onClick={props.onClose} data-testid="ladder-stop">{ask.mode === 'deeper' ? s('observation.ladderStop') : s('common.cancel')}</Button>
+              <Button variant="primary" onClick={add} data-testid="ladder-add" data-guide="observations.newCause">{addLabel}</Button>
             </div>
             {refused && <p className="chain-form__refused" role="alert" data-testid="ladder-refused">{refused}</p>}
             <p className="chain-form__said">{ask.mode === 'deeper' ? s('observation.ladderRootSaid') : s('observation.ladderOneStep')}</p>

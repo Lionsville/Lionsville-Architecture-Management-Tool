@@ -89,7 +89,7 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
         open={removing} title={t('blocks.removeEvaluationTitle', { scope: access.scopeLabel(scope) })} onClose={() => setRemoving(false)}
         actions={(
           <>
-            <Button variant="plain" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
+            <Button variant="quiet" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
             <Button variant="danger" onClick={() => { setRemoving(false); access.removeEvaluation(scope, evaluation.id); onBack() }}>{t('blocks.remove')}</Button>
           </>
         )}

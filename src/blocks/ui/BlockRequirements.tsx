@@ -97,7 +97,7 @@ function CapabilityDialog({ row, onClose }: { row: BlockRow; onClose: () => void
       open size="m" title={t('blocks.addCapabilityTitle')} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!text.trim()} onClick={add} data-testid="capability-add">{t('blocks.add')}</Button>
         </>
       )}
@@ -131,7 +131,7 @@ function ContextDialog({ row, onClose }: { row: BlockRow; onClose: () => void })
       open size="m" title={t('blocks.addContextTitle')} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!name.trim()} onClick={add} data-testid="context-add">{t('blocks.add')}</Button>
         </>
       )}

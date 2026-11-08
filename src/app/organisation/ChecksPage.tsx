@@ -138,10 +138,14 @@ function MarkForm({ count, onMark, onCancel, s }: { count: number; onMark: (reas
   return (
     <span className="checks-mark" data-testid="checks-mark-form">
       <span className="checks-mark__reason">
-        <TextInput aria-label={s(CHECK_MARK_WORDS.reason)} placeholder={s(CHECK_MARK_WORDS.reason)} value={reason} onChange={(event) => setReason(event.target.value)} />
+        {/* The field that opened takes the focus, and Return is the button that marks (macOS: the default button). */}
+        <TextInput
+          autoFocus aria-label={s(CHECK_MARK_WORDS.reason)} placeholder={s(CHECK_MARK_WORDS.reason)} value={reason} onChange={(event) => setReason(event.target.value)}
+          onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); onMark(reason) } }}
+        />
       </span>
-      <Button variant="primary" data-guide="findings.markIntended" data-testid="checks-mark" onClick={() => onMark(reason)}>{s('checks.markN', { count })}</Button>
       {onCancel && <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>}
+      <Button variant="primary" data-guide="findings.markIntended" data-testid="checks-mark" onClick={() => onMark(reason)}>{s('checks.markN', { count })}</Button>
       <span className="checks-mark__returns">{s('checks.markReturns')}</span>
     </span>
   )

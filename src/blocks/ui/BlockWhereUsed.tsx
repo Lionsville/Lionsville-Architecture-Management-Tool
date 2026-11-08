@@ -85,7 +85,7 @@ function EvaluateDialog({ row, onClose }: { row: BlockRow; onClose: (made?: stri
       open size="m" title={t('blocks.evaluateFor')} onClose={() => onClose()}
       actions={(
         <>
-          <Button variant="plain" onClick={() => onClose()}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={() => onClose()}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={busy || choices.length === 0} onClick={start} data-testid="evaluate-start">{t('blocks.evaluateStart')}</Button>
         </>
       )}

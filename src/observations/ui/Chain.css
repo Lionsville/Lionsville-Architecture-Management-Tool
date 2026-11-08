@@ -24,7 +24,9 @@
 
 .chain-form { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
 .chain-form__hint { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); font-size: var(--t-small); color: var(--ink-2); }
-.chain-form__foot { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.chain-form__foot { display: flex; align-items: center; justify-content: flex-end; gap: var(--s-2); flex-wrap: wrap; }
+/* A form's answer is trailing (macOS): Cancel, then the primary at the right; what else it says stands at the start. */
+.chain-form__foot > .chain-form__said:first-child, .chain-form__grow { margin-inline-end: auto; }
 .chain-form__said { margin: 0; font-size: var(--t-small); color: var(--ink-2); }
 .chain-form__refused { margin: 0; font-size: var(--t-body); color: var(--bad); }
 .chain-more > summary { cursor: pointer; font-size: var(--t-small); color: var(--ink-2); padding: var(--s-1) 0; }

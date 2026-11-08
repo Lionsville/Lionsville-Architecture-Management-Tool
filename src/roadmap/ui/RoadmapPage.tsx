@@ -294,7 +294,7 @@ function NamePlanDialog({ title, onTitle, onMake }: {
       open={title !== null} title={t('roadmap.newPlanTitle')} onClose={() => onTitle(null)} onSubmit={make}
       actions={(
         <>
-          <Button onClick={() => onTitle(null)}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={() => onTitle(null)}>{t('common.cancel')}</Button>
           <Button variant="primary" type="submit" disabled={!title?.trim()} onClick={make}>{t('roadmap.newPlan')}</Button>
         </>
       )}

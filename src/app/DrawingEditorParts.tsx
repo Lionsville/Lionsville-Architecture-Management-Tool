@@ -89,7 +89,7 @@ function PointDialog({ elements, onCancel, onPoint, kindWord, s }: {
       open size="m" title={s('drawing.pointTitle')} onClose={onCancel}
       actions={(
         <>
-          <Button variant="plain" onClick={onCancel}>{s('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
           <Button variant="primary" disabled={!chosen} onClick={() => { if (chosen) onPoint(chosen) }} data-testid="drawing-point-confirm">
             {chosen ? s('drawing.pointConfirm', { name: chosen.name }) : s('drawing.pointAt')}
           </Button>

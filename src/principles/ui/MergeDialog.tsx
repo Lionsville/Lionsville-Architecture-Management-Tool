@@ -30,7 +30,7 @@ export function MergeDialog({ open, scope, into, onClose }: { open: boolean; sco
       open={open} size="m" title={t('principles.mergeTitle', { number: formatPrincipleNumber(into.number) })} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={from.length === 0} onClick={() => { access.merge(scope, into.id, from); onClose() }}>{t('principles.mergeSubmit')}</Button>
         </>
       )}

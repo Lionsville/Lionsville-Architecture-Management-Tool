@@ -49,7 +49,7 @@ function DaysDialog({ mode, topic, link, access, onClose }: { mode: 'end' | 'edi
       open title={t(mode === 'end' ? 'topics.endTitle' : 'topics.daysTitle')} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" onClick={save}>{mode === 'end' ? t('topics.endSave') : t('topics.save')}</Button>
         </>
       )}
@@ -96,7 +96,7 @@ function AddLink({ topic, access, current, onClose }: { topic: TopicSummary; acc
       open size="m" title={t('topics.addScopeTitle')} onClose={onClose}
       actions={(
         <>
-          <Button variant="plain" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="primary" disabled={!adding} onClick={() => { if (adding) access.relate(topic.id, adding.id, from || undefined); onClose() }} data-testid="topic-link-add">{t('topics.link')}</Button>
         </>
       )}
@@ -159,7 +159,7 @@ function TopicBlocks({ topic, may }: { topic: TopicSummary; may: boolean }) {
         open={making} title={t('topics.newBlockTitle')} onClose={() => setMaking(false)}
         actions={(
           <>
-            <Button variant="plain" onClick={() => setMaking(false)}>{t('common.cancel')}</Button>
+            <Button variant="quiet" onClick={() => setMaking(false)}>{t('common.cancel')}</Button>
             <Button variant="primary" disabled={!name.trim()} onClick={make} data-testid="topic-new-block">{t('topics.createBlock')}</Button>
           </>
         )}
@@ -241,7 +241,7 @@ export function TopicDetail({ topic, access, ids, onSelect, onSubtopic }: {
         open={removing} title={t('topics.removeTitle', { name: topic.name })} onClose={() => setRemoving(false)}
         actions={(
           <>
-            <Button variant="plain" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
+            <Button variant="quiet" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
             <Button variant="danger" onClick={remove}>{t('topics.remove')}</Button>
           </>
         )}
