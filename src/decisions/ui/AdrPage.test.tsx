@@ -191,14 +191,28 @@ describe('a new decision', () => {
     expect(next[3].body).toContain('## Decision Outcome')
   })
 
-  it('leaves nothing behind when the new record is cancelled before it was ever saved', () => {
+  it('leaves nothing behind when the new record is cancelled before it was ever saved, asking first since its title is a draft', async () => {
     const { onProject } = mount()
     fireEvent.click(screen.getByRole('button', { name: 'New decision' }))
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'One way to log in' } })
     fireEvent.click(screen.getByRole('button', { name: 'Create and write' }))
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Leave and drop it' }))
     expect(onProject).not.toHaveBeenCalled()
-    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
+    await vi.waitFor(() => expect(screen.queryByRole('button', { name: 'Save' })).toBeNull())
+  })
+
+  it('asks before Cancel in the New decision dialog drops a title typed, and not with none', async () => {
+    mount()
+    fireEvent.click(screen.getByRole('button', { name: 'New decision' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await vi.waitFor(() => expect(screen.queryByLabelText('Title')).toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'New decision' }))
+    fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'One way to log in' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Keep writing' }))
+    await vi.waitFor(() => expect(screen.queryByTestId('draft-question')).toBeNull())
+    expect((screen.getByLabelText('Title') as HTMLInputElement).value).toBe('One way to log in')
   })
 
   it('lands about the scope itself unless somebody said otherwise', () => {
@@ -526,7 +540,7 @@ describe('a record, written', () => {
     fireEvent.click(within(record()).getByRole('button', { name: 'Edit' }))
     fireEvent.change(screen.getByLabelText('Context'), { target: { value: 'Changed.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Leave and drop changes' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Leave and drop it' }))
     expect(onProject).not.toHaveBeenCalled()
   })
 

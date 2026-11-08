@@ -155,7 +155,8 @@ export function AdrWriting({ adr, list, at, s, language, today, elements, render
       open
       title={s('adr.writing')}
       number={formatAdrNumber(adr.number)}
-      changed={changed}
+      // A decision never saved holds its title as a draft: Cancel drops it, so Cancel asks.
+      changed={changed || (unsaved && title.trim() !== '')}
       onSave={() => { if (changed || unsaved) onSave(patch); else onCancel() }}
       saveRefused={title.trim() ? undefined : s('adr.titleNeeded')}
       onCancel={onCancel}

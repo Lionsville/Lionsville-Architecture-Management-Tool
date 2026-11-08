@@ -13,6 +13,7 @@
 import { useEffect, useState } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
 import { Dialog } from '../../widgets/kit/Dialog'
+import { LeaveQuestion, useDraft } from '../../widgets/kit/drafts'
 import { SelectField, TextField } from '../../widgets/kit/Field'
 import type { SelectOption } from '../../widgets/kit/Field'
 import type { Translate } from '../../i18n'
@@ -36,18 +37,25 @@ export function NewAdrDialog({ open, subjects, about = ABOUT_THE_SCOPE, onCancel
   const [chosen, setChosen] = useState(about)
   useEffect(() => { if (open) { setTitle(''); setChosen(about) } }, [open, about])
   const ready = title.trim().length > 0
+  // A title typed is a draft: Cancel and leaving the page ask before it is dropped (`kit/drafts`).
+  useDraft(open && ready)
+  const [asking, setAsking] = useState(false)
+  const cancel = () => { if (ready) setAsking(true); else onCancel() }
   return (
+    <>
+    <LeaveQuestion open={asking} onKeep={() => setAsking(false)} onLeave={() => { setAsking(false); onCancel() }} />
     <Dialog
-      open={open} size="m" title={s('adr.new')} onClose={onCancel}
+      open={open} size="m" title={s('adr.new')} onClose={cancel}
       onSubmit={() => { if (ready) onCreate(title.trim(), chosen) }}
       actions={{
-        cancel: { onClick: onCancel, label: s('common.cancel') },
+        cancel: { onClick: cancel, label: s('common.cancel') },
         outcome: { type: 'submit', disabled: !ready, label: s('adr.create') },
       }}
     >
       <TextField autoFocus label={s('adr.newTitleField')} hint={s('adr.newTitleHelp')} value={title} onChange={setTitle} />
       <SelectField label={s('adr.aboutField')} hint={s('adr.aboutHelp')} value={chosen} options={subjects} onChange={setChosen} />
     </Dialog>
+    </>
   )
 }
 

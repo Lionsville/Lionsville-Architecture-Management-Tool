@@ -30,14 +30,13 @@
  * **What holds the save** is said by the save button (`saveRefused`) and at the
  * field, which is the screen's. Save is one step for Undo, also the screen's.
  */
-import { useDraft } from './drafts'
+import { LeaveQuestion, useDraft } from './drafts'
 import { createContext, useContext, useId, useState } from 'react'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ReactNode } from 'react'
 import MuiDialog from '@mui/material/Dialog'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Button } from './Button'
-import { Dialog } from './Dialog'
 import { Segmented } from './Segmented'
 import { WINDOW_BAR } from './windowArea'
 import './FocusedWindow.css'
@@ -164,17 +163,7 @@ export function FocusedWindow({
           {aside && <div className="kit-focused__aside" data-folded={asideFolded || undefined}>{aside}</div>}
         </div>
       </InFocusedWindow.Provider>
-      <Dialog
-        open={asking}
-        title={t('kit.focused.askTitle')}
-        onClose={() => setAsking(false)}
-        actions={{
-          cancel: { onClick: () => setAsking(false), label: t('kit.focused.keepEditing') },
-          outcome: { onClick: () => { setAsking(false); onCancel() }, label: t('kit.focused.discard'), danger: true },
-        }}
-      >
-        <p>{t('kit.focused.askBody')}</p>
-      </Dialog>
+      <LeaveQuestion open={asking} onKeep={() => setAsking(false)} onLeave={() => { setAsking(false); onCancel() }} />
     </MuiDialog>
   )
 }

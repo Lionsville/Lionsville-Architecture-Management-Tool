@@ -417,7 +417,7 @@ describe('the text', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Edit' }))
     fireEvent.change(screen.getByLabelText('Plan source (markdown)'), { target: { value: 'Other words' } })
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.getByRole('button', { name: 'Leave and drop changes' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Leave and drop it' })).toBeTruthy()
   })
 
   it('takes a picture in', async () => {

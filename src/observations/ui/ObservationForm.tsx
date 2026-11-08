@@ -51,14 +51,13 @@ import type { LinkRow } from './FormParts'
 import { problemsLine } from './FormDialog'
 import { Button as KitButton } from '../../widgets/kit/Button'
 import { Panel } from '../../widgets/kit/Panel'
-import { Dialog as KitDialog } from '../../widgets/kit/Dialog'
 import { NextStep } from '../../widgets/kit/NextStep'
 import { isBlankRef, personRefOf } from '../../model/person'
 import type { PersonRef } from '../../model/person'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { claimKey, commandKey } from '../../widgets/kit/keys'
-import { useDraft } from '../../widgets/kit/drafts'
+import { LeaveQuestion, useDraft } from '../../widgets/kit/drafts'
 
 /** A scope an observation may be recorded in, and what the form reads of it. */
 export type FormScope = {
@@ -314,15 +313,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
           <KitButton variant="primary" type="submit" data-testid="form-record" data-guide="observationForm.record">{recordLabel(rows, s)}</KitButton>
         </div>
       </form>
-      <KitDialog
-        open={asking} title={s('observation.formDiscardTitle')} onClose={() => setAsking(false)}
-        actions={{
-          cancel: { onClick: () => setAsking(false), label: s('observation.formKeep') },
-          outcome: { onClick: () => { setAsking(false); props.onCancel() }, label: s('observation.formDiscard'), danger: true },
-        }}
-      >
-        <p>{s('observation.formDiscardBody')}</p>
-      </KitDialog>
+      <LeaveQuestion open={asking} onKeep={() => setAsking(false)} onLeave={() => { setAsking(false); props.onCancel() }} />
     </Panel>
   )
 }

@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
-import { act, cleanup, fireEvent, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
 import { DraftQuestion, draftHeld, leaveWithDrafts, useDraft, watchDrafts } from './drafts'
 
@@ -48,6 +48,23 @@ describe('leaving with a draft', () => {
     expect(draftHeld()).toBe(true)
     unmount()
     expect(draftHeld()).toBe(false)
+  })
+
+  it('asks one question in one order: Keep writing, focused, then Leave and drop it in the danger ink', () => {
+    renderShell(<><DraftQuestion /><Box start="Who owns this?" /></>)
+    act(() => leaveWithDrafts(() => {}))
+    const answers = within(screen.getByTestId('draft-question')).getAllByRole('button').map((one) => one.textContent)
+    expect(answers.slice(-2)).toEqual(['Keep writing', 'Leave and drop it'])
+    expect(document.activeElement?.textContent).toBe('Keep writing')
+  })
+
+  it('tells a watcher whether a draft is held, as it changes: what decides a desktop window\'s close', () => {
+    const heard: boolean[] = []
+    const stop = watchDrafts((holding) => heard.push(holding))
+    const { unmount } = renderShell(<Box start="Who owns this?" />)
+    unmount()
+    stop()
+    expect(heard).toEqual([false, true, false])
   })
 })
 

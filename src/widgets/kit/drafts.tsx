@@ -61,7 +61,6 @@ export function leaveWithDrafts(go: () => void, stay?: () => void): void {
 
 /** The question, drawn once by the shell; with none drawn, leaving does not wait on one. */
 export function DraftQuestion() {
-  const { t } = useStrings()
   const [going, setGoing] = useState<Asked | undefined>(undefined)
   useEffect(() => {
     // A second move asked while the first waits: the first stays where it is.
@@ -83,14 +82,25 @@ export function DraftQuestion() {
     setGoing(undefined)
     asked?.stay?.()
   }
+  return <LeaveQuestion open={going !== undefined} onKeep={stay} onLeave={leave} />
+}
+
+/**
+ * The one question before something written is dropped, wherever it is asked —
+ * leaving a page, Cancel in an editor, closing a new record's form: one title,
+ * one sentence, and one order through the kit's footer. *Keep writing* is the
+ * quiet Cancel, focused, so Return and Escape keep; *Leave and drop it* is the
+ * danger to its right, never the default.
+ */
+export function LeaveQuestion({ open, onKeep, onLeave }: { readonly open: boolean; readonly onKeep: () => void; readonly onLeave: () => void }) {
+  const { t } = useStrings()
   return (
     <Dialog
-      open={going !== undefined} title={t('kit.draft.title')} onClose={stay} onSubmit={stay}
+      open={open} title={t('kit.draft.title')} onClose={onKeep} onSubmit={onKeep}
       data-testid="draft-question"
       actions={{
-        // Leaving is something else done with the draft, set apart; keeping on writing is the answer.
-        aside: [{ danger: true, onClick: leave, 'data-testid': 'draft-leave', label: t('kit.draft.leave') }],
-        outcome: { type: 'submit', autoFocus: true, label: t('kit.draft.keep') },
+        cancel: { type: 'submit', autoFocus: true, label: t('kit.draft.keep'), 'data-testid': 'draft-keep' },
+        outcome: { danger: true, onClick: onLeave, 'data-testid': 'draft-leave', label: t('kit.draft.leave') },
       }}
     >
       <p>{t('kit.draft.body')}</p>
