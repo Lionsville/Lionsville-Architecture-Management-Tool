@@ -7,7 +7,8 @@
  * pixels, as shapes. The picture is laid out whole at its own width and a
  * window shows the parts marked `data-crop` (or, failing one, the ring a step
  * draws, `data-mark`), taken out to whole lines of text (`pictureCut`); a press
- * shows the whole of it over the page, enlarged to most of the window.
+ * shows the whole of it over the page, enlarged to most of the window, or,
+ * in a window narrower than the picture, at its own size to pan.
  */
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
@@ -49,6 +50,9 @@ export function HelpFigure({ Picture, caption, t, width, column, small }: {
   const foot = useRef<HTMLParagraphElement>(null)
   const [cut, setCut] = useState<Box | undefined>()
   const [scale, setScale] = useState(1)
+  // A window narrower than the picture's own size, a phone's: the whole is shown at its own size and panned,
+  // since drawn smaller to fit it reads no better than the cut on the page.
+  const [pan, setPan] = useState(false)
   // The column the picture stands in, where it is narrower than the cut: a phone's. The cut is drawn smaller to fit it
   // rather than cut off at its edge, and a press still shows the whole picture at a size to read.
   const figure = useRef<HTMLElement>(null)
@@ -100,7 +104,9 @@ export function HelpFigure({ Picture, caption, t, width, column, small }: {
     const footHeight = foot.current ? foot.current.offsetHeight + parseFloat(view.getComputedStyle(foot.current).marginTop) : 0
     // The picture's own frame is two px of border, which is not enlarged.
     const room = { width: view.innerWidth * WINDOW_SHARE - across - 2, height: view.innerHeight * WINDOW_SHARE - down - footHeight - 2 }
-    setScale(fitScale({ width, height: picture.offsetHeight }, room))
+    const fits = fitScale({ width, height: picture.offsetHeight }, room)
+    setPan(room.width < width)
+    setScale(room.width < width ? 1 : fits)
   }
   useEffect(() => {
     const view = whole.current?.ownerDocument.defaultView
@@ -134,10 +140,13 @@ export function HelpFigure({ Picture, caption, t, width, column, small }: {
         <button type="button" className="help-figure__press" onClick={show} aria-label={`${t('help.enlarge')}: ${caption}`} title={t('help.enlarge')} />
       </div>
       <figcaption>{caption}</figcaption>
-      <dialog ref={whole} className="help-whole" aria-label={caption} onClick={(event) => { if (event.target === whole.current) hide() }}>
-        {/* Enlarged by zoom rather than a transform, so the dialog is laid out at the size it shows and its words are drawn sharp. */}
-        <div className="help-screen" aria-hidden="true" inert style={{ width: width * scale }}>
-          <div className="help-whole__picture" style={{ width, zoom: scale }}><Picture /></div>
+      <dialog ref={whole} className={`help-whole${pan ? ' help-whole--pan' : ''}`} aria-label={caption} onClick={(event) => { if (event.target === whole.current) hide() }}>
+        {/* Panned by the scroller round it, which a finger, the wheel and the arrow keys move; the picture itself is inert. */}
+        <div className="help-whole__pan" {...(pan ? { tabIndex: 0, role: 'group', 'aria-label': caption } : {})}>
+          {/* Enlarged by zoom rather than a transform, so the dialog is laid out at the size it shows and its words are drawn sharp. */}
+          <div className="help-screen" aria-hidden="true" inert style={{ width: width * scale }}>
+            <div className="help-whole__picture" style={{ width, zoom: scale }}><Picture /></div>
+          </div>
         </div>
         <p ref={foot} className="help-whole__foot">
           <span>{caption}</span>

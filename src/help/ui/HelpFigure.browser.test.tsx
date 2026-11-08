@@ -12,13 +12,15 @@ import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
 import type { Root } from 'react-dom/client'
 import { afterEach, describe, expect, it } from 'vitest'
+import { page } from 'vitest/browser'
 import { LanguageProvider } from '../../i18n/LanguageContext'
 import { translator } from '../../i18n'
 import type { Language } from '../../i18n/languages'
 import { tokenVariables } from '../../widgets/kit/tokens'
 import '../../widgets/kit/fonts/fonts.css'
 import './help.css'
-import { CHAPTER_WIDTH, START_COLUMN, START_WIDTH } from './HelpDocument'
+import { CHAPTER_WIDTH, HelpDocument, START_COLUMN, START_WIDTH } from './HelpDocument'
+import { helpOutline, loadHelpText } from '../registry'
 import { HelpFigure } from './HelpFigure'
 import { crosses, overlaps, textLines } from './pictureCut'
 import type { Box } from './pictureCut'
@@ -111,6 +113,8 @@ describe("the help's pictures, cut", () => {
   })
 
   it('enlarges the whole picture to most of the window, keeping its shape', async () => {
+    // A desktop's window, wider than the picture.
+    await page.viewport(1280, 800)
     const host = await draw('en', 100)
     const figure = host.querySelector('[data-figure="board"]') as HTMLElement
     ;(figure.querySelector('.help-figure__press') as HTMLButtonElement).click()
@@ -128,6 +132,7 @@ describe("the help's pictures, cut", () => {
     // Its shape kept, to the few per cent text laid out larger rounds its lines to.
     expect(Math.abs((picture.width - 2) / (picture.height - 2) / (CHAPTER_WIDTH / inline.offsetHeight) - 1)).toBeLessThan(0.05)
     expect(dialog.scrollHeight).toBeLessThanOrEqual(dialog.clientHeight + 1)
+    await page.viewport(414, 896)
   })
 
   it('scales a picture down to a phone\'s column rather than cutting it at the edge, and cuts it where a wide column does', async () => {
@@ -149,4 +154,54 @@ describe("the help's pictures, cut", () => {
     })
     expect(problems).toEqual([])
   })
+
+  it('shows the whole picture at its own size to pan, in a window narrower than the picture, with its caption under it', async () => {
+    await page.viewport(390, 700)
+    try {
+      const host = await draw('en', 100, 358)
+      const figure = host.querySelector('[data-figure="board"]') as HTMLElement
+      const dialog = figure.querySelector('dialog') as HTMLDialogElement
+      ;(figure.querySelector('.help-figure__press') as HTMLButtonElement).click()
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      const pan = dialog.querySelector('.help-whole__pan') as HTMLElement
+      const screen = dialog.querySelector('.help-screen') as HTMLElement
+      // At its own width, the size the chapter lays it out at, inside the window, and wider than the room it pans in.
+      expect(screen.offsetWidth).toBeGreaterThanOrEqual(CHAPTER_WIDTH)
+      expect(dialog.getBoundingClientRect().right).toBeLessThanOrEqual(innerWidth)
+      expect(pan.scrollWidth).toBeGreaterThan(pan.clientWidth)
+      expect(pan.tabIndex).toBe(0)
+      pan.scrollLeft = 200
+      expect(pan.scrollLeft).toBeGreaterThan(0)
+      // The caption stays in the dialog, under the picture.
+      const foot = (dialog.querySelector('.help-whole__foot') as HTMLElement).getBoundingClientRect()
+      expect(foot.top).toBeGreaterThanOrEqual(pan.getBoundingClientRect().bottom - 0.5)
+      expect(foot.bottom).toBeLessThanOrEqual(dialog.getBoundingClientRect().bottom + 0.5)
+    } finally {
+      await page.viewport(414, 896)
+    }
+  })
+})
+
+describe('the help at a phone\'s width', () => {
+  for (const language of ['en', 'nl', 'de'] as const) {
+    it(`does not scroll sideways for a section's example line, in ${language}`, async () => {
+      for (const [name, value] of Object.entries(tokenVariables('light'))) document.documentElement.style.setProperty(name, value)
+      const host = document.createElement('div')
+      host.style.cssText = 'width:358px'
+      document.body.append(host)
+      const text = await loadHelpText(language)
+      const root = createRoot(host)
+      mounted.push(root)
+      const outline = helpOutline().filter((chapter) => chapter.id === 'drawing')
+      flushSync(() => {
+        root.render(<LanguageProvider language={language}><HelpDocument outline={outline} text={{ ...text, start: undefined, background: {} }} t={translator(language)} hidden={false} /></LanguageProvider>)
+      })
+      await document.fonts.ready
+      const wide = Array.from(host.querySelectorAll('.help-more summary'))
+        .filter((summary) => summary.getBoundingClientRect().right > host.getBoundingClientRect().right + 0.5)
+        .map((summary) => `${summary.textContent}: ${summary.getBoundingClientRect().width} px`)
+      expect(host.querySelectorAll('.help-more summary').length).toBeGreaterThan(0)
+      expect(wide).toEqual([])
+    })
+  }
 })

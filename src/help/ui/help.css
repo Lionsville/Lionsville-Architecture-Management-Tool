@@ -129,10 +129,14 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 }
 .help-figure__press:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px }
 .help-whole {
-  max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); padding: 16px; overflow: auto;
+  box-sizing: border-box; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); padding: 16px; overflow: auto;
   border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink);
 }
 .help-whole::backdrop { background: var(--scrim) }
+/* The picture scrolls inside the dialog and the caption stays under it, in view. */
+.help-whole--pan[open] { display: flex; flex-direction: column; overflow: hidden }
+.help-whole--pan .help-whole__pan { flex: 0 1 auto; min-height: 0; min-width: 0; overflow: auto; touch-action: pan-x pan-y pinch-zoom }
+.help-whole--pan .help-whole__pan > .help-screen { flex: none }
 .help-whole__foot { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 10px 0 0; color: var(--ink-2); font-size: var(--t-small) }
 .help-whole__close {
   font: inherit; padding: 4px 12px; border: 1px solid var(--line-strong); border-radius: 4px;
@@ -165,7 +169,7 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 .help-steps { margin: 6px 0 0; padding-left: 22px }
 .help-steps li { margin: 2px 0 }
 .help-more { margin-top: 4px; font-size: var(--t-small) }
-.help-more summary { cursor: pointer; color: var(--ink-3); width: max-content }
+.help-more summary { cursor: pointer; color: var(--ink-3); width: fit-content; max-width: 100% }
 .help-more[open] summary { color: var(--ink-2) }
 .help-example {
   margin-top: 6px !important;
