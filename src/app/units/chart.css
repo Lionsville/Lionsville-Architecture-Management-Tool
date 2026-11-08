@@ -80,8 +80,8 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .org-link { all: unset; color: var(--accent); cursor: pointer; }
 .org-link:hover { text-decoration: underline; }
 .org-link[aria-disabled='true'] { color: var(--ink-3); }
-/* From far, a box says its name and what it hides; closer, who is in it. */
-[data-distance='far'] .org-row:not([data-exception]),
+/* From far, a box says its name and what it hides; closer, who is in it. All roles, asked for by name, says who at any distance. */
+[data-distance='far'] .chart-stage:not([data-people='all']) .org-row:not([data-exception]),
 [data-distance='far'] .org-said,
 [data-distance='far'] .org-actions { display: none; }
 

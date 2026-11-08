@@ -218,7 +218,7 @@ export function ChartPage(props: ChartPageProps) {
             {empty
               ? <EmptyChart day={day} language={language} add={firstUnit(newUnit, props.make, t)} t={t} />
               : (
-                <div ref={stage} className="chart-stage" style={{ zoom: zoom.zoom }}>
+                <div ref={stage} className="chart-stage" data-people={folds.people} style={{ zoom: zoom.zoom }}>
                   <ChartConnectors stage={stage} zoom={zoom.zoom} redraw={redraw} />
                   <OrgTree organisation={organisationName} focused={focused} drawing={drawing} />
                   <ChartLinesOverlay stage={stage} lines={lines.drawn} zoom={zoom.zoom} redraw={redraw} unitName={here.name} t={t} />

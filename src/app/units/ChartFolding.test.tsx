@@ -251,6 +251,8 @@ describe('a large organisation on its chart', () => {
     expect(leads()).toEqual([])
     say('People: Required roles', 'All roles')
     expect(leads()).toHaveLength(36)
+    // Asked for by name, every role is said at any distance: the stage says so to its rules.
+    expect(document.querySelector('.chart-stage')?.getAttribute('data-people')).toBe('all')
     cleanup()
     renderShell(<Harness folds={folds} />)
     expect(screen.getByRole('button', { name: 'People: All roles' })).toBeTruthy()
