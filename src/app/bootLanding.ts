@@ -51,7 +51,7 @@ export type BootLanding = {
   notice?: BootNotice
 }
 
-export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone' | 'example.kept'
+export type BootNotice = 'shell.placeUnknown' | 'shell.placeGone' | 'example.kept' | 'example.keptUnder'
 
 /**
  * The scope the boot read, turned into where the app starts.

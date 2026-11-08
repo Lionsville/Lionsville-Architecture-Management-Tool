@@ -635,11 +635,24 @@ function FrameBands({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | 
   return <BandStack bands={bands} />
 }
 
-/** On every screen of the example: nothing here is kept, and the two ways out. */
+/**
+ * On every screen of the example: nothing here is kept, and the two ways out —
+ * or, once *Keep* would file it under an organisation that holds work, that
+ * said before anything is written, with what stays behind.
+ */
 function useVisitBand(parts: ShellParts): StackedBand | undefined {
   const { services: { s } } = parts
   const visiting = parts.props.visiting
-  return useMemo(() => (visiting ? {
+  return useMemo(() => (visiting?.asking ? {
+    id: 'example', tone: 'looking',
+    title: <span data-testid="example-keep-question">{s('example.keepAsk')}</span>,
+    action: (
+      <>
+        <Button size="small" variant="primary" onClick={visiting.asking.onKeep} data-testid="example-keep-under">{s('example.keepUnder')}</Button>
+        <Button size="small" variant="quiet" onClick={visiting.asking.onCancel} data-testid="example-keep-not">{s('example.keepNot')}</Button>
+      </>
+    ),
+  } : visiting ? {
     id: 'example', tone: 'looking',
     title: <span data-testid="example-band">{s('example.band')}</span>,
     action: (

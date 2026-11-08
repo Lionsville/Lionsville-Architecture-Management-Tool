@@ -70,7 +70,7 @@ import type { BootDialog, BootLanding } from './bootLanding'
 import { App } from './App'
 import { BootFailure } from './BootFailure'
 import type { ChooseDestination } from './workingFileFlows'
-import { keepVisit } from '../projects/examples/copy'
+import { keepAsks, keepVisit } from '../projects/examples/copy'
 import type { ExampleOffer } from '../projects/examples/catalogue'
 
 /**
@@ -337,7 +337,7 @@ function waysIn(): readonly SourceWayIn[] {
  * untouched, because nothing was written to it.
  */
 let enteredFrom: { readonly shell: typeof shell; readonly sourced: boolean } | undefined
-let visiting: { readonly offer: ExampleOffer } | undefined
+let visiting: { readonly offer: ExampleOffer; readonly asking?: true } | undefined
 
 function addressVisiting(key: string | undefined): void {
   const search = new URLSearchParams(window.location.search)
@@ -366,7 +366,7 @@ function visitExample(offer: ExampleOffer): void {
   })
 }
 
-function leaveExample(notice?: 'example.kept'): void {
+function leaveExample(notice?: 'example.kept' | 'example.keptUnder'): void {
   if (!enteredFrom) return
   shell = enteredFrom.shell
   sourced = enteredFrom.sourced
@@ -377,19 +377,44 @@ function leaveExample(notice?: 'example.kept'): void {
   renderApp(stored, notice ? { initialProject: undefined, notice } : undefined)
 }
 
+function keptNot(cause: unknown): void {
+  shell.diagnostics.report({ level: 'error', where: 'source', message: 'the example was not kept', cause })
+  renderApp(stored, undefined, { cause })
+}
+
+/**
+ * *Keep this as my start*: into an organisation nobody has started, the example
+ * becomes it at once; into one that holds work it is filed under it, and that is
+ * asked first, saying what stays behind (`keepAsks`).
+ */
 function keepExample(): void {
+  if (!enteredFrom || !visiting) return
+  void keepAsks(enteredFrom.shell.repositories.scopes).then((asks) => {
+    if (!asks) { keepNow(); return }
+    if (!visiting) return
+    visiting = { ...visiting, asking: true }
+    renderApp(stored, undefined)
+  }).catch(keptNot)
+}
+
+function keepNow(): void {
   if (!enteredFrom || !visiting) return
   const { offer } = visiting
   void keepVisit(shell.repositories.scopes, enteredFrom.shell.repositories, { key: offer.key, label: offer.label, description: offer.description, path: offer.path })
-    .then(() => leaveExample('example.kept'))
-    .catch((cause: unknown) => {
-      shell.diagnostics.report({ level: 'error', where: 'source', message: 'the example was not kept', cause })
-      renderApp(stored, undefined, { cause })
-    })
+    .then((kept) => leaveExample(kept.under === undefined ? 'example.kept' : 'example.keptUnder'))
+    .catch(keptNot)
+}
+
+function keepNotNow(): void {
+  if (!visiting) return
+  visiting = { offer: visiting.offer }
+  renderApp(stored, undefined)
 }
 
 function visitingPart() {
-  return visiting ? { visiting: { name: visiting.offer.label, onKeep: keepExample, onLeave: () => leaveExample() } } : {}
+  if (!visiting) return {}
+  const asking = visiting.asking ? { asking: { onKeep: keepNow, onCancel: keepNotNow } } : {}
+  return { visiting: { name: visiting.offer.label, onKeep: keepExample, onLeave: () => leaveExample(), ...asking } }
 }
 
 function yourWorkPart() {

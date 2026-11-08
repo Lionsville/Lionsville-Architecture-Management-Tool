@@ -417,8 +417,15 @@ export type AppProps = {
   examples: readonly ExampleOffer[]
   /** Open an example as a place to visit, where this build can (`main.tsx`). */
   onVisitExample?: (offer: ExampleOffer) => void
-  /** This window is visiting an example: what it is called, and the two ways out. */
-  visiting?: { readonly name: string; readonly onKeep: () => void; readonly onLeave: () => void }
+  /**
+   * This window is visiting an example: what it is called, and the two ways out —
+   * and, while keeping it would file it under an organisation that holds work,
+   * the question that says so, with its two answers.
+   */
+  visiting?: {
+    readonly name: string; readonly onKeep: () => void; readonly onLeave: () => void
+    readonly asking?: { readonly onKeep: () => void; readonly onCancel: () => void }
+  }
   /** A new organisation is met by the first-run page and its first steps, rather than the home's cards. */
   offersFirstRun?: boolean
   /** Fresh ids. Injected because a clock inside a component cannot be tested. */

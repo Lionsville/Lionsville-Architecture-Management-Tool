@@ -134,19 +134,58 @@ export async function placeCopy(
 }
 
 /**
+ * What only the organisation reads (ADR-0036, ADR-0046): the operating model
+ * and the numeric scales. In a scope filed under the organisation nothing
+ * reads them, so a visit kept there leaves them behind, and the question
+ * before it says so (`keepAsks`). Never merged into the organisation's own:
+ * an organisation that holds work is somebody's, and its operating model —
+ * an empty one included — is theirs to shape.
+ *
+ * Principles are not among them: a scope's own are read there and in every
+ * scope below (ADR-0041), so they come along with the rest.
+ */
+export const ORGANISATION_ONLY = ['unitTypes', 'roles', 'responsibilities', 'operatingRules', 'aspectScales'] as const
+
+/** Where a visit was kept: as the organisation itself, or under it, as a scope of its own at `under`. */
+export type KeptVisit = { under?: ScopePath }
+
+/**
+ * Whether keeping a visit now would file it under the organisation rather than
+ * make it the organisation — and so whether there is anything to ask first:
+ * where it lands, and what it leaves behind. Read now, as the keep reads it.
+ */
+export async function keepAsks(scopes: ScopeReader): Promise<boolean> {
+  const [tree, root] = await Promise.all([scopes.tree(), readScope(scopes, ROOT_SCOPE)])
+  return organisationHoldsWork(summaryOf(tree), root)
+}
+
+/**
  * A visit kept: every scope the visit holds, as it stands with whatever was tried
  * there, placed where the example would land. Over work that appeared meanwhile it
- * is filed under a scope of its own, as a copy is, never over it.
+ * is filed under a scope of its own, as a copy is, never over it — and without
+ * what only the organisation reads ({@link ORGANISATION_ONLY}). Answers where it
+ * landed, decided as it was written: the question asked before may be older.
  */
 export async function keepVisit(
   from: ScopeReader,
   to: { scopes: ScopeReader & Pick<ScopeRepository, 'create' | 'apply' | 'remove'>; images: Pick<ImageRepository, 'put'> },
   named: { key: string; label: string; description: string; path: ScopePath },
-): Promise<void> {
+): Promise<KeptVisit> {
   const paths = nodesOf((await from.tree()).root).map((node) => node.address)
   const read = await Promise.all(paths.map((path) => readScope(from, path)))
   const scopes = read.filter((one): one is ScopeSnapshot => one !== undefined)
-  await placeCopy(to, await exampleCopyOver(to.scopes, { ...named, path: ROOT_SCOPE, fileAs: named.path, scopes }))
+  const copy = await exampleCopyOver(to.scopes, { ...named, path: ROOT_SCOPE, fileAs: named.path, scopes })
+  // Parents first, so the visit's organisation is the first scope placed, wherever it went.
+  const under = copy[0] && copy[0].path !== ROOT_SCOPE ? copy[0].path : undefined
+  await placeCopy(to, under === undefined ? copy : copy.map((scope) => (scope.path === under ? withoutOrganisationOnly(scope) : scope)))
+  return under === undefined ? {} : { under }
+}
+
+/** A scope with none of what only the organisation reads. */
+function withoutOrganisationOnly(scope: ScopeSnapshot): ScopeSnapshot {
+  const model = { ...scope.model }
+  for (const list of ORGANISATION_ONLY) delete model[list]
+  return { ...scope, model }
 }
 
 /** One cause's links to a scope below, re-addressed. Untouched where it has none. */
