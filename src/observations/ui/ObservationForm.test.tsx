@@ -139,6 +139,14 @@ describe('the new observation form', { timeout: 20_000 }, () => {
     expect(made).not.toHaveProperty('recordedBy')
   })
 
+  it('records on ⌘Enter from any field', () => {
+    const { onChange } = mount()
+    openForm()
+    fill('Labels print twice')
+    fireEvent.keyDown(screen.getByTestId('form-record'), { key: 'Enter', metaKey: true })
+    expect(lastChange(onChange).observations.at(-1)).toMatchObject({ title: 'Labels print twice' })
+  })
+
   it('says a title reads like a cause, and records it anyway', () => {
     const { onChange } = mount()
     openForm()

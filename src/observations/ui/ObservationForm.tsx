@@ -23,7 +23,7 @@
  * The form says what it wants and the page performs it: the page owns the lists,
  * the numbering and where the step lands.
  */
-import { useMemo, useState, type ReactNode } from 'react'
+import { useMemo, useState, type KeyboardEvent, type ReactNode } from 'react'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -131,6 +131,12 @@ export function splitLongTitle(title: string): { title: string; rest: string } {
   return space < 20 ? { title: text, rest: '' } : { title: text.slice(0, space).trim(), rest: text.slice(space + 1).trim() }
 }
 
+/** Escape is Cancel; ⌘Enter records from any field, the description's text included, where Return makes a new line. */
+function formKey(event: KeyboardEvent, cancel: () => void, record: () => void) {
+  if (event.key === 'Escape') { claimKey(event); cancel() }
+  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); record() }
+}
+
 /** What the Record button says it will make: *Record observation with 1 new cause and 1 link*. */
 export function recordLabel(rows: readonly CauseChoice[], s: Translate): string {
   const made = rows.filter((one) => one.kind === 'new').length
@@ -214,7 +220,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
         aria-label={s('observation.new')}
         noValidate
         onSubmit={(event) => { event.preventDefault(); record() }}
-        onKeyDown={(event) => { if (event.key === 'Escape') { claimKey(event); cancel() } }}
+        onKeyDown={(event) => formKey(event, cancel, record)}
       >
         {scopes.length > 1 && (
           <ExampleField

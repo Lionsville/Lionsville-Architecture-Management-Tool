@@ -12,10 +12,10 @@ export function NotedDialog({ label, onCancel, onConfirm, s }: { label: string |
   useEffect(() => { if (label) setReason('') }, [label])
   return (
     <Dialog
-      open={label !== undefined} title={s('observation.notedTitle')} onClose={onCancel}
+      open={label !== undefined} title={s('observation.notedTitle')} onClose={onCancel} onSubmit={() => onConfirm(reason.trim())}
       actions={{
         cancel: { onClick: onCancel, label: s('common.cancel') },
-        outcome: { onClick: () => onConfirm(reason.trim()), 'data-testid': 'noted-confirm', label: s('observation.notedConfirm') },
+        outcome: { type: 'submit', 'data-testid': 'noted-confirm', label: s('observation.notedConfirm') },
       }}
     >
       <p>{s('observation.notedBody', { name: label ?? '' })}</p>
