@@ -39,6 +39,7 @@
  */
 import type { LabelOutcome } from '../projects/label'
 import type { RecordKey } from '../model/recordKey'
+import type { StepSummary } from '../model/activity'
 import type { ScopeAddress, ScopeId, ScopeState } from '../projects/scopeState'
 
 /** An entry's identity: opaque, and handed back to read that entry. */
@@ -63,6 +64,13 @@ export type HistoryEntry = {
   via?: string
   /** What the entry says it was, where somebody said. */
   subject?: string
+  /**
+   * What its first steps did, oldest first, where the repository keeps no
+   * subject (a server cuts its entries as the steps come): the page drafts the
+   * line from them in the language on screen (`draftEntrySubject`). Absent
+   * where a subject is kept or nothing could be said.
+   */
+  summaries?: readonly StepSummary[]
   /** What people have called this version since (ADR-0008); usually none. */
   labels: readonly string[]
   /**

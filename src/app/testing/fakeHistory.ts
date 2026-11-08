@@ -28,6 +28,8 @@ export type FakeEntry = {
   /** The scope it is an entry of, by address. */
   address: ScopePath
   subject?: string
+  /** What its steps did, said by a source that keeps no subject. */
+  summaries?: HistoryEntry['summaries']
   at: number
   by?: string
   labels?: string[]
@@ -57,6 +59,7 @@ export function fakeHistory(
   const asEntry = (held: FakeEntry, scope: string): HistoryEntry => ({
     id: held.id, scope, at: held.at, by: held.by ?? 'W.', labels: [...(held.labels ?? [])],
     ...(held.subject !== undefined ? { subject: held.subject } : {}),
+    ...(held.summaries !== undefined ? { summaries: held.summaries } : {}),
   })
   const wrote = (held: FakeEntry, record: RecordKey | undefined) =>
     record === undefined || held.records === undefined || held.records.some((one) => sameRecord(one, record))

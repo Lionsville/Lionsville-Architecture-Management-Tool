@@ -46,6 +46,7 @@ import { PageState } from '../../widgets/kit/PageState'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import type { HistoryEntry } from '../../ports/HistoryRepository'
 import type { HistorySubject } from './subjects'
+import { draftEntrySubject } from '../../projects/entrySubject'
 import { changeLine } from './changeLine'
 import { changesFor } from './changesFor'
 import { LabelDialog } from './LabelDialog'
@@ -128,8 +129,10 @@ function titleOf(entry: HistoryEntry, s: Translate, language: Language): string 
   if (entry.moved) return s('activity.scopeMoved', { from: entry.moved.from, to: entry.moved.to })
   if (entry.subject) return entry.subject
   // A source that keeps no subject (a server cuts its entries as the steps come)
-  // still gives the row a name: the time and who, never an empty line.
-  return [clockTime(new Date(entry.at), language), entry.by, entry.via].filter(Boolean).join(' · ')
+  // still gives the row a name: the time, who, and what its steps did where the
+  // source said — never an empty line.
+  const what = entry.summaries?.length ? draftEntrySubject(entry.summaries, s).split('\n')[0] : undefined
+  return [clockTime(new Date(entry.at), language), entry.by, entry.via, what].filter(Boolean).join(' · ')
 }
 
 /** The counts in words: four glyphs with no words need the help. */

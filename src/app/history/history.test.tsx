@@ -319,6 +319,12 @@ describe('reading one back', () => {
     expect(within(await screen.findByTestId('history-list')).getByText(/ · W\. Simons$/)).toBeDefined()
   })
 
+  it('names one by what its steps did, after its time and who, where the source said that and no subject', async () => {
+    show([entry({ subject: undefined, summaries: [{ key: 'activity.elementAdded', name: 'Billing', count: 1 }, { key: 'activity.elementDeleted', name: 'Crews' }] })])
+    await openIt()
+    expect(within(await screen.findByTestId('history-list')).getByText(/ · W\. Simons · Added Billing, Deleted Crews$/)).toBeDefined()
+  })
+
   it('says so when the scope was not there then', async () => {
     show([entry()])
     await openIt()
