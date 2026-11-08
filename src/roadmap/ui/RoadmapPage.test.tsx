@@ -177,6 +177,13 @@ describe('the axis', () => {
     expect(screen.queryByTestId('row-app-4')).toBeNull()
   })
 
+  it('offers how the ruler works behind a ?, not as lines in the corner, while it has few rows', () => {
+    const elements = [element('app-1', 'App 1', { lifecycleDates: { live: '2027-01-01' } })]
+    setup({ model: model({ elements, transitions: [] }) })
+    expect(screen.getByRole('button', { name: 'How the ruler works' })).toBeTruthy()
+    expect(screen.queryByText(/Drag the handle/)).toBeNull()
+  })
+
   it('can hide what is done and abandoned', () => {
     setup({ model: model({ transitions: [PLAN, { ...PLAN, id: 'tr-2', number: 2, title: 'Over', status: 'done' }] }) })
     expect(screen.getByTestId('plan-tr-2')).toBeTruthy()

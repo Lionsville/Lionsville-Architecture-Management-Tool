@@ -135,7 +135,9 @@
   padding: 2px var(--s-3);
   border-right: 1px solid var(--line-strong);
 }
-.kit-time__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A name wraps to a second line rather than losing its end beside the row's aside: the row grows, the lane centres. */
+.kit-time__label { min-width: 0; overflow: hidden; }
+.kit-time__labeltext { overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .kit-time__labelpress { min-height: var(--target-min); padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: start; cursor: pointer; }
 .kit-time__labelpress:hover { text-decoration: underline; }
 .kit-time__labelpress:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }

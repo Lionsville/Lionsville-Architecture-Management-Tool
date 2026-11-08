@@ -22,7 +22,8 @@ import type { DesignElement, DesignModel, ElementId, Transition } from '../../mo
 import { useStrings } from '../../i18n'
 import { PageDialog } from '../../widgets/PageDialog'
 import { PageClose } from '../../widgets/PageClose'
-import { Button } from '../../widgets/kit/Button'
+import { Button, IconButton } from '../../widgets/kit/Button'
+import { HelpIcon } from '../../widgets/icons'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import { FindField } from '../../widgets/kit/FindField'
@@ -227,7 +228,7 @@ export function RoadmapPage(props: RoadmapPageProps) {
                     data-guide="roadmap.axis"
                     head={rowCount >= FIND_FROM_ROWS
                       ? <FindField fill label={t('roadmap.find')} value={find} onChange={setFind} />
-                      : <span>{t('roadmap.help')}</span>}
+                      : <IconButton label={t('roadmap.helpName')} tip={t('roadmap.help')} size="small" data-testid="roadmap-help"><HelpIcon size={16} /></IconButton>}
                   >
                     <PlanRows plans={roadmap.transitions} hideEnded={hideEnded} onHideEnded={setHideEnded} context={context} />
                     <ApplicationRows tracks={roadmap.tracks} total={model.elements.filter((one) => one.kind === 'application').length} belowLabel={labelOf} context={context} />

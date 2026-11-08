@@ -149,6 +149,7 @@ export const DE: Record<keyof typeof EN, string> = {
 
   // The roadmap on its ruler and the plan as one document (4.0).
   'roadmap.help': 'Ziehen Sie den Griff, um das Board an einem Tag zu zeigen. Es wird nichts gespeichert. ⌘ oder Strg mit dem Rad zoomt; Umschalt mit dem Rad verschiebt.',
+  'roadmap.helpName': 'Wie das Lineal funktioniert',
   'roadmap.find': 'Eine Zeile suchen',
   'roadmap.plansUndated': '{count}, und {undated} ohne Datum',
   'roadmap.hideEnded': 'Erledigte und abgebrochene ausblenden',

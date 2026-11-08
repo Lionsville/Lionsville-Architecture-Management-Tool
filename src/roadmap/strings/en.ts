@@ -166,6 +166,7 @@ export const EN = {
 
   // The roadmap on its ruler and the plan as one document (4.0).
   'roadmap.help': 'Drag the handle to show the board on a day. Nothing is saved. ⌘ or Ctrl and the wheel zooms; Shift and the wheel scrolls.',
+  'roadmap.helpName': 'How the ruler works',
   'roadmap.find': 'Find a row',
   'roadmap.plansUndated': '{count}, and {undated} with no dates',
   'roadmap.hideEnded': 'Hide done and abandoned',

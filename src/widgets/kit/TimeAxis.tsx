@@ -393,8 +393,8 @@ export function TimeAxisRow({ label, aside, children, onOpen, picked, level = 0,
     <div className="kit-time__row" data-picked={picked} data-level={level || undefined} data-testid={testId}>
       <div className="kit-time__name">
         {onOpen
-          ? <button type="button" className="kit-time__label kit-time__labelpress" title={title} aria-current={picked === 'self' || undefined} onClick={onOpen}>{label}</button>
-          : <span className="kit-time__label" title={title}>{label}</span>}
+          ? <button type="button" className="kit-time__label kit-time__labelpress" title={title} aria-current={picked === 'self' || undefined} onClick={onOpen}><span className="kit-time__labeltext">{label}</span></button>
+          : <span className="kit-time__label" title={title}><span className="kit-time__labeltext">{label}</span></span>}
         {aside && <span className="kit-time__aside">{aside}</span>}
       </div>
       <div className="kit-time__lane">{children}</div>
