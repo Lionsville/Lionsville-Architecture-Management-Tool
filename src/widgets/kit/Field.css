@@ -64,7 +64,7 @@
 .kit-props__add .kit-button { color: var(--accent); }
 
 .kit-prop { display: flex; align-items: flex-start; gap: var(--s-2); min-height: var(--row-prop); }
-.kit-prop__label { flex: none; width: var(--label-col); padding-block: 3px; color: var(--ink-3); font-size: var(--t-small); line-height: 1.125rem; overflow-wrap: anywhere; }
+.kit-prop__label { flex: none; width: var(--label-col); padding-block: 3px; color: var(--ink-3); font-size: var(--t-small); line-height: 1.125rem; overflow-wrap: break-word; }
 .kit-prop__value { flex: 1; min-width: 0; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--s-1); }
 .kit-prop__read,
 .kit-prop__press {
@@ -74,7 +74,8 @@
   padding-block: 2px;
   color: var(--ink);
   line-height: 1.25rem;
-  overflow-wrap: anywhere;
+  /* At spaces, and inside a word only where the word alone is wider than the column: "Manageme|nt" read as two words. */
+  overflow-wrap: break-word;
 }
 .kit-prop__press {
   flex: 0 1 auto;
