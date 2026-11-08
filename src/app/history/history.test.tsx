@@ -190,10 +190,13 @@ describe('from the menu bar', () => {
 
 describe('the History page as a place', () => {
   it('has an address of its own, which Back leaves and which opens it again', async () => {
+    // The window outlives a test: an address an earlier one left would say #/-/home before this app
+    // has written its home, and History would then be its first place, written over that entry.
+    window.history.replaceState(null, '', window.location.pathname)
     const view = showDesktop([{ id: 'abc1234', address: '', subject: 'Before the merger', at: 1_757_000_000_000, by: 'W. Simons', state: { ...project(), path: '' } }], { open: false })
     await screen.findByTestId('shell-toolbar')
     await view.settled()
-    // The home is a place of its own first, so the History page is a step from it.
+    // The home is a place of its own first, written by this app, so the History page is a step from it.
     await waitFor(() => expect(window.location.hash).toBe('#/-/home'), { timeout: 10000 })
     view.send({ type: 'history' })
     await screen.findByTestId('history-list')
