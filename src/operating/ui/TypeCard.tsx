@@ -26,7 +26,7 @@ export type TypeCardProps = {
   /** The roles its slots name, by id; a slot naming one not there shows the id. */
   roles: ReadonlyMap<RoleId, Pick<Role, 'id' | 'name' | 'manages' | 'until'>>
   look?: Look
-  /** The count at the end of the name's line: *14 units*. */
+  /** The count, first under the name: *14 units*. Beside a long name it dropped to a line of its own, beside a short one it did not. */
   count?: string
   /** What is said under the name, joined by a dot: its limit, its last day. */
   meta?: readonly string[]
@@ -64,9 +64,8 @@ export function TypeCard(props: TypeCardProps) {
           : <span className="op-card__name">{type.name}</span>)}
         {type.spans && <span className="op-badge">{t('operating.spansBadge')}</span>}
         {fresh && <span className="op-badge" data-fresh="">{t('operating.newBadge')}</span>}
-        {count && <span className="op-card__count">{count}</span>}
       </div>
-      {meta.length > 0 && <div className="op-card__meta">{meta.join(' · ')}</div>}
+      {(count || meta.length > 0) && <div className="op-card__meta">{[...(count ? [count] : []), ...meta].join(' · ')}</div>}
       {place && <span className="kit-hidden">{place}</span>}
       <div className="op-card__slots">
         {type.slots.length === 0 && <span className="op-small">{props.noSlots ?? t('operating.noSlots')}</span>}

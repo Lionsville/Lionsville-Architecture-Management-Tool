@@ -100,12 +100,23 @@ function across(from: CardBox, to: CardBox): string {
   return `M${x1},${y1} C${mid},${y1} ${mid},${y2} ${x2},${y2}`
 }
 
+/** How far a line bends round a corner between its runs. */
+const BEND = 8
+
+/**
+ * From the rail down the middle of the gap between two lanes, straight, and into the card's side: a curve from the rail
+ * to the card swept over the next lane's heading on its way down.
+ */
+function down(x: number, rail: number, x2: number, y2: number): string {
+  return `Q${x},${rail} ${x},${rail + BEND} L${x},${y2 - BEND} Q${x},${y2} ${x2},${y2}`
+}
+
 function alongRail(from: CardBox, to: CardBox, rail: number): string {
   const x1 = from.right
   const y1 = from.top + LINE_ANCHOR
   const x2 = to.left
   const y2 = to.top + LINE_ANCHOR
-  return `M${x1},${y1} C${x1 + 18},${y1} ${x1 + 18},${rail} ${x1 + 36},${rail} L${x2 - 36},${rail} C${x2 - 18},${rail} ${x2 - 18},${y2} ${x2},${y2}`
+  return `M${x1},${y1} Q${x1 + 18},${y1} ${x1 + 18},${y1 - BEND} L${x1 + 18},${rail + BEND} Q${x1 + 18},${rail} ${x1 + 36},${rail} L${x2 - 36},${rail} ${down(x2 - 18, rail, x2, y2)}`
 }
 
 /**
@@ -119,7 +130,7 @@ function backUp(from: CardBox, to: CardBox, rail: number): string {
   const y1 = from.top + LINE_ANCHOR
   const x2 = to.right
   const y2 = to.top + LINE_ANCHOR
-  return `M${x1},${y1} C${x1 + 18},${y1} ${x1 + 18},${rail} ${x1},${rail} L${x2 + 36},${rail} C${x2 + 18},${rail} ${x2 + 18},${y2} ${x2},${y2}`
+  return `M${x1},${y1} C${x1 + 18},${y1} ${x1 + 18},${rail} ${x1},${rail} L${x2 + 36},${rail} ${down(x2 + 18, rail, x2, y2)}`
 }
 
 function toItself(box: CardBox): string {
