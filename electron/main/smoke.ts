@@ -50,6 +50,7 @@ import { PAGE_STATE_SCRIPT, showsWindow, windowSays, type PageState } from './sm
 import { SCOPE_FORMAT_VERSION } from '../../src/adapters/folder/format/scopeHeader'
 import { writePlace } from '../../src/agent/place'
 import { USER_DATA_NAME } from '../../src/platform/userData'
+import { EN } from '../../src/platform/strings/en'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 
 export type SmokeResult = { name: string; ok: boolean; detail: string }
@@ -68,14 +69,12 @@ const STEP_TIMEOUT_MS = 20_000
  */
 const EXAMPLE = {
   organisation: 'Acme Logistics',
-  // On the desktop a fresh folder's root is already named — after the folder
-  // (`upgradeFormat` in main.tsx) — so the example is filed under a scope of
-  // its own rather than becoming the root.
-  path: 'acme-logistics',
-  landscape: 'acme-logistics/application-landscape',
+  // Kept into an empty folder, the example becomes the organisation: its
+  // root is the folder's root, and its landscape is filed directly under it.
+  landscape: 'application-landscape',
   landscapeName: 'Application landscape',
-  /** The root, the example's organisation, its landscape and its platforms (ADR-0013), its Topics place and the integration topic (ADR-0042). */
-  scopes: 6,
+  /** The organisation, its landscape and its platforms (ADR-0013), its Topics place and the integration topic (ADR-0042). */
+  scopes: 5,
   applications: 20,
   activeDiagram: 'landscape',
 }
@@ -572,7 +571,7 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
 }
 
 /** Where the run keeps a scope a part of which will not read, holding one drawing. */
-const LATER = 'acme-logistics/application-landscape/smoke-damaged'
+const LATER = 'application-landscape/smoke-damaged'
 
 /** That scope, written straight to the folder, its model half written, as a crash would have left it. */
 async function writeLaterScope(run: DrawingRun): Promise<void> {
@@ -666,13 +665,23 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   const first = await grant('a')
   const second = await grant('b')
 
-  /** Tell the renderer to work in a folder, and wait for that folder's home. */
-  const openFolder = async (directory: DesktopDirectory): Promise<string> => {
+  /**
+   * Tell the renderer to work in a folder, and wait for what it opens on: an
+   * empty folder's first page, which says the folder it keeps work in, or the
+   * home of the organisation the folder holds, by that organisation's name.
+   */
+  const openFolder = async (directory: DesktopDirectory, holds?: string): Promise<string> => {
     sendCommand({ type: 'reopen', key: directory.root })
+    if (holds === undefined) {
+      return page(waitFor(`(() => {
+        const first = document.querySelector('[data-testid="first-run-page"]')
+        return first && (first.textContent || '').includes(${JSON.stringify(directory.name)}) && 'its first page is up'
+      })()`, `the first page of ${directory.name}`))
+    }
     return page(waitFor(`(() => {
       const name = document.querySelector('[data-testid="organisation-name"]')
-      return name && (name.textContent || '').includes(${JSON.stringify(directory.name)}) && 'its home is up'
-    })()`, `the home of ${directory.name}`))
+      return name && (name.textContent || '') === ${JSON.stringify(holds)} && 'its home is up'
+    })()`, `the home of ${holds} in ${directory.name}`))
   }
 
   /**
@@ -687,7 +696,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
       button.click()
       await ${waitFor("document.querySelector('[data-testid=\"example-keep\"]') && 'in the example'", 'the example to open')}
       document.querySelector('[data-testid="example-keep"]').click()
-      await ${waitFor("!document.querySelector('[data-testid=\"example-keep\"]') && document.querySelector('[data-testid=\"organisation-name\"]') && 'kept'", 'the example to be kept')}
+      await ${waitFor(`!document.querySelector('[data-testid="example-keep"]') && (document.querySelector('[data-testid="organisation-name"]') || {}).textContent === ${JSON.stringify(EXAMPLE.organisation)} && 'kept'`, 'the example to be kept as the organisation')}
       location.hash = ${JSON.stringify(`#/${EXAMPLE.landscape}/-/board/landscape`)}
       return await ${waitFor("document.querySelector('.react-flow') && 'canvas mounted'", 'the canvas to mount')}
     })()`)
@@ -715,12 +724,11 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   const exists = (directory: DesktopDirectory, path: string) =>
     stat(join(directory.root, path)).then(() => true, () => false)
 
-  // The export test presses the real Save PNG button, and the real button
-  // downloads. Cancel it in the session rather than in the page: the DOM trick
-  // that used to do this depended on the editor using an anchor, and when it
-  // did not, macOS put a save panel in front of the window and the run sat there
-  // waiting for a human. Proving the blob exists is the point; writing it to
-  // someone's Downloads folder is not.
+  // The export test presses the real Save PNG button, which saves through the
+  // host and has its dialog answered there. A download anywhere in this run is
+  // still cancelled in the session: once, an export downloaded, macOS put a
+  // save panel in front of the window and the run sat there waiting for a
+  // human, and writing to someone's Downloads folder is never the point.
   window.webContents.session.on('will-download', (event) => event.preventDefault())
 
   // --- the platform: what app:// has to give the renderer ---------------------
@@ -752,7 +760,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     }
     const under = (name: string) => menu.items.find((held) => held.label === name)?.submenu?.items.map((held) => held.label) ?? []
     const help = under('Help')
-    for (const want of ['Open the Help', 'Keyboard Shortcuts…', 'Check for Updates…']) {
+    for (const want of [EN['menu.userManual'], 'Keyboard Shortcuts…', 'Check for Updates…']) {
       if (!help.includes(want)) throw new Error(`no "${want}" in Help: ${help.join(' · ') || labels.join(' · ')}`)
     }
     const edit = under('Edit')
@@ -840,19 +848,22 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   // --- a folder to work in (ADR-0003, ADR-0012 §1) ----------------------------
   section('a folder to work in')
 
-  results.push(await checkHere('the app takes a folder and shows its root, named after the folder', async () => {
+  results.push(await checkHere('the app takes an empty folder and opens on its first page, saying where the work is kept', async () => {
     const seen = await openFolder(first)
-    // An empty folder is an organisation named after the folder, with nothing
-    // under it and the example on offer as the way to have something.
+    // An empty folder is an organisation nobody has started: its first page
+    // says the folder the work will be kept in, asks for a name, and offers
+    // the example as the way to have something. Nothing is written yet.
     const shown = JSON.parse(await page(`JSON.stringify({
-      name: (document.querySelector('[data-testid="organisation-name"]') || {}).textContent || '',
+      named: Boolean(document.querySelector('[data-testid="organisation-name-field"]')),
       example: Boolean(document.querySelector('[data-testid="open-example"]')),
       rows: document.querySelectorAll('[data-guide="org.tree.row"]').length,
-    })`)) as { name: string; example: boolean; rows: number }
-    if (shown.name !== first.name) throw new Error(`the root is called ${JSON.stringify(shown.name)}`)
+    })`)) as { named: boolean; example: boolean; rows: number }
+    if (!shown.named) throw new Error('the first page asks for no name')
     if (!shown.example) throw new Error('the example is not on offer')
     if (shown.rows) throw new Error(`${shown.rows} scopes under an empty root`)
-    return `${first.root} — ${seen}, root "${shown.name}", nothing under it, example on offer`
+    const listing = (await readdir(first.root)).filter((name) => !name.startsWith('.'))
+    if (listing.length) throw new Error(`the empty folder already holds ${listing.join(', ')}`)
+    return `${first.root} — ${seen}, a name asked for, nothing under it or on disk, example on offer`
   }))
 
   results.push(await checkHere('the example becomes the organisation, as the format writes it', async () => {
@@ -861,14 +872,14 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     // organisation at the root, the landscape filed under it, a view as two
     // files, a description as markdown, a decision and a plan as numbered
     // records. Read off the disk, not asked of the app.
-    const organisation = JSON.parse(await onDisk(first, `${EXAMPLE.path}/scope.json`)) as { name?: string; type?: string; version?: number }
+    const organisation = JSON.parse(await onDisk(first, 'scope.json')) as { name?: string; type?: string; version?: number }
     if (organisation.type !== 'lionsville-architecture' || organisation.version !== SCOPE_FORMAT_VERSION) throw new Error(`header: ${JSON.stringify(organisation)}`)
     if (organisation.name !== EXAMPLE.organisation) throw new Error(`the example's organisation is called ${organisation.name}`)
     const landscape = JSON.parse(await onDisk(first, `${EXAMPLE.landscape}/scope.json`)) as { name?: string }
     if (landscape.name !== EXAMPLE.landscapeName) throw new Error(`the landscape is called ${landscape.name}`)
     for (const path of [
-      `${EXAMPLE.path}/model.json`,
-      `${EXAMPLE.path}/diagrams/business-architecture.json`,
+      'model.json',
+      'diagrams/business-architecture.json',
       `${EXAMPLE.landscape}/model.json`,
       `${EXAMPLE.landscape}/diagrams/landscape.json`,
       `${EXAMPLE.landscape}/diagrams/landscape.geometry.json`,
@@ -879,7 +890,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     const plans = await readdir(join(first.root, EXAMPLE.landscape, 'transitions'))
     if (!decisions.some((name) => /^0001-.*\.md$/.test(name))) throw new Error(`decisions/: ${decisions.join(', ')}`)
     if (!plans.some((name) => /^0001-.*\.md$/.test(name))) throw new Error(`transitions/: ${plans.join(', ')}`)
-    return `${seen}; ${EXAMPLE.path}/ + ${EXAMPLE.landscape}/, ${decisions.length} decisions, ${plans.length} plans on disk`
+    return `${seen}; the organisation at the root + ${EXAMPLE.landscape}/, ${decisions.length} decisions, ${plans.length} plans on disk`
   }))
 
   // Back goes to the place before (ADR-0033): the landscape was opened from a
@@ -976,51 +987,74 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   // `getViewportForBounds` a padding in pixels where it wants a ratio, which
   // pinned the capture at that function's 0.1 zoom floor. A tenth-scale drawing
   // in a full-size bitmap passes "a PNG arrived" and is unreadable on paper.
-  results.push(await check(window, 'PNG export settles at a size worth printing', `
-    (async () => {
-      const button = document.querySelector('[data-testid="board-export"]')
-      if (!button) throw new Error('no export button found')
-      const seen = []
-      const createObjectURL = URL.createObjectURL.bind(URL)
-      URL.createObjectURL = (blob) => { seen.push(blob); return createObjectURL(blob) }
-      ${'' /* Tidy, one check above, moves every node. Capturing while it settles
-              photographs a layout nobody would recognise. */}
-      const positions = () => [...document.querySelectorAll('.react-flow__node')]
-        .map((n) => n.style.transform).join('|')
-      let last = ''
-      for (let settled = 0; settled < 3; settled += 1) {
-        await new Promise((r) => setTimeout(r, 400))
-        const now = positions()
-        if (now !== last) { settled = -1; last = now }
-      }
-      const started = Date.now()
-      button.click()
-      const confirm = () => [...document.querySelectorAll('[role="dialog"] button')]
-        .find((b) => /^(Save PNG|Save anyway|PNG bewaren|Toch bewaren)$/.test((b.textContent || '').trim()))
-      await ${waitFor("confirm() && 'open'", 'the export dialog')}
-      confirm().click()
-      await ${waitFor("!document.querySelector('[role=\"dialog\"]') && seen.some((b) => b.type === 'image/png') && 'arrived'", 'the export to leave')}
-      URL.createObjectURL = createObjectURL
-      const png = seen.filter((b) => b.type === 'image/png').sort((a, b) => b.size - a.size)[0]
-      const bitmap = await createImageBitmap(png)
-      const elapsed = Date.now() - started
-      if (Math.max(bitmap.width, bitmap.height) < 3000) {
-        throw new Error('only ' + bitmap.width + 'x' + bitmap.height + ' px: too coarse to print')
-      }
-      ${'' /* The size proves a bitmap, not a drawing: a capture that painted nothing
-              comes out just as large. A board has a background, boxes, ink and
-              lines, so its picture has many colours in it. */}
-      const sample = document.createElement('canvas')
-      sample.width = 200
-      sample.height = 134
-      const inked = sample.getContext('2d', { willReadFrequently: true })
-      inked.drawImage(bitmap, 0, 0, sample.width, sample.height)
-      const { data } = inked.getImageData(0, 0, sample.width, sample.height)
-      const colours = new Set()
-      for (let at = 0; at < data.length; at += 4) colours.add((data[at] << 16) | (data[at + 1] << 8) | data[at + 2])
-      if (colours.size < 32) throw new Error('only ' + colours.size + ' colours in the picture: nothing was drawn')
-      return colours.size + ' colours, ' + png.size + ' bytes, ' + bitmap.width + 'x' + bitmap.height + ' px in ' + elapsed + ' ms'
-    })()`))
+  results.push(await checkHere('PNG export settles at a size worth printing, saved where the person says', async () => {
+    // The picture leaves through the host's save (`files:saveDocument`), as
+    // a person's export does: its dialog is answered here with a path in this
+    // run's own folder, as the folders of this run are granted without one.
+    const showSaveDialog = dialog.showSaveDialog
+    const offered: string[] = []
+    const saved = join(workIn, 'smoke-board.png')
+    dialog.showSaveDialog = ((options: { defaultPath?: string }) => {
+      offered.push(options.defaultPath ?? '')
+      return Promise.resolve({ canceled: false, filePath: saved })
+    }) as unknown as typeof dialog.showSaveDialog
+    let png: Buffer
+    const started = Date.now()
+    try {
+      await page(`
+        (async () => {
+          const button = document.querySelector('[data-testid="board-export"]')
+          if (!button) throw new Error('no export button found')
+          ${'' /* Tidy, one check above, moves every node. Capturing while it settles
+                  photographs a layout nobody would recognise. */}
+          const positions = () => [...document.querySelectorAll('.react-flow__node')]
+            .map((n) => n.style.transform).join('|')
+          let last = ''
+          for (let settled = 0; settled < 3; settled += 1) {
+            await new Promise((r) => setTimeout(r, 400))
+            const now = positions()
+            if (now !== last) { settled = -1; last = now }
+          }
+          button.click()
+          const confirm = () => [...document.querySelectorAll('[role="dialog"] button')]
+            .find((b) => /^(Save PNG|Save anyway|PNG bewaren|Toch bewaren)$/.test((b.textContent || '').trim()))
+          await ${waitFor("confirm() && 'open'", 'the export dialog')}
+          confirm().click()
+          return await ${waitFor(`!document.querySelector('[role="dialog"]') && 'closed'`, 'the export dialog to close')}
+        })()`)
+      // Whole on the disk: a PNG ends with its IEND chunk.
+      png = await until('the picture on the disk', () => readFile(saved).catch(() => Buffer.alloc(0)),
+        (held) => held.subarray(-8).toString('latin1', 0, 4) === 'IEND')
+    } finally {
+      dialog.showSaveDialog = showSaveDialog
+    }
+    const elapsed = Date.now() - started
+    if (offered.length !== 1 || !offered[0].endsWith('.png')) throw new Error(`the dialog was offered ${JSON.stringify(offered)}`)
+    if (png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error(`${saved} is not a PNG`)
+    // The size from the header, where a PNG keeps it: width and height, big-endian, after the IHDR tag.
+    const width = png.readUInt32BE(16)
+    const height = png.readUInt32BE(20)
+    if (Math.max(width, height) < 3000) throw new Error(`only ${width}x${height} px: too coarse to print`)
+    // The size proves a bitmap, not a drawing: a capture that painted nothing
+    // comes out just as large. A board has a background, boxes, ink and lines,
+    // so its picture has many colours in it — counted in the page, which can decode it.
+    const colours = Number(await page(`
+      (async () => {
+        const bytes = Uint8Array.from(atob(${JSON.stringify(png.toString('base64'))}), (c) => c.charCodeAt(0))
+        const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/png' }))
+        const sample = document.createElement('canvas')
+        sample.width = 200
+        sample.height = 134
+        const inked = sample.getContext('2d', { willReadFrequently: true })
+        inked.drawImage(bitmap, 0, 0, sample.width, sample.height)
+        const { data } = inked.getImageData(0, 0, sample.width, sample.height)
+        const colours = new Set()
+        for (let at = 0; at < data.length; at += 4) colours.add((data[at] << 16) | (data[at + 1] << 8) | data[at + 2])
+        return colours.size
+      })()`))
+    if (colours < 32) throw new Error(`only ${colours} colours in the picture: nothing was drawn`)
+    return `${basename(offered[0])}: ${colours} colours, ${png.length} bytes, ${width}x${height} px in ${elapsed} ms`
+  }))
 
   // --- an agent as a peer of the menu (ADR-0007) ------------------------------
   //
@@ -1123,9 +1157,9 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     const tree = await agent<{ total: number; open: string; scopes: { path: string; name: string; views: number }[] }>('scopes.list')
     if (tree.total !== EXAMPLE.scopes) throw new Error(`${tree.total} scopes: ${tree.scopes.map((s) => s.path || '(root)').join(', ')}`)
     const root = tree.scopes.find((s) => s.path === '')
-    if (root?.name !== first.name) throw new Error(`the root is ${root?.name}`)
-    const organisation = tree.scopes.find((s) => s.path === EXAMPLE.path)
-    if (organisation?.name !== EXAMPLE.organisation) throw new Error(`${EXAMPLE.path} is ${organisation?.name}`)
+    if (root?.name !== EXAMPLE.organisation) throw new Error(`the root is ${root?.name}`)
+    const landscape = tree.scopes.find((s) => s.path === EXAMPLE.landscape)
+    if (landscape?.name !== EXAMPLE.landscapeName) throw new Error(`${EXAMPLE.landscape} is ${landscape?.name}`)
     if (tree.open !== EXAMPLE.landscape) throw new Error(`open is ${JSON.stringify(tree.open)}`)
     return tree.scopes.map((s) => `${s.path || '(root)'} "${s.name}" ${s.views} views`).join('; ')
   }))
@@ -1244,17 +1278,17 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   // test, because none of it is under `App`; it is what mounts `App`.
   section('a second folder')
 
-  results.push(await checkHere('switching to an empty folder shows an empty root, and copies nothing into it', async () => {
+  results.push(await checkHere('switching to an empty folder opens on its first page, and copies nothing into it', async () => {
     const seen = await openFolder(second)
     const listing = (await readdir(second.root)).filter((name) => !name.startsWith('.'))
     // Nothing of the first folder may arrive: not the organisation, not the
     // landscape, not a `scope.json` written for the example.
     if (listing.length) throw new Error(`the new folder already holds ${listing.join(', ')}`)
     const shown = JSON.parse(await page(`JSON.stringify({
-      name: (document.querySelector('[data-testid="organisation-name"]') || {}).textContent || '',
+      home: Boolean(document.querySelector('[data-testid="organisation-name"]')),
       rows: document.querySelectorAll('[data-guide="org.tree.row"]').length,
-    })`)) as { name: string; rows: number }
-    if (shown.name !== second.name) throw new Error(`the root is called ${JSON.stringify(shown.name)}`)
+    })`)) as { home: boolean; rows: number }
+    if (shown.home) throw new Error('a home is up over a folder that holds nothing: the old organisation is still up')
     if (shown.rows) throw new Error(`${shown.rows} scopes shown under a root that has none: the old tree is still up`)
     const refused = await client!.callTool({ name: 'project.current', arguments: {} }) as ToolAnswer
     if (!refused.isError) throw new Error('the agent still answers for the scope that was open in the other folder')
@@ -1289,19 +1323,17 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
   }))
 
   results.push(await checkHere('switching back reads the first folder again, with what was saved there', async () => {
-    await openFolder(first)
+    await openFolder(first, EXAMPLE.organisation)
     // Its home, not its canvas: nothing is open until a person opens it, and
     // they open it the way the screen offers. A row of the tree goes to that
     // scope's home, where its boards are listed by name; the board is opened
     // from there. Each press is on something scrolled into view first, as a
     // person would have to: the tree starts below the fold of a laptop window.
-    // The tree starts folded too (3.7.4), so the landscape has no row until the
-    // scope it is filed under is opened, with the press on its chevron.
+    // The tree starts folded (3.7.4), but the landscape is filed directly
+    // under the organisation, so its row is there from the start.
     await page(`
       (async () => {
         const press = (element) => { element.scrollIntoView({ block: 'center' }); element.click() }
-        await ${waitFor(`document.querySelector('[data-testid="fold-${EXAMPLE.path}"]') && 'fold'`, 'the example scope with its chevron')}
-        if (!document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]')) press(document.querySelector('[data-testid="fold-${EXAMPLE.path}"]'))
         await ${waitFor(`document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]') && 'row'`, 'the landscape row')}
         press(document.querySelector('[data-testid="home-${EXAMPLE.landscape}"]'))
         await ${waitFor(`(document.querySelector('[data-testid="organisation-name"]') || {}).textContent === ${JSON.stringify(EXAMPLE.landscapeName)}
@@ -1318,9 +1350,8 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     const theirs = await registerTotal(ADDED_ELSEWHERE)
     if (theirs.total !== 0) throw new Error(`"${ADDED_ELSEWHERE}" from the second folder is in the first folder's register`)
     // And the second folder is as it was left: a switch reads, it never
-    // removes. (Its root is named after the folder and is not a file; the
-    // example under it is.)
-    if (!await exists(second, `${EXAMPLE.path}/scope.json`)) throw new Error('the second folder lost the example on the way back')
+    // removes. (The example kept there is its organisation, at its root.)
+    if (!await exists(second, 'scope.json') || !await exists(second, `${EXAMPLE.landscape}/scope.json`)) throw new Error('the second folder lost the example on the way back')
     return `${register.total} applications: the example's ${EXAMPLE.applications} and "${ADDED}", not "${ADDED_ELSEWHERE}"`
   }))
 
