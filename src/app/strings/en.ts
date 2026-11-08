@@ -613,7 +613,7 @@ export const EN = {
   'shell.roadmapTip': 'The landscape on a time axis, the plans over it, and what the dates disagree about',
   'shell.activity': 'Activity',
   'shell.activityTip': 'What has changed in this scope since you opened it',
-  'shell.activityEmpty': 'Nothing yet',
+  'shell.activityEmpty': 'What is changed here from now on shows in this list.',
   /** The tag on a step an agent took, beside the time (ADR-0007). */
   'shell.activityAgent': 'Agent',
   /** The tag on a step another author made, beside the time: their name. */
@@ -1952,11 +1952,11 @@ export const EN = {
   'org.continueHere': 'Here',
   'org.emptyTitle': 'Nothing is kept in this scope yet',
   'org.emptyBody': 'That is fine. A scope can simply mark a place in the organisation until there is something to say about it.',
-  'org.stepView': 'Draw a view\u2026',
+  'org.stepView': 'New view\u2026',
   'org.stepObservation': 'Record an observation\u2026',
   'org.stepDecision': 'Write a decision\u2026',
   'org.stepPlan': 'Add a plan\u2026',
-  'org.stepScope': 'File a scope under it\u2026',
+  'org.stepScope': 'New scope\u2026',
   'org.inForceHere': 'In force here, from above',
   'org.nearestWork': 'Nearest work',
   'org.allPages': 'All pages of this scope:',

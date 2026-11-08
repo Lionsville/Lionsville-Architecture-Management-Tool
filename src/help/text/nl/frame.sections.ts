@@ -192,7 +192,7 @@ export const SECTIONS: SectionTexts = {
   'home.firstSteps': ['Eerste stappen in een lege scope', 'Een scope zonder inhoud zegt dat en biedt de eerste stappen: een weergave tekenen, een waarneming vastleggen, een besluit schrijven, een plan toevoegen of er een scope onder zetten; het toont wat van boven geldt en het dichtstbijzijnde werk.',
     'Het thuis van een scope zonder inhoud.',
     ['Kies een eerste stap.'],
-    'Een nieuwe scope Fleet biedt Een weergave tekenen… en Een waarneming vastleggen….'],
+    'Een nieuwe scope Fleet biedt Nieuwe weergave… en Een waarneming vastleggen….'],
   'scope.new': ['Een nieuwe scope maken', 'Zet een nieuwe scope onder een andere: de naam, wat het is, waaronder het valt, eventueel de eenheid die het bedient, en of het met een landschapsweergave begint.',
     'Een thuis, Nieuwe scope…; het menu van een regel in de boom › Nieuwe scope eronder….',
     ['Druk op Nieuwe scope….', 'Typ de naam en kies Wat dit is en Valt onder.', 'Kies eventueel + Eenheid en vink Begin met een landschapsweergave aan.', 'Druk op Maken.'],

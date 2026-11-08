@@ -192,7 +192,7 @@ export const SECTIONS: SectionTexts = {
   'home.firstSteps': ['Erste Schritte in einem leeren Bereich', 'Ein Bereich ohne Inhalt sagt es und bietet die ersten Schritte: eine Ansicht zeichnen, eine Beobachtung festhalten, eine Entscheidung schreiben, einen Plan hinzufügen oder einen Bereich darunter ablegen; er zeigt, was von oben gilt, und die nächste Arbeit.',
     'Die Startseite eines Bereichs ohne Inhalt.',
     ['Wählen Sie einen ersten Schritt.'],
-    'Ein neuer Bereich Fleet bietet Eine Ansicht zeichnen… und Eine Beobachtung festhalten….'],
+    'Ein neuer Bereich Fleet bietet Neue Ansicht… und Eine Beobachtung festhalten….'],
   'scope.new': ['Einen neuen Bereich anlegen', 'Legt einen neuen Bereich unter einem anderen an: Name, was er ist, wo er abgelegt ist, wahlweise die Einheit, die ihn bedient, und ob er mit einer Landschaftsansicht beginnt.',
     'Eine Startseite, Neuer Bereich…; das Menü einer Zeile im Baum › Neuer Bereich darunter….',
     ['Drücken Sie Neuer Bereich….', 'Geben Sie den Namen ein und wählen Sie Was das ist und Abgelegt unter.', 'Wählen Sie wahlweise + Einheit und kreuzen Sie Mit einer Landschaftsansicht beginnen an.', 'Drücken Sie Anlegen.'],

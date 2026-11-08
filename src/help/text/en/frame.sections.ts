@@ -192,7 +192,7 @@ export const SECTIONS: SectionTexts = {
   'home.firstSteps': ['First steps in an empty scope', 'A scope holding nothing says so and offers its first steps: draw a view, record an observation, write a decision, add a plan or file a scope under it; it shows what is in force from above and the nearest work.',
     'The home of a scope that holds nothing.',
     ['Pick a first step.'],
-    'A new scope Fleet offers Draw a view… and Record an observation….'],
+    'A new scope Fleet offers New view… and Record an observation….'],
   'scope.new': ['Make a new scope', 'Files a new scope under another: its name, what it is, where it is filed, optionally the unit that serves it, and whether it starts with a landscape view.',
     'A home, New scope…; a tree row\'s menu › New scope under it….',
     ['Press New scope….', 'Type the name, pick What this is and Filed under.', 'Optionally + Unit, and tick Start it with a landscape view.', 'Press Create.'],

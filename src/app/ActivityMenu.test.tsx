@@ -87,7 +87,7 @@ describe('the activity list', () => {
   it('says nothing has happened yet', () => {
     show()
     openActivity()
-    expect(screen.getByText('Nothing yet')).toBeDefined()
+    expect(screen.getByText('What is changed here from now on shows in this list.')).toBeDefined()
   })
 
   it('names what happened, newest first, whichever half of the app did it', () => {
@@ -103,7 +103,7 @@ describe('the activity list', () => {
     show()
     click('settled')
     openActivity()
-    expect(screen.getByText('Nothing yet')).toBeDefined()
+    expect(screen.getByText('What is changed here from now on shows in this list.')).toBeDefined()
   })
 })
 

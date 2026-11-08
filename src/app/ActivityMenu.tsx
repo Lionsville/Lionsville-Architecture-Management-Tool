@@ -172,7 +172,7 @@ export function ActivityLines({ open = true, entries, recent, language, s }: Omi
   // opposite of the order a stack keeps it.
   const lines = mergeActivity(entries, kept).reverse()
   if (lines.length === 0) {
-    return <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{s(asking ? 'shell.activityReading' : 'shell.activityEmpty')}</Typography>
+    return <Typography sx={{ fontSize: 'var(--t-body)', color: 'text.secondary' }}>{s(asking ? 'shell.activityReading' : 'shell.activityEmpty')}</Typography>
   }
   return (
     <ul className="kit-lines" aria-label={s('shell.activity')}>
