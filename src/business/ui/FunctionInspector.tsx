@@ -361,7 +361,7 @@ function FunctionBlocks({ props, owned }: { props: FunctionInspectorProps & { el
         element={element} model={model} readOnly={readOnly} actions={actions} applications={props.applications}
         elsewhere={props.elsewhere} responsible={props.responsible} describe={props.describe}
       />
-      <InSubscope element={element} model={model} readOnly={readOnly} actions={actions} domains={props.domains} />
+      <InSubscope element={element} model={model} readOnly={readOnly} actions={actions} domains={props.domains} elsewhere={props.elsewhere} />
       <PanelSection title={t('sheet.whoHolds')}>
         <AssignedTo element={element} model={model} readOnly={readOnly} actions={actions} responsible={props.responsible} elsewhere={props.elsewhere} describe={props.describe} applications={props.applications} />
         <Domains element={element} model={model} readOnly={readOnly} owned={owned('scopes')} actions={actions} domains={props.domains} />
@@ -694,33 +694,42 @@ function ParentField({ element, model, readOnly, actions, keptIn }: {
   )
 }
 
+/** How many of a subscope's applications show before *Show all*: the panel's next section stays in reach. */
+const IN_SUBSCOPE_SHOWN = 5
+
 /**
- * What a subscope it is handed to has filed: read off the register, and a press away
- * from being mapped. It does not feed `coverage.ts`, so it counts for nothing until then.
+ * What a subscope it is handed to has filed and does not cover it yet: read off the
+ * register, and a press away from being mapped. One that covers it already is under
+ * *Covered by*, wherever its row is kept (the subscope keeps most), and is not offered
+ * again: a second press drew a second row saying the same thing.
  */
-function InSubscope({ element, model, readOnly, actions, domains }: {
+function InSubscope({ element, model, readOnly, actions, domains, elsewhere }: {
   element: DesignElement
   model: DesignModel
   readOnly: boolean
   actions: SheetActions
   domains: SheetDomains | undefined
+  elsewhere: readonly Relation[] | undefined
 }) {
   const { t } = useStrings()
+  const [all, setAll] = useState(false)
   const scope = element.scopes?.[0]
-  const apps = scope !== undefined ? domains?.applicationsIn?.(scope) ?? [] : []
+  const mapped = rowsOf(element, model, elsewhere).coverage.supportedBy
+  const apps = (scope !== undefined ? domains?.applicationsIn?.(scope) ?? [] : []).filter((app) => !mapped.includes(app.id))
   if (scope === undefined || apps.length === 0 || !domains) return null
-  const mapped = coverageFor(model.relations, element.id).supportedBy
+  const shown = all ? apps : apps.slice(0, IN_SUBSCOPE_SHOWN)
   return (
     <div data-testid="sheet-in-subscope">
       <PanelSection title={t('sheet.poster.inScope', { name: domains.name(scope) })}>
-        {apps.map((app) => (
+        {shown.map((app) => (
           <div className="sheet-held" key={app.id}>
             <span className="sheet-held__name">{app.name}</span>
-            {!readOnly && !mapped.includes(app.id) && (
-              <Button variant="quiet" size="small" aria-label={t('sheet.poster.mapThis', { name: app.name })} onClick={() => actions.setCoverage({ type: 'supports', sourceId: app.id, functionId: element.id, on: true })}>{t('sheet.poster.mapIt')}</Button>
+            {!readOnly && (
+              <Button variant="plain" size="small" aria-label={t('sheet.poster.mapThis', { name: app.name })} onClick={() => actions.setCoverage({ type: 'supports', sourceId: app.id, functionId: element.id, on: true })}>{t('sheet.poster.mapIt')}</Button>
             )}
           </div>
         ))}
+        {shown.length < apps.length && <Button variant="quiet" size="small" onClick={() => setAll(true)}>{t('sheet.poster.showAll', { count: apps.length })}</Button>}
         <div className="sheet-held__say">{t('sheet.poster.inScopeSay')}</div>
       </PanelSection>
     </div>

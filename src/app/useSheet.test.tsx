@@ -365,14 +365,22 @@ describe('coverage, ticked', () => {
     expect(rows(host2, 'picking', 'supports').map((r) => r.sourceId)).toEqual(['scanner'])
   })
 
-  it('takes every row that says the same thing, as one step', () => {
+  it('writes a row once, however often it is pressed', () => {
     const host = opened()
-    act(() => host.sheets().actions.setCoverage({
-      type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
-    }))
-    act(() => host.sheets().actions.setCoverage({
-      type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
-    }))
+    const steps = host.steps()
+    for (let press = 0; press < 2; press += 1) {
+      act(() => host.sheets().actions.setCoverage({
+        type: 'supports', sourceId: 'erp', functionId: 'dunning', on: true,
+      }))
+    }
+    expect(rows(host, 'dunning', 'supports')).toHaveLength(1)
+    expect(host.steps()).toBe(steps + 1)
+  })
+
+  it('takes every row that says the same thing, as one step', () => {
+    const twice = model()
+    const host = mount(project({ ...twice, relations: [...twice.relations, ...['d1', 'd2'].map((id) => ({ id, type: 'supports' as const, sourceId: 'erp', targetId: 'dunning' }))] }))
+    act(() => host.sheets().create())
     expect(rows(host, 'dunning', 'supports')).toHaveLength(2)
     act(() => host.sheets().actions.setCoverage({
       type: 'supports', sourceId: 'erp', functionId: 'dunning', on: false,

@@ -214,6 +214,8 @@ export function useSheet(deps: {
       setCoverage(change) {
         const { type, sourceId, functionId, on } = change
         if (on) {
+          // Said once is enough: a second press, or a pick racing a refresh, draws no second row.
+          if (session.current().relations.some((relation) => relation.type === type && relation.sourceId === sourceId && relation.targetId === functionId)) return
           const relation: Relation = {
             id: session.ids.connection(), type, sourceId, targetId: functionId,
           }

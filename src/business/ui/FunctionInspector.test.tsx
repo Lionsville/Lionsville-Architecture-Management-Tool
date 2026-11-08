@@ -501,6 +501,19 @@ describe('which domains it is handed to, and which took it up (ADR-0040)', () =>
     expect(actions.updateElement).toHaveBeenCalledWith('fulfilment', { scopes: ['retail', 'wholesale', 'online'] })
   })
 
+  it('offers a subscope’s applications that do not cover it yet, five at first, and leaves out one already covering it from there', () => {
+    const apps = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'covers'].map((id) => ({ id, name: `App ${id}` }))
+    const elsewhere = [{ id: 'kept-there', type: 'supports' as const, sourceId: 'covers', targetId: 'fulfilment' }]
+    const { actions } = open(handed(['retail']), false, undefined, undefined, { domains: { ...domains(), applicationsIn: () => apps }, elsewhere })
+    const list = screen.getByTestId('sheet-in-subscope')
+    expect(within(list).queryByText('App covers')).toBeNull()
+    expect(within(list).getAllByRole('button', { name: /^Map .* to this function$/ })).toHaveLength(5)
+    fireEvent.click(within(list).getByRole('button', { name: 'Show all 6' }))
+    expect(within(list).getAllByRole('button', { name: /^Map .* to this function$/ })).toHaveLength(6)
+    fireEvent.click(within(list).getByRole('button', { name: 'Map App a6 to this function' }))
+    expect(actions.setCoverage).toHaveBeenCalledWith({ type: 'supports', sourceId: 'a6', functionId: 'fulfilment', on: true })
+  })
+
   it('says who took it up, marks one that was never handed it, and opens a taker’s home', () => {
     const shown = domains(['retail/shops', 'online'])
     open(handed(['retail']), false, undefined, undefined, { domains: shown })
