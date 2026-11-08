@@ -189,6 +189,10 @@
   inset-block: min(-4px, calc(9px - 12.5px / var(--canvas-zoom, 1)));
   inset-inline: min(-2px, calc(10px - 12px / var(--canvas-zoom, 1)));
 }
+/* A grouping's + stands in a head 18px high that cuts its name short: under Design the head lets the target out, and the
+   press stands over the first tile below, so the 24px holds there as it does on the area heads. */
+[data-posture="design"] .poster-grouping__head { overflow: visible; }
+.poster-grouping__head > .poster-add { position: relative; z-index: 3; }
 .poster-block:hover .poster-add, .poster-block:focus-within .poster-add, .poster-item:hover .poster-add, .poster-item:focus-within .poster-add { opacity: 1; }
 .poster-add--icon { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 2; }
 /* Where the press sits among many like it, it shows on its own cell, step or stakeholder only, at a full target, clear of the words. */
