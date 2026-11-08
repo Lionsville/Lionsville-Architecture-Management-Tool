@@ -153,6 +153,17 @@ type RowViewProps = {
   readonly draggable?: boolean
 }
 
+/** The tone a stylesheet colours the rail by, on the row so its states can place the rail. */
+const railTone = (rail: ListRail | undefined) => (rail ? { 'data-rail': rail.tone } : {})
+
+/** In the item's cell, where a grid lets it be, and drawn at the row's edge. Named where the row does not say its kind. */
+function RailMark({ rail }: { readonly rail: ListRail | undefined }) {
+  if (!rail) return null
+  return rail.label
+    ? <span className="kit-list__rail" role="img" aria-label={rail.label} />
+    : <span className="kit-list__rail" aria-hidden="true" />
+}
+
 const RowView = memo(function RowView({ row, groupId, level, columns, focusable, selected, ticks, ticked, guide, words, draggable }: RowViewProps) {
   return (
     <div
@@ -166,7 +177,7 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
       data-guide={row.guide ?? guide}
       data-testid={row.testId}
       data-state={row.state}
-      data-rail={row.rail?.tone}
+      {...railTone(row.rail)}
       draggable={draggable || undefined}
       aria-selected={selected}
       aria-level={level === undefined && row.depth === undefined ? undefined : (level ?? 1) + (row.depth ?? 0)}
@@ -180,10 +191,7 @@ const RowView = memo(function RowView({ row, groupId, level, columns, focusable,
         </div>
       )}
       <div role="gridcell" className="kit-list__item" data-fact={row.fact !== undefined || undefined} style={row.indent ? { paddingInlineStart: `calc(${row.indent} * var(--s-5))` } : undefined}>
-        {/* In the item's cell, where a grid lets it be, and drawn at the row's edge. */}
-        {row.rail && (row.rail.label
-          ? <span className="kit-list__rail" role="img" aria-label={row.rail.label} />
-          : <span className="kit-list__rail" aria-hidden="true" />)}
+        <RailMark rail={row.rail} />
         {row.unread && <span className="kit-list__dot" aria-hidden="true" />}
         {row.mark && <span className="kit-list__mark">{row.mark}</span>}
         {row.code && <span className="kit-list__code">{row.code}</span>}
