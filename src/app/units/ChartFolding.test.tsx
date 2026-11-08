@@ -135,6 +135,32 @@ describe('a large organisation on its chart', () => {
     expect(drawn()).toEqual(expect.arrayContaining(['d1c0t0', 'd1c0t1', 'd1c0t2']))
   })
 
+  it('puts the whole stage back when the panel docks, so the connectors move with the boxes', () => {
+    // jsdom lays nothing out: the room is played by a ResizeObserver called by hand and a box that says where it stands.
+    const watchers: (() => void)[] = []
+    vi.stubGlobal('ResizeObserver', class { constructor(call: () => void) { watchers.push(call) } observe() {} disconnect() {} })
+    let left = 400
+    const measured = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const x = this.hasAttribute('data-tree-box') ? left : 0
+      return { left: x, right: x + 168, top: 0, bottom: 80, width: 168, height: 80, x, y: 0, toJSON: () => ({}) } as DOMRect
+    })
+    try {
+      const { rerender } = renderShell(<Harness />)
+      rerender(<Harness selectedId="d2" />)
+      // The panel took room, and the boxes, centred in what was left, moved 160px to the left.
+      left = 240
+      for (const watch of watchers) watch()
+      const stage = screen.getByTestId('chart-units').parentElement as HTMLElement
+      expect(stage.style.left).toBe('160px')
+      expect(screen.getByTestId('chart-units').style.left).toBe('')
+      // The connectors are drawn inside what was put back, so they keep to the boxes.
+      expect(stage.contains(screen.getByTestId('chart-connectors'))).toBe(true)
+    } finally {
+      measured.mockRestore()
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('opens the same menu from the menu key on a unit’s name', () => {
     renderShell(<Harness selectedId="d2" />)
     fireEvent.keyDown(within(box('d2')).getByTestId('chart-unit-open'), { key: 'ContextMenu' })

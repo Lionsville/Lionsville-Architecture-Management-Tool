@@ -731,43 +731,42 @@ function useUnitMenu(here: UnitViewsHere, folds: ChartFolds, going: Going, movin
  * what they took. For a moment after the panel comes or goes, wherever the
  * tree has been moved to by the room changing, it is put back where it stood;
  * it pans only where the box picked would then be under the panel. Once the
- * panel has gone, the tree is centred again.
+ * panel has gone, the tree is centred again. What is put back is the whole
+ * stage, so the connectors and the lines, measured against the stage, move
+ * with the boxes rather than staying where the room put them.
  */
 function useSteadyOnDock(pane: { current: HTMLElement | null }, stage: { current: HTMLElement | null }, picked: ElementId | undefined, docked: boolean) {
   const latest = useRef(picked)
   latest.current = picked
   const said = useRef({ x: undefined as number | undefined, until: 0, offset: 0 })
-  const treeOf = useCallback(() => stage.current?.querySelector<HTMLElement>('.org-tree') ?? null, [stage])
-  // The tree spans the stage; what moves is the boxes centred in it, so the first box is what is measured.
-  const xOf = (tree: HTMLElement) => tree.querySelector('[data-tree-box]')?.getBoundingClientRect().left
+  // The stage spans the room; what moves is the boxes centred in it, so the first box is what is measured.
+  const xOf = (board: HTMLElement) => board.querySelector('[data-tree-box]')?.getBoundingClientRect().left
   // Where the tree stood before the panel moved: read on every render that is not the panel moving.
   useLayoutEffect(() => {
-    const tree = treeOf()
-    if (tree && Date.now() > said.current.until) said.current.x = xOf(tree)
+    const board = stage.current
+    if (board && Date.now() > said.current.until) said.current.x = xOf(board)
   })
   useLayoutEffect(() => {
     said.current.until = Date.now() + STEADY_FOR_MS
     if (!docked) {
       said.current.offset = 0
-      const tree = treeOf()
-      if (tree) tree.style.left = ''
+      if (stage.current) stage.current.style.left = ''
     }
-  }, [docked, treeOf])
+  }, [docked, stage])
   useEffect(() => {
     const element = pane.current
     const board = stage.current
     if (!element || !board || typeof ResizeObserver === 'undefined') return undefined
     const settle = () => {
-      const tree = treeOf()
       const held = said.current
-      if (!tree || held.x === undefined || Date.now() > held.until || held.until - Date.now() > STEADY_FOR_MS || !docked) return
-      const now = xOf(tree)
+      if (held.x === undefined || Date.now() > held.until || held.until - Date.now() > STEADY_FOR_MS || !docked) return
+      const now = xOf(board)
       if (now === undefined) return
       const moved = now - held.x
       if (Math.abs(moved) < 1) return
       const scale = Number.parseFloat(getComputedStyle(board).zoom) || 1
       held.offset -= moved
-      tree.style.left = `${held.offset / scale}px`
+      board.style.left = `${held.offset / scale}px`
       const id = latest.current
       const box = id === undefined ? undefined : board.querySelector<HTMLElement>(`[data-tree-box="${id.replace(/["\\]/g, '\\$&')}"]`)
       box?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
@@ -776,7 +775,7 @@ function useSteadyOnDock(pane: { current: HTMLElement | null }, stage: { current
     watch.observe(element)
     watch.observe(board)
     return () => watch.disconnect()
-  }, [pane, stage, treeOf, docked])
+  }, [pane, stage, docked])
 }
 
 /** How long after the panel comes or goes the chart is held where it stood. */
