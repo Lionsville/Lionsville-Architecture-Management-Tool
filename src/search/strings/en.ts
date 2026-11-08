@@ -19,7 +19,7 @@ export const EN = {
   'search.noMatches': 'No element matches “{query}”.',
   'search.otherDiagram': 'on {name}',
   'search.unplaced': 'not on any view',
-  'search.hint': 'Enter opens the first match; Esc closes.',
+  'search.hint': 'Enter shows the first match; Esc closes.',
 
   // --- the search over everything ------------------------------------------
   'gsearch.title': 'Find or run a command',

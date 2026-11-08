@@ -115,6 +115,8 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
       // Anchored high: the dialog must not sit over the middle of the board it
       // is about to pan.
       sx={{ '& .MuiDialog-container': { alignItems: 'flex-start', pt: '12vh' } }}
+      // No scrim: what is found is on the board behind, and must stay in sight while typing.
+      slotProps={{ backdrop: { invisible: true } }}
     >
       <Box sx={{ p: 1.5, pb: 1 }}>
         <FieldBox

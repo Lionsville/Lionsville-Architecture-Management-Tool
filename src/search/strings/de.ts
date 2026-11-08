@@ -21,7 +21,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'search.noMatches': 'Kein Element entspricht „{query}“.',
   'search.otherDiagram': 'auf {name}',
   'search.unplaced': 'auf keiner Ansicht',
-  'search.hint': 'Enter öffnet den ersten Treffer; Esc schließt.',
+  'search.hint': 'Enter zeigt den ersten Treffer; Esc schließt.',
 
   'gsearch.title': 'Suchen oder Befehl ausführen',
   'gsearch.placeholder': 'Bereiche, Ansichten, Einträge, Personen und Befehle…',

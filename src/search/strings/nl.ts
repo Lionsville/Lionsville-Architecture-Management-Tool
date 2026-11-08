@@ -21,7 +21,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'search.noMatches': 'Geen element komt overeen met “{query}”.',
   'search.otherDiagram': 'op {name}',
   'search.unplaced': 'op geen enkele weergave',
-  'search.hint': 'Enter opent het eerste resultaat; Esc sluit.',
+  'search.hint': 'Enter toont het eerste resultaat; Esc sluit.',
 
   'gsearch.title': 'Zoek of voer een opdracht uit',
   'gsearch.placeholder': 'Scopes, weergaven, records, mensen en opdrachten…',
