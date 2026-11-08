@@ -65,6 +65,7 @@ function open(over: Partial<TechnologyLandscapePageProps> = {}) {
 
 const rowOf = (name: string) => [...document.querySelectorAll<HTMLElement>('[data-kit-row]')].find((one) => (one.querySelector('.kit-list__text')?.textContent ?? one.textContent)?.startsWith(name))!
 const namesIn = (testId: string) => [...screen.getByTestId(testId).querySelectorAll('.kit-list__text')].map((one) => one.textContent)
+const more = () => fireEvent.click(within(screen.getByTestId('landscape-inspector')).getByRole('button', { name: 'More' }))
 const noteOf = (name: string) => rowOf(name).querySelector('.kit-list__note')?.textContent
 
 describe('the three columns', () => {
@@ -278,6 +279,7 @@ describe('the reader', () => {
     const onOpenServiceReport = vi.fn()
     open({ onOpenPlatformReport, onOpenServiceReport })
     fireEvent.click(rowOf('Event broker'))
+    more()
     fireEvent.click(screen.getByTestId('landscape-report'))
     expect(onOpenPlatformReport).toHaveBeenCalledWith('kafka')
     fireEvent.doubleClick(rowOf('Message brokering'))
@@ -299,8 +301,31 @@ describe('the reader', () => {
     fireEvent.click(rowOf('Warehouse Management'))
     fireEvent.click(screen.getByTestId('landscape-open-record'))
     expect(onOpenElsewhere).toHaveBeenCalledWith('wms')
+    more()
     fireEvent.click(screen.getByTestId('landscape-containers'))
     expect(onOpenContainers).toHaveBeenCalledWith('wms')
+  })
+})
+
+describe('the reader’s head, as a board’s panel', () => {
+  it('folds rather than closes, and keeps the delete last in ⋯ for a record this scope keeps', () => {
+    const onDelete = vi.fn()
+    open({ onDelete, onSetUse: vi.fn(), onSetHost: vi.fn() })
+    fireEvent.click(rowOf('Event broker'))
+    const panel = within(screen.getByTestId('landscape-inspector'))
+    expect(panel.queryByRole('button', { name: 'Close' })).toBeNull()
+    more()
+    const items = screen.getAllByRole('menuitem').map((one) => one.textContent)
+    expect(items.at(-1)?.trim()).toBe('Delete from model…')
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete from model…' }))
+    expect(onDelete).toHaveBeenCalledWith('kafka')
+    fireEvent.click(panel.getByRole('button', { name: 'Fold the panel away' }))
+    expect(screen.getByTestId('landscape-inspector').getAttribute('data-collapsed')).toBe('true')
+  })
+  it('offers no delete to a reader, nor for a record another scope keeps', () => {
+    open({ onDelete: vi.fn(), readOnly: true })
+    fireEvent.click(rowOf('Event broker'))
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
   })
 })
 
@@ -310,6 +335,7 @@ describe('the one tick', () => {
     const writes = writing()
     open({ ...writes })
     fireEvent.click(rowOf('Rating (legacy)'))
+    more()
     fireEvent.click(screen.getByTestId('landscape-edit-uses'))
     expect(rowOf('Container platform').querySelector('.tl-tick')!.getAttribute('data-tick')).toBe('use')
     expect(rowOf('Message brokering').querySelector('.tl-tick')!.getAttribute('data-tick')).toBe('none')
@@ -321,7 +347,9 @@ describe('the one tick', () => {
   it('stops when Done is pressed', () => {
     open({ ...writing() })
     fireEvent.click(rowOf('Rating (legacy)'))
+    more()
     fireEvent.click(screen.getByTestId('landscape-edit-uses'))
+    // While the ticks are up, Done stands in the panel's head.
     fireEvent.click(screen.getByTestId('landscape-edit-uses'))
     expect(document.querySelector('.tl-tick')).toBeNull()
   })

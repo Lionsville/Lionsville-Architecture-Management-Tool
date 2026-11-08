@@ -16,7 +16,9 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { Button, IconButton } from '../../widgets/kit/Button'
 import { Select } from '../../widgets/kit/Field'
-import { Panel, PanelSection } from '../../widgets/kit/Panel'
+import { MoreMenu } from '../../widgets/kit/Menu'
+import type { MenuEntry } from '../../widgets/kit/Menu'
+import { Panel, PanelLink, PanelSection } from '../../widgets/kit/Panel'
 import type { PanelUndo } from '../../widgets/kit/Panel'
 import { Picker } from '../../widgets/kit/Picker'
 import type { PickerOption } from '../../widgets/kit/Picker'
@@ -32,6 +34,8 @@ export type ReaderDoors = {
   onServiceReport?: ((id: ElementId) => void) | undefined
   onPlatformReport?: ((id: ElementId) => void) | undefined
   onAddUnder?: ((kind: 'platform' | 'platformService', id: ElementId, at: { x: number; y: number }) => void) | undefined
+  /** Delete a record this scope keeps, through the editor's one question. Absent: nothing is deleted from here. */
+  onDelete?: ((id: ElementId) => void) | undefined
 }
 
 export type ReaderWrites = {
@@ -57,7 +61,6 @@ type Props = {
   rest: ReactNode
   restFoot: string | undefined
   nameOf(id: ElementId): string
-  onClose(): void
   /** Where a change to this application is saved, in words. */
   savedIn(applicationId: ElementId): string
 }
@@ -197,16 +200,32 @@ function PlatformBody({ platform, above, landscape, maintainers, nameOf, t }: {
   )
 }
 
-type Shown = { kind: string; name: string; status?: string; body: ReactNode; doors: ReactNode }
+/**
+ * What the reader says of the thing chosen, in the kit Panel's own places, as a
+ * board's panel does: the record a press away in the head (*Record ›*), what is
+ * done to the whole thing in ⋯ with the delete last, and in the body only what
+ * is added beneath it.
+ */
+type Shown = { kind: string; name: string; status?: string; body: ReactNode; record?: ReactNode; more?: readonly MenuEntry[]; doors?: ReactNode }
 
 function maintainersOf(model: DesignModel, id: ElementId, nameOf: (id: ElementId) => string): string[] {
   return model.relations.filter((row) => row.type === 'assigned' && row.targetId === id).map((row) => model.elements.find((one) => one.id === row.sourceId)?.name ?? nameOf(row.sourceId))
 }
 
-function recordDoor(doors: ReaderDoors, id: ElementId, held: boolean, t: Translate) {
-  return held && doors.onEditRecord
-    ? <Button variant="plain" size="small" data-testid="landscape-edit-record" onClick={() => doors.onEditRecord!(id)}>{t('landscape.editRecord')}</Button>
-    : null
+/** *Record ›*: the record in its own column where this scope keeps it, or where another scope does. */
+function recordLink(doors: ReaderDoors, id: ElementId, held: boolean, known: boolean, t: Translate): ReactNode {
+  if (held && doors.onEditRecord) return <PanelLink data-testid="landscape-edit-record" onPress={() => doors.onEditRecord!(id)}>{t('landscape.record')} ›</PanelLink>
+  if (!held && known && doors.onOpenElsewhere) return <PanelLink data-testid="landscape-open-record" onPress={() => doors.onOpenElsewhere!(id)}>{t('landscape.record')} ›</PanelLink>
+  return undefined
+}
+
+/** The delete, last in ⋯, for a record this scope keeps. */
+function deleteEntry(doors: ReaderDoors, id: ElementId, held: boolean, t: Translate): MenuEntry[] {
+  return held && doors.onDelete ? [{ label: t('landscape.deleteFromModel'), final: true, 'data-testid': 'landscape-delete', onSelect: () => doors.onDelete!(id) }] : []
+}
+
+function reportEntry(open: ((id: ElementId) => void) | undefined, id: ElementId, held: boolean, t: Translate): MenuEntry[] {
+  return held && open ? [{ label: t('landscape.ifItWent'), 'data-testid': 'landscape-report', onSelect: () => open(id) }] : []
 }
 
 function shownApplication(props: Props, id: ElementId, held: boolean, t: Translate): Shown | undefined {
@@ -218,17 +237,18 @@ function shownApplication(props: Props, id: ElementId, held: boolean, t: Transla
     kind: t('landscape.kindApplication'), name: app.name,
     status: app.where ? t('landscape.keptIn', { scope: app.where }) : t('landscape.keptHere'),
     body: <ApplicationBody key={id} app={app} landscape={landscape} writes={writes} nameOf={nameOf} t={t} />,
-    doors: (
+    // While the rows carry ticks, the way out of them stands in the head where the eye is.
+    record: (
       <>
-        {writes && (
-          <Button variant={ticking ? 'primary' : 'plain'} size="small" data-testid="landscape-edit-uses" onClick={() => writes.onTicking(ticking ? undefined : id)}>
-            {ticking ? t('landscape.editDone') : t('landscape.editUses')}
-          </Button>
-        )}
-        {held ? recordDoor(doors, id, held, t) : doors.onOpenElsewhere && app.known && <Button variant="plain" size="small" data-testid="landscape-open-record" onClick={() => doors.onOpenElsewhere!(id)}>{t('landscape.openRecord')}</Button>}
-        {doors.hasContainers?.(id) && <Button variant="plain" size="small" data-testid="landscape-containers" onClick={() => doors.onOpenContainers?.(id)}>{t('landscape.containers')}</Button>}
+        {ticking && writes && <PanelLink data-testid="landscape-edit-uses" onPress={() => writes.onTicking(undefined)}>{t('landscape.editDone')}</PanelLink>}
+        {recordLink(doors, id, held, app.known, t)}
       </>
     ),
+    more: [
+      ...(writes && !ticking ? [{ label: t('landscape.editUses'), detail: t('landscape.editUsesHint'), 'data-testid': 'landscape-edit-uses', onSelect: () => writes.onTicking(id) }] : []),
+      ...(doors.hasContainers?.(id) ? [{ label: t('landscape.containers'), 'data-testid': 'landscape-containers', onSelect: () => { doors.onOpenContainers?.(id) } }] : []),
+      ...deleteEntry(doors, id, held, t),
+    ],
   }
 }
 
@@ -242,10 +262,6 @@ function addDoor(doors: ReaderDoors, kind: 'platform' | 'platformService', id: E
   ) : null
 }
 
-function reportDoor(open: ((id: ElementId) => void) | undefined, id: ElementId, held: boolean, t: Translate) {
-  return held && open ? <Button variant="plain" size="small" data-testid="landscape-report" onClick={() => open(id)}>{t('landscape.ifItWent')}</Button> : null
-}
-
 function shownService(props: Props, id: ElementId, held: boolean, t: Translate): Shown | undefined {
   const { landscape, model, doors, nameOf } = props
   const service = serviceList(landscape).find(({ node }) => node.id === id)?.node
@@ -254,7 +270,9 @@ function shownService(props: Props, id: ElementId, held: boolean, t: Translate):
     kind: service.shared ? t('landscape.kindServiceShared') : t('landscape.kindService'), name: service.name,
     ...(service.where ? { status: t('landscape.keptIn', { scope: service.where }) } : {}),
     body: <ServiceBody service={service} landscape={landscape} maintainers={maintainersOf(model, id, nameOf)} nameOf={nameOf} t={t} />,
-    doors: <>{reportDoor(doors.onServiceReport, id, held, t)}{recordDoor(doors, id, held, t)}{service.where === undefined && addDoor(doors, 'platformService', id, service.name, t)}</>,
+    record: recordLink(doors, id, held, false, t),
+    more: [...reportEntry(doors.onServiceReport, id, held, t), ...deleteEntry(doors, id, held, t)],
+    doors: service.where === undefined && addDoor(doors, 'platformService', id, service.name, t),
   }
 }
 
@@ -265,7 +283,9 @@ function shownPlatform(props: Props, id: ElementId, held: boolean, t: Translate)
   return {
     kind: t('landscape.kindPlatform'), name: found.node.name,
     body: <PlatformBody platform={found.node} above={found.above} landscape={landscape} maintainers={maintainersOf(model, id, nameOf)} nameOf={nameOf} t={t} />,
-    doors: <>{reportDoor(doors.onPlatformReport, id, held, t)}{recordDoor(doors, id, held, t)}{addDoor(doors, 'platform', id, found.node.name, t)}</>,
+    record: recordLink(doors, id, held, false, t),
+    more: [...reportEntry(doors.onPlatformReport, id, held, t), ...deleteEntry(doors, id, held, t)],
+    doors: addDoor(doors, 'platform', id, found.node.name, t),
   }
 }
 
@@ -280,11 +300,13 @@ function shownOf(props: Props, t: Translate): Shown | undefined {
   if (kind === 'service') return shownService(props, id, held, t)
   if (kind === 'platform') return shownPlatform(props, id, held, t)
   const group = landscape.groups.find((one) => one.key === id)
-  return group && { kind: t('landscape.kindGroup'), name: group.label ?? t('landscape.thisScope'), body: <GroupBody group={group} nameOf={nameOf} t={t} />, doors: null }
+  return group && { kind: t('landscape.kindGroup'), name: group.label ?? t('landscape.thisScope'), body: <GroupBody group={group} nameOf={nameOf} t={t} /> }
 }
 
 export function LandscapeReader(props: Props) {
   const { t } = useStrings()
+  // Folded to its edge as a board's panel folds, and kept folded from one pick to the next.
+  const [collapsed, setCollapsed] = useState(false)
   const shown = shownOf(props, t)
   if (!shown) {
     return (
@@ -296,14 +318,16 @@ export function LandscapeReader(props: Props) {
     )
   }
   const application = props.selected?.startsWith('application:') ? props.selected.slice('application:'.length) : undefined
+  const more = shown.more ?? []
   return (
-    <div className="tl-reader" data-testid="landscape-inspector">
+    <div className="tl-reader" data-testid="landscape-inspector" data-collapsed={collapsed || undefined}>
       <Panel helpAt={PANEL_HELP.technology}
-        kind={shown.kind} name={shown.name} dataGuide="landscape.inspector" onClose={props.onClose}
+        kind={shown.kind} name={shown.name} dataGuide="landscape.inspector" collapsed={collapsed} onCollapse={setCollapsed}
+        actions={<>{shown.record}{more.length > 0 && <MoreMenu items={more} label={t('landscape.more')} size="small" />}</>}
         {...(shown.status ? { status: shown.status } : {})}
         {...(props.undo ? { undo: props.undo } : application && props.writes ? { help: props.savedIn(application) } : {})}
       >
-        <PanelSection>{shown.body}<div className="tl-doors">{shown.doors}</div></PanelSection>
+        <PanelSection>{shown.body}{shown.doors && <div className="tl-doors">{shown.doors}</div>}</PanelSection>
       </Panel>
     </div>
   )

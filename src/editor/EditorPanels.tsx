@@ -55,6 +55,7 @@ export function LaidOutView({ parts, diagram, pageBar, onDock }: { parts: Editor
         outline: { width: view.outlineWidth, onWidth: view.setOutlineWidth },
         ...(diagram.kind === 'technology' ? {
           record: <SelectionInspector parts={parts} diagram={diagram} />,
+          ...(readOnly ? {} : { onDelete: (elementId: string) => parts.deletes.setDeleteTarget(elementId) }),
           onDay: (day: string | undefined) => parts.board.viewing.show(diagram.id, day),
           ownerText: (owner: PersonRef) => names.text(owner),
         } : {}),

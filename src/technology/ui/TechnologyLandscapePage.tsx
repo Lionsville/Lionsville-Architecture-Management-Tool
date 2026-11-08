@@ -109,6 +109,8 @@ export type TechnologyLandscapePageProps = {
   record?: React.ReactNode
   /** The way to a record another scope keeps. */
   onOpenElsewhere?(id: ElementId): void
+  /** Delete a record this scope keeps, asked first by the host. Absent: nothing is deleted from here. */
+  onDelete?(id: ElementId): void
   /** Open what is inside an application; false where nothing is. */
   onOpenContainers?(id: ElementId): boolean
   hasContainers?(id: ElementId): boolean
@@ -448,9 +450,9 @@ function EmptyLandscape({ add }: { add: TechnologyLandscapePageProps['onAdd'] })
   )
 }
 
-function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onLetGo, onAddUnder }: {
+function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onAddUnder }: {
   props: TechnologyLandscapePageProps; landscape: TechnologyLandscape; grouped: TechnologyLandscape; selected: NodeKey | undefined
-  gestures: ReturnType<typeof useGestures>; undo: PanelUndo | undefined; onLetGo(): void
+  gestures: ReturnType<typeof useGestures>; undo: PanelUndo | undefined
   onAddUnder: ReaderDoors['onAddUnder']
 }) {
   const { t } = useStrings()
@@ -469,6 +471,7 @@ function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onL
     onServiceReport: props.onOpenServiceReport,
     onPlatformReport: props.onOpenPlatformReport,
     onAddUnder,
+    onDelete: props.readOnly ? undefined : props.onDelete,
   }
   const scopes = new Set(applicationList(landscape).map((app) => app.where ?? '')).size
   const looks = worthALook(landscape, t)
@@ -486,7 +489,6 @@ function ReaderColumn({ props, landscape, grouped, selected, gestures, undo, onL
     <LandscapeReader
       landscape={grouped} model={props.model} selected={selected} doors={doors} undo={undo} rest={rest} nameOf={nameOf} savedIn={savedIn}
       restFoot={scopes > 0 ? t('landscape.fromScopes', { scopes: t(scopes === 1 ? 'landscape.scopesOne' : 'landscape.scopesOther', { count: scopes }) }) : undefined}
-      onClose={onLetGo}
       writes={writes ? { setUse: writes.setUse, setHost: (app, platform) => writes.setHost(app, platform, appOf(app)?.saysHosted), usable, placesElsewhere, ticking, onTicking: setTicking } : undefined}
     />
   )
@@ -611,7 +613,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
               <div className="tl-recordBody">{props.record}</div>
             </div>
           ) : !isEmpty && (
-            <ReaderColumn props={props} landscape={landscape} grouped={grouped} selected={selected} gestures={gestures} undo={undo} onLetGo={() => { setTicking(undefined); choose(undefined) }}
+            <ReaderColumn props={props} landscape={landscape} grouped={grouped} selected={selected} gestures={gestures} undo={undo}
               onAddUnder={add ? (kind, parentId, at) => setAdding({ kind, parentId, at }) : undefined} />
           )}
         </div>

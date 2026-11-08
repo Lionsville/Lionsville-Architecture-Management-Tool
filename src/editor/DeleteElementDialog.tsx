@@ -32,7 +32,8 @@ export interface DeleteElementDialogProps {
    * not hold the delete back the way an application's components do.
    */
   units?: UnitDeletion;
-  onRemoveFromDiagram(): void;
+  /** Absent where the thing is on no view here to be removed from: a technology landscape draws what is, and holds no members. */
+  onRemoveFromDiagram?: () => void;
   onDeleteFromModel(choice?: string): void;
   onClose(): void;
 }
@@ -51,7 +52,7 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
       <DialogTitle>{t('dialog.deleteElementTitle', { name: props.element.name })}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>
-          <strong>{t('dialog.removeFromDiagram')}</strong> {t('dialog.deleteElementKeeps')}{' '}
+          {props.onRemoveFromDiagram && <><strong>{t('dialog.removeFromDiagram')}</strong> {t('dialog.deleteElementKeeps')}{' '}</>}
           <strong>{t('dialog.deleteFromModelButton')}</strong>{' '}
           {t('dialog.deleteElementRemoves')}
         </DialogContentText>
@@ -61,7 +62,7 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
       </DialogContent>
       <DialogFooter
         cancel={{ onClick: props.onClose, label: t('common.cancel') }}
-        also={[{ onClick: props.onRemoveFromDiagram, reason: props.isBoundaryApplication ? t('menu.boundaryApplication') : undefined, label: t('dialog.removeFromDiagram') }]}
+        also={props.onRemoveFromDiagram ? [{ onClick: props.onRemoveFromDiagram, reason: props.isBoundaryApplication ? t('menu.boundaryApplication') : undefined, label: t('dialog.removeFromDiagram') }] : []}
         outcome={{ onClick: () => props.onDeleteFromModel(units ? choice : undefined), reason: held ? t('dialog.deleteComponentsFirst') : undefined, label: t('dialog.deleteFromModelButton'), danger: true }}
       />
     </Dialog>

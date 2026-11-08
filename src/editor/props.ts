@@ -56,6 +56,8 @@ export interface PageView {
   onUse(elementId: ElementId, targetIds: readonly ElementId[]): void;
   /** The selection's inspector, for a page that shows the record in a column of its own: the technology landscape. */
   record?: ReactNode;
+  /** Delete a record this scope keeps, through the board's own question: for a page with no board under it. */
+  onDelete?(elementId: ElementId): void;
   /** The day it is looked at (ADR-0027), for a page that has the Day control in its own bar. */
   onDay?(day: string | undefined): void;
   /** The register's word for a picked person, for a page that may not read the register. */

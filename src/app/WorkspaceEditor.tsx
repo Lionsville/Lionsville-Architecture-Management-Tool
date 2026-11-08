@@ -482,6 +482,7 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
       {...(ownership.technology ? { technologyElsewhere: ownership.technology.elsewhere } : {})}
       {...(view.record !== undefined ? { record: view.record } : {})}
       {...(view.onDay ? { onDay: view.onDay } : {})}
+      {...(view.onDelete ? { onDelete: view.onDelete } : {})}
       {...(view.ownerText ? { ownerText: view.ownerText } : {})}
       onExport={(name, png) => savePicture(parts, name, png, 'landscapeExport')}
       today={parts.todayDay}

@@ -202,10 +202,12 @@ function DeleteDialogs({ state, diagram, deletes, roles, unitDeletion }: {
           hasComponents={state.model.elements.some((e) => e.parentId === deleteElement.id)}
           endsRoles={rolesEnded(one(deleteElement.id))}
           units={units}
-          onRemoveFromDiagram={() => {
-            state.actions.removeFromDiagram(deleteElement.id);
-            setDeleteTarget(undefined);
-          }}
+          {...(diagram.members.some((member) => member.id === deleteElement.id) ? {
+            onRemoveFromDiagram: () => {
+              state.actions.removeFromDiagram(deleteElement.id);
+              setDeleteTarget(undefined);
+            },
+          } : {})}
           onDeleteFromModel={(choice) => {
             if (units && choice !== undefined) state.actions.deleteFromModel(deleteElement.id, (here) => units.run(choice, here));
             else state.actions.deleteFromModel(deleteElement.id);
