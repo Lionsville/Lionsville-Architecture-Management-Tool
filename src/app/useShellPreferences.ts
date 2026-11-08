@@ -11,6 +11,7 @@
  * settings.
  */
 import { useEffect, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { Theme } from '@mui/material/styles'
 import { shellTheme } from './theme'
@@ -153,7 +154,9 @@ export function useShellPreferences(deps: {
   // asks it again whenever the answer changes (sunset, a switch in settings),
   // without a refresh.
   const systemDark = useMediaQuery('(prefers-color-scheme: dark)')
-  const mode: 'light' | 'dark' = themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode
+  // Paper is white: while the browser prints, the app is drawn in the light theme, so dark text never comes out pale grey.
+  const printing = usePrinting()
+  const mode: 'light' | 'dark' = printing ? 'light' : themeMode === 'system' ? (systemDark ? 'dark' : 'light') : themeMode
   // The language rides on the theme as well as in context: MUI's own labels
   // (an autocomplete's buttons, a toast's close) are read off the theme.
   const theme = useMemo(() => shellTheme(mode, language, accent ? { accent } : {}), [mode, language, accent])
@@ -163,4 +166,24 @@ export function useShellPreferences(deps: {
     savePreferences, chooseLanguage, chooseDensity, chooseTextSize, moveTextSize, chooseTheme, writePreference: writePrefs,
     readPreferences: useCallback(() => blob.current, []),
   }
+}
+
+/**
+ * Whether the browser is printing the page: from its *beforeprint* to its
+ * *afterprint*, drawn at once, because the print is laid out as soon as the
+ * first handler returns.
+ */
+export function usePrinting(): boolean {
+  const [printing, setPrinting] = useState(false)
+  useEffect(() => {
+    const before = () => flushSync(() => setPrinting(true))
+    const after = () => setPrinting(false)
+    window.addEventListener('beforeprint', before)
+    window.addEventListener('afterprint', after)
+    return () => {
+      window.removeEventListener('beforeprint', before)
+      window.removeEventListener('afterprint', after)
+    }
+  }, [])
+  return printing
 }

@@ -41,3 +41,12 @@
 .kit-dialog__danger { padding: var(--s-2) var(--s-3); border: 1px solid var(--bad); border-radius: var(--r-2); background: var(--bad-soft); }
 .kit-dialog__danger-title { color: var(--ink); }
 .kit-dialog__danger-detail { color: var(--ink-2); font-size: var(--t-body); }
+
+/* A dialog or a large preview up when the page is printed is what is printed, whole: a record read in its preview, say. */
+@media print {
+  body:has(> .MuiModal-root:not(.MuiPopover-root, .MuiMenu-root)) > #root { display: none !important; }
+  .MuiModal-root:not(.MuiPopover-root, .MuiMenu-root), .MuiDialog-container { position: static !important; inset: auto !important; height: auto !important; display: block !important; }
+  .MuiModal-root .MuiBackdrop-root { display: none !important; }
+  .MuiDialog-paper, .kit-preview { position: static !important; inset: auto !important; transform: none !important; margin: 0 !important; max-width: none !important; max-height: none !important; width: auto !important; height: auto !important; box-shadow: none !important; overflow: visible !important; }
+  :is(.MuiDialog-paper, .kit-preview) * { overflow: visible !important; max-height: none !important; }
+}

@@ -342,6 +342,12 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         if (act?.can) { event.preventDefault(); event.stopPropagation(); act.run() }
         return
       }
+      // ⌘P over a board prints it through the picture's own paper, not the window around it.
+      if (!parts.hostMenu && boardUp && commandKey(event) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'p' && !modalUp()) {
+        event.preventDefault()
+        send({ type: 'exportPicture' })
+        return
+      }
       if (!parts.hostMenu && chordHeld(event)) {
         const key = menuKey(event, canOf(parts, frame.get().screen), { boardUp, modal: modalUp() }, isMac())
         if (!key) return

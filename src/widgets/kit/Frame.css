@@ -153,3 +153,20 @@
   .kit-frame__status { min-width: 0; flex-shrink: 0; }
   .kit-frame__tree { position: absolute; inset-block: 0; inset-inline-start: 0; z-index: 5; width: min(var(--panel-w-tree), 85cqw); max-width: 85cqw; box-shadow: var(--shadow); }
 }
+
+/*
+ * On paper the frame is gone and the place flows over as many sheets as it takes: the page that
+ * is up, or the view where none is. In the light theme, which the shell draws while it prints.
+ */
+@media print {
+  html, body { height: auto !important; overflow: visible !important; background: white; }
+  body > div, body > div > div, .kit-frame, .kit-frame__body, .kit-frame__main, .kit-frame__view { height: auto !important; min-height: 0 !important; overflow: visible !important; display: block !important; }
+  .kit-frame__row, .kit-frame__tree, .kit-frame__panel, .kit-frame__accent, .kit-band, .kit-toast, .react-flow__attribution, .react-flow__panel { display: none !important; }
+  .kit-frame__main:has(.kit-place) .kit-frame__view { display: none !important; }
+  /* A view with no page over it is a canvas, which draws in the room it is given: a sheet's height of it, without its bar. */
+  .kit-frame__main:not(:has(.kit-place)) .kit-frame__view { height: 100vh !important; display: flex !important; }
+  .kit-frame__view .kit-viewbar { display: none !important; }
+  .kit-place { position: static !important; inset: auto; overflow: visible !important; height: auto !important; }
+  .kit-place * { overflow: visible !important; max-height: none !important; }
+  .kit-place:has(~ .kit-place) { display: none !important; }
+}
