@@ -183,6 +183,17 @@ describe('reading a poster', () => {
 describe('designing a poster', () => {
   const blockRect = { left: 0, top: 0 }
 
+  it('says an area is handed to a domain no scope is only in Design; Read leaves that to the sheet\'s foot', () => {
+    const handed = elements.map((one) => (one.id === 'a' ? { ...one, scopes: ['gone'] } : one))
+    const laidOut = sheetPage({ elements: handed, relations }, { journeyId: 'j', areas: ['a', 'b'], showActors: true })
+    const unknown = { domainName: (scope: string) => scope, domainKnown: () => false }
+    const read = inLanguage(<Poster laidOut={laidOut} {...unknown} />)
+    expect(screen.queryByText('sheet.domainGone')).toBeNull()
+    read.unmount()
+    inLanguage(<Poster laidOut={laidOut} {...unknown} design={fakeDesign()} />)
+    expect(screen.getByText('sheet.domainGone')).toBeTruthy()
+  })
+
   it('offers nothing to place in Read, and its corners and adds in Design', () => {
     inLanguage(<Poster design={fakeDesign()} />)
     expect(screen.getByTestId('poster-pane').dataset.posture).toBe('design')

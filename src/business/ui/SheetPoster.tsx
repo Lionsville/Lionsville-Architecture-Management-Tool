@@ -212,15 +212,20 @@ function Tiles({ capabilities, drawing }: { capabilities: readonly SheetCapabili
 
 const basis = (cols: number, size: PosterTileSize) => `${cols} ${cols} ${cols * (POSTER_TILES[size].minWidth + 6) + 6}px`
 
-/** The line under a title: where it is kept, or who it is handed to, marked where nobody can open that. */
+/**
+ * The line under a title: where it is kept, or who it is handed to, marked where nobody can open that.
+ * A handing nobody can open is said on the area only in Design, where it can be put right; Read
+ * leaves it to the one line at the sheet's foot, so a picture is not spotted with the same warning.
+ */
 function AreaLine({ area, drawing }: { area: SheetArea; drawing: Drawing }) {
-  const { t, domainName, domainKnown, ownerLabel } = drawing
+  const { t, domainName, domainKnown, ownerLabel, design } = drawing
   const owner = ownerLabel?.(area.element.id)
   if (owner !== undefined) return <div className="poster-line">{t('sheet.poster.keptIn', { scope: owner })}</div>
   const domain = area.domain
   if (domain === undefined) return null
   const name = domainName?.(domain) ?? domain
   const broken = domainKnown !== undefined && !domainKnown(domain)
+  if (broken && !design) return null
   const more = (area.element.scopes?.length ?? 1) - 1
   return (
     <div className="poster-line" data-warn={broken ? '' : undefined} title={name}>
