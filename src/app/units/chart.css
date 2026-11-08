@@ -50,6 +50,8 @@
 
 .org-name { all: unset; display: block; box-sizing: border-box; width: 100%; font: inherit; cursor: pointer; }
 .org-name:hover { text-decoration: underline; }
+/* Each word of a name is a box of its own (`kit-name__word`), which an underline on the button does not reach: only the space between them took it. */
+.org-name:hover .kit-name__word { text-decoration: underline; }
 .org-name:focus-visible,
 .org-person:focus-visible,
 .org-link:focus-visible,
