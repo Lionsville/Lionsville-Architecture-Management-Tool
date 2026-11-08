@@ -149,7 +149,7 @@ export function ConnectionInspector({
     <Panel helpAt={PANEL_HELP.connection}
       kind={t('section.connection')}
       name={`${name(connection.sourceId)} ${connection.isBidirectional ? '↔' : '→'} ${name(connection.targetId)}`}
-      facts={[connection.certainty ? t(`certainty.${connection.certainty}` as StringKey) : undefined, badge, bendCount > 0 ? bends : undefined].filter(Boolean).join(' · ')}
+      facts={[connection.certainty ? t(`certainty.${connection.certainty}` as StringKey) : undefined, routeStatus === 'none' ? undefined : badge, bendCount > 0 ? bends : undefined].filter(Boolean).join(' · ')}
       actions={!readOnly && (
         <MoreMenu
           label={t('inspector.more')} size="small"
