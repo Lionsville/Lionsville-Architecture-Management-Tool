@@ -40,6 +40,8 @@
 @media (hover: none) { .kit-menu__key { display: none; } }
 .kit-menu__more { flex: none; display: inline-flex; transform: rotate(-90deg); color: var(--ink-3); }
 .kit-menu__reason { display: block; margin-top: 2px; color: var(--ink-3); font-size: var(--t-small); }
+/* Under its own label, past the room a tick keeps where any row has one. */
+.kit-menu__row:has(> .kit-menu__check) ~ .kit-menu__reason { padding-inline-start: calc(14px + var(--s-2)); }
 .kit-menu__line { height: 1px; margin: var(--s-1); background: var(--line); list-style: none; }
 .kit-menu__heading { padding: var(--s-1) var(--s-2); color: var(--ink-3); font-size: var(--t-small); list-style: none; }
 
