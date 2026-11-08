@@ -29,7 +29,7 @@ import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import { wordCount } from '../../documentation/markdownEditing'
 import { MarkdownDocument } from '../../documentation/ui/MarkdownDocument'
 import { FlowPlainPart, MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
-import { MarkdownFlow, MarkdownFlowBar } from '../../documentation/ui/MarkdownFlow'
+import { MarkdownFlow, MarkdownFlowBar, MarkdownFlowBeside } from '../../documentation/ui/MarkdownFlow'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
@@ -232,18 +232,17 @@ function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, image
       {...(refused ? { saveRefused: refused } : {})}
       onCancel={onClose}
     >
-      <div className="chain-editor" data-view={shownView}>
-        {/* Kept while it is not shown: each part's undo and caret live in its text box. */}
-        <div className="chain-editor__column" hidden={shownView === 'preview'}>
+      <MarkdownFlowBeside
+        view={shownView}
+        writing={(
           <MarkdownFlow>
             <MarkdownFlowBar words={words} />
             <div className="md-flow">{main}</div>
           </MarkdownFlow>
-        </div>
-        {shownView !== 'write' && (
-          <ReadingColumn parts={editing.kind === 'experiment' ? PLAIN_PARTS.filter((one) => (draft[one.key] ?? '').trim()) : []} draft={draft} body={body} renderMarkdown={renderMarkdown} s={s} />
         )}
-      </div>
+        reading={<ReadingColumn parts={editing.kind === 'experiment' ? PLAIN_PARTS.filter((one) => (draft[one.key] ?? '').trim()) : []} draft={draft} body={body} renderMarkdown={renderMarkdown} s={s} />}
+        data-testid="editor-preview"
+      />
     </FocusedWindow>
   )
 }
@@ -257,8 +256,7 @@ function ReadingColumn({ parts, draft, body, renderMarkdown, s }: {
   s: Translate
 }) {
   return (
-    <div className="chain-editor__column" data-testid="editor-preview">
-      <p className="chain-editor__caption">{s('observation.editAsRead')}</p>
+    <>
       <TitleRead>{draft.title}</TitleRead>
       <div className="md-flow">
         {parts.map((one) => (
@@ -269,7 +267,7 @@ function ReadingColumn({ parts, draft, body, renderMarkdown, s }: {
         ))}
       </div>
       <MarkdownDocument {...(parts.length ? { className: 'chain-body' } : {})}>{renderedBody(body, s, renderMarkdown)}</MarkdownDocument>
-    </div>
+    </>
   )
 }
 

@@ -845,7 +845,6 @@ export const EN = {
   'observation.editWrite': 'Write',
   'observation.editPreview': 'Preview',
   'observation.editBeside': 'Side by side',
-  'observation.editAsRead': 'As it will read',
   'observation.editSave': 'Save changes',
   'solution.editingSolution': 'Editing a solution',
   'solution.editingExperiment': 'Editing an experiment',

@@ -46,3 +46,35 @@
 @container (max-width: 36rem) {
   .md-flow-bar > .md-editor__count { display: none; }
 }
+
+/* --- written and read, beside each other ------------------------------------ */
+
+/* One column of one width, so going from writing to reading moves nothing; beside
+   each other each takes half, and the written one is a field on the page. */
+.md-beside { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; min-width: 0; }
+.md-beside[data-view='side'] { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s-5); }
+.md-beside__write, .md-beside__read { box-sizing: border-box; width: 100%; max-width: var(--w-document); margin-inline: auto; min-width: 0; }
+.md-beside__write[hidden] { display: none; }
+.md-beside[data-view='side'] .md-beside__write {
+  max-width: none;
+  padding: 0 var(--s-4) var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-3);
+  background: var(--surface-raised);
+}
+.md-beside[data-view='side'] .md-beside__write:focus-within { border-color: var(--field-focus); box-shadow: 0 0 0 var(--focus-ring-width) var(--focus-ring); }
+/* The bar sticks inside the field and wears its ground, not the page's. */
+.md-beside[data-view='side'] .md-flow-bar { margin-inline: calc(-1 * var(--s-4)); padding-inline: var(--s-4); border-radius: var(--r-3) var(--r-3) 0 0; background: var(--surface-raised); box-shadow: none; }
+.md-beside[data-view='side'] .md-beside__read { max-width: none; align-self: stretch; padding-inline-start: var(--s-5); border-inline-start: 1px solid var(--line); }
+.md-beside__head {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  min-height: var(--doc-bar-h);
+  margin-bottom: var(--s-4);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--t-small);
+  font-weight: var(--fw-strong);
+}
+.md-beside[data-view='side'] .md-beside__head { margin-top: 1px; }

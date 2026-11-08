@@ -60,3 +60,34 @@ export function useFlowSeat(id: string, on: boolean): { slot: HTMLElement | null
   if (!held) return undefined
   return { slot: held.slot, mine: held.seated === id, claim: () => held.seat(id, true) }
 }
+
+export type FlowView = 'write' | 'side' | 'preview'
+
+/**
+ * A document being written and how it will read: one of them, or the two beside
+ * each other. Beside each other they must not look alike, since both say the same
+ * words in the same sizes: the one written is a field, raised and bordered and
+ * ringed while the caret is in it, and the one read is the page, under a Preview
+ * heading level with the bar, past a rule. Written is kept while it is not shown,
+ * because each part's undo and caret live in its text box.
+ */
+export function MarkdownFlowBeside({ view, writing, reading, 'data-testid': testId }: {
+  view: FlowView
+  writing: ReactNode
+  reading: ReactNode
+  /** On what is read. */
+  'data-testid'?: string
+}) {
+  const { t } = useStrings()
+  return (
+    <div className="md-beside" data-view={view}>
+      <div className="md-beside__write" hidden={view === 'preview'}>{writing}</div>
+      {view !== 'write' && (
+        <div className="md-beside__read" data-testid={testId}>
+          {view === 'side' && <div className="md-beside__head">{t('md.preview')}</div>}
+          {reading}
+        </div>
+      )}
+    </div>
+  )
+}

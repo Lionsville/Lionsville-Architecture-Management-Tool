@@ -429,10 +429,18 @@ function EditorTop({ fieldId, seat, variant, canAttach, editor, ...bar }: Omit<C
 }
 
 /** The preview, in a field with something to say where nothing is written yet. */
-function PreviewColumn({ boxRef, editor, pane, minRows }: { boxRef: RefObject<HTMLDivElement | null>; editor: MarkdownEditorProps; pane: boolean; minRows: number }) {
+function PreviewColumn({ boxRef, editor, pane, minRows, beside }: {
+  boxRef: RefObject<HTMLDivElement | null>
+  editor: MarkdownEditorProps
+  pane: boolean
+  minRows: number
+  /** Beside the text: it says it is the preview, since both say the same words. */
+  beside: boolean
+}) {
   const { t } = useStrings()
   return (
     <div ref={boxRef} className="md-editor__preview" data-testid={editor.previewTestId} style={pane ? undefined : { minHeight: minRows * LINE + 18 }}>
+      {beside && <div className="md-editor__previewHead">{t('md.preview')}</div>}
       {pane || editor.value.trim() ? editor.renderPreview?.(editor.value) : <span className="md-editor__nothing">{t('md.nothing')}</span>}
     </div>
   )
@@ -541,7 +549,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
             onCaret={setCaret} onKeyDown={onKeyDown} taking={taking} words={words} files={files}
           />
         )}
-        {view !== 'write' && renderPreview && <PreviewColumn boxRef={previewRef} editor={props} pane={pane} minRows={minRows} />}
+        {view !== 'write' && renderPreview && <PreviewColumn boxRef={previewRef} editor={props} pane={pane} minRows={minRows} beside={view === 'split'} />}
       </div>
       {props.helper && !flow && <div className="md-editor__helper">{props.helper}</div>}
       {canAttach && (

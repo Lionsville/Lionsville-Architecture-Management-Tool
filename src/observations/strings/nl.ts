@@ -826,7 +826,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.editWrite': 'Schrijven',
   'observation.editPreview': 'Voorbeeld',
   'observation.editBeside': 'Naast elkaar',
-  'observation.editAsRead': 'Zoals het gelezen wordt',
   'observation.editSave': 'Wijzigingen opslaan',
   'solution.editingSolution': 'Een oplossing bewerken',
   'solution.editingExperiment': 'Een experiment bewerken',
