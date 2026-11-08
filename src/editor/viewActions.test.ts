@@ -11,7 +11,7 @@ describe('what can be done to a view, said once', () => {
   it('lists every act in one order, delete last and destructive', () => {
     const all = viewActions({ canOpen: true, canRename: true, canConfigure: true, canDuplicate: true, canDuplicateAsOf: true, canHistory: true, canDelete: true }, t)
     expect(all.map((one) => one.id)).toEqual(['open', 'rename', 'settings', 'duplicate', 'duplicateAsOf', 'history', 'delete'])
-    expect(all.map((one) => one.label)).toEqual(['Open', 'Rename view…', 'Board settings…', 'Duplicate view', 'Duplicate as of…', 'History…', 'Delete view…'])
+    expect(all.map((one) => one.label)).toEqual(['Open', 'Rename view…', 'View settings…', 'Duplicate view', 'Duplicate as of…', 'History…', 'Delete view…'])
     expect(all.filter((one) => one.danger).map((one) => one.id)).toEqual(['delete'])
   })
 

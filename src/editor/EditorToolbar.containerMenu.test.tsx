@@ -88,7 +88,7 @@ describe('the menu of a container view', () => {
     fireEvent.click(screen.getByLabelText('Menu of the container view of Billing'));
     const menu = diagramMenu();
     expect(within(menu).getByText('Rename view…')).toBeTruthy();
-    expect(within(menu).getByText('Board settings…')).toBeTruthy();
+    expect(within(menu).getByText('View settings…')).toBeTruthy();
     // No duplicate: a second view about the same application would be two
     // answers to "what is inside it".
     expect(within(menu).queryByText('Duplicate view')).toBeNull();
@@ -104,7 +104,7 @@ describe('the menu of a container view', () => {
     const menu = diagramMenu();
     const remove = within(menu).getByText('Delete view…').closest('[role="menuitem"]');
     expect(remove?.getAttribute('aria-disabled')).not.toBe('true');
-    fireEvent.click(within(menu).getByText('Board settings…'));
+    fireEvent.click(within(menu).getByText('View settings…'));
     expect(onOpenDiagramSettings).toHaveBeenCalledWith('cd1');
   });
 
