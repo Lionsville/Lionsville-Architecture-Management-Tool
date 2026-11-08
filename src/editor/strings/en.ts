@@ -308,6 +308,7 @@ export const EN = {
   'board.emptyHow': 'Double-click anywhere to add a card, or use Add above.',
   'board.emptyAdd': 'Add an application',
   'board.emptyExisting': 'Bring in what exists…',
+  'board.emptyDismiss': 'Hide this note',
   'palette.existingShort': 'Existing…',
   'diagramSettings.tabCards': 'On the cards',
   'diagramSettings.tabExport': 'On an export',

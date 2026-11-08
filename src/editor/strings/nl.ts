@@ -297,6 +297,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'board.emptyHow': 'Dubbelklik ergens om een kaart toe te voegen, of gebruik Toevoegen hierboven.',
   'board.emptyAdd': 'Een applicatie toevoegen',
   'board.emptyExisting': 'Binnenhalen wat bestaat…',
+  'board.emptyDismiss': 'Deze uitleg verbergen',
   'palette.existingShort': 'Bestaand…',
   'diagramSettings.tabCards': 'Op de kaarten',
   'diagramSettings.tabExport': 'Op een export',

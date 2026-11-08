@@ -297,6 +297,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'board.emptyHow': 'Doppelklicken Sie irgendwo, um eine Karte hinzuzufügen, oder nutzen Sie oben Hinzufügen.',
   'board.emptyAdd': 'Eine Anwendung hinzufügen',
   'board.emptyExisting': 'Vorhandenes holen…',
+  'board.emptyDismiss': 'Diesen Hinweis ausblenden',
   'palette.existingShort': 'Vorhanden…',
   'diagramSettings.tabCards': 'Auf den Karten',
   'diagramSettings.tabExport': 'Auf einem Export',

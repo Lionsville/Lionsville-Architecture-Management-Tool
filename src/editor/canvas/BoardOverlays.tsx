@@ -10,7 +10,10 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MouseEvent as ReactMouseEvent, RefObject } from 'react';
 import { getSmoothStepPath, Panel, useReactFlow, ViewportPortal, type ConnectionLineComponentProps, type FinalConnectionState } from '@xyflow/react';
 import { useStrings } from '../../i18n/LanguageContext';
-import { Button } from '../../widgets/kit/Button';
+import { Button, IconButton } from '../../widgets/kit/Button';
+import { CloseIcon } from '../../widgets/icons';
+import { useSessionSet } from '../../widgets/sessionMemory';
+import { usePlaceHost } from '../../widgets/kit/placeHost';
 import { MenuButton } from '../../widgets/kit/Menu';
 import type { DesignDiagram, ElementId, Point } from '../../model/types';
 import type { EditorActions } from '../useEditorState';
@@ -116,11 +119,23 @@ function SelectionBar({ count, onAlign, onDistribute, onGroup }: {
   );
 }
 
-/** An empty board: its bands are the places to put things, and two ways in. Goes when a card lands. */
-export function EmptyBoard({ readOnly, onAdd, onExisting }: { readOnly: boolean; onAdd: (() => void) | undefined; onExisting: (() => void) | undefined }) {
+/**
+ * An empty board: its bands are the places to put things, and two ways in. Goes when a
+ * card lands, or when the person puts it away — with its ✕ or Escape — since a person
+ * who already knows how to add a card should not have to work around the note.
+ */
+export function EmptyBoard({ readOnly, onAdd, onExisting, onDismiss }: {
+  readOnly: boolean;
+  onAdd: (() => void) | undefined;
+  onExisting: (() => void) | undefined;
+  onDismiss(): void;
+}) {
   const { t } = useStrings();
   return (
     <div className="lv-empty" data-testid="empty-board">
+      <span className="lv-empty__close">
+        <IconButton size="small" label={t('board.emptyDismiss')} onClick={onDismiss}><CloseIcon size={12} /></IconButton>
+      </span>
       <h2 className="lv-empty__title">{t('board.emptyTitle')}</h2>
       {!readOnly && (
         <>
@@ -133,6 +148,45 @@ export function EmptyBoard({ readOnly, onAdd, onExisting }: { readOnly: boolean;
       )}
     </div>
   );
+}
+
+/** The session's memory of the empty boards whose note was put away, by view. */
+const EMPTY_NOTE_AWAY = 'board.emptyNoteAway';
+
+/**
+ * The empty board's note, until it is put away. Away is for the view and for the
+ * session: the window remembers it while it is open, so switching tabs or pages does not
+ * bring it back, and a new session or another empty view shows it again — a note
+ * nobody can recall having hidden should not stay hidden for good. Escape anywhere on
+ * the board puts it away too, since nothing on an empty board takes Escape for itself.
+ */
+export function EmptyBoardNote({ viewId, board, readOnly, onAdd, onExisting }: {
+  viewId: string;
+  board: RefObject<HTMLDivElement | null>;
+  readOnly: boolean;
+  onAdd: (() => void) | undefined;
+  onExisting: (() => void) | undefined;
+}) {
+  const [away, setAway] = useSessionSet(EMPTY_NOTE_AWAY);
+  const shown = !away.has(viewId);
+  const dismiss = useCallback(() => setAway(new Set(away).add(viewId)), [away, setAway, viewId]);
+  const pageUp = usePlaceHost()?.pageUp ?? false;
+  useEffect(() => {
+    if (!shown || pageUp) return undefined;
+    // A press on open board leaves the focus on the body, so the key is heard on the
+    // window: from the board, or from nowhere in particular while the board is what is up.
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      const from = event.target;
+      if (from !== document.body && !(from instanceof Node && board.current?.contains(from))) return;
+      event.preventDefault();
+      dismiss();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [board, shown, pageUp, dismiss]);
+  if (!shown) return null;
+  return <EmptyBoard readOnly={readOnly} onAdd={onAdd} onExisting={onExisting} onDismiss={dismiss} />;
 }
 
 /** Which side of a card a point is nearest to, for a line released on it. */

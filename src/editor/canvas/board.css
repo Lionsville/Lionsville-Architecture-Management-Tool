@@ -283,7 +283,8 @@
   background: var(--surface-raised);
   transform: translate(-50%, -50%);
 }
-.lv-empty__title { margin: 0 0 var(--s-2); font-size: var(--canvas-t-md); font-weight: var(--fw-strong); }
+.lv-empty__close { position: absolute; top: var(--s-2); inset-inline-end: var(--s-2); }
+.lv-empty__title { margin: 0 0 var(--s-2); margin-inline-end: var(--s-5); font-size: var(--canvas-t-md); font-weight: var(--fw-strong); }
 .lv-empty__how { margin: 0 0 var(--s-3); color: var(--ink-2); }
 .lv-empty__acts { display: flex; gap: var(--s-2); }
 

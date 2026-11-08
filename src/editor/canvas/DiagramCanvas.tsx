@@ -74,7 +74,7 @@ import { keyboardIntent } from './keyboardIntent';
 import { ViewportMemory, type Viewport } from './viewportMemory';
 import { useBoardZoom } from './ZoomControls';
 import type { OverlayLegendProps } from './OverlayLegend';
-import { BoardChrome, BoardConnectionLine, boardAttributes, EmptyBoard, useAskAdd } from './BoardOverlays';
+import { BoardChrome, BoardConnectionLine, boardAttributes, EmptyBoardNote, useAskAdd } from './BoardOverlays';
 import type { AddRequest } from '../AddPicker';
 import type { OverlayMark } from '../theme/overlayColors';
 import { FIT_ALL, MAX_ZOOM, MIN_ZOOM } from './fitAll';
@@ -1754,7 +1754,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
           {props.children}
         </ReactFlow>
         {framed && nodes.length === 0 && props.diagram.kind === 'layer7' && (
-          <EmptyBoard readOnly={props.readOnly} onAdd={asking.askMiddle} onExisting={asking.askExisting} />
+          <EmptyBoardNote viewId={props.diagram.id} board={containerRef} readOnly={props.readOnly} onAdd={asking.askMiddle} onExisting={asking.askExisting} />
         )}
         </NodeResizeContext.Provider>
       </RouteEditingContext.Provider>
