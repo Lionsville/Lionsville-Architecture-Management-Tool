@@ -153,7 +153,7 @@ describe('a source a provider answers for', () => {
       provider: { status: () => held, onWork: asked.onSourceWork },
     })
     const bar = await screen.findByTestId('saved-indicator')
-    expect(bar.textContent).toBe('✓Not saved yet · Elsewhere')
+    expect(bar.textContent).toBe('✓Elsewhere')
 
     held = 'dirty'
     asked.tell()

@@ -42,6 +42,12 @@ describe('the status word', () => {
     expect(word({ status: 'dirty' }).text).toBe(s('shell.unsaved'))
   })
 
+  it('says only the place for a scope opened and not changed, as the root does: it is kept there already', () => {
+    expect(word({ status: 'clean', savedAt: null, place: 'Folder · work1' })).toEqual({ text: 'Folder · work1', tone: 'saved', alarm: false })
+    expect(word({ place: 'Folder · work1' }).text).toBe('Folder · work1')
+    expect(word({ status: 'clean', savedAt: new Date('2026-11-07T10:23:00'), place: 'Folder · work1' }).text).toMatch(/10:23.* · Folder · work1$/)
+  })
+
   it('says nothing is waiting where nothing is open', () => {
     expect(word({}).text).toBe(s('frame.nothingWaiting'))
   })

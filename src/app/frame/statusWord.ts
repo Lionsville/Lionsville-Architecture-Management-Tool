@@ -78,5 +78,7 @@ export function statusWord(facts: StatusFacts, language: Language, s: Translate)
   }
   const word = WORDS[status]
   if (word) return said(s(word), 'busy')
-  return said(at(savedAt ? s('shell.saved', { time: clockTime(savedAt, language) }) : s('shell.notSaved')), 'saved')
+  if (savedAt) return said(at(s('shell.saved', { time: clockTime(savedAt, language) })), 'saved')
+  // Clean and not written this session is what was read: kept where it is, which is the one thing to say.
+  return said(place ?? s('shell.notSaved'), 'saved')
 }
