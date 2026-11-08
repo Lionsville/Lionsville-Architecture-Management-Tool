@@ -27,7 +27,7 @@ import type { Theme } from '@mui/material/styles'
 export type Mode = 'light' | 'dark'
 
 export const LIGHT = {
-  ground: '#f6f3ef', surface: '#fefdfb', 'surface-2': '#ece9e4', 'surface-raised': '#ffffff',
+  ground: '#f6f3ef', surface: '#fefdfb', 'surface-2': '#ece9e4', 'surface-raised': '#ffffff', 'press-hover': '#e7e3dc',
   line: '#dcd9d3', 'line-strong': '#89847a', ink: '#171f28', 'ink-2': '#3d444e', 'ink-3': '#565d66',
   accent: '#015d74', 'accent-soft': '#d4edf5', 'on-accent': '#fefdfb', ok: '#1e6534',
   'ok-soft': '#d8f2dc', warn: '#7e4f04', 'warn-soft': '#f7e8c4', bad: '#a52520', 'bad-soft': '#fde3de',
@@ -78,7 +78,7 @@ export const LIGHT = {
 } as const
 
 export const DARK: Record<ColourToken, string> = {
-  ground: '#0c151d', surface: '#141e29', 'surface-2': '#1e2833', 'surface-raised': '#242f3b',
+  ground: '#0c151d', surface: '#141e29', 'surface-2': '#1e2833', 'surface-raised': '#242f3b', 'press-hover': '#2f3b49',
   line: '#2d3843', 'line-strong': '#6f7e8d', ink: '#e8eef2', 'ink-2': '#bfc9d1', 'ink-3': '#9ea9b4',
   accent: '#6fcee4', 'accent-soft': '#153c4a', 'on-accent': '#0c151d', ok: '#82d79a',
   'ok-soft': '#1e3a26', warn: '#edc06b', 'warn-soft': '#43341a', bad: '#f69088', 'bad-soft': '#512927',
