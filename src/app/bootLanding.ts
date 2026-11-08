@@ -228,8 +228,25 @@ export type PlaceScope = HeldScope & { snapshot: ScopeSnapshot }
  * in one read of the tree. `undefined` where no scope is there.
  */
 export async function readPlaceScope(scopes: ScopeReader, path: ScopePath): Promise<PlaceScope | undefined> {
-  const [held, ...above] = await readScopes(scopes, [path, ...ancestorScopes(path)])
-  if (!held) return undefined
+  const read = await readPlaceOrNearest(scopes, path)
+  return 'nearest' in read ? undefined : read
+}
+
+/** Where a place's scope is not there: the nearest scope above it that is, read in the same read. */
+export type NearestScope = { nearest: ScopePath }
+
+/**
+ * The scope a place names, as `readPlaceScope` reads it, or where it is not there
+ * the nearest scope above it that is — where a place changed in an open tab lands
+ * (`nearestPlace`), so a fresh load of the same address lands there too.
+ */
+export async function readPlaceOrNearest(scopes: ScopeReader, path: ScopePath): Promise<PlaceScope | NearestScope> {
+  const paths = [path, ...ancestorScopes(path)]
+  const [held, ...above] = await readScopes(scopes, paths)
+  if (!held) {
+    const at = above.findIndex((one) => one !== undefined)
+    return { nearest: at < 0 ? ROOT_SCOPE : paths[at + 1]! }
+  }
   return { snapshot: held, model: held.model, ancestorDecisions: above.flatMap((one) => one?.model.decisions ?? []) }
 }
 
@@ -240,11 +257,23 @@ export async function readPlaceScope(scopes: ScopeReader, path: ScopePath): Prom
  * and is the caller's to say on the trail; here it is the organisation's home.
  */
 export async function landedAt(
-  reading: Promise<PlaceScope | undefined>, place: Place, ms = BOOT_READ_MS,
+  reading: Promise<PlaceScope | NearestScope | undefined>, place: Place, ms = BOOT_READ_MS,
 ): Promise<BootLanding> {
   const read = await inTime(reading, ms)
   const finding = place.finding !== undefined ? { initialFinding: place.finding } : {}
-  return { ...(read === 'late' ? homeOf(place.scope) : placeLanding(read.held, place)), ...finding }
+  if (read === 'late') return { ...homeOf(place.scope), ...finding }
+  const held = read.held
+  if (held !== undefined && 'nearest' in held) return { ...nearestLanding(held.nearest, place), ...finding }
+  return { ...placeLanding(held, place), ...finding }
+}
+
+/**
+ * A scope that is not there, landed as a place changed in an open tab lands
+ * (`nearestPlace`): the home of the nearest scope above it, saying it opened the
+ * nearest place; at the organisation, saying which scope is not there.
+ */
+function nearestLanding(nearest: ScopePath, place: Place): BootLanding {
+  return nearest === ROOT_SCOPE ? scopeNotThere(place) : { ...homeOf(nearest), notice: 'shell.placeGone' }
 }
 
 /**

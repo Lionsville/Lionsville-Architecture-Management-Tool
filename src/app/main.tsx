@@ -64,7 +64,7 @@ import { recoverPending } from '../projects/pendingRecovery'
 import { readScope } from '../projects/scopeAccess'
 import { sourceKey } from '../platform/workingSource'
 import {
-  bootDecidedBy, dialogAsked, landedAt, landingOf, placeLanding, placeToRead, readPlaceScope, reopened, withoutDialog,
+  bootDecidedBy, dialogAsked, landedAt, landingOf, placeLanding, placeToRead, readPlaceOrNearest, reopened, withoutDialog,
 } from './bootLanding'
 import { oldPlaceForm, readPlace, unknownPlace, writePlace } from '../agent/place'
 import type { Place } from '../agent/place'
@@ -652,7 +652,7 @@ if (bootPlace !== undefined && oldPlaceForm(window.location.hash)) {
 async function landingAtPlace(place: Place): Promise<BootLanding> {
   const path = placeToRead(place)
   if (path === undefined) return placeLanding(undefined, place)
-  const reading = readPlaceScope(shell.repositories.scopes, path).catch((cause: unknown) => {
+  const reading = readPlaceOrNearest(shell.repositories.scopes, path).catch((cause: unknown) => {
     shell.diagnostics.report({ level: 'warn', where: 'boot', message: 'the place in the address could not be read', cause })
     return undefined
   })

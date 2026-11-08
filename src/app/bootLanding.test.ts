@@ -11,7 +11,7 @@ import type { Place } from '../agent/place'
 import type { ScopeSnapshot } from '../projects/scope'
 import {
   BOOT_READ_MS, bootDecidedBy, dialogAsked, initialPageFor, landedAt, landingOf, placeLanding, placeToRead,
-  readPlaceScope, reopened, scopeToRead, withoutDialog,
+  readPlaceOrNearest, readPlaceScope, reopened, scopeToRead, withoutDialog,
 } from './bootLanding'
 import type { PlaceScope } from './bootLanding'
 import { heldRepositories } from './testing/heldRepositories'
@@ -242,6 +242,16 @@ describe('a place in the address (ADR-0033)', () => {
     expect(read?.snapshot.path).toBe('acme/rail')
     expect(read?.ancestorDecisions.map((one) => one.id)).toEqual(['TOP-1'])
     expect(await readPlaceScope(repositories.scopes, 'acme/gone')).toBeUndefined()
+    expect(await readPlaceOrNearest(repositories.scopes, 'acme/gone/deeper')).toEqual({ nearest: 'acme' })
+    expect(await readPlaceOrNearest(repositories.scopes, 'gone')).toEqual({ nearest: '' })
+  })
+
+  it('lands a scope that is not there on the nearest one above it, as a place changed in an open tab does', async () => {
+    expect(await landedAt(Promise.resolve({ nearest: 'acme' }), { scope: 'acme/gone', page: 'board', id: 'x' }))
+      .toEqual({ initialHome: 'acme', notice: 'shell.placeGone' })
+    // At the organisation, by the scope's name, as before.
+    expect(await landedAt(Promise.resolve({ nearest: '' }), { scope: 'gone', page: 'board', id: 'x' }))
+      .toEqual({ notice: 'shell.placeNoScope', noticeWith: { scope: 'gone' } })
   })
 
   it('opens the page a destination names, the same words the agent uses', () => {
