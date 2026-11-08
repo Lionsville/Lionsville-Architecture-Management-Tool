@@ -1898,6 +1898,8 @@ export const EN = {
   'frame.lookingDetail': 'Only on your screen. Nothing can be changed while you look, so undo is off.',
   'frame.lookingToday': 'Back to today',
   'frame.lookingKeep': 'Make this the view’s day',
+  'frame.lookingKept': '{view} now shows {day}',
+  'frame.lookingUndo': 'Undo',
   'frame.lookingDayToday': 'today',
   'frame.lookingBack': 'Back to {day}',
   'frame.agentCountOne': '{count} change so far.',

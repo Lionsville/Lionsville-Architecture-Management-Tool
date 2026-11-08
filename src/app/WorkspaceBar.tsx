@@ -162,16 +162,18 @@ const NO_BANDS: readonly StackedBand[] = []
  */
 function useLookBand(parts: WorkspaceParts, active: DesignDiagram | undefined, looking: boolean): readonly StackedBand[] {
   const { props, session, viewing, pages } = parts
-  const { s, language } = props.shell
+  const { s, language, notify } = props.shell
   const { carried, carryTo, letGo, backToPlan } = pages.plans
   return useMemo<readonly StackedBand[]>(() => {
     if (!looking || !active) return NO_BANDS
     const day = shownAsOf(active, viewing.days)
     const say = (value: string | undefined) => (value ? formatDay(value, language) : s('frame.lookingDayToday'))
     const back = () => { viewing.forget(active.id); letGo() }
+    // It changes what everyone opening the view sees, so it says so, with the way back.
     const keep = () => {
       session.dispatch({ type: 'diagram.update', id: active.id, patch: { asOf: day } })
       back()
+      notify(s('frame.lookingKept', { view: active.name, day: say(day) }), 'success', { label: s('frame.lookingUndo'), onClick: () => session.undo() })
     }
     // A board opened from a plan carries it: the plan's own days to step between, and the way back.
     const carrying = carried ? carriedPlan(carried, day ?? '', (next) => carryTo(active.id, next)) : undefined
@@ -190,7 +192,7 @@ function useLookBand(parts: WorkspaceParts, active: DesignDiagram | undefined, l
         </>
       ),
     }]
-  }, [looking, active, viewing, session, s, language, carried, carryTo, letGo, backToPlan])
+  }, [looking, active, viewing, session, s, language, notify, carried, carryTo, letGo, backToPlan])
 }
 
 /** The look said to the frame, so the address carries it; and one the address or an agent asked for, taken up. */

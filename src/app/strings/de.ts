@@ -1670,6 +1670,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.lookingDetail': 'Nur auf Ihrem Bildschirm. Beim Ansehen lässt sich nichts ändern, deshalb ist Rückgängig aus.',
   'frame.lookingToday': 'Zurück zu heute',
   'frame.lookingKeep': 'Zum Tag der Ansicht machen',
+  'frame.lookingKept': '{view} zeigt jetzt {day}',
+  'frame.lookingUndo': 'Rückgängig',
   'frame.lookingDayToday': 'heute',
   'frame.lookingBack': 'Zurück zu {day}',
   'frame.agentCountOne': 'Bisher {count} Änderung.',

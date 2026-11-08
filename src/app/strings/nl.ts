@@ -1666,6 +1666,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.lookingDetail': 'Alleen op jouw scherm. Er kan niets veranderen terwijl je kijkt, dus ongedaan maken staat uit.',
   'frame.lookingToday': 'Terug naar vandaag',
   'frame.lookingKeep': 'Maak dit de dag van de weergave',
+  'frame.lookingKept': '{view} toont nu {day}',
+  'frame.lookingUndo': 'Ongedaan maken',
   'frame.lookingDayToday': 'vandaag',
   'frame.lookingBack': 'Terug naar {day}',
   'frame.agentCountOne': 'Tot nu toe {count} wijziging.',
