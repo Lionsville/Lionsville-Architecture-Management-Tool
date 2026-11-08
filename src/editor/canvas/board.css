@@ -78,6 +78,17 @@
 .lv-board:not([data-kind='container']) .lv-tile--low { padding-block: calc(1px / var(--canvas-zoom, 1)); }
 .lv-board:not([data-kind='container']) .lv-tile--low .kit-card__head { align-items: center; }
 .lv-board:not([data-kind='container']) .lv-tile--low .kit-card__name { -webkit-line-clamp: 2; line-height: var(--lh-close); }
+/*
+ * An application's card with no description to say keeps the height its layout gave it, and
+ * its name and its marks stand together in the middle of it, the space shared above and below:
+ * with the name at the top and the marks at the foot, a third of the card was an empty hole
+ * between them at 100% and nearer. `safe` keeps the name in view where a card is too short.
+ */
+.lv-board:not([data-kind='container']):not([data-distance='far']) .lv-tile:not(.lv-tile--low):is(.lv-board[data-hide-descriptions] *, :not(:has(.lv-tile__description))) {
+  justify-content: safe center;
+  gap: calc(var(--s-2) / var(--canvas-zoom, 1));
+}
+.lv-board:not([data-kind='container']):not([data-distance='far']) .lv-tile:not(.lv-tile--low):is(.lv-board[data-hide-descriptions] *, :not(:has(.lv-tile__description))) .kit-card__head { flex: 0 1 auto; }
 
 /* A container diagram: boxes say what they are at every distance, and the context recedes. */
 .lv-board[data-kind='container'] .lv-tile { text-align: center; }
