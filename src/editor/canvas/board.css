@@ -179,6 +179,8 @@
 .lv-layer__name { position: absolute; top: 50%; left: calc(var(--s-2) / var(--canvas-zoom, 1)); color: var(--ink-2); font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); transform: translateY(-50%); }
 
 .lv-crossing { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-2); border: 1px solid var(--line-strong); border-radius: var(--r-2); background: var(--surface-raised); box-shadow: var(--shadow); color: var(--ink-2); font-size: var(--canvas-t-sm); }
+/* Two notices at once stand one under the other. */
+.lv-crossing + .lv-crossing { margin-top: var(--s-1); }
 
 /* Where it runs: derived and never pressed, around the containers and under them. */
 .lv-deployment {

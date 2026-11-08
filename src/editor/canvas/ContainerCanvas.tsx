@@ -51,7 +51,9 @@ export function ContainerCanvas(
     <DiagramCanvas {...props} onAddByDrop={onAddByDrop}>
       <LabelSpread />
       <CategoryBands />
-      {!props.readOnly && props.onRouteLines && <LinesCrossing onRoute={props.onRouteLines} boundary={diagram.applicationElementId} />}
+      {!props.readOnly && props.onRouteLines && (
+        <LinesCrossing onRoute={props.onRouteLines} onMoveClear={(moves) => actions.movePlacements([...moves])} boundary={diagram.applicationElementId} />
+      )}
       {props.showKey !== false && (
         <ContainerKey model={model} diagram={diagram} day={diagram.asOf} showDeployment={props.showDeployment === true} showStatus={props.showStatus === true} />
       )}
