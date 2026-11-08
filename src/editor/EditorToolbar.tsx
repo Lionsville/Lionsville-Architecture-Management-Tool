@@ -854,12 +854,16 @@ function Breadcrumb({
   onOpenThisView: (() => void) | undefined;
 }) {
   const { t } = useStrings();
+  // While a page is up the view is not where you are: its name reads as a tab not
+  // chosen, and pressing it goes back to the view, as a tab's does.
+  const pageUp = usePlaceHost()?.pageUp ?? false;
   const application = model.elements.find((e) => e.id === activeDiagram.applicationElementId);
   const parent = levelUpOf(model, activeDiagram, cameFrom);
   const name = application?.name ?? activeDiagram.name;
   const title = t('c4.containerTitle', { name });
+  const pressed = pageUp ? () => onActiveDiagramChange(activeDiagram.id) : onOpenThisView;
   return (
-    <div className="lv-levelbar">
+    <div className="lv-levelbar" data-page-up={pageUp || undefined}>
       {parent && (
         <Tooltip title={t('toolbar.backTo', { name: viewWord(model, parent) })}>
           <KitButton
@@ -873,8 +877,8 @@ function Breadcrumb({
           </KitButton>
         </Tooltip>
       )}
-      {onOpenThisView
-        ? <span className="lv-levelbar__title"><KitButton variant="quiet" aria-haspopup="dialog" data-testid="this-view" onClick={onOpenThisView}>{title}</KitButton></span>
+      {pressed
+        ? <span className="lv-levelbar__title"><KitButton variant="quiet" aria-haspopup={pageUp ? undefined : 'dialog'} data-testid="this-view" onClick={pressed}>{title}</KitButton></span>
         : <span className="lv-levelbar__title">{title}</span>}
       {onMenu && (
         <Tooltip title={t('toolbar.containerMenu')}>

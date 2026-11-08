@@ -19,6 +19,7 @@ import { DEFAULT_GROUP_SIZE } from './canvas/domainGroupPlacement';
 import { slug } from '../model/keys';
 import type { DesignModel } from '../model/types';
 import { installReactFlowMocks } from './reactFlowTestSetup';
+import { PlaceHostContext } from '../widgets/kit/placeHost';
 
 beforeAll(() => {
   installReactFlowMocks();
@@ -229,6 +230,19 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
     expect(screen.getByTestId('level-up').textContent).toContain('‹');
     fireEvent.click(screen.getByRole('button', { name: 'Add' }));
     expect(screen.getByRole('menuitem', { name: 'Container' })).toBeDefined();
+  });
+
+  it('reads the container diagram as not where you are while a page is up, and goes back to it on a press', () => {
+    const onActiveDiagramChange = vi.fn();
+    render(
+      <PlaceHostContext.Provider value={{ page: null, views: null, pageUp: true }}>
+        {editorUi({ model: baseModel(), activeDiagramId: 'd2', onActiveDiagramChange }, { current: undefined as unknown as EditorHostState })}
+      </PlaceHostContext.Provider>,
+    );
+    expect(document.querySelector('.lv-levelbar')?.getAttribute('data-page-up')).toBe('true');
+    expect(screen.getByTestId('this-view').getAttribute('aria-haspopup')).toBeNull();
+    fireEvent.click(screen.getByTestId('this-view'));
+    expect(onActiveDiagramChange).toHaveBeenCalledWith('d2');
   });
 });
 

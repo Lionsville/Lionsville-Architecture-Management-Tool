@@ -111,6 +111,7 @@
 
 .lv-levelbar { display: flex; align-items: center; gap: var(--s-2); min-width: 0; padding-inline: var(--s-2); }
 .lv-levelbar__title, .lv-levelbar__title button { color: var(--ink); font-size: var(--canvas-t-md); font-weight: var(--fw-strong); white-space: nowrap; }
+.lv-levelbar[data-page-up] .lv-levelbar__title, .lv-levelbar[data-page-up] .lv-levelbar__title button { color: var(--ink-2); font-weight: var(--fw-regular); }
 
 /* A row per category, under the containers. */
 .lv-layer { position: absolute; z-index: -5; box-sizing: border-box; border: calc(1px / var(--canvas-zoom, 1)) solid var(--line); border-radius: var(--r-2); background: var(--surface); pointer-events: none; }
