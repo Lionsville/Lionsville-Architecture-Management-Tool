@@ -42,6 +42,19 @@ describe('what a view floats stays under a page', () => {
   })
 })
 
+describe('the status word under 75 rem', () => {
+  // "Offline · 1 not saved" read as a red "▲ 1", a badge, at every laptop width: the
+  // swap to icon and count is for a calm word, and one that is not keeps its first words.
+  it('swaps only a calm word for its icon and count', () => {
+    const css = readFileSync('src/widgets/kit/Frame.css', 'utf8')
+    const narrow = css.slice(css.indexOf('@container kit-frame (max-width: 75rem)'))
+    const block = narrow.slice(0, narrow.indexOf('\n}'))
+    const rules = block.split('\n').filter((line) => line.includes('kit-frame__status'))
+    expect(rules.length).toBeGreaterThan(0)
+    for (const rule of rules) expect(rule).toContain(".kit-frame__status[data-calm='true']")
+  })
+})
+
 describe('the density switch', () => {
   // It was written and never imported, so Compact set an attribute nothing read.
   it('is loaded with the frame, and moves the rows, the frame’s bars and its controls', () => {

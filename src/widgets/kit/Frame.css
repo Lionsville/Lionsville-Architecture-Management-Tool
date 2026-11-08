@@ -175,10 +175,11 @@
 
 /* Under 75 rem the word gives way to its icon and count before anything overlaps. In rem and on the frame, since a media query knows neither the text size nor what the frame was given. The find field gives way by its own width (above). */
 /* A word with no icon and count of its own is not capped here: it stands whole or folds whole to its mark, measured, rather than being cut at a width. */
+/* Only a calm word: one that is not keeps its first words ("Offline", "Saving…") under the rule above, or a count in red reads as a badge. */
 @container kit-frame (max-width: 75rem) {
-  .kit-frame__status:has(.kit-frame__status-short) { max-width: 8rem; }
-  .kit-frame__status:has(.kit-frame__status-short) .kit-frame__status-word { display: none; }
-  .kit-frame__status-short { display: inline; }
+  .kit-frame__status[data-calm='true']:has(.kit-frame__status-short) { max-width: 8rem; }
+  .kit-frame__status[data-calm='true']:has(.kit-frame__status-short) .kit-frame__status-word { display: none; }
+  .kit-frame__status[data-calm='true'] .kit-frame__status-short { display: inline; }
 }
 
 /* A window this narrow in rem, by zoom or by text size, holds one column of work: a panel stands over it instead of squeezing it to nothing, and the tree leaves it most of the width. */
