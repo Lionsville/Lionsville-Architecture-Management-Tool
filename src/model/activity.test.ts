@@ -125,6 +125,11 @@ describe('summarise', () => {
     expect(summarise([{
       type: 'relation.create',
       relation: { id: 'r2', type: 'supports', sourceId: 'billing', targetId: 'fulfilment' },
+    }], fromArrays(model({ elements: [element('billing', 'Billing'), { ...element('fulfilment', 'Fulfilment'), kind: 'function' as const }] })))).toEqual({ key: 'activity.supportsAdded', name: 'Fulfilment' })
+    // A row to something this scope does not hold keeps the row's own words.
+    expect(summarise([{
+      type: 'relation.create',
+      relation: { id: 'r3', type: 'supports', sourceId: 'billing', targetId: 'elsewhere' },
     }], before())).toEqual({ key: 'activity.rowAdded', typeKey: 'relation.supports' })
   })
 

@@ -343,6 +343,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.relationChanged': 'Koppeling gewijzigd',
   'activity.relationDeleted': 'Koppeling verwijderd',
   'activity.rowAdded': 'Rij getekend ({type})',
+  'activity.supportsAdded': 'Een applicatie aan {name} gekoppeld',
+  'activity.assignedAdded': 'Vastgelegd wie voor {name} instaat',
   'activity.rowChanged': 'Rij gewijzigd ({type})',
   'activity.rowDeleted': 'Rij verwijderd ({type})',
   'activity.usesSet': 'Vastgelegd wat {name} gebruikt ({count} rijen)',

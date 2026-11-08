@@ -18,6 +18,8 @@ import { mayDo } from './access'
 import type { PeopleRegisterAccess, Saying } from './access'
 
 const SEES_LABEL = { names: 'people.agentsNames', pseudonyms: 'people.agentsPseudonyms' } as const
+/** A choice starts with a capital, as every other choice does; the sentence that reads it back does not. */
+const SEES_OPTION = { names: 'people.agentsNamesOption', pseudonyms: 'people.agentsPseudonymsOption' } as const
 
 function days(text: string): number | undefined {
   const value = Number(text)
@@ -65,7 +67,7 @@ export function PolicyPanel({ register, saying, s }: { register: PeopleRegisterA
         <>
           <SelectField
             label={s('people.agentsSee')} value={sees} onChange={(next) => setSees(next as AgentSees)}
-            options={AGENT_SEES.map((one) => ({ value: one, label: s(SEES_LABEL[one]) }))}
+            options={AGENT_SEES.map((one) => ({ value: one, label: s(SEES_OPTION[one]) }))}
           />
           <div><Button variant="primary" disabled={!changed} onClick={save} data-testid="people-policy-save">{s('people.save')}</Button></div>
         </>

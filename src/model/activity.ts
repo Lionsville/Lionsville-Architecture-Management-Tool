@@ -167,8 +167,13 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
     // the four the business layer brought say which they are, because "drew a
     // connection" for a row between a capability and a journey step would be
     // the log describing something that did not happen.
-    case 'relation.create':
+    case 'relation.create': {
+      // A mapping is said as one: what was mapped to, not the row it is kept as.
+      const mapped = lead.relation.type === 'supports' ? 'activity.supportsAdded' : lead.relation.type === 'assigned' ? 'activity.assignedAdded' : undefined
+      const to = before.elements[lead.relation.targetId]?.name
+      if (mapped && to !== undefined) return { key: mapped, name: to }
       return rowStep(lead.relation.type, 'activity.relationAdded', 'activity.rowAdded')
+    }
     case 'relation.update':
       return rowStep(before.relations[lead.id]?.type, 'activity.relationChanged', 'activity.rowChanged')
     case 'relation.delete':

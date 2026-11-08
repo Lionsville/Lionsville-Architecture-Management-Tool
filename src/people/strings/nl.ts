@@ -133,7 +133,9 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.days': 'dagen',
   'people.agentsSee': 'Agents zien',
   'people.agentsNames': 'namen',
+  'people.agentsNamesOption': 'Namen',
   'people.agentsPseudonyms': 'pseudoniemen',
+  'people.agentsPseudonymsOption': 'Pseudoniemen',
   'people.policyNote': 'Toegepast als de organisatie wordt geopend en elke dag dat ze open blijft. Ingesteld door wie de instellingen van de organisatie mag wijzigen. Twee dingen hangen hier niet van af: een ondertekend besluit houdt de namen waarmee het is ondertekend, en geen agent kan iemand vergeten.',
   'people.policySaved': 'Het beleid is gewijzigd.',
 
@@ -242,7 +244,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'people.holdYou': 'Gemarkeerd als u',
   'people.leaveBack': 'Het register kent geen ongedaan maken, maar dit kan worden teruggedraaid tot de naam is vergeten. Een beëindigde rol is een stap in de lijst Activiteit van het bereik dat hem bewaart.',
   'people.leaveEffects': 'Wat dit doet',
-  'people.leaveEndsNone': 'Beëindigt geen rol: niets loopt door na die dag.',
+  'people.leaveEndsNone': 'Heeft geen rol, dus verder eindigt er die dag niets.',
   'people.leaveEndsOne': 'Beëindigt {count} rol op die dag: {roles}.',
   'people.leaveEndsOther': 'Beëindigt {count} rollen op die dag: {roles}.',
   'people.leaveForgets': 'Houdt de naam op elk scherm tot {day} en toont daarna een pseudoniem.',

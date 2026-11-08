@@ -362,6 +362,8 @@ export const EN = {
   'activity.relationChanged': 'Changed a connection',
   'activity.relationDeleted': 'Deleted a connection',
   'activity.rowAdded': 'Drew a row ({type})',
+  'activity.supportsAdded': 'Mapped an application to {name}',
+  'activity.assignedAdded': 'Said who answers for {name}',
   'activity.rowChanged': 'Changed a row ({type})',
   'activity.rowDeleted': 'Deleted a row ({type})',
   'activity.usesSet': 'Set what {name} uses ({count} rows)',

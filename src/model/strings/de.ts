@@ -343,6 +343,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.relationChanged': 'Verbindung geändert',
   'activity.relationDeleted': 'Verbindung gelöscht',
   'activity.rowAdded': 'Zeile gezeichnet ({type})',
+  'activity.supportsAdded': 'Eine Anwendung {name} zugeordnet',
+  'activity.assignedAdded': 'Festgelegt, wer für {name} einsteht',
   'activity.rowChanged': 'Zeile geändert ({type})',
   'activity.rowDeleted': 'Zeile gelöscht ({type})',
   'activity.usesSet': 'Festgelegt, was {name} nutzt ({count} Zeilen)',

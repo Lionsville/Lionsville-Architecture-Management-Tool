@@ -133,7 +133,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.days': 'Tage',
   'people.agentsSee': 'Agenten sehen',
   'people.agentsNames': 'Namen',
+  'people.agentsNamesOption': 'Namen',
   'people.agentsPseudonyms': 'Pseudonyme',
+  'people.agentsPseudonymsOption': 'Pseudonyme',
   'people.policyNote': 'Angewendet, wenn die Organisation geöffnet wird, und an jedem Tag, an dem sie geöffnet bleibt. Festgelegt von denen, die die Einstellungen der Organisation ändern dürfen. Zwei Dinge hängen nicht davon ab: Eine unterzeichnete Entscheidung behält die Namen, mit denen sie unterzeichnet wurde, und kein Agent kann jemanden vergessen.',
   'people.policySaved': 'Die Richtlinie ist geändert.',
 
@@ -242,7 +244,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'people.holdYou': 'Als Sie markiert',
   'people.leaveBack': 'Das Register kennt kein Rückgängig, aber dies lässt sich zurücknehmen, bis der Name vergessen ist. Eine beendete Rolle ist ein Schritt in der Aktivitätsliste des Bereichs, der sie führt.',
   'people.leaveEffects': 'Was das bewirkt',
-  'people.leaveEndsNone': 'Beendet keine Rolle: Nichts läuft über diesen Tag hinaus.',
+  'people.leaveEndsNone': 'Hat keine Rolle, also endet an diesem Tag sonst nichts.',
   'people.leaveEndsOne': 'Beendet {count} Rolle an diesem Tag: {roles}.',
   'people.leaveEndsOther': 'Beendet {count} Rollen an diesem Tag: {roles}.',
   'people.leaveForgets': 'Behält den Namen auf jedem Bildschirm bis {day}, zeigt danach ein Pseudonym.',

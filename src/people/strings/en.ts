@@ -145,7 +145,9 @@ export const EN = {
   'people.days': 'days',
   'people.agentsSee': 'Agents see',
   'people.agentsNames': 'names',
+  'people.agentsNamesOption': 'Names',
   'people.agentsPseudonyms': 'pseudonyms',
+  'people.agentsPseudonymsOption': 'Pseudonyms',
   'people.policyNote': 'Applied when the organisation is opened and each day it stays open. Set by whoever may change the organisation’s settings. Two things do not depend on this: a signed decision keeps the names it was signed with, and no agent can forget anyone.',
   'people.policySaved': 'The policy is changed.',
 
@@ -256,7 +258,7 @@ export const EN = {
   'people.holdYou': 'Marked as you',
   'people.leaveBack': 'The register has no undo, but this can be taken back until the name is forgotten. An ended role is a step in the Activity list of the scope that keeps it.',
   'people.leaveEffects': 'What this does',
-  'people.leaveEndsNone': 'Ends no role: nothing runs past that day.',
+  'people.leaveEndsNone': 'Holds no role, so nothing else ends that day.',
   'people.leaveEndsOne': 'Ends {count} role on that day: {roles}.',
   'people.leaveEndsOther': 'Ends {count} roles on that day: {roles}.',
   'people.leaveForgets': 'Keeps the name on every screen until {day}, then shows a pseudonym.',
