@@ -264,7 +264,8 @@ export function RootRow({ tree, name, current, count, words, onHome, menuOf, s }
       onClick={() => onHome(ROOT_SCOPE)}
     >
       <span className="kit-tree__fold" aria-hidden />
-      <button type="button" className="kit-tree__name" tabIndex={-1} aria-hidden>{name}</button>
+      {/* In a span of its own, as a scope's name is: a flex button cuts bare text without its ellipsis, hard against the count. */}
+      <button type="button" className="kit-tree__name" tabIndex={-1} aria-hidden><span className="kit-tree__own">{name}</span></button>
       {count > 0 && <span className="kit-tree__holds">{count}</span>}
       <span className="kit-tree__menu">
         {items.length > 0 && <MoreMenu size="small" tabIndex={-1} label={s('frame.scopeMenu', { name })} items={items} />}

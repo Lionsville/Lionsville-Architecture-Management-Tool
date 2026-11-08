@@ -119,7 +119,7 @@
 .kit-tree__match { background: var(--selected-soft); color: inherit; font-weight: var(--fw-strong); border-radius: 2px; }
 .kit-tree__row[data-enter] { background: var(--surface-2); }
 .kit-tree__row:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(0px - var(--focus-ring-width)); }
-.kit-tree__holds { color: var(--ink-2); font-size: var(--t-small); flex: 0 0 auto; padding-inline: var(--s-1) 0; text-align: end; font-variant-numeric: tabular-nums; }
+.kit-tree__holds { color: var(--ink-2); font-size: var(--t-small); flex: 0 0 auto; padding-inline: var(--s-2) 0; text-align: end; font-variant-numeric: tabular-nums; }
 /* Held open on every row, with or without a menu, so the numbers stand in one column. */
 .kit-tree__menu { flex: 0 0 var(--kit-tree-menu); display: inline-flex; justify-content: center; margin-inline-start: var(--s-1); opacity: 0; }
 .kit-tree__row:hover .kit-tree__menu, .kit-tree__row:focus-within .kit-tree__menu, .kit-tree__row:focus .kit-tree__menu { opacity: 1; }
