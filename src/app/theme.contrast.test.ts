@@ -474,8 +474,9 @@ describe('the palette’s contrast', () => {
  * nothing else; a new use fails here until it is one of those, or is changed.
  */
 const DISABLED_INK: Record<string, [uses: number, what: string]> = {
-  // The breadcrumb's separator glyph, hidden from the tree: a divider, not a word.
-  'src/app/ShellToolbar.tsx': [1, 'separator'],
+  // The breadcrumb's separator glyph, hidden from the tree: a divider, not a word — after each crumb,
+  // and after the ⋯ that folds the scopes in between a deep trail.
+  'src/app/ShellToolbar.tsx': [2, 'separators'],
   // A sheet's *+* that has nothing to add to: the − at one column, the + at the most.
   // A chart unit's *+* where no unit type may sit in it: an icon, its tooltip and label the words.
   // The same separator between a container diagram and its application.
