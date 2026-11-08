@@ -163,9 +163,16 @@
 [data-posture="design"] .poster-block, [data-posture="design"] .poster-title__name, [data-posture="design"] .poster-item { cursor: move; }
 [data-posture="design"] .poster-block { overflow: visible; }
 .poster-add { display: inline-flex; flex: none; opacity: 0; }
-.poster-add button { appearance: none; min-width: 16px; height: 16px; padding: 0 3px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--canvas-t-label); font-weight: var(--fw-regular); line-height: 1; cursor: pointer; }
+.poster-add button { appearance: none; min-width: 20px; height: 18px; padding: 0 4px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--canvas-t-label); font-weight: var(--fw-regular); line-height: 1; cursor: pointer; }
 .poster-block:hover .poster-add, .poster-block:focus-within .poster-add, .poster-item:hover .poster-add, .poster-item:focus-within .poster-add { opacity: 1; }
 .poster-add--icon { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 2; }
+/* Where the press sits among many like it, it shows on its own cell, step or stakeholder only, at a full target, clear of the words. */
+.poster-band__cell > .poster-add button, .poster-st > .poster-add button, .poster-person-row > .poster-add button { min-width: var(--canvas-target); height: var(--canvas-target); }
+.poster-block:hover .poster-band__cell > .poster-add, .poster-block:hover .poster-st > .poster-add, .poster-block:hover .poster-person-row > .poster-add { opacity: 0; }
+.poster-block .poster-band__cell:hover > .poster-add, .poster-block .poster-band__cell:focus-within > .poster-add,
+.poster-block .poster-st:hover > .poster-add, .poster-block .poster-st:focus-within > .poster-add,
+.poster-block .poster-person-row:hover > .poster-add, .poster-block .poster-person-row:focus-within > .poster-add { opacity: 1; }
+.poster-person-row > .poster-add--icon { inset-inline-start: auto; inset-inline-end: 0; inset-block-start: 50%; transform: translateY(-50%); }
 .poster-add--item { position: absolute; inset-block-start: 0; inset-inline-end: 0; }
 .poster-band__cell > .poster-add { position: absolute; inset-block-end: 0; inset-inline-end: 0; z-index: 2; }
 .poster-adds { position: absolute; inset-block-end: 2px; inset-inline-end: 12px; display: flex; gap: 2px; background: var(--surface); }

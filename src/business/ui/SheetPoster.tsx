@@ -249,10 +249,11 @@ function AreaLine({ area, drawing }: { area: SheetArea; drawing: Drawing }) {
 }
 
 /** What Design offers on a block: a + at the place it would land, on hover or focus and by keyboard. */
-function AddHere({ label, onAdd }: { label: string; onAdd(): void }) {
+/** A press that adds here: a + where there is one thing to add, its word where two sit side by side. */
+function AddHere({ label, word, onAdd }: { label: string; word?: string; onAdd(): void }) {
   return (
     <span className="poster-add" data-sheet-add>
-      <button type="button" tabIndex={-1} aria-label={label} title={label} onClick={(event) => { event.stopPropagation(); onAdd() }}>+</button>
+      <button type="button" tabIndex={-1} aria-label={label} title={label} onClick={(event) => { event.stopPropagation(); onAdd() }}>{word ?? '+'}</button>
     </span>
   )
 }
@@ -287,8 +288,8 @@ const AreaBlock = memo(function AreaBlock({ area, block, drawing, span }: { area
         {units.length > 0
           ? <span className="poster-title__unit"><UnitLabel who={drawing.who} functionId={element.id} t={t} /></span>
           : facts?.unit && <span className="poster-title__unit">{facts.unit}</span>}
-        {design && <AddHere label={t('sheet.poster.addInto', { name: element.name })} onAdd={() => design.addUnder(element.id, 'capability')} />}
-        {design && <AddHere label={t('sheet.poster.addGroupingInto', { name: element.name })} onAdd={() => design.addUnder(element.id, 'grouping')} />}
+        {design && <AddHere label={t('sheet.poster.addInto', { name: element.name })} word={t('sheet.addCapability')} onAdd={() => design.addUnder(element.id, 'capability')} />}
+        {design && <AddHere label={t('sheet.poster.addGroupingInto', { name: element.name })} word={t('sheet.addGrouping')} onAdd={() => design.addUnder(element.id, 'grouping')} />}
       </h3>
       <AreaLine area={area} drawing={drawing} />
       <span className="poster-meter" aria-hidden="true">
