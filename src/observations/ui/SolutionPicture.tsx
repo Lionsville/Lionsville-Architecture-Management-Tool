@@ -34,11 +34,12 @@ import type { SolutionGraph, SolutionGraphEdge, SolutionGraphNode, SolutionLane 
 import { OUTCOME_LABEL, PHASE_LABEL } from '../observationScope'
 import { PictureFrame } from './AnalysisPicture'
 import type { PictureView } from './usePictureFilters'
-import { BOX, CauseMark, DIMMED, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, seenTint, shorten } from './ChainMarks'
+import { BOX, CardFace, CauseMark, DIMMED, Flag, LANE_WIDTH, LINE_HIT_WIDTH, ObservationMark, RADIUS, ROW_HEIGHT, STROKE, seenTint } from './ChainMarks'
 import type { PictureMenuHandler, PictureTarget } from './PictureMenu'
 
-const WIDTH: Record<SolutionSize | 'unset', number> = { unset: 160, small: 160, medium: 184, large: 212 }
-const HEIGHT = 46
+/** A solution's card is as wide as the benefit it promises, the largest the Why map's card. */
+const WIDTH: Record<SolutionSize | 'unset', number> = { unset: 196, small: 196, medium: 212, large: BOX.width }
+const HEIGHT = BOX.height
 
 type Stroke = { width: number; dash?: string }
 /**
@@ -52,6 +53,8 @@ const LINE: Record<'tests' | 'proves', Record<CauseStrength, Stroke>> = {
   proves: { strong: { width: 3.4 }, normal: { width: 1.8 }, weak: { width: 1.4, dash: '3 4' } },
 }
 const BECAME: Stroke = { width: 1.4, dash: '1 3' }
+/** Where the first row stands: under the lanes' names, the Why map's heads. */
+const TOP = 44
 
 const LANE_TITLE: Record<SolutionLane, Parameters<Translate>[0]> = {
   observations: 'observation.laneObservations',
@@ -98,7 +101,7 @@ function reach(graph: SolutionGraph, from: string): Set<string> {
 
 export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, view, dockExtra, s }: SolutionPictureProps) {
   const theme = useTheme()
-  const placed = useMemo(() => placeGraph(graph, { laneWidth: LANE_WIDTH, rowHeight: ROW_HEIGHT, top: 36, left: 0 }), [graph])
+  const placed = useMemo(() => placeGraph(graph, { laneWidth: LANE_WIDTH, rowHeight: ROW_HEIGHT, top: TOP, left: 0 }), [graph])
   const at = useMemo(() => new Map(placed.map((one) => [one.key, one])), [placed])
   // A structural solution is lit from its direction too, so an experiment
   // that tested it without confirming it is part of its chain.
@@ -111,7 +114,7 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, v
   }, [graph, selectedKey])
   const tallest = Math.max(1, ...Array.from({ length: graph.lanes }, (_, lane) => graph.nodes.filter((node) => node.lane === lane).length))
   const width = graph.lanes * LANE_WIDTH
-  const height = 36 + tallest * ROW_HEIGHT + 16
+  const height = TOP + tallest * ROW_HEIGHT + 16
 
   const hasSolutions = graph.nodes.some((node) => node.kind === 'solution')
   if (!hasSolutions && !graph.nodes.some((node) => node.kind === 'cause')) {
@@ -200,12 +203,11 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, v
         {graph.laneKinds.map((kind, lane) => (
           <text
             key={lane}
-            x={lane * LANE_WIDTH + LANE_WIDTH / 2}
-            y={18}
-            textAnchor="middle"
-            fontSize={11}
+            x={lane * LANE_WIDTH + (LANE_WIDTH - BOX.width) / 2}
+            y={22}
+            fontWeight={600}
             fill={theme.palette.text.secondary}
-            style={{ textTransform: 'uppercase', letterSpacing: '.05em' }}
+            style={{ fontSize: 'var(--t-small)', textTransform: 'uppercase', letterSpacing: '.09em' }}
           >
             {s(LANE_TITLE[kind])}
           </text>
@@ -268,18 +270,16 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, v
             const w = WIDTH[solution.benefit ?? 'unset']
             const chosen = solutionKey(node.id) === selectedKey
             return (
-              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={() => onSelect(solutionKey(node.id))} onContextMenu={menuOn(solutionKey(node.id))} cursor="pointer" data-testid="solution-picture-trail" data-key={node.key}>
-                <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
+              <g key={node.key} transform={`translate(${spot.x - w / 2},${spot.y - HEIGHT / 2})`} onClick={() => onSelect(solutionKey(node.id))} onContextMenu={menuOn(solutionKey(node.id))} cursor="pointer" data-testid="solution-picture-trail" data-key={node.key}>
+                <rect width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
                 <g {...(dim ? { style: DIMMED } : { opacity: 0.6 })}>
                   <title>{`${formatSolutionNumber(solution.number)} ${solution.title} — ${s('solution.trail')}`}</title>
-                  <rect
-                    x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill="none"
-                    stroke={chosen ? theme.palette.secondary.main : theme.palette.text.secondary} strokeWidth={chosen ? 2 : 1.2} strokeDasharray="3 3"
+                  <CardFace
+                    width={w} height={HEIGHT} rx={10} fill="none" dash="3 3"
+                    stroke={chosen ? theme.palette.secondary.main : theme.palette.text.secondary} strokeWidth={chosen ? 2 : 1.2}
+                    meta={`${formatSolutionNumber(solution.number)} · ${s('solution.trail')}`} title={solution.title}
+                    ink={{ meta: theme.palette.text.secondary, title: theme.palette.text.secondary }}
                   />
-                  <text textAnchor="middle" dy="-0.2em" fontSize={11} fill={theme.palette.text.secondary}>{shorten(solution.title, Math.round(w / 6.4))}</text>
-                  <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-                    {formatSolutionNumber(solution.number)} · {s('solution.trail')}
-                  </text>
                 </g>
               </g>
             )
@@ -287,16 +287,15 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, v
           if (node.kind === 'experiment') {
             const { experiment } = node
             return (
-              <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key}>
-                <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} />
+              <g key={node.key} transform={`translate(${spot.x - BOX.width / 2},${spot.y - HEIGHT / 2})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key}>
+                <rect width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} />
                 <g {...(dim ? { style: DIMMED } : {})}>
                   <title>{`${formatExperimentNumber(experiment.number)} ${experiment.title}`}</title>
-                  <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper} stroke={selected ? stroke : theme.palette.divider} strokeWidth={selected ? 3 : 1.2} />
-                  <rect x={-BOX.width / 2} y={-HEIGHT / 2} width={5} height={HEIGHT} fill={outcomeColour[experiment.outcome]} />
-                  <text x={-BOX.width / 2 + 12} dy="-0.2em" fontSize={11} fill={theme.palette.text.primary}>{shorten(experiment.title, 27)}</text>
-                  <text x={-BOX.width / 2 + 12} dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-                    {formatExperimentNumber(experiment.number)} · {s(OUTCOME_LABEL[experiment.outcome]).toLowerCase()}
-                  </text>
+                  <CardFace
+                    width={BOX.width} height={HEIGHT} rx={3} fill={theme.palette.background.paper}
+                    stroke={selected ? stroke : theme.palette.divider} strokeWidth={selected ? 3 : 1.2} stripe={outcomeColour[experiment.outcome]}
+                    meta={`${formatExperimentNumber(experiment.number)} · ${s(OUTCOME_LABEL[experiment.outcome]).toLowerCase()}`} title={experiment.title}
+                  />
                 </g>
               </g>
             )
@@ -305,22 +304,17 @@ export function SolutionPicture({ graph, selectedKey, onSelect, flags, onMenu, v
           const w = WIDTH[solution.benefit ?? 'unset']
           const done = phase === 'implemented'
           return (
-            <g key={node.key} transform={`translate(${spot.x},${spot.y})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-phase={phase}>
-              <rect x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
+            <g key={node.key} transform={`translate(${spot.x - w / 2},${spot.y - HEIGHT / 2})`} onClick={common.onClick} onContextMenu={common.onContextMenu} cursor="pointer" data-testid={common['data-testid']} data-key={node.key} data-phase={phase}>
+              <rect width={w} height={HEIGHT} rx={10} fill={theme.palette.background.paper} />
               <g {...(dim ? { style: DIMMED } : phase === 'dropped' ? { opacity: 0.55 } : {})}>
                 <title>{`${formatSolutionNumber(solution.number)} ${solution.title}`}</title>
-                <rect
-                  x={-w / 2} y={-HEIGHT / 2} width={w} height={HEIGHT} rx={10}
-                  fill={fillOf(phase)} stroke={stroke} strokeWidth={selected ? 3 : 1.5}
-                  strokeDasharray={phase === 'idea' || phase === 'dropped' ? '5 3' : undefined}
+                <CardFace
+                  width={w} height={HEIGHT} rx={10} fill={fillOf(phase)} stroke={stroke} strokeWidth={selected ? 3 : 1.5}
+                  {...(phase === 'idea' || phase === 'dropped' ? { dash: '5 3' } : {})} struck={phase === 'dropped'}
+                  meta={`${formatSolutionNumber(solution.number)} · ${s(PHASE_LABEL[phase]).toLowerCase()}`} title={solution.title}
+                  {...(done ? { ink: { meta: theme.palette.success.contrastText, title: theme.palette.success.contrastText } } : {})}
                 />
-                <text textAnchor="middle" dy="-0.2em" fontSize={11} fill={done ? theme.palette.success.contrastText : theme.palette.text.primary} textDecoration={phase === 'dropped' ? 'line-through' : undefined}>
-                  {shorten(solution.title, Math.round(w / 6.4))}
-                </text>
-                <text textAnchor="middle" dy="1.05em" fontSize={10} fill={done ? theme.palette.success.contrastText : theme.palette.text.secondary}>
-                  {formatSolutionNumber(solution.number)} · {s(PHASE_LABEL[phase]).toLowerCase()}
-                </text>
-                {flag && <Flag x={w / 2} y={-HEIGHT / 2} title={flag.text} strong={flag.strong} />}
+                {flag && <Flag x={w} y={0} title={flag.text} strong={flag.strong} />}
               </g>
             </g>
           )

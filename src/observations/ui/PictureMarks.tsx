@@ -35,7 +35,7 @@ import { causeLabel, formatObservationNumber } from '../observation'
 import type { ObservationImpact } from '../observation'
 import { PHASE_LABEL, STATE_LABEL } from '../observationScope'
 import { formatSolutionNumber } from '../solution'
-import { shorten, wrapTitle } from './ChainMarks'
+import { CardFace, shorten } from './ChainMarks'
 
 /** A small mark's radius per impact: the size of an observation is how much it hurts. */
 export const DOT: Record<ObservationImpact, number> = { minor: 10, major: 13, critical: 16 }
@@ -179,20 +179,19 @@ function LargeMark({ node, selected, matched, openEnd, marker, s }: RecordMarkPr
   // The state only: a root cause says it is one by its outline, and the hover says it in words.
   const state = node.kind === 'cause' ? inSentence(s(STATE_LABEL[node.cause.state]), language) : recordState(node, s, language)
   const meta = `${recordLabel(node)} · ${state}`
-  // A link that leaves the picture takes a title line of its own: on the label's line the two overprinted.
-  const title = wrapTitle(recordTitle(node), LARGE_LINE, marker ? 2 : 3)
   return (
     <>
       {(selected || matched) && (
         <rect x={-5} y={-5} width={width + 10} height={height + 10} rx={12} fill="none" stroke={theme.palette.primary.main} strokeWidth={selected ? 2.6 : 2} strokeDasharray={selected ? undefined : '3 3'} data-testid={selected ? undefined : 'picture-match'} />
       )}
-      <rect width={width} height={height} rx={root ? 18 : 6} fill={fill} stroke={line.stroke} strokeWidth={line.width} strokeDasharray={line.dash} />
-      {node.kind === 'observation' && <rect x={0} y={0} width={4} height={height} rx={2} fill={impactColour(theme, node.observation.impact)} />}
-      <text x={left} y={19} fontSize={11} fontFamily={SCALE['font-mono']} fill={theme.palette.text.secondary}>{meta}</text>
-      {title.map((text, index) => (
-        <text key={index} x={left} y={37 + index * 16} fontSize={12.5} fill={theme.palette.text.primary}>{text}</text>
-      ))}
-      {marker && <text x={left} y={height - 9} fontSize={10.5} fill={theme.palette.info.main} data-testid="picture-marker">{shorten(marker, LARGE_LINE + 2)}</text>}
+      {/* A link that leaves the picture takes a title line of its own: on the label's line the two overprinted. */}
+      <CardFace
+        width={width} height={height} rx={root ? 18 : 6} fill={fill} stroke={line.stroke} strokeWidth={line.width} {...(line.dash ? { dash: line.dash } : {})}
+        {...(node.kind === 'observation' ? { stripe: impactColour(theme, node.observation.impact) } : {})}
+        meta={meta} title={recordTitle(node)} lines={marker ? 2 : 3} left={left}
+      >
+        {marker && <text x={left} y={height - 9} fill={theme.palette.info.main} data-testid="picture-marker" style={{ fontSize: 'var(--canvas-t-xs)' }}>{shorten(marker, LARGE_LINE + 2)}</text>}
+      </CardFace>
       {openEnd && <OpenEnd x={width} y={height / 2} r={8} s={s} />}
     </>
   )

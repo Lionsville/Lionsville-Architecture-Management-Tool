@@ -264,6 +264,18 @@ describe('the Solutions tab', () => {
     expect(screen.getByTestId('solution-coverage').textContent).toBe('0 of 1 root cause has a live solution')
   })
 
+  it('draws its records on the Why map\'s card: the whole title in lines, under its label and state', () => {
+    const long = 'Every carrier keeps its own mapping of the shipment messages, written by hand for each new partner'
+    mount({ ...base, causes: [base.causes![0]!, { ...base.causes![1]!, title: long }], solutions: [solution({})] })
+    toSolveMap()
+    const card = screen.getByTestId('solution-picture').querySelector('[data-key="c2"]')!
+    const lines = [...card.querySelectorAll('text')].map((one) => one.textContent)
+    expect(lines[0]).toBe('RC-0002 · verified')
+    // Three lines of words kept whole, the last cut where the card ends, not a title cut at 28 characters.
+    expect(lines.slice(1)).toHaveLength(3)
+    expect(lines.slice(1).join(' ').startsWith('Every carrier keeps its own mapping of the shipment')).toBe(true)
+  })
+
   it('draws a proven solution after the direction it was and the experiment that confirmed it, and opens it from either box', () => {
     mount({ ...base, solutions: [solution({ state: 'proven' })], experiments: [experiment({ outcome: 'confirmed' })] })
     toSolveMap()

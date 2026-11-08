@@ -28,9 +28,9 @@ const FIXED: Record<string, number> = {
   'src/layout/edgeLabelSize.ts': 2,
   'src/model/placement.ts': 6,
   'src/observations/ui/AnalysisPicture.tsx': 3,
-  'src/observations/ui/ChainMarks.tsx': 6,
-  'src/observations/ui/PictureMarks.tsx': 9,
-  'src/observations/ui/SolutionPicture.tsx': 8,
+  'src/observations/ui/ChainMarks.tsx': 2,
+  'src/observations/ui/PictureMarks.tsx': 6,
+  'src/observations/ui/SolutionPicture.tsx': 1,
 }
 
 const SOURCE = /\.(tsx?|css)$/

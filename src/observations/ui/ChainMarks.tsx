@@ -9,7 +9,7 @@
  * attention. The Analysis tab draws its own two sizes (`PictureMarks`), and
  * shares the tint.
  */
-import type { MouseEvent as ReactMouseEvent } from 'react'
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react'
 import { toneColor } from './ToneBar'
 import { toneOf } from '../observation'
 import type { ObservationTone } from '../observation'
@@ -19,14 +19,17 @@ import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { inSentence } from '../../i18n/languages'
 import { inkOn, mix } from '../../widgets'
+import { SCALE } from '../../widgets/kit/tokens'
 import type { GraphNode } from '../graph'
 import { causeLabel, formatObservationNumber } from '../observation'
 import type { CauseStrength, ObservationImpact } from '../observation'
 import { STATE_LABEL } from '../observationScope'
 
-export const LANE_WIDTH = 260
-export const ROW_HEIGHT = 84
-export const BOX = { width: 180, height: 44 }
+/** A lane holds the Why map's card and the air between two of them, and a row its height and the same air. */
+export const LANE_WIDTH = 276
+export const ROW_HEIGHT = 98
+/** The Why map's card, which the Solve map draws its records on too. */
+export const BOX = { width: 228, height: 84 }
 export const RADIUS: Record<ObservationImpact, number> = { minor: 12, major: 17, critical: 23 }
 /**
  * What a trace or a filter leaves of the records off it: the kit's one dimming, so the maps
@@ -93,48 +96,85 @@ export function ObservationMark(props: MarkProps<Extract<GraphNode, { kind: 'obs
         {seen > 1 && (
           <text textAnchor="middle" dy="0.35em" fontSize={11} fontWeight={600} fill={inkOn(theme, fill)}>{seen}×</text>
         )}
-        <text textAnchor="middle" y={r + 13} fontSize={10} fill={theme.palette.text.secondary}>
+        <text textAnchor="middle" y={r + 15} fontFamily={SCALE['font-mono']} fill={theme.palette.text.secondary} style={{ fontSize: 'var(--canvas-t-xs)' }}>
           {formatObservationNumber(node.observation.number)}{node.scope !== undefined ? ' ↑' : ''}
         </text>
-        <text textAnchor="middle" y={r + 25} fontSize={10} fill={theme.palette.text.primary}>
-          {shorten(node.observation.title, 34)}
-        </text>
+        {wrapTitle(node.observation.title, lineOf(BOX.width, 12), 2).map((text, index) => (
+          <text key={index} textAnchor="middle" y={r + 31 + index * 16} fill={theme.palette.text.primary} style={{ fontSize: 'var(--canvas-t-sm)' }}>{text}</text>
+        ))}
       </g>
     </g>
   )
 }
 
-/** A cause: a box, dashed while assumed, with the heavier rounded outline for a root. */
+/** A cause: the Why map's card, dashed while assumed, with the heavier rounded outline for a root. */
 export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>> & { s: Translate; flag?: string }) {
   const theme = useTheme()
   const { node, x, y, selected, s, flag, dim, ...rest } = props
   const { language } = useStrings()
   const rootStroke = node.root ? theme.palette.secondary.main : node.cause.state === 'verified' ? theme.palette.success.main : theme.palette.warning.main
+  const rx = node.root ? 18 : 6
   return (
-    <g transform={`translate(${x},${y})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined}>
-      <rect x={-BOX.width / 2} y={-BOX.height / 2} width={BOX.width} height={BOX.height} rx={node.root ? BOX.height / 2 : 5} fill={theme.palette.background.paper} />
+    <g transform={`translate(${x - BOX.width / 2},${y - BOX.height / 2})`} {...rest} data-key={node.key} data-root={node.root ? 'true' : undefined}>
+      <rect width={BOX.width} height={BOX.height} rx={rx} fill={theme.palette.background.paper} />
       <g {...(dim ? { style: DIMMED } : {})}>
         <title>{`${causeLabel(node.cause)} ${node.cause.title}`}</title>
-        <rect
-          x={-BOX.width / 2}
-          y={-BOX.height / 2}
-          width={BOX.width}
-          height={BOX.height}
-          rx={node.root ? BOX.height / 2 : 5}
-          fill={theme.palette.background.paper}
-          stroke={selected ? theme.palette.secondary.main : rootStroke}
-          strokeWidth={selected ? 3 : node.root ? 2.5 : 1.8}
-          strokeDasharray={node.cause.state === 'assumed' ? '5 3' : undefined}
+        <CardFace
+          width={BOX.width} height={BOX.height} rx={rx} fill={theme.palette.background.paper}
+          stroke={selected ? theme.palette.secondary.main : rootStroke} strokeWidth={selected ? 3 : node.root ? 2.6 : 1.4}
+          {...(node.cause.state === 'assumed' ? { dash: '5 4' } : {})}
+          // The state only: a root cause says it is one by its outline, and the hover says it in words, as on the Why map.
+          meta={`${causeLabel(node.cause)} · ${inSentence(s(STATE_LABEL[node.cause.state]), language)}`}
+          title={node.cause.title} left={node.root ? 16 : 13}
         />
-        <text textAnchor="middle" dy="-0.15em" fontSize={11} fill={theme.palette.text.primary}>
-          {shorten(node.cause.title, 28)}
-        </text>
-        <text textAnchor="middle" dy="1.05em" fontSize={10} fill={theme.palette.text.secondary}>
-          {causeLabel(node.cause)} · {inSentence(s(STATE_LABEL[node.cause.state]), language)}{node.root ? ` · ${inSentence(s('observation.rootCause'), language)}` : ''}
-        </text>
-        {flag && <Flag x={BOX.width / 2} y={-BOX.height / 2} title={flag} />}
+        {flag && <Flag x={BOX.width} y={0} title={flag} />}
       </g>
     </g>
+  )
+}
+
+/** How many characters a card's line holds at the card's type: its width less the margins, over what a character takes. */
+export function lineOf(width: number, left: number): number {
+  return Math.floor((width - left - 12) / 6.3)
+}
+
+/**
+ * A record as a card, drawn at its slot's corner: its label and state in the
+ * mono line, then up to three lines of its title, words kept whole, in the
+ * kit's canvas type. The Why map's records and the Solve map's are this card.
+ */
+export function CardFace(props: {
+  width: number
+  height: number
+  rx: number
+  fill: string
+  stroke: string
+  strokeWidth: number
+  dash?: string
+  /** A band down the left edge: an observation's impact, an experiment's outcome. */
+  stripe?: string
+  meta: string
+  title: string
+  /** Fewer title lines, where something else takes the card's last line. */
+  lines?: number
+  left?: number
+  ink?: { meta: string; title: string }
+  struck?: boolean
+  children?: ReactNode
+}) {
+  const theme = useTheme()
+  const { width, height, left = 13, lines = 3 } = props
+  const ink = props.ink ?? { meta: theme.palette.text.secondary, title: theme.palette.text.primary }
+  return (
+    <>
+      <rect width={width} height={height} rx={props.rx} fill={props.fill} stroke={props.stroke} strokeWidth={props.strokeWidth} strokeDasharray={props.dash} />
+      {props.stripe && <rect x={0} y={0} width={4} height={height} rx={2} fill={props.stripe} />}
+      <text x={left} y={19} fontFamily={SCALE['font-mono']} fill={ink.meta} style={{ fontSize: 'var(--canvas-t-xs)' }}>{props.meta}</text>
+      {wrapTitle(props.title, lineOf(width, left), lines).map((text, index) => (
+        <text key={index} x={left} y={38 + index * 16} fill={ink.title} textDecoration={props.struck ? 'line-through' : undefined} style={{ fontSize: 'var(--canvas-t-sm)' }}>{text}</text>
+      ))}
+      {props.children}
+    </>
   )
 }
 
