@@ -16,3 +16,6 @@
 .inspector-actions { display: flex; flex-wrap: wrap; gap: var(--s-1); margin-block-start: var(--s-1); }
 
 .inspector-section { margin-block-start: var(--s-3); }
+
+/* A way to another view ("Show on technology landscape ›") is a press on the screen, and nothing on paper. */
+@media print { .inspector-note .kit-panel__link { display: none !important; } }

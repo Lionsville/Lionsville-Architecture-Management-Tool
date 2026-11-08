@@ -91,3 +91,15 @@
 .kit-record__sectionHead h2 { scroll-margin-top: var(--s-2); }
 
 .kit-record__next { margin-top: var(--s-3); }
+
+/*
+ * On paper a record is its text, as a decision in the preview is (`Preview.css`): no way
+ * back, no ‹ › History… ✎ Edit ⋯, no page index, and none of the presses that act on a
+ * field (Replace…, Create, Cite…) or write (a comment's box); the sections take the width.
+ */
+@media print {
+  .kit-record { height: auto !important; }
+  .kit-record__back, .kit-record__actions, .kit-record-actions, .kit-record__outline { display: none !important; }
+  .kit-record__page[data-outlined] { grid-template-columns: minmax(0, 1fr) !important; }
+  .kit-record__sections :is(button.kit-button, .kit-prop__action, .kit-panel__icon, input, textarea, [role='toolbar']) { display: none !important; }
+}

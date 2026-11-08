@@ -154,3 +154,6 @@
 }
 .md-editor[data-variant='flow'][data-error='true'] .md-editor__flowHint { color: var(--bad); opacity: 1; }
 .md-editor[data-variant='flow'] .md-editor__text { font-family: inherit; font-size: inherit; line-height: inherit; }
+
+/* On paper the text is what prints, not the bar that writes it. */
+@media print { .md-editor__bar { display: none !important; } }

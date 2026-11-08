@@ -12,3 +12,9 @@
 .kit-list-page__body { flex: 1; min-height: 0; min-width: 0; }
 .kit-list-page__body[data-body='scroll'] { overflow: auto; padding-inline: var(--s-4); }
 .kit-list-page__body[data-body='fill'] { display: flex; }
+
+/* On paper a list is its rows under its title: no find, filter, group or view, which act on the screen. */
+@media print {
+  .kit-list-page__bar .kit-filter, .kit-list-page__bar .kit-find { display: none !important; }
+  .kit-list-page__bar { border-bottom: 0; }
+}
