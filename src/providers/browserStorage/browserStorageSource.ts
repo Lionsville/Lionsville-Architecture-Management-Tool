@@ -34,6 +34,7 @@ import type { PreferencesStore } from '../../ports/PreferencesStore'
 import type { ProviderParts, ProviderSayings } from '../../ports/ProviderParts'
 import type { Repositories } from '../../ports/Repositories'
 import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
+import { overOtherTabs, tabChannel } from '../../adapters/webStorage/otherTabs'
 import { afterWrites, browserOwn } from './browserOwn'
 import type { BrowserOwn } from './browserOwn'
 import { fallingBack, made } from './fallingBack'
@@ -99,7 +100,10 @@ export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening
       ...(by ? { by } : {}), ...(s ? { earlier: earlierWords(s) } : {}),
     })
     const { own, heard, fell, answering } = browserOwn(kept, earlier)
-    const writing = { ...repositories, scopes: afterWrites(repositories.scopes, kept, heard, diagnostics) }
+    // Another tab of this browser writes the same database: what it wrote is heard here, as a folder's watcher hears a folder.
+    const channel = tabChannel()
+    const tabs = channel && overOtherTabs(afterWrites(repositories.scopes, kept, heard, diagnostics), channel)
+    const writing = { ...repositories, scopes: tabs?.scopes ?? afterWrites(repositories.scopes, kept, heard, diagnostics) }
     let fallen: Promise<BrowserParts> | undefined
     const fallback = () => fallen ??= inMemory().then(({ repositories: held, shown }) => {
       fell(shown)
@@ -110,6 +114,7 @@ export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening
         diagnostics.report({ level: 'warn', where: 'browserStorage', message: 'the database would not open; nothing is kept', cause })
       }),
       preferences, source: BROWSER_STORAGE, own, historyNoteKey: 'browser.historyNote',
+      ...(tabs ? { changes: tabs.changes } : {}),
     }
     return { ...parts, settled: () => settle(parts, kept, () => fallen, answering) }
   },
