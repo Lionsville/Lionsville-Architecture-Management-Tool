@@ -52,7 +52,8 @@ import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField, TextInput } from '../../widgets/kit/Field'
-import { MenuButton } from '../../widgets/kit/Menu'
+import { MenuButton, MoreMenu } from '../../widgets/kit/Menu'
+import type { MenuAct } from '../../widgets/kit/Menu'
 import { LinkLine, PageHead } from '../../widgets/kit/Section'
 import type { ExampleOffer } from '../../projects/examples/catalogue'
 import { useFrameFacts } from '../frame/frameStore'
@@ -170,6 +171,12 @@ export type OrganisationScreenProps = {
    */
   waysIn?: readonly SourceWayIn[]
   /**
+   * The open source publishes its steps (`Shell.publishesSteps`): the work stays
+   * where it is kept, so the ways to work from somewhere else are a rare act,
+   * under ⋯, and not the first press on the home.
+   */
+  publishesSteps?: boolean
+  /**
    * Go to another scope's home: a crumb on the bar, or a row's name. The
    * shell's, because which home is up is the shell's state — the same as
    * which scope is open.
@@ -269,7 +276,7 @@ export type OrganisationScreenProps = {
 
 export function OrganisationScreen({
   organisation, examples, onVisitExample, onShareScope, order, sourceDescription, sourceSayings = {}, sourcePage,
-  waysIn,
+  waysIn, publishesSteps,
   onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
   writable = ANYWHERE, today, language, s, windowChrome = NO_WINDOW_CHROME, checkMarks, treeRead, principlesAt, topics,
@@ -364,7 +371,7 @@ export function OrganisationScreen({
                   <HomeActions
                     bare={bare} writable={mayWrite} settingsAllowed={writable(home.path)} newView={newView}
                     onNewScope={() => organisation.addUnder(at)} onSettings={() => homePages.open('settings')}
-                    waysIn={atRoot ? waysIn : undefined} s={s}
+                    waysIn={atRoot ? waysIn : undefined} waysFolded={publishesSteps === true} s={s}
                   />
                 )}
               >
@@ -653,7 +660,7 @@ function HomeFacts(facts: ScreenFacts) {
  * up here; each is simply not there for somebody who may only read.
  */
 function HomeActions({
-  writable, settingsAllowed, newView, onNewScope, onSettings, bare, waysIn = [], s,
+  writable, settingsAllowed, newView, onNewScope, onSettings, bare, waysIn = [], waysFolded = false, s,
 }: {
   writable: boolean
   settingsAllowed: boolean
@@ -662,12 +669,14 @@ function HomeActions({
   onSettings: () => void
   bare: boolean
   waysIn?: readonly SourceWayIn[] | undefined
+  waysFolded?: boolean
   s: Translate
 }) {
   const steps = writable && !bare
+  const elsewhere = waysIn.map((way): MenuAct => ({ label: s(way.labelKey as StringKey), onSelect: way.onConnect, 'data-testid': `connect-source-${way.kind}` }))
   return (
     <>
-      {waysIn.map((way) => (
+      {!waysFolded && waysIn.map((way) => (
         // The provider's key, from its own table or from this one's (`i18n/registerStrings`); the shell only renders it.
         <Button key={way.kind} variant="quiet" size="small" data-testid={`connect-source-${way.kind}`} onClick={way.onConnect}>{s(way.labelKey as StringKey)}</Button>
       ))}
@@ -675,6 +684,7 @@ function HomeActions({
       {/* The one way to a new scope from a home that has something to show, filed where it is. */}
       {steps && <Button data-testid="new-scope" data-guide="org.newScope" onClick={onNewScope}>{s('picker.newScope')}</Button>}
       {settingsAllowed && <Button variant="quiet" data-testid="scope-settings" onClick={onSettings}>{s('group.open')}</Button>}
+      {waysFolded && elsewhere.length > 0 && <MoreMenu label={s('org.workElsewhere')} items={elsewhere} />}
     </>
   )
 }

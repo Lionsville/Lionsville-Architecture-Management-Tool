@@ -17,6 +17,8 @@ import { LOCALE } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import { helpAt } from '../helpAt'
 import { Button } from '../../widgets/kit/Button'
+import { MoreMenu } from '../../widgets/kit/Menu'
+import type { MenuAct } from '../../widgets/kit/Menu'
 import { Panel, PanelSection } from '../../widgets/kit/Panel'
 import { ActivityLines } from '../ActivityMenu'
 import { chromeProps } from '../AppPanels'
@@ -123,8 +125,17 @@ function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: Screen
 function WorkActs({ parts, facts, history }: { parts: ShellParts; facts: ScreenFacts | undefined; history: boolean }) {
   const { services: { s }, commands: { bus: { send } }, agent, provider, props, source } = parts
   const ways = provider.offered ?? []
+  // A source that publishes its steps keeps the work where it is; moving it elsewhere is a rare act, under ⋯.
+  const published = props.provider?.publishesSteps ?? false
   // Where the work is now is said, not pressed: a name on a button read as a way to somewhere else.
-  const here = props.provider?.publishesSteps ? undefined : sourceLabel(source, s, undefined, props.provider?.sayings?.labelKey)
+  const here = published ? undefined : sourceLabel(source, s, undefined, props.provider?.sayings?.labelKey)
+  const moves: MenuAct[] = [
+    { label: s('menu.open'), onSelect: () => send({ type: 'open' }), 'data-testid': 'work-open' },
+    ...ways.map((way): MenuAct => ({ label: s(way.labelKey as StringKey), onSelect: way.onConnect, 'data-testid': `work-way-${way.kind}` })),
+    ...ways.flatMap((way) => (way.recent ?? []).filter((held) => held.label !== source.name).map((held): MenuAct => ({
+      label: s('work.workFrom', { name: held.label }), onSelect: () => way.onReopen?.(held.key), 'data-testid': 'work-recent',
+    }))),
+  ]
   return (
     <>
       <PanelSection title={s('frame.keepIt')}>
@@ -132,20 +143,19 @@ function WorkActs({ parts, facts, history }: { parts: ShellParts; facts: ScreenF
           {facts?.kind === 'workspace' && <Button size="small" onClick={() => send({ type: 'save' })} data-testid="work-save">{s('menu.save')}</Button>}
           <Button size="small" variant={facts?.saveFailed ? 'primary' : 'plain'} onClick={() => send({ type: 'export' })} data-testid="work-copy">{s('menu.exportWorkingFile')}</Button>
           {history && <Button size="small" onClick={() => send({ type: 'snapshot' })} data-testid="work-snapshot">{s('menu.snapshot')}</Button>}
+          {published && <MoreMenu size="small" label={s('frame.moveIt')} items={moves} />}
         </div>
       </PanelSection>
-      <PanelSection title={s('frame.moveIt')}>
-        {here && <Fact label={s('work.keptNow')} value={here} />}
-        <div className="kit-work__acts">
-          <Button size="small" variant="quiet" onClick={() => send({ type: 'open' })} data-testid="work-open">{s('menu.open')}</Button>
-          {ways.map((way) => (
-            <Button key={way.kind} size="small" variant="quiet" onClick={way.onConnect} data-testid={`work-way-${way.kind}`}>{s(way.labelKey as StringKey)}</Button>
-          ))}
-          {ways.flatMap((way) => (way.recent ?? []).filter((held) => held.label !== source.name).map((held) => (
-            <Button key={held.key} size="small" variant="quiet" onClick={() => way.onReopen?.(held.key)} data-testid="work-recent">{s('work.workFrom', { name: held.label })}</Button>
-          )))}
-        </div>
-      </PanelSection>
+      {!published && (
+        <PanelSection title={s('frame.moveIt')}>
+          {here && <Fact label={s('work.keptNow')} value={here} />}
+          <div className="kit-work__acts">
+            {moves.map((move, at) => (
+              <Button key={`${at}-${move.label}`} size="small" variant="quiet" onClick={move.onSelect} data-testid={move['data-testid']}>{move.label}</Button>
+            ))}
+          </div>
+        </PanelSection>
+      )}
       <PanelSection title={s('frame.lookBack')}>
         <div className="kit-work__acts">
           <Button size="small" variant="quiet" onClick={() => agent.setPanel('activity')} data-testid="work-activity">{s('shell.activity')}</Button>

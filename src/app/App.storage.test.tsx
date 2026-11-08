@@ -555,6 +555,25 @@ describe('a way in a registered provider brought', () => {
     expect(screen.getByText('Open a folder\u2026')).toBeDefined()
   })
 
+  /**
+   * A source that publishes its steps keeps the work where it is: working from
+   * somewhere else is a rare act there, under ⋯, and not the first press on the
+   * home or in *Your work*.
+   */
+  it('folds under ⋯ on the home and in Your work where the source publishes its steps', async () => {
+    renderApp({ provider: { waysIn: [chooser, ...waysIn], publishesSteps: true } as never })
+    expect(screen.queryByTestId('connect-source-elsewhere')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Work from somewhere else' }))
+    expect(await screen.findByRole('menuitem', { name: 'Connect to elsewhere\u2026' })).toBeDefined()
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    const panel = await screen.findByTestId('frame-panel')
+    expect(within(panel).queryByTestId('work-open')).toBeNull()
+    fireEvent.click(within(panel).getByRole('button', { name: 'Change where it is kept' }))
+    expect(await screen.findByRole('menuitem', { name: 'Connect to elsewhere\u2026' })).toBeDefined()
+  })
+
   it('presses through to whoever registered it', () => {
     let pressed = ''
     renderApp({ provider: { waysIn: [{ ...waysIn[0], onConnect: () => { pressed = 'elsewhere' } }] } })

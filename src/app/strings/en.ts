@@ -971,6 +971,7 @@ export const EN = {
   /** An empty tree under a landscape: what a scope under it would be for, not a request for one. */
   'org.treeEmptyLandscape': 'A landscape keeps its own views. Add a scope below it only to split it up.',
   /** A scope only the reader sees: the mark's name and the row's hover. */
+  'org.workElsewhere': 'Work from somewhere else',
   'org.treePersonal': 'Only you see this. It is not the organisation’s, and nothing in it is counted.',
   'org.expand': 'Show what is under {name}',
   'org.collapse': 'Hide what is under {name}',

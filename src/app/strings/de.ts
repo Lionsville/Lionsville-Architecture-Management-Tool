@@ -763,6 +763,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'org.tree': 'Bereiche in {name}',
   'org.treeEmpty': 'Noch nichts abgelegt. Eine Sparte oder ein Team gehört hierher.',
   'org.treeEmptyLandscape': 'Eine Landschaft führt ihre eigenen Ansichten. Legen Sie nur dann einen Bereich darunter an, wenn Sie sie aufteilen wollen.',
+  'org.workElsewhere': 'Anderswo arbeiten',
   'org.treePersonal': 'Nur Sie sehen dies. Es gehört nicht zur Organisation, und nichts darin wird mitgezählt.',
   'org.expand': 'Zeigen, was unter {name} liegt',
   'org.collapse': 'Verbergen, was unter {name} liegt',

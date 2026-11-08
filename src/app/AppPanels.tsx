@@ -297,6 +297,7 @@ function Home({ parts }: { parts: ShellParts }) {
           sourcePage={sourcePageFor(parts)}
           chipFace={chipFaceFor(parts)}
           waysIn={parts.provider.offered}
+          publishesSteps={props.provider?.publishesSteps ?? false}
           onGoHome={nav.goHome}
           findings={findings.treeFindings}
           checkMarks={marking.marks}
