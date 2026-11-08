@@ -339,8 +339,14 @@ export function enabledFor(spec: MenuItemSpec): boolean {
   return scopeOpen
 }
 
+/**
+ * Ticks the one radio that matches. Electron's radio setter ticks an item on
+ * any assignment, `false` included, and unticks its siblings, so setting each
+ * in turn left the last one, System, ticked whatever the theme was.
+ */
 function tickTheme(): void {
-  for (const held of themeRadios) held.item.checked = held.mode === theme
+  const on = themeRadios.find((held) => held.mode === theme)
+  if (on) on.item.checked = true
 }
 
 /**

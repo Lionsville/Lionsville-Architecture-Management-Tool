@@ -230,3 +230,39 @@ describe('the items that need something on screen', () => {
     expect(menu.enabledFor(PICTURE_ITEM)).toBe(false)
   })
 })
+
+describe('View › Theme', () => {
+  /**
+   * A radio as Electron has it: assigning `checked` ticks the item whatever is
+   * assigned, `false` included, and unticks the other radios beside it.
+   */
+  async function radios() {
+    const { MenuItem } = await import('electron')
+    const group: { label?: string; ticked: boolean }[] = []
+    vi.mocked(MenuItem).mockImplementation(function made(this: object, options: { label?: string; type?: string }) {
+      if (options?.type !== 'radio') return Object.assign(this, options)
+      const item = { label: options.label, ticked: false }
+      group.push(item)
+      Object.defineProperty(this, 'checked', {
+        set: () => { for (const other of group) other.ticked = other === item },
+        get: () => item.ticked,
+      })
+      return this
+    } as never)
+    return group
+  }
+
+  it('ticks the theme that is on, not whichever radio was set last', async () => {
+    const group = await radios()
+    const menu = await fresh()
+    menu.installAppMenu({ recents: [], packaged: true })
+    const ticked = () => group.filter((one) => one.ticked).map((one) => one.label)
+    menu.reportTheme('dark')
+    expect(ticked()).toEqual(['Dark'])
+    menu.reportTheme('light')
+    expect(ticked()).toEqual(['Light'])
+    menu.reportTheme('system')
+    expect(ticked()).toEqual(['System'])
+    vi.mocked((await import('electron')).MenuItem).mockReset()
+  })
+})
