@@ -67,7 +67,7 @@ export const SECTIONS: SectionTexts = {
     'Row one: ? and Help; a panel\'s head: ?',
     ['Press ? in row one, or F1.', 'Or press Help and pick an item.'],
     'On the roadmap, press F1 and the help opens at The roadmap and plans.',
-    'F1, or ⌘? (Ctrl+?) where the system leaves it to the app'],
+    'F1 opens it at the screen you are on; ⌘? (Ctrl+?) opens the whole help'],
   'frame.shortcutsSheet': ['Keyboard shortcuts', 'One sheet of every key: what works everywhere and what works on a board.',
     'Help › Keyboard shortcuts…, or press ? where you are not typing.',
     ['Press ?.', 'Read the keys; press Close or Esc.'],

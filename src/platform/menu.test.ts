@@ -71,7 +71,8 @@ describe('the vocabulary', () => {
       'menu.shareLink': 'Share with a Link…', 'menu.snapshot': 'Take a Snapshot…', 'menu.history': 'History…',
       'menu.connectAgent': 'Connect an Agent…', 'menu.preferences': 'Preferences…', 'menu.settings': 'Settings…',
       'menu.checkForUpdates': 'Check for Updates…', 'menu.undo': 'Undo', 'menu.redo': 'Redo', 'menu.editDelete': 'Delete',
-      'menu.editSelectAll': 'Select All', 'menu.userManual': 'Open the Help', 'menu.shortcuts': 'Keyboard Shortcuts…',
+      'menu.editSelectAll': 'Select All', 'menu.userManual': 'Lionsville Architect Help',
+      'menu.zoomIn': 'Zoom In', 'menu.zoomOut': 'Zoom Out', 'menu.zoomActual': 'Actual Size', 'menu.shortcuts': 'Keyboard Shortcuts…',
       'menu.back': 'Back', 'menu.forward': 'Forward', 'menu.getDesktopApp': 'Get the Desktop App',
     }
     for (const [key, title] of Object.entries(bar)) {

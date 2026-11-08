@@ -2,58 +2,31 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The keys, on every screen: generated from the one table of commands, so a
- * key cannot be on a menu and not here. The canvas's own come from its keymap.
+ * The keys, on every screen and over a board alike: generated from the one
+ * table of commands and the frame's own keys, so a key cannot be on a menu and
+ * not here, and the canvas's from its keymap, under a heading of their own.
+ * `?` and Help › Keyboard Shortcuts… open this sheet everywhere (`AppFrame`).
  */
 import type { StringKey, Translate } from '../../i18n'
-import { CANVAS_SHORTCUTS, detectPlatform, formatChord } from '../../editor/keymap'
-import { Button } from '../../widgets/kit/Button'
-import { Dialog } from '../../widgets/kit/Dialog'
+import { canvasKeyRows, detectPlatform } from '../../editor/keymap'
+import { KeySheet } from '../../widgets/kit/KeySheet'
 import { FRAME_KEYS, keyCap } from './commandsTable'
 import type { CommandRow } from './commandsTable'
-
-/**
- * The canvas's keys a row per thing done: a second key for the same thing (⌘Y
- * beside ⇧⌘Z, the Menu key beside ⇧F10) is said on the row it belongs to, and
- * the sheet's own key is said once, under Everywhere.
- */
-function canvasRows(platform: ReturnType<typeof detectPlatform>): { label: StringKey; keys: string[] }[] {
-  const rows: { label: StringKey; keys: string[] }[] = []
-  for (const def of CANVAS_SHORTCUTS) {
-    if (def.id === 'help') continue
-    const chord = formatChord(def, platform)
-    const row = rows.find((one) => one.label === def.labelKey)
-    if (row) { if (!row.keys.includes(chord)) row.keys.push(chord) } else rows.push({ label: def.labelKey as StringKey, keys: [chord] })
-  }
-  return rows
-}
 
 export function ShortcutsSheet({ open, onClose, rows, mac, s }: {
   open: boolean; onClose: () => void; rows: readonly CommandRow[]; mac: boolean; s: Translate
 }) {
-  const withKeys = rows.filter((row) => row.keys !== undefined)
-  const group = (name: CommandRow['group']) => withKeys.filter((row) => row.group === name)
-  const platform = detectPlatform()
+  const everywhere = [
+    ...FRAME_KEYS(mac).map(([label, key]) => ({ label: s(label), keys: [key] })),
+    ...(['file', 'edit', 'go', 'view', 'help'] as const)
+      .flatMap((name) => rows.filter((row) => row.group === name && row.keys !== undefined))
+      .map((row) => ({ label: s(row.label), keys: [keyCap(row.keys!, mac)] })),
+  ]
+  const board = canvasKeyRows(detectPlatform()).map((row) => ({ label: s(row.labelKey as StringKey), keys: row.keys }))
   return (
-    <Dialog open={open} onClose={onClose} size="l" title={s('frame.shortcutsTitle')} actions={<Button onClick={onClose}>{s('frame.close')}</Button>}>
-      <div className="kit-sheet" data-testid="shortcuts-sheet">
-        <section>
-          <h3>{s('frame.group.frame')}</h3>
-          {FRAME_KEYS(mac).map(([label, key]) => <div key={label} className="kit-sheet__row"><span>{s(label)}</span><span className="kit-frame__kbd">{key}</span></div>)}
-          {(['file', 'edit', 'go', 'view'] as const).flatMap((name) => group(name)).map((row) => (
-            <div key={row.id} className="kit-sheet__row"><span>{s(row.label)}</span><span className="kit-frame__kbd">{keyCap(row.keys!, mac)}</span></div>
-          ))}
-        </section>
-        <section>
-          <h3>{s('frame.group.canvas')}</h3>
-          {canvasRows(platform).map((row) => (
-            <div key={row.label} className="kit-sheet__row">
-              <span>{s(row.label)}</span>
-              <span>{row.keys.map((key, index) => <span key={key}>{index > 0 && ` ${s('frame.keysOr')} `}<span className="kit-frame__kbd">{key}</span></span>)}</span>
-            </div>
-          ))}
-        </section>
-      </div>
-    </Dialog>
+    <KeySheet
+      open={open} onClose={onClose} title={s('frame.shortcutsTitle')} closeLabel={s('frame.close')} orWord={s('frame.keysOr')}
+      groups={[{ title: s('frame.group.frame'), rows: everywhere }, { title: s('frame.group.canvas'), rows: board }]}
+    />
   )
 }

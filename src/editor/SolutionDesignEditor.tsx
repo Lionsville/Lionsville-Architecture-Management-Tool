@@ -186,7 +186,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
     },
   });
   const capture = useBoardCapture(wrapperRef, activeDiagram, theme, props.logos?.onExportImagesMissing);
-  const dialogs = useEditorDialogs();
+  const dialogs = useEditorDialogs(props.onShowShortcuts);
   const adding = useAddRequests();
   const clicks = useDoubleClicks(props, state, activeDiagram, docs.open);
   const parts: EditorParts = {

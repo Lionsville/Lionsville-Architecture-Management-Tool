@@ -23,8 +23,8 @@ describe('which key is the help\'s', () => {
     const plain = { shiftKey: true, metaKey: false, ctrlKey: false, altKey: false }
     expect(helpKeyOf({ key: '?', ...plain })).toBe('shortcuts')
     expect(helpKeyOf({ key: 'F1', ...plain, shiftKey: false })).toBe('help')
-    expect(helpKeyOf({ key: '?', ...plain, metaKey: true })).toBe('help')
-    expect(helpKeyOf({ key: '/', ...plain, ctrlKey: true })).toBe('help')
+    expect(helpKeyOf({ key: '?', ...plain, metaKey: true })).toBe('whole')
+    expect(helpKeyOf({ key: '/', ...plain, ctrlKey: true })).toBe('whole')
     expect(helpKeyOf({ key: '/', ...plain, shiftKey: false })).toBeUndefined()
     expect(helpKeyOf({ key: '?', ...plain, altKey: true })).toBeUndefined()
   })
@@ -78,6 +78,27 @@ describe('the keys, heard on the window', () => {
     const field = document.body.appendChild(document.createElement('textarea'))
     expect(press('?', field).defaultPrevented).toBe(false)
     expect(send).toHaveBeenCalledTimes(1)
+    // A search field the page put the focus in, with nothing typed yet: ? is the key there.
+    const search = document.body.appendChild(document.createElement('input'))
+    search.type = 'search'
+    press('?', search)
+    expect(send).toHaveBeenCalledTimes(2)
+    search.value = 'Ann'
+    expect(press('?', search).defaultPrevented).toBe(false)
+    expect(send).toHaveBeenCalledTimes(2)
+  })
+
+  it('⌘? opens the whole help on the web, and is the menu bar\'s where there is one', () => {
+    const send = vi.fn()
+    const { unmount } = renderHook(() => useHelpKeys({ send, place: () => 'board', framed: true }))
+    press('?', document.body, { metaKey: true })
+    expect(send).toHaveBeenCalledWith({ type: 'manual' })
+    unmount()
+    const desk = vi.fn()
+    renderHook(() => useHelpKeys({ send: desk, place: () => 'board', framed: true, hostMenu: true }))
+    expect(press('?', document.body, { metaKey: true }).defaultPrevented).toBe(false)
+    press('F1')
+    expect(desk.mock.calls).toEqual([[{ type: 'manual', section: 'board' }]])
   })
 
   it('opens the help\'s own list of keys where there is no frame to show the sheet', () => {

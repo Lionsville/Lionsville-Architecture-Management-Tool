@@ -67,7 +67,7 @@ export const SECTIONS: SectionTexts = {
     'Rij één: ? en Help; de kop van een paneel: ?',
     ['Druk op ? in rij één, of op F1.', 'Of druk op Help en kies een item.'],
     'Druk op de roadmap op F1 en de help opent bij De roadmap en plannen.',
-    'F1, of ⌘? (Ctrl+?) waar het systeem die aan de app laat'],
+    'F1 opent hem bij het scherm waar je bent; ⌘? (Ctrl+?) opent de hele help'],
   'frame.shortcutsSheet': ['Sneltoetsen', 'Eén overzicht van elke toets: wat overal werkt en wat op een bord werkt.',
     'Help › Sneltoetsen…, of druk op ? waar je niet typt.',
     ['Druk op ?.', 'Lees de toetsen; druk op Sluiten of Esc.'],

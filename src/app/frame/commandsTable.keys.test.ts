@@ -85,8 +85,7 @@ const read = (file: string) => readFileSync(new URL(`../../${file}`, import.meta
 
 /** Keys one surface answers for itself, by the file that does and what in it shows it does. */
 const LOCAL: Record<Chord, { file: string; shows: RegExp }> = {
-  // The shell's help keys, and row one's ↶ ↷ by their keys where no Edit menu hears them.
-  'mod+?': { file: 'app/helpKeys.ts', shows: /event\.key === '\?'/ },
+  // Row one's redo by the other key, where no Edit menu hears it.
   'mod+y': { file: 'app/frame/AppFrame.tsx', shows: /key === 'y'/ },
   // The writer's toolbar keys (`toolOfKey`), its way to the toolbar, and ⌘Enter to finish.
   'mod+b': { file: 'documentation/ui/MarkdownToolbar.tsx', shows: /shortcut: 'B'/ },

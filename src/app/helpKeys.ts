@@ -2,9 +2,10 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The two keys of the help, on every screen: `?` shows the keyboard shortcuts
- * and F1 — or ⌘? (Ctrl+?) where the platform leaves that chord to the page —
- * opens the help at the place that answers for the screen that is up.
+ * The keys of the help, on every screen: `?` shows the keyboard shortcuts, F1
+ * opens the help at the place that answers for the screen that is up, and ⌘?
+ * (Ctrl+?) opens the whole help as the Help menu's first item does — answered
+ * by the menu bar on the desktop, here on the web.
  *
  * Heard once, on the window, in the capture phase, before any part of a screen.
  * `?` used to be the frame's only where no board was up and no dialog anywhere
@@ -15,7 +16,8 @@
  * takes it, stops it there so a board's keymap does not answer it a second
  * time, and lets the frame say which sheet: a board's own where one is up.
  *
- * Typing keeps both keys: a field, a text area, a list's type-ahead.
+ * Typing keeps both keys: a field, a text area, a list's type-ahead — but for
+ * `?` in a search field nothing is typed in yet.
  */
 import { useEffect, useRef } from 'react'
 import type { Screen } from '../agent/screen'
@@ -37,7 +39,16 @@ export function takesText(target: EventTarget | null): boolean {
   return target.closest('[role="menu"], [role="listbox"], [role="combobox"]') !== null
 }
 
-export type HelpKey = 'shortcuts' | 'help' | undefined
+/**
+ * A search field nothing is typed in yet: a page that is mostly looked things
+ * up in (People) puts the focus there as it opens, and a ? as the first
+ * character of a search is the key, not the question.
+ */
+function emptySearch(target: EventTarget | null): boolean {
+  return target instanceof HTMLInputElement && target.type === 'search' && target.value === ''
+}
+
+export type HelpKey = 'shortcuts' | 'help' | 'whole' | undefined
 
 /** Which of the help's keys this is, if any. */
 export function helpKeyOf(event: Pick<KeyboardEvent, 'key' | 'shiftKey' | 'metaKey' | 'ctrlKey' | 'altKey'>): HelpKey {
@@ -45,7 +56,7 @@ export function helpKeyOf(event: Pick<KeyboardEvent, 'key' | 'shiftKey' | 'metaK
   if (event.key === 'F1') return 'help'
   const modified = event.metaKey || event.ctrlKey
   // With ⌘ or Ctrl held, some keyboards report the key under ? as / with Shift.
-  if (modified && (event.key === '?' || (event.key === '/' && event.shiftKey))) return 'help'
+  if (modified && (event.key === '?' || (event.key === '/' && event.shiftKey))) return 'whole'
   return event.key === '?' && !modified ? 'shortcuts' : undefined
 }
 
@@ -73,17 +84,21 @@ export function useHelpKeys(deps: {
   place: () => string
   /** The frame is up and shows the sheet of keys; without it, `?` opens the help's own list of them. */
   framed: boolean
+  /** A menu bar that answers ⌘? itself, as the desktop's does. */
+  hostMenu?: boolean
 }) {
   const latest = useRef(deps)
   latest.current = deps
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const said = helpKeyOf(event)
-      if (!said || event.defaultPrevented || takesText(event.target)) return
+      if (!said || event.defaultPrevented || (said === 'whole' && latest.current.hostMenu)) return
+      if (takesText(event.target) && !(said === 'shortcuts' && emptySearch(event.target))) return
       event.preventDefault()
       event.stopPropagation()
       const { send, place, framed } = latest.current
       if (said === 'help') send({ type: 'manual', section: place() })
+      else if (said === 'whole') send({ type: 'manual' })
       else if (framed) send({ type: 'shortcuts' })
       else send({ type: 'manual', section: PANEL_HELP.shortcuts })
     }

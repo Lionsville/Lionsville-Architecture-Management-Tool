@@ -269,6 +269,8 @@ export type WorkspaceHost = {
   commands?: (listener: (command: HostCommand) => void) => () => void
   /** The host has a menu bar of its own, which carries ⌘Z and ⌘⇧Z (ADR-0005, amended). */
   hostMenu?: boolean
+  /** The sheet of keys of every screen, which a board's own ⋯ opens rather than a second one of its own. */
+  showShortcuts?: () => void
   /**
    * Tell the host whether closing the window would lose something. Absent in a
    * browser tab, where the window is ours and `beforeunload` says it.

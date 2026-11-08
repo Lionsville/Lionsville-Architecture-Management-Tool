@@ -2,22 +2,10 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { useMemo } from 'react';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import Typography from '@mui/material/Typography';
-import {
-  CANVAS_SHORTCUTS,
-  detectPlatform,
-  formatChord,
-  type ShortcutDef,
-  type ShortcutGroup,
-} from './keymap';
+import { canvasKeyRows, detectPlatform, type ShortcutGroup } from './keymap';
 import { useStrings } from '../i18n/LanguageContext';
 import type { StringKey } from '../i18n/strings';
+import { KeySheet } from '../widgets/kit/KeySheet';
 
 export interface ShortcutsHelpDialogProps {
   open: boolean;
@@ -32,82 +20,20 @@ const GROUP_LABELS: Array<{ group: ShortcutGroup; labelKey: StringKey }> = [
 ];
 
 /**
- * Keyboard-shortcut overlay. Mirrors hal_app's `FunnelHelpDialog` MUI-Dialog
- * pattern (title + dividers + close) rather than importing it — this package
- * must not depend on the host. It renders `CANVAS_SHORTCUTS` grouped by
- * `group`, so it can never fall out of sync with the dispatch hook. Glyphs are
- * resolved for the viewer's platform (⌘/Ctrl, ⇧, ⌥).
+ * The canvas's keys, for an editor drawn with no host around it: the kit's one
+ * sheet of keys over `CANVAS_SHORTCUTS`, so it cannot fall out of sync with the
+ * dispatch hook. A host that has a sheet of its own for every screen hands it in
+ * as `onShowShortcuts`, and this is not drawn (`EditorDialogs`).
  */
 export function ShortcutsHelpDialog({ open, onClose }: ShortcutsHelpDialogProps) {
   const { t } = useStrings();
-  const platform = useMemo(() => detectPlatform(), []);
-  const byGroup = useMemo(() => {
-    const map = new Map<ShortcutGroup, ShortcutDef[]>();
-    for (const def of CANVAS_SHORTCUTS) {
-      const list = map.get(def.group) ?? [];
-      list.push(def);
-      map.set(def.group, list);
-    }
-    return map;
-  }, []);
-
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('shortcuts.title')}</DialogTitle>
-      <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {t('shortcuts.intro')}
-        </Typography>
-        {GROUP_LABELS.map(({ group, labelKey }) => {
-          const defs = byGroup.get(group);
-          if (!defs || defs.length === 0) return null;
-          return (
-            <Box key={group} sx={{ mb: 2, '&:last-of-type': { mb: 0 } }}>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}
-              >
-                {t(labelKey)}
-              </Typography>
-              {defs.map((def) => (
-                <Box
-                  key={def.id}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 2,
-                    py: 0.5,
-                  }}
-                >
-                  <Typography variant="body2">{t(def.labelKey)}</Typography>
-                  <Box
-                    component="kbd"
-                    sx={{
-                      fontFamily: 'inherit',
-                      fontSize: 'var(--t-small)',
-                      fontWeight: 600,
-                      color: 'text.secondary',
-                      px: 0.75,
-                      py: 0.25,
-                      borderRadius: 1,
-                      border: 1,
-                      borderColor: 'divider',
-                      bgcolor: 'action.hover',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {formatChord(def, platform)}
-                  </Box>
-                </Box>
-              ))}
-            </Box>
-          );
-        })}
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.close')}</Button>
-      </DialogActions>
-    </Dialog>
-  );
+  const groups = useMemo(() => {
+    const rows = canvasKeyRows(detectPlatform());
+    const help = { label: t('shortcut.help'), keys: ['?'] };
+    return GROUP_LABELS.map(({ group, labelKey }) => ({
+      title: t(labelKey),
+      rows: [...rows.filter((row) => row.group === group).map((row) => ({ label: t(row.labelKey as StringKey), keys: row.keys })), ...(group === 'general' ? [help] : [])],
+    }));
+  }, [t]);
+  return <KeySheet open={open} onClose={onClose} title={t('shortcuts.title')} closeLabel={t('common.close')} orWord={t('shortcuts.or')} groups={groups} />;
 }

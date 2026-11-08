@@ -236,7 +236,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByTestId('topics-catalogue', {}, { timeout: 5000 })
   }]],
   // The overflow menu's Help, and Connect an agent from it, in a browser tab: where the desktop app is had (ADR-0044 §6).
-  [['the frame, on any screen', ['frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.tree', 'frame.switcher', 'frame.textSize', 'frame.textSmaller', 'frame.textSizeNow', 'frame.textLarger'], async () => {
+  [['the frame, on any screen', ['frame.find', 'frame.status', 'frame.home', 'frame.more', 'frame.agent', 'frame.help', 'frame.helpHere', 'frame.tree', 'frame.switcher', 'frame.textSize', 'frame.textSmaller', 'frame.textSizeNow', 'frame.textLarger'], async () => {
     show(false)
     await screen.findByTestId('frame-places')
   }], ['the text size, its steps', ['frame.textSizeReset'], async () => {
@@ -248,7 +248,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   }]],
   [['Help', ['shell.website'], async () => {
     show(false)
-    fireEvent.click(await screen.findByRole('button', { name: /Help/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Help$/ }))
   }], ['Connect an agent, from it', ['agent.download'], async () => {
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     fireEvent.click(await screen.findByTestId('overflow-button'))

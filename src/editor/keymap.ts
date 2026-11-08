@@ -274,3 +274,20 @@ export function formatShortcut(id: string, platform: Platform): string | undefin
   const def = CANVAS_SHORTCUTS.find((d) => d.id === id);
   return def ? formatChord(def, platform) : undefined;
 }
+
+/**
+ * The canvas's keys a row per thing done: a second key for the same thing (⌘Y
+ * beside ⇧⌘Z, the Menu key beside ⇧F10) is said on the row it belongs to, and
+ * the sheet's own key, `?`, is left to whoever lists the keys of every screen.
+ * What the one sheet of keys (`widgets/kit/KeySheet`) lists for a board.
+ */
+export function canvasKeyRows(platform: Platform, groups?: readonly ShortcutGroup[]): { labelKey: string; group: ShortcutGroup; keys: string[] }[] {
+  const rows: { labelKey: string; group: ShortcutGroup; keys: string[] }[] = [];
+  for (const def of CANVAS_SHORTCUTS) {
+    if (def.id === 'help' || (groups && !groups.includes(def.group))) continue;
+    const chord = formatChord(def, platform);
+    const row = rows.find((one) => one.labelKey === def.labelKey);
+    if (row) { if (!row.keys.includes(chord)) row.keys.push(chord); } else rows.push({ labelKey: def.labelKey, group: def.group, keys: [chord] });
+  }
+  return rows;
+}

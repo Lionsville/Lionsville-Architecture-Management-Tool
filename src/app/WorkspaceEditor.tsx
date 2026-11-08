@@ -119,6 +119,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
         themeFor={seams.themeFor}
         // ⌘S does not wait: a save says how it went on the bar itself.
         onForceSave={() => { void parts.document.document.forceSave() }}
+        {...(parts.props.host.showShortcuts ? { onShowShortcuts: parts.props.host.showShortcuts } : {})}
         onHandle={renderer.onEditorHandle}
       />
       </ErrorBoundary>

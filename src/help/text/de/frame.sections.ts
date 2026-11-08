@@ -67,7 +67,7 @@ export const SECTIONS: SectionTexts = {
     'Zeile eins: ? und Hilfe; der Kopf eines Panels: ?',
     ['Drücken Sie ? in Zeile eins, oder F1.', 'Oder drücken Sie Hilfe und wählen Sie einen Eintrag.'],
     'Drücken Sie auf dem Fahrplan F1, und die Hilfe öffnet sich bei Der Fahrplan und Pläne.',
-    'F1, oder ⌘? (Strg+?), wo das System es der App überlässt'],
+    'F1 öffnet sie beim Bildschirm, auf dem Sie sind; ⌘? (Strg+?) öffnet die ganze Hilfe'],
   'frame.shortcutsSheet': ['Tastenkürzel', 'Eine Übersicht jeder Taste: was überall funktioniert und was auf einem Board.',
     'Hilfe › Tastenkürzel…, oder drücken Sie ?, wo Sie nicht tippen.',
     ['Drücken Sie ?.', 'Lesen Sie die Tasten; drücken Sie Schließen oder Esc.'],

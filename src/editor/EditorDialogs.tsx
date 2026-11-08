@@ -42,7 +42,7 @@ const DiagramSettingsDialog = lazyPart<ComponentProps<typeof DiagramSettingsDial
 /** Which of the plain dialogs is up. ⌘F's dialog owns its own query; this is only whether it is up. */
 export type ThisViewTab = 'properties' | 'lines' | 'tidy';
 
-export function useEditorDialogs() {
+export function useEditorDialogs(hostSheet?: () => void) {
   const [helpOpen, setHelpOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   // "Rename diagram…" and "Settings…" from a tab: the dialog lives here, the
@@ -52,7 +52,8 @@ export function useEditorDialogs() {
   // *This view*, in the panel: pressing the name of the view that is up.
   const [thisViewOpen, setThisViewOpen] = useState(false);
   const [thisViewTab, setThisViewTab] = useState<ThisViewTab>('properties');
-  const openHelp = useCallback(() => setHelpOpen(true), []);
+  // The host's one sheet of keys where it has one; the canvas's own otherwise.
+  const openHelp = useCallback(() => { if (hostSheet) hostSheet(); else setHelpOpen(true); }, [hostSheet]);
   const openSearch = useCallback(() => setSearchOpen(true), []);
   return {
     helpOpen, setHelpOpen, openHelp, searchOpen, setSearchOpen, openSearch,

@@ -830,6 +830,11 @@ export interface SolutionDesignEditorProps {
    */
   onForceSave?: () => void;
   /**
+   * The host's sheet of keys, for every screen: `?` and the bar's *Keyboard
+   * shortcuts* open it. Absent, the editor shows its own sheet of the canvas's keys.
+   */
+  onShowShortcuts?: () => void;
+  /**
    * The editor's handle, whenever it changes, and `undefined` on unmount
    * (ADR-0007). A host that answers an agent holds the latest one.
    */

@@ -206,7 +206,7 @@ function helpMenuFor(onCheck?: () => void, onHelp?: () => void): MenuItemConstru
     ...HELP_MENU.map((entry): MenuItemConstructorOptions => (
       entry.kind !== 'item' ? { type: 'separator' }
         // The help is main's to open: it needs no page to be listening.
-        : entry === HELP_MENU_ITEM && onHelp ? { label: label(entry.label as keyof typeof EN), click: onHelp }
+        : entry === HELP_MENU_ITEM && onHelp ? { label: label(entry.label as keyof typeof EN), accelerator: entry.accelerator, click: onHelp }
           : itemFor(entry)
     )),
     { label: label('menu.website'), click: () => { void shell.openExternal(WEBSITE_LINK.href) } },

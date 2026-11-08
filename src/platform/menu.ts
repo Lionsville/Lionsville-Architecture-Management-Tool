@@ -45,8 +45,10 @@ export type MenuHost = 'desktop' | 'web'
 const SMALL_WORDS = new Set(['a', 'an', 'the', 'of', 'with', 'for', 'and', 'or', 'to', 'in', 'on', 'at', 'by'])
 
 export function titleCase(label: string): string {
-  return label.split(' ').map((word, at) => (
-    at > 0 && SMALL_WORDS.has(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
+  const words = label.split(' ')
+  // The first word and the last are always capitalised: *Zoom In* beside *Zoom Out*.
+  return words.map((word, at) => (
+    at > 0 && at < words.length - 1 && SMALL_WORDS.has(word) ? word : word.charAt(0).toUpperCase() + word.slice(1)
   )).join(' ')
 }
 
@@ -146,8 +148,13 @@ export const EDIT_ITEMS: {
  * overlay the `?` button opens. Check for Updates… sits under these on the
  * desktop and is main's own, not a command (`appMenu.ts`).
  */
-/** The help, which the Help menu, the ? in row one and a browser's ⋯ all open. */
-export const HELP_MENU_ITEM: MenuItemSpec = item('menu.userManual', { type: 'manual' })
+/**
+ * The help, whole, from Getting started: the Help menu, a browser's ⋯ and the
+ * first page open it. ⌘? as every Mac app's own help has it; F1 and the ? in
+ * row one open it at the screen instead (`app/helpKeys.ts`). On the desktop the
+ * menu bar answers the key, so the page leaves it alone there.
+ */
+export const HELP_MENU_ITEM: MenuItemSpec = item('menu.userManual', { type: 'manual' }, 'CmdOrCtrl+?')
 
 export const HELP_MENU: readonly MenuEntry[] = [
   HELP_MENU_ITEM,

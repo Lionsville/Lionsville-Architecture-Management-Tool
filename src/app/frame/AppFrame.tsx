@@ -86,7 +86,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const page = screen.page?.page
   const pageUp = page !== undefined
   const onHomeBare = !parts.nav.project && !pageUp
-  const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts, facts)
+  const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts)
   useFrameKeys(parts, state)
   useRememberPlace(parts, screen)
   const lines = usePaletteLines(parts, at, go)
@@ -199,17 +199,11 @@ export function canOf(parts: ShellParts, facts: ScreenFacts | undefined) {
   }
 }
 
-/** The `?` key and the menu's item, on every screen: a board's own sheet where a board is up, this one elsewhere. */
-function useShortcutsSheet(parts: ShellParts, facts: ScreenFacts | undefined) {
+/** The one sheet of keys, on every screen and over a board alike: `?`, the Help menu's item and a board's own ⋯ open it. */
+function useShortcutsSheet(parts: ShellParts) {
   const [open, setOpen] = useState(false)
-  const boardUp = useRef(false)
-  boardUp.current = facts?.boardUp === true
-  const showBoard = useRef(facts?.showShortcuts)
-  showBoard.current = facts?.showShortcuts
   useEffect(() => parts.commands.bus.on((command) => {
-    if (command.type !== 'shortcuts') return
-    if (boardUp.current && showBoard.current) showBoard.current()
-    else setOpen(true)
+    if (command.type === 'shortcuts') setOpen(true)
   }), [parts.commands.bus])
   return [open, setOpen] as const
 }
@@ -224,6 +218,17 @@ export function menuKeyCommand(press: KeyPress, can: ReturnType<typeof canOf>, b
   const hit = items.find((entry) => entry.accelerator !== undefined && acceleratorMatches(entry.accelerator, press, mac))
   if (!hit || (hit.command.type === 'save' && boardUp)) return undefined
   return hit.command
+}
+
+/**
+ * Is something modal up, that owns the keys until it is closed? A dialog that
+ * says so, or MUI's. Not the on-screen guidance, which is a dialog that is not
+ * modal and stands beside every screen while a path is followed: refusing the
+ * keys for any dialog at all took ⌘O, ⌘S and Esc away for as long as it was up.
+ */
+export function modalUp(): boolean {
+  return Array.from(document.querySelectorAll('[role="dialog"][aria-modal="true"], [role="alertdialog"], .MuiDialog-root'))
+    .some((found) => found.closest('[aria-hidden="true"]') === null)
 }
 
 /** ⌘Z, ⇧⌘Z and ⌘Y (Ctrl on Windows and Linux), as the canvas's keymap reads them. */
@@ -249,18 +254,21 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         parts.services.prefs.writePreference({ treePinned: pinned })
         return
       }
-      if ((!parts.hostMenu || event.key.toLowerCase() === 'y') && !boardUp && undoKey(event) && !takesText(event.target)) {
-        // Row one's ↶ and ↷ by their keys, on a host with no Edit menu to hear them: a board has its own.
+      const undo = undoKey(event)
+      // The desktop's Edit menu has ⌘Z and ⇧⌘Z everywhere but no ⌘Y; on the web a board's keymap has all three.
+      const ours = undo !== undefined && (parts.hostMenu ? event.key.toLowerCase() === 'y' : !boardUp)
+      if (ours && !takesText(event.target) && !modalUp()) {
+        // Row one's ↶ and ↷ by their keys.
         const facts = frame.get().screen
-        const act = undoKey(event) === 'redo' ? facts?.redo : facts?.undo
+        const act = undo === 'redo' ? facts?.redo : facts?.undo
         if (act?.can) { event.preventDefault(); event.stopPropagation(); act.run() }
         return
       }
-      if (!parts.hostMenu && (event.metaKey || event.ctrlKey) && !document.querySelector('[role="dialog"]')) {
+      if (!parts.hostMenu && (event.metaKey || event.ctrlKey) && !modalUp()) {
         const command = menuKeyCommand(event, canOf(parts, frame.get().screen), boardUp, /Mac|iPhone|iPad/.test(navigator.platform))
         if (command) { event.preventDefault(); send(command); return }
       }
-      if (event.key === 'Escape' && hasPanel && !document.querySelector('[role="dialog"], [role="menu"]')) {
+      if (event.key === 'Escape' && hasPanel && !modalUp() && !document.querySelector('[role="menu"]')) {
         event.preventDefault()
         parts.agent.setPanel(undefined)
       }
@@ -541,7 +549,7 @@ function helpEntries(parts: ShellParts): (MenuAct | MenuSpacer)[] {
   const { services: { s }, commands: { bus } } = parts
   const help = offered(HELP_MENU, 'web', { history: false, connect: false, scope: true })
   const here: MenuAct = { label: s('frame.helpHere'), shortcut: 'F1', onSelect: () => bus.send({ type: 'manual', section: helpHere(parts) }) }
-  const items: (MenuAct | MenuSpacer)[] = [here, ...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : {}) }] : []))]
+  const items: (MenuAct | MenuSpacer)[] = [here, ...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : entry.accelerator ? { shortcut: keyCap(entry.accelerator, isMac()) } : {}) }] : []))]
   if (!parts.hostMenu) {
     const open = (href: string) => () => parts.props.hostControls.openExternal(href)
     items.push({ line: true }, { label: s(DESKTOP_APP_LINK.label), onSelect: open(DESKTOP_APP_LINK.href) }, { label: s(WEBSITE_LINK.label), onSelect: open(WEBSITE_LINK.href), 'data-guide': 'shell.website' })

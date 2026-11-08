@@ -362,7 +362,7 @@ describe('the overflow on the web', () => {
     expect(screen.getByText(s(PREFERENCES_ITEM.label))).toBeDefined()
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     // Help has its own place in row one.
-    fireEvent.click(await screen.findByRole('button', { name: /Help/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Help$/ }))
     for (const entry of offered(HELP_MENU, 'web', can)) {
       if (entry.kind === 'item') expect(await screen.findByText(s(entry.label))).toBeDefined()
     }
@@ -390,10 +390,10 @@ describe('the overflow on the web', () => {
    */
   it('offers the desktop app and the product’s site under Help, each opened outside this window', async () => {
     const view = show()
-    fireEvent.click(await screen.findByRole('button', { name: /Help/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Help$/ }))
     fireEvent.click(await screen.findByText(s(DESKTOP_APP_LINK.label)))
     await waitFor(() => expect(view.hostControls.openExternal).toHaveBeenCalledWith('https://architecture.lionsville.nl/download'))
-    fireEvent.click(await screen.findByRole('button', { name: /Help/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Help$/ }))
     fireEvent.click(await screen.findByText('Website'))
     await waitFor(() => expect(view.hostControls.openExternal).toHaveBeenCalledWith('https://architecture.lionsville.nl'))
   })

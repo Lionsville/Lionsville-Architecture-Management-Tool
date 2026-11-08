@@ -172,6 +172,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
       host={{
         commands: parts.commands.bus.on,
         hostMenu: parts.hostMenu,
+        showShortcuts: () => parts.commands.bus.send({ type: 'shortcuts' }),
         onUnsavedWork: host.onUnsavedWork,
         windowChrome: parts.windowChrome,
         controls: props.hostControls,

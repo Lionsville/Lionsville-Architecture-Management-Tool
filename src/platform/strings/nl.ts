@@ -43,7 +43,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.editDelete': 'Verwijderen',
   'menu.editSelectAll': 'Alles selecteren',
   'menu.help': 'Help',
-  'menu.userManual': 'De help openen',
+  'menu.userManual': 'Help bij Lionsville Architect',
   'menu.shortcuts': 'Sneltoetsen…',
   'menu.go': 'Ga',
   'menu.back': 'Terug',
