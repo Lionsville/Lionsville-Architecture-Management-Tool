@@ -5,8 +5,8 @@
  * German, for the menu.
  *
  * Typed from the English slice beside it, so a missing translation is a compile
- * error here rather than an English sentence on a German screen. Only the web's
- * overflow reads this table; the desktop's menu bar is English (see `en.ts`).
+ * error here rather than an English sentence on a German screen. The web's
+ * overflow and the desktop's menu bar both read it.
  */
 import type { EN } from './en'
 
@@ -61,4 +61,21 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.exportPicture': 'Bild exportieren…',
   'menu.notNow': 'Derzeit nicht verfügbar',
   'menu.saveNothingOpen': 'Nichts ist geöffnet. Arbeit speichert sich selbst; öffnen Sie einen Bereich, um jetzt zu speichern.',
+  // The desktop's menu bar: the items Electron's roles would otherwise say in English.
+  'menubar.window': 'Fenster',
+  'menubar.cut': 'Ausschneiden',
+  'menubar.copy': 'Kopieren',
+  'menubar.paste': 'Einfügen',
+  'menubar.pasteAndMatchStyle': 'Einfügen und Stil anpassen',
+  'menubar.closeWindow': 'Fenster schließen',
+  'menubar.quit': '{app} beenden',
+  'menubar.fullScreen': 'Vollbild ein/aus',
+  'menubar.minimize': 'Minimieren',
+  'menubar.zoomWindow': 'Zoomen',
+  'menubar.front': 'Alle nach vorne bringen',
+  'menubar.about': 'Über {app}',
+  'menubar.hide': '{app} ausblenden',
+  'menubar.hideOthers': 'Andere ausblenden',
+  'menubar.showAll': 'Alle einblenden',
+  'menubar.services': 'Dienste',
 }

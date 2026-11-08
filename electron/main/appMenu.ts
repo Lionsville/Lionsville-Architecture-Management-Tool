@@ -42,11 +42,13 @@
  * Check for Updates… — one place for it on every platform. A packaged build
  * loses the developer items from View.
  *
- * Labels come from the platform's English slice, verbatim. Main has no way to
- * know which language the renderer settled on; a native menu in English is
- * the price of not building a channel for it.
+ * Labels come from the platform's slice in the language the page last said
+ * (`app:language`, {@link setMenuLanguage}), English in Title Case until it has
+ * said one, and the menu is built again when it changes. The items Electron's
+ * roles would label — the app menu, Window, Cut, Copy, Paste — are given our
+ * words too, since a role's own label is English whatever the app says.
  */
-import { Menu, MenuItem, shell, webContents } from 'electron'
+import { app, Menu, MenuItem, shell, webContents } from 'electron'
 import type { MenuItemConstructorOptions, WebContents } from 'electron'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
@@ -58,6 +60,9 @@ import {
 import type { MenuEntry, MenuItemSpec } from '../../src/platform/menu'
 import type { ThemeMode } from '../../src/platform/theme'
 import { EN } from '../../src/platform/strings/en'
+import { interpolate } from '../../src/i18n/interpolate'
+import type { Language } from '../../src/i18n/languages'
+import { platformWords } from './windowGuard'
 
 /**
  * Commands sent while nothing in the window listens: held, and sent the moment
@@ -155,8 +160,20 @@ export function commandsHeard(by?: Listener): void {
   for (const command of held.splice(0)) sendCommand(command)
 }
 
-// The table is in sentence case for the web's overflow; a menu bar is in Title Case.
-const label = (key: keyof typeof EN): string => titleCase(EN[key])
+/**
+ * A menu item's words in a language: the table is in sentence case for the
+ * web's overflow, and an English menu bar is in Title Case, as a Mac's is; a
+ * Dutch or German one stays in sentence case, as theirs are.
+ */
+export function menuLabel(language: Language, key: keyof typeof EN, params?: Record<string, string>): string {
+  const said = interpolate(platformWords(language)[key], params)
+  return language === 'en' ? titleCase(said) : said
+}
+
+/** The language the menu bar is in: the page's, once it has said one. */
+let menuLanguage: Language = 'en'
+
+const label = (key: keyof typeof EN, params?: Record<string, string>): string => menuLabel(menuLanguage, key, params)
 
 /** The id an item that needs a scope is found by, to enable it when one opens. */
 const scopeId = (spec: MenuItemSpec) => `scope:${spec.command.type}`
@@ -184,10 +201,10 @@ function editMenuFor(): MenuItemConstructorOptions[] {
     itemFor(EDIT_ITEMS.undo),
     itemFor(EDIT_ITEMS.redo),
     { type: 'separator' },
-    { role: 'cut' },
-    { role: 'copy' },
-    { role: 'paste' },
-    ...(process.platform === 'darwin' ? [{ role: 'pasteAndMatchStyle' } as const] : []),
+    { role: 'cut', label: label('menubar.cut') },
+    { role: 'copy', label: label('menubar.copy') },
+    { role: 'paste', label: label('menubar.paste') },
+    ...(process.platform === 'darwin' ? [{ role: 'pasteAndMatchStyle', label: label('menubar.pasteAndMatchStyle') } as const] : []),
     { type: 'separator' },
     itemFor(EDIT_ITEMS.delete),
     itemFor(EDIT_ITEMS.selectAll),
@@ -238,7 +255,9 @@ function fileMenuFor(recents: readonly DesktopDirectory[]): MenuItemConstructorO
   }
   // Closing the window is the platform's own item and keeps its role, so the
   // unsaved-work prompt in the renderer still gets its say.
-  items.push({ type: 'separator' }, process.platform === 'darwin' ? { role: 'close' } : { role: 'quit' })
+  items.push({ type: 'separator' }, process.platform === 'darwin'
+    ? { role: 'close', label: label('menubar.closeWindow') }
+    : { role: 'quit', label: label('menubar.quit', { app: app.getName() }) })
   return items
 }
 
@@ -266,6 +285,24 @@ let scopeOpen = false
 /** What the screen up offers beyond a scope being open (`ScreenOffers`). */
 let offers: ScreenOffers = {}
 
+type MenuOptions = Parameters<typeof installAppMenu>[0]
+
+/** What the menu was last built with, so a change of language can build it again. */
+let built: MenuOptions | undefined
+
+/**
+ * The page said which language it is in: the menu bar says its items in it.
+ * Rebuilt rather than relabelled, because a native menu shows the labels it
+ * was built with.
+ */
+export function setMenuLanguage(language: Language): void {
+  if (language === menuLanguage) return
+  menuLanguage = language
+  if (built === undefined) return
+  viewMenu = undefined
+  installAppMenu(built)
+}
+
 /**
  * Build (or rebuild) the application menu.
  */
@@ -283,7 +320,7 @@ export function installAppMenu(options: {
   /** Open the help's window; without it, the item is sent to the page as every other is. */
   onHelp?: () => void
 }): void {
-  const first = defaults === undefined
+  built = options
   defaults ??= Menu.getApplicationMenu()?.items ? [...Menu.getApplicationMenu()!.items] : []
 
   const file = new MenuItem({ label: label('menu.file'), submenu: fileMenuFor(options.recents) })
@@ -295,7 +332,11 @@ export function installAppMenu(options: {
 
   // Over Electron's own File menu, whose one item ours ends with; then over
   // its Edit and Help, which bind the wrong things.
-  const items = [...defaults]
+  // The app menu and Window are Electron's, built afresh in our words each time.
+  const items = defaults.map((held) => {
+    const role = held.role?.toLowerCase()
+    return role === 'appmenu' ? appMenuFor() : role === 'windowmenu' ? windowMenuFor() : held
+  })
   const slot = fileMenuSlot(items, process.platform)
   items.splice(slot.index, slot.replace ? 1 : 0, file)
   const editSlot = replacingSlot(items, 'editmenu')
@@ -308,9 +349,6 @@ export function installAppMenu(options: {
 
   const menu = new Menu()
   for (const held of items) menu.append(held)
-  // Once: the default submenus are the same objects on every rebuild, so a
-  // second pass would insert every item a second time.
-  if (first) decorateDefaults(menu)
   tickTheme()
   Menu.setApplicationMenu(menu)
   tickScope()
@@ -370,21 +408,49 @@ function tickScope(): void {
 }
 
 /**
- * What goes into the menus Electron built, and does so exactly once.
- *
- * **Settings… ⌘,** goes in the app menu on macOS, which is the only platform
- * with one; elsewhere it is in the File menu above Quit, and `fileMenuFor`
- * put it there. Check for Updates… used to sit beside it here and in Help
- * elsewhere; it is in Help on every platform now (`helpMenuFor`), one place.
+ * The app menu, which only macOS has, as Electron's own is laid out and in our
+ * words. **Settings… ⌘,** goes below About, above the rule, where every Mac app
+ * puts it; elsewhere it is in the File menu above Quit, and `fileMenuFor` put
+ * it there. Check for Updates… is in Help on every platform (`helpMenuFor`).
  */
-function decorateDefaults(menu: Menu): void {
-  if (process.platform === 'darwin' && preferencesPlacement(process.platform) === 'appMenu') {
-    // The first submenu is the app menu, and its first item is About. Below
-    // it, above the separator, is where every Mac app puts Settings.
-    const appMenu = menu.items[0]?.submenu
-    appMenu?.insert(1, new MenuItem({ type: 'separator' }))
-    appMenu?.insert(2, new MenuItem(itemFor(SETTINGS_ITEM)))
-  }
+function appMenuFor(): MenuItem {
+  const name = app.getName()
+  const settings = preferencesPlacement(process.platform) === 'appMenu' ? [{ type: 'separator' } as const, itemFor(SETTINGS_ITEM)] : []
+  return new MenuItem({
+    role: 'appMenu',
+    label: name,
+    submenu: [
+      { role: 'about', label: label('menubar.about', { app: name }) },
+      ...settings,
+      { type: 'separator' },
+      { role: 'services', label: label('menubar.services') },
+      { type: 'separator' },
+      { role: 'hide', label: label('menubar.hide', { app: name }) },
+      { role: 'hideOthers', label: label('menubar.hideOthers') },
+      { role: 'unhide', label: label('menubar.showAll') },
+      { type: 'separator' },
+      { role: 'quit', label: label('menubar.quit', { app: name }) },
+    ],
+  })
+}
+
+/** Window, as Electron's own is laid out on each platform, in our words. */
+function windowMenuFor(): MenuItem {
+  return new MenuItem({
+    role: 'windowMenu',
+    label: label('menubar.window'),
+    submenu: process.platform === 'darwin'
+      ? [
+          { role: 'minimize', label: label('menubar.minimize') },
+          { role: 'zoom', label: label('menubar.zoomWindow') },
+          { type: 'separator' },
+          { role: 'front', label: label('menubar.front') },
+        ]
+      : [
+          { role: 'minimize', label: label('menubar.minimize') },
+          { role: 'close', label: label('menubar.closeWindow') },
+        ],
+  })
 }
 
 /**
@@ -419,7 +485,7 @@ function viewMenuFor(packaged: boolean): Menu {
     { type: 'separator' },
     ...TEXT_SIZE_ITEMS.map(itemFor),
     { type: 'separator' },
-    { role: 'togglefullscreen' },
+    { role: 'togglefullscreen', label: label('menubar.fullScreen') },
     { type: 'separator' },
     { label: label('menu.theme'), enabled: false },
   ]

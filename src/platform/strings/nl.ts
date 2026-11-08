@@ -5,8 +5,8 @@
  * Dutch, for the menu.
  *
  * Typed from the English slice beside it, so a missing translation is a compile
- * error here rather than an English sentence on a Dutch screen. Only the web's
- * overflow reads this table; the desktop's menu bar is English (see `en.ts`).
+ * error here rather than an English sentence on a Dutch screen. The web's
+ * overflow and the desktop's menu bar both read it.
  */
 import type { EN } from './en'
 
@@ -61,4 +61,21 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.exportPicture': 'Afbeelding exporteren…',
   'menu.notNow': 'Nu niet beschikbaar',
   'menu.saveNothingOpen': 'Er staat niets open. Werk bewaart zichzelf; open een scope om nu te bewaren.',
+  // The desktop's menu bar: the items Electron's roles would otherwise say in English.
+  'menubar.window': 'Venster',
+  'menubar.cut': 'Knippen',
+  'menubar.copy': 'Kopiëren',
+  'menubar.paste': 'Plakken',
+  'menubar.pasteAndMatchStyle': 'Plakken en stijl aanpassen',
+  'menubar.closeWindow': 'Venster sluiten',
+  'menubar.quit': 'Stop {app}',
+  'menubar.fullScreen': 'Schermvullende weergave aan/uit',
+  'menubar.minimize': 'Minimaliseren',
+  'menubar.zoomWindow': 'Zoomen',
+  'menubar.front': 'Alles op voorgrond',
+  'menubar.about': 'Over {app}',
+  'menubar.hide': 'Verberg {app}',
+  'menubar.hideOthers': 'Verberg andere',
+  'menubar.showAll': 'Toon alles',
+  'menubar.services': 'Voorzieningen',
 }

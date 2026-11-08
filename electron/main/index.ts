@@ -28,7 +28,7 @@ import { basename } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { openedDocuments } from './openedDocuments'
 import { guardWindow, liveWindows, platformWords, reportUnsaved, windowsOf } from './windowGuard'
-import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand, zoomWindow } from './appMenu'
+import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand, setMenuLanguage, zoomWindow } from './appMenu'
 import { productName } from '../../package.json'
 import { swipeCommand } from '../../src/platform/menu'
 import { isThemeMode, readsDark } from '../../src/platform/theme'
@@ -46,7 +46,7 @@ import { registerFolderSettingsChannel } from './folderSettings'
 import { useHooksFolder } from '../../src/platform/node/git'
 import { keepPaintingForAgent, registerAgentChannel, startAgent, stopAgent } from './mcp'
 import { showsWindow } from './smokeWindow'
-import { closeHelpWindow, isHelpWindow, openHelpWindow, opensInBrowser } from './helpWindow'
+import { closeHelpWindow, helpWindowInLanguage, isHelpWindow, openHelpWindow, opensInBrowser } from './helpWindow'
 import { helpAddress } from '../../src/platform/helpAddress'
 import { isLanguage } from '../../src/i18n/languages'
 
@@ -540,7 +540,11 @@ void app.whenReady().then(() => {
     reportTheme(held)
   })
   // And the app's language, so the question closing asks is asked in it.
-  ipcMain.handle('app:language', (_event, held: unknown) => { language = held })
+  ipcMain.handle('app:language', (_event, held: unknown) => {
+    language = held
+    // The menu bar in it too, and an open help window.
+    if (isLanguage(held)) { setMenuLanguage(held); helpWindowInLanguage(held) }
+  })
   ipcMain.handle('app:zoomWindow', (event, how: unknown) => { zoomWindow(event.sender, how) })
   // Whether the window asking is in full screen, for a page that loads in one.
   ipcMain.handle('window:isFullScreen', (event) => BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false)

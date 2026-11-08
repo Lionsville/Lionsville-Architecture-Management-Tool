@@ -8,10 +8,9 @@
  * cannot be missing one and cannot invent one. The registry composes every
  * module's slice into the table `t()` reads (`i18n/strings.ts`).
  *
- * The desktop's menu bar reads this table directly and in English: main has
- * no way to know which language the renderer settled on, and a native menu in
- * English is the price of not building a channel for it yet. The web's
- * overflow reads it through `t()` like everything else.
+ * The desktop's menu bar reads this slice and its twins directly, in the
+ * language the page last told main (`app:language`); the web's overflow reads
+ * it through `t()` like everything else.
  *
  * Sentence case, like every button beside the overflow that carries it on the
  * web; the menu bar says the same items in Title Case through `titleCase`
@@ -74,4 +73,21 @@ export const EN = {
   'menu.exportPicture': 'Export picture…',
   'menu.notNow': 'Not available now',
   'menu.saveNothingOpen': 'Nothing is open. Work saves itself as you go; open a scope to save it now.',
+  // The desktop's menu bar: the items Electron's roles would otherwise say in English.
+  'menubar.window': 'Window',
+  'menubar.cut': 'Cut',
+  'menubar.copy': 'Copy',
+  'menubar.paste': 'Paste',
+  'menubar.pasteAndMatchStyle': 'Paste and match style',
+  'menubar.closeWindow': 'Close window',
+  'menubar.quit': 'Quit {app}',
+  'menubar.fullScreen': 'Toggle full screen',
+  'menubar.minimize': 'Minimize',
+  'menubar.zoomWindow': 'Zoom',
+  'menubar.front': 'Bring all to front',
+  'menubar.about': 'About {app}',
+  'menubar.hide': 'Hide {app}',
+  'menubar.hideOthers': 'Hide others',
+  'menubar.showAll': 'Show all',
+  'menubar.services': 'Services',
 } as const
