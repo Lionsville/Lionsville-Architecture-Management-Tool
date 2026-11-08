@@ -183,7 +183,11 @@ function standing(one: Observation, scope: string | undefined, ctx: ReaderContex
   })
 }
 
-function steps(at: ChainStep, s: Translate): Step[] {
+function steps(at: ChainStep, s: Translate, noted = false): Step[] {
+  // Noted with nothing explaining it: nobody will ask why, so the chain stops there and says so.
+  if (noted && at === 'seen') {
+    return [{ id: 'seen', label: s(STEP_WORD.seen), state: 'done' }, { id: 'noted', label: s('observation.groupNoted'), state: 'current' }]
+  }
   const here = CHAIN_STEPS.indexOf(at)
   return CHAIN_STEPS.map((step, index) => ({
     id: step, label: s(STEP_WORD[step]), state: index < here ? 'done' as const : index === here ? 'current' as const : 'todo' as const,
@@ -202,7 +206,7 @@ function PreviewFacts({ held, ctx }: { held: Selected; ctx: ReaderContext }) {
     <>
       {said.map((one) => <PreviewFact key={one.label} label={one.label}><span data-testid={one.testId}>{one.value}</span></PreviewFact>)}
       <PreviewFact label={ctx.s('observation.whereItStands')}>
-        <StepLadder steps={steps(standing(held.observation, scope, ctx), ctx.s)} orientation="down" />
+        <StepLadder steps={steps(standing(held.observation, scope, ctx), ctx.s, isNoted(held.observation))} orientation="down" />
       </PreviewFact>
     </>
   )

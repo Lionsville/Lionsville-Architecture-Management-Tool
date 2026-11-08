@@ -208,6 +208,14 @@ describe('the chain', () => {
     expect(screen.getByTestId('cause-row-c1')).toBeTruthy()
   })
 
+  it('says on the stepper that an observation was noted, and that the chain stops there', () => {
+    mount({ model: { ...model, observations: [model.observations![0]!, observation({ id: 'o2', number: 2, title: 'Same change released twice', noted: true })] } })
+    openRow('o2')
+    const ladder = screen.getByRole('list', { name: 'Where it stands' })
+    expect([...ladder.querySelectorAll('li')].map((one) => one.textContent)).toEqual(['Seen (done)', 'Noted'])
+    expect(ladder.querySelector('[aria-current="step"]')?.textContent).toBe('Noted')
+  })
+
   it('reads an observation in its preview, and the whole record adds its links, history and comments', () => {
     mount()
     openRow('o1')
