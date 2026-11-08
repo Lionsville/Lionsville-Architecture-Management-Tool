@@ -227,6 +227,15 @@ describe('a building block\'s page', () => {
 
   const onOptions = () => fireEvent.click(screen.getByRole('tab', { name: s('blocks.solutions') }))
 
+  it('writes its text from the tab it is on, and leaves the person there after Cancel', async () => {
+    page(accessOver())
+    onOptions()
+    fireEvent.click(screen.getByTestId('block-document-edit'))
+    await screen.findByRole('textbox', { name: s('blocks.document') })
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    await waitFor(() => expect(screen.getByRole('tab', { name: s('blocks.solutions') }).getAttribute('aria-selected')).toBe('true'))
+  })
+
   it('lists its options with where each is weighed and chosen, and the elements that are it', () => {
     page(accessOver({ mayWrite: () => false }))
     onOptions()

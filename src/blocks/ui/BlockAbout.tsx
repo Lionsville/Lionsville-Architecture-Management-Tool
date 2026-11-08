@@ -44,7 +44,7 @@ export function useBlockDocument(block: string): { text: string | undefined; wro
   const access = useBlocks()
   const [text, setText] = useState<string | undefined>(undefined)
   useEffect(() => {
-    if (!access) return
+    if (!access || !block) return
     let current = true
     // `document` says its own failure and answers `undefined`; it does not reject.
     void access.document(block).then((read) => { if (current) setText(read) })
@@ -53,34 +53,20 @@ export function useBlockDocument(block: string): { text: string | undefined; wro
   return { text, wrote: setText }
 }
 
-export function BlockAbout({ row, chapter, onChapterShown, editAsked = false, onEditTaken }: {
+export type BlockDocument = ReturnType<typeof useBlockDocument>
+
+export function BlockAbout({ row, chapter, onChapterShown, document, writing }: {
   row: BlockRow; chapter: string | undefined; onChapterShown: () => void
-  /** The page head's ✎ Edit was pressed: the text opens in the full window, and says so with `onEditTaken`. */
-  editAsked?: boolean
-  onEditTaken?: () => void
+  /** The block's text, read once by the page, which writes it from any tab (`BlockTextWindow`). */
+  document: BlockDocument
+  /** The text is being written over the page: a chapter waits until it is read again. */
+  writing: boolean
 }) {
   const access = useBlocks()
   const { t } = useStrings()
   const { block, scope } = row
-  const document = useBlockDocument(block.id)
-  const [draft, setDraft] = useState<string | undefined>(undefined)
-  const { view, views } = useWritingView()
-  const read = useChapter(chapter, draft === undefined && document.text !== undefined, onChapterShown)
-  // Not before the document is read: a draft started from nothing would be saved over it.
-  useEffect(() => {
-    if (!editAsked || document.text === undefined) return
-    setDraft(document.text)
-    onEditTaken?.()
-  }, [editAsked, document.text, onEditTaken])
+  const read = useChapter(chapter, !writing && document.text !== undefined, onChapterShown)
   if (!access) return null
-  const keep = () => {
-    if (draft !== undefined && draft !== document.text) {
-      access.update(block.id, { description: draft })
-      // Shown at once: what is kept comes back when the tree is read again.
-      document.wrote(draft)
-    }
-    setDraft(undefined)
-  }
   const cited = access.citationsOf(block.id)
   const keeper = access.scopeLabel(scope)
   return (
@@ -105,14 +91,41 @@ export function BlockAbout({ row, chapter, onChapterShown, editAsked = false, on
       </PanelSection>
       {/* Who added it and who changed it since (ADR-0038, amended §11): a block is an element of the scope that keeps it. */}
       <RecordChanges about={{ kind: 'element', id: block.id }} scope={scope} first="added" />
-      <FocusedWindow
-        open={draft !== undefined} title={t('blocks.editingDocument', { name: block.name })} views={views}
-        changed={draft !== undefined && draft !== document.text} onSave={keep} onCancel={() => setDraft(undefined)}
-      >
-        <div className="guidance-form__edit">
-          <MarkdownEditor variant="pane" value={draft ?? ''} onChange={setDraft} label={t('blocks.document')} shownAs={view} renderPreview={(text) => <MarkdownView markdown={text} />} />
-        </div>
-      </FocusedWindow>
     </div>
+  )
+}
+
+/**
+ * The block's text written in the full window, over whichever tab the page is on:
+ * ✎ Edit, Save and Cancel leave the person on the tab they pressed it from.
+ */
+export function BlockTextWindow({ row, document, asked, onDone }: { row: BlockRow; document: BlockDocument; asked: boolean; onDone: () => void }) {
+  const access = useBlocks()
+  const { t } = useStrings()
+  const { block } = row
+  const [draft, setDraft] = useState<string | undefined>(undefined)
+  const { view, views } = useWritingView()
+  // Not before the document is read: a draft started from nothing would be saved over it.
+  useEffect(() => {
+    if (asked && document.text !== undefined) setDraft(document.text)
+  }, [asked, document.text])
+  const close = () => { setDraft(undefined); onDone() }
+  const keep = () => {
+    if (access && draft !== undefined && draft !== document.text) {
+      access.update(block.id, { description: draft })
+      // Shown at once: what is kept comes back when the tree is read again.
+      document.wrote(draft)
+    }
+    close()
+  }
+  return (
+    <FocusedWindow
+      open={asked && draft !== undefined} title={t('blocks.editingDocument', { name: block.name })} views={views}
+      changed={draft !== undefined && draft !== document.text} onSave={keep} onCancel={close}
+    >
+      <div className="guidance-form__edit">
+        <MarkdownEditor variant="pane" value={draft ?? ''} onChange={setDraft} label={t('blocks.document')} shownAs={view} renderPreview={(text) => <MarkdownView markdown={text} />} />
+      </div>
+    </FocusedWindow>
   )
 }

@@ -24,7 +24,7 @@ import { RecordActions } from '../../widgets/kit/RecordActions'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceTab } from '../../widgets/placeTab'
-import { BlockAbout } from './BlockAbout'
+import { BlockAbout, BlockTextWindow, useBlockDocument } from './BlockAbout'
 import { BlockRequirements } from './BlockRequirements'
 import { BlockSolutions } from './BlockSolutions'
 import { BlockWhereUsed } from './BlockWhereUsed'
@@ -57,6 +57,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
     else if (shown.current !== id) setTab('about')
     shown.current = id
   }, [open, openOn, id, nonce, setTab])
+  const document = useBlockDocument(id ?? '')
   const row = id ? access?.block(id) : undefined
   if (!access || !row) return null
   const { block, scope } = row
@@ -72,9 +73,10 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
             <span className="guidance-read__quiet">{t('blocks.keptInScope', { scope: access.scopeLabel(scope) })}</span>
             <span className="guidance-read__spring" />
             {/* The block's text is its record's text: ✎ Edit in the head, as on every record (`RecordActions`). */}
-            {access.mayWrite(scope) && (
-              <RecordActions edit={{ onPress: () => { setTab('about'); setEditAsked(true) }, testId: 'block-document-edit' }} />
-            )}
+            <RecordActions
+              {...(access.mayWrite(scope) ? { edit: { onPress: () => setEditAsked(true), testId: 'block-document-edit' } } : {})}
+              more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => access.openScope(scope), 'data-testid': 'block-open-scope' }]}
+            />
           </div>
           <div className="guidance-record__tabs">
             <Tabs<TabKey>
@@ -92,13 +94,14 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
             ? <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />
             : (
               <div className="guidance-record__body">
-                {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} editAsked={editAsked} onEditTaken={() => setEditAsked(false)} />}
+                {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} document={document} writing={editAsked} />}
                 {now === 'requirements' && <BlockRequirements row={row} onChapter={toChapter} />}
                 {now === 'options' && <BlockSolutions row={row} />}
                 {now === 'used' && <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />}
               </div>
             )}
         </div>
+        <BlockTextWindow row={row} document={document} asked={editAsked} onDone={() => setEditAsked(false)} />
       </GuidanceFrame>
     </PageDialog>
   )
