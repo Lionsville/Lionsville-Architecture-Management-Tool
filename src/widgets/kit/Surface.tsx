@@ -27,12 +27,12 @@
  * gives them `pressStaysHere`. Everything else that floats comes from this file, and
  * `build/surfaces.test.ts` holds new code to it.
  */
-import { useEffect, useRef } from 'react'
-import type { MouseEvent, SyntheticEvent } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { MouseEvent, Ref, SyntheticEvent } from 'react'
 import MuiMenu from '@mui/material/Menu'
 import type { MenuProps } from '@mui/material/Menu'
 import MuiPopover from '@mui/material/Popover'
-import type { PopoverProps } from '@mui/material/Popover'
+import type { PopoverActions, PopoverProps } from '@mui/material/Popover'
 import MuiPopper from '@mui/material/Popper'
 import type { PopperProps } from '@mui/material/Popper'
 
@@ -105,9 +105,50 @@ export function SurfaceMenu(props: MenuProps) {
   return <MuiMenu {...useModalSurface(props.open, props.onClose as Close)} {...props} />
 }
 
-/** MUI's popover with the rule. */
+/** How far from the window's edge a surface stays: MUI's own margin. */
+const WINDOW_MARGIN = 16
+
+/**
+ * **A popover stays inside the window as it grows.** It is placed once, when it
+ * opens, under what opened it; a part that folds out afterwards (a new person's
+ * fields, a longer list) grew it past the window's foot, where its buttons could
+ * not be reached and nothing scrolled. Grown past the foot it moves up as far as it
+ * must, and once it is taller than the window it scrolls inside itself (the
+ * paper's own height limit). It does not move back down as it shrinks again, so a
+ * list that filters keeps its top where the eye is.
+ */
+function useStaysInWindow(open: boolean, action: PopoverProps['action']) {
+  const actions = useRef<PopoverActions | null>(null)
+  const [paper, setPaper] = useState<HTMLElement | null>(null)
+  useEffect(() => {
+    if (!open || !paper || typeof ResizeObserver === 'undefined') return
+    const watch = new ResizeObserver(() => {
+      const { top, bottom } = paper.getBoundingClientRect()
+      if (bottom > window.innerHeight - WINDOW_MARGIN || top < 0) actions.current?.updatePosition()
+    })
+    watch.observe(paper)
+    return () => watch.disconnect()
+  }, [open, paper])
+  const keep = useCallback((held: PopoverActions | null) => {
+    actions.current = held
+    passOn(action, held)
+  }, [action])
+  return { keep, paperRef: setPaper }
+}
+
+function passOn<T>(ref: Ref<T> | undefined, value: T | null) {
+  if (typeof ref === 'function') ref(value)
+  else if (ref) (ref as { current: T | null }).current = value
+}
+
+/** MUI's popover with the rule, and kept inside the window. */
 export function SurfacePopover(props: PopoverProps) {
-  return <MuiPopover {...useModalSurface(props.open, props.onClose as Close)} {...props} />
+  const { keep, paperRef } = useStaysInWindow(props.open, props.action)
+  const paper = props.slotProps?.paper
+  const withRef = typeof paper === 'function'
+    ? (state: Parameters<typeof paper>[0]) => ({ ...paper(state), ref: paperRef })
+    : { ...paper, ref: paperRef }
+  return <MuiPopover {...useModalSurface(props.open, props.onClose as Close)} {...props} action={keep} slotProps={{ ...props.slotProps, paper: withRef as never }} />
 }
 
 /** MUI's popper with the rule: no backdrop, so nothing to close it but its owner. */

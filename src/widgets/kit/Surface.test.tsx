@@ -205,3 +205,45 @@ describe('the second press of a double press', () => {
     add.mockRestore()
   })
 })
+
+describe('a popover that grows after it opened', () => {
+  it('moves up to keep its foot inside the window, and does not move as it shrinks again', async () => {
+    const watchers: (() => void)[] = []
+    vi.stubGlobal('ResizeObserver', class { constructor(heard: () => void) { watchers.push(heard) } observe() {} disconnect() {} })
+    const tall = { height: 60 }
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
+      return this.classList.contains('MuiPopover-paper') ? tall.height : 0
+    })
+    const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.dataset.testid === 'anchor') return { top: 580, bottom: 600, left: 20, right: 120, width: 100, height: 20, x: 20, y: 580, toJSON: () => ({}) }
+      const top = parseFloat(this.style.top) || 0
+      return { top, bottom: top + tall.height, left: 0, right: 0, width: 0, height: tall.height, x: 0, y: top, toJSON: () => ({}) }
+    })
+    try {
+      function Grows() {
+        const [at, setAt] = useState<HTMLElement | null>(null)
+        return (
+          <>
+            <button type="button" data-testid="anchor" ref={setAt}>Open</button>
+            {at && <SurfacePopover open anchorEl={at} anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}><p>Fields</p></SurfacePopover>}
+          </>
+        )
+      }
+      renderShell(<Grows />)
+      const paper = await waitFor(() => document.querySelector<HTMLElement>('.MuiPopover-paper') as HTMLElement)
+      await waitFor(() => expect(paper.style.top).toBe('600px'))
+      // A part folds out: 300 px under the anchor's 600 runs past a 768 px window's foot.
+      tall.height = 300
+      watchers.forEach((heard) => heard())
+      expect(paper.style.top).toBe(`${window.innerHeight - 16 - 300}px`)
+      // Shrinking again leaves it where it is.
+      tall.height = 100
+      watchers.forEach((heard) => heard())
+      expect(paper.style.top).toBe(`${window.innerHeight - 16 - 300}px`)
+    } finally {
+      height.mockRestore()
+      rect.mockRestore()
+      vi.unstubAllGlobals()
+    }
+  })
+})
