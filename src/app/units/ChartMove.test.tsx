@@ -91,7 +91,8 @@ const dialog = () => within(screen.getByTestId('move-unit-dialog'))
 /** A unit picked on the chart, and its Move to… pressed. */
 const moveFromBox = (id: string, name: string) => {
   fireEvent.click(within(boxOf(id)).getByTestId('chart-unit-open'))
-  fireEvent.click(within(boxOf(id)).getByRole('button', { name: `Move ${name} to…` }))
+  // The verbs hang from the picked box's foot, in a strip of their own under it.
+  fireEvent.click(within(document.querySelector<HTMLElement>(`[data-verbs-of="${id}"]`)!).getByRole('button', { name: `Move ${name} to…` }))
 }
 const refused = (button: HTMLElement) => button.getAttribute('aria-disabled') === 'true'
 

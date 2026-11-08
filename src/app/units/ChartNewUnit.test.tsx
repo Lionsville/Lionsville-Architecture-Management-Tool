@@ -106,7 +106,8 @@ const unitBox = (id: string) => screen.getAllByTestId('chart-unit').find((box) =
 /** The unit picked, as the verbs on a box are the picked box's. */
 const addInside = (id: string) => {
   fireEvent.click(within(unitBox(id)).getByTestId('chart-unit-open'))
-  return within(unitBox(id)).getByTestId('chart-add-inside')
+  const verbs = screen.getAllByTestId('chart-verbs').find((strip) => strip.getAttribute('data-verbs-of') === id)!
+  return within(verbs).getByTestId('chart-add-inside')
 }
 const dialog = () => screen.getByTestId('new-unit-dialog')
 const typesOffered = async () => {

@@ -80,16 +80,19 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .org-rollup:hover { text-decoration: underline; }
 .org-rollup:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 /*
- * The picked box's verbs hang from its foot, over the gap below, rather than grow the box:
- * a box that grew when picked pushed its siblings down.
+ * The picked box's verbs hang from its foot as a strip that takes its own room in the branch:
+ * laid over the gap below they covered the next box's type line. The box itself does not grow,
+ * so nothing beside it moves; what is under it moves down by the strip while it shows.
  */
 .org-actions {
-  position: absolute; z-index: 5; inset-inline: calc(-1 * var(--line-width-emphasis)); top: 100%;
+  position: relative; z-index: 5; box-sizing: border-box; margin-top: calc(-1 * var(--s-4)); margin-inline: calc(-1 * var(--line-width-emphasis));
+  font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); line-height: var(--lh-tight);
   display: flex; flex-wrap: wrap; gap: 0 var(--s-2); padding: 1px var(--s-2) 2px;
   border: var(--line-width-emphasis) solid var(--selected-edge); border-top: 0; border-radius: 0 0 var(--r-2) var(--r-2);
   background: var(--surface-raised); box-shadow: var(--shadow);
 }
 /* A fold that hides the unit picked: ringed in the selection's edge, dashed, as the place it is. */
+.org-branch[data-spreads] > .org-actions { align-self: center; width: calc(var(--org-box-w) + 2 * var(--line-width-emphasis)); }
 .org-node[data-holds-picked] { outline: var(--line-width-emphasis) dashed var(--selected-edge); outline-offset: 2px; }
 .org-link { all: unset; color: var(--accent); cursor: pointer; }
 .org-link:hover { text-decoration: underline; }

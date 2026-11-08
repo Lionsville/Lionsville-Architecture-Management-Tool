@@ -22,8 +22,10 @@
  * another scope there; nothing leaves the chart on a single click.
  *
  * **The picked box carries its verbs**, in words: *+ Unit inside*, *Move to…*
- * and *Focus*, laid over its foot so that picking a box moves nothing round it,
- * and none that write on a chart that is only read. The keyboard has them too
+ * and *Focus*, in a strip hung from its foot that takes its own room, so they
+ * cover no box under it (what is below moves down by the strip while it is
+ * shown, and nothing beside it moves), and none that write on a chart that is
+ * only read. The keyboard has them too
  * (`chartKeys`), and a right-click or the menu key opens them as the unit's own
  * menu. A folded box that hides the unit picked is ringed and says so.
  */
@@ -162,6 +164,7 @@ function Branch({ unit, drawing, focus = false }: { unit: ChartUnit; drawing: Dr
   return (
     <div className="org-branch" data-focus={focus || undefined} data-spreads={(open && shape === 'across') || undefined}>
       <UnitBox unit={unit} drawing={drawing} />
+      {drawing.pickedId === unit.id && !drawing.moving && <Verbs unit={unit} drawing={drawing} />}
       {open && <Under owner={unit.id} units={unit.children} shape={shape} drawing={drawing} />}
     </div>
   )
@@ -215,7 +218,6 @@ function UnitBox({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
           <UnitBadges unit={unit} drawing={drawing} />
           {moving?.target === unit.id && <span className="org-said">{moving.words.newPlace}</span>}
           {state === 'current' && moving && <span className="org-said">{moving.words.sitsNow}</span>}
-          {selected && !moving && <Verbs unit={unit} drawing={drawing} />}
         </>
       )}
     />
@@ -261,7 +263,7 @@ function Verbs({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
   const { t, add, move } = drawing
   const offer = add?.offer(unit)
   return (
-    <span className="org-actions" data-sheet-add="">
+    <span className="org-actions" data-sheet-add="" data-testid="chart-verbs" data-verbs-of={unit.id}>
       {add && offer && (
         <button
           type="button" className="org-link" onClick={() => add.open(unit)} title={offer.ok ? undefined : offer.reason} aria-disabled={offer.ok ? undefined : 'true'}
