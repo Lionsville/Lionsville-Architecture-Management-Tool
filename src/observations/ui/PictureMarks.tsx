@@ -114,7 +114,7 @@ export function RecordMark(props: RecordMarkProps) {
 }
 
 /** How many characters a card's line holds: its width less the margins, over what a character takes at the card's type. */
-const LARGE_LINE = 32
+const LARGE_LINE = 30
 
 /** Records not drawn, said as a card: pressing it opens them where they are, or lists them. */
 function MoreMark({ node, size, s }: RecordMarkProps) {

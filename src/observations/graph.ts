@@ -409,7 +409,7 @@ export type PictureSize = 'large' | 'small' | 'far'
  * screen, because below that three lines could no longer be read.
  */
 export const PICTURE_SIZE: Record<PictureSize, { width: number; height: number; lane: number; row: number }> = {
-  large: { width: 228, height: 84, lane: 276, row: 98 },
+  large: { width: 276, height: 98, lane: 324, row: 112 },
   small: { width: 126, height: 74, lane: 146, row: 92 },
   far: { width: 300, height: 40, lane: 360, row: 52 },
 }

@@ -26,10 +26,10 @@ import type { CauseStrength, ObservationImpact } from '../observation'
 import { STATE_LABEL } from '../observationScope'
 
 /** A lane holds the Why map's card and the air between two of them, and a row its height and the same air. */
-export const LANE_WIDTH = 276
-export const ROW_HEIGHT = 98
+export const LANE_WIDTH = 324
+export const ROW_HEIGHT = 112
 /** The Why map's card, which the Solve map draws its records on too. */
-export const BOX = { width: 228, height: 84 }
+export const BOX = { width: 276, height: 98 }
 export const RADIUS: Record<ObservationImpact, number> = { minor: 12, major: 17, critical: 23 }
 /**
  * What a trace or a filter leaves of the records off it: the kit's one dimming, so the maps
@@ -135,7 +135,7 @@ export function CauseMark(props: MarkProps<Extract<GraphNode, { kind: 'cause' }>
 
 /** How many characters a card's line holds at the card's type: its width less the margins, over what a character takes. */
 export function lineOf(width: number, left: number): number {
-  return Math.floor((width - left - 12) / 6.3)
+  return Math.floor((width - left - 12) / 7.8)
 }
 
 /**
@@ -169,9 +169,9 @@ export function CardFace(props: {
     <>
       <rect width={width} height={height} rx={props.rx} fill={props.fill} stroke={props.stroke} strokeWidth={props.strokeWidth} strokeDasharray={props.dash} />
       {props.stripe && <rect x={0} y={0} width={4} height={height} rx={2} fill={props.stripe} />}
-      <text x={left} y={19} fontFamily={SCALE['font-mono']} fill={ink.meta} style={{ fontSize: 'var(--canvas-t-xs)' }}>{props.meta}</text>
+      <text x={left} y={21} fontFamily={SCALE['font-mono']} fill={ink.meta} style={{ fontSize: 'var(--canvas-t-sm)' }}>{props.meta}</text>
       {wrapTitle(props.title, lineOf(width, left), lines).map((text, index) => (
-        <text key={index} x={left} y={38 + index * 16} fill={ink.title} textDecoration={props.struck ? 'line-through' : undefined} style={{ fontSize: 'var(--canvas-t-sm)' }}>{text}</text>
+        <text key={index} x={left} y={44 + index * 20} fill={ink.title} textDecoration={props.struck ? 'line-through' : undefined} style={{ fontSize: 'var(--canvas-t-lg)' }}>{text}</text>
       ))}
       {props.children}
     </>
