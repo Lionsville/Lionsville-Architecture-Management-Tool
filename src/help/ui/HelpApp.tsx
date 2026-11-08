@@ -19,7 +19,7 @@ import { readHelpAddress } from '../../platform/helpAddress'
 import { helpOutline, loadHelpText } from '../registry'
 import { helpIndex, searchHelp } from '../helpSearch'
 import type { HelpChapterOutline, HelpText } from '../types'
-import { HelpDocument, REFERENCE } from './HelpDocument'
+import { HelpDocument, REFERENCE, othersOf } from './HelpDocument'
 import { GETTING_STARTED } from '../types'
 import './help.css'
 
@@ -58,7 +58,7 @@ export function HelpApp({ initial }: { initial: Language }) {
     const target = document.getElementById(place)
     if (!target) return
     // A place inside something folded is unfolded to be read: the reference, a section's example.
-    for (let at = target.parentElement; at; at = at.parentElement) if (at instanceof HTMLDetailsElement) at.open = true
+    for (let at: HTMLElement | null = target; at; at = at.parentElement) if (at instanceof HTMLDetailsElement) at.open = true
     target.scrollIntoView({ block: 'start' })
     const heading = target.matches('h2, h3, h4') ? target : target.querySelector<HTMLElement>('h2, h3, h4')
     heading?.focus({ preventScroll: true })
@@ -126,7 +126,7 @@ function Contents({ outline, text, place, label, t }: {
   outline: readonly HelpChapterOutline[]; text: HelpText | undefined; place: string | undefined; label: string; t: ReturnType<typeof translator>
 }) {
   const inReference = place?.includes('~') === true && !place.startsWith(`${GETTING_STARTED}~`)
-  const of = (chapter: HelpChapterOutline) => chapter.id === place || chapter.sections.some((one) => one.id === place) || place?.startsWith(`${chapter.id}~`)
+  const of = (chapter: HelpChapterOutline) => chapter.id === place || place === othersOf(chapter.id) || chapter.sections.some((one) => one.id === place) || place?.startsWith(`${chapter.id}~`)
   const open = inReference ? undefined : outline.find(of)?.id
   const openTopic = inReference ? outline.find(of)?.id : undefined
   const reference = outline.filter((chapter) => (text?.background[chapter.id] ?? []).length > 0)
@@ -142,11 +142,17 @@ function Contents({ outline, text, place, label, t }: {
             <a href={`#${chapter.id}`} aria-current={open === chapter.id && place === chapter.id ? 'location' : undefined}>{text?.chapters[chapter.id]?.title ?? chapter.id}</a>
             {open === chapter.id && text && (
               <ol>
-                {chapter.sections.map((one) => (
+                {chapter.sections.filter((one) => !one.minor).map((one) => (
                   <li key={one.id}>
                     <a href={`#${one.id}`} aria-current={place === one.id ? 'location' : undefined}>{text.sections[one.id]?.[0] ?? one.id}</a>
                   </li>
                 ))}
+                {/* The tasks a control's label already says are one line here, as they are one list in the chapter. */}
+                {chapter.sections.some((one) => one.minor) && (
+                  <li>
+                    <a href={`#${othersOf(chapter.id)}`} aria-current={place === othersOf(chapter.id) || chapter.sections.some((one) => one.minor && one.id === place) ? 'location' : undefined}>{t('help.others')}</a>
+                  </li>
+                )}
               </ol>
             )}
           </li>

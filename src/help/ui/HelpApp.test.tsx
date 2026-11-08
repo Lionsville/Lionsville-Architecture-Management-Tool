@@ -45,6 +45,20 @@ describe('the help page', () => {
     expect(contents.getByRole('link', { name: 'Zurück' }).getAttribute('aria-current')).toBe('location')
   }, 30_000)
 
+  it('lists a task a control\'s label already says under Other things you can do, and opens it when it is gone to', async () => {
+    history.replaceState(null, '', '/help/?lang=en#obs-delete')
+    render(<HelpApp initial="en" />)
+    await waitFor(() => expect(document.activeElement?.textContent).toBe('Delete a record'), { timeout: 10_000 })
+    expect((document.getElementById('obs-delete') as HTMLDetailsElement).open).toBe(true)
+    expect((document.getElementById('obs-copy-link') as HTMLDetailsElement).open).toBe(false)
+    const contents = within(screen.getByRole('navigation', { name: 'Contents' }))
+    expect(contents.queryByRole('link', { name: 'Delete a record' })).toBeNull()
+    expect(contents.getByRole('link', { name: 'Other things you can do' }).getAttribute('aria-current')).toBe('location')
+    // Still found by a search, by its name.
+    fireEvent.change(screen.getByTestId('help-search'), { target: { value: 'copy a link to a record' } })
+    expect(await screen.findByRole('link', { name: 'Copy a link to a record' })).toBeTruthy()
+  }, 30_000)
+
   it('searches as you type, goes to the first hit on Enter and clears on Escape', async () => {
     render(<HelpApp initial="en" />)
     await opened()

@@ -29,6 +29,7 @@ export const EN = {
   'help.background': 'How it works',
   'help.enlarge': 'Show the whole picture',
   'help.close': 'Close',
+  'help.others': 'Other things you can do',
   'help.picture': 'A picture of the screen',
   'help.toTop': 'Back to the top',
   'help.inChapter': 'in {chapter}',

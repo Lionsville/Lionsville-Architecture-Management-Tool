@@ -30,6 +30,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'help.background': 'Wie es funktioniert',
   'help.enlarge': 'Das ganze Bild zeigen',
   'help.close': 'Schließen',
+  'help.others': 'Was Sie noch tun können',
   'help.picture': 'Ein Bild des Bildschirms',
   'help.toTop': 'Zurück nach oben',
   'help.inChapter': 'in {chapter}',

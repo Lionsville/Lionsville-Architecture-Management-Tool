@@ -30,6 +30,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'help.background': 'Hoe het werkt',
   'help.enlarge': 'Het hele plaatje tonen',
   'help.close': 'Sluiten',
+  'help.others': 'Wat u verder kunt doen',
   'help.picture': 'Een afbeelding van het scherm',
   'help.toTop': 'Terug naar boven',
   'help.inChapter': 'in {chapter}',

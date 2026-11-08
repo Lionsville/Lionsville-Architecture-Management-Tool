@@ -176,6 +176,16 @@ h2[tabindex="-1"]:focus, h3[tabindex="-1"]:focus, h4[tabindex="-1"]:focus { outl
 .help-example span { font-weight: 600; color: var(--ink) }
 .help-see { font-size: var(--t-small); color: var(--ink-2) }
 
+/* The tasks a control's label already says: a name a line, each unfolding into the same words a task has. */
+.help-others { padding: 18px 0 0; border-top: 1px solid var(--line); scroll-margin-top: 70px }
+.help-others h3 { margin: 0 0 6px; font-size: var(--t-title); line-height: 1.3 }
+.help-others ul { list-style: none; margin: 0; padding: 0 }
+.help-other { padding: 2px 0; scroll-margin-top: 70px }
+.help-other > summary { cursor: pointer }
+.help-other > summary h4 { display: inline; margin: 0; font-size: var(--t-body); font-weight: 400 }
+.help-other[open] { padding: 6px 0 10px }
+.help-other[open] > summary h4 { font-weight: 600 }
+
 .help-first { margin: 0 0 18px; font-size: var(--t-large) }
 .help-first span { color: var(--ink-2) }
 

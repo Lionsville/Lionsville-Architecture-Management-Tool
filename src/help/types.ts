@@ -23,6 +23,12 @@ export type HelpSectionOutline = {
   /** It changes the work, so a reader who may only read does not see it. */
   readonly writes?: true
   readonly seeAlso?: readonly string[]
+  /**
+   * A task that only says what a control's label already says (delete, copy a
+   * link, zoom): listed under its chapter's *Other things you can do* by name,
+   * its words folded until it is opened, gone to or found.
+   */
+  readonly minor?: true
 }
 
 export type HelpChapterOutline = {

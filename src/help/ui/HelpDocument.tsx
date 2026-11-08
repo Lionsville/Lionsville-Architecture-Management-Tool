@@ -94,7 +94,8 @@ function Chapter({ chapter, text, t }: { chapter: HelpChapterOutline; text: Help
           <ol>{words.worked.steps.map((step, at) => <li key={at}><Words text={step} /></li>)}</ol>
         </details>
       )}
-      {chapter.sections.map((one) => <Section key={one.id} outline={one} text={text} t={t} />)}
+      {chapter.sections.filter((one) => !one.minor).map((one) => <Section key={one.id} outline={one} text={text} t={t} />)}
+      <OtherTasks chapter={chapter} text={text} t={t} />
       {hasBackground && <p className="help-see"><a href={`#${chapter.id}~0`}>{t('help.howItWorks', { chapter: words?.title ?? chapter.id })}</a></p>}
     </section>
   )
@@ -117,10 +118,48 @@ function Background({ chapter, text, t }: { chapter: HelpChapterOutline; text: H
   )
 }
 
+/** The address of a chapter's *Other things you can do*. */
+export function othersOf(chapter: string): string {
+  return `others.${chapter}`
+}
+
+/**
+ * The tasks a control's label already says, by name, one line each: opened,
+ * gone to or found, a name unfolds into the same words a task above has.
+ */
+function OtherTasks({ chapter, text, t }: { chapter: HelpChapterOutline; text: HelpText; t: Translate }) {
+  const others = chapter.sections.filter((one) => one.minor && text.sections[one.id])
+  if (others.length === 0) return null
+  return (
+    <div className="help-others" id={othersOf(chapter.id)}>
+      <h3 tabIndex={-1}>{t('help.others')}</h3>
+      <ul>
+        {others.map((one) => (
+          <li key={one.id}>
+            <details className="help-other" id={one.id} data-section={one.id}>
+              <summary><h4 tabIndex={-1}>{text.sections[one.id][0]}</h4></summary>
+              <SectionBody outline={one} text={text} t={t} />
+            </details>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function Section({ outline, text, t }: { outline: HelpSectionOutline; text: HelpText; t: Translate }) {
   const said = text.sections[outline.id]
   if (!said) return null
-  const [name, what, where, steps, example, keys] = said
+  return (
+    <div className="help-section" id={outline.id} data-section={outline.id}>
+      <h3 tabIndex={-1}>{said[0]}</h3>
+      <SectionBody outline={outline} text={text} t={t} />
+    </div>
+  )
+}
+
+function SectionBody({ outline, text, t }: { outline: HelpSectionOutline; text: HelpText; t: Translate }) {
+  const [, what, where, steps, example, keys] = text.sections[outline.id]
   const badges = [
     outline.on === 'desktop' && t('help.onDesktop'),
     outline.on === 'web' && t('help.onWeb'),
@@ -129,8 +168,7 @@ function Section({ outline, text, t }: { outline: HelpSectionOutline; text: Help
   ].filter((one): one is string => Boolean(one))
   const seeAlso = (outline.seeAlso ?? []).filter((id) => text.sections[id])
   return (
-    <div className="help-section" id={outline.id} data-section={outline.id}>
-      <h3 tabIndex={-1}>{name}</h3>
+    <>
       <p>{what}</p>
       {steps.length > 0 && <ol className="help-steps">{steps.map((step, at) => <li key={at}>{step}</li>)}</ol>}
       <p className="help-facts">
@@ -148,7 +186,7 @@ function Section({ outline, text, t }: { outline: HelpSectionOutline; text: Help
           </p>
         )}
       </details>
-    </div>
+    </>
   )
 }
 

@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { LANGUAGE_CODES } from '../i18n/languages'
 import { CONTROL_NAMES } from '../platform/controlNames'
 import { readHelpAddress } from '../platform/helpAddress'
+import { PANEL_HELP, SCREEN_HELP } from '../platform/helpPlaces'
 import { readInline, readMarkdown } from './markdown'
 import { CHAPTERS } from './outline'
 import { forgetHelpChapters, helpOutline, loadHelpText, registerHelpChapters } from './registry'
@@ -32,6 +33,18 @@ describe('the outline', () => {
   it('names only controls that are on screen', () => {
     const known = new Set<string>(CONTROL_NAMES)
     expect(sections.flatMap((one) => one.controls ?? []).filter((name) => !known.has(name))).toEqual([])
+  })
+
+  // The reviewer: Observations listed about thirty tasks, many of them a control's label said again.
+  // Those are one list per chapter, by name, folded; the ways in stay tasks of their own.
+  it('folds only tasks no way in opens at, and leaves each chapter tasks of its own', () => {
+    const entries = new Set<string>([...Object.values(SCREEN_HELP), ...Object.values(PANEL_HELP), ...CHAPTERS.flatMap((chapter) => chapter.first ?? [])])
+    expect(sections.filter((one) => one.minor && entries.has(one.id)).map((one) => one.id)).toEqual([])
+    for (const chapter of CHAPTERS) {
+      const folded = chapter.sections.filter((one) => one.minor).length
+      expect(chapter.sections.length - folded, chapter.id).toBeGreaterThanOrEqual(Math.min(5, chapter.sections.length))
+    }
+    expect(sections.filter((one) => one.minor).length / sections.length).toBeGreaterThan(0.3)
   })
 
   it('points only at sections it has', () => {
