@@ -33,8 +33,6 @@ export const EN = {
   'doc.editText': 'Edit text',
   'doc.writeText': 'Write text',
   'doc.noPage': 'No page written yet.',
-  'doc.done': 'Done',
-  'doc.fields': 'Fields',
   'doc.text': 'Text',
   'doc.filter': 'Find among {count} elements',
   'doc.noMatch': 'Nothing by that name.',

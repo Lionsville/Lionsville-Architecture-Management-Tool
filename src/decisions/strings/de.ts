@@ -36,7 +36,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'adr.verbSupersede': 'Als abgelöst markieren…',
   'adr.verbDelete': 'Löschen…',
   'adr.write': 'Text bearbeiten',
-  'adr.done': 'Fertig',
   'adr.writing': 'Eine Entscheidung schreiben',
   'adr.titleNeeded': 'Eine Entscheidung braucht einen Titel.',
   'adr.writeHow': 'Wie Sie schreiben',

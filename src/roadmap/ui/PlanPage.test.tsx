@@ -400,7 +400,7 @@ describe('the text', () => {
     const area = screen.getByLabelText('Plan source (markdown)') as HTMLTextAreaElement
     fireEvent.change(area, { target: { value: 'Other words' } })
     expect(actions.updateTransition).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Save text' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { body: 'Other words' })
     expect(screen.queryByLabelText('Plan source (markdown)')).toBeNull()
   })

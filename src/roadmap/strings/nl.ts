@@ -205,7 +205,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'plan.comments': 'Opmerkingen',
   'plan.editText': 'Tekst bewerken',
   'plan.editing': 'De tekst van een plan bewerken',
-  'plan.saveText': 'Tekst opslaan',
   'plan.interfacesRow': '{done} van {total} hebben een dag',
   'plan.setDays': 'Dagen zetten',
   'plan.unitsNone': 'Het verplaatst geen eenheid',

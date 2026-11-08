@@ -32,8 +32,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'doc.editText': 'Text bearbeiten',
   'doc.writeText': 'Text schreiben',
   'doc.noPage': 'Noch keine Seite geschrieben.',
-  'doc.done': 'Fertig',
-  'doc.fields': 'Felder',
   'doc.text': 'Text',
   'doc.filter': 'In {count} Elementen suchen',
   'doc.noMatch': 'Nichts unter diesem Namen.',

@@ -184,7 +184,7 @@ describe('a new decision', () => {
     expect(next[3]).toMatchObject({ title: 'Retire the legacy sync', subjectId: 'crm', number: 4, status: 'proposed', date: '2026-09-05' })
     expect(next[3].body).toContain('## Decision Outcome')
     rerender(page({ model: { ...model, decisions: next } }))
-    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
     expect((screen.getByLabelText('Context and Problem Statement') as HTMLTextAreaElement).value).toBe('')
     await vi.waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Context and Problem Statement')))
   })
@@ -332,7 +332,7 @@ describe('a record, read', () => {
     mount({ initialAdrId: 'c1' })
     const outcome = screen.getByTestId('adr-gate').querySelector('[data-gate-item="outcome"]')!
     fireEvent.click(within(outcome as HTMLElement).getByRole('button'))
-    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
   })
 
   it('confirms before it accepts, and supersedes what the record names in the same step', () => {
@@ -467,7 +467,7 @@ describe('a record, written', () => {
     expect(context.value).toBe('Why.')
     fireEvent.change(context, { target: { value: 'Why, written better.' } })
     expect(onProject).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onProject).toHaveBeenCalledTimes(1)
     expect(onProject.mock.calls[0][0].find((a: Adr) => a.id === 'l1').body).toBe('## Context\n\nWhy, written better.\n')
   })
@@ -478,14 +478,14 @@ describe('a record, written', () => {
     const source = screen.getByLabelText('Decision source (markdown)') as HTMLTextAreaElement
     expect(source.value).toBe('## Context\n\nWhy.')
     fireEvent.change(source, { target: { value: '## Background\n\nWhy.' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onProject.mock.calls[0][0].find((a: Adr) => a.id === 'l1').body).toBe('## Background\n\nWhy.')
   })
 
   it('asks before Cancel drops what was typed, and not otherwise', async () => {
     const { onProject } = writing()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.queryByRole('button', { name: 'Done' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
     fireEvent.click(within(record()).getByRole('button', { name: 'Edit text' }))
     fireEvent.change(screen.getByLabelText('Context'), { target: { value: 'Changed.' } })
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
@@ -522,7 +522,7 @@ describe('a record, written', () => {
     fireEvent.change(screen.getByLabelText(/^Title/), { target: { value: 'Events, decided' } })
     fireEvent.click(within(screen.getByTestId('adr-supersedes')).getByLabelText(/One warehouse system/))
     fireEvent.click(screen.getByRole('button', { name: 'Add a reviewer' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onProject.mock.calls[0][0].find((a: Adr) => a.id === 'l1')).toMatchObject({
       title: 'Events, decided', supersedes: ['l2'], signers: [{ name: '' }],
     })
@@ -532,14 +532,14 @@ describe('a record, written', () => {
     const decisions = model.decisions!.map((one) => (one.id === 'c1' ? { ...one, signers: [{ name: 'Kim' }] } : one))
     const { onProject } = writing({ model: { ...model, decisions }, initialAdrId: 'c1' })
     chooseValue(screen.getByLabelText('Verdict'), 'approved')
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onProject.mock.calls[0][0].find((a: Adr) => a.id === 'c1').signers[0]).toMatchObject({ verdict: 'approved', signedAt: '2026-09-05' })
   })
 
   it('refuses to be Done with no title, and says why', () => {
     const { onProject } = writing()
     fireEvent.change(screen.getByLabelText(/^Title/), { target: { value: ' ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onProject).not.toHaveBeenCalled()
   })
 
@@ -558,7 +558,7 @@ describe('a record, written', () => {
     const file = new File([new Uint8Array([1, 2])], 'Screenshot.png', { type: 'image/png' })
     fireEvent.paste(area, { clipboardData: { files: [file], items: [], types: ['Files'], getData: () => '' } })
     await vi.waitFor(() => expect(area.value).toContain('![Screenshot](image:screenshot-k1.png)'))
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(onProject).toHaveBeenCalledWith(expect.arrayContaining([
       expect.objectContaining({ id: 'l1', body: expect.stringContaining('screenshot-k1.png') }),
     ]))

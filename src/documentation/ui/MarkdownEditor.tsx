@@ -34,6 +34,7 @@ import type { ImageEntry } from '../../model/imageName'
 import { useStrings } from '../../i18n/LanguageContext'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
 import { useInFocusedWindow } from '../../widgets/kit/FocusedWindow'
+import type { WritingView } from '../../widgets/kit/FocusedWindow'
 import { TrashIcon } from '../../widgets/icons'
 import { GrowingTextArea } from '../../widgets/kit/Field'
 import { attachmentMarkdown } from '../attachments'
@@ -79,6 +80,11 @@ export type MarkdownEditorProps = {
   onBlur?(): void
   /** What the text is called: on the field, and for a reader who cannot see it. */
   label: string
+  /**
+   * How a full window's bar says the text is shown (`FocusedWindow`'s `views`):
+   * then the bar is the one switch, and the editor draws none of its own.
+   */
+  shownAs?: WritingView
   /**
    * A pane fills the height it is given and always shows its bar; a field grows with
    * its text and shows its tools while in use; a flow is a headed part of a document,
@@ -496,13 +502,16 @@ function goToHeading(area: HTMLTextAreaElement | null, preview: HTMLElement | nu
 }
 
 /** Which of the three ways the text is shown just now, and the choice a person made. */
-function useView({ pane, disabled, canPreview, sideBySide }: { pane: boolean; disabled: boolean; canPreview: boolean; sideBySide: boolean }) {
+function useView({ pane, disabled, canPreview, sideBySide, shownAs }: { pane: boolean; disabled: boolean; canPreview: boolean; sideBySide: boolean; shownAs: WritingView | undefined }) {
   const [wanted, setWanted] = useState<MarkdownViewMode>(pane && canPreview ? 'split' : 'write')
+  // A full window's bar says it, and is then the one switch.
+  const told = shownAs !== undefined && canPreview && !disabled
+  if (told) return { view: shownAs === 'side' ? 'split' as const : shownAs, setWanted, told }
   let view = wanted
   // Nothing to write with, then there is only reading, where there is a way to read.
   if (disabled && canPreview) view = 'preview'
   else if (!canPreview || (wanted === 'split' && !sideBySide)) view = 'write'
-  return { view, setWanted }
+  return { view, setWanted, told }
 }
 
 export function MarkdownEditor(props: MarkdownEditorProps) {
@@ -520,7 +529,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   const flow = variant === 'flow'
   const seat = useFlowSeat(fieldId, flow)
   const { sideBySide, wordsOnBar, width, setRoot } = useRoom(variant)
-  const { view, setWanted } = useView({ pane, disabled, canPreview: Boolean(renderPreview), sideBySide })
+  const { view, setWanted, told } = useView({ pane, disabled, canPreview: Boolean(renderPreview), sideBySide, shownAs: props.shownAs })
   const [active, setActive] = useState(false)
   const [showPictures, setShowPictures] = useState(false)
   const [caret, setCaret] = useState(0)
@@ -556,7 +565,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
   }
 
   const canWrite = !disabled && view !== 'preview'
-  const switcher = renderPreview && !disabled && <ViewSwitch view={view} onView={setWanted} sideBySide={sideBySide} words={wordsOnBar} single={!pane} />
+  const switcher = !told && renderPreview && !disabled && <ViewSwitch view={view} onView={setWanted} sideBySide={sideBySide} words={wordsOnBar} single={!pane} />
   const tools = canWrite && (
     <MarkdownToolbar
       toolbarRef={toolbarRef}

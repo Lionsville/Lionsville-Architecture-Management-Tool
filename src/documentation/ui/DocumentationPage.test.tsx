@@ -224,7 +224,7 @@ describe('DocumentationPage', () => {
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two.' }, 'field:e1:description');
 
     fireEvent.change(area!, { target: { value: 'One. Two. Three.' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two. Three.' }, 'field:e1:description');
     expect(source()).toBeNull();
   });
@@ -233,7 +233,7 @@ describe('DocumentationPage', () => {
     const { updateElement } = setup();
     fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
     fireEvent.change(source()!, { target: { value: '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: undefined }, 'field:e1:description');
   });
 
@@ -301,7 +301,6 @@ describe('DocumentationPage', () => {
     setup();
     expect(screen.getByText('Facts of Order Management')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Fields' }));
     expect(screen.getAllByText('Facts of Order Management').length).toBeGreaterThan(1);
   });
 

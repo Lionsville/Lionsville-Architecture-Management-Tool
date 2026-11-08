@@ -15,7 +15,7 @@ import { useStrings } from '../../i18n/LanguageContext'
 import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { Button } from '../../widgets/kit/Button'
-import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
+import { FocusedWindow, useWritingView } from '../../widgets/kit/FocusedWindow'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
@@ -60,6 +60,7 @@ export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; ch
   const { block, scope } = row
   const document = useBlockDocument(block.id)
   const [draft, setDraft] = useState<string | undefined>(undefined)
+  const { view, views } = useWritingView()
   const read = useChapter(chapter, draft === undefined && document.text !== undefined, onChapterShown)
   if (!access) return null
   const may = access.mayWrite(scope)
@@ -101,11 +102,11 @@ export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; ch
       {/* Who added it and who changed it since (ADR-0038, amended §11): a block is an element of the scope that keeps it. */}
       <RecordChanges about={{ kind: 'element', id: block.id }} scope={scope} first="added" />
       <FocusedWindow
-        open={draft !== undefined} title={t('blocks.editingDocument', { name: block.name })}
-        changed={draft !== undefined && draft !== document.text} saveLabel={t('blocks.save')} onSave={keep} onCancel={() => setDraft(undefined)}
+        open={draft !== undefined} title={t('blocks.editingDocument', { name: block.name })} views={views}
+        changed={draft !== undefined && draft !== document.text} onSave={keep} onCancel={() => setDraft(undefined)}
       >
         <div className="guidance-form__edit">
-          <MarkdownEditor variant="pane" value={draft ?? ''} onChange={setDraft} label={t('blocks.document')} renderPreview={(text) => <MarkdownView markdown={text} />} />
+          <MarkdownEditor variant="pane" value={draft ?? ''} onChange={setDraft} label={t('blocks.document')} shownAs={view} renderPreview={(text) => <MarkdownView markdown={text} />} />
         </div>
       </FocusedWindow>
     </div>

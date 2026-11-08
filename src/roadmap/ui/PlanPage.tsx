@@ -38,7 +38,7 @@ import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceTab } from '../../widgets/placeTab'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogDanger } from '../../widgets/kit/Dialog'
-import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
+import { FocusedWindow, useWritingView } from '../../widgets/kit/FocusedWindow'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PageState } from '../../widgets/kit/PageState'
@@ -407,14 +407,15 @@ function WritePlan({ plan, model, renderMarkdown, onAddImage, images, onSave, on
 }) {
   const { t } = useStrings()
   const [draft, setDraft] = useState(plan.body)
+  const { view, views } = useWritingView()
   return (
     <FocusedWindow
-      open title={t('plan.editing')} number={transitionLabel(plan)}
-      changed={draft !== plan.body} saveLabel={t('plan.saveText')} onCancel={onDone}
+      open title={t('plan.editing')} number={transitionLabel(plan)} views={views}
+      changed={draft !== plan.body} onCancel={onDone}
       onSave={() => { if (draft !== plan.body) onSave(draft); onDone() }}
     >
       <MarkdownEditor
-        variant="pane" autoFocus value={draft} onChange={setDraft} label={t('plan.source')} attachable
+        variant="pane" autoFocus value={draft} onChange={setDraft} label={t('plan.source')} attachable shownAs={view}
         {...(onAddImage ? { onAddImage } : {})} {...(images ? { images } : {})}
         template={{ label: t('md.fromTemplate'), text: planBodyTemplate(t) }}
         renderPreview={(text) => <div className="plan-document plan-preview" data-document=""><PlanText text={text} model={model} onOpenElement={() => undefined} renderMarkdown={renderMarkdown} /></div>}

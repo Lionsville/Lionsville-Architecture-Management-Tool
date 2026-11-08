@@ -31,7 +31,7 @@ import { SeamResizer } from '../../widgets/SeamResizer';
 import { RECORD_RAIL } from './DocumentationPage.rail';
 import { Button } from '../../widgets/kit/Button';
 import { FindField } from '../../widgets/kit/FindField';
-import { FocusedWindow } from '../../widgets/kit/FocusedWindow';
+import { FocusedWindow, useWritingView } from '../../widgets/kit/FocusedWindow';
 import { List } from '../../widgets/kit/List';
 import type { ListGroup } from '../../widgets/kit/List';
 import { MoreMenu } from '../../widgets/kit/Menu';
@@ -283,7 +283,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
   const { t } = useStrings();
   const writing = useRecordText(element, actions);
   const { mode, draft, setDraft, commit, startWriting, doneWriting, cancelWriting, changed } = writing;
-  const [fieldsOut, setFieldsOut] = useState(false);
+  const { view, views } = useWritingView();
   const contentRef = useRef<HTMLDivElement>(null);
 
   const close = () => {
@@ -328,6 +328,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
   const template = { label: t('doc.insertTemplate'), text: documentTemplate(t) };
   const kind = kindLabel(element.kind, t);
   const rest = props.recordSections?.(element) ?? [];
+  const fields = rest.filter((section) => section.id !== 'comments');
 
   const textSection: RecordSection = {
     id: 'text',
@@ -380,13 +381,11 @@ export function DocumentationPage(props: DocumentationPageProps) {
         data-guide="record.writing"
         title={t('doc.editing', { name: element.name })}
         changed={changed}
-        saveLabel={t('doc.done')}
+        views={views}
         onSave={doneWriting}
         onCancel={cancelWriting}
-        middle={rest.length > 0 && (
-          <Button size="small" variant="quiet" aria-pressed={fieldsOut} onClick={() => setFieldsOut((was) => !was)}>{t('doc.fields')}</Button>
-        )}
-        aside={fieldsOut ? rest.filter((section) => section.id !== 'comments').map((section) => <div key={section.id}><h2 className="doc-record__asideHead">{section.heading}</h2>{section.children}</div>) : undefined}
+        // The fields stand open beside the writing where there is room; on a narrow window the bar folds them (`FocusedWindow`).
+        {...(fields.length > 0 ? { aside: fields.map((section) => <div key={section.id}><h2 className="doc-record__asideHead">{section.heading}</h2>{section.children}</div>) } : {})}
       >
         <MarkdownEditor
           variant="pane"
@@ -394,6 +393,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
           onChange={setDraft}
           onBlur={commit}
           label={t('doc.source')}
+          shownAs={view}
           autoFocus
           attachable
           {...(readOnly || !props.onAddImage ? {} : { onAddImage: props.onAddImage })}

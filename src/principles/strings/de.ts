@@ -74,7 +74,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'principles.signalField': 'Signal (optional)',
   'principles.removeAspect': 'Diesen Aspekt entfernen',
   'principles.save': 'Speichern',
-  'principles.propose': 'Anlegen',
   'principles.back': 'Zurück',
   'principles.sharpenIntro': 'Dieses Prinzip ist angenommen und seine Aussage oder Aspekte ändern sich: sagen Sie, was geschärft wurde. Zitate von vorher sagen weiter, dass sie älter sind.',
   'principles.sharpenNote': 'Was geschärft wurde',

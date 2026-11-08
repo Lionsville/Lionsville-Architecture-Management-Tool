@@ -154,7 +154,6 @@ export function AdrWriting({ adr, list, at, s, language, today, elements, render
       title={s('adr.writing')}
       number={formatAdrNumber(adr.number)}
       changed={changed}
-      saveLabel={s('adr.done')}
       onSave={() => { if (changed) onSave(patch); else onCancel() }}
       saveRefused={title.trim() ? undefined : s('adr.titleNeeded')}
       onCancel={onCancel}

@@ -74,7 +74,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'principles.signalField': 'Signaal (optioneel)',
   'principles.removeAspect': 'Dit aspect verwijderen',
   'principles.save': 'Bewaren',
-  'principles.propose': 'Aanmaken',
   'principles.back': 'Terug',
   'principles.sharpenIntro': 'Dit principe is aanvaard en de uitspraak of de aspecten veranderen: zeg wat er is aangescherpt. Aanhalingen van daarvoor blijven zeggen dat ze ouder zijn.',
   'principles.sharpenNote': 'Wat er is aangescherpt',

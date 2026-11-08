@@ -18,7 +18,7 @@ function Editing(props: Partial<FocusedWindowProps>) {
   return (
     <FocusedWindow
       open title="Editing an observation" number="OB-0021" changed={false}
-      saveLabel="Save changes" onSave={() => {}} onCancel={() => {}} {...props}
+      onSave={() => {}} onCancel={() => {}} {...props}
     >
       <p>The writing</p>
     </FocusedWindow>
@@ -31,11 +31,24 @@ describe('FocusedWindow', () => {
     const dialog = screen.getByRole('dialog', { name: 'Editing an observation' })
     expect(dialog.dataset.guide).toBe('edit')
     expect(screen.getByRole('button', { name: 'Cancel' }).dataset.guide).toBe('edit-cancel')
-    expect(screen.getByRole('button', { name: 'Save changes' }).dataset.guide).toBe('edit-save')
+    expect(screen.getByRole('button', { name: 'Save' }).dataset.guide).toBe('edit-save')
     expect(screen.getByText('OB-0021')).toBeTruthy()
     expect(screen.getByText('Write or preview')).toBeTruthy()
     expect(screen.getByText('Facts')).toBeTruthy()
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('says Save, whatever is being written, and how the text is shown as Write · Side by side · Preview, in that order', () => {
+    const onChange = vi.fn()
+    renderShell(<Editing views={{ value: 'write', onChange, beside: true }} />)
+    expect(screen.getByRole('button', { name: 'Save' })).toBeTruthy()
+    const group = screen.getByRole('radiogroup', { name: 'How the text is shown' })
+    expect([...group.querySelectorAll('[role=radio]')].map((one) => one.textContent)).toEqual(['Write', 'Side by side', 'Preview'])
+    fireEvent.click(screen.getByRole('radio', { name: 'Preview' }))
+    expect(onChange).toHaveBeenCalledWith('preview')
+    cleanup()
+    renderShell(<Editing views={{ value: 'write', onChange, beside: false }} />)
+    expect(screen.queryByRole('radio', { name: 'Side by side' })).toBeNull()
   })
 
   it('wears the window’s bar, which keeps clear of the traffic lights and moves the window where the host asks', () => {
@@ -84,11 +97,11 @@ describe('FocusedWindow', () => {
   it('saves, and says what holds a save in the button and not by removing it', async () => {
     const saved = vi.fn()
     const view = renderShell(<Editing onSave={saved} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(saved).toHaveBeenCalledOnce()
     saved.mockClear()
     view.rerender(<Editing onSave={saved} saveRefused="A title is needed." />)
-    const save = screen.getByRole('button', { name: 'Save changes' })
+    const save = screen.getByRole('button', { name: 'Save' })
     expect(save.getAttribute('aria-disabled')).toBe('true')
     fireEvent.click(save)
     expect(saved).not.toHaveBeenCalled()

@@ -72,7 +72,6 @@ export const EN = {
   'principles.signalField': 'Signal (optional)',
   'principles.removeAspect': 'Remove this aspect',
   'principles.save': 'Save',
-  'principles.propose': 'Create',
   'principles.back': 'Back',
   'principles.sharpenIntro': 'This principle is accepted and its statement or aspects change: say what was sharpened. Citations from before keep saying they predate it.',
   'principles.sharpenNote': 'What was sharpened',

@@ -300,7 +300,7 @@ describe('a tone, read and changed (ADR-0038, amended §9)', () => {
     const tone = screen.getByRole('combobox', { name: 'What it is' }) as HTMLButtonElement
     expect(tone.value).toBe('neutral')
     chooseValue(tone, 'bright')
-    fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     expect(lastChange(onChange).observations[0]).toMatchObject({ id: 'o1', tone: 'bright' })
   })
 

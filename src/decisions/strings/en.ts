@@ -34,7 +34,6 @@ export const EN = {
   'adr.verbSupersede': 'Mark as superseded…',
   'adr.verbDelete': 'Delete…',
   'adr.write': 'Edit text',
-  'adr.done': 'Done',
   'adr.writing': 'Writing a decision',
   'adr.titleNeeded': 'A decision needs a title.',
   'adr.writeHow': 'How to write it',

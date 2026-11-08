@@ -32,8 +32,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.editText': 'Tekst bewerken',
   'doc.writeText': 'Tekst schrijven',
   'doc.noPage': 'Nog geen pagina geschreven.',
-  'doc.done': 'Klaar',
-  'doc.fields': 'Velden',
   'doc.text': 'Tekst',
   'doc.filter': 'Zoek in {count} elementen',
   'doc.noMatch': 'Niets met die naam.',

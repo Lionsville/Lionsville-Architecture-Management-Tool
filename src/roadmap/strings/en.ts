@@ -222,7 +222,6 @@ export const EN = {
   'plan.comments': 'Comments',
   'plan.editText': 'Edit text',
   'plan.editing': 'Editing the text of a plan',
-  'plan.saveText': 'Save text',
   'plan.interfacesRow': '{done} of {total} have a day',
   'plan.setDays': 'Set days',
   'plan.unitsNone': 'It moves no unit',

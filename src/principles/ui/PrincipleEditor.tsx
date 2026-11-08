@@ -62,7 +62,6 @@ export function PrincipleEditor({ open, scope, principle, title, onClose }: {
         title={principle ? t('principles.editWord') : t('principles.newTitle')}
         {...(principle ? { number: formatPrincipleNumber(principle.number) } : {})}
         changed={JSON.stringify(draft) !== start}
-        saveLabel={principle ? t('principles.save') : t('principles.propose')}
         onSave={() => { if (sharpening) setAskingNote(true); else keep() }}
         {...(draftReady(draft) ? {} : { saveRefused: t('principles.saveNeeds') })}
         onCancel={() => onClose()}

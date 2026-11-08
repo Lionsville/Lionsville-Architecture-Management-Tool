@@ -38,7 +38,6 @@ import type { PersonRef } from '../../model/person'
 import { SelectField, DateField, TextField, TitleField, TitleRead } from '../../widgets/kit/Field'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
 import { PreviewFact } from '../../widgets/kit/Preview'
-import { Segmented } from '../../widgets/kit/Segmented'
 import { observationBody, observationProblems, observationSections } from '../form'
 import type { ObservationSections } from '../form'
 import {
@@ -215,19 +214,9 @@ function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, image
       open
       title={s(TITLE[editing.kind])}
       number={numberOf(editing)}
-      middle={(
-        <Segmented
-          label={s('observation.editView')} value={shownView} onChange={setView}
-          options={[
-            { value: 'write', label: s('observation.editWrite') },
-            ...(roomBeside ? [{ value: 'side' as const, label: s('observation.editBeside') }] : []),
-            { value: 'preview', label: s('observation.editPreview') },
-          ]}
-        />
-      )}
+      views={{ value: shownView, onChange: setView, beside: roomBeside }}
       {...(aside ? { aside } : {})}
       changed={changed}
-      saveLabel={s('observation.editSave')}
       onSave={save}
       {...(refused ? { saveRefused: refused } : {})}
       onCancel={onClose}
