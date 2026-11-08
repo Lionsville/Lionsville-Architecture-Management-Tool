@@ -1524,6 +1524,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.find': 'Suchen oder Befehl ausführen',
   'frame.findTip': 'Orte, Einträge, Personen und Befehle',
   'frame.treeToggle': 'Scope-Baum geöffnet halten',
+  'frame.treeOnHome': 'Eine Startseite zeigt den Baum immer',
   'frame.switchScope': 'Bereich wechseln',
   'frame.home': 'Start',
   'frame.more': 'Mehr',

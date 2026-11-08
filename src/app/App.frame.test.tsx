@@ -80,6 +80,20 @@ describe('the two rows', () => {
     expect(screen.getByTestId('scope-retail/depot').getAttribute('aria-current')).toBe('page')
   })
 
+  it('leaves the tree open on a home, where the toggle says so and ⌘\\ flips nothing unseen', async () => {
+    const { ask } = await home()
+    const toggle = screen.getByTestId('frame-tree-toggle')
+    expect(toggle.getAttribute('aria-pressed')).toBe('true')
+    expect(toggle.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(toggle)
+    fireEvent.keyDown(window, { key: '\\', metaKey: true })
+    expect(screen.getByTestId('frame-tree')).toBeDefined()
+    // The preference was not flipped behind the home: the board still leaves the width to the work.
+    await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })
+    await waitFor(() => expect(screen.queryByTestId('frame-tree')).toBeNull())
+    expect(screen.getByTestId('frame-tree-toggle').getAttribute('aria-pressed')).toBe('false')
+  })
+
   it('switches scope from the crumb’s chevron, with the same tree over the work', async () => {
     const { ask } = await home()
     await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })

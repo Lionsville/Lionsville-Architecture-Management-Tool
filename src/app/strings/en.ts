@@ -1752,6 +1752,7 @@ export const EN = {
   'frame.find': 'Find or run a command',
   'frame.findTip': 'Places, records, people and commands',
   'frame.treeToggle': 'Keep the scope tree open',
+  'frame.treeOnHome': 'A home always shows the tree',
   'frame.switchScope': 'Switch scope',
   'frame.home': 'Home',
   'frame.more': 'More',

@@ -85,7 +85,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const screen = agent.screen ?? agent.screenNow()
   const page = screen.page?.page
   const pageUp = page !== undefined
-  const onHomeBare = !parts.nav.project && !pageUp
+  const onHomeBare = treeAlwaysOn(parts, pageUp)
   const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts)
   useExampleCommand(parts)
   useFrameKeys(parts, state)
@@ -273,6 +273,8 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
     const onKey = (event: KeyboardEvent) => {
       if (commandKey(event) && event.key === '\\') {
         event.preventDefault()
+        // Behind a dialog, or on a home where the tree is always open, it would flip what nobody sees.
+        if (modalUp() || treeAlwaysOn(parts)) return
         const pinned = !frame.get().pinned
         frame.set({ pinned })
         parts.services.prefs.writePreference({ treePinned: pinned })
@@ -497,7 +499,7 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
     <>
       <span ref={anchor} hidden />
       <BackForward s={s} />
-      <TreeToggle parts={parts} pinned={state.pinned} />
+      <TreeToggle parts={parts} pinned={state.pinned} onHome={treeAlwaysOn(parts)} />
       <Trail parts={parts} at={at} name={name} />
       <div className="kit-frame__grow" />
       <FindField openSearch={facts?.openSearch} s={s} />
@@ -516,11 +518,24 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   )
 }
 
-function TreeToggle({ parts, pinned }: { parts: ShellParts; pinned: boolean }) {
+/** A home with no page over it docks the tree whatever the preference says. */
+function treeAlwaysOn(parts: ShellParts, pageUp = (parts.agent.screen ?? parts.agent.screenNow()).page !== undefined): boolean {
+  return !parts.nav.project && !pageUp
+}
+
+/**
+ * A home always shows the tree, so there the toggle would flip a preference
+ * nobody sees until the next view: it shows as pressed and says why it does
+ * nothing, and ⌘\ is left alone there too (`useFrameKeys`).
+ */
+function TreeToggle({ parts, pinned, onHome }: { parts: ShellParts; pinned: boolean; onHome: boolean }) {
   const { frame, services: { s, prefs } } = parts
+  const label = s('frame.treeToggle')
   return (
     <IconButton
-      label={s('frame.treeToggle')} size="small" aria-pressed={pinned} data-testid="frame-tree-toggle" data-guide="frame.tree"
+      label={label} size="small" pressed={onHome || pinned} data-testid="frame-tree-toggle" data-guide="frame.tree"
+      reason={onHome ? s('frame.treeOnHome') : undefined}
+      tip={`${label} (${isMac() ? '⌘\\' : 'Ctrl \\'})`}
       onClick={() => { frame.set({ pinned: !pinned }); prefs.writePreference({ treePinned: !pinned }) }}
     >
       <TreeGlyph />
