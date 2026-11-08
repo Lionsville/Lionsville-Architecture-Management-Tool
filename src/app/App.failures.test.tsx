@@ -259,3 +259,37 @@ describe('a view renamed on a home, where the folder refuses', () => {
     expect(document.querySelector('[aria-label="More for L7"]')).not.toBeNull()
   })
 })
+
+describe('a view renamed on a home whose folder was moved away', () => {
+  it('says the folder is not there rather than closing on nothing, and holds the change in Your work', async () => {
+    const held = heldRepositories([project('warehouse', 'Warehouse')])
+    const gone = { now: false }
+    const projects = answering(held, {
+      // The folder moved away: the scope no longer reads, and a write to it fails as the folder does.
+      state: (id) => (gone.now ? Promise.resolve(undefined) : held.scopes.state(id)),
+      apply: (work) => (gone.now ? Promise.reject(new ShellError('shell.folderUnavailable')) : held.scopes.apply(work)),
+    })
+    renderApp({
+      repositories: projects,
+      boot: { initialProject: undefined, initialHome: 'acme/warehouse' },
+      provider: { sayings: { labelKey: 'shell.sourceFolder', whereKey: 'folder.where', keepFailedKey: 'folder.keepFailed' } },
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'More for L7' }))
+    gone.now = true
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Rename view…' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'Order flow' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    const toast = await screen.findByRole('alert')
+    await waitFor(() => expect(toast.textContent).toContain('That folder is not available. Choose it again, or reconnect the drive it is on.'))
+    expect(toast.textContent).not.toContain('somebody removed it')
+    await waitFor(() => expect(screen.getByTestId('saved-indicator').textContent).toContain('Not saved'))
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    expect((await screen.findByTestId('work-refused-row')).textContent).toBe('Renamed a view to Order flow')
+    // Back where it was: Try again lands it.
+    gone.now = false
+    fireEvent.click(screen.getByTestId('work-retry'))
+    await waitFor(() => expect(screen.queryByTestId('work-not-kept')).toBeNull())
+    expect((await held.read('acme/warehouse'))?.model.diagrams[0]?.name).toBe('Order flow')
+  })
+})

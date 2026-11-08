@@ -21,9 +21,9 @@ import { claimKey, idsIn } from '../../model/keys'
 import { ShellError } from '../../platform/errors'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { refusalOf } from '../../projects/refusalTag'
-import { changeScope } from '../../projects/scopeAccess'
+import { changeScope, landed, stepOf } from '../../projects/scopeAccess'
 import { holdWrite, whenLanded } from '../writeRefusals'
-import type { ScopeCommand } from '../../projects/scopeState'
+import type { ScopeCommand, ScopeId } from '../../projects/scopeState'
 import type { ScopePath } from '../../projects/scopePath'
 import type { Repositories } from '../../ports/Repositories'
 import type { FrameStep } from '../frame/frameStore'
@@ -69,7 +69,7 @@ export function deleteViewCommands(held: ScopeSnapshot, id: string): { forward: 
   }
 }
 
-export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, onViewRenamed, s }: {
+export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, onViewRenamed, idAt, s }: {
   repositories: Pick<Repositories, 'scopes'>
   refresh: () => void
   notify: (message: string, severity: 'success' | 'error', undo?: ToastUndo) => void
@@ -77,6 +77,8 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
   onKeptResult: (kept: boolean, cause?: unknown) => void
   /** A view's new name landed: what the screen remembers it as elsewhere (*Continue*) follows. */
   onViewRenamed?: (path: ScopePath, id: string, name: string) => void
+  /** The identity a scope was last known by at an address, for a change whose scope no longer reads there. */
+  idAt?: (path: ScopePath) => ScopeId | undefined
   s: Translate
 }): HomeViews {
   const { scopes } = repositories
@@ -99,22 +101,41 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
       .catch((cause: unknown) => failed('organisation.undoView', cause))
   }, [scopes, refresh, failed])
 
-  /** Change a scope, keep what puts it back, and answer the step it became. */
-  const change = useCallback(async (path: ScopePath, name: string, work: (held: ScopeSnapshot) => { forward: ScopeCommand[]; back: ScopeCommand[] } | undefined) => {
+  /**
+   * Change a scope, keep what puts it back, and answer the step it became.
+   * `unread` is the change as it can be made without reading the scope: where
+   * the scope does not read at its address any more — its folder moved away —
+   * it is sent by the identity the scope was last known by, so the place says
+   * why it would not take it, and the change stands in *Your work* to be made
+   * again, rather than the dialog closing on nothing.
+   */
+  const change = useCallback(async (
+    path: ScopePath, name: string, work: (held: ScopeSnapshot) => { forward: ScopeCommand[]; back: ScopeCommand[] } | undefined,
+    unread?: readonly ScopeCommand[],
+  ) => {
     let back: readonly ScopeCommand[] = []
     // Expecting what was read, and worked out again over a scope that moved in between.
     // Under way from its read: a quit in between waits for it (`holdWrite`).
+    let read = false
     const next = await holdWrite(scopes, changeScope(scopes, path, (held) => {
+      read = true
       const made = work(held)
       back = made?.back ?? []
       return made?.forward
     }))
+    if (!read && unread) {
+      const id = idAt?.(path)
+      if (id === undefined) throw new ShellError('shell.scopeGone')
+      landed(await holdWrite(scopes, scopes.apply([{ scope: id, steps: unread.map((command) => stepOf(command)) }])))
+      refresh()
+      return undefined
+    }
     if (!next || back.length === 0) return undefined
     const step: HomeStep = { id: Date.now() + Math.random(), name, path, back }
     setSteps((held) => [...held, step])
     refresh()
     return step
-  }, [scopes, refresh])
+  }, [scopes, refresh, idAt])
 
   const confirmDeleteView = useCallback(() => {
     if (viewDialog.kind !== 'delete') return
@@ -136,7 +157,7 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
       const was = held.model.diagrams.find((diagram) => diagram.id === view.id)
       if (!was || was.name === name) return undefined
       return { forward: [{ type: 'diagram.rename', id: view.id, name }], back: [{ type: 'diagram.rename', id: view.id, name: was.name }] }
-    }).then((step) => {
+    }, [{ type: 'diagram.rename', id: view.id, name }]).then((step) => {
       if (step) onViewRenamed?.(path, view.id, name)
       return undefined
     }).catch((cause: unknown) => {

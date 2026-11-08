@@ -326,7 +326,11 @@ export function useOrganisation({
 
   const folds = useScopeFolds(tree)
   /** A view renamed or deleted from its row, and taken back (`useHomeViews`). */
-  const views = useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, ...(onViewRenamed ? { onViewRenamed } : {}), s })
+  // Every identity the tree has shown at an address, kept past a read that lost the scope: a folder moved away still has one to be refused by.
+  const knownIds = useRef(new Map<ScopePath, string>())
+  for (const one of flattenScopes(tree)) if (one.id !== undefined) knownIds.current.set(one.path, one.id)
+  const knownIdAt = useCallback((path: ScopePath) => knownIds.current.get(path), [])
+  const views = useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, ...(onViewRenamed ? { onViewRenamed } : {}), idAt: knownIdAt, s })
 
   const addUnder = useCallback((parent: ScopePath) => setDialog({ kind: 'newScope', parent, name: '', withBoard: false, type: '' }), [])
   const setNewScopeType = useCallback((type: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, type } : held)), [])
