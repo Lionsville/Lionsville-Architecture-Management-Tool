@@ -246,6 +246,20 @@ describe('the operating model\'s page', () => {
     expect(screen.queryByRole('complementary', { name: 'Approve the budget' })).toBeNull()
   })
 
+  it('opens every new item’s name for typing, on each tab that makes one', () => {
+    show(MODEL())
+    fireEvent.click(screen.getByRole('tab', { name: 'Roles' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New role' }))
+    expect(document.activeElement?.tagName).toBe('TEXTAREA')
+    for (const made of ['New role', 'New unit type']) {
+      cleanup()
+      show(MODEL())
+      fireEvent.click(screen.getByRole('tab', { name: 'Structure' }))
+      fireEvent.click(screen.getByRole('button', { name: made }))
+      expect(document.activeElement?.tagName).toBe('TEXTAREA')
+    }
+  })
+
   it('opens a role from its heading, keeping the column lit and the grid as it was', () => {
     show(MODEL())
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))

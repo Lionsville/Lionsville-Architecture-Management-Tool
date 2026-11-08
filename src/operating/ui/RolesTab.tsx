@@ -74,8 +74,11 @@ const lineOf = (role: Role, roles: readonly Role[], t: Translate) => {
   return dotted?.role === undefined ? main : t('operating.andFunctional', { main, role: roleNamed(roles, dotted.role) })
 }
 
-export function RolesTab({ parts, makeId, selected, onSelect, onNew }: {
-  parts: ReaderParts; makeId: MakeId; selected: string | undefined; onSelect(id: string | undefined): void; onNew(id: string): void
+export function RolesTab({ parts, makeId, selected, onSelect, onNew, naming }: {
+  parts: ReaderParts; makeId: MakeId; selected: string | undefined; onSelect(id: string | undefined): void
+  /** A role just made: picked, with its name open for typing. */
+  onNew(id: string): void
+  naming?: { id: string; nonce: number } | undefined
 }) {
   const { t, language } = useStrings()
   const { model, readOnly, dispatch } = parts
@@ -128,7 +131,7 @@ export function RolesTab({ parts, makeId, selected, onSelect, onNew }: {
         }))}
         empty={<p className="op-quiet">{t('operating.noRolesFound')}</p>}
       />
-      <RecordPreview picked={open && { kind: 'role', item: open }} ids={ids} onSelect={onSelect} parts={parts} dataGuide="operating.rolePreview" />
+      <RecordPreview picked={open && { kind: 'role', item: open }} ids={ids} onSelect={onSelect} parts={parts} naming={naming} dataGuide="operating.rolePreview" />
     </>
   )
 }

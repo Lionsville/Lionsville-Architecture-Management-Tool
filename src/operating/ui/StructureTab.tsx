@@ -35,9 +35,11 @@ type Props = {
   unitCounts?: ReadonlyMap<UnitTypeId, number> | undefined
   onFromLibrary(): void
   fresh?: ReadonlySet<string>
+  /** What was just made: picked, with its name open for typing. */
+  onMade?(id: string): void
 }
 
-export function StructureTab({ model, readOnly, selected, onSelect, dispatch, makeId, unitCounts, onFromLibrary, fresh }: Props) {
+export function StructureTab({ model, readOnly, selected, onSelect, dispatch, makeId, unitCounts, onFromLibrary, fresh, onMade }: Props) {
   const { t } = useStrings()
   const structure = useMemo(() => unitTypeLanes(model.unitTypes), [model.unitTypes])
   // A role picked by its line on a card says which card it was picked on; picked anywhere else, it says none.
@@ -48,7 +50,10 @@ export function StructureTab({ model, readOnly, selected, onSelect, dispatch, ma
   const roles = useMemo(() => new Map(model.roles.map((role) => [role.id, role])), [model.roles])
   const add = (command: CommandOf<'unitType.add'> | CommandOf<'role.add'>) => {
     dispatch(command)
-    onSelect(command.type === 'unitType.add' ? command.unitType.id : command.role.id)
+    const id = command.type === 'unitType.add' ? command.unitType.id : command.role.id
+    // Picked with its name open for typing, as a new responsibility is.
+    if (onMade) onMade(id)
+    else onSelect(id)
   }
   const pick = (id: string) => {
     setPickedIn(undefined)

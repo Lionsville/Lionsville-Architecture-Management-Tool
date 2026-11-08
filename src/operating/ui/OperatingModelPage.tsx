@@ -243,7 +243,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
         <div className="op-body">
           <div className="op-main" data-flat={flat || undefined} ref={main}>
             <TabBody
-              tab={tab} parts={parts} props={props} readOnly={readOnly} libraries={libraries} fromLibrary={fromLibrary} selected={selected} select={select} onMade={(id) => { select(id); setNaming((was) => ({ id, nonce: (was?.nonce ?? 0) + 1 })) }} look={look} setLook={setLook}
+              tab={tab} parts={parts} props={props} readOnly={readOnly} libraries={libraries} fromLibrary={fromLibrary} selected={selected} select={select} onMade={(id) => { select(id); setNaming((was) => ({ id, nonce: (was?.nonce ?? 0) + 1 })) }} naming={naming} look={look} setLook={setLook}
               setTab={setTab} matrixView={matrixView} setMatrixView={setMatrixView} arranging={arranging} setArranging={setArranging} exceptions={exceptions} openItem={openItem}
             />
           </div>
@@ -324,9 +324,9 @@ function useSlotTaking(props: OperatingModelPageProps, picked: OperatingItem | u
 }
 
 /** What the tab that is up shows. */
-function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected, select, onMade, look, setLook, setTab, matrixView, setMatrixView, arranging, setArranging, exceptions, openItem }: {
+function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected, select, onMade, naming, look, setLook, setTab, matrixView, setMatrixView, arranging, setArranging, exceptions, openItem }: {
   tab: OperatingTab; parts: ReaderParts; props: OperatingModelPageProps; readOnly: boolean; libraries: readonly Library[]; fromLibrary: LibraryStep
-  selected: string | undefined; select(id: string | undefined): void; onMade(id: string): void; look: RaciLook; setLook(look: RaciLook): void; setTab(tab: OperatingTab): void
+  selected: string | undefined; select(id: string | undefined): void; onMade(id: string): void; naming: { id: string; nonce: number } | undefined; look: RaciLook; setLook(look: RaciLook): void; setTab(tab: OperatingTab): void
   matrixView: MatrixView; setMatrixView(view: MatrixView): void; arranging: boolean; setArranging(on: boolean): void
   exceptions: readonly OutsideTheModel[]; openItem(id: string): void
 }) {
@@ -337,10 +337,10 @@ function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected
             {tab === 'structure' && (
               <StructureTab
                 model={model} readOnly={readOnly} selected={selected} onSelect={select} dispatch={dispatch} makeId={makeId}
-                unitCounts={props.unitCounts} onFromLibrary={() => fromLibrary.open()} fresh={fromLibrary.fresh}
+                unitCounts={props.unitCounts} onFromLibrary={() => fromLibrary.open()} fresh={fromLibrary.fresh} onMade={onMade}
               />
             )}
-            {tab === 'roles' && <RolesTab parts={parts} makeId={makeId} selected={selected} onSelect={select} onNew={select} />}
+            {tab === 'roles' && <RolesTab parts={parts} makeId={makeId} selected={selected} onSelect={select} onNew={onMade} naming={naming} />}
             {tab === 'responsibilities' && (
               <ResponsibilitiesTab
                 model={model} readOnly={readOnly} dispatch={dispatch} makeId={makeId} facts={facts} look={look}
