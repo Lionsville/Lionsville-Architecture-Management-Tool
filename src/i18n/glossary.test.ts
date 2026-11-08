@@ -45,6 +45,17 @@ describe.each(['nl', 'de'] as const)('the %s words', (language) => {
   })
 })
 
+describe('a word the glossary refuses', () => {
+  it('is said with its key, the text and the word to use', () => {
+    expect(refusedIn('de', 'checks.title', 'Die Prüfung')).toEqual(['checks.title: "Die Prüfung" — use Check'])
+  })
+
+  it('passes where its exception says it is meant, and only there', () => {
+    expect(refusedIn('de', 'adr.reviewNote', 'Die Prüfung')).toEqual([])
+    expect(refusedIn('de', 'decision.state', 'In Prüfung')).toEqual([])
+  })
+})
+
 describe('terms that must not meet', () => {
   it('says an assumed cause otherwise than an accepted decision, in every language', () => {
     for (const language of ['en', 'nl', 'de'] as const) {

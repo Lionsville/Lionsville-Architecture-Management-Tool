@@ -6,8 +6,8 @@
  * string carries ⌘, ⇧, ⌥ or ⌃ itself, or Windows and Linux would read ⌘Z.
  * (The key names themselves are held in `platform/keyNames.test.ts`.)
  */
-import { describe, expect, it } from 'vitest'
-import { MODIFIER_GLYPHS, fillKeys } from './keyNames'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { MODIFIER_GLYPHS, acceleratorName, fillKeys, keyName, onMac } from './keyNames'
 import { STRINGS, t } from './strings'
 
 describe('a key a sentence names', () => {
@@ -39,5 +39,41 @@ describe.each(['en', 'nl', 'de'] as const)('the %s strings', (language) => {
   it('name keys rather than draw ⌘, ⇧, ⌥ or ⌃', () => {
     const drawn = Object.entries(STRINGS[language]).filter(([, text]) => MODIFIER_GLYPHS.test(text)).map(([key, text]) => `${key}: ${text}`)
     expect(drawn).toEqual([])
+  })
+})
+
+describe('a key with no name of its own', () => {
+  it('is its letter as the keyboard prints it, or its own word', () => {
+    expect(keyName('z', false)).toBe('Z')
+    expect(keyName('F5', true)).toBe('F5')
+  })
+
+  it('may be + itself, at the end of a chord', () => {
+    expect(acceleratorName('CmdOrCtrl++', false)).toBe('Ctrl++')
+    expect(acceleratorName('CmdOrCtrl++', true)).toBe('⌘+')
+    expect(acceleratorName('Shift++', false, 'de')).toBe('Umschalt++')
+  })
+})
+
+describe('the platform a key is said for', () => {
+  afterEach(() => { vi.unstubAllGlobals() })
+
+  it('is the browser\'s where there is one', () => {
+    vi.stubGlobal('navigator', { platform: 'MacIntel' })
+    expect(onMac()).toBe(true)
+    vi.stubGlobal('navigator', { platform: 'Win32', userAgentData: { platform: 'Windows' } })
+    expect(onMac()).toBe(false)
+    // A browser that says no platform at all is not a Mac.
+    vi.stubGlobal('navigator', { platform: '' })
+    expect(onMac()).toBe(false)
+  })
+
+  // The desktop's main process has no browser: only Electron on a Mac is one, never node on the runner.
+  it('is Electron\'s in a process with no browser, and never node\'s', () => {
+    vi.stubGlobal('navigator', undefined)
+    vi.stubGlobal('process', { platform: 'darwin', versions: { electron: '40.0.0' } })
+    expect(onMac()).toBe(true)
+    vi.stubGlobal('process', { platform: 'darwin', versions: {} })
+    expect(onMac()).toBe(false)
   })
 })
