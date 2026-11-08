@@ -100,6 +100,8 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .kit-line.org-line[data-override='true'] { --kit-line-ink: var(--line-exception); }
 .kit-line.org-line[data-tone='loop'] { --kit-line-ink: var(--bad); }
 .org-line__tag { position: absolute; z-index: 3; transform: translate(-50%, -50%); pointer-events: none; white-space: nowrap; }
+/* One line, so the tags can be stepped apart by their height. */
+.org-line__tag .kit-linelabel { max-width: none; }
 
 /* The outline: the units as a tree, with its find on top and its order at the foot. */
 .chart-outline { position: relative; flex: none; display: flex; flex-direction: column; min-height: 0; border-inline-end: 1px solid var(--line); background: var(--surface); }
