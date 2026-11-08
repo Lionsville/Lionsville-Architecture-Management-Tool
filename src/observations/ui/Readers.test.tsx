@@ -96,6 +96,8 @@ describe('what a record offers', () => {
     mount({ initialId: 'c2', initialTab: 'analysis-list', initialNonce: 1 })
     expect(screen.getByRole('dialog', { name: 'Nobody owns the batch' }).textContent).toContain('What could take this away?')
     expect(screen.getByTestId('cause-solution').textContent).toBe('Solution')
+    // New solution's name, as the bar's: a guide pointing at it finds it on the root cause that is open.
+    expect(screen.getByTestId('cause-solution').getAttribute('data-guide')).toBe('solutions.new')
     expect(screen.queryByTestId('cause-deeper')).toBeNull()
     expect(screen.getByTestId('cause-verify')).toBeTruthy()
     more()

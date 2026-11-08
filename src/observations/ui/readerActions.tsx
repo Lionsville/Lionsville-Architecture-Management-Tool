@@ -173,7 +173,7 @@ export function causeActions(o: {
     { key: 'deeper', icon: <DeeperIcon size={14} />, label: s('observation.actAskWhy'), tip: s('observation.tipDeeper'), onClick: () => o.onLink('deeper'), primary: true, opensDialog: true, testId: 'cause-deeper' },
   ]
   const solution: ReaderAction[] = o.root && o.mayPropose
-    ? [{ key: 'solution', icon: <SolutionIcon size={14} />, label: s('observation.actSolution'), tip: s('observation.tipSolution'), onClick: o.onPropose, primary: true, opensDialog: true, testId: 'cause-solution' }]
+    ? [{ key: 'solution', icon: <SolutionIcon size={14} />, label: s('observation.actSolution'), tip: s('observation.tipSolution'), onClick: o.onPropose, primary: true, opensDialog: true, testId: 'cause-solution', guide: 'solutions.new' }]
     : []
   const onRoot = o.onRoot
   const rootStep: ReaderAction[] = onRoot ? [{
