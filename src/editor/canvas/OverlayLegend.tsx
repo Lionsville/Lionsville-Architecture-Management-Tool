@@ -56,6 +56,7 @@ export function OverlayLegend({ colourBy, bands, aspectColumns, onClose, onKeep 
   return (
     <Panel position="bottom-right" data-canvas-float="">
       <KeyStrip
+        foldable
         data-testid="overlay-legend"
         title={t('overlay.legendTitle', { what: overlayTitle(colourBy, aspectColumns, t, bands) })}
         values={values}
@@ -80,6 +81,7 @@ export function BoardKey({ diagram }: { diagram: DesignDiagram }) {
   return (
     <Panel position="bottom-right" data-canvas-float="">
       <KeyStrip
+        foldable
         data-testid="board-key"
         values={[...legend.statuses, 'unset' as const].map((status) => ({
           id: status,

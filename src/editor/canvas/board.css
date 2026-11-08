@@ -329,7 +329,5 @@
 .lv-board { container-type: inline-size; }
 .lv-board .react-flow__panel.right .kit-key { max-width: max(240px, calc(100cqw - 400px)); }
 
-/* The key leaves the dock's corner on a window this narrow, whichever way it got there: a key over the dock hides its controls. */
-@container kit-frame (max-width: 56rem) {
-  .react-flow__panel.bottom.right:has(.kit-key) { top: var(--s-2); bottom: auto; }
-}
+/* With the map up, the key stands over the map rather than on it (the map is React Flow's 150 px, in its corner). */
+.lv-board:has(.react-flow__minimap) .react-flow__panel.bottom.right:has(.kit-key) { bottom: calc(150px + 15px); }

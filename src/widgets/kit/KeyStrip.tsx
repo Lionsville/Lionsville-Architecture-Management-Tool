@@ -9,7 +9,7 @@
  * A swatch is a token's name or a colour somebody chose, and a value with neither
  * is drawn as an outline, which is how *Other* looks.
  */
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Mark } from './Mark'
 import type { MarkKind } from './Mark'
@@ -49,7 +49,7 @@ export function keyValues(values: readonly KeyValue[], otherLabel: string): KeyV
   ]
 }
 
-export function KeyStrip({ title, values, all, pressed, onPress, onKeep, onClose, note, 'data-guide': guide, 'data-testid': testId }: {
+export function KeyStrip({ title, values, all, pressed, onPress, onKeep, onClose, note, foldable, 'data-guide': guide, 'data-testid': testId }: {
   /** What the key is of, where it is not plain from the values. */
   title?: string
   /** A notation: every value, in the order given, since none of them is *Other*. */
@@ -63,13 +63,28 @@ export function KeyStrip({ title, values, all, pressed, onPress, onKeep, onClose
   note?: string
   /** Takes down what the key is of. */
   onClose?: { label: string; press: () => void }
+  /**
+   * A key over a canvas: where the window is too narrow for it beside the
+   * canvas's controls it folds into a *Key* button that opens it in place,
+   * rather than lying over what it explains.
+   */
+  foldable?: boolean
   'data-guide'?: string
   'data-testid'?: string
 }) {
   const { t } = useStrings()
   const shown = all ? values : keyValues(values, t('kit.key.other'))
+  const [unfolded, setUnfolded] = useState(false)
   return (
-    <div className="kit-key" role="group" aria-label={title ?? t('kit.key.label')} data-guide={guide} data-testid={testId}>
+    <div
+      className="kit-key" role="group" aria-label={title ?? t('kit.key.label')} data-guide={guide} data-testid={testId}
+      data-foldable={foldable ? '' : undefined} data-unfolded={foldable && unfolded ? '' : undefined}
+    >
+      {foldable && (
+        <button type="button" className="kit-key__fold" aria-expanded={unfolded} onClick={() => setUnfolded((was) => !was)}>
+          {t('kit.key.label')}
+        </button>
+      )}
       <div className="kit-key__values">
         {title && <span className="kit-key__title">{title}</span>}
         {shown.map((value) => {

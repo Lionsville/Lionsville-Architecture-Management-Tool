@@ -62,3 +62,24 @@ button.kit-key__value:focus-visible,
   cursor: pointer;
 }
 .kit-key__close:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
+
+/* A canvas's key folds into a button where the window leaves it no room beside the canvas's controls. */
+.kit-key__fold {
+  display: none;
+  min-height: var(--target-min);
+  padding: 0 var(--s-1);
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-weight: var(--fw-strong);
+  cursor: pointer;
+}
+.kit-key__fold:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
+@container kit-frame (max-width: 56rem) {
+  .kit-key[data-foldable] { max-width: min(100%, 24rem); }
+  .kit-key[data-foldable] .kit-key__fold { display: inline-flex; align-items: center; align-self: flex-end; }
+  .kit-key[data-foldable]:not([data-unfolded]) { padding-block: 0; }
+  .kit-key[data-foldable]:not([data-unfolded]) > :not(.kit-key__fold) { display: none; }
+  .kit-key[data-foldable][data-unfolded] { flex-direction: column-reverse; }
+}

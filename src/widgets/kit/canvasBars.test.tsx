@@ -116,6 +116,17 @@ describe('the key strip', () => {
     expect(screen.queryByRole('button')).toBeNull()
     expect(screen.getByText('Value 0')).toBeTruthy()
   })
+
+  it('folds into a Key button on a canvas, which opens it in place and folds it again', () => {
+    const { container } = render(<KeyStrip foldable values={eight.slice(0, 1)} />)
+    const fold = screen.getByRole('button', { name: 'Key' })
+    expect(fold.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(fold)
+    expect(fold.getAttribute('aria-expanded')).toBe('true')
+    expect(container.querySelector('.kit-key')?.hasAttribute('data-unfolded')).toBe(true)
+    fireEvent.click(fold)
+    expect(container.querySelector('.kit-key')?.hasAttribute('data-unfolded')).toBe(false)
+  })
 })
 
 describe('the Day control', () => {

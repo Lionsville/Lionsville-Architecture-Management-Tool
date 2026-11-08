@@ -67,6 +67,7 @@ export function ContainerKey({ model, diagram, day, showDeployment, showStatus }
   return (
     <Panel position="bottom-right" data-canvas-float="" style={{ maxWidth: 'calc(100% - 420px)' }}>
       <KeyStrip
+        foldable
         all
         data-testid="container-key"
         data-guide="board.key"
