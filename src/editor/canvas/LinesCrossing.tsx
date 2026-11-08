@@ -43,8 +43,11 @@ export function LinesCrossing({ onRoute, boundary }: { onRoute: (lines: readonly
         id: node.id, x: node.position.x, y: node.position.y,
         width: node.measured?.width ?? node.width ?? 0, height: node.measured?.height ?? node.height ?? 0,
       }));
+      // Each line's path by its id, read in one pass: an id is the model's, and a selector built from one would need escaping.
+      const drawn = new Map(Array.from(root.querySelectorAll('.react-flow__edge'), (line) =>
+        [line.getAttribute('data-id'), line.querySelector<SVGPathElement>('path.react-flow__edge-path')] as const));
       const routes = edges.flatMap((edge) => {
-        const path = root.querySelector<SVGPathElement>(`.react-flow__edge[data-id="${CSS.escape(edge.id)}"] path.react-flow__edge-path`);
+        const path = drawn.get(edge.id);
         if (!path?.getTotalLength) return [];
         const length = path.getTotalLength();
         const points = Array.from({ length: Math.ceil(length / STEP) }, (_, index) => path.getPointAtLength(index * STEP));
