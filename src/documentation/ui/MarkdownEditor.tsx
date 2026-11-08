@@ -428,6 +428,38 @@ function EditorTop({ fieldId, seat, variant, canAttach, editor, ...bar }: Omit<C
   )
 }
 
+const PRESSABLE = 'a, button, [role="link"], [role="button"], [tabindex]'
+
+/**
+ * A preview is read, not used, while the text is being written: a link in it
+ * would leave the editor mid-sentence and take the draft along. So nothing in it
+ * answers a press, by mouse or by key, and nothing in it is in the Tab order,
+ * which goes from the text to the bar and not into the reading.
+ */
+function useReadOnlyPreview(boxRef: RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const box = boxRef.current
+    if (!box) return undefined
+    const quiet = () => {
+      for (const one of box.querySelectorAll<HTMLElement>(PRESSABLE)) {
+        if (one.getAttribute('tabindex') !== '-1') one.setAttribute('tabindex', '-1')
+      }
+    }
+    quiet()
+    if (typeof MutationObserver === 'undefined') return undefined
+    const watch = new MutationObserver(quiet)
+    watch.observe(box, { childList: true, subtree: true })
+    return () => watch.disconnect()
+  }, [boxRef])
+}
+
+const refusePress = (event: SyntheticEvent<HTMLElement>) => {
+  if (!(event.target as HTMLElement).closest(PRESSABLE)) return
+  if ('key' in event && (event as KeyboardEvent<HTMLElement>).key !== 'Enter' && (event as KeyboardEvent<HTMLElement>).key !== ' ') return
+  event.preventDefault()
+  event.stopPropagation()
+}
+
 /** The preview, in a field with something to say where nothing is written yet. */
 function PreviewColumn({ boxRef, editor, pane, minRows, beside }: {
   boxRef: RefObject<HTMLDivElement | null>
@@ -438,8 +470,12 @@ function PreviewColumn({ boxRef, editor, pane, minRows, beside }: {
   beside: boolean
 }) {
   const { t } = useStrings()
+  useReadOnlyPreview(boxRef)
   return (
-    <div ref={boxRef} className="md-editor__preview" data-testid={editor.previewTestId} style={pane ? undefined : { minHeight: minRows * LINE + 18 }}>
+    <div
+      ref={boxRef} className="md-editor__preview" data-testid={editor.previewTestId} style={pane ? undefined : { minHeight: minRows * LINE + 18 }}
+      onClickCapture={refusePress} onKeyDownCapture={refusePress} onAuxClickCapture={refusePress}
+    >
       {beside && <div className="md-editor__previewHead">{t('md.preview')}</div>}
       {pane || editor.value.trim() ? editor.renderPreview?.(editor.value) : <span className="md-editor__nothing">{t('md.nothing')}</span>}
     </div>

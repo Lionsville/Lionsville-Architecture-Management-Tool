@@ -180,6 +180,16 @@ describe('MarkdownEditor, how the text is shown', () => {
     expect(screen.queryByTestId('rendered')).toBeNull()
   })
 
+  it('keeps the writer in: a link in the preview answers no press, by mouse or key, and is out of the Tab order', () => {
+    const opened = vi.fn()
+    setup({ renderPreview: (text) => <p>{text} <a href="#/-/document/other" onClick={opened} onKeyDown={opened}>Other</a></p> })
+    const link = screen.getByRole('link', { name: 'Other' })
+    expect(link.getAttribute('tabindex')).toBe('-1')
+    fireEvent.keyDown(link, { key: 'Enter' })
+    expect(fireEvent.click(link)).toBe(false)
+    expect(opened).not.toHaveBeenCalled()
+  })
+
   it('has no side by side in a field, and one button that goes between Write and Preview', () => {
     setup({ renderPreview, variant: 'field' })
     expect(screen.queryByRole('button', { name: 'Side by side' })).toBeNull()
