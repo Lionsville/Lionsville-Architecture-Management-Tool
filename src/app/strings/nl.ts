@@ -450,6 +450,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.placeUnknown': 'Het adres noemt een pagina die deze app niet heeft, dus hij is geopend waar hij was.',
   'shell.placeGone': 'Waar het adres naar wees is er niet, dus de dichtstbijzijnde plek is geopend.',
   'shell.placeNoScope': 'Er is geen scope “{scope}”, dus dit is het begin van de organisatie.',
+  'shell.placeNoScopeSettings': 'Er is geen scope “{scope}”, dus dit zijn de instellingen van de organisatie.',
   'shell.pendingRecovered': 'Een wijziging die nog niet bewaard was, is hersteld.',
   'shell.pendingPartly': 'Een wijziging uit een tabblad dat sloot voordat ze bewaard was, kon niet worden teruggezet, omdat dit bereik sindsdien is veranderd.',
   'shell.decisions': 'Besluiten',

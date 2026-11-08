@@ -268,6 +268,14 @@ describe('Back and Forward', () => {
     await waitFor(async () => expect((await where()).home?.path).toBe(''))
     await screen.findByText('There is no scope “nowhere”, so this is the organisation’s home.')
   })
+
+  it('names the organisation’s settings where a scope’s settings were asked for and the scope is not there', async () => {
+    renderApp({
+      agent: fakeGateway().gateway, repositories: heldRepositories([root, retail]),
+      boot: { initialProject: undefined, initialHome: 'acme/nowhere', initialHomePage: 'settings' },
+    })
+    await screen.findByText('There is no scope “acme/nowhere”, so these are the organisation’s settings.')
+  })
 })
 
 describe('the first paint, where a place in the address landed it', () => {

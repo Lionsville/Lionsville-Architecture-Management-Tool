@@ -46,6 +46,8 @@ export function useHomeParts(deps: {
   organisation: Organisation
   home: ScopePath
   setHome: (path: ScopePath) => void
+  /** Which page of a home is up, where the shell knows: a home that is gone is said as the page it leaves up. */
+  pageUp?: { readonly current: () => string | undefined }
   /** The scope that is open; everything here is inert while there is one. */
   scopeOpen: boolean
   /** Where the home's history is read and recorded, and its tree for which scope is which. */
@@ -72,7 +74,7 @@ export function useHomeParts(deps: {
   notify: Notify
   s: Translate
 }) {
-  const { organisation, home, setHome, scopeOpen, index, restore, notify, s } = deps
+  const { organisation, home, setHome, scopeOpen, index, restore, notify, s, pageUp } = deps
   /**
    * Snapshots and the history, while the organisation screen is up.
    *
@@ -131,9 +133,10 @@ export function useHomeParts(deps: {
   useEffect(() => {
     if (!organisation.listedNow || homeListed) return
     setHome(ROOT_SCOPE)
-    // An address, a link or Back named it: say which scope was not there, rather than land somewhere else in silence.
-    notify(s('shell.placeNoScope', { scope: home }), 'info')
-  }, [organisation.listedNow, homeListed, setHome, notify, s, home])
+    // An address, a link or Back named it: say which scope was not there, rather than land somewhere else in silence —
+    // and what is shown instead, which on the settings page is the organisation's settings, not its home.
+    notify(s(pageUp?.current() === 'settings' ? 'shell.placeNoScopeSettings' : 'shell.placeNoScope', { scope: home }), 'info')
+  }, [organisation.listedNow, homeListed, setHome, notify, s, home, pageUp])
   /** What the home that is up is called, for the window's title and the agent. */
   const name = useMemo(
     () => flattenScopes(organisation.tree).find((scope) => scope.path === home)?.name,

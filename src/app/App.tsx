@@ -689,8 +689,10 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
   const prompts = { password: usePasswordPrompt(s, () => copyAbout(organisation.tree, s, openViews.current()), props.documents.downloads), openInto: useOpenIntoPrompt(s) }
   /** What is folded shut on each view's trees, for as long as the window is open (`sessionFolds.ts`). */
   const [folds] = useState(() => new SessionFolds())
+  // Which of a home's pages is up, read when a home that is gone is said: known once the agent's parts are composed below.
+  const pageUp = useRef<() => string | undefined>(() => undefined)
   const home = useHomeParts({
-    organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, repositories,
+    organisation, home: nav.home, setHome: nav.setHome, scopeOpen: project !== undefined, repositories, pageUp,
     historyKept: props.provider?.historyKept,
     index: tree.index, restore: restoreIntoHome, documents: props.documents,
     carryOut,
@@ -747,6 +749,7 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
     return project && model ? { path: project.path, views: model.diagrams.length } : undefined
   }
   base.screenRef.current = shellAgent.screenNow
+  pageUp.current = () => shellAgent.screenNow().page?.page
   openScopeRef.current = shellAgent.openSession
   base.selectedRef.current = shellAgent.selectedNow
   useWindowTitle({

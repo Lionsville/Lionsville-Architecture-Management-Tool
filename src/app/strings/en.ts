@@ -621,6 +621,7 @@ export const EN = {
   'shell.placeUnknown': 'The address names a page this app does not have, so it opened where it was.',
   'shell.placeGone': 'What the address pointed at is not there, so it opened the nearest place.',
   'shell.placeNoScope': 'There is no scope “{scope}”, so this is the organisation’s home.',
+  'shell.placeNoScopeSettings': 'There is no scope “{scope}”, so these are the organisation’s settings.',
   'shell.pendingRecovered': 'Recovered a change that hadn’t finished saving.',
   'shell.pendingPartly': 'A change from a tab that closed before it was saved could not be put back, because this scope has changed since.',
   'shell.decisions': 'Decisions',

@@ -582,6 +582,9 @@ function screenOf(
  * anything else, the nearest scope above it included, as gone.
  */
 function sayLanded(place: Place, near: Place, s: Translate, say: (said: string) => void): void {
-  if (near.scope !== place.scope && place.scope !== ROOT_SCOPE && near.scope === ROOT_SCOPE) say(s('shell.placeNoScope', { scope: place.scope }))
+  // Said as the page it landed on: the organisation's settings are not its home.
+  if (near.scope !== place.scope && place.scope !== ROOT_SCOPE && near.scope === ROOT_SCOPE) {
+    say(s(near.page === 'settings' ? 'shell.placeNoScopeSettings' : 'shell.placeNoScope', { scope: place.scope }))
+  }
   else if (near.page !== place.page || near.id !== place.id || near.scope !== place.scope) say(s('shell.placeGone'))
 }
