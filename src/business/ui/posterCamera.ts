@@ -8,6 +8,11 @@
  * It opens where the person left this view, or else at Fit where that can be read
  * and at a readable zoom from the top left where it cannot. A person's last place
  * is theirs and not the work's (`useViewerKeep`), so a reader never writes a step.
+ *
+ * The text size scales the whole page. Until the person moves it, the page is where
+ * it opened, and a change of size opens it again at the new size: the rail and the
+ * journey stay at the top left. Once they have moved it, a change of size grows the
+ * page about the middle, as a step of the zoom does.
  */
 import { useCallback, useContext, useEffect, useMemo, useRef } from 'react'
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom'
@@ -77,12 +82,24 @@ export function openingCamera(pane: Size, page: Size, insets: Insets = BARE, sca
   return frameInRoom(whole(page), pane, insets, { floor: readable, ceiling: readable }) ?? { x: insets.left, y: insets.top, zoom: readable }
 }
 
-/** The same place at another text size: the page grows or shrinks about the pane's middle, as a step of the zoom does. */
-export function rescaled(camera: Camera, ratio: number, pane: Size): Camera {
+/** The same place at another text size, grown or shrunk about a point of the pane. */
+function scaledAbout(camera: Camera, ratio: number, at: Point): Camera {
   const zoom = clampZoomTo(camera.zoom * ratio, POSTER_ZOOM)
   const by = zoom / camera.zoom
-  const at = { x: pane.width / 2, y: pane.height / 2 }
   return { x: at.x - (at.x - camera.x) * by, y: at.y - (at.y - camera.y) * by, zoom }
+}
+
+/** A live change of text size: the page grows or shrinks about the pane's middle, as a step of the zoom does. */
+export const rescaled = (camera: Camera, ratio: number, pane: Size): Camera =>
+  scaledAbout(camera, ratio, { x: pane.width / 2, y: pane.height / 2 })
+
+/**
+ * A kept place at the text size now. It is read from its top left, as a page is: an edge of the page that
+ * was in the window stays where it was, and otherwise what was at the room's edge stays there. About the
+ * middle, a place left at the rail would open with the rail cut off at a larger size.
+ */
+export function rescaledKept(camera: Camera, ratio: number, insets: Insets = BARE): Camera {
+  return scaledAbout(camera, ratio, { x: Math.max(camera.x, insets.left), y: Math.max(camera.y, insets.top) })
 }
 
 export function heldInView(camera: Camera, pane: Size, page: Size): Camera {
@@ -93,12 +110,12 @@ export function heldInView(camera: Camera, pane: Size, page: Size): Camera {
 /** A place is kept with the text size it was left at, so a person who changed it since comes back to the same page at their size now. */
 type KeptPlace = Camera & { scale?: number }
 
-function keptCamera(held: unknown, scale: number, pane: Size): Camera | undefined {
+function keptCamera(held: unknown, scale: number, insets: Insets): Camera | undefined {
   const at = held as Partial<KeptPlace> | null | undefined
   if (typeof at?.x !== 'number' || typeof at.y !== 'number' || typeof at.zoom !== 'number') return undefined
   const camera = { x: at.x, y: at.y, zoom: clampZoomTo(at.zoom, POSTER_ZOOM) }
   const was = typeof at.scale === 'number' && at.scale > 0 ? at.scale : 1
-  return was === scale ? camera : rescaled(camera, scale / was, pane)
+  return was === scale ? camera : rescaledKept(camera, scale / was, insets)
 }
 
 /** What a person's last place on this view is kept under. */
@@ -119,6 +136,8 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
   keeper.current = keep
   const textScale = useTextScale()
   const scale = useRef(textScale)
+  /** Where it opened, untouched since: a change of text size opens it again rather than growing it about the middle. */
+  const asOpened = useRef(false)
 
   const write = useCallback((moving: boolean) => {
     const on = stage.current
@@ -151,11 +170,13 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     const next = clampZoomTo(zoom, POSTER_ZOOM)
     const around = at ?? (held ? { x: held.clientWidth / 2, y: held.clientHeight / 2 } : { x: 0, y: 0 })
     const ratio = next / was.zoom
+    asOpened.current = false
     camera.current = { x: around.x - (around.x - was.x) * ratio, y: around.y - (around.y - was.y) * ratio, zoom: next }
     write(true)
     distances()
   }, [write, distances])
   const panBy = useCallback((dx: number, dy: number) => {
+    asOpened.current = false
     camera.current = { ...camera.current, x: camera.current.x + dx, y: camera.current.y + dy }
     write(true)
   }, [write])
@@ -163,6 +184,7 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     const held = pane.current
     if (!held) return
     const box = { width: held.clientWidth, height: held.clientHeight }
+    asOpened.current = false
     camera.current = fitOf(box, size.current, roomOf(held), scale.current)
     write(true)
     distances()
@@ -171,8 +193,10 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     const held = pane.current
     if (!held) return
     const box = { width: held.clientWidth, height: held.clientHeight }
-    const kept = key.current !== undefined ? keptCamera(keeper.current?.read(posterPlaceKey(key.current)), scale.current, box) : undefined
-    camera.current = kept ?? openingCamera(box, size.current, roomOf(held), scale.current)
+    const room = roomOf(held)
+    const kept = key.current !== undefined ? keptCamera(keeper.current?.read(posterPlaceKey(key.current)), scale.current, room) : undefined
+    camera.current = kept ?? openingCamera(box, size.current, room, scale.current)
+    asOpened.current = true
     write(false)
     distances()
   }, [write, distances])
@@ -207,17 +231,21 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     return () => { listeners.current.delete(tell) }
   }, [])
   useEffect(() => () => clearTimeout(settle.current), [])
-  // A text size changed while the poster is up grows or shrinks the whole page about the middle, as a board is framed again.
+  // A text size changed while the poster is up: where it opened, it opens again at the new size; once moved, the page grows or shrinks about the middle.
   useEffect(() => {
     const was = scale.current
     if (was === textScale) return
     scale.current = textScale
     const held = pane.current
     if (!held) return
+    if (asOpened.current) {
+      open()
+      return
+    }
     camera.current = rescaled(camera.current, textScale / was, { width: held.clientWidth, height: held.clientHeight })
     write(true)
     distances()
-  }, [textScale, write, distances])
+  }, [textScale, write, distances, open])
   return { attach, stage, pane, camera, panBy, open, follow, target, listen, fitFloor: atScale(FIT_FLOOR, textScale) }
 }
 
