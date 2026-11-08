@@ -65,6 +65,14 @@ describe('terms that must not meet', () => {
     }
   })
 
+  it('says assumed in German as vermutet wherever the English says it, never as an accepted decision\'s angenommen', () => {
+    const wrong = Object.entries(STRINGS.en)
+      .filter(([, text]) => /\bassum/i.test(text))
+      .map(([key]) => [key, STRINGS.de[key as keyof typeof STRINGS.de]] as const)
+      .filter(([, text]) => /angenommen/i.test(text) || !/vermut/i.test(text))
+    expect(wrong).toEqual([])
+  })
+
   it('gives German an area and a panel words other than the scope\'s', () => {
     const de = STRINGS.de
     for (const key of ['sheet.unmappedJumpOne', 'sheet.unmappedJumpOther', 'newView.sheetLine', 'prefs.textSizeHint'] as const) {

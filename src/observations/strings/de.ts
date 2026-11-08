@@ -809,7 +809,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.ladderGroup': 'Alle {count} sind in {scope}. Eine Ursache erklärt Beobachtungen ihres eigenen Bereichs.',
   'observation.ladderField': 'Warum es geschieht, in wenigen Worten',
   'observation.ladderExample': 'Z. B. Jedes EDI-Mapping eines Frachtführers wird von Hand geschrieben',
-  'observation.ladderMadeAs': 'Wird {label}, angenommen. Verknüpft mit Stärke {strength}. Beides ist im Eintrag änderbar.',
+  'observation.ladderMadeAs': 'Wird {label}, vermutet. Verknüpft mit Stärke {strength}. Beides ist im Eintrag änderbar.',
   'observation.ladderMore': 'Warum wir das meinen, Stärke, Grundursache',
   'observation.ladderAdd': 'Ursache hinzufügen',
   'observation.ladderAddMany': 'Ursache und {count} Verknüpfungen hinzufügen',
