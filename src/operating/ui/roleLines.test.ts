@@ -45,6 +45,8 @@ describe('the lines between the cards', () => {
     expect(roleLinePath({ left: 100, top: 30, right: 150, bottom: 40 }, a, false)).toBe('M125,40 C125,50 125,50 115,50 L74,50 C56,50 50,15 50,15')
     expect(roleLinePath(a, { left: 0, top: 50, right: 50, bottom: 60 }, false)).toBe('M25,20 C25,30 25,30 35,30 L26,30 C44,30 50,55 50,55')
     expect(roleLinePath(a, { left: 60, top: 10, right: 110, bottom: 20 }, true)).toBe('M25,20 C25,32 85,32 85,20')
+    // Stacked in a card's rows: a bracket along its edge, out of the one's side and into the other's, not a stub through the slot.
+    expect(roleLinePath({ left: 0, top: 30, right: 100, bottom: 40 }, { left: 0, top: 10, right: 100, bottom: 20 }, true)).toBe('M100,35 C110,35 110,15 100,15')
     const drawn = roleLinePaths(roleLines(structure, types, roles), (end) => (end.typeId === 'team' ? { left: 0, top: 0, right: 40, bottom: 10 } : undefined))
     // Only the lines with both chips on the stage.
     expect(drawn.map((line) => line.key)).toEqual(['team/dev/solid>team', 'team/sm/solid>team'])

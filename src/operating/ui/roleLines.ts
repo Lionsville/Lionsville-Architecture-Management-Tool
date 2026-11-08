@@ -90,6 +90,12 @@ export type ChipOf = (end: RoleLineEnd) => CardBox | undefined
 export function roleLinePath(from: CardBox, to: CardBox, within: boolean): string {
   const x1 = (from.left + from.right) / 2
   const y2 = (to.top + to.bottom) / 2
+  if (within && stacked(from, to)) {
+    // One above the other on a card: out of the one's side, along the card's edge, and back into the other's, a bracket
+    // rather than a stub drawn through the chips between them.
+    const out = Math.max(from.right, to.right) + 10
+    return `M${from.right},${(from.top + from.bottom) / 2} C${out},${(from.top + from.bottom) / 2} ${out},${y2} ${to.right},${y2}`
+  }
   if (within) {
     // Under the chips, which sit beside each other on a card: down from the one, across, and up into the other.
     const x2 = (to.left + to.right) / 2
@@ -104,8 +110,14 @@ export function roleLinePath(from: CardBox, to: CardBox, within: boolean): strin
   return `M${x1},${from.bottom} C${x1},${under} ${x1},${under} ${x1 + dir * 10},${under} L${turn},${under} C${x2 - dir * 6},${under} ${x2},${y2} ${x2},${y2}`
 }
 
+/** Two chips one above the other: they share their width and not their height, as a card's roles stand in rows. */
+function stacked(a: CardBox, b: CardBox): boolean {
+  return a.left < b.right && b.left < a.right && (a.bottom <= b.top || b.bottom <= a.top)
+}
+
 /** Where a line ends on the target's chip: under it for a line within, else on the side nearer the chip it comes from. */
 export function roleLineEnd(from: CardBox, to: CardBox, within: boolean): { x: number; y: number } {
+  if (within && stacked(from, to)) return { x: to.right, y: (to.top + to.bottom) / 2 }
   if (within) return { x: (to.left + to.right) / 2, y: to.bottom }
   const x1 = (from.left + from.right) / 2
   const y = (to.top + to.bottom) / 2
