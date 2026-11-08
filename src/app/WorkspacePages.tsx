@@ -349,6 +349,15 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
   // A plan may rest on a record filed above this scope; its gate reads those too.
   const { ancestorDecisions } = props.tree
   const decidedAbove = useMemo(() => ancestorDecisions.flatMap((one) => one.decisions), [ancestorDecisions])
+  // The plan's page is a record with a comment box: every way off it to a board, an element or a decision asks first.
+  const { planActions } = plans
+  const planWays = useMemo(() => ({
+    ...planActions,
+    onOpenElement: guarded(planActions.onOpenElement),
+    ...(planActions.onOpenDecision ? { onOpenDecision: guarded(planActions.onOpenDecision) } : {}),
+    ...(planActions.onOpenBoard ? { onOpenBoard: guarded(planActions.onOpenBoard) } : {}),
+    ...(planActions.onDuplicateBoard ? { onDuplicateBoard: guarded(planActions.onDuplicateBoard) } : {}),
+  }), [planActions])
   return (
     <>
       <RoadmapPage
@@ -383,7 +392,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         ancestorDecisions={decidedAbove}
         today={todayDay}
         readOnly={readOnly || looking}
-        actions={plans.planActions}
+        actions={planWays}
         renderMarkdown={pictures.renderDocument}
         onAddImage={files.addImage}
         images={imagesOf(parts)}
