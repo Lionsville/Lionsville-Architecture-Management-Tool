@@ -27,7 +27,7 @@ import { useDoubleClicks, useEditorHandle } from './useEditorHandle';
 import { EditorDialogs, EditorLateDialogs, useEditorDialogs } from './EditorDialogs';
 import { InsideChoice } from './InsideChoice';
 import { EditorDocumentationPage } from './EditorDocumentationPage';
-import { BoardToolbar } from './EditorBoardToolbar';
+import { BoardToolbar, newViewProps } from './EditorBoardToolbar';
 import { AddPicker, useAddRequests } from './AddPicker';
 import { BoardCanvas, LaidOutView, PaletteDock } from './EditorPanels';
 import { InspectorDock } from './EditorInspectorDock';
@@ -35,7 +35,9 @@ import { ArrangeSeatProvider } from './inspector/arrangeSeat';
 import type { ArrangeActs } from './inspector/arrangeSeat';
 import type { EditorParts } from './editorParts';
 import { findContainerDiagram } from '../model/containerDiagram';
-import { levelUpOf } from './EditorToolbar';
+import { levelUpOf, NewViewMenu } from './EditorToolbar';
+import { usePlaceHost } from '../widgets/kit/placeHost';
+import { createPortal } from 'react-dom';
 import { PageState } from '../widgets/kit/PageState';
 import { useHistoryKeys } from './useHistoryKeys';
 
@@ -76,8 +78,11 @@ function NoView({ props, readOnly }: { props: SolutionDesignEditorProps; readOnl
   const { t } = useStrings();
   const { onNewView, onCreateLayer7 } = props.diagrams;
   const keys = useHistoryKeys(props.editing.history, readOnly);
+  // Row two keeps its +, which sat after the tabs that went: making a view is still a press where it always was.
+  const row = usePlaceHost()?.views ?? null;
   return (
     <Box ref={keys} data-testid="no-view" sx={{ p: 3, height: '100%' }}>
+      {row && !readOnly && createPortal(<NewViewMenu props={newViewProps(props.diagrams)} />, row)}
       <PageState
         state="empty"
         title={t('board.noViewTitle')}

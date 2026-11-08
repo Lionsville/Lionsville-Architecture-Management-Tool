@@ -580,11 +580,16 @@ function ViewDay({ props }: { props: EditorToolbarProps }) {
   );
 }
 
+/** What the `+` beside the tabs is handed: the ways to make a view, and nothing of the tabs. */
+export type NewViewProps = Pick<EditorToolbarProps,
+  | 'onCreateLayer7Diagram' | 'onCreateSheet' | 'onCreateMap' | 'onCreateTechnology' | 'onCreateDrawing' | 'onCreateChart' | 'onCreateConway' | 'onNewView'>
+
 /**
  * The `+` beside the tabs: a new view of each kind the host can make, or a
- * new landscape straight away where the host makes no other kind.
+ * new landscape straight away where the host makes no other kind. Drawn in row
+ * two with no tabs before it too, where a scope's last view went.
  */
-function NewViewMenu({ props }: { props: EditorToolbarProps }) {
+export function NewViewMenu({ props }: { props: NewViewProps }) {
   const { t } = useStrings();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   if (!props.onCreateSheet) {

@@ -7,7 +7,7 @@
  */
 import type { DesignDiagram } from '../model/types';
 import { cancelElkLayout, canCancelElkLayout } from '../layout/elkLayout';
-import { EditorToolbar, type EditorToolbarProps } from './EditorToolbar';
+import { EditorToolbar, type EditorToolbarProps, type NewViewProps } from './EditorToolbar';
 import { labelsOn } from './useViewSettings';
 import { addableKinds } from './AddPicker';
 import { paletteLabel } from './canvas/paletteItems';
@@ -102,6 +102,20 @@ export function boardMiddle(): { x: number; y: number } {
   return box ? { x: box.left + box.width / 2 - 160, y: box.top + box.height / 3 } : { x: window.innerWidth / 2, y: window.innerHeight / 3 };
 }
 
+/** The ways to make a view, for the `+` beside the tabs and for the one row two keeps where there are none. */
+export function newViewProps(diagrams: SolutionDesignEditorProps['diagrams']): NewViewProps {
+  return {
+    onCreateLayer7Diagram: diagrams.onCreateLayer7,
+    onCreateSheet: diagrams.onCreateSheet,
+    onCreateMap: diagrams.onCreateMap,
+    onCreateTechnology: diagrams.onCreateTechnology,
+    onCreateDrawing: diagrams.onCreateDrawing,
+    onNewView: diagrams.onNewView,
+    onCreateChart: diagrams.onCreateChart,
+    onCreateConway: diagrams.onCreateConway,
+  };
+}
+
 /** The tabs' own menus: open, make, rename, settings, duplicate, delete, history. */
 function diagramMenus(
   props: SolutionDesignEditorProps,
@@ -113,21 +127,14 @@ function diagramMenus(
   | 'onDeleteDiagram' | 'onDiagramHistory'> {
   const { diagrams } = props;
   return {
+    ...newViewProps(diagrams),
     onActiveDiagramChange: props.document.onActiveDiagramChange,
-    onCreateLayer7Diagram: diagrams.onCreateLayer7,
     onOpenSheet: diagrams.onOpenSheet,
-    onCreateSheet: diagrams.onCreateSheet,
     onOpenMap: diagrams.onOpenMap,
-    onCreateMap: diagrams.onCreateMap,
     onOpenTechnology: diagrams.onOpenTechnology,
-    onCreateTechnology: diagrams.onCreateTechnology,
     onOpenDrawing: diagrams.onOpenDrawing,
-    onCreateDrawing: diagrams.onCreateDrawing,
-    onNewView: diagrams.onNewView,
     onOpenChart: diagrams.onOpenChart,
-    onCreateChart: diagrams.onCreateChart,
     onOpenConway: diagrams.onOpenConway,
-    onCreateConway: diagrams.onCreateConway,
     onRenameDiagram: diagrams.onRename ? (id, name) => dialogs.setRenameDiagramTarget({ id, name }) : undefined,
     onOpenDiagramSettings: diagrams.onSettingsChange ? (id) => dialogs.setSettingsDiagramId(id) : undefined,
     onDuplicateDiagram: diagrams.onDuplicate,

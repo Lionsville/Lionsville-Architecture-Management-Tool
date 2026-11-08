@@ -44,6 +44,8 @@ describe('removing a scope’s last view', () => {
     await waitFor(() => expect(window.location.hash).toBe('#/acme/landscape/-'))
     // A closing dialog hides the page from role queries until it is gone.
     expect(await screen.findByRole('button', { name: 'New view…' })).toBeTruthy()
+    // Row two keeps its +, though the tabs it stood after are gone.
+    expect(document.querySelector('.kit-frame__views [aria-label="New Layer 7 diagram"]')).not.toBeNull()
     // Still the workspace: no home came up in its place.
     expect(screen.queryByTestId('organisation-name')).toBeNull()
 
