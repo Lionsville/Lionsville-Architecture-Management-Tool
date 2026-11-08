@@ -54,7 +54,8 @@ export const EN = {
   'menu.editSelectAll': 'Select all',
   // Help, on both hosts.
   'menu.help': 'Help',
-  'menu.userManual': 'Lionsville Architect help',
+  'menu.userManual': 'Lionsville Architect Help',
+  'menu.helpHere': 'Help on this page',
   'menu.shortcuts': 'Keyboard shortcuts…',
   'menu.visitExample': 'Look around the example',
   /** The desktop's Go menu (ADR-0033), between View and Window as on every Mac. */
