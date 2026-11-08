@@ -183,12 +183,17 @@ export function TopicTreeRow({ at, topic, depth, onHome, s }: { at: ScopePath; t
 }
 
 /** One scope's row: its fold, its name, what it holds, and its acts under ⋯. */
+/** How many letters before a match a long name keeps. */
+const MATCH_LEAD = 10
+
 /** A name with what was typed marked in it, so a match shown flat says why it is there. */
 function Marked({ text, asked }: { text: string; asked: string }) {
   const at = asked === '' ? -1 : fold(text).indexOf(fold(asked))
   // Folding keeps the length for the letters a name is made of; where it did not, the name is said plainly.
   if (at < 0 || fold(text).length !== text.length) return <>{text}</>
-  return <>{text.slice(0, at)}<mark className="kit-tree__match">{text.slice(at, at + asked.length)}</mark>{text.slice(at + asked.length)}</>
+  // Deep in a long name, the words before the match give way to an ellipsis rather than the match itself.
+  const from = at > MATCH_LEAD * 2 ? at - MATCH_LEAD : 0
+  return <>{from > 0 ? '…' : ''}{text.slice(from, at)}<mark className="kit-tree__match">{text.slice(at, at + asked.length)}</mark>{text.slice(at + asked.length)}</>
 }
 
 function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unread, count, words, warns, onHome, menuOf, s, language, toggleCollapsed, asked, enters }: RowActs & {
@@ -232,7 +237,7 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
       {/* No handler of its own: its press is the row's. */}
       <button type="button" className="kit-tree__name" tabIndex={-1} aria-hidden data-testid={`home-${scope.path}`} disabled={unread}>
         {/* Where a match is gives way before what it is called: the path is cut, the name is kept. */}
-        {above && <span className="kit-tree__above">{above} / </span>}
+        {above && <><span className="kit-tree__above">{above}</span><span className="kit-tree__sep" aria-hidden> / </span></>}
         <span className="kit-tree__own" data-testid={`open-${scope.path}`}><Marked text={scope.name} asked={asked} /></span>
       </button>
       {warns && <span className="kit-tree__warn" title={s('org.typeMismatchTip')}><Mark kind="review" size={12} />{s('org.typeMismatch')}</span>}

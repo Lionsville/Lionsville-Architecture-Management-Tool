@@ -102,7 +102,8 @@
 .kit-tree__fold[aria-expanded='false'] svg { transform: rotate(-90deg); }
 .kit-tree__name { appearance: none; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; flex: 1 1 0; min-width: 0; text-align: start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: var(--s-1); display: flex; }
 /* A match shown flat: the path above gives way first, so the scope's own name and what was typed in it stay in sight. */
-.kit-tree__above { flex: 0 1 auto; min-width: 1.5em; overflow: hidden; text-overflow: ellipsis; white-space: pre; }
+.kit-tree__above { flex: 0 100 auto; min-width: 2ch; overflow: hidden; text-overflow: ellipsis; white-space: pre; }
+.kit-tree__sep { flex: none; white-space: pre; color: var(--ink-2); }
 .kit-tree__own { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .kit-tree__match { background: var(--selected-soft); color: inherit; font-weight: var(--fw-strong); border-radius: 2px; }
 .kit-tree__row[data-enter] { background: var(--surface-2); }
