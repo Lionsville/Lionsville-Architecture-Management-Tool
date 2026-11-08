@@ -70,8 +70,15 @@
 .poster-tile__near { display: none; }
 .poster-tile__label { display: none; }
 .poster-tile[data-labelled] .poster-tile__name { -webkit-line-clamp: 2; line-height: 13.5px; }
-.poster-tile[data-labelled] .poster-tile__label { display: block; max-width: 100%; overflow: hidden; color: var(--ink-2); font-size: var(--canvas-t-sm); line-height: 13.5px; text-overflow: ellipsis; white-space: nowrap; }
-.poster-tile__label::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-inline-end: 3px; background: var(--line-ink); vertical-align: 1px; }
+.poster-tile[data-labelled] .poster-tile__label { display: flex; align-items: baseline; gap: 3px; max-width: 100%; min-width: 0; color: var(--ink-2); font-size: var(--canvas-t-sm); line-height: 13.5px; white-space: nowrap; }
+/* Who answers asks for the label: it takes two lines and the name one, where both on one line each cut the unit to "Transport pl…". */
+[data-lens="who"] .poster-tile[data-labelled] { padding-inline: 4px; }
+[data-lens="who"] .poster-tile[data-labelled] .poster-tile__name { -webkit-line-clamp: 1; }
+[data-lens="who"] .poster-tile[data-labelled] .poster-tile__label { white-space: normal; text-align: start; }
+[data-lens="who"] .poster-tile[data-labelled] .poster-tile__labelName { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+.poster-tile__labelName { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.poster-tile__labelMore { flex: none; }
+.poster-tile__label::before { content: ""; flex: none; align-self: center; display: inline-block; width: 6px; height: 6px; margin-inline-end: 3px; background: var(--line-ink); vertical-align: 1px; }
 .poster-tile__label[data-typed] { font-style: italic; }
 .poster-tile__label[data-typed]::before { background: none; outline: 1px dashed var(--line-ink); outline-offset: -1px; }
 .poster-tile__label[data-none]::before { background: none; outline: 1px solid var(--line-ink); outline-offset: -1px; }
@@ -168,11 +175,17 @@
 [data-posture="design"] .poster-block, [data-posture="design"] .poster-title__name, [data-posture="design"] .poster-item { cursor: move; }
 [data-posture="design"] .poster-block { overflow: visible; }
 .poster-add { display: inline-flex; flex: none; opacity: 0; }
-.poster-add button { appearance: none; min-width: 20px; height: 18px; padding: 0 4px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--canvas-t-label); font-weight: var(--fw-regular); line-height: 1; cursor: pointer; }
+.poster-add button { position: relative; appearance: none; min-width: 20px; height: 18px; padding: 0 4px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--canvas-t-sm); font-weight: var(--fw-regular); line-height: 1; cursor: pointer; }
+/* A full 24px target round a press drawn 18px high, so the head it stands in keeps its height. */
+.poster-add button::after { content: ''; position: absolute; inset: -4px -2px; }
 .poster-block:hover .poster-add, .poster-block:focus-within .poster-add, .poster-item:hover .poster-add, .poster-item:focus-within .poster-add { opacity: 1; }
 .poster-add--icon { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 2; }
 /* Where the press sits among many like it, it shows on its own cell, step or stakeholder only, at a full target, clear of the words. */
 .poster-band__cell > .poster-add button, .poster-st > .poster-add button, .poster-person-row > .poster-add button { min-width: var(--canvas-target); height: var(--canvas-target); }
+.poster-band__cell > .poster-add button::after, .poster-st > .poster-add button::after, .poster-person-row > .poster-add button::after { inset: 0; }
+/* A step with presses keeps their column clear, so on hover they stand beside its words, not over their end. */
+.poster-st:has(> .poster-add) .poster-step,
+.poster-band__cell:has(> .poster-add) > .poster-st:last-of-type .poster-step { padding-inline-end: calc(var(--canvas-target) + 2px); }
 .poster-block:hover .poster-band__cell > .poster-add, .poster-block:hover .poster-st > .poster-add, .poster-block:hover .poster-person-row > .poster-add { opacity: 0; }
 .poster-block .poster-band__cell:hover > .poster-add, .poster-block .poster-band__cell:focus-within > .poster-add,
 .poster-block .poster-st:hover > .poster-add, .poster-block .poster-st:focus-within > .poster-add,

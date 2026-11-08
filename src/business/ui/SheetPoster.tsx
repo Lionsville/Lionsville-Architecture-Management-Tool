@@ -59,8 +59,12 @@ type Facts = {
   unit: string
   /** The applications filed in a subscope it is handed to: read, and never counted as coverage. */
   via: string
-  /** What a label on the tile says, where one shows at reading distance. */
+  /** What a label on the tile says, where one shows at reading distance: the first unit's name. */
   label?: string
+  /** How many more units answer for it than the label names: drawn as +N, which an ellipsis never cuts. */
+  labelMore?: number
+  /** Every unit's name, for the label's title. */
+  labelAll?: string
   /** The label names something that is not a unit. */
   labelTyped?: boolean
   /** The label says nobody answers for it: its mark is hollow, as no unit's is. */
@@ -145,7 +149,12 @@ function TileWords({ element, inside, value, facts, labelled, mark, t }: {
       {value?.heat !== undefined && <span className="poster-tile__value">{value.said}</span>}
       <span className="poster-tile__name"><CanvasName text={element.name} /></span>
       {facts?.apps && <span className="poster-tile__near">{facts.apps}</span>}
-      {labelled && facts?.label !== undefined && <span className="poster-tile__label" data-tile-label={element.id} data-typed={facts.labelTyped ? '' : undefined} data-none={facts.labelNone ? '' : undefined}>{facts.label}</span>}
+      {labelled && facts?.label !== undefined && (
+        <span className="poster-tile__label" data-tile-label={element.id} data-typed={facts.labelTyped ? '' : undefined} data-none={facts.labelNone ? '' : undefined} title={facts.labelAll}>
+          <span className="poster-tile__labelName">{facts.label}</span>
+          {facts.labelMore ? <span className="poster-tile__labelMore">+{facts.labelMore}</span> : null}
+        </span>
+      )}
       {last && <span className="poster-tile__near" data-via={facts?.via ? '' : undefined}>{last}</span>}
       {inside > 0 && <span className="poster-tile__inside" title={t('sheet.poster.inside', { count: inside })}>+{inside}</span>}
     </>
@@ -554,7 +563,8 @@ function useFactsOf(props: SheetPosterProps) {
     const labels = new Set(sheet?.labels ?? [])
     const ofOne = (element: DesignElement) => {
       const held = coverageAt(element.id)
-      const unit = held.assignedTo.map((one) => named.current(one)).join(', ')
+      const names = held.assignedTo.map((one) => named.current(one))
+      const unit = names.join(', ')
       const units = typed.current?.units(element.id) ?? []
       const showsLabel = lens === 'who' || labels.has(element.id)
       const handed = element.scopes?.[0]
@@ -562,7 +572,8 @@ function useFactsOf(props: SheetPosterProps) {
       facts.set(element.id, {
         apps: held.supportedBy.map((one) => named.current(one)).join(', '),
         unit, via,
-        ...(showsLabel ? { label: unit || t('sheet.lens.who.nobody'), labelTyped: unit !== '' && units.length === 0 && typed.current !== undefined, labelNone: unit === '' } : {}),
+        // The first unit and +N: a list of names cut by an ellipsis read Dispatcher, Dr… and hid a unit just dropped on.
+        ...(showsLabel ? { label: names[0] ?? t('sheet.lens.who.nobody'), labelMore: Math.max(0, names.length - 1), labelAll: unit, labelTyped: unit !== '' && units.length === 0 && typed.current !== undefined, labelNone: unit === '' } : {}),
       })
     }
     for (const area of laidOut.areas) {
