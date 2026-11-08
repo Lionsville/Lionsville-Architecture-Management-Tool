@@ -9,7 +9,7 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { workingFileBytes } from '../adapters/folder/format/workingFile'
 import { manifestOf } from '../adapters/folder/format/workingFileManifest'
 import { WORKING_FILE_INTERCHANGE } from '../adapters/folder/format/interchange'
-import { landWorkingFile as landThrough } from './workingFileFlows'
+import { landingSentence, landWorkingFile as landThrough } from './workingFileFlows'
 import type { LandingPrompts, WorkingFileDestination } from './workingFileFlows'
 
 /** A landing through the working file's own interchange, as the composition hands the app one. */
@@ -194,6 +194,11 @@ describe('a landing, read back and held to the file (ADR-0023, amended)', () => 
       'Opened org.lvarch: 3 scopes, 3 views, all there.',
       'success',
     ])
+  })
+
+  it('says one scope and one view in the singular', () => {
+    const arrival = { accounted: true, totals: { scopes: 1, views: 1, parts: 3 } }
+    expect(landingSentence('org.lvarch', arrival as never, s)).toBe('Opened org.lvarch: 1 scope, 1 view, all there.')
   })
 
   it('names the scope that did not arrive, rather than saying "loaded"', async () => {

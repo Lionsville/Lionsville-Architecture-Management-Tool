@@ -21,6 +21,7 @@ import Box from '@mui/material/Box'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@mui/material/styles'
 import { LanguageProvider } from '../i18n'
+import { plural } from '../i18n/strings'
 import type { StringKey, Translate } from '../i18n'
 import '../widgets/kit/fonts/fonts.css'
 import type { Command, ElementId } from '../model'
@@ -760,7 +761,7 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
 function copyAbout(tree: ScopeSummary, s: Translate) {
   const every = flattenScopes(tree)
   const views = every.reduce((sum, scope) => sum + scope.diagrams, 0)
-  return { name: tree.name.trim() || s('common.organisation'), holds: s('seal.holds', { scopes: every.length, views }) }
+  return { name: tree.name.trim() || s('common.organisation'), holds: s('seal.holds', { scopes: plural(s, { one: 'org.scopesOne', other: 'org.scopesOther' }, every.length), views: plural(s, { one: 'seal.viewsOne', other: 'seal.viewsOther' }, views) }) }
 }
 
 /**

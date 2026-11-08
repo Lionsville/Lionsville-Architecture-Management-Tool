@@ -95,7 +95,7 @@ describe('the open scope\'s pictures in a working file', () => {
     view.send({ type: 'openDocument', name: 'theirs.lvarch', bytes: theirs.bytes })
     await waitFor(() => expect(screen.getByTestId('open-into-here')).toBeDefined())
     fireEvent.click(screen.getByTestId('open-into-here'))
-    await waitFor(() => expect(screen.getByText(/views, all there/)).toBeDefined())
+    await waitFor(() => expect(screen.getByText(/views?, all there/)).toBeDefined())
 
     expect(await exported(view, 1)).toContain('landscape/images/yard.png')
   })

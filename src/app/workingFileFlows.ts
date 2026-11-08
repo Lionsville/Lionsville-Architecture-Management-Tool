@@ -9,6 +9,7 @@
  * Both answer `undefined` for a cancel, and a cancel is silent — a person who
  * closed a dialog does not need a toast to say they did.
  */
+import { plural } from '../i18n/strings'
 import type { Translate } from '../i18n'
 import type { SavedDocument } from '../ports/DocumentGateway'
 import type { Arrival, BringOptions, BroughtIn, CarriedOut, Interchange, Opened } from '../ports/Interchange'
@@ -265,7 +266,7 @@ async function destinationQuestion(args: Parameters<typeof landWorkingFile>[0], 
 export function holdsInWords(opened: OpenedWorkingFile, s: Translate): string {
   const all = [opened.top, ...opened.rest]
   const views = all.reduce((sum, scope) => sum + scope.model.diagrams.length, 0)
-  return s('openInto.holds', { scopes: all.length, views })
+  return s('openInto.holds', { scopes: plural(s, { one: 'org.scopesOne', other: 'org.scopesOther' }, all.length), views: plural(s, { one: 'seal.viewsOne', other: 'seal.viewsOther' }, views) })
 }
 
 /**
@@ -312,7 +313,9 @@ export function landingSentence(name: string, arrival: Arrival, s: Translate): s
   if (!arrival.short) {
     const { totals } = arrival
     return s(arrival.accounted ? 'shell.workingFileArrived' : 'shell.workingFileArrivedOwn', {
-      name, scopes: String(totals.scopes), views: String(totals.views), files: String(totals.parts),
+      name, files: String(totals.parts),
+      scopes: plural(s, { one: 'org.scopesOne', other: 'org.scopesOther' }, totals.scopes),
+      views: plural(s, { one: 'seal.viewsOne', other: 'seal.viewsOther' }, totals.views),
     })
   }
   const scopeName = (address: ScopePath) => arrival.scopes.find((scope) => scope.address === address)?.name ?? address
