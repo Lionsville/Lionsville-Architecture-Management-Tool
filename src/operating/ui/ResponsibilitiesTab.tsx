@@ -61,8 +61,8 @@ const PART = (group: string) => `part:${group}`
 const ALL = 'all'
 const OTHERS = 'others'
 
-/** Up to this many roles the whole organisation's grid still has room for their full names. */
-const FULL_NAMES_UP_TO = 8
+/** Up to this many roles the grid has room for their names across; past it they stand on their side, never shortened. */
+const ACROSS_UP_TO = 8
 
 export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, look, onLook, view, onView, arranging, onArrange, selected, onSelect, onMade, onSave, onOpenUnit }: RaciTabProps) {
   const { t } = useStrings()
@@ -121,7 +121,7 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
                 grid={grid} allRoles={model.roles} readOnly={readOnly} dispatch={dispatch} pick={pick} onPick={setPick}
                 litRole={model.roles.some((role) => role.id === selected) ? selected : undefined}
                 onFoldNone={(folded) => setNoneOpen(!folded)}
-                onOpenRole={onSelect} onOpenRow={onSelect} fullNames={(!look.whole && !look.needs) || grid.columns.length + grid.folded.length <= FULL_NAMES_UP_TO} unit={unit} facts={facts}
+                onOpenRole={onSelect} onOpenRow={onSelect} rotateNames={grid.columns.length + grid.folded.length > ACROSS_UP_TO} unit={unit} facts={facts}
                 label={title}
               />
             )}

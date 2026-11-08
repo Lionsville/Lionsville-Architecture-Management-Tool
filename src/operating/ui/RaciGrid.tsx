@@ -18,7 +18,6 @@ import { Button } from '../../widgets/kit/Button'
 import { Matrix } from '../../widgets/kit/Matrix'
 import type { MatrixCell, MatrixPick, MatrixRowDef } from '../../widgets/kit/Matrix'
 import { cycleRaci, setRaci } from '../edit'
-import { roleHeading } from '../matrixView'
 import { needOf } from '../raciView'
 import type { RaciGrid as Grid } from '../raciView'
 import type { OrganisationFacts, UnitFact } from '../organisationFacts'
@@ -31,12 +30,12 @@ export const needWords = (count: number, t: Translate): string => (count === 0 ?
 
 const GROUP = (name: string) => `group:${name}`
 
-export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, litRole, onOpenRole, onOpenRow, fullNames, unit, facts, label, onFoldNone }: {
+export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, litRole, onOpenRole, onOpenRow, rotateNames, unit, facts, label, onFoldNone }: {
   grid: Grid; allRoles: readonly Role[]; readOnly: boolean; dispatch(command: Command): void
   pick: MatrixPick | null; onPick(pick: MatrixPick | null): void
   litRole: string | undefined; onOpenRole(id: string): void; onOpenRow(id: string): void
-  /** A part or a unit shows roles by their full name; the whole organisation by their short one. */
-  fullNames: boolean
+  /** Many roles turn their names on their side rather than shorten them: a short name left most of the row empty. */
+  rotateNames: boolean
   unit: UnitFact | undefined; facts: OrganisationFacts | undefined; label: string
   /** Told when the + column of roles with no part is opened or folded again. */
   onFoldNone?: (folded: boolean) => void
@@ -45,11 +44,11 @@ export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, lit
   const roles = useMemo(() => new Map(allRoles.map((role) => [role.id, role])), [allRoles])
   const columns = useMemo(() => [
     ...grid.columns.map((role) => ({
-      id: role.id, label: fullNames ? role.name : roleHeading(role),
+      id: role.id, label: role.name,
       ...(unit ? { under: <HolderWords holders={facts?.holdersIn(unit.id, role.id) ?? []} t={t} /> } : {}),
     })),
-    ...grid.folded.map((role) => ({ id: role.id, label: fullNames ? role.name : roleHeading(role), group: 'none' })),
-  ], [grid, fullNames, unit, facts, t])
+    ...grid.folded.map((role) => ({ id: role.id, label: role.name, group: 'none' })),
+  ], [grid, unit, facts, t])
   const rows = useMemo<MatrixRowDef[]>(() => {
     const out: MatrixRowDef[] = []
     let last: string | undefined
@@ -79,7 +78,7 @@ export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, lit
   return (
     <>
       <Matrix
-        label={label} rowHeading={t('operating.responsibility')} rows={rows} columns={columns} wrapRows
+        label={label} rowHeading={t('operating.responsibility')} rows={rows} columns={columns} wrapRows rotateHeads={rotateNames}
         columnGroups={grid.folded.length ? [{ id: 'none', label: t('operating.noPartColumn'), short: `+${grid.folded.length}` }] : []}
         defaultFoldedGroups={['none']} cellOf={cellOf} answer={answer} selected={pick} onSelect={onPick}
         litColumn={litRole} onOpenColumn={onOpenRole} onOpenRow={onOpenRow}
