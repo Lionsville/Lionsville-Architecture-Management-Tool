@@ -39,7 +39,7 @@ import {
   ARCHIVED_LABEL, IMPACT_LABEL, OUTCOME_LABEL, PHASE_LABEL, STATE_LABEL,
 } from '../../observations/observationScope'
 import { PLAN_STATUS_LABEL } from '../../roadmap/labels'
-import { searchAll } from '../search'
+import { SEARCH_LIMIT_PER_KIND, searchAll } from '../search'
 import type { PeopleMatch, SearchHit, SearchSource } from '../search'
 
 export type GlobalSearchDialogProps = {
@@ -74,6 +74,8 @@ export type PaletteLine = {
    * record's description is a weaker answer than a name.
    */
   readonly lead?: boolean
+  /** Changes what the dialog lists rather than leaving it: it stays open. */
+  readonly stays?: boolean
   readonly run: () => void
 }
 
@@ -195,17 +197,14 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
    */
   const asked = useDeferredValue(query)
 
-  const found = useMemo(
-    () => (open ? searchAll({ sources, query: asked, ...(people ? { people } : {}) }) : []),
-    [open, sources, asked, people],
-  )
+  const { found, more: showAll } = useFoundWithMore(open, sources, asked, people, s)
   // Keyed on the query the list was built from, not on the one being typed: the
   // highlight resets when the rows it points into change.
   useEffect(() => setActiveIndex(0), [asked])
 
   const offered = useMemo(() => (open && more ? more(asked) : []), [open, more, asked])
   const ahead = useMemo(() => offered.filter((line) => line.lead), [offered])
-  const lines = useMemo(() => offered.filter((line) => !line.lead), [offered])
+  const lines = useMemo(() => [...showAll, ...offered.filter((line) => !line.lead)], [offered, showAll])
   // A view found by name across the tree is a line ahead; the same view as a record of this scope would be said twice.
   const leadIds = useMemo(() => new Set(ahead.map((line) => line.id)), [ahead])
   const hits = useMemo(() => found.filter((hit) => !(hit.kind === 'view' && leadIds.has(`view:${hit.id}`))), [found, leadIds])
@@ -228,7 +227,7 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
     onClose()
   }
   const run = (line: PaletteLine) => {
-    onClose()
+    if (!line.stays) onClose()
     line.run()
   }
   const chooseAt = (index: number) => {
@@ -353,6 +352,39 @@ function runsOfGroup(lines: readonly PaletteLine[]): { group: string; from: numb
 }
 
 /** The hits in runs of one kind, in the order they came, with where each run starts. */
+/**
+ * The hits, and a line under them for each kind cut to the dialog's number,
+ * which lists the rest of that kind: one more than shown is searched for, so a
+ * kind that has more says so.
+ */
+function useFoundWithMore(open: boolean, sources: readonly SearchSource[], asked: string, people: PeopleMatch | undefined, s: Translate) {
+  const [whole, setWhole] = useState<ReadonlySet<SearchKind>>(new Set())
+  useEffect(() => setWhole(new Set()), [open, asked])
+  const { found, cut } = useMemo(
+    () => (open ? searchWithMore(sources, asked, people, whole) : { found: [], cut: new Set<SearchKind>() }),
+    [open, sources, asked, people, whole],
+  )
+  const more = useMemo(() => [...cut].map((kind): PaletteLine => ({
+    id: `all:${kind}`, group: s('gsearch.more'), label: s('gsearch.showAllOf', { kind: s(KIND_LABEL[kind]) }), stays: true,
+    run: () => setWhole((was) => new Set(was).add(kind)),
+  })), [cut, s])
+  return { found, more }
+}
+
+/** The hits, each kind cut to the dialog's number unless it was asked for whole, and which kinds had more than that. */
+function searchWithMore(sources: readonly SearchSource[], query: string, people: PeopleMatch | undefined, whole: ReadonlySet<SearchKind>) {
+  const asked = { sources, query, ...(people ? { people } : {}) }
+  const hits = searchAll({ ...asked, limitPerKind: SEARCH_LIMIT_PER_KIND + 1 })
+  const cut = new Set<SearchKind>()
+  const found: SearchHit[] = []
+  for (const { kind, run } of runsOfKind(hits)) {
+    if (whole.has(kind)) { found.push(...searchAll({ ...asked, kinds: [kind], limitPerKind: Number.MAX_SAFE_INTEGER })); continue }
+    if (run.length > SEARCH_LIMIT_PER_KIND) cut.add(kind)
+    found.push(...run.slice(0, SEARCH_LIMIT_PER_KIND))
+  }
+  return { found, cut }
+}
+
 function runsOfKind(hits: readonly SearchHit[]): { kind: SearchKind; from: number; run: SearchHit[] }[] {
   const runs: { kind: SearchKind; from: number; run: SearchHit[] }[] = []
   hits.forEach((hit, index) => {

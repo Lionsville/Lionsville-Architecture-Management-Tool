@@ -136,3 +136,16 @@ describe('what the chip beside a title says', () => {
     expect(onChoose).toHaveBeenCalledWith(expect.objectContaining({ id: 'ob-w', scope: 'shop/warehouse' }))
   })
 })
+
+describe('a kind with more hits than it shows', () => {
+  it('says so, and shows them all on a press', async () => {
+    const many = treeSources({ scope: 'shop', model: { ...model, elements: Array.from({ length: 12 }, (_, at) => element(`gate-${at}`, `Gateway ${at}`)) }, above: [], tree: [] })
+    renderShell(<GlobalSearchDialog open sources={many} scopeLabel={scopeLabel} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'gateway' } })
+    expect(screen.getAllByRole('option').filter((one) => /Gateway/.test(one.textContent ?? ''))).toHaveLength(8)
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByTestId('palette-all:element'))
+    expect(screen.getAllByRole('option').filter((one) => /Gateway/.test(one.textContent ?? ''))).toHaveLength(12)
+    expect(screen.queryByTestId('palette-all:element')).toBeNull()
+  })
+})
