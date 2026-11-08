@@ -466,7 +466,7 @@ export const GROWN = {
   'src/editor/edges/FloatingEdge.tsx': { complexity: 58, lines: 471 },
   'src/editor/graph.ts': { complexity: 37 },
   'src/editor/use-canvas-shortcuts.ts': { complexity: 33 },
-  'src/editor/useEditorState.ts': { lines: 728 },
+  'src/editor/useEditorState.ts': { lines: 726 },
   'src/layout/tidy.ts': { complexity: 26, lines: 176 },
   'src/model/activity.ts': { complexity: 83 },
   'src/model/platformReport.ts': { complexity: 26 },
