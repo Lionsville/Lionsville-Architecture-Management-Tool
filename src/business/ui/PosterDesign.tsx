@@ -13,12 +13,14 @@
  * here has a way for the keyboard: Space lifts a block, the arrows move it a grid step,
  * ⇧ resizes, Alt steps a unit, Space drops and Esc puts it back.
  */
-import { useCallback, useRef } from 'react'
+import { useCallback, useContext, useRef } from 'react'
 import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent, ReactNode } from 'react'
 import type { DomainGroupRect, ElementId, NodeGeometry, PosterCell, PosterItem as PosterItemRecord, PosterItemPlace } from '../../model'
 import type { Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
 import { Button } from '../../widgets/kit/Button'
+import { MoreMenu } from '../../widgets/kit/Menu'
+import { PosterStripNarrow } from './posterStrip'
 import { POSTER_COLUMN_ID, POSTER_TILE, POSTER_TILES, overlapsOf } from '../posterLayout'
 import type { PosterBlock } from '../posterLayout'
 import { freeCorner, posterBlockFloor } from '../posterPlaces'
@@ -450,6 +452,33 @@ export function DesignBar({ actions, places, onPaperLayout, onAddArea, fromAbove
   const crossing = overlapsOf(places.blocks)
   const overlaps = crossing.length
   const said = plural(t, { one: 'sheet.poster.overlapOne', other: 'sheet.poster.overlapOther' }, overlaps)
+  // Short of room, the bar keeps Undo, Redo and + area out and the rest under ⋯, so the strip stays one line.
+  const narrow = useContext(PosterStripNarrow).bar
+  if (narrow) {
+    return (
+      <div className="poster-bar" role="toolbar" aria-label={t('sheet.poster.design')} data-testid="poster-design-bar">
+        <Button variant="quiet" size="small" onClick={actions.undo}>{t('sheet.poster.undo')}</Button>
+        <Button variant="quiet" size="small" onClick={actions.redo}>{t('sheet.poster.redo')}</Button>
+        <span className="kit-dock__rule" />
+        <Button variant="quiet" size="small" onClick={onAddArea}>{t('sheet.addArea')}</Button>
+        {fromAbove}
+        <MoreMenu
+          size="small" label={t('sheet.poster.design')}
+          items={[
+            { label: t('sheet.poster.addNote'), onSelect: onNote, 'data-testid': 'poster-add-note' },
+            { label: t('sheet.poster.addPicture'), onSelect: onPicture },
+            { label: t('sheet.poster.firstLayout'), onSelect: actions.firstLayout, 'data-testid': 'poster-first-layout' },
+            { label: t('sheet.poster.resetTiles'), onSelect: actions.resetTiles },
+            { label: t('sheet.poster.paperLayout'), onSelect: onPaperLayout },
+          ]}
+        />
+        {overlaps > 0 && (onShowOverlap
+          ? <Button variant="quiet" size="small" data-testid="poster-overlaps" onClick={() => onShowOverlap([...new Set(crossing.flatMap((one) => [one.a, one.b]))])}><span className="poster-bar__warn">{said}</span></Button>
+          : <span className="poster-bar__warn" data-testid="poster-overlaps">{said}</span>)}
+        {places.waiting.length > 0 && <span className="poster-bar__warn" data-testid="poster-waiting">{plural(t, { one: 'sheet.poster.waitingOne', other: 'sheet.poster.waitingOther' }, places.waiting.length)}</span>}
+      </div>
+    )
+  }
   return (
     <div className="poster-bar" role="toolbar" aria-label={t('sheet.poster.design')} data-testid="poster-design-bar">
       <Button variant="quiet" size="small" onClick={actions.undo}>{t('sheet.poster.undo')}</Button>

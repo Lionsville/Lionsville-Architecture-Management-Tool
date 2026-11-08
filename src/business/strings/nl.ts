@@ -268,6 +268,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'sheet.poster.showLabel': 'Label tonen',
   'sheet.poster.showLabelSay': 'Alleen op deze poster. Weghalen laat de toewijzing staan; die beëindig je bij Staat ervoor.',
   'sheet.poster.cell': 'Positie',
+  'sheet.keyFold': 'Legenda',
   'sheet.poster.cellColumn': 'Kolom',
   'sheet.poster.cellRow': 'Rij',
   'sheet.poster.flow': 'Laten stromen',

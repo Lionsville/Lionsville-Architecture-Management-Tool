@@ -41,6 +41,7 @@ import { usePosterGestures } from './PosterDesign'
 import type { PosterDesign } from './PosterDesign'
 import { PosterItem } from './PosterItem'
 import { FIT_FLOOR, POSTER_ZOOM, usePosterCamera } from './posterCamera'
+import { PosterStripNarrow, useStripNarrow } from './posterStrip'
 import { unitTargets, UnitLabel } from './Responsible'
 import type { Who } from './Responsible'
 import { lookOf, valueWord } from './sheetLook'
@@ -626,6 +627,8 @@ function useTileMarks(stage: { current: HTMLDivElement | null }, marks: { select
 
 export function SheetPoster(props: SheetPosterProps) {
   const { laidOut, sheet, lens, valueOf, selectedId, onSelect, strip, only, lit, who, ownerLabel, domainName, domainKnown, day, design, handle, dockExtra, t } = props
+  const stripRef = useRef<HTMLDivElement>(null)
+  const narrow = useStripNarrow(stripRef)
   const places = useMemo(() => posterPlaces(laidOut, sheet ?? {}), [laidOut, sheet])
   const items = sheet?.poster?.items ?? EMPTY_ITEMS
   const itemPlaces = sheet?.geometry?.items
@@ -764,9 +767,9 @@ export function SheetPoster(props: SheetPosterProps) {
         </div>
         <div className="poster__say" ref={say} role="status" aria-live="polite" data-testid="poster-say" />
       </div>
-      <div className="poster__strip">
+      <div className="poster__strip" ref={stripRef} data-narrow={narrow.bar || undefined}>
         <Dock listen={listen} onGo={(how) => target.go(how)} extra={dockExtra} />
-        {strip}
+        <PosterStripNarrow.Provider value={narrow}>{strip}</PosterStripNarrow.Provider>
       </div>
       <Menu
         open={unitMenu !== undefined} anchorEl={unitMenu?.anchor ?? null} label={t('sheet.lens.who')} onClose={() => setUnitMenu(undefined)}

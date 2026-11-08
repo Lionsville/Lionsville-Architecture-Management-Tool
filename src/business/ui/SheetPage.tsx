@@ -27,7 +27,7 @@
  * the session, undoable with an Activity line, and selects what it made with the
  * cursor in its name. Under `readOnly`, and under a look, none of them is rendered.
  */
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, CSSProperties, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
@@ -42,6 +42,8 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { Band } from '../../widgets/kit/Band'
 import { tokenVar } from '../../widgets/kit/tokens'
 import { Button } from '../../widgets/kit/Button'
+import { SurfacePopover } from '../../widgets/kit/Surface'
+import { PosterStripNarrow } from './posterStrip'
 import { ColourMenu } from '../../widgets/kit/ColourMenu'
 import { DayControl } from '../../widgets/kit/DayControl'
 import type { DayGroup } from '../../widgets/kit/DayControl'
@@ -482,6 +484,26 @@ function onNamedRow(at: {
 /** Up to this many, a key keeps its values in the lens's order, flagged first; more are gathered by size. */
 const KEY_IN_ORDER = 6
 
+/** Under a poster short of room, the key is a press that opens it, so the strip stays one line. */
+function KeyFold({ children, t }: { children: ReactNode; t: Translate }) {
+  const narrow = useContext(PosterStripNarrow).key
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null)
+  if (!narrow) return <>{children}</>
+  return (
+    <>
+      <Button variant="quiet" size="small" aria-haspopup="dialog" aria-expanded={anchor !== null} data-testid="sheet-key-fold" onClick={(event) => setAnchor(anchor ? null : event.currentTarget)}>
+        {t('sheet.keyFold')} ▾
+      </Button>
+      <SurfacePopover
+        open={anchor !== null} anchorEl={anchor} onClose={() => setAnchor(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'left' }} transformOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      >
+        <div className="sheet-page__keyPop">{children}</div>
+      </SurfacePopover>
+    </>
+  )
+}
+
 /** The key, and the jump to what waits at the end of the page. */
 function KeyRow({ values, only, onOnly, onKeep, unmapped, onJump, t }: {
   values: readonly KeyValue[]
@@ -492,7 +514,7 @@ function KeyRow({ values, only, onOnly, onKeep, unmapped, onJump, t }: {
   onJump(): void
   t: Translate
 }) {
-  return (
+  const row = (
     <div className="sheet-page__keyRow">
       <KeyStrip values={values} all={values.length <= KEY_IN_ORDER} pressed={only} onPress={onOnly} data-guide="sheet.key" {...(onKeep ? { onKeep } : {})} />
       {unmapped > 0 && (
@@ -502,6 +524,7 @@ function KeyRow({ values, only, onOnly, onKeep, unmapped, onJump, t }: {
       )}
     </div>
   )
+  return <KeyFold t={t}>{row}</KeyFold>
 }
 
 /** The panel over the page, on what is chosen. */

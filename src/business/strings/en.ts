@@ -292,6 +292,7 @@ export const EN = {
   'sheet.poster.showLabel': 'Show label',
   'sheet.poster.showLabelSay': 'On this poster only. Taking it off leaves the assignment as it is; ending that is under Answers for it.',
   'sheet.poster.cell': 'Position',
+  'sheet.keyFold': 'Key',
   'sheet.poster.cellColumn': 'Column',
   'sheet.poster.cellRow': 'Row',
   'sheet.poster.flow': 'Let it flow',

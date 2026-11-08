@@ -12,6 +12,8 @@
 .sheet-page__keyRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-4); border-bottom: 1px solid var(--line); }
 .sheet-page__keyRow .kit-key { border: 0; box-shadow: none; background: transparent; padding: 0; }
 .sheet-page__keyEnd { margin-inline-start: auto; }
+.sheet-page__keyPop { max-width: min(40rem, 90vw); padding: var(--s-2); }
+.sheet-page__keyPop .sheet-page__keyRow { padding: 0; }
 .sheet-page > .sheet-page__keyRow { border-bottom: 0; border-top: 1px solid var(--line); }
 .sheet-page__link { min-height: var(--target-min);  appearance: none; border: 0; padding: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
 .sheet-page__link:focus-visible,

@@ -8,6 +8,7 @@ import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
 import { translator } from '../../i18n'
 import { DesignBar } from './PosterDesign'
+import { PosterStripNarrow } from './posterStrip'
 
 afterEach(cleanup)
 
@@ -18,5 +19,19 @@ describe('the design bar', () => {
     renderShell(<DesignBar actions={{} as never} places={places as never} onPaperLayout={vi.fn()} onAddArea={vi.fn()} onNote={vi.fn()} onPicture={vi.fn()} onShowOverlap={onShowOverlap} t={translator('en')} />)
     fireEvent.click(screen.getByTestId('poster-overlaps'))
     expect(onShowOverlap).toHaveBeenCalledWith(['a', 'b'])
+  })
+
+  it('keeps Undo, Redo and + area out where the strip is short of room, and the rest under ⋯', () => {
+    const firstLayout = vi.fn()
+    renderShell(
+      <PosterStripNarrow.Provider value={{ bar: true, key: false }}>
+        <DesignBar actions={{ firstLayout } as never} places={{ blocks: [], waiting: [] } as never} onPaperLayout={vi.fn()} onAddArea={vi.fn()} onNote={vi.fn()} onPicture={vi.fn()} t={translator('en')} />
+      </PosterStripNarrow.Provider>,
+    )
+    expect(screen.getByRole('button', { name: 'Undo' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'First layout' })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Design' }))
+    fireEvent.click(screen.getByTestId('poster-first-layout'))
+    expect(firstLayout).toHaveBeenCalled()
   })
 })

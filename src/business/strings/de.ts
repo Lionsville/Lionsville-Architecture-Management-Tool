@@ -268,6 +268,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.poster.showLabel': 'Beschriftung zeigen',
   'sheet.poster.showLabelSay': 'Nur auf diesem Poster. Entfernen lässt die Zuordnung bestehen; beendet wird sie unter Verantwortet es.',
   'sheet.poster.cell': 'Position',
+  'sheet.keyFold': 'Legende',
   'sheet.poster.cellColumn': 'Spalte',
   'sheet.poster.cellRow': 'Zeile',
   'sheet.poster.flow': 'Fließen lassen',
