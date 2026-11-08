@@ -13,7 +13,9 @@
  * by the topics relevant to it, and shows each match flat with its path, so
  * nothing needs unfolding.
  */
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { RefObject } from 'react'
+import { CaretIcon } from '../../widgets/icons'
 import type { Language, Translate } from '../../i18n'
 import type { Destination, Page } from '../../agent/screen'
 import { flattenScopes, sortScopes } from '../../projects/scope'
@@ -116,6 +118,42 @@ function menuFor(scope: ScopeSummary, acts: TreeActs, onHome: (path: ScopePath) 
   ]
 }
 
+/** How many scope rows the tree keeps before the foot gives up its room. */
+const SCOPE_ROWS_KEPT = 6
+
+/**
+ * Whether the foot stands folded: what the person chose, or, until they
+ * choose, folded when opening it would leave the scopes fewer than
+ * {@link SCOPE_ROWS_KEPT} rows — a short window, a large text size. The
+ * scopes are what the tree is for; the places across the organisation are
+ * also in row two.
+ */
+function useFootFold(panel: RefObject<HTMLDivElement | null>, rows: RefObject<HTMLDivElement | null>, foot: RefObject<HTMLDivElement | null>) {
+  const [chosen, choose] = useState<boolean | undefined>(undefined)
+  const [short, setShort] = useState(false)
+  const openHeight = useRef(0)
+  useLayoutEffect(() => {
+    const whole = panel.current
+    if (!whole || typeof ResizeObserver === 'undefined') return undefined
+    const measure = () => {
+      const list = rows.current
+      const end = foot.current
+      // Nothing laid out (a hidden window, a test's document) is no reason to fold.
+      if (!list || !end || whole.clientHeight === 0) return
+      const body = end.querySelector<HTMLElement>('.kit-tree__foot-body')
+      if (body && !body.hidden) openHeight.current = end.scrollHeight
+      const row = list.querySelector<HTMLElement>('.kit-tree__row')?.offsetHeight || 32
+      const room = whole.clientHeight - (list.offsetTop - whole.offsetTop)
+      setShort(room - openHeight.current < SCOPE_ROWS_KEPT * row)
+    }
+    const watch = new ResizeObserver(measure)
+    watch.observe(whole)
+    measure()
+    return () => watch.disconnect()
+  }, [panel, rows, foot])
+  return { folded: chosen ?? short, toggle: () => choose(!(chosen ?? short)) }
+}
+
 export function ScopeTreePanel({
   tree, at, page, order, onOrderChange, folds, holdings, onHome, go, writable, typeLink, placeFact, today, language, s, ...acts
 }: ScopeTreePanelProps) {
@@ -133,8 +171,12 @@ export function ScopeTreePanel({
   const topicRows = useMemo(() => topicRowsOf(listed, today), [listed, today])
   const name = tree.name.trim() || s('common.organisation')
   const menuOf = (scope: ScopeSummary) => menuFor(scope, acts, onHome, writable, s)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const rowsRef = useRef<HTMLDivElement>(null)
+  const footRef = useRef<HTMLDivElement>(null)
+  const { folded, toggle } = useFootFold(panelRef, rowsRef, footRef)
   return (
-    <div className="kit-tree" data-testid="scope-tree-panel">
+    <div className="kit-tree" data-testid="scope-tree-panel" ref={panelRef}>
       <div className="kit-tree__find">
         <FindField
           fill label={s('frame.findScope')} value={find} data-testid="tree-find" onChange={setFind}
@@ -163,7 +205,7 @@ export function ScopeTreePanel({
           ]}
         />
       </div>
-      <div className="kit-tree__rows">
+      <div className="kit-tree__rows" ref={rowsRef}>
         <div className="kit-tree__head" aria-hidden="true"><span>{s('org.treeScopes')}</span><span>{s('org.treeHolds')}</span></div>
         {matching === undefined && (
           <RootRow
@@ -182,8 +224,12 @@ export function ScopeTreePanel({
           {...(typeLink ? { typeLink } : {})}
         />
       </div>
-      <div className="kit-tree__foot" data-testid="tree-foot">
-        <div className="kit-tree__heading">{s('frame.acrossOrganisation')}</div>
+      <div className="kit-tree__foot" data-testid="tree-foot" ref={footRef}>
+        <button type="button" className="kit-tree__heading" aria-expanded={!folded} aria-controls="kit-tree-foot-body" data-testid="tree-foot-fold" onClick={toggle}>
+          <span>{s('frame.acrossOrganisation')}</span>
+          <CaretIcon />
+        </button>
+        <div className="kit-tree__foot-body" id="kit-tree-foot-body" hidden={folded}>
         {ORGANISATION_PLACES.map((place) => {
           const fact = placeFact?.(place.page)
           return (
@@ -209,6 +255,7 @@ export function ScopeTreePanel({
             </Fragment>
           )
         })}
+        </div>
       </div>
     </div>
   )

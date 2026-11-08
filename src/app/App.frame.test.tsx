@@ -164,6 +164,17 @@ describe('row two on a home', () => {
 })
 
 describe('the foot of the tree', () => {
+  it('folds to its heading on a press, and opens again, leaving the scopes the room', async () => {
+    await home()
+    const fold = screen.getByTestId('tree-foot-fold')
+    expect(fold.getAttribute('aria-expanded')).toBe('true')
+    fireEvent.click(fold)
+    expect(fold.getAttribute('aria-expanded')).toBe('false')
+    expect(screen.getByTestId('tree-place-register').closest('[hidden]')).not.toBeNull()
+    fireEvent.click(fold)
+    expect(screen.getByTestId('tree-place-register').closest('[hidden]')).toBeNull()
+  })
+
   it('says what its entries hold, each word going to that page by its own address', async () => {
     await home()
     const press = async (word: string) => {

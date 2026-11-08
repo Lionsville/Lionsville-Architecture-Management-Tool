@@ -77,9 +77,16 @@
 /* In the rows that scroll, so that a scrollbar cannot pull the heading off its column. */
 .kit-tree__head { position: sticky; top: 0; z-index: 1; display: flex; justify-content: space-between; padding-block: var(--s-1); padding-inline: var(--s-3) var(--kit-tree-end); font-size: var(--t-small); color: var(--ink-2); background: var(--surface); }
 .kit-tree__empty { margin: 0; padding: var(--s-2) var(--s-3); font-size: var(--t-small); color: var(--ink-2); }
-.kit-tree__rows { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-.kit-tree__foot { flex: 0 1 auto; max-height: 50%; overflow-y: auto; border-top: 1px solid var(--line); padding-block: var(--s-1); }
-.kit-tree__heading { padding: var(--s-1) var(--s-3); font-size: var(--t-small); color: var(--ink-2); }
+/* The scopes keep six rows whatever the foot holds: the foot scrolls, or folds to its heading, first. */
+.kit-tree__rows { flex: 1 1 auto; min-height: min(calc(6 * var(--row-h)), 50%); overflow-y: auto; }
+.kit-tree__foot { flex: 0 1 auto; min-height: 0; max-height: 50%; overflow-y: auto; border-top: 1px solid var(--line); padding-block: var(--s-1); }
+.kit-tree__heading {
+  display: flex; align-items: center; justify-content: space-between; width: 100%; appearance: none; border: 0; background: none; font: inherit; cursor: pointer;
+  padding: var(--s-1) var(--s-3); padding-inline-end: var(--kit-tree-end); font-size: var(--t-small); color: var(--ink-2); text-align: start;
+}
+.kit-tree__heading:hover { background: var(--surface-2); }
+.kit-tree__heading:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(0px - var(--focus-ring-width)); }
+.kit-tree__heading[aria-expanded='false'] svg { transform: rotate(-90deg); }
 .kit-tree__row {
   display: flex; align-items: center; min-height: var(--row-h); min-width: 0; cursor: pointer; padding-inline-end: var(--s-1); border-inline-start: 2px solid transparent;
 }
