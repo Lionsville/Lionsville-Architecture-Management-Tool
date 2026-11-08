@@ -105,6 +105,8 @@ export type ChainProps = {
   onDragStart: ((id: ElementId) => void) | undefined
   onDragOverRow(key: NodeKey | undefined): void
   onDropRow(key: NodeKey): void
+  /** An application is being dragged: the lines of what was picked before recede while it is. */
+  dragging?: boolean
   groupLabel(key: string, label: string | undefined): string
 }
 
@@ -187,6 +189,7 @@ export function LandscapeChain(props: ChainProps) {
       className="tl-board"
       data-columns={showing.services ? 3 : 2}
       data-testid="landscape-board"
+      data-dragging={props.dragging || undefined}
       onMouseOver={onHover}
       onMouseLeave={() => showing.setHovered(undefined)}
       onDoubleClick={onDouble}

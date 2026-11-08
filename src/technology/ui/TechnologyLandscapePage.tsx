@@ -316,8 +316,10 @@ function useGestures(props: TechnologyLandscapePageProps, landscape: TechnologyL
       return
     }
     toggle(app.id, key)
+    // The application dragged is picked, so the line it was just given is drawn.
+    choose(nodeKey.application(app.id))
   }
-  return { ticking, setTicking, recordUp, setRecordUp, setDragging, dropTarget, setDropTarget, nameOf, writes, appOf, press, dropWord, drop }
+  return { ticking, setTicking, recordUp, setRecordUp, dragging, setDragging, dropTarget, setDropTarget, nameOf, writes, appOf, press, dropWord, drop }
 }
 
 /** Most of a sheet of A3 at a good resolution: the whole page, and small enough to send to somebody. */
@@ -548,7 +550,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
               <div className="tl-scroll" data-testid="landscape-body" ref={page}>
                 {chain ? (
                   <LandscapeChain
-                    showing={showing} landscape={shown} markOf={markOf} quiet={colouring.quiet} dropTarget={gestures.dropTarget} groupLabel={groupLabel}
+                    showing={showing} landscape={shown} markOf={markOf} quiet={colouring.quiet} dropTarget={gestures.dropTarget} dragging={gestures.dragging !== undefined} groupLabel={groupLabel}
                     noteOfApplication={notes.application} noteOfService={notes.service} noteOfPlatform={notes.platform}
                     onPress={gestures.press} onOpen={open}
                     onAdd={add ? (kind, parentId, at) => setAdding({ kind, ...(parentId !== undefined ? { parentId } : {}), at: at ?? { x: 400, y: 200 } }) : undefined}

@@ -90,3 +90,6 @@
 .tl-report h2 { margin: 0 0 var(--s-1); font-size: var(--t-body); font-weight: var(--fw-strong); }
 .tl-reportEmpty { margin: 0; color: var(--ink-3); }
 .tl-reportBack { padding: var(--s-2) var(--s-4) 0; }
+
+/* While an application is dragged, the lines of what was picked before recede: the drop is what is being said. */
+.tl-board[data-dragging] .tl-lines { opacity: var(--dim-opacity); }
