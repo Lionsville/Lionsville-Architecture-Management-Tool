@@ -14,7 +14,8 @@ import type { MarkdownEditor as MarkdownEditorShape } from '../../documentation/
 import { lazyPart } from '../../widgets/lazyPart'
 import { PencilIcon } from '../../widgets/icons'
 import { DateInput, PropertyRow, PropertyRows } from '../../widgets/kit/Field'
-import { MoreMenu } from '../../widgets/kit/Menu'
+import type { MenuEntry } from '../../widgets/kit/Menu'
+import { RecordActions } from '../../widgets/kit/RecordActions'
 import { setDay, setSuccessors } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
 import { entryOf } from '../library'
@@ -177,27 +178,41 @@ export function ReaderActions({ children, away }: { children?: ReactNode; away?:
 }
 
 /**
- * ⋯ at the head of a reader, the panel's and the preview's alike: deleting the
- * thing stands last in it, in the danger ink, as it does on a board's panel —
- * never a button of its own at the foot. Nothing for a reader who may not.
+ * The head of a reader, the panel's and the preview's alike, as every record's:
+ * ✎ Edit, which opens the name for typing (the rest is written where it is read),
+ * then ⋯ with History… and, last in the danger ink, deleting the thing — never a
+ * button of its own at the foot. A reader who may not change it keeps History….
  */
-export function ReaderMore({ item, parts }: { item: OperatingItem | undefined; parts: ReaderParts }) {
+export function ReaderMore({ item, parts, onEdit }: { item: OperatingItem | undefined; parts: ReaderParts; onEdit?: () => void }) {
   const { t } = useStrings()
-  if (parts.readOnly || !item) return null
+  if (!item) return null
+  const history = parts.onOpenHistory
+  const more: MenuEntry[] = [
+    ...(history ? [{ label: t('operating.historyMore'), 'data-testid': 'operating-history', onSelect: history }] : []),
+    ...(parts.readOnly ? [] : [{ label: t('operating.deleteFromModel'), final: true, 'data-testid': 'operating-remove', onSelect: () => parts.onRemove(item.item.id) }]),
+  ]
   return (
-    <MoreMenu
-      label={t('operating.more')} size="small"
-      items={[{ label: t('operating.deleteFromModel'), final: true, 'data-testid': 'operating-remove', onSelect: () => parts.onRemove(item.item.id) }]}
+    <RecordActions
+      {...(onEdit && !parts.readOnly ? { edit: { onPress: onEdit, tip: t('operating.editTip'), testId: 'operating-edit' } } : {})}
+      more={more} moreLabel={t('operating.more')}
     />
   )
 }
 
-/** The end of every reader: its history at the start, and what takes it away, where it has a word of its own, at the far end. */
-export function ReaderFoot({ parts, away }: { parts: ReaderParts; away?: ReactNode }) {
+/**
+ * The end of a reader: its history at the start where its head has none, and what takes it away, where it has a
+ * word of its own, at the far end. Nothing at all where it has neither, so a preview draws no empty foot bar.
+ */
+export function readerFoot(parts: ReaderParts, { away, history = false }: { away?: ReactNode; history?: boolean } = {}): ReactNode {
+  if (!away && !(history && parts.onOpenHistory)) return undefined
+  return <ReaderFoot parts={parts} away={away} history={history} />
+}
+
+function ReaderFoot({ parts, away, history }: { parts: ReaderParts; away: ReactNode; history: boolean }) {
   const { t } = useStrings()
   return (
     <ReaderActions away={away}>
-      {parts.onOpenHistory && <button type="button" className="op-link" data-testid="operating-history" onClick={parts.onOpenHistory}>{t('operating.history')}</button>}
+      {history && parts.onOpenHistory && <button type="button" className="op-link" data-testid="operating-history" onClick={parts.onOpenHistory}>{t('operating.history')}</button>}
     </ReaderActions>
   )
 }

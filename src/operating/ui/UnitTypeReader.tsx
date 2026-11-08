@@ -16,7 +16,7 @@ import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { MenuButton } from '../../widgets/kit/Menu'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { addSlot, editUnitType, moveUnitType, setFlag, setLimit, setWithin } from '../edit'
-import { Fold, OverTime, Prose, ReaderFoot, SourceWord, stackedFrame, Tick } from './ReaderParts'
+import { Fold, OverTime, Prose, readerFoot, SourceWord, stackedFrame, Tick } from './ReaderParts'
 import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { howManyWords, lineWords, slotReading } from './reading'
 
@@ -100,7 +100,7 @@ export function UnitTypeReader({ type, parts, onOpenSlot, slotAside, frame = sta
       {parts.aside}
     </>
   )
-  return frame({ body, facts: said, foot: <ReaderFoot parts={parts} /> })
+  return frame({ body, facts: said, foot: readerFoot(parts) })
 }
 
 function TypeOrder({ type, lane, siblings, parts }: { type: UnitType; lane: number | undefined; siblings: readonly UnitType[]; parts: ReaderParts }) {

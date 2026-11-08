@@ -80,6 +80,8 @@ button.op-line:hover { background: var(--surface-2); }
 .op-line__where { color: var(--ink-2); font-size: var(--t-small); }
 .op-line__where[data-own] { color: var(--exception); font-weight: var(--fw-medium); }
 .op-rowEnd { display: flex; justify-content: space-between; gap: var(--s-2); align-items: baseline; padding-block: 2px; }
+/* Change beside the value it changes, not across a wide preview's body from it. */
+.op-rowEnd[data-near] { justify-content: flex-start; }
 .op-question { margin: var(--s-2) 0 var(--s-1); color: var(--ink-2); }
 .op-answer { margin: 0 0 var(--s-2); font-size: var(--t-body); font-weight: var(--fw-strong); }
 .op-chain { list-style: none; margin: 0; padding: 0; }

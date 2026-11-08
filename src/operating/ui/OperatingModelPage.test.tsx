@@ -308,7 +308,7 @@ describe('the operating model\'s page', () => {
     expect(screen.getByTestId('operating-needs-count').textContent).toContain('in all')
     // The role reader lists its units and who holds each.
     fireEvent.click(screen.getByRole('columnheader', { name: /Planner/ }))
-    expect(screen.getByTestId('operating-holders').textContent).toBe('Holders: 1 · vacant: 0')
+    expect(screen.getByTestId('operating-holders').textContent).toBe('1 person')
     expect(screen.getByTestId('operating-role-place').textContent).toContain('Depot North')
     expect(screen.getByTestId('operating-role-place').textContent).toContain('Anna')
   })
@@ -342,7 +342,7 @@ describe('the operating model\'s page', () => {
     expect(screen.getByRole('row', { name: /Head/ }).textContent).toContain('No part yet')
     fireEvent.click(screen.getByRole('row', { name: /^Planner/ }))
     const preview = await screen.findByRole('dialog', { name: 'Planner' })
-    expect(within(preview).getByTestId('operating-held-in').textContent).toBe('Held in: Depot')
+    expect(within(preview).getByTestId('operating-held-in').textContent).toBe('Depot')
     expect(await axeFindings()).toEqual([])
   })
 

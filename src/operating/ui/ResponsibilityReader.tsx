@@ -11,7 +11,7 @@ import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { editResponsibility, moveResponsibility } from '../edit'
 import { groupsOf } from '../matrixView'
-import { Prose, ReaderFoot, SourceWord, stackedFrame } from './ReaderParts'
+import { Prose, readerFoot, SourceWord, stackedFrame } from './ReaderParts'
 import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { claimKey } from '../../widgets/kit/keys'
 
@@ -71,5 +71,5 @@ export function ResponsibilityReader({ responsibility, parts, frame = stackedFra
       {parts.aside}
     </div>
   )
-  return frame({ body, facts, foot: <ReaderFoot parts={parts} /> })
+  return frame({ body, facts, foot: readerFoot(parts) })
 }

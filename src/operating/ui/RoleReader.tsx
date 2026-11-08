@@ -14,9 +14,10 @@ import { useStrings } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
 import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { PanelSection } from '../../widgets/kit/Panel'
+import { PreviewFact } from '../../widgets/kit/Preview'
 import { editRole, moveRole, setFlag, setRoleReportsTo } from '../edit'
 import { LinesEditor } from './LinesEditor'
-import { Fold, OverTime, Prose, ReaderFoot, SourceWord, stackedFrame, Tick } from './ReaderParts'
+import { Fold, OverTime, Prose, readerFoot, SourceWord, stackedFrame, Tick } from './ReaderParts'
 import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { roleNamed } from './reading'
 import { ReportedBy } from './SlotReader'
@@ -49,7 +50,7 @@ export function RoleReader({ role, parts, partName, partDuties, frame = stackedF
     const line = lines.find((one) => one.kind === kind)
     return (
       <>
-        <div className="op-rowEnd">
+        <div className="op-rowEnd" data-near="">
           <span>{label}: {line ? `${roleNamed(model.roles, line.role)}${line.within ? ` · ${t('operating.lineWithinShort')}` : ''}` : kind === 'solid' ? t('operating.byNestingCap') : t('operating.none')}</span>
           {!readOnly && <Button variant="quiet" size="small" aria-expanded={changing === kind} data-testid={`operating-role-change-${kind}`} onClick={() => setChanging(changing === kind ? undefined : kind)}>{t('operating.change')}</Button>}
         </div>
@@ -61,8 +62,15 @@ export function RoleReader({ role, parts, partName, partDuties, frame = stackedF
   // Where it is held, by how many, and where it came from: the facts beside the text.
   const said = (
     <>
-      <div data-testid="operating-held-in">{t('operating.heldInLine', { types: holding.length ? holding.map((type) => type.name).join(', ') : t('operating.inNoType') })}</div>
-      {facts && <div data-testid="operating-holders">{t('operating.holdersLine', { people, vacant })}</div>}
+      <PreviewFact label={t('operating.heldIn')}><span data-testid="operating-held-in">{holding.length ? holding.map((type) => type.name).join(', ') : t('operating.inNoType')}</span></PreviewFact>
+      {facts && (
+        <PreviewFact label={t('operating.holders')}>
+          {/* Who holds it and what is missing; a place nobody holds and nobody must is not a vacancy, and says nobody yet. */}
+          <span data-testid="operating-holders">
+            {[people === 0 ? t('operating.holdersNone') : t(people === 1 ? 'operating.holdersOne' : 'operating.holdersOther', { count: people }), ...(vacant > 0 ? [t('operating.vacantCount', { count: vacant })] : [])].join(' · ')}
+          </span>
+        </PreviewFact>
+      )}
       <SourceWord basedOn={role.basedOn} />
     </>
   )
@@ -120,7 +128,7 @@ export function RoleReader({ role, parts, partName, partDuties, frame = stackedF
       {parts.aside}
     </div>
   )
-  return frame({ body, facts: said, foot: <ReaderFoot parts={parts} /> })
+  return frame({ body, facts: said, foot: readerFoot(parts) })
 }
 
 function RoleColumn({ role, parts }: { role: Role; parts: ReaderParts }) {

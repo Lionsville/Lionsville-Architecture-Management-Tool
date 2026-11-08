@@ -17,7 +17,7 @@ import { Field, TextInput } from '../../widgets/kit/Field'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { setReportsTo, setSlot } from '../edit'
 import { LinesEditor } from './LinesEditor'
-import { ReaderFoot, stackedFrame } from './ReaderParts'
+import { readerFoot, stackedFrame } from './ReaderParts'
 import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { howManyWords, lineWords, roleNamed, slotReading } from './reading'
 import { plural } from '../../i18n/strings'
@@ -77,7 +77,7 @@ export function SlotReader({ type, slot, index, parts, onTakeOut, frame = stacke
   )
   // Taking it out of the type stands alone at the foot's far end, where no other press lands on it.
   const away = !readOnly && <Button variant="danger" size="small" aria-label={t('operating.slotRemove', { role: name })} onClick={onTakeOut}>{t('operating.takeOut')}</Button>
-  return frame({ body, facts, foot: <ReaderFoot parts={parts} away={away} /> })
+  return frame({ body, facts, foot: readerFoot(parts, { away, history: true }) })
 }
 
 /** The functional line under the answer, with its Change. */

@@ -16,6 +16,7 @@
  * set in the grid with the record still open. The preview's scrim hid both, and
  * every new responsibility had to be put away before its A could be set.
  */
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
@@ -57,6 +58,7 @@ const kindWord = (kind: OperatingItem['kind'], t: Translate) =>
 /** The large preview, over a list. */
 export function RecordPreview({ picked, ids, onSelect, parts, naming, slotOpen, onSlot, slotAside, removeSlotOf, part, dataGuide = 'operating.reader' }: RecordPreviewProps) {
   const { t } = useStrings()
+  const [renaming, setRenaming] = useState(0)
   if (!picked) return null
   const wordOf = { unitType: t('operating.unitTypesWord'), role: t('operating.rolesWord'), responsibility: t('operating.responsibilitiesWord') }
   const walk = ids ?? siblings(picked, parts)
@@ -81,8 +83,8 @@ export function RecordPreview({ picked, ids, onSelect, parts, naming, slotOpen, 
     <Preview
       ids={walk} currentId={picked.item.id} onSelect={(id) => (id === null ? close() : onSelect(id))}
       kind={kindWord(picked.kind, t)} titleText={picked.item.name} listWord={wordOf[picked.kind]}
-      title={<RecordName picked={picked} parts={parts} naming={naming} />}
-      dataGuide={dataGuide} actions={<ReaderMore item={picked} parts={parts} />} facts={facts} foot={foot}
+      title={<RecordName picked={picked} parts={parts} naming={naming} asked={renaming} />}
+      dataGuide={dataGuide} actions={<ReaderMore item={picked} parts={parts} onEdit={() => setRenaming((n) => n + 1)} />} facts={facts} foot={foot}
     >
       <div data-testid="operating-inspector">{body}</div>
     </Preview>
@@ -93,6 +95,7 @@ export function RecordPreview({ picked, ids, onSelect, parts, naming, slotOpen, 
 /** The panel, beside the structure or the grid. */
 export function RecordPanel({ picked, onSelect, parts, naming, onNamed, slotOpen, onSlot, slotAside, removeSlotOf, part, width, dataGuide = 'operating.reader' }: RecordPreviewProps & { width: number }) {
   const { t } = useStrings()
+  const [renaming, setRenaming] = useState(0)
   if (!picked) return null
   const slot = slotOf(picked, slotOpen, parts)
   if (slot) {
@@ -112,8 +115,8 @@ export function RecordPanel({ picked, onSelect, parts, naming, onNamed, slotOpen
   const frame: ReaderFrame = (layout) => (
     <Panel
       kind={kindWord(picked.kind, t)} name={picked.item.name} onClose={() => onSelect(undefined)} width={width} dataGuide={dataGuide}
-      actions={<ReaderMore item={picked} parts={parts} />}
-      {...(naming?.id === picked.item.id ? { renameRequest: naming.nonce, renameAtOnce: true } : {})}
+      actions={<ReaderMore item={picked} parts={parts} onEdit={() => setRenaming((n) => n + 1)} />}
+      {...renameAsk(picked, naming, renaming)}
       {...(rename ? { onRename: (name: string) => { rename(name); onNamed?.(picked.item.id) } } : {})}
     >
       <div data-testid="operating-inspector">{stackedFrame(layout)}</div>
@@ -140,15 +143,25 @@ function ReaderOf({ picked, parts, part, onSlot, slotAside, frame }: {
 }
 
 /** The name in the preview's title: pressed to rename where it may be, open for typing where it was just made. */
-function RecordName({ picked, parts, naming }: { picked: OperatingItem; parts: ReaderParts; naming: RecordPreviewProps['naming'] }) {
+function RecordName({ picked, parts, naming, asked }: { picked: OperatingItem; parts: ReaderParts; naming: RecordPreviewProps['naming']; asked: number }) {
   const rename = renameOf(picked, parts)
   return (
     <PanelName
       unheaded name={picked.item.name}
-      {...(naming?.id === picked.item.id ? { renameRequest: naming.nonce, renameAtOnce: true } : {})}
+      {...renameAsk(picked, naming, asked)}
       {...(rename ? { onRename: (name: string) => { rename(name) } } : {})}
     />
   )
+}
+
+/**
+ * The name opened for typing: at once where the record was just made, and again at every ✎ Edit. One count for
+ * both, so a press after a making is a change the name hears.
+ */
+function renameAsk(picked: OperatingItem, naming: RecordPreviewProps['naming'], asked: number): { renameRequest?: number; renameAtOnce?: boolean } {
+  const made = naming?.id === picked.item.id
+  if (!made && asked === 0) return {}
+  return { renameRequest: (made ? naming.nonce : 0) + asked * 1_000_000, ...(made && asked === 0 ? { renameAtOnce: true } : {}) }
 }
 
 function renameOf(picked: OperatingItem, parts: ReaderParts): ((name: string) => void) | undefined {

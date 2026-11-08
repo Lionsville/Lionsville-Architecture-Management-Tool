@@ -18,6 +18,7 @@ import type { OrganisationFacts, OutsideTheModel } from '../organisationFacts'
 import { ExceptionsTab } from './ExceptionsTab'
 import { ResponsibilityReader } from './ResponsibilityReader'
 import { RoleReader } from './RoleReader'
+import { ReaderMore } from './ReaderParts'
 import type { ReaderParts } from './ReaderParts'
 
 afterEach(() => cleanup())
@@ -179,7 +180,7 @@ describe('a role read', () => {
   it('calls a place vacant only where the count above does, and an optional one nobody holds quietly', () => {
     const facts = { placesOf: () => [place(1), { ...place(2), vacant: 0 }] } as unknown as OrganisationFacts
     renderShell(<RoleReader role={roleOf('dev')} parts={parts({ facts })} />)
-    expect(screen.getByTestId('operating-holders').textContent).toBe('Holders: 0 · vacant: 1')
+    expect(screen.getByTestId('operating-holders').textContent).toBe('Nobody yet · 1 vacant')
     const [needed, optional] = screen.getAllByTestId('operating-role-place')
     expect(needed.textContent).toContain('Vacant')
     expect(optional.textContent).toContain('Nobody yet')
@@ -222,6 +223,30 @@ describe('a role read', () => {
   })
 })
 
+describe('a reader\'s head', () => {
+  const item = { kind: 'responsibility', item: { id: 'plan', name: 'Plan' } } as Parameters<typeof ReaderMore>[0]['item']
+
+  it('says ✎ Edit, which opens the name, then ⋯ with History… and Delete last', () => {
+    const onEdit = vi.fn()
+    const onOpenHistory = vi.fn()
+    const onRemove = vi.fn()
+    renderShell(<ReaderMore item={item} parts={parts({ onOpenHistory, onRemove })} onEdit={onEdit} />)
+    fireEvent.click(screen.getByTestId('operating-edit'))
+    expect(onEdit).toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    expect(screen.getAllByRole('menuitem').map((one) => one.textContent?.trim())).toEqual(['History…', 'Delete from model…'])
+    fireEvent.click(screen.getByTestId('operating-history'))
+    expect(onOpenHistory).toHaveBeenCalled()
+  })
+
+  it('keeps History… and nothing that changes it for a reader who may not', () => {
+    renderShell(<ReaderMore item={item} parts={parts({ readOnly: true, onOpenHistory: vi.fn() })} onEdit={vi.fn()} />)
+    expect(screen.queryByTestId('operating-edit')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    expect(screen.getAllByRole('menuitem').map((one) => one.textContent?.trim())).toEqual(['History…'])
+  })
+})
+
 describe('a responsibility read', () => {
   const of = (id: string) => MODEL.responsibilities.find((one) => one.id === id)!
 
@@ -238,12 +263,10 @@ describe('a responsibility read', () => {
     expect(screen.queryByRole('button', { name: 'Lead' })).toBeNull()
   })
 
-  it('ends in the page’s one foot with its history, its delete in the head’s ⋯ rather than at the foot', () => {
+  it('keeps its history and its delete in the head, as every record does, and no foot of its own', () => {
     renderShell(<ResponsibilityReader responsibility={of('plan')} parts={parts({ onOpenHistory: vi.fn() })} />)
-    const foot = screen.getByTestId('operating-reader-foot')
-    expect(foot.querySelector('.op-foot__away')).toBeNull()
+    expect(screen.queryByTestId('operating-reader-foot')).toBeNull()
     expect(screen.queryByTestId('operating-remove')).toBeNull()
-    expect(foot.firstElementChild?.textContent).toBe('History')
     cleanup()
     exceptions({ start: 'by-type' })
     expect(screen.getByTestId('operating-reader-foot').querySelector('.op-foot__away [data-testid="operating-back-to-default"]')).not.toBeNull()
