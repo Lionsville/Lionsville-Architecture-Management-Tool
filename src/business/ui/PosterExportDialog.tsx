@@ -9,7 +9,7 @@
  * names this paper cuts, and a press selects them, so nobody finds out on the wall.
  */
 import { useMemo, useState } from 'react'
-import { useStrings } from '../../i18n'
+import { LOCALE, useStrings } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { plural } from '../../i18n/strings'
 import type { DesignDiagram, ElementId } from '../../model'
@@ -114,7 +114,7 @@ export function PosterExportDialog({ sheet, page, scopeName, keyWords, cutNames,
       <Labelled label={t('sheet.exportPaper')}>
         <Segmented label={t('sheet.exportPaper')} value={paperName} onChange={setPaperName} options={NAMES.map((name) => ({ value: name, label: name }))} />
       </Labelled>
-      <p data-testid="poster-export-size">{t('sheet.poster.exportSize', { points: named.toFixed(1), reach })}</p>
+      <p data-testid="poster-export-size">{t('sheet.poster.exportSize', { points: new Intl.NumberFormat(LOCALE[language], { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(named), reach })}</p>
       {named < SMALL_PT && <p className="poster-export__warn" role="note" data-testid="poster-export-small">{t('sheet.poster.exportSmall')}</p>}
       <Labelled label={t('sheet.poster.exportFile')}>
         <Segmented label={t('sheet.poster.exportFile')} value={file} onChange={setFile} options={[{ value: 'pdf', label: 'PDF' }, { value: 'png', label: 'PNG' }]} />
