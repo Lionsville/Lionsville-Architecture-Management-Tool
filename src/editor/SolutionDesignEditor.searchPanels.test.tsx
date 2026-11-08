@@ -112,6 +112,19 @@ describe('SolutionDesignEditor — element search', () => {
     expect(screen.getByText(/on Webshop containers/)).toBeDefined();
   });
 
+  it('marks what matches on the board behind the field, and nothing once it closes', async () => {
+    renderEditor();
+    fireEvent.click(screen.getByTestId('board-find'));
+    expect(document.querySelector('style[data-lv-found]')).toBeNull();
+    fireEvent.change(searchField(), { target: { value: 'adyen' } });
+    const sheet = () => document.querySelector('style[data-lv-found]')?.textContent ?? '';
+    await waitFor(() => expect(sheet()).toContain('outline'));
+    // The one Enter would take is ringed heavier.
+    expect(sheet()).toContain('outline-width:4px');
+    fireEvent.keyDown(searchField(), { key: 'Escape' });
+    await waitFor(() => expect(document.querySelector('style[data-lv-found]')).toBeNull());
+  });
+
   it('says so when nothing matches', () => {
     renderEditor();
     fireEvent.click(screen.getByTestId('board-find'));

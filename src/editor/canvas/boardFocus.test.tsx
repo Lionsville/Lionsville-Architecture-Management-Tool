@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest';
-import { focusOf, focusSheet } from './boardFocus';
+import { focusOf, focusSheet, foundSheet } from './boardFocus';
 
 const edges = [
   { id: 'ab', source: 'a', target: 'b' },
@@ -38,5 +38,17 @@ describe('what stays under the focus', () => {
   it('lets everything back while a line is in hand, so the card it lands on is never faded', () => {
     const sheet = focusSheet({ nodes: new Set(['a']), lines: new Set() });
     for (const rule of sheet.split('\n')) expect(rule).toContain(':not([data-connecting])');
+  });
+});
+
+describe('what Find matches', () => {
+  it('is no sheet while nothing matches', () => {
+    expect(foundSheet({ ids: [], active: undefined })).toBe('');
+  });
+
+  it('rings every card that matches, and the one Enter takes heavier', () => {
+    const sheet = foundSheet({ ids: ['a', 'b'], active: 'b' });
+    expect(sheet).toContain('.react-flow__node[data-id="a"] .kit-card,.lv-board .react-flow__node[data-id="b"] .kit-card{outline:2px solid var(--accent)');
+    expect(sheet).toContain('.lv-board .react-flow__node[data-id="b"] .kit-card{outline-width:4px}');
   });
 });

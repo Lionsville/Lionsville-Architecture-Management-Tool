@@ -97,6 +97,27 @@ export function BoardFocusSheet({ focus }: { focus: BoardFocus }) {
   return sheet ? <style data-lv-focus>{sheet}</style> : null;
 }
 
+/** What Find matches on the board, while its field is up: the one Enter would take, and the rest. */
+export type BoardFound = { ids: readonly string[]; active: string | undefined };
+
+/**
+ * A ring on each card Find matches, heavier on the one Enter would take, said in a
+ * stylesheet as the focus is so that typing renders no card.
+ */
+export function foundSheet(found: BoardFound): string {
+  if (found.ids.length === 0) return '';
+  const cards = (ids: readonly string[]) => ids.map((id) => `.lv-board .react-flow__node${quoted(id)} .kit-card`).join(',');
+  const rules = [`${cards(found.ids)}{outline:2px solid var(--accent);outline-offset:3px;background:var(--accent-soft)}`];
+  if (found.active !== undefined) rules.push(`${cards([found.active])}{outline-width:4px}`);
+  return rules.join('\n');
+}
+
+/** The sheet for what Find matches, while it matches something. */
+export function BoardFoundSheet({ found }: { found: BoardFound }) {
+  const sheet = useMemo(() => foundSheet(found), [found]);
+  return sheet ? <style data-lv-found>{sheet}</style> : null;
+}
+
 /** How long a pointer rests on a card before the board answers: crossing a board asks nothing. */
 const HOVER_REST_MS = 120;
 

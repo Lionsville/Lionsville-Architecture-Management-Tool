@@ -13,6 +13,8 @@ import type { DesignDiagram, DesignModel } from '../model/types';
 import { useStrings } from '../i18n/LanguageContext';
 import { usePersonNames } from '../people/ui/names';
 import { ElementSearchDialog } from '../search/ui/ElementSearchDialog';
+import { BoardFoundSheet } from './canvas/boardFocus';
+import type { BoardFound } from './canvas/boardFocus';
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { DeleteElementDialog } from './DeleteElementDialog';
 import type { DiagramSettingsDialog as DiagramSettingsDialogShape } from './DiagramSettingsDialog';
@@ -39,12 +41,18 @@ const DiagramSettingsDialog = lazyPart<ComponentProps<typeof DiagramSettingsDial
   () => import('./DiagramSettingsDialog').then((held) => held.DiagramSettingsDialog), { until: (props) => props.target !== undefined, fallback: (props) => (props.target === undefined ? null : <ArrivingDialog />) },
 );
 
+const NOTHING_FOUND: BoardFound = { ids: [], active: undefined };
+
 /** Which of the plain dialogs is up. ⌘F's dialog owns its own query; this is only whether it is up. */
 export type ThisViewTab = 'properties' | 'lines' | 'tidy';
 
 export function useEditorDialogs(hostSheet?: () => void) {
   const [helpOpen, setHelpOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [found, setFoundState] = useState<BoardFound>(NOTHING_FOUND);
+  const setFound = useCallback((ids: readonly string[], active: string | undefined) => {
+    setFoundState((was) => (ids.length === 0 && was.ids.length === 0 ? was : { ids, active }));
+  }, []);
   // "Rename diagram…" and "Settings…" from a tab: the dialog lives here, the
   // change lands on the host.
   const [settingsDiagramId, setSettingsDiagramId] = useState<string | undefined>(undefined);
@@ -56,7 +64,7 @@ export function useEditorDialogs(hostSheet?: () => void) {
   const openHelp = useCallback(() => { if (hostSheet) hostSheet(); else setHelpOpen(true); }, [hostSheet]);
   const openSearch = useCallback(() => setSearchOpen(true), []);
   return {
-    helpOpen, setHelpOpen, openHelp, searchOpen, setSearchOpen, openSearch,
+    helpOpen, setHelpOpen, openHelp, searchOpen, setSearchOpen, openSearch, found, setFound,
     settingsDiagramId, setSettingsDiagramId, renameDiagramTarget, setRenameDiagramTarget,
     thisViewOpen, setThisViewOpen, thisViewTab, setThisViewTab,
   };
@@ -135,7 +143,9 @@ export function EditorLateDialogs({ props, state, dialogs, onFocus }: {
         activeDiagramId={props.document.activeDiagramId}
         onClose={() => dialogs.setSearchOpen(false)}
         onFocus={onFocus}
+        onMatches={dialogs.setFound}
       />
+      <BoardFoundSheet found={dialogs.found} />
       {onRename && (
         <RenameDiagramDialog
           target={dialogs.renameDiagramTarget}

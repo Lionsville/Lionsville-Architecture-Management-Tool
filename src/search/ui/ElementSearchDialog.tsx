@@ -19,6 +19,8 @@ export interface ElementSearchDialogProps {
   onClose(): void;
   /** Select and pan to this element — the editor's existing focus request. */
   onFocus(elementId: ElementId): void;
+  /** What matches on the board that is open, and the one Enter would take: marked there while the field is up. None when it closes. */
+  onMatches?(ids: readonly ElementId[], active: ElementId | undefined): void;
 }
 
 /**
@@ -105,6 +107,15 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
 
   // The empty state describes the list, so it quotes the query the list answers.
   const trimmed = asked.trim();
+
+  // The board stays in sight behind the field, so what matches on it is marked there as the list fills.
+  const { onMatches } = props;
+  useEffect(() => {
+    if (!onMatches) return;
+    const shown = props.open && trimmed !== '' ? hits.filter((hit) => hit.onActiveDiagram) : [];
+    const taken = hits[active];
+    onMatches(shown.map((hit) => hit.id), taken?.onActiveDiagram ? taken.id : undefined);
+  }, [onMatches, props.open, trimmed, hits, active]);
 
   return (
     <Dialog
