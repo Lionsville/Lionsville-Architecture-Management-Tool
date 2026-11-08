@@ -123,17 +123,19 @@ const IS_KEY: Record<'nl' | 'de', { press: RegExp; key: (before: string, word: s
         const op = /\b[Oo]p\s+(.{1,40}?)\s*$/.exec(before)
         return !!op && KEY_FIRST.test(op[1]!)
       }
-      return objects.some((object) => KEY_FIRST.test(object))
+      // The first thing pressed is what is pressed: in "Druk op de roadmap op F1" a reader presses the roadmap.
+      // "Druk op 2 op te lossen" names a line, not the key 2.
+      return KEY_FIRST.test(objects[0]!.trim()) && !/^te\b/.test(objects[1] ?? '')
     },
   },
-  // Drücken Sie X · Drücken Sie auf X · Enter drücken · ein Druck auf X · ein Doppeldruck
+  // Drücken Sie X · Drücken Sie auf X · Enter drücken · ein Druck auf X · ein Doppeldruck · er drückt X · wenn man es drückt
   de: {
-    press: /\b[Dd]rücken Sie auf\b|\b[Dd]rücken Sie\b|\b([Dd]oppel)?[Dd]ruck\b|\b[Dd]rücken\b/g,
+    press: /\b[Dd]rücken Sie auf\b|\b[Dd]rücken Sie\b|\b([Dd]oppel)?[Dd]ruck\b|\b[Dd]rücken\b|\bdrückt\b/g,
     key: (before, word, after) => {
       if (word === 'Druck' && /(\bdem|\bim|\bgroßen|\bkleinen|-)\s*$/.test(before)) return true // the printout: im Druck, ein A0-Druck
       const said = clause(after)
       if (/^drücken sie/i.test(word)) return KEY_WORD.test(said)
-      if (/^drücken$/i.test(word) && KEY_WORD.test(before.slice(-30))) return true
+      if (/^drück(en|t)$/i.test(word) && KEY_WORD.test(before.slice(-30))) return true
       return KEY_FIRST.test(said.trim())
     },
   },

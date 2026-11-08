@@ -10,7 +10,7 @@ export const SECTIONS: SectionTexts = {
     'Open Mensen om te zien wie in Acme Logistics een rol heeft: Anna de Vries is Head of Terminal, Tom Berger is Lead of Dock crew.'],
   'people.find': ['Een persoon zoeken in het register', 'Maakt de lijst korter terwijl je typt. Het zoekt in de naam, het werkadres, de rollen en hun eenheden, en de woorden op een regel (Extern, Heeft niets, Vertrokken). Waar niemand past, biedt het de dichtstbijzijnde namen en het toevoegen van de getypte naam.',
     'Het zoekveld boven de lijst op het tabblad Mensen. Het heeft de focus als de pagina opent.',
-    ['Typ een deel van een naam, een adres, een rol of een eenheid.', 'Druk op ↓ om van het veld naar de lijst te gaan, en Enter om de persoon te openen.', 'Druk ergens op de pagina op / om terug te komen in het veld.'],
+    ['Typ een deel van een naam, een adres, een rol of een eenheid.', 'Druk op ↓ om van het veld naar de lijst te gaan, en Enter om de persoon te openen.', 'Druk op / om vanaf elke plek op de pagina terug te komen in het veld.'],
     'Typ Dock crew om Tom Berger en Lena Fischer te tonen; typ Marrek en de pagina vraagt: bedoel je Marek Nowak?',
     '/ zet de focus op het veld; ↓ gaat naar de lijst'],
   'people.filter': ['Filteren en kolommen kiezen', 'Filter toont alleen de mensen in één staat (actief, vertrokken, vergeten, elk met een aantal), van één soort (intern of extern), of die niets hebben. Weergave voegt kolommen toe naast Heeft: Soort, Staat en Werkadres. Een kolomkop sorteert erop.',

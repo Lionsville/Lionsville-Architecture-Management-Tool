@@ -17,7 +17,7 @@ export const SECTIONS: SectionTexts = {
   'file.save': ['Nu bewaren', 'Schrijft de open scope nu weg. Werk bewaart zich ook vanzelf een paar seconden nadat je stopt; zonder open scope is Bewaren grijs, met de reden.',
     'Je werk, Bewaren; menu ⋯; menu Bestand op de desktop',
     ['Klik op Bewaren, of {key:Mod+S}'],
-    'Druk op Application landscape op {key:Mod+S} voordat je de laptop dichtklapt.',
+    'Druk in Application landscape op {key:Mod+S} voordat je de laptop dichtklapt.',
     '{key:Mod+S}'],
   'file.saveCopy': ['Een kopie bewaren', 'Bewaart de hele organisatie in één .lvarch-bestand onder een wachtwoord, op welk scherm je ook bent. Vraagt het wachtwoord twee keer; niets kan een vergeten wachtwoord terughalen. Kies "Namen weglaten" voor een kopie die de organisatie verlaat: iedereen gaat mee als zijn pseudoniem.',
     'Je werk, Bewaren; menu ⋯; menu Bestand op de desktop',
