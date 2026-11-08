@@ -48,6 +48,16 @@
   appearance: none; font: inherit; cursor: pointer; flex: 0 1 300px; min-width: 36px; height: var(--ctl-h); display: inline-flex; align-items: center; gap: var(--s-2);
   padding-inline: var(--s-2); color: var(--ink-2); background: var(--ground); border: 1px solid var(--line-strong); border-radius: var(--r-3);
   overflow: hidden; white-space: nowrap;
+  /*
+   * It gives way by its own width, not at a width of the row: where the row is
+   * short it shrinks before the trail does, and its words go only once it is
+   * too narrow to hold them, the glass then alone at its start. Collapsed at a fixed
+   * 75rem of the row it was a bare glass at 150 % beside room nobody used.
+   */
+  container: kit-find / inline-size;
+}
+@container kit-find (max-width: 10rem) {
+  .kit-frame__find span { display: none; }
 }
 .kit-frame__find span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: start; }
 .kit-frame__status {
@@ -130,10 +140,8 @@
 .kit-lines__row { display: block; width: 100%; appearance: none; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; color: inherit; text-align: start; padding: var(--s-1) 0; }
 .kit-lines__row small { display: block; color: var(--ink-2); }
 
-/* Under 75 rem the rows give way before they overlap: the field keeps its glass and the word its start. In rem and on the frame, since a media query knows neither the text size nor what the frame was given. */
+/* Under 75 rem the word gives way to its icon and count before anything overlaps. In rem and on the frame, since a media query knows neither the text size nor what the frame was given. The find field gives way by its own width (above). */
 @container kit-frame (max-width: 75rem) {
-  .kit-frame__find span { display: none; }
-  .kit-frame__find { flex: 0 0 36px; justify-content: center; padding-inline: 0; }
   .kit-frame__status { max-width: 8rem; min-width: 5rem; }
   .kit-frame__status:has(.kit-frame__status-short) .kit-frame__status-word { display: none; }
   .kit-frame__status-short { display: inline; }

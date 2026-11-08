@@ -300,22 +300,20 @@ export function crumbsFor(
  */
 export const CrumbPressContext = createContext<() => void>(() => undefined)
 
-export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
+export function Crumbs({ crumbs, current, currentPath, onGoHome, after, s }: {
   crumbs: readonly Crumb[]
   current: string
   /** The open scope's path: its own crumb leads to its home too. */
   currentPath: ScopePath
   onGoHome: (path: ScopePath) => void
+  /** What follows the open scope's name and goes with it: the frame's switcher. */
+  after?: ReactNode
   s: Translate
 }) {
-  // Narrow windows: the crumbs give way before anything else does, the
-  // leftmost first — an ancestor's name is the one a reader can most afford
-  // to lose — each to an ellipsis rather than a wrap. The bar wraps its
-  // items (`WRAPS`), and a wrapping bar lays an item out at its own width
-  // before it shrinks anything, so a crumb at its natural width is what sent
-  // ⋯ to a line of its own at 1024 px. A basis of nothing, grown up to the
-  // crumbs' own width and no further: on the bar's first line whatever the
-  // window, and shorter than their names only where the line is short.
+  // Within the trail, where it has to give way, the names between give way
+  // first, then the organisation's, the open scope's last — an ancestor's name
+  // is the one a reader can most afford to lose — each to an ellipsis rather
+  // than a wrap.
   const pressed = useContext(CrumbPressContext)
   const go = (path: ScopePath) => { pressed(); onGoHome(path) }
   // The organisation stays readable however long the names between are: it is
@@ -334,8 +332,21 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   // anything else still can — the status word and the find field give way
   // first — and takes the rest of the shortfall once they are at their least:
   // a shrink of 1 cut a name by a pixel, and so to an ellipsis, beside a long word.
+  // Its floor is its names, up to two fifths of the row: until then the row
+  // folds its words into ⋯ before it cuts a name, and a trail shorter than its
+  // cap keeps no empty room after it — a floor of 13rem sent the switcher a
+  // hand's width off a short name, took the find field's room, and still cut
+  // the open scope's name at 150 % while Help stood whole. A browser without
+  // calc-size keeps the old floor, and the room it leaves stands after the
+  // switcher, as part of the row's spacing.
   return (
-    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '0 0.001 auto', maxWidth: 'max-content' }}>
+    <Box
+      data-testid="crumbs" data-guide="shell.crumbs"
+      sx={{
+        display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '0 0.001 auto', maxWidth: 'max-content',
+        '@supports (min-width: calc-size(max-content, size))': { minWidth: 'calc-size(max-content, min(size, 40cqw))' },
+      }}
+    >
       {shown.map((crumb, index) => (
         <Fragment key={crumb.path}>
         {index === 1 && folded.length > 0 && (
@@ -378,6 +389,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
           {current}
         </Button>
       </Tooltip>
+      {after !== undefined && <Box sx={{ display: 'flex', flexShrink: 0 }}>{after}</Box>}
     </Box>
   )
 }

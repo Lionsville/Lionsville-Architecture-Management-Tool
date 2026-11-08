@@ -588,13 +588,18 @@ function Trail({ parts, at, name }: { parts: ShellParts; at: ScopePath; name: st
   const page = parts.agent.screen?.page?.page
   return (
     <>
-      <Crumbs crumbs={crumbs} current={name} currentPath={at} onGoHome={(path) => parts.agent.openSomewhere({ scope: path, page: 'home' })} s={s} />
-      <IconButton
-        label={s('frame.switchScope')} size="small" data-testid="scope-switcher-open" data-guide="frame.switcher"
-        aria-haspopup="dialog" aria-expanded={anchor !== null} onClick={(event) => setAnchor(event.currentTarget)}
-      >
-        <CaretIcon size={14} />
-      </IconButton>
+      {/* The switcher stands right after the open scope's name, whatever room the trail keeps. */}
+      <Crumbs
+        crumbs={crumbs} current={name} currentPath={at} onGoHome={(path) => parts.agent.openSomewhere({ scope: path, page: 'home' })} s={s}
+        after={(
+          <IconButton
+            label={s('frame.switchScope')} size="small" data-testid="scope-switcher-open" data-guide="frame.switcher"
+            aria-haspopup="dialog" aria-expanded={anchor !== null} onClick={(event) => setAnchor(event.currentTarget)}
+          >
+            <CaretIcon size={14} />
+          </IconButton>
+        )}
+      />
       <Popover
         open={anchor !== null} anchorEl={anchor} onClose={() => setAnchor(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} transformOrigin={{ vertical: 'top', horizontal: 'left' }}
