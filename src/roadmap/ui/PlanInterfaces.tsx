@@ -181,12 +181,10 @@ function GiveTheRest({ count, targets, name, start, onGive, onClose }: {
   return (
     <Dialog
       open title={t('plan.giveTheRest')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!to || !on} onClick={() => onGive(to, on)}>{t('plan.giveAct', { count })}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: !to || !on, onClick: () => onGive(to, on), label: t('plan.giveAct', { count }) },
+      }}
     >
       {targets.length > 1 && (
         <SelectField

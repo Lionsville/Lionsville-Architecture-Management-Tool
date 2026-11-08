@@ -7,9 +7,8 @@
  * "rename" is what a person will reach for, and this is deliberately not that.
  */
 import { useEffect, useState } from 'react'
-import Button from '@mui/material/Button'
 import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -41,12 +40,10 @@ export function LabelDialog({ open, onCancel, onLabel, s }: LabelDialogProps) {
           onKeyDown={(event) => { if (event.key === 'Enter' && name.trim()) { event.preventDefault(); onLabel(name.trim()) } }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={name.trim().length === 0} onClick={() => onLabel(name.trim())}>
-          {s('history.labelConfirm')}
-        </Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onCancel, label: s('common.cancel') }}
+        outcome={{ disabled: name.trim().length === 0, onClick: () => onLabel(name.trim()), label: s('history.labelConfirm') }}
+      />
     </FieldsDialog>
   )
 }

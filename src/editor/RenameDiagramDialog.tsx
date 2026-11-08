@@ -2,9 +2,8 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { useEffect, useRef, useState } from 'react';
-import Button from '@mui/material/Button';
 import { FieldsDialog } from '../widgets/CompactForms';
-import DialogActions from '@mui/material/DialogActions';
+import { DialogFooter } from '../widgets/kit/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import { FieldBox } from '../widgets/kit/FieldBox'
@@ -67,12 +66,10 @@ export function RenameDiagramDialog({ target, onRename, onClose }: RenameDiagram
           }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" onClick={commit} disabled={!canSave}>
-          {t('common.save')}
-        </Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onClose, label: t('common.cancel') }}
+        outcome={{ onClick: commit, disabled: !canSave, label: t('common.save') }}
+      />
     </FieldsDialog>
   );
 }

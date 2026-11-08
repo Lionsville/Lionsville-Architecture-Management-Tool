@@ -34,7 +34,7 @@ import Box from '@mui/material/Box'
 import Link from '@mui/material/Link'
 import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Divider from '@mui/material/Divider'
@@ -193,9 +193,9 @@ export function ConnectAgentDialog({
           )}
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onClose}>{s('common.close')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onClose, label: s('common.close') }}
+      />
     </Dialog>
   )
 }

@@ -165,12 +165,10 @@ export function FocusedWindow({
         open={asking}
         title={t('kit.focused.askTitle')}
         onClose={() => setAsking(false)}
-        actions={(
-          <>
-            <Button variant="quiet" onClick={() => setAsking(false)}>{t('kit.focused.keepEditing')}</Button>
-            <Button variant="danger" onClick={() => { setAsking(false); onCancel() }}>{t('kit.focused.discard')}</Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setAsking(false), label: t('kit.focused.keepEditing') },
+          outcome: { onClick: () => { setAsking(false); onCancel() }, label: t('kit.focused.discard'), danger: true },
+        }}
       >
         <p>{t('kit.focused.askBody')}</p>
       </Dialog>

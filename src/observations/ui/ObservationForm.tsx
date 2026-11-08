@@ -303,12 +303,10 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
       </form>
       <KitDialog
         open={asking} title={s('observation.formDiscardTitle')} onClose={() => setAsking(false)}
-        actions={(
-          <>
-            <KitButton variant="quiet" onClick={() => setAsking(false)}>{s('observation.formKeep')}</KitButton>
-            <KitButton variant="danger" onClick={() => { setAsking(false); props.onCancel() }}>{s('observation.formDiscard')}</KitButton>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setAsking(false), label: s('observation.formKeep') },
+          outcome: { onClick: () => { setAsking(false); props.onCancel() }, label: s('observation.formDiscard'), danger: true },
+        }}
       >
         <p>{s('observation.formDiscardBody')}</p>
       </KitDialog>

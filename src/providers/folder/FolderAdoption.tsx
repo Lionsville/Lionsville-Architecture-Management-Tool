@@ -39,7 +39,6 @@
  * work stays as it is, and those scopes are not brought.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogFacts } from '../../widgets/kit/Dialog'
 import { Progress } from '../../widgets/kit/Progress'
 import { useStrings } from '../../i18n'
@@ -157,25 +156,17 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
   return (
     <Dialog
       open={stage.at !== 'closed'} size="m" title={title} onClose={close} working={stage.at !== 'said' && stage.at !== 'closed'}
-      actions={(
-        <>
-          {stage.at === 'asking' && (
-            <>
-              <Button size="small" onClick={skip} data-testid="adopt-skip">{s('folder.adoptSkip')}</Button>
-              <Button size="small" variant="primary" onClick={copy} data-testid="adopt-copy">{s('folder.adoptCopy')}</Button>
-            </>
-          )}
-          {stage.at === 'copying' && (
-            <Button size="small" onClick={stop} disabled={stage.stopping} data-testid="adopt-stop">{s(stage.stopping ? 'folder.adoptStopping' : 'folder.adoptStop')}</Button>
-          )}
-          {stage.at === 'said' && stage.again && (
-            <Button size="small" onClick={copy} data-testid="adopt-again">{s('folder.adoptAgain')}</Button>
-          )}
-          {stage.at === 'said' && (
-            <Button size="small" variant="primary" onClick={close} data-testid="adopt-close">{s(stage.staying ? 'folder.adoptStay' : 'folder.adoptClose')}</Button>
-          )}
-        </>
-      )}
+      actions={
+        stage.at === 'asking' ? {
+          cancel: { onClick: skip, 'data-testid': 'adopt-skip', label: s('folder.adoptSkip') },
+          outcome: { onClick: copy, 'data-testid': 'adopt-copy', label: s('folder.adoptCopy') },
+        } : stage.at === 'copying' ? {
+          cancel: { onClick: stop, disabled: stage.stopping, 'data-testid': 'adopt-stop', label: s(stage.stopping ? 'folder.adoptStopping' : 'folder.adoptStop') },
+        } : stage.at === 'said' ? {
+          also: [stage.again && { onClick: copy, 'data-testid': 'adopt-again', label: s('folder.adoptAgain') }],
+          outcome: { onClick: close, 'data-testid': 'adopt-close', label: s(stage.staying ? 'folder.adoptStay' : 'folder.adoptClose') },
+        } : undefined
+      }
     >
       <div data-testid="adopt-folder">
         {stage.at === 'asking' && <p>{s('folder.adoptBody', { name: adoption.name })}</p>}

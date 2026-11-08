@@ -18,7 +18,6 @@
  */
 import { useEffect, useState } from 'react'
 import type { Translate } from '../../i18n'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogChoices, DialogDanger, DialogFacts } from '../../widgets/kit/Dialog'
 
 export type OpenIntoDialogProps = {
@@ -61,20 +60,18 @@ export function OpenIntoDialog({
   const hereEffect = puttingBack
     ? s('openInto.herePutsBack', { scope: here })
     : keepsHistory ? `${writesOver} ${s('openInto.snapshotFirst')}` : `${writesOver} ${s('openInto.noWayBack')}`
-  const cancel = <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
+  const cancel = { onClick: onCancel, label: s('common.cancel') }
 
   if (canGoElsewhere) {
     return (
       <Dialog
         open={open} size="m" title={s('openInto.title', { name: file })} onClose={onCancel}
-        actions={(
-          <>
-            {cancel}
-            {choice === 'elsewhere'
-              ? <Button variant="primary" onClick={onElsewhere} data-testid="open-into-elsewhere">{s('openInto.elsewhere')}</Button>
-              : <Button variant={keepsHistory || puttingBack ? 'primary' : 'danger'} onClick={onHere} data-testid="open-into-here">{s('openInto.here', { scope: here })}</Button>}
-          </>
-        )}
+        actions={{
+          cancel,
+          outcome: choice === 'elsewhere'
+            ? { onClick: onElsewhere, 'data-testid': 'open-into-elsewhere', label: s('openInto.elsewhere') }
+            : { onClick: onHere, 'data-testid': 'open-into-here', label: s('openInto.here', { scope: here }), danger: !keepsHistory && !puttingBack },
+        }}
       >
         {facts}
         <DialogChoices
@@ -93,7 +90,7 @@ export function OpenIntoDialog({
     return (
       <Dialog
         open={open} size="m" title={s('openInto.title', { name: file })} onClose={onCancel}
-        actions={<>{cancel}<Button variant="primary" onClick={onHere} data-testid="open-into-here">{s('openInto.here', { scope: here })}</Button></>}
+        actions={{ cancel, outcome: { onClick: onHere, 'data-testid': 'open-into-here', label: s('openInto.here', { scope: here }) } }}
       >
         {facts}
         <p>{hereEffect}</p>
@@ -103,13 +100,11 @@ export function OpenIntoDialog({
   return (
     <Dialog
       open={open} size="m" title={s('openInto.replaceTitle', { name: file })} onClose={onCancel}
-      actions={(
-        <>
-          {onSaveCopyFirst && <Button variant="quiet" onClick={onSaveCopyFirst} data-testid="open-into-copy-first">{s('openInto.copyFirst', { scope: here })}</Button>}
-          {cancel}
-          <Button variant="danger" onClick={onHere} data-testid="open-into-here">{s('openInto.replaceAndLose')}</Button>
-        </>
-      )}
+      actions={{
+        cancel,
+        also: [onSaveCopyFirst && { onClick: onSaveCopyFirst, 'data-testid': 'open-into-copy-first', label: s('openInto.copyFirst', { scope: here }) }],
+        outcome: { onClick: onHere, 'data-testid': 'open-into-here', label: s('openInto.replaceAndLose'), danger: true },
+      }}
     >
       {facts}
       <DialogDanger title={below > 0 ? s('openInto.goneBelow', { scope: here, count: below }) : s('openInto.gone', { scope: here })}>

@@ -11,7 +11,6 @@ import Autocomplete from '@mui/material/Autocomplete'
 import { FieldBox } from '../../widgets/kit/FieldBox'
 import { useStrings } from '../../i18n/LanguageContext'
 import { isWithinScope } from '../../projects/scopePath'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { SelectField, TextField } from '../../widgets/kit/Field'
 import { renderScopeOption } from '../../widgets/ScopeChoices'
@@ -42,12 +41,10 @@ export function NewTopicDialog({ access, parent, name: named = '', relevantTo = 
   return (
     <Dialog
       open size="m" title={under ? t('topics.newSubtopic') : t('topics.new')} onClose={() => onClose()}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={() => onClose()}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!name.trim() || busy} onClick={make} data-testid="topic-create">{t('topics.create')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: () => onClose(), label: t('common.cancel') },
+        outcome: { disabled: !name.trim() || busy, onClick: make, 'data-testid': 'topic-create', label: t('topics.create') },
+      }}
     >
       <p>{t('topics.newIntro')}</p>
       <TextField autoFocus label={t('topics.name')} value={name} onChange={setName} data-testid="topic-name" />

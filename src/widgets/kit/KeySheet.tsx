@@ -8,7 +8,6 @@
  * its own cannot come to look like two different things.
  */
 import { Fragment } from 'react'
-import { Button } from './Button'
 import { Dialog } from './Dialog'
 import './Frame.css'
 
@@ -25,7 +24,7 @@ export function KeySheet({ open, onClose, title, closeLabel, orWord, groups }: {
   readonly groups: readonly KeyGroup[]
 }) {
   return (
-    <Dialog open={open} onClose={onClose} size="l" title={title} actions={<Button onClick={onClose}>{closeLabel}</Button>}>
+    <Dialog open={open} onClose={onClose} size="l" title={title} actions={{ cancel: { onClick: onClose, label: closeLabel } }}>
       <div className="kit-sheet" data-testid="shortcuts-sheet">
         {groups.filter((group) => group.rows.length > 0).map((group) => (
           <section key={group.title}>

@@ -231,12 +231,10 @@ function EndOn({ held, day, today, person, role, language, t, onEnd }: {
       <Dialog
         open={asking} size="s" title={t('chart.assignmentEndTitle', { person, role })} onClose={() => setAsking(false)}
         onSubmit={() => { if (ready) { setAsking(false); onEnd(until) } }}
-        actions={(
-          <>
-            <Button onClick={() => setAsking(false)}>{t('assign.cancel')}</Button>
-            <Button type="submit" variant="primary" reason={ready ? undefined : t('chart.assignmentLastDay')} data-testid="assignment-end-on">{t('chart.assignmentEndOn')}</Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setAsking(false), label: t('assign.cancel') },
+          outcome: { type: 'submit', reason: ready ? undefined : t('chart.assignmentLastDay'), 'data-testid': 'assignment-end-on', label: t('chart.assignmentEndOn') },
+        }}
       >
         <DateField label={t('chart.assignmentLastDay')} value={until} onChange={setUntil} data-testid="assignment-until" autoFocus
           hint={t('chart.assignmentEndBody')} {...(early && held.from !== undefined ? { error: t('chart.assignmentEndEarly', { day: formatDay(held.from, language) }) } : {})}

@@ -25,7 +25,6 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import type { Translate } from '../../i18n'
 import { PickToAdd } from '../../widgets/PickToAdd'
 import type { PickOption } from '../../widgets/PickToAdd'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import { flattenScopes } from '../../projects/scope'
@@ -73,12 +72,10 @@ export function NewScopeDialog({
   return (
     <Dialog
       open={open} title={s('picker.newScopeTitle')} onClose={onCancel} onSubmit={() => { if (ready) onCreate() }}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="primary" reason={ready ? undefined : s('picker.nameFirst')} onClick={onCreate}>{s('picker.create')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { reason: ready ? undefined : s('picker.nameFirst'), onClick: onCreate, label: s('picker.create') },
+      }}
     >
       {open && (
         <>

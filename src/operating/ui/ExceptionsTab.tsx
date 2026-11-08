@@ -175,7 +175,10 @@ export function ExceptionsTab({ model, exceptions, readOnly, dispatch, onBackBel
       </Preview>
       <Dialog
         open={asking !== undefined} onClose={() => setAsking(undefined)} title={t('operating.changeTheRole')} size="s"
-        actions={<><Button variant="plain" onClick={() => setAsking(undefined)}>{t('operating.cancel')}</Button><Button variant="primary" data-testid="operating-change-role-confirm" onClick={toRole}>{t('operating.changeTheRole')}</Button></>}
+        actions={{
+          cancel: { onClick: () => setAsking(undefined), label: t('operating.cancel') },
+          outcome: { 'data-testid': 'operating-change-role-confirm', onClick: toRole, label: t('operating.changeTheRole') },
+        }}
       >
         {asking && <p>{t('operating.changeRoleAsk', { role: roleNamed(model.roles, asking.roleId), says: roleNamed(model.roles, asking.saysRole), units: asking.units })}</p>}
       </Dialog>

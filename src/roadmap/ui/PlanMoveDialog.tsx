@@ -10,7 +10,6 @@ import { useState } from 'react'
 import type { DesignModel, Transition } from '../../model'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { PropertyRow, PropertyRows, TextField } from '../../widgets/kit/Field'
 import { Segmented } from '../../widgets/kit/Segmented'
@@ -35,12 +34,10 @@ export function PlanMoveDialog({ plan, model, onMove, onClose }: {
   return (
     <Dialog
       open size="m" title={t('plan.moveTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={days === 0} onClick={() => onMove(days)}>{plural(t, { one: 'plan.moveActOne', other: 'plan.moveAct' }, count)}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: days === 0, onClick: () => onMove(days), label: plural(t, { one: 'plan.moveActOne', other: 'plan.moveAct' }, count) },
+      }}
     >
       <div className="plan-form">
         <span className="plan-form__grow">

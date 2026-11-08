@@ -189,24 +189,16 @@ export function AssignDialog(props: AssignDialogProps) {
     <Dialog
       open size="s" steady onClose={onClose} onSubmit={save} data-testid="assign-dialog"
       title={s(held ? 'assign.editTitle' : 'assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}
-      actions={(
-        <>
-          {held && (
-            <span className="kit-dialog__start">
-              <Button size="small" variant="danger" onClick={() => done({ type: 'assignment.remove', id: held.id })} data-testid="assign-remove">{s('assign.remove')}</Button>
-              {!held.until && !(held.from && held.from > endOn) && (
-                <Button size="small" onClick={() => done({ type: 'assignment.update', id: held.id, patch: { until: endOn } })} data-testid="assign-end">
-                  {s('assign.endToday', { day: formatDay(endOn, language) })}
-                </Button>
-              )}
-            </span>
-          )}
-          <Button onClick={onClose}>{s('assign.cancel')}</Button>
-          <Button type="submit" variant="primary" reason={form.person && form.roleId ? undefined : s('assign.pickFirst')} data-testid="assign-save">
-            {s(held ? 'assign.saveChange' : 'assign.save')}
-          </Button>
-        </>
-      )}
+      actions={{
+        aside: [
+          held && !held.until && !(held.from && held.from > endOn) && {
+            onClick: () => done({ type: 'assignment.update', id: held.id, patch: { until: endOn } }), 'data-testid': 'assign-end', label: s('assign.endToday', { day: formatDay(endOn, language) }),
+          },
+          held && { onClick: () => done({ type: 'assignment.remove', id: held.id }), 'data-testid': 'assign-remove', label: s('assign.remove'), danger: true },
+        ],
+        cancel: { onClick: onClose, label: s('assign.cancel') },
+        outcome: { type: 'submit', reason: form.person && form.roleId ? undefined : s('assign.pickFirst'), 'data-testid': 'assign-save', label: s(held ? 'assign.saveChange' : 'assign.save') },
+      }}
     >
       <div className="chart-assign" data-flat=""><AssignFields props={props} state={state} /></div>
     </Dialog>

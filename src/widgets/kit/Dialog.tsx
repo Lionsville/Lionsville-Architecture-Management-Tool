@@ -23,7 +23,68 @@
 import { useId } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import MuiDialog from '@mui/material/Dialog'
+import { Button } from './Button'
+import type { ButtonProps } from './Button'
 import './Dialog.css'
+
+/** One answer: a button's own props, its words as `label`. Its look is the footer's to give. */
+export type DialogAct = Omit<ButtonProps, 'variant' | 'size' | 'children'> & {
+  label: ReactNode
+  /** No way back: drawn in the danger ink, wherever it stands. */
+  danger?: boolean
+  'data-testid'?: string
+  'data-guide'?: string
+}
+
+/** An answer, or nothing where a condition left it out (`ready && { … }`). */
+type MaybeAct = DialogAct | false | null | undefined | '' | 0
+
+/**
+ * A dialog's answers, by what each is rather than how it looks, so every dialog
+ * says them in one order with one look (`DialogFooter`).
+ */
+export type DialogAnswers = {
+  /** No: leaves everything as it was. The quiet button, just before the outcome; a dialog that only tells says Close here. */
+  cancel?: DialogAct
+  /** Another answer to the same question, beside the outcome: *Keep theirs* to *Keep mine*. Plain. */
+  also?: readonly MaybeAct[]
+  /** The outcome: the one primary, last; a danger where there is no way back. */
+  outcome?: MaybeAct
+  /** Something else to do with what the dialog is about — *Remove*, *End today*, *Copy as text* — at the row's far start, apart from the answers, the destructive first. */
+  aside?: readonly MaybeAct[]
+}
+
+const present = (acts: readonly MaybeAct[] | undefined): DialogAct[] =>
+  (acts ?? []).filter((act): act is DialogAct => Boolean(act))
+
+function Answer({ act, variant }: { act: DialogAct; variant: 'plain' | 'quiet' | 'primary' }) {
+  const { label, danger, ...rest } = act
+  return <Button {...rest} variant={danger ? 'danger' : variant}>{label}</Button>
+}
+
+/**
+ * **Dialog footer**: every dialog's answers in one order and one look. What
+ * else can be done with the subject stands at the far start, the destructive
+ * first; the answers stand at the end, a quiet Cancel first and the outcome
+ * last, the outcome the one primary or a danger, any other answer plain. A dialog drawn by other means than `Dialog` — a palette, a picker with
+ * its own frame — puts this at its foot too (`build/dialogFooter.test.ts`).
+ */
+export function DialogFooter({ cancel, also, outcome, aside }: DialogAnswers) {
+  // The destructive first, so it stands furthest from the answer a person reaches for.
+  const before = [...present(aside)].sort((a, b) => Number(Boolean(b.danger)) - Number(Boolean(a.danger)))
+  return (
+    <div className="kit-dialog__actions">
+      {before.length > 0 && (
+        <div className="kit-dialog__start">
+          {before.map((act, at) => <Answer key={at} act={act} variant="plain" />)}
+        </div>
+      )}
+      {cancel && <Answer act={cancel} variant="quiet" />}
+      {present(also).map((act, at) => <Answer key={at} act={act} variant="plain" />)}
+      {outcome && <Answer act={outcome} variant="primary" />}
+    </div>
+  )
+}
 
 export type DialogSize = 's' | 'm' | 'l'
 
@@ -34,8 +95,8 @@ export type DialogProps = {
   /** The act: *Open acme-logistics.lvarch*. */
   title: string
   children: ReactNode
-  /** The answers, plain first and the outcome last. */
-  actions: ReactNode
+  /** The answers, said by what each is: the footer gives them their order and look. */
+  actions?: DialogAnswers | null
   /** No, by Escape or the scrim. */
   onClose: () => void
   error?: string
@@ -59,7 +120,7 @@ export function Dialog({
       <h2 className="kit-dialog__title" id={titleId}>{title}</h2>
       <div className="kit-dialog__body">{children}</div>
       {error && <p className="kit-dialog__error" role="alert">{error}</p>}
-      <div className="kit-dialog__actions">{actions}</div>
+      {actions && <DialogFooter {...actions} />}
     </>
   )
   return (

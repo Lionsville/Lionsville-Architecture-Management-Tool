@@ -24,7 +24,6 @@ import { nextLevel } from '../../model/buildingBlock'
 import { drivenBy as contextsDriving, fitOf, needsOf, percent } from '../../model/evaluation'
 import type { Evaluation, Fit } from '../../model/evaluation'
 import type { BlockCapability as Capability, BlockLevel as Level, DesignElement, SolutionSort } from '../../model/types'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import { Matrix } from '../../widgets/kit/Matrix'
@@ -217,12 +216,10 @@ function NoteDialog({ value, onClose, onSave }: { value: string; onClose: () => 
   return (
     <Dialog
       open title={t('blocks.howTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" onClick={() => onSave(how.trim())}>{t('blocks.save')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { onClick: () => onSave(how.trim()), label: t('blocks.save') },
+      }}
     >
       <TextField autoFocus rows={2} label={t('blocks.note')} placeholder={t('blocks.howPlaceholder')} value={how} onChange={setHow} />
     </Dialog>

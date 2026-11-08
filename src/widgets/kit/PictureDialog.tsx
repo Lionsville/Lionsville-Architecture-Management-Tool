@@ -17,7 +17,6 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
-import { Button } from './Button'
 import { Dialog } from './Dialog'
 import './PictureDialog.css'
 
@@ -116,14 +115,10 @@ export function PictureDialog(props: PictureDialogProps) {
       open={props.open ?? true} size={props.preview !== undefined ? 'l' : 'm'} title={t('kit.picture.title', { name: props.name })} onClose={props.onClose} working={held}
       data-testid={props['data-testid']}
       {...(failure !== undefined ? { error: props.failed ? props.failed(failure) : t('kit.picture.failed', { message: failure }) } : {})}
-      actions={(
-        <>
-          <Button onClick={props.onClose} disabled={held}>{t('kit.focused.cancel')}</Button>
-          <Button variant="primary" working={held} data-testid={props.saveTestId} onClick={() => { void save() }}>
-            {busy ? t('kit.picture.busy') : props.saveWord ?? t('kit.picture.save')}
-          </Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: props.onClose, disabled: held, label: t('kit.focused.cancel') },
+        outcome: { working: held, 'data-testid': props.saveTestId, onClick: () => { void save() }, label: busy ? t('kit.picture.busy') : props.saveWord ?? t('kit.picture.save') },
+      }}
     >
       {props.preview !== undefined
         ? <div className="kit-picture">{options}<div className="kit-picture__preview">{props.preview}</div></div>

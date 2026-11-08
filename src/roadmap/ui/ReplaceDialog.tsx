@@ -19,7 +19,7 @@ import { useFreshFor } from '../../widgets/useFreshFor'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -172,10 +172,10 @@ export function ReplaceDialog({ subject, model, onCancel, onConfirm }: ReplaceDi
         </Box>
         <Typography variant="caption" color="text.secondary">{t('replace.help')}</Typography>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={!ready} onClick={confirm}>{t('replace.start')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onCancel, label: t('common.cancel') }}
+        outcome={{ disabled: !ready, onClick: confirm, label: t('replace.start') }}
+      />
     </FieldsDialog>
   )
 }

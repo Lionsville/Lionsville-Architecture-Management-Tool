@@ -23,7 +23,7 @@ import type { DesignDiagram, DesignModel, ElementId } from '../../model'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { CaretIcon } from '../../widgets/icons'
-import { Button, IconButton } from '../../widgets/kit/Button'
+import { IconButton } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { SelectField } from '../../widgets/kit/Field'
 import { journeyOf } from '../lanes'
@@ -56,7 +56,9 @@ export function SheetSettingsDialog({ model, sheet, actions, onClose }: SheetSet
       .filter((id): id is ElementId => id !== undefined)
 
   return (
-    <Dialog open size="m" title={t('sheet.settings')} onClose={onClose} actions={<Button onClick={onClose}>{t('common.close')}</Button>}>
+    <Dialog open size="m" title={t('sheet.settings')} onClose={onClose} actions={{
+      cancel: { onClick: onClose, label: t('common.close') },
+    }}>
       <SelectField
         label={t('sheet.settingsJourney')} value={sheet.journeyId ?? ''}
         options={[{ value: '', label: t('common.none') }, ...journeys.map((journey) => ({ value: journey.id, label: journey.name }))]}

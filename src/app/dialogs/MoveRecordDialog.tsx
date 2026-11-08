@@ -16,10 +16,9 @@
  * has read the help meets the same four words in the same order.
  */
 import { useEffect, useState } from 'react'
-import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -148,13 +147,9 @@ export function MoveRecordDialog({
           )}
         </Stack>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button
-          variant="contained"
-          disabled={!ready || busy}
-          data-testid="gesture-go"
-          onClick={() => {
+      <DialogFooter
+        cancel={{ onClick: onCancel, label: s('common.cancel') }}
+        outcome={{ disabled: !ready || busy, 'data-testid': 'gesture-go', onClick: () => {
             if (gesture === '') return
             onMove({
               gesture,
@@ -162,11 +157,8 @@ export function MoveRecordDialog({
               ...(to !== undefined ? { to } : {}),
               ...(gesture === 'transfer' ? { keepStandIn } : {}),
             })
-          }}
-        >
-          {s(gesture === 'link' ? 'gesture.link' : 'gesture.go')}
-        </Button>
-      </DialogActions>
+          }, label: s(gesture === 'link' ? 'gesture.link' : 'gesture.go') }}
+      />
     </FieldsDialog>
   )
 }

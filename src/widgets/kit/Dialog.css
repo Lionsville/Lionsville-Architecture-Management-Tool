@@ -29,6 +29,9 @@
 .kit-dialog__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: var(--s-2); }
 /* What is not the dialog's answer, the destructive first, at the far start: Cancel and the answer keep the end. */
 .kit-dialog__start { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-inline-end: auto; }
+/* The same footer at the foot of a dialog with a frame of its own, which has no padding of the kit's: lined up with MUI's content. */
+.MuiDialog-paper:not(.kit-dialog) .kit-dialog__actions { padding: var(--s-2) var(--s-5) var(--s-4); }
+.MuiDialog-paper:not(.kit-dialog) .kit-dialog__error { padding-inline: var(--s-5); }
 
 .kit-dialog__choices { display: flex; flex-direction: column; gap: var(--s-3); margin: 0; padding: 0; border: 0; min-width: 0; }
 .kit-dialog__legend { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

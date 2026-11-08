@@ -5,9 +5,8 @@ import { useMemo, useState } from 'react';
 import { placedNodes } from '../model/placement';
 import type { ColourBy, OverlayBand } from '../model/overlay';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
+import { DialogFooter } from '../widgets/kit/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
@@ -498,19 +497,13 @@ export function EditorToolbar(props: EditorToolbarProps) {
                 onChange={(day) => setDuplicateAsOf((held) => (held ? { ...held, day } : held))}
               />
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDuplicateAsOf(null)}>{t('common.cancel')}</Button>
-              <Button
-                variant="contained"
-                disabled={!duplicateAsOf?.day}
-                onClick={() => {
+            <DialogFooter
+              cancel={{ onClick: () => setDuplicateAsOf(null), label: t('common.cancel') }}
+              outcome={{ disabled: !duplicateAsOf?.day, onClick: () => {
                   if (duplicateAsOf?.day) props.onDuplicateDiagram?.(duplicateAsOf.diagramId, duplicateAsOf.day);
                   setDuplicateAsOf(null);
-                }}
-              >
-                {t('menu.duplicateDiagram')}
-              </Button>
-            </DialogActions>
+                }, label: t('menu.duplicateDiagram') }}
+            />
           </Dialog>
           {!props.readOnly && <NewViewMenu props={props} />}
         </>

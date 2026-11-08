@@ -13,9 +13,8 @@
  * what picking one means are `useLibrary`'s, which asks `projects/library.ts`.
  */
 import { useEffect, useState } from 'react'
-import Button from '@mui/material/Button'
 import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -57,11 +56,11 @@ export function AddFromLibraryDialog({
         <DialogContent>
           <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>{s('library.ownBody', { name: choice.name })}</DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={onCancel}>{s('common.cancel')}</Button>
-          {choice.canDrawOnly && <Button onClick={onDrawOnly}>{s('library.drawOnly')}</Button>}
-          <Button variant="contained" onClick={onOwn}>{s('library.own')}</Button>
-        </DialogActions>
+        <DialogFooter
+          cancel={{ onClick: onCancel, label: s('common.cancel') }}
+          also={[choice.canDrawOnly && { onClick: onDrawOnly, label: s('library.drawOnly') }]}
+          outcome={{ onClick: onOwn, label: s('library.own') }}
+        />
       </FieldsDialog>
     )
   }
@@ -88,9 +87,9 @@ export function AddFromLibraryDialog({
             </ListItemButton>
           </List>
         </DialogContent>
-        <DialogActions>
-          <Button size="small" onClick={onCancel}>{s('common.cancel')}</Button>
-        </DialogActions>
+        <DialogFooter
+          cancel={{ onClick: onCancel, label: s('common.cancel') }}
+        />
       </FieldsDialog>
     )
   }
@@ -139,9 +138,9 @@ export function AddFromLibraryDialog({
           ))}
         </List>
       </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onCancel}>{s('common.cancel')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onCancel, label: s('common.cancel') }}
+      />
     </FieldsDialog>
   )
 }

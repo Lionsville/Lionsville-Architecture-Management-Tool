@@ -20,10 +20,9 @@
  */
 import { useState } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -114,12 +113,10 @@ export function LaneDialog({ model, phases, onCancel, onConfirm }: LaneDialogPro
           ))}
         </FieldBox>
       </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onCancel}>{t('common.cancel')}</Button>
-        <Button size="small" variant="contained" disabled={!ready} onClick={confirm}>
-          {t('sheet.laneAdd')}
-        </Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onCancel, label: t('common.cancel') }}
+        outcome={{ disabled: !ready, onClick: confirm, label: t('sheet.laneAdd') }}
+      />
     </FieldsDialog>
   )
 }

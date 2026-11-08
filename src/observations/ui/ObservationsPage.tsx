@@ -1155,7 +1155,7 @@ function HowToRead({ open, onClose, stage, size, local, phases, phaseCounts, lan
   return (
     <Dialog
       open={open} size="m" title={s('observation.howToRead')} onClose={onClose}
-      actions={<Button variant="primary" onClick={onClose}>{s('common.close')}</Button>}
+      actions={{ cancel: { onClick: onClose, label: s('common.close') } }}
     >
       <div className="chain-read" data-testid="how-to-read-body">
         {stage === 'solutions' ? (

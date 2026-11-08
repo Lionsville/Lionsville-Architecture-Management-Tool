@@ -12,7 +12,6 @@ import { useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { usePlaceGo } from '../../widgets/placeTab'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { PageState } from '../../widgets/kit/PageState'
 import type { PageAction } from '../../widgets/kit/PageState'
@@ -61,7 +60,9 @@ export function GuidanceFrame({ tab, children }: { tab: GuidanceTab; children: R
       {children}
       <Dialog
         open={asking} size="m" title={t('guidance.which.ask')} onClose={() => setAsking(false)}
-        actions={<Button variant="plain" onClick={() => setAsking(false)}>{t('common.close')}</Button>}
+        actions={{
+          cancel: { onClick: () => setAsking(false), label: t('common.close') },
+        }}
       >
         <WhichOne />
       </Dialog>

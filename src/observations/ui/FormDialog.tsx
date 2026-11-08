@@ -24,9 +24,8 @@
  */
 import { useId, useRef, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Typography from '@mui/material/Typography'
@@ -90,18 +89,11 @@ export function FormDialog(props: FormDialogProps) {
           {props.children}
         </Box>
       </DialogContent>
-      <DialogActions sx={{ px: 3, py: 1.5, ...(size === 'lg' ? { borderTop: 1, borderColor: 'divider' } : {}) }}>
-        <Box sx={{ flex: 1 }}>
-          {problem && <Typography role="alert" color="error" sx={{ fontSize: 'var(--t-body)' }} data-testid={props.problemTestId}>{problem}</Typography>}
-        </Box>
-        <Button onClick={onCancel} sx={{ textTransform: 'none' }}>{s('common.cancel')}</Button>
-        <Button
-          variant="contained" onClick={onSubmit} disabled={props.submitDisabled} sx={{ textTransform: 'none' }}
-          data-testid={props.submitTestId} data-guide={props.submitGuide}
-        >
-          {props.submitLabel}
-        </Button>
-      </DialogActions>
+      {problem && <p className="kit-dialog__error" role="alert" data-testid={props.problemTestId}>{problem}</p>}
+      <DialogFooter
+        cancel={{ onClick: onCancel, label: s('common.cancel') }}
+        outcome={{ onClick: onSubmit, disabled: props.submitDisabled, 'data-testid': props.submitTestId, 'data-guide': props.submitGuide, label: props.submitLabel }}
+      />
     </FieldsDialog>
   )
 }

@@ -70,12 +70,10 @@ export function NewViewDialog({ open, naming, about, elements, canDraw, make, on
     <Dialog
       open={open} size="m" title={s('frame.newView')} onClose={onClose} data-guide="drawing.chooser"
       {...(drawing ? { onSubmit: submit } : {})}
-      actions={(
-        <>
-          <Button variant="plain" onClick={onClose} data-testid="new-view-cancel">{s('common.cancel')}</Button>
-          {drawing && <Button variant="primary" type="submit" disabled={!name.trim()} data-testid="new-drawing-make">{s('newView.makeDrawing')}</Button>}
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, 'data-testid': 'new-view-cancel', label: s('common.cancel') },
+        outcome: drawing && { type: 'submit', disabled: !name.trim(), 'data-testid': 'new-drawing-make', label: s('newView.makeDrawing') },
+      }}
     >
       <div className="new-view" data-testid="new-view">
         <h3 className="new-view__group">{s('newView.modelDraws')}</h3>

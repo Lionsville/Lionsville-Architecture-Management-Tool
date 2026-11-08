@@ -83,12 +83,10 @@ function EvaluateDialog({ row, onClose }: { row: BlockRow; onClose: (made?: stri
   return (
     <Dialog
       open size="m" title={t('blocks.evaluateFor')} onClose={() => onClose()}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={() => onClose()}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={busy || choices.length === 0} onClick={start} data-testid="evaluate-start">{t('blocks.evaluateStart')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: () => onClose(), label: t('common.cancel') },
+        outcome: { disabled: busy || choices.length === 0, onClick: start, 'data-testid': 'evaluate-start', label: t('blocks.evaluateStart') },
+      }}
     >
       <p>{t('blocks.evaluateIntro')}</p>
       <SelectField label={t('blocks.colScope')} value={scope} onChange={setScope} options={scopeOptions(choices, t)} data-testid="evaluate-scope" />

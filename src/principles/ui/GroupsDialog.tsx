@@ -36,12 +36,10 @@ export function GroupsDialog({ open, scope, onClose }: { open: boolean; scope: s
   return (
     <Dialog
       open={open} size="m" title={t('principles.groupsTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" onClick={() => { access.setGroups(scope, list.filter((one) => one.name.trim())); onClose() }} data-testid="groups-save">{t('principles.save')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { onClick: () => { access.setGroups(scope, list.filter((one) => one.name.trim())); onClose() }, 'data-testid': 'groups-save', label: t('principles.save') },
+      }}
     >
       <p>{t('principles.groupsIntro')}</p>
       {list.map((group, index) => (

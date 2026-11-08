@@ -588,12 +588,10 @@ function NewBoardDialog({ open, name, onNameChange, onCancel, onCreate, s }: {
   return (
     <Dialog
       open={open} title={s('org.newLandscapeTitle')} onClose={onCancel} onSubmit={() => { if (ready) onCreate() }}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="primary" reason={ready ? undefined : s('picker.nameFirst')} onClick={onCreate}>{s('picker.create')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { reason: ready ? undefined : s('picker.nameFirst'), onClick: onCreate, label: s('picker.create') },
+      }}
     >
       {open && <TextField autoFocus label={s('org.boardName')} value={name} onChange={onNameChange} />}
     </Dialog>

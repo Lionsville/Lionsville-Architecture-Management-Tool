@@ -12,7 +12,6 @@
  */
 import { useEffect, useState } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { SelectField, TextField } from '../../widgets/kit/Field'
 import type { SelectOption } from '../../widgets/kit/Field'
@@ -41,12 +40,10 @@ export function NewAdrDialog({ open, subjects, about = ABOUT_THE_SCOPE, onCancel
     <Dialog
       open={open} size="m" title={s('adr.new')} onClose={onCancel}
       onSubmit={() => { if (ready) onCreate(title.trim(), chosen) }}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button type="submit" variant="primary" disabled={!ready}>{s('adr.create')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { type: 'submit', disabled: !ready, label: s('adr.create') },
+      }}
     >
       <TextField autoFocus label={s('adr.newTitleField')} hint={s('adr.newTitleHelp')} value={title} onChange={setTitle} />
       <SelectField label={s('adr.aboutField')} hint={s('adr.aboutHelp')} value={chosen} options={subjects} onChange={setChosen} />
@@ -80,12 +77,10 @@ export function SupersedeDialog({ target, candidates, onCancel, onConfirm, s }: 
   return (
     <Dialog
       open={Boolean(target)} size="m" title={s('adr.supersedeTitle')} onClose={onCancel}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="primary" disabled={!chosen} onClick={() => onConfirm(chosen)}>{s('adr.supersedeConfirm')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { disabled: !chosen, onClick: () => onConfirm(chosen), label: s('adr.supersedeConfirm') },
+      }}
     >
       <p>{s('adr.supersedeBody')}</p>
       {candidates.length === 0
@@ -124,12 +119,10 @@ export function ReasonDialog({ target, withdraw, required, onCancel, onConfirm, 
   return (
     <Dialog
       open={Boolean(target)} size="m" title={s(withdraw ? 'adr.withdrawTitle' : 'adr.rejectTitle', { name })} onClose={onCancel}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="danger" disabled={!ready} onClick={() => onConfirm(reason.trim())}>{s(withdraw ? 'adr.withdraw' : 'adr.reject')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { disabled: !ready, onClick: () => onConfirm(reason.trim()), label: s(withdraw ? 'adr.withdraw' : 'adr.reject'), danger: true },
+      }}
     >
       <p>{s(withdraw ? 'adr.withdrawBody' : 'adr.rejectBody')}</p>
       <TextField autoFocus rows={3} required={required} label={s('adr.reasonField')} value={reason} onChange={setReason} />
@@ -161,12 +154,10 @@ export function MoveDialogs({ accepting, rejecting, listOf, onAccept, onReject, 
     <>
       <Dialog
         open={Boolean(accepting)} title={accepting ? s('adr.acceptTitle', { name: formatAdrNumber(accepting.number) }) : ''} onClose={onCancel}
-        actions={(
-          <>
-            <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-            <Button variant="primary" onClick={() => { if (accepting) onAccept(accepting) }}>{s('adr.accept')}</Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: onCancel, label: s('common.cancel') },
+          outcome: { onClick: () => { if (accepting) onAccept(accepting) }, label: s('adr.accept') },
+        }}
       >
         <p>{s('adr.acceptBody')}{replacing.length > 0 && ` ${s('adr.acceptSupersedes', { names: replacing.join(', ') })}`}</p>
       </Dialog>
@@ -187,12 +178,10 @@ export function DeleteDialog({ target, onCancel, onConfirm, s }: { target?: Adr;
   return (
     <Dialog
       open={Boolean(target)} title={target ? s('adr.deleteTitle', { name: `${formatAdrNumber(target.number)} ${target.title}` }) : ''} onClose={onCancel}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="danger" onClick={onConfirm}>{s('adr.delete')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { onClick: onConfirm, label: s('adr.delete'), danger: true },
+      }}
     >
       <p>{s('adr.deleteBody')}</p>
     </Dialog>

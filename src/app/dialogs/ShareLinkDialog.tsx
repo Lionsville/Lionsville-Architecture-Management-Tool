@@ -12,7 +12,6 @@
  * a screen reader reads it as the value of something named.
  */
 import type { Translate } from '../../i18n'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import type { ShareAnswer } from '../useShareLink'
@@ -36,13 +35,12 @@ export function ShareLinkDialog({ answer, onCopy, onClose, onSaveCopy, place, s 
       open={answer !== undefined}
       title={s(noAddress ? 'share.noLinkTitle' : 'share.title')}
       onClose={onClose}
-      actions={(
-        <>
-          <Button onClick={onClose}>{s('common.close')}</Button>
-          {link !== undefined && <Button variant="primary" onClick={onCopy}>{s('share.copy')}</Button>}
-          {noAddress && onSaveCopy && <Button variant="primary" onClick={() => { onClose(); onSaveCopy() }} data-testid="share-save-copy">{s('menu.exportWorkingFile')}</Button>}
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: s('common.close') },
+        outcome: link !== undefined
+          ? { onClick: onCopy, label: s('share.copy') }
+          : noAddress && onSaveCopy && { onClick: () => { onClose(); onSaveCopy() }, 'data-testid': 'share-save-copy', label: s('menu.exportWorkingFile') },
+      }}
     >
       {link !== undefined && (
         <>

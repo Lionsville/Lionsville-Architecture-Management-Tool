@@ -18,7 +18,6 @@
  * know what a model is.
  */
 import { useState } from 'react';
-import { Button } from '../widgets/kit/Button';
 import { Card } from '../widgets/kit/Card';
 import { Dialog } from '../widgets/kit/Dialog';
 import { DateField, TextField } from '../widgets/kit/Field';
@@ -188,12 +187,10 @@ export function DiagramSettingsDialog({
       title={t('diagramSettings.title')}
       onClose={onClose}
       onSubmit={commit}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" type="submit" disabled={!canSave}>{t('common.save')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { type: 'submit', disabled: !canSave, label: t('common.save') },
+      }}
     >
       {draft && isLayer7 && (
         <>

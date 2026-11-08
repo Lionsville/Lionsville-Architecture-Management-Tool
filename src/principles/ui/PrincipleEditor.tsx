@@ -15,7 +15,6 @@ import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import { formatPrincipleNumber, PRINCIPLE_REGIMES, PRINCIPLE_STATUSES } from '../../model/principle'
 import type { Principle } from '../../model/principle'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogChoices } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
@@ -71,12 +70,10 @@ export function PrincipleEditor({ open, scope, principle, title, onClose }: {
       </FocusedWindow>
       <Dialog
         open={askingNote} title={t('principles.sharpenTitle')} onClose={() => setAskingNote(false)}
-        actions={(
-          <>
-            <Button variant="plain" onClick={() => setAskingNote(false)}>{t('principles.back')}</Button>
-            <Button variant="primary" onClick={keep} reason={note.trim() ? undefined : t('principles.sharpenNeeds')}>{t('principles.sharpenSave')}</Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setAskingNote(false), label: t('principles.back') },
+          outcome: { onClick: keep, reason: note.trim() ? undefined : t('principles.sharpenNeeds'), label: t('principles.sharpenSave') },
+        }}
       >
         <p>{t('principles.sharpenIntro')}</p>
         <TextField autoFocus required rows={2} label={t('principles.sharpenNote')} value={note} onChange={setNote} data-testid="principle-sharpen-note" />

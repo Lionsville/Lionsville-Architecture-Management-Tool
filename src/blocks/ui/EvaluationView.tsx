@@ -87,12 +87,10 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
       {proposing && <ProposeDialog row={row} scope={scope} evaluation={evaluation} onClose={() => setProposing(false)} />}
       <Dialog
         open={removing} title={t('blocks.removeEvaluationTitle', { scope: access.scopeLabel(scope) })} onClose={() => setRemoving(false)}
-        actions={(
-          <>
-            <Button variant="quiet" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
-            <Button variant="danger" onClick={() => { setRemoving(false); access.removeEvaluation(scope, evaluation.id); onBack() }}>{t('blocks.remove')}</Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setRemoving(false), label: t('common.cancel') },
+          outcome: { onClick: () => { setRemoving(false); access.removeEvaluation(scope, evaluation.id); onBack() }, label: t('blocks.remove'), danger: true },
+        }}
       >
         <p>{t('blocks.removeEvaluationBody')}</p>
       </Dialog>
@@ -117,14 +115,12 @@ function ProposeDialog({ row, scope, evaluation, onClose }: { row: BlockRow; sco
   return (
     <Dialog
       open size="m" title={t('blocks.proposeTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="plain" onClick={onClose}>{made ? t('common.close') : t('common.cancel')}</Button>
-          {made
-            ? <Button variant="primary" onClick={() => access.openDecision(scope, made)} data-testid="propose-open">{t('blocks.openDecision')}</Button>
-            : <Button variant="primary" disabled={busy || !option} onClick={propose} data-testid="propose-submit">{t('blocks.proposeSubmit')}</Button>}
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: made ? t('common.close') : t('common.cancel') },
+        outcome: made
+          ? { onClick: () => access.openDecision(scope, made), 'data-testid': 'propose-open', label: t('blocks.openDecision') }
+          : { disabled: busy || !option, onClick: propose, 'data-testid': 'propose-submit', label: t('blocks.proposeSubmit') },
+      }}
     >
       {made ? <p role="status">{t('blocks.proposed')}</p> : (
         <>

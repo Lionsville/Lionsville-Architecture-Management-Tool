@@ -13,7 +13,6 @@ import type { Command } from '../../model/commands'
 import type { HostModel } from '../../model/hostModel'
 import { nextTransitionNumber } from '../../model/transition'
 import type { ElementId } from '../../model/types'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { Picker } from '../../widgets/kit/Picker'
 import type { UnitViewsHere } from './unitViewsHere'
@@ -50,7 +49,9 @@ export function ConwayPlanDialog({ ids, model, here, declare, onClose, onOpenPla
   return (
     <Dialog
       open size="s" title={t('conway.plan.title')} onClose={onClose}
-      actions={<Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+      }}
     >
       <p className="conway__quiet">{t('conway.plan.about')}</p>
       <Picker

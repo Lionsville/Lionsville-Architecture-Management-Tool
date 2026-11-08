@@ -30,13 +30,11 @@ export function DrawingLeaveDialog({ open, to, failed, saving, onLeave, onStay, 
     <Dialog
       open={open} size="s" title={s('drawing.leaveTitle')} onClose={onStay} working={saving}
       error={failed ? s('drawing.saveFailed') : undefined}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onLeave} data-testid="drawing-leave-unsaved">{s('drawing.leaveUnsaved')}</Button>
-          <Button variant="plain" onClick={onStay} data-testid="drawing-leave-stay">{s('drawing.leaveStay')}</Button>
-          <Button variant="primary" working={saving} onClick={onSave} data-testid="drawing-leave-save">{s('drawing.leaveSave')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onStay, 'data-testid': 'drawing-leave-stay', label: s('drawing.leaveStay') },
+        also: [{ onClick: onLeave, 'data-testid': 'drawing-leave-unsaved', label: s('drawing.leaveUnsaved'), danger: true }],
+        outcome: { working: saving, onClick: onSave, 'data-testid': 'drawing-leave-save', label: s('drawing.leaveSave') },
+      }}
     >
       <p data-testid="drawing-leave-body">{to ? `${s('drawing.leaveGoing', { name: to })} ` : ''}{s('drawing.leaveBody')}</p>
     </Dialog>
@@ -87,14 +85,10 @@ function PointDialog({ elements, onCancel, onPoint, kindWord, s }: {
   return (
     <Dialog
       open size="m" title={s('drawing.pointTitle')} onClose={onCancel}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="primary" disabled={!chosen} onClick={() => { if (chosen) onPoint(chosen) }} data-testid="drawing-point-confirm">
-            {chosen ? s('drawing.pointConfirm', { name: chosen.name }) : s('drawing.pointAt')}
-          </Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { disabled: !chosen, onClick: () => { if (chosen) onPoint(chosen) }, 'data-testid': 'drawing-point-confirm', label: chosen ? s('drawing.pointConfirm', { name: chosen.name }) : s('drawing.pointAt') },
+      }}
     >
       <Picker
         label={s('drawing.pointTitle')} options={options} autoFocus recent={options.slice(0, 8)} placeholder={s('drawing.pointFind')}

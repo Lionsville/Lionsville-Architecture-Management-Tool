@@ -17,10 +17,9 @@
  */
 import { useState } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import { FieldLabel, FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
@@ -79,10 +78,10 @@ function NothingMaySit({ none, onClose, s }: { none: NewUnitNone; onClose: () =>
       <DialogContent>
         <Typography sx={{ fontSize: 'var(--t-body)' }} data-testid="new-unit-none">{none.reason}</Typography>
       </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onClose}>{s('chart.addCancel')}</Button>
-        <Button size="small" variant="contained" onClick={() => { onClose(); none.onLink() }} data-testid="new-unit-link">{none.link}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onClose, label: s('chart.addCancel') }}
+        outcome={{ onClick: () => { onClose(); none.onLink() }, 'data-testid': 'new-unit-link', label: none.link }}
+      />
     </>
   )
 }
@@ -151,10 +150,10 @@ function NewUnitForm({ place, types, scopes, writable, chartScope, scopeLabel, o
         </FieldBox>
         {said && <Typography role="status" data-testid="new-unit-said" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }}>{said}</Typography>}
       </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onClose}>{s('chart.addCancel')}</Button>
-        <Button size="small" variant="contained" disabled={!ready} onClick={create} data-testid="new-unit-create">{s('chart.addCreate')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onClose, label: s('chart.addCancel') }}
+        outcome={{ disabled: !ready, onClick: create, 'data-testid': 'new-unit-create', label: s('chart.addCreate') }}
+      />
     </>
   )
 }

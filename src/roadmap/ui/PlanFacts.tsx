@@ -17,10 +17,10 @@ import type { Adr } from '../../model/adr'
 import { openPlanItems, planGate, statusPatch } from '../../model/transition'
 import type { PlanGate, PlanGateItem } from '../../model/transition'
 import { useStrings } from '../../i18n'
-import type { StringKey } from '../../i18n'
+import type { StringKey, Translate } from '../../i18n'
 import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
-import { Button } from '../../widgets/kit/Button'
+import type { DialogAnswers } from '../../widgets/kit/Dialog'
 import { PropertyRow, PropertyRows, DateInput } from '../../widgets/kit/Field'
 import { Mark } from '../../widgets/kit/Mark'
 import { MenuButton } from '../../widgets/kit/Menu'
@@ -222,12 +222,6 @@ export function PlanStatusLine(props: StatusProps & { editing: string | undefine
   )
 }
 
-export function DeleteActions({ onCancel, onDelete }: { onCancel: () => void; onDelete: () => void }) {
-  const { t } = useStrings()
-  return (
-    <>
-      <Button variant="quiet" onClick={onCancel}>{t('common.cancel')}</Button>
-      <Button variant="danger" onClick={onDelete}>{t('roadmap.delete')}</Button>
-    </>
-  )
+export function deleteAnswers(t: Translate, onCancel: () => void, onDelete: () => void): DialogAnswers {
+  return { cancel: { onClick: onCancel, label: t('common.cancel') }, outcome: { onClick: onDelete, label: t('roadmap.delete'), danger: true } }
 }

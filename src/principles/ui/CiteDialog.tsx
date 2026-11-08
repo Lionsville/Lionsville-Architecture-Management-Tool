@@ -11,8 +11,7 @@ import { useMemo, useState } from 'react'
 import Alert from '@mui/material/Alert'
 import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import MenuItem from '@mui/material/MenuItem'
@@ -129,10 +128,10 @@ export function CiteDialog({ open, about, here, initial, deviating = false, onCl
         )}
         {said && <Alert severity="error">{said}</Alert>}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" onClick={submit} disabled={!picked || refusal !== undefined} data-testid="cite-submit">{t(deviating ? 'principles.deviateSubmit' : 'principles.citeSubmit')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onClose, label: t('common.cancel') }}
+        outcome={{ onClick: submit, disabled: !picked || refusal !== undefined, 'data-testid': 'cite-submit', label: t(deviating ? 'principles.deviateSubmit' : 'principles.citeSubmit') }}
+      />
     </FieldsDialog>
   )
 }

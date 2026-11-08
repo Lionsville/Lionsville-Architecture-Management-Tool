@@ -15,10 +15,9 @@
  */
 import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
 import Chip from '@mui/material/Chip'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import { FieldBox } from '../../widgets/kit/FieldBox'
@@ -78,13 +77,11 @@ export function TopicChooser({ at, access, onClose }: { at: ScopePath; access: T
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions>
-        {access.mayCreate() && <Button onClick={() => setMaking(true)} sx={{ mr: 'auto' }} data-testid="topic-chooser-new">{t('topics.chooseNew')}</Button>}
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={picked.size === 0} onClick={add} data-testid="topic-chooser-add">
-          {t(picked.size === 0 ? 'topics.chooseAdd' : picked.size === 1 ? 'topics.chooseAddOne' : 'topics.chooseAddOther', { count: picked.size })}
-        </Button>
-      </DialogActions>
+      <DialogFooter
+        aside={[access.mayCreate() && { onClick: () => setMaking(true), 'data-testid': 'topic-chooser-new', label: t('topics.chooseNew') }]}
+        cancel={{ onClick: onClose, label: t('common.cancel') }}
+        outcome={{ disabled: picked.size === 0, onClick: add, 'data-testid': 'topic-chooser-add', label: t(picked.size === 0 ? 'topics.chooseAdd' : picked.size === 1 ? 'topics.chooseAddOne' : 'topics.chooseAddOther', { count: picked.size }) }}
+      />
     </FieldsDialog>
   )
 }

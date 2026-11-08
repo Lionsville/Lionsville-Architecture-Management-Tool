@@ -49,7 +49,7 @@ import { TimeStrip } from '../../widgets/kit/TimeStrip'
 import type { DescribeElsewhere } from '../planGateHints'
 import { boardsOfPlan, dayToShow } from '../planReading'
 import type { PlanBoard } from '../planReading'
-import { DeleteActions, PlanStatusLine } from './PlanFacts'
+import { deleteAnswers, PlanStatusLine } from './PlanFacts'
 import type { GateWay } from './PlanFacts'
 import { PlanInterfaces } from './PlanInterfaces'
 import { PlanMoveDialog } from './PlanMoveDialog'
@@ -371,7 +371,7 @@ function PlanRecord(props: PlanPageProps & { plan: Transition }) {
       {moving && <PlanMoveDialog plan={plan} model={model} onClose={() => setMoving(false)} onMove={(days) => { actions.shiftTransition(plan.id, days); setMoving(false) }} />}
       <Dialog
         open={deleting} title={t('roadmap.deleteConfirm', { name: plan.title })} onClose={() => setDeleting(false)}
-        actions={<DeleteActions onCancel={() => setDeleting(false)} onDelete={() => { actions.removeTransition(plan.id); setDeleting(false); props.onClose() }} />}
+        actions={deleteAnswers(t, () => setDeleting(false), () => { actions.removeTransition(plan.id); setDeleting(false); props.onClose() })}
       >
         <DialogDanger title={t('roadmap.deleteBody')} />
       </Dialog>

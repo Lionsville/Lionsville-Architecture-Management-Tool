@@ -10,7 +10,6 @@
 import { useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { matchesQuery } from '../../model/textSearch'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { FindField } from '../../widgets/kit/FindField'
 import { formatPrincipleNumber } from '../principle'
@@ -28,12 +27,10 @@ export function MergeDialog({ open, scope, into, onClose }: { open: boolean; sco
   return (
     <Dialog
       open={open} size="m" title={t('principles.mergeTitle', { number: formatPrincipleNumber(into.number) })} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={from.length === 0} onClick={() => { access.merge(scope, into.id, from); onClose() }}>{t('principles.mergeSubmit')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: from.length === 0, onClick: () => { access.merge(scope, into.id, from); onClose() }, label: t('principles.mergeSubmit') },
+      }}
     >
       <p>{t('principles.mergeIntro')}</p>
       <FindField fill autoFocus label={t('principles.search')} value={find} onChange={setFind} />

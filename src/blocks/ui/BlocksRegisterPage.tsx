@@ -144,12 +144,10 @@ function NewBlockDialog({ access, at, onClose }: { access: BlocksAccess; at: str
   return (
     <Dialog
       open size="m" title={t('blocks.new')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={busy || !name.trim() || places.length === 0} onClick={make} data-testid="block-create">{t('blocks.create')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: busy || !name.trim() || places.length === 0, onClick: make, 'data-testid': 'block-create', label: t('blocks.create') },
+      }}
     >
       <TextField autoFocus label={t('blocks.name')} value={name} onChange={setName} data-testid="block-name" />
       <SelectField label={t('blocks.colKeptIn')} hint={t('blocks.keptInHelp')} value={place} onChange={setPlace} options={scopeOptions(places, t)} />

@@ -47,12 +47,10 @@ function DaysDialog({ mode, topic, link, access, onClose }: { mode: 'end' | 'edi
   return (
     <Dialog
       open title={t(mode === 'end' ? 'topics.endTitle' : 'topics.daysTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" onClick={save}>{mode === 'end' ? t('topics.endSave') : t('topics.save')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { onClick: save, label: mode === 'end' ? t('topics.endSave') : t('topics.save') },
+      }}
     >
       {mode === 'edit' && <DateField label={t('topics.from')} value={from} onChange={setFrom} />}
       {(mode === 'end' || link.until !== undefined) && <DateField label={t('topics.until')} value={until} onChange={setUntil} />}
@@ -94,12 +92,10 @@ function AddLink({ topic, access, current, onClose }: { topic: TopicSummary; acc
   return (
     <Dialog
       open size="m" title={t('topics.addScopeTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!adding} onClick={() => { if (adding) access.relate(topic.id, adding.id, from || undefined); onClose() }} data-testid="topic-link-add">{t('topics.link')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: !adding, onClick: () => { if (adding) access.relate(topic.id, adding.id, from || undefined); onClose() }, 'data-testid': 'topic-link-add', label: t('topics.link') },
+      }}
     >
       {adding ? <p>{t('topics.pickedScope', { scope: adding.label })}</p> : <Picker label={t('topics.pickScope')} autoFocus options={options} recent={options.slice(0, 8)} onPick={setAdding} />}
       <DateField label={t('topics.from')} value={from} onChange={setFrom} />
@@ -157,12 +153,10 @@ function TopicBlocks({ topic, may }: { topic: TopicSummary; may: boolean }) {
       ))}
       <Dialog
         open={making} title={t('topics.newBlockTitle')} onClose={() => setMaking(false)}
-        actions={(
-          <>
-            <Button variant="quiet" onClick={() => setMaking(false)}>{t('common.cancel')}</Button>
-            <Button variant="primary" disabled={!name.trim()} onClick={make} data-testid="topic-new-block">{t('topics.createBlock')}</Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setMaking(false), label: t('common.cancel') },
+          outcome: { disabled: !name.trim(), onClick: make, 'data-testid': 'topic-new-block', label: t('topics.createBlock') },
+        }}
       >
         <TextField autoFocus label={t('topics.blockName')} value={name} onChange={setName} />
       </Dialog>
@@ -239,12 +233,10 @@ export function TopicDetail({ topic, access, ids, onSelect, onSubtopic }: {
       {editing && <EditTopicDialog topic={topic} access={access} onClose={() => setEditing(false)} />}
       <Dialog
         open={removing} title={t('topics.removeTitle', { name: topic.name })} onClose={() => setRemoving(false)}
-        actions={(
-          <>
-            <Button variant="quiet" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
-            <Button variant="danger" onClick={remove}>{t('topics.remove')}</Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setRemoving(false), label: t('common.cancel') },
+          outcome: { onClick: remove, label: t('topics.remove'), danger: true },
+        }}
       >
         <p>{t('topics.removeBody')}</p>
       </Dialog>

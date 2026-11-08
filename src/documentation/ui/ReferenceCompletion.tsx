@@ -16,7 +16,7 @@ import type { KeyboardEvent, RefObject } from 'react'
 import Autocomplete from '@mui/material/Autocomplete'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import Dialog from '@mui/material/Dialog'
@@ -252,10 +252,10 @@ function PickDialog({ kind, options, onClose, onPick }: { kind: ReferableKind; o
           renderInput={(params) => <FieldBox {...params} autoFocus label={t(KIND_WORD[kind])} />}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>{t('common.cancel')}</Button>
-        <Button variant="contained" disabled={!value} onClick={() => value && onPick(value)}>{t('doc.insertPicture')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onClose, label: t('common.cancel') }}
+        outcome={{ disabled: !value, onClick: () => value && onPick(value), label: t('doc.insertPicture') }}
+      />
     </Dialog>
   )
 }

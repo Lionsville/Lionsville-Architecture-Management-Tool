@@ -193,17 +193,10 @@ export function ScopeSettingsPage({
       </SettingsPage>
       <Dialog
         open={asked !== undefined} title={s('settings.moveTitle', { name })} onClose={() => setAsked(undefined)}
-        actions={(
-          <>
-            <Button variant="quiet" onClick={() => setAsked(undefined)}>{s('common.cancel')}</Button>
-            <Button
-              variant="primary" data-testid="settings-move"
-              onClick={() => { if (asked !== undefined) onApply(path, { ...patchOf(target), parent: asked }); setAsked(undefined) }}
-            >
-              {s('settings.moveConfirm')}
-            </Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setAsked(undefined), label: s('common.cancel') },
+          outcome: { 'data-testid': 'settings-move', onClick: () => { if (asked !== undefined) onApply(path, { ...patchOf(target), parent: asked }); setAsked(undefined) }, label: s('settings.moveConfirm') },
+        }}
       >
         <p>{s('settings.moveBody', { name, below: flattenScopes(target).length - 1 })}</p>
       </Dialog>

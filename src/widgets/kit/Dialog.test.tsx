@@ -8,14 +8,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
-import { Button } from './Button'
-import { Dialog, DialogChoices, DialogDanger, DialogFacts } from './Dialog'
-import type { DialogProps } from './Dialog'
+import { Dialog, DialogChoices, DialogDanger, DialogFacts, DialogFooter } from './Dialog'
+import type { DialogAnswers, DialogProps } from './Dialog'
 import { TextField } from './Field'
 
 afterEach(cleanup)
 
-const actions = <><Button variant="quiet">Keep what is here</Button><Button variant="primary" type="submit">Open in a new folder</Button></>
+const actions: DialogAnswers = { cancel: { label: 'Keep what is here' }, outcome: { type: 'submit', label: 'Open in a new folder' } }
 
 function Asking(props: Partial<DialogProps>) {
   return <Dialog open title="Open acme.lvarch" onClose={() => {}} actions={actions} {...props}><p>It holds 5 scopes.</p></Dialog>
@@ -45,7 +44,7 @@ describe('Dialog', () => {
       return (
         <>
           <button type="button" onClick={() => setOpen(true)}>Ask</button>
-          <Dialog open={open} title="Sure?" onClose={() => setOpen(false)} actions={<Button onClick={() => setOpen(false)}>No</Button>}><p>Body</p></Dialog>
+          <Dialog open={open} title="Sure?" onClose={() => setOpen(false)} actions={{ cancel: { onClick: () => setOpen(false), label: 'No' } }}><p>Body</p></Dialog>
         </>
       )
     }
@@ -89,6 +88,32 @@ describe('Dialog', () => {
   })
 })
 
+describe('one footer for every dialog', () => {
+  const words = (root: Element) => [...root.querySelectorAll('button')].map((one) => [one.textContent, one.dataset.variant])
+
+  it('says the answers in one order and look whatever order they were given in: what else at the start, the destructive first, Cancel, another answer, the outcome last', () => {
+    const { container } = renderShell(
+      <DialogFooter
+        outcome={{ label: 'Save' }} also={[{ label: 'Save a copy' }, false]} cancel={{ label: 'Cancel' }}
+        aside={[{ label: 'End today' }, { label: 'Remove', danger: true }, null]}
+      />,
+    )
+    expect(words(container)).toEqual([
+      ['Remove', 'danger'], ['End today', 'plain'], ['Cancel', 'quiet'], ['Save a copy', 'plain'], ['Save', 'primary'],
+    ])
+    expect(container.querySelector('.kit-dialog__start')?.textContent).toBe('RemoveEnd today')
+  })
+
+  it('draws an outcome with no way back as a danger, and a dialog that only tells with Close alone', () => {
+    const view = renderShell(<DialogFooter cancel={{ label: 'Cancel' }} outcome={{ label: 'Delete', danger: true }} />)
+    expect(words(view.container)).toEqual([['Cancel', 'quiet'], ['Delete', 'danger']])
+    view.unmount()
+    const told = renderShell(<DialogFooter cancel={{ label: 'Close' }} />)
+    expect(words(told.container)).toEqual([['Close', 'quiet']])
+    expect(told.container.querySelector('.kit-dialog__start')).toBeNull()
+  })
+})
+
 describe('the parts of a dialog', () => {
   it('names each outcome in a radio row, says its effect, and answers by the arrows a browser gives', async () => {
     const chose = vi.fn()
@@ -116,7 +141,7 @@ describe('the parts of a dialog', () => {
 
   it('says what will be gone in a danger block, in words', async () => {
     renderShell(
-      <Dialog open title="Replace your work?" onClose={() => {}} actions={<Button variant="danger">Replace and lose what is here</Button>}>
+      <Dialog open title="Replace your work?" onClose={() => {}} actions={{ outcome: { label: 'Replace and lose what is here', danger: true } }}>
         <DialogFacts title="Bare fact" />
         <DialogDanger title="Northline and the 12 scopes under it will be gone.">It cannot be restored.</DialogDanger>
         <DialogDanger title="Only this" />

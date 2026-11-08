@@ -29,7 +29,6 @@ import { plural } from '../../i18n/strings'
 import type { Translate } from '../../i18n'
 import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
-import { Button } from '../../widgets/kit/Button'
 import { DayControl } from '../../widgets/kit/DayControl'
 import type { DayGroup } from '../../widgets/kit/DayControl'
 import { List } from '../../widgets/kit/List'
@@ -701,7 +700,9 @@ function MapDrawsDialog({ map, model, onOrder, onClose, t }: { map: DesignDiagra
   const roots = rootsOfKind(model.elements, 'function').map((root) => root.id)
   const drawn = map.areas ?? roots
   return (
-    <Dialog open size="m" title={t('map.draws')} onClose={onClose} actions={<Button onClick={onClose}>{t('common.close')}</Button>}>
+    <Dialog open size="m" title={t('map.draws')} onClose={onClose} actions={{
+      cancel: { onClick: onClose, label: t('common.close') },
+    }}>
       <OrderList
         heading={t('sheet.settingsAreas')} order={drawn} extra={roots.filter((id) => !drawn.includes(id))}
         named={(id) => model.elements.find((held) => held.id === id)?.name ?? id}
@@ -718,7 +719,10 @@ function RenameDialog({ name, onChange, onCancel, onDone, t }: { name: string; o
   return (
     <Dialog
       open title={t('map.rename')} onClose={onCancel} onSubmit={onDone}
-      actions={<><Button variant="quiet" onClick={onCancel}>{t('common.cancel')}</Button><Button variant="primary" type="submit">{t('common.save')}</Button></>}
+      actions={{
+        cancel: { onClick: onCancel, label: t('common.cancel') },
+        outcome: { type: 'submit', label: t('common.save') },
+      }}
     >
       <TextField label={t('common.name')} value={name} onChange={onChange} autoFocus />
     </Dialog>

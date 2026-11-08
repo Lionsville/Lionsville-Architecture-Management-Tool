@@ -70,13 +70,10 @@ export function PosterIconDialog({ name, icon, onChoose, onClose, addImage }: {
   return (
     <Dialog
       open size="s" title={t('sheet.poster.iconFor', { name })} onClose={onClose}
-      actions={(
-        <>
-          <Button onClick={() => { onChoose(undefined); onClose() }}>{t('sheet.poster.noIcon')}</Button>
-          <Button onClick={() => setImages((was) => !was)}>{t('sheet.poster.fromImages')}</Button>
-          <Button variant="plain" onClick={onClose}>{t('common.close')}</Button>
-        </>
-      )}
+      actions={{
+        aside: [{ onClick: () => { onChoose(undefined); onClose() }, label: t('sheet.poster.noIcon') }, { onClick: () => setImages((was) => !was), label: t('sheet.poster.fromImages') }],
+        cancel: { onClick: onClose, label: t('common.close') },
+      }}
     >
       {images
         ? <ImagePick chosen={icon} addImage={addImage} onPick={(entry) => { onChoose(entry.contentAddress); onClose() }} />
@@ -107,12 +104,10 @@ export function PosterPictureDialog({ onAdd, onClose, addImage }: {
   return (
     <Dialog
       open size="s" title={t('sheet.poster.pictureTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!ready} onClick={() => { if (image !== undefined) onAdd(image, alt.trim()); onClose() }}>{t('sheet.poster.addPicture')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: !ready, onClick: () => { if (image !== undefined) onAdd(image, alt.trim()); onClose() }, label: t('sheet.poster.addPicture') },
+      }}
     >
       <ImagePick chosen={image} addImage={addImage} onPick={(entry) => setImage(entry.contentAddress)} />
       <TextField label={t('sheet.poster.pictureAlt')} value={alt} onChange={setAlt} />

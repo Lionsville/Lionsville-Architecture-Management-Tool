@@ -20,7 +20,6 @@
 import { useMemo, useState } from 'react'
 import { plural } from '../../i18n/strings'
 import { addDays } from '../../model/transition'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogChoices, DialogDanger } from '../../widgets/kit/Dialog'
 import { DateField } from '../../widgets/kit/Field'
 import { Picker } from '../../widgets/kit/Picker'
@@ -72,12 +71,10 @@ function Leave({ person, day, register, saying, onClose, s }: Asked & { person: 
   return (
     <Dialog
       open size="m" title={s('people.leaveTitle', { name: name(person, s) })} onClose={onClose} onSubmit={leave}
-      actions={(
-        <>
-          <Button onClick={onClose}>{s('people.cancel')}</Button>
-          <Button variant="primary" type="submit" disabled={!valid} data-testid="people-leave-confirm">{s('people.markLeft')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: s('people.cancel') },
+        outcome: { type: 'submit', disabled: !valid, 'data-testid': 'people-leave-confirm', label: s('people.markLeft') },
+      }}
     >
       <div className="people-stack">
         <DateField label={s('people.lastDay')} value={lastDay} onChange={setLastDay} autoFocus data-testid="people-last-day" />
@@ -113,12 +110,10 @@ function TakeBack({ person, register, saying, onClose, s }: Asked & { person: Pe
   return (
     <Dialog
       open size="s" title={s('people.takeBackTitle', words)} onClose={onClose}
-      actions={(
-        <>
-          <Button onClick={onClose}>{s('people.cancel')}</Button>
-          <Button variant="primary" onClick={back} data-testid="people-take-back-confirm">{s('people.takeBackLeaving')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: s('people.cancel') },
+        outcome: { onClick: back, 'data-testid': 'people-take-back-confirm', label: s('people.takeBackLeaving') },
+      }}
     >
       <p>{s('people.takeBackBody', words)}</p>
     </Dialog>
@@ -141,12 +136,10 @@ function Forget({ person, register, saying, onClose, s }: Asked & { person: Pers
   return (
     <Dialog
       open size="m" title={s('people.forgetTitle', words)} onClose={onClose}
-      actions={(
-        <>
-          <Button onClick={onClose}>{s('people.cancel')}</Button>
-          <Button variant="danger" onClick={forget} data-testid="people-forget-confirm">{s('people.forgetName', words)}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: s('people.cancel') },
+        outcome: { onClick: forget, 'data-testid': 'people-forget-confirm', label: s('people.forgetName', words), danger: true },
+      }}
     >
       <div className="people-stack">
         <p>{s('people.forgetBody', words)}</p>
@@ -180,12 +173,10 @@ function Remove({ person, register, saying, onClose, s }: Asked & { person: Pers
   return (
     <Dialog
       open size="s" title={s('people.removeTitle', { pseudonym: name(person, s) })} onClose={onClose}
-      actions={(
-        <>
-          <Button onClick={onClose}>{s('people.cancel')}</Button>
-          <Button variant="danger" onClick={remove} data-testid="people-remove-confirm">{s('people.remove')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: s('people.cancel') },
+        outcome: { onClick: remove, 'data-testid': 'people-remove-confirm', label: s('people.remove'), danger: true },
+      }}
     >
       <DialogDanger title={s('people.removeBody')} />
     </Dialog>
@@ -201,7 +192,9 @@ function MergePick({ person, register, onPicked, onClose, s }: Asked & { person:
   return (
     <Dialog
       open size="m" title={s('people.mergePickTitle', { name: name(person, s) })} onClose={onClose}
-      actions={<Button onClick={onClose}>{s('people.cancel')}</Button>}
+      actions={{
+        cancel: { onClick: onClose, label: s('people.cancel') },
+      }}
     >
       <div className="people-stack">
         <div data-testid="people-merge-pick">
@@ -255,14 +248,10 @@ function Merge({ one, other, register, saying, onClose, s }: Asked & { one: Pers
   return (
     <Dialog
       open size="m" title={sameName ? s('people.mergeWhichNamed', { name: name(first, s) }) : s('people.mergeWhich')} onClose={onClose}
-      actions={(
-        <>
-          <Button onClick={onClose}>{s('people.cancel')}</Button>
-          <Button variant="primary" onClick={merge} data-testid="people-merge-confirm">
-            {s(answer === 'stillHere' ? 'people.mergeConfirmHere' : answer === 'left' ? 'people.mergeConfirmLeft' : 'people.mergeConfirm')}
-          </Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: s('people.cancel') },
+        outcome: { onClick: merge, 'data-testid': 'people-merge-confirm', label: s(answer === 'stillHere' ? 'people.mergeConfirmHere' : answer === 'left' ? 'people.mergeConfirmLeft' : 'people.mergeConfirm') },
+      }}
     >
       <div className="people-stack" data-testid="people-merge">
         <DialogChoices

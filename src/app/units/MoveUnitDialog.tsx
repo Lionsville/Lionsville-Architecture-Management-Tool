@@ -16,9 +16,8 @@
  */
 import { useMemo, useState } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import Checkbox from '@mui/material/Checkbox'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import FormControlLabel from '@mui/material/FormControlLabel'
@@ -146,10 +145,10 @@ export function MoveUnitDialog(props: MoveUnitDialogProps) {
         <FieldText quiet>{s('unitMove.keeps')}</FieldText>
         {said && <Typography role="status" data-testid="move-unit-said" sx={{ fontSize: 'var(--t-small)', color: 'error.main' }}>{said}</Typography>}
       </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onClose}>{s('unitMove.cancel')}</Button>
-        <Button size="small" variant="contained" disabled={!ready} onClick={move} data-testid="move-unit-move">{s('unitMove.move')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onClose, label: s('unitMove.cancel') }}
+        outcome={{ disabled: !ready, onClick: move, 'data-testid': 'move-unit-move', label: s('unitMove.move') }}
+      />
     </FieldsDialog>
   )
 }

@@ -7,7 +7,6 @@
  * who asked and the other for whoever files it.
  */
 import { useEffect, useState } from 'react'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { heldLine, holdText, keptName, pointerLine, ruleLine, whatWeHold } from '../hold'
 import type { Mention, PointsAt } from '../hold'
@@ -74,13 +73,10 @@ export function WhatWeHold({ person, register, copyText, onClose, s }: {
   return (
     <Dialog
       open size="l" title={s('people.holdTitle', { name: shownText(shownEntry(person), s) })} onClose={onClose}
-      actions={(
-        <>
-          {copyText && <Button onClick={() => copyText(asText)} data-testid="people-hold-copy-text">{s('people.holdCopyText')}</Button>}
-          {copyText && <Button onClick={() => copyText(holdText(held))} data-testid="people-hold-copy-json">{s('people.holdCopyJson')}</Button>}
-          <Button variant="primary" onClick={onClose}>{s('people.close')}</Button>
-        </>
-      )}
+      actions={{
+        aside: [copyText && { onClick: () => copyText(asText), 'data-testid': 'people-hold-copy-text', label: s('people.holdCopyText') }, copyText && { onClick: () => copyText(holdText(held)), 'data-testid': 'people-hold-copy-json', label: s('people.holdCopyJson') }],
+        cancel: { onClick: onClose, label: s('people.close') },
+      }}
     >
       <div className="people-stack" data-testid="people-hold">
         <p className="people-note">{s('people.holdNote')}</p>

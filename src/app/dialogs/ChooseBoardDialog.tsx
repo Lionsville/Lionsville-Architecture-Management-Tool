@@ -8,9 +8,8 @@
  * landscape in 2027 both draw the application, and which one a person meant
  * is theirs to say.
  */
-import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import List from '@mui/material/List'
@@ -45,9 +44,9 @@ export function ChooseBoardDialog({ choice, onChoose, onCancel, s }: {
           ))}
         </List>
       </DialogContent>
-      <DialogActions>
-        <Button size="small" onClick={onCancel}>{s('common.cancel')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onCancel, label: s('common.cancel') }}
+      />
     </Dialog>
   )
 }

@@ -26,7 +26,7 @@ import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
 import ButtonBase from '@mui/material/ButtonBase'
 import { FieldsDialog } from './CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from './kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import { FieldBox } from './kit/FieldBox'
@@ -107,10 +107,10 @@ export function useMarkAsIntended({ words, sentence, onMark }: { words: FindingM
           slotProps={{ htmlInput: { 'data-testid': 'finding-mark-reason', maxLength: 500 } }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={close}>{t(words.cancel)}</Button>
-        <Button variant="contained" onClick={confirm} data-testid="finding-mark-confirm">{t(words.confirm)}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: close, label: t(words.cancel) }}
+        outcome={{ onClick: confirm, 'data-testid': 'finding-mark-confirm', label: t(words.confirm) }}
+      />
     </FieldsDialog>
   )
   return { open: () => setAsking(true), dialog }

@@ -7,9 +7,8 @@
  * The name is the state: `null` means closed. That way there is no second flag
  * beside it that can drift out of step with it.
  */
-import Button from '@mui/material/Button'
 import { FieldsDialog } from '../../widgets/CompactForms'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import { FieldBox } from '../../widgets/kit/FieldBox'
@@ -39,10 +38,10 @@ export function NewDiagramDialog({ name, onNameChange, onConfirm, s }: NewDiagra
           onKeyDown={(e) => { if (e.key === 'Enter' && !empty) { e.preventDefault(); onConfirm() } }}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={() => onNameChange(null)}>{s('common.cancel')}</Button>
-        <Button variant="contained" disabled={empty} onClick={onConfirm}>{s('shell.add')}</Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: () => onNameChange(null), label: s('common.cancel') }}
+        outcome={{ disabled: empty, onClick: onConfirm, label: s('shell.add') }}
+      />
     </FieldsDialog>
   )
 }

@@ -115,6 +115,11 @@ describe('the delete questions, for a unit', () => {
       <DeleteElementDialog element={element} isBoundaryApplication={false} hasComponents
         onRemoveFromDiagram={vi.fn()} onDeleteFromModel={onDeleteFromModel} onClose={vi.fn()} />,
     );
-    expect((screen.getByRole('button', { name: 'Delete from model' }) as HTMLButtonElement).disabled).toBe(true);
+    // Refused with its reason, as the kit's footer says it: in the tab order, the press doing nothing.
+    const refused = screen.getByRole('button', { name: 'Delete from model' });
+    expect(refused.getAttribute('aria-disabled')).toBe('true');
+    onDeleteFromModel.mockClear();
+    fireEvent.click(refused);
+    expect(onDeleteFromModel).not.toHaveBeenCalled();
   });
 });

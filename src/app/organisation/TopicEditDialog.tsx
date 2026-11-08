@@ -9,7 +9,6 @@ import { useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { SelectField, TextField } from '../../widgets/kit/Field'
 import type { TopicSummary, TopicsAccess } from './TopicsContext'
@@ -27,12 +26,10 @@ export function EditTopicDialog({ topic, access, onClose }: { topic: TopicSummar
   return (
     <Dialog
       open size="m" title={t('topics.editTitle', { name: topic.name })} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!name.trim()} onClick={save}>{t('topics.save')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: !name.trim(), onClick: save, label: t('topics.save') },
+      }}
     >
       <TextField autoFocus label={t('topics.name')} value={name} onChange={setName} />
       <MarkdownEditor label={t('topics.description')} value={description} onChange={setDescription} minRows={2} renderPreview={renderMarkdown} />

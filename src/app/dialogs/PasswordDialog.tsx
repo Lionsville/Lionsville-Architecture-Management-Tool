@@ -21,7 +21,6 @@
 import { useEffect, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import type { Translate } from '../../i18n'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogChoices } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 
@@ -73,14 +72,10 @@ export function PasswordDialog({ open, mode, error, about, onCancel, onConfirm, 
   return (
     <Dialog
       open={open} size={setting ? 'm' : 's'} title={title} onClose={onCancel}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="primary" disabled={!ready} onClick={confirm} data-testid="password-confirm">
-            {s(setting ? 'seal.confirmSet' : 'seal.confirmEnter')}
-          </Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { disabled: !ready, onClick: confirm, 'data-testid': 'password-confirm', label: s(setting ? 'seal.confirmSet' : 'seal.confirmEnter') },
+      }}
     >
       {setting
         ? about?.holds && <p>{s('seal.setBody', { holds: about.holds })}</p>

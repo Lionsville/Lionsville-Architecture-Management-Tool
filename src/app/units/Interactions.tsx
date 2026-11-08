@@ -20,7 +20,6 @@ import Box from '@mui/material/Box'
 import MuiButton from '@mui/material/Button'
 import Chip from '@mui/material/Chip'
 import Typography from '@mui/material/Typography'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog, DialogChoices } from '../../widgets/kit/Dialog'
 import { SelectField, DateField } from '../../widgets/kit/Field'
 import './Interactions.css'
@@ -113,15 +112,11 @@ export function InteractDialog({ interacting, units, newRowId, dispatch, scopeNa
   return (
     <Dialog
       open size="s" title={title} onClose={onClose} data-testid="interact-dialog"
-      actions={(
-        <>
-          {held && <Button variant="danger" onClick={() => done({ type: 'relation.delete', id: held.id })} data-testid="interact-remove">{s('interacts.remove')}</Button>}
-          <Button variant="plain" onClick={onClose}>{s('interacts.cancel')}</Button>
-          <Button variant="primary" disabled={!form.with || form.mode === '' || backwards} onClick={save} data-testid="interact-save">
-            {s(held ? 'interacts.saveChange' : 'interacts.save')}
-          </Button>
-        </>
-      )}
+      actions={{
+        aside: [held && { onClick: () => done({ type: 'relation.delete', id: held.id }), 'data-testid': 'interact-remove', label: s('interacts.remove'), danger: true }],
+        cancel: { onClick: onClose, label: s('interacts.cancel') },
+        outcome: { disabled: !form.with || form.mode === '' || backwards, onClick: save, 'data-testid': 'interact-save', label: s(held ? 'interacts.saveChange' : 'interacts.save') },
+      }}
     >
       {!fixedOther && (
         <SelectField

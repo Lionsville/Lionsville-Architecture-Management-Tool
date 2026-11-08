@@ -17,7 +17,6 @@
  * be true — goes under the body as `children`.
  */
 import type { ReactNode } from 'react'
-import { Button } from './kit/Button'
 import { Dialog } from './kit/Dialog'
 
 export type ConfirmDialogProps = {
@@ -43,12 +42,10 @@ export function ConfirmDialog({
       open={open}
       title={title}
       onClose={onCancel}
-      actions={(
-        <>
-          <Button onClick={onCancel}>{cancelLabel}</Button>
-          <Button variant={tone === 'danger' ? 'danger' : 'primary'} disabled={confirmDisabled} onClick={onConfirm}>{confirmLabel}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: cancelLabel },
+        outcome: { disabled: confirmDisabled, onClick: onConfirm, label: confirmLabel, danger: tone === 'danger' },
+      }}
     >
       <p>{body}</p>
       {children}

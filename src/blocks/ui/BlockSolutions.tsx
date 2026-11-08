@@ -100,12 +100,10 @@ function ElementsDialog({ row, sbb, onClose }: { row: BlockRow; sbb: SolutionBlo
   return (
     <Dialog
       open size="m" title={t('blocks.elementsOf', { name: sbb.name })} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" onClick={save} data-testid="sbb-elements-save">{t('blocks.save')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { onClick: save, 'data-testid': 'sbb-elements-save', label: t('blocks.save') },
+      }}
     >
       <Autocomplete
         multiple options={choices} value={value} onChange={(_event, next) => setValue(next)}
@@ -136,12 +134,10 @@ export function SolutionDialog({ row, onClose }: { row: BlockRow; onClose: (made
   return (
     <Dialog
       open size="m" title={t('blocks.addSbbTitle')} onClose={() => onClose()}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={() => onClose()}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!name.trim()} onClick={add} data-testid="sbb-add">{t('blocks.add')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: () => onClose(), label: t('common.cancel') },
+        outcome: { disabled: !name.trim(), onClick: add, 'data-testid': 'sbb-add', label: t('blocks.add') },
+      }}
     >
       <TextField autoFocus label={t('blocks.name')} value={name} onChange={setName} data-testid="sbb-name" />
       <TextField label={t('blocks.supplier')} value={supplier} onChange={setSupplier} />

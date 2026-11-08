@@ -8,7 +8,6 @@
  * edit, because the register has no undo.
  */
 import { useMemo, useState } from 'react'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { SelectField, TextField } from '../../widgets/kit/Field'
 import { possibleDuplicates } from '../duplicates'
@@ -37,12 +36,10 @@ export function CorrectPerson({ person, register, saying, onClose, s }: {
   return (
     <Dialog
       open size="m" title={s('people.correctTitle', { name: shownText(shownEntry(person), s) })} onClose={onClose} onSubmit={save}
-      actions={(
-        <>
-          <Button onClick={onClose}>{s('people.cancel')}</Button>
-          <Button variant="primary" type="submit" data-testid="people-correct-save">{s('people.save')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: s('people.cancel') },
+        outcome: { type: 'submit', 'data-testid': 'people-correct-save', label: s('people.save') },
+      }}
     >
       <div className="people-stack">
         <TextField label={s('people.name')} value={name} onChange={setName} autoFocus data-testid="people-correct-name" />

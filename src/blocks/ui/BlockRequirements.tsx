@@ -95,12 +95,10 @@ function CapabilityDialog({ row, onClose }: { row: BlockRow; onClose: () => void
   return (
     <Dialog
       open size="m" title={t('blocks.addCapabilityTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!text.trim()} onClick={add} data-testid="capability-add">{t('blocks.add')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: !text.trim(), onClick: add, 'data-testid': 'capability-add', label: t('blocks.add') },
+      }}
     >
       <TextField autoFocus label={t('blocks.capabilityText')} hint={t('blocks.capabilityHelp')} value={text} onChange={setText} data-testid="capability-text" />
       <label className="guidance-form__tick"><input type="checkbox" checked={must} onChange={(event) => setMust(event.target.checked)} />{t('blocks.mustLabel')}</label>
@@ -129,12 +127,10 @@ function ContextDialog({ row, onClose }: { row: BlockRow; onClose: () => void })
   return (
     <Dialog
       open size="m" title={t('blocks.addContextTitle')} onClose={onClose}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onClose}>{t('common.cancel')}</Button>
-          <Button variant="primary" disabled={!name.trim()} onClick={add} data-testid="context-add">{t('blocks.add')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: t('common.cancel') },
+        outcome: { disabled: !name.trim(), onClick: add, 'data-testid': 'context-add', label: t('blocks.add') },
+      }}
     >
       <p>{t('blocks.contextIntro')}</p>
       <TextField autoFocus label={t('blocks.contextName')} hint={t('blocks.contextNameHelp')} value={name} onChange={setName} data-testid="context-name" />

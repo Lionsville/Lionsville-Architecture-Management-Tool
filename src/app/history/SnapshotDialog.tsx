@@ -15,7 +15,6 @@
  */
 import { useEffect, useState } from 'react'
 import type { Translate } from '../../i18n'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 
@@ -49,12 +48,10 @@ export function SnapshotDialog({ open, keeping, draft, onCancel, onTake, note, o
   return (
     <Dialog
       open={open} size="m" title={title} onClose={onCancel} onSubmit={() => { if (ready) onTake(message.trim()) }}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button type="submit" variant="primary" disabled={!ready} data-testid="snapshot-take">{s('history.take')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { type: 'submit', disabled: !ready, 'data-testid': 'snapshot-take', label: s('history.take') },
+      }}
     >
       <p>{keeping ? s('history.snapshotWhy') : note ? `${s('history.startBody')} ${note}` : s('history.startBody')}</p>
       <TextField autoFocus rows={2} label={s('history.message')} hint={s('history.messageHint')} value={message} onChange={setMessage} />

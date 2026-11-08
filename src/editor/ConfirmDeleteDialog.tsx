@@ -2,9 +2,8 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { useState } from 'react';
-import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
+import { DialogFooter } from '../widgets/kit/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -84,17 +83,11 @@ export function ConfirmDeleteDialog(props: ConfirmDeleteDialogProps) {
           ? units.render(choice, setChoice, props.onClose)
           : <RolesEnded lines={props.endsRoles ?? []} instead={t('dialog.retireInstead')} />}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={props.onClose}>{t('common.cancel')}</Button>
-        {bothWays && (
-          <Button color="error" onClick={props.onConfirmWithLandings}>
-            {landings === 1 ? t('dialog.deleteWithLandingOne') : t('dialog.deleteWithLandingOther', { count: landings })}
-          </Button>
-        )}
-        <Button color="error" variant="contained" onClick={() => props.onConfirm(units ? choice : undefined)} autoFocus>
-          {bothWays ? t('dialog.keepLandings') : t('common.delete')}
-        </Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: props.onClose, label: t('common.cancel') }}
+        also={[bothWays && { onClick: props.onConfirmWithLandings, label: landings === 1 ? t('dialog.deleteWithLandingOne') : t('dialog.deleteWithLandingOther', { count: landings }), danger: true }]}
+        outcome={{ onClick: () => props.onConfirm(units ? choice : undefined), autoFocus: true, label: bothWays ? t('dialog.keepLandings') : t('common.delete'), danger: true }}
+      />
     </Dialog>
   );
 }

@@ -95,12 +95,10 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
       {merging && <MergeDialog open scope={scope} into={principle} onClose={() => setMerging(false)} />}
       <Dialog
         open={removing} title={t('principles.removeTitle', { number })} onClose={() => setRemoving(false)}
-        actions={(
-          <>
-            <Button variant="quiet" onClick={() => setRemoving(false)}>{t('common.cancel')}</Button>
-            <Button variant="danger" onClick={() => { setRemoving(false); access.remove(scope, principle.id); onSelect(null) }}>{t('common.delete')}</Button>
-          </>
-        )}
+        actions={{
+          cancel: { onClick: () => setRemoving(false), label: t('common.cancel') },
+          outcome: { onClick: () => { setRemoving(false); access.remove(scope, principle.id); onSelect(null) }, label: t('common.delete'), danger: true },
+        }}
       >
         <p>{t('principles.removeBody')}</p>
       </Dialog>
@@ -238,7 +236,9 @@ function Relations({ found, onPick }: { found: PrincipleInForce; onPick: (ref: P
       })}
       <Dialog
         open={adding} size="m" title={t('principles.relate')} onClose={() => setAdding(false)}
-        actions={<Button variant="quiet" onClick={() => setAdding(false)}>{t('common.cancel')}</Button>}
+        actions={{
+          cancel: { onClick: () => setAdding(false), label: t('common.cancel') },
+        }}
       >
         <SelectField
           label={t('principles.relationKind')} value={kind} onChange={(next) => setKind(next as PrincipleRelationKind)}

@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from 'react'
 import type { Translate } from '../../i18n'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 
@@ -14,12 +13,10 @@ export function NotedDialog({ label, onCancel, onConfirm, s }: { label: string |
   return (
     <Dialog
       open={label !== undefined} title={s('observation.notedTitle')} onClose={onCancel}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={onCancel}>{s('common.cancel')}</Button>
-          <Button variant="primary" onClick={() => onConfirm(reason.trim())} data-testid="noted-confirm">{s('observation.notedConfirm')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onCancel, label: s('common.cancel') },
+        outcome: { onClick: () => onConfirm(reason.trim()), 'data-testid': 'noted-confirm', label: s('observation.notedConfirm') },
+      }}
     >
       <p>{s('observation.notedBody', { name: label ?? '' })}</p>
       <TextField label={s('observation.notedReason')} value={reason} onChange={setReason} autoFocus data-testid="noted-reason" />

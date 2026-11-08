@@ -8,9 +8,8 @@
  * risk: a person expecting the timeline to rewind sees it grow instead, and
  * should have read that before, not after.
  */
-import Button from '@mui/material/Button'
 import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
+import { DialogFooter } from '../../widgets/kit/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogContentText from '@mui/material/DialogContentText'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -44,12 +43,10 @@ export function RestoreDialog({ open, name, date, whole = false, onCancel, onRes
       <DialogContent>
         <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>{said.body}</DialogContentText>
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onCancel}>{s('common.cancel')}</Button>
-        <Button variant="contained" color={project ? 'warning' : 'primary'} onClick={onRestore}>
-          {said.confirm}
-        </Button>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: onCancel, label: s('common.cancel') }}
+        outcome={{ onClick: onRestore, label: said.confirm, danger: project }}
+      />
     </Dialog>
   )
 }

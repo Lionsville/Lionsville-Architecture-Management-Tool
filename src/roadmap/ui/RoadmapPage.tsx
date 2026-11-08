@@ -292,12 +292,10 @@ function NamePlanDialog({ title, onTitle, onMake }: {
   return (
     <Dialog
       open={title !== null} title={t('roadmap.newPlanTitle')} onClose={() => onTitle(null)} onSubmit={make}
-      actions={(
-        <>
-          <Button variant="quiet" onClick={() => onTitle(null)}>{t('common.cancel')}</Button>
-          <Button variant="primary" type="submit" disabled={!title?.trim()} onClick={make}>{t('roadmap.newPlan')}</Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: () => onTitle(null), label: t('common.cancel') },
+        outcome: { type: 'submit', disabled: !title?.trim(), onClick: make, label: t('roadmap.newPlan') },
+      }}
     >
       <TextField label={t('roadmap.newPlanName')} hint={t('roadmap.newPlanHelp')} value={title ?? ''} onChange={onTitle} autoFocus />
     </Dialog>

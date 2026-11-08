@@ -11,7 +11,6 @@
  */
 import { useMemo, useState } from 'react'
 import { plural } from '../../i18n/strings'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import { matchRows, newPersonOf, readCsv } from '../csv'
@@ -68,14 +67,10 @@ export function CsvImport({ open, register, saying, readText, onClose, s }: {
   return (
     <Dialog
       open={open} size="l" title={s('people.csvTitle')} onClose={onClose} working={busy}
-      actions={(
-        <>
-          <Button onClick={onClose}>{s('people.cancel')}</Button>
-          <Button variant="primary" disabled={adding.length === 0} working={busy} onClick={() => { void add() }} data-testid="people-csv-add">
-            {plural(s, { one: 'people.csvImportOne', other: 'people.csvImportOther' }, adding.length)}
-          </Button>
-        </>
-      )}
+      actions={{
+        cancel: { onClick: onClose, label: s('people.cancel') },
+        outcome: { disabled: adding.length === 0, working: busy, onClick: () => { void add() }, 'data-testid': 'people-csv-add', label: plural(s, { one: 'people.csvImportOne', other: 'people.csvImportOther' }, adding.length) },
+      }}
     >
       <div className="people-stack">
         <p className="people-note">{s('people.csvLead')}</p>

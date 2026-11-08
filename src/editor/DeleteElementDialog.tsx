@@ -2,13 +2,11 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { useState } from 'react';
-import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
+import { DialogFooter } from '../widgets/kit/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import Tooltip from '@mui/material/Tooltip';
 import type { DesignElement } from '../model/types';
 import { useStrings } from '../i18n/LanguageContext';
 import { RolesEnded } from '../widgets/RolesEnded';
@@ -61,23 +59,11 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
           ? units.render(choice, setChoice, props.onClose)
           : <RolesEnded lines={props.endsRoles ?? []} instead={t('dialog.retireInstead')} />}
       </DialogContent>
-      <DialogActions>
-        <Button onClick={props.onClose}>{t('common.cancel')}</Button>
-        <Tooltip title={props.isBoundaryApplication ? t('menu.boundaryApplication') : ''}>
-          <span>
-            <Button onClick={props.onRemoveFromDiagram} disabled={props.isBoundaryApplication}>
-              {t('dialog.removeFromDiagram')}
-            </Button>
-          </span>
-        </Tooltip>
-        <Tooltip title={held ? t('dialog.deleteComponentsFirst') : ''}>
-          <span>
-            <Button color="error" onClick={() => props.onDeleteFromModel(units ? choice : undefined)} disabled={held}>
-              {t('dialog.deleteFromModelButton')}
-            </Button>
-          </span>
-        </Tooltip>
-      </DialogActions>
+      <DialogFooter
+        cancel={{ onClick: props.onClose, label: t('common.cancel') }}
+        also={[{ onClick: props.onRemoveFromDiagram, reason: props.isBoundaryApplication ? t('menu.boundaryApplication') : undefined, label: t('dialog.removeFromDiagram') }]}
+        outcome={{ onClick: () => props.onDeleteFromModel(units ? choice : undefined), reason: held ? t('dialog.deleteComponentsFirst') : undefined, label: t('dialog.deleteFromModelButton'), danger: true }}
+      />
     </Dialog>
   );
 }
