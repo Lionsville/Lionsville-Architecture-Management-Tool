@@ -99,6 +99,28 @@ describe('captureSheet', () => {
     } as unknown as HTMLCanvasElement)
     await expect(captureSheet(page(), { maxPixels: 4_000_000 })).rejects.toThrow(/no image/)
   })
+
+  it('says an image the browser would not load in words, never as "[object Event]"', async () => {
+    toCanvas.mockRejectedValueOnce(new Event('error'))
+    await expect(captureSheet(page(), { maxPixels: 4_000_000 })).rejects.toMatchObject({
+      name: 'PictureRefused', message: 'the browser could not draw the page as an image (an error event)',
+    })
+  })
+})
+
+describe('the lines on the page', () => {
+  it('are painted inline while the picture is drawn, and given back their own styles after', async () => {
+    // The library copies an <svg> whole and styles nothing inside it: a line painted by a class would come out bare.
+    const node = page()
+    node.innerHTML = '<style>.ink { stroke: rgb(1, 2, 3); stroke-width: 2px }</style><svg><path class="ink" d="M0,0 L1,1"/><path class="ink" style="opacity: 0.5" d="M0,0 L1,1"/></svg>'
+    const [bare, styled] = [...node.querySelectorAll('path')]
+    let during: string | null = null
+    toCanvas.mockImplementationOnce(async () => { during = bare!.getAttribute('style'); return fakeCanvas() })
+    await captureSheet(node, { maxPixels: 4_000_000 })
+    expect(during).toContain('stroke: rgb(1, 2, 3)')
+    expect(bare!.getAttribute('style')).toBeNull()
+    expect(styled!.getAttribute('style')).toBe('opacity: 0.5')
+  })
 })
 
 describe('what the picture leaves out', () => {

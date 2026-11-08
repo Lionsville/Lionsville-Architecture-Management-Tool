@@ -144,8 +144,12 @@ export function OrgTree({ organisation, focused, drawing }: { organisation: stri
   )
 }
 
-/** What the connectors call the organisation's box, which is no unit. */
-export const ORGANISATION = '\u0000organisation'
+/**
+ * What the connectors call the organisation's box, which is no unit: the empty
+ * id, which no unit has. Not a control character, which would keep a key apart
+ * as well: the page is drawn as XML for its picture, and XML cannot carry one.
+ */
+export const ORGANISATION = ''
 
 function Under({ owner, units, shape, drawing }: { owner: string; units: readonly ChartUnit[]; shape: ChartShape; drawing: Drawing }) {
   if (units.length === 0) return null

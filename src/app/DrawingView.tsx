@@ -47,6 +47,7 @@ import type { LinkFact, ReadElement } from './DrawingPanels'
 import { DRAWING_DARK_COLOUR, drawingSkin } from './drawingSkin'
 import type { DrawingLook } from './drawingProtocol'
 import { handOver } from './handOver'
+import { pictureLog } from './savePicture'
 import { pictureFile, printPicture } from './drawingExport'
 import type { PrintHost } from './drawingExport'
 import { claimKey } from '../widgets/kit/keys'
@@ -160,13 +161,19 @@ function DrawingReading(props: DrawingViewProps & { canEdit: boolean; noEditor: 
       notify?.(s('drawing.exportFailed'), 'error')
     }
     let name = ''
+    let log: ReturnType<typeof pictureLog> | undefined
     await handOver(async () => {
       const held = await images.bytesAt(scope, address)
       if (!held) throw new Error('gone')
       const file = await pictureFile(diagram.name, held.bytes, format, frame)
       name = file.name
+      if (props.diagnostics) log = pictureLog(props.diagnostics, 'drawingExport', file.bytes ?? new TextEncoder().encode(file.text))
       return documents.save(file)
-    }, { saved: () => notify?.(s('shell.drawingExported', { name }), 'success'), failed })
+    }, {
+      saved: () => { log?.('saved'); notify?.(s('shell.drawingExported', { name }), 'success') },
+      cancelled: () => log?.('cancelled'),
+      failed: () => { log?.('failed'); failed() },
+    })
   }
   // On paper from the reading too, as the editor's own menu offers it: a reader has no editor to print from.
   const printIt = async () => {

@@ -17,7 +17,7 @@ import type { DesignDiagram, ElementId } from '../../model/types'
 import type { ScopePath } from '../../projects/scopePath'
 import { lazyPart } from '../../widgets/lazyPart'
 import type { WorkspaceParts } from '../workspaceParts'
-import { savePicture } from '../savePicture'
+import { pictureFailed, savePicture } from '../savePicture'
 import type { ChartPage as ChartPageShape } from './ChartPage'
 import type { ConwayPage as ConwayPageShape } from './ConwayPage'
 import type { AssignmentInspector as AssignmentInspectorShape } from './AssignmentInspector'
@@ -99,6 +99,7 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
         {...(view.onDock ? { onDock: view.onDock } : {})} {...(view.day ? { day: view.day } : {})}
         {...(moveAsked ? { moveAsked } : {})}
         onExport={(name, png) => savePicture(parts, name, png, 'chartExport')}
+        onExportFailed={(cause) => pictureFailed(parts.props.host.diagnostics, 'chartExport', cause)}
       />
     )
   }

@@ -130,6 +130,8 @@ export type TechnologyLandscapePageProps = {
   onKeepColour?(colour: LandscapeColour): void
   /** Hand over the page as a picture, to be kept where a person says. Absent = no Export. */
   onExport?(name: string, png: Uint8Array): void
+  /** A picture that could not be made, for the host's log; the dialog says it to the person. */
+  onExportFailed?(cause: unknown): void
   /** The register's word for a picked person, which this module may not read. Absent: the text as typed. */
   ownerText?(owner: PersonRef): string
 }
@@ -387,7 +389,10 @@ function useExport(props: TechnologyLandscapePageProps, capture: PageHandle['cap
     ? (
       <PictureDialog
         name={name} onClose={() => setAsking(false)} about={<p>{t('landscape.exportAbout')}</p>} data-testid="landscape-export-dialog"
-        onSave={async () => { const shot = await capture({ maxPixels: EXPORT_PIXELS }); onExport(`${name}.png`, shot.png) }}
+        onSave={async () => {
+          const shot = await capture({ maxPixels: EXPORT_PIXELS }).catch((cause: unknown) => { props.onExportFailed?.(cause); throw cause })
+          onExport(`${name}.png`, shot.png)
+        }}
         failed={() => t('landscape.exportFailed')}
       />
     )

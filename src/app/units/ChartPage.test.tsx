@@ -162,6 +162,14 @@ describe('the organisation chart', () => {
     expect(screen.getByTestId('chart-organisation').textContent).toBe('the organisation')
   })
 
+  it('draws nothing XML cannot carry, so its picture can be made', () => {
+    // The picture is the page as XML in an image; a control character anywhere in it, a key in an attribute too, and the browser will not load it.
+    const { container } = renderShell(<Harness commands={[]} />)
+    expect(screen.getByTestId('chart-organisation')).toBeTruthy()
+    const unsayable = [...container.innerHTML].filter((one) => one.charCodeAt(0) < 0x20 && !'\t\n\r'.includes(one))
+    expect(unsayable).toEqual([])
+  })
+
   it('names each holder through the register, marks you, the people over all of their time, and the vacancies', () => {
     renderShell(<Harness commands={[]} />)
     const tt = unitBox('tt')

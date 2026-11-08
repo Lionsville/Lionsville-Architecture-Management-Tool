@@ -31,7 +31,7 @@ import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
 import { hostCommands, useCommands } from '../model/technologyWrites'
 import type { WrittenIn } from './units/writeIn'
-import { savePicture } from './savePicture'
+import { pictureFailed, savePicture } from './savePicture'
 import type { StringKey } from '../i18n'
 
 /**
@@ -269,7 +269,8 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       takenUp={takenUpHere(parts.props.tree.index, parts.props.project.path)}
       {...sheetMapping(parts, diagram)}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
-      onSave={files.savePicture}
+      // Through the one way a picture is saved, so the sheet's and the poster's leave their line on the log as well.
+      onSave={(doc) => savePicture(parts, doc.name, doc.bytes, doc.where)}
       onPrint={files.printPage}
       addImage={files.addImage}
       {...(view.readOnly ? {} : { poster: parts.sheets.poster })}
@@ -355,7 +356,7 @@ function sheetWaysOut(parts: WorkspaceParts): SheetWaysOut {
 }
 
 function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView): ReactNode {
-  const { session, sheets, ownership, readings, requests, renderer, todayDay, pages, diagrams, files } = parts
+  const { session, sheets, ownership, readings, requests, renderer, todayDay, pages, diagrams } = parts
   const { project, navigation } = parts.props
   const sheet = session.model.diagrams.find((held) => held.kind === 'sheet')
   const domains = sheetMapping(parts, diagram).domains
@@ -374,7 +375,7 @@ function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView):
       applications={readings.applicationsInTree}
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       select={pages.selectRequestFor(diagram.id)}
-      onSave={files.savePicture}
+      onSave={(doc) => savePicture(parts, doc.name, doc.bytes, 'mapExport')}
       responsible={sheetResponsibleFor({
         index: parts.props.tree.index, scope: project.path, model: session.model, day: todayDay,
         scopeName: readings.scopeLabel, s: parts.props.shell.s,
@@ -486,6 +487,7 @@ function technologyPage(parts: WorkspaceParts, diagram: DesignDiagram, view: Pag
       {...(view.onDelete ? { onDelete: view.onDelete } : {})}
       {...(view.ownerText ? { ownerText: view.ownerText } : {})}
       onExport={(name, png) => savePicture(parts, name, png, 'landscapeExport')}
+      onExportFailed={(cause) => pictureFailed(parts.props.host.diagnostics, 'landscapeExport', cause)}
       today={parts.todayDay}
       dayModelOf={(id) => {
         const master = parts.readings.masterOf(id)

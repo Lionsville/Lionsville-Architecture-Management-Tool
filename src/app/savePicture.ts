@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-/** A view's picture to a file the person picks, said as saved or why not: the board's, the landscape's and the chart's Export…. */
+/** A view's picture to a file the person picks, said as saved or why not: every view's Export… and a drawing's. */
+import type { Diagnostics } from '../ports/Diagnostics'
+import { refused } from '../widgets/pictureRefused'
 import { handOver } from './handOver'
 import type { WorkspaceParts } from './workspaceParts'
 
@@ -13,6 +15,16 @@ export function pngSize(png: Uint8Array): { width: number; height: number } | un
   return { width: view.getUint32(16), height: view.getUint32(20) }
 }
 
+/** What a picture is, read from its bytes: a PNG's size, or the kind of file a drawing's export made. */
+function pictureSaid(bytes: Uint8Array): string {
+  const size = pngSize(bytes)
+  if (size) return `${size.width} × ${size.height} px`
+  const head = new TextDecoder().decode(bytes.subarray(0, 256))
+  if (head.startsWith('%PDF')) return 'PDF'
+  if (head.includes('<svg') || head.startsWith('<?xml')) return 'SVG'
+  return 'size unknown'
+}
+
 const seconds = (ms: number) => `${(ms / 1000).toFixed(2)} s`
 
 /**
@@ -22,20 +34,35 @@ const seconds = (ms: number) => `${(ms / 1000).toFixed(2)} s`
  * own time says when it started. No name and no path: those are the person's.
  */
 export function pictureLine(where: string, png: Uint8Array, outcome: 'saved' | 'cancelled' | 'failed', panelMs: number, rasterMs?: number): string {
-  const size = pngSize(png)
   return [
-    `picture export (${where}): ${size ? `${size.width} × ${size.height} px` : 'size unknown'}, ${png.byteLength} bytes`,
+    `picture export (${where}): ${pictureSaid(png)}, ${png.byteLength} bytes`,
     ...(rasterMs !== undefined ? [`rastered in ${seconds(rasterMs)}`] : []),
-    `${outcome} ${seconds(panelMs)} after`,
+    `${outcome}; the save panel took ${seconds(panelMs)}`,
   ].join(', ')
+}
+
+/** Why a picture could not be made, as words: an image's error event says "[object Event]" and nothing else. */
+export function pictureCause(cause: unknown): string {
+  const said = refused(cause)
+  return said instanceof Error ? said.message : String(said)
+}
+
+/** The line a picture that could not be made leaves on the log, so a failed export is not silent. */
+export function pictureFailed(diagnostics: Pick<Diagnostics, 'report'>, where: string, cause: unknown): void {
+  diagnostics.report({ level: 'error', where, message: `picture export (${where}): failed: ${pictureCause(cause)}` })
+}
+
+/** Starts the save panel's clock, and answers with what logs the export's one line when the panel has answered. */
+export function pictureLog(diagnostics: Pick<Diagnostics, 'report'>, where: string, bytes: Uint8Array, rasterMs?: number) {
+  const asked = Date.now()
+  return (outcome: 'saved' | 'cancelled' | 'failed') => {
+    diagnostics.report({ level: 'info', where, message: pictureLine(where, bytes, outcome, Date.now() - asked, rasterMs) })
+  }
 }
 
 export function savePicture(parts: WorkspaceParts, name: string, png: Uint8Array, where: string, rasterMs?: number): void {
   const { files: { documents }, shell: { notify, s }, host: { diagnostics } } = parts.props
-  const asked = Date.now()
-  const log = (outcome: 'saved' | 'cancelled' | 'failed') => {
-    diagnostics.report({ level: 'info', where, message: pictureLine(where, png, outcome, Date.now() - asked, rasterMs) })
-  }
+  const log = pictureLog(diagnostics, where, png, rasterMs)
   void handOver(() => documents.save({ name, mediaType: 'image/png', bytes: png }), {
     saved: () => { log('saved'); notify(s('shell.savedPicture'), 'success') },
     cancelled: () => log('cancelled'),

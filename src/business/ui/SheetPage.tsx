@@ -59,7 +59,7 @@ import { usePlaceReading, usePlaceTab } from '../../widgets/placeTab'
 import { useSessionSet } from '../../widgets/sessionMemory'
 import { captureSheet } from '../../widgets/capturePage'
 import { posterShot, PosterWork } from './PosterWork'
-import type { PosterHostParts } from './PosterWork'
+import type { PosterHostParts, SheetPicture } from './PosterWork'
 import type { PosterHandle } from './SheetPoster'
 import { PosterKeyTile } from './PosterKeyTile'
 import type { PosterActions } from './PosterDesign'
@@ -145,7 +145,7 @@ export type SheetPageProps = {
   /** The way to an element's own page. Absent = no *Page ›*. */
   onOpenDocumentation?(id: ElementId): void
   /** Hand a picture of the page to the person. Absent = no *Picture…*. */
-  onSave?(doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' | 'application/pdf' }): void
+  onSave?(doc: SheetPicture): void
   /** What placing on a poster writes. Absent: the poster is only read. */
   poster?: PosterActions
   /** An image into this scope's library, for a picture or an icon on a poster. */
@@ -356,7 +356,7 @@ function usePicture(props: SheetPageProps, node: { current: HTMLDivElement | nul
   const exportPng = useCallback(async (layout: ExportLayout) => {
     if (!sheet || !onSave) return
     const shot = await shoot(EXPORT_MAX_PIXELS, layout === 'screen' ? undefined : paperWidth(layout))
-    onSave({ name: `${fileSafe(sheet.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
+    onSave({ name: `${fileSafe(sheet.name)}.png`, bytes: shot.png, mediaType: 'image/png', where: 'sheetExport' })
   }, [sheet, onSave, shoot])
   const width = exporting?.width
   const paper = sheet ? (width !== undefined ? paperOfWidth(width) : undefined) ?? sheetPaper(sheet) : undefined

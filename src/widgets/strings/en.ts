@@ -85,6 +85,7 @@ export const EN = {
   'kit.picture.save': 'Save picture',
   'kit.picture.busy': 'Drawing…',
   'kit.picture.failed': 'The picture could not be made: {message}',
+  'kit.picture.refused': 'the browser could not draw the page as an image',
   'kit.picture.titleBlockHint': 'Client, author and date along the bottom.',
   'kit.picture.client': 'Client',
   'kit.picture.author': 'Author',

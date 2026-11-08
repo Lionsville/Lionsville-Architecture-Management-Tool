@@ -86,6 +86,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.picture.save': 'Bild speichern',
   'kit.picture.busy': 'Wird gezeichnet…',
   'kit.picture.failed': 'Das Bild konnte nicht erstellt werden: {message}',
+  'kit.picture.refused': 'der Browser konnte die Seite nicht als Bild zeichnen',
   'kit.picture.titleBlockHint': 'Kunde, Autor und Datum am unteren Rand.',
   'kit.picture.client': 'Kunde',
   'kit.picture.author': 'Autor',

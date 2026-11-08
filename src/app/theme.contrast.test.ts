@@ -515,6 +515,8 @@ const DIMMED: Record<string, [uses: number, what: string]> = {
   // A card outside the overlay's band, faded so the band stands out: a design call.
   // A logo tile that cannot be picked: a control that is off.
   'src/editor/nodes/LogoGrid.tsx': [1, 'disabled tile'],
+  // A picture's SVG shapes given the paint their classes give them on the page, an opacity among it: copied, not chosen.
+  'src/widgets/capturePage.ts': [3, 'paint copied into a picture'],
   // Shapes inside an icon.
   'src/widgets/icons.tsx': [6, 'icon shapes'],
   // A unit type and the organisation out of what is picked on the structure, and the card's fade between the two:

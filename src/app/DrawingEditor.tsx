@@ -67,6 +67,7 @@ import {
   type DrawingLook, type DrawingMode, type FrameEvent, type PaletteElement,
 } from './drawingProtocol'
 import { handOver as handOverFile } from './handOver'
+import { pictureLog } from './savePicture'
 import { printPicture } from './drawingExport'
 import type { PrintHost } from './drawingExport'
 import './DrawingView.css'
@@ -416,9 +417,12 @@ function handOver(heard: FrameEvent, props: Props): void {
     notify(s('shell.drawingExportFailed'), 'error')
     return
   }
+  const log = pictureLog(diagnostics, 'drawingExport', file.bytes ?? new TextEncoder().encode(file.text))
   void handOverFile(() => documents.save(file), {
-    saved: () => notify(s('shell.drawingExported', { name: file.name }), 'success'),
+    saved: () => { log('saved'); notify(s('shell.drawingExported', { name: file.name }), 'success') },
+    cancelled: () => log('cancelled'),
     failed: (cause) => {
+      log('failed')
       diagnostics.report({ level: 'error', where: 'drawingExport', message: 'shell.saveFileFailed', cause })
       notify(s('shell.saveFileFailed', { message: reasonOf(cause) }), 'error')
     },

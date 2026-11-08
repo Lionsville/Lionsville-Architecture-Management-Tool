@@ -135,6 +135,8 @@ export type ChartPageProps = {
   onHandle?(handle: PageHandle | undefined): void
   /** Export…: the chart as a PNG picture, handed to the host to save. Absent = no Export…. */
   onExport?(name: string, png: Uint8Array): void
+  /** A picture that could not be made, for the host's log; the dialog says it to the person. */
+  onExportFailed?(cause: unknown): void
   /** The scope open in this window: what the chart's folds are kept under with the view, and whose step a move writes through its session. */
   scope?: ScopePath
   /** Where the chart's folds are kept for the session (`sessionFolds.ts`). Absent: they last while the page is on screen. */
@@ -252,7 +254,10 @@ export function ChartPage(props: ChartPageProps) {
       {exportAsked && onExport && (
         <PictureDialog
           name={diagram.name} onClose={() => setExportAsked(false)} about={<p>{t('chart.exportAbout')}</p>} data-testid="chart-export-dialog"
-          onSave={async () => { const shot = await going.capture({ maxPixels: EXPORT_PIXELS }); onExport(`${diagram.name}.png`, shot.png) }}
+          onSave={async () => {
+            const shot = await going.capture({ maxPixels: EXPORT_PIXELS }).catch((cause: unknown) => { props.onExportFailed?.(cause); throw cause })
+            onExport(`${diagram.name}.png`, shot.png)
+          }}
         />
       )}
     </div>

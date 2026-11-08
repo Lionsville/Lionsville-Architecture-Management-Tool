@@ -70,6 +70,9 @@ export async function posterShot(handle: PosterHandle, paper: PrintPaper, maxPix
   }
 }
 
+/** A picture of the sheet or of its poster, handed to the host to save, saying which it is for the log. */
+export type SheetPicture = { name: string; bytes: Uint8Array; mediaType: 'image/png'; where: 'sheetExport' | 'posterExport' }
+
 export type PosterHostParts = {
   model: DesignModel
   sheet: DesignDiagram
@@ -82,7 +85,7 @@ export type PosterHostParts = {
   claims?: SheetClaims | undefined
   retiring(id: ElementId): boolean
   addImage?: ((file: File) => Promise<string | undefined>) | undefined
-  onSave?: ((doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' | 'application/pdf' }) => void) | undefined
+  onSave?: ((doc: SheetPicture) => void) | undefined
   onPrint?: ((doc: { name: string; widthMm: number; heightMm: number }) => Promise<void>) | undefined
 }
 
@@ -205,7 +208,7 @@ function usePaper(handle: { current: PosterHandle | undefined }, keyWords: reado
     const name = `${sheetName.replace(/[\\/:*?"<>|]+/g, '-').trim() || 'sheet'}`
     if (how.file === 'png') {
       const shot = await posterShot(on, how.paper, EXPORT_MAX_PIXELS, dress)
-      parts.onSave?.({ name: `${name}.png`, bytes: shot.png, mediaType: 'image/png' })
+      parts.onSave?.({ name: `${name}.png`, bytes: shot.png, mediaType: 'image/png', where: 'posterExport' })
       return
     }
     const held = posterCopy(on, how.paper, dress)

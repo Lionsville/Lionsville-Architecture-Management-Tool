@@ -440,7 +440,9 @@ describe('DrawingEditor', () => {
       expect(notify).not.toHaveBeenCalled()
       finish?.()
       await waitFor(() => expect(notify).toHaveBeenCalledWith('order-flow.drawio.png saved.', 'success'))
-      expect(report).not.toHaveBeenCalled()
+      // One line on the log, and no failure.
+      expect(report).toHaveBeenCalledTimes(1)
+      expect(report.mock.calls[0]?.[0]).toMatchObject({ level: 'info', where: 'drawingExport', message: expect.stringMatching(/^picture export \(drawingExport\): .*, saved; the save panel took /) })
       // It is not a save of the drawing.
       expect(updates).toEqual([])
       expect(puts).toEqual([])
@@ -454,7 +456,9 @@ describe('DrawingEditor', () => {
       await waitFor(() => expect(save).toHaveBeenCalledTimes(1))
       await new Promise((resolve) => setTimeout(resolve, 10))
       expect(notify).not.toHaveBeenCalled()
-      expect(report).not.toHaveBeenCalled()
+      // Said on the log only, so a cancel can be told from a file that never came.
+      expect(report).toHaveBeenCalledTimes(1)
+      expect(report.mock.calls[0]?.[0]).toMatchObject({ level: 'info', message: expect.stringContaining('cancelled; the save panel took') })
     })
 
     it.each([

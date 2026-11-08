@@ -86,6 +86,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.picture.save': 'Afbeelding bewaren',
   'kit.picture.busy': 'Tekenen…',
   'kit.picture.failed': 'De afbeelding kon niet gemaakt worden: {message}',
+  'kit.picture.refused': 'de browser kon de pagina niet als afbeelding tekenen',
   'kit.picture.titleBlockHint': 'Klant, auteur en datum onderaan.',
   'kit.picture.client': 'Klant',
   'kit.picture.author': 'Auteur',

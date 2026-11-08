@@ -56,6 +56,13 @@ describe('PictureDialog', () => {
     expect(screen.getByRole('dialog', { name: 'Export Coverage' })).toBeTruthy()
   })
 
+  it('says an image the browser would not load in words, not as an event', async () => {
+    renderShell(<WithBlock onSave={async () => { throw new Event('error') }} />)
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save PDF' })); await Promise.resolve() })
+    expect(screen.getByRole('alert').textContent).toContain('The picture could not be made: the browser could not draw the page as an image')
+    expect(screen.getByRole('alert').textContent).not.toContain('[object')
+  })
+
   it('asks the title block\'s words in one order with what an empty one draws, and writes one as it is left', () => {
     const onChange = vi.fn()
     renderShell(<PictureTitleFields values={{ client: '', author: 'Ann', date: '' }} clientFrom="Acme" disabled={false} onChange={onChange} />)

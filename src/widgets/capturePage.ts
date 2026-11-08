@@ -28,6 +28,7 @@
  */
 
 import { pictureFontCss } from './pictureFonts'
+import { refused } from './pictureRefused'
 
 export type SheetShot = {
   png: Uint8Array
@@ -80,6 +81,7 @@ export async function captureSheet(
   const height = Math.max(node.scrollHeight, node.clientHeight, 1)
   const pixelRatio = sheetPixelRatio(width, height, options.maxPixels)
 
+  const painted = paintSvgInline(node)
   const canvas = await toCanvas(node, {
     backgroundColor: options.background,
     // The app's own faces, handed over ready (`pictureFonts`).
@@ -90,13 +92,40 @@ export async function captureSheet(
     // The page scrolls; the picture does not.
     style: { overflow: 'visible', width: `${width}px`, height: `${height}px` },
     filter: (held) => !(held instanceof HTMLElement) || held.dataset.sheetAdd === undefined,
-  })
+  }).catch((cause: unknown) => { throw refused(cause) }).finally(painted)
   const blob = await blobOf(canvas)
   return {
     png: new Uint8Array(await blob.arrayBuffer()),
     width: Math.round(width * pixelRatio),
     height: Math.round(height * pixelRatio),
     pixelRatio,
+  }
+}
+
+/** What an SVG shape is painted with, which a class gives it on the page and nothing gives it in the picture. */
+const SVG_PAINT = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'stroke-linecap', 'stroke-linejoin', 'stroke-opacity', 'opacity', 'visibility', 'display', 'marker-start', 'marker-mid', 'marker-end'] as const
+
+/**
+ * The library copies an `<svg>` whole and writes no style onto anything inside
+ * it, so a line painted by a class — the chart's connectors, the kit's lines —
+ * comes out unpainted. Each shape is given its paint as an inline style for the
+ * picture, and the styles it had are put back after, drawn or not.
+ */
+export function paintSvgInline(node: HTMLElement): () => void {
+  const held: Array<{ shape: SVGElement; style: string | null }> = []
+  for (const shape of node.querySelectorAll<SVGElement>('svg *')) {
+    const computed = getComputedStyle(shape)
+    held.push({ shape, style: shape.getAttribute('style') })
+    for (const name of SVG_PAINT) {
+      const value = computed.getPropertyValue(name)
+      if (value) shape.style.setProperty(name, value)
+    }
+  }
+  return () => {
+    for (const { shape, style } of held) {
+      if (style === null) shape.removeAttribute('style')
+      else shape.setAttribute('style', style)
+    }
   }
 }
 

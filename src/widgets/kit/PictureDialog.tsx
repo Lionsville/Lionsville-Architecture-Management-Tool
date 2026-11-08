@@ -17,6 +17,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
+import { PICTURE_REFUSED } from '../pictureRefused'
 import { Dialog } from './Dialog'
 import { TextField } from './Field'
 import { Segmented } from './Segmented'
@@ -168,7 +169,9 @@ export function PictureDialog(props: PictureDialogProps) {
       await props.onSave()
       props.onClose()
     } catch (error) {
-      setFailure(error instanceof Error ? error.message : String(error))
+      // An image the browser would not load is an event, not an error: it is said in words, never as "[object Event]".
+      const refusedImage = (error instanceof Error && error.name === PICTURE_REFUSED) || (typeof Event !== 'undefined' && error instanceof Event)
+      setFailure(refusedImage ? t('kit.picture.refused') : error instanceof Error ? error.message : String(error))
     } finally {
       setBusy(false)
     }
