@@ -18,7 +18,7 @@ import { EMPTY_SELECTION, useEditorState } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
 import { labelsOn, useViewSettings } from './useViewSettings';
 import { useBoardView } from './useBoardView';
-import { isLookingAway, useCarriedDay, useSelectionPerLevel, useShownDays } from './useShownDays';
+import { isLookingAway, useBoardDoors, useCarriedDay, useSelectionPerLevel, useShownDays } from './useShownDays';
 import { useCanvasRequests, useDocumentation } from './useEditorRequests';
 import { useDeleteRequests } from './useDeleteRequests';
 import { useLayoutActions } from './useLayoutActions';
@@ -173,7 +173,9 @@ function EditorBody(props: SolutionDesignEditorProps) {
  * requests and the deletes over the selection, the export over those, and
  * the doors a host and the keyboard come in by last.
  */
-function useEditorParts(props: SolutionDesignEditorProps) {
+function useEditorParts(given: SolutionDesignEditorProps) {
+  // What the board opens goes through its own doors, so a day carried is one asked from it.
+  const { props, from: wentFrom } = useBoardDoors(given);
   const theme = useTheme();
   const { t, language } = useStrings();
   const state = useEditorState(props);
@@ -186,7 +188,7 @@ function useEditorParts(props: SolutionDesignEditorProps) {
   const ownDays = useShownDays(useCallback((id: string) => modelRef.current.diagrams.find((d) => d.id === id)?.asOf, []));
   const viewing = props.document.viewing ?? ownDays;
   const looking = isLookingAway(activeDiagram, viewing.days);
-  const cameFrom = useCarriedDay(activeDiagram, viewing);
+  const cameFrom = useCarriedDay(activeDiagram, viewing, wentFrom);
   useSelectionPerLevel(activeDiagram?.id, cameFrom, state.selection, state.setSelection, activeDiagram?.kind === 'container' ? EMPTY_SELECTION : undefined);
   const writable = !(props.editing.readOnly ?? false);
   // A look is read-only (ADR-0027, amended): everything that draws from `readOnly`

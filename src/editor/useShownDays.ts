@@ -73,25 +73,73 @@ export function dayShown(
  * the one to go back to, not the first one that places it. The same sideways, from
  * one application's diagram to a neighbour's. Coming back up changes nothing: the
  * look stayed with the board. Answers where this diagram was opened from.
+ *
+ * Only a move asked from the board does that (`wentFrom`, which {@link useBoardDoors}
+ * fills). Reaching a container diagram any other way — its scope's home, an address,
+ * an agent — opens it on its own day: a saved view's day is that view's alone, and
+ * did follow to whatever was opened next. A day carried there earlier goes with it,
+ * while a look the person took on the diagram itself stays theirs.
  */
 export function useCarriedDay(
   active: { id: string; kind: string; asOf?: string } | undefined,
   viewing: ShownDays,
+  wentFrom: { current: string | undefined },
 ): string | undefined {
   const last = useRef(active);
   const [cameFrom, setCameFrom] = useState<Readonly<Record<string, string>>>({});
+  const carried = useRef(new Map<string, string | undefined>());
   useEffect(() => {
     const was = last.current;
     last.current = active;
-    if (!was || !active || was.id === active.id || active.kind !== 'container') return;
-    if (was.kind !== 'layer7' && was.kind !== 'container') return;
+    if (!was || !active || was.id === active.id) return;
+    const asked = wentFrom.current === was.id;
+    wentFrom.current = undefined;
+    if (active.kind !== 'container') return;
+    if (!asked || (was.kind !== 'layer7' && was.kind !== 'container')) {
+      leaveCarried(active.id, viewing, carried.current);
+      setCameFrom((held) => (active.id in held ? withoutKey(held, active.id) : held));
+      return;
+    }
     if (cameFrom[was.id] === active.id) return;
     setCameFrom((held) => ({ ...held, [active.id]: was.id }));
     const day = shownAsOf(was, viewing.days);
+    carried.current.set(active.id, day);
     if (day) viewing.show(active.id, day);
     else viewing.forget(active.id);
-  }, [active, viewing, cameFrom]);
+  }, [active, viewing, cameFrom, wentFrom]);
   return active ? cameFrom[active.id] : undefined;
+}
+
+/** A day carried onto a diagram goes when it is reached another way; one the person chose there since is not this one's to take. */
+function leaveCarried(id: string, viewing: ShownDays, carried: Map<string, string | undefined>): void {
+  if (!carried.has(id)) return;
+  const day = carried.get(id);
+  carried.delete(id);
+  const look = viewing.days[id];
+  if (look !== undefined && look.day === day) viewing.forget(id);
+}
+
+function withoutKey(held: Readonly<Record<string, string>>, key: string): Readonly<Record<string, string>> {
+  const { [key]: _gone, ...rest } = held;
+  return rest;
+}
+
+/**
+ * The board's own doors to another view: everything the editor opens from the board
+ * goes through these, and says which board it left (`from`), so the day may go along
+ * ({@link useCarriedDay}). What a host opens by itself does not pass here.
+ */
+export function useBoardDoors<P extends {
+  document: { activeDiagramId: string | undefined; onActiveDiagramChange(id: string): void };
+  diagrams: { onCreateContainer(applicationElementId: string): void };
+}>(props: P): { props: P; from: { current: string | undefined } } {
+  const from = useRef<string | undefined>(undefined);
+  const { document, diagrams } = props;
+  const doors = useMemo(() => ({
+    document: { ...document, onActiveDiagramChange: (id: string) => { from.current = document.activeDiagramId; document.onActiveDiagramChange(id); } },
+    diagrams: { ...diagrams, onCreateContainer: (applicationElementId: string) => { from.current = document.activeDiagramId; diagrams.onCreateContainer(applicationElementId); } },
+  }), [document, diagrams]);
+  return { props: useMemo(() => ({ ...props, ...doors }), [props, doors]), from };
 }
 
 /**

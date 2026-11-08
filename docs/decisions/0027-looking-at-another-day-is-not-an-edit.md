@@ -157,6 +157,7 @@ back goes to that board (`useCarriedDay`).
 * Bad, accepted: a lens is lost on reload unless kept, as a look is. One that used to
   stick by being chosen now has to be kept.
 * As built, 7 November 2026: going down to a container diagram takes the board's day and remembers the board, also sideways to a neighbour's diagram, and Back returns to that board on its day with its selection. What it came from is held for as long as the window is open; the day is in the address.
+* As built, 8 November 2026: only a move asked from the board carries the day (`useBoardDoors`). A container diagram reached another way, from its scope's home, an address or an agent, opens on its own day, and a day carried onto it earlier goes; a look the person took on it stays. A saved view's day is that view's alone.
 * Neutral: the container view's deployment boxes still write when toggled. They are
   a setting of the view rather than a colouring of it, and have no *Keep* yet.
 

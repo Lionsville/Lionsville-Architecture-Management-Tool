@@ -186,22 +186,70 @@ describe('a level down and back', () => {
   const inside = { id: 'wms', kind: 'container' };
   const neighbour = { id: 'yard', kind: 'container' };
 
+  // What the board's own doors say when the editor opens a view from it.
+  const asked = () => ({ current: undefined as string | undefined });
+  const carry = (active: { id: string; kind: string; asOf?: string }, wentFrom: { current: string | undefined }) => {
+    const view = renderHook(({ at }) => useCarriedDay(at, viewing, wentFrom), { initialProps: { at: active } });
+    return view;
+  };
+  let viewing: ShownDays;
+
   it('carries the day down from the board and remembers the board', () => {
-    const viewing = shown();
-    const view = renderHook(({ active }) => useCarriedDay(active, viewing), { initialProps: { active: landscape as { id: string; kind: string; asOf?: string } } });
-    view.rerender({ active: inside });
+    viewing = shown();
+    const wentFrom = asked();
+    const view = carry(landscape, wentFrom);
+    wentFrom.current = 'plan';
+    view.rerender({ at: inside });
     expect(viewing.show).toHaveBeenCalledWith('wms', '2027-09-01');
     expect(view.result.current).toBe('plan');
   });
 
   it('goes sideways from one diagram to a neighbour, and comes back the way it went', () => {
-    const viewing = shown();
-    const view = renderHook(({ active }) => useCarriedDay(active, viewing), { initialProps: { active: landscape as { id: string; kind: string; asOf?: string } } });
-    view.rerender({ active: inside });
-    view.rerender({ active: neighbour });
+    viewing = shown();
+    const wentFrom = asked();
+    const view = carry(landscape, wentFrom);
+    wentFrom.current = 'plan';
+    view.rerender({ at: inside });
+    wentFrom.current = 'wms';
+    view.rerender({ at: neighbour });
     expect(view.result.current).toBe('wms');
-    view.rerender({ active: inside });
+    wentFrom.current = 'yard';
+    view.rerender({ at: inside });
     expect(view.result.current).toBe('plan');
+  });
+
+  it('leaves a saved view\'s day with it when the next view is opened another way', () => {
+    // A view saved on 1 Sep 2027, then its scope's home, then a container diagram from there:
+    // nothing the board asked, so the diagram opens on its own day, and editable.
+    viewing = shown();
+    const view = carry(landscape, asked());
+    view.rerender({ at: inside });
+    expect(viewing.show).not.toHaveBeenCalled();
+    expect(view.result.current).toBeUndefined();
+  });
+
+  it('takes back a day it carried once the diagram is reached another way, and leaves one the person chose', () => {
+    // Days kept as a window keeps them, so what was carried can be read back.
+    const days: Record<string, { day?: string }> = {};
+    viewing = {
+      days,
+      show: vi.fn((id: string, day: string | undefined) => { days[id] = day === undefined ? {} : { day }; }),
+      forget: vi.fn((id: string) => { delete days[id]; }),
+    };
+    const wentFrom = asked();
+    const view = carry(landscape, wentFrom);
+    wentFrom.current = 'plan';
+    view.rerender({ at: inside });
+    expect(days.wms).toEqual({ day: '2027-09-01' });
+    view.rerender({ at: landscape });
+    view.rerender({ at: inside });
+    expect(viewing.forget).toHaveBeenCalledWith('wms');
+    expect(days.wms).toBeUndefined();
+    // The person looks at it on a day of their own; reaching it another way leaves that be.
+    days.wms = { day: '2026-01-01' };
+    view.rerender({ at: landscape });
+    view.rerender({ at: inside });
+    expect(days.wms).toEqual({ day: '2026-01-01' });
   });
 
   it('returns what was selected on the way back up, and starts afresh going down', () => {
