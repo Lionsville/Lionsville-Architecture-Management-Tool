@@ -15,7 +15,8 @@ import type { ImageRepository } from '../../ports/ImageRepository'
 import type { ScopeRepository } from '../../ports/ScopeRepository'
 import { namesUnder } from '../scope'
 import type { ScopeSnapshot, ScopeSummary } from '../scope'
-import { blank, contentOf, nodesOf, picturesOf, placeTogether, readScope, summaryOf } from '../scopeAccess'
+import { organisationHoldsWork } from '../organisationWork'
+import { contentOf, nodesOf, picturesOf, placeTogether, readScope, summaryOf } from '../scopeAccess'
 import type { ScopeReader } from '../scopeAccess'
 import { ROOT_SCOPE, scopePathFor, scopePathLabel } from '../scopePath'
 import type { ScopePath } from '../scopePath'
@@ -57,6 +58,11 @@ export type ExampleProject = {
  * removed. A listing does not say what a scope holds, so the caller reads the
  * root and says (`rootHoldsWork`); the example is filed under it, never over it.
  *
+ * **Whose a name is, is the listing's to say** (`organisationWork`): a folder
+ * lists its organisation under the folder's own name until something is
+ * written there, and that name is nobody's. Read as one, an example kept into
+ * an empty folder was filed under an organisation called after the folder.
+ *
  * A board of its own is not in the sentence the design asked for — it says "a
  * name or children" — and is here anyway: an unnamed root with a landscape
  * drawn in it is rare, and overwriting it would be the one mistake on this
@@ -67,8 +73,7 @@ export function copyExampleInto(
   root: ScopeSummary,
   rootHoldsWork = false,
 ): ScopeSnapshot[] {
-  const fresh = !rootHoldsWork && root.name.trim() === '' && root.children.length === 0 && root.diagrams === 0
-  const base = fresh
+  const base = !rootHoldsWork && !organisationHoldsWork(root)
     ? ROOT_SCOPE
     : scopePathFor(ROOT_SCOPE, scopePathLabel(example.fileAs ?? example.path), namesUnder(root))
   const readdress = (path: ScopePath): ScopePath => {
@@ -110,8 +115,8 @@ export function copyExampleInto(
  */
 export async function exampleCopyOver(scopes: ScopeReader, example: ExampleProject): Promise<ScopeSnapshot[]> {
   const [tree, root] = await Promise.all([scopes.tree(), readScope(scopes, ROOT_SCOPE)])
-  const unread = (root?.unreadable?.length ?? 0) > 0 || (tree.unreadable?.length ?? 0) > 0
-  return copyExampleInto(example, summaryOf(tree), unread || (root !== undefined && !blank(root)))
+  const listed = summaryOf(tree)
+  return copyExampleInto(example, listed, organisationHoldsWork(listed, root))
 }
 
 /**

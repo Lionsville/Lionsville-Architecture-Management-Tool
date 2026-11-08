@@ -28,7 +28,7 @@ import { memoryGit } from './memoryGit'
 import { largeAddresses, seedLargeOrganisation } from './testing/largeOrganisation'
 
 const FOLDER = 'my-folder'
-const copy = (from: Repositories, into: CopyInto, signal?: AbortSignal) => copyScopes(from, into, { ownName: FOLDER, ...(signal ? { signal } : {}) })
+const copy = (from: Repositories, into: CopyInto, signal?: AbortSignal) => copyScopes(from, into, signal ? { signal } : {})
 
 async function places() {
   const store = new MemoryStore()
@@ -223,7 +223,7 @@ describe('run again, stopped, and over what is there', () => {
     const { from, into, root } = await places()
     const stopping = new AbortController()
     let told = 0
-    const tally = await copyScopes(from, into, { ownName: FOLDER, signal: stopping.signal, onProgress: () => { told += 1; if (told === 11) stopping.abort() } })
+    const tally = await copyScopes(from, into, { signal: stopping.signal, onProgress: () => { told += 1; if (told === 11) stopping.abort() } })
     expect(tally.stopped?.left).toBe(56)
     expect(tally.scopes).toBe(11)
     expect(isWhole(tally)).toBe(false)
@@ -243,7 +243,7 @@ describe('run again, stopped, and over what is there', () => {
   it('adds the picture of a drawing an earlier copy never brought, and counts the scope as brought', async () => {
     const { from, into, root } = await places()
     // As 3.8.2 left it: every scope, and no drawing's picture.
-    await copyScopes(from, { ...into, images: { ...into.images, put: (scope, name, bytes) => (name === 'drawing.svg' ? Promise.resolve({ contentAddress: 'none' }) : into.images.put(scope, name, bytes)), bytes: (...args) => into.images.bytes(...args), bytesAt: (...args) => into.images.bytesAt(...args) } }, { ownName: FOLDER })
+    await copyScopes(from, { ...into, images: { ...into.images, put: (scope, name, bytes) => (name === 'drawing.svg' ? Promise.resolve({ contentAddress: 'none' }) : into.images.put(scope, name, bytes)), bytes: (...args) => into.images.bytes(...args), bytesAt: (...args) => into.images.bytesAt(...args) } })
     const again = folderRepositories({ root, git: memoryGit(root) })
     const node = nodesOf((await again.scopes.tree()).root).find((one) => one.address === 'domain-1')!
     const [address] = drawingPictureAddresses((await again.scopes.state(node.id))!.model.diagrams)
@@ -276,7 +276,7 @@ describe('run again, stopped, and over what is there', () => {
       }
       return handle
     }
-    const first = await copyScopes(from, folderRepositories({ root, git: memoryGit(root) }), { ownName: FOLDER }).finally(() => { proto.getFileHandle = was })
+    const first = await copyScopes(from, folderRepositories({ root, git: memoryGit(root) })).finally(() => { proto.getFileHandle = was })
     expect(isWhole(first)).toBe(false)
     expect(first.failures.length).toBeGreaterThan(0)
     expect(first.scopes + first.failed).toBe(67)

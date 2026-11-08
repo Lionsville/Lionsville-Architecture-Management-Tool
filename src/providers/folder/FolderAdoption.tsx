@@ -119,7 +119,6 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
     void flush()
       .then(() => copyScopes(adoption.from, adoption.into, {
         signal: controller.signal,
-        ownName: adoption.name,
         ...(adoption.check ? { check: adoption.check } : {}),
         onProgress: (progress) => setStage((was) => (was.at === 'copying' ? { ...was, progress } : was)),
       }))

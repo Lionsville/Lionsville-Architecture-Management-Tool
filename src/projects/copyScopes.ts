@@ -65,8 +65,9 @@ import type { SettingsOf, SettingsRepository } from '../ports/SettingsRepository
 import { copyCountsOf, addCounts, differencesBetween, EMPTY_COUNTS } from './copyCounts'
 import type { CopyCounts } from './copyCounts'
 import { isScopeMoved } from './revision'
+import { blank, holdsWorkBeyondItsName } from './organisationWork'
 import {
-  blank, carriedOf, contentOf, drawingBytesOf, drawingPicturesOf, landAt, landed, nodesOf, picturesOf, snapshotOf,
+  carriedOf, contentOf, drawingBytesOf, drawingPicturesOf, landAt, landed, nodesOf, picturesOf, snapshotOf,
 } from './scopeAccess'
 import type { ArrivalPlace, ScopeReader } from './scopeAccess'
 import { scopePathLabel } from './scopePath'
@@ -143,8 +144,6 @@ export type CopyOptions = {
   /** Aborted, the copy stops before the next scope. */
   signal?: AbortSignal
   onProgress?: (progress: CopyProgress) => void
-  /** What the destination calls itself, which its organisation reads as until somebody names it. */
-  ownName?: string
   /** The destination, read as if opened anew: holding nothing of what was written. Where absent, the destination as it was handed in. */
   check?: Pick<CopyInto, 'scopes' | 'images'>
 }
@@ -161,10 +160,14 @@ function holdsNothing(scope: ScopeState, ours: ScopeState | undefined): boolean 
   return blank({ ...scope, images, kind: undefined, model: { ...scope.model, name: '' } })
 }
 
-/** Whether a name is one nobody chose: the folder's own, the address's, or the one this copy gave a scope it made. */
-function nameNobodyChose(name: string, address: ScopeAddress, ours: string, ownName: string | undefined): boolean {
-  const held = name.trim()
-  return held === '' || held === ours || held === scopePathLabel(address) || (address === '' && held === ownName)
+/**
+ * Whether the name a scope there holds is one nobody chose: the place's own,
+ * which its listing says (`organisationWork`), the address's, or the one this
+ * copy gave a scope it made.
+ */
+function nameNobodyChose(there: ScopeState, held: ScopeNode | undefined, ours: string): boolean {
+  const name = there.model.name.trim()
+  return held?.unnamed === true || name === '' || name === ours || name === scopePathLabel(there.address)
 }
 
 /**
@@ -179,7 +182,7 @@ export async function surveyCopy(from: Pick<CopyFrom, 'scopes'>, into: Pick<Copy
   let total = 0
   for (const node of nodesOf(source.root)) {
     const state = await from.scopes.state(node.id)
-    if (state && blank(state)) continue
+    if (state && !holdsWorkBeyondItsName(state, node)) continue
     total += 1
     const found = held.get(node.address)
     const scope = found && await into.scopes.state(found.id)
@@ -199,7 +202,7 @@ export async function holdsWork(from: { scopes: ScopeReader }): Promise<boolean>
   try {
     for (const node of nodesOf((await from.scopes.tree()).root)) {
       const state = await from.scopes.state(node.id).catch(() => undefined)
-      if (state && !blank(state)) return true
+      if (state && holdsWorkBeyondItsName(state, node)) return true
     }
   } catch {
     return false
@@ -294,7 +297,7 @@ async function hasHistory(from: CopyFrom, nodes: readonly ScopeNode[]): Promise<
 type ToCheck = { node: ScopeNode; brought: boolean; keepName: boolean }
 
 /** One scope looked at and, where there is nothing of anybody's in the way, brought. Answers what to read back, or nothing. */
-async function copyOne(from: CopyFrom, into: CopyInto, node: ScopeNode, state: ScopeState, held: ScopeNode | undefined, tally: CopyTally, ownName: string | undefined): Promise<ToCheck | undefined> {
+async function copyOne(from: CopyFrom, into: CopyInto, node: ScopeNode, state: ScopeState, held: ScopeNode | undefined, tally: CopyTally): Promise<ToCheck | undefined> {
   const there = held && await into.scopes.state(held.id)
   if (there && !holdsNothing(there, state)) {
     if (differencesBetween(state, there).length > 0) { tally.kept += 1; tally.differs.push(node.address); return undefined }
@@ -306,7 +309,7 @@ async function copyOne(from: CopyFrom, into: CopyInto, node: ScopeNode, state: S
     await bring(from, into, node, state, held, there, false)
     return { node, brought: true, keepName: false }
   }
-  const keepName = there !== undefined && !nameNobodyChose(there.model.name, node.address, state.model.name, ownName)
+  const keepName = there !== undefined && !nameNobodyChose(there, held, state.model.name)
   const id = await bring(from, into, node, state, held, there, keepName)
   if (keepName) tally.namesKept.push(node.address)
   await copyScopeSettings(from, into, node, id, tally)
@@ -360,7 +363,7 @@ export async function copyScopes(from: CopyFrom, into: CopyInto, options: CopyOp
     scopes: 0, already: 0, kept: 0, failed: 0, unread: 0, missed: [], meanwhile: [], differs: [], unlike: [], namesKept: [],
     counts: EMPTY_COUNTS, failures: [], historyStays: false,
   }
-  const { signal, onProgress, ownName, check = into } = options
+  const { signal, onProgress, check = into } = options
   const tree = await from.scopes.tree()
   tally.unread += tree.unreadable?.length ?? 0
   tally.missed.push(...tree.unreadable ?? [])
@@ -379,11 +382,11 @@ export async function copyScopes(from: CopyFrom, into: CopyInto, options: CopyOp
       if ('cause' in read) failed(tally, 'read', read.cause, node.address)
       continue
     }
-    if (blank(state)) continue
+    if (!holdsWorkBeyondItsName(state, node)) continue
     // What did not read would be lost by a copy of what did: it stays here, and is said.
     if (state.unreadable?.length || state.later) { tally.unread += 1; tally.missed.push(node.address); continue }
     try {
-      const landedHere = await copyOne(from, into, node, state, held.get(node.address), tally, ownName)
+      const landedHere = await copyOne(from, into, node, state, held.get(node.address), tally)
       if (landedHere) toCheck.push(landedHere)
     } catch (cause) {
       if (isScopeMoved(cause)) { tally.kept += 1; tally.meanwhile.push(node.address); continue }

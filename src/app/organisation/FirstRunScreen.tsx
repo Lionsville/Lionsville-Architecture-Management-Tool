@@ -13,7 +13,7 @@ import { useState } from 'react'
 import { LANGUAGES, LANGUAGE_NAME } from '../../i18n'
 import type { Language, StringKey } from '../../i18n'
 import { DESKTOP_APP_LINK } from '../../platform/menu'
-import { blank } from '../../projects/scopeAccess'
+import { organisationHoldsWork } from '../../projects/organisationWork'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import { Button } from '../../widgets/kit/Button'
 import { TextInput, Select } from '../../widgets/kit/Field'
@@ -24,8 +24,10 @@ import type { ShellParts } from '../shellParts'
  * An organisation with nothing in it and no name, that this person may start, and
  * nothing asked for over it. Only once it is known: a root that holds records and
  * no name is somebody's work, and a listing that would not read is not an empty
- * one, so neither may be met by a page that says nothing is here. `waiting` is the
- * tick before the answer, in which nothing is drawn rather than the wrong screen.
+ * one, so neither may be met by a page that says nothing is here. A folder's own
+ * name, which an empty folder's organisation is listed under, is nobody's
+ * (`organisationWork`). `waiting` is the tick before the answer, in which nothing
+ * is drawn rather than the wrong screen.
  */
 export function firstRunUp(parts: ShellParts): 'up' | 'waiting' | 'no' {
   const { props, nav, organisation, machine, frame, agent } = parts
@@ -36,8 +38,8 @@ export function firstRunUp(parts: ShellParts): 'up' | 'waiting' | 'no' {
   if (asked && asked.page !== 'home') return 'no'
   if (!organisation.listed || !organisation.ready) return 'waiting'
   const { tree, root } = organisation
-  if (organisation.listFailed || (root !== undefined && !blank(root))) return 'no'
-  return tree.name.trim() === '' && tree.children.length === 0 && tree.diagrams === 0 && !tree.unreadable?.length && parts.writable(ROOT_SCOPE) ? 'up' : 'no'
+  if (organisation.listFailed || organisationHoldsWork(tree, root)) return 'no'
+  return parts.writable(ROOT_SCOPE) ? 'up' : 'no'
 }
 
 export function FirstRunScreen({ parts }: { parts: ShellParts }) {

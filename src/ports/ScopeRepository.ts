@@ -57,6 +57,13 @@ export type ScopeNode = {
   parent?: ScopeId
   /** What it is called — its model's name. */
   name: string
+  /**
+   * Nobody named it: `name` is what the place calls itself, which its
+   * organisation is listed under until something is written there (ADR-0012
+   * §1). Only ever the root's. Whether a root holds work asks this, not the
+   * name (`projects/organisationWork`).
+   */
+  unnamed?: true
   kind?: ScopeKind
   /** Its type from the operating model, a unit type's id, where it says one (ADR-0036, amended 17 October 2026). */
   unitTypeId?: string

@@ -211,6 +211,8 @@ export type ScopeSummary = {
   id?: ScopeId
   /** What it is called. Its own name, never an ancestor's. */
   name: string
+  /** Nobody named it, and `name` is the place's own ({@link ScopeNode.unnamed}). */
+  unnamed?: true
   kind?: ScopeKind
   /** Its type from the operating model, where it says one ({@link ScopeSnapshot.unitTypeId}). */
   unitTypeId?: string
@@ -368,7 +370,7 @@ export function scopeTree(
 ): ScopeSummary {
   const byPath = new Map(summaries.map((scope) => [scope.path, { ...scope, children: [] as ScopeSummary[] }]))
   const root = byPath.get(ROOT_SCOPE)
-    ?? { path: ROOT_SCOPE, name: rootName, diagrams: 0, children: [] as ScopeSummary[] }
+    ?? { path: ROOT_SCOPE, name: rootName, unnamed: true as const, diagrams: 0, children: [] as ScopeSummary[] }
   byPath.set(ROOT_SCOPE, root)
 
   for (const path of [...byPath.keys()].filter((held) => held !== ROOT_SCOPE).sort()) {

@@ -185,6 +185,7 @@ export class FolderScopeRepository implements ScopeRepository {
       return {
         id: node.id, address: composed(node.address), name: summary.name, diagrams: summary.diagrams,
         ...(parent ? { parent: parent.id } : {}),
+        ...(summary.unnamed ? { unnamed: true as const } : {}),
         ...(summary.kind !== undefined ? { kind: summary.kind } : {}),
         ...(summary.unitTypeId !== undefined ? { unitTypeId: summary.unitTypeId } : {}),
         ...(summary.client !== undefined ? { client: summary.client } : {}),

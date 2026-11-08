@@ -25,6 +25,7 @@ import { ShellError } from '../platform/errors'
 import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/OrganisationIndex'
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
 import { dataUrl, readDataUrl } from './dataUrl'
+import { holdsWorkBeyondItsName } from './organisationWork'
 import { readdressLinks } from './topics'
 import {
   analysisNamesWithin, linesNameWithin, principlesNameWithin, readdressAnalysis, readdressLines, readdressPrinciples, readdressRef, readdressRefs,
@@ -51,6 +52,7 @@ function summaryOfNode(node: ScopeNode): ScopeSummary {
     path: node.address,
     id: node.id,
     name: node.name,
+    ...(node.unnamed ? { unnamed: true as const } : {}),
     ...(node.kind !== undefined ? { kind: node.kind } : {}),
     ...(node.unitTypeId !== undefined ? { unitTypeId: node.unitTypeId } : {}),
     ...(node.client !== undefined ? { client: node.client } : {}),
@@ -616,9 +618,9 @@ export async function everyScope(
     throw new ShellError('shell.exportUnreadable', { paths: unreadable.map((path) => path || '/').join(', ') })
   }
   // The organisation is always there, whether or not anything was ever put
-  // in it; one with no name and nothing in it is nothing yet, and a working
-  // set does not carry it.
-  const held = states.filter((state) => !(state!.address === '' && blank(state!)))
+  // in it; one nobody named with nothing in it is nothing yet — a folder's
+  // listed under the folder's own name — and a working set does not carry it.
+  const held = states.filter((state) => state!.address !== ROOT_SCOPE || holdsWorkBeyondItsName(state!, tree.root))
   return Promise.all(held.map((state) => wholeOf(repositories.images, state!)))
 }
 
@@ -644,14 +646,3 @@ async function wholeOf(images: Pick<ImageRepository, 'bytes' | 'bytesAt'>, state
   }
 }
 
-/**
- * A scope with no name, and nothing in it or said about it: the organisation
- * before anybody put anything there, which is always there all the same.
- */
-export function blank(scope: ScopeState | ScopeSnapshot): boolean {
-  const { model } = scope
-  const said = Object.entries(model).some(([key, value]) => key !== 'name' && (Array.isArray(value) ? value.length > 0 : value !== undefined))
-  const described = scope.kind !== undefined || scope.client !== undefined || (scope.links?.length ?? 0) > 0 || (scope.relevantTo?.length ?? 0) > 0
-    || (scope.logoLibrary?.length ?? 0) > 0
-  return model.name.trim() === '' && !said && !described && (scope.images?.length ?? 0) === 0
-}

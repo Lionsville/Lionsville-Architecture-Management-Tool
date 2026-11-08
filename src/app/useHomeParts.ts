@@ -11,6 +11,7 @@ import type { Translate } from '../i18n'
 import type { Command, StepSummary } from '../model'
 import { fromArrays } from '../model'
 import type { HostModel } from '../model/hostModel'
+import { organisationHoldsWork } from '../projects/organisationWork'
 import { bareScope, flattenScopes } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { CarryChoice } from './workingFileFlows'
@@ -153,8 +154,8 @@ function useHomeFileDoors(deps: Parameters<typeof useHomeParts>[0] & {
     askPassword: password.askPassword,
     // Nothing made here yet, so a file just opens: an untouched first run has nothing to lose.
     untouched: () => {
-      const { tree } = deps.organisation
-      return deps.home === ROOT_SCOPE && tree.name.trim() === '' && tree.children.length === 0 && tree.diagrams === 0 && !tree.unreadable?.length
+      const { tree, root } = deps.organisation
+      return deps.home === ROOT_SCOPE && !organisationHoldsWork(tree, root)
     },
     below: () => flattenScopes(deps.organisation.tree).filter((scope) => scope.path !== deps.home && isWithinScope(scope.path, deps.home)).length,
     ...(deps.onCopySaved ? { onCopySaved: deps.onCopySaved } : {}),

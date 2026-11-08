@@ -235,7 +235,6 @@ export class FolderScopes {
     })
   }
 
-  /** The organisation of a folder nobody has written a header into: there, empty, and named nothing. */
   /**
    * The root of a folder that has no header of its own: named after the
    * folder, as a folder nobody has named has always been listed (ADR-0012 §1),
@@ -246,7 +245,7 @@ export class FolderScopes {
       id: identityAt(ROOT_SCOPE),
       address: ROOT_SCOPE,
       header: {},
-      summary: { path: ROOT_SCOPE, name: this.root.name, diagrams: 0, children: [] },
+      summary: { path: ROOT_SCOPE, name: this.root.name, unnamed: true, diagrams: 0, children: [] },
     }
   }
 
