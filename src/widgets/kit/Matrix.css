@@ -55,7 +55,7 @@
 .kit-matrix:focus-within .kit-matrix__colHead[data-crossed] { background: var(--crosshair); color: var(--ink); }
 .kit-matrix__colHead[data-folded] { color: var(--ink); cursor: pointer; }
 .kit-matrix__colName { display: block; width: max-content; max-width: 6.5rem; hyphens: auto; }
-.kit-matrix[data-rotate] .kit-matrix__colName { max-height: 12rem; max-width: none; writing-mode: vertical-rl; transform: rotate(180deg); overflow: hidden; }
+.kit-matrix[data-rotate] .kit-matrix__colName { max-height: 9rem; max-width: none; writing-mode: vertical-rl; transform: rotate(180deg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .kit-matrix__colHead[data-opens] { cursor: pointer; color: var(--ink); }
 .kit-matrix__colHead[data-opens] .kit-matrix__colName { text-decoration: underline; text-underline-offset: 2px; font-weight: var(--fw-medium); }
@@ -156,7 +156,7 @@
 
 /* The band over the columns, and the headings stuck under it. */
 .kit-matrix { --kit-matrix-band: 0px; }
-.kit-matrix[data-band] { --kit-matrix-band: 24px; }
+.kit-matrix[data-band] { --kit-matrix-band: 1.5rem; }
 .kit-matrix__band .kit-matrix__corner { height: var(--kit-matrix-band); padding-block: 0; border-bottom: 0; }
 .kit-matrix__groupHead {
   position: sticky;
@@ -171,6 +171,8 @@
   white-space: nowrap;
   cursor: pointer;
 }
+/* A group's name takes no width of its own: a one-column group is not widened by it, and says it in full on hover. */
+.kit-matrix__groupName { display: block; width: 0; min-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .kit-matrix tr:not(.kit-matrix__band) > .kit-matrix__corner,
 .kit-matrix thead .kit-matrix__colHead,
 .kit-matrix thead .kit-matrix__answerHead { top: var(--kit-matrix-band); }

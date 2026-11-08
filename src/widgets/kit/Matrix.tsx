@@ -219,7 +219,7 @@ function GroupBand({ answers, drawn, columns, groups }: {
   return (
     <tr className="kit-matrix__band">
       <th scope="col" className="kit-matrix__corner" colSpan={answers + 1} />
-      {spans.map((one) => <th scope="colgroup" key={one.id} colSpan={one.span} className="kit-matrix__groupHead" data-kit-group={one.id}>{one.label}</th>)}
+      {spans.map((one) => <th scope="colgroup" key={one.id} colSpan={one.span} className="kit-matrix__groupHead" data-kit-group={one.id} title={one.label || undefined}><span className="kit-matrix__groupName">{one.label}</span></th>)}
     </tr>
   )
 }

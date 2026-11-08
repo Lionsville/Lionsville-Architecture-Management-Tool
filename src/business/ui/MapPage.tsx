@@ -540,11 +540,12 @@ function MapFind({ query, count, onQuery, onClose, t }: { query: string; count: 
 }
 
 /** The sentence over the page and the map's own legend, which stays on the page. */
-function MapLine({ laidOut, t }: { laidOut: LaidOutMap; t: Translate }) {
+function MapLine({ laidOut, legend, t }: { laidOut: LaidOutMap; legend: boolean; t: Translate }) {
   return (
     <div className="map-page__line">
       <span className="map-page__summary" data-testid="map-summary" data-guide="map.summary">{summaryOf(laidOut, t)}</span>
-      <span data-testid="map-legend">{t('map.legend')}</span>
+      {/* The legend is the matrix's: a list of gaps or overlaps draws none of its marks. */}
+      {legend && <span data-testid="map-legend">{t('map.legend')}</span>}
     </div>
   )
 }
@@ -655,7 +656,7 @@ export function MapPage(props: MapPageProps) {
       />
       {look !== undefined && <MapLook day={look} props={props} onBack={() => chooseDay(undefined)} t={t} />}
       {finding && <MapFind query={query} count={matched?.length ?? 0} onQuery={setQuery} onClose={closeFind} t={t} />}
-      {laidOut && hasRows && <MapLine laidOut={laidOut} t={t} />}
+      {laidOut && hasRows && <MapLine laidOut={laidOut} legend={filter === 'all'} t={t} />}
       <Box ref={page} className="sheet-page" data-exporting={exporting ? '' : undefined} sx={exporting ? undefined : locatedRing(locatedId, 'data-kit-row')}>
         <div className="sheet-page__work">
           <div className="map-page__grid" data-testid="map-body">
