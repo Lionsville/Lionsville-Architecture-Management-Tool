@@ -214,7 +214,8 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
           {trimmed === '' ? t('search.empty') : t('search.noMatches', { query: trimmed })}
         </Typography>
       )}
-      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 2, pb: 1.5 }}>
+      {/* Under a rule: a row cut by the list's foot read as if the hint were its second line. */}
+      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', px: 2, pt: 1, pb: 1.5, borderTop: 1, borderColor: 'divider' }}>
         {t('search.hint')}
       </Typography>
     </Dialog>
