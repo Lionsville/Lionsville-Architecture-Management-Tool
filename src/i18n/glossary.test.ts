@@ -80,6 +80,16 @@ describe('terms that must not meet', () => {
     }
   })
 
+  it('names an act on the board with the same words in the menu, the panel and the dialog that follows', () => {
+    for (const language of ['en', 'nl', 'de'] as const) {
+      const t = STRINGS[language]
+      expect(t['dialog.removeFromDiagram']).toBe(t['menu.removeFromDiagram'])
+      expect(t['dialog.deleteFromModelButton']).toBe(t['menu.deleteFromModel'].replace(/…$/, ''))
+      expect(t['inspector.arrange']).toBe(t['bar.arrange'])
+      expect(t['prefs.snap']).toBe(t['menu.snapToGrid'])
+    }
+  })
+
   it('names the two densities and the two tidy spacings apart on one page', () => {
     for (const language of ['nl', 'de'] as const) {
       const t = STRINGS[language]

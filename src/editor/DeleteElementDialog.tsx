@@ -48,7 +48,8 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
   const [choice, setChoice] = useState(units?.initial ?? '');
   const held = props.hasComponents && !units;
   return (
-    <Dialog open onClose={props.onClose} maxWidth="xs" fullWidth>
+    // Wide enough for the menu's own two words on one row in German (Aus der Ansicht entfernen, Aus dem Modell löschen).
+    <Dialog open onClose={props.onClose} maxWidth="sm" fullWidth>
       <DialogTitle>{t('dialog.deleteElementTitle', { name: props.element.name })}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>

@@ -1973,7 +1973,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'prefs.canvas': 'Canvas',
   'prefs.canvasNote': 'Ook te schakelen op het canvas zelf, dat ze hier onthoudt.',
   'prefs.grid': 'Raster',
-  'prefs.snap': 'Op raster uitlijnen',
+  'prefs.snap': 'Uitlijnen op raster',
   'prefs.minimap': 'Minikaart',
   'prefs.badges': 'Levenscyclusbadges',
   'prefs.lineLabels': 'Alle lijnlabels',
