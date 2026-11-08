@@ -451,6 +451,28 @@ describe('routeWithLibavoid — the two tiers', () => {
     expect(pathHitsObstacles(drawnPath(board, connection, waypoints), [middle], ROUTE_CLEARANCE)).toBe(0);
   });
 
+  it('routes the leg inside a group clear of the card above the one it ends at', async () => {
+    // A lead above a group of two stacked cards, its line to the lower one: tier 1 sees the group
+    // as one box and ran the line straight down through the upper card.
+    const board: RouterInput = {
+      nodes: [
+        node('lead', actor(125, 0)),
+        node('upper', card(100, 200), 'W'),
+        node('lower', card(100, 450), 'W'),
+      ],
+      groups: [{ id: 'W', x: 60, y: 160, width: 280, height: 460 }],
+      connections: [{ id: 'lead-lower', sourceId: 'lead', targetId: 'lower' }],
+    };
+    const upper = nodeOf(board, 'upper').rect;
+    expect(pathHitsObstacles(drawnPath(board, board.connections[0], []), [upper])).toBeGreaterThan(0);
+    const waypoints = (await routedMap(board)).get('lead-lower')!;
+    expect(pathHitsObstacles(drawnPath(board, board.connections[0], waypoints), [upper])).toBe(0);
+    // And from the other end, the same.
+    const back = { ...board, connections: [{ id: 'lower-lead', sourceId: 'lower', targetId: 'lead' }] };
+    const backWaypoints = (await routedMap(back)).get('lower-lead')!;
+    expect(pathHitsObstacles(drawnPath(back, back.connections[0], backWaypoints), [upper])).toBe(0);
+  });
+
   it('routes an intra-group edge clear of its siblings', async () => {
     const board = threeGroupBoard();
     const connection = board.connections[1];

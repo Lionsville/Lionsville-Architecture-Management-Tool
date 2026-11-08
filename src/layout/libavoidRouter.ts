@@ -3,6 +3,7 @@
 
 import type { AttachSide, DomainGroupRect, ElementId, Point, Rect } from '../model/types';
 import { ROUTE_CLEARANCE, rectCentre } from './routing';
+import { pathHitsObstacles } from './geometry';
 
 /**
  * Orthogonal edge router: rects in, interior waypoints out.
@@ -1160,7 +1161,93 @@ export async function routeWithLibavoidInProcess(input: RouterInput): Promise<Ro
       throw new Error(`${UNAVAILABLE} (${detail})`, { cause: error });
     }
   }
+  try {
+    clearInsideGroups(avoid, input, routes);
+  } catch (error: unknown) {
+    // As a tier's: only an abort is terminal, and it is said as the router being unavailable.
+    if (!isWasmAbort(error)) throw error;
+    poisoned = true;
+    throw new Error(`${UNAVAILABLE} (${error instanceof Error ? error.message : String(error)})`, { cause: error });
+  }
   return { routes, skipped };
+}
+
+/**
+ * The leg of an inter-group line inside the group at either end, routed again
+ * among that group's cards where it ran through one.
+ *
+ * Tier 1 sees a group as one opaque box, so the leg from where a line crosses
+ * the box's edge to a card inside was drawn blind: a line from above to the
+ * lower of two stacked cards ran straight down through the upper one, and a
+ * line through a card says it connects to it. Where the leg crosses a sibling,
+ * it is routed again from that crossing, against the group's members and what
+ * lies outside the box, as tier 2 routes the group's own lines. Every other
+ * route is left exactly as tier 1 drew it. A pinned end is left alone: its side
+ * is the person's.
+ */
+function clearInsideGroups(avoid: AvoidApi, input: RouterInput, routes: Map<string, Point[]>): void {
+  const groups = new Map(input.groups.filter((g) => isSafeRect(rectOf(g))).map((g) => [g.id, rectOf(g)]));
+  const nodes = new Map(input.nodes.filter((n) => isSafeRect(n.rect)).map((n) => [n.id, n]));
+  const groupOf = (id: ElementId) => { const group = nodes.get(id)?.group; return group !== undefined && groups.has(group) ? group : undefined; };
+  for (const connection of [...input.connections].sort((a, b) => compareText(a.id, b.id))) {
+    const waypoints = routes.get(connection.id);
+    const source = nodes.get(connection.sourceId);
+    const target = nodes.get(connection.targetId);
+    if (!waypoints || !source || !target || groupOf(source.id) === groupOf(target.id)) continue;
+    let line = [
+      ...(connection.sourceSide ? [] : [rectCentre(source.rect)]), ...waypoints, ...(connection.targetSide ? [] : [rectCentre(target.rect)]),
+    ];
+    const atTarget = groupOf(target.id);
+    if (atTarget !== undefined && !connection.targetSide) line = legRoutedInside(avoid, line, target, atTarget, groups, nodes, groupOf) ?? line;
+    const atSource = groupOf(source.id);
+    if (atSource !== undefined && !connection.sourceSide) line = legRoutedInside(avoid, [...line].reverse(), source, atSource, groups, nodes, groupOf)?.reverse() ?? line;
+    routes.set(connection.id, line.slice(connection.sourceSide ? 0 : 1, connection.targetSide ? line.length : -1));
+  }
+}
+
+/** The line, its end inside `group` routed again among the group's cards where it ran through one; undefined where it ran through none. */
+function legRoutedInside(
+  avoid: AvoidApi, line: Point[], end: RouterNode, group: string,
+  groups: ReadonlyMap<string, Rect>, nodes: ReadonlyMap<ElementId, RouterNode>, groupOf: (id: ElementId) => string | undefined,
+): Point[] | undefined {
+  const box = groups.get(group)!;
+  const inside = (point: Point) => point.x > box.x && point.x < box.x + box.width && point.y > box.y && point.y < box.y + box.height;
+  const entered = line.findIndex(inside);
+  if (entered < 1) return undefined;
+  const port = edgeCrossing(line[entered - 1], line[entered], box);
+  const siblings = [...nodes.values()].filter((one) => one.id !== end.id && groupOf(one.id) === group);
+  if (pathHitsObstacles([port, ...line.slice(entered)], siblings.map((one) => one.rect)) === 0) return undefined;
+  const router = newRouter(avoid);
+  const shapes = new TierShapes(avoid);
+  const outside = [...groups].filter(([id]) => id !== group).map(([, rect]) => ({ rect }));
+  const loose = [...nodes.values()].filter((one) => groupOf(one.id) === undefined).map((one) => ({ id: one.id, rect: one.rect }));
+  const obstacles: TierObstacle[] = [...[...siblings, end].sort((a, b) => compareText(a.id, b.id)).map((one) => ({ id: one.id, rect: one.rect })), ...outside, ...loose];
+  for (const obstacle of withoutContainedRects(obstacles)) {
+    const shape = addObstacle(avoid, router, obstacle.rect);
+    if (obstacle.id !== undefined) shapes.add(obstacle.id, shape);
+  }
+  const { ref } = addConnector(avoid, router, shapes, { id: 'inside', sourceId: '', targetId: end.id, source: port, target: rectCentre(end.rect) }, () => undefined);
+  router.processTransaction();
+  const inner = interiorWaypoints(ref);
+  avoid.destroy(router);
+  if (inner === undefined) return undefined;
+  return [...line.slice(0, entered), { x: rounded(port.x), y: rounded(port.y) }, ...inner, line[line.length - 1]];
+}
+
+/** Where the leg from `from` (outside) to `to` (inside) crosses the box's edge. */
+function edgeCrossing(from: Point, to: Point, box: Rect): Point {
+  const clamp = (value: number, low: number, high: number) => Math.min(Math.max(value, low), high);
+  let t = 1;
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  for (const [edge, delta, start] of [[box.x, dx, from.x], [box.x + box.width, dx, from.x], [box.y, dy, from.y], [box.y + box.height, dy, from.y]] as const) {
+    if (delta === 0) continue;
+    const at = (edge - start) / delta;
+    if (at < 0 || at > 1) continue;
+    const point = { x: from.x + dx * at, y: from.y + dy * at };
+    if (point.x >= box.x - 0.01 && point.x <= box.x + box.width + 0.01 && point.y >= box.y - 0.01 && point.y <= box.y + box.height + 0.01) t = Math.min(t, at);
+  }
+  return { x: clamp(from.x + dx * t, box.x, box.x + box.width), y: clamp(from.y + dy * t, box.y, box.y + box.height) };
 }
 
 /**
