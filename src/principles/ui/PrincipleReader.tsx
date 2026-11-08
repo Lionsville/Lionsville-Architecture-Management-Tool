@@ -60,7 +60,10 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
   const status = principle.status === 'accepted' && principle.acceptedOn
     ? t('principles.acceptedOn', { date: formatDay(principle.acceptedOn, language) })
     : t(STATUS_WORD[principle.status])
+  // Copy link reads too, so it stands where nothing else of the ⋯ may: a reader sends a principle on as well.
+  const copy: MenuEntry[] = access.copyLink ? [{ label: t('common.copyLink'), onSelect: () => access.copyLink?.({ scope, id: principle.id }), 'data-testid': 'principle-copy-link' }] : []
   const more: MenuEntry[] = [
+    ...copy,
     ...(principle.status === 'accepted' ? [{ label: t('principles.retire'), onSelect: () => setStatus('retired') }] : []),
     ...(principle.status === 'retired' ? [{ label: t('principles.restore'), onSelect: () => setStatus('accepted') }] : []),
     { label: t('principles.merge'), onSelect: () => setMerging(true) },
@@ -72,7 +75,7 @@ export function PrincipleReader({ found, here, ids, currentId, onSelect, onEdit,
         ids={ids} currentId={currentId} onSelect={onSelect} title={principle.title} listWord={t('principles.listWord')}
         code={from.kind === 'here' ? number : t('principles.numberIn', { number, scope: access.scopeLabel(scope) })}
         facts={<Facts found={found} />}
-        {...(may ? { actions: <RecordActions edit={{ onPress: onEdit, testId: 'principle-edit' }} more={more} /> } : {})}
+        {...(may ? { actions: <RecordActions edit={{ onPress: onEdit, testId: 'principle-edit' }} more={more} /> } : copy.length > 0 ? { actions: <RecordActions more={copy} /> } : {})}
         {...(may && principle.status === 'candidate' ? {
           next: <Button variant="primary" onClick={() => setStatus('accepted')} data-testid="principle-accept">{t('principles.accept')}</Button>,
         } : {})}

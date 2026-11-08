@@ -9,7 +9,7 @@
  * it — and a principle from above read and not written.
  */
 import { useMemo, useRef, useState } from 'react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderShell } from '../testing/renderShell'
 import { axeFindings } from '../testing/axe'
@@ -35,7 +35,7 @@ const above: Principle = {
 /** A topic's principle (ADR-0042 §4): in force wherever the topic is relevant. */
 const topical: Principle = { ...above, id: 'pr-sec', title: 'Least privilege', statement: 'Grant the least that works.' }
 
-function Harness({ initial, steps, readOnly = false, topics }: { initial: HostModel; steps: Command[]; readOnly?: boolean; topics?: (scope: string) => string[] }) {
+function Harness({ initial, steps, readOnly = false, topics, copyLink }: { initial: HostModel; steps: Command[]; readOnly?: boolean; topics?: (scope: string) => string[]; copyLink?: (ref: { scope: string; id: string }) => void }) {
   const [model, setModel] = useState(initial)
   const latest = useRef(model)
   const counter = useRef(0)
@@ -59,6 +59,7 @@ function Harness({ initial, steps, readOnly = false, topics }: { initial: HostMo
       citations: () => [],
     },
     ...(topics ? { topics } : {}),
+    ...(copyLink ? { copyLink } : {}),
     scopeLabel: (path) => (path === '' ? 'Organisation' : path === 'topics/security' ? 'Security' : 'Acme'),
     makeId: (prefix) => { counter.current += 1; return `${prefix}-${counter.current}` },
     today: () => '2026-10-25',
@@ -167,6 +168,15 @@ describe('the principles page (ADR-0041)', () => {
     expect(screen.getByTestId('principle-reader').textContent).toContain('Kept in Organisation')
     expect(screen.queryByTestId('principle-edit')).toBeNull()
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('copies a link to a principle from its ⋯, one read from above too', async () => {
+    const copyLink = vi.fn()
+    renderShell(<Harness initial={blank} steps={[]} copyLink={copyLink} />)
+    fireEvent.click(screen.getByRole('row', { name: /Data is owned where it is made/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Copy link' }))
+    expect(copyLink).toHaveBeenCalledWith({ scope: '', id: 'pr-org' })
   })
 
   it('leaves retired ones out of a search, and says how to include them', () => {

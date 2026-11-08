@@ -16,6 +16,7 @@ import { flattenScopes } from '../../projects/scope'
 import { scopeDisplayName } from '../../projects/scopeLabel'
 import { topicsInForce } from '../../projects/topics'
 import type { ScopePath } from '../../projects/scopePath'
+import type { PrincipleRef } from '../../model/principle'
 import { lazyPart } from '../../widgets/lazyPart'
 import { arrivingPage } from '../../widgets/Arriving'
 import type { WorkspaceParts } from '../workspaceParts'
@@ -32,7 +33,7 @@ export function ScopePrinciples({ parts, children }: { parts: WorkspaceParts; ch
   const { scopes, groupName } = props.tree
   const listed = useMemo(() => flattenScopes(scopes), [scopes])
   const scopeLabel = useCallback((path: ScopePath) => scopeDisplayName(path, listed, groupName), [listed, groupName])
-  const { onOpenScope } = props.navigation
+  const { onOpenScope, onShareLink } = props.navigation
   const day = parts.today()
   const topics = useCallback((path: ScopePath) => topicsInForce(path, listed, day), [listed, day])
   const access = usePrinciplesAccess({
@@ -46,6 +47,7 @@ export function ScopePrinciples({ parts, children }: { parts: WorkspaceParts; ch
     openHere: pages.openPrinciples,
     openDecision: pages.openDecisions,
     t: props.shell.s,
+    ...(onShareLink ? { copyLink: (ref: PrincipleRef) => onShareLink({ scope: ref.scope, page: 'principles', id: ref.id }) } : {}),
     ...(onOpenScope ? { openThere: (path: ScopePath, id: string) => onOpenScope(path, { page: 'principles', id }) } : {}),
   })
   return <PrinciplesProvider value={access}>{children}</PrinciplesProvider>

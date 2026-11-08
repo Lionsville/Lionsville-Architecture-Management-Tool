@@ -59,6 +59,8 @@ export type PrinciplesDeps = {
   openHere: (id?: string) => void
   /** Another scope's principles page, on a principle: where it is kept. */
   openThere?: (scope: ScopePath, id: string) => void
+  /** *Copy link* to a principle, at its scope's principles page (ADR-0033, amended); absent where the source has no address. */
+  copyLink?: ((ref: PrincipleRef) => void) | undefined
   /** The decisions page, on a decision: where a departure made from an element lands. */
   openDecision?: (id: string) => void
   /** The words a new decision is written in. */
@@ -259,6 +261,7 @@ export function principlesAccess(deps: PrinciplesDeps, version: number): Princip
     },
     ...(deps.t ? { deviate: (about: CitingRecord, ref: PrincipleRef, aspect: number | undefined, reason: string) => deviate(deps, about, ref, aspect, reason) } : {}),
     open: (ref) => (ref.scope === here ? deps.openHere(ref.id) : deps.openThere?.(ref.scope, ref.id)),
+    ...(deps.copyLink ? { copyLink: deps.copyLink } : {}),
     mayWrite: (scope) => scope === here && !deps.session.readOnly,
     today: deps.today,
   }

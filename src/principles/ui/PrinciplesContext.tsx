@@ -61,6 +61,8 @@ export type PrinciplesAccess = {
   merge(scope: string, into: string, from: readonly string[]): void
   /** Open a principle where it is kept: the principles page of its scope, on it. */
   open?(ref: PrincipleRef): void
+  /** *Copy link* to a principle, as every record's ⋯ has; absent where no link can be made. */
+  copyLink?(ref: PrincipleRef): void
   /** Open a citing record where it is kept. */
   openRecord?(citation: Citation): void
   /**

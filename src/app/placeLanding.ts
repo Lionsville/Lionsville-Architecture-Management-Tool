@@ -26,7 +26,7 @@ export type HeldScope = { readonly model: HostModel; readonly ancestorDecisions:
  * What a scope's document says about a place in it: its views in order, and
  * whether it holds a record by id — a view, an element, a decision of its own
  * or one it reads from above, a plan, an observation, a cause, a solution or
- * an experiment, or a unit type, a role or a responsibility of the operating model.
+ * an experiment, a principle, or a unit type, a role or a responsibility of the operating model.
  */
 export function factsOf(held: HeldScope): Required<Pick<PlaceFacts, 'views' | 'holds'>> {
   const { model } = held
@@ -34,6 +34,8 @@ export function factsOf(held: HeldScope): Required<Pick<PlaceFacts, 'views' | 'h
     ...model.diagrams, ...model.elements, ...(model.decisions ?? []), ...held.ancestorDecisions,
     ...(model.transitions ?? []), ...(model.observations ?? []), ...(model.causes ?? []),
     ...(model.solutions ?? []), ...(model.experiments ?? []),
+    // A principle's page is `#/<scope>/-/principles/<id>`: without them Back to one said it was gone and opened the list.
+    ...(model.principles ?? []),
     // The operating model's items are what `#/-/operating/<id>` names: without them a link to one lands on the page with nothing picked.
     ...(model.unitTypes ?? []), ...(model.roles ?? []), ...(model.responsibilities ?? []),
   ].map((record) => record.id))
