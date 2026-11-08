@@ -165,11 +165,15 @@
   background: var(--zone-fill);
   pointer-events: none;
 }
+/* Top left, in the room the box keeps over its members, on a ground of its own: at the foot lines ran through it. */
 .lv-deployment__name {
   position: absolute;
-  bottom: calc(2px / var(--canvas-zoom, 1));
+  top: calc(2px / var(--canvas-zoom, 1));
   left: calc(var(--s-2) / var(--canvas-zoom, 1));
-  color: var(--ink-3);
+  padding-inline: calc(2px / var(--canvas-zoom, 1));
+  border-radius: var(--r-1);
+  background: var(--zone-fill);
+  color: var(--ink-2);
   font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1));
   line-height: var(--lh-tight);
   white-space: nowrap;
