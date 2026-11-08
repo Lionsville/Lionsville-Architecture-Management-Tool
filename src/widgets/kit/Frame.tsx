@@ -79,7 +79,8 @@ export function Frame({ rowOne, rowTwoStart, rowTwoEnd, band, tree, panel, pageU
         <div className="kit-frame__body">
           {tree && <DockedTree>{tree}</DockedTree>}
           <main className="kit-frame__main">
-            {children}
+            {/* The view in a layer of its own, so nothing a canvas floats over itself is ever stacked against a page. */}
+            <div className="kit-frame__view" data-testid="frame-view">{children}</div>
             <div className="kit-frame__pages" ref={setPage} data-testid="frame-pages" />
           </main>
           {panel && <aside className="kit-frame__panel" data-testid="frame-panel">{panel}</aside>}

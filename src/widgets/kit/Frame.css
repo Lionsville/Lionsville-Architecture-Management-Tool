@@ -18,6 +18,13 @@
 /* Its own width and nothing it holds: without the min-width a name that cannot wrap widens the column past what was asked. */
 .kit-frame__tree { flex: 0 0 auto; width: var(--panel-w-tree); min-width: 0; max-width: 60vw; min-height: 0; display: flex; overflow: hidden; background: var(--surface); }
 .kit-frame__main { position: relative; flex: 1 1 0; min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+/*
+ * The view's own layer. A canvas floats its dock, its legend and its notes over itself
+ * with z-indexes of its own; without this context they were stacked against the page
+ * (`.kit-place`, z-index 3) and drawn over it. Isolated here, every canvas kind stays
+ * under every page, whatever it floats.
+ */
+.kit-frame__view { position: relative; flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; flex-direction: column; isolation: isolate; }
 .kit-frame__panel { flex: 0 0 auto; min-height: 0; display: flex; }
 .kit-frame__homeviews { flex: 0 1 auto; min-width: min(10rem, 30%); display: flex; align-items: center; overflow-x: auto; scrollbar-width: none; }
 .kit-frame__pages { display: contents; }

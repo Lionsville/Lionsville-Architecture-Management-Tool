@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
@@ -20,6 +21,26 @@ const inFrame = (children: ReactNode) => renderShell(
     {children}
   </Frame>,
 )
+
+describe('what a view floats stays under a page', () => {
+  // A canvas floats its dock, legend and notes with z-indexes of its own (the chart's
+  // dock is 5, its legend 4), and a page is z-index 3 in the same column. The view's
+  // own stacking context is what keeps every canvas kind under every page; jsdom lays
+  // nothing out, so the structure and the rule are what is read.
+  it('draws the view in a layer of its own, beside the pages and not around them', () => {
+    inFrame(<div data-testid="a-canvas"><div className="kit-dock" data-corner="" /></div>)
+    const view = screen.getByTestId('frame-view')
+    expect(view.contains(screen.getByTestId('a-canvas'))).toBe(true)
+    expect(view.contains(screen.getByTestId('frame-pages'))).toBe(false)
+    expect(view.parentElement?.tagName).toBe('MAIN')
+  })
+
+  it('gives that layer a stacking context, and the page a layer over it', () => {
+    const css = readFileSync('src/widgets/kit/Frame.css', 'utf8')
+    expect(css).toMatch(/\.kit-frame__view \{[^}]*isolation: isolate;/)
+    expect(css).toMatch(/\.kit-place \{ position: absolute; inset: 0; z-index: 3;/)
+  })
+})
 
 describe('a page in the frame', () => {
   it('is a place in the main column and no dialog, with the rows beside it to press', () => {
