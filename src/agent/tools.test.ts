@@ -47,10 +47,11 @@ describe('the tool list', () => {
     expect(toolSpec('search').tier).toBe('read')
   })
 
-  it('has a sentence for every refusal, and the reducer’s two among them', () => {
+  it('has a sentence for every refusal, the reducer’s among them, and none for a view that is the last', () => {
     const keys = Object.keys(REFUSAL_SENTENCE) as AgentRefusal[]
     expect(keys).toContain('command.gone')
-    expect(keys).toContain('command.lastLandscape')
+    // A scope's last view may go (a scope may keep only its records), so there is no refusal to word.
+    expect(keys).not.toContain('command.lastLandscape')
     for (const key of keys) expect(REFUSAL_SENTENCE[key]).toMatch(/\.$/)
   })
 })

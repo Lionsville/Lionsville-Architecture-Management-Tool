@@ -37,8 +37,6 @@ export type DiagramActions = {
   /** Deleting: a request from the editor, confirmed here first. */
   requestDeleteDiagram: (diagramId: string) => void
   diagramToDelete: DesignDiagram | undefined
-  /** The last landscape may not go — nothing would be left to work on. */
-  isLastLandscape: boolean
   cancelDeleteDiagram: () => void
   confirmDeleteDiagram: () => void
 }
@@ -121,8 +119,6 @@ export function useDiagramActions(deps: {
   const diagramToDelete = deleteId
     ? session.model.diagrams.find((d) => d.id === deleteId)
     : undefined
-  const isLastLandscape = diagramToDelete?.kind === 'layer7'
-    && session.model.diagrams.filter((d) => d.kind === 'layer7').length <= 1
 
   const cancelDeleteDiagram = useCallback(() => setDeleteId(null), [])
 
@@ -137,13 +133,15 @@ export function useDiagramActions(deps: {
     // the landscape first (`model/containerDiagram.ts`) — the same step the
     // boards table takes, so the application stands afterwards with nothing
     // inside it and can be deleted like any other. A landscape is the plain
-    // drop; the reducer refuses the last one, and says so itself.
+    // drop, the last one too: a scope may keep only its records.
     const current = session.current()
     const taken = new Set(idsIn(current))
     const command = removeContainerDiagram(current, id, () => claimKey('interface', taken))
       ?? { type: 'diagram.delete' as const, id }
     if (!session.dispatch(command)) return
-    // The active diagram gone? Then on to the first one that remains.
+    // The active diagram gone? Then on to the first one that remains. With
+    // none left the scope stays open on its empty place, still naming the
+    // view that went, so ⌘Z puts it back on screen as well as in the model.
     if (session.currentActiveId() === id) {
       const left = session.indexed()
       session.setActiveDiagramId(left.order.diagrams[0] ?? id)
@@ -154,7 +152,7 @@ export function useDiagramActions(deps: {
   return {
     onCreateContainerDiagram, onRenameDiagram, onDiagramSettingsChange, onDuplicateDiagram,
     onCreateLayer7Diagram, newDiagramName, setNewDiagramName, confirmNewDiagram,
-    requestDeleteDiagram: setDeleteId, diagramToDelete, isLastLandscape,
+    requestDeleteDiagram: setDeleteId, diagramToDelete,
     cancelDeleteDiagram, confirmDeleteDiagram,
   }
 }

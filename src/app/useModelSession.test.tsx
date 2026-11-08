@@ -489,10 +489,23 @@ describe('useModelSession — undo and redo', () => {
       model: model({ diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })] }),
     }))
     let accepted: unknown = 'unset'
-    act(() => { accepted = session().dispatch({ type: 'diagram.delete', id: 'd1' }) })
+    act(() => { accepted = session().dispatch({ type: 'diagram.delete', id: 'gone' }) })
     expect(accepted).toBeUndefined()
     expect(session().current().diagrams).toHaveLength(1)
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining('last landscape'), 'error')
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('no longer there'), 'error')
+  })
+
+  /** A scope may keep only its records: its last view is a step like any other, taken back by undo. */
+  it('takes the last view off as one step, and undo puts it back', () => {
+    const { session, notify } = mount(project({
+      model: model({ diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })] }),
+    }))
+    act(() => { session().dispatch({ type: 'diagram.delete', id: 'd1' }) })
+    expect(session().current().diagrams).toEqual([])
+    expect(session().history()).toHaveLength(1)
+    expect(notify).not.toHaveBeenCalledWith(expect.anything(), 'error')
+    act(() => session().undo())
+    expect(session().current().diagrams.map((d) => d.id)).toEqual(['d1'])
   })
 
   it('forgets the stack when it takes on another document', () => {
@@ -1240,9 +1253,9 @@ describe('useModelSession — an action on a refusal', () => {
   it('says the refusal and the command it refused', () => {
     const { facts, notify, session, Host } = offering()
     render(<Host readOnly={false} />)
-    act(() => { session().dispatch({ type: 'diagram.delete', id: 'd1' }) })
-    expect(facts).toEqual([{ where: 'session.dispatch', key: 'command.lastLandscape', command: 'diagram.delete' }])
-    expect(notify).toHaveBeenCalledWith(expect.stringContaining('last landscape'), 'error', { label: 'Pass it on', onClick: expect.any(Function) })
+    act(() => { session().dispatch({ type: 'diagram.delete', id: 'gone' }) })
+    expect(facts).toEqual([{ where: 'session.dispatch', key: 'command.gone', command: 'diagram.delete' }])
+    expect(notify).toHaveBeenCalledWith(expect.stringContaining('no longer there'), 'error', { label: 'Pass it on', onClick: expect.any(Function) })
   })
 
   it('says an undo the model no longer takes, and which way it went', () => {

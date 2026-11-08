@@ -89,12 +89,9 @@ export const DIAGRAM_COMMANDS = {
     apply(model, command, { meta }) {
       const diagram = model.diagrams[command.id]
       if (!diagram) return gone
-      // The last landscape always stays; the editor disables the menu item and
-      // this is the safety net underneath it.
-      if (diagram.kind === 'layer7'
-        && model.order.diagrams.filter((id) => model.diagrams[id].kind === 'layer7').length <= 1) {
-        return { ok: false, reason: 'command.lastLandscape' }
-      }
+      // Any view may go, the last one too: a scope whose work is its
+      // observations and decisions needs no board, and one with no views is
+      // a scope like any other (ADR-0002, amended).
       const at = model.order.diagrams.indexOf(command.id)
       return ok(
         withDiagrams(model, drop(model.diagrams, model.order.diagrams, command.id)),

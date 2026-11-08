@@ -18,7 +18,6 @@ export type ShellDialogsProps = {
   s: Translate
 
   diagramToDelete: DesignDiagram | undefined
-  isLastLandscape: boolean
   onCancelDelete: () => void
   onConfirmDelete: () => void
 
@@ -29,14 +28,12 @@ export type ShellDialogsProps = {
 
 export function ShellDialogs({
   s,
-  diagramToDelete, isLastLandscape, onCancelDelete, onConfirmDelete,
+  diagramToDelete, onCancelDelete, onConfirmDelete,
   newDiagramName, onNewDiagramNameChange, onConfirmNewDiagram,
 }: ShellDialogsProps) {
-  const deleteBody = isLastLandscape
-    ? 'shell.lastLandscape'
-    : diagramToDelete?.kind === 'layer7'
-      ? 'shell.deleteLandscapeBody'
-      : 'shell.deleteContainerBody'
+  const deleteBody = diagramToDelete?.kind === 'layer7'
+    ? 'shell.deleteLandscapeBody'
+    : 'shell.deleteContainerBody'
 
   return (
     <>
@@ -46,7 +43,6 @@ export function ShellDialogs({
         body={s(deleteBody)}
         confirmLabel={s('common.delete')}
         cancelLabel={s('common.cancel')}
-        confirmDisabled={isLastLandscape}
         onCancel={onCancelDelete}
         onConfirm={onConfirmDelete}
       />

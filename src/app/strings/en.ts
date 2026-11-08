@@ -219,7 +219,6 @@ export const EN = {
   /** The name a newly created container view gets. */
   'shell.containerDiagram': '{name} · containers',
   'shell.deleteDiagramTitle': 'Delete view “{name}”?',
-  'shell.lastLandscape': 'This is the last landscape; it cannot be deleted.',
   'shell.deleteLandscapeBody':
     'The placements, groups and routes of this landscape are lost. The elements themselves stay in the model, and container views remain.',
   'shell.deleteContainerBody':

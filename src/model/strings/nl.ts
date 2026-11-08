@@ -270,7 +270,6 @@ export const NL: Record<keyof typeof EN, string> = {
 
   // --- wat de enige schrijver weigert (ADR-0002) ---------------------------
   'command.gone': 'Dat is er niet meer',
-  'command.lastLandscape': 'Dit is het laatste landschap, en een scope houdt er minstens \u00e9\u00e9n. Voeg eerst een ander landschap toe en verwijder dit daarna.',
   'command.datesOutOfOrder': 'Levenscyclusdata lopen op volgorde: live, dan uitfaseren, dan weg, elk op of na de vorige. Die dag zou ze terug laten lopen, dus hij is niet opgeslagen.',
   'command.refinesEnds': 'Een koppelvlak op containerniveau moet onder het koppelvlak vallen waar het deel van is: de bron onder de bron daarvan en het doel onder het doel, elk uiteinde hetzelfde element of een van zijn containers. Pas de uiteinden aan, of zet \u201cOnderdeel van\u201d op niets om het los te maken.',
   'command.refinesLevel': 'Dat koppelvlak is zelf al onderdeel van een ander, en een koppelvlak landt \u00e9\u00e9n keer. Kies in plaats daarvan het applicatiekoppelvlak waar het onderdeel van is.',

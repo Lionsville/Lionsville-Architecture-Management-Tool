@@ -124,7 +124,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.copyOf': '{name} (kopie)',
   'shell.containerDiagram': '{name} · containers',
   'shell.deleteDiagramTitle': 'Aanzicht “{name}” verwijderen?',
-  'shell.lastLandscape': 'Dit is het laatste landschap; het kan niet worden verwijderd.',
   'shell.deleteLandscapeBody':
     'De plaatsingen, groepen en routes van dit landschap gaan verloren. De elementen zelf blijven in het model, en containeraanzichten blijven staan.',
   'shell.deleteContainerBody':

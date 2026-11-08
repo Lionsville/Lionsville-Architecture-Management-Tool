@@ -74,7 +74,7 @@ function contexts(): MenuContext[] {
           element: ELEMENTS[i % ELEMENTS.length],
           connection: CONNECTIONS[i % CONNECTIONS.length],
           selection: { elementCount: 3, landscapeCount: 2 },
-          tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, canHistory: true, isLastLandscape: false },
+          tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, canHistory: true },
         });
       }
     }

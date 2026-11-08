@@ -16,7 +16,6 @@ import type { CommandRefusal } from './handler'
 
 const EVERY_REFUSAL: Record<CommandRefusal, true> = {
   'command.gone': true,
-  'command.lastLandscape': true,
   'command.datesOutOfOrder': true,
   'command.refinesEnds': true,
   'command.refinesLevel': true,

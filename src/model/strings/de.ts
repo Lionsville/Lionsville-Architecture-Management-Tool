@@ -270,7 +270,6 @@ export const DE: Record<keyof typeof EN, string> = {
 
   // --- what the one writer refuses (ADR-0002) ------------------------------
   'command.gone': 'Das ist nicht mehr da',
-  'command.lastLandscape': 'Dies ist die letzte Landschaft, und ein Bereich beh\u00e4lt mindestens eine. Legen Sie zuerst eine andere Landschaft an und l\u00f6schen Sie dann diese.',
   'command.datesOutOfOrder': 'Lebenszyklusdaten laufen der Reihe nach: aktiv, dann auslaufend, dann weg, jedes am oder nach dem vorigen. Dieser Tag lie\u00dfe sie r\u00fcckw\u00e4rts laufen, deshalb wurde er nicht gespeichert.',
   'command.refinesEnds': 'Eine Container-Schnittstelle muss unter der Schnittstelle liegen, zu der sie geh\u00f6rt: ihre Quelle unter deren Quelle und ihr Ziel unter deren Ziel, jedes Ende dasselbe Element oder einer seiner Container. \u00c4ndern Sie die Enden, oder setzen Sie \u201eTeil von\u201c auf nichts, um sie zu l\u00f6sen.',
   'command.refinesLevel': 'Diese Schnittstelle geh\u00f6rt selbst schon zu einer anderen, und eine Schnittstelle landet einmal. W\u00e4hlen Sie stattdessen die Anwendungsschnittstelle, zu der sie geh\u00f6rt.',

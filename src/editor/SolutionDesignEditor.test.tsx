@@ -1101,7 +1101,7 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     }
   });
 
-  it('refuses to delete the last landscape and hides entries whose callback is absent', () => {
+  it('asks the host to delete the last landscape like any other, and hides entries whose callback is absent', () => {
     const onDeleteDiagram = vi.fn();
     renderEditor({ model: modelWithPlacement('d1'), onDeleteDiagram });
 
@@ -1110,18 +1110,9 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     expect(within(menu).queryByText('Rename diagram…')).toBeNull();
     expect(within(menu).queryByText('Duplicate diagram')).toBeNull();
     const remove = within(menu).getByRole('menuitem', { name: /Delete diagram/ });
-    expect(remove.getAttribute('aria-disabled')).toBe('true');
+    expect(remove.getAttribute('aria-disabled')).not.toBe('true');
     fireEvent.click(remove);
-    expect(onDeleteDiagram).not.toHaveBeenCalled();
-    // The tooltip opens after MUI's enter delay, which is a timer.
-    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    try {
-      fireEvent.mouseOver(within(remove).getByText('Delete diagram…'));
-      act(() => { vi.advanceTimersByTime(1_000); });
-      expect(screen.getByRole('tooltip').textContent).toMatch(/last landscape/);
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(onDeleteDiagram).toHaveBeenCalledWith('d1');
   });
 
   it('"History…" on a tab asks the host for that diagram\'s history (ADR-0008)', () => {

@@ -655,10 +655,15 @@ describe('apply — diagrams', () => {
     expect(ok(apply(m, { type: 'diagram.rename', id: 'landscape', name: 'Diagram landscape' })).model).toBe(m)
   })
 
-  it('refuses to delete the last landscape', () => {
+  /** A scope may keep only its records: its last view goes like any other, and comes back with the inverse. */
+  it('deletes the last landscape, and the last view of all, reversibly', () => {
     const m = sample()
-    expect(apply(m, { type: 'diagram.delete', id: 'landscape' }))
-      .toEqual({ ok: false, reason: 'command.lastLandscape' })
+    const noLandscape = reversible(m, { type: 'diagram.delete', id: 'landscape' })
+    expect(noLandscape.order.diagrams).toEqual(['inside-a'])
+    const none = reversible(noLandscape, { type: 'diagram.delete', id: 'inside-a' })
+    expect(none.order.diagrams).toEqual([])
+    expect(none.diagrams).toEqual({})
+    expect(Object.keys(none.elements)).toEqual(['a', 'b', 'c'])
   })
 
   /** Settings are the whole answer: an absent field clears the diagram's own. */

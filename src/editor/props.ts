@@ -139,8 +139,8 @@ export interface EditorDiagramActions {
      * `onRename` receives the NEW name: the editor asks for it (a small
      * dialog with the current name preselected) and hands over the trimmed result,
      * so the host has nothing to prompt for. `onDelete` is a request — the
-     * host confirms in its own way and decides what becomes active; the editor
-     * only refuses (disables the entry) for the last remaining landscape.
+     * host confirms in its own way and decides what becomes active. Any view
+     * may go, the last one too.
      */
     onRename?(diagramId: string, name: string): void;
     onDuplicate?(diagramId: string): void;

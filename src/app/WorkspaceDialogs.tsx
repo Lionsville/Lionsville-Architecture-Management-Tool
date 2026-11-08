@@ -151,7 +151,6 @@ export function HistoryDialogs({ parts }: { parts: WorkspaceParts }) {
       <ShellDialogs
         s={s}
         diagramToDelete={diagrams.diagramToDelete}
-        isLastLandscape={diagrams.isLastLandscape}
         onCancelDelete={diagrams.cancelDeleteDiagram}
         onConfirmDelete={diagrams.confirmDeleteDiagram}
         newDiagramName={diagrams.newDiagramName}

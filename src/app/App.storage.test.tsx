@@ -1465,10 +1465,10 @@ describe('the action a registered provider offers on a problem', () => {
       },
     })
     await waitFor(() => expect(session?.scope).toBe('acme/landscape'))
-    // The last landscape: the reducer refuses it, and the session says so.
-    act(() => { session!.dispatch({ type: 'diagram.delete', id: 'd1' }) })
+    // A view that is not there: the reducer refuses it, and the session says so.
+    act(() => { session!.dispatch({ type: 'diagram.delete', id: 'gone' }) })
     fireEvent.click(await screen.findByRole('button', { name: 'Pass it on' }))
-    expect(handed).toEqual([expect.objectContaining({ where: 'session.dispatch', key: 'command.lastLandscape', command: 'diagram.delete' })])
+    expect(handed).toEqual([expect.objectContaining({ where: 'session.dispatch', key: 'command.gone', command: 'diagram.delete' })])
   })
 
   it('is the button on the notice of a failure the shell reports', async () => {

@@ -136,7 +136,6 @@ export const EN = {
   'menu.duplicateDiagram': 'Duplicate diagram',
   'menu.duplicateDiagramAsOf': 'Duplicate as of…',
   'menu.deleteDiagram': 'Delete diagram…',
-  'menu.lastLandscape': 'The last landscape cannot be deleted',
   'menu.nodeLabel': 'Element menu',
   'menu.edgeLabel': 'Connection menu',
   'menu.paneLabel': 'Canvas menu',

@@ -493,7 +493,7 @@ describe('menuItemsFor — group', () => {
 describe('menuItemsFor — tab', () => {
   const TAB = { kind: 'tab', diagramId: 'd1' } as const;
   const tab = (over: Partial<NonNullable<MenuContext['tab']>> = {}, more: Partial<MenuContext> = {}) =>
-    ctx({ tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, isLastLandscape: false, ...over }, ...more });
+    ctx({ tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, ...over }, ...more });
 
   // "Duplicate as of…" sits beside the plain duplicate (ADR-0009): a dated copy
   // is how a future board is made here, so it belongs where copying already is.
@@ -534,10 +534,10 @@ describe('menuItemsFor — tab', () => {
     expect(byId(items, 'diagram-history').label).toBe('History…');
   });
 
-  it('refuses to delete the last landscape', () => {
-    const remove = byId(menuItemsFor(TAB, tab({ isLastLandscape: true })), 'delete-diagram');
-    expect(remove.disabled).toBe(true);
-    expect(remove.disabledReason).toMatch(/last landscape/);
+  it('offers to delete any view, the last one too, never disabled', () => {
+    const remove = byId(menuItemsFor(TAB, tab({})), 'delete-diagram');
+    expect(remove.disabled).toBeUndefined();
+    expect(remove.danger).toBe(true);
   });
 
   it('is empty in read-only mode and without tab facts', () => {
@@ -558,7 +558,7 @@ describe('menuItemsFor — invariants', () => {
       menuItemsFor({ kind: 'group', groupId: 'core' }, ctx()),
       menuItemsFor(
         { kind: 'tab', diagramId: 'd' },
-        ctx({ tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, isLastLandscape: false } }),
+        ctx({ tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true } }),
       ),
     ];
   };

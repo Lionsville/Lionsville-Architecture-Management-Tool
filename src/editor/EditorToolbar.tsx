@@ -313,7 +313,6 @@ function openTab(kind: DesignDiagram['kind'], id: string, props: EditorToolbarPr
 export function EditorToolbar(props: EditorToolbarProps) {
   const host = usePlaceHost();
   const { t, language } = useStrings();
-  const layer7Diagrams = props.model.diagrams.filter((d) => tabList(d.kind, props) === 'board');
   // Each kind is its own list. A drawing is not dropped into a sheet's, and a
   // kind the host cannot open is not offered.
   const tabs = TAB_LISTS.flatMap((list) => props.model.diagrams.filter((d) => tabList(d.kind, props) === list));
@@ -348,12 +347,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
                 canDuplicate: Boolean(props.onDuplicateDiagram) && tabMenu.kind !== 'container',
                 canDelete: Boolean(props.onDeleteDiagram),
                 canHistory: Boolean(props.onDiagramHistory),
-                isLastLandscape: tabMenu.kind === 'layer7' && layer7Diagrams.length <= 1,
               },
             },
           )
         : [],
-    [tabMenu, props.readOnly, platform, t, props.onRenameDiagram, props.onOpenDiagramSettings, props.onDuplicateDiagram, props.onDeleteDiagram, props.onDiagramHistory, layer7Diagrams.length],
+    [tabMenu, props.readOnly, platform, t, props.onRenameDiagram, props.onOpenDiagramSettings, props.onDuplicateDiagram, props.onDeleteDiagram, props.onDiagramHistory],
   );
   const hasTabMenu = !props.readOnly && Boolean(
     props.onRenameDiagram || props.onOpenDiagramSettings

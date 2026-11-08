@@ -8,8 +8,7 @@
  * theme, and is not always visible in an embedded view.
  *
  * `confirmDisabled` is there for the case where the question may be asked but
- * the answer may not be given: deleting the last landscape would leave a shell
- * with nothing to work on, and a dialog with a dead button is then more honest
+ * the answer may not be given: a dialog with a dead button is then more honest
  * than a button that is absent — you can see *why* it cannot be done.
  *
  * The buttons are in sentence case, as in every other dialog. The answer is

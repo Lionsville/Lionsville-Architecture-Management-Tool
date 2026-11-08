@@ -125,7 +125,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.copyOf': '{name} (Kopie)',
   'shell.containerDiagram': '{name} · Container',
   'shell.deleteDiagramTitle': 'Ansicht „{name}“ löschen?',
-  'shell.lastLandscape': 'Dies ist die letzte Landschaft; sie kann nicht gelöscht werden.',
   'shell.deleteLandscapeBody':
     'Die Platzierungen, Gruppen und Routen dieser Landschaft gehen verloren. Die Elemente selbst bleiben im Modell, und Containeransichten bleiben bestehen.',
   'shell.deleteContainerBody':

@@ -196,15 +196,28 @@ describe('deleting', () => {
     const view = mount()
     act(() => view.actions().requestDeleteDiagram('d2'))
     expect(view.actions().diagramToDelete?.name).toBe('Second')
-    expect(view.actions().isLastLandscape).toBe(false)
   })
 
-  it('refuses to lose the last landscape — nothing would be left to work on', () => {
+  /**
+   * A scope may keep only its records, so its last view goes like any other:
+   * asked first, one step, and the scope stays open on the view that went,
+   * which ⌘Z puts back on screen as well as in the model.
+   */
+  it('deletes the last landscape on confirmation, and undo brings it back on screen', () => {
     const view = mount(project(model({
-      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] })],
+      diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [at('billing')] })],
     })))
     act(() => view.actions().requestDeleteDiagram('d1'))
-    expect(view.actions().isLastLandscape).toBe(true)
+    expect(view.actions().diagramToDelete?.name).toBe('L7')
+    act(() => view.actions().confirmDeleteDiagram())
+    expect(view.model().diagrams).toEqual([])
+    expect(view.model().elements.map((e) => e.id)).toEqual(['billing'])
+    expect(view.activeId()).toBe('d1')
+    expect(view.notify).toHaveBeenCalledWith('“L7” deleted.', 'success')
+
+    act(() => view.undo())
+    expect(view.model().diagrams.map((d) => d.id)).toEqual(['d1'])
+    expect(view.activeId()).toBe('d1')
   })
 
   it('deletes on confirmation, moves off it, and says so', () => {

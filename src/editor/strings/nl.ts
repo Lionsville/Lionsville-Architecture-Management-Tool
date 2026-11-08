@@ -131,7 +131,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.duplicateDiagram': 'Aanzicht dupliceren',
   'menu.duplicateDiagramAsOf': 'Dupliceren per datum…',
   'menu.deleteDiagram': 'Aanzicht verwijderen…',
-  'menu.lastLandscape': 'Het laatste landschap kan niet worden verwijderd',
   'menu.nodeLabel': 'Elementmenu',
   'menu.edgeLabel': 'Koppelingsmenu',
   'menu.paneLabel': 'Canvasmenu',

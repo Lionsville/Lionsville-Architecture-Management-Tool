@@ -131,7 +131,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.duplicateDiagram': 'Diagramm duplizieren',
   'menu.duplicateDiagramAsOf': 'Duplizieren zum Stand…',
   'menu.deleteDiagram': 'Diagramm löschen…',
-  'menu.lastLandscape': 'Die letzte Landschaft kann nicht gelöscht werden',
   'menu.nodeLabel': 'Elementmenü',
   'menu.edgeLabel': 'Verbindungsmenü',
   'menu.paneLabel': 'Zeichenflächenmenü',

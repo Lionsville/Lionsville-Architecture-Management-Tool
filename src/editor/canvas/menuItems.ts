@@ -208,8 +208,6 @@ export interface TabMenuFacts {
   canDelete: boolean;
   /** The host keeps a history and can show this diagram's (ADR-0008). */
   canHistory?: boolean;
-  /** The only landscape left: deleting it is refused, not confirmed. */
-  isLastLandscape: boolean;
 }
 
 export interface MenuContext {
@@ -784,9 +782,6 @@ function tabItems(ctx: MenuContext): MenuItem[] {
       label: t('menu.deleteDiagram'),
       danger: true,
       action: 'delete-diagram',
-      ...(tab.isLastLandscape
-        ? { disabled: true, disabledReason: t('menu.lastLandscape') }
-        : {}),
     });
   }
   return items;

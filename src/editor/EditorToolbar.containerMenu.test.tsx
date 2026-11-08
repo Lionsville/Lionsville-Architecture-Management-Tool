@@ -97,7 +97,7 @@ describe('the menu of a container view', () => {
     expect(onDeleteDiagram).toHaveBeenCalledWith('cd1');
   });
 
-  it('opens from the chevron in the view\'s own header, and is never disabled as a last landscape', () => {
+  it('opens from the chevron in the view\'s own header, and never disabled', () => {
     const onDeleteDiagram = vi.fn();
     const onOpenDiagramSettings = vi.fn();
     renderToolbar({ activeDiagram: container, onDeleteDiagram, onOpenDiagramSettings });

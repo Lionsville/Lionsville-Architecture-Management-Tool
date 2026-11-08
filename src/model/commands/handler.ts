@@ -23,7 +23,7 @@ import type { Model } from '../normalised'
  * refusal to show somebody.
  */
 export type CommandRefusal =
-  | 'command.gone' | 'command.lastLandscape' | 'command.datesOutOfOrder'
+  | 'command.gone' | 'command.datesOutOfOrder'
   /** A landing whose ends do not sit under the interface's ends (ADR-0013). */
   | 'command.refinesEnds'
   /** A landing on a line that is itself a landing: an interface lands once. */
@@ -144,7 +144,6 @@ export type CommandRefusal =
  */
 const COMMAND_REFUSALS: Record<CommandRefusal, true> = {
   'command.gone': true,
-  'command.lastLandscape': true,
   'command.datesOutOfOrder': true,
   'command.refinesEnds': true,
   'command.refinesLevel': true,
