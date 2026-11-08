@@ -248,8 +248,10 @@
   outline: calc(1px / var(--canvas-zoom, 1)) dashed var(--selected-edge);
   outline-offset: calc(2px / var(--canvas-zoom, 1));
 }
-.lv-board[data-connecting] .react-flow__node:hover .kit-card {
+/* The card the line would land on, under the pointer or by the handle it is drawn to: ringed solid and lit. */
+.lv-board[data-connecting] .react-flow__node:is(:hover, :has(.react-flow__handle.connectingto)) .kit-card {
   outline: calc(2px / var(--canvas-zoom, 1)) solid var(--selected-edge);
+  background: var(--selected-soft);
 }
 .lv-connect-word {
   padding: 1px 6px;

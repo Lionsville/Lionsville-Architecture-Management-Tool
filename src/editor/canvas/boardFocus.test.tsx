@@ -34,4 +34,9 @@ describe('what stays under the focus', () => {
     expect(sheet).toContain('color:var(--ink-dim)');
     expect(sheet).not.toMatch(/kit-card\{[^}]*opacity/);
   });
+
+  it('lets everything back while a line is in hand, so the card it lands on is never faded', () => {
+    const sheet = focusSheet({ nodes: new Set(['a']), lines: new Set() });
+    for (const rule of sheet.split('\n')) expect(rule).toContain(':not([data-connecting])');
+  });
 });

@@ -78,8 +78,10 @@ const quoted = (id: string) => `[data-id="${id.replace(/["\\]/g, '\\$&')}"]`;
 /** Everything but what is kept, in one rule each: the ink of a card, its marks, a line. */
 export function focusSheet(state: BoardFocusState): string {
   const not = (ids: ReadonlySet<string>) => (ids.size > 0 ? `:not(${[...ids].map(quoted).join(',')})` : '');
-  const node = `.lv-board:not([data-capturing]) .react-flow__node${not(state.nodes)}`;
-  const line = `.lv-board:not([data-capturing]) .react-flow__edge${not(state.lines)}`;
+  // A line in hand lifts the fade: the card it is to land on may be one that receded.
+  const board = '.lv-board:not([data-capturing]):not([data-connecting])';
+  const node = `${board} .react-flow__node${not(state.nodes)}`;
+  const line = `${board} .react-flow__edge${not(state.lines)}`;
   return [
     `${node} .kit-card{color:var(--ink-dim);border-color:var(--line)}`,
     `${node} .kit-card__sub,${node} .kit-card__about{color:inherit}`,
