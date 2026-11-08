@@ -348,17 +348,15 @@ function useRows(register: PeopleRegisterAccess, day: string, view: ListView, s:
   return { rows, shown }
 }
 
-/** The first tab, as it truly stands: still being read, nobody yet, or the list. */
+/**
+ * The first tab, as it truly stands: still being read, nobody yet, or the list. Empty, it
+ * offers no press of its own: *Add person* is on the bar above, and one primary press is enough.
+ */
 function PeopleTab(props: ListPartProps) {
   const { register, rows, onAdd, s } = props
   if (register.people === undefined) return <PageState state="loading" />
   if (rows.length > 0) return <PeopleList {...props} />
-  return (
-    <PageState
-      state="empty" title={s('people.emptyTitle')} body={s(onAdd ? 'people.emptyBody' : 'people.emptyReader')}
-      {...(onAdd ? { action: { label: s('people.add'), onPress: () => onAdd() } } : {})}
-    />
-  )
+  return <PageState state="empty" title={s('people.emptyTitle')} body={s(onAdd ? 'people.emptyBody' : 'people.emptyReader')} />
 }
 
 /** What is on every tab's head: the tabs, the day, and adding. */

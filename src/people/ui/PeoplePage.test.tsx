@@ -213,10 +213,10 @@ describe('the People page, as a directory', () => {
     expect((screen.getByTestId('people-add-name') as HTMLInputElement).value).toBe('Pia Schultz')
   })
 
-  it('says it is empty truthfully: a first step for who may add, and no promise to a reader', () => {
+  it('says it is empty truthfully: one press to add for who may, and no promise to a reader', () => {
     renderShell(<Harness start={[]} />)
     expect(screen.getByText('Nobody is in the register yet')).toBeDefined()
-    expect(screen.getAllByRole('button', { name: 'Add person' }).length).toBeGreaterThan(1)
+    expect(screen.getAllByRole('button', { name: 'Add person' })).toHaveLength(1)
     cleanup()
     renderShell(<Harness start={[]} readOnly />)
     expect(screen.getByText('Whoever keeps the register adds people here.')).toBeDefined()
