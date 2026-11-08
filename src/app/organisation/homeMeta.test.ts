@@ -10,11 +10,11 @@ describe('the line under a home\'s name', () => {
     for (const language of ['en', 'nl', 'de'] as const) {
       const root = { path: '', name: 'Acme', children: [] }
       const line = homeMeta(root as never, root as never, '', '2026-11-08T03:25:00Z', language, translator(language))
-      const when = line.slice(line.search(/\d/))
-      expect(when).not.toMatch(/[ \t\n]/)
-      expect(when.length).toBeGreaterThan(4)
-      // …and to its label: "Zuletzt geändert" does not end a line its date starts the next.
-      expect(line).toMatch(/(changed|gewijzigd|geändert)\u00a0\d/)
+      // From the label's first word to the date's end, nothing breaks: not "Zuletzt / geändert".
+      const said = line.slice(line.search(/Last|Laatst|Zuletzt/))
+      expect(said).toMatch(/^(Last\u00a0changed|Laatst\u00a0gewijzigd|Zuletzt\u00a0geändert)\u00a0\d/)
+      expect(said).not.toMatch(/[ \t\n]/)
+      expect(said.length).toBeGreaterThan(20)
     }
   })
 })
