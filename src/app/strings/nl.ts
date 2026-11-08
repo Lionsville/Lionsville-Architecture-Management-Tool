@@ -1831,6 +1831,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'chart.findPeople': "Mensen",
   'chart.findIn': "in {unit}",
   'chart.findLabel': 'Zoek een eenheid of persoon',
+  'chart.findShort': 'Zoeken…',
   'chart.findHint': "Enter gaat naar de eerste. De weg ernaartoe klapt open.",
   'chart.me': "Ik",
   'chart.findMeTip': "Ga naar waar je een rol hebt",

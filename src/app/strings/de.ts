@@ -1835,6 +1835,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'chart.findPeople': "Personen",
   'chart.findIn': "in {unit}",
   'chart.findLabel': 'Eine Einheit oder Person suchen',
+  'chart.findShort': 'Suchen…',
   'chart.findHint': "Enter geht zum ersten Treffer. Der Weg dorthin klappt auf.",
   'chart.me': "Ich",
   'chart.findMeTip': 'Dorthin gehen, wo Sie eine Rolle haben',

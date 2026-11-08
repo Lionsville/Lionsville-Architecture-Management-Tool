@@ -2063,6 +2063,8 @@ export const EN = {
   'chart.findPeople': "People",
   'chart.findIn': "in {unit}",
   'chart.findLabel': 'Find a unit or person',
+  /** The find field's placeholder where the field is narrow; its name stays chart.findLabel. */
+  'chart.findShort': 'Find…',
   'chart.findHint': "Enter goes to the first. The way there unfolds.",
   'chart.me': "Me",
   'chart.findMeTip': "Go to where you hold a role",

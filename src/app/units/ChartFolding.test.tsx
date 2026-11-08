@@ -132,6 +132,9 @@ describe('a large organisation on its chart', () => {
     const onSelect = vi.fn()
     renderShell(<Harness onSelect={onSelect} />)
     const field = screen.getByTestId('chart-find-input')
+    // A placeholder short enough for the narrow field, and the field's name whole.
+    expect(field.getAttribute('placeholder')).toBe('Find…')
+    expect(screen.getByRole('combobox', { name: 'Find a unit or person' })).toBe(field)
     fireEvent.focus(field)
     fireEvent.change(field, { target: { value: 'team 3.1.2' } })
     expect(screen.getAllByRole('option')[0].textContent).toBe('Team 3.1.2in Cluster 3.1')

@@ -68,7 +68,7 @@ export function ChartFind({ chart, names, roleName, onUnit, onHolder, onMe, note
   return (
     <div className="chart-outline__find" data-testid="chart-find">
       <Picker
-        label={t('chart.findLabel')} placeholder={t('chart.findLabel')} options={options} onPick={onPick} posture="popup" recent={[]} hint={t('chart.findHint')}
+        label={t('chart.findLabel')} placeholder={t('chart.findShort')} options={options} onPick={onPick} posture="popup" recent={[]} hint={t('chart.findHint')}
         inputTestId="chart-find-input" data-guide="chart.find"
       />
       <Button onClick={onMe} data-testid="chart-find-me" data-guide="chart.findMe" title={t('chart.findMeTip')}>{t('chart.me')}</Button>
