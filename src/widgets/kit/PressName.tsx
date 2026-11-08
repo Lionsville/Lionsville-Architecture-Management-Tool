@@ -10,7 +10,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
+import { PencilIcon } from '../icons'
 import { claimKey } from './keys'
+import './PressName.css'
 
 export type PressNameProps = {
   readonly name: string
@@ -78,7 +80,9 @@ export function PressName({ name, onRename, renameRequest, renameAtOnce, heading
   if (!editing) {
     return (
       <Heading className={classes.heading}>
-        <button type="button" ref={pressed} className={classes.press} aria-label={`${t('kit.panel.rename')}: ${name}`} onClick={() => setTyped(name)}>{name}</button>
+        <button type="button" ref={pressed} className={classes.press} aria-label={`${t('kit.panel.rename')}: ${name}`} onClick={() => setTyped(name)}>
+          {name}<span className="kit-pressname__pen" aria-hidden="true"><PencilIcon size={12} /></span>
+        </button>
       </Heading>
     )
   }

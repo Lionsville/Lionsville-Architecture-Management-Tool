@@ -1,0 +1,7 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* A name pressed to rename it says so as a property's value does: a pencil after the words, where the pointer or the focus is. */
+.kit-pressname__pen { display: inline-flex; margin-inline-start: var(--s-1); vertical-align: middle; color: var(--ink-3); opacity: 0; }
+button:hover > .kit-pressname__pen,
+button:focus-visible > .kit-pressname__pen { opacity: 1; }

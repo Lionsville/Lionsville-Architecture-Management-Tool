@@ -12,6 +12,7 @@ import type { BasedOn, Role, UnitType } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import type { MarkdownEditor as MarkdownEditorShape } from '../../documentation/ui/MarkdownEditor'
 import { lazyPart } from '../../widgets/lazyPart'
+import { PencilIcon } from '../../widgets/icons'
 import { Button } from '../../widgets/kit/Button'
 import { DateInput, PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { setDay, setSuccessors } from '../edit'
@@ -70,6 +71,7 @@ export function Prose({ label, value, onChange, readOnly, render, testId }: {
       <button type="button" className="op-prose__read" onClick={() => setWriting(true)}>
         {value && <span className="kit-hidden">{t('operating.write', { label })}: </span>}
         {value ? (render ? render(value) : value) : <span className="op-quiet">{t('operating.writeEmpty', { label })}</span>}
+        <span className="op-prose__pen" aria-hidden="true"><PencilIcon size={12} /></span>
       </button>
     </div>
   )
