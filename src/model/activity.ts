@@ -134,10 +134,16 @@ function elementUpdated(id: string, to: unknown, before: Model, count: number): 
   return { key: 'activity.elementChanged', name: was, count }
 }
 
+/**
+ * What a step did, in one line. Total: a step that is no command of the model —
+ * a scope's content landed whole, as a log keeps it beside the commands — or
+ * one this build does not know says nothing, rather than no summary, which a
+ * list reading `key` off it threw on and lost every other line with.
+ */
 export function summarise(commands: readonly Command[], before: Model): StepSummary {
   // Words chosen by whoever made the step say it as they chose (`CommandMeta.said`).
   const said = commands.length === 1 ? commands[0]?.said : undefined
-  return said ?? summariseCommands(commands, before)
+  return said ?? (summariseCommands(commands, before) as StepSummary | undefined) ?? NOTHING
 }
 
 function summariseCommands(commands: readonly Command[], before: Model): StepSummary {

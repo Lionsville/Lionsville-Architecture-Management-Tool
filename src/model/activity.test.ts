@@ -38,6 +38,8 @@ describe('summarise', () => {
   it('names a step nobody made', () => {
     expect(summarise([], before())).toEqual({ key: 'activity.nothing' })
     expect(summarise([transaction([])], before())).toEqual({ key: 'activity.nothing' })
+    // A scope's content landed whole is kept in a log beside the commands; it is said as nothing, never as no summary.
+    expect(summarise([{ type: 'scope.replace', content: {} } as unknown as Command], before())).toEqual({ key: 'activity.nothing' })
   })
 
   it('says the words whoever made the step chose for it, on the command or the transaction that is the step', () => {
