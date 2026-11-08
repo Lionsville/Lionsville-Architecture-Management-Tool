@@ -113,7 +113,7 @@ export const DARK: Record<ColourToken, string> = {
   'line-uses': 'var(--line-ink)', 'line-implied': 'var(--line-quiet)', 'line-runs': 'var(--cat-3)',
   'line-delivered': 'var(--cat-1)', 'line-issue': 'var(--line-signal)',
   'c4-container-fill': 'var(--card-surface)', 'c4-container-line': 'var(--line-ink)',
-  'c4-context-fill': 'var(--zone-fill)', 'state-attention-border': 'var(--warn)',
+  'c4-context-fill': 'var(--canvas-ground)', 'state-attention-border': 'var(--warn)',
   'drop-ok': 'var(--selected-soft)', 'drop-warn': 'var(--warn-soft)',
   'link-outline': 'var(--focus-ring)', 'guide-ring': 'var(--focus-ring)',
   'field-focus': 'var(--focus-ring)', leaves: 'var(--surface-2)', 'harvey-need': 'var(--ink-2)',

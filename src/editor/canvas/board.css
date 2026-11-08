@@ -76,7 +76,7 @@
 /* A container diagram: boxes say what they are at every distance, and the context recedes. */
 .lv-board[data-kind='container'] .lv-tile { text-align: center; }
 .lv-board[data-kind='container'] .lv-tile:not([data-context]) { background: var(--c4-container-fill); border-color: var(--c4-container-line); }
-.lv-board[data-kind='container'] .lv-tile[data-context] { background: var(--c4-context-fill); }
+.lv-board[data-kind='container'] .lv-tile[data-context] { background: var(--c4-context-fill); border-color: var(--line-strong); border-style: dashed; }
 .lv-board[data-kind='container'] .lv-tile .kit-card__head { justify-content: center; }
 .lv-board[data-kind='container'] .lv-tile .kit-card__name { padding-right: 0; -webkit-line-clamp: 2; }
 /*
@@ -132,7 +132,7 @@
 
 /* A sample in a key: the thing's own edge and ground. */
 .lv-key-box { flex: none; box-sizing: border-box; width: 22px; height: 14px; border: 1px solid var(--c4-container-line); border-radius: var(--r-1); background: var(--c4-container-fill); }
-.lv-key-box[data-shape='context'] { border-color: var(--card-edge); background: var(--c4-context-fill); }
+.lv-key-box[data-shape='context'] { border: 1px dashed var(--line-strong); background: var(--c4-context-fill); }
 .lv-key-box[data-shape='boundary'] { border: 1px dashed var(--zone-edge); background: transparent; }
 .lv-key-box[data-shape='deployment'] { border: 1px dashed var(--zone-edge); background: var(--zone-fill); }
 .lv-key-box[data-shape='person'] { border-color: var(--card-edge); border-radius: 7px; background: var(--c4-context-fill); }
