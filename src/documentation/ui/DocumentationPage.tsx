@@ -49,6 +49,7 @@ import {
   outline,
 } from '../documentation';
 import { useStrings } from '../../i18n/LanguageContext';
+import type { Translate } from '../../i18n';
 import { DocGlyph } from '../../widgets/icons';
 import { kindLabel } from '../../model/kinds';
 import { fieldEdit } from '../../model/commands';
@@ -153,6 +154,15 @@ function RecordText({ rendered, readOnly, headings, template, onWrite, onHeading
       <div data-document>{rendered}</div>
     </div>
   );
+}
+
+/**
+ * *Step · on Business architecture*: the view only where it holds the element. A
+ * page opened from search or a list has the view the editor last showed, which may
+ * not draw it at all.
+ */
+function statusOf(kind: string, diagram: DesignDiagram | undefined, holds: boolean, t: Translate): string {
+  return diagram && holds ? t('doc.statusOn', { kind, view: diagram.name }) : kind;
 }
 
 /** The view's other elements: filtered by what is typed, since a real list runs to two hundred. */
@@ -349,7 +359,7 @@ export function DocumentationPage(props: DocumentationPageProps) {
               {...(readOnly || props.nameLocked ? {} : { onRename: (name: string) => actions.updateElement(element.id, { name }) })}
             />
           )}
-          status={diagram ? t('doc.statusOn', { kind, view: diagram.name }) : kind}
+          status={statusOf(kind, diagram, position >= 0, t)}
           actions={(
             <>
               <Button size="small" variant="quiet" aria-label={t('doc.previous')} reason={previous ? undefined : t('doc.firstInList')} onClick={() => previous && navigate(previous)}>‹ {t('doc.previousShort')}</Button>

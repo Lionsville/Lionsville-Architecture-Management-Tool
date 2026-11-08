@@ -244,6 +244,15 @@ describe('DocumentationPage', () => {
     expect(source()!.value.startsWith('| Short description | |')).toBe(true);
   });
 
+  it('names the view in its status only where the view holds it', () => {
+    const status = () => document.querySelector('.kit-record__status')?.textContent
+    setup()
+    expect(status()).toBe('Application · on Landscape')
+    cleanup()
+    setup({ element: offDiagram })
+    expect(status()).toBe('Application')
+  })
+
   it('lists the diagram’s elements by kind and navigates from the list, a link, and next', () => {
     const { props } = setup();
     const nav = within(screen.getByTestId('doc-nav'));
