@@ -30,7 +30,7 @@
  * Solutions tab's whole chain is drawn from.
  */
 import {
-  absorbedBy, causeDepth, isArchived, isBright, isMerged, isMoved, isRootCause, liveCauses, mergedInto,
+  absorbedBy, causeDepth, isArchived, isBright, isMerged, isMoved, isRootCause, liveCauses, liveObservations, mergedInto,
 } from './observation'
 import type { Analysis, Cause, CauseStrength, Observation, ObservationBelow, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
@@ -595,7 +595,8 @@ function sectionOf(
   return {
     scope: one.scope, nodes, lanes, kinds, children: [],
     tallest: Math.max(0, ...Array.from({ length: lanes }, (_, lane) => rowsIn(lane))),
-    observations: observations.length, causes: causes.length, seen: one.observations.filter((held) => !isArchived(held)).length,
+    // Seen as Seen and a home count it (`seenBelow`): live in its own list, so not one merged into another.
+    observations: observations.length, causes: causes.length, seen: liveObservations(one.observations).length,
   }
 }
 

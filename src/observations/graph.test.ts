@@ -6,6 +6,7 @@ import {
   PICTURE_SIZE, analysisGraph, analysisPicture, brightChains, fitZoom, openEnds, pictureCounts, pictureKey, pictureLinks, placeGraph, solutionKey,
   traceChain,
 } from './graph'
+import { liveObservations } from './observation'
 import type { Analysis, Cause, Observation, ScopeAnalysis } from './observation'
 import type { Solution } from './solution'
 
@@ -202,6 +203,20 @@ describe('analysisPicture', () => {
     const crossing = drawn.edges.filter((edge) => edge.crossing)
     expect(crossing).toEqual([{ from: 'acme#b1', to: 'r1', kind: 'explains', strength: 'weak', crossing: true }])
     expect(drawn.edges).toContainEqual({ from: 'r1', to: solutionKey('s1'), kind: 'addresses', strength: 'normal', crossing: false })
+  })
+
+  it('counts a frame\'s observations as Seen and a home do, leaving out the ones merged into another', () => {
+    const merged = { date: 'd', kind: 'merged' as const, id: 'z1' }
+    const zeta: ScopeAnalysis = {
+      scope: 'zeta', causes: [], solutions: [], experiments: [],
+      observations: [
+        observation('z1', 1, { history: [{ date: 'd', kind: 'recorded' }, { date: 'd', kind: 'absorbed', id: 'z2', seen: 1 }, { date: 'd', kind: 'absorbed', id: 'z3', seen: 1 }] }),
+        observation('z2', 2, { history: [merged] }), observation('z3', 3, { history: [merged] }), observation('z4', 4),
+      ],
+    }
+    const drawn = picture([tree[0], tree[1], tree[2], zeta])
+    expect(drawn.boundaries.find((box) => box.scope === 'zeta')?.seen).toBe(liveObservations(zeta.observations).length)
+    expect(drawn.boundaries.find((box) => box.scope === 'zeta')?.seen).toBe(2)
   })
 
   it('lands the same records in the same place, whatever order the scopes come in', () => {
