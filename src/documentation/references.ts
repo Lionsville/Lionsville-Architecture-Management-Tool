@@ -119,8 +119,9 @@ export function insertReferable(text: string, from: number, to: number, referabl
   const head = text.slice(0, from)
   const tail = text.slice(to)
   if (!referable.block) {
-    // A link glued to a word reads as one word: *Quoting and tariffsThe*. A space keeps them apart.
-    const before = /[\p{L}\p{N}]$/u.test(head) ? ' ' : ''
+    // A link glued to a word reads as one word: *Quoting and tariffsThe*, and one after a full stop
+    // as the same sentence: *here.Quoting*. A space keeps them apart.
+    const before = /[\p{L}\p{N}.!?;:,)]$/u.test(head) ? ' ' : ''
     const after = /^[\p{L}\p{N}]/u.test(tail) ? ' ' : ''
     const inserted = `${before}${referable.markdown}${after}`
     return { text: head + inserted + tail, caret: head.length + before.length + referable.markdown.length }

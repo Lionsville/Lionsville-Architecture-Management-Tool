@@ -53,6 +53,9 @@ describe('finding and putting in', () => {
     // Next to a word, a link is kept apart from it by a space on that side.
     expect(insertReferable('The rating rules', 0, 0, ref('element', 'Quoting', false)).text).toBe('[[Quoting]] The rating rules')
     expect(insertReferable('rules', 5, 5, ref('element', 'Quoting', false))).toEqual({ text: 'rules [[Quoting]]', caret: 17 })
+    // After sentence punctuation as after a word: *here.Quoting* would read as one sentence run on.
+    expect(insertReferable('A price here.', 13, 13, ref('element', 'Quoting', false)).text).toBe('A price here. [[Quoting]]')
+    expect(insertReferable('Two: ', 5, 5, ref('element', 'Quoting', false)).text).toBe('Two: [[Quoting]]')
     const block = insertReferable('Before @dec after', 7, 11, ref('decision', 'D'))
     expect(block.text).toBe('Before \n\n```ref\ndecision: D\n```\n\n after')
     expect(insertReferable('', 0, 0, ref('decision', 'D')).text).toBe('```ref\ndecision: D\n```\n\n')
