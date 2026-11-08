@@ -205,6 +205,9 @@ export const EN = {
   /** A change the folder would not take, said before the refusal's own reason (`SourceProvider.keepFailedKey`). */
   'folder.keepFailed': 'The folder did not take the change, so it is not saved.',
   'browser.keepFailed': 'This browser did not keep the change, so it is not saved.',
+  /** The status word while a change the place would not take stands (`SourceProvider.refusedWordKey`). */
+  'folder.refusedWord': 'Not saved — the folder refused',
+  'browser.refusedWord': 'Not saved — this browser refused',
   /** The standing strip where this browser keeps nothing at all: what goes when the tab closes. */
   'browser.notKeeping': 'This browser could not save your work (storage full or blocked). Save a copy, or it is gone when you close the tab.',
   'example.label': 'Example · not kept',

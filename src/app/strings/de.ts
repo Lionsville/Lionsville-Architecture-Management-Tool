@@ -19,7 +19,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.nothingToRedo': 'Nichts zu wiederholen',
   'shell.saved': 'Gespeichert {time}',
   'shell.notSaved': 'Noch nicht gespeichert',
-  'shell.saveRefused': 'Nicht gespeichert — Speicher verweigert',
+  'shell.saveRefused': 'Nicht gespeichert — Änderung abgelehnt',
   'shell.unsaved': 'Ungespeicherte Änderungen',
   'shell.saving': 'Wird gespeichert…',
   'shell.savingBeforeClose': 'Das Fenster schließt, sobald Ihre Änderungen gespeichert sind.',

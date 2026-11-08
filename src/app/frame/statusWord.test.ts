@@ -35,6 +35,12 @@ describe('the status word', () => {
     expect(statusHead(word({ refused: true }).text).head).toBe('Not saved')
   })
 
+  it('names the place that refused where the source has a word for it, as its toast does', () => {
+    expect(word({ refused: true, refusedWordKey: 'folder.refusedWord' }).text).toBe('Not saved — the folder refused')
+    expect(word({ saveFailed: true, refusedWordKey: 'browser.refusedWord' }).text).toBe('Not saved — this browser refused')
+    expect(statusHead(word({ refused: true, refusedWordKey: 'folder.refusedWord' }).text).head).toBe('Not saved')
+  })
+
   it('keeps what a person has to act on ahead of being offline', () => {
     expect(word({ status: 'conflict', connected: false }).text).toBe(s('shell.conflict'))
     expect(word({ status: 'external-changed' }).alarm).toBe(true)

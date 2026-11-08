@@ -335,6 +335,7 @@ export function sourceSayings(source: WorkingSource): {
   riskKey?: StringKey | (string & {})
   unreadableKey?: StringKey | (string & {})
   keepFailedKey?: StringKey | (string & {})
+  refusedWordKey?: StringKey | (string & {})
 } {
   const provider = sourceProvider(source.provider)
   return {
@@ -344,6 +345,7 @@ export function sourceSayings(source: WorkingSource): {
     ...(provider?.riskKey ? { riskKey: provider.riskKey } : {}),
     ...(provider?.unreadableKey ? { unreadableKey: provider.unreadableKey } : {}),
     ...(provider?.keepFailedKey ? { keepFailedKey: provider.keepFailedKey } : {}),
+    ...(provider?.refusedWordKey ? { refusedWordKey: provider.refusedWordKey } : {}),
   }
 }
 

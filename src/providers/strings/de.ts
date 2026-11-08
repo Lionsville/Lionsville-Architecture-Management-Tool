@@ -162,6 +162,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'folder.risk': 'Drei Sekunden nach dem Anhalten geschrieben. Ein Ordner lässt sich sichern, synchronisieren und committen.',
   'folder.keepFailed': 'Der Ordner hat die Änderung nicht angenommen; sie ist nicht gespeichert.',
   'browser.keepFailed': 'Dieser Browser hat die Änderung nicht behalten; sie ist nicht gespeichert.',
+  'folder.refusedWord': 'Nicht gespeichert — der Ordner hat abgelehnt',
+  'browser.refusedWord': 'Nicht gespeichert — dieser Browser hat abgelehnt',
   'browser.notKeeping': 'Dieser Browser konnte Ihre Arbeit nicht speichern (Speicher voll oder blockiert). Speichern Sie eine Kopie, sonst ist sie beim Schließen des Tabs verloren.',
   'example.label': 'Beispiel · nicht gespeichert',
   'example.where': 'Das ist das Beispiel: Hier wird nichts gespeichert.',

@@ -23,7 +23,7 @@ export const EN = {
    * and it replaces a last-successful time that would otherwise be older than
    * the work on screen and read as reassurance.
    */
-  'shell.saveRefused': 'Not saved — storage refused',
+  'shell.saveRefused': 'Not saved — the change was refused',
   /**
    * The rest of the same indicator, once saving is a state machine and not a
    * timestamp (ADR-0003). Each one is a different answer to "can I close this

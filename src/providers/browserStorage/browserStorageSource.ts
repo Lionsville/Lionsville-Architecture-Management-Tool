@@ -89,6 +89,7 @@ export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening
   whereKey: 'browser.where',
   riskKey: 'browser.risk',
   keepFailedKey: 'browser.keepFailed',
+  refusedWordKey: 'browser.refusedWord',
   removeKey: 'picker.deleteBodyBrowser',
   open: ({ storage, database }, { diagnostics, s }) => {
     const preferences = new WebStoragePreferencesStore(storage)

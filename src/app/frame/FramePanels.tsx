@@ -47,6 +47,7 @@ export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, lang
   return statusWord({
     status: facts?.status, saveFailed: facts?.saveFailed, savedAt: facts?.savedAt, publishesSteps: facts?.publishesSteps,
     sourceStatus: facts?.sourceStatus, connected: props.provider?.connected?.(), source: props.provider?.frame?.word?.(), own, refused,
+    refusedWordKey: props.provider?.sayings?.refusedWordKey,
     ...(place !== undefined ? { place, placeAsStarted: firstPlace.get(parts.frame) === place, transient: source.transient, visiting: props.visiting !== undefined } : {}),
   }, language, s)
 }

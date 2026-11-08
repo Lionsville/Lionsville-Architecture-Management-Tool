@@ -44,6 +44,8 @@ export type StatusFacts = {
    * everything, because every other word here would call that work safe.
    */
   readonly refused?: boolean | undefined
+  /** The place's own word for a change it would not take (`SourceProvider.refusedWordKey`), as the toast names it. */
+  readonly refusedWordKey?: StringKey | (string & {}) | undefined
 }
 
 const WORDS: Partial<Record<DocumentStatus, StringKey>> = {
@@ -88,7 +90,12 @@ function savedWord(savedAt: Date, { place, placeAsStarted }: StatusFacts, langua
 }
 
 export function statusWord(facts: StatusFacts, language: Language, s: Translate): StatusWord {
-  return facts.refused ? said(s('shell.saveRefused'), 'problem') : keptWord(facts, language, s)
+  return facts.refused ? refusedWord(facts, s) : keptWord(facts, language, s)
+}
+
+/** *Not saved*, with the place that refused where the source names one, as its toast and *Your work* do. */
+function refusedWord(facts: StatusFacts, s: Translate): StatusWord {
+  return said(s((facts.refusedWordKey ?? 'shell.saveRefused') as StringKey), 'problem')
 }
 
 /** The word where nothing written outside the open session is waiting to be tried again. */
@@ -96,7 +103,7 @@ function keptWord(facts: StatusFacts, language: Language, s: Translate): StatusW
   const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected, place, transient, source, own } = facts
   if (own) return ownWord(own, language, s)
   if (source) return { text: source.text, tone: source.tone, alarm: source.tone === 'problem' || source.tone === 'waiting', ...(source.short === undefined ? {} : { short: source.short }) }
-  if (saveFailed) return said(s('shell.saveRefused'), 'problem')
+  if (saveFailed) return refusedWord(facts, s)
   if (status === 'conflict' || status === 'external-changed') return said(s(WORDS[status]!), 'problem')
   if (connected === false) {
     const waiting = status === 'dirty' || status === 'saving'

@@ -110,6 +110,7 @@ export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, FolderBas
   whereKey: 'folder.where',
   riskKey: 'folder.risk',
   keepFailedKey: 'folder.keepFailed',
+  refusedWordKey: 'folder.refusedWord',
   removeKey: 'picker.deleteBodyFolder',
   unreadableKey: 'folder.unreadableScope',
   connect: {

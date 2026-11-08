@@ -162,6 +162,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'folder.risk': 'Geschreven drie seconden nadat je stopt. Een map kun je back-uppen, synchroniseren en committen.',
   'folder.keepFailed': 'De map nam de wijziging niet aan, dus die is niet bewaard.',
   'browser.keepFailed': 'Deze browser bewaarde de wijziging niet, dus die is niet bewaard.',
+  'folder.refusedWord': 'Niet bewaard — de map weigerde',
+  'browser.refusedWord': 'Niet bewaard — deze browser weigerde',
   'browser.notKeeping': 'Deze browser kon je werk niet bewaren (opslag vol of geblokkeerd). Bewaar een kopie, anders is het bij het sluiten van het tabblad weg.',
   'example.label': 'Voorbeeld · niet bewaard',
   'example.where': 'Dit is het voorbeeld: hier wordt niets bewaard.',

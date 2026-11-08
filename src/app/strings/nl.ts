@@ -19,7 +19,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.nothingToRedo': 'Niets om opnieuw te doen',
   'shell.saved': 'Bewaard {time}',
   'shell.notSaved': 'Nog niet bewaard',
-  'shell.saveRefused': 'Niet bewaard — opslag weigert',
+  'shell.saveRefused': 'Niet bewaard — wijziging geweigerd',
   'shell.unsaved': 'Nog niet bewaarde wijzigingen',
   'shell.saving': 'Bezig met bewaren…',
   'shell.savingBeforeClose': 'Het venster sluit zodra je wijzigingen zijn bewaard.',

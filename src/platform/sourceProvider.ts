@@ -445,6 +445,12 @@ export type SourceProvider<Parts, Opening = void, Base = unknown> = {
    * sentence about a browser's storage was, everywhere but a browser.
    */
   readonly keepFailedKey?: StringKey | (string & {})
+  /**
+   * The same, as the status word says it while a refused change stands — *Not
+   * saved — the folder refused* — so the word names the place the toast and
+   * *Your work* name. Absent, a word that names no place.
+   */
+  readonly refusedWordKey?: StringKey | (string & {})
   readonly removeKey?: StringKey | (string & {})
   /**
    * What the notice over a scope that could not be read whole says here, with

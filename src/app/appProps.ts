@@ -56,6 +56,8 @@ export type SourceSayings = {
   readonly unreadableKey?: StringKey | (string & {})
   /** What a change this place would not take means here (`SourceProvider.keepFailedKey`). */
   readonly keepFailedKey?: StringKey | (string & {})
+  /** The status word while a refused change stands, naming this place (`SourceProvider.refusedWordKey`). */
+  readonly refusedWordKey?: StringKey | (string & {})
 }
 
 /** What the composition root read before the first render, and what went wrong on the way. */
@@ -370,6 +372,8 @@ export type AppHost = {
   onUnsavedWork?: (unsaved: boolean) => void
   /** The person left a draft at the question a closing window asked: the host closes it (`closeAsked`). */
   onLeaveAnyway?: () => void
+  /** The person kept writing at that question: the host says so on its log. */
+  onKeepWriting?: () => void
   /** Tell the host which theme is on, so its View menu's radio can be right. */
   onThemeMode?: (mode: ThemeMode) => void
   /** The zoom keys with no canvas under them, on a host whose menu bar owns them. */
