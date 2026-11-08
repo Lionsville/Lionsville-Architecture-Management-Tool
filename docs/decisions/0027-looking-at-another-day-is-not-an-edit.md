@@ -3,7 +3,9 @@
 * Status: accepted; amended, 7 November 2026: a look is read-only, and a lens is
   the reader's until it is kept (*Amended*, below), as built the same day in the
   editor and on the screens; implemented, 7 November 2026 (4.0.0, not yet
-  released)
+  released); amended again, 8 November 2026: a board's first layout is nobody's
+  step (*Amended, 8 November 2026*, below), implemented the same day, awaiting
+  the owner's confirmation
 * Date: 2026-09-26
 * Deciders: Wouter Simons
 * Supersedes: ADR-0009 (time on the facts), its *A diagram carries `asOf` and
@@ -161,3 +163,45 @@ back goes to that board (`useCarriedDay`).
 * Neutral: the container view's deployment boxes still write when toggled. They are
   a setting of the view rather than a colouring of it, and have no *Keep* yet.
 
+## Amended, 8 November 2026 — a board's first layout is nobody's step
+
+A board a machine wrote — the example's, an import, a new container diagram — says
+so with `needsLayout` and lays itself out the first time somebody who may write it
+opens it (`editor/useAutoLayout`). That pass landed as the opener's step: ⌘Z took the
+board back to a pile, the document said *Unsaved changes* and then *Saved*, and the
+list said *Moved 33 elements* under the person's window. Opening a board is reading
+it, and the amendment above says reading changes nothing a person did.
+
+A sheet answers the same question the other way (ADR-0048 §1): it has no geometry
+until somebody places a block, and its first layout is computed every time. A board
+cannot: its places are its members' geometry, so the first card a person moved would
+write one place on a board with none, and everybody else would read every other
+card as unplaced. So **the first layout of a board is still written, and is nobody's
+step**:
+
+* **Never on the undo stack as the person's.** It stays on the stack, because it
+  happened and the list says so, and ⌘Z passes over it as it passes over another
+  author's step (`app/rebase.newestOwn`). It clears no redo.
+* **Never the person's in Activity.** The line says *Laid out automatically* where
+  an author would be, and a source that keeps a log of its own files it as nobody's
+  (`SessionChange.unattended`).
+* **Written quietly, and only that board.** Where the session's changes are written
+  as steps, a change that is nothing but such a layout is written at once without the
+  status moving: no *Unsaved changes*, no *Saving…*, no new *Saved* time. What is
+  written is that board's step and nothing the scope says about itself; the view it
+  opens on rides with the next save, as it did. A quiet write that is refused stops
+  being quiet: the change becomes the person's to save, and the status says so.
+* **Published where steps are published**, marked, so a server lays a board out
+  once rather than at every open.
+
+A reader still makes no step (`useReadingLayout`).
+
+### Consequences of the second amendment
+
+* Good: opening a board leaves the status, the undo stack and the list of the
+  person's own work as they were.
+* Bad, accepted: a board still changes on disk the first time it is opened, once,
+  in its own files. Holding the layout in memory until the first real edit would
+  avoid that and was set aside: the edit would have to carry every place with it,
+  from wherever it came — a drag, a tool, an agent.
+* Neutral: Tidy pressed by a person is a person's step, undone with ⌘Z, as before.

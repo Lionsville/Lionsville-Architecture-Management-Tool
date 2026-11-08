@@ -201,7 +201,9 @@ export function useDocumentSession(deps: {
       return Promise.resolve()
     }
     apply({ type: 'saveRequested' })
-    const writing = writes.write().then(
+    // After a quiet write still in flight, which moves the revision this one expects.
+    const after = running.current
+    const writing = (after ? after.then(() => writes.write()) : writes.write()).then(
       () => {
         apply({ type: 'saveSucceeded' })
         onSaved(new Date())
@@ -248,8 +250,36 @@ export function useDocumentSession(deps: {
    * arms the wait.
    */
   const opened = useRef(true)
+  /**
+   * The first layout of a board a machine wrote, written by itself where
+   * nothing else waits (ADR-0048's rule for a sheet, said for a board): a
+   * board opened is a board read, so the status stays where it was, and what
+   * is written is that board's own step and nothing the scope says about
+   * itself — the tab it opens on rides with the next save, as it always has.
+   * A write that fails has nothing quiet left about it: the change is the
+   * person's to save like any other, and the machine says so.
+   */
+  const quietly = useCallback(() => {
+    const before = running.current ?? Promise.resolve()
+    const writing = before.then(() => writes.write({ only: 'steps' })).then(
+      () => undefined,
+      () => {
+        editedAt.current = Date.now()
+        apply({ type: 'edited' })
+        window.setTimeout(() => { void saving.current('idle') }, AUTOSAVE_IDLE_MS)
+      },
+    )
+    running.current = writing
+    const done = () => { if (running.current === writing) running.current = undefined }
+    void writing.then(done, done)
+  }, [apply, writes])
   useEffect(() => {
     if (opened.current) { opened.current = false; return undefined }
+    if (held.current.status === 'clean' && session.journal.pending().length > 0
+      && session.journal.pending().every((one) => one.unattended === true)) {
+      quietly()
+      return undefined
+    }
     editedAt.current = Date.now()
     apply({ type: 'edited' })
     // A save answers its own failure (`saveFailed`, `onResult`), so a timer
@@ -478,7 +508,11 @@ function useScopeWrites(
   }, [onAdopt, journal])
 
   return useMemo(() => ({
-    write: async (): Promise<void> => {
+    /**
+     * `only: 'steps'` writes the session's steps and leaves what the scope
+     * says about itself for the next whole write: what a quiet write takes.
+     */
+    write: async (options: { only?: 'steps' } = {}): Promise<void> => {
       // A document was adopted in place of the one opened, and written where
       // it came from: where the scope stands now is learnt, not assumed.
       if (known.current!.adopted !== journal.adopted()) {
@@ -486,10 +520,11 @@ function useScopeWrites(
         known.current = { revision: read?.revision, described: read ? describedOf(read) : known.current!.described, adopted: journal.adopted() }
       }
       const pending = journal.pending()
-      const now = describedOf(snapshot())
+      const was = known.current!.described
+      const now = options.only === 'steps' ? was : describedOf(snapshot())
       const steps: ScopeStep[] = [
         ...pending.map(({ stepId, command, at }) => ({ stepId, command, at })),
-        ...changesOf(known.current!.described, now).map((command) => stepOf(command)),
+        ...changesOf(was, now).map((command) => stepOf(command)),
       ]
       if (steps.length === 0) return
       const onTheirs = over.current

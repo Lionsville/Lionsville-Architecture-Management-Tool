@@ -175,4 +175,9 @@ describe('newestOwn', () => {
     expect(newestOwn([{ origin: 'remote' }, { origin: 'remote' }])).toBe(-1)
     expect(newestOwn([])).toBe(-1)
   })
+
+  it('steps over a board laying itself out as it opened, which nobody asked for', () => {
+    expect(newestOwn([{}, { unattended: true }])).toBe(0)
+    expect(newestOwn([{ unattended: true }])).toBe(-1)
+  })
 })

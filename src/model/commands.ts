@@ -347,11 +347,12 @@ export type CommandMeta = {
    * such step is the pass that lays out a board a machine wrote, on first
    * open (`editor/useAutoLayout.ts`).
    *
-   * It is still the session's own step — undoable, announced, published —
+   * It is still the session's own step — announced, published, written —
    * because a layout that lands on the model and not wherever the model is
    * carried is a layout every later open runs again. What it is not is the
-   * person's work, and a host that counts or attributes steps has to be able
-   * to tell. Beside `origin` rather than a third value of it, because
+   * person's work: ⌘Z passes over it (`app/rebase.newestOwn`), a writer
+   * writes it without calling the document changed, and a host that counts
+   * or attributes steps has to be able to tell. Beside `origin` rather than a third value of it, because
    * `origin` says *who*, and the answer here is still this keyboard's
    * session.
    *

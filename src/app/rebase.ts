@@ -146,11 +146,14 @@ export function rewind<F extends StepFold>(
  * Another author's step sits on the stack because it happened and the Activity
  * list says so, but it is not ours to undo — and it does not make our own step
  * underneath it un-undoable either, so the walk steps over it and keeps going.
- * `-1` when there is nothing of ours left.
+ * The layout a board made of itself as it opened is stepped over the same way:
+ * nobody asked for it, so ⌘Z after opening a board does not take the board
+ * back to a pile, and it is said in the list as nobody's. `-1` when there is
+ * nothing of ours left.
  */
-export function newestOwn(steps: readonly { origin?: string }[]): number {
+export function newestOwn(steps: readonly { origin?: string; unattended?: true }[]): number {
   for (let i = steps.length - 1; i >= 0; i -= 1) {
-    if (steps[i].origin !== 'remote') return i
+    if (steps[i].origin !== 'remote' && steps[i].unattended !== true) return i
   }
   return -1
 }

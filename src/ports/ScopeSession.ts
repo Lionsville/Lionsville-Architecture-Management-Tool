@@ -114,11 +114,11 @@ export type HistoryStep = {
    * The editor made this step by itself, and not at the person's asking: the
    * layout that settles a board a machine wrote (`CommandMeta.unattended`).
    *
-   * It is ours in every other respect — ⌘Z takes it back, and it is announced
-   * and carried wherever this session's steps go — because a layout that is
-   * not carried is a layout every later open runs again. The mark is only for
-   * whoever counts or attributes steps, so that a board being opened is never
-   * mistaken for the person's work.
+   * It is announced and carried wherever this session's steps go, because a
+   * layout that is not carried is a layout every later open runs again. It is
+   * not the person's: ⌘Z passes over it as it passes over another author's,
+   * and whoever counts or attributes steps reads the mark, so that a board
+   * being opened is never mistaken for the person's work.
    */
   unattended?: true
   /**

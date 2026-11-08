@@ -49,7 +49,7 @@ export const SECTIONS: SectionTexts = {
   'frame.activity': ['Sehen, was zuletzt getan wurde (Aktivität)', 'Ein Panel neben der Arbeit mit jedem Schritt in diesem Bereich, seit er geöffnet wurde, der neueste zuerst, mit wer, wann und über welchen Client, und einem Weg zum ganzen Verlauf.',
     'Erste Zeile, Aktivität.',
     ['Drücken Sie Aktivität.', 'Lesen Sie die Schritte; den neuesten nehmen Sie mit ⌘Z zurück.', 'Drücken Sie unten Verlauf… für alles davor.', 'Drücken Sie × oder Esc, um zu schließen.'],
-    'Nachdem sich das Board selbst angeordnet hat, zeigt Aktivität 33 Elemente verschoben, automatisch angeordnet.',
+    'Nachdem sich ein Board beim Öffnen selbst angeordnet hat, zeigt Aktivität 33 Elemente verschoben, Automatisch angeordnet: von niemandem, und ⌘Z überspringt es.',
     'Esc schließt es'],
   'frame.agent': ['Einen Agenten verbinden', 'Lässt einen Coding-Agenten wie Claude Code die Organisation lesen und Änderungen machen, die Sie sehen und rückgängig machen können. Die Desktop-App lauscht auf diesem Computer; im Browser erklärt der Dialog es und verweist auf die Desktop-App.',
     'Erste Zeile, Agent; auch ⋯ › Einen Agenten verbinden….',

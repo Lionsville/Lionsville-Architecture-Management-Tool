@@ -117,15 +117,15 @@ export function useLayoutActions(args: LayoutArgs) {
   /**
    * Lay this diagram out once if a machine wrote its geometry (intent rule 12).
    * `run` is `handleTidy` itself, not a copy of its body, so the settling pass
-   * inherits everything the button already does: one commit and one undo
-   * step, the placements kept when only routing failed, a routing failure
+   * inherits everything the button already does: one commit, the placements kept when only routing failed, a routing failure
    * reported through the one message channel, and the frame over the board —
    * which on a first open is required, since the canvas framed the machine
    * grid on mount.
    *
    * Two things are its own. The step is marked `unattended`: nobody pressed
-   * anything, and a host that counts or attributes steps must not take a
-   * board being opened for the person's work. And the flag that asked for the
+   * anything, so ⌘Z passes over it, the document is not changed by it, and a
+   * host that counts or attributes steps must not take a board being opened
+   * for the person's work. And the flag that asked for the
    * pass is cleared inside that same step (`applyTidyResult`), so the layout
    * and the clearing are carried together wherever steps go, or not at all.
    */

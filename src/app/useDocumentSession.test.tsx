@@ -135,6 +135,16 @@ function mount(
       pending = [...pending, { stepId: `step-${pending.length}`, command: { type: 'project.settings', patch: { name } }, at: 0 }]
       view.rerender(<Host model={latest.current.model} />)
     }),
+    /** A board laying itself out as it opens: a change of the model nobody asked for. */
+    layOut: (active = 'd1') => act(() => {
+      latest.current = { ...project(latest.current.model.name), activeDiagramId: active }
+      latest.current.model = { ...latest.current.model }
+      pending = [...pending, {
+        stepId: `step-${pending.length}`, at: 0, unattended: true,
+        command: { type: 'board.set', diagramId: 'd1', patch: { needsLayout: undefined } },
+      }]
+      view.rerender(<Host model={latest.current.model} active={active} />)
+    }),
     idle: (ms = AUTOSAVE_IDLE_MS) => act(async () => { await vi.advanceTimersByTimeAsync(ms) }),
     leaveWindow: () => act(() => { window.dispatchEvent(new Event('blur')) }),
     close: () => {
@@ -682,5 +692,59 @@ describe('what a write carries', () => {
     const refusing = writing(() => Promise.reject(new Error('gone')))
     refusing.change({ model: { ...project().model, name: 'Now' } }, rename('Now'))
     await act(async () => { await expect(refusing.hook().flush()).rejects.toThrow('gone') })
+  })
+})
+
+/**
+ * A board a machine wrote lays itself out the first time it is opened. Opening
+ * is reading (ADR-0027, amended 8 November 2026): the layout is written, at
+ * once and without a word, and the status stays where it was.
+ */
+describe('a board laying itself out as it opens', () => {
+  it('is written at once and quietly: no Unsaved changes, no Saving…, no new Saved time', async () => {
+    const view = mount()
+    view.layOut()
+    expect(view.status()).toBe('clean')
+    await view.idle(0)
+    expect(view.sent).toHaveLength(1)
+    expect(view.sent[0].steps.map((step) => step.command.type)).toEqual(['board.set'])
+    expect(view.status()).toBe('clean')
+    expect(view.saved).not.toHaveBeenCalled()
+    await view.idle()
+    expect(view.sent).toHaveLength(1)
+  })
+
+  it('writes the board\'s step and nothing the scope says about itself: the tab rides with the next save', async () => {
+    const view = mount()
+    view.layOut('d2')
+    await view.idle(0)
+    expect(view.sent[0].steps.map((step) => step.command.type)).toEqual(['board.set'])
+    view.edit('Edited')
+    view.latest.current = { ...view.latest.current, activeDiagramId: 'd2' }
+    await view.idle()
+    expect(view.sent).toHaveLength(2)
+    expect(view.sent[1].steps.map((step) => step.command.type)).toEqual(['project.settings', 'scope.describe'])
+  })
+
+  it('stops being quiet when the write is refused: the change is then the person\'s to save', async () => {
+    let refuse = true
+    const view = mount(() => (refuse ? Promise.reject(new Error('disk full')) : Promise.resolve()))
+    view.layOut()
+    await view.idle(0)
+    expect(view.status()).toBe('dirty')
+    refuse = false
+    await view.idle()
+    expect(view.status()).toBe('clean')
+    expect(view.sent.at(-1)?.steps.map((step) => step.command.type)).toEqual(['board.set'])
+  })
+
+  it('is an ordinary change where the person has work waiting already', async () => {
+    const view = mount()
+    view.edit('Edited')
+    view.layOut()
+    expect(view.status()).toBe('dirty')
+    await view.idle()
+    expect(view.sent).toHaveLength(1)
+    expect(view.sent[0].steps).toHaveLength(2)
   })
 })

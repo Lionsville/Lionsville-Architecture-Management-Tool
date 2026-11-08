@@ -49,7 +49,7 @@ export const SECTIONS: SectionTexts = {
   'frame.activity': ['See what was lately done (Activity)', 'A panel beside the work listing every step taken in this scope since it was opened, newest first, with who, when and through which client, and a way to the whole history.',
     'Row one, Activity.',
     ['Press Activity.', 'Read the steps; the newest is undone with ⌘Z.', 'Press History… at the foot for everything before.', 'Press × or Esc to close.'],
-    'After the board laid itself out, Activity shows Moved 33 elements, laid out automatically.',
+    'After a board laid itself out as it opened, Activity shows Moved 33 elements, Laid out automatically: nobody\'s step, which ⌘Z passes over.',
     'Esc closes it'],
   'frame.agent': ['Connect an agent', 'Lets a coding agent such as Claude Code read the organisation and make changes you can see and undo. The desktop app listens on this machine; in a browser the dialog explains and links to the desktop app.',
     'Row one, Agent; also ⋯ › Connect an agent….',

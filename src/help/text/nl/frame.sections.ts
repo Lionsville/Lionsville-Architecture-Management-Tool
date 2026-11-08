@@ -49,7 +49,7 @@ export const SECTIONS: SectionTexts = {
   'frame.activity': ['Zien wat er onlangs is gedaan (Activiteit)', 'Een paneel naast het werk met elke stap in deze scope sinds die werd geopend, de nieuwste eerst, met wie, wanneer en via welke client, en een weg naar de hele geschiedenis.',
     'Rij één, Activiteit.',
     ['Druk op Activiteit.', 'Lees de stappen; de nieuwste maak je ongedaan met ⌘Z.', 'Druk onderaan op Geschiedenis… voor alles daarvoor.', 'Druk op × of Esc om te sluiten.'],
-    'Nadat het bord zichzelf indeelde, toont Activiteit 33 elementen verplaatst, automatisch ingedeeld.',
+    'Nadat een bord zichzelf bij het openen indeelde, toont Activiteit 33 elementen verplaatst, Automatisch ingedeeld: van niemand, en ⌘Z slaat het over.',
     'Esc sluit het'],
   'frame.agent': ['Een agent koppelen', 'Laat een coding agent zoals Claude Code de organisatie lezen en wijzigingen maken die je ziet en ongedaan kunt maken. De desktop-app luistert op deze computer; in een browser legt het venster het uit en verwijst het naar de desktop-app.',
     'Rij één, Agent; ook ⋯ › Een agent koppelen….',

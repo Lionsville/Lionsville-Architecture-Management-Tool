@@ -35,6 +35,7 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/app/ActivityMenu.test.tsx', // 3 s
   'src/app/App.accessibility.test.tsx', // 145 s
   'src/app/App.agent.test.tsx', // 3 s
+  'src/app/App.boardOpens.test.tsx', // 14 s
   'src/app/App.channel.test.tsx', // 7 s
   'src/app/App.chart.test.tsx', // 4 s
   'src/app/App.chartPick.test.tsx', // 13 s

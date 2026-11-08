@@ -426,16 +426,38 @@ describe('useModelSession — undo and redo', () => {
       expect('unattended' in session().history()[0].commands[0]).toBe(false)
     })
 
-    it('is still an ordinary step to undo, and the undo is the person\'s', () => {
+    it('is nobody\'s to undo: ⌘Z passes over it to the person\'s own step underneath', () => {
       const { session } = mount(flagged())
-      const heard: SessionChange[] = []
+      expect(session().canUndo).toBe(false)
       act(() => { session().dispatch(settle()) })
-      act(() => { session().steps.onChange((change) => heard.push(change)) })
+      expect(session().canUndo).toBe(false)
+      act(() => session().undo())
+      expect(session().current().diagrams[0].geometry?.needsLayout).toBeUndefined()
+      act(() => { session().dispatch(rename('Renamed')) })
+      act(() => { session().dispatch(settle()) })
       expect(session().canUndo).toBe(true)
       act(() => session().undo())
-      expect(session().current().diagrams[0].geometry?.needsLayout).toBe(true)
-      expect(heard[0].kind).toBe('undo')
-      expect(heard[0].unattended).toBeUndefined()
+      // The rename went back; the layout stayed where it was.
+      expect(session().current().elements[0].name).not.toBe('Renamed')
+      expect(session().history().some((step) => step.unattended === true)).toBe(true)
+    })
+
+    it('leaves what a person could redo where it was', () => {
+      const { session } = mount(flagged())
+      act(() => { session().dispatch(rename('Renamed')) })
+      act(() => session().undo())
+      expect(session().canRedo).toBe(true)
+      act(() => { session().dispatch(settle()) })
+      expect(session().canRedo).toBe(true)
+    })
+
+    it('is written marked, so a writer may write it without calling the document changed', () => {
+      const { session } = mount(flagged(), undefined, undefined, true)
+      act(() => { session().dispatch(settle()) })
+      expect(session().journal.pending()).toHaveLength(1)
+      expect(session().journal.pending()[0].unattended).toBe(true)
+      act(() => { session().dispatch(rename('Renamed')) })
+      expect(session().journal.pending()[1].unattended).toBeUndefined()
     })
 
     it('leaves a step somebody asked for unmarked', () => {

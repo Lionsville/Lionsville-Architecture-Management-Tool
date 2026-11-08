@@ -78,7 +78,17 @@ const HISTORY_CAP = 200
  * scope is kept: the command that made it, as one step, under a name nobody
  * else will give one.
  */
-export type PendingStep = { stepId: string; command: Command; at: number }
+export type PendingStep = {
+  stepId: string
+  command: Command
+  at: number
+  /**
+   * The editor made it by itself: the layout that settles a board a machine
+   * wrote, on first open. A writer may write it without telling anybody, and
+   * the document is not *changed* by it: opening a board is reading it.
+   */
+  unattended?: true
+}
 
 /**
  * What the open scope's writer takes from the session: every change made here
@@ -445,7 +455,7 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
     const changeId = mintStepId()
     // Written where the scope is kept whatever the stack does with it, and
     // under the name it is announced by; another author's is written already.
-    if (meta.origin !== 'remote') keep(changeId, commands, meta.at)
+    if (meta.origin !== 'remote') keep(changeId, commands, meta.at, meta.unattended)
     // Not recorded, so not announced: it has no inverse, and a change nothing
     // can take back is not a step (`SessionSteps.onChange`).
     if (meta.undoable === false) return
@@ -487,7 +497,9 @@ export function useModelSession(deps: ModelSessionDeps): ModelSession {
       unsettled.current.add(fold.changeId)
     }
     trim()
-    if (!meta.keepFuture) future.current = []
+    // A board laying itself out on open is no reason to forget what a
+    // person could still redo: they did nothing.
+    if (!meta.keepFuture && meta.unattended !== true) future.current = []
     setHistoryVersion((v) => v + 1)
     // The commands of THIS change and not the step's whole run: a coalescing
     // step is announced as it grows, and announcing the run again each time
@@ -932,10 +944,10 @@ function useSessionJournal(journaling: boolean) {
     adopted: () => adoptions.current,
   }), [])
   /** One change, as one step: most are one command, and a run of them is a transaction. */
-  const keep = useCallback((stepId: string, commands: readonly Command[], at = Date.now()) => {
+  const keep = useCallback((stepId: string, commands: readonly Command[], at = Date.now(), unattended?: true) => {
     if (!journaling) return
     const command = commands.length === 1 ? commands[0] : transaction([...commands])
-    pending.current = [...pending.current, { stepId, command, at }]
+    pending.current = [...pending.current, { stepId, command, at, ...(unattended ? { unattended } : {}) }]
   }, [journaling])
   /** A document adopted in place of this one: nothing pending is this one's any more. */
   const adopted = useCallback(() => {
