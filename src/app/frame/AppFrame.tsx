@@ -43,6 +43,7 @@ import { frameBarButton, frameChip, frameOverflow } from '../AppPanels'
 import { Crumbs, crumbsFor, SourceChipView } from '../ShellToolbar'
 import type { ShellParts } from '../shellParts'
 import { agentTip } from '../BarEnd'
+import { reasonIn } from '../messageFor'
 import { lazyPart } from '../../widgets/lazyPart'
 import type { FindingBandStack as FindingBandShape } from './FindingBand'
 import { commandsTable, keyCap } from './commandsTable'
@@ -858,8 +859,18 @@ function FrameBands({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | 
  * said before anything is written, with what stays behind.
  */
 function useVisitBand(parts: ShellParts): StackedBand | undefined {
-  const { services: { s } } = parts
+  const { services: { s, toasts } } = parts
   const visiting = parts.props.visiting
+  // The keep reads the visit from where it is held, so what the open scope has
+  // not written yet — the change of a moment ago — is written first, or it is
+  // left behind with nothing said. A write that fails keeps nothing, and says why.
+  const flushing = useRef(parts.provider.openScope)
+  flushing.current = parts.provider.openScope
+  const afterWrites = useMemo(() => (keep: () => void) => () => {
+    void (flushing.current?.flush?.() ?? Promise.resolve()).then(keep, (cause: unknown) => {
+      toasts.notify(s('example.keepUnwritten', { reason: reasonIn(cause, s) }), 'error')
+    })
+  }, [toasts, s])
   return useMemo(() => (visiting?.asking ? {
     id: 'example', tone: 'looking',
     // The decision in bold, what follows from it in the band's plain detail.
@@ -867,7 +878,7 @@ function useVisitBand(parts: ShellParts): StackedBand | undefined {
     detail: <span data-testid="example-keep-detail">{s('example.keepAskDetail')}</span>,
     action: (
       <>
-        <Button size="small" variant="primary" onClick={visiting.asking.onKeep} data-testid="example-keep-under">{s('example.keepUnder')}</Button>
+        <Button size="small" variant="primary" onClick={afterWrites(visiting.asking.onKeep)} data-testid="example-keep-under">{s('example.keepUnder')}</Button>
         <Button size="small" variant="quiet" onClick={visiting.asking.onCancel} data-testid="example-keep-not">{s('example.keepNot')}</Button>
       </>
     ),
@@ -876,11 +887,11 @@ function useVisitBand(parts: ShellParts): StackedBand | undefined {
     title: <span data-testid="example-band">{s('example.band')}</span>,
     action: (
       <>
-        <Button size="small" variant="primary" onClick={visiting.onKeep} data-testid="example-keep" data-guide="example.keep">{s('example.keep')}</Button>
+        <Button size="small" variant="primary" onClick={afterWrites(visiting.onKeep)} data-testid="example-keep" data-guide="example.keep">{s('example.keep')}</Button>
         <Button size="small" variant="quiet" onClick={visiting.onLeave} data-testid="example-leave" data-guide="example.leave">{s('example.leave')}</Button>
       </>
     ),
-  } : undefined), [visiting, s])
+  } : undefined), [visiting, s, afterWrites])
 }
 
 /**

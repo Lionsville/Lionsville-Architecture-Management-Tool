@@ -2132,6 +2132,7 @@ export const EN = {
   'example.keepAskDetail': 'It becomes a scope of its own, and nothing of yours changes. Its operating model and rating scales stay behind: only an organisation has those, and yours is yours to shape. Its units come as plain actors, without types or reporting lines. Everything else comes, its principles too.',
   'example.keepUnder': 'Keep it under my organisation',
   'example.keepNot': 'Not now',
+  'example.keepUnwritten': 'Nothing was kept: the latest change could not be written first. {reason}',
   'work.today': 'Today, {time}',
   'work.manual': 'Where your work is kept, in the help',
   'work.couldNotSave': 'Could not save',

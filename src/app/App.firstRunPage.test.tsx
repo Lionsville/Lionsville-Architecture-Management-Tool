@@ -7,8 +7,12 @@
  * The first screen of a new organisation, the first steps once it has a name, the
  * example as a place, and the status word beside them.
  */
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { laidOut } from '../model/testFixtures'
+import { installReactFlowMocks } from '../editor/reactFlowTestSetup'
+import type { ScopeSnapshot } from '../projects/scope'
+import type { ScopeSession } from '../ports/ScopeSession'
 import { axeFindings } from './testing/axe'
 import { heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
@@ -75,15 +79,36 @@ describe('an organisation nobody has started', () => {
 })
 
 describe('the example, visited', () => {
+  beforeAll(() => installReactFlowMocks())
   it('says so on every screen, with the two ways out', async () => {
     const onKeep = vi.fn()
     const onLeave = vi.fn()
     renderApp({ repositories: heldRepositories([]), offersFirstRun: true, visiting: { name: 'One', onKeep, onLeave } })
     await screen.findByTestId('example-band')
     fireEvent.click(screen.getByTestId('example-keep'))
-    expect(onKeep).toHaveBeenCalled()
+    await waitFor(() => expect(onKeep).toHaveBeenCalled())
     fireEvent.click(screen.getByTestId('example-leave'))
     expect(onLeave).toHaveBeenCalled()
+  })
+
+  it('keeps a change made a moment before the press: the open scope is written first', async () => {
+    const scopes: ScopeSnapshot[] = [
+      { path: '', model: { name: 'One', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] },
+      { path: 'one/landscape', model: { name: 'Landscape', elements: [], relations: [], diagrams: [laidOut({ id: 'd1', kind: 'layer7', name: 'L7', placements: [] }), laidOut({ id: 'd2', kind: 'layer7', name: 'Tried', placements: [] })] }, activeDiagramId: 'd1', logoLibrary: [] },
+    ]
+    const repositories = heldRepositories(scopes)
+    let session: ScopeSession | undefined
+    let kept: readonly string[] | undefined
+    const onKeep = vi.fn(() => { void repositories.read('one/landscape').then((held) => { kept = held?.model.diagrams.map((view) => view.id) }) })
+    renderApp({
+      repositories, boot: { initialProject: scopes[1] }, visiting: { name: 'One', onKeep, onLeave: vi.fn() },
+      provider: { onScopeSession: (held) => { session = held } },
+    })
+    await waitFor(() => expect(session?.scope).toBe('one/landscape'))
+    act(() => { session!.dispatch({ type: 'diagram.delete', id: 'd2' }) })
+    fireEvent.click(await screen.findByTestId('example-keep'))
+    await waitFor(() => expect(onKeep).toHaveBeenCalled())
+    await waitFor(() => expect(kept).toEqual(['d1']))
   })
 })
 

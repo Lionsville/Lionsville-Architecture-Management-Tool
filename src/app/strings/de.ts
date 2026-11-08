@@ -1904,6 +1904,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'example.keepAskDetail': 'Es wird ein eigener Bereich, und an Ihrer Arbeit ändert sich nichts. Sein Betriebsmodell und seine Bewertungsskalen bleiben zurück: Nur eine Organisation hat diese, und Ihre gestalten Sie selbst. Seine Einheiten kommen als einfache Akteure mit, ohne Typ und ohne Berichtslinien. Alles andere kommt mit, auch seine Prinzipien.',
   'example.keepUnder': 'Unter meiner Organisation behalten',
   'example.keepNot': 'Nicht jetzt',
+  'example.keepUnwritten': 'Nichts wurde behalten: Die letzte Änderung konnte nicht zuerst geschrieben werden. {reason}',
   'work.today': 'Heute, {time}',
   'work.manual': 'Wo Ihre Arbeit liegt, in der Hilfe',
   'work.couldNotSave': 'Nicht gespeichert',
