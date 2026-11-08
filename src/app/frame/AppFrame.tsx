@@ -402,7 +402,8 @@ function useScreenUndo(parts: ShellParts) {
     if (!screen || screen.kind === 'workspace' || hostControls.editInField(command.type)) return
     const step = command.type === 'undo' ? screen.undo : screen.redo
     if (step?.can) step.run()
-  }), [bus, frame, hostControls])
+    else parts.services.toasts.notify(parts.services.s(command.type === 'undo' ? 'shell.nothingToUndo' : 'shell.nothingToRedo'))
+  }), [bus, frame, hostControls, parts.services])
 }
 
 /**

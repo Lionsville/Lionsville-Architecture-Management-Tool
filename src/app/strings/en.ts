@@ -13,6 +13,8 @@ export const EN = {
   'logo.category.rail': 'Rail',
 
   // --- the shell around the editor -----------------------------------------
+  'shell.nothingToUndo': 'Nothing to undo',
+  'shell.nothingToRedo': 'Nothing to redo',
   'shell.saved': 'Saved {time}',
   'shell.notSaved': 'Not saved yet',
   /**

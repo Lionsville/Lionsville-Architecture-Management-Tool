@@ -482,7 +482,7 @@ function useScreenParts(
   useEffect(() => { safeguardRef.current = snapshots.safeguard }, [safeguardRef, snapshots.safeguard])
   useWorkspaceCommands({
     commands: host.commands, forceSave, files, documentPicker: pickers.document, snapshots, session,
-    hostControls: host.controls, editorHandle: renderer.editorHandle,
+    hostControls: host.controls, editorHandle: renderer.editorHandle, notify, s,
   })
   const { pageChrome, windowChrome } = usePageChrome(host.windowChrome)
   // The clock, read once per render of the workspace rather than per component:

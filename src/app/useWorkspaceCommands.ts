@@ -10,6 +10,8 @@ import type { RefObject } from 'react'
 import type { EditorHandle } from '../editor'
 import type { HostCommand } from '../platform/hostCommands'
 import type { HostControls } from '../ports/HostControls'
+import type { Translate } from '../i18n'
+import type { Notify } from './useToasts'
 import type { InitialPage } from './App'
 import type { ProjectHistoryState } from './history/useProjectHistory'
 import type { FilePicker } from './useFilePicker'
@@ -41,8 +43,11 @@ export function useWorkspaceCommands(deps: {
   session: ModelSession
   hostControls: HostControls
   editorHandle: RefObject<EditorHandle | undefined>
+  /** Where *Nothing to undo* is said, for a press that has nothing to take back. */
+  notify?: Notify
+  s?: Translate
 }): void {
-  const { commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle } = deps
+  const { commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle, notify, s } = deps
   const frame = useContext(FrameStoreContext)
   useEffect(() => commands?.((command) => {
     switch (command.type) {
@@ -61,12 +66,13 @@ export function useWorkspaceCommands(deps: {
       // item and from the key with nothing focused, and never twice.
       // A text field that has focus keeps its own undo, as the role gave it.
       // And an editor in a frame has its own: the model's stack would take back the wrong thing.
-      case 'undo': if (!frame?.get().work && !hostControls.editInField('undo')) session.undo(); break
-      case 'redo': if (!frame?.get().work && !hostControls.editInField('redo')) session.redo(); break
+      // With nothing to take back, the press says so rather than doing nothing anyone can see.
+      case 'undo': if (!frame?.get().work && !hostControls.editInField('undo')) { if (session.canUndo) session.undo(); else if (s) notify?.(s('shell.nothingToUndo')) } break
+      case 'redo': if (!frame?.get().work && !hostControls.editInField('redo')) { if (session.canRedo) session.redo(); else if (s) notify?.(s('shell.nothingToRedo')) } break
       case 'deleteSelection': editorHandle.current?.deleteSelection(); break
       case 'selectAll': editorHandle.current?.selectAll(); break
     }
-  }), [commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle, frame])
+  }), [commands, forceSave, files, documentPicker, snapshots, session, hostControls, editorHandle, frame, notify, s])
 }
 
 /**

@@ -15,6 +15,8 @@ export const DE: Record<keyof typeof EN, string> = {
   /** The rail pack's picker heading. The pack is registered in composition.ts. */
   'logo.category.rail': 'Bahn',
 
+  'shell.nothingToUndo': 'Nichts rückgängig zu machen',
+  'shell.nothingToRedo': 'Nichts zu wiederholen',
   'shell.saved': 'Gespeichert {time}',
   'shell.notSaved': 'Noch nicht gespeichert',
   'shell.saveRefused': 'Nicht gespeichert — Speicher verweigert',

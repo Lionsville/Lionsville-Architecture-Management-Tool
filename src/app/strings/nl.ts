@@ -15,6 +15,8 @@ export const NL: Record<keyof typeof EN, string> = {
   /** The rail pack's picker heading. The pack is registered in composition.ts. */
   'logo.category.rail': 'Spoor',
 
+  'shell.nothingToUndo': 'Niets om ongedaan te maken',
+  'shell.nothingToRedo': 'Niets om opnieuw te doen',
   'shell.saved': 'Bewaard {time}',
   'shell.notSaved': 'Nog niet bewaard',
   'shell.saveRefused': 'Niet bewaard — opslag weigert',

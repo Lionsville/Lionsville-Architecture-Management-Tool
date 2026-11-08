@@ -241,6 +241,15 @@ describe('commands from the host', () => {
     await waitFor(async () => expect(await named()).toBe('L7'))
   })
 
+  it('Undo and Redo with nothing to take back say so, rather than doing nothing anyone can see', async () => {
+    const view = show()
+    await screen.findByTestId('edit-the-diagram')
+    act(() => { view.send({ type: 'undo' }) })
+    expect(await screen.findByText('Nothing to undo')).toBeTruthy()
+    act(() => { view.send({ type: 'redo' }) })
+    expect(await screen.findByText('Nothing to redo')).toBeTruthy()
+  })
+
   it('Save writes now rather than waiting for the idle timer', async () => {
     const view = show()
     act(() => { screen.getByTestId('edit-the-diagram').click() })
