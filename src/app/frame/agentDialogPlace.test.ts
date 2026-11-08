@@ -1,6 +1,6 @@
-// @vitest-environment jsdom
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAgentDialogFollowsPlace } from './AppFrame'

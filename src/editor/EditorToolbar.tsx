@@ -335,8 +335,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
             { kind: 'tab', diagramId: tabMenu.diagramId },
             {
               readOnly: props.readOnly,
-              platform,
-              language,
+              platform, language,
               t,
               diagramKind: tabMenu.kind,
               tab: {

@@ -1174,8 +1174,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     (target: MenuTarget): MenuContext => {
       const ctx: MenuContext = {
         readOnly,
-        platform,
-        language,
+        platform, language,
         t,
         diagramKind: diagram.kind,
         groups: diagram.groups ?? [],
@@ -1266,8 +1265,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
     },
     [
       readOnly,
-      platform,
-      language,
+      platform, language,
       t,
       diagram,
       model,
