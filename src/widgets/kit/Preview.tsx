@@ -111,7 +111,9 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
           <button type="button" className="kit-preview__icon" aria-label={t('kit.preview.next')} disabled={!next} onClick={() => next && select(next)}><ForwardIcon /></button>
           {index >= 0 && (
             <span className="kit-preview__position" aria-live="polite">
-              {t('kit.preview.position', { at: index + 1, total: ids.length })}{listWord && ids.length > 1 ? ` ${listWord}` : ''}
+              <span className="kit-preview__whole">{t('kit.preview.position', { at: index + 1, total: ids.length })}{listWord && ids.length > 1 ? ` ${listWord}` : ''}</span>
+              {/* At a phone's width the count is the number alone, and the whole is still read out. */}
+              <span className="kit-preview__at" aria-hidden="true">{index + 1}</span>
             </span>
           )}
           {code && <span className="kit-preview__code">{code}</span>}

@@ -34,8 +34,14 @@
   border-bottom: 1px solid var(--line);
 }
 .kit-preview__grow { flex: 1; }
-.kit-preview__position { color: var(--ink-2); font-size: var(--t-small); }
-.kit-preview__code { color: var(--ink-2); font-family: var(--font-mono); font-size: var(--t-small); }
+.kit-preview__position { color: var(--ink-2); font-size: var(--t-small); white-space: nowrap; }
+.kit-preview__at { display: none; }
+/* An id is one word: broken at its hyphen it read as two. */
+.kit-preview__code { color: var(--ink-2); font-family: var(--font-mono); font-size: var(--t-small); white-space: nowrap; }
+@container (max-width: 37.5rem) {
+  .kit-preview__whole { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .kit-preview__at { display: inline; }
+}
 .kit-preview__icon {
   display: inline-flex;
   align-items: center;
