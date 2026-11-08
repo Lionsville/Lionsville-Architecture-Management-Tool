@@ -99,14 +99,20 @@
 .lv-boundary { color: var(--ink); }
 .lv-boundary[data-selected] { --zone-edge: var(--selected-edge); }
 .lv-boundary .kit-zone__aside { display: inline-flex; align-items: center; gap: 4px; }
+/*
+ * Sized in canvas units, as graph.ts's EMPTY_HELP: it is drawn only where the
+ * boundary holds it whole under its head, so it scales with the board rather
+ * than growing past the box and over its name when the board is far off.
+ */
 .lv-boundary__empty {
   position: absolute;
-  top: 50%;
+  top: calc(50% + 14px);
   left: 50%;
-  width: 340px;
+  width: min(340px, calc(100% - 32px));
+  max-height: 170px;
+  overflow: hidden;
   pointer-events: auto;
   cursor: default;
-  zoom: calc(1 / var(--canvas-zoom, 1));
   transform: translate(-50%, -50%);
 }
 

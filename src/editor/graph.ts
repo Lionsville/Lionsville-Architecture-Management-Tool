@@ -194,7 +194,45 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       },
     });
   }
-  return keepingUnchanged(nodes, previous, sameNode);
+  return keepingUnchanged(withoutHelpOverContent(nodes), previous, sameNode);
+}
+
+/** The room the empty boundary's helper takes, in canvas units: under the boundary's head, centred. */
+export const EMPTY_HELP = { width: 340, height: 170, head: 44, margin: 16 } as const;
+
+/**
+ * Where the empty boundary's helper would sit inside `boundary`, or nothing
+ * when the boundary is too small to hold it whole below its head.
+ */
+export function emptyHelpRect(boundary: Rect): Rect | undefined {
+  const width = Math.min(EMPTY_HELP.width, boundary.width - EMPTY_HELP.margin * 2);
+  const room = boundary.height - EMPTY_HELP.head - EMPTY_HELP.margin;
+  if (width < EMPTY_HELP.width * 0.75 || room < EMPTY_HELP.height) return undefined;
+  return {
+    x: boundary.x + (boundary.width - width) / 2,
+    y: boundary.y + EMPTY_HELP.head + (room - EMPTY_HELP.height) / 2,
+    width,
+    height: EMPTY_HELP.height,
+  };
+}
+
+const crosses = (a: Rect, b: Rect) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+
+/**
+ * The helper says what goes inside an empty boundary, and is only ever drawn
+ * where it covers nothing: a boundary too small for it, or one with a box
+ * placed where it would sit, is not empty to the eye, and text over a box's
+ * name reads as a fault.
+ */
+function withoutHelpOverContent(nodes: ElementNode[]): ElementNode[] {
+  const boundary = nodes.find((node) => node.data.c4Empty);
+  if (!boundary) return nodes;
+  const help = emptyHelpRect({ x: boundary.position.x, y: boundary.position.y, width: boundary.width ?? 0, height: boundary.height ?? 0 });
+  const covered = help === undefined || nodes.some((node) => node !== boundary
+    && crosses(help, { x: node.position.x, y: node.position.y, width: node.width ?? 0, height: node.height ?? 0 }));
+  if (!covered) return nodes;
+  const { c4Empty: _empty, ...data } = boundary.data;
+  return nodes.map((node) => (node === boundary ? { ...node, data } : node));
 }
 
 /**

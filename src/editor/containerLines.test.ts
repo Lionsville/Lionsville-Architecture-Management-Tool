@@ -80,4 +80,21 @@ describe('a container diagram, as data', () => {
     const nodes = buildNodes({ model: empty, diagram, readOnly: true, edgeColor: '' });
     expect(nodes.find((node) => node.id === 'app')?.data.c4Empty).toBe(true);
   });
+
+  it('says nothing over a box: not in a boundary too small for it, nor where a box sits inside one', () => {
+    const empty = { ...model, elements: model.elements.filter((one) => one.kind !== 'component'), relations: [] };
+    const placed = (app: object, buyer: object) => ({
+      ...diagram,
+      geometry: { nodes: [{ id: 'app', x: 0, y: 0, ...app }, { id: 'buyer', ...buyer }, { id: 'other', x: 700, y: 0 }] },
+    }) as unknown as DesignDiagram;
+    const helped = (on: DesignDiagram) => buildNodes({ model: { ...empty, diagrams: [on] }, diagram: on, readOnly: true, edgeColor: '' })
+      .find((node) => node.id === 'app')?.data.c4Empty;
+    expect(helped(placed({ width: 600, height: 400 }, { x: -300, y: 0 }))).toBe(true);
+    // A planned application placed at a card's size: the helper would cover its name and its type.
+    expect(helped(placed({ width: 240, height: 120 }, { x: -300, y: 0 }))).toBeUndefined();
+    // A person placed in the middle of the boundary.
+    expect(helped(placed({ width: 600, height: 400 }, { x: 240, y: 180 }))).toBeUndefined();
+    // One that only touches its edge leaves the middle free.
+    expect(helped(placed({ width: 600, height: 400 }, { x: -110, y: 0 }))).toBe(true);
+  });
 });
