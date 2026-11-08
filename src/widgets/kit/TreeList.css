@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
-.kit-tree { display: flex; flex-direction: column; color: var(--ink); font-size: var(--t-body); }
+/* A list's own indent left off: the rows indent by their depth alone, where the top level stood 40px in with an empty gutter. */
+.kit-tree { display: flex; flex-direction: column; margin: 0; padding: 0; color: var(--ink); font-size: var(--t-body); }
 .kit-tree__item { list-style: none; }
 .kit-tree__group { margin: 0; padding: 0; }
 .kit-tree__row {
