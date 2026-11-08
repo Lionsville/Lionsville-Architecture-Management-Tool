@@ -24,7 +24,8 @@
  * and no storage in it — which is what lets this component be exercised in a
  * test without an editor, without a model and without browser APIs.
  */
-import { createContext, useContext, useState } from 'react'
+import { createContext, Fragment, useContext, useState } from 'react'
+import { MoreMenu } from '../widgets/kit/Menu'
 import type { MouseEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import Button from '@mui/material/Button'
@@ -319,9 +320,14 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   const go = (path: ScopePath) => { pressed(); onGoHome(path) }
   // The organisation stays readable however long the names between are: it is
   // the way back to the first screen, and the middle gives way first.
-  const shrinking = (order: number) => ({
-    minWidth: order === 0 ? '6ch' : 0, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+  const shrinking = (order: number, least: string | 0 = order === 0 ? '6ch' : 0) => ({
+    minWidth: least, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
+  // Deep in the tree the scopes between the organisation and the one above
+  // this fold into a ⋯ of their own, rather than each being cut to a sliver:
+  // the open scope is read first, the organisation second, the rest on a press.
+  const folded = crumbs.length > 2 ? crumbs.slice(1, -1) : []
+  const shown = folded.length > 0 ? [crumbs[0], crumbs[crumbs.length - 1]] : crumbs
   // In the frame the trail shares the row with two spacers around the find field
   // and the status word. It starts at the width its names need, so the spacers
   // share only what is left. Where the row is short it barely shrinks while
@@ -330,8 +336,15 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   // a shrink of 1 cut a name by a pixel, and so to an ellipsis, beside a long word.
   return (
     <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '0 0.001 auto', maxWidth: 'max-content' }}>
-      {crumbs.map((crumb, index) => (
-        <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(index === 0 ? 0 : 40 - index) }}>
+      {shown.map((crumb, index) => (
+        <Fragment key={crumb.path}>
+        {index === 1 && folded.length > 0 && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0 }} data-testid="crumbs-folded">
+            <MoreMenu size="small" label={s('shell.crumbsBetween')} items={folded.map((one) => ({ label: one.name, onSelect: () => go(one.path) }))} />
+            <Typography aria-hidden sx={{ fontSize: 'var(--t-small)', color: 'text.disabled' }}>›</Typography>
+          </Box>
+        )}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(index === 0 ? 0 : 40 - index, index === 0 ? '6ch' : '4ch') }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>
             <Button
               size="small"
@@ -349,6 +362,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
           </Tooltip>
           <Typography aria-hidden sx={{ fontSize: 'var(--t-small)', color: 'text.disabled' }}>›</Typography>
         </Box>
+        </Fragment>
       ))}
       {/* The open scope is a button as well: a page that ends on a canvas with
           nothing to draw — an organisation whose views are all laid out — has
@@ -359,7 +373,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
           color="inherit"
           onClick={() => go(currentPath)}
           data-testid="crumb-current"
-          sx={{ fontSize: 'var(--t-body)', fontWeight: 700, px: 0.5, py: 0, minHeight: 'var(--target-min)', textTransform: 'none', color: 'text.primary', ...shrinking(1), display: 'block' }}
+          sx={{ fontSize: 'var(--t-body)', fontWeight: 700, px: 0.5, py: 0, minHeight: 'var(--target-min)', textTransform: 'none', color: 'text.primary', ...shrinking(0.01, 'min(8ch, 100%)'), display: 'block' }}
         >
           {current}
         </Button>

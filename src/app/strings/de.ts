@@ -148,6 +148,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.chooseBoardHint': '{name} ist auf mehr als einem Board gezeichnet.',
   'shell.chooseBoardAsOf': 'Stand {day}',
   'shell.crumbTip': 'Zu {name}',
+  'shell.crumbsBetween': 'Bereiche dazwischen',
   'shell.exampleCopied': 'Beispiel „{name}“ in eine eigene Organisation kopiert.',
 
   // --- projects and the picker ---------------------------------------------

@@ -147,6 +147,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.chooseBoardHint': '{name} staat op meer dan één bord.',
   'shell.chooseBoardAsOf': 'Per {day}',
   'shell.crumbTip': 'Naar {name}',
+  'shell.crumbsBetween': 'Scopes daartussen',
   'shell.exampleCopied': 'Voorbeeld “{name}” gekopieerd naar een eigen organisatie.',
 
   // --- projecten en de kiezer ----------------------------------------------

@@ -252,6 +252,7 @@ export const EN = {
   'shell.chooseBoardHint': '{name} is drawn on more than one board.',
   'shell.chooseBoardAsOf': 'As of {day}',
   'shell.crumbTip': 'Go to {name}',
+  'shell.crumbsBetween': 'Scopes in between',
   'shell.exampleCopied': 'Example “{name}” copied to an organisation of your own.',
 
   // --- projects and the picker ---------------------------------------------

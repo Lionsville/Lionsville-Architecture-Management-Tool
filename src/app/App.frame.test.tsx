@@ -141,6 +141,21 @@ describe('the two rows', () => {
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Depot'))
     expect(screen.getByTestId('crumb-').textContent).toBe('Acme Logistics')
   })
+
+  it('folds the scopes in between into a ⋯ deep in the tree, keeping the organisation and the one above', async () => {
+    const agent = wire()
+    const deep = [...TREE(), scope('retail/depot/bay', 'Bay', false), scope('retail/depot/bay/dock', 'Dock', true)]
+    renderApp({ agent: agent.gateway, repositories: heldRepositories(deep), boot: { initialProject: undefined } })
+    await waitFor(() => expect(agent.bound()).toBe(true))
+    await agent.ask('app.open', { scope: 'retail/depot/bay/dock', page: 'home' })
+    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Dock'))
+    expect(screen.getByTestId('crumb-').textContent).toBe('Acme Logistics')
+    expect(screen.getByTestId('crumb-retail/depot/bay').textContent).toBe('Bay')
+    expect(screen.queryByTestId('crumb-retail')).toBeNull()
+    fireEvent.click(within(screen.getByTestId('crumbs-folded')).getByRole('button'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Depot' }))
+    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Depot'))
+  })
 })
 
 describe('row two on a home', () => {
