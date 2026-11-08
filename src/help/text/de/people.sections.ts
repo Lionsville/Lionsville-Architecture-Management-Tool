@@ -49,7 +49,7 @@ export const SECTIONS: SectionTexts = {
   'people.findMe': ['Mich finden', 'Leert Suche und Filter und öffnet Ihren eigenen Eintrag.',
     'Mich finden rechts in der Suchzeile auf dem Reiter Personen, sobald ein Eintrag Sie ist.',
     ['Klicken Sie auf Mich finden.'],
-    'Marek Nowak drückt Mich finden, um zu sehen, was er hält und wer an ihn berichtet.'],
+    'Marek Nowak klickt auf Mich finden, um zu sehen, was er hält und wer an ihn berichtet.'],
   'people.copyAddress': ['Die Adresse einer Person kopieren', 'Kopiert den Link zur Seite der Person, um ihn in eine Nachricht oder ein Dokument einzufügen.',
     '⋯ am Fuß einer offenen Person: Adresse dieser Seite kopieren. Nur im Browser, wo die Seite eine Adresse hat.',
     ['Öffnen Sie die Person.', 'Klicken Sie auf ⋯ und wählen Sie Adresse dieser Seite kopieren.'],

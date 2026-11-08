@@ -170,7 +170,7 @@ export const SECTIONS: SectionTexts = {
     ['Tippen Sie [[ oder @ und die ersten Buchstaben eines Namens.', 'Wählen Sie mit den Pfeilen aus der Liste und drücken Sie die Eingabetaste.'],
     'Schreiben Sie Siehe [[Tariff Engine]] in den Text von Billing, damit man ihm folgen kann.',
     '[[ oder @'],
-  'editor.pictures': ['Bilder hinzufügen und verwalten', 'Fügen Sie ein Bild in den Text ein oder ziehen Sie es hinein; die Bildschaltfläche zeigt die Bilder des Bereichs, wo eines erneut eingefügt oder gelöscht werden kann, und ein Bild öffnet sich groß, wenn man es drückt.',
+  'editor.pictures': ['Bilder hinzufügen und verwalten', 'Fügen Sie ein Bild in den Text ein oder ziehen Sie es hinein; die Bildschaltfläche zeigt die Bilder des Bereichs, wo eines erneut eingefügt oder gelöscht werden kann, und ein Bild öffnet sich groß, wenn man darauf klickt.',
     'Der Text des Eintrags, in seinem Schreibfenster, die Bildschaltfläche rechts in der Werkzeugleiste',
     ['Fügen Sie ein Bild in den Text ein oder ziehen Sie es hinein.', 'Klicken Sie auf die Bildschaltfläche, um die Bilder des Bereichs zu sehen.'],
     'Ziehen Sie ein Foto der Rampentore des Yards in den Text von Yard Management.'],
