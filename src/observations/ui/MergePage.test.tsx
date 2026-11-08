@@ -145,7 +145,7 @@ describe('the merge screen', () => {
     const move = merge.getByRole('checkbox', { name: /^Move: CA-0001/ })
     fireEvent.click(move)
     expect(move).toHaveProperty('checked', false)
-    fireEvent.click(merge.getByRole('button', { name: 'Take OB-0002 out of the merge' }))
+    fireEvent.click(merge.getByRole('button', { name: 'Remove OB-0002 from the merge' }))
     expect(within(merge.getByTestId('merge-picked')).getAllByRole('radio')).toHaveLength(1)
     expect(merge.getByText(t('observation.mergeNoLinks'))).toBeTruthy()
   })

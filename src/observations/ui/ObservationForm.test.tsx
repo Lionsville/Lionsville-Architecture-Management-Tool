@@ -214,7 +214,7 @@ describe('the new observation form', { timeout: 20_000 }, () => {
       expect.stringContaining('RC-0002 Nobody owns the batch'),
     ])
     // Taken off again, and put back: nothing is made until the form is recorded.
-    fireEvent.click(screen.getByRole('button', { name: 'Take Splits are not modelled off the list' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Splits are not modelled from the list' }))
     newCause('Splits are not modelled')
     expect(onChange).not.toHaveBeenCalled()
     const record = screen.getByTestId('form-record')

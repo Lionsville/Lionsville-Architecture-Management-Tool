@@ -86,7 +86,7 @@ export const SECTIONS: SectionTexts = {
     'Press a line under Found on a check; the band appears over the board you land on.',
     ['Pick a check and press one of its findings.', 'Press Open on its board.', 'Fix it in the inspector; press › in the band for the next finding.', 'Press Back to Checks to return to the same check.'],
     'From A connection outlives one of its ends, open the connection falls back for two contracts: it lands selected between Tariff Engine and Rating (legacy), with 1 of 2 in the band.'],
-  'checks.fix': ['Fix a finding from the Checks page', 'Where the fix is one field or one press, the pressed finding offers it in place: Set an owner…, Mark it shared, Assign…, Declare an interaction…, Accept, End the assignment…, Remove the assignment, Remove the declaration, Link…. Each lands as a step in the scope that keeps the record, named in Activity, with Put back in the toast.',
+  'checks.fix': ['Fix a finding from the Checks page', 'Where the fix is one field or one press, the pressed finding offers it in place: Set an owner…, Mark it shared, Assign…, Declare an interaction…, Accept, End the assignment…, Delete the assignment, Delete the declaration, Link…. Each lands as a step in the scope that keeps the record, named in Activity, with Put back in the toast.',
     'Under a pressed finding on the Checks page.',
     ['Pick a check and press a finding.', 'Press its fix, for example Set an owner…, and pick a unit.', 'Press Put back in the toast to reverse it.'],
     'Under Application nobody owns, press Dispatch, then Set an owner… and pick Warehouse team.'],

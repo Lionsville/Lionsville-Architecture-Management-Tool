@@ -98,7 +98,7 @@ export const EN = {
   'landscape.colourLifecycle': 'Lifecycle',
   'landscape.colourCategory': 'Category',
   'landscape.colourOwner': 'Owner',
-  'landscape.lensOff': 'Take the colouring off',
+  'landscape.lensOff': 'Turn the colouring off',
   'landscape.dayHere': 'Days on this landscape',
   'landscape.dayPlan': '{plan}: {milestone}',
   'landscape.dayLive': '{name} goes live',

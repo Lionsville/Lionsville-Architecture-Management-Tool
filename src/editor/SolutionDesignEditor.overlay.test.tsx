@@ -131,7 +131,7 @@ describe('colour by', () => {
     expect(within(document.querySelector('.react-flow__node[data-id="wms"]') as HTMLElement).getByTestId('overlay-tag').textContent).toBe('1');
     expect(within(document.querySelector('.react-flow__node[data-id="crm"]') as HTMLElement).getByTestId('overlay-tag').textContent).toBe('2');
     // Closing the legend takes the overlay off.
-    fireEvent.click(within(legend).getByLabelText('Take the colouring off'));
+    fireEvent.click(within(legend).getByLabelText('Turn the colouring off'));
     await measured();
     expect(screen.queryByTestId('overlay-legend')).toBeNull();
     expect(wash('wms')).toBe(before.wms);

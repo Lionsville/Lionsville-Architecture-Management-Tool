@@ -356,7 +356,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.inside': 'Darin',
   'inspector.allBoth': '{value}, beide',
   'inspector.allOf': '{value}, alle {count}',
-  'inspector.takeOut': '{name} aus der Auswahl nehmen',
+  'inspector.takeOut': '{name} aus der Auswahl entfernen',
   'inspector.deleteCount': '{count} aus dem Modell löschen…',
   'inspector.remove': 'Entfernen',
   'inspector.fromThisView': 'Aus der Ansicht entfernen',

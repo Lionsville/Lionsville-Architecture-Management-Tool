@@ -49,7 +49,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'plan.addElement': 'Element',
   'plan.addApplication': 'Applicatie',
   'plan.add': 'Toevoegen',
-  'plan.remove': 'Verwijderen',
+  'plan.remove': 'Weghalen',
   'plan.noElements': 'Benoemt nog niets. Voeg toe wat het invoert, uitfaseert of wijzigt.',
   'plan.date.live': 'Live vanaf',
   'plan.date.retiring': 'Uitfaseren vanaf',

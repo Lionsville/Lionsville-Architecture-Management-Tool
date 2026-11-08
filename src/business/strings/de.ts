@@ -208,7 +208,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.poster.aNote': 'Eine Notiz',
   'sheet.poster.noteSays': 'Notiz: {text}',
   'sheet.poster.noteWords': 'Was die Notiz sagt',
-  'sheet.poster.takeOffItem': 'Vom Poster nehmen',
+  'sheet.poster.takeOffItem': 'Vom Poster entfernen',
   'sheet.poster.overlapOne': '{count} Überlappung',
   'sheet.poster.overlapOther': '{count} Überlappungen',
   'sheet.poster.waitingOne': '{count} Block wartet unter der Seite',

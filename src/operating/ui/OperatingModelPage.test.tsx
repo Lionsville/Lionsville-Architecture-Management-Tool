@@ -378,11 +378,11 @@ describe('the operating model\'s page', () => {
     const sent = show(MODEL(), { initialId: 'ut-1', slotTakeOut })
     fireEvent.click(screen.getAllByTestId('operating-slot')[0])
     const before = sent.length
-    fireEvent.click(screen.getByRole('button', { name: 'Take Planner out of this unit type' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Planner from this unit type' }))
     expect(sent).toHaveLength(before)
     expect(screen.getByTestId('take-out').textContent).toBe('People of ro-1')
     fireEvent.click(screen.getAllByTestId('operating-slot')[1])
-    fireEvent.click(screen.getByRole('button', { name: 'Take Head out of this unit type' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Head from this unit type' }))
     expect(sent).toHaveLength(before + 1)
   })
 

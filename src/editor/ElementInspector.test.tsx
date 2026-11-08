@@ -603,7 +603,7 @@ describe('ElementInspector: what an application uses (ADR-0020)', () => {
     const { setUses, unmount } = renderInspector(element(), { others: [service, another], relations: rows });
     expect(says('element-uses')).toContain('Database');
     press('element-uses');
-    fireEvent.click(screen.getByRole('button', { name: /Take out Database/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Remove Database/ }));
     unmount();
     expect(setUses).toHaveBeenCalledWith('e1', []);
   });

@@ -19,7 +19,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { STRINGS } from './strings'
-import { SAME_EVERYWHERE, SHARED, pressedNotKey, prose, refusedIn } from './glossary'
+import { SAME_EVERYWHERE, SHARED, actsIn, pressedNotKey, prose, refusedIn } from './glossary'
 
 describe.each(['nl', 'de'] as const)('the %s words', (language) => {
   const table = STRINGS[language]
@@ -47,6 +47,26 @@ describe.each(['nl', 'de'] as const)('the %s words', (language) => {
       english.push(`${key}: "${text}"`)
     }
     expect(english).toEqual([])
+  })
+})
+
+describe('remove and delete', () => {
+  it.each(['en', 'nl', 'de'] as const)('never share a word in %s, and English says Remove rather than take off or out', (language) => {
+    const en = STRINGS.en as Record<string, string>
+    const wrong: string[] = []
+    for (const [key, text] of Object.entries(STRINGS[language] as Record<string, string>)) {
+      if (key.endsWith('markdownHelp') || en[key] === undefined) continue
+      wrong.push(...actsIn(language, key, en[key], text))
+    }
+    expect(wrong).toEqual([])
+  })
+
+  it('refuses the other act\'s word, and lets a choice between the two say both', () => {
+    expect(actsIn('nl', 'x', 'Remove', 'Verwijderen')).toHaveLength(1)
+    expect(actsIn('de', 'x', 'Comment deleted', 'Kommentar entfernt')).toHaveLength(1)
+    expect(actsIn('nl', 'x', 'Remove', 'Weghalen')).toEqual([])
+    expect(actsIn('de', 'x', 'Remove from view or delete from model…', 'Aus der Ansicht entfernen oder aus dem Modell löschen…')).toEqual([])
+    expect(actsIn('en', 'x', 'Take out {name}', 'Take out {name}')).toHaveLength(1)
   })
 })
 

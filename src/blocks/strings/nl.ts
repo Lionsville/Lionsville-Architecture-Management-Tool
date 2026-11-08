@@ -36,7 +36,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'blocks.description': 'Omschrijving',
   'blocks.contextDescriptionHelp': 'Eén of twee zinnen; het hoofdstuk in het document zegt de rest.',
   'blocks.must': 'must',
-  'blocks.remove': 'Verwijderen',
+  'blocks.remove': 'Weghalen',
   'blocks.chapterOf': 'Hoofdstuk: {name}',
   'blocks.solutionsIntro': 'Wat deze bouwsteen kan leveren: producten, diensten, eigen bouw. Hoe goed elk past, zegt elke scope zelf, onder Waar gebruikt.',
   'blocks.solutionsEmpty': 'Nog geen opties in de catalogus.',

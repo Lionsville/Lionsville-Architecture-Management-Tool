@@ -26,7 +26,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.property.from': '{value}, von {source}',
   'kit.property.showAll': 'Alles anzeigen',
   'kit.property.showLess': 'Weniger anzeigen',
-  'kit.picker.remove': '{name} herausnehmen',
+  'kit.picker.remove': '{name} entfernen',
   'kit.picker.add': '„{query}“ hinzufügen',
   'kit.picker.recent': 'Zuletzt',
   'kit.picker.didYouMean': 'Meinten Sie',

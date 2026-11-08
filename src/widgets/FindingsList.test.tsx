@@ -95,10 +95,10 @@ describe('a list of findings', () => {
     expect(screen.getByTestId('finding-sentence').textContent).toBe(FOUND[3]!.text)
     expect(screen.getByTestId('finding-why').textContent).toMatch(/^Two units declare that they work together/)
     expect(screen.getByTestId('finding-how').textContent).toMatch(/^If the interface exists, model it/)
-    // Remove is wired; Model the missing interface is not, and Open the two units has nothing to open here.
-    expect(within(explanation).getAllByRole('button').map((one) => one.textContent)).toEqual(['←All findings', 'Remove the declaration'])
+    // Delete is wired; Model the missing interface is not, and Open the two units has nothing to open here.
+    expect(within(explanation).getAllByRole('button').map((one) => one.textContent)).toEqual(['←All findings', 'Delete the declaration'])
     expect(await axeFindings()).toEqual([])
-    fireEvent.click(screen.getByRole('button', { name: 'Remove the declaration' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete the declaration' }))
     expect(remove).toHaveBeenCalledWith('i-service')
     fireEvent.click(screen.getByRole('button', { name: /All findings/ }))
     expect(onPick).toHaveBeenLastCalledWith(undefined)

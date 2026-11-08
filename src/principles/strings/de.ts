@@ -79,7 +79,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'principles.sharpenNote': 'Was geschärft wurde',
   'principles.sharpenSave': 'Schärfung speichern',
   'principles.groupsTitle': 'Gruppen',
-  'principles.groupsIntro': 'Die Gruppen dieses Bereichs, in der Reihenfolge der Seite. Eine entfernte Gruppe wird von ihren Prinzipien genommen; keines davon verschwindet.',
+  'principles.groupsIntro': 'Die Gruppen dieses Bereichs, in der Reihenfolge der Seite. Eine entfernte Gruppe wird von ihren Prinzipien entfernt; keines davon verschwindet.',
   'principles.groupName': 'Name',
   'principles.groupDescription': 'Was hineingehört (optional)',
   'principles.groupCount': '{count} darin',

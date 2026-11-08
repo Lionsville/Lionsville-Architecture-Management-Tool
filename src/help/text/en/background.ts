@@ -708,8 +708,8 @@ beside its title.
 - **Reply.** Press **Reply** under a comment. A thread is one level deep:
   replying to a reply answers the comment it is under.
 - **Edit.** Your own comments only. An edited comment says *edited*.
-- **Remove.** Your own, or anybody's where you may change the scope. A
-  removed comment reads *Comment removed* where it stood, so the replies under
+- **Delete.** Your own, or anybody's where you may change the scope. A
+  deleted comment reads *Comment deleted* where it stood, so the replies under
   it keep their place. Its words stay in the history, as any edit does.
 
 **Who wrote it** is a person in the register, never a name typed in. The first
@@ -1955,8 +1955,8 @@ findings on the **Checks** line and lists them on the Checks page.
   about, **Why it matters**, **How to fix it**, and the actions that fix it
   or open where it is fixed — open the record, the drawing, the unit or the
   two units, the unit type, the plan, the person in People; **Link…**,
-  **Accept**, **Assign…**, **End the assignment…**, **Remove the
-  assignment**, **Declare an interaction…**, **Remove the declaration**. A list offers the actions it can
+  **Accept**, **Assign…**, **End the assignment…**, **Delete the
+  assignment**, **Declare an interaction…**, **Delete the declaration**. A list offers the actions it can
   do where it is drawn, and the screen it opens does the rest. **All
   findings** goes back to the finding you came from.
 - A finding put right leaves the list, and its explanation with it.
@@ -1990,7 +1990,7 @@ organisation's home in the whole tree.
   intended…** beside a review's or a note's finding marks it from here, in
   the scope that keeps it, and **Accepted (N)** lists what was marked, each
   with **Take back**. An assignment in a unit that is not there offers
-  **Remove the assignment** beside it, written the same way: no unit is left
+  **Delete the assignment** beside it, written the same way: no unit is left
   to fix it from. A mark made here, with nothing open, is that scope's
   step and is not on an undo stack: **Take back** is how it is undone.
 - What the page counts comes from what the app already holds about the whole
@@ -2290,7 +2290,7 @@ people's roles end then and stay in their history. **An assignment in a unit
 that is not there** — left by a unit deleted before deleting took them along,
 or by an actor that is no longer a unit — is a fix, *An assignment in a unit
 that is not there*, whatever its days: the person still counts as holding the
-role. On the Checks page it opens the person in People, and **Remove the
+role. On the Checks page it opens the person in People, and **Delete the
 assignment** takes it away. The units inside a unit deleted move up into its
 parent, or into another unit of its type where theirs may not sit there, or
 go too; the applications it owned show as owned by nobody (*Elements*).

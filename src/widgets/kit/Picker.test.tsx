@@ -241,7 +241,7 @@ describe('several, in a row', () => {
     expect(screen.queryByRole('option', { name: 'Apple' })).toBeNull()
     fireEvent.click(screen.getByRole('option', { name: 'Banana' }))
     expect(onAdd).toHaveBeenCalledWith('b')
-    fireEvent.click(screen.getByRole('button', { name: 'Take out Apple' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Apple' }))
     expect(onRemove).toHaveBeenCalledWith('a')
     fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Escape' })
     expect(onDone).toHaveBeenCalled()

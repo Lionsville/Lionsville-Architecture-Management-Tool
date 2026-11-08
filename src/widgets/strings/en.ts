@@ -25,7 +25,7 @@ export const EN = {
   'kit.property.from': '{value}, from {source}',
   'kit.property.showAll': 'Show all',
   'kit.property.showLess': 'Show less',
-  'kit.picker.remove': 'Take out {name}',
+  'kit.picker.remove': 'Remove {name}',
   'kit.picker.add': 'Add “{query}”',
   'kit.picker.recent': 'Recent',
   'kit.picker.didYouMean': 'Did you mean',

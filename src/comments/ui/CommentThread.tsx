@@ -15,7 +15,7 @@
  * **What it offers is what the source says** (§5): *Edit* on your own
  * comments, *Remove* on your own and — where you may moderate the scope — on
  * anybody's, *Comment* and *Reply* wherever you may comment. A removed comment
- * reads *Comment removed* where it stood, so its replies keep their place.
+ * reads *Comment deleted* where it stood, so its replies keep their place.
  *
  * Each step goes through the session the workspace hands down
  * (`CommentsContext`): one step each, in the Activity list, undone by ⌘Z.

@@ -204,7 +204,7 @@ describe('what covers a capability', () => {
     })
     cleanup()
     const { actions: actions2 } = open('picking')
-    fireEvent.click(screen.getByRole('button', { name: 'Take Warehouse system off' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Warehouse system' }))
     expect(actions2.setCoverage).toHaveBeenCalledWith({
       type: 'supports', sourceId: 'wms', functionId: 'picking', on: false,
     })
@@ -253,7 +253,7 @@ describe('what covers a capability', () => {
     expect(screen.queryByText('Nothing and nobody yet')).toBeNull()
     expect(screen.getAllByRole('button', { name: /^Open / })).toHaveLength(1)
     // The row is the landscape's, and taking it off here would find nothing to delete.
-    expect(screen.queryByRole('button', { name: 'Take Customer system off' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Remove Customer system' })).toBeNull()
     expect(actions.setCoverage).not.toHaveBeenCalled()
   })
 })
@@ -466,8 +466,8 @@ describe('who is responsible for a capability', () => {
     const chips = screen.getAllByTestId('sheet-assigned')
     expect(chips.map((one) => one.textContent?.trim())).toEqual(['Warehouse team', 'Roboticsoutside this domain'])
     expect(chips[1].getAttribute('data-outside')).toBe('true')
-    expect(within(chips[1]).queryByRole('button', { name: /Take/ })).toBeNull()
-    fireEvent.click(within(chips[0]).getByRole('button', { name: /Take/ }))
+    expect(within(chips[1]).queryByRole('button', { name: /^Remove/ })).toBeNull()
+    fireEvent.click(within(chips[0]).getByRole('button', { name: /^Remove/ }))
     expect(actions.setCoverage).toHaveBeenCalledWith({ type: 'assigned', sourceId: 'warehouse-team', functionId: 'packing', on: false })
   })
 
@@ -493,7 +493,7 @@ describe('which domains it is handed to, and which took it up (ADR-0040)', () =>
     const chips = screen.getAllByTestId('sheet-domain')
     expect(chips.map((one) => one.textContent)).toEqual(['Retail', 'Wholesalenot started'])
     expect(chips[1].getAttribute('data-not-started')).toBe('true')
-    fireEvent.click(within(chips[0]).getByRole('button', { name: /Take/ }))
+    fireEvent.click(within(chips[0]).getByRole('button', { name: /^Remove/ }))
     expect(actions.updateElement).toHaveBeenCalledWith('fulfilment', { scopes: ['wholesale'] })
     fireEvent.click(screen.getByRole('button', { name: '+ Domain' }))
     expect(await axeFindings()).toEqual([])
@@ -548,7 +548,7 @@ describe('which domains it is handed to, and which took it up (ADR-0040)', () =>
   it('offers no editor where the sheet is only read, nor on a stand-in, whose domains are the definition’s', () => {
     open(handed(['retail']), true, undefined, undefined, { domains: domains() })
     expect(screen.queryByRole('button', { name: '+ Domain' })).toBeNull()
-    expect(within(screen.getByTestId('sheet-domain')).queryByRole('button', { name: /Take/ })).toBeNull()
+    expect(within(screen.getByTestId('sheet-domain')).queryByRole('button', { name: /^Remove/ })).toBeNull()
     cleanup()
     open({ ...held('fulfilment'), ref: '' }, false, undefined, () => ({ label: 'Acme', fields: ['scopes', 'name'] }), { domains: domains(['retail']) })
     expect(screen.queryByRole('button', { name: '+ Domain' })).toBeNull()

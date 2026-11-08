@@ -803,8 +803,8 @@ neben ihrem Titel.
   Kommentar, unter dem sie steht.
 - **Bearbeiten.** Nur Ihre eigenen Kommentare. Ein bearbeiteter Kommentar
   sagt *bearbeitet*.
-- **Entfernen.** Ihre eigenen, oder die aller anderen, wo Sie den Bereich
-  ändern dürfen. Ein entfernter Kommentar liest *Kommentar entfernt* an seiner
+- **Löschen.** Ihre eigenen, oder die aller anderen, wo Sie den Bereich
+  ändern dürfen. Ein gelöschter Kommentar liest *Kommentar gelöscht* an seiner
   Stelle, damit die Antworten darunter ihren Platz behalten. Seine Worte
   bleiben im Verlauf, wie bei jeder Änderung.
 
@@ -2215,9 +2215,9 @@ und führt sie auf der Seite Checks auf.
   Aktionen, die ihn beheben oder öffnen, wo er behoben wird — den Eintrag
   öffnen, die Zeichnung, die Einheit oder beide Einheiten, den Einheitstyp,
   den Plan, die Person in Personen; **Verknüpfen…**, **Übernehmen**,
-  **Zuweisen…**, **Zuordnung beenden…**, **Zuordnung entfernen**, **Eine
+  **Zuweisen…**, **Zuordnung beenden…**, **Zuordnung löschen**, **Eine
   Zusammenarbeit festhalten…**,
-  **Festlegung entfernen**. Eine Liste bietet die Aktionen, die sie dort tun
+  **Festlegung löschen**. Eine Liste bietet die Aktionen, die sie dort tun
   kann, wo sie steht, und der Bildschirm, den sie öffnet, tut den Rest.
   **Alle Befunde** geht zurück zu dem Befund, von dem Sie kamen.
 - Ein behobener Befund verschwindet aus der Liste, und seine Erklärung mit

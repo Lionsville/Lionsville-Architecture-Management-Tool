@@ -151,4 +151,39 @@ export function pressedNotKey(text: string, language: 'nl' | 'de'): string[] {
   return found
 }
 
+/**
+ * Remove and Delete are two acts, and each language has one word for each that
+ * the other never borrows (8 November 2026). Remove takes a thing off or out of
+ * something, and the thing stays: a link, a row of a list, a role from a unit
+ * type, a card from a view. Delete makes the record itself go. A label or an
+ * announcement in English that says one is held, in Dutch and German, to the
+ * other's word not appearing in it; one that names both acts is a choice between
+ * them and says both.
+ */
+export const ACTS: readonly {
+  readonly act: 'Remove' | 'Delete'
+  readonly en: RegExp
+  readonly refused: Record<Exclude<Language, 'en'>, RegExp>
+  readonly use: Record<Exclude<Language, 'en'>, string>
+}[] = [
+  { act: 'Remove', en: /^(Remove|Removed|Removing)\b|\bremoved\.?$/, refused: { nl: /verwijder/i, de: /lösch/i }, use: { nl: 'weghalen', de: 'entfernen' } },
+  { act: 'Delete', en: /^(Delete|Deleted|Deleting)\b|\bdeleted\.?$/, refused: { nl: /weghal|weggehaald|eruit hal/i, de: /entfern/i }, use: { nl: 'verwijderen', de: 'löschen' } },
+]
 
+/** English words standing in for Remove, refused in a label: *Take off*, *Take out*. */
+export const ENGLISH_REFUSED: readonly Refused[] = [
+  { word: /^(Take|Took|Taking)\b[^.]*\b(off|out)\b/, use: 'Remove' },
+]
+
+/** What a label says against the two acts: one line where Dutch or German uses the other act's word, or English a stand-in for Remove. */
+export function actsIn(language: Language, key: string, english: string, text: string): string[] {
+  if (language === 'en') {
+    return ENGLISH_REFUSED.filter((refused) => refused.word.test(prose(text))).map((refused) => `${key}: "${text.slice(0, 80)}" — use ${refused.use}`)
+  }
+  const said = prose(english).trim()
+  const both = /\bremov/i.test(said) && /\bdelet/i.test(said)
+  if (both) return []
+  return ACTS
+    .filter((one) => one.en.test(said) && one.refused[language].test(prose(text)))
+    .map((one) => `${key}: "${text.slice(0, 80)}" says ${english.slice(0, 40)} — ${one.act} is ${one.use[language]}`)
+}

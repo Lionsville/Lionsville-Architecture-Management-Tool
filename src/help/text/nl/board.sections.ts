@@ -120,7 +120,7 @@ export const SECTIONS: SectionTexts = {
     'Ruim Order to delivery op nadat je Track & Trace erin hebt gezet.'],
   'board.domainGroup': ['Kaarten in een domeingroep zetten', 'Zet kaarten die bij elkaar horen in een kader; een groep kan worden hernoemd, gekleurd, geschaald, opgeruimd, de leden geselecteerd, of verwijderd zonder de kaarten te verwijderen.',
     'Toevoegen ▾ ▸ Domeingroep; rechtsklik op een selectie ▸ Samenvoegen in een nieuwe domeingroep; rechtsklik op een groep',
-    ['Kies de kaarten en kies Samenvoegen in een nieuwe domeingroep.', 'Klik rechts op de groep voor Groepskleur…, Leden selecteren, Deze groep opschonen of Groep verwijderen.'],
+    ['Kies de kaarten en kies Samenvoegen in een nieuwe domeingroep.', 'Klik rechts op de groep voor Groepskleur…, Leden selecteren, Deze groep opschonen of Groep weghalen.'],
     'Zet Billing, Tariff Engine en Rating (legacy) in een domeingroep Billing.'],
   'board.moveZone': ['Een element naar een andere band of groep verplaatsen', 'Verplaatst een kaart naar een andere band (Actoren, Invoerkanalen, Externe systemen, Beheerlaag, het landschap) of domeingroep. De band bepaalt hoe ze wordt getekend.',
     'Rechtsklik op een kaart ▸ Naar zone verplaatsen, Domeingroep; of sleep haar',

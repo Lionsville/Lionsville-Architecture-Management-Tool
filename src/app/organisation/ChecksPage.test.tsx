@@ -212,7 +212,7 @@ describe('the Checks page', () => {
   })
 
   // A unit deleted before its assignments went with it left them naming nothing (ADR-0036, amended 12 October 2026).
-  it('offers Remove the assignment on one whose unit is not there, with Put back, opening the person, where the scope may be changed', async () => {
+  it('offers Delete the assignment on one whose unit is not there, with Put back, opening the person, where the scope may be changed', async () => {
     const left: AttentionItem[] = [{
       key: 'check.assignmentOrphaned', kind: 'assignmentOrphaned', scope: 'retail', id: 'as-1', person: 'pe-ada', fields: ['as-1'], subject: 'Ada',
       text: 'Ada still holds Team lead in a unit that is not there',

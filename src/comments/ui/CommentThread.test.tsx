@@ -7,7 +7,7 @@
  * workspace drives it: a comment written as *you*, asked once who that is
  * where nobody is said, a reply under the comment it answers — and under it
  * again when a reply is answered — an edit of your own, a removal that leaves
- * *Comment removed*, and nothing offered where the scope is only read.
+ * *Comment deleted*, and nothing offered where the scope is only read.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
@@ -164,7 +164,7 @@ describe('a thread', () => {
     moreOf('cm-1')
     fireEvent.click(screen.getByTestId('comment-remove-cm-1'))
     expect(held()[0]).toEqual({ ...first, body: '', removed: { at: AT, by: { person: 'pe-eva' } } })
-    expect(screen.getByTestId('comment-cm-1').textContent).toContain('Comment removed')
+    expect(screen.getByTestId('comment-cm-1').textContent).toContain('Comment deleted')
     expect(screen.getByTestId('comment-cm-2')).toBeTruthy()
     expect(screen.getByTestId('comment-count').textContent).toBe('Comments (1)')
     // Put back from the toast, as a step of its own.
