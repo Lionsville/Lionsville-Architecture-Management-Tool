@@ -796,7 +796,7 @@ export interface SolutionDesignEditorProps {
    * save dialog and a file where the person said. Absent, the browser downloads it, which on
    * the desktop wrote hidden part-files into Downloads before its dialog came up.
    */
-  savePicture?: (name: string, png: Uint8Array) => void;
+  savePicture?: (name: string, png: Uint8Array, rasterMs?: number) => void;
   /**
    * Optional markdown renderer for element descriptions. The package stays
    * dependency-free here: without it, the preview falls back to a plain

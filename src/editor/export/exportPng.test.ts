@@ -231,8 +231,19 @@ describe('exportBitmapSize', () => {
     const size = exportBitmapSize({ x: 0, y: 0, width: 1000, height: 500 }, 50);
     // 1100 x 600 of board; the ratio aims the long edge at 6000.
     expect(size.pixelRatio).toBe(exportPixelRatio(1100, 600));
-    expect(size.width).toBe(Math.round(1100 * size.pixelRatio));
-    expect(size.height).toBe(Math.round(600 * size.pixelRatio));
+    expect(size.width).toBe(Math.floor(1100 * size.pixelRatio));
+    expect(size.height).toBe(Math.floor(600 * size.pixelRatio));
+  });
+
+  it('says the size the canvas takes, which floors the product rather than rounding it', () => {
+    // 2002 x 1340 of board at 2.99: 5985.98 x 4006.6, which a canvas holds as 5985 x 4006.
+    const size = exportBitmapSize({ x: 0, y: 0, width: 1906, height: 1244 }, 48);
+    expect(size.pixelRatio).toBe(2.99);
+    expect([size.width, size.height]).toEqual([5985, 4006]);
+    const canvas = { width: 0, height: 0 };
+    canvas.width = Math.trunc(2002 * size.pixelRatio);
+    canvas.height = Math.trunc(1340 * size.pixelRatio);
+    expect([size.width, size.height]).toEqual([canvas.width, canvas.height]);
   });
 
   it('counts the megapixels a caller has to decide about', () => {

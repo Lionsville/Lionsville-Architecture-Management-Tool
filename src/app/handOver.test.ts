@@ -25,6 +25,12 @@ describe('a document handed over', () => {
     expect(words.failed).not.toHaveBeenCalled()
   })
 
+  it('tells a caller that keeps a log that the dialog was closed', async () => {
+    const cancelled = vi.fn()
+    await handOver(() => Promise.resolve('cancelled'), { ...said(), cancelled })
+    expect(cancelled).toHaveBeenCalledOnce()
+  })
+
   it('says why, for a refusal and for a gateway that throws', async () => {
     const words = said()
     await handOver(() => Promise.reject(new Error('full')), words)

@@ -112,7 +112,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
           client: groupClient ?? groupName,
           author: session.model.defaultAuthor,
         }}
-        savePicture={(name, png) => savePicture(parts, name, png, 'boardExport')}
+        savePicture={(name, png, rasterMs) => savePicture(parts, name, png, 'boardExport', rasterMs)}
         renderMarkdown={pictures.renderDocument}
         onAddImage={files.addImage}
         images={{ library: session.imageLibrary, usedBy: pictures.imageUsedBy, onRemove: files.removeImage }}

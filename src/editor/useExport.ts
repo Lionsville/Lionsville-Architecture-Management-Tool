@@ -144,12 +144,15 @@ function useConfirmExport(
     setExporting(true);
     void (async () => {
       await painted();
+      const rastering = performance.now();
       const blob = await renderExportRef.current(exportOptions);
+      // How long the raster took, for the host's one line about this export.
+      const rasterMs = Math.round(performance.now() - rastering);
       // The editor can be gone by the time that frame arrives — a diagram
       // switched, a project closed, a window shut. Nothing to hand over.
       if (!blob) return;
       const name = pngFilename(props.exportTitleBlock?.client ?? titleBlock.model.name, shot);
-      if (props.savePicture) props.savePicture(name, new Uint8Array(await blob.arrayBuffer()));
+      if (props.savePicture) props.savePicture(name, new Uint8Array(await blob.arrayBuffer()), rasterMs);
       else downloadBlob(blob, name);
       closeExport();
     })().catch((error: unknown) => {

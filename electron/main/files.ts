@@ -21,7 +21,7 @@
  * before it acts and answers a refusal rather than throwing something
  * interesting back across the boundary.
  */
-import { app, dialog, ipcMain, shell, webContents } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, shell, webContents } from 'electron'
 import { readFile, writeFile } from 'node:fs/promises'
 import { basename, join } from 'node:path'
 import { realpath } from 'node:fs/promises'
@@ -256,11 +256,19 @@ export function registerFileChannel(options: { onRecentsChanged?: () => void } =
    * worth having.
    */
   ipcMain.handle('files:saveDocument', async (
-    _event, name: unknown, bytes: unknown, mediaType: unknown,
+    event, name: unknown, bytes: unknown, mediaType: unknown,
   ): Promise<boolean> => {
     if (typeof name !== 'string' || !isBytes(bytes)) throw new Error('shell.pathRefused')
-    const chosen = await dialog.showSaveDialog({ defaultPath: basename(name) })
-    if (chosen.canceled || !chosen.filePath) return false
+    // On its window, a sheet on macOS: a panel of its own can sit on another Space, or behind the window it is for.
+    const owner = BrowserWindow.fromWebContents(event.sender)
+    const asked = Date.now()
+    const options = { defaultPath: basename(name) }
+    const chosen = await (owner ? dialog.showSaveDialog(owner, options) : dialog.showSaveDialog(options))
+    if (chosen.canceled || !chosen.filePath) {
+      // No name and no path: the person's. A cancel said nowhere reads exactly like a panel nobody answered.
+      log('files', `saveDocument: ${bytes.byteLength} bytes, cancelled after ${Date.now() - asked} ms`)
+      return false
+    }
     await writeFile(chosen.filePath, bytes)
     if (typeof mediaType === 'string' && chosen.filePath.endsWith('.lvarch')) {
       app.addRecentDocument(chosen.filePath)

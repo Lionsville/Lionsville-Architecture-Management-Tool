@@ -118,11 +118,13 @@ export function exportBitmapSize(
   const width = Math.ceil(bounds.width + padding * 2);
   const height = Math.ceil(bounds.height + padding * 2) + footer;
   const pixelRatio = exportPixelRatio(width, height, requested);
-  const pixels = width * pixelRatio * height * pixelRatio;
+  // Floored, as the canvas floors the same product when it takes it as its size: the size said is the file's to the pixel.
+  const across = Math.floor(width * pixelRatio);
+  const down = Math.floor(height * pixelRatio);
   return {
-    width: Math.round(width * pixelRatio),
-    height: Math.round(height * pixelRatio),
-    megapixels: Math.round(pixels / 1e6),
+    width: across,
+    height: down,
+    megapixels: Math.round((across * down) / 1e6),
     pixelRatio,
   };
 }
