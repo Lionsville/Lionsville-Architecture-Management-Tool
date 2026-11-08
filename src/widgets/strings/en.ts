@@ -113,7 +113,7 @@ export const EN = {
   'kit.dock.atFloor': 'Zoom stops at {percent}%. A larger canvas scrolls.',
   'kit.dock.atCeiling': 'Zoom stops at 200%.',
   'kit.dock.grid': 'Grid',
-  'kit.dock.map': 'Map',
+  'kit.dock.map': 'Minimap',
   'kit.dock.mapHint': 'A small map of the whole canvas',
   'kit.colour': 'Colour',
   'kit.colour.on': 'Colour: {question}',

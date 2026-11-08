@@ -187,7 +187,7 @@ describe('the canvas dock', () => {
     const onToggle = vi.fn()
     dock({ grid: { on: true, onToggle }, map: { on: false, onToggle: () => {} } })
     expect(screen.getByRole('button', { name: 'Grid' }).getAttribute('aria-pressed')).toBe('true')
-    expect(screen.getByRole('button', { name: 'Map' }).getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByRole('button', { name: 'Minimap' }).getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(screen.getByRole('button', { name: 'Grid' }))
     expect(onToggle).toHaveBeenCalledOnce()
   })
@@ -195,7 +195,7 @@ describe('the canvas dock', () => {
   it('leaves them out where it has not', () => {
     dock()
     expect(screen.queryByRole('button', { name: 'Grid' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Map' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Minimap' })).toBeNull()
   })
 
   it('says the limits without dropping the focus', () => {

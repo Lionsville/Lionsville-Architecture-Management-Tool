@@ -298,7 +298,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'operating.dutiesIn': 'Verantwoordelijkheden in {part}',
   'operating.dutiesAll': 'Alle {count}',
   'operating.inTheOrganisation': 'In de organisatie',
-  'operating.vacant': 'Vacant',
+  'operating.vacant': 'Vacature',
   'operating.nobodyYet': 'Nog niemand',
   'operating.acting': '{name}, waarnemend',
   'operating.moreCount': 'Nog {count}',

@@ -201,7 +201,7 @@ export const EN = {
 
   // --- the enterprise map (ADR-0012 §6, §9) --------------------------------
   'map.page': 'Coverage',
-  'map.close': 'Close the enterprise map',
+  'map.close': 'Close Coverage',
   'map.function': 'Capability',
   'map.people': 'People',
   'map.coverage': 'Coverage',

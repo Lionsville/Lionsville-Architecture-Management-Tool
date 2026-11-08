@@ -19,7 +19,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.save': 'Speichern',
   'menu.exportWorkingFile': 'Kopie speichern…',
   'menu.shareLink': 'Per Link teilen…',
-  'menu.snapshot': 'Einen Snapshot erstellen…',
+  'menu.snapshot': 'Eine Momentaufnahme festhalten…',
   'menu.history': 'Verlauf…',
   'menu.connectAgent': 'Agent verbinden…',
   'menu.preferences': 'Voreinstellungen…',
@@ -60,7 +60,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.website': 'Website',
   'menu.exportPicture': 'Bild exportieren…',
   'menu.notNow': 'Derzeit nicht verfügbar',
-  'menu.saveNothingOpen': 'Nichts ist geöffnet. Arbeit speichert sich selbst; öffnen Sie einen Bereich, um jetzt zu speichern.',
+  'menu.saveNothingOpen': 'Nichts ist geöffnet. Ihre Arbeit wird automatisch gespeichert; öffnen Sie einen Bereich, um jetzt zu speichern.',
   // The desktop's menu bar: the items Electron's roles would otherwise say in English.
   'menubar.window': 'Fenster',
   'menubar.cut': 'Ausschneiden',
