@@ -129,7 +129,9 @@ export function AnalysisPicture(props: AnalysisPictureProps) {
   const large = size !== 'small'
 
   return (
-    <PictureFrame content={picture} opensAt={picture.boundaries.length > 0 && picture.nodes.some((node) => node.scope === here) ? picture.hereX : undefined} view={view} label={s('observation.tabAnalysis')} dockExtra={props.dockExtra} overview={props.showOverview ? { nodes: picture.nodes, slot: PICTURE_SIZE[size] } : undefined}>
+    // At its start, on the frames of the scopes below: opened on this scope's own lanes, the frames were cut off at the
+    // window's left and read as nothing there. `opensAt` stays for a map that is read from elsewhere than its start.
+    <PictureFrame content={picture} view={view} label={s('observation.tabAnalysis')} dockExtra={props.dockExtra} overview={props.showOverview ? { nodes: picture.nodes, slot: PICTURE_SIZE[size] } : undefined}>
       {picture.nodes.length === 0 ? (
         <PageState compact state="empty" title={filtered ? s('observation.filterNothing') : s('observation.graphEmpty')} />
       ) : (

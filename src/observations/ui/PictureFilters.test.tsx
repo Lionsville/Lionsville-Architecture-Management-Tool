@@ -147,10 +147,9 @@ describe('what is kept back', () => {
     expect(screen.queryByTestId('observation-hidden')).toBeNull()
   })
 
-  it('opens the map on this scope’s lanes, with the scopes below to the left of them', () => {
+  it('opens the map at its start, on the frames of the scopes below, and stays there under a filter', () => {
     mount()
-    expect(screen.getByTestId('analysis-frame').scrollLeft).toBeGreaterThan(0)
-    // A filter that leaves only what is below goes back to where that stands.
+    expect(screen.getByTestId('analysis-frame').scrollLeft).toBe(0)
     openFilter()
     fireEvent.click(screen.getByTestId('filter-scopes'))
     fireEvent.click(within(screen.getByTestId('filter-scopes-list')).getAllByRole('checkbox')[0])
