@@ -396,6 +396,27 @@
   }
 }
 
+/*
+ * Where the browser can place by an anchor, the folded Key stands in the dock's row, just after it: over the
+ * dock it stood in the strip a band's heading runs along, and with the kinds kept beside the board the pane's
+ * edge took it over the start of "Management layer". The dock's row is already the board's own.
+ */
+@supports (anchor-name: --lv-dock) {
+  .lv-board .kit-dock { anchor-name: --lv-dock; }
+  @media (max-height: 60rem) {
+    .lv-board .react-flow__panel.bottom.right:has(> .kit-key[data-foldable]:not([data-unfolded])),
+    .lv-board:has(.react-flow__minimap) .react-flow__panel.bottom.right:has(> .kit-key[data-foldable]:not([data-unfolded])) {
+      position-anchor: --lv-dock; margin: 0; bottom: auto; top: anchor(center); left: calc(anchor(right) + var(--s-2)); translate: 0 -50%;
+    }
+  }
+  @container kit-frame (max-width: 56rem) {
+    .lv-board .react-flow__panel.bottom.right:has(> .kit-key[data-foldable]:not([data-unfolded])),
+    .lv-board:has(.react-flow__minimap) .react-flow__panel.bottom.right:has(> .kit-key[data-foldable]:not([data-unfolded])) {
+      position-anchor: --lv-dock; margin: 0; bottom: auto; top: anchor(center); left: calc(anchor(right) + var(--s-2)); translate: 0 -50%;
+    }
+  }
+}
+
 /* A line the keyboard is on: the selected weight and a halo, so it is told from its neighbours. */
 .lv-board .react-flow__edge:focus-visible { outline: none; filter: drop-shadow(0 0 calc(2px / var(--canvas-zoom, 1)) var(--focus-ring)); }
 .lv-board .react-flow__edge:focus-visible path:not(.react-flow__edge-interaction) { stroke-width: calc(2.5px / var(--canvas-zoom, 1)) !important; stroke: var(--selected-edge); }
