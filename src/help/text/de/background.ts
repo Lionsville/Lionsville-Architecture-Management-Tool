@@ -501,7 +501,7 @@ Eine Karte, die eines hat, trägt eine kleine Marke; doppelklicken Sie die
 Karte, um es zu öffnen. Ein Doppelklick legt nie eines an. Ein Landschaftsreiter
 listet seine Containerdiagramme unter einem Pfeil: klicken Sie dort mit rechts
 auf einen Eintrag, oder klicken Sie auf den Pfeil hinter dem Namen, sobald das
-Diagramm offen ist, um es umzubenennen, seine **Diagrammeinstellungen** zu
+Diagramm offen ist, um es umzubenennen, seine **Ansichtseinstellungen** zu
 öffnen oder es zu löschen. Löschen nimmt die Komponenten mit und lässt die
 Anwendung stehen. Klicken Sie mit rechts auf einen Landschaftsreiter für
 dasselbe Menü, mit Duplizieren dazu. **Zurück zur Landschaft** bringt Sie
@@ -641,23 +641,24 @@ Kanal konkurrieren — lehnt das automatische Routing ab, statt Minuten darauf z
 verwenden, und sagt es in der unteren Leiste. Nichts geht verloren: die Linien
 behalten die Routen, die sie hatten, und alles, was Sie von Hand gezeichnet
 haben, bleibt genau so, wie Sie es hinterlassen haben.` },
-    { title: `Layout`, text: `**Automatisch anordnen** lässt ein automatisches Layout über das Diagramm laufen, mit einer
-Richtung (quer, abwärts, oder Gruppen quer und ihre Anwendungen abwärts), einer
-Dichte und Fixierungen für das, was Sie von Hand platziert haben.
-**Verbindungen routen** zeichnet nur die Linien neu und lässt jedes Element, wo
-es ist; **Alles neu routen** ignoriert Fixierungen. Eine Domänengruppe kann aus
-ihrem Menü für sich aufgeräumt werden.
+    { title: `Layout`, text: `**Anordnen** in der Leiste enthält alles. **Board aufräumen** lässt ein
+automatisches Layout über das Diagramm laufen, mit einer Leserichtung (quer,
+abwärts, oder Gruppen quer und ihre Anwendungen abwärts), dem Abstand und dem,
+was es stehen lassen soll. **Linien führen** zeichnet nur die Linien neu und
+lässt jedes Element, wo es ist; **Alle Linien neu führen** übergeht, was Sie
+fixiert haben; **Nach jeder Bewegung führen** hält sie geführt. Eine
+Domänengruppe lässt sich aus ihrem Menü für sich anordnen.
 
-Automatisch anordnen arbeitet neben der App statt in ihr, sodass das Fenster am Leben
-bleibt, während es läuft, und die Schaltfläche Automatisch anordnen derweil zu
-**Abbrechen** wird. Auf einem Diagramm mit mehr als vierhundert Kästen lehnt es
-ab und sagt es, statt mehrere Minuten nachzudenken: verteilen Sie das Board auf
-mehrere Diagramme, oder räumen Sie eine Domänengruppe nach der anderen auf.
+Das Anordnen arbeitet neben der App statt in ihr, sodass das Fenster am Leben
+bleibt, während es läuft, und **Anordnen** derweil zu **Abbrechen** wird. Auf
+einem Diagramm mit mehr als vierhundert Kästen lehnt es ab und sagt es, statt
+mehrere Minuten nachzudenken: Verteilen Sie das Board auf mehrere Diagramme,
+oder ordnen Sie eine Domänengruppe nach der anderen an.
 
 Von Hand: eine Auswahl **ausrichten** und **verteilen** aus dem Panel
 oder dem Rechtsklickmenü, ein **Raster** mit optionalem Einrasten,
-Verschieben mit den Pfeilen, **Einpassen** (Shift+1) und 100 % (Shift+2).` },
-    { title: `Diagrammeinstellungen`, text: `Klicken Sie mit rechts auf einen Diagrammreiter, **Diagrammeinstellungen…**.
+Verschieben mit den Pfeilen, **Einpassen** ({key:Shift+1}) und 100 % ({key:Shift+2}).` },
+    { title: `Ansichtseinstellungen`, text: `Klicken Sie mit rechts auf den Reiter einer Ansicht, **Ansichtseinstellungen…**.
 
 - **Auf der Zeichnung.** Autor, Kunde und Datum für den Titelblock eines
   PNG-Exports, die leer gelassen jeweils auf den Standardwert des Projekts oder

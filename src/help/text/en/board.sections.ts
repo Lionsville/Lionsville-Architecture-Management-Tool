@@ -225,7 +225,7 @@ export const SECTIONS: SectionTexts = {
     ['Press ‹ Application landscape, or {key:Mod+Up}.'],
     'Press ‹ Landscape in 2027 to come back to the plan board.',
     '{key:Mod+Up}'],
-  'container.titleMenu': ['Rename, settings, history or delete a container diagram', 'The menu after the diagram\'s title: rename, diagram settings, history and delete.',
+  'container.titleMenu': ['Rename, settings, history or delete a container diagram', 'The menu after the diagram\'s title: rename, view settings, history and delete.',
     '▾ after the title in the diagram\'s row',
     ['Press ▾ after Container diagram for ….', 'Choose the action.'],
     'Open the history of Container diagram for Warehouse Management to see who added Floor workstation.'],

@@ -225,7 +225,7 @@ export const SECTIONS: SectionTexts = {
     ['Klik op ‹ Application landscape, of {key:Mod+Up}.'],
     'Klik op ‹ Landscape in 2027 om terug te komen bij het planbord.',
     '{key:Mod+Up}'],
-  'container.titleMenu': ['Een containerdiagram hernoemen, instellen, de geschiedenis zien of verwijderen', 'Het menu na de titel van het diagram: hernoemen, diagraminstellingen, geschiedenis en verwijderen.',
+  'container.titleMenu': ['Een containerdiagram hernoemen, instellen, de geschiedenis zien of verwijderen', 'Het menu na de titel van het diagram: hernoemen, weergave-instellingen, geschiedenis en verwijderen.',
     '▾ na de titel in de rij van het diagram',
     ['Klik op ▾ na Container diagram for ….', 'Kies de actie.'],
     'Open de geschiedenis van Container diagram for Warehouse Management om te zien wie Floor workstation toevoegde.'],

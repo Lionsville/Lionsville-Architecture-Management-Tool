@@ -449,7 +449,7 @@ die balk onderin.` },
   tekenen, dus de dialoog zegt hoe groot de afbeelding wordt en de knop vraagt
   het eerst.` },
     { title: `Voorkeuren`, text: `Raster, uitlijnen op raster, levenscyclusbadges, ingeklapte panelen en hun
-breedte, de minikaart, de Tidy-instellingen, de taal en het thema
+breedte, de minikaart, de instellingen van Ordenen, de taal en het thema
 worden per browser of per desktopinstallatie onthouden. Ze zijn van jou, niet
 van het project: ze reizen niet mee in een bestand. Hetzelfde geldt voor wat
 deze machine met een map doet — ophalen bij openen, pushen na een
@@ -470,7 +470,7 @@ dus {key:Mod+Z} neemt het terug. Een kaart die er een heeft draagt een klein mer
 dubbelklik de kaart om het te openen. Dubbelklikken maakt er nooit een. Een
 landschapstabblad toont zijn containerdiagrammen onder een pijltje: rechtsklik
 daar op een regel, of klik op het pijltje achter de naam zodra het diagram open
-is, om het te hernoemen, de **diagraminstellingen** te openen of het te
+is, om het te hernoemen, de **weergave-instellingen** te openen of het te
 verwijderen. Verwijderen neemt de componenten mee en laat de applicatie staan.
 Rechtsklik een landschapstabblad voor hetzelfde menu, met dupliceren erbij.
 **Terug naar het landschap** brengt je terug naar de weergave precies zoals je
@@ -588,7 +588,7 @@ als er iets verschuift. Als automatisch niet is wat je wilt:
 - Sleep een **pil** midden op een been om dat been te verschuiven, sleep een
   **vierkant** om een knik te verplaatsen; de route wordt handgetekend en de
   router laat hem met rust.
-- **Knik toevoegen**, **Knik verwijderen**, **Terug naar automatische route**
+- **Hier een knikpunt toevoegen**, **Knikpunt verwijderen**, **Terug naar automatische route**
   in het lijnmenu.
 - **Route vastzetten** houdt een lijn precies zoals hij is, ook zonder knikken.
 - **Aanhechten aan ▸** kiest aan welke kant van een element elk uiteinde
@@ -603,22 +603,23 @@ ruimte strijden — slaat het automatisch leggen over in plaats van er minuten
 aan te besteden, en zegt dat in de balk onderin. Er gaat niets verloren: de
 lijnen houden de routes die ze hadden, en alles wat je met de hand tekende
 blijft precies zoals je het achterliet.` },
-    { title: `Lay-out`, text: `**Tidy** legt het diagram automatisch, met een richting (dwars, omlaag, of
-groepen dwars en hun applicaties omlaag), een dichtheid, en pinnen voor wat je
-met de hand hebt neergezet. **Verbindingen leggen** tekent alleen de lijnen
-opnieuw en laat elk element staan; **Alles opnieuw leggen** negeert pinnen.
-Een domeingroep leg je apart netjes vanuit zijn menu.
+    { title: `Lay-out`, text: `**Ordenen** in de balk bevat het allemaal. **Bord ordenen** legt het diagram
+automatisch, met een leesrichting (dwars, omlaag, of groepen dwars en hun
+applicaties omlaag), de ruimte, en wat het moet laten staan. **Lijnen routeren**
+tekent alleen de lijnen opnieuw en laat elk element staan; **Alle lijnen opnieuw
+routeren** negeert wat je vastzette; **Routeren na elke verplaatsing** houdt ze
+gerouteerd. Een domeingroep orden je apart vanuit zijn menu.
 
-Tidy werkt naast de app in plaats van erin, dus het venster blijft reageren
-terwijl het loopt en de Tidy-knop is intussen een **Annuleren**. Op een diagram
+Ordenen werkt naast de app in plaats van erin, dus het venster blijft reageren
+terwijl het loopt, en **Ordenen** is intussen een **Annuleren**. Op een diagram
 van meer dan vierhonderd blokken slaat het over en zegt dat, in plaats van er
-minuten over te doen: verdeel het bord over meerdere diagrammen, of leg één
-domeingroep tegelijk netjes.
+minuten over te doen: verdeel het bord over meerdere diagrammen, of orden één
+domeingroep tegelijk.
 
 Met de hand: **uitlijnen** en **verdelen** van een selectie via het paneel
 of het rechtsklikmenu, een **raster** met optioneel uitlijnen, verplaatsen
-met de pijltjes, **passend maken** (Shift+1) en 100 % (Shift+2).` },
-    { title: `Diagraminstellingen`, text: `Rechtsklik een diagramtabblad, **Diagraminstellingen…**.
+met de pijltjes, **passend maken** ({key:Shift+1}) en 100 % ({key:Shift+2}).` },
+    { title: `Weergave-instellingen`, text: `Klik rechts op het tabblad van een weergave, **Weergave-instellingen…**.
 
 - **Op de tekening.** Auteur, opdrachtgever en datum voor het titelblok van een
   PNG-export — leeg gelaten vallen ze terug op de standaard van het project of
@@ -676,7 +677,7 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.` },
   omschrijving (zie *Documentatie*), waar het draait, de ingevulde gegevenspagina, de
   **operationele aspecten** van een applicatie, een rij per stuk met een notitie op
   een klik, en wat erin zit. De kolommen stel je per diagram in bij de
-  diagraminstellingen.
+  weergave-instellingen.
 - **Vormgeving.** Accentkleur, vorm, pictogram, pictogramgrootte, en waar het in
   deze weergave staat.
 - **Opmerkingen.** De draad, met het aantal op het tabblad.
@@ -1525,7 +1526,7 @@ met een zin die dat zegt, en werkt de rest precies zoals eerst.
 **Geschiedenis…** toont elke momentopname. Kies er een en je ziet wat er
 sindsdien veranderde — applicaties erbij, weg en gewijzigd, koppelingen getekend
 en doorgeknipt, besluiten genomen — met de geometrie als aantal in plaats van
-als lijst, want een Tidy-ronde is één zin en vierhonderd gewijzigde regels. Een
+als lijst, want een ronde Ordenen is één zin en vierhonderd gewijzigde regels. Een
 verplaatsing is ook een punt, *Verplaatst van X naar Y*, in de geschiedenis van
 elk onderdeel dat ze verplaatste.
 

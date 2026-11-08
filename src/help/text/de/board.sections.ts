@@ -225,7 +225,7 @@ export const SECTIONS: SectionTexts = {
     ['Klicken Sie auf ‹ Application landscape oder {key:Mod+Up}.'],
     'Klicken Sie auf ‹ Landscape in 2027, um zum Plan-Board zurückzukommen.',
     '{key:Mod+Up}'],
-  'container.titleMenu': ['Ein Containerdiagramm umbenennen, einstellen, seinen Verlauf sehen oder löschen', 'Das Menü nach dem Titel des Diagramms: umbenennen, Diagrammeinstellungen, Verlauf und löschen.',
+  'container.titleMenu': ['Ein Containerdiagramm umbenennen, einstellen, seinen Verlauf sehen oder löschen', 'Das Menü nach dem Titel des Diagramms: umbenennen, Ansichtseinstellungen, Verlauf und löschen.',
     '▾ nach dem Titel in der Zeile des Diagramms',
     ['Klicken Sie auf ▾ nach Container diagram for ….', 'Wählen Sie die Aktion.'],
     'Öffnen Sie den Verlauf von Container diagram for Warehouse Management, um zu sehen, wer Floor workstation hinzugefügt hat.'],

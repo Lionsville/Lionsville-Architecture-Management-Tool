@@ -436,7 +436,7 @@ the panel — and it is a step in Activity like any other, so
 card to open it. Double-clicking never creates one. A landscape tab lists its
 container diagrams under a chevron: right-click an entry there, or press the
 chevron after the name once the diagram is open, to rename it, open its
-**diagram settings** or delete it. Deleting one takes its components with it
+**view settings** or delete it. Deleting one takes its components with it
 and keeps the application. Right-click a landscape tab for the same menu, with
 duplicate as well. **‹** with the name of the board you came from, or {key:Mod+Up}, returns to it
 on its day, with its zoom and what was selected; a diagram opened from a board on
@@ -551,7 +551,7 @@ moves. When automatic is not what you want:
 - Drag a **pill** in the middle of a segment to shift that segment, drag a
   **square** to move a bend; the route becomes hand-drawn and the router leaves
   it alone.
-- **Add bend**, **Remove bend**, **Reset to automatic route** in the line menu.
+- **Add bend point here**, **Remove bend point**, **Reset to automatic route** in the line menu.
 - **Pin route** keeps a line exactly as it is, even one with no bends.
 - **Attach at ▸** chooses which side of an element each end leaves from or
   arrives at, or hold Alt while dragging a connection from a specific side
@@ -579,8 +579,8 @@ time.
 
 By hand: **align** and **distribute** a selection from the panel or the
 right-click menu, a **grid** with optional snapping, nudge with the arrows,
-**fit view** (Shift+1) and 100 % (Shift+2).` },
-    { title: `Diagram settings`, text: `Right-click a diagram tab, **Diagram settings…**.
+**fit view** ({key:Shift+1}) and 100 % ({key:Shift+2}).` },
+    { title: `View settings`, text: `Right-click a view's tab, **View settings…**.
 
 - **On the drawing.** Author, client and date for the title block of a PNG
   export, each falling back to the scope's default or the day of export when

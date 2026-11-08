@@ -9,7 +9,8 @@
  *   ellipsis — is a string the app has in some language, or the start of one;
  * - the board's labels a version renamed (8 November 2026: Remove from view
  *   and Delete from model, the selection's bar gone into the panel and the
- *   right-click menu, View settings…) are named nowhere in the help;
+ *   right-click menu, View settings…, the Arrange menu's Tidy the board and
+ *   Route the lines, a line's bend points) are named nowhere in the help;
  * - a control the English help presses or picks by its label, or names in
  *   bold, is named in Dutch and German by that control's own Dutch or German
  *   label, at the same place in the help: the English is checked against the
@@ -24,9 +25,9 @@ import { TEXT as NL } from './text/nl'
 import { TEXT as DE } from './text/de'
 
 const RETIRED: Record<Language, RegExp> = {
-  en: /Remove \/ delete…|\bFrom this view\b|Remove from diagram|selection bar|bar over the selection|floating toolbar|Board settings…|Route connections/,
-  nl: /Weghalen \/ verwijderen…|Van deze weergave\b|Van het diagram halen|selectiebalk|balk boven de selectie|zwevende werkbalk|Bordinstellingen…|Verbindingen routeren/,
-  de: /Entfernen \/ Löschen…|Von dieser Ansicht\b|Aus dem Diagramm nehmen|Auswahlleiste|Leiste über der Auswahl|schwebende\w* Werkzeugleiste|Board-Einstellungen…|Verbindungen führen/,
+  en: /Remove \/ delete…|\bFrom this view\b|Remove from diagram|selection bar|bar over the selection|floating toolbar|Board settings…|Route connections|[Dd]iagram settings|\*\*Add bend\*\*|\*\*Remove bend\*\*|\bTidy\*\* (runs|lays)/,
+  nl: /Weghalen \/ verwijderen…|Van deze weergave\b|Van het diagram halen|selectiebalk|balk boven de selectie|zwevende werkbalk|Bordinstellingen…|Verbindingen routeren|[Dd]iagraminstellingen|Knik toevoegen|Knik verwijderen|\bTidy\b|Verbindingen leggen|Alles opnieuw leggen/,
+  de: /Entfernen \/ Löschen…|Von dieser Ansicht\b|Aus dem Diagramm nehmen|Auswahlleiste|Leiste über der Auswahl|schwebende\w* Werkzeugleiste|Board-Einstellungen…|Verbindungen führen|Diagrammeinstellungen|Verbindungen routen|Alles neu routen|\*\*Automatisch anordnen\*\*/,
 }
 
 describe.each([['en', EN], ['nl', NL], ['de', DE]] as const)('the %s help', (language, text) => {
