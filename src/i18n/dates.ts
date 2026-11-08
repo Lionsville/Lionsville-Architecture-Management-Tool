@@ -97,3 +97,8 @@ export function weekStartOf(tag: string): number {
   const locale = new Intl.Locale(tag) as Intl.Locale & { getWeekInfo?: () => { firstDay: number }; weekInfo?: { firstDay: number } }
   return locale.getWeekInfo?.().firstDay ?? locale.weekInfo?.firstDay ?? 1
 }
+
+/** Every `YYYY-MM-DD` day in a line written for a reader, said as a day: a plan's span in a search hit, a milestone's day. */
+export function daysInText(text: string, language: Language): string {
+  return text.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (day) => formatDay(day, language))
+}

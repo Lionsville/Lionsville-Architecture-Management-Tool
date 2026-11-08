@@ -17,6 +17,7 @@ import type { DesignModel, Lifecycle, Transition } from '../../model'
 import type { TransitionStatus } from '../../model/transition'
 import { useStrings } from '../../i18n'
 import type { StringKey } from '../../i18n'
+import { formatDay } from '../../i18n/dates'
 import { Mark } from '../../widgets/kit/Mark'
 import { TimeAxisGroup, TimeAxisRow, TimeBar, TimeMilestones } from '../../widgets/kit/TimeAxis'
 import type { TimeBarTone } from '../../widgets/kit/TimeAxis'
@@ -80,7 +81,7 @@ export function PlanRows({ plans, hideEnded, onHideEnded, context }: {
 }
 
 function PlanRow({ plan, context }: { plan: Transition; context: RowsContext }) {
-  const { t } = useStrings()
+  const { t, language } = useStrings()
   const progress = portProgress(context.model, plan)
   const shadow = shadowRunOf(context.model, plan)
   const name = `${transitionLabel(plan)} ${plan.title}`
@@ -101,7 +102,7 @@ function PlanRow({ plan, context }: { plan: Transition; context: RowsContext }) 
       {dated
         ? <TimeBar from={isDay(plan.from) ? plan.from : undefined} to={isDay(plan.to) ? plan.to : undefined} name={said} tone={STATUS_TONE[plan.status]} onOpen={open} />
         : milestones.length === 0 && <span className="roadmap-quiet roadmap-lanesaid">{t('roadmap.noDates')}</span>}
-      {shadow && <TimeBar from={shadow.from} to={shadow.to} name={t('roadmap.shadowRun')} tone="shadow" says={t('roadmap.shadowSays', { from: shadow.from, to: shadow.to })} />}
+      {shadow && <TimeBar from={shadow.from} to={shadow.to} name={t('roadmap.shadowRun')} tone="shadow" says={t('roadmap.shadowSays', { from: formatDay(shadow.from, language), to: formatDay(shadow.to, language) })} />}
       {milestones.length > 0 && <TimeMilestones items={milestones} onOpen={open} />}
     </TimeAxisRow>
   )

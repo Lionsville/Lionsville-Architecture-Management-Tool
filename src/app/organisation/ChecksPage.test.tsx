@@ -45,7 +45,7 @@ const ATTENTION: AttentionItem[] = [
   { key: 'check.unattributed', kind: 'unattributed', scope: 'retail', id: 'post', text: 'Post office is outside the organisation and nobody has said whose it is' },
   { key: 'check.conflict', kind: 'conflict', scope: 'retail', id: 'erp', text: 'ERP is defined both here and in Finance' },
 ]
-const instances = treeInstances({ attention: ATTENTION, models: [], at: '', today: '2026-10-12', index, home: ROOT, t })
+const instances = treeInstances({ attention: ATTENTION, models: [], at: '', today: '2026-10-12', index, home: ROOT, language: 'en', t })
 
 function page(over: Partial<ChecksPageProps> = {}, marks: KeptCheckMark[] = [], marking?: Partial<CheckMarking>) {
   const split = splitInstances(instances, marks)
@@ -197,7 +197,7 @@ describe('the Checks page', () => {
     }]
     const assignment = { id: 'as-1', unitId: 'gone', roleId: 'r', person: { person: 'pe-ada' } }
     const held = { ...index, lookup: index.lookup, rowsOf: index.rowsOf, units: index.units, assignments: () => [{ scope: 'retail', assignment }] }
-    const rows = checksByCategory(splitInstances(treeInstances({ attention: left, models: [], at: '', today: '2026-10-12', index, home: ROOT, t }), []))
+    const rows = checksByCategory(splitInstances(treeInstances({ attention: left, models: [], at: '', today: '2026-10-12', index, home: ROOT, language: 'en', t }), []))
     const { props, marking } = page({ rows, index: held as never, request: { select: 'check.assignmentOrphaned' } })
     expect(within(detail()).getByRole('heading', { name: 'An assignment in a unit that is not there' })).toBeTruthy()
     fireEvent.click(instanceRow(/Ada/))

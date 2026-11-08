@@ -57,6 +57,7 @@ export function useHomeChecks(deps: {
   const findings = useDeferredValue(deps.findings, undefined)
   const home = deps.root?.path === at ? deps.root.model : undefined
   const people = deps.people?.people
+  const { language } = useStrings()
   const marking = useCheckMarking()
   const marks = marking?.marks ?? deps.marks
   const { language } = useStrings()

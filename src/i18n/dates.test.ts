@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { LANGUAGES } from './strings'
-import { firstWeekday, formatDay, formatMoment, numericDay, parseDay, typedDayIn, weekStartOf } from './dates'
+import { daysInText, firstWeekday, formatDay, formatMoment, numericDay, parseDay, typedDayIn, weekStartOf } from './dates'
 
 describe('parseDay', () => {
   it('reads a YYYY-MM-DD day as that local day, whitespace and all', () => {
@@ -114,5 +114,13 @@ describe('a day in figures', () => {
     expect(firstWeekday('de')).toBe(1)
     expect(firstWeekday('en')).toBe(1)
     expect(weekStartOf('en-US')).toBe(7)
+  })
+})
+
+describe('days inside a line', () => {
+  it('are said as days, and nothing else in the line moves', () => {
+    expect(daysInText('2026-06-01 – 2027-03-31', 'de')).toBe('1. Juni 2026 – 31. März 2027')
+    expect(daysInText('2027-06-30 · Retire it', 'nl')).toBe('30 jun 2027 · Retire it')
+    expect(daysInText('TR-0002', 'en')).toBe('TR-0002')
   })
 })

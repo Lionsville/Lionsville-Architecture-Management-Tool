@@ -52,7 +52,7 @@ const ATTENTION: AttentionItem[] = [
   { key: 'check.relevantGone', kind: 'relevantGone', scope: 'topics/security', id: 'billing', page: 'topics', fields: ['billing'], text: 'A link to billing' },
 ]
 
-const all = () => treeInstances({ attention: ATTENTION, models, at: '', today: TODAY, index, home: ROOT, t })
+const all = () => treeInstances({ attention: ATTENTION, models, at: '', today: TODAY, index, home: ROOT, language: 'en', t })
 
 describe('the findings at or under a home', () => {
   it('opens each of the tree\'s where Needs attention did, and keeps the row\'s own names for something outside to find it by', () => {
@@ -74,7 +74,7 @@ describe('the findings at or under a home', () => {
     expect(dated[0]).toMatchObject({ scope: 'retail', checkedIn: 'retail', opens: { scope: 'retail', page: { page: 'plan', id: 'tr-1' } } })
     expect(dated[0]!.text).toContain('Move the warehouse')
     // Only what is filed at or under the home.
-    expect(treeInstances({ attention: [], models, at: 'finance', today: TODAY, index, home: undefined, t })).toEqual([])
+    expect(treeInstances({ attention: [], models, at: 'finance', today: TODAY, index, home: undefined, language: 'en', t })).toEqual([])
   })
 
   it('reads the Conway map over the home, each opening what it is about, and nothing of it before the home is read', () => {
@@ -86,16 +86,16 @@ describe('the findings at or under a home', () => {
       ['check.applicationUnowned', 'retail', { scope: 'retail', page: { page: 'element', id: 'pos', field: 'owner' } }],
     ])
     expect(conway[0]!.text).toBe('Operations and Sales declare As a service, and no interface runs between them.')
-    expect(treeInstances({ attention: [], models: [], at: '', today: TODAY, index, home: undefined, t })).toEqual([])
+    expect(treeInstances({ attention: [], models: [], at: '', today: TODAY, index, home: undefined, language: 'en', t })).toEqual([])
   })
 
   it('says a unit over its type\'s limit once, whichever found it', () => {
     const limited: HostModel = { ...ROOT, unitTypes: [{ id: 'ut-team', name: 'Team', top: true, within: [], slots: [], limit: 0 }] }
     const tight = indexScopes([{ path: '', model: limited }])
-    const map = treeInstances({ attention: [], models: [], at: '', today: TODAY, index: tight, home: limited, t })
+    const map = treeInstances({ attention: [], models: [], at: '', today: TODAY, index: tight, home: limited, language: 'en', t })
     expect(map.filter((one) => one.key === 'check.unitOverLimit').map((one) => one.opens)).toEqual([{ scope: '', page: { page: 'element', id: 'ops' } }])
     const said: AttentionItem = { key: 'check.unitOverLimit', kind: 'unitOverLimit', scope: '', id: 'ops', text: 'Operations owns 1' }
-    const both = treeInstances({ attention: [said], models: [], at: '', today: TODAY, index: tight, home: limited, t })
+    const both = treeInstances({ attention: [said], models: [], at: '', today: TODAY, index: tight, home: limited, language: 'en', t })
     expect(both.filter((one) => one.key === 'check.unitOverLimit')).toHaveLength(1)
   })
 
