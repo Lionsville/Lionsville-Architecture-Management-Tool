@@ -776,7 +776,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.howToRead': 'Hoe lees je dit',
   'observation.saidSeen': '{seen} gezien · {waiting} wachten op een waarom',
   'observation.saidSeenBelow': '{seen} gezien — {here} hier, {below} eronder · {waiting} wachten op een waarom',
-  'observation.saidWhy': '{causes} oorzaken · {open} open eindjes',
+  'observation.saidWhy': '{causes} oorzaken · {open} open einden',
   'observation.bulkAskWhy': 'Vraag waarom voor deze {count}',
   'observation.bulkOneScope': 'Een oorzaak verklaart waarnemingen van haar eigen scope: kies uit één scope.',
   'observation.bulkMerge': 'Samenvoegen…',
