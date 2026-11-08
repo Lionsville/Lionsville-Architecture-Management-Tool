@@ -251,10 +251,12 @@ export type MoreMenuProps = {
   label?: string
   size?: 'normal' | 'small'
   'data-guide'?: string
+  /** -1 where the row it sits in is the one Tab stop and opens it by key (a tree's Shift+F10). */
+  tabIndex?: number
 }
 
 /** The one ⋯ per item. Never two on a row. */
-export function MoreMenu({ items, label, size, 'data-guide': guide }: MoreMenuProps) {
+export function MoreMenu({ items, label, size, 'data-guide': guide, tabIndex }: MoreMenuProps) {
   const { t } = useStrings()
   const { anchor, open, toggle, close } = useAnchored()
   const name = label ?? t('kit.menu.more')
@@ -262,6 +264,7 @@ export function MoreMenu({ items, label, size, 'data-guide': guide }: MoreMenuPr
     <>
       <IconButton
         ref={anchor} label={name} size={size} data-guide={guide} aria-haspopup="menu" aria-expanded={open}
+        {...(tabIndex !== undefined ? { tabIndex } : {})}
         onClick={toggle}
       >
         <MoreIcon />

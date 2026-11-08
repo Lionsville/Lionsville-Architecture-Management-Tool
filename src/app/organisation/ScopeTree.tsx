@@ -22,6 +22,7 @@ import { Fragment } from 'react'
 import { LOCALE } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { plural } from '../../i18n/strings'
+import { fold } from '../../model/textSearch'
 import { flattenScopes } from '../../projects/scope'
 import type { ScopeSummary } from '../../projects/scope'
 import { ROOT_SCOPE, scopeSegments } from '../../projects/scopePath'
@@ -69,6 +70,8 @@ export type ScopeTreeProps = RowActs & {
   unread?: ReadonlySet<ScopePath>
   /** The topics relevant to a scope today, for the rows its open branch shows; absent: none. */
   topicRows?: ((path: ScopePath) => readonly TopicRow[]) | undefined
+  /** What was typed in the find box, marked where a name holds it. */
+  asked?: string
 }
 
 /** A topic as a row under a scope it is relevant to: where it lives, and what it is called. */
@@ -130,7 +133,7 @@ function pathWords(tree: ScopeSummary, path: ScopePath): string {
 }
 
 export function ScopeTree({
-  tree, folds, onHome, menuOf, holdings, typeLink, language, s, current, onlyWork = false, matching, unread, topicRows,
+  tree, folds, onHome, menuOf, holdings, typeLink, language, s, current, onlyWork = false, matching, unread, topicRows, asked = '',
 }: ScopeTreeProps) {
   const rows = rowsOf({ tree, folds, onlyWork, matching, holdings })
   // The top of the tree is its own row, so its children are the first column.
@@ -152,7 +155,7 @@ export function ScopeTree({
               scope={scope} depth={depth} shut={shut} hasBranch={scope.children.length > 0 || topics.length > 0}
               current={scope.path === current} foldable={!matching && !onlyWork} above={matching ? pathWords(tree, scope.path) : ''} unread={unread?.has(scope.path) === true}
               count={holdings.count(scope.path)} words={heldInWords(holdings.all(scope.path), s)} warns={typeWarns(typeLink?.(scope.path))}
-              onHome={onHome} menuOf={menuOf} language={language} s={s} toggleCollapsed={folds.toggleCollapsed}
+              onHome={onHome} menuOf={menuOf} language={language} s={s} toggleCollapsed={folds.toggleCollapsed} asked={matching ? asked : ''} enters={matching?.[0] === scope.path}
             />
             {!shut && topics.map((topic) => <TopicTreeRow key={topic.path} at={scope.path} topic={topic} depth={depth + 1} onHome={onHome} s={s} />)}
           </Fragment>
@@ -167,10 +170,11 @@ export function TopicTreeRow({ at, topic, depth, onHome, s }: { at: ScopePath; t
   return (
     <div
       className="kit-tree__row" data-testid={`topic-row-${at}-${topic.path}`} data-topic data-depth={depth}
+      role="treeitem" tabIndex={-1} aria-level={depth + 1} aria-label={s('org.treeTopicRow', { name: topic.name })} data-name={topic.name}
       style={{ paddingInlineStart: `${depth * 14}px` }} onClick={() => onHome(topic.path)}
     >
       <span className="kit-tree__fold" aria-hidden />
-      <button type="button" className="kit-tree__name" aria-label={s('org.treeTopicRow', { name: topic.name })} title={s('org.treeTopicRow', { name: topic.name })}>
+      <button type="button" className="kit-tree__name" tabIndex={-1} aria-hidden title={s('org.treeTopicRow', { name: topic.name })}>
         <span aria-hidden>↗ </span>{topic.name}
       </button>
       <span className="kit-tree__menu" />
@@ -179,9 +183,19 @@ export function TopicTreeRow({ at, topic, depth, onHome, s }: { at: ScopePath; t
 }
 
 /** One scope's row: its fold, its name, what it holds, and its acts under ⋯. */
-function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unread, count, words, warns, onHome, menuOf, s, language, toggleCollapsed }: RowActs & {
+/** A name with what was typed marked in it, so a match shown flat says why it is there. */
+function Marked({ text, asked }: { text: string; asked: string }) {
+  const at = asked === '' ? -1 : fold(text).indexOf(fold(asked))
+  // Folding keeps the length for the letters a name is made of; where it did not, the name is said plainly.
+  if (at < 0 || fold(text).length !== text.length) return <>{text}</>
+  return <>{text.slice(0, at)}<mark className="kit-tree__match">{text.slice(at, at + asked.length)}</mark>{text.slice(at + asked.length)}</>
+}
+
+function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unread, count, words, warns, onHome, menuOf, s, language, toggleCollapsed, asked, enters }: RowActs & {
   scope: ScopeSummary; depth: number; shut: boolean; hasBranch: boolean; current: boolean; foldable: boolean; above: string; unread: boolean
-  count: number; words: string; warns: boolean
+  count: number; words: string; warns: boolean; asked: string
+  /** The match Enter in the find box opens, marked as the one. */
+  enters: boolean
   toggleCollapsed: (path: ScopePath) => void
   language: Language; s: Translate
 }) {
@@ -194,6 +208,10 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
     // either end keep their press to themselves.
     <div
       className="kit-tree__row"
+      // One Tab stop for the whole tree: the panel moves it with the arrows (`useTreeKeys`).
+      role="treeitem" tabIndex={-1} aria-level={depth + 1} aria-label={named} data-name={scope.name}
+      data-enter={enters || undefined}
+      aria-expanded={foldable && hasBranch ? !shut : undefined} aria-disabled={unread || undefined}
       data-testid={`scope-${scope.path}`}
       data-guide="org.tree.row"
       data-depth={depth}
@@ -205,23 +223,24 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
     >
       {foldable && hasBranch ? (
         <button
-          type="button" className="kit-tree__fold" aria-label={foldName} aria-expanded={!shut} data-testid={`fold-${scope.path}`}
+          type="button" className="kit-tree__fold" tabIndex={-1} aria-label={foldName} aria-expanded={!shut} data-testid={`fold-${scope.path}`}
           onClick={(event) => { event.stopPropagation(); toggleCollapsed(scope.path) }}
         >
           <CaretIcon size={14} />
         </button>
       ) : <span className="kit-tree__fold" aria-hidden />}
       {/* No handler of its own: its press is the row's. */}
-      <button type="button" className="kit-tree__name" data-testid={`home-${scope.path}`} disabled={unread}>
+      <button type="button" className="kit-tree__name" tabIndex={-1} aria-hidden data-testid={`home-${scope.path}`} disabled={unread}>
+        {/* Where a match is gives way before what it is called: the path is cut, the name is kept. */}
         {above && <span className="kit-tree__above">{above} / </span>}
-        <span data-testid={`open-${scope.path}`}>{scope.name}</span>
+        <span className="kit-tree__own" data-testid={`open-${scope.path}`}><Marked text={scope.name} asked={asked} /></span>
       </button>
       {warns && <span className="kit-tree__warn" title={s('org.typeMismatchTip')}><Mark kind="review" size={12} />{s('org.typeMismatch')}</span>}
       {unread
         ? <span className="kit-tree__holds" data-testid="scope-not-read">{s('org.notRead')}</span>
         : count > 0 && <span className="kit-tree__holds" data-testid="scope-holds">{count}</span>}
       <span className="kit-tree__menu">
-        {items.length > 0 && <MoreMenu size="small" label={s('frame.scopeMenu', { name: scope.name })} items={items} />}
+        {items.length > 0 && <MoreMenu size="small" tabIndex={-1} label={s('frame.scopeMenu', { name: scope.name })} items={items} />}
       </span>
     </div>
   )
@@ -235,14 +254,15 @@ export function RootRow({ tree, name, current, count, words, onHome, menuOf, s }
   return (
     <div
       className="kit-tree__row" data-testid="scope-root" aria-current={current ? 'page' : undefined}
+      role="treeitem" tabIndex={-1} aria-level={1} aria-label={name} data-name={name}
       data-quiet={count === 0 || undefined} title={[name, words].filter(Boolean).join('\n')}
       onClick={() => onHome(ROOT_SCOPE)}
     >
       <span className="kit-tree__fold" aria-hidden />
-      <button type="button" className="kit-tree__name">{name}</button>
+      <button type="button" className="kit-tree__name" tabIndex={-1} aria-hidden>{name}</button>
       {count > 0 && <span className="kit-tree__holds">{count}</span>}
       <span className="kit-tree__menu">
-        {items.length > 0 && <MoreMenu size="small" label={s('frame.scopeMenu', { name })} items={items} />}
+        {items.length > 0 && <MoreMenu size="small" tabIndex={-1} label={s('frame.scopeMenu', { name })} items={items} />}
       </span>
     </div>
   )

@@ -94,6 +94,37 @@ describe('the two rows', () => {
     expect(screen.getByTestId('frame-tree-toggle').getAttribute('aria-pressed')).toBe('false')
   })
 
+  it('is one Tab stop, moved by the arrows, folded by ← and →, and found by typing', async () => {
+    await home()
+    const tree = screen.getByRole('tree')
+    const stops = () => within(tree).getAllByRole('treeitem').filter((item) => item.tabIndex === 0)
+    expect(stops()).toEqual([screen.getByTestId('scope-root')])
+    screen.getByTestId('scope-root').focus()
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowDown' })
+    const retail = screen.getByTestId('scope-retail')
+    expect(document.activeElement).toBe(retail)
+    expect(stops()).toEqual([retail])
+    const open = retail.getAttribute('aria-expanded')
+    fireEvent.keyDown(retail, { key: open === 'true' ? 'ArrowLeft' : 'ArrowRight' })
+    expect(retail.getAttribute('aria-expanded')).toBe(open === 'true' ? 'false' : 'true')
+    if (retail.getAttribute('aria-expanded') === 'false') fireEvent.keyDown(retail, { key: 'ArrowRight' })
+    fireEvent.keyDown(retail, { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(screen.getByTestId('scope-retail/depot'))
+    fireEvent.keyDown(document.activeElement!, { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(retail)
+    fireEvent.keyDown(retail, { key: 'Home' })
+    fireEvent.keyDown(document.activeElement!, { key: 'd' })
+    expect(document.activeElement).toBe(screen.getByTestId('scope-retail/depot'))
+    fireEvent.keyDown(document.activeElement!, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByTestId('scope-retail/depot').getAttribute('aria-current')).toBe('page'))
+  })
+
+  it('opens a row’s ⋯ on a right-click', async () => {
+    await home()
+    fireEvent.contextMenu(screen.getByTestId('home-retail'))
+    expect(await screen.findByRole('menu')).toBeDefined()
+  })
+
   it('switches scope from the crumb’s chevron, with the same tree over the work', async () => {
     const { ask } = await home()
     await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })

@@ -100,11 +100,17 @@
 .kit-tree__warn { display: inline-flex; align-items: center; gap: var(--s-1); flex: 0 0 auto; color: var(--warn); font-size: var(--t-small); padding-inline-end: var(--s-1); }
 .kit-tree__fold { appearance: none; border: 0; background: none; cursor: pointer; color: var(--ink-2); width: 24px; height: var(--row-h); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
 .kit-tree__fold[aria-expanded='false'] svg { transform: rotate(-90deg); }
-.kit-tree__name { appearance: none; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; flex: 1 1 0; min-width: 0; text-align: start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: var(--s-1); }
+.kit-tree__name { appearance: none; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; flex: 1 1 0; min-width: 0; text-align: start; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-inline: var(--s-1); display: flex; }
+/* A match shown flat: the path above gives way first, so the scope's own name and what was typed in it stay in sight. */
+.kit-tree__above { flex: 0 1 auto; min-width: 1.5em; overflow: hidden; text-overflow: ellipsis; white-space: pre; }
+.kit-tree__own { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.kit-tree__match { background: var(--selected-soft); color: inherit; font-weight: var(--fw-strong); border-radius: 2px; }
+.kit-tree__row[data-enter] { background: var(--surface-2); }
+.kit-tree__row:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: calc(0px - var(--focus-ring-width)); }
 .kit-tree__holds { color: var(--ink-2); font-size: var(--t-small); flex: 0 0 auto; padding-inline: var(--s-1) 0; text-align: end; font-variant-numeric: tabular-nums; }
 /* Held open on every row, with or without a menu, so the numbers stand in one column. */
 .kit-tree__menu { flex: 0 0 var(--kit-tree-menu); display: inline-flex; justify-content: center; margin-inline-start: var(--s-1); opacity: 0; }
-.kit-tree__row:hover .kit-tree__menu, .kit-tree__row:focus-within .kit-tree__menu { opacity: 1; }
+.kit-tree__row:hover .kit-tree__menu, .kit-tree__row:focus-within .kit-tree__menu, .kit-tree__row:focus .kit-tree__menu { opacity: 1; }
 .kit-tree__place { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: var(--row-h); appearance: none; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; padding-inline: var(--s-3) var(--kit-tree-end); text-align: start; }
 .kit-tree__place:hover { background: var(--surface-2); }
 .kit-tree__place[aria-current='page'] { font-weight: var(--fw-strong); }

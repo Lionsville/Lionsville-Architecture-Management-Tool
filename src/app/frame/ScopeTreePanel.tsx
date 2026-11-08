@@ -14,7 +14,7 @@
  * nothing needs unfolding.
  */
 import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { RefObject } from 'react'
+import type { MouseEvent, RefObject } from 'react'
 import { CaretIcon } from '../../widgets/icons'
 import type { Language, Translate } from '../../i18n'
 import type { Destination, Page } from '../../agent/screen'
@@ -35,6 +35,7 @@ import type { TopicRow } from '../organisation/ScopeTree'
 import type { Holdings } from '../organisation/holdings'
 import type { ScopeFolds } from '../organisation/useScopeFolds'
 import { ORGANISATION_PLACES, placeShows } from './places'
+import { useTreeKeys } from './treeKeys'
 
 /** What a row's ⋯ can do, each its own question on the home that answers it. */
 export type TreeActs = {
@@ -175,6 +176,16 @@ export function ScopeTreePanel({
   const rowsRef = useRef<HTMLDivElement>(null)
   const footRef = useRef<HTMLDivElement>(null)
   const { folded, toggle } = useFootFold(panelRef, rowsRef, footRef)
+  const treeKeys = useTreeKeys(rowsRef)
+  // A right-click on a row opens the row's ⋯, as a view's tab answers one.
+  const rowMenu = (event: MouseEvent) => {
+    const more = (event.target as HTMLElement).closest('[role="treeitem"]')?.querySelector<HTMLElement>('.kit-tree__menu button')
+    if (more) { event.preventDefault(); more.click() }
+  }
+  // Wherever the tree is opened or moved to, the scope that is up is in sight.
+  useEffect(() => {
+    rowsRef.current?.querySelector('[aria-current="page"]')?.scrollIntoView?.({ block: 'nearest' })
+  }, [at, show, matching === undefined])
   return (
     <div className="kit-tree" data-testid="scope-tree-panel" ref={panelRef}>
       <div className="kit-tree__find">
@@ -183,6 +194,11 @@ export function ScopeTreePanel({
           onKeyDown={(event) => {
             const first = matching?.[0]
             if (event.key === 'Enter' && first !== undefined) { event.preventDefault(); onHome(first) }
+            // Down goes into what was found, or the tree, by its one stop.
+            if (event.key === 'ArrowDown') {
+              const into = rowsRef.current?.querySelector<HTMLElement>('[role="treeitem"][data-enter]') ?? rowsRef.current?.querySelector<HTMLElement>('[role="treeitem"]')
+              if (into) { event.preventDefault(); into.focus() }
+            }
           }}
         />
       </div>
@@ -190,8 +206,9 @@ export function ScopeTreePanel({
         <Tabs
           label={s('org.treeShow')} value={show} onChange={setShow}
           items={[
-            { value: 'all', label: s('org.treeAll'), count: flattenScopes(tree).length },
-            { value: 'work', label: s('org.treeWithWork'), count: holdings.withWork.size },
+            // While a name is typed, what each tab would show of what was found.
+            { value: 'all', label: s('org.treeAll'), count: matching ? matching.length : flattenScopes(tree).length },
+            { value: 'work', label: s('org.treeWithWork'), count: matching ? matching.filter((path) => holdings.withWork.has(path)).length : holdings.withWork.size },
           ]}
         />
         <MoreMenu
@@ -205,7 +222,7 @@ export function ScopeTreePanel({
           ]}
         />
       </div>
-      <div className="kit-tree__rows" ref={rowsRef}>
+      <div className="kit-tree__rows" ref={rowsRef} role="tree" aria-label={s('org.treeScopes')} onKeyDown={treeKeys} onContextMenu={rowMenu}>
         <div className="kit-tree__head" aria-hidden="true"><span>{s('org.treeScopes')}</span><span>{s('org.treeHolds')}</span></div>
         {matching === undefined && (
           <RootRow
@@ -220,7 +237,7 @@ export function ScopeTreePanel({
         <ScopeTree
           tree={listed} folds={folds} onHome={onHome} menuOf={menuOf} holdings={holdings} current={at} language={language} s={s} unread={unread}
           onlyWork={show === 'work'} topicRows={topicRows}
-          {...(matching ? { matching } : {})}
+          {...(matching ? { matching, asked } : {})}
           {...(typeLink ? { typeLink } : {})}
         />
       </div>

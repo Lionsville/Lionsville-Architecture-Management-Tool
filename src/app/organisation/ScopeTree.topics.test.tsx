@@ -89,7 +89,7 @@ describe('a topic in the scope tree', () => {
     render(<Tree onHome={onHome} />)
     fireEvent.click(screen.getByTestId('fold-sales'))
     expect(row('sales', 'topics/security/keys')).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Topic relevant here: Security' }))
+    fireEvent.click(screen.getByRole('treeitem', { name: 'Topic relevant here: Security' }))
     expect(onHome).toHaveBeenCalledWith('topics/security')
   })
 
