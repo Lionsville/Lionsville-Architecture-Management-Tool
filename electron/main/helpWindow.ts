@@ -87,6 +87,26 @@ export function openHelpWindow(url: string, base: string, options: { background:
   void window.loadURL(url)
 }
 
+/**
+ * The app changed its language: an open help window follows, at the place it
+ * is reading, rather than staying in the old one until Help is asked again.
+ */
+export function helpWindowInLanguage(language: string): void {
+  if (!helpWindow || helpWindow.isDestroyed()) return
+  const now = helpWindow.webContents.getURL()
+  const again = helpAddressInLanguage(now, language)
+  if (again !== undefined && again !== now) void helpWindow.loadURL(again)
+}
+
+/** The same help address in another language, keeping where it reads; nothing for what is not an address. */
+export function helpAddressInLanguage(url: string, language: string): string | undefined {
+  let held: URL
+  try { held = new URL(url) } catch { return undefined }
+  if (held.searchParams.get('lang') === language) return url
+  held.searchParams.set('lang', language)
+  return held.href
+}
+
 /** Is this the help's window? The app's own windows are counted without it. */
 export function isHelpWindow(window: unknown): boolean {
   return helpWindow !== undefined && window === helpWindow

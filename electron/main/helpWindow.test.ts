@@ -31,7 +31,7 @@ vi.mock('electron', () => ({
   },
 }))
 
-const { helpNavigation, helpWindowOptions, openHelpWindow, opensInBrowser } = await import('./helpWindow')
+const { helpAddressInLanguage, helpNavigation, helpWindowOptions, openHelpWindow, opensInBrowser } = await import('./helpWindow')
 const BASE = 'app://local/'
 
 describe('the help window', () => {
@@ -75,5 +75,14 @@ describe('the help window', () => {
     const prevented = vi.fn()
     made[0].handlers['will-navigate']?.({ preventDefault: prevented }, 'app://local/')
     expect(prevented).toHaveBeenCalled()
+  })
+})
+
+describe('the help window and the app\'s language', () => {
+  it('reads the same place in the language the app switched to', () => {
+    expect(helpAddressInLanguage('app://local/help/?lang=nl&theme=dark#chart.find', 'de')).toBe('app://local/help/?lang=de&theme=dark#chart.find')
+    expect(helpAddressInLanguage('app://local/help/#frame.back', 'nl')).toBe('app://local/help/?lang=nl#frame.back')
+    expect(helpAddressInLanguage('app://local/help/?lang=de', 'de')).toBe('app://local/help/?lang=de')
+    expect(helpAddressInLanguage('not an address', 'de')).toBeUndefined()
   })
 })
