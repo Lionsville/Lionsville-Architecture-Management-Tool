@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import { SurfacePopover as Popover } from '../../widgets/kit/Surface'
-import type { Translate } from '../../i18n'
+import type { StringKey, Translate } from '../../i18n'
 import type { Destination, Page, Screen } from '../../agent/screen'
 import { HOME_PAGES, viewPage } from '../../agent/screen'
 import type { DesignDiagram } from '../../model/types'
@@ -70,7 +70,7 @@ import { ShortcutsSheet } from './ShortcutsSheet'
 import { TONE_MARK } from './statusWord'
 import { NewViewDialog } from '../NewViewDialog'
 import { DESKTOP_APP_LINK, FILE_MENU, PREFERENCES_ITEM, WEBSITE_LINK, HELP_MENU, acceleratorMatches, offered } from '../../platform/menu'
-import type { KeyPress, MenuItemSpec } from '../../platform/menu'
+import type { KeyPress, MenuItemSpec, MenuNeed } from '../../platform/menu'
 import { chordHeld, claimKey, commandKey, isMac, keyClaimed } from '../../widgets/kit/keys'
 
 
@@ -236,16 +236,29 @@ function useShortcutsSheet(parts: ShellParts) {
   return [open, setOpen] as const
 }
 
+/** Every item the web's ⋯ can show with a key, whatever it would refuse now. */
+const WEB_KEYED = [
+  ...offered(FILE_MENU, 'web', { history: true, connect: true, scope: true, picture: true, example: true }).flatMap((entry) => (entry.kind === 'item' && entry.accelerator !== undefined ? [entry] : [])),
+  PREFERENCES_ITEM,
+]
+
 /**
- * The ⋯ menu's keys, on a host with no menu bar to hear them: the menu shows ⌘O,
- * ⇧⌘O, ⇧⌘E and ⌘, on the web as well. An item the menu would refuse is not run,
- * and Save is left to a board's own keymap while one is up, so it saves once.
+ * What one of the ⋯ menu's keys does, on a host with no menu bar to hear them:
+ * the menu shows ⌘O, ⌘S, ⇧⌘O, ⇧⌘E and ⌘, on the web as well, and every one is
+ * the app's in every state, so the browser's Open, Save Page As or Settings
+ * never comes up over it. An item the menu would refuse now is not run and
+ * says why where the menu does; while a dialog is up the key does nothing;
+ * Save is left to a board's own keymap while one is up, so it saves once.
+ * `undefined` is a key that is none of the menu's.
  */
-export function menuKeyCommand(press: KeyPress, can: ReturnType<typeof canOf>, boardUp: boolean, mac: boolean): MenuItemSpec['command'] | undefined {
-  const items = [...offered(FILE_MENU, 'web', can).flatMap((entry) => (entry.kind === 'item' ? [entry] : [])), PREFERENCES_ITEM]
-  const hit = items.find((entry) => entry.accelerator !== undefined && acceleratorMatches(entry.accelerator, press, mac))
-  if (!hit || (hit.command.type === 'save' && boardUp)) return undefined
-  return hit.command
+export function menuKey(
+  press: KeyPress, can: ReturnType<typeof canOf>, at: { boardUp: boolean; modal: boolean }, mac: boolean,
+): { run?: MenuItemSpec['command']; refused?: StringKey } | undefined {
+  const hit = WEB_KEYED.find((entry) => entry.accelerator !== undefined && acceleratorMatches(entry.accelerator, press, mac))
+  if (!hit || (hit.command.type === 'save' && at.boardUp && !at.modal)) return undefined
+  if (at.modal) return {}
+  if (hit.needs?.some((need) => !(can as Partial<Record<MenuNeed, boolean>>)[need])) return hit.needs.includes('scope') && !can.scope ? { refused: 'menu.saveNothingOpen' } : { refused: 'menu.notNow' }
+  return { run: hit.command }
 }
 
 /**
@@ -323,9 +336,12 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         if (act?.can) { event.preventDefault(); event.stopPropagation(); act.run() }
         return
       }
-      if (!parts.hostMenu && chordHeld(event) && !modalUp()) {
-        const command = menuKeyCommand(event, canOf(parts, frame.get().screen), boardUp, isMac())
-        if (command) { event.preventDefault(); send(command); return }
+      if (!parts.hostMenu && chordHeld(event)) {
+        const key = menuKey(event, canOf(parts, frame.get().screen), { boardUp, modal: modalUp() }, isMac())
+        if (!key) return
+        event.preventDefault()
+        if (key.run) send(key.run)
+        else if (key.refused) parts.services.toasts.notify(parts.services.s(key.refused), 'info')
       }
     }
     window.addEventListener('keydown', onKey, true)
