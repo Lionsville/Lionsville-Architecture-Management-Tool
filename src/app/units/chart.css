@@ -63,7 +63,8 @@
 .org-row__said[data-over] { color: var(--bad); }
 .org-person { all: unset; cursor: pointer; }
 /* The people are what the card is read for: in the ink, with the role words before them kept grey. */
-.org-row .org-person { color: var(--ink); }
+/* ...and at the unit name's reading size: they are the content of the card, the role words its small print. */
+.org-row .org-person { color: var(--ink); font-size: calc(var(--t-canvas-name) / var(--canvas-zoom, 1)); }
 .org-person:hover { text-decoration: underline; }
 .org-person[data-chosen] { outline: var(--line-width-emphasis) solid var(--selected-edge); border-radius: var(--r-1); }
 .org-person[data-over] { color: var(--bad); }
