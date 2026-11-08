@@ -266,10 +266,20 @@ describe('snippet', () => {
 
   it('reads a template\'s table as its words, without the rules or the pipes', () => {
     const text = '## Owner\n\n| Field | Value |\n| --- | :---: |\n| Short description | Billing engine |\n\n---\n\n- Criticality: high'
-    const out = snippet(text, 'criticality')
-    expect(out).not.toMatch(/---|\|/)
+    const out = snippet(text, 'billing')
+    expect(out).not.toMatch(/---|\||#/)
     expect(out).toContain('Short description · Billing engine')
-    expect(out).toContain('Criticality: high')
+  })
+
+  it('shows the prose that matched rather than the template\'s headings and tables around it', () => {
+    const text = '| Owner | Last reviewed |\n| --- | --- |\n| | |\n## Purpose\nKey functions\n\n## Context\n\nThe rail desk books every wagon once.\n\n- Criticality: high'
+    expect(snippet(text, 'wagon')).toBe('Key functions The rail desk books every wagon once. Criticality: high')
+    expect(snippet(text, 'context')).toBe('Owner · Last reviewed · Purpose Key functions Context The rail desk books every wagon once. Criticality: high')
+    expect(snippet(text, 'elsewhere')).toBe('Key functions The rail desk books every wagon once. Criticality: high')
+  })
+
+  it('never carries a heading\'s mark into the line before it', () => {
+    expect(snippet('| Owner | Last reviewed |\n## Purpose\nWords', 'purpose')).toBe('Owner · Last reviewed · Purpose Words')
   })
 })
 

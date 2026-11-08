@@ -317,19 +317,38 @@ const aboveModels = new WeakMap<readonly Adr[], SearchableModel>()
 /**
  * The stretch of `text` around the first word of the query that occurs in it,
  * with markdown reduced to words, so a reader can tell WHY this row matched.
- * When no single token is found — the match came from another field — the
- * opening of the text is shown instead.
+ * The document's prose first: a template's headings and tables are the same
+ * words in every document made from it, and a snippet of them read alike for
+ * all of them ("Owner · Last reviewed · Purpose…"). Its headings and tables
+ * where the word is only there; and where no single token is found — the match
+ * came from another field — the opening of the prose.
  */
 export function snippet(text: string, query: string, radius = 70): string {
-  const plain = text
+  const lines = text
     .replace(/```[\s\S]*?```/g, ' ')
     .replace(/<!--[\s\S]*?-->/g, ' ')
+    .split('\n')
+  const prose = plainWords(lines.filter((line) => !isFrame(line)).join('\n'))
+  const all = plainWords(lines.join('\n'))
+  const tokens = queryTokens(query)
+  return around(prose, tokens, radius) ?? around(all, tokens, radius) ?? opening(prose || all, radius)
+}
+
+/** A line of a document's frame rather than its prose: a heading, a table's row, a rule across. */
+function isFrame(line: string): boolean {
+  return /^\s*#{1,6}\s/.test(line) || /^\s*\|/.test(line) || /^\s*([-*_]\s*){3,}$/.test(line)
+}
+
+/** Markdown reduced to its words, a line at a time, so no mark of one line is read into the next. */
+function plainWords(text: string): string {
+  return text
     // A table's rule and a line drawn across say nothing: a template's snippet read "Short description ------ Owner".
-    .replace(/^\s*\|?(\s*:?-{3,}:?\s*\|?)+\s*$/gm, ' ')
-    .replace(/^\s*([-*_]\s*){3,}$/gm, ' ')
-    .replace(/^\s*([-*+]|\d+\.)\s+/gm, '')
-    .replace(/\s*\|\s*/g, ' · ')
-    .replace(/^\s*#{1,6}\s+/gm, '')
+    .replace(/^[ \t]*\|?([ \t]*:?-{3,}:?[ \t]*\|?)+[ \t]*$/gm, ' ')
+    .replace(/^[ \t]*([-*_][ \t]*){3,}$/gm, ' ')
+    .replace(/^[ \t]*#{1,6}[ \t]+/gm, '')
+    .replace(/^[ \t]*([-*+]|\d+\.)[ \t]+/gm, '')
+    // Within its line: a pipe that ended a row took the next line's heading mark with it ("Last reviewed · ## Purpose").
+    .replace(/[ \t]*\|[ \t]*/g, ' · ')
     .replace(/[*_`>]/g, '')
     .replace(/\[\[([^\]]+)\]\]/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
@@ -337,16 +356,24 @@ export function snippet(text: string, query: string, radius = 70): string {
     .replace(/(^|\s)·(?=\s·|\s*$)/g, '')
     .replace(/^\s*·\s*|\s*·\s*$/g, '')
     .trim()
+}
+
+/** The stretch of `plain` around the first token found in it, or nothing where none is. */
+function around(plain: string, tokens: readonly string[], radius: number): string | undefined {
   const haystack = fold(plain)
   let at = -1
-  for (const token of queryTokens(query)) {
+  for (const token of tokens) {
     at = haystack.indexOf(token)
     if (at >= 0) break
   }
-  if (at < 0) return plain.length > radius * 2 ? `${plain.slice(0, radius * 2).trimEnd()}…` : plain
+  if (at < 0) return undefined
   // Folding strips accents without changing length, so an index into the folded
   // text is an index into the original.
   const start = Math.max(0, at - radius)
   const end = Math.min(plain.length, at + radius)
   return `${start > 0 ? '…' : ''}${plain.slice(start, end).trim()}${end < plain.length ? '…' : ''}`
+}
+
+function opening(plain: string, radius: number): string {
+  return plain.length > radius * 2 ? `${plain.slice(0, radius * 2).trimEnd()}…` : plain
 }
