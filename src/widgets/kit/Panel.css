@@ -70,6 +70,8 @@
 /* The tab is its word, underlined, as drawn: three tabs fit 320 px in German and Dutch too. */
 .kit-panel__tabs .kit-tabs,
 .kit-panel__tabs .kit-tabs[data-tight] { gap: var(--s-3); }
+/* At a large text size they no longer do: a tab goes to a second row rather than out of sight. */
+.kit-panel__tabs .kit-tabs { flex-wrap: wrap; row-gap: 0; }
 .kit-panel__tabs .kit-tabs__tab,
 .kit-panel__tabs .kit-tabs[data-tight] .kit-tabs__tab { padding-inline: 0; }
 
