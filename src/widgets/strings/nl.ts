@@ -8,7 +8,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.toast.undo': 'Ongedaan maken',
   'kit.toast.putBack': 'Terugzetten',
   'kit.focused.cancel': 'Annuleren',
-  'kit.focused.save': 'Opslaan',
+  'kit.focused.save': 'Bewaren',
   'kit.focused.views': 'Hoe de tekst wordt getoond',
   'kit.focused.write': 'Schrijven',
   'kit.focused.beside': 'Naast elkaar',

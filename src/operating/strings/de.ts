@@ -330,7 +330,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'operating.rowsNeeding': 'Zeilen, die ein A brauchen · {count}',
   'operating.aElsewhere': 'A anderswo',
   'operating.noPartColumn': 'Rollen ohne Anteil',
-  'operating.noPartLine': '{count} Rollen haben hier keinen Anteil: {names}{more}. Drücken Sie die +-Spalte, um sie zu sehen.',
+  'operating.noPartLine': '{count} Rollen haben hier keinen Anteil: {names}{more}. Klicken Sie auf die +-Spalte, um sie zu sehen.',
   'operating.noPartShown': '{count} Rollen haben hier keinen Anteil: {names}{more}.',
   'operating.noPartShownOne': '{names} hat hier keinen Anteil.',
   'operating.andMore': ' und {count} weitere',
