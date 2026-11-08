@@ -181,8 +181,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'export.themeDark': 'Donker',
   'export.labels': 'Lijnlabels',
   'export.labelsHelp': 'Elk label op de afbeelding, niet alleen die onder de muis.',
-  'export.titleBlock': 'Titelblok',
-  'export.titleBlockHelp': 'Klant, auteur en datum onderaan.',
   'export.legend': 'Legenda',
   'export.legendHelp': 'Wat de badgekleuren betekenen, onder het titelblok.',
   'export.lifecycle': 'LEVENSCYCLUS',
@@ -191,7 +189,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'export.size': '{width} × {height} pixels, ongeveer {megapixels} megapixels.',
   'export.largeBody':
     'Dat is een grote afbeelding. Tekenen kan even duren en het venster reageert intussen niet.',
-  'export.authorHelp': 'Leeg: niemand wordt genoemd',
   'export.dialogTitleOf': '{name} exporteren als afbeelding',
   'export.confirm': 'PNG bewaren',
   'export.outOfSight': 'Dit venster is uit beeld, en een afbeelding kan alleen worden getekend in een venster dat je ziet. De export gaat verder zodra je het terughaalt.',

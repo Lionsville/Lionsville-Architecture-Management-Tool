@@ -190,8 +190,6 @@ export const EN = {
   'export.themeDark': 'Dark',
   'export.labels': 'Line labels',
   'export.labelsHelp': 'Every label on the picture, not only the ones under the pointer.',
-  'export.titleBlock': 'Title block',
-  'export.titleBlockHelp': 'Client, author and date along the bottom.',
   'export.legend': 'Legend',
   'export.legendHelp': 'What the badge colours mean, under the title block.',
   'export.lifecycle': 'LIFECYCLE',
@@ -201,7 +199,6 @@ export const EN = {
   'export.largeBody':
     'That is a large image. Drawing it can take a while, and the window will not respond '
     + 'until it is done.',
-  'export.authorHelp': 'Empty: nobody is named',
   'export.dialogTitleOf': 'Export {name} as a picture',
   'export.confirm': 'Save PNG',
   'export.outOfSight': 'This window is out of sight, and a picture can only be drawn in a window you can see. The export goes on as soon as you bring it back.',

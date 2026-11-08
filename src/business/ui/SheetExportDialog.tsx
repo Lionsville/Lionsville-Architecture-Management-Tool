@@ -19,8 +19,8 @@
 import { useState } from 'react'
 import { useStrings } from '../../i18n'
 import type { DesignDiagram, SheetPaper } from '../../model'
-import { PictureDialog } from '../../widgets/kit/PictureDialog'
-import { SelectField, TextField } from '../../widgets/kit/Field'
+import { PictureDialog, PictureTitleFields } from '../../widgets/kit/PictureDialog'
+import { SelectField } from '../../widgets/kit/Field'
 import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperHeight, paperWidth } from '../grid'
 import type { PaperSize } from '../grid'
 import type { SheetActions } from './FunctionInspector'
@@ -38,7 +38,12 @@ export type SheetExportDialogProps = {
   sheet?: DesignDiagram
   actions?: Pick<SheetActions, 'updateSheet'>
   /** A map's title block: its name stays on the tab and the other words of a picture live here (a map has no tab menu of its own). */
-  titleBlock?: { map: DesignDiagram; onChange(patch: Partial<Pick<DesignDiagram, 'author' | 'client' | 'documentDate' | 'showTitleBlock'>>): void }
+  titleBlock?: {
+    map: DesignDiagram
+    /** What an empty client draws: the scope's name, as on a board. */
+    clientFrom: string
+    onChange(patch: Partial<Pick<DesignDiagram, 'author' | 'client' | 'documentDate' | 'showTitleBlock'>>): void
+  }
   /** The view's name: the dialog is Export <name>, as every export is. */
   name: string
   /** What the picture is, where it is not the sheet's whole page. */
@@ -59,13 +64,12 @@ export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, 
       failed={(message) => t('sheet.exportFailed', { message })}
       {...(titleBlock && map ? {
         titleBlock: {
-          on: map.showTitleBlock === true, label: t('map.titleBlock'), onChange: (on: boolean) => titleBlock.onChange({ showTitleBlock: on }),
+          on: map.showTitleBlock === true, onChange: (on: boolean) => titleBlock.onChange({ showTitleBlock: on }),
           fields: (disabled: boolean) => (
-            <>
-              <TextField label={t('map.author')} disabled={disabled} value={map.author ?? ''} onChange={(author) => titleBlock.onChange({ author })} />
-              <TextField label={t('map.client')} disabled={disabled} value={map.client ?? ''} onChange={(client) => titleBlock.onChange({ client })} />
-              <TextField label={t('map.date')} disabled={disabled} value={map.documentDate ?? ''} onChange={(documentDate) => titleBlock.onChange({ documentDate })} />
-            </>
+            <PictureTitleFields
+              values={{ client: map.client ?? '', author: map.author ?? '', date: map.documentDate ?? '' }} clientFrom={titleBlock.clientFrom} disabled={disabled}
+              onChange={({ date, ...rest }) => titleBlock.onChange({ ...rest, ...(date !== undefined ? { documentDate: date } : {}) })}
+            />
           ),
         },
       } : {})}

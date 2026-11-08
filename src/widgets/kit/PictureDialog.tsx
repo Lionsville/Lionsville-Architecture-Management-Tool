@@ -14,10 +14,11 @@
  * (`children` in `PictureGroup`s, a title block, a preview) and does the work in
  * `onSave`. A failure is said in place and the dialog stays up.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Dialog } from './Dialog'
+import { TextField } from './Field'
 import './PictureDialog.css'
 
 export type PictureDialogProps = {
@@ -57,9 +58,73 @@ export type PictureTitleBlock = {
   readonly onChange: (on: boolean) => void
   /** Its fields, told whether they may be written: only while it is drawn. */
   readonly fields: (disabled: boolean) => ReactNode
-  /** What the tick says, where it is not the kit's *Draw the title block*. */
+  /** What the tick says, where it is not the kit's *Title block*. */
   readonly label?: string
+  /** Said beside the tick; the kit's *Client, author and date along the bottom* where absent. */
   readonly hint?: string
+}
+
+/** A title block's words as a view keeps them: each may be empty, and then the picture draws what its hint says. */
+export type PictureTitleValues = { readonly client: string; readonly author: string; readonly date: string }
+
+/**
+ * The title block's words, one part for every view that draws one: Client,
+ * Author and Date in that order, each saying under it what an empty one draws,
+ * each written as the field is left. The board's and Coverage's had their own,
+ * in another order and one without its hints.
+ */
+export function PictureTitleFields({ values, clientFrom, disabled, onChange }: {
+  readonly values: PictureTitleValues
+  /** What an empty client draws: the scope's name. */
+  readonly clientFrom: string
+  readonly disabled: boolean
+  readonly onChange: (patch: Partial<PictureTitleValues>) => void
+}) {
+  const { t } = useStrings()
+  return (
+    <>
+      <TitleField label={t('kit.picture.client')} hint={t('kit.picture.clientEmpty', { name: clientFrom })} held={values.client} disabled={disabled} onCommit={(client) => onChange({ client })} />
+      <TitleField label={t('kit.picture.author')} hint={t('kit.picture.authorEmpty')} held={values.author} disabled={disabled} onCommit={(author) => onChange({ author })} />
+      <TitleField label={t('kit.picture.date')} hint={t('kit.picture.dateEmpty')} held={values.date} disabled={disabled} onCommit={(date) => onChange({ date })} />
+    </>
+  )
+}
+
+/** One value of the title block: it lands as the person leaves the field. */
+function TitleField({ label, hint, held, disabled, onCommit }: { label: string; hint: string; held: string; disabled: boolean; onCommit(next: string): void }) {
+  const [typed, setTyped] = useState(held)
+  useEffect(() => setTyped(held), [held])
+  return (
+    <TextField
+      label={label} hint={hint} value={typed} disabled={disabled} onChange={setTyped}
+      onBlur={() => { if (typed.trim() !== held.trim()) onCommit(typed.trim()) }}
+    />
+  )
+}
+
+/**
+ * The strip a laid-out page draws along its foot while it is being made into a
+ * picture: client, title, author and date, as a board's export draws them onto
+ * its bitmap. It is never on the page otherwise.
+ */
+export function PictureTitleStrip({ client, title, author, date }: { readonly client: string; readonly title: string; readonly author?: string; readonly date: string }) {
+  const { t } = useStrings()
+  const cells = [
+    { label: t('kit.picture.client'), value: client },
+    { label: t('kit.picture.titleWord'), value: title, wide: true },
+    ...(author ? [{ label: t('kit.picture.author'), value: author }] : []),
+    { label: t('kit.picture.date'), value: date },
+  ]
+  return (
+    <div className="kit-picture-strip" data-testid="picture-title-strip">
+      {cells.map((cell) => (
+        <div key={cell.label} className="kit-picture-strip__cell" data-wide={cell.wide ? '' : undefined}>
+          <span className="kit-picture-strip__label">{cell.label}</span>
+          <span className="kit-picture-strip__value">{cell.value}</span>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 /** A choice of the export, with its name shown above it as a field's is. */
@@ -102,7 +167,7 @@ export function PictureDialog(props: PictureDialogProps) {
             <input type="checkbox" checked={block.on} disabled={held} onChange={(event) => block.onChange(event.target.checked)} data-testid="picture-title-block" />
             <span>{block.label ?? t('kit.picture.titleBlock')}</span>
           </label>
-          {block.hint && <span className="kit-picture__hint">{block.hint}</span>}
+          <span className="kit-picture__hint">{block.hint ?? t('kit.picture.titleBlockHint')}</span>
           <div className="kit-picture__fields">{block.fields(!block.on || held)}</div>
         </div>
       )}

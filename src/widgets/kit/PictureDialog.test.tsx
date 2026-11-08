@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
 import { TextField } from './Field'
-import { PictureDialog, PictureGroup } from './PictureDialog'
+import { PictureDialog, PictureGroup, PictureTitleFields, PictureTitleStrip } from './PictureDialog'
 import { Segmented } from './Segmented'
 
 afterEach(cleanup)
@@ -40,7 +40,7 @@ describe('PictureDialog', () => {
     renderShell(<WithBlock />)
     const author = screen.getByLabelText('Author') as HTMLInputElement
     expect(author.disabled).toBe(true)
-    fireEvent.click(screen.getByRole('checkbox', { name: 'Draw the title block' }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Title block' }))
     expect((screen.getByLabelText('Author') as HTMLInputElement).disabled).toBe(false)
   })
 
@@ -54,5 +54,23 @@ describe('PictureDialog', () => {
     await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Save PDF' })); await Promise.resolve() })
     expect(screen.getByRole('alert').textContent).toContain('no bitmap')
     expect(screen.getByRole('dialog', { name: 'Export Coverage' })).toBeTruthy()
+  })
+
+  it('asks the title block\'s words in one order with what an empty one draws, and writes one as it is left', () => {
+    const onChange = vi.fn()
+    renderShell(<PictureTitleFields values={{ client: '', author: 'Ann', date: '' }} clientFrom="Acme" disabled={false} onChange={onChange} />)
+    const fields = screen.getAllByRole('textbox')
+    expect(fields.map((one) => one.getAttribute('aria-label') ?? (one as HTMLInputElement).labels?.[0]?.textContent)).toEqual(['Client', 'Author', 'Date'])
+    expect(screen.getByText('Empty: uses Acme')).toBeTruthy()
+    expect(screen.getByText('Empty: nobody is named')).toBeTruthy()
+    expect(screen.getByText('Empty: the day it is exported')).toBeTruthy()
+    fireEvent.change(fields[2], { target: { value: '2026-11-08' } })
+    fireEvent.blur(fields[2])
+    expect(onChange).toHaveBeenCalledWith({ date: '2026-11-08' })
+  })
+
+  it('draws a laid-out page\'s strip with the cells a board draws, leaving out an author nobody gave', () => {
+    renderShell(<PictureTitleStrip client="Acme" title="Coverage" date="2026-11-08" />)
+    expect(screen.getByTestId('picture-title-strip').textContent).toBe('ClientAcmeTitleCoverageDate2026-11-08')
   })
 })

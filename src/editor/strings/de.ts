@@ -181,8 +181,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'export.themeDark': 'Dunkel',
   'export.labels': 'Linienbeschriftungen',
   'export.labelsHelp': 'Jede Beschriftung im Bild, nicht nur die unter dem Zeiger.',
-  'export.titleBlock': 'Titelblock',
-  'export.titleBlockHelp': 'Kunde, Autor und Datum am unteren Rand.',
   'export.legend': 'Legende',
   'export.legendHelp': 'Was die Farben der Kennzeichen bedeuten, unter dem Titelblock.',
   'export.lifecycle': 'LEBENSZYKLUS',
@@ -191,7 +189,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'export.size': '{width} × {height} Pixel, etwa {megapixels} Megapixel.',
   'export.largeBody':
     'Das ist ein großes Bild. Das Zeichnen kann eine Weile dauern, und das Fenster reagiert so lange nicht.',
-  'export.authorHelp': 'Leer: niemand wird genannt',
   'export.dialogTitleOf': '{name} als Bild exportieren',
   'export.confirm': 'PNG speichern',
   'export.outOfSight': 'Dieses Fenster ist nicht zu sehen, und ein Bild lässt sich nur in einem sichtbaren Fenster zeichnen. Der Export geht weiter, sobald Sie es zurückholen.',

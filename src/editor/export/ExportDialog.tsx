@@ -17,10 +17,8 @@
  * chosen options while this is open and hands over the preview and the size;
  * this decides nothing but what the person chose.
  */
-import { useEffect, useState } from 'react';
 import { useStrings } from '../../i18n/LanguageContext';
-import { PictureDialog, PictureGroup } from '../../widgets/kit/PictureDialog';
-import { TextField } from '../../widgets/kit/Field';
+import { PictureDialog, PictureGroup, PictureTitleFields } from '../../widgets/kit/PictureDialog';
 import { Segmented } from '../../widgets/kit/Segmented';
 import { SettingSwitch } from '../../widgets/kit/SettingsPage';
 import { LARGE_EXPORT_MEGAPIXELS } from './exportPng';
@@ -74,18 +72,6 @@ export interface ExportTitleFields {
   onChange(patch: { client?: string; author?: string; documentDate?: string }): void;
 }
 
-/** One value of the title block: it lands as the person leaves the field. */
-function TitleField({ label, hint, held, disabled, onCommit }: { label: string; hint: string; held: string; disabled: boolean; onCommit(next: string): void }) {
-  const [typed, setTyped] = useState(held);
-  useEffect(() => setTyped(held), [held]);
-  return (
-    <TextField
-      label={label} hint={hint} value={typed} disabled={disabled} onChange={setTyped}
-      onBlur={() => { if (typed.trim() !== held.trim()) onCommit(typed.trim()); }}
-    />
-  );
-}
-
 export function ExportDialog(props: ExportDialogProps) {
   const { t } = useStrings();
   const { options, onChange, titleFields, exporting } = props;
@@ -98,16 +84,15 @@ export function ExportDialog(props: ExportDialogProps) {
       {...(warning ? { warning } : {})}
       facts={<p className="export-dialog__size">{t('export.size', props.size)}</p>}
       titleBlock={{
-        on: options.titleBlock, label: t('export.titleBlock'), hint: t('export.titleBlockHelp'),
+        on: options.titleBlock,
         onChange: (titleBlock) => onChange({ ...options, titleBlock }),
         fields: (disabled) => (
           <>
             {titleFields && (
-              <>
-                <TitleField label={t('diagramSettings.client')} hint={t('diagramSettings.clientHelp', { name: titleFields.clientFrom })} held={titleFields.client} disabled={disabled} onCommit={(client) => titleFields.onChange({ client })} />
-                <TitleField label={t('diagramSettings.author')} hint={t('export.authorHelp')} held={titleFields.author} disabled={disabled} onCommit={(author) => titleFields.onChange({ author })} />
-                <TitleField label={t('diagramSettings.date')} hint={t('diagramSettings.dateHelp')} held={titleFields.date} disabled={disabled} onCommit={(documentDate) => titleFields.onChange({ documentDate })} />
-              </>
+              <PictureTitleFields
+                values={titleFields} clientFrom={titleFields.clientFrom} disabled={disabled}
+                onChange={({ date, ...rest }) => titleFields.onChange({ ...rest, ...(date !== undefined ? { documentDate: date } : {}) })}
+              />
             )}
             {/* The key lives on the strip: without one there is nowhere to draw it. */}
             <SettingSwitch boxFirst label={t('export.legend')} hint={t(props.offersLineList ? 'export.keyHelp' : 'export.legendHelp')} checked={options.legend && options.titleBlock} disabled={disabled} onChange={(legend) => onChange({ ...options, legend })} />

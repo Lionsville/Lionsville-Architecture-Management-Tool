@@ -39,6 +39,7 @@ import { MoreMenu } from '../../widgets/kit/Menu'
 import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PageDialog } from '../../widgets/PageDialog'
 import { PageState } from '../../widgets/kit/PageState'
+import { PictureTitleStrip } from '../../widgets/kit/PictureDialog'
 import { Panel, PanelSection } from '../../widgets/kit/Panel'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { Toast } from '../../widgets/kit/Toast'
@@ -403,6 +404,8 @@ function MapBody({ laidOut, props, readOnly, firstLeaf, matched, title, pick, on
 function useMapPicture(props: MapPageProps, node: { current: HTMLDivElement | null }, selectedId: ElementId | undefined) {
   const theme = useTheme()
   const [exporting, setExporting] = useState(false)
+  // A person's picture carries the title block where the map draws one; an agent's look does not.
+  const [titled, setTitled] = useState(false)
   const capture = useCallback(async (options: SheetCaptureOptions) => {
     if (!node.current) throw new Error('MapPage: the page is not on screen')
     setExporting(true)
@@ -423,10 +426,15 @@ function useMapPicture(props: MapPageProps, node: { current: HTMLDivElement | nu
   }, [onHandle, open, mapId, capture, selectedId])
   const exportPng = async (layout: ExportLayout) => {
     if (!map || !props.onSave) return
-    const shot = await capture({ maxPixels: EXPORT_MAX_PIXELS, ...(layout === 'screen' ? {} : { width: paperWidth(layout) }) })
-    props.onSave({ name: `${fileSafe(map.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
+    setTitled(map.showTitleBlock === true)
+    try {
+      const shot = await capture({ maxPixels: EXPORT_MAX_PIXELS, ...(layout === 'screen' ? {} : { width: paperWidth(layout) }) })
+      props.onSave({ name: `${fileSafe(map.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
+    } finally {
+      setTitled(false)
+    }
   }
-  return { exporting, exportPng }
+  return { exporting, titled, exportPng }
 }
 
 /** What is open beyond the level: by hand, or because a row was asked for that sat under it. */
@@ -513,8 +521,9 @@ function MapDialogs({ map, props, exportOpen, onExportClose, exportPng, renaming
     <>
       {exportOpen && map && (
         <SheetExportDialog
-          name={map.name} initial="screen" onExport={exportPng} onClose={onExportClose} hint={t('map.exportHint')}
-          {...(!readOnly && props.onUpdate ? { titleBlock: { map, onChange: props.onUpdate } } : {})}
+          // Named for the page it is on, as the tab says it, and not for the view's stored name.
+          name={t('map.page')} initial="screen" onExport={exportPng} onClose={onExportClose} hint={t('map.exportHint')}
+          {...(!readOnly && props.onUpdate ? { titleBlock: { map, clientFrom: props.model.name, onChange: props.onUpdate } } : {})}
         />
       )}
       {drawsOpen && map && props.onUpdate && (
@@ -634,7 +643,7 @@ export function MapPage(props: MapPageProps) {
   const [toast, setToast] = useState<ToastWords | null>(null)
   const sheetLevel = usePlaceTabFor('sheet')
   const { lookDay, look, readOnly, chooseDay } = useMapDay(props)
-  const { exporting, exportPng } = useMapPicture(props, page, pick?.id)
+  const { exporting, titled, exportPng } = useMapPicture(props, page, pick?.id)
   const laidOut = useLaidOutMap(props, lookDay ?? (props.map?.asOf === undefined ? props.sheetDay : undefined), allColumns)
   const folds = useUnfolded(model)
   const pickRow = (id: ElementId) => { setPick({ kind: 'row', id }); folds.reveal(id) }
@@ -685,6 +694,7 @@ export function MapPage(props: MapPageProps) {
             />
           )}
         </div>
+        <MapTitleStrip shown={titled} map={map} model={props.model} t={t} />
       </Box>
       <MapDialogs
         map={map} props={props} exportOpen={exportOpen} onExportClose={() => setExportOpen(false)} exportPng={exportPng} renaming={renaming} onRenaming={setRenaming}
@@ -692,6 +702,16 @@ export function MapPage(props: MapPageProps) {
       />
       <Toast toast={toast} onClose={() => setToast(null)} />
     </Frame>
+  )
+}
+
+/** The map's title block, drawn along its foot while a person's picture is made: what an empty field draws is a board's. */
+function MapTitleStrip({ shown, map, model, t }: { shown: boolean; map: DesignDiagram | undefined; model: DesignModel; t: Translate }) {
+  if (!shown || !map) return null
+  return (
+    <PictureTitleStrip
+      client={map.client || model.name} title={t('map.page')} author={map.author} date={map.documentDate || new Date().toISOString().slice(0, 10)}
+    />
   )
 }
 
