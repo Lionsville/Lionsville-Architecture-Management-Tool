@@ -40,6 +40,7 @@ import type { MenuEntry } from '../../widgets/kit/Menu'
 import { PageDialog } from '../../widgets/PageDialog'
 import { PageState } from '../../widgets/kit/PageState'
 import { PictureTitleStrip } from '../../widgets/kit/PictureDialog'
+import { coloursOf, tokenVariables } from '../../widgets/kit/tokens'
 import { Panel, PanelSection } from '../../widgets/kit/Panel'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { Toast } from '../../widgets/kit/Toast'
@@ -407,13 +408,18 @@ function useMapPicture(props: MapPageProps, node: { current: HTMLDivElement | nu
   const [exporting, setExporting] = useState(false)
   // A person's picture carries the title block where the map draws one; an agent's look does not.
   const [titled, setTitled] = useState(false)
-  const capture = useCallback(async (options: SheetCaptureOptions) => {
-    if (!node.current) throw new Error('MapPage: the page is not on screen')
+  const capture = useCallback(async (options: SheetCaptureOptions, mode: 'light' | 'dark' = theme.palette.mode) => {
+    const held = node.current
+    if (!held) throw new Error('MapPage: the page is not on screen')
+    // The other theme: the page's tokens set on its own root for as long as it is drawn, and its ground under it.
+    const other = mode === theme.palette.mode ? [] : Object.entries(tokenVariables(mode, theme.tokens?.shades))
+    for (const [name, value] of other) held.style.setProperty(name, value)
     setExporting(true)
     try {
       await settled()
-      return await captureSheet(node.current, { maxPixels: options.maxPixels, background: theme.palette.background.default })
+      return await captureSheet(held, { maxPixels: options.maxPixels, background: other.length ? coloursOf(mode, theme.tokens?.shades).ground : theme.palette.background.default })
     } finally {
+      for (const [name] of other) held.style.removeProperty(name)
       setExporting(false)
     }
   }, [theme, node])
@@ -425,12 +431,12 @@ function useMapPicture(props: MapPageProps, node: { current: HTMLDivElement | nu
     onHandle({ diagramId: mapId, capture, ...(selectedId !== undefined ? { selectedId } : {}) })
     return () => onHandle(undefined)
   }, [onHandle, open, mapId, capture, selectedId])
-  const exportPng = async (layout: ExportLayout) => {
+  const exportPng = async (layout: ExportLayout, mode: 'light' | 'dark' = theme.palette.mode) => {
     if (!map || !props.onSave) return
     // On unless turned off, as a board's is.
     setTitled(map.showTitleBlock !== false)
     try {
-      const shot = await capture({ maxPixels: EXPORT_MAX_PIXELS, ...(layout === 'screen' ? {} : { width: paperWidth(layout) }) })
+      const shot = await capture({ maxPixels: EXPORT_MAX_PIXELS, ...(layout === 'screen' ? {} : { width: paperWidth(layout) }) }, mode)
       props.onSave({ name: coverageFileName(props.model.name, t('map.page')), bytes: shot.png, mediaType: 'image/png' })
     } finally {
       setTitled(false)
@@ -511,7 +517,7 @@ function MapDialogs({ map, props, exportOpen, onExportClose, exportPng, renaming
   props: MapPageProps
   exportOpen: boolean
   onExportClose(): void
-  exportPng(layout: ExportLayout): Promise<void>
+  exportPng(layout: ExportLayout, mode?: 'light' | 'dark'): Promise<void>
   renaming: string | undefined
   onRenaming(name: string | undefined): void
   drawsOpen: boolean
@@ -519,12 +525,13 @@ function MapDialogs({ map, props, exportOpen, onExportClose, exportPng, renaming
   readOnly: boolean
   t: Translate
 }) {
+  const theme = useTheme()
   return (
     <>
       {exportOpen && map && (
         <SheetExportDialog
           // Named for the page it is on, as the tab says it, and not for the view's stored name.
-          name={t('map.page')} initial="screen" onExport={exportPng} onClose={onExportClose} hint={t('map.exportHint')}
+          name={t('map.page')} initial="screen" onExport={exportPng} onClose={onExportClose} hint={t('map.exportHint')} themeFrom={theme.palette.mode}
           {...(!readOnly && props.onUpdate ? { titleBlock: { map, clientFrom: props.model.name, onChange: props.onUpdate } } : {})}
         />
       )}

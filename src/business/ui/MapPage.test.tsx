@@ -256,6 +256,10 @@ describe('what a person can do from it', () => {
     open({ onSave: vi.fn() })
     fireEvent.click(screen.getByRole('button', { name: 'Export…' }))
     expect(screen.getByRole('dialog', { name: /^Export / })).toBeTruthy()
+    // The theme it is made in, as a board's export offers it, from the window's.
+    const theme = screen.getByRole('radiogroup', { name: 'Theme' })
+    expect(within(theme).getAllByRole('radio').map((one) => one.textContent)).toEqual(['Light', 'Dark'])
+    expect(within(theme).getAllByRole('radio').filter((one) => one.getAttribute('aria-checked') === 'true')).toHaveLength(1)
   })
 })
 

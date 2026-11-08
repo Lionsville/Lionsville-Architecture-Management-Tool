@@ -19,6 +19,7 @@ import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Dialog } from './Dialog'
 import { TextField } from './Field'
+import { Segmented } from './Segmented'
 import './PictureDialog.css'
 
 export type PictureDialogProps = {
@@ -127,6 +128,19 @@ export function PictureTitleStrip({ client, title, author, date }: { readonly cl
         </div>
       ))}
     </div>
+  )
+}
+
+/** Which theme a picture is made in, whatever the window wears: a print from a dark window is often wanted light. */
+export function PictureTheme({ value, onChange }: { readonly value: 'light' | 'dark'; readonly onChange: (mode: 'light' | 'dark') => void }) {
+  const { t } = useStrings()
+  return (
+    <PictureGroup label={t('kit.picture.theme')}>
+      <Segmented
+        label={t('kit.picture.theme')} value={value} onChange={onChange}
+        options={[{ value: 'light', label: t('kit.picture.themeLight') }, { value: 'dark', label: t('kit.picture.themeDark') }]}
+      />
+    </PictureGroup>
   )
 }
 

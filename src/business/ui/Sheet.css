@@ -160,6 +160,10 @@
   .map-page__grid .kit-matrix .kit-matrix__line { min-height: 0; padding-block: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--t-small); }
 }
 .sheet-page[data-exporting] .kit-matrix__scroll { overflow: visible; }
+/* A picture is the page, not the work on it: no live line, no fold carets, and every head written whole. */
+.sheet-page[data-exporting] .kit-matrix__line, .sheet-page[data-exporting] .kit-matrix__caret { display: none; }
+.sheet-page[data-exporting] .kit-matrix .kit-matrix__groupName { width: auto; min-width: 0; overflow: visible; text-overflow: clip; }
+.sheet-page[data-exporting] .kit-matrix[data-rotate] .kit-matrix__colName { max-height: none; overflow: visible; text-overflow: clip; }
 .map-verdict[data-gap] { color: var(--warn); font-weight: var(--fw-medium); }
 .map-column__row { display: flex; gap: var(--s-2); }
 .map-count { color: var(--cov-apps); font-size: var(--t-small); }

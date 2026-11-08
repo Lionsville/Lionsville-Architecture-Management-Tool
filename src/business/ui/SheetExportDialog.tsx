@@ -19,7 +19,7 @@
 import { useState } from 'react'
 import { useStrings } from '../../i18n'
 import type { DesignDiagram, SheetPaper } from '../../model'
-import { PictureDialog, PictureTitleFields } from '../../widgets/kit/PictureDialog'
+import { PictureDialog, PictureTheme, PictureTitleFields } from '../../widgets/kit/PictureDialog'
 import { SelectField } from '../../widgets/kit/Field'
 import { DEFAULT_PAPER, MAX_SPAN, PAPER_SIZES, isSheetPaper, paperHeight, paperWidth } from '../grid'
 import type { PaperSize } from '../grid'
@@ -31,8 +31,10 @@ export type ExportLayout = 'screen' | PaperSize
 export type SheetExportDialogProps = {
   /** What the sheet is laid out on already, offered first. Absent = A1. */
   initial?: ExportLayout
-  /** Draw the page at the width, or as it is, and hand the picture over. Rejects when the browser declined. */
-  onExport(layout: ExportLayout): Promise<void>
+  /** Draw the page at the width, or as it is, in the theme chosen where one is offered, and hand the picture over. Rejects when the browser declined. */
+  onExport(layout: ExportLayout, mode?: 'light' | 'dark'): Promise<void>
+  /** The theme the picture is made in, offered as a board's export offers it, starting from the window's. Absent: the window's, unasked. */
+  themeFrom?: 'light' | 'dark'
   onClose(): void
   /** The sheet's own canvas and columns, which say how a picture is laid out. Absent for a reader, and for a map. */
   sheet?: DesignDiagram
@@ -53,14 +55,15 @@ export type SheetExportDialogProps = {
 /** One to twice the widest an area may be: an A0 holds about fourteen columns, and nobody reads that. */
 const COLUMN_CHOICES = Array.from({ length: MAX_SPAN * 2 }, (_, index) => index + 1)
 
-export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, titleBlock, name, hint }: SheetExportDialogProps) {
+export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, titleBlock, name, hint, themeFrom }: SheetExportDialogProps) {
   const { t } = useStrings()
   const [layout, setLayout] = useState<ExportLayout>(initial ?? 'A1')
+  const [mode, setMode] = useState(themeFrom ?? 'light')
   const papers = PAPER_SIZES.map((paper) => ({ value: paper, label: `${paper} · ${paperWidth(paper)} × ${paperHeight(paper)} px` }))
   const map = titleBlock?.map
   return (
     <PictureDialog
-      name={name} onSave={() => onExport(layout)} onClose={onClose} about={<p>{hint ?? t('sheet.exportHint')}</p>}
+      name={name} onSave={() => (themeFrom ? onExport(layout, mode) : onExport(layout))} onClose={onClose} about={<p>{hint ?? t('sheet.exportHint')}</p>}
       failed={(message) => t('sheet.exportFailed', { message })}
       {...(titleBlock && map ? {
         titleBlock: {
@@ -74,6 +77,7 @@ export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, 
         },
       } : {})}
     >
+      {themeFrom && <PictureTheme value={mode} onChange={setMode} />}
       <SelectField
         label={t('sheet.exportPaper')} value={layout} onChange={(value) => setLayout(value as ExportLayout)}
         options={[{ value: 'screen', label: t('sheet.exportScreen') }, ...papers]}
