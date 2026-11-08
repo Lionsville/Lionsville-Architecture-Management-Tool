@@ -700,6 +700,23 @@ describe('useCanvasShortcuts — Escape, outermost', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
+  it('lets go from the frame’s chrome around a board that is up, never from a field of somebody else’s', () => {
+    const { view, setSelection } = setup();
+    Object.defineProperty(view.getByTestId('container'), 'offsetParent', { configurable: true, get: () => document.body });
+    const field = document.createElement('input');
+    const button = document.createElement('button');
+    document.body.append(field, button);
+    try {
+      fireEvent.keyDown(field, { key: 'Escape' });
+      expect(setSelection).not.toHaveBeenCalled();
+      fireEvent.keyDown(button, { key: 'Escape' });
+      expect(setSelection).toHaveBeenCalledWith(EMPTY);
+    } finally {
+      field.remove();
+      button.remove();
+    }
+  });
+
   it('is not the board’s from nowhere while a page is up over it', () => {
     const { view, setSelection } = setup();
     Object.defineProperty(view.getByTestId('container'), 'offsetParent', { configurable: true, get: () => document.body });

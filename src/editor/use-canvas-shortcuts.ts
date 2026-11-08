@@ -244,7 +244,7 @@ export function useCanvasShortcuts(
      * the window as it bubbles, so a field reverting, a menu, the frame's panel
      * and a page closing have all had it first, and one that acted claimed it.
      * Ours from inside the editor, an inspector field with nothing to put back
-     * included, or from nowhere in particular while the editor is what is seen.
+     * included, or from around it while the editor is what is seen.
      */
     const onEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || keyClaimed(event)) return;
@@ -253,10 +253,14 @@ export function useCanvasShortcuts(
       if (!node || !node.isConnected || !h.diagram) return;
       const target = event.target;
       const inside = target instanceof Node && node.contains(target);
-      const nowhere = target == null || target === document.body || target === document || target === window;
       const visible = node.offsetParent !== null || node.getClientRects().length > 0;
-      // A page up over the board hears it on the window too, and closes first whichever listener was added first.
-      if (!inside && !(nowhere && visible && document.querySelector('[data-place-page]') === null)) return;
+      // From outside the editor — the body, or the frame's chrome around it, where
+      // the focus stays after the panel shut — while the board is what is up: not
+      // from a field or a dialog of somebody else's, and not while a page is up
+      // over the board, which hears it on the window too.
+      const around = visible && !isEditableTarget(target) && document.querySelector('[data-place-page]') === null
+        && !(target instanceof Element && target.closest('[role="dialog"], [role="alertdialog"], [role="menu"]'));
+      if (!inside && !around) return;
       if (isShortcutIgnoredTarget(target) || keepsItsChord('deselect', target)) return;
       const def = CANVAS_SHORTCUTS.find((one) => one.id === 'deselect');
       if (!def || !matchEvent(event, def, platformRef.current)) return;
