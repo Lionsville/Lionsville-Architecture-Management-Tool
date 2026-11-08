@@ -241,7 +241,7 @@ describe('DiagramCanvas — element menu', () => {
     fireEvent.contextMenu(nodeEl('a1'));
     fireEvent.click(within(menu('Element menu')).getByText('Delete from model…'));
     expect(screen.getByRole('dialog')).toBeDefined();
-    expect(screen.getByText(/Delete “Webshop”/)).toBeDefined();
+    expect(screen.getByText(/Remove or delete “Webshop”/)).toBeDefined();
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
 
     fireEvent.contextMenu(nodeEl('a1'));

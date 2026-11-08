@@ -435,7 +435,7 @@ function nodeItems(ctx: MenuContext): MenuItem[] {
     {
       id: 'remove-from-diagram',
       label: t('menu.removeFromDiagram'),
-      shortcut: key('delete'),
+      // No ⌫ here: the key asks which of the two, and says so on the sheet of keys.
       action: 'remove-from-diagram',
       ...(el.isBoundaryApplication
         ? { disabled: true, disabledReason: t('menu.boundaryApplication') }

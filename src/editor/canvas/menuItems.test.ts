@@ -127,7 +127,8 @@ describe('menuItemsFor — node', () => {
     expect(byId(mac, 'duplicate').shortcut).toBe('⌘D');
     expect(byId(mac, 'copy').shortcut).toBe('⌘C');
     expect(byId(mac, 'cut').shortcut).toBe('⌘X');
-    expect(byId(mac, 'remove-from-diagram').shortcut).toBe('⌫');
+    // ⌫ asks remove or delete, so neither of the two items wears it.
+    expect(byId(mac, 'remove-from-diagram').shortcut).toBeUndefined();
     const win = menuItemsFor(NODE, ctx({ element: app(), platform: 'other' }));
     expect(byId(win, 'duplicate').shortcut).toBe('Ctrl+D');
   });

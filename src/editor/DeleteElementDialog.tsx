@@ -50,7 +50,8 @@ export function DeleteElementDialog(props: DeleteElementDialogProps) {
   return (
     // Wide enough for the menu's own two words on one row in German (Aus der Ansicht entfernen, Aus dem Modell löschen).
     <Dialog open onClose={props.onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{t('dialog.deleteElementTitle', { name: props.element.name })}</DialogTitle>
+      {/* A choice between the two acts is asked as one: the title says both where both are offered. */}
+      <DialogTitle>{t(props.onRemoveFromDiagram ? 'dialog.removeOrDeleteTitle' : 'dialog.deleteElementTitle', { name: props.element.name })}</DialogTitle>
       <DialogContent>
         <DialogContentText sx={{ fontSize: 'var(--t-body)' }}>
           {props.onRemoveFromDiagram && <><strong>{t('dialog.removeFromDiagram')}</strong> {t('dialog.deleteElementKeeps')}{' '}</>}
