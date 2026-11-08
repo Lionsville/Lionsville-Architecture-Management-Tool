@@ -2119,6 +2119,8 @@ export const EN = {
   'unitMove.newPlace': "New place",
   'unitMove.sitsNowShort': "Where it sits now",
   'unitMove.alongNone': "no units beside it",
+  'chart.holdsPicked': "Holds the unit picked",
+  'chart.openWhereKept': "Open where it is kept",
   'unitMove.legend': "What the rings mean",
   'unitMove.legendMoving': "Being moved",
   'unitMove.pickFirst': "Pick where it goes first",

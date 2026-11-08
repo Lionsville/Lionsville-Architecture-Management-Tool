@@ -1890,6 +1890,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'unitMove.newPlace': "Neuer Platz",
   'unitMove.sitsNowShort': "Wo sie jetzt sitzt",
   'unitMove.alongNone': "keine Einheiten daneben",
+  'chart.holdsPicked': "Enthält die gewählte Einheit",
+  'chart.openWhereKept': "Öffnen, wo sie geführt wird",
   'unitMove.legend': "Was die Rahmen bedeuten",
   'unitMove.legendMoving': "Wird verschoben",
   'unitMove.pickFirst': 'Wählen Sie zuerst, wohin sie kommt',

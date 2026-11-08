@@ -116,6 +116,31 @@ describe('a large organisation on its chart', () => {
     expect(within(box('d2')).getByTestId('chart-rollup').textContent).toBe('8 units · 12 roles vacant')
   })
 
+  it('rings a folded box that hides the unit picked, and says so', () => {
+    renderShell(<Harness selectedId="d0c0t1" />)
+    // d0c0 is folded on a first open, and holds the team picked.
+    expect(box('d0c0').getAttribute('data-holds-picked')).toBe('true')
+    expect(within(box('d0c0')).getByTestId('chart-holds-picked').textContent).toBe('Holds the unit picked')
+    expect(box('d0c1').getAttribute('data-holds-picked')).toBeNull()
+  })
+
+  it('opens a unit’s menu on a right-click, picking it first, with what its picked box offers and its fold', () => {
+    const onSelect = vi.fn()
+    renderShell(<Harness onSelect={onSelect} />)
+    fireEvent.contextMenu(box('d1c0'))
+    expect(onSelect).toHaveBeenCalledWith('d1c0')
+    const menu = screen.getByRole('menu', { name: 'Cluster 1.0' })
+    expect(within(menu).getByRole('menuitem', { name: 'Focus' })).toBeTruthy()
+    fireEvent.click(within(menu).getByRole('menuitem', { name: 'Unfold Cluster 1.0' }))
+    expect(drawn()).toEqual(expect.arrayContaining(['d1c0t0', 'd1c0t1', 'd1c0t2']))
+  })
+
+  it('opens the same menu from the menu key on a unit’s name', () => {
+    renderShell(<Harness selectedId="d2" />)
+    fireEvent.keyDown(within(box('d2')).getByTestId('chart-unit-open'), { key: 'ContextMenu' })
+    expect(screen.getByRole('menu', { name: 'Domain 2' })).toBeTruthy()
+  })
+
   it('shows as many levels as the Levels control says: one folds every unit, All opens every one', () => {
     renderShell(<Harness />)
     fireEvent.click(screen.getByRole('radio', { name: 'All' }))

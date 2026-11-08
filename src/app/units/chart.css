@@ -79,7 +79,18 @@ button.org-vacant:focus-visible { outline: var(--focus-ring-width) solid var(--f
 .org-rollup { all: unset; display: block; color: var(--accent); cursor: pointer; }
 .org-rollup:hover { text-decoration: underline; }
 .org-rollup:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
-.org-actions { display: flex; flex-wrap: wrap; gap: 0 var(--s-2); margin-top: 2px; }
+/*
+ * The picked box's verbs hang from its foot, over the gap below, rather than grow the box:
+ * a box that grew when picked pushed its siblings down.
+ */
+.org-actions {
+  position: absolute; z-index: 5; inset-inline: calc(-1 * var(--line-width-emphasis)); top: 100%;
+  display: flex; flex-wrap: wrap; gap: 0 var(--s-2); padding: 1px var(--s-2) 2px;
+  border: var(--line-width-emphasis) solid var(--selected-edge); border-top: 0; border-radius: 0 0 var(--r-2) var(--r-2);
+  background: var(--surface-raised); box-shadow: var(--shadow);
+}
+/* A fold that hides the unit picked: ringed in the selection's edge, dashed, as the place it is. */
+.org-node[data-holds-picked] { outline: var(--line-width-emphasis) dashed var(--selected-edge); outline-offset: 2px; }
 .org-link { all: unset; color: var(--accent); cursor: pointer; }
 .org-link:hover { text-decoration: underline; }
 .org-link[aria-disabled='true'] { color: var(--ink-3); }

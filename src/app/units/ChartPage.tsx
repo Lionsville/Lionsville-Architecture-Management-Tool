@@ -39,7 +39,7 @@
  * ⌘F comes to it, because on a chart of people the search of the design finds
  * the wrong things.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
@@ -106,6 +106,8 @@ import { useNewUnit } from './useNewUnit'
 import type { NewUnit, UnitMaking } from './useNewUnit'
 import { useSiblingOrder } from './useSiblingOrder'
 import { claimKey, commandKey, keyClaimed } from '../../widgets/kit/keys'
+import { Menu } from '../../widgets/kit/Menu'
+import type { MenuEntry } from '../../widgets/kit/Menu'
 import './chart.css'
 
 /** As large a picture as the landscape's: a chart of a large organisation is wide. */
@@ -187,7 +189,8 @@ export function ChartPage(props: ChartPageProps) {
     make: props.make, readOnly: props.readOnly, here, chart, day, scope: props.scope ?? '', scopeLabel: props.scopeLabel, typeName, goTo: going.goTo, t,
   })
   const drawnTop = focused ? [focused] : chart.roots
-  const drawing = useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, names, typeName, drawnTop, stage, setAssigning, language, t })
+  const menu = useUnitMenu(props.here, folds, going, moving, newUnit, t)
+  const drawing = useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, names, typeName, drawnTop, stage, setAssigning, unitMenu: menu.open, language, t })
   useFindKey(stage)
   const organisationName = props.scopeLabel('')
   const empty = chart.roots.length === 0
@@ -196,6 +199,7 @@ export function ChartPage(props: ChartPageProps) {
     [folds.people, folds.folded, chart, props.selectedId, props.chosen, reading.focus, zoom.zoom],
   )
   const ownPanel = useChartDock(props, moving.up !== undefined, lines.lines === 'exceptions', going.summaryAsked)
+  useSteadyOnDock(page, stage, props.selectedId ?? going.current, props.selectedId !== undefined || props.chosen !== undefined || going.summaryAsked || ownPanel)
   const closeExceptions = () => setReading({ lines: 'person' })
   const [exportAsked, setExportAsked] = useState(false)
   const onExport = props.onExport
@@ -243,6 +247,7 @@ export function ChartPage(props: ChartPageProps) {
           </div>
         )}
       </div>
+      {menu.drawn}
       {assigning && <AssignThere held={assigning} props={props} day={day} names={names} onClose={() => setAssigning(undefined)} t={t} />}
       {newUnit.dialog}
       {exportAsked && onExport && (
@@ -337,10 +342,11 @@ function useChartGoing(
 type Going = ReturnType<typeof useChartGoing>
 
 /** What the boxes read, worked out once per render of the page. */
-function useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, names, typeName, drawnTop, stage, setAssigning, language, t }: {
+function useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, names, typeName, drawnTop, stage, setAssigning, unitMenu, language, t }: {
   props: ChartPageProps; chart: OrgChart; day: string; folds: ChartFolds; byUnit: ReadonlyMap<ElementId, number>; going: Going
   moving: ReturnType<typeof useChartMove>; newUnit: NewUnit; names: PersonNames; typeName: (id: string | undefined) => string
-  drawnTop: readonly ChartUnit[]; stage: { current: HTMLElement | null }; setAssigning: (held: HeldAssigning) => void; language: Language; t: Translate
+  drawnTop: readonly ChartUnit[]; stage: { current: HTMLElement | null }; setAssigning: (held: HeldAssigning) => void
+  unitMenu: ((unit: ChartUnit, at: HTMLElement) => void) | undefined; language: Language; t: Translate
 }): Drawing {
   const { here, people, today } = props
   const { current, pick, open, choose } = going
@@ -366,8 +372,10 @@ function useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, 
     else setRoving(onward)
     focusBox(stage.current, onward)
   }
+  const pickedId = props.selectedId ?? (props.chosen === undefined && current !== undefined && !here.heldHere(current) ? current : undefined)
+  const holdsPicked = useMemo(() => new Set(pickedId === undefined ? [] : unitsAboveIn(chart, pickedId)), [chart, pickedId])
   return {
-    chart, roles, typeName, names, scopeLabel: props.scopeLabel, plansOf: here.plansOf,
+    chart, roles, typeName, names, scopeLabel: props.scopeLabel, plansOf: here.plansOf, holdsPicked,
     day, today, language, t, selectedId: props.selectedId, chosen: props.chosen, pick, open, choose,
     external: (person: PersonId) => {
       const entry = resolvePerson(person, register)
@@ -375,7 +383,7 @@ function useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, 
     },
     mayAssign: (unit, roleId) => !props.readOnly || (here.heldHere(unit.id) && mayChangeIn(manages, unit.id, roleId)),
     // A unit kept elsewhere cannot be the editor's selection: gone to, it is picked as far as this chart goes.
-    pickedId: props.selectedId ?? (props.chosen === undefined && current !== undefined && !here.heldHere(current) ? current : undefined),
+    pickedId,
     loadOf: (person) => Math.round(loadOn(here.at.organisation.assignments, person, day, names.canonical) * 100),
     vacancy: editable ? (unit, roleId, at) => {
       if (here.heldHere(unit.id)) setAssigning({ unit, assigning: { mode: 'new', roleId }, at })
@@ -389,6 +397,7 @@ function useDrawing({ props, chart, day, folds, byUnit, going, moving, newUnit, 
     ...(newUnit.offer ? { add: { offer: newUnit.offer, open: newUnit.open } } : {}),
     ...(moving.open ? { move: moving.open } : {}),
     ...(moving.tree ? { moving: moving.tree } : {}),
+    ...(unitMenu ? { menu: unitMenu } : {}),
   }
 }
 
@@ -689,3 +698,87 @@ function usePageHandle(
   }, [onHandle, diagramId, capture, selectedId])
   return capture
 }
+
+/**
+ * A unit's own menu, from a right-click on its box or the menu key on its name:
+ * what its picked box offers, and its fold. Nothing while a move is under way.
+ */
+function useUnitMenu(here: UnitViewsHere, folds: ChartFolds, going: Going, moving: ReturnType<typeof useChartMove>, newUnit: NewUnit, t: Translate) {
+  const [held, setHeld] = useState<{ unit: ChartUnit; at: HTMLElement } | undefined>(undefined)
+  const open = useCallback((unit: ChartUnit, at: HTMLElement) => setHeld({ unit, at }), [])
+  const close = useCallback(() => setHeld(undefined), [])
+  if (!held) return { open, drawn: null }
+  const { unit } = held
+  const offer = newUnit.offer?.()
+  const items: MenuEntry[] = [
+    ...(offer && newUnit.open ? [{
+      label: t('chart.addInsideShort'), 'data-testid': 'chart-menu-add',
+      ...(offer.ok ? {} : { refused: offer.reason }), onSelect: () => newUnit.open(unit),
+    }] : []),
+    ...(moving.open ? [{ label: t('unitMove.open'), 'data-testid': 'chart-menu-move', onSelect: () => moving.open?.(unit.id) }] : []),
+    { label: t('chart.focusHere'), 'data-testid': 'chart-menu-focus', onSelect: () => going.focus(unit.id) },
+    ...(unit.children.length > 0 ? [{
+      label: t(folds.folded.has(unit.id) ? 'chart.unfold' : 'chart.fold', { name: unit.name }), 'data-testid': 'chart-menu-fold', onSelect: () => folds.toggle(unit.id),
+    }] : []),
+    ...(here.heldHere(unit.id) ? [] : [{ label: t('chart.openWhereKept'), 'data-testid': 'chart-menu-open', onSelect: () => going.open(unit.id) }]),
+  ]
+  return { open, drawn: <Menu open anchorEl={held.at} label={unit.name} items={items} onClose={close} /> }
+}
+
+/**
+ * The chart keeps still when the panel docks beside it. The tree is centred in
+ * the room it has, so the panel opening on a pick, and the key and the dock
+ * finding their places again beside it, moved every box sideways by half of
+ * what they took. For a moment after the panel comes or goes, wherever the
+ * tree has been moved to by the room changing, it is put back where it stood;
+ * it pans only where the box picked would then be under the panel. Once the
+ * panel has gone, the tree is centred again.
+ */
+function useSteadyOnDock(pane: { current: HTMLElement | null }, stage: { current: HTMLElement | null }, picked: ElementId | undefined, docked: boolean) {
+  const latest = useRef(picked)
+  latest.current = picked
+  const said = useRef({ x: undefined as number | undefined, until: 0, offset: 0 })
+  const treeOf = useCallback(() => stage.current?.querySelector<HTMLElement>('.org-tree') ?? null, [stage])
+  // The tree spans the stage; what moves is the boxes centred in it, so the first box is what is measured.
+  const xOf = (tree: HTMLElement) => tree.querySelector('[data-tree-box]')?.getBoundingClientRect().left
+  // Where the tree stood before the panel moved: read on every render that is not the panel moving.
+  useLayoutEffect(() => {
+    const tree = treeOf()
+    if (tree && Date.now() > said.current.until) said.current.x = xOf(tree)
+  })
+  useLayoutEffect(() => {
+    said.current.until = Date.now() + STEADY_FOR_MS
+    if (!docked) {
+      said.current.offset = 0
+      const tree = treeOf()
+      if (tree) tree.style.left = ''
+    }
+  }, [docked, treeOf])
+  useEffect(() => {
+    const element = pane.current
+    const board = stage.current
+    if (!element || !board || typeof ResizeObserver === 'undefined') return undefined
+    const settle = () => {
+      const tree = treeOf()
+      const held = said.current
+      if (!tree || held.x === undefined || Date.now() > held.until || held.until - Date.now() > STEADY_FOR_MS || !docked) return
+      const now = xOf(tree)
+      if (now === undefined) return
+      const moved = now - held.x
+      if (Math.abs(moved) < 1) return
+      const scale = Number.parseFloat(getComputedStyle(board).zoom) || 1
+      held.offset -= moved
+      tree.style.left = `${held.offset / scale}px`
+      const id = latest.current
+      const box = id === undefined ? undefined : board.querySelector<HTMLElement>(`[data-tree-box="${id.replace(/["\\]/g, '\\$&')}"]`)
+      box?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+    }
+    const watch = new ResizeObserver(settle)
+    watch.observe(element)
+    watch.observe(board)
+    return () => watch.disconnect()
+  }, [pane, stage, treeOf, docked])
+}
+
+/** How long after the panel comes or goes the chart is held where it stood. */
+const STEADY_FOR_MS = 800

@@ -22,8 +22,10 @@
  * another scope there; nothing leaves the chart on a single click.
  *
  * **The picked box carries its verbs**, in words: *+ Unit inside*, *Move to…*
- * and *Focus*, and none that write on a chart that is only read. The keyboard
- * has them too (`chartKeys`).
+ * and *Focus*, laid over its foot so that picking a box moves nothing round it,
+ * and none that write on a chart that is only read. The keyboard has them too
+ * (`chartKeys`), and a right-click or the menu key opens them as the unit's own
+ * menu. A folded box that hides the unit picked is ringed and says so.
  */
 import type { DragEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import type { Language, Translate } from '../../i18n'
@@ -99,6 +101,10 @@ export type Drawing = {
   roving: ElementId | undefined
   onKey: (unit: ChartUnit, event: KeyboardEvent) => void
   moving?: TreeMove
+  /** The units a fold hides the picked one under: that box is ringed and says so. */
+  holdsPicked: ReadonlySet<ElementId>
+  /** The unit's own menu, from a right-click or the menu key, beside its name. Absent: none. */
+  menu?: (unit: ChartUnit, at: HTMLElement) => void
 }
 
 /** What the boxes read of the chart's folds. */
@@ -170,18 +176,21 @@ function UnitBox({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
   const pressable = !moving || state === 'ok' || state === 'warn'
   const press = () => { if (moving) moving.choose(unit.id); else drawing.pick(unit.id) }
   const tabbable = drawing.roving === unit.id
+  const menuAt = unitMenuAt(unit, drawing, selected)
   return (
     <Card
       className="org-node" name={unit.name} selected={selected && !moving} planned={unit.ended} dimmed={state === 'none'}
       over={drawing.typeName(unit.unitTypeId)}
       data-testid="chart-unit" data-element-id={unit.id} data-unit-name={unit.name} data-tree-box={unit.id}
-      data-ended={unit.ended ? 'true' : undefined} data-folded={shut ? 'true' : undefined}
+      data-ended={unit.ended ? 'true' : undefined} {...foldMarks(unit, drawing, shut)}
       data-drop={state} data-target={moving?.target === unit.id ? state : undefined}
       {...dragging(unit, drawing)}
+      onContextMenu={menuAt}
       nameAs={(
         <span className="org-head">
           <button
-            type="button" className="org-name" onClick={press} onDoubleClick={() => { if (!moving) drawing.open(unit.id) }} onKeyDown={(event) => drawing.onKey(unit, event)}
+            type="button" className="org-name" onClick={press} onDoubleClick={() => { if (!moving) drawing.open(unit.id) }}
+            onKeyDown={(event) => (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10') ? menuAt(event) : drawing.onKey(unit, event))}
             data-testid="chart-unit-open" disabled={!pressable} tabIndex={tabbable ? 0 : -1}
           >
             <CanvasName text={unit.name} />
@@ -209,6 +218,23 @@ function UnitBox({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
       )}
     />
   )
+}
+
+/** A right-click, or the menu key, opens the unit's menu beside its name; it picks the unit first, so the menu and the panel are about the same one. */
+/** A folded box says so, and is ringed where it hides the unit picked. */
+function foldMarks(unit: ChartUnit, drawing: Drawing, shut: boolean) {
+  return { 'data-folded': shut ? 'true' : undefined, 'data-holds-picked': shut && drawing.holdsPicked.has(unit.id) ? 'true' : undefined }
+}
+
+function unitMenuAt(unit: ChartUnit, drawing: Drawing, selected: boolean) {
+  return (event: MouseEvent | KeyboardEvent) => {
+    if (drawing.moving || !drawing.menu) return
+    event.preventDefault()
+    const at = (event.currentTarget as HTMLElement).closest('.org-node')?.querySelector<HTMLElement>('.org-name')
+    if (!at) return
+    if (!selected) drawing.pick(unit.id)
+    drawing.menu(unit, at)
+  }
 }
 
 /** Where a unit may be dragged to another: the same panel as *Move to…*, filled in, and nothing written until Move. */
@@ -260,9 +286,12 @@ function RollUp({ unit, drawing }: { unit: ChartUnit; drawing: Drawing }) {
   const { t, folds } = drawing
   const parts = rollUpWords({ ...folds.rollUp(unit), findings: 0 }, t).filter((part) => part.key !== 'people')
   return (
-    <button type="button" className="org-rollup" data-testid="chart-rollup" tabIndex={-1} onClick={() => folds.toggle(unit.id)}>
-      {parts.map((part, at) => <span key={part.key} data-part={part.key}>{at > 0 ? ' · ' : ''}{part.text}</span>)}
-    </button>
+    <>
+      <button type="button" className="org-rollup" data-testid="chart-rollup" tabIndex={-1} onClick={() => folds.toggle(unit.id)}>
+        {parts.map((part, at) => <span key={part.key} data-part={part.key}>{at > 0 ? ' · ' : ''}{part.text}</span>)}
+      </button>
+      {drawing.holdsPicked.has(unit.id) && <span className="org-said" data-testid="chart-holds-picked">{t('chart.holdsPicked')}</span>}
+    </>
   )
 }
 
