@@ -11,7 +11,7 @@
  * field in `model/ownerField`, the dates in `model/lifecycle`, where it runs in
  * `model/hosting`. What is here is which row asks what.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import type { CitationsSection as CitationsSectionShape } from '../../principles/ui/CitationsSection';
 import type { PersonRefField as PersonRefFieldShape } from '../../people/ui/PersonRefField';
@@ -41,6 +41,7 @@ import { zoneLabel } from '../../model/zones';
 import { usePersonNames } from '../../people/ui/names';
 import type { PersonNames } from '../../people/ui/names';
 import { PanelLink, PanelSection } from '../../widgets/kit/Panel';
+import { Menu } from '../../widgets/kit/Menu';
 import { PropertyRow, PropertyRows, Select, TextInput } from '../../widgets/kit/Field';
 import type { RowEditor } from '../../widgets/kit/Field';
 import { Button } from '../../widgets/kit/Button';
@@ -49,6 +50,7 @@ import type { PickerOption } from '../../widgets/kit/Picker';
 import { ColorField } from '../ColorField';
 import { partyChoices, ownerText, showOutside, showTechnology, showVendor } from '../ElementRecord';
 import type { ElementInspectorProps } from '../ElementInspectorProps';
+import type { ShowOnDoor } from '../props';
 import { ICON_SIZE_OPTIONS, LIFECYCLES, heldIdsOf, hostingChoices, inspectorField, leverageFor, leverageText, offersContainer, runsSomewhere, shapeOptionsFor, sharedNote, technologyChoices, usesChoices } from '../elementInspectorFacts';
 import type { InspectorField } from '../elementInspectorFacts';
 import { LogoGrid } from '../nodes/LogoGrid';
@@ -316,20 +318,43 @@ function leveragesRow(ctx: Ctx): RowSpec | undefined {
   const { field: { element, model }, t, props } = ctx;
   const leverage = leverageFor(element, model, props.leverage);
   const text = leverageText(leverage, t);
-  if (leverage === undefined || (text === '' && !props.onShowOnTechnology)) return undefined;
+  const door = props.showOnTechnology;
+  if (leverage === undefined || (text === '' && !door)) return undefined;
   const label = t('field.leverages');
-  const show = props.onShowOnTechnology;
   return always('leverages', label, () => (
     <PropertyRow
       label={label} data-testid="element-leverages" readOnly value={text} empty={t('field.runsOnNothing')}
-      display={(
-        <>
-          {text || t('field.runsOnNothing')}
-          {show && <span className="inspector-note"><PanelLink data-testid="show-on-landscape" onPress={() => show(element.id)}>{t('field.showOnLandscape')} ›</PanelLink></span>}
-        </>
-      )}
+      after={door && <ShowOnLink door={door} elementId={element.id} label={t('field.showOnLandscape')} />}
     />
   ));
+}
+
+/**
+ * *Show on technology landscape ›*, drawn only while a landscape shows the
+ * element (ADR-0019, amended): one opens at a press, several are a menu
+ * naming each with the scope that keeps it.
+ */
+function ShowOnLink({ door, elementId, label }: { door: ShowOnDoor; elementId: ElementId; label: string }) {
+  useEffect(() => { door.want(elementId); }, [door, elementId]);
+  const anchor = useRef<HTMLSpanElement>(null);
+  const [open, setOpen] = useState(false);
+  const places = door.places(elementId);
+  if (places.length === 0) return null;
+  const press = () => (places.length === 1 ? door.open(elementId, places[0].key) : setOpen(true));
+  return (
+    <span className="inspector-note" ref={anchor}>
+      <PanelLink data-testid="show-on-landscape" onPress={press}>{label} ›</PanelLink>
+      {places.length > 1 && (
+        <Menu
+          open={open} anchorEl={anchor.current} label={label} onClose={() => setOpen(false)}
+          items={places.map((place) => ({
+            label: place.view, ...(place.scope !== undefined ? { detail: place.scope } : {}),
+            'data-testid': 'show-on-place', onSelect: () => door.open(elementId, place.key),
+          }))}
+        />
+      )}
+    </span>
+  );
 }
 
 // --- the record ------------------------------------------------------------

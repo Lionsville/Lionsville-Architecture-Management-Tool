@@ -275,6 +275,8 @@ export type PropertyRowProps = {
   readOnly?: boolean
   /** A word at the end of the row: *live from 2 Nov 2026*. Colour is not the only thing it may carry. */
   aside?: ReactNode
+  /** A way on from the value, on a line of its own under it, which *Show all* never cuts: *Show on technology landscape ›*. */
+  after?: ReactNode
   /** The row's name to `PropertyRows`' `editing`. */
   rowId?: string
   /** The name a finding asks for this row by: what is pressed carries it as `data-field`, so arriving gives it the focus. */
@@ -291,7 +293,7 @@ function notOwnWords(t: Translate, value: string, inherited: PropertyRowProps['i
     : t('kit.property.fromAbove', { value })
 }
 
-export function PropertyRow({ label, edit, error, check, onCommit, readOnly = false, aside, rowId, field, help, startOpen = false, 'data-guide': guide, 'data-testid': testId, ...reading }: PropertyRowProps) {
+export function PropertyRow({ label, edit, error, check, onCommit, readOnly = false, aside, after, rowId, field, help, startOpen = false, 'data-guide': guide, 'data-testid': testId, ...reading }: PropertyRowProps) {
   const rows = useContext(RowsContext)
   if (!rows) throw new Error('A PropertyRow belongs in PropertyRows.')
   const ownId = useId()
@@ -338,6 +340,7 @@ export function PropertyRow({ label, edit, error, check, onCommit, readOnly = fa
             />
           )}
         {aside && !editing && <span className="kit-prop__aside">{aside}</span>}
+        {after && !editing && <div className="kit-prop__after">{after}</div>}
       </dd>
     </div>
   )

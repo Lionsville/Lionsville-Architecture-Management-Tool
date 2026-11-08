@@ -48,7 +48,7 @@ export const SECTIONS: SectionTexts = {
     'The panel to the right of a board, + add under Record for a card, + Certainty for a line',
     ['Select the card or line.', 'Press + … and pick Certainty (or press the Certainty row).', 'Pick Confirmed or Assumed.'],
     'Mark the line from Billing to Payment provider as assumed until the contract is read.'],
-  'panel.runsOn': ['Say what an element runs on and uses', 'Hosted on, Uses and Leverages say which platforms and services an application runs on; long values clamp with Show all, and Show on technology landscape opens it there.',
+  'panel.runsOn': ['Say what an element runs on and uses', 'Hosted on, Uses and Leverages say which platforms and services an application runs on; long values clamp with Show all, and Show on technology landscape opens the landscape that shows it, in whichever scope keeps it.',
     'The panel to the right of a board, Properties tab, Runs on section',
     ['Select the application.', 'Press the value beside Hosted on or Uses and pick from the list.'],
     'Say Billing uses the Managed database.'],

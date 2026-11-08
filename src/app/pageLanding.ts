@@ -35,17 +35,6 @@ function isViewPage(page: InitialPage): page is Extract<InitialPage, { page: Vie
   return isViewPageName(page.page)
 }
 
-/**
- * A door that shows something on a view of a kind — *Show on technology
- * landscape ›* — offered only while the scope has a view of that kind to show
- * it on. A door to a view that is gone opened nothing, and an open never makes
- * a view; so where there is none the door is not drawn, the one rule every
- * such link is offered by.
- */
-export function showOnDoor<Door>(page: ViewPageName, diagrams: readonly { id: string; kind: string }[], door: Door | undefined): Door | undefined {
-  return door !== undefined && viewFor(page, undefined, diagrams, undefined) !== undefined ? door : undefined
-}
-
 export function pageLanding(scope: Pick<ScopeSnapshot, 'model' | 'activeDiagramId'>, page: InitialPage | undefined): PageLanding {
   // No page named is the view on the tab. A scope with no views — a domain
   // made without a board — has none, and the canvas could only say so as an

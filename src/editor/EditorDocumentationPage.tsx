@@ -16,7 +16,7 @@ import { elementMenu } from './ElementInspector';
 import type { ElementInspectorProps } from './ElementInspectorProps';
 import { RecordSectionBody, recordSectionsOf } from './inspector/elementRows';
 import { useStrings } from '../i18n/LanguageContext';
-import type { SolutionDesignEditorProps } from './props';
+import type { ShowOnDoor, SolutionDesignEditorProps } from './props';
 import type { EditorState } from './useEditorState';
 import type { Documentation } from './useEditorRequests';
 
@@ -55,6 +55,11 @@ export function moveFor(
     tip: gestures.tip,
     onMove: () => gestures.onMove(elementId),
   };
+}
+
+/** A door from a record's page: the page steps out of the way before the view opens. */
+function leavingFirst(door: ShowOnDoor, leave: () => void): ShowOnDoor {
+  return { places: door.places, want: door.want, open: (elementId, key) => { leave(); door.open(elementId, key); } };
 }
 
 export function EditorDocumentationPage({ props, state, readOnly, docs, onRequestDelete }: {
@@ -128,8 +133,8 @@ function recordInspector({ props, state, readOnly, docs, element, diagram, onReq
     parties: ownership?.parties,
     unitSection: element.kind === 'actor' ? ownership?.unitSection?.(element, readOnly) : undefined,
     answeredBy: ownership?.answeredBy?.(element),
-    onShowOnTechnology: diagrams.onOpenTechnologyFor
-      ? (id) => { docs.leave(); diagrams.onOpenTechnologyFor?.(id); }
+    showOnTechnology: diagrams.showOnTechnology
+      ? leavingFirst(diagrams.showOnTechnology, docs.leave)
       : undefined,
     onCreateContainer: readOnly ? undefined : diagrams.onCreateContainer,
     onCreateDrawing: !readOnly && diagrams.onCreateDrawingFor

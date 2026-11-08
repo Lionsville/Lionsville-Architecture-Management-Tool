@@ -909,7 +909,9 @@ waar het draait, de rest krijgt gebruik. Een wijziging gaat naar de scope die de
 applicatie bijhoudt, de lezer zegt welke, en ze staat in de Activiteit daarvan. De \`+\` op
 een kolom vraagt een naam of biedt aan wat elders in de organisatie staat; het pictogram
 en de rest staan in het record. *Tonen op technologielandschap* op het record van een
-bord opent het landschap op die regel. Het bord zelf tekent nog steeds alleen stromen.
+bord opent het landschap dat de applicatie toont op die regel, in de scope die het bewaart —
+vaak die van het platform waarop ze draait. Tonen er meer, dan noemt een klein menu elk met
+zijn scope; toont geen het, dan is er geen link. Het bord zelf tekent nog steeds alleen stromen.
 
 Wat u kiest is van u en schrijft niets; **Bewaren bij de weergave**, in hetzelfde menu, maakt het tot wat iedereen opent.
 

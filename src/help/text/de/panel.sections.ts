@@ -48,7 +48,7 @@ export const SECTIONS: SectionTexts = {
     'Das Panel rechts von einem Board, + hinzufügen unter Eintrag für eine Karte, + Gewissheit für eine Linie',
     ['Wählen Sie die Karte oder Linie.', 'Drücken Sie + … und wählen Sie Gewissheit (oder drücken Sie die Zeile Gewissheit).', 'Wählen Sie Bestätigt oder Angenommen.'],
     'Kennzeichnen Sie die Linie von Billing zu Payment provider als angenommen, bis der Vertrag gelesen ist.'],
-  'panel.runsOn': ['Sagen, worauf ein Element läuft und was es nutzt', 'Gehostet auf, Nutzt und Stützt sich auf sagen, auf welchen Plattformen und Diensten eine Anwendung läuft; lange Werte werden mit Alle zeigen gekürzt, und Auf der Technologielandschaft zeigen öffnet sie dort.',
+  'panel.runsOn': ['Sagen, worauf ein Element läuft und was es nutzt', 'Gehostet auf, Nutzt und Stützt sich auf sagen, auf welchen Plattformen und Diensten eine Anwendung läuft; lange Werte werden mit Alle zeigen gekürzt, und Auf der Technologielandschaft zeigen öffnet die Landschaft, die sie zeigt, in welchem Scope auch immer.',
     'Das Panel rechts von einem Board, Reiter Eigenschaften, Abschnitt Läuft auf',
     ['Wählen Sie die Anwendung.', 'Drücken Sie den Wert neben Gehostet auf oder Nutzt und wählen Sie aus der Liste.'],
     'Sagen Sie, dass Billing die Managed database nutzt.'],

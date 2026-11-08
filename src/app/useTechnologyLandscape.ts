@@ -27,8 +27,8 @@ export type TechnologyLandscapes = {
   create: () => void
   /** The card the page starts on, where a record's door opened it (ADR-0020). */
   focus: NodeKey | undefined
-  /** Open the scope's landscape — the first — on this application; nothing where it has none. */
-  showOn: (elementId: ElementId) => void
+  /** Open this landscape — or the scope's first — on this application; nothing where it has none. */
+  showOn: (elementId: ElementId, viewId?: string) => void
   /**
    * Choose the card this element is drawn as on the landscape that is up, as
    * a door would (ADR-0019, amended): nothing where it is not drawn there.
@@ -52,16 +52,19 @@ export function useTechnologyLandscape(deps: { session: ModelSession; makeId: Ma
     setFocus(undefined)
     session.setActiveDiagramId(id)
   }, [session])
-  const showOn = useCallback((elementId: ElementId) => {
+  const showOn = useCallback((elementId: ElementId, viewId?: string) => {
     setFocus(nodeKey.application(elementId))
-    // An open never makes a view: the door is drawn only while there is one (`showOnDoor`).
-    const held = session.current().diagrams.find((diagram) => diagram.kind === 'technology')
+    // An open never makes a view: the door is drawn only while there is one (`showOnTechnology`).
+    const landscapes = session.current().diagrams.filter((diagram) => diagram.kind === 'technology')
+    const held = landscapes.find((diagram) => diagram.id === viewId) ?? landscapes[0]
     if (held) session.setActiveDiagramId(held.id)
   }, [session])
 
   const select = useCallback((elementId: ElementId) => {
     const held = session.current().elements.find((element) => element.id === elementId)
-    const key = held ? cardFor(held.kind, held.id) : undefined
+    // One this scope does not hold is an application the rows bring here from
+    // another scope: the only cards a landscape draws of what it does not keep.
+    const key = held ? cardFor(held.kind, held.id) : nodeKey.application(elementId)
     if (key) setFocus(key)
   }, [session])
 

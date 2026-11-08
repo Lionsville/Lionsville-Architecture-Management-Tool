@@ -958,8 +958,10 @@ Spalte ziehen**, und die Seite nennt das Verb vor dem Loslassen: Ein Ort nimmt d
 alles andere eine Nutzung. Eine Änderung geht in den Bereich, der die Anwendung führt, der Leser
 sagt welchen, und sie steht dort in der Aktivität. Das \`+\` an einer Spalte fragt nach einem Namen
 oder bietet an, was anderswo in der Organisation steht; das Symbol und der Rest stehen im
-Datensatz. *Auf der Technologielandschaft zeigen* im Datensatz eines Boards öffnet die Landschaft
-auf dieser Zeile. Das Board selbst zeichnet weiterhin nur Flüsse.
+Datensatz. *Auf der Technologielandschaft zeigen* im Datensatz eines Boards öffnet die Landschaft,
+die die Anwendung zeigt, auf dieser Zeile, in dem Scope, der sie führt — oft dem der Plattform,
+auf der sie läuft. Zeigen sie mehrere, nennt ein kleines Menü jede mit ihrem Scope; zeigt sie
+keine, gibt es keinen Link. Das Board selbst zeichnet weiterhin nur Flüsse.
 
 Was Sie wählen, gehört Ihnen und schreibt nichts; **Mit der Ansicht behalten**, im selben Menü, macht es zu dem, was alle öffnen.
 

@@ -137,8 +137,8 @@ describe('the pages beside the canvas', () => {
     expect(maps.create).toHaveBeenCalledTimes(1)
     expect(pages().page()).toBeUndefined()
     act(() => pages().openObservations())
-    act(() => pages().openTechnologyFor('pos'))
-    expect(landscapes.showOn).toHaveBeenCalledWith('pos')
+    act(() => pages().openTechnologyFor('pos', 'tl-1'))
+    expect(landscapes.showOn).toHaveBeenCalledWith('pos', 'tl-1')
     expect(pages().page()).toBeUndefined()
   })
 

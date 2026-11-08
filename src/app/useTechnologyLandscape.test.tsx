@@ -115,4 +115,21 @@ describe('the door from a record (ADR-0020)', () => {
     expect(host.views().focus).toBe('application:portal')
     expect(host.model().diagrams.filter((d) => d.kind === 'technology')).toHaveLength(1)
   })
+
+  it('opens the landscape named, where the scope keeps more than one', () => {
+    const host = mount()
+    act(() => host.views().create())
+    act(() => host.views().create())
+    const second = host.activeId()
+    act(() => host.views().open('d1'))
+    act(() => host.views().showOn('wms', second))
+    expect(host.activeId()).toBe(second)
+  })
+
+  it('selects an application another scope keeps, which the rows bring onto this landscape', () => {
+    const host = mount()
+    act(() => host.views().create())
+    act(() => host.views().select('kept-elsewhere'))
+    expect(host.views().focus).toBe('application:kept-elsewhere')
+  })
 })

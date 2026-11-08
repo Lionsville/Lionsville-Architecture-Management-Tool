@@ -849,8 +849,10 @@ reader says which, and it shows in that scope's Activity. **Fold hosting into se
 lines**, under Show, hides a hosting line where a use already reaches the same platform.
 The \`+\` on a column asks a name or offers what is elsewhere in the organisation; the icon
 and the rest are in the record. Under *Leverages* on a board's record, *Show on
-technology landscape* opens the landscape on that row. The board itself still draws
-flows only.
+technology landscape* opens the landscape that shows the application on that row, in
+whichever scope keeps it — often the one that keeps the platform it runs on. Where several
+show it, a small menu names each with its scope; where none does, there is no link. The
+board itself still draws flows only.
 
 What you choose is yours and writes nothing; **Keep with the view**, in the same menu, makes it what everybody opens on.
 

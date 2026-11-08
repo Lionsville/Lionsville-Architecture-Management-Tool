@@ -40,6 +40,7 @@ import { useShowElement } from './useShowElement'
 import { useTechnologyLandscape } from './useTechnologyLandscape'
 import { useTreeReadings } from './useTreeReadings'
 import { showOn, useWorkspaceAgentView } from './useWorkspaceAgentView'
+import { useShowOnTechnology } from './showOnTechnology'
 import { useInitialPage, useWorkspaceCommands } from './useWorkspaceCommands'
 import { useScopeSessionSeam, useScopeWriter, useWorkspaceDocument } from './useWorkspaceDocument'
 import { useWorkspaceFiles } from './useWorkspaceFiles'
@@ -522,5 +523,11 @@ function useScreenParts(
     ...(navigation.onOpenPeople ? { onOpenPeople: navigation.onOpenPeople } : {}), pointComment: requests.pointComment,
   })
   const analysis = useAnalysisActions({ session, makeId, today, s })
-  return { snapshots, pageChrome, windowChrome, todayDay, today, pages, show, dialogs, analysis }
+  const showOnTechnology = useShowOnTechnology({
+    scope: project.path, model: session.model, index: props.tree.index, scopes: source.repositories.scopes,
+    ...(props.tree.indexAnswered !== undefined ? { answered: props.tree.indexAnswered } : {}),
+    scopeLabel: tree.readings.scopeLabel, openHere: pages.openTechnologyFor,
+    ...(navigation.onOpenScope ? { onOpenScope: navigation.onOpenScope } : {}),
+  })
+  return { snapshots, pageChrome, windowChrome, todayDay, today, pages, show, dialogs, analysis, showOnTechnology }
 }

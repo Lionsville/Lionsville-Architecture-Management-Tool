@@ -95,8 +95,8 @@ function renderInspector(
     parties?: ElementInspectorProps['parties'];
     /** Make the application's container diagram, on purpose. */
     onCreateContainer?: (id: string) => void;
-    /** The door to the technology landscape (ADR-0020). */
-    onShowOnTechnology?: (id: string) => void;
+    /** The door to the technology landscapes that show it (ADR-0020). */
+    showOnTechnology?: ElementInspectorProps['showOnTechnology'];
     /** An actor's unit section, as the host draws it (ADR-0036 §3), and whether it leads. */
     unitSection?: ElementInspectorProps['unitSection'];
     /** The way to move the record to another scope (ADR-0012 §10). */
@@ -129,7 +129,7 @@ function renderInspector(
         leverage={opts.leverage}
         technology={opts.technology}
         parties={opts.parties}
-        onShowOnTechnology={opts.onShowOnTechnology}
+        showOnTechnology={opts.showOnTechnology}
         unitSection={opts.unitSection}
         move={opts.move}
         onCreateDrawing={opts.onCreateDrawing}
@@ -614,14 +614,33 @@ describe('ElementInspector: what an application uses (ADR-0020)', () => {
     expect(within(row('element-uses')).queryByRole('button')).toBeNull();
   });
 
-  it('offers the door to the landscape under Leverages, and none where the host has no landscape', () => {
-    const onShowOnTechnology = vi.fn();
-    renderInspector(element(), { onShowOnTechnology, leverage: { services: [], platforms: [] } as never });
+  const door = (places: { key: string; view: string; scope?: string }[]) => ({ places: () => places, want: vi.fn(), open: vi.fn() });
+
+  it('offers the door to the one landscape that shows it, and none where the host has no landscape', () => {
+    const one = door([{ key: 'k', view: 'Technology landscape', scope: 'Shared platforms' }]);
+    renderInspector(element(), { showOnTechnology: one, leverage: { services: [], platforms: [] } as never });
+    expect(one.want).toHaveBeenCalledWith('e1');
     fireEvent.click(screen.getByTestId('show-on-landscape'));
-    expect(onShowOnTechnology).toHaveBeenCalledWith('e1');
+    expect(one.open).toHaveBeenCalledWith('e1', 'k');
     cleanup();
     renderInspector(element());
     expect(screen.queryByTestId('show-on-landscape')).toBeNull();
+  });
+
+  it('draws no door while no landscape shows it', () => {
+    renderInspector(element(), { showOnTechnology: door([]), leverage: { services: [], platforms: [] } as never });
+    expect(screen.queryByTestId('show-on-landscape')).toBeNull();
+  });
+
+  it('offers a menu where several landscapes show it, each with the scope that keeps it', () => {
+    const two = door([{ key: 'here', view: 'Ours' }, { key: 'there', view: 'Technology landscape', scope: 'Shared platforms' }]);
+    renderInspector(element(), { showOnTechnology: two, leverage: { services: [], platforms: [] } as never });
+    fireEvent.click(screen.getByTestId('show-on-landscape'));
+    expect(two.open).not.toHaveBeenCalled();
+    const items = screen.getAllByTestId('show-on-place');
+    expect(items.map((item) => item.textContent?.trim())).toEqual(['Ours', expect.stringContaining('Shared platforms')]);
+    fireEvent.click(items[1]);
+    expect(two.open).toHaveBeenCalledWith('e1', 'there');
   });
 });
 

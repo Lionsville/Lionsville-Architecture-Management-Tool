@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import type { ReactNode } from 'react';
-import type { AnsweredBy, EditorOwnership, PartyElsewhere, UnitSlot } from './props';
+import type { AnsweredBy, EditorOwnership, PartyElsewhere, ShowOnDoor, UnitSlot } from './props';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { LeverageLine } from '../model/leverage';
@@ -87,11 +87,11 @@ export interface ElementInspectorProps {
   /** The actors the scopes above keep, for *Belongs to* (ADR-0012 §4). See `EditorOwnership.parties`. */
   parties?: readonly PartyElsewhere[];
   /**
-   * The door under *Leverages* (ADR-0020): open the technology landscape
-   * with this application selected. Absent where the host has no landscape
-   * to open, and the line then stands alone.
+   * The door under *Leverages* (ADR-0020): the technology landscapes that
+   * show this application, in whichever scope keeps them. Absent where the
+   * host has none to open, and the line then stands alone.
    */
-  onShowOnTechnology?(elementId: ElementId): void;
+  showOnTechnology?: ShowOnDoor;
   /**
    * Make this application's container diagram. Offered as a button on the
    * General tab of an application that has none, because a view is made on

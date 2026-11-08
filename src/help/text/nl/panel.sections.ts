@@ -48,7 +48,7 @@ export const SECTIONS: SectionTexts = {
     'Het paneel rechts van een bord, + toevoegen onder Record voor een kaart, + Zekerheid voor een lijn',
     ['Selecteer de kaart of lijn.', 'Druk op + … en kies Zekerheid (of druk op de regel Zekerheid).', 'Kies Bevestigd of Aangenomen.'],
     'Markeer de lijn van Billing naar Payment provider als aangenomen tot het contract is gelezen.'],
-  'panel.runsOn': ['Zeggen waarop een element draait en wat het gebruikt', 'Gehost op, Gebruikt en Benut zeggen op welke platforms en diensten een applicatie draait; lange waarden worden ingekort met Alles tonen, en Tonen op technologielandschap opent het daar.',
+  'panel.runsOn': ['Zeggen waarop een element draait en wat het gebruikt', 'Gehost op, Gebruikt en Benut zeggen op welke platforms en diensten een applicatie draait; lange waarden worden ingekort met Alles tonen, en Tonen op technologielandschap opent het landschap dat haar toont, in welke scope ook.',
     'Het paneel rechts van een bord, tabblad Eigenschappen, deel Draait op',
     ['Selecteer de applicatie.', 'Druk op de waarde naast Gehost op of Gebruikt en kies uit de lijst.'],
     'Zeg dat Billing de Managed database gebruikt.'],

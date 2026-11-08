@@ -307,7 +307,7 @@ function usePageOpeners(deps: {
   const openTechnology = useCallback((id: string) => { closePages(); landscapes.open(id) }, [closePages, landscapes.open])
   /** The door from a record (ADR-0020): the scope's landscape, on that application. */
   const openTechnologyFor = useCallback(
-    (elementId: string) => { closePages(); landscapes.showOn(elementId) },
+    (elementId: string, viewId?: string) => { closePages(); landscapes.showOn(elementId, viewId) },
     [closePages, landscapes.showOn],
   )
   const createTechnology = useCallback(() => { closePages(); landscapes.create() }, [closePages, landscapes.create])

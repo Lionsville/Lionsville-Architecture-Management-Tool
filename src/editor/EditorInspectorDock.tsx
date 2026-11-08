@@ -150,7 +150,7 @@ function SelectedElementInspector({ parts, diagram }: { parts: EditorParts; diag
       // Who holds what takes the day it is looking at, so a look does not lock it (ADR-0027, amended).
       unitSection={element.kind === 'actor' ? ownership?.unitSection?.(element, !parts.writable) : undefined}
       answeredBy={ownership?.answeredBy?.(element)}
-      onShowOnTechnology={props.diagrams.onOpenTechnologyFor}
+      showOnTechnology={props.diagrams.showOnTechnology}
       onCreateContainer={readOnly ? undefined : props.diagrams.onCreateContainer}
       onCreateDrawing={readOnly ? undefined : props.diagrams.onCreateDrawingFor}
       onOpenDrawing={props.diagrams.onOpenDrawing}

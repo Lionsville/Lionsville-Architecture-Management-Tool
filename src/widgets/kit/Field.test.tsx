@@ -80,6 +80,15 @@ describe('PropertyRow', () => {
     expect(await axeFindings()).toEqual([])
   })
 
+  it('draws a way on under the value, outside what Show all cuts, and not while it is edited', () => {
+    renderShell(<PropertyRows><Row after={<button type="button">Go there</button>} /></PropertyRows>)
+    const after = screen.getByRole('button', { name: 'Go there' })
+    expect(after.closest('.kit-prop__text')).toBeNull()
+    expect(after.closest('.kit-prop__after')).toBeTruthy()
+    press('Edit Category: Billing')
+    expect(screen.queryByRole('button', { name: 'Go there' })).toBeNull()
+  })
+
   it('refuses to stand outside its rows, which keep editing to one', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => renderShell(<PropertyRow label="x" />)).toThrow(/PropertyRows/)

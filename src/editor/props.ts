@@ -210,12 +210,27 @@ export interface EditorDiagramActions {
     /** A service's report (ADR-0014): what would be stranded if it were withdrawn. As the platform's. */
     onOpenServiceReport?(serviceId: string): void;
     /**
-     * The technology landscape, focused on one application (ADR-0020): the
-     * door under the record's *Leverages* line. The host opens the scope's
-     * landscape with the card selected and its lines up; the board itself
-     * keeps drawing flows only. Absent = no door.
+     * The technology landscapes that show one application (ADR-0020): the
+     * door under the record's *Leverages* line, to whichever scope keeps the
+     * landscape. The board itself keeps drawing flows only. Absent = no door.
      */
-    onOpenTechnologyFor?(elementId: string): void;
+    showOnTechnology?: ShowOnDoor;
+}
+
+/** One view an element is shown on, named for a person: the view, and the scope that keeps it. */
+export type ShowOnPlace = { key: string; view: string; scope?: string };
+
+/**
+ * A *Show on …* door (ADR-0019, amended): drawn only while a view shows the
+ * element, a menu where several do, and an open that makes nothing.
+ */
+export interface ShowOnDoor {
+    /** The views that show it, as far as they have been read; none means no door. */
+    places(elementId: string): readonly ShowOnPlace[];
+    /** Read where its views may be kept, where that has not been read yet. Asked again whenever the door changes. */
+    want(elementId: string): void;
+    /** Open that scope and view with the element selected. */
+    open(elementId: string, key: string): void;
 }
 
 /** The shared uploaded mark library, and what happens when one cannot be drawn. */
