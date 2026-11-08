@@ -71,6 +71,13 @@ describe('useShellPreferences — writing', () => {
     expect(written.at(-1)).toMatchObject({ language: 'nl' })
   })
 
+  it('says the language on the document, and again on every change', () => {
+    const { prefs } = mount({ language: 'de' })
+    expect(document.documentElement.lang).toBe('de')
+    act(() => prefs().chooseLanguage('nl'))
+    expect(document.documentElement.lang).toBe('nl')
+  })
+
   it('takes the theme it is told, and writes it', () => {
     const { prefs, written } = mount({ themeMode: 'light' })
     act(() => prefs().chooseTheme('dark'))

@@ -101,6 +101,12 @@ export function useShellPreferences(deps: {
   const [language, setLanguage] = useState<Language>(
     () => readLanguage(initial) ?? detectBrowserLanguage(browserLanguages ?? 'en'))
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => readThemeMode(initial) ?? 'system')
+  // The document says its language, so a screen reader speaks Dutch and German in
+  // a Dutch or German voice, and hyphenation and the fields' spelling hint follow.
+  useLayoutEffect(() => {
+    const root = globalThis.document?.documentElement
+    if (root) root.lang = language
+  }, [language])
 
   const [density, setDensity] = useState<Density>(() => readDensity(initial))
   // On the root and not on a component: every screen's rows read it, the portals' too.
