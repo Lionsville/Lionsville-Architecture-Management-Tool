@@ -76,16 +76,25 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
   const to = useCallback((next: number, at?: Point) => {
     const pane = page.current
     const was = latest.current
-    setZoom(next)
-    // The point under the pointer stays under it; pressed on the dock or a key, the middle of the room does.
+    // The point under the pointer stays under it; pressed on the dock or a key, the middle of the room does —
+    // but where the chart's top was in the room, it stays where it was: from Fit, 100 % kept the middle and
+    // put the top unit above the pane. Measured off the stage as drawn, whatever centres it in the room.
     const about = at ?? (pane ? roomMiddle(pane) : undefined)
-    if (pane && about && next !== was) {
-      const ratio = next / was
-      const left = (pane.scrollLeft + about.x) * ratio - about.x
-      const top = (pane.scrollTop + about.y) * ratio - about.y
-      requestAnimationFrame(() => pane.scrollTo?.({ left, top }))
-    }
-  }, [page])
+    const drawn = stage.current?.getBoundingClientRect()
+    const box = pane?.getBoundingClientRect()
+    setZoom(next)
+    if (!pane || !about || !drawn || !box || next === was) return
+    const room = roomOf(pane)
+    const topInRoom = at === undefined && drawn.top >= box.top + room.top - 1
+    const held = { x: about.x, y: topInRoom ? drawn.top - box.top : about.y }
+    const point = { x: (box.left + held.x - drawn.left) / was, y: topInRoom ? 0 : (box.top + held.y - drawn.top) / was }
+    requestAnimationFrame(() => {
+      const now = stage.current?.getBoundingClientRect()
+      const paneBox = pane.getBoundingClientRect()
+      if (!now) return
+      pane.scrollBy?.({ left: now.left + point.x * next - (paneBox.left + held.x), top: now.top + point.y * next - (paneBox.top + held.y) })
+    })
+  }, [page, stage])
   const fit = useCallback(() => {
     // Measured at 100%: below it the stage fills the pane, and says nothing of its own width.
     setZoom(ZOOM_HOME)
@@ -95,13 +104,19 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
       if (!pane || !drawing) return
       // In the room the dock and the key leave: the chart pads its end by them (`clearOfFloats`),
       // so the pane's own box less its padding is that room, and a stage no wider than it is 100%.
-      const style = getComputedStyle(pane)
-      const pad = (side: string) => Number.parseFloat(style.getPropertyValue(`padding-${side}`)) || 0
-      const room = { width: pane.clientWidth - pad('left') - pad('right'), height: pane.clientHeight - pad('top') - pad('bottom') }
+      const room = roomOf(pane)
       const fitted = fitZoom(room, { width: drawing.scrollWidth, height: drawing.scrollHeight })
       setZoom(fitted)
-      // Clamped at the floor, the chart is wider than the pane: its middle, where the top unit is, is what is shown.
-      requestAnimationFrame(() => pane.scrollTo?.({ left: Math.max(0, (pane.scrollWidth - pane.clientWidth) / 2), top: 0 }))
+      // The chart's middle, where the top unit is, in the middle of the room, and its top at the room's top —
+      // measured off the stage as now drawn, so a Fit after the people shown changed frames what is there now
+      // rather than where the scroll was left (it right-aligned a wider chart under the outline).
+      requestAnimationFrame(() => {
+        const now = stage.current?.getBoundingClientRect()
+        const box = pane.getBoundingClientRect()
+        if (!now) return
+        const middle = roomMiddle(pane)
+        pane.scrollBy?.({ left: now.left + now.width / 2 - (box.left + middle.x), top: now.top - (box.top + room.top) })
+      })
     })
   }, [page, stage])
   const target = useMemo(() => steppedZoomTarget({ zoom: () => latest.current, to, fit }), [to, fit])
@@ -123,9 +138,16 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
   return { zoom, target, attach, canvas: { 'data-distance': props['data-distance'], style: props.style as CSSProperties } }
 }
 
-/** The middle of the room the pane shows, in its own pixels: its box less the padding the floats take. */
-function roomMiddle(pane: HTMLElement): Point {
+/** The room the pane shows, in its own pixels: its box less the padding the floats take. */
+function roomOf(pane: HTMLElement): { top: number; right: number; bottom: number; left: number; width: number; height: number } {
   const style = getComputedStyle(pane)
   const pad = (side: string) => Number.parseFloat(style.getPropertyValue(`padding-${side}`)) || 0
-  return { x: (pad('left') + pane.clientWidth - pad('right')) / 2, y: (pad('top') + pane.clientHeight - pad('bottom')) / 2 }
+  const [top, right, bottom, left] = [pad('top'), pad('right'), pad('bottom'), pad('left')]
+  return { top, right, bottom, left, width: pane.clientWidth - left - right, height: pane.clientHeight - top - bottom }
+}
+
+/** The middle of the room the pane shows, in its own pixels. */
+function roomMiddle(pane: HTMLElement): Point {
+  const room = roomOf(pane)
+  return { x: room.left + room.width / 2, y: room.top + room.height / 2 }
 }
