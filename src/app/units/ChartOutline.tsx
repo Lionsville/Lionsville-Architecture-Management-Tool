@@ -86,7 +86,7 @@ export function ChartOutline({ units, folded, onToggle, current, onPick, order, 
   const box = useRef<HTMLElement | null>(null)
   const [own, setOwn] = useState<number>(OUTLINE_LIMITS.default)
   // Kept in pixels at the default text size and drawn in rem, so the foot's three
-  // buttons that fit on one line at 100% (Verschieben…, Verplaatsen naar…) fit at 150%.
+  // buttons that fit on one line at 100% (Verschieben…, Verplaatsen…) fit at 150%.
   const scale = textScale()
   const wide = (width?.width ?? own) * scale
   const onWidth = (next: number) => (width?.onWidth ?? setOwn)(Math.round(next / scale))

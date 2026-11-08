@@ -1226,7 +1226,7 @@ ook op het organogram open, met elke eenheid erboven, scrollt ernaartoe en kiest
 haar. Inklappen in het overzicht klapt alleen het overzicht in. De pijltoetsen lopen
 erdoorheen, rechts opent en links sluit. De breedte is van jou: sleep de naad rechts
 ervan, of geef de naad de focus en gebruik de pijltoetsen. Onderaan verplaatsen
-**Omhoog** en **Omlaag** de gekozen eenheid onder de eenheden van haar type in
+**Hoger** en **Lager** de gekozen eenheid onder de eenheden van haar type in
 dezelfde eenheid: één stap in elke scope die er een bewaart. Waar ze allemaal in
 deze scope staan, neemt ongedaan maken de verplaatsing terug; waar sommige in andere
 scopes staan, wordt elke scope op zichzelf teruggezet.
@@ -1261,7 +1261,7 @@ van een lus of eindigt in een ingeklapte eenheid, zegt dat op de lijn, en de leg
 staat altijd in haar hoek, zodat een nieuwe lijn niets verschuift.
 
 **Een eenheid naar een andere plek verplaatsen.** Een eenheid op de verkeerde plek
-verhuist zonder opnieuw te koppelen: **Verplaatsen naar…** op het gekozen vak, onderaan
+verhuist zonder opnieuw te koppelen: **Verplaatsen…** op het gekozen vak, onderaan
 het overzicht, **Valt onder** in haar inspector, M, of door haar op een andere te
 slepen. Er opent een paneel naast het organogram, dat in beeld blijft met zijn plekken
 opgelicht: elke eenheid in de organisatie, welke scope haar ook bewaart, te kiezen door
@@ -2348,7 +2348,7 @@ zoals die was, met **Eenheid** onder zijn tabblad Algemeen.
 De onderdelen van een eenheid, in die volgorde:
 
 - **Valt onder**: de eenheid waaronder ze op de dag valt, of *Bovenaan*. Waar
-  je de eenheid mag wijzigen, is het een knop die **Verplaatsen naar…** opent
+  je de eenheid mag wijzigen, is het een knop die **Verplaatsen…** opent
   (zie *Een eenheid naar een andere plek verplaatsen*, onder *Het organogram*).
 - **Rollen, vandaag**: elke rol die haar type heeft, met hoeveel het er wil,
   en wie hem vandaag vervult — met de naam uit het register, het aandeel waar
