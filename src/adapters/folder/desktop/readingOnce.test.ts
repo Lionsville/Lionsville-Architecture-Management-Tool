@@ -18,9 +18,9 @@ import {
   createFile, fingerprint, listDirectory, makeDirectory, moveEntry, readFile, removeEntry, stampAt, writeFile, writeTogether,
 } from '../../../../electron/main/fileStore'
 import type { DesktopChange, DesktopFiles } from '../../desktop/channel'
-import { readingOnce } from '../../desktop/readingOnce'
+import { readingOnce, WATCHED_KEEP_MS } from '../../desktop/readingOnce'
 import { ancestorScopes } from '../../../projects/scopePath'
-import { nodesOf, readScopeKnown, readScopes, readScopesKnown } from '../../../projects/scopeAccess'
+import { nodesOf, readScopeKnown, readScopes, readScopesKnown, stepOf } from '../../../projects/scopeAccess'
 import { folderRepositories } from '../folderRepositories'
 import { memoryGit } from '../memoryGit'
 import { DENSE_TEAM, seedDenseOrganisation } from '../testing/denseOrganisation'
@@ -132,7 +132,13 @@ describe('readingOnce', () => {
     await read()
     await read()
     expect(raw.reads.get('scope.json')).toBe(1)
+    // A write to another file leaves this one's read standing; one to it does not.
     await once.files.write(root, 'notes.txt', new TextEncoder().encode('x'))
+    await read()
+    expect(raw.reads.get('scope.json')).toBe(1)
+    const bytes = await raw.files.read(root, 'scope.json')
+    raw.reads.set('scope.json', 1)
+    await once.files.write(root, 'scope.json', bytes!.bytes)
     await read()
     expect(raw.reads.get('scope.json')).toBe(2)
     raw.changed({ root, path: 'scope.json' })
@@ -150,15 +156,95 @@ describe('readingOnce', () => {
     await once.files.remove(root, 'notes.txt')
   })
 
-  it('does not keep a read that crossed a write', async () => {
+  it('does not keep a read that crossed a write to its file', async () => {
     const root = await seeded
     const raw = counted(root)
     const once = readingOnce(raw.files, 1000, () => 0)
-    const reading = once.files.read(root, 'model.json')
+    await raw.files.write(root, 'other.txt', new Uint8Array([0]))
+    const reading = once.files.read(root, 'other.txt')
     await once.files.write(root, 'other.txt', new Uint8Array([1]))
     await reading
-    await once.files.read(root, 'model.json')
-    expect(raw.reads.get('model.json')).toBe(2)
+    expect((await once.files.read(root, 'other.txt'))?.bytes).toEqual(new Uint8Array([1]))
+    expect(raw.reads.get('other.txt')).toBe(2)
     await once.files.remove(root, 'other.txt')
   })
+
+  it('takes the echo of its own write as no change, and another\'s change to a file as a change to it and its folders\' listings alone', async () => {
+    const root = await seeded
+    const raw = counted(root)
+    const once = readingOnce(raw.files, 1000, () => 0)
+    const stamp = await once.files.write(root, 'docs-note.txt', new Uint8Array([1]))
+    await once.files.read(root, 'docs-note.txt')
+    await once.files.read(root, 'scope.json')
+    await once.files.list(root, '')
+    raw.changed({ root, path: 'docs-note.txt', stamp })
+    await once.files.read(root, 'docs-note.txt')
+    await once.files.list(root, '')
+    expect(raw.reads.get('docs-note.txt')).toBe(1)
+    expect(raw.lists.get('')).toBe(1)
+    raw.changed({ root, path: 'docs-note.txt', stamp: { ...stamp, sha256: 'theirs' } })
+    await once.files.read(root, 'docs-note.txt')
+    await once.files.read(root, 'scope.json')
+    await once.files.list(root, '')
+    expect(raw.reads.get('docs-note.txt')).toBe(2)
+    expect(raw.reads.get('scope.json')).toBe(1)
+    expect(raw.lists.get('')).toBe(2)
+    await once.files.remove(root, 'docs-note.txt')
+  })
+
+  it('keeps a stamp and a listing of a watched folder until the watcher says they changed, and a dotted path\'s only for an open', async () => {
+    const root = await seeded
+    const raw = counted(root)
+    let clock = 0
+    const once = readingOnce(raw.files, 1000, () => clock)
+    await once.files.watch(root)
+    await once.files.stamp(root, 'scope.json')
+    await once.files.list(root, '')
+    await once.files.list(root, '.lionsville-architecture')
+    clock = 60_000
+    await once.files.stamp(root, 'scope.json')
+    await once.files.list(root, '')
+    await once.files.list(root, '.lionsville-architecture')
+    expect(raw.stamps.get('scope.json')).toBe(1)
+    expect(raw.lists.get('')).toBe(1)
+    expect(raw.lists.get('.lionsville-architecture')).toBe(2)
+    raw.changed({ root, path: 'scope.json' })
+    await once.files.stamp(root, 'scope.json')
+    expect(raw.stamps.get('scope.json')).toBe(2)
+    // The change was in the root: its listing goes with it.
+    await once.files.list(root, '')
+    expect(raw.lists.get('')).toBe(2)
+    clock = 60_000 + WATCHED_KEEP_MS
+    await once.files.list(root, '')
+    expect(raw.lists.get('')).toBe(3)
+  })
+
+  it('after one save in a team, reads the tree again by the files that changed, not the whole folder', async () => {
+    const root = await seeded
+    const raw = counted(root)
+    const written: DesktopChange[] = []
+    const files: DesktopFiles = {
+      ...raw.files,
+      write: async (held, path, bytes) => { const stamp = await raw.files.write(held, path, bytes); written.push({ root, path, stamp }); return stamp },
+      writeTogether: async (held, writes, removals) => {
+        const stamps = await raw.files.writeTogether(held, writes, removals)
+        writes.forEach((one, at) => written.push({ root, path: one.path, stamp: stamps[at] }))
+        for (const path of removals) written.push({ root, path })
+        return stamps
+      },
+    }
+    const once = readingOnce(files)
+    await once.files.watch(root)
+    const { scopes } = repositoriesOver(once.files, root)
+    const team = nodesOf((await scopes.tree()).root).find((node) => node.address === DENSE_TEAM)!
+    const before = await scopes.state(team.id)
+    for (const held of [raw.reads, raw.lists, raw.stamps]) held.clear()
+    await scopes.apply([{ scope: team.id, steps: [stepOf({ type: 'project.settings', patch: { description: 'Seen again.' } })], expects: before!.revision }])
+    // The watcher's echo of each file the save wrote, and the tree read again as the shell does when it hears one.
+    for (const change of written) raw.changed(change)
+    await Promise.all([scopes.tree(), scopes.state(team.id)])
+    console.info(`one save: ${written.length} files written; then reads ${total(raw.reads)}, lists ${total(raw.lists)}, stamps ${total(raw.stamps)}`)
+    expect(total(raw.stamps)).toBeLessThanOrEqual(written.length)
+    expect(total(raw.lists)).toBeLessThan(20)
+  }, 60_000)
 })
