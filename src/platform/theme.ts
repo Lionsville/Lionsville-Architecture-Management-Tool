@@ -20,3 +20,11 @@ export const THEME_MODES: readonly ThemeMode[] = ['light', 'dark', 'system']
 export function isThemeMode(value: unknown): value is ThemeMode {
   return typeof value === 'string' && (THEME_MODES as readonly string[]).includes(value)
 }
+
+/**
+ * Whether a mode reads dark, with the system's answer for *system* and for a mode
+ * nobody has said yet: what a window is made with before its page can say.
+ */
+export function readsDark(mode: unknown, systemDark: boolean): boolean {
+  return mode === 'dark' || (mode !== 'light' && systemDark)
+}

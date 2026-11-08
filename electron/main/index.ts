@@ -18,7 +18,7 @@
  * `app://` remains a *standard* scheme regardless, and not only for the
  * localStorage the browser fallback still uses; see below.
  */
-import { app, BrowserWindow, dialog, ipcMain, protocol, net, shell } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, protocol, net, shell } from 'electron'
 import { access } from 'node:fs/promises'
 import { mkdirSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -31,7 +31,8 @@ import { guardWindow, liveWindows, platformWords, reportUnsaved, windowsOf } fro
 import { commandsHeard, commandsListened, holdUntilHeard, installAppMenu, reportScopeOpen, reportTheme, sendCommand, zoomWindow } from './appMenu'
 import { productName } from '../../package.json'
 import { swipeCommand } from '../../src/platform/menu'
-import { isThemeMode } from '../../src/platform/theme'
+import { isThemeMode, readsDark } from '../../src/platform/theme'
+import { keepTheme, readKeptTheme } from './keptTheme'
 import { USER_DATA_NAME } from '../../src/platform/userData'
 import { recentDirectories, registerFileChannel, stopWatching } from './files'
 import { contentSecurityPolicy, pageOrigins } from './csp'
@@ -92,11 +93,22 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 /**
- * The ground a window is made with, before its page paints: dark, because the
- * app's page paints dark first (`index.html`) and a white flash between the two
- * is the most visible thing about starting it.
+ * The ground a window is made with, before its page paints: the theme's, as the
+ * page last said it (`keptTheme.ts`) or else the system's — the same choice
+ * `index.html` makes before its first paint — because a flash between two
+ * grounds is the most visible thing about starting the app. The two are the
+ * tokens' `ground`, written here because no page exists yet to read them from.
  */
-const GROUND = '#0c151d'
+const GROUNDS = { dark: '#0c151d', light: '#f6f3ef' } as const
+
+/** Where the theme the page last said is kept between starts. */
+const keptThemePath = (): string => join(app.getPath('userData'), 'theme.json')
+
+/** The ground for a window made now. */
+function groundNow(): string {
+  const said = isThemeMode(themeSaid) ? themeSaid : readKeptTheme(keptThemePath())
+  return readsDark(said, nativeTheme.shouldUseDarkColors) ? GROUNDS.dark : GROUNDS.light
+}
 
 /** One host, so `app://local/x` has a stable origin to resolve URLs against. */
 const APP_ORIGIN = 'app://local'
@@ -209,7 +221,7 @@ function createWindow(): BrowserWindow {
     minWidth: 900,
     minHeight: 600,
     show: false,
-    backgroundColor: GROUND,
+    backgroundColor: groundNow(),
     // macOS only: the app draws to the top of the window instead of sitting
     // under a strip of grey. The renderer then owes the window the two things
     // the title bar was doing — room for the traffic lights, and something to
@@ -499,7 +511,12 @@ void app.whenReady().then(() => {
   ipcMain.handle('app:unsaved', (event, held: unknown) => { reportUnsaved(event.sender, held === true) })
 
   // The second fact the renderer reports, so the View menu's radio is right.
-  ipcMain.handle('app:theme', (_event, held: unknown) => { if (isThemeMode(held)) { themeSaid = held; reportTheme(held) } })
+  ipcMain.handle('app:theme', (_event, held: unknown) => {
+    if (!isThemeMode(held)) return
+    if (held !== themeSaid) void keepTheme(keptThemePath(), held)
+    themeSaid = held
+    reportTheme(held)
+  })
   // And the app's language, so the question closing asks is asked in it.
   ipcMain.handle('app:language', (_event, held: unknown) => { language = held })
   ipcMain.handle('app:zoomWindow', (event, how: unknown) => { zoomWindow(event.sender, how) })
@@ -563,7 +580,7 @@ let themeSaid: unknown
 
 /** The window's ground before the help paints, and whether to show it (never under `--smoke`). */
 function helpLook(): { background: string; show: boolean } {
-  return { background: GROUND, show: !UNATTENDED }
+  return { background: groundNow(), show: !UNATTENDED }
 }
 
 /**

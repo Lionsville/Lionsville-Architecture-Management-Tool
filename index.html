@@ -7,13 +7,21 @@
     <title>Lionsville Architect</title>
     <style>
       html, body, #root { height: 100%; margin: 0; font-family: system-ui, sans-serif }
-      /* The ground the app paints over. Dark, because the window is created with
-         a dark background colour and a white flash between the two is the most
-         visible thing about starting the app. */
-      body { background: #0c151d }
+      /* The ground the app paints over, in the theme's ground as the window is
+         made with it (electron/main/index.ts): /ground.js says which before the
+         body is drawn, the system's where it cannot, since a flash between two
+         grounds is the most visible thing about starting the app. */
+      body { background: #f6f3ef }
       #boot { display: flex; height: 100%; align-items: center; justify-content: center;
-              color: #9ea9b4; font-size: 13px; letter-spacing: .02em }
+              color: #565d66; font-size: 13px; letter-spacing: .02em }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-ground='light']) body { background: #0c151d }
+        :root:not([data-ground='light']) #boot { color: #9ea9b4 }
+      }
+      :root[data-ground='dark'] body { background: #0c151d }
+      :root[data-ground='dark'] #boot { color: #9ea9b4 }
     </style>
+    <script src="/ground.js"></script>
   </head>
   <body>
     <!-- Replaced as soon as the app mounts. What was here before was a page of

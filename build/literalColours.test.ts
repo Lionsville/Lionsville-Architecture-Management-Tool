@@ -12,14 +12,14 @@
  * What stays here is not all debt. A colour somebody picks has a default written
  * as data (the agent's tools, `ColorField`), a picture's title block is drawn on
  * a canvas with no theme (`exportPng`), and a window's ground is set before any
- * page exists (`electron/main/index.ts`).
+ * page exists (`electron/main/index.ts`), in either theme.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const CEILING: Record<string, number> = {
-  'electron/main/index.ts': 1,
+  'electron/main/index.ts': 2,
   'src/agent/tools.ts': 3,
   'src/agent/write/canvas.ts': 1,
   'src/agent/write/connections.ts': 1,
