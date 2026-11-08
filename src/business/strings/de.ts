@@ -264,7 +264,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'sheet.poster.insideHeading': 'Darin',
   'sheet.poster.onThis': 'Auf diesem Poster',
   'sheet.poster.showLabel': 'Beschriftung zeigen',
-  'sheet.poster.showLabelSay': 'Nur auf diesem Poster. Entfernen lässt die Zuweisung bestehen; beendet wird sie unter Verantwortet es.',
+  'sheet.poster.showLabelSay': 'Nur auf diesem Poster. Entfernen lässt die Zuordnung bestehen; beendet wird sie unter Verantwortet es.',
   'sheet.poster.cell': 'Position',
   'sheet.poster.cellColumn': 'Spalte',
   'sheet.poster.cellRow': 'Zeile',
