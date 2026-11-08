@@ -204,6 +204,17 @@ function Marked({ text, asked }: { text: string; asked: string }) {
   return <>{from > 0 ? '…' : ''}{text.slice(from, at)}<mark className="kit-tree__match">{text.slice(at, at + asked.length)}</mark>{text.slice(at + asked.length)}</>
 }
 
+/**
+ * The row's name: what it shows, its count or its mark too, since a name short of the words on screen
+ * is a name a speech user cannot say to press it (WCAG 2.5.3). What only its reader sees is said last:
+ * the words on screen come first, in their order.
+ */
+function rowSaid({ named, own, warns, unread, count, s }: {
+  named: string; own: string; warns: boolean; unread: boolean; count: number; s: Translate
+}): string {
+  return [named, warns ? s('org.typeMismatch') : '', unread ? s('org.notRead') : count > 0 ? String(count) : '', own].filter(Boolean).join(', ')
+}
+
 function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unread, count, words, warns, onHome, menuOf, s, language, toggleCollapsed, asked, enters }: RowActs & {
   scope: ScopeSummary; depth: number; shut: boolean; hasBranch: boolean; current: boolean; foldable: boolean; above: string; unread: boolean
   count: number; words: string; warns: boolean; asked: string
@@ -216,10 +227,7 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
   const items = unread ? [] : menuOf(scope)
   const named = above ? `${above} / ${scope.name}` : scope.name
   const own = scope.personal ? s('org.treePersonal') : ''
-  // The row's name says what it shows, its count or its mark too: a name short of the words on screen
-  // is a name a speech user cannot say to press it (WCAG 2.5.3).
-  // What only its reader sees is said last: the words on screen come first, in their order.
-  const said = [named, warns ? s('org.typeMismatch') : '', unread ? s('org.notRead') : count > 0 ? String(count) : '', own].filter(Boolean).join(', ')
+  const said = rowSaid({ named, own, warns, unread, count, s })
   return (
     // The press anywhere on the row is the way home; the name is the button
     // that carries it for a keyboard and a screen reader, and the controls at
