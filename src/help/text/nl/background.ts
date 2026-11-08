@@ -32,7 +32,7 @@ zo lang als de browser dat doet. *Waar je werk wordt bewaard* zegt meer.
 
 In beide gevallen verlaat niets je computer. Er is geen account, geen backend
 en geen telemetrie.` },
-    { title: `Het organisatiescherm`, text: `**Het voorbeeld.** Een organisatie waar nog niemand aan begon, opent op een eerste pagina: geef de jouwe een naam, kijk rond in het voorbeeld, of ga verder met een bestand of map die je hebt. **Voorbeeld openen** is een plek om te bezoeken: een band op elk scherm zegt dat je erin bent, je kunt alles proberen, er wordt niets bewaard en je eigen werk blijft onaangeroerd. **Dit als mijn begin houden** maakt wat je ziet tot je organisatie (onder een eigen scope als de jouwe intussen iets is geworden); **Voorbeeld verlaten** gaat terug zonder dat er iets veranderd is.` },
+    { title: `Het organisatiescherm`, text: `**Het voorbeeld.** Een organisatie waar nog niemand aan begon, opent op een eerste pagina: geef de jouwe een naam, kijk rond in het voorbeeld, of ga verder met een bestand of map die je hebt. **Voorbeeld openen** is een plek om te bezoeken: een band op elk scherm zegt dat je erin bent, je kunt alles proberen, er wordt niets bewaard en je eigen werk blijft onaangeroerd. **Voorbeeld overnemen** maakt wat je ziet tot je organisatie (onder een eigen scope als de jouwe intussen iets is geworden); **Voorbeeld verlaten** gaat terug zonder dat er iets veranderd is.` },
   ],
   frame: [
     { title: `Het organisatiescherm`, text: `De app opent op de **organisatie**: een onderdeel als elk ander, en het
@@ -155,8 +155,8 @@ dat er niet meer is, opent het onderdeel en zegt dat.
 
 **Op een weergave selecteert de link wat jij geselecteerd had.** Deel je vanaf
 een bord, een blad, een ondernemingskaart, het technologielandschap of een
-organigram met één element of eenheid geselecteerd, dan opent de link die
-weergave met dat weer geselecteerd — op een organigram de eenheid waar je
+organogram met één element of eenheid geselecteerd, dan opent de link die
+weergave met dat weer geselecteerd — op een organogram de eenheid waar je
 naartoe ging, waar die ook bewaard wordt; op een blad en een kaart wordt het ook even omlijnd. Een record waarop een link
 opent — een besluit, een waarneming, een oorzaak, een oplossing of een
 experiment — wordt op dezelfde manier in beeld gebracht en omlijnd, in de lijst
@@ -504,7 +504,7 @@ het **paneel** rechts toont het: zijn soort, een naam die afbreekt, één regel
 feiten en drie tabbladen. Met niets geselecteerd is er geen paneel en heeft het
 bord de breedte; klik op de naam van de weergave die open staat voor **Deze
 weergave**, wat ze is en bevat en hoe ze wordt geordend. Elk feit is een rij van label en
-waarde, en een druk maakt van de waarde een veld: Enter of verlaten bewaart,
+waarde, en een klik maakt van de waarde een veld: Enter of verlaten bewaart,
 Escape zet terug, en de voet zegt waar het veld voor is. Een veld zonder inhoud
 blijft uit het paneel tot **+ Eigenaar, leverancier…** het toevoegt. De pagina van
 het element, zijn **gegevenspagina**, toont dezelfde rijen met elk veld, een leeg
@@ -558,7 +558,7 @@ wijziging: waar ook een andere scope verandert, is het deel van die scope
 haar eigen stap, en kan de stap hier niet ongedaan worden gemaakt. Een actor
 verwijderen zet wat erin zit een niveau hoger, in zijn ouder.` },
     { title: `Koppelingen`, text: `Sleep van het handvat van een element naar een ander, of rechtsklik en kies
-**Verbinding starten naar…**. Een koppeling heeft een label, een protocol (wat
+**Koppeling starten naar…**. Een koppeling heeft een label, een protocol (wat
 je maar typt: REST, EDI, Kafka), een richting die de pijlpunten bepaalt, een
 een technologie, een kleur en een lijnstijl. Dubbelklik het label om het ter
 plekke te bewerken.
@@ -652,7 +652,7 @@ Naar een andere dag kijken is een toestand van het hele venster: een band noemt 
 loopt een rand om het canvas, en het bord is alleen-lezen: het palet en de velden zijn
 weggeborgen en ongedaan maken staat uit. Het is alleen op jouw scherm, niemand anders ziet
 het, en het adres draagt het (\`?day=2027-06-01\`), dus een koppeling opent dezelfde blik.
-**Terug naar vandaag**, of **Terug naar** de eigen dag van het bord, is één druk. **Maak dit
+**Terug naar vandaag**, of **Terug naar** de eigen dag van het bord, is één klik. **Maak dit
 de dag van de weergave** in de band is de bewuste stap: één bewerking, één regel in
 Activiteit, en {key:Mod+Z} neemt hem terug. Het werkt ook voor vandaag, wat een gedateerd bord terug
 op de kalender zet. Een bord dat op zijn dag is bewaard, zegt die dag op zijn tabblad en
@@ -675,7 +675,7 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.` },
   badge, uitgefaseerde elementen dimmen) en categorie, de eerste regels van de
   omschrijving (zie *Documentatie*), waar het draait, de ingevulde gegevenspagina, de
   **operationele aspecten** van een applicatie, een rij per stuk met een notitie op
-  een druk, en wat erin zit. De kolommen stel je per diagram in bij de
+  een klik, en wat erin zit. De kolommen stel je per diagram in bij de
   diagraminstellingen.
 - **Vormgeving.** Accentkleur, vorm, pictogram, pictogramgrootte, en waar het in
   deze weergave staat.
@@ -684,7 +684,7 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.` },
 **⋯** naast de naam bevat **Verplaatsen…**, **Soort wijzigen** en **Weghalen /
 verwijderen…**.` },
     { title: `Documentatie`, text: `Elk element heeft een omschrijving in markdown, en die kan een hele pagina zijn.
-De eerste regels staan in het paneel; een druk schrijft ze daar met dezelfde
+De eerste regels staan in het paneel; een klik schrijft ze daar met dezelfde
 editor, en **De pagina openen** opent dezelfde tekst op de **gegevenspagina** van het
 element. Dat doen ook de link naast de naam, **Documentatie openen** in het
 elementmenu, Enter op het geselecteerde element, en een dubbelklik op alles wat
@@ -751,7 +751,7 @@ over dat record, de oudste eerst, elk antwoord onder de reactie waarop het
 antwoordt. Een kop zegt hoeveel het er zijn, en de rij van een waarneming in
 het register toont het aantal naast de titel.
 
-- **Reageren.** Schrijf in het veld onder de draad en druk op **Reageren**
+- **Reageren.** Schrijf in het veld onder de draad en klik op **Reageren**
   ({key:Mod+Enter} doet hetzelfde). De tekst neemt de Markdown die een beschrijving
   neemt.
 - **Antwoorden.** Klik op **Antwoorden** onder een reactie. Een draad is één
@@ -766,7 +766,7 @@ het register toont het aantal naast de titel.
 
 **Wie het schreef** is een persoon uit het register, nooit een getypte naam.
 De eerste keer dat je reageert en niemand op deze installatie *Dit ben ik* is,
-vraagt de draad één keer wie er schrijft — kies uzelf, of voeg uzelf toe met
+vraagt de draad één keer wie er schrijft — kies jezelf, of voeg jezelf toe met
 **Nieuwe persoon…** — en onthoudt het antwoord als *Dit ben ik*. Iemand
 vergeten op de pagina Mensen bereikt elke reactie die die persoon schreef, die
 dan als pseudoniem leest.
@@ -867,9 +867,9 @@ elke applicatie die de gegevens aan die diensten en platforms koppelen, uit elk
 landschap in de organisatie; de diensten; en de platforms, genest zoals de boom
 nest, een extern platform gestippeld. Niets wordt getekend of geplaatst: elke regel
 en lijn wordt uit de gegevens gelezen. **In rust zijn er geen lijnen.** Met de muis
-op een regel zie je de lijnen, een druk zet ze vast, en er verschuift niets.
+op een regel zie je de lijnen, een klik zet ze vast, en er verschuift niets.
 **Matrix** toont dezelfde regels als tabel, een gevuld teken voor gebruik en een hol
-voor wat met de hosting meekomt; een druk selecteert, Spatie wijzigt een teken, en
+voor wat met de hosting meekomt; een klik selecteert, Spatie wijzigt een teken, en
 een kop zegt wie erop staat. **Tonen** bevat de rest: de diensten, alle lijnen
 tegelijk, verbergen wat de keuze niet raakt, hosting opvouwen in dienstlijnen, de
 gedeelde rij, een regel per scope, en applicaties groeperen op scope of categorie.
@@ -879,7 +879,7 @@ levenscyclus, de categorie, wie verantwoordelijk is), met een legenda van wat er
 staat, en schrijft niets tot *Bewaren bij de weergave*. **Dag** leest de hele pagina
 op een andere dag: wat weg is staat er niet, en de pagina is alleen-lezen tot je
 teruggaat. De lezer rechts zegt wat een regel is. *Als het wegviel…* opent het rapport,
-net als een dubbele druk, en *Gegevens bewerken* opent het record in dezelfde kolom.
+net als een dubbele klik, en *Gegevens bewerken* opent het record in dezelfde kolom.
 Het getal op de regel van een platform is het getal in het rapport: elke applicatie
 die erop staat of op iets eronder, elk één keer.
 
@@ -900,7 +900,7 @@ twee: *Draait op*, en *Gebruikt* met een ✕ bij elk en *Een dienst of platform
 toevoegen…*, met eerst wat deze scope heeft en dan wat de rest van de organisatie
 aanbiedt; kies je iets van elders, dan wordt de stand-in meegeschreven. **Gebruik
 bewerken** zet een vinkje op elke regel, een vakje voor gebruik, een rond teken voor
-waar het draait en een holle ring voor wat de hosting al meebrengt, en een druk schrijft
+waar het draait en een holle ring voor wat de hosting al meebrengt, en een klik schrijft
 of neemt terug, per keer één stap. Je kunt ook **een applicatieregel op een regel in een
 andere kolom slepen**, en de pagina zegt het werkwoord voor je loslaat: een plaats krijgt
 waar het draait, de rest krijgt gebruik. Een wijziging gaat naar de scope die de
@@ -1118,7 +1118,7 @@ eigen pagina van de applicatie als geen enkel bord hem tekent.` },
     { title: `Dekking`, text: `**Dekking**, op de schakelaar naast **Poster** en **Namen**, is dezelfde laag
 andersom gelezen, in het tabblad van het blad zelf: elke functie aan de zijkant, een
 kolom per applicatie die de regels noemen, en een teken waar de een de ander
-ondersteunt. De eerste druk maakt de kaart als de scope er geen heeft en je mag
+ondersteunt. De eerste klik maakt de kaart als de scope er geen heeft en je mag
 schrijven; ook **+** in de tabbladen maakt er een, en **Nieuwe kaart in deze scope**
 onder **⋯** een tweede, die naast de schakelaar staat. Ze houdt haar eigen adres, en
 een agent bereikt haar daar.
@@ -1133,7 +1133,7 @@ naam. **Dag** telt de regels die op de gekozen dag gelden, en terwijl je naar ee
 andere dag kijkt kan niets worden gewijzigd. **Exporteren** bewaart de hele tabel als
 afbeelding, met titelblok. **Wat het tekent…** onder **⋯** kiest de gebieden.
 
-Een druk selecteert, dus lezen verandert niets: een regel opent zijn paneel, en een
+Een klik selecteert, dus lezen verandert niets: een regel opent zijn paneel, en een
 kolomkop toont wat die applicatie ondersteunt, waar zij de enige is, en de weg
 erheen waar ze ook staat. **Spatie** op een cel koppelt of ontkoppelt, als één stap
 met **Ongedaan maken**; een koppeling in een andere scope wordt als zodanig genoemd en
@@ -1236,7 +1236,7 @@ omhoog, M verplaatst de eenheid en F zet de focus erop.
 
 **Een vak** zegt het type en de naam van de eenheid en één regel per rol: *Hoofd:
 Anna de Vries*, met het aandeel waar dat niet alle tijd is, *waarnemend*, *ext* voor
-iemand van buiten de organisatie en *jij*, of **vacant** in woorden, waarmee een druk
+iemand van buiten de organisatie en *jij*, of **vacant** in woorden, waarmee een klik
 toewijst in een eenheid die deze scope bewaart. Iemand boven al zijn tijd heeft *200%
 van hun tijd* in woorden op de regel; iemand in een rol buiten die van de eenheid
 heeft een eigen rij met *buiten haar rollen*. Het een staat nooit in de plaats van
@@ -1406,7 +1406,7 @@ schreef, met waar hij naar wijst; of, waar geen editor is, waarom niet en waar j
 er een haalt.
 
 Op de afbeelding krijgt elke vorm die naar een element wijst bij aanwijzen of focus
-een lijn en een naam. Erop drukken opent het element in het paneel naast de
+een lijn en een naam. Erop klikken opent het element in het paneel naast de
 afbeelding, met **Pagina openen**; de afbeelding beweegt niet. **n koppelingen**
 markeert ze allemaal en somt ze op: welke in de pas lopen, welke **om na te kijken**
 zijn (het element staat niet meer in deze scope, of de afbeelding zegt nog een oude
@@ -1942,7 +1942,7 @@ elkaar vallen samen en zeggen hoeveel. De pagina van een plan is één document 
 scroll: de kop, een strook met mijlpalen die in beeld blijft, wat het wijzigt op één
 regel per stuk, dan de tekst, dan de borden die het wijzigt, de principes die het
 aanhaalt, de wijzigingen en de opmerkingen. Een overzicht links gaat naar elk daarvan.
-Een feit leest als woorden en een druk maakt van die ene regel een formulier. **Tekst
+Een feit leest als woorden en een klik maakt van die ene regel een formulier. **Tekst
 bewerken** is alleen de tekst, in een eigen venster met voorbeeld, opgeslagen als één
 stap. **Koppelvlakken** en **Eenheden** wachten tot je erom vraagt; **De rest een dag
 geven…** verplaatst elke lijn zonder dag op één dag, en een regel opent om het hele
@@ -2246,7 +2246,7 @@ lijn; **Terug naar wat de rol zegt** haalt hem weg. Een lijn die een kring zou s
 wordt geweigerd, met de reden.` },
     { title: `Rollen`, text: `**Rollen** toont elke rol: waar die zit, de leidinggevende en het aandeel. Een rol kiezen
 opent hem groot: doel, houders en vacatures, de lijnen, waarvoor hij instaat, wie eraan
-rapporteert, en elke eenheid met wie de rol daar vervult. Op een eenheid drukken gaat naar
+rapporteert, en elke eenheid met wie de rol daar vervult. Op een eenheid klikken gaat naar
 haar plaats in de organisatie.
 
 De twee eigenaarsregels staan boven de lijst. Een regel die niet is ingesteld zegt wat
@@ -2256,7 +2256,7 @@ stap; vervullen mensen hem nog, dan zegt de vraag hoeveel en waar.` },
 raster met de rollen die daarin een aandeel hebben. De andere rollen zijn samengevouwen
 in één kolom **+N**. **Hele organisatie** toont alles, voor audits en export. **Eenheid**
 beperkt het raster tot de rollen van één eenheid en zegt wie ze vervult; een rij met de A
-buiten de eenheid zegt waar die zit. De lezer van een eenheid op het organigram leidt
+buiten de eenheid zegt waar die zit. De lezer van een eenheid op het organogram leidt
 hierheen.
 
 Op een cel klikken selecteert en schrijft niets. R, A, C, I of – op het toetsenbord, of de

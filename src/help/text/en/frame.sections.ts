@@ -172,7 +172,7 @@ export const SECTIONS: SectionTexts = {
   'home.roadmapFinding': ['Show what the dates disagree about', 'Where the roadmap\'s dates disagree, the Roadmap row says so and Show opens the finding.',
     'A home, the Roadmap row, Show.',
     ['Press Show on the Roadmap row.'],
-    'Rating (legacy) retires on 2027-06-30 with 2 connections still live: Show opens it.'],
+    'Rating (legacy) retires on 30 Jun 2027 with 2 connections still live: Show opens it.'],
   'home.checks': ['Read the checks on a home', 'Counts what the tree contradicts here and below: to fix, to review and notes. Each count opens the first finding of its weight; Checks opens the list.',
     'A home, the Checks line under the header.',
     ['Press Checks for the list, or a count to go to its first finding.'],

@@ -36,7 +36,8 @@ export type Refused = { readonly word: RegExp; readonly use: string; readonly ex
 
 export const GLOSSARY: Record<Exclude<Language, 'en'>, readonly Refused[]> = {
   nl: [
-    { word: /\b[Uu]w?\b/, use: 'je, jouw (Dutch says je throughout)' },
+    { word: /\b[Uu]w?\b|\b[Uu]zelf\b/, use: 'je, jouw, jezelf (Dutch says je throughout)' },
+    { word: /[Oo]rganigram/, use: 'organogram' },
     { word: /[Oo]perating model/, use: 'besturingsmodel' },
     { word: /[Aa]anzicht/, use: 'weergave; containerdiagram for a container view' },
     { word: /\b[Vv]iews?\b/, use: 'weergave' },

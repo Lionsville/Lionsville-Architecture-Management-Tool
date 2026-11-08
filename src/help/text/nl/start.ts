@@ -6,7 +6,7 @@ import type { GettingStartedText } from '../../types'
 /** Beginnen: waar de help mee opent, in twee minuten gelezen. */
 export const START: GettingStartedText = {
   title: 'Beginnen',
-  intro: 'Zes stappen, twee minuten. Elke stap zegt waarop je drukt; de hoofdstukken daarna zeggen de rest wanneer je het nodig hebt.',
+  intro: 'Zes stappen, twee minuten. Elke stap zegt waarop je klikt; de hoofdstukken daarna zeggen de rest wanneer je het nodig hebt.',
   steps: [
     {
       title: 'Waar het voor is',
@@ -25,17 +25,17 @@ export const START: GettingStartedText = {
     },
     {
       title: 'Toevoegen en verbinden',
-      text: 'Klik op een bord op **Toevoegen** in de balk, of dubbeldruk op een lege plek, en typ een naam. Om twee kaarten te verbinden wijs je er één aan en sleep je van de stip aan de rand naar de andere. Selecteer iets om het in het paneel te lezen en te wijzigen. {key:Mod+Z} neemt elke stap terug.',
+      text: 'Klik op een bord op **Toevoegen** in de balk, of dubbelklik op een lege plek, en typ een naam. Om twee kaarten te verbinden wijs je er één aan en sleep je van de stip aan de rand naar de andere. Selecteer iets om het in het paneel te lezen en te wijzigen. {key:Mod+Z} neemt elke stap terug.',
       picture: 'Een bord met twee kaarten en de lijn ertussen, en het paneel van de geselecteerde kaart.',
     },
     {
       title: 'Een waarneming vastleggen',
-      text: 'Iets opgemerkt — twee systemen die een andere prijs noemen, een trage overdracht? Open **Waarnemingen** in rij twee en klik op **Nieuwe waarneming**. Zeg in een paar woorden wat je zag. Druk later op **Vraag waarom** om de oorzaak te vinden, en stel een oplossing voor de grondoorzaak voor.',
+      text: 'Iets opgemerkt — twee systemen die een andere prijs noemen, een trage overdracht? Open **Waarnemingen** in rij twee en klik op **Nieuwe waarneming**. Zeg in een paar woorden wat je zag. Klik later op **Vraag waarom** om de oorzaak te vinden, en stel een oplossing voor de grondoorzaak voor.',
       picture: 'De waarnemingenpagina: wat er gezien is, de oorzaken erachter en de voorgestelde oplossing.',
     },
     {
       title: 'Waar verder',
-      text: 'Druk op elk scherm op de **?** in rij één, of op F1: de help opent bij dat scherm. Druk buiten een tekstveld op **?** op het toetsenbord voor de sneltoetsen. Elk paneel heeft ook een **?** in de kop. Lees verder bij *De weg vinden* en *Landschapsborden en containerdiagrammen*.',
+      text: 'Klik op elk scherm op de **?** in rij één, of op F1: de help opent bij dat scherm. Druk buiten een tekstveld op **?** op het toetsenbord voor de sneltoetsen. Elk paneel heeft ook een **?** in de kop. Lees verder bij *De weg vinden* en *Landschapsborden en containerdiagrammen*.',
       picture: 'Rij één met de ? die de help bij dit scherm opent, en Help ernaast.',
     },
   ],

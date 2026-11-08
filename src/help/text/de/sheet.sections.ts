@@ -66,7 +66,7 @@ export const SECTIONS: SectionTexts = {
     'Wählen Sie Billing: Es unterstützt Invoicing und Collections und ist das einzige System für Invoicing.'],
   'map.link': ['Ein System in einer Zelle verknüpfen oder lösen', 'Eine Zelle ist ein Bedienelement: Die Leertaste verknüpft das System mit der Fähigkeit oder nimmt die Verknüpfung weg, als ein Schritt mit Rückgängig in der Meldung.',
     'Die Zelle einer Fähigkeit auf der Karte.',
-    ['Gehen Sie mit den Pfeiltasten oder einem Druck zur Zelle.', 'Drücken Sie die Leertaste.'],
+    ['Gehen Sie mit den Pfeiltasten oder einem Klick zur Zelle.', 'Drücken Sie die Leertaste.'],
     'Drücken Sie die Leertaste bei Maintenance × Fleet Register, um zu sagen, dass Fleet Register sie unterstützt.',
     'Pfeiltasten, Leertaste'],
   'map.find': ['Eine Fähigkeit auf der Karte suchen', 'Behält die Zeilen, deren Name passt.',

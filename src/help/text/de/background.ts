@@ -34,7 +34,7 @@ wird* sagt mehr.
 
 In beiden Fällen verlässt nichts Ihren Rechner. Es gibt kein Konto, kein
 Backend und keine Telemetrie.` },
-    { title: `Der Organisationsbildschirm`, text: `**Das Beispiel.** Eine Organisation, die noch niemand begonnen hat, öffnet sich auf einer ersten Seite: Geben Sie Ihrer einen Namen, sehen Sie sich das Beispiel an, oder machen Sie mit einer vorhandenen Datei oder einem Ordner weiter. **Beispiel öffnen** ist ein Ort, den Sie besuchen: Ein Band auf jedem Bildschirm sagt, dass Sie darin sind, Sie können alles ausprobieren, nichts wird gespeichert, und Ihre eigene Arbeit bleibt unberührt. **Das als meinen Anfang behalten** macht das Gesehene zu Ihrer Organisation (unter einem eigenen Bereich, falls Ihre inzwischen etwas geworden ist); **Beispiel verlassen** geht zurück, ohne dass sich etwas geändert hat.` },
+    { title: `Der Organisationsbildschirm`, text: `**Das Beispiel.** Eine Organisation, die noch niemand begonnen hat, öffnet sich auf einer ersten Seite: Geben Sie Ihrer einen Namen, sehen Sie sich das Beispiel an, oder machen Sie mit einer vorhandenen Datei oder einem Ordner weiter. **Beispiel öffnen** ist ein Ort, den Sie besuchen: Ein Band auf jedem Bildschirm sagt, dass Sie darin sind, Sie können alles ausprobieren, nichts wird gespeichert, und Ihre eigene Arbeit bleibt unberührt. **Als eigene Organisation übernehmen** macht das Gesehene zu Ihrer Organisation (unter einem eigenen Bereich, falls Ihre inzwischen etwas geworden ist); **Beispiel verlassen** geht zurück, ohne dass sich etwas geändert hat.` },
   ],
   frame: [
     { title: `Der Organisationsbildschirm`, text: `Die App öffnet sich auf der **Organisation**: einem Bereich wie jedem anderen,
@@ -494,7 +494,7 @@ Gruppe zu entfernen lässt ihre Elemente, wo sie sind.
 **Containerdiagramme.** Eine Anwendung kann ein Containerdiagramm unter
 sich haben: die Anwendung wird zur Grenze dieses Diagramms, und ihre
 Komponenten sitzen darin. Sie legen eines bewusst an — klicken Sie mit rechts
-auf die Anwendung und wählen Sie **Containerdiagramm erstellen**, oder drücken
+auf die Anwendung und wählen Sie **Containerdiagramm erstellen**, oder klicken
 Sie die Schaltfläche dieses Namens auf dem Reiter Allgemein des Inspektors —
 und es ist ein Schritt in der Aktivität wie jeder andere, den {key:Mod+Z} zurücknimmt.
 Eine Karte, die eines hat, trägt eine kleine Marke; doppelklicken Sie die
@@ -537,7 +537,7 @@ aus, und das **Panel** rechts zeigt es: seine Art, einen Namen, der umbricht, ei
 Zeile Fakten und drei Reiter. Ist nichts ausgewählt, gibt es kein Panel und das
 Board hat die Breite; klicken Sie auf den Namen der offenen Ansicht für **Diese
 Ansicht**, was sie ist und enthält und wie sie aufräumt. Jeder Fakt ist eine Zeile
-aus Beschriftung und Wert, und ein Druck macht aus dem Wert ein Feld: Enter oder
+aus Beschriftung und Wert, und ein Klick macht aus dem Wert ein Feld: Enter oder
 Verlassen behält ihn, Escape setzt ihn zurück, und der Fuß sagt, wofür das Feld
 ist. Ein Feld ohne Inhalt bleibt aus dem Panel, bis **+ Verantwortlicher,
 Anbieter…** es hinzufügt. Die Seite des Elements, seine **Steckbrief**, zeigt
@@ -549,7 +549,7 @@ die Einheit, die dafür einsteht, oder tippen Sie einen Namen, der als keine Ein
 markiert wird. Das eine zu wählen löscht das andere.
 
 **Sicherheit.** Ein Element oder eine Linie kann sagen, dass es **bestätigt** oder
-**angenommen** ist, als Wort auf der Zeile. Eine angenommene Karte wird gestrichelt
+**vermutet** ist, als Wort auf der Zeile. Eine vermutete Karte wird gestrichelt
 gezeichnet. Nichts zu sagen heißt, dass es niemand gesagt hat.
 
 **Symbole.** Rund hundert eingebaute Marken, durchsuchbar nach Name, Kategorie
@@ -692,7 +692,7 @@ Einen anderen Tag anzusehen ist ein Zustand des ganzen Fensters: Ein Band nennt 
 Rand läuft um die Leinwand, und das Board ist schreibgeschützt: Palette und Felder sind
 weggeräumt und Rückgängig ist aus. Es ist nur auf Ihrem Bildschirm, niemand sonst sieht es,
 und die Adresse trägt es (\`?day=2027-06-01\`), also öffnet ein Link dieselbe Ansicht.
-**Zurück zu heute**, oder **Zurück zu** dem eigenen Tag des Boards, ist ein Druck. **Zum Tag
+**Zurück zu heute**, oder **Zurück zu** dem eigenen Tag des Boards, ist ein Klick. **Zum Tag
 der Ansicht machen** im Band ist der bewusste Schritt: eine Bearbeitung, ein Eintrag in der
 Aktivität, und {key:Mod+Z} nimmt ihn zurück. Das geht auch für heute, was ein datiertes Board zurück
 in den Kalender setzt. Ein auf seinen Tag gespeichertes Board nennt diesen Tag auf seinem Tab
@@ -716,7 +716,7 @@ Checks der Roadmap eine Person nennen können.` },
   Abzeichen dargestellt, abgeschaltete Elemente werden abgeblendet) und Kategorie,
   die ersten Zeilen der Beschreibung (siehe *Dokumentation*), wo es läuft, die
   ausgefüllten Steckbrief, die **betrieblichen Aspekte** einer Anwendung, je eine
-  Zeile mit einer Notiz auf einen Druck, und was darin ist. Die Spalten werden je
+  Zeile mit einer Notiz auf einen Klick, und was darin ist. Die Spalten werden je
   Diagramm in dessen Einstellungen festgelegt.
 - **Darstellung.** Akzentfarbe, Form, Symbol, Symbolgröße, und wo es in dieser
   Ansicht sitzt.
@@ -725,14 +725,14 @@ Checks der Roadmap eine Person nennen können.` },
 **⋯** neben dem Namen enthält **Verschieben…**, **Art ändern** und **Entfernen /
 löschen…**.` },
     { title: `Dokumentation`, text: `Jedes Element hat eine Markdown-Beschreibung, und sie kann eine ganze Seite sein.
-Die ersten Zeilen stehen im Panel; ein Druck schreibt sie dort mit demselben Editor,
+Die ersten Zeilen stehen im Panel; ein Klick schreibt sie dort mit demselben Editor,
 und **Seite öffnen** öffnet denselben Text auf den **Steckbrief** des Elements. Das
 tun auch der Link neben dem Namen, **Dokumentation öffnen** im Menü des Elements,
 Enter auf dem ausgewählten Element und ein Doppelklick auf alles, was keine
 Anwendung ist.
 
 Die Seite liest sich als ein Ganzes: der Text mit seinem Inhalt, dann dieselben
-Zeilen wie im Panel mit jedem Feld, in jedem Zustand per Druck zu bearbeiten, und
+Zeilen wie im Panel mit jedem Feld, in jedem Zustand per Klick zu bearbeiten, und
 womit es verbunden ist: seine Pläne, jede Linie hinein und heraus, die Ansichten,
 die es zeichnen, was darin ist, die Grundsätze, denen es folgt, seine Änderungen und
 seine Kommentare. Links stehen die anderen Elemente der Ansicht, mit einem Filter
@@ -794,7 +794,7 @@ Antwort unter dem Kommentar, auf den sie antwortet. Eine Überschrift sagt, wie
 viele es sind, und die Zeile einer Beobachtung im Register zeigt die Zahl
 neben ihrem Titel.
 
-- **Kommentieren.** Schreiben Sie in das Feld unter dem Verlauf und drücken
+- **Kommentieren.** Schreiben Sie in das Feld unter dem Verlauf und klicken
   Sie **Kommentieren** ({key:Mod+Enter} tut dasselbe). Der Text nimmt das Markdown,
   das eine Beschreibung nimmt.
 - **Antworten.** Klicken Sie auf **Antworten** unter einem Kommentar. Ein Verlauf
@@ -914,9 +914,9 @@ Anwendung, die die Einträge mit diesen Diensten und Plattformen verbinden, aus 
 Landschaft der Organisation; die Dienste; und die Plattformen, verschachtelt wie der
 Baum, eine externe gestrichelt. Nichts wird gezeichnet oder platziert: Jede Zeile und
 Linie wird aus den Einträgen gelesen. **Im Ruhezustand gibt es keine Linien.** Der
-Mauszeiger auf einer Zeile zeigt ihre Linien, ein Druck hält sie fest, und nichts
+Mauszeiger auf einer Zeile zeigt ihre Linien, ein Klick hält sie fest, und nichts
 verschiebt sich dabei. **Matrix** zeigt dieselben Zeilen als Tabelle, ein gefülltes
-Zeichen für eine Nutzung und ein hohles für das, was mit dem Hosting kommt; ein Druck
+Zeichen für eine Nutzung und ein hohles für das, was mit dem Hosting kommt; ein Klick
 wählt aus, die Leertaste ändert ein Zeichen, und eine Überschrift sagt, wer darauf steht.
 **Anzeigen** enthält den Rest: die Dienste, alle Linien zugleich, Ausblenden, was die
 Auswahl nicht berührt, Hosting in Dienstlinien einklappen, die gemeinsame Zeile, eine
@@ -927,7 +927,7 @@ die Kategorie, wer verantwortlich ist), mit einem Schlüssel aus dem, was gezeic
 und schreibt nichts bis *Mit der Ansicht speichern*. **Tag** liest die ganze Seite an einem
 anderen Tag: Was weg ist, steht nicht da, und die Seite ist schreibgeschützt, bis Sie
 zurückgehen. Der Leser rechts sagt, was eine Zeile ist. *Wenn es wegfiele…* öffnet den
-Bericht, wie ein Doppeldruck, und *Eintrag bearbeiten* öffnet den Eintrag in derselben
+Bericht, wie ein Doppelklick, und *Eintrag bearbeiten* öffnet den Eintrag in derselben
 Spalte. Die Zahl in der Zeile einer Plattform ist die Zahl in ihrem Bericht: jede Anwendung,
 die darauf oder auf etwas darunter steht, jede einmal.
 
@@ -949,7 +949,7 @@ und *Nutzt* mit einem ✕ bei jedem und *Einen Dienst oder eine Plattform hinzuf
 mit dem, was dieser Bereich hat, dann mit dem, was der Rest der Organisation anbietet; eine
 Wahl von anderswo schreibt ihren Stellvertreter mit. **Nutzung bearbeiten** setzt ein Häkchen
 auf jede Zeile, ein Kästchen für eine Nutzung, ein rundes Zeichen für den Betriebsort und
-einen hohlen Ring für das, was das Hosting schon mitbringt, und ein Druck schreibt oder nimmt
+einen hohlen Ring für das, was das Hosting schon mitbringt, und ein Klick schreibt oder nimmt
 zurück, je ein Schritt. Sie können auch **eine Anwendungszeile auf eine Zeile in einer anderen
 Spalte ziehen**, und die Seite nennt das Verb vor dem Loslassen: Ein Ort nimmt den Betriebsort,
 alles andere eine Nutzung. Eine Änderung geht in den Bereich, der die Anwendung führt, der Leser
@@ -960,7 +960,7 @@ die die Anwendung zeigt, auf dieser Zeile, in dem Bereich, der sie führt — of
 auf der sie läuft. Zeigen sie mehrere, nennt ein kleines Menü jede mit ihrem Bereich; zeigt sie
 keine, gibt es keinen Link. Das Board selbst zeichnet weiterhin nur Flüsse.
 
-Was Sie wählen, gehört Ihnen und schreibt nichts; **Mit der Ansicht behalten**, im selben Menü, macht es zu dem, was alle öffnen.
+Was Sie wählen, gehört Ihnen und schreibt nichts; **Mit der Ansicht speichern**, im selben Menü, macht es zu dem, was alle öffnen.
 
 **Einfärben nach** in der Werkzeugleiste der Landschaft tönt die Karten nach
 Plattform — dem Cluster, nicht dem Namespace — oder nach Lebenszyklus der
@@ -1145,7 +1145,7 @@ Einheit außerhalb der Domäne steht als Warnung da. Die Beschriftung ist eine
 Schaltfläche: Sie öffnet die Startseite der Domäne, die die Einheit bedient,
 ein Menü der Domänen, wo sie mehrere bedient oder mehrere Einheiten
 zugewiesen sind, und die Einheit dort, wo sie geführt wird — auf dem
-Organigramm dieses Bereichs —, wo sie keine bedient. Ein Druck darauf wählt
+Organigramm dieses Bereichs —, wo sie keine bedient. Ein Klick darauf wählt
 die Karte nicht.
 
 **Zeigen, wer verantwortlich ist**, in der oberen Leiste, fügt die anderen
@@ -1185,7 +1185,7 @@ Board sie zeichnet.` },
     { title: `Abdeckung`, text: `**Abdeckung**, auf dem Schalter neben **Poster** und **Namen**, ist dieselbe Schicht
 andersherum gelesen, im Reiter des Blatts selbst: jede Funktion an der Seite, eine
 Spalte je Anwendung, die die Zeilen nennen, und ein Zeichen, wo eine die andere
-unterstützt. Der erste Druck legt die Karte an, wenn der Bereich keine hat und Sie
+unterstützt. Der erste Klick legt die Karte an, wenn der Bereich keine hat und Sie
 schreiben dürfen; auch **+** in den Reitern legt eine an, und **Neue Karte in diesem
 Bereich** unter **⋯** eine zweite, die neben dem Schalter steht. Sie behält ihre eigene
 Adresse, und ein Agent erreicht sie dort.
@@ -1201,7 +1201,7 @@ gelten, und während der Ansicht eines anderen Tages lässt sich nichts ändern.
 **Exportieren** speichert die ganze Tabelle als Bild, mit Schriftfeld. **Was sie
 zeichnet…** unter **⋯** wählt die Bereiche.
 
-Ein Druck wählt aus, Lesen ändert also nichts: Eine Zeile öffnet ihr Feld, und ein
+Ein Klick wählt aus, Lesen ändert also nichts: Eine Zeile öffnet ihr Feld, und ein
 Spaltenkopf zeigt, was diese Anwendung unterstützt, wofür sie die einzige ist, und den
 Weg zu ihr, wo immer sie liegt. **Leertaste** auf einer Zelle verknüpft oder löst, als
 ein Schritt mit **Rückgängig**; eine Verknüpfung in einem anderen Bereich wird als solche
@@ -1209,8 +1209,8 @@ genannt und dort geändert.` },
   ],
   poster: [
     { title: `Das Poster`, text: `**Poster**, zuerst auf dem Schalter, zeichnet das Blatt als eine Seite fester Größe: die Kundenreise,
-die Stakeholder und jeden Bereich als Block, jede Fähigkeit als Kachel. Es ist die erste Lesart,
-wo das Blatt einen Bereich hat und das Fenster mindestens 900 Pixel breit ist. Es öffnet beim
+die Stakeholder und jedes Gebiet als Block, jede Fähigkeit als Kachel. Es ist die erste Lesart,
+wo das Blatt ein Gebiet hat und das Fenster mindestens 900 Pixel breit ist. Es öffnet beim
 Größeren von Einpassen und 90 %, damit ein Name lesbar ist, von oben links, wo der Rest Schieben
 ist; danach öffnet es, wo Sie es verlassen haben. **Einpassen** im Dock zeigt das Ganze. Unter 70 %
 verschwinden die Namen und jede Fähigkeit ist ein Quadrat unter der eingestellten Farbe, was früher
@@ -1232,15 +1232,15 @@ Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
   die Pfeile verschieben, {key:Shift} ändert die Größe, Alt geht einheitenweise, die Leertaste setzt ab und
   Esc stellt zurück;
 - eine Kachel innerhalb ihres Blocks in eine Zelle ziehen, und die anderen fließen darum herum;
-  oder auf einen anderen Bereich oder eine Gruppierung, was sie im Modell verschiebt, auf jeder
+  oder auf ein anderes Gebiet oder eine Gruppierung, was sie im Modell verschiebt, auf jeder
   Ansicht, wie *Verschieben nach…* im Panel. Was ein anderer Bereich aufbewahrt, wird mit den Worten
   des Panels abgelehnt;
 - ein Team, eine Anwendung oder einen Unterbereich aus der Ablage auf eine Kachel, Gruppierung oder
-  einen Bereich ziehen. Sie schreiben, was das Panel schreibt. Ein Team zeigt sich auch als
+  ein Gebiet ziehen. Sie schreiben, was das Panel schreibt. Ein Team zeigt sich auch als
   Beschriftung auf diesem Poster; sie zu entfernen lässt die Zuordnung bestehen. Ein eingegebener
   Name ist ein Akteur, als keine Einheit markiert. Eine Anwendung gehört auf eine Kachel, nicht auf
   einen Block. Wählen Sie mehrere mit {key:Shift} oder einem gezogenen Rahmen mit {key:Shift}, und einmal Absetzen oder
-  Drücken in der Ablage nimmt alle in einem Schritt. **L** und **A** auf einer Kachel öffnen dort
+  Klicken in der Ablage nimmt alle in einem Schritt. **L** und **A** auf einer Kachel öffnen dort
   dieselben Listen;
 - eine **Notiz** oder ein **Bild** hinzufügen, die nur zu dieser Ansicht gehören, mitgedruckt und
   von der Suche gefunden werden. Doppelklicken Sie auf eine Notiz, um zu schreiben;
@@ -1248,7 +1248,7 @@ Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
 
 **Erste Anordnung** verwirft die Plätze als ein Rückgängig, **Kacheln zurücksetzen** lässt jede
 Kachel fließen, **Für dieses Papier anordnen** platziert alles in Papierform. Überlappungen sind
-erlaubt und stehen im Streifen; ein Bereich, der zu einer platzierten Seite hinzukommt, erhält den
+erlaubt und stehen im Streifen; ein Gebiet, das zu einer platzierten Seite hinzukommt, erhält den
 ersten freien Platz oder wartet unter der Seite und wird dort gezählt. Beim Blick auf einen anderen
 Tag kann nichts platziert werden. Die Kachelgröße und die Zeilen der Kundenreise stehen unter **Was
 dieses Blatt zeigt**: eine Kundenreise, die für ganze Wörter zu schmal ist, erhält zwei Zeilen, bis
@@ -1277,7 +1277,7 @@ sich das ganze Organigramm öffnet; **Personen**, wer gezeichnet wird: die Führ
 die erforderlichen Rollen oder alle Rollen; **Linien**, welche Berichtslinien gezeichnet
 werden; **+ Einheit**; und den **Tag**. Beim ersten Öffnen zeigt ein Organigramm zwei
 Ebenen. Ein Pfeil auf einem Kasten klappt nur diese Einheit ein, und eine eingeklappte
-Einheit sagt in einer Zeile, was sie verbirgt, *3 Einheiten · 3 unbesetzt*; ein Druck auf
+Einheit sagt in einer Zeile, was sie verbirgt, *3 Einheiten · 3 unbesetzt*; ein Klick auf
 diese Zeile öffnet sie. **−**, **+**, **Einpassen** und **100%** stehen in der Ecke der
 Fläche, dazu {key:Mod} mit + − 0 und das Rad, und Einpassen stoppt bei 60%, wo ein
 Kasten seinen Namen sagt und was er verbirgt und nichts weiter. Nichts davon wird je
@@ -1309,7 +1309,7 @@ verschiebt die Einheit und F setzt den Fokus darauf.
 
 **Ein Kasten** sagt Typ und Namen der Einheit und eine Zeile je Rolle: *Leitung: Anna de
 Vries*, mit dem Anteil, wo es nicht die ganze Zeit ist, *kommissarisch*, *ext* für jemanden
-von außerhalb der Organisation und *Sie*, oder **unbesetzt** in Worten, was mit einem Druck
+von außerhalb der Organisation und *Sie*, oder **unbesetzt** in Worten, was mit einem Klick
 in einer Einheit dieses Bereichs zuweist. Wer über der ganzen Zeit liegt, hat *200% ihrer
 Zeit* in Worten in der Zeile; wer eine Rolle außerhalb der Einheit hat, eine eigene Zeile
 mit *außerhalb ihrer Rollen*. Das eine steht nie für das andere. Eine Zeile unter dem Namen
@@ -1334,7 +1334,7 @@ ihrer Ecke, sodass eine neue Linie nichts verschiebt.
 um, ohne neu verknüpft zu werden: **Verschieben nach…** auf dem gewählten Kasten, unten in
 der Gliederung, **Sitzt unter** in ihrem Inspektor, M, oder durch Ziehen auf eine andere.
 Ein Feld öffnet sich neben dem Organigramm, das mit seinen hervorgehobenen Plätzen sichtbar
-bleibt: jede Einheit der Organisation, welcher Bereich sie auch führt, gewählt durch Druck
+bleibt: jede Einheit der Organisation, welcher Bereich sie auch führt, gewählt durch Klick
 im Organigramm oder in der Liste, oder **Ganz oben**. Die Plätze, an denen ihr Typ sitzen
 darf, kommen zuerst; die anderen folgen unter eigener Überschrift, und ein Umzug dorthin ist
 erlaubt, lässt die Einheit in den Checks aber als falsch platziert stehen. Die Einheit
@@ -1436,7 +1436,7 @@ Das Panel neben der Karte sagt **Worauf zu schauen ist**, nach Check: die Paare,
 besitzt, als ihr Typ erlaubt, und hinter **Hinweise zeigen**, was ohne System
 dazwischen gesagt ist, und ein Eigentümer, der ein Name und keine Einheit ist.
 **Akzeptiert** listet, was als beabsichtigt markiert wurde. Nichts auf der Seite
-ändert etwas, bis eine Schaltfläche in diesem Panel gedrückt wird. Ein Druck auf
+ändert etwas, bis eine Schaltfläche in diesem Panel gedrückt wird. Ein Klick auf
 eine Zelle, Linie oder Zeile liest dieses Paar und zeichnet seine zwei Einheiten
 und Schnittstellen unter das Raster. Es sagt, warum es wichtig ist, und bietet die
 Antworten: **Sagen, wie sie zusammenarbeiten…**, **Sie sollten nicht voneinander
@@ -1447,9 +1447,9 @@ keine Einheit ist, bekommt mit **Zu Einheiten machen** gleich dort einen Typ, ei
 Partei außerhalb der Organisation lässt sich nur markieren oder wegplanen, und zwei
 Einheiten, die ein anderer Bereich führt, werden dort beantwortet. Ein Paar, das
 ohne System dazwischen sagte, wie es arbeitet, kann **Das Gesagte löschen** oder
-**Fehlende Schnittstelle zeichnen…**. Ein Druck auf den Namen einer Einheit liest,
+**Fehlende Schnittstelle zeichnen…**. Ein Klick auf den Namen einer Einheit liest,
 was ihr gehört, mit wem sie arbeitet und ihre offenen Paare, mit **Im Organigramm
-öffnen** für den Rest; ein Druck auf eine Anwendung liest ihren Eigentümer und ihre
+öffnen** für den Rest; ein Klick auf eine Anwendung liest ihren Eigentümer und ihre
 Schnittstellen. **Mich finden** geht zu Ihrer Einheit und sagt, warum nicht, wo Sie
 keine Rolle in einer Einheit auf der Karte haben. Wie das Organigramm ist sie an
 einem Tag gezeichnet. Eine Anwendung steht auf der Karte, solange sie am Tag der
@@ -1484,7 +1484,7 @@ schrieb, mit dem, worauf sie zeigt; oder, wo kein Editor ist, warum nicht und wo
 einer kommt.
 
 Auf dem Bild erhält jede Form, die auf ein Element zeigt, beim Überfahren oder im
-Fokus einen Rahmen und einen Namen. Ein Druck öffnet das Element im Panel neben dem
+Fokus einen Rahmen und einen Namen. Ein Klick öffnet das Element im Panel neben dem
 Bild, mit **Seite öffnen**; das Bild bewegt sich nicht. **n Verknüpfungen** markiert
 alle und listet sie auf: welche im Gleichschritt sind, welche **zur Durchsicht** sind (das
 Element ist nicht mehr in diesem Bereich, oder das Bild sagt noch einen alten Namen),
@@ -1635,7 +1635,7 @@ zu dem, was es damals war; wenn der ganze Bereich gezeigt wird, tut **Den ganzen
 Bereich wiederherstellen…** dasselbe für alles. Eine Wiederherstellung ist eine
 neue Änderung über allem, was seither geschah, kein Schritt zurück: der Verlauf
 wächst weiter, die Aktivitätsliste sagt *Diagramm Lager wiederhergestellt auf
-den Stand vom 3. Sep*, {key:Mod+Z} macht es rückgängig, und die nächste Momentaufnahme
+den Stand vom 3. Sept.*, {key:Mod+Z} macht es rückgängig, und die nächste Momentaufnahme
 hält es fest. Die App bietet diese Momentaufnahme an Ort und Stelle an. Eine
 Entscheidung, die angenommen, abgelehnt oder abgelöst wurde, bleibt, wie sie ist
 — schreiben Sie eine neue, die sie ablöst — und ein wiederhergestelltes Diagramm
@@ -1670,7 +1670,7 @@ darunter in einem eigenen Rahmen links von den Bahnen dieses Bereiche,
 verschachtelt wie der Baum, und das Register, die Ursachen, die Lösungen und
 die Experimente führen die Einträge jedes Bereiche darunter nach denen dieses
 Bereiche auf, unter *Lokal in …*. Die Zahlen über dem Bild — beobachtet,
-analysiert, angenommen, verifiziert, Grundursachen, offene Enden — zählen,
+analysiert, vermutet, verifiziert, Grundursachen, offene Enden — zählen,
 was das Bild zeigt, die Bereiche darunter eingeschlossen. Aus zeigt die Seite
 nur diesen Bereich und sagt, wie viele lokale Einträge sie ausblendet.
 
@@ -1774,7 +1774,7 @@ Seite, mit diesem Eintrag gewählt. Sie hat drei Teile:
 - **Was der bleibende Eintrag sagt.** Eine Zeile je Wert — für eine
   Beobachtung der Titel, wo, beobachtet von, die Auswirkung und der Tag des
   ersten Sehens, der beim frühesten der gewählten beginnt; für eine Ursache
-  der Titel, angenommen oder verifiziert, und ob sie eine Grundursache ist.
+  der Titel, vermutet oder verifiziert, und ob sie eine Grundursache ist.
   Daneben ist der Wert jedes gewählten Eintrags eine Schaltfläche, die ihn
   ins Feld setzt, oder Sie geben Ihren eigenen ein. Die Sichtungen werden
   addiert, nicht gewählt. Die Beschreibung ist die des bleibenden
@@ -1853,7 +1853,7 @@ Eintrag, der nie einer hätte sein sollen.
 
 Eine **Ursache** (\`CA-0003\`) ist, was das Team hinter einer oder mehreren
 Beobachtungen vermutet, oder hinter anderen Ursachen. Sie beginnt
-**angenommen** und wird **verifiziert**, sobald sie geprüft ist. Eine
+**vermutet** und wird **verifiziert**, sobald sie geprüft ist. Eine
 **Grundursache** ist eine Ursache, von der das Team sagt, dass sie eine ist,
 und sie heißt **RC** auf der eigenen Nummer der Ursache: \`CA-0004\` zur
 Grundursache gemacht ist \`RC-0004\`, und wieder zur Ursache gemacht ist sie
@@ -1937,7 +1937,7 @@ gespeicherter Bereich, den es nicht mehr gibt, fällt beim Zurückholen weg.
 **Das Bild betrachten.** **Groß** zeichnet jeden Eintrag als Karte mit
 Kennung und Titel; **Klein** als Kreis mit der Kennung darunter — eine
 Beobachtung so groß wie ihre Auswirkung, eine Ursache hohl, eine Grundursache
-mit doppeltem Ring, eine Lösung als Quadrat. Gestrichelt heißt angenommen und
+mit doppeltem Ring, eine Lösung als Quadrat. Gestrichelt heißt vermutet und
 durchgezogen verifiziert, in beiden, und die Legende unter dem Bild folgt der
 Größe. Das Bild beginnt **eingepasst** ins Fenster und passt sich erneut an,
 wenn sich ändert, was es zeigt, bis Sie zoomen; die Zoom-Schaltflächen, und {key:Mod} mit dem Mausrad, zoomen, und Ziehen über den Hintergrund
@@ -1992,7 +1992,7 @@ Experiment bleibt, als der Beleg, nach dem die Nächsten fragen.
 Über eine bewährte Lösung wird auf der Seite **Entscheidungen** entschieden.
 **Die Entscheidung vorschlagen** schreibt einen neuen Eintrag, dessen Kontext
 nennt, was die Lösung angeht und was sonst erwogen wurde. Ist er dort
-angenommen, kann die Lösung zu **beschlossen**, und **Einen Plan beginnen**
+angenommen, kann die Lösung zu **Übernommen**, und **Einen Plan beginnen**
 schreibt den Plan, der sie baut. Ist der Plan **erledigt**, gilt die Lösung
 als **umgesetzt**, und **Hat es gewirkt?** listet die Beobachtungen darunter
 auf: keine sollte mehr auftreten, und eine, die erneut gesehen wird, wird an
@@ -2044,7 +2044,7 @@ Die Seite eines Plans ist ein Dokument mit einem Bildlauf: der Kopf, ein Streife
 den Meilensteinen, der im Blick bleibt, was er ändert, je eine Zeile, dann der Text, dann
 die Boards, die er ändert, die Prinzipien, die er zitiert, die Änderungen und die
 Kommentare. Eine Gliederung links führt zu allem davon. Ein Fakt liest sich als Worte, und
-ein Druck macht aus dieser einen Zeile ein Formular. **Bearbeiten** ist nur der Text,
+ein Klick macht aus dieser einen Zeile ein Formular. **Bearbeiten** ist nur der Text,
 in einem eigenen Fenster mit Vorschau, gespeichert als ein Schritt. **Schnittstellen** und
 **Einheiten** warten, bis Sie danach fragen; **Dem Rest einen Tag geben…** bewegt jede
 Linie ohne Tag an einem Tag, und eine Zeile öffnet sich, um die ganze Beschriftung zu
@@ -2112,7 +2112,7 @@ Optionen, die Sie abgewogen haben.
 
 **Business Case hinzufügen** im Bearbeitungsfenster setzt einen leeren Block an
 der Cursorposition ein.` },
-    { title: `Worin sich die Daten widersprechen`, text: `Unter der Achse steht eine Liste von Befunden (siehe *Eine Liste von Befunden
+    { title: `Wo sich die Daten widersprechen`, text: `Unter der Achse steht eine Liste von Befunden (siehe *Eine Liste von Befunden
 lesen*): eine Anwendung, die
 abgeschaltet wird, während Verbindungen noch live sind, ein Nachfolger, der
 erst ankommt, nachdem das, was er ersetzt, weg ist, eine Abschaltung, für die
@@ -2353,8 +2353,8 @@ Typs sitzen kann. Jede Karte nennt den Typ, wie viele Einheiten er heute hat und
 je eine Zeile. Unter den Ebenen sagt eine Zeile, was nirgends sitzt und welche Rollen in keinem
 Typ sind.
 
-Eine Karte drücken wählt den Typ: wo er sitzen darf, was darin sitzen darf und seine Rollen
-leuchten auf, der Rest tritt zurück, und rechts öffnet sich der Leser. Eine Rolle drücken wählt
+Eine Karte klicken wählt den Typ: wo er sitzen darf, was darin sitzen darf und seine Rollen
+leuchten auf, der Rest tritt zurück, und rechts öffnet sich der Leser. Eine Rolle klicken wählt
 sie und zeichnet ihre Berichtslinien, durchgezogen für die Führungskraft und gepunktet für eine
 fachliche. Ein leeres Modell zeigt die drei Schritte der Reihe nach.
 
@@ -2363,13 +2363,13 @@ viele, und an wen ihre Inhaber berichten. Nur eine Linie, die dieser Typ ändert
 *eigene Linie hier*. **Mehr** enthält, ob eine Einheit mehrere Domänen bedienen darf, die
 Höchstzahl der Anwendungen, die Reihenfolge und die Tage.
 
-Die Zeile einer Rolle drücken zeigt, an wen ihre Inhaber berichten und **woher das kommt**, die
+Die Zeile einer Rolle klicken zeigt, an wen ihre Inhaber berichten und **woher das kommt**, die
 oberste Regel zuerst: die eigene Linie einer Person, der Einheit, dieses Typs, der Rolle, dann die
 Hierarchie. **Linie ändern für** diesen Typ setzt hier eine Linie; **Zurück zu dem, was die
 Rolle sagt** nimmt sie weg. Eine Linie, die einen Kreis schließen würde, wird abgelehnt, mit Grund.` },
     { title: `Rollen`, text: `**Rollen** zeigt jede Rolle: wo sie sitzt, die Führungskraft und den Anteil. Eine Rolle wählen
 öffnet sie groß: Zweck, Inhaber und freie Plätze, die Linien, wofür sie einsteht, wer an sie
-berichtet, und jede Einheit mit ihrem Inhaber. Eine Einheit drücken führt zu ihrem Platz in der
+berichtet, und jede Einheit mit ihrem Inhaber. Eine Einheit klicken führt zu ihrem Platz in der
 Organisation.
 
 Die zwei Eigentümerregeln stehen über der Liste. Eine nicht festgelegte Regel sagt, was daraus
@@ -2381,7 +2381,7 @@ den Rollen, die dort einen Anteil haben. Die anderen Rollen sind in einer Spalte
 Rollen einer Einheit und sagt, wer sie hat; eine Zeile mit dem A außerhalb sagt, wo es ist. Der
 Leser einer Einheit im Organigramm führt hierher.
 
-Eine Zelle drücken wählt sie und schreibt nichts. R, A, C, I oder – auf der Tastatur oder die
+Eine Zelle klicken wählt sie und schreibt nichts. R, A, C, I oder – auf der Tastatur oder die
 Knöpfe unter dem Raster setzen den Buchstaben als einen Schritt. Jede Verantwortung will genau
 ein A: Eine Zeile ohne oder mit mehreren sagt das unter **Fehlt**, der Baum zählt, was darunter ist,
 und die Zahl über dem Raster gilt immer der ganzen Organisation. **Filter** behält Rollen und
@@ -2427,7 +2427,7 @@ zurück.
 Was hereinkommt, gehört der Organisation: umbenennen, umschreiben, streichen.
 Der Reiter **Bibliotheken** zeigt für jede Bibliothek **Was übernommen
 wurde**: das Wort der Bibliothek neben dem, wie es hier heißt, an Ort und
-Stelle umzubenennen — ein Druck auf das Wort der Bibliothek öffnet den
+Stelle umzubenennen — ein Klick auf das Wort der Bibliothek öffnet den
 Eintrag dort, wo er bearbeitet wird — und was sich seitdem geändert hat;
 sowie die Einträge, für die ein eigener verwendet wurde, als **… aus Ihrem
 Modell verwendet**. Ein beim Übernehmen gewählter Name oder Platz ist keine

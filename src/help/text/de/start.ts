@@ -6,7 +6,7 @@ import type { GettingStartedText } from '../../types'
 /** Erste Schritte: womit die Hilfe öffnet, in zwei Minuten gelesen. */
 export const START: GettingStartedText = {
   title: 'Erste Schritte',
-  intro: 'Sechs Schritte, zwei Minuten. Jeder sagt, was zu drücken ist; die Kapitel danach sagen den Rest, wenn Sie ihn brauchen.',
+  intro: 'Sechs Schritte, zwei Minuten. Jeder sagt, was zu klicken ist; die Kapitel danach sagen den Rest, wenn Sie ihn brauchen.',
   steps: [
     {
       title: 'Wofür es da ist',
@@ -29,7 +29,7 @@ export const START: GettingStartedText = {
       picture: 'Ein Board mit zwei Karten und der Linie zwischen ihnen, und das Panel der ausgewählten Karte.',
     },
     {
-      title: 'Eine Beobachtung festhalten',
+      title: 'Eine Beobachtung erfassen',
       text: 'Etwas bemerkt — zwei Systeme mit verschiedenen Preisen, eine langsame Übergabe? Öffnen Sie **Beobachtungen** in Zeile zwei und klicken Sie auf **Neue Beobachtung**. Sagen Sie in wenigen Worten, was Sie gesehen haben. Klicken Sie später auf **Warum fragen**, um die Ursache zu finden, und schlagen Sie eine Lösung für die Grundursache vor.',
       picture: 'Die Beobachtungsseite: was gesehen wurde, die Ursachen dahinter und die vorgeschlagene Lösung.',
     },
