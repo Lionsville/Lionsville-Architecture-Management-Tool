@@ -97,7 +97,7 @@ export function Segmented<V extends string = string>({ label, options, value, on
           onClick={() => { if (option.value !== value) onChange(option.value) }}
           onKeyDown={(event) => onKeyDown(event, index)}
         >
-          {option.label}
+          <span className="kit-segmented__word" data-label={option.label}>{option.label}</span>
         </button>
       ))}
     </div>

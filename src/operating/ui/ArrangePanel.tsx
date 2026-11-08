@@ -47,6 +47,7 @@ export function ArrangePanel({ width, model, order, onOrder, part, dispatch, onC
         <>
           <PanelSection title={t('operating.arrangeGroups')}>
             <div className="op-arrange" data-guide="operating.groupOrder">
+              {groups.length === 0 && <p className="op-small">{t('operating.arrangeNoGroups')}</p>}
               {groups.map(({ group }) => <Row key={group} label={group} up={moveGroup(model, group, -1)} down={moveGroup(model, group, 1)} words={[t('operating.groupUp', { group }), t('operating.groupDown', { group })]} dispatch={dispatch} />)}
             </div>
           </PanelSection>

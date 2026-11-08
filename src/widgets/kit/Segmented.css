@@ -24,4 +24,7 @@
 .kit-segmented__option:first-child { border-inline-start: 0; }
 .kit-segmented__option:hover { background: var(--surface-2); color: var(--ink); }
 .kit-segmented__option[aria-checked='true'] { background: var(--selected-soft); color: var(--ink); font-weight: var(--fw-strong); }
+/* Each word keeps the width it has in bold, so picking one does not shift the bar it stands in. */
+.kit-segmented__word { display: inline-flex; flex-direction: column; }
+.kit-segmented__word::after { content: attr(data-label); height: 0; overflow: hidden; visibility: hidden; font-weight: var(--fw-strong); }
 .kit-segmented__option:focus-visible { outline: none; }

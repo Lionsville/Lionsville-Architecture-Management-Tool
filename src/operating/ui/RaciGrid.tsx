@@ -31,13 +31,15 @@ export const needWords = (count: number, t: Translate): string => (count === 0 ?
 
 const GROUP = (name: string) => `group:${name}`
 
-export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, litRole, onOpenRole, onOpenRow, fullNames, unit, facts, label }: {
+export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, litRole, onOpenRole, onOpenRow, fullNames, unit, facts, label, onFoldNone }: {
   grid: Grid; allRoles: readonly Role[]; readOnly: boolean; dispatch(command: Command): void
   pick: MatrixPick | null; onPick(pick: MatrixPick | null): void
   litRole: string | undefined; onOpenRole(id: string): void; onOpenRow(id: string): void
   /** A part or a unit shows roles by their full name; the whole organisation by their short one. */
   fullNames: boolean
   unit: UnitFact | undefined; facts: OrganisationFacts | undefined; label: string
+  /** Told when the + column of roles with no part is opened or folded again. */
+  onFoldNone?: (folded: boolean) => void
 }) {
   const { t } = useStrings()
   const roles = useMemo(() => new Map(allRoles.map((role) => [role.id, role])), [allRoles])
@@ -81,6 +83,7 @@ export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, lit
         columnGroups={grid.folded.length ? [{ id: 'none', label: t('operating.noPartColumn'), short: `+${grid.folded.length}` }] : []}
         defaultFoldedGroups={['none']} cellOf={cellOf} answer={answer} selected={pick} onSelect={onPick}
         litColumn={litRole} onOpenColumn={onOpenRole} onOpenRow={onOpenRow}
+        onFoldGroup={(group, folded) => { if (group === 'none') onFoldNone?.(folded) }}
         {...(readOnly ? {} : {
           keys: ['r', 'a', 'c', 'i', '-', ' ', 'delete', 'backspace'],
           onKey: (at: MatrixPick, key: string) => {

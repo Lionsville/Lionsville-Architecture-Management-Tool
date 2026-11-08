@@ -208,13 +208,23 @@ describe('the operating model\'s page', () => {
     expect(screen.getAllByTestId('operating-need')[0].textContent).toBe('No A')
   })
 
-  it('shows every role and row under the whole organisation, by short name, with group headings', () => {
+  it('shows every role and row under the whole organisation, by full name while they fit, with group headings', () => {
     show(MODEL())
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
     fireEvent.click(screen.getByRole('radio', { name: 'Whole organisation' }))
     expect(screen.getByTestId('operating-grid-title').textContent).toBe('Whole organisation')
     expect(screen.getAllByRole('rowheader').map((one) => one.textContent)).toEqual(['Move', 'Plan the routes', 'Keep it safe', 'Bill', 'Send the bill'])
-    expect(screen.getAllByRole('columnheader').map((one) => one.textContent)).toContain('Bi')
+    expect(screen.getAllByRole('columnheader').map((one) => one.textContent)).toContain('Biller')
+  })
+
+  it('opens a new responsibility’s name for typing, and stops asking for the + column once it is open', () => {
+    show(MODEL())
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New responsibility' }))
+    expect(document.activeElement?.tagName).toBe('TEXTAREA')
+    expect(screen.getByTestId('operating-folded').textContent).toContain('Press the + column')
+    fireEvent.click(screen.getByRole('columnheader', { name: /^\+/ }))
+    expect(screen.getByTestId('operating-folded').textContent).not.toContain('Press the + column')
   })
 
   it('opens a role from its heading, keeping the column lit and the grid as it was', () => {

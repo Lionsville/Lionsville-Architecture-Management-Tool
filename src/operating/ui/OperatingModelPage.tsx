@@ -142,6 +142,8 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const libraries = props.libraries ?? LIBRARIES
   const fromLibrary = useLibraryStep({ pageOpen: props.open, dispatch, undoStep: props.undoStep })
 
+  // What was just made, with a count that opens its name for typing once.
+  const [naming, setNaming] = useState<{ id: string; nonce: number } | undefined>(undefined)
   const select = (id: string | undefined) => {
     const { select: _was, ...rest } = look
     setLook(id === undefined ? rest : { ...rest, select: id })
@@ -223,7 +225,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
         <div className="op-body">
           <div className="op-main" data-flat={flat || undefined}>
             <TabBody
-              tab={tab} parts={parts} props={props} readOnly={readOnly} libraries={libraries} fromLibrary={fromLibrary} selected={selected} select={select} look={look} setLook={setLook}
+              tab={tab} parts={parts} props={props} readOnly={readOnly} libraries={libraries} fromLibrary={fromLibrary} selected={selected} select={select} onMade={(id) => { select(id); setNaming((was) => ({ id, nonce: (was?.nonce ?? 0) + 1 })) }} look={look} setLook={setLook}
               setTab={setTab} matrixView={matrixView} setMatrixView={setMatrixView} arranging={arranging} setArranging={setArranging} exceptions={exceptions} openItem={openItem}
             />
           </div>
@@ -233,7 +235,7 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           {beside && picked && !arranging && (
             <Reader
               width={asideWidth} picked={picked} parts={parts} slotOpen={slotOpen} onSlot={setSlotOpen} onClose={() => select(undefined)} slotAside={taking}
-              removeSlotOf={removeSlotOf} part={tab === 'responsibilities' ? look.part : undefined}
+              removeSlotOf={removeSlotOf} naming={naming} part={tab === 'responsibilities' ? look.part : undefined}
             />
           )}
           {tab === 'responsibilities' && arranging && (
@@ -284,9 +286,9 @@ function useSlotTaking(props: OperatingModelPageProps, picked: OperatingItem | u
 }
 
 /** What the tab that is up shows. */
-function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected, select, look, setLook, setTab, matrixView, setMatrixView, arranging, setArranging, exceptions, openItem }: {
+function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected, select, onMade, look, setLook, setTab, matrixView, setMatrixView, arranging, setArranging, exceptions, openItem }: {
   tab: OperatingTab; parts: ReaderParts; props: OperatingModelPageProps; readOnly: boolean; libraries: readonly Library[]; fromLibrary: LibraryStep
-  selected: string | undefined; select(id: string | undefined): void; look: RaciLook; setLook(look: RaciLook): void; setTab(tab: OperatingTab): void
+  selected: string | undefined; select(id: string | undefined): void; onMade(id: string): void; look: RaciLook; setLook(look: RaciLook): void; setTab(tab: OperatingTab): void
   matrixView: MatrixView; setMatrixView(view: MatrixView): void; arranging: boolean; setArranging(on: boolean): void
   exceptions: readonly OutsideTheModel[]; openItem(id: string): void
 }) {
@@ -306,7 +308,7 @@ function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected
                 model={model} readOnly={readOnly} dispatch={dispatch} makeId={makeId} facts={facts} look={look}
                 onLook={(next) => setLook({ ...next, ...(selected ? { select: selected } : {}) })}
                 view={matrixView} onView={setMatrixView} arranging={arranging} onArrange={(on) => { setArranging(on); if (on) select(undefined) }}
-                selected={selected} onSelect={select} onSave={props.onSave} onOpenUnit={props.onOpenUnit}
+                selected={selected} onSelect={select} onMade={onMade} onSave={props.onSave} onOpenUnit={props.onOpenUnit}
               />
             )}
             {tab === 'exceptions' && (
@@ -328,9 +330,11 @@ function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected
 }
 
 /** The panel beside the structure or the grid: an item, or one role of a unit type. */
-function Reader({ width, picked, parts, slotOpen, onSlot, onClose, slotAside, removeSlotOf, part }: {
+function Reader({ width, picked, parts, slotOpen, onSlot, onClose, slotAside, removeSlotOf, part, naming }: {
   width: number; picked: OperatingItem; parts: ReaderParts; slotOpen: RoleId | undefined; onSlot(role: RoleId | undefined): void; onClose(): void
   slotAside: ReactNode; removeSlotOf(type: UnitType, index: number): void; part: string | undefined
+  /** The item just made, whose name opens for typing. */
+  naming: { id: string; nonce: number } | undefined
 }) {
   const { t } = useStrings()
   const { readOnly, dispatch, model } = parts
@@ -352,6 +356,7 @@ function Reader({ width, picked, parts, slotOpen, onSlot, onClose, slotAside, re
   return (
     <Panel
       kind={kind} name={picked.item.name} onClose={onClose} width={width} dataGuide="operating.reader"
+      {...(naming?.id === picked.item.id ? { renameRequest: naming.nonce, renameAtOnce: true } : {})}
       {...(readOnly ? {} : { onRename: (name: string) => { dispatch(rename(picked.item.id, 'name', name)) } })}
     >
       <div data-testid="operating-inspector">

@@ -14,6 +14,7 @@
 import { useMemo, useState } from 'react'
 import type { Command } from '../../model/commands'
 import type { MakeId } from '../../model/keys'
+import type { Role } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
@@ -47,6 +48,8 @@ export type RaciTabProps = {
   onView(view: MatrixView): void
   arranging: boolean
   onArrange(on: boolean): void
+  /** What was just made: picked, with its name open for typing. */
+  onMade?(id: string): void
   selected: string | undefined
   onSelect(id: string | undefined): void
   /** Hands the file over to be saved. Absent: no export. */
@@ -58,7 +61,10 @@ const PART = (group: string) => `part:${group}`
 const ALL = 'all'
 const OTHERS = 'others'
 
-export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, look, onLook, view, onView, arranging, onArrange, selected, onSelect, onSave, onOpenUnit }: RaciTabProps) {
+/** Up to this many roles the whole organisation's grid still has room for their full names. */
+const FULL_NAMES_UP_TO = 8
+
+export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, look, onLook, view, onView, arranging, onArrange, selected, onSelect, onMade, onSave, onOpenUnit }: RaciTabProps) {
   const { t } = useStrings()
   const unit = facts?.units.find((one) => one.id === look.unit)
   const unitRoles = unit?.roles
@@ -88,13 +94,15 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
   const addResponsibility = () => {
     const command = newResponsibility(t('operating.newResponsibilityName'), makeId, part || undefined, model)
     dispatch(command)
-    onSelect(command.responsibility.id)
+    if (onMade) onMade(command.responsibility.id)
+    else onSelect(command.responsibility.id)
   }
   const exportGrid = (whole: boolean) => {
     const wanted = whole ? raciGrid(model, { whole: true }, view, undefined, model.roles.map((role) => role.id)) : grid
     onSave?.(exportName(whole, unit, part), gridCsv(wanted, whole, model, t))
   }
   const noRoles = model.roles.length === 0
+  const [noneOpen, setNoneOpen] = useState(false)
   return (
     <>
       <RaciTree
@@ -112,25 +120,12 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
               <RaciGrid
                 grid={grid} allRoles={model.roles} readOnly={readOnly} dispatch={dispatch} pick={pick} onPick={setPick}
                 litRole={model.roles.some((role) => role.id === selected) ? selected : undefined}
-                onOpenRole={onSelect} onOpenRow={onSelect} fullNames={!look.whole && !look.needs} unit={unit} facts={facts}
+                onFoldNone={(folded) => setNoneOpen(!folded)}
+                onOpenRole={onSelect} onOpenRow={onSelect} fullNames={(!look.whole && !look.needs) || grid.columns.length + grid.folded.length <= FULL_NAMES_UP_TO} unit={unit} facts={facts}
                 label={title}
               />
             )}
-        {grid.folded.length > 0 && (
-          <div className="op-actions op-small" data-testid="operating-folded">
-            <span>{t(grid.folded.length === 1 ? 'operating.noPartLineOne' : 'operating.noPartLine', {
-              count: grid.folded.length,
-              names: grid.folded.slice(0, 3).map((role) => role.name).join(', '),
-              more: grid.folded.length > 3 ? t('operating.andMore', { count: grid.folded.length - 3 }) : '',
-            })}</span>
-            {!readOnly && (
-              <MenuButton
-                label={t('operating.addColumn')} variant="quiet" size="small"
-                items={grid.folded.map((role) => ({ label: role.name, onSelect: () => setAdded((held) => [...held, role.id]) }))}
-              />
-            )}
-          </div>
-        )}
+        {grid.folded.length > 0 && <NoPartLine folded={grid.folded} open={noneOpen} readOnly={readOnly} onAdd={(id) => setAdded((held) => [...held, id])} />}
       </div>
     </>
   )
@@ -204,6 +199,29 @@ function treeNodes(model: OperatingModel, parts: readonly RaciPart[], unitName: 
   ]
 }
 
+
+/** The roles with no part here, named under the grid, and a way to add one as a column. */
+function NoPartLine({ folded, open, readOnly, onAdd }: { folded: readonly Role[]; open: boolean; readOnly: boolean; onAdd(id: string): void }) {
+  const { t } = useStrings()
+  // Once the + column is open, the line no longer asks for it to be pressed.
+  const key = folded.length === 1 ? (open ? 'operating.noPartShownOne' : 'operating.noPartLineOne') : (open ? 'operating.noPartShown' : 'operating.noPartLine')
+  return (
+    <div className="op-actions op-small" data-testid="operating-folded">
+      <span>{t(key, {
+        count: folded.length,
+        names: folded.slice(0, 3).map((role) => role.name).join(', '),
+        more: folded.length > 3 ? t('operating.andMore', { count: folded.length - 3 }) : '',
+      })}</span>
+      {!readOnly && (
+        <MenuButton
+          label={t('operating.addColumn')} variant="quiet" size="small"
+          items={folded.map((role) => ({ label: role.name, onSelect: () => onAdd(role.id) }))}
+        />
+      )}
+    </div>
+  )
+}
+
 /** How much to show, of which unit, and what can be done with it. */
 function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrange, onExport }: {
   model: OperatingModel; facts: OrganisationFacts | undefined; look: RaciLook; onLook(look: RaciLook): void; view: MatrixView; onView(view: MatrixView): void
@@ -239,7 +257,7 @@ function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrang
               onFilters={(filters) => onView({ ...view, roles: filters.roles ?? [], groups: filters.groups ?? [] })}
             />
           </span>
-          <Button variant="quiet" aria-pressed={arranging} data-guide="operating.arrange" onClick={() => onArrange(!arranging)}>{t('operating.arrange')}</Button>
+          <Button variant="plain" aria-pressed={arranging} data-guide="operating.arrange" onClick={() => onArrange(!arranging)}>{t('operating.arrange')}</Button>
           {onExport && (
             <MenuButton
               label={t('operating.export')} variant="plain" data-guide="operating.raciExport"
@@ -262,7 +280,7 @@ function GridHead({ title, grid, all, unit, onOpenUnit, needing, needingHere, lo
   return (
         <div className="op-gridHead">
           <h2 data-testid="operating-grid-title">{title}</h2>
-          <span className="op-small" data-testid="operating-grid-counts">{t('operating.gridCounts', { rows: grid.rows.length, roles: grid.columns.length, all })}</span>
+          <span className="op-small" data-testid="operating-grid-counts">{t(grid.rows.length === 1 ? 'operating.gridCountsOne' : 'operating.gridCounts', { rows: grid.rows.length, roles: grid.columns.length, all })}</span>
           {unit && onOpenUnit && <button type="button" className="op-link" data-testid="operating-unit-open" onClick={() => onOpenUnit(unit)}>{t('operating.openInOrganisation')}</button>}
           <span className="op-grow" />
           <span className="op-need" data-testid="operating-needs-count">
