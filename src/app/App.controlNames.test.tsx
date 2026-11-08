@@ -594,7 +594,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await screen.findByTestId('chart-page')
   }]],
   // A chart of the organisation's own teams: its bar, its outline and its find, and the line that opens its summary.
-  [['an organisation chart with a unit', ['chart.outline', 'chart.bar', 'chart.foldAll', 'chart.showOptional', 'chart.summary', 'chart.addAtTop', 'chart.showLines', 'chart.day', 'chart.find', 'chart.findMe'], async () => {
+  [['an organisation chart with a unit', ['chart.outline', 'chart.bar', 'chart.foldAll', 'chart.showOptional', 'chart.summary', 'chart.addAtTop', 'chart.showLines', 'chart.day', 'chart.find', 'chart.findMe', 'chart.export'], async () => {
     const charted = example.map((one) => (one.path === '' ? chartAtTheTop(one) : one))
     renderApp({ repositories: heldRepositories(charted), boot: { initialProject: charted.find((one) => one.path === '')! } })
     await screen.findAllByTestId('chart-unit-open')
