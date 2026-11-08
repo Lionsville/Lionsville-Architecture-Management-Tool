@@ -13,6 +13,7 @@ import Paper from '@mui/material/Paper';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { useStrings } from '../../i18n/LanguageContext';
+import type { PopperProps } from '@mui/material/Popper';
 import type { Point } from '../../model/types';
 import { dangerInk } from '../../widgets';
 import type { MenuItem as MenuItemModel } from './menuItems';
@@ -75,6 +76,9 @@ export function ContextMenu({
     </Menu>
   );
 }
+
+/** The placement engine MUI's Popper hands back, named through MUI's own type. */
+type PopperInstance = NonNullable<Extract<PopperProps['popperRef'], { current: unknown }>['current']>;
 
 // --- one level ------------------------------------------------------------------
 
@@ -291,9 +295,21 @@ function SubMenuItem({
   tabIndex?: number;
 }) {
   const anchorRef = useRef<HTMLLIElement>(null);
+  const popperRef = useRef<PopperInstance | null>(null);
   const disabled = Boolean(item.disabled);
   const isOpen = open && !disabled;
   const children = useLevelItems({ items: item.children ?? [], open: isOpen, onSelect, renderIcon });
+  // A submenu opened while the menu still grows in is placed against the
+  // menu's transform (a transformed box holds what is fixed inside it); once the
+  // grow ends that transform is gone and the submenu would stay where it was put,
+  // across the window. Place it again when the menu's transition ends.
+  useEffect(() => {
+    if (!isOpen) return;
+    const paper = anchorRef.current?.closest('.MuiPaper-root');
+    const place = () => void popperRef.current?.update();
+    paper?.addEventListener('transitionend', place);
+    return () => paper?.removeEventListener('transitionend', place);
+  }, [isOpen]);
 
   return (
     <>
@@ -345,6 +361,7 @@ function SubMenuItem({
         anchorEl={anchorRef.current}
         placement="right-start"
         disablePortal
+        popperRef={popperRef}
         popperOptions={{ strategy: 'fixed' }}
         modifiers={[{ name: 'offset', options: { offset: [-6, -4] } }]}
         sx={{ zIndex: (theme) => theme.zIndex.modal + 1 }}
