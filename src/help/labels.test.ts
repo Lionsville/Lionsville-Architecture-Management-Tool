@@ -15,7 +15,10 @@
  * - a control the English help presses or picks by its label, or names in
  *   bold, is named in Dutch and German by that control's own Dutch or German
  *   label, at the same place in the help: the English is checked against the
- *   screen's English, and the other two follow it through the string's key.
+ *   screen's English, and the other two follow it through the string's key;
+ * - and, apart from the English, what the Dutch and German help press, pick,
+ *   quote or put in bold in a step is a label of that language's own strings,
+ *   so a stale word is caught where the English quote has no key to follow.
  */
 import { describe, expect, it } from 'vitest'
 import { STRINGS } from '../i18n/strings'
@@ -24,6 +27,7 @@ import { helpStrings } from './glossary.test'
 import { TEXT as EN } from './text/en'
 import { TEXT as NL } from './text/nl'
 import { TEXT as DE } from './text/de'
+import example from '../adapters/folder/format/examples/acme-logistics.json' with { type: 'json' }
 
 const RETIRED: Record<Language, RegExp> = {
   en: /Remove \/ delete…|\bFrom this view\b|Remove from diagram|selection bar|bar over the selection|floating toolbar|Board settings…|Route connections|[Dd]iagram settings|\*\*Add bend\*\*|\*\*Remove bend\*\*|\bTidy\*\* (runs|lays)|Open documentation/,
@@ -125,7 +129,7 @@ describe.each([['nl', NL], ['de', DE]] as const)('the %s help', (language, text)
   it('names a control the English names by the label the screen gives it in this language', () => {
     const labels = labelsByWord()
     const longestFirst = [...labels.keys()].sort((a, b) => b.length - a.length)
-    const here = new Map(helpStrings(text))
+    const here = new Map(helpStrings(text).map(([path, said]) => [path, said.replace(/\s*\n\s*/g, ' ')]))
     const table = STRINGS[language] as Record<string, string>
     const wrong = helpStrings(EN).filter(([path]) => !NAMED_LABELS.has(path)).flatMap(([path, english]) => {
       const said = here.get(path) ?? ''
@@ -139,3 +143,77 @@ describe.each([['nl', NL], ['de', DE]] as const)('the %s help', (language, text)
   })
 })
 
+
+/** The names in the shipped example, which the help presses as they are in every language. */
+function exampleNames(): string[] {
+  const names = new Set<string>()
+  const take = (name: string) => { if (name.length > 1 && name.length <= 60) names.add(name.trim()) }
+  // The example is its folder: a file's JSON, or the lines of a file, whose quoted
+  // values, front matter and headings are the names.
+  const walk = (value: unknown): void => {
+    if (typeof value === 'string') {
+      for (const [, quoted] of value.matchAll(/"((?:[^"\\]|\\.){2,60})"/g)) take(quoted!.replace(/\\(.)/g, '$1'))
+      const [, said] = /^(?:\w+: |#+ )(.+)$/.exec(value) ?? []
+      if (said) take(said.replace(/^['"]|['"]$/g, ''))
+      if (!/[{}[\]":]/.test(value)) take(value)
+    } else if (Array.isArray(value)) value.forEach(walk)
+    else if (value && typeof value === 'object') Object.values(value).forEach(walk)
+  }
+  walk(example)
+  return [...names]
+}
+
+/** Where the Dutch and German help press or pick a control, ending where its label starts; a step's *then* too. */
+const PRESSED_HERE = {
+  nl: /\b(?:[Kk]lik(?: dan)?(?: nog eens)?(?: daar)? op|[Kk]ies)\s+/g,
+  de: /\b(?:[Kk]licken Sie(?: dann)?(?: dort)?(?: erneut)? auf|[Ww]ählen Sie)\s+/g,
+} as const
+const THEN_HERE = { nl: /(?:^|, )dan\s+/g, de: /(?:^|, )dann\s+/g } as const
+
+/**
+ * What the help presses that no string holds, because the screen draws it
+ * without one: the plus, minus, back and forward buttons, the panel's + … menu, an export's
+ * formats, a record's number, what a step types itself, and the people,
+ * library and records the help's examples add to the shipped example.
+ */
+const UNSTRUNG = /^(\+|−|‹|›|\+ …|SVG|PNG|[A-Z]{2,3}-\d{4}\b.*|Northline Freight|Road network|Backup|Teambord|Logistics IT|Platforms and hosting|ware|chase|Priya Raman|Jonas Weber|Operate|RM|IT4IT|A customer is quoted one price and billed another)(?![\p{L}\d])/u
+
+/**
+ * A label of the screen read as a pattern: a count it starts with is the
+ * help's N, a name inside it any words, and a name it ends on one word.
+ */
+function labelPattern(label: string): RegExp {
+  const escape = (part: string) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const body = label.replace(/^\{[^}]+\}/, 'N').replace(/\s*\{[^}]+\}$/, '\u0000').split(/\{[^}]+\}/).map(escape).join('[^.,;:]{1,40}?')
+  return new RegExp(`^${body.replace('\u0000', '(?:\\s?(?:N|[A-Z0-9][^\\s.,;:]*))?')}(?![\\p{L}\\d])`, 'u')
+}
+
+describe.each([['nl', NL], ['de', DE]] as const)('the %s help', (language, text) => {
+  it('names every control it presses, picks or quotes by a label this language\'s screen has', () => {
+    const table = STRINGS[language] as Record<string, string>
+    const labels = [...new Set(Object.values(table))]
+      .filter((label) => label.length <= 90 && !label.includes('\n') && label.replace(/\{[^}]+\}/g, '').trim() !== '')
+      .map(labelPattern)
+    const names = exampleNames()
+    const wrong = helpStrings(text).filter(([path]) => !NAMED_LABELS.has(path)).flatMap(([path, help]) => {
+      const said = help.replace(/\s*\n\s*/g, ' ')
+      const step = /\[3\]\[\d+\]$|\.steps\[\d+\]$/.test(path)
+      const found: string[] = []
+      const read = (at: number, anyCase = false) => {
+        const rest = said.slice(at)
+        if (!anyCase && !/^[A-Z+]/.test(rest)) return
+        if (UNSTRUNG.test(rest) || labels.some((label) => label.test(rest))) return
+        if (names.some((name) => rest.startsWith(name) && !/^[\p{L}\d]/u.test(rest.slice(name.length)))) return
+        found.push(`${path}: ${rest.slice(0, 48)}`)
+      }
+      for (const match of said.matchAll(PRESSED_HERE[language])) read((match.index ?? 0) + match[0].length)
+      if (step) for (const match of said.matchAll(THEN_HERE[language])) read((match.index ?? 0) + match[0].length)
+      for (const match of said.matchAll(/\*\*(?! )([^*]{1,60}?)(?<! )\*\*/g)) {
+        if (step || /[›…]$/.test(match[1]!)) read((match.index ?? 0) + 2, step)
+      }
+      for (const match of said.matchAll(/"([^"]{2,60})"/g)) read((match.index ?? 0) + 1)
+      return found
+    })
+    expect(wrong).toEqual([])
+  })
+})

@@ -51,7 +51,7 @@ export const SECTIONS: SectionTexts = {
     'Open Rating (legacy) on the board from its row.'],
   'roadmap.connections': ['Unfold the dated connections', 'Shows the connections with a window, folded by the plan that moves them, then old lines that end and new lines that start.',
     'Connections with dates, under the applications.',
-    ['Press Connections with dates.', 'Unfold a plan, then Old lines or New lines.'],
+    ['Press Connections with dates.', 'Unfold a plan, then Old lines that end or New lines that start.'],
     'Unfold the connections to see the line from Rating (legacy) that outlives it.'],
   'roadmap.find': ['Find a row', 'Narrows the rows to those whose names match, unfolding what matches; offered once the roadmap has eight rows or more.',
     'Find a row, in the corner above the names.',

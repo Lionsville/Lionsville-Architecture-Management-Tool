@@ -200,7 +200,7 @@ alles daarna?") die {key:Mod+Z} al beantwoordt.` },
 | \`?\` | Alle sneltoetsen |
 | F1 | De help, bij het scherm waar je bent |
 | {key:Mod+F} | Element zoeken |
-| {key:Enter} | Documentatie van het geselecteerde element openen |
+| {key:Enter} | Gegevenspagina openen |
 | F2 | Selectie hernoemen |
 | {key:Delete} | Selectie weghalen, na navraag |
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Ongedaan maken, opnieuw — één stapel over alles |
@@ -368,7 +368,7 @@ Er wordt nooit iets ongevraagd overschreven.` },
     { title: `Als een scope niet helemaal te lezen is`, text: `Is een deel van een scope niet te lezen, omdat een bestand ervan beschadigd
 is of met de hand is veranderd, dan opent de scope om te bekijken en niet
 om te wijzigen, en een melding noemt wat niet te lezen was. Waar je mag
-schrijven waar de scope bewaard wordt, biedt die **Een bewaarde kopie
+schrijven waar de scope bewaard wordt, biedt die **Een bewaard bestand
 binnenhalen…**, en **Terugzetten uit de geschiedenis…** waar een geschiedenis
 wordt bijgehouden; in een map zegt hij ook dat je het bestand kunt herstellen en
 de scope opnieuw kunt openen.
@@ -910,7 +910,7 @@ andere kolom slepen**, en de pagina zegt het werkwoord voor je loslaat: een plaa
 waar het draait, de rest krijgt gebruik. Een wijziging gaat naar de scope die de
 applicatie bijhoudt, de lezer zegt welke, en ze staat in de Activiteit daarvan. De \`+\` op
 een kolom vraagt een naam of biedt aan wat elders in de organisatie staat; het pictogram
-en de rest staan in het record. *Tonen op technologielandschap* op het record van een
+en de rest staan in het record. *Toon op technologielandschap* op het record van een
 bord opent het landschap dat de applicatie toont op die regel, in de scope die het bewaart —
 vaak die van het platform waarop ze draait. Tonen er meer, dan noemt een klein menu elk met
 zijn scope; toont geen het, dan is er geen link. Het bord zelf tekent nog steeds alleen stromen.
@@ -1240,7 +1240,7 @@ omhoog, M verplaatst de eenheid en F zet de focus erop.
 
 **Een vak** zegt het type en de naam van de eenheid en één regel per rol: *Hoofd:
 Anna de Vries*, met het aandeel waar dat niet alle tijd is, *waarnemend*, *ext* voor
-iemand van buiten de organisatie en *jij*, of **vacant** in woorden, waarmee een klik
+iemand van buiten de organisatie en *jij*, of **vacature** in woorden, waarmee een klik
 toewijst in een eenheid die deze scope bewaart. Iemand boven al zijn tijd heeft *200%
 van hun tijd* in woorden op de regel; iemand in een rol buiten die van de eenheid
 heeft een eigen rij met *buiten haar rollen*. Het een staat nooit in de plaats van
@@ -1288,7 +1288,7 @@ vraagt vier dingen. **Type** biedt alleen de typen die daar mogen zitten. **Naam
 **Bedient**, alleen bovenaan of voor een type dat meerdere domeinen bedient.
 **Ingedeeld in**, de scope die haar bewaart: standaard die van de eenheid waarin ze zit, en bovenaan
 het domein dat ze bedient, anders de scope van dit organogram. **Maken** is één stap in
-die scope. De nieuwe eenheid wordt gekozen en haar vereiste rollen staan als **vacant**,
+die scope. De nieuwe eenheid wordt gekozen en haar vereiste rollen staan als **vacature**,
 dus toewijzen volgt meteen. Waar geen type mag zitten, zegt het dat en leidt het naar
 het **Besturingsmodel**; zonder unittypen naar **Begin met een bibliotheek**. Een
 organogram dat alleen wordt gelezen, biedt niets hiervan.
@@ -1312,7 +1312,7 @@ staan en hoeveel plaatsen vacant zijn; dan **Bevindingen**, wat de
 organisatie over deze eenheden en de mensen erin tegenspreekt, in de lijst
 met bevindingen — **Open de eenheid** gaat naar de eenheid waarover ze gaat,
 en **Openen in Mensen** naar iemand boven al zijn tijd; en **Zo lees je het** — een gestreepte **+
-vacant** is een rol die het type van de eenheid vraagt en die niemand vervult,
+vacature** is een rol die het type van de eenheid vraagt en die niemand vervult,
 een rode rand is iemand boven al zijn tijd, *stuurt aan* markeert een rol
 waarvan wie hem vervult de mensen van de eenheid aanstuurt, en een gestreept
 vak is een eenheid die is opgeheven terwijl er nog mensen in zitten.
@@ -2840,7 +2840,7 @@ tabbladen:
   wordt dat hem kan leveren, elk met leverancier en status, en de elementen
   in het landschap die het zijn.
 - **Waar gebruikt** — de **beoordeling** van elke scope. **Beoordelen
-  voor…** begint er een voor een scope, met de contexten die daar gelden,
+  voor een scope…** begint er een, met de contexten die daar gelden,
   eventueel met de scores van de beoordeling van een andere scope. In het
   raster wordt elke optie gescoord op elke capability; de **fit** is hoeveel
   van wat deze scope nodig heeft zij afdekt, en een optie die een must niet

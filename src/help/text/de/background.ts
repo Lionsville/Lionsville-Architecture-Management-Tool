@@ -211,7 +211,7 @@ würde eine Frage aufwerfen („und alles danach?“), die {key:Mod+Z} bereits b
 | \`?\` | Jedes Tastenkürzel |
 | F1 | Die Hilfe, beim Bildschirm, auf dem Sie sind |
 | {key:Mod+F} | Ein Element suchen |
-| {key:Enter} | Die Dokumentation des ausgewählten Elements öffnen |
+| {key:Enter} | Steckbrief öffnen |
 | F2 | Die Auswahl umbenennen |
 | Delete | Die Auswahl entfernen, nach Rückfrage |
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Rückgängig, Wiederholen — ein Stapel über alles |
@@ -390,7 +390,7 @@ Nichts wird ohne Nachfrage überschrieben.` },
     { title: `Wenn ein Bereich nicht ganz lesbar ist`, text: `Ist ein Teil eines Bereichs nicht lesbar, weil eine Datei davon beschädigt ist
 oder von Hand geändert wurde, öffnet sich der Bereich zum Ansehen und nicht zum
 Ändern, und eine Meldung nennt, was nicht lesbar war. Wo Sie dort schreiben
-dürfen, wo der Bereich aufbewahrt wird, bietet sie **Eine gespeicherte Kopie
+dürfen, wo der Bereich aufbewahrt wird, bietet sie **Eine gespeicherte Datei
 einbringen…** an, und **Aus dem Verlauf zurückholen…**, wo ein Verlauf geführt
 wird; in einem Ordner sagt sie auch, dass Sie die Datei reparieren und den
 Bereich erneut öffnen können.
@@ -1306,7 +1306,7 @@ sich zurückgesetzt.
 
 **Suchen.** Das Feld über der Gliederung nimmt Einheiten und Personen, mit Treffern beim
 Tippen, und {key:Mod+F} führt dorthin. Bei einer gefundenen Person geht das Organigramm zur Einheit
-und öffnet die Zuordnung. **Mich finden** geht zur Einheit, in der Sie eine Rolle haben; sagen Sie zuerst,
+und öffnet die Zuordnung. **Ich** geht zur Einheit, in der Sie eine Rolle haben; sagen Sie zuerst,
 wer Sie sind, mit **Das bin ich** auf der Seite Personen. Im Organigramm gehen die Pfeile
 durch die Kästen, {key:Enter} wählt und geht nach unten, {key:Shift} und {key:Enter} nach oben, M
 verschiebt die Einheit und F setzt den Fokus darauf.

@@ -76,7 +76,7 @@ export const SECTIONS: SectionTexts = {
     'Switch on automatic checks so the app says when a new version is out.'],
   'prefs.folder': ['This folder on this machine', 'Where the open folder has a remote: pull when the folder opens, and push after every snapshot. Kept by this computer, not in the folder.',
     'Preferences, last section (desktop, a folder with a remote)',
-    ['Open Preferences', 'Switch "Pull on open" or "Push after a snapshot"'],
+    ['Open Preferences', 'Switch "Pull from the remote when this folder is opened" or "Push after every snapshot"'],
     'Switch on Push after a snapshot so the team repository gets every snapshot of Acme Logistics.'],
   'settings.rename': ['Rename a scope', 'Changes a scope\'s name. Its address stays, so links to it keep working.',
     'Scope settings, General, Name',

@@ -58,7 +58,7 @@ export const GLOSSARY: Record<Exclude<Language, 'en'>, readonly Refused[]> = {
     { word: /\b[Jj]ourney/, use: 'klantreis' },
     // A scope is a scope, on the screens and in the help; an onderdeel is an operating model's
     // or a library's item, a unit's section, and what something is part of (onderdeel van).
-    { word: /(?<!menu-)\b[Oo]nderde(el|len)\b(?! van\b)/, use: 'scope', except: (key) => /^(operating\.|folder\.count\.operating|activity\.(broughtIn|matchedIn)\b|background\.operating\b)/.test(key) },
+    { word: /(?<!menu-)\b[Oo]nderde(el|len)\b(?! van\b)/, use: 'scope', except: (key) => /^(operating\.|folder\.count\.operating|activity\.(broughtIn|matchedIn)\b|background\.operating\b|sections\.operating\.|chapters\.operating\.)/.test(key) },
     // A scope's home is the tab called Start: its page is the startpagina, never a thuis.
     { word: /\b[Tt]huis\b/, use: 'startpagina' },
   ],

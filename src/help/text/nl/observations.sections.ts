@@ -169,7 +169,7 @@ export const SECTIONS: SectionTexts = {
     'Klik rechts op OB-0001 op de Waarom-kaart en kies Opnieuw gezien….'],
   'sol-propose': ['Een oplossing voorstellen', 'Legt een oplossing vast voor een of meer grondoorzaken: titel, wat ze aanpakt, het verwachte voordeel en een ruwe kostenschatting. Ze begint als idee en gaat via gevormd, testen, bewezen, aangenomen en uitgevoerd achter poorten.',
     'Nieuwe oplossing rechts in de balk op Oplossen en Resultaat; Een oplossing voorstellen in het vak Volgende van een grondoorzaak.',
-    ['Open een grondoorzaak zonder oplossing op Oplossen.', 'Klik op Een oplossing voorstellen.', 'Schrijf de titel en het verwachte voordeel, en bewaar.'],
+    ['Open een grondoorzaak zonder oplossing op Oplossen.', 'Klik op Een oplossing voorstellen….', 'Schrijf de titel en het verwachte voordeel, en bewaar.'],
     'Stel Let the portal show the estimate Dispatch holds voor bij RC-0002 Track & Trace and Dispatch each compute an estimate.'],
   'sol-address': ['Een oplossing nog een grondoorzaak laten aanpakken', 'Koppelt een oplossing aan nog een grondoorzaak die ze wegneemt; Niet meer aanpakken haalt de koppeling weg.',
     'Aanpakken in de lezer van een oplossing.',

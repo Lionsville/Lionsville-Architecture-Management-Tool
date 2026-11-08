@@ -186,7 +186,7 @@ everything after it?") that {key:Mod+Z} already answers.` },
 | \`?\` | Every shortcut |
 | F1 | The help, at the screen you are on |
 | {key:Mod+F} | Find an element |
-| {key:Enter} | Open the selected element's documentation |
+| {key:Enter} | Open the record |
 | F2 | Rename the selection |
 | {key:Delete} | Remove the selection, after asking |
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Undo, redo — one stack over everything |
@@ -2631,8 +2631,8 @@ list folded away, on four tabs:
 - **Options** — the catalogue: products, services and what is built in
   house that could deliver it, each with its supplier and status, and the
   elements in the landscape that are it.
-- **Where used** — every scope's **evaluation**. **Evaluate for…** starts
-  one for a scope, with the contexts that apply there, optionally copying the
+- **Where used** — every scope's **evaluation**. **Evaluate for a scope…**
+  starts one, with the contexts that apply there, optionally copying the
   ratings of another scope's. In the grid each option is rated against each
   capability, N writes a note on how, and a cell with one says *note*; the
   **fit** is how much of what this scope needs it covers, and

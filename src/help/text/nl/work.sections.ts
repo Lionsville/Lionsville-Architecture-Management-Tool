@@ -76,7 +76,7 @@ export const SECTIONS: SectionTexts = {
     'Zet automatisch zoeken aan, zodat de app zegt wanneer er een nieuwe versie is.'],
   'prefs.folder': ['Deze map op deze computer', 'Waar de open map een remote heeft: ophalen als de map opent, en pushen na elke momentopname. Bijgehouden door deze computer, niet in de map.',
     'Voorkeuren, laatste deel (desktop, een map met een remote)',
-    ['Open Voorkeuren', 'Schakel "Ophalen bij openen" of "Na elke momentopname pushen"'],
+    ['Open Voorkeuren', 'Schakel "Van de remote ophalen als deze map wordt geopend" of "Na elke momentopname pushen"'],
     'Zet Na elke momentopname pushen aan, zodat de teamrepository elke momentopname van Acme Logistics krijgt.'],
   'settings.rename': ['Een scope hernoemen', 'Wijzigt de naam van een scope. Het adres blijft, dus links ernaar blijven werken.',
     'Scope-instellingen, Algemeen, Naam',
