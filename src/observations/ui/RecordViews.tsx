@@ -112,8 +112,8 @@ function solutionGateNext(props: ReturnType<typeof solutionProps>, s: Translate)
   if (!gate || props.readOnly || solution.state === 'dropped') return undefined
   const open = openItems(gate)
   const state = s(PHASE_LABEL[gate.to]).toLowerCase()
+  // No question of its own: the gate under it is headed the same, and says each line.
   return {
-    question: s('solution.gateTitle', { state }),
     actions: [
       { label: s('solution.moveOn', { state }), primary: true, held: open.length > 0, onPress: () => props.onMove(gate.to), testId: 'solution-move', dataGuide: 'solution.move' },
       ...(open.includes('experimentConfirmed') ? [{ label: `${s('solution.waive')}…`, onPress: props.onWaive, testId: 'solution-waive-open' }] : []),
