@@ -644,7 +644,7 @@ field now, so the roadmap's checks can name a person.` },
     { title: `Documentation`, text: `Every element has a markdown description, and it can be a whole page. Its first
 lines stand in the panel; a press writes them there with the same editor, and
 **Open the page** opens the same text on the element's **record**. So do
-**Record ›** beside its name, **Open documentation** in the element's menu, {key:Enter}
+**Record ›** beside its name, **Open the record** in the element's menu, {key:Enter}
 on the selected element, and a double-click on anything that is not an
 application.
 

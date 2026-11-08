@@ -690,7 +690,7 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.` },
     { title: `Documentatie`, text: `Elk element heeft een omschrijving in markdown, en die kan een hele pagina zijn.
 De eerste regels staan in het paneel; een klik schrijft ze daar met dezelfde
 editor, en **De pagina openen** opent dezelfde tekst op de **gegevenspagina** van het
-element. Dat doen ook de link naast de naam, **Documentatie openen** in het
+element. Dat doen ook de link naast de naam, **Gegevenspagina openen** in het
 elementmenu, {key:Enter} op het geselecteerde element, en een dubbelklik op alles wat
 geen applicatie is.
 

@@ -731,7 +731,7 @@ Checks der Roadmap eine Person nennen können.` },
     { title: `Dokumentation`, text: `Jedes Element hat eine Markdown-Beschreibung, und sie kann eine ganze Seite sein.
 Die ersten Zeilen stehen im Panel; ein Klick schreibt sie dort mit demselben Editor,
 und **Seite öffnen** öffnet denselben Text auf den **Steckbrief** des Elements. Das
-tun auch der Link neben dem Namen, **Dokumentation öffnen** im Menü des Elements,
+tun auch der Link neben dem Namen, **Steckbrief öffnen** im Menü des Elements,
 {key:Enter} auf dem ausgewählten Element und ein Doppelklick auf alles, was keine
 Anwendung ist.
 
