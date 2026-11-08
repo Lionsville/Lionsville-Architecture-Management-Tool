@@ -61,6 +61,12 @@ function ownWord(own: OwnWork, language: Language, s: Translate): StatusWord {
   }
 }
 
+/** A save's time, with the place after it only where the window has moved since it started: the panel says the first. */
+function savedWord(savedAt: Date, { place, placeAsStarted }: StatusFacts, language: Language, s: Translate): string {
+  const saved = s('shell.saved', { time: clockTime(savedAt, language) })
+  return place && !placeAsStarted ? `${saved} · ${place}` : saved
+}
+
 export function statusWord(facts: StatusFacts, language: Language, s: Translate): StatusWord {
   const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected, place, transient, source, own } = facts
   if (own) return ownWord(own, language, s)
@@ -71,7 +77,6 @@ export function statusWord(facts: StatusFacts, language: Language, s: Translate)
     const waiting = status === 'dirty' || status === 'saving'
     return waiting ? said(s('frame.offlineWaiting'), 'waiting') : said(s('frame.offline'), 'offline')
   }
-  const at = (word: string) => (place ? `${word} · ${place}` : word)
   if (transient && place && status !== 'dirty' && status !== 'saving') return said(place, facts.visiting ? 'saved' : 'waiting')
   if (status === undefined) return said(place ?? s('frame.nothingWaiting'), 'saved')
   if (publishesSteps) {
@@ -80,10 +85,7 @@ export function statusWord(facts: StatusFacts, language: Language, s: Translate)
   }
   const word = WORDS[status]
   if (word) return said(s(word), 'busy')
-  if (savedAt) {
-    const saved = s('shell.saved', { time: clockTime(savedAt, language) })
-    return said(facts.placeAsStarted ? saved : at(saved), 'saved')
-  }
+  if (savedAt) return said(savedWord(savedAt, facts, language, s), 'saved')
   // Clean and not written this session is what was read: kept where it is, which is the one thing to say.
   return said(place ?? s('shell.notSaved'), 'saved')
 }
