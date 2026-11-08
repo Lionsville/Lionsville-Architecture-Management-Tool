@@ -18,6 +18,7 @@ import { getExportTokens } from './theme/tokens';
 import { EditorRefused, type SolutionDesignEditorProps } from './props';
 import { pngFilename, titleBlockFor, type TitleBlockContext } from './exportTitleBlock';
 import { useOutOfSight } from '../widgets/outOfSight';
+import type { Selection } from './useEditorState';
 
 /**
  * The preview's long edge, in image pixels. Enough to judge a sheet, and a
@@ -122,6 +123,30 @@ export function useExportDialog(args: ExportArgs) {
 }
 
 export type ExportDialogState = ReturnType<typeof useExportDialog>;
+
+const nothingPicked = (held: Selection) => held.elementIds.length + held.connectionIds.length + held.domainGroups.length === 0;
+
+/**
+ * The board is pictured with nothing picked: a selection's ring, the cards it
+ * dims and lights, its handles and its port are the editor's, not the board's.
+ * Put aside while the export is up, the preview and the file drawn without it,
+ * and given back as it closes, unless something else was picked meanwhile.
+ */
+export function usePictureUnpicked(open: boolean, selection: Selection, setSelection: (next: Selection) => void, none: Selection): void {
+  const held = useRef<Selection | undefined>(undefined);
+  const latest = useRef({ selection, setSelection });
+  latest.current = { selection, setSelection };
+  useEffect(() => {
+    if (!open) return;
+    held.current = latest.current.selection;
+    latest.current.setSelection(none);
+    return () => {
+      const was = held.current;
+      held.current = undefined;
+      if (was !== undefined && nothingPicked(latest.current.selection)) latest.current.setSelection(was);
+    };
+  }, [open, none]);
+}
 
 /**
  * The export itself, from the dialog. Rasterising a large board takes

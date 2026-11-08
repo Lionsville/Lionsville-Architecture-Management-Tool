@@ -22,7 +22,7 @@ import { isLookingAway, useBoardDoors, useCarriedDay, useSelectionPerLevel, useS
 import { useCanvasRequests, useDocumentation } from './useEditorRequests';
 import { useDeleteRequests } from './useDeleteRequests';
 import { useLayoutActions } from './useLayoutActions';
-import { useBoardCapture, useExportDialog } from './useExport';
+import { useBoardCapture, useExportDialog, usePictureUnpicked } from './useExport';
 import { useDoubleClicks, useEditorHandle } from './useEditorHandle';
 import { EditorDialogs, EditorLateDialogs, useEditorDialogs } from './EditorDialogs';
 import { InsideChoice } from './InsideChoice';
@@ -222,6 +222,7 @@ function useEditorParts(given: SolutionDesignEditorProps) {
       showLifecycle: view.showLifecycle, showStatus: view.containerStatus, t, language,
     },
   });
+  usePictureUnpicked(exports.exportOptions !== undefined, state.selection, state.setSelection, EMPTY_SELECTION);
   const capture = useBoardCapture(wrapperRef, activeDiagram, theme, props.logos?.onExportImagesMissing);
   const dialogs = useEditorDialogs(props.onShowShortcuts);
   const adding = useAddRequests();

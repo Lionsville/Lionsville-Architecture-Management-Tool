@@ -196,6 +196,21 @@ describe('exportDiagramPng — how much of it survives printing', () => {
   });
 });
 
+describe('exportDiagramPng — the editor\'s marks', () => {
+  it('leaves out every handle, port, resize corner and rubber band, and keeps the board', async () => {
+    const container = viewportWithLogo('data:image/svg+xml;base64,AAAA');
+    await exportDiagramPng({ container, bounds: { x: 0, y: 0, width: 100, height: 100 } });
+    const { filter } = (toCanvas.mock.calls[0] as unknown as [HTMLElement, { filter: (node: Node) => boolean }])[1];
+    const mark = (className: string) => Object.assign(document.createElement('div'), { className });
+    for (const one of ['react-flow__handle lv-nub', 'react-flow__resize-control handle', 'kit-card__nub', 'react-flow__nodesselection', 'react-flow__selection']) {
+      expect(filter(mark(one))).toBe(false);
+    }
+    expect(filter(mark('react-flow__node selected'))).toBe(true);
+    expect(filter(mark('kit-card'))).toBe(true);
+    expect(filter(document.createTextNode('Fleet Register'))).toBe(true);
+  });
+});
+
 describe('exportPixelRatio', () => {
   it('never drops below a retina screen', () => {
     expect(exportPixelRatio(6000, 4000)).toBe(2);

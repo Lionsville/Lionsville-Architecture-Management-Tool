@@ -70,6 +70,8 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
       backgroundColor: background,
       // The app's own faces, handed over ready: the library's own way to them is refused by the desktop's policy.
       fontEmbedCSS: await pictureFontCss(),
+      // The editor's own marks are not the board: no handle, port, resize corner or rubber band in a picture.
+      filter: notEditorChrome,
       pixelRatio,
       width,
       height,
@@ -101,6 +103,15 @@ export async function exportDiagramPng(options: ExportDiagramPngOptions): Promis
     }
   }
   return canvasToBlob(canvas);
+}
+
+/** What the editor draws to work on a board, never part of a picture of it. */
+const EDITOR_CHROME = ['react-flow__handle', 'react-flow__resize-control', 'kit-card__nub', 'react-flow__nodesselection', 'react-flow__selection'];
+
+/** Kept in a picture: anything but the editor's marks (html-to-image asks of every node it clones). */
+export function notEditorChrome(node: Node): boolean {
+  const classes = (node as Element).classList;
+  return !classes || !EDITOR_CHROME.some((one) => classes.contains(one));
 }
 
 /**
