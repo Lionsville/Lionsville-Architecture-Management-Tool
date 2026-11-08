@@ -213,7 +213,7 @@ würde eine Frage aufwerfen („und alles danach?“), die {key:Mod+Z} bereits b
 | {key:Mod+F} | Ein Element suchen |
 | {key:Enter} | Steckbrief öffnen |
 | F2 | Die Auswahl umbenennen |
-| Delete | Die Auswahl entfernen, nach Rückfrage |
+| {key:Delete} | Die Auswahl entfernen, nach Rückfrage |
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Rückgängig, Wiederholen — ein Stapel über alles |
 | {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Kopieren, Ausschneiden, Einfügen, Duplizieren |
 | Pfeile, {key:Shift} Pfeile | Um einen Rasterschritt verschieben, um ein Pixel |
@@ -527,9 +527,9 @@ Verbindungen und die Namen von Domänengruppen liegen auf demselben Weg, und
 {key:Enter} wählt auch sie aus; {key:Shift+F10} öffnet das Menü dessen, was ausgewählt ist,
 und {key:Enter} auf dem bereits ausgewählten Element öffnet seine Dokumentation. Eine
 Verbindung ziehen Sie ohne Maus mit **Verbindung beginnen zu…** aus dem Menü
-eines Elements: mit {key:Tab} zum anderen Ende gehen und {key:Enter} drücken. Auf dem Tab
+eines Elements: mit {key:Tab} zum anderen Ende gehen und {key:Enter} drücken. Auf dem Reiter
 einer Landschaft listet ↓ ihre Containerdiagramme, und {key:Shift+F10} öffnet das
-Menü des Tabs. Ein Element, ein Band oder eine Gruppe in der Größe ändern, eine
+Menü des Reiters. Ein Element, ein Band oder eine Gruppe in der Größe ändern, eine
 Gruppe verschieben und einer Verbindung einen Knick geben braucht weiterhin
 einen Zeiger.` },
     { title: `Elemente`, text: `Sieben Arten: Anwendung, Komponente, externes System, Eingabekanal,
@@ -699,7 +699,7 @@ und die Adresse trägt es (\`?day=2027-06-01\`), also öffnet ein Link dieselbe 
 **Zurück zu heute**, oder **Zurück zu** dem eigenen Tag des Boards, ist ein Klick. **Zum Tag
 der Ansicht machen** im Band ist der bewusste Schritt: eine Bearbeitung, ein Eintrag in der
 Aktivität, und {key:Mod+Z} nimmt ihn zurück. Das geht auch für heute, was ein datiertes Board zurück
-in den Kalender setzt. Ein auf seinen Tag gespeichertes Board nennt diesen Tag auf seinem {key:Tab}
+in den Kalender setzt. Ein auf seinen Tag gespeichertes Board nennt diesen Tag auf seinem Reiter
 und bleibt darauf bearbeitbar, und wer eine Rolle innehat, lässt sich am angesehenen Tag noch
 ändern. Ein von einem Board geöffnetes Containerdiagramm nimmt dessen Tag mit, und sein Weg
 zurück führt zu diesem Board.
@@ -912,7 +912,7 @@ beide werden bei jedem Öffnen aus den Zeilen abgeleitet.
 
 **Die Technologielandschaft** beantwortet eine Frage: Was steht worauf, und was fällt,
 wenn ein Stück wegfällt. *Landschaft* auf der Technologiekarte legt eine in dem Bereich
-an, dessen Dienste und Plattformen sie zeigen soll, und sie steht unter den Tabs. Sie
+an, dessen Dienste und Plattformen sie zeigen soll, und sie steht unter den Reitern. Sie
 besteht aus drei Spalten einzeiliger Zeilen, die sich von links nach rechts lesen: jede
 Anwendung, die die Einträge mit diesen Diensten und Plattformen verbinden, aus jeder
 Landschaft der Organisation; die Dienste; und die Plattformen, verschachtelt wie der
@@ -1474,10 +1474,10 @@ an dem sie geführt wird. Ein draw.io-Kasten, der auf eine Einheit zeigt,
   ],
   drawing: [
     { title: `Eine Zeichnung`, text: `Eine **Zeichnung** ist die eine Ansicht, die Sie zeichnen und nicht das Modell.
-**+** in den Diagramm-Tabs fragt, welche Art Ansicht es sein soll, geteilt danach,
+**+** in den Reitern der Ansichten fragt, welche Art Ansicht es sein soll, geteilt danach,
 wer sie zeichnet: unter **Diese zeichnen Sie selbst** fragt **Zeichnung** nach einem
 Namen und, wenn Sie möchten, dem Element, um das es geht. Die Startseite eines
-Bereichs bietet dasselbe. Sie hat einen eigenen Tab, wie eine Landschaft oder ein Sheet.
+Bereichs bietet dasselbe. Sie hat einen eigenen Reiter, wie eine Landschaft oder ein Sheet.
 
 Eine Zeichnung wird als ihr Bild gezeigt, mit einer Leiste wie jede Ansicht: was sie
 ist, wie viele Formen auf das Modell zeigen, und was Sie damit tun können. Eine
@@ -1513,7 +1513,7 @@ Eine Form auszuwählen sagt unter der Fläche, worauf sie zeigt, mit **Seite öf
 **Auf ein anderes zeigen…** und **Lösen**. Die Adressform bleibt darunter für einen
 Agenten und für Dateien.
 
-Gehen mit ungespeicherter Arbeit fragt zuerst, welchen Weg Sie auch nehmen: ein Tab,
+Gehen mit ungespeicherter Arbeit fragt zuerst, welchen Weg Sie auch nehmen: ein Reiter,
 eine Seite, der Baum, Zurück oder das Fenster. **Speichern und gehen** behält sie,
 **Bleiben** geht zurück, **Ohne Speichern gehen** verwirft sie. Der Editor ist ein
 eigener Dienst; hat er 15 Sekunden nicht geantwortet, sagt die Seite das, mit

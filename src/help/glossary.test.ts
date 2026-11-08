@@ -90,12 +90,13 @@ describe('a press that is a key', () => {
 /**
  * Enter, Escape, Tab, Delete and an arrow named as words, outside a key
  * placeholder: a Mac shows ↩ ⎋ ⇥ ⌫ ↓ for them on every other screen, and German
- * said one key three ways. A browser's tab and the Delete a menu says are not keys.
+ * said one key three ways. A browser's tab and the Delete a menu says are not keys,
+ * and German calls a view's tab a Reiter, so its Tab is a browser's (auf seinem Tab).
  */
 const KEY_AS_WORD: Record<'en' | 'nl' | 'de', RegExp> = {
   en: /\b(Enter|Escape|Esc)\b|\bDelete key\b|\b(down|up|left|right) arrows?\b|\b(up|left) and (down|right) arrows\b|(?<!\b(an?|the|own) )\bTab\b/,
   nl: /\b(Enter|Escape|Esc|Delete)\b|\bpijlen? (omlaag|omhoog|links|rechts)\b|(?<!\b(een|de|het|eigen) )\bTab\b/,
-  de: /\b(Enter|Escape|Esc|Eingabetaste|Entf(-Taste)?|Rücktaste)\b|\bPfeile? (nach )?(unten|links|rechts|hoch|runter)\b(?! (rechts|links))|(?<!\b(ein|der|den|dem|einem|einen|anderen|anderer|diesem|dieser|dieses|jedem|jeder|eigenen|Ein) |Browser-)\bTab\b/,
+  de: /\b(Enter|Escape|Esc|Delete|Eingabetaste|Entf(-Taste)?|Rücktaste)\b|\bPfeile? (nach )?(unten|links|rechts|hoch|runter)\b(?! (rechts|links))|(?<!\b(ein|der|den|dem|einem|einen|anderen|anderer|diesem|dieser|dieses|jedem|jeder|eigenen|seinem|ihrem|Ein) |Browser-)\bTab\b/,
 }
 
 describe.each([['en', EN], ['nl', NL], ['de', DE]] as const)('the %s help', (language, text) => {
