@@ -65,6 +65,14 @@ describe('diffModels', () => {
    * organisation" and "it stopped being one" are told apart by the key being
    * there at all, never by the value being empty.
    */
+  it('reads an object whose keys a store gave back in another order as unchanged', () => {
+    const written = model({ elements: [element('crews', 'Crews', { aspects: { dr: { status: 'managed' }, cost: { status: 'none' } } }), element('reisinfo', 'Reisinformatie')] })
+    const stored = model({ elements: [element('crews', 'Crews', { aspects: { cost: { status: 'none' }, dr: { status: 'managed' } } }), element('reisinfo', 'Reisinformatie')] })
+    expect(isUnchanged(diffModels(written, stored))).toBe(true)
+    const moved = model({ elements: [element('crews', 'Crews', { aspects: { cost: { status: 'managed' }, dr: { status: 'managed' } } }), element('reisinfo', 'Reisinformatie')] })
+    expect(diffModels(written, moved)[0]).toMatchObject({ kind: 'changed', id: 'crews', fields: ['aspects'] })
+  })
+
   it('tells a stand-in of the root from a record that stopped being one', () => {
     const drawn = model({
       elements: [element('crews', 'Crews', { ref: '' }), element('reisinfo', 'Reisinformatie')],

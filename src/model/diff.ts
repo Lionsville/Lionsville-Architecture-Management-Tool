@@ -97,7 +97,7 @@ function changedFields(before: object, after: object): string[] {
   const now = after as Record<string, unknown>
   return [...keys]
     .filter((key) => !NOT_A_FIELD.has(key))
-    .filter((key) => JSON.stringify(held[key]) !== JSON.stringify(now[key]))
+    .filter((key) => !same(held[key], now[key]))
     .sort()
 }
 
@@ -174,7 +174,28 @@ function rowsThatDiffer<T extends { id: string }>(
 }
 
 function differs(before: unknown, after: unknown): number {
-  return JSON.stringify(before ?? null) === JSON.stringify(after ?? null) ? 0 : 1
+  return same(before ?? null, after ?? null) ? 0 : 1
+}
+
+/**
+ * Whether two values hold the same, whatever order their keys were written in.
+ * A store may give an object's keys back in an order of its own (PostgreSQL's
+ * `jsonb` does), and a reordered object is not a change to anything.
+ */
+export function same(before: unknown, after: unknown): boolean {
+  if (before === after) return true
+  if (typeof before !== 'object' || typeof after !== 'object' || before === null || after === null) return false
+  if (Array.isArray(before) || Array.isArray(after)) {
+    if (!Array.isArray(before) || !Array.isArray(after) || before.length !== after.length) return false
+    return before.every((one, at) => same(one, after[at]))
+  }
+  const held = before as Record<string, unknown>
+  const now = after as Record<string, unknown>
+  // An absent key and an undefined one are the same, as JSON writes them.
+  const keys = (value: Record<string, unknown>) => Object.keys(value).filter((key) => value[key] !== undefined)
+  const heldKeys = keys(held)
+  if (heldKeys.length !== keys(now).length) return false
+  return heldKeys.every((key) => Object.hasOwn(now, key) && same(held[key], now[key]))
 }
 
 /**
@@ -204,7 +225,7 @@ function membershipChanges(
     }
     if (!was) changes.push({ kind: 'added', ...row })
     else if (!is) changes.push({ kind: 'removed', ...row })
-    else if (JSON.stringify(was) !== JSON.stringify(is)) changes.push({ kind: 'changed', ...row })
+    else if (!same(was, is)) changes.push({ kind: 'changed', ...row })
   }
   return changes
 }
