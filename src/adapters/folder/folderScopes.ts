@@ -148,6 +148,13 @@ export class FolderScopes {
   private unkept = false
   /** Where each identity was last found, so reading one scope does not walk the tree. */
   private readonly found = new Map<ScopeId, ScopeAddress>()
+  /**
+   * Where each identity last read whole: where a scope that no longer reads
+   * was. Not `found`, which a walk moves to wherever a header claims the
+   * identity — a folder renamed beside the root's others, which may not read
+   * as a scope at all.
+   */
+  private readonly readAt = new Map<ScopeId, ScopeAddress>()
   private queue: Promise<unknown> = Promise.resolve()
   /** The places as they were last kept, to write them only when they moved. */
   private kept: string | undefined
@@ -378,12 +385,13 @@ export class FolderScopes {
     const { library, files } = await this.libraryOf(node.address, snapshot)
     const stored = snapshot?.revision ?? ''
     const state = stateFrom(node, snapshot, library, revisionOf(node.address, stored, library))
+    this.readAt.set(id, node.address)
     return { node, state, snapshot, library, files, ...(snapshot?.revision !== undefined ? { stored } : {}) }
   }
 
   /** Scopes removed here: no longer looked for where they were last found. */
   letGo(ids: readonly ScopeId[]): void {
-    for (const id of ids) this.found.delete(id)
+    for (const id of ids) { this.found.delete(id); this.readAt.delete(id) }
   }
 
   /**
@@ -399,8 +407,10 @@ export class FolderScopes {
     } catch {
       return 'shell.folderUnavailable'
     }
-    const address = this.found.get(id)
-    if (address === undefined || address === ROOT_SCOPE) return 'shell.scopeGone'
+    const address = this.readAt.get(id) ?? this.found.get(id)
+    if (address === undefined) return 'shell.scopeGone'
+    // The organisation is nowhere but the folder itself: read once and not now, the folder is what went.
+    if (address === ROOT_SCOPE) return this.readAt.has(id) ? 'shell.folderUnavailable' : 'shell.scopeGone'
     // A folder that is there and did not read is another matter, which the caller says as it always has.
     const there = await folderAt(this.root, address).catch(() => undefined)
     return there ? 'shell.scopeGone' : 'shell.folderUnavailable'

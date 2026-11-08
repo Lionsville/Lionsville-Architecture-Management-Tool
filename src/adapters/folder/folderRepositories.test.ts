@@ -218,8 +218,12 @@ describe('the folder, beyond what the suites say', () => {
     const repositories = over({ repositories: folderRepositories({ root, git: memoryGit(root) }) })
     const acme = await repositories.scope('acme', 'Acme Logistics')
     const globex = await repositories.scope('globex', 'Globex')
-    // Moved away outside the app: a drive gone, a folder dragged elsewhere.
+    await repositories.state(acme)
+    // Moved away outside the app: a drive gone, a folder dragged elsewhere — here renamed beside the others, header and all.
+    const header = (await textAt(root, 'acme/scope.json'))!
+    await writeAt(root, 'acme.away/scope.json', header)
     await removeAt(root, 'acme', true)
+    await repositories.scopes.tree()
     await expect(repositories.apply([{ scope: acme, steps: [step(addCrews)] }])).rejects.toMatchObject({ key: 'shell.folderUnavailable' })
     ok(await repositories.remove(globex))
     expect(await repositories.apply([{ scope: globex, steps: [step(addCrews)] }])).toEqual({ refused: 'shell.scopeGone', scope: globex })
