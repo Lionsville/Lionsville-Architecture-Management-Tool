@@ -275,13 +275,17 @@ describe('watchRepositories', () => {
     const letGo = vi.fn()
     const store = writeRefusals(() => {}, letGo)
     const made: string[] = []
+    const heard: (string | undefined)[] = []
+    store.watchLanded((landed) => heard.push(landed.scope))
     const ids = store.handOver([
-      { cause: new Error('EACCES'), summary: { key: 'activity.elementRenamed', name: 'Fleet', to: 'Fleet QA' }, retry: () => { made.push('rename'); return Promise.resolve(true) } },
+      { cause: new Error('EACCES'), scope: 'rail', summary: { key: 'activity.elementRenamed', name: 'Fleet', to: 'Fleet QA' }, retry: () => { made.push('rename'); return Promise.resolve(true) } },
       { cause: new Error('EACCES'), summary: { key: 'activity.elementAdded', name: 'QA App' }, retry: () => Promise.resolve(false) },
     ])
     expect(store.list().map((one) => one.id)).toEqual(ids)
     await expect(store.retry()).resolves.toBe(false)
     expect(made).toEqual(['rename'])
+    // A session open on that scope again hears it landed, and reads it.
+    expect(heard).toEqual(['rail'])
     expect(store.list().map((one) => one.summary?.name)).toEqual(['QA App'])
     store.forget(ids[1])
     expect(store.list()).toEqual([])

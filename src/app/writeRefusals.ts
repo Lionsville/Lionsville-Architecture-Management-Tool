@@ -55,6 +55,12 @@ export type WriteRefusal = {
    * *Your work* names each one rather than one sentence for all of them.
    */
   readonly summary?: StepSummary
+  /**
+   * The scope it was a change to, where its maker said: a change handed over
+   * by a session that went, which a session open on that scope again has to
+   * read once it lands (`watchLanded`), since it holds the scope as it was.
+   */
+  readonly scope?: string
 }
 
 export type WriteRefusals = {
@@ -85,6 +91,8 @@ export type WriteRefusals = {
    * row each, rather than going with the session. Answers their numbers.
    */
   readonly handOver: (refusals: readonly Omit<WriteRefusal, 'id'>[]) => readonly number[]
+  /** Word of each refused write that lands when made again, after it has. */
+  readonly watchLanded: (listener: (landed: WriteRefusal) => void) => () => void
 }
 
 /** The refusals that mean a write was not kept, rather than an answer to a question. */
@@ -108,6 +116,7 @@ export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => vo
   let held: readonly WriteRefusal[] = []
   let next = 0
   const listeners = new Set<() => void>()
+  const landing = new Set<(landed: WriteRefusal) => void>()
   const set = (to: readonly WriteRefusal[]) => { held = to; for (const listener of [...listeners]) listener() }
   const after = new Map<number, () => void>()
   const drop = (id?: number) => {
@@ -152,6 +161,7 @@ export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => vo
       set([...held, { ...refusal, id: next }])
       return next
     },
+    watchLanded: (listener) => { landing.add(listener); return () => { landing.delete(listener) } },
     handOver: (refusals) => {
       const made = refusals.map((one, at) => ({ ...one, id: next + at + 1 }))
       next += refusals.length
@@ -165,7 +175,11 @@ export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => vo
       for (const one of held.filter((each) => id === undefined || each.id === id)) {
         const landed = await one.retry().catch(() => false)
         const then = after.get(one.id)
-        if (landed) { drop(one.id); then?.() }
+        if (landed) {
+          drop(one.id)
+          then?.()
+          for (const listener of [...landing]) listener(one)
+        }
         tried.push(landed)
       }
       if (tried.some(Boolean)) onLanded()
@@ -286,6 +300,11 @@ export function whenLanded(repository: object, id: number | undefined, then: () 
 /** Refused writes handed over to the list a watched repository keeps; nothing where nobody watches it. */
 export function handOver(repository: object, refusals: readonly Omit<WriteRefusal, 'id'>[]): readonly number[] | undefined {
   return storeOf(repository)?.handOver(refusals)
+}
+
+/** Word of each refused write that lands when made again, where the repository is watched. */
+export function watchLanded(repository: object, listener: (landed: WriteRefusal) => void): () => void {
+  return storeOf(repository)?.watchLanded(listener) ?? (() => {})
 }
 
 /** The count of writes under way that a watched repository keeps, or none for one nobody watches. */

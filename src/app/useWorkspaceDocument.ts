@@ -6,7 +6,7 @@
  * when, what the bar says about that, and the session handed to whoever
  * answers for the source.
  */
-import { handOver, stepsSummary, unwatched } from './writeRefusals'
+import { handOver, stepsSummary, unwatched, watchLanded } from './writeRefusals'
 import type { WriteRefusal } from './writeRefusals'
 import type { StepSummary } from '../model'
 import type { ScopeStep } from '../projects/scopeState'
@@ -21,6 +21,7 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { SourceStatus, SourceWork, SourceWorkChanged } from '../platform/sourceProvider'
 import { useDocumentSession } from './useDocumentSession'
+import { hasUnsavedWork } from '../projects/documentSession'
 import type { DocumentSessionHook, LeftUnwritten, ScopeWriter } from './useDocumentSession'
 import type { ModelSession, ScopeSession } from './useModelSession'
 import type { KeepNotice } from './useKeepNotice'
@@ -100,8 +101,9 @@ export function useWorkspaceDocument(deps: {
    * work* — the word stays *Not saved* until one or the other.
    */
   const onLeftUnwritten = useCallback<LeftUnwritten>((steps, cause) => {
+    const scope = session.snapshot().path
     const refusals = changesOf(session, steps).map((change): Omit<WriteRefusal, 'id'> => ({
-      cause,
+      cause, scope,
       summary: change.summary,
       // Made again over the scope as it stands: the person asked for this very change once more.
       retry: () => writer.write(change.steps).then(() => true, () => false),
@@ -134,6 +136,23 @@ export function useWorkspaceDocument(deps: {
     () => changesOf(session, session.journal.pending().map(({ stepId, command, at }) => ({ stepId, command, at }))).map((change) => change.summary),
     [session],
   )
+  /**
+   * A change an earlier session of this scope handed over, landed from *Your
+   * work* while the scope is open again: this session holds the scope as it
+   * was, and nothing here would read it — the place's own watch does not tell
+   * a window of its own writes. Read now, where nothing of this session's is
+   * waiting to be written; otherwise the next write meets the scope moved,
+   * and the person is asked.
+   */
+  const path = session.snapshot().path
+  const shown = useRef(document)
+  shown.current = document
+  useEffect(() => writer.watchHandedLanded?.((scope) => {
+    if (scope !== path) return
+    const { state, takeTheirs: take } = shown.current
+    if (!hasUnsavedWork(state) && state.status !== 'saving') void take()
+  }), [writer, path])
+
   // Put back: the scope as it is kept, read over what was not written. Nothing is refused any more, so nothing is said.
   const { takeTheirs } = document
   const putBack = useCallback(() => takeTheirs().then((taken) => {
@@ -214,6 +233,7 @@ export function useScopeWriter(
     }
     return {
       handOver: (refusals) => { handOver(watchedScopes, refusals) },
+      watchHandedLanded: (listener) => watchLanded(watchedScopes, (landed) => listener(landed.scope)),
       write: async (steps, expects) => {
         const scope = await identity()
         return landed(await scopes.apply([{ scope, steps, ...(expects !== undefined ? { expects } : {}) }])).revisions[0]
