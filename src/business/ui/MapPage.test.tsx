@@ -13,7 +13,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { MapPage } from './MapPage'
+import { MapPage, coverageFileName } from './MapPage'
 import type { SheetActions } from './FunctionInspector'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
@@ -256,6 +256,14 @@ describe('what a person can do from it', () => {
     open({ onSave: vi.fn() })
     fireEvent.click(screen.getByRole('button', { name: 'Export…' }))
     expect(screen.getByRole('dialog', { name: /^Export / })).toBeTruthy()
+  })
+})
+
+describe('the picture\'s file', () => {
+  it('is proposed as a board\'s is: the organisation and the page, in a slug', () => {
+    expect(coverageFileName('Acme Logistics', 'Coverage')).toBe('acme-logistics-coverage.png')
+    expect(coverageFileName('Bäckerei Müller', 'Abdeckung')).toBe('backerei-muller-abdeckung.png')
+    expect(coverageFileName('', '')).toBe('coverage.png')
   })
 })
 

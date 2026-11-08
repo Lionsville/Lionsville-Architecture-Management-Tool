@@ -65,7 +65,7 @@ import { ReadingSwitch } from './SheetBar'
 import type { OtherView, SheetReading } from './SheetBar'
 import { SheetExportDialog } from './SheetExportDialog'
 import type { ExportLayout } from './SheetExportDialog'
-import { InlineFrame, LookBand, fileSafe, settled } from './SheetPage'
+import { InlineFrame, LookBand, settled } from './SheetPage'
 import type { SheetCaptureOptions, SheetHandle } from './SheetPage'
 import { claimKey } from '../../widgets/kit/keys'
 import './Sheet.css'
@@ -403,6 +403,7 @@ function MapBody({ laidOut, props, readOnly, firstLeaf, matched, title, pick, on
 /** The picture of the map, for an agent and for a person: unfolded, and nothing scrolling. */
 function useMapPicture(props: MapPageProps, node: { current: HTMLDivElement | null }, selectedId: ElementId | undefined) {
   const theme = useTheme()
+  const { t } = useStrings()
   const [exporting, setExporting] = useState(false)
   // A person's picture carries the title block where the map draws one; an agent's look does not.
   const [titled, setTitled] = useState(false)
@@ -426,10 +427,11 @@ function useMapPicture(props: MapPageProps, node: { current: HTMLDivElement | nu
   }, [onHandle, open, mapId, capture, selectedId])
   const exportPng = async (layout: ExportLayout) => {
     if (!map || !props.onSave) return
-    setTitled(map.showTitleBlock === true)
+    // On unless turned off, as a board's is.
+    setTitled(map.showTitleBlock !== false)
     try {
       const shot = await capture({ maxPixels: EXPORT_MAX_PIXELS, ...(layout === 'screen' ? {} : { width: paperWidth(layout) }) })
-      props.onSave({ name: `${fileSafe(map.name)}.png`, bytes: shot.png, mediaType: 'image/png' })
+      props.onSave({ name: coverageFileName(props.model.name, t('map.page')), bytes: shot.png, mediaType: 'image/png' })
     } finally {
       setTitled(false)
     }
@@ -706,6 +708,12 @@ export function MapPage(props: MapPageProps) {
 }
 
 /** The map's title block, drawn along its foot while a person's picture is made: what an empty field draws is a board's. */
+/** The file proposed, as a board's is: the organisation and the page, in a slug (`acme-logistics-coverage.png`). */
+export function coverageFileName(organisation: string, page: string): string {
+  const part = (name: string) => name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+  return `${[part(organisation), part(page) || 'coverage'].filter(Boolean).join('-')}.png`
+}
+
 function MapTitleStrip({ shown, map, model, t }: { shown: boolean; map: DesignDiagram | undefined; model: DesignModel; t: Translate }) {
   if (!shown || !map) return null
   return (

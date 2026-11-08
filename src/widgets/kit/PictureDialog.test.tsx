@@ -71,6 +71,6 @@ describe('PictureDialog', () => {
 
   it('draws a laid-out page\'s strip with the cells a board draws, leaving out an author nobody gave', () => {
     renderShell(<PictureTitleStrip client="Acme" title="Coverage" date="2026-11-08" />)
-    expect(screen.getByTestId('picture-title-strip').textContent).toBe('ClientAcmeTitleCoverageDate2026-11-08')
+    expect(screen.getByTestId('picture-title-strip').textContent).toBe('TitleCoverageClientAcmeDate2026-11-08')
   })
 })

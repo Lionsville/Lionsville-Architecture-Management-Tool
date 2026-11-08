@@ -64,7 +64,7 @@ export function SheetExportDialog({ initial, onExport, onClose, sheet, actions, 
       failed={(message) => t('sheet.exportFailed', { message })}
       {...(titleBlock && map ? {
         titleBlock: {
-          on: map.showTitleBlock === true, onChange: (on: boolean) => titleBlock.onChange({ showTitleBlock: on }),
+          on: map.showTitleBlock !== false, onChange: (on: boolean) => titleBlock.onChange({ showTitleBlock: on }),
           fields: (disabled: boolean) => (
             <PictureTitleFields
               values={{ client: map.client ?? '', author: map.author ?? '', date: map.documentDate ?? '' }} clientFrom={titleBlock.clientFrom} disabled={disabled}

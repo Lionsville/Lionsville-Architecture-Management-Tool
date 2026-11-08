@@ -112,8 +112,9 @@ function TitleField({ label, hint, held, disabled, onCommit }: { label: string; 
 export function PictureTitleStrip({ client, title, author, date }: { readonly client: string; readonly title: string; readonly author?: string; readonly date: string }) {
   const { t } = useStrings()
   const cells = [
-    { label: t('kit.picture.client'), value: client },
+    // In the order a board's strip draws them: the title at the left, then who it is for, who made it and when.
     { label: t('kit.picture.titleWord'), value: title, wide: true },
+    { label: t('kit.picture.client'), value: client },
     ...(author ? [{ label: t('kit.picture.author'), value: author }] : []),
     { label: t('kit.picture.date'), value: date },
   ]
