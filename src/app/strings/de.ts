@@ -1874,7 +1874,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'example.keep': 'Das als meinen Anfang behalten',
   'example.leave': 'Beispiel verlassen',
   'example.keptUnder': 'Das Beispiel liegt jetzt unter Ihrer Organisation, als eigener Bereich, ohne sein Betriebsmodell. Ihre eigene Arbeit bleibt unberührt.',
-  'example.keepAsk': 'Ihre Organisation enthält bereits Arbeit, deshalb wird das Beispiel darunter abgelegt, als eigener Bereich, und an Ihrer Arbeit ändert sich nichts. Sein Betriebsmodell und seine Bewertungsskalen bleiben zurück: Nur eine Organisation hat diese, und Ihre gestalten Sie selbst. Alles andere kommt mit, auch seine Prinzipien.',
+  'example.keepAsk': 'Ihre Organisation enthält bereits Arbeit, deshalb wird das Beispiel darunter abgelegt, als eigener Bereich, und an Ihrer Arbeit ändert sich nichts. Sein Betriebsmodell und seine Bewertungsskalen bleiben zurück: Nur eine Organisation hat diese, und Ihre gestalten Sie selbst. Seine Einheiten kommen als einfache Akteure mit, ohne Typ und ohne Berichtslinien. Alles andere kommt mit, auch seine Prinzipien.',
   'example.keepUnder': 'Unter meiner Organisation behalten',
   'example.keepNot': 'Nicht jetzt',
   'work.today': 'Heute, {time}',

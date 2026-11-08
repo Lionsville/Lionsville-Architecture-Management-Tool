@@ -27,6 +27,7 @@ import type { Cause, Observation } from '../model/observation'
 import type { Assignment } from '../model/units'
 import type { Citation } from '../model/citable'
 import type { Principle } from '../model/principle'
+import { evaluationId } from '../model/evaluation'
 import type { ScopeModel, ScopeSnapshot } from './scope'
 import { isWithinScope, ROOT_SCOPE } from './scopePath'
 import type { ScopePath } from './scopePath'
@@ -255,4 +256,55 @@ export function readdressPrinciples(model: PrinciplesHeld, from: ScopePath, to: 
       ? [{ type: 'principle.update', id: one.id, patch: { relations } }] : []
   })
   return [...citations, ...principles]
+}
+
+/**
+ * Every address a scope holds, carried by `carry`: the whole of what this
+ * module carries a piece at a time for a move, said once for a scope that
+ * lands somewhere new whole — an example, or a visit kept, filed under the
+ * organisation rather than as it (`examples/copy`).
+ *
+ * The list is every field that names a scope by its path: a stand-in's
+ * `ref`; a unit's own reporting lines, the scopes it serves, and a holder's
+ * own line; a cause's links and history, an observation's history, a
+ * comment's `from`; a citation's principle, a principle's relations; an
+ * evaluation's block — and its id, which is said from that block's scope
+ * (`evaluationId`) — and a building block's capability's aspect; and a
+ * topic's links. A field added that names a scope belongs here, or a copy
+ * filed under the organisation points at the organisation's own scopes.
+ *
+ * The scope's own `path` is not among them: where it lands is the caller's.
+ */
+export function carryAddresses(scope: ScopeSnapshot, carry: (path: ScopePath) => ScopePath): ScopeSnapshot {
+  const at = <T extends { scope: string }>(held: T): T => ({ ...held, scope: carry(held.scope) })
+  const maybe = <T extends { scope?: string }>(held: T): T => (held.scope === undefined ? held : { ...held, scope: carry(held.scope) })
+  const { model } = scope
+  const elements = model.elements.map((element): DesignElement => ({
+    ...element,
+    ...(element.ref !== undefined ? { ref: carry(element.ref) } : {}),
+    ...(element.reportingLines ? { reportingLines: element.reportingLines.map((line) => (line.to === undefined ? line : { ...line, to: at(line.to) })) } : {}),
+    ...(element.scopes ? { scopes: element.scopes.map(carry) } : {}),
+    ...(element.capabilities ? {
+      capabilities: element.capabilities.map((one) => (one.aspect === undefined ? one : { ...one, aspect: at(one.aspect) })),
+    } : {}),
+  }))
+  const evaluations = model.evaluations?.map((one) => {
+    const block = at(one.block)
+    return { ...one, id: evaluationId(block), block }
+  })
+  return {
+    ...scope,
+    model: {
+      ...model,
+      elements,
+      ...(model.assignments ? { assignments: model.assignments.map((one) => (one.reportsTo ? { ...one, reportsTo: one.reportsTo.map((line) => ({ ...line, to: at(line.to) })) } : one)) } : {}),
+      ...(model.causes ? { causes: model.causes.map((one) => ({ ...one, explains: one.explains.map(maybe), ...(one.history ? { history: one.history.map(maybe) } : {}) })) } : {}),
+      ...(model.observations ? { observations: model.observations.map((one) => ({ ...one, history: one.history.map(maybe) })) } : {}),
+      ...(model.comments ? { comments: model.comments.map((one) => (one.from ? { ...one, from: maybe(one.from) } : one)) } : {}),
+      ...(model.citations ? { citations: model.citations.map((one) => ({ ...one, principle: at(one.principle) })) } : {}),
+      ...(model.principles ? { principles: model.principles.map((one) => (one.relations ? { ...one, relations: one.relations.map((relation) => ({ ...relation, to: at(relation.to) })) } : one)) } : {}),
+      ...(evaluations ? { evaluations } : {}),
+    },
+    ...(scope.relevantTo ? { relevantTo: scope.relevantTo.map((link) => ({ ...link, path: carry(link.path) })) } : {}),
+  }
 }

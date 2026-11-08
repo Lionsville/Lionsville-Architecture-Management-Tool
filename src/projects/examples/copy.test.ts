@@ -17,6 +17,8 @@ import type { ScopeSnapshot, ScopeSummary } from '../scope'
 import { placeWhole, readScope } from '../scopeAccess'
 import { emptyContent } from '../scopeState'
 import { EXAMPLE_CATALOGUE } from './catalogue'
+import { carryAddresses } from '../readdress'
+import { joinScopePath } from '../scopePath'
 import { copyExampleInto, exampleCopyOver, keepVisit, placeCopy } from './copy'
 import type { ExampleProject } from './copy'
 
@@ -69,11 +71,8 @@ describe('where a copy lands', () => {
   it('carries the content over unchanged, and re-addresses what is an address', () => {
     const asRoot = copyExampleInto(example, root())
     const asChild = copyExampleInto(example, root({ name: 'Globex' }))
-    const withoutRefs = (scope: typeof asRoot[number]) => ({
-      ...scope.model,
-      elements: scope.model.elements.map(({ ref: _held, ...rest }) => rest),
-    })
-    expect(withoutRefs(asChild[1])).toEqual(withoutRefs(asRoot[1]))
+    // Every address is carried (`every address the example holds…` below); with them put back, nothing else differs.
+    expect(carryAddresses(asChild[1], (path) => (path === 'acme-logistics' ? '' : path.replace(/^acme-logistics\//, ''))).model).toEqual(asRoot[1].model)
 
     const refs = (scope: typeof asRoot[number]) =>
       [...new Set(scope.model.elements.map((e) => e.ref).filter((ref) => ref !== undefined))]
@@ -84,6 +83,61 @@ describe('where a copy lands', () => {
     const across = (scope: typeof asRoot[number]) => scope.model.causes?.flatMap((one) => one.explains).find((link) => link.scope !== undefined)?.scope
     expect(across(asRoot[0])).toBe('application-landscape')
     expect(across(asChild[0])).toBe('acme-logistics/application-landscape')
+  })
+})
+
+/**
+ * Every address the example holds, found by walking it rather than by the
+ * list `carryAddresses` keeps, so a field that names a scope and is missing
+ * from that list is caught here: the example landed as the organisation and
+ * under a child is the same tree, every leaf the same but the ones that are
+ * addresses, and each of those is the root's put under the child.
+ */
+describe('every address the example holds, landed under a child', () => {
+  const example = EXAMPLES[0]
+  const root = (over: Partial<ScopeSummary> = {}): ScopeSummary => ({ path: '', name: '', diagrams: 0, children: [], ...over })
+  /** Leaves by where they are in the tree, keyed on the position — never on a scope's path, which differs. */
+  const leaves = (value: unknown, at: string, into: Map<string, unknown>): Map<string, unknown> => {
+    if (Array.isArray(value)) value.forEach((one, i) => leaves(one, `${at}[${i}]`, into))
+    else if (value !== null && typeof value === 'object') for (const [key, one] of Object.entries(value)) leaves(one, `${at}.${key}`, into)
+    else into.set(at, value)
+    return into
+  }
+  const ADDRESS = /\.(scope|ref|path)$|\.scopes\[\d+\]$/
+  const asRoot = copyExampleInto(example, root())
+  const asChild = copyExampleInto(example, root({ name: 'Globex' }))
+
+  it('differs from the example as the organisation only where it says an address, and says each one under the child', () => {
+    const before = leaves(asRoot, '', new Map())
+    const after = leaves(asChild, '', new Map())
+    expect([...after.keys()]).toEqual([...before.keys()])
+    const changed: string[] = []
+    for (const [at, was] of before) {
+      const now = after.get(at)
+      if (/\.evaluations\[\d+\]\.id$/.test(at)) {
+        // An evaluation's id is said from its block's scope (`evaluationId`).
+        expect(now).toBe(`acme-logistics.${was as string}`)
+        continue
+      }
+      if (ADDRESS.test(at) && typeof was === 'string') {
+        expect(now, at).toBe(joinScopePath('acme-logistics', was))
+        changed.push(at)
+      } else {
+        expect(now, at).toEqual(was)
+      }
+    }
+    // What the shipped example holds today: stand-ins, a cause's link, units' lines, evaluations' blocks, a topic's links.
+    expect(changed.some((at) => at.endsWith('.ref'))).toBe(true)
+    expect(changed.some((at) => at.includes('.reportingLines['))).toBe(true)
+    expect(changed.some((at) => at.includes('.relevantTo['))).toBe(true)
+    expect(changed.some((at) => at.includes('.evaluations['))).toBe(true)
+    expect(changed.some((at) => at.includes('.explains['))).toBe(true)
+  })
+
+  it('points nowhere outside the child: not at the organisation it lands in, and not at a scope of its', () => {
+    for (const [at, value] of leaves(asChild, '', new Map())) {
+      if (ADDRESS.test(at) && typeof value === 'string') expect(value === 'acme-logistics' || value.startsWith('acme-logistics/'), `${at} = ${value}`).toBe(true)
+    }
   })
 })
 

@@ -20,7 +20,12 @@ import { memoryRepositories } from '../memory/memoryRepositories'
 import { EXAMPLE_CATALOGUE } from '../../projects/examples/catalogue'
 import { exampleCopyOver, keepAsks, keepVisit, ORGANISATION_ONLY, placeCopy } from '../../projects/examples/copy'
 import { organisationHoldsWork } from '../../projects/organisationWork'
-import { nodesOf, readScope, summaryOf } from '../../projects/scopeAccess'
+import { modelsOf, nodesOf, readScope, summaryOf } from '../../projects/scopeAccess'
+import { checkMarkFor, checkMarkId } from '../../model/checkMarks'
+import { identityFindings, organisationFindings, documentFindings, tally } from '../../projects/checks'
+import type { Finding } from '../../projects/checks'
+import { indexScopes } from '../../projects/scopeIndex'
+import { isWithinScope } from '../../projects/scopePath'
 import { emptyContent } from '../../projects/scopeState'
 import { placeWhole } from '../../projects/scopeAccess'
 import { FakeDirectory } from './fakeDirectory'
@@ -144,5 +149,76 @@ describe('the example kept into a folder whose organisation holds work', () => {
     const { into, reopen } = await withWork()
     await keepVisit((await visit()).scopes, into, named)
     expect(await organisationOnlyAt(reopen(), '')).toEqual(Object.fromEntries(ORGANISATION_ONLY.map((list) => [list, 0])))
+  })
+})
+
+/**
+ * What the example filed under a child says, read off the folder anew: every
+ * address in it its own, its units plain, and no finding the example kept as
+ * the organisation does not have.
+ */
+describe('the example filed under an organisation that holds work, as it reads there', () => {
+  const DAY = '2026-11-08'
+
+  /** The folder after a keep, either way, and every finding about the example's scopes not marked as intended. */
+  async function landed(work: boolean) {
+    const made = folder()
+    if (work) {
+      await placeWhole(made.into.scopes, '', {
+        ...emptyContent('Globex'), kind: 'organisation',
+        model: { ...emptyContent('Globex').model, elements: [{ id: 'ours', kind: 'application', name: 'Our system' } as never] },
+      })
+    }
+    const base = (await keepVisit((await visit()).scopes, made.into, named)).under ?? ''
+    const back = made.reopen()
+    const tree = await back.scopes.tree()
+    const paths = nodesOf(tree.root).map((node) => node.address).filter((path) => isWithinScope(path, base))
+    const scopes = new Map(await Promise.all(paths.map(async (path) => [path, (await readScope(back.scopes, path))!] as const)))
+    const index = indexScopes(modelsOf(await back.index.read()))
+    const found: Finding[] = [
+      ...identityFindings(index), ...organisationFindings(index, DAY),
+      ...paths.flatMap((path) => documentFindings({ scope: path, model: scopes.get(path)!.model, index })),
+    ].filter((finding) => isWithinScope(finding.scope, base))
+    const marked = new Set(paths.flatMap((path) => (scopes.get(path)!.model.checkMarks ?? []).map((mark) => `${path} ${checkMarkId(mark)}`)))
+    const open = found.filter((finding) => !marked.has(`${finding.scope} ${checkMarkId(checkMarkFor(finding as never, { on: DAY }))}`))
+    return { base, tree, scopes, found, open, marked }
+  }
+
+  it('names its own scopes wherever it names one: units\' lines gone with their roles, topic links and evaluations under the child', async () => {
+    const { base, tree, scopes } = await landed(true)
+    expect(base).toBe('acme-logistics')
+    const topic = nodesOf(tree.root).find((node) => node.address === 'acme-logistics/topics/integration')
+    expect(topic?.relevantTo?.map((link) => link.path)).toEqual(['acme-logistics/application-landscape', 'acme-logistics/platforms'])
+    const blocks = [...scopes.values()].flatMap((scope) => scope.model.evaluations ?? []).map((one) => one.block.scope)
+    expect(blocks.length).toBeGreaterThan(0)
+    expect(new Set(blocks)).toEqual(new Set(['acme-logistics/topics/integration']))
+  })
+
+  it('brings its units as plain actors, nested as they were, with nothing that names the operating model it left behind', async () => {
+    const { scopes } = await landed(true)
+    const organisation = scopes.get('acme-logistics')!
+    const actors = organisation.model.elements.filter((element) => element.kind === 'actor')
+    expect(actors.find((one) => one.id === 'planning-desk')?.parentId).toBeDefined()
+    for (const scope of scopes.values()) {
+      expect(scope.unitTypeId).toBeUndefined()
+      expect(scope.model.assignments ?? []).toEqual([])
+      for (const element of scope.model.elements) {
+        expect(element.unitTypeId, element.id).toBeUndefined()
+        expect(element.reportingLines, element.id).toBeUndefined()
+      }
+    }
+  })
+
+  it('greets the person with no finding the example kept as the organisation lacks: its capabilities are marked as its own, not proposed', async () => {
+    const asOrganisation = await landed(false)
+    const under = await landed(true)
+    // Filed under, its own map reads as forty-odd capabilities proposed to the organisation above; each is marked as intended.
+    const proposals = under.found.filter((finding) => finding.key === 'check.proposal')
+    expect(proposals.length).toBeGreaterThan(0)
+    expect(under.open.filter((finding) => finding.key === 'check.proposal')).toEqual([])
+    expect(under.marked.size).toBe(proposals.length)
+    // Nothing open in the child that the example as the organisation does not raise too, and no more of any.
+    const root = tally(asOrganisation.open)
+    for (const [key, count] of Object.entries(tally(under.open))) expect(count, key).toBeLessThanOrEqual(root[key as keyof typeof root] ?? 0)
   })
 })

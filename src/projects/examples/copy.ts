@@ -18,7 +18,13 @@ import type { ScopeSnapshot, ScopeSummary } from '../scope'
 import { organisationHoldsWork } from '../organisationWork'
 import { contentOf, nodesOf, picturesOf, placeTogether, readScope, summaryOf } from '../scopeAccess'
 import type { ScopeReader } from '../scopeAccess'
-import { ROOT_SCOPE, scopePathFor, scopePathLabel } from '../scopePath'
+import { checkMarkFor, checkMarkId } from '../../model/checkMarks'
+import type { CheckMark } from '../../model/checkMarks'
+import { today } from '../../model/lifecycle'
+import { identityFindings } from '../checks'
+import { carryAddresses } from '../readdress'
+import { indexScopes } from '../scopeIndex'
+import { isWithinScope, joinScopePath, ROOT_SCOPE, scopePathFor, scopePathLabel } from '../scopePath'
 import type { ScopePath } from '../scopePath'
 
 export type ExampleProject = {
@@ -76,28 +82,25 @@ export function copyExampleInto(
   const base = !rootHoldsWork && !organisationHoldsWork(root)
     ? ROOT_SCOPE
     : scopePathFor(ROOT_SCOPE, scopePathLabel(example.fileAs ?? example.path), namesUnder(root))
-  const readdress = (path: ScopePath): ScopePath => {
-    if (path === example.path) return base
-    // An example at the root is every path as it stands: what a visit keeps.
-    const below = example.path === ROOT_SCOPE ? path : path.slice(example.path.length + 1)
-    return base === ROOT_SCOPE ? below : `${base}/${below}`
+  // Every address in the example is the example's own: nothing in it can mean
+  // the organisation it lands in. The shipped folder says some from where it
+  // ships (`example.path/…`, a stand-in's `ref`, a cause's link) and some from
+  // its own root (`''`, a unit's line, a topic's link, an evaluation's block),
+  // as a visit says all of them; both are read from the example's root, and
+  // land under `base`. An address said the second way that read as the first
+  // would be a scope of the example named after where it ships.
+  const fromItsRoot = (path: ScopePath): ScopePath => {
+    if (example.path === ROOT_SCOPE || !isWithinScope(path, example.path)) return path
+    return path === example.path ? ROOT_SCOPE : path.slice(example.path.length + 1)
   }
+  const readdress = (path: ScopePath): ScopePath => joinScopePath(base, fromItsRoot(path))
   return example.scopes.map((scope) => ({
-    ...scope,
+    // A stand-in's `ref` is an address too (ADR-0012 §3), and so is every
+    // line, link and citation that names a scope (`carryAddresses`): one not
+    // carried points at a scope that is not there — or, filed under an
+    // organisation, at one of the organisation's own.
+    ...carryAddresses(scope, readdress),
     path: readdress(scope.path),
-    // A stand-in's `ref` is an address too (ADR-0012 §3), and an address that
-    // was not carried over is a drifting stand-in of a folder that is not
-    // there. The example ships at its own paths and lands wherever the root
-    // sends it, so the two have to move together — which the drift check found
-    // the moment it existed.
-    model: {
-      ...scope.model,
-      elements: scope.model.elements.map(withRef(readdress)),
-      // So is the scope a cause above names when it explains a cause below
-      // (ADR-0032 §4): the organisation's root cause in the shipped example
-      // explains one of the landscape's, wherever the landscape lands.
-      ...(scope.model.causes ? { causes: scope.model.causes.map(withLinks(readdress)) } : {}),
-    },
   }))
 }
 
@@ -177,8 +180,53 @@ export async function keepVisit(
   const copy = await exampleCopyOver(to.scopes, { ...named, path: ROOT_SCOPE, fileAs: named.path, scopes })
   // Parents first, so the visit's organisation is the first scope placed, wherever it went.
   const under = copy[0] && copy[0].path !== ROOT_SCOPE ? copy[0].path : undefined
-  await placeCopy(to, under === undefined ? copy : copy.map((scope) => (scope.path === under ? withoutOrganisationOnly(scope) : scope)))
-  return under === undefined ? {} : { under }
+  if (under === undefined) {
+    await placeCopy(to, copy)
+    return {}
+  }
+  await placeCopy(to, filedUnder(copy, under, await readScope(to.scopes, ROOT_SCOPE), today()))
+  return { under }
+}
+
+/**
+ * A visit as it is filed under an organisation that holds work, rather than
+ * made it: without what only the organisation reads, without what named that,
+ * and with the capability map it brought marked as its own.
+ *
+ * **Its units come as plain actors.** A unit's type, its own reporting lines,
+ * a holder's role and a scope's type are all said in the operating model left
+ * behind (`ORGANISATION_ONLY`), and read against the organisation's instead
+ * they name types and roles it does not have — or, worse, ones of its own
+ * that happen to share an id and mean something else. So they go, and the
+ * units stay where they were nested, under the same names; the question
+ * before the keep says so (`example.keepAsk`).
+ *
+ * **Its capabilities are not proposals.** A function a scope below defines
+ * and the organisation never named is one the domain proposes (`check.proposal`),
+ * which is right of a domain's map and wrong of this one: the example's map was
+ * its own organisation's, and it is kept here to be looked at, not to propose
+ * forty capabilities to somebody else's. Each such finding is marked as
+ * intended, as a person would, in the scope it is about — read off the copy
+ * over the organisation as it is, so a function the organisation does name is
+ * no finding and is not marked — and stays under *Accepted*, to be taken back.
+ */
+export function filedUnder(
+  copy: readonly ScopeSnapshot[], under: ScopePath, organisation: ScopeSnapshot | undefined, on: string,
+): ScopeSnapshot[] {
+  const plain = copy.map((scope) => withoutOperatingModel(scope.path === under ? withoutOrganisationOnly(scope) : scope))
+  const index = indexScopes([...(organisation ? [{ ...organisation, path: ROOT_SCOPE }] : []), ...plain])
+  const marks = new Map<ScopePath, CheckMark[]>()
+  for (const finding of identityFindings(index)) {
+    if (finding.key !== 'check.proposal' || !isWithinScope(finding.scope, under)) continue
+    marks.set(finding.scope, [...marks.get(finding.scope) ?? [], checkMarkFor(finding, { on })])
+  }
+  return plain.map((scope) => {
+    const marked = marks.get(scope.path)
+    if (!marked) return scope
+    const held = scope.model.checkMarks ?? []
+    const known = new Set(held.map(checkMarkId))
+    return { ...scope, model: { ...scope.model, checkMarks: [...held, ...marked.filter((mark) => !known.has(checkMarkId(mark)))] } }
+  })
 }
 
 /** A scope with none of what only the organisation reads. */
@@ -188,20 +236,14 @@ function withoutOrganisationOnly(scope: ScopeSnapshot): ScopeSnapshot {
   return { ...scope, model }
 }
 
-/** One cause's links to a scope below, re-addressed. Untouched where it has none. */
-function withLinks(readdress: (path: ScopePath) => ScopePath) {
-  const carry = <T extends { scope?: string }>(held: T): T => (held.scope === undefined ? held : { ...held, scope: readdress(held.scope) })
-  return (cause: NonNullable<ScopeSnapshot['model']['causes']>[number]) => {
-    const named = cause.explains.some((link) => link.scope !== undefined) || (cause.history ?? []).some((event) => event.scope !== undefined)
-    if (!named) return cause
-    return { ...cause, explains: cause.explains.map(carry), ...(cause.history ? { history: cause.history.map(carry) } : {}) }
-  }
+/** A scope with nothing that names the operating model left behind: its type, its units' types and lines, and who held which role. */
+function withoutOperatingModel(scope: ScopeSnapshot): ScopeSnapshot {
+  const { unitTypeId: _type, ...rest } = scope
+  const { assignments: _held, ...model } = scope.model
+  const elements = model.elements.map((element) => {
+    if (element.unitTypeId === undefined && element.reportingLines === undefined) return element
+    const { unitTypeId: _unit, reportingLines: _lines, ...plain } = element
+    return plain
+  })
+  return { ...rest, model: { ...model, elements } }
 }
-
-/** One element's `ref`, re-addressed. Untouched where there is none. */
-function withRef(readdress: (path: ScopePath) => ScopePath) {
-  return (element: ScopeSnapshot['model']['elements'][number]) => (
-    element.ref === undefined ? element : { ...element, ref: readdress(element.ref) }
-  )
-}
-

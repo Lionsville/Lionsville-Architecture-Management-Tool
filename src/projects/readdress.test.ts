@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 import type { DesignElement } from '../model'
 import type { ScopeModel, ScopeSnapshot } from './scope'
 import {
+  carryAddresses,
   analysisNamesWithin, applyRefPatch, linesNameWithin, principlesNameWithin, readdressAnalysis, readdressLines, readdressPrinciples, readdressRef, readdressRefs,
 } from './readdress'
 import type { Cause, Observation } from '../model/observation'
@@ -227,5 +228,56 @@ describe('a move carries the principles a scope cites and relates to (ADR-0041 �
       { type: 'principle.update', id: 'pr-5', patch: { relations: [{ kind: 'refines', to: { scope: 'freight/rail/yard', id: 'pr-2' } }] } },
     ])
     expect(readdressPrinciples(model as never, 'acme/rail', 'acme/rail')).toEqual([])
+  })
+})
+
+/**
+ * A scope landing somewhere new whole carries every address it holds: what
+ * the shipped example does not hold yet — a holder's own line, a served
+ * scope, an observation's history, a comment's `from`, a citation, a
+ * principle's relation, a building block's aspect — said here, one of each.
+ */
+describe('every address a scope holds, carried', () => {
+  const held = {
+    path: 'landscape',
+    activeDiagramId: '',
+    logoLibrary: [],
+    relevantTo: [{ path: 'landscape', from: '2026-01-01' }],
+    model: {
+      name: 'Landscape', diagrams: [], relations: [],
+      elements: [
+        { id: 'standin', kind: 'application', name: 'Billing', ref: '' },
+        { id: 'unit', kind: 'actor', name: 'Ops', scopes: ['', 'landscape'], reportingLines: [{ kind: 'solid', role: 'lead', to: { scope: '', unit: 'top', role: 'head' } }, { kind: 'dotted', role: 'lead' }] },
+        { id: 'block', kind: 'buildingBlock', name: 'Gateway', capabilities: [{ id: 'c', text: 'Routes', aspect: { scope: '', id: 'p1', number: 1 } }, { id: 'd', text: 'Logs' }] },
+      ],
+      assignments: [{ id: 'a', unitId: 'unit', roleId: 'lead', reportsTo: [{ kind: 'solid', to: { scope: '', unit: 'top', role: 'head' } }] }],
+      causes: [{ id: 'c1', explains: [{ id: 'x', scope: 'landscape/below', strength: 'strong' }, { id: 'y', strength: 'weak' }], history: [{ date: '2026-01-01', kind: 'merged', id: 'z', scope: '' }] }],
+      observations: [{ id: 'o1', history: [{ date: '2026-01-01', kind: 'absorbed', id: 'q', scope: 'landscape/below' }, { date: '2026-01-02', kind: 'seen' }] }],
+      comments: [{ id: 'k', body: 'b', from: { kind: 'observation', id: 'o9', scope: '' } }, { id: 'l', body: 'c' }],
+      citations: [{ id: 'ct', principle: { scope: '', id: 'p1' } }],
+      principles: [{ id: 'p2', relations: [{ kind: 'refines', to: { scope: '', id: 'p1' } }] }],
+      evaluations: [{ id: '-~block', block: { scope: '', id: 'block' }, contexts: [], options: [], coverage: {} }],
+    },
+  } as unknown as ScopeSnapshot
+  const carried = carryAddresses(held, (path) => (path === '' ? 'kept' : `kept/${path}`))
+  const model = carried.model as unknown as Record<string, never[]> & { elements: DesignElement[] }
+
+  it('carries each kind of address, and leaves what names none as it was', () => {
+    expect(carried.path).toBe('landscape')
+    expect(carried.relevantTo).toEqual([{ path: 'kept/landscape', from: '2026-01-01' }])
+    expect(model.elements[0].ref).toBe('kept')
+    expect(model.elements[1].scopes).toEqual(['kept', 'kept/landscape'])
+    expect(model.elements[1].reportingLines).toEqual([{ kind: 'solid', role: 'lead', to: { scope: 'kept', unit: 'top', role: 'head' } }, { kind: 'dotted', role: 'lead' }])
+    expect(model.elements[2].capabilities).toEqual([{ id: 'c', text: 'Routes', aspect: { scope: 'kept', id: 'p1', number: 1 } }, { id: 'd', text: 'Logs' }])
+    expect(model.assignments).toMatchObject([{ reportsTo: [{ to: { scope: 'kept' } }] }])
+    expect(model.causes).toMatchObject([{ explains: [{ scope: 'kept/landscape/below' }, { id: 'y' }], history: [{ scope: 'kept' }] }])
+    expect((model.causes[0] as { explains: object[] }).explains[1]).not.toHaveProperty('scope')
+    expect(model.observations).toMatchObject([{ history: [{ scope: 'kept/landscape/below' }, { kind: 'seen' }] }])
+    expect((model.observations[0] as { history: object[] }).history[1]).not.toHaveProperty('scope')
+    expect(model.comments).toEqual([{ id: 'k', body: 'b', from: { kind: 'observation', id: 'o9', scope: 'kept' } }, { id: 'l', body: 'c' }])
+    expect(model.citations).toMatchObject([{ principle: { scope: 'kept', id: 'p1' } }])
+    expect(model.principles).toMatchObject([{ relations: [{ to: { scope: 'kept', id: 'p1' } }] }])
+    // An evaluation's id is said from its block's scope, and moves with it.
+    expect(model.evaluations).toMatchObject([{ id: 'kept~block', block: { scope: 'kept', id: 'block' } }])
   })
 })
