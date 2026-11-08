@@ -351,6 +351,11 @@ export function GlobalSearchDialog({ open, sources, scopeLabel, onClose, onChoos
           {chipOf(previewed, s) !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{chipOf(previewed, s)}</Typography>}
           <Typography sx={{ fontSize: 'var(--t-large)', fontWeight: 600, overflowWrap: 'anywhere' }}>{previewed.title !== '' ? previewed.title : previewed.about.join(' → ')}</Typography>
           {previewed.scope !== undefined && <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary', mt: 0.5 }}>{scopeLabel(previewed.scope)}</Typography>}
+          {previewed.holds && (
+            <Typography sx={{ fontSize: 'var(--t-body)', mt: 1 }}>
+              {[s('gsearch.person.holds', { role: previewed.holds.role, unit: previewed.holds.unit }), previewed.holds.more ? s('gsearch.person.holdsMore', { count: previewed.holds.more }) : undefined].filter(Boolean).join(' · ')}
+            </Typography>
+          )}
           {previewed.detail && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{readDays(previewed.detail, language)}</Typography>}
           {previewed.snippet && <Typography sx={{ fontSize: 'var(--t-body)', mt: 1, overflowWrap: 'anywhere' }}>{previewed.snippet}</Typography>}
         </Box>
