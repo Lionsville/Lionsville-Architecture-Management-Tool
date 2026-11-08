@@ -61,7 +61,8 @@ export function ToastBar({ toast, open, onClose, onExited }: ToastBarProps) {
       disableWindowBlurListener
       onClose={(_e, reason) => { if (reason !== 'clickaway') onClose() }}
       slotProps={{ transition: { onExited } }}
-      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+      // Centred under the work, never over the tree's foot at the left.
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
     >
       {/* Separate from the Snackbar props: the Alert carries both the colour and
           the close button, so a long error does not tick away before you are
