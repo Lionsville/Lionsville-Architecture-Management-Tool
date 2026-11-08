@@ -36,7 +36,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.themeDark': 'Donker',
   'menu.themeSystem': 'Systeem',
   'menu.checkForUpdates': 'Zoeken naar updates…',
-  'menu.more': 'Menu',
+  'menu.more': 'Hoofdmenu',
   'menu.edit': 'Bewerken',
   'menu.undo': 'Ongedaan maken',
   'menu.redo': 'Opnieuw',

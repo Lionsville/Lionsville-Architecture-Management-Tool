@@ -34,6 +34,6 @@ export const SECTIONS: SectionTexts = {
     'In Northline Freight press "New scope…" to file a division called "Road network".'],
   'first.desktopFolder': ['Choose where your work lives (desktop)', 'On the desktop, the first screen asks for a folder to keep work in as files you can read, back up, sync and commit. An empty folder is fine, and the folder can be changed later. Recently used folders are one press away.',
     'Desktop, first start, or with no folder chosen',
-    ['Press "Choose a folder…"', 'Pick or create a folder in the window that opens'],
+    ['Press "Open a folder…"', 'Pick or create a folder in the window that opens'],
     'Choose ~/Documents/architecture/northline: the app keeps Northline Freight there as files.'],
 }

@@ -34,6 +34,6 @@ export const SECTIONS: SectionTexts = {
     'Klicken Sie in Northline Freight auf "Neuer Bereich…", um eine Division "Road network" anzulegen.'],
   'first.desktopFolder': ['Wählen, wo Ihre Arbeit liegt (Desktop)', 'Auf dem Desktop fragt der erste Bildschirm nach einem Ordner, in dem die Arbeit als Dateien liegt, die Sie lesen, sichern, synchronisieren und committen können. Ein leerer Ordner ist in Ordnung, und der Ordner lässt sich später ändern. Zuletzt benutzte Ordner sind einen Druck entfernt.',
     'Desktop, erster Start, oder wenn kein Ordner gewählt ist',
-    ['Klicken Sie auf "Einen Ordner wählen…"', 'Wählen oder erstellen Sie einen Ordner im Fenster, das sich öffnet'],
+    ['Klicken Sie auf "Einen Ordner öffnen…"', 'Wählen oder erstellen Sie einen Ordner im Fenster, das sich öffnet'],
     'Wählen Sie ~/Documents/architecture/northline: Die App bewahrt Northline Freight dort als Dateien auf.'],
 }

@@ -74,6 +74,7 @@ export const SCREEN_HELP = {
   settings: 'scope.settings',
   preferences: 'prefs.page',
   agents: 'agent',
+  history: 'file.history',
 } as const satisfies Readonly<Record<string, string>>
 
 /** The first page, before there is an organisation to have a screen. */

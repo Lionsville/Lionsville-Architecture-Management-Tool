@@ -36,7 +36,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.themeDark': 'Dunkel',
   'menu.themeSystem': 'System',
   'menu.checkForUpdates': 'Nach Updates suchen…',
-  'menu.more': 'Menü',
+  'menu.more': 'Hauptmenü',
   'menu.edit': 'Bearbeiten',
   'menu.undo': 'Rückgängig',
   'menu.redo': 'Wiederholen',

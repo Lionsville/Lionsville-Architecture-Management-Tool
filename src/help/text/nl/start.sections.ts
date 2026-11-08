@@ -34,6 +34,6 @@ export const SECTIONS: SectionTexts = {
     'Druk in Northline Freight op "Nieuwe scope…" om een divisie "Road network" aan te maken.'],
   'first.desktopFolder': ['Kiezen waar je werk staat (desktop)', 'Op de desktop vraagt het eerste scherm om een map om werk in te bewaren als bestanden die je kunt lezen, back-uppen, synchroniseren en committen. Een lege map is prima, en de map kan later worden gewijzigd. Recent gebruikte mappen zijn één druk ver.',
     'Desktop, eerste start, of zonder gekozen map',
-    ['Klik op "Een map kiezen…"', 'Kies of maak een map in het venster dat opent'],
+    ['Klik op "Een map openen…"', 'Kies of maak een map in het venster dat opent'],
     'Kies ~/Documents/architecture/northline: de app bewaart Northline Freight daar als bestanden.'],
 }
