@@ -17,24 +17,24 @@
 .kit-button[data-size='small'] { height: var(--target-min); padding-inline: var(--s-2); font-size: var(--t-body); }
 .kit-button[data-icon] { flex: none; width: var(--ctl-h); padding-inline: 0; }
 .kit-button[data-icon][data-size='small'] { width: var(--target-min); }
-.kit-button:hover { background: var(--surface-2); }
+.kit-button:hover:where(:not(:disabled)) { background: var(--surface-2); }
 .kit-button:active { background: var(--line); }
 .kit-button:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 
 .kit-button[data-variant='primary'] { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
-.kit-button[data-variant='primary']:hover { background: color-mix(in srgb, var(--accent) 88%, var(--ink)); border-color: transparent; }
-.kit-button[data-variant='primary']:active { background: color-mix(in srgb, var(--accent) 76%, var(--ink)); }
+.kit-button[data-variant='primary']:hover:where(:not(:disabled)) { background: color-mix(in srgb, var(--accent) 88%, var(--ink)); border-color: transparent; }
+.kit-button[data-variant='primary']:active:where(:not(:disabled)) { background: color-mix(in srgb, var(--accent) 76%, var(--ink)); }
 
 .kit-button[data-variant='quiet'] { background: transparent; border-color: transparent; }
 /* A quiet press has no outline to show it is one: its hover is the kit's press fill, which reads in the dark as well. */
-.kit-button[data-variant='quiet']:hover { background: var(--press-hover); }
+.kit-button[data-variant='quiet']:hover:where(:not(:disabled)) { background: var(--press-hover); }
 .kit-button[data-variant='quiet']:active { background: var(--line); }
 /* A quiet control that is off stays quiet, by specificity over the refused look below: a filled ground would read as pressed. */
 .kit-button[data-variant='quiet']:disabled { background: transparent; border-color: transparent; }
 
 .kit-button[data-variant='danger'] { background: var(--surface); border-color: var(--bad); color: var(--bad); }
-.kit-button[data-variant='danger']:hover { background: var(--bad-soft); }
-.kit-button[data-variant='danger']:active { background: var(--bad-soft); border-width: 2px; }
+.kit-button[data-variant='danger']:hover:where(:not(:disabled)) { background: var(--bad-soft); }
+.kit-button[data-variant='danger']:active:where(:not(:disabled)) { background: var(--bad-soft); border-width: 2px; }
 
 /* Pressed is one look whatever the variant: ground, edge and ink set together, after the variants, so a variant's ink never lands on this ground. */
 .kit-button[aria-pressed='true'],
@@ -42,7 +42,7 @@
 .kit-button[aria-pressed='true']:active { background: var(--selected-soft); border-color: var(--selected-edge); color: var(--ink); }
 .kit-button[aria-pressed='true']:hover { box-shadow: inset 0 0 0 1px var(--selected-edge); }
 
-/* Refused and native-disabled are drawn alike, and answer nothing under the pointer. */
+/* Refused and native-disabled are drawn alike, and answer nothing under the pointer: a variant's hover and press ask :where(:not(:disabled)), which keeps their weight and leaves a disabled one alone. */
 .kit-button:disabled,
 .kit-button[data-refused],
 .kit-button[data-refused]:hover,
