@@ -51,6 +51,22 @@ describe('an organisation nobody has started', () => {
     expect((await repositories.read(''))?.model.name ?? '').toBe('')
   })
 
+  it('names the press beside where the work is kept for what it does there: another folder, where one is open', async () => {
+    const onConnect = vi.fn()
+    renderApp({
+      repositories: heldRepositories([]), offersFirstRun: true, examples: [example], onVisitExample: vi.fn(),
+      provider: {
+        sayings: { labelKey: 'shell.sourceBrowser' },
+        waysIn: [{ kind: 'folder', labelKey: 'picker.chooseFolder', firstLabelKey: 'folder.choose', onConnect, offer: () => ({ labelKey: 'picker.changeFolder' }) }],
+      },
+    })
+    await screen.findByTestId('first-run-page')
+    expect(screen.getByTestId('first-kept-folder').textContent).toBe('Work from another folder…')
+    expect(screen.queryByText('Choose a folder…')).toBeNull()
+    fireEvent.click(screen.getByTestId('first-kept-folder'))
+    expect(onConnect).toHaveBeenCalled()
+  })
+
   it('does not stand in the way of a page asked for by address', async () => {
     renderApp({ repositories: heldRepositories([]), offersFirstRun: true, boot: { initialProject: undefined, initialFramePage: 'preferences' } })
     expect(await screen.findByTestId('preferences-page')).toBeDefined()

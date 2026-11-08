@@ -158,7 +158,11 @@ function waysInOffered(
       continue
     }
     if (said === null) continue
-    drawn.push(said ? { ...way, labelKey: said.labelKey } : way)
+    if (!said) { drawn.push(way); continue }
+    // What the offer says is what the press does now — another folder where one is open —
+    // and a first screen's word for it (*Choose a folder…*) would name the first choice beside it.
+    const { firstLabelKey: _first, ...rest } = way
+    drawn.push({ ...rest, labelKey: said.labelKey })
   }
   return drawn
 }
