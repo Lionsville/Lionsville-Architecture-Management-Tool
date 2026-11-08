@@ -805,6 +805,7 @@ export const EN = {
   'observation.saidWhyCauseOne': '1 cause · {open} open ends',
   'observation.saidWhyOpenOne': '{causes} causes · 1 open end',
   'observation.saidWhyBothOne': '1 cause · 1 open end',
+  'observation.listWord': 'in this list',
   'observation.saidWhy': '{causes} causes · {open} open ends',
   'observation.bulkAskWhy': 'Ask why for these {count}',
   'observation.bulkOneScope': 'A cause explains observations of its own scope: pick from one scope.',

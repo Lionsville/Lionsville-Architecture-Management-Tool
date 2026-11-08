@@ -787,6 +787,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'observation.saidWhyCauseOne': '1 oorzaak · {open} open einden',
   'observation.saidWhyOpenOne': '{causes} oorzaken · 1 open einde',
   'observation.saidWhyBothOne': '1 oorzaak · 1 open einde',
+  'observation.listWord': 'in deze lijst',
   'observation.bulkAskWhy': 'Vraag waarom voor deze {count}',
   'observation.bulkOneScope': 'Een oorzaak verklaart waarnemingen van haar eigen scope: kies uit één scope.',
   'observation.bulkMerge': 'Samenvoegen…',

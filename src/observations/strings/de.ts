@@ -786,6 +786,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'observation.saidWhyCauseOne': '1 Ursache · {open} offene Enden',
   'observation.saidWhyOpenOne': '{causes} Ursachen · 1 offenes Ende',
   'observation.saidWhyBothOne': '1 Ursache · 1 offenes Ende',
+  'observation.listWord': 'in dieser Liste',
   'observation.saidWhy': '{causes} Ursachen · {open} offene Enden',
   'observation.bulkAskWhy': 'Warum fragen für diese {count}',
   'observation.bulkOneScope': 'Eine Ursache erklärt Beobachtungen ihres eigenen Bereichs: Wählen Sie aus einem Bereich.',

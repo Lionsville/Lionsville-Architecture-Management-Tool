@@ -983,9 +983,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
     </span>
   )
 
-  const groupOf = selectedKey ? groups.find((one) => one.rows.some((row) => row.id === selectedKey)) : undefined
-  const previewIds = groupOf ? groupOf.rows.map((row) => row.id) : []
-  const listWord = groupOf && inSentence(groupOf.label, props.language)
+  // The preview walks the list as it is drawn, from one group into the next, as Principles' does.
+  const previewIds = groups.flatMap((one) => one.rows.map((row) => row.id))
+  const listWord = s('observation.listWord')
   // The merge and move screens are places under the frame: a modal over them would hide them from everybody.
   const showPreview = !onMap && !full && selected !== undefined && selectedKey !== undefined && !merging.state && !moving.state
 
