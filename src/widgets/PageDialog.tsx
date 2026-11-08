@@ -27,11 +27,14 @@ import Dialog from '@mui/material/Dialog'
 import type { DialogProps } from '@mui/material/Dialog'
 import { usePlaceHost } from './kit/placeHost'
 import { claimKey, keyClaimed } from './kit/keys'
-import { leaveWithDrafts } from './kit/drafts'
+import { DraftArea, leaveWithDrafts, useDraftSurface } from './kit/drafts'
+import type { DraftSurface } from './kit/drafts'
 
 export type PageDialogProps = Omit<DialogProps, 'fullScreen' | 'hideBackdrop'> & {
   /** How much of the top of the window belongs to the host, in px. */
   topInset?: number
+  /** The page's surface for drafts, where the screen makes it to hold surfaces of its own inside (`kit/drafts`). */
+  surface?: DraftSurface
 }
 
 /** Where a person types: Escape there means leave the field, never the page. */
@@ -65,8 +68,11 @@ function modalUp(): boolean {
  * closes, as the dialog did, and Escape closes the page on top, from wherever
  * the focus is, since the rows stay pressable beside it.
  */
-function PlacePage({ host, open, onClose, children, slotProps, sx, ...rest }: Omit<PageDialogProps, 'topInset'> & { host: HTMLElement }) {
+function PlacePage({ host, open, onClose, children, slotProps, sx, surface: given, ...rest }: Omit<PageDialogProps, 'topInset'> & { host: HTMLElement }) {
   const page = useRef<HTMLDivElement>(null)
+  // A page over another — a plan over the roadmap or a record — is left on its own: a draft on the page under it is not asked about.
+  const made = useDraftSurface()
+  const surface = given ?? made
   const latestClose = useRef(onClose)
   latestClose.current = onClose
   useEffect(() => {
@@ -82,14 +88,14 @@ function PlacePage({ host, open, onClose, children, slotProps, sx, ...rest }: Om
       claimKey(event)
       if (leavesFieldFirst(event)) return
       // A draft in a box on the page is asked about first (`kit/drafts`).
-      leaveWithDrafts(() => latestClose.current?.(event, 'escapeKeyDown'))
+      leaveWithDrafts(() => latestClose.current?.(event, 'escapeKeyDown'), undefined, surface)
     }
     window.addEventListener('keydown', onKey)
     return () => {
       window.removeEventListener('keydown', onKey)
       if (before?.isConnected && document.activeElement === document.body) before.focus({ preventScroll: true })
     }
-  }, [open, host])
+  }, [open, host, surface])
   if (!open) return null
   const { paper } = (slotProps ?? {}) as { paper?: Record<string, unknown> }
   const { sx: paperSx, ...paperRest } = (paper ?? {}) as { sx?: object | object[] }
@@ -105,15 +111,25 @@ function PlacePage({ host, open, onClose, children, slotProps, sx, ...rest }: Om
       {...paperRest}
       {...own}
     >
-      {children}
+      <DraftArea surface={surface}>{children}</DraftArea>
     </Box>,
     host,
   )
 }
 
-export function PageDialog({ topInset = 0, slotProps, sx, onClose, ...rest }: PageDialogProps) {
+export function PageDialog(props: PageDialogProps) {
   const host = usePlaceHost()
-  if (host?.page) return <PlacePage host={host.page} slotProps={slotProps} sx={sx} onClose={onClose} {...rest} />
+  if (host?.page) {
+    const { topInset: _topInset, ...rest } = props
+    return <PlacePage host={host.page} {...rest} />
+  }
+  return <WindowPage {...props} />
+}
+
+/** A page drawn with no frame above it: the dialog, a surface of its own as a place is. */
+function WindowPage({ topInset = 0, slotProps, sx, onClose, children, surface: given, ...rest }: PageDialogProps) {
+  const own = useDraftSurface()
+  const surface = given ?? own
   const under = topInset > 0
   return (
     <Dialog
@@ -134,9 +150,11 @@ export function PageDialog({ topInset = 0, slotProps, sx, onClose, ...rest }: Pa
       }}
       onClose={(event, reason) => {
         if (reason === 'escapeKeyDown' && leavesFieldFirst(event)) return
-        leaveWithDrafts(() => onClose?.(event, reason))
+        leaveWithDrafts(() => onClose?.(event, reason), undefined, surface)
       }}
       {...rest}
-    />
+    >
+      <DraftArea surface={surface}>{children}</DraftArea>
+    </Dialog>
   )
 }

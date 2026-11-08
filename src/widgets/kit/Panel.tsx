@@ -24,7 +24,7 @@ import { HelpPress } from './HelpPress'
 import { PressName } from './PressName'
 import { Tabs } from './Tabs'
 import type { TabItem } from './Tabs'
-import { leaveWithDrafts } from './drafts'
+import { DraftArea, leaveWithDrafts, useDraftSurface } from './drafts'
 import './Panel.css'
 
 /**
@@ -112,6 +112,7 @@ export function Panel({
   const width = ownWidth ?? dock?.width
   const dataGuide = ownGuide ?? dock?.dataGuide
   const style = width ? ({ '--kit-panel-w': `${width}px` } as CSSProperties) : undefined
+  const surface = useDraftSurface()
   if (collapsed && onCollapse) {
     return (
       <aside className="kit-panel" data-collapsed="" aria-label={name} data-guide={dataGuide}>
@@ -129,7 +130,7 @@ export function Panel({
             {actions}
             {helpAt && <HelpPress at={helpAt} about={kind} />}
             {onCollapse && <button type="button" className="kit-panel__icon" aria-label={t('kit.panel.collapse')} aria-expanded onClick={() => onCollapse(true)}><ForwardIcon /></button>}
-            {onClose && <button type="button" className="kit-panel__icon" aria-label={t('common.close')} onClick={() => leaveWithDrafts(onClose)}><CloseIcon /></button>}
+            {onClose && <button type="button" className="kit-panel__icon" aria-label={t('common.close')} onClick={() => leaveWithDrafts(onClose, undefined, surface)}><CloseIcon /></button>}
           </span>
         </div>
         <PanelName name={name} onRename={onRename} renameRequest={renameRequest} renameAtOnce={renameAtOnce} />
@@ -142,7 +143,7 @@ export function Panel({
         </div>
       )}
       <div className="kit-panel__body" tabIndex={0} role="region" aria-label={name} aria-busy={loading || undefined}>
-        {loading ? <div className="kit-panel__skeleton" aria-hidden="true"><span /><span /><span /></div> : children}
+        {loading ? <div className="kit-panel__skeleton" aria-hidden="true"><span /><span /><span /></div> : <DraftArea surface={surface}>{children}</DraftArea>}
       </div>
       <PanelFoot help={help} undo={undo} helpLink={helpLink} />
     </aside>

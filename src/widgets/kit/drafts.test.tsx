@@ -6,7 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderShell } from '../../app/testing/renderShell'
-import { DraftQuestion, draftHeld, leaveWithDrafts, useDraft, watchDrafts } from './drafts'
+import { DraftArea, DraftQuestion, draftHeld, leaveWithDrafts, useDraft, useDraftSurface, watchDrafts } from './drafts'
+import type { DraftSurface } from './drafts'
 
 afterEach(() => cleanup())
 
@@ -95,5 +96,84 @@ describe('whether a draft is held, for a host that closes the window', () => {
     unmount()
     stop()
     expect(said).toEqual([false, true, false, false])
+  })
+})
+
+describe('a surface left on its own', () => {
+  /** A page with a comment on it, and a plan over it: two surfaces, the plan's handed out to be left. */
+  function Stacked({ onPlan }: { onPlan: (plan: DraftSurface) => void }) {
+    const page = useDraftSurface()
+    const plan = useDraftSurface()
+    onPlan(plan)
+    return (
+      <>
+        <DraftQuestion />
+        <DraftArea surface={page}><Box start="Draft two" /></DraftArea>
+        <DraftArea surface={plan}><p>The plan</p></DraftArea>
+      </>
+    )
+  }
+
+  it('does not ask where the draft is on another surface, and the draft stays guarded', () => {
+    let plan: DraftSurface | undefined
+    renderShell(<Stacked onPlan={(held) => { plan = held }} />)
+    const go = vi.fn()
+    act(() => leaveWithDrafts(go, undefined, plan))
+    expect(go).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('draft-question')).toBeNull()
+    // The next way out of the place still asks: nothing was forgotten.
+    const away = vi.fn()
+    act(() => leaveWithDrafts(away))
+    expect(away).not.toHaveBeenCalled()
+    expect(screen.getByTestId('draft-question')).toBeTruthy()
+  })
+
+  it('drops only the drafts of the surface that goes on Leave and drop it', () => {
+    function Two({ onSurface }: { onSurface: (preview: DraftSurface) => void }) {
+      const preview = useDraftSurface()
+      onSurface(preview)
+      return (
+        <>
+          <DraftQuestion />
+          <Box start="The form's title" />
+          <DraftArea surface={preview}><Box start="A comment" /></DraftArea>
+        </>
+      )
+    }
+    let preview: DraftSurface | undefined
+    renderShell(<Two onSurface={(held) => { preview = held }} />)
+    const go = vi.fn()
+    act(() => leaveWithDrafts(go, undefined, preview))
+    fireEvent.click(screen.getByTestId('draft-leave'))
+    expect(go).toHaveBeenCalledTimes(1)
+    // The form beside the preview is still written and still held.
+    expect(draftHeld()).toBe(true)
+    expect(draftHeld(preview)).toBe(false)
+    const away = vi.fn()
+    act(() => leaveWithDrafts(away))
+    expect(away).not.toHaveBeenCalled()
+  })
+
+  it('asks about a draft on a surface held inside the one that goes', () => {
+    function Nested({ onPage }: { onPage: (page: DraftSurface) => void }) {
+      const page = useDraftSurface()
+      onPage(page)
+      return (
+        <>
+          <DraftQuestion />
+          <DraftArea surface={page}><Inner /></DraftArea>
+        </>
+      )
+    }
+    function Inner() {
+      const record = useDraftSurface()
+      return <DraftArea surface={record}><Box start="A comment" /></DraftArea>
+    }
+    let page: DraftSurface | undefined
+    renderShell(<Nested onPage={(held) => { page = held }} />)
+    const go = vi.fn()
+    act(() => leaveWithDrafts(go, undefined, page))
+    expect(go).not.toHaveBeenCalled()
+    expect(screen.getByTestId('draft-question')).toBeTruthy()
   })
 })

@@ -29,7 +29,7 @@ import type { KeyboardEvent, ReactNode } from 'react'
 import Modal from '@mui/material/Modal'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon, CloseIcon, ForwardIcon } from '../icons'
-import { leaveWithDrafts } from './drafts'
+import { DraftArea, leaveWithDrafts, useDraftSurface } from './drafts'
 import './Preview.css'
 
 export type PreviewProps = {
@@ -70,8 +70,9 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
   const previous = index > 0 ? ids[index - 1] : undefined
   const next = index >= 0 && index < ids.length - 1 ? ids[index + 1] : undefined
 
-  // Every way off this record — ‹ ›, the arrows, ×, Escape, Open full record — asks first where a draft would be lost (`drafts`).
-  const select = (id: string | null) => leaveWithDrafts(() => onSelect(id))
+  // Every way off this record — ‹ ›, the arrows, ×, Escape, Open full record — asks first where a draft on it would be lost (`drafts`); one beside it, a form under the preview, is not this record's to ask about.
+  const surface = useDraftSurface()
+  const select = (id: string | null) => leaveWithDrafts(() => onSelect(id), undefined, surface)
 
   // A new record reads from its top, whatever the last one was scrolled to.
   useEffect(() => { body.current?.scrollTo?.({ top: 0 }) }, [currentId])
@@ -89,6 +90,7 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
   }
 
   return (
+    <DraftArea surface={surface}>
     <Modal
       open={currentId !== null}
       onClose={(event: { target?: EventTarget | null }, reason) => {
@@ -114,7 +116,7 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
           )}
           {code && <span className="kit-preview__code">{code}</span>}
           <span className="kit-preview__grow" />
-          {openFull && <button type="button" className="kit-preview__link" data-testid={openFull.testId} onClick={() => leaveWithDrafts(openFull.onPress)}>{openFull.label ?? t('kit.preview.openFull')}</button>}
+          {openFull && <button type="button" className="kit-preview__link" data-testid={openFull.testId} onClick={() => leaveWithDrafts(openFull.onPress, undefined, surface)}>{openFull.label ?? t('kit.preview.openFull')}</button>}
           {actions}
           <button type="button" className="kit-preview__icon" aria-label={t('common.close')} onClick={() => select(null)}><CloseIcon /></button>
         </div>
@@ -128,6 +130,7 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
         {foot && <div className="kit-preview__foot">{foot}</div>}
       </div>
     </Modal>
+    </DraftArea>
   )
 }
 

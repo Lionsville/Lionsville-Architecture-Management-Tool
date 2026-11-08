@@ -29,6 +29,7 @@ import { ArrivingDialog, arrivingPage } from '../widgets/Arriving'
 import type { WorkspaceParts } from './workspaceParts'
 import type { EndedHolders as EndedHoldersShape, SlotHolders as SlotHoldersShape } from './units/EndedHolders'
 import { organisationHere } from './units/organisationHere'
+import { leaveWithDrafts } from '../widgets/kit/drafts'
 import { heldThroughType } from '../model/units'
 import { refuseRoleLines, refuseSlotLine } from '../model/reporting'
 import { refusalWords } from './units/lineWords'
@@ -111,6 +112,17 @@ const SlotHolders = lazyPart<ComponentProps<typeof SlotHoldersShape>>(
   () => import('./units/EndedHolders').then((held) => held.SlotHolders),
 )
 
+/**
+ * A way from one page to another, handed to the page already asking about a
+ * draft that leaving would drop (`kit/drafts`): a link inside a record — a
+ * decision's *Decided for*, an observation's plan, History… — passes no frame,
+ * so the frame's guard never hears it. Every `onOpen…` handed to a page here goes
+ * through this (`WorkspacePages.guard.test`).
+ */
+function guarded<A extends unknown[]>(go: (...args: A) => void): (...args: A) => void {
+  return (...args: A) => leaveWithDrafts(() => go(...args))
+}
+
 export function WorkspacePages({ parts }: { parts: WorkspaceParts }) {
   return (
     <>
@@ -192,10 +204,10 @@ function OperatingPages({ parts }: { parts: WorkspaceParts }) {
           return true
         }
       }}
-      {...(onOpenScope && !atOrganisation ? { onOpenOrganisation: () => onOpenScope(ROOT_SCOPE, { page: 'operating' }) } : {})}
-      onOpenUnit={goUnit}
-      {...(onOpenScope ? { onOpenChart: () => onOpenScope(ROOT_SCOPE, { page: 'chart' }) } : {})}
-      {...(snapshots.available ? { onOpenHistory: () => { pages.closeOperating(); snapshots.openPage() } } : {})}
+      {...(onOpenScope && !atOrganisation ? { onOpenOrganisation: guarded(() => onOpenScope(ROOT_SCOPE, { page: 'operating' })) } : {})}
+      onOpenUnit={guarded(goUnit)}
+      {...(onOpenScope ? { onOpenChart: guarded(() => onOpenScope(ROOT_SCOPE, { page: 'chart' })) } : {})}
+      {...(snapshots.available ? { onOpenHistory: guarded(() => { pages.closeOperating(); snapshots.openPage() }) } : {})}
       onBackBelow={(exception) => {
         const command = backToTheModel(exception)
         if (command && exception.scope !== undefined) void landMoves(new Map([[exception.scope, [command]]]))
@@ -260,7 +272,7 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
           // On the record, as the observations page opens on its own: the scope
           // above may draw nothing, and a scope with no views opened on no page
           // lands on its home (`pageLanding`), away from the record.
-          ? { onOpenScope: (path: string, id: string) => onOpenScope(path, { page: 'decisions', id }) }
+          ? { onOpenScope: guarded((path: string, id: string) => onOpenScope(path, { page: 'decisions', id })) }
           : {})}
         onProjectDecisionsChange={analysis.onDecisionsChange}
         initialAdrId={pages.adrPage.adrId}
@@ -272,13 +284,13 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         makeId={makeId}
         today={parts.today}
         renderMarkdown={pictures.renderDocument}
-        onOpenElement={(elementId) => requests.openDocumentation(elementId)}
+        onOpenElement={guarded((elementId: string) => requests.openDocumentation(elementId))}
         onOpenHistory={snapshots.available
-          ? (adrId) => { pages.closeDecisions(); snapshots.openPage({ what: 'decision', id: adrId }) }
+          ? guarded((adrId: string) => { pages.closeDecisions(); snapshots.openPage({ what: 'decision', id: adrId }) })
           : undefined}
-        onOpenPlan={plans.openPlan}
+        onOpenPlan={guarded(plans.openPlan)}
         {...(onShareLink ? { onCopyLink: (id: string) => onShareLink({ scope, page: 'decisions', id }) } : {})}
-        onOpenSolution={(solutionId) => { pages.closeDecisions(); pages.openObservations(solutionId) }}
+        onOpenSolution={guarded((solutionId: string) => { pages.closeDecisions(); pages.openObservations(solutionId) })}
         windowChrome={parts.windowChrome}
       />
       <ObservationsPage
@@ -300,14 +312,14 @@ function RecordPages({ parts }: { parts: WorkspaceParts }) {
         {...(props.preferences.savedFilters ? { savedFilters: props.preferences.savedFilters } : {})}
         absorbedAbove={readings.absorbedAbove}
         {...(onOpenScope
-          ? { onOpenScope: (path: string, id?: string) => onOpenScope(path, { page: 'observations', ...(id !== undefined ? { id } : {}) }) }
+          ? { onOpenScope: guarded((path: string, id?: string) => onOpenScope(path, { page: 'observations', ...(id !== undefined ? { id } : {}) })) }
           : {})}
         onChange={analysis.onAnalysisChange}
         readOnly={readOnly}
         onDecide={readOnly ? undefined : analysis.onDecideSolution}
         onStartPlan={readOnly ? undefined : analysis.onStartSolutionPlan}
-        onOpenDecision={(adrId) => { pages.closeObservations(); pages.openDecisions(adrId) }}
-        onOpenPlan={(planId) => { pages.closeObservations(); plans.openPlan(planId) }}
+        onOpenDecision={guarded((adrId: string) => { pages.closeObservations(); pages.openDecisions(adrId) })}
+        onOpenPlan={guarded((planId: string) => { pages.closeObservations(); plans.openPlan(planId) })}
         initialId={pages.obsPage.id}
         initialTab={pages.obsPage.tab}
         initialNonce={pages.obsPage.nonce}
@@ -343,7 +355,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         open={plans.roadmapOpen}
         model={session.model}
         fromBelow={readings.initiativesBelow}
-        onOpenInitiative={onOpenScope ? (scope, id) => onOpenScope(scope, { page: 'plan', id }) : undefined}
+        onOpenInitiative={onOpenScope ? guarded((scope: string, id: string) => onOpenScope(scope, { page: 'plan', id })) : undefined}
         today={todayDay}
         platformTree={ownership.platformTree}
         asOf={open ? shownAsOf(open, viewing.days) : undefined}
@@ -393,7 +405,7 @@ function planOrganisation(parts: WorkspaceParts, plan: NonNullable<WorkspacePart
     plan, scope: props.project.path, model: session.model, index: props.tree.index, people: props.shell.people, readOnly,
     dispatch: session.dispatch, makeId: props.shell.makeId, land: landMoves, scopeLabel: readings.scopeLabel, s: props.shell.s,
     // A unit a finding is about, wherever it is kept: the plan's page closes on the way.
-    onOpenElement: (id) => showElement.show(id, pages.plans.closePlan),
+    onOpenElement: guarded((id: string) => showElement.show(id, pages.plans.closePlan)),
   }
   return { facts: createElement(PlanMoves, shared), main: createElement(PlanOrganisation, shared) }
 }
@@ -415,7 +427,7 @@ function ReportPages({ parts }: { parts: WorkspaceParts }) {
         sharedElsewhere={readings.sharedElsewhere}
         tree={parts.ownership.platformTree}
         today={todayDay}
-        onOpenDocumentation={(id) => requests.openDocumentation(id)}
+        onOpenDocumentation={guarded((id: string) => requests.openDocumentation(id))}
         windowChrome={pageChrome}
       />
       <PlatformReportPage
@@ -428,7 +440,7 @@ function ReportPages({ parts }: { parts: WorkspaceParts }) {
         sharedElsewhere={readings.sharedElsewhere}
         tree={parts.ownership.platformTree}
         today={todayDay}
-        onOpenDocumentation={(id) => requests.openDocumentation(id)}
+        onOpenDocumentation={guarded((id: string) => requests.openDocumentation(id))}
         windowChrome={pageChrome}
       />
     </>

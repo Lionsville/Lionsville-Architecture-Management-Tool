@@ -66,11 +66,21 @@ describe('the record page', () => {
     const { DraftQuestion, useDraft } = await import('./drafts')
     const onPress = vi.fn()
     function Draft() { useDraft(true); return null }
-    renderShell(<><DraftQuestion /><Draft /><RecordPage back={{ label: 'Roadmap', onPress }} title="T" sections={sections(1)} /></>)
+    renderShell(<><DraftQuestion /><RecordPage back={{ label: 'Roadmap', onPress }} title="T" sections={[{ id: 's', heading: 'Comments', children: <Draft /> }]} /></>)
     fireEvent.click(screen.getByRole('button', { name: 'Roadmap' }))
     expect(onPress).not.toHaveBeenCalled()
     fireEvent.click(screen.getByTestId('draft-leave'))
     expect(onPress).toHaveBeenCalledOnce()
+  })
+
+  it('goes back without asking about a draft that is not on it', async () => {
+    const { DraftQuestion, draftHeld, useDraft } = await import('./drafts')
+    const onPress = vi.fn()
+    function Draft() { useDraft(true); return null }
+    renderShell(<><DraftQuestion /><Draft /><RecordPage back={{ label: 'Roadmap', onPress }} title="T" sections={sections(1)} /></>)
+    fireEvent.click(screen.getByRole('button', { name: 'Roadmap' }))
+    expect(onPress).toHaveBeenCalledOnce()
+    expect(draftHeld()).toBe(true)
   })
 
   it('passes axe', async () => {

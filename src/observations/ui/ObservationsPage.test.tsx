@@ -22,10 +22,26 @@ import { ObservationsPage } from './ObservationsPage'
 import type { ChangeAcross, ObservationsPageProps } from './ObservationsPage'
 import { renderShell } from '../../app/testing/renderShell'
 import { SeamWidthsProvider } from '../../widgets/useSeamWidth'
-import { DraftQuestion, useDraft } from '../../widgets/kit/drafts'
+import { DraftQuestion, draftHeld } from '../../widgets/kit/drafts'
 import type { SeamWidths } from '../../widgets/useSeamWidth'
 
 afterEach(() => cleanup())
+
+/**
+ * A record's thread, as a box that holds what is written in it as a draft
+ * (`kit/drafts`), so a test can write a comment on the surface it stands on —
+ * the preview, the panel, the whole record — without the comments' host.
+ */
+vi.mock('../../comments/ui/threadPart', async () => {
+  const { useState } = await import('react')
+  const { useDraft } = await import('../../widgets/kit/drafts')
+  function CommentThread() {
+    const [text, setText] = useState('')
+    useDraft(text !== '')
+    return <textarea aria-label="Comment draft" value={text} onChange={(event) => setText(event.target.value)} />
+  }
+  return { CommentThread }
+})
 
 const observation = (over: Partial<Observation>): Observation => ({
   id: 'o1', number: 1, title: 'Nightly batch overruns', date: '2026-09-08', where: 'Claims run', impact: 'major', seen: 4,
@@ -107,12 +123,14 @@ describe('ObservationsPage, as axe reads it', () => {
   })
 })
 
-/** Something written in the panel and not yet sent. */
-function Draft() { useDraft(true); return null }
+/** Something written in the box on screen and not yet sent. */
+const writeComment = () => fireEvent.change(screen.getByRole('textbox', { name: 'Comment draft' }), { target: { value: 'Who owns this?' } })
+const asked = () => screen.queryByRole('heading', { name: 'Leave with a draft?' })
 
 describe('a card picked on the map', () => {
   it('asks before it swaps a panel that holds a draft, and keeps the panel on Keep writing', async () => {
-    mount({ initialId: 'c1', initialTab: 'analysis-map', initialNonce: 1, beside: <><DraftQuestion /><Draft /></> })
+    mount({ initialId: 'c1', initialTab: 'analysis-map', initialNonce: 1, beside: <DraftQuestion /> })
+    writeComment()
     const picture = screen.getByTestId('analysis-picture')
     const card = (key: string) => within(picture).getAllByTestId('analysis-observation').find((node) => node.getAttribute('data-key') === key)!
     fireEvent.click(card('o1'))
@@ -123,6 +141,74 @@ describe('a card picked on the map', () => {
     fireEvent.click(card('o1'))
     fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
     await waitFor(() => expect(screen.getByText('Nightly batch overruns', { selector: 'h2, h3' })).toBeTruthy())
+  })
+})
+
+describe('a draft and the ways off its record', () => {
+  it('asks before an Explained by link, a stage tab or the Why map’s List/Map leaves a comment being written', async () => {
+    mount({ beside: <DraftQuestion /> })
+    openRow('o1')
+    openFull()
+    writeComment()
+    fireEvent.click(within(screen.getByTestId('observation-explained-by')).getAllByRole('button', { name: /CA-0001/ })[0]!)
+    expect(asked()).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    await waitFor(() => expect(asked()).toBeNull())
+    expect((screen.getByRole('textbox', { name: 'Comment draft' }) as HTMLTextAreaElement).value).toBe('Who owns this?')
+    toStage('solutions')
+    expect(asked()).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    await waitFor(() => expect(asked()).toBeNull())
+    expect(screen.getByTestId('observation-explained-by')).toBeTruthy()
+    cleanup()
+    mount({ initialId: 'c1', initialTab: 'analysis-map', initialNonce: 1, beside: <DraftQuestion /> })
+    writeComment()
+    fireEvent.click(screen.getByRole('radio', { name: 'List' }))
+    expect(asked()).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Comment draft' })).toBeNull())
+    expect(draftHeld()).toBe(false)
+  })
+
+  it('does not ask about a new observation’s form as a preview over it goes, and the form stays guarded', async () => {
+    mount({ beside: <DraftQuestion /> })
+    fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
+    fireEvent.change(screen.getByRole('textbox', { name: /^Title/ }), { target: { value: 'Duplicate customers' } })
+    openRow('o1')
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(asked()).toBeNull()
+    expect(screen.queryByTestId('observation-reader')).toBeNull()
+    // Still written, and still asked about by a way off the page.
+    expect((screen.getByRole('textbox', { name: /^Title/ }) as HTMLInputElement).value).toBe('Duplicate customers')
+    expect(draftHeld()).toBe(true)
+  })
+
+  it('asks before the whole record takes the place of a new observation’s form', async () => {
+    mount({ beside: <DraftQuestion /> })
+    fireEvent.click(screen.getByRole('button', { name: 'New observation' }))
+    fireEvent.change(screen.getByRole('textbox', { name: /^Title/ }), { target: { value: 'Duplicate customers' } })
+    openRow('o1')
+    // The whole record takes the form's place: that one is asked about, and kept on Keep writing.
+    openFull()
+    expect(asked()).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    await waitFor(() => expect(asked()).toBeNull())
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(asked()).toBeNull()
+    await waitFor(() => expect((screen.getByRole('textbox', { name: /^Title/ }) as HTMLInputElement).value).toBe('Duplicate customers'))
+    expect(draftHeld()).toBe(true)
+  })
+
+  it('asks about a comment on the whole record, and drops only the comment', async () => {
+    mount({ beside: <DraftQuestion /> })
+    openRow('o1')
+    openFull()
+    writeComment()
+    fireEvent.click(screen.getByRole('button', { name: 'Seen' }))
+    expect(asked()).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
+    await waitFor(() => expect(screen.queryByRole('textbox', { name: 'Comment draft' })).toBeNull())
+    expect(draftHeld()).toBe(false)
   })
 })
 

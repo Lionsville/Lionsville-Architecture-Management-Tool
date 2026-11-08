@@ -13,7 +13,7 @@ import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { List } from './List'
 import { Preview, PreviewFact } from './Preview'
-import { DraftQuestion, useDraft } from './drafts'
+import { DraftQuestion, draftHeld, useDraft } from './drafts'
 import { FRESH_VIEW, readListView, writeListView } from './listView'
 
 afterEach(() => cleanup())
@@ -172,14 +172,18 @@ describe('the preview', () => {
 })
 
 describe('a draft written in the preview', () => {
-  function Writing({ onSelect }: { readonly onSelect: (id: string | null) => void }) {
+  function Box() {
     const [text, setText] = useState('')
     useDraft(text !== '')
+    return <textarea aria-label="Write a comment" value={text} onChange={(event) => setText(event.target.value)} />
+  }
+  function Writing({ onSelect, beside }: { readonly onSelect: (id: string | null) => void; readonly beside?: boolean }) {
     return (
       <>
         <DraftQuestion />
+        {beside && <Box />}
         <Preview ids={['a', 'b']} currentId="a" onSelect={onSelect} title="The first record">
-          <textarea aria-label="Write a comment" value={text} onChange={(event) => setText(event.target.value)} />
+          {!beside && <Box />}
         </Preview>
       </>
     )
@@ -201,5 +205,15 @@ describe('a draft written in the preview', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Close' }))
     fireEvent.click(await screen.findByTestId('draft-leave'))
     expect(onSelect).toHaveBeenCalledWith(null)
+  })
+
+  it('does not ask about a draft beside it, a form under the preview, and leaves it held', () => {
+    const onSelect = vi.fn()
+    renderShell(<Writing onSelect={onSelect} beside />)
+    fireEvent.change(screen.getByRole('textbox', { name: 'Write a comment', hidden: true }), { target: { value: 'Who owns this?' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    expect(screen.queryByTestId('draft-question')).toBeNull()
+    expect(onSelect).toHaveBeenCalledWith(null)
+    expect(draftHeld()).toBe(true)
   })
 })

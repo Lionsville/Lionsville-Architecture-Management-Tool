@@ -10,7 +10,7 @@
  * are handlers: the page proposes a list, the caller keeps it.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
 import type { Adr } from '../adr'
@@ -21,6 +21,7 @@ import type { AdrPageProps } from './AdrPage'
 import { madrTemplate } from '../adr'
 import { renderShell } from '../../app/testing/renderShell'
 import { chooseValue } from '../../widgets/kit/testing/select'
+import { DraftQuestion, useDraft } from '../../widgets/kit/drafts'
 
 afterEach(() => cleanup())
 
@@ -630,6 +631,41 @@ describe('the plans that rest on a record (ADR-0010)', () => {
     fireEvent.click(within(line).getByRole('button', { name: 'TR-0001 Replace the warehouse system' }))
     expect(onOpenPlan).toHaveBeenCalledWith('tr-1')
     expect(onClose).toHaveBeenCalled()
+  })
+
+  it('asks before Decided for, Linked to or History… leaves a comment being written', async () => {
+    function Draft() { useDraft(true); return null }
+    const onOpenPlan = vi.fn()
+    const onOpenSolution = vi.fn()
+    const onOpenHistory = vi.fn()
+    const onClose = vi.fn()
+    const solution = {
+      id: 'so-1', number: 1, title: 'One owner for stock', state: 'proven' as const, addresses: [], validatedWith: [],
+      attempts: [], history: [], body: '', decision: 'l2',
+    }
+    renderShell(<><DraftQuestion /><Draft />{page({
+      model: { ...model, transitions: [plan], solutions: [solution] as unknown as HostModel['solutions'] },
+      initialAdrId: 'l2', onOpenPlan, onOpenSolution, onOpenHistory, onClose,
+    })}</>)
+    const keep = async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+      await waitFor(() => expect(screen.queryByRole('heading', { name: 'Leave with a draft?' })).toBeNull())
+    }
+    fireEvent.click(within(screen.getByTestId('adr-decided-for')).getByRole('button', { name: 'SO-0001 One owner for stock' }))
+    expect(screen.getByRole('heading', { name: 'Leave with a draft?' })).toBeTruthy()
+    await keep()
+    fireEvent.click(within(screen.getByTestId('adr-plans')).getByRole('button', { name: 'TR-0001 Replace the warehouse system' }))
+    await keep()
+    fireEvent.click(within(record()).getByRole('button', { name: 'History…' }))
+    await keep()
+    expect(onOpenSolution).not.toHaveBeenCalled()
+    expect(onOpenPlan).not.toHaveBeenCalled()
+    expect(onOpenHistory).not.toHaveBeenCalled()
+    expect(onClose).not.toHaveBeenCalled()
+    fireEvent.click(within(screen.getByTestId('adr-plans')).getByRole('button', { name: 'TR-0001 Replace the warehouse system' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
+    expect(onClose).toHaveBeenCalled()
+    expect(onOpenPlan).toHaveBeenCalledWith('tr-1')
   })
 
   it('shows no line when nothing rests on it, or the host cannot open a plan', () => {

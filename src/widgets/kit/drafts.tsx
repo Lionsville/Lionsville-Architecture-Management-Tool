@@ -11,14 +11,71 @@
  * The drafts are a module's set and not a context: a page is left from places
  * that share no tree with the box being written in — a key on the window, a press
  * in the frame, the window's own close — and each must hear the same answer.
+ *
+ * **Each draft knows the surface it is written on** (`DraftArea`): a page, a
+ * preview, a side panel, a full record. Leaving one surface — a preview's ×, a
+ * plan's Escape over the page it stands on — asks only about the drafts on it and
+ * what it holds, and *Leave and drop it* drops only those: a form beside the
+ * preview, or a comment on the page under the plan, stays written and stays
+ * guarded. Leaving the place (the frame, Back, ⌘K) asks about every draft.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { Dialog } from './Dialog'
 
-const held = new Set<symbol>()
-/** A move held at the question: made on a yes, and told it stays on Keep writing. */
-type Asked = { go: () => void; stay?: (() => void) | undefined }
+/** Somewhere a draft can be written and that can be left on its own: a page, a preview, a panel, a record. */
+export type DraftSurface = { readonly parent: DraftSurface | undefined }
+
+const SurfaceContext = createContext<DraftSurface | undefined>(undefined)
+
+/**
+ * A surface of its own, inside the one it is drawn in — or inside `within`, for a
+ * screen that makes the surfaces of a page it draws itself: hand it to
+ * `DraftArea` and to `leaveWithDrafts`.
+ */
+export function useDraftSurface(within?: DraftSurface): DraftSurface {
+  const drawnIn = useContext(SurfaceContext)
+  const parent = within ?? drawnIn
+  return useMemo(() => ({ parent }), [parent])
+}
+
+/** What is drawn inside is written on `surface`. */
+export function DraftArea({ surface, children }: { readonly surface: DraftSurface; readonly children: ReactNode }) {
+  return <SurfaceContext.Provider value={surface}>{children}</SurfaceContext.Provider>
+}
+
+/** The surface this is drawn on: for a press that leaves it (`PageClose`, `PageBack`). */
+export function useLeaveSurface(): (go: () => void, stay?: () => void) => void {
+  const surface = useContext(SurfaceContext)
+  return useCallback((go: () => void, stay?: () => void) => leaveWithDrafts(go, stay, surface), [surface])
+}
+
+/**
+ * How a door out of a surface that asks its own question goes: through that
+ * question. A full-window editor holds its text back until Save, so a door in its
+ * column of facts asks as Cancel does, and on a yes puts the text back first.
+ * Anywhere else a door leaves the place, asking about every draft.
+ */
+const ThroughContext = createContext<((go: () => void) => void) | undefined>(undefined)
+export const LeaveThrough = ThroughContext.Provider
+export function useLeaveThrough(): (go: () => void) => void {
+  return useContext(ThroughContext) ?? leaveWithDrafts
+}
+
+/** Every draft, with the surface it is written on (none: the place itself). */
+const held = new Map<symbol, DraftSurface | undefined>()
+/** A move held at the question: made on a yes, dropping only `drafts`, and told it stays on Keep writing. */
+type Asked = { go: () => void; stay?: (() => void) | undefined; drafts: readonly symbol[] }
+
+function on(surface: DraftSurface | undefined, leaving: DraftSurface): boolean {
+  for (let at = surface; at; at = at.parent) if (at === leaving) return true
+  return false
+}
+/** The drafts a leave would drop: every one, or those on the surface left and on what it holds. */
+function draftsOn(leaving?: DraftSurface): symbol[] {
+  return [...held].filter(([, surface]) => !leaving || on(surface, leaving)).map(([draft]) => draft)
+}
 let asker: ((asked: Asked) => void) | undefined
 const watchers = new Set<(holding: boolean) => void>()
 
@@ -54,30 +111,43 @@ export function watchDrafts(watcher: (holding: boolean) => void): () => void {
   return () => { watchers.delete(watcher) }
 }
 
-/** Says, while `holding`, that something written here would be lost by leaving. */
-export function useDraft(holding: boolean): void {
+/**
+ * Says, while `holding`, that something written here would be lost by leaving.
+ * Answers a way to let go of it at once, for a surface that asked its own
+ * question and is about to go (`FocusedWindow`).
+ */
+export function useDraft(holding: boolean): () => void {
+  const surface = useContext(SurfaceContext)
+  const mine = useRef<symbol | undefined>(undefined)
   useEffect(() => {
     if (!holding) return undefined
     const draft = Symbol('draft')
-    held.add(draft)
+    mine.current = draft
+    held.set(draft, surface)
     told()
-    return () => { held.delete(draft); told() }
-  }, [holding])
+    return () => { mine.current = undefined; held.delete(draft); told() }
+  }, [holding, surface])
+  return useCallback(() => {
+    if (mine.current && held.delete(mine.current)) told()
+  }, [])
 }
 
-/** Whether anything on screen holds a draft. */
-export function draftHeld(): boolean {
-  return held.size > 0
+/** Whether anything on screen holds a draft; with `surface`, on that surface or what it holds. */
+export function draftHeld(surface?: DraftSurface): boolean {
+  return draftsOn(surface).length > 0
 }
 
 /**
  * Leave, asking first where a draft would be lost: `go` runs at once, after a
  * yes, or not at all — and then `stay` runs, for a move that has to be taken
  * back where it was already half made (the window's Back has moved its address).
+ * With `surface`, only that surface is being left: a draft anywhere else is not
+ * asked about, and not dropped.
  */
-export function leaveWithDrafts(go: () => void, stay?: () => void): void {
-  if (!draftHeld() || !asker) { go(); return }
-  asker({ go, stay })
+export function leaveWithDrafts(go: () => void, stay?: () => void, surface?: DraftSurface): void {
+  const drafts = draftsOn(surface)
+  if (drafts.length === 0 || !asker) { go(); return }
+  asker({ go, stay, drafts })
 }
 
 /** The question, drawn once by the shell; with none drawn, leaving does not wait on one. */
@@ -94,7 +164,8 @@ export function DraftQuestion() {
   const leave = () => {
     const asked = going
     setGoing(undefined)
-    held.clear()
+    // Only what goes is dropped: a draft elsewhere is still on screen, and still asked about.
+    for (const draft of asked?.drafts ?? []) held.delete(draft)
     told()
     asked?.go()
   }

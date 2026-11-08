@@ -19,17 +19,18 @@ import Tooltip from '@mui/material/Tooltip'
 import { useStrings } from '../i18n/LanguageContext'
 import { CloseIcon } from './icons'
 import { usePlaceHost } from './kit/placeHost'
-import { leaveWithDrafts } from './kit/drafts'
+import { useLeaveSurface } from './kit/drafts'
 
 export function PageClose({ onClose, label }: { onClose: () => void; label?: string | undefined }) {
   const { t } = useStrings()
   const said = label ?? t('common.close')
+  const leave = useLeaveSurface()
   // In the frame a page is left by Esc, by *Home* or a view's tab, and by Back
   // (decision 1). Only going back to reading is the page's own to offer.
   if (usePlaceHost()?.page && said !== t('common.backToReading')) return null
   return (
     <Tooltip title={said}>
-      <IconButton size="small" aria-label={said} onClick={() => leaveWithDrafts(onClose)} data-testid="page-close" sx={{ ml: 'auto', color: 'text.secondary' }}>
+      <IconButton size="small" aria-label={said} onClick={() => leave(onClose)} data-testid="page-close" sx={{ ml: 'auto', color: 'text.secondary' }}>
         <CloseIcon size={16} />
       </IconButton>
     </Tooltip>
@@ -39,10 +40,11 @@ export function PageClose({ onClose, label }: { onClose: () => void; label?: str
 /** The ‹ at the start of a page's bar, saying what it does: close, or go back to reading. */
 export function PageBack({ onBack, label, children }: { onBack: () => void; label: string; children?: ReactNode }) {
   const { t } = useStrings()
+  const leave = useLeaveSurface()
   if (usePlaceHost()?.page && label !== t('common.backToReading')) return null
   return (
     <Tooltip title={label}>
-      <IconButton size="small" aria-label={label} onClick={() => leaveWithDrafts(onBack)} data-testid="page-back">
+      <IconButton size="small" aria-label={label} onClick={() => leave(onBack)} data-testid="page-back">
         {children ?? <Box component="span" aria-hidden sx={{ display: 'inline-block', width: 18, textAlign: 'center', fontSize: 'var(--t-large)', lineHeight: 1 }}>‹</Box>}
       </IconButton>
     </Tooltip>

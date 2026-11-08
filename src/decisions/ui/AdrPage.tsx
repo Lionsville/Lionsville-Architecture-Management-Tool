@@ -22,6 +22,7 @@
  *
  * The page never writes anywhere itself.
  */
+import { leaveWithDrafts } from '../../widgets/kit/drafts'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { LanguageProvider } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
@@ -320,12 +321,13 @@ function useAdrChanges(deps: {
 /** Where a record leads, as far as the host can go. An ancestor's has no history here: its files are in another scope's folder. */
 function whereItLeads(page: AdrPageProps, selected: Adr | undefined, above: AncestorRecords | undefined) {
   const { model, onClose } = page
-  const leaving = <T,>(go: ((value: T) => void) | undefined) => (go ? (value: T) => { onClose(); go(value) } : undefined)
+  // Each leaves the page, so each asks first about a comment being written on it (`kit/drafts`).
+  const leaving = <T,>(go: ((value: T) => void) | undefined) => (go ? (value: T) => leaveWithDrafts(() => { onClose(); go(value) }) : undefined)
   const toElement = leaving(page.onOpenElement)
   const toPlan = above ? undefined : leaving(page.onOpenPlan)
   const toSolution = above ? undefined : leaving(page.onOpenSolution)
   return {
-    ...(page.onOpenHistory && selected && !above ? { onHistory: () => page.onOpenHistory?.(selected.id) } : {}),
+    ...(page.onOpenHistory && selected && !above ? { onHistory: () => leaveWithDrafts(() => page.onOpenHistory?.(selected.id)) } : {}),
     ...(page.onCopyLink && selected ? { onCopyLink: () => page.onCopyLink?.(selected.id) } : {}),
     ...(toElement ? { onElementLink: toElement } : {}),
     ...(toPlan ? { plans: { list: model.transitions ?? [], onOpen: toPlan } } : {}),

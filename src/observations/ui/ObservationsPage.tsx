@@ -39,7 +39,8 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { ListPage } from '../../widgets/kit/ListPage'
-import { leaveWithDrafts } from '../../widgets/kit/drafts'
+import { DraftArea, leaveWithDrafts, useDraftSurface } from '../../widgets/kit/drafts'
+import type { DraftSurface } from '../../widgets/kit/drafts'
 import type { ListPageCreate } from '../../widgets/kit/ListPage'
 import { List } from '../../widgets/kit/List'
 import type { ListGroup } from '../../widgets/kit/List'
@@ -562,18 +563,34 @@ function phaseRows(counted: PictureCounts): PhaseRow[] {
  * written in the panel would go with it: ask first, as every other way out does.
  * The card already shown, or a form's panel (which a pick does not swap), is not asked about.
  */
-function pickThroughGuard(keepsPanel: boolean, go: () => void) {
+function pickThroughGuard(keepsPanel: boolean, go: () => void, record: DraftSurface) {
   if (keepsPanel) go()
-  else leaveWithDrafts(go)
+  else leaveWithDrafts(go, undefined, record)
 }
 
-function escapeClosesPanel(event: ReactKeyboardEvent, onMap: boolean, selectedKey: string | undefined, setSelectedKey: (key: string | undefined) => void) {
+function escapeClosesPanel(event: ReactKeyboardEvent, onMap: boolean, selectedKey: string | undefined, setSelectedKey: (key: string | undefined) => void, record: DraftSurface) {
   if (event.key !== 'Escape' || keyClaimed(event) || !onMap || selectedKey === undefined) return
   claimKey(event)
   // Escape in a box being written leaves the box, as on a page; the next one closes the panel, asking first where a draft would go.
   const field = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('input, textarea, select, [contenteditable="true"]') : null
   if (field) { field.blur(); return }
-  leaveWithDrafts(() => setSelectedKey(undefined))
+  leaveWithDrafts(() => setSelectedKey(undefined), undefined, record)
+}
+
+/**
+ * The record up — in the preview, the side panel or whole — is one surface for
+ * its drafts (`kit/drafts`): every way to another record, another stage or lens
+ * asks about a comment being written on it, and not about a new observation's
+ * form beside it, which stays. A way off the page asks about both; so does the
+ * whole record, which takes the list's place and that form's with it.
+ */
+function useRecordSurfaces(setSelectedKey: (key: string | undefined) => void) {
+  const pageSurface = useDraftSurface()
+  const recordSurface = useDraftSurface(pageSurface)
+  const offTheRecord = useCallback((go: () => void) => leaveWithDrafts(go, undefined, recordSurface), [recordSurface])
+  const goTo = useCallback((key: string | undefined) => offTheRecord(() => setSelectedKey(key)), [offTheRecord, setSelectedKey])
+  const offThePage = <A extends unknown[]>(go: ((...args: A) => void) | undefined) => (go ? (...args: A) => leaveWithDrafts(() => go(...args)) : undefined)
+  return { pageSurface, recordSurface, offTheRecord, goTo, offThePage }
 }
 
 /** *5 causes · 1 open end*: each count in its own number. */
@@ -660,6 +677,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const [noting, setNoting] = useState<{ observation: Observation; scope?: string } | undefined>(undefined)
   const [deleting, setDeleting] = useState<{ kind: DeleteKind; id: string; label: string } | undefined>(undefined)
   const setStage = useCallback((next: Tab) => { setStageRaw(next); setSelectedKey(undefined); setEditingKey(undefined); setTicked(new Set()) }, [setSelectedKey])
+  const { pageSurface, recordSurface, offTheRecord, goTo, offThePage } = useRecordSurfaces(setSelectedKey)
 
   // --- what is where ------------------------------------------------------------------
 
@@ -843,14 +861,14 @@ export function ObservationsPage(props: ObservationsPageProps) {
       remove: (kind, id) => setDeleting({ kind, id, label: nameOf(id) }), propose: (causeId) => setProposing({ causeId }),
       address: setAddressing, plan: setPlanning, drop: (solution) => setAsking({ what: 'drop', solution }), waive: (solution) => setAsking({ what: 'waive', solution }),
     },
-    mergedLabel, mergedCause, openKey: setSelectedKey, asked,
-    ...(onOpenScope ? { openScope: (path: string) => { onClose(); onOpenScope(path) } } : {}),
-    onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: props.onOpenDecision, onOpenPlan: props.onOpenPlan,
+    mergedLabel, mergedCause, openKey: goTo, asked,
+    ...(onOpenScope ? { openScope: (path: string) => leaveWithDrafts(() => { onClose(); onOpenScope(path) }) } : {}),
+    onDecide: props.onDecide, onStartPlan: props.onStartPlan, onOpenDecision: offThePage(props.onOpenDecision), onOpenPlan: offThePage(props.onOpenPlan),
     renderMarkdown: props.renderMarkdown, onAddImage: props.onAddImage, images: props.images,
     copyLink: copyLinkOf(props, stage),
   }
   readerRef.current = readerCtx
-  const pickOnMap = (key: string, then?: () => void) => pickThroughGuard(key === selectedKey || Boolean(forms.panel), () => { setSelectedKey(key); then?.() })
+  const pickOnMap = (key: string, then?: () => void) => pickThroughGuard(key === selectedKey || Boolean(forms.panel), () => { setSelectedKey(key); then?.() }, recordSurface)
   const pageWrites = { edit: (key: string) => setEditingKey(key), ask: (key: string, panel: CausePanel) => setAsked({ key, panel }) }
 
   // --- the right-click ------------------------------------------------------------------
@@ -989,7 +1007,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       </Button>
       {hasMap(stage) && (
         <Segmented
-          label={s('observation.lens')} value={lens} onChange={(next) => { pressLens(next); setSelectedKey(undefined) }}
+          label={s('observation.lens')} value={lens} onChange={(next) => offTheRecord(() => { pressLens(next); setSelectedKey(undefined) })}
           data-guide="observations.lens"
           options={[{ value: 'list', label: s('observation.lensList') }, { value: 'map', label: s('observation.lensMap') }]}
         />
@@ -1032,20 +1050,20 @@ export function ObservationsPage(props: ObservationsPageProps) {
         orientation="vertical" region="after" value={readerWidth[stage as 'analysis' | 'solutions']} min={READER.min} max={READER.max} defaultValue={READER.default}
         onChange={(next) => setReaderWidth(stage as 'analysis' | 'solutions', next)} label={s('observation.resizeReader')}
       />
-      <RecordPanel held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} width={readerWidth[stage as 'analysis' | 'solutions']} onClose={() => setSelectedKey(undefined)} />
+      <DraftArea surface={recordSurface}><RecordPanel held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} width={readerWidth[stage as 'analysis' | 'solutions']} onClose={() => setSelectedKey(undefined)} /></DraftArea>
     </>
   ) : undefined)
 
   const editing = editingKey ? editingOf(resolve(editingKey), readerCtx) : undefined
 
   return (
-    <PageDialog open={open} topInset={chrome.topInset} onClose={leaving.leave} aria-label={s('observation.title')}>
+    <PageDialog open={open} topInset={chrome.topInset} onClose={leaving.leave} aria-label={s('observation.title')} surface={pageSurface}>
       <LanguageProvider language={props.language}>
-        <Box className="chain-page" ref={located.ref} sx={located.ring} onKeyDown={(event) => escapeClosesPanel(event, onMap, selectedKey, setSelectedKey)}>
+        <Box className="chain-page" ref={located.ref} sx={located.ring} onKeyDown={(event) => escapeClosesPanel(event, onMap, selectedKey, setSelectedKey, recordSurface)}>
           <div className="chain-page__tabs" data-testid="observation-topbar">
             <OffTheRecord full={full}><PageBack onBack={leaving.leave} label={leaving.said} /></OffTheRecord>
             <Tabs<Tab>
-              label={s('observation.title')} value={stage} onChange={setStage}
+              label={s('observation.title')} value={stage} onChange={(next) => offTheRecord(() => setStage(next))}
               items={[
                 { value: 'register', label: s('observation.stageSeen'), guide: 'observations.tabRegister', testId: 'observation-tab-register' },
                 { value: 'analysis', label: s('observation.stageWhy'), guide: 'observations.tabAnalysis', testId: 'observation-tab-analysis' },
@@ -1057,7 +1075,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
             <OffTheRecord full={full}><PageClose onClose={leaving.leave} label={leaving.closeSaid} /></OffTheRecord>
           </div>
           {full && selected && selectedKey ? (
-            <RecordFull held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} backLabel={s(STAGE_WORD[stage])} onBack={() => setFull(false)} />
+            <DraftArea surface={recordSurface}><RecordFull held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} backLabel={s(STAGE_WORD[stage])} onBack={() => setFull(false)} /></DraftArea>
           ) : nothingYet && !forms.panel ? (
             <ChainEmpty {...(readOnly ? {} : { onNew: forms.openNew })} s={s} />
           ) : (
@@ -1083,10 +1101,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
           )}
         </Box>
         {showPreview && (
-          <RecordPreview
-            held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} ids={previewIds} {...(listWord ? { listWord } : {})}
-            onSelect={(key) => setSelectedKey(key ?? undefined)} onFull={() => setFull(true)}
-          />
+          <DraftArea surface={recordSurface}><RecordPreview held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} ids={previewIds} {...(listWord ? { listWord } : {})}
+            onSelect={(key) => setSelectedKey(key ?? undefined)} onFull={() => leaveWithDrafts(() => setFull(true), undefined, pageSurface)} />
+          </DraftArea>
         )}
         <RecordEditor
           editing={editing} onClose={() => setEditingKey(undefined)} today={today()}

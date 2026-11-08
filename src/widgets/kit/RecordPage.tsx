@@ -15,7 +15,7 @@ import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon } from '../icons'
 import { PressName } from './PressName'
-import { leaveWithDrafts } from './drafts'
+import { DraftArea, leaveWithDrafts, useDraftSurface } from './drafts'
 import './RecordPage.css'
 
 export type RecordSection = {
@@ -113,6 +113,7 @@ function useCurrentSection(root: React.RefObject<HTMLDivElement | null>, ids: re
 export function RecordPage({ back, code, title, onRename, status, actions, next, band, section, onSection, sections, outlineFrom = 4, dataGuide }: RecordPageProps) {
   const { t } = useStrings()
   const scroller = useRef<HTMLDivElement>(null)
+  const surface = useDraftSurface()
   const outlined = sections.length >= outlineFrom
   const ids = sections.filter((one) => !one.folded).map((one) => one.id)
   const stableIds = useStable(ids)
@@ -145,11 +146,12 @@ export function RecordPage({ back, code, title, onRename, status, actions, next,
     return all
   }, [])
   return (
+    <DraftArea surface={surface}>
     <div className="kit-record" data-guide={dataGuide}>
       <header className="kit-record__head">
         <div className="kit-record__line">
           {back && (
-            <button type="button" className="kit-record__back" onClick={() => leaveWithDrafts(back.onPress)}>
+            <button type="button" className="kit-record__back" onClick={() => leaveWithDrafts(back.onPress, undefined, surface)}>
               <BackIcon size={12} /> {back.label}
             </button>
           )}
@@ -208,6 +210,7 @@ export function RecordPage({ back, code, title, onRename, status, actions, next,
         </div>
       </div>
     </div>
+    </DraftArea>
   )
 }
 
