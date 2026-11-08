@@ -37,7 +37,12 @@ export function LabelSpread({ maxMove }: { /** On screen: how far from its line 
         const box = card.getBoundingClientRect();
         return { id: `card${index}`, x: box.x, y: box.y, width: box.width, height: box.height };
       });
-      const moved = spreadLabels(boxes, cards, maxMove);
+      // A selected line's pills are kept clear too: its chip has stepped off them, and a spread that put it back would cut it again.
+      const pills = [...root.querySelectorAll<HTMLElement>('.lv-edge-pill > *')].map((pill, index) => {
+        const box = pill.getBoundingClientRect();
+        return { id: `pill${index}`, x: box.x, y: box.y, width: box.width, height: box.height };
+      });
+      const moved = spreadLabels(boxes, [...cards, ...pills], maxMove);
       labels.forEach((label, index) => {
         const by = moved.get(String(index));
         if (by === undefined) label.style.removeProperty('--lv-nudge-y');
@@ -55,7 +60,7 @@ export function LabelSpread({ maxMove }: { /** On screen: how far from its line 
     });
     // A label that comes up on its own, under the pointer, is kept clear at once, before it
     // is painted: it stood where nothing moved it, and jumped when its line was then selected.
-    const chip = (node: Node) => node instanceof HTMLElement && (node.classList.contains('lv-edge-chip') || node.querySelector('.lv-edge-chip') !== null);
+    const chip = (node: Node) => node instanceof HTMLElement && (node.matches('.lv-edge-chip, .lv-edge-pill') || node.querySelector('.lv-edge-chip, .lv-edge-pill') !== null);
     const root = flow.getState().domNode;
     const watch = typeof MutationObserver === 'undefined' || !root ? undefined : new MutationObserver((changes) => {
       if (changes.some((change) => [...change.addedNodes].some(chip))) spread();

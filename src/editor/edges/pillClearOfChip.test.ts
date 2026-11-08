@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from 'vitest'
-import { chipClearOfPills, pillClearOfChip } from './FloatingEdge'
+import { chipClearOfPills, loopGuard, pillClearOfChip } from './FloatingEdge'
 
 describe('pillClearOfChip', () => {
   const a = { x: 0, y: 100 }
@@ -62,3 +62,44 @@ describe('chipClearOfPills', () => {
   })
 })
 
+
+describe('a new line at Fit (60%), on a short leg', () => {
+  // The chip holds its size on screen: "double-click to label…" is 134 × 22 there, so in the canvas's units it is
+  // 1/0.6 as large, and the line's last leg into the card below is shorter than that.
+  const scale = 1 / 0.6
+  const leg = { a: { x: 1496, y: 474 }, b: { x: 1496, y: 514 } }
+  const anchor = { x: 1496, y: 494 }
+
+  it('keeps the pill on the leg and steps the chip once, clear of it', () => {
+    const chip = { at: anchor, width: 134, height: 22 }
+    const pill = pillClearOfChip(anchor, 'vertical', leg.a, leg.b, chip, scale)
+    expect(pill).toEqual(anchor)
+    const at = chipClearOfPills(chip, [{ at: pill, axis: 'vertical' }], scale)
+    // Above: half the pill's length (9), half the chip (11) and a gap (4), in the canvas's units.
+    expect(at.x).toBe(1496)
+    expect(at.y).toBeCloseTo(494 - 24 * scale)
+  })
+
+  it('answers the same side for a size a hair different, so a measure cannot flip it', () => {
+    const pills = [{ at: anchor, axis: 'vertical' as const }]
+    const one = chipClearOfPills({ at: anchor, width: 80.66, height: 13.050018 }, pills, scale)
+    const other = chipClearOfPills({ at: anchor, width: 80.66, height: 13.049987 }, pills, scale)
+    expect(Math.sign(one.y - anchor.y)).toBe(Math.sign(other.y - anchor.y))
+  })
+
+  it('keeps the chip off the line’s own cards when it can', () => {
+    const chip = { at: { x: 100, y: 100 }, width: 140, height: 20 }
+    const pills = [{ at: { x: 100, y: 100 }, axis: 'vertical' as const }]
+    // A card just above: the chip goes below rather than over its name.
+    const at = chipClearOfPills(chip, pills, 1, [{ x: 0, y: 40, width: 200, height: 40 }])
+    expect(at.y).toBeGreaterThan(100)
+  })
+})
+
+describe('loopGuard', () => {
+  it('lets a few writes through in a frame and refuses the rest', () => {
+    const budget = { count: 0, frame: false }
+    const answers = Array.from({ length: 8 }, () => loopGuard(budget))
+    expect(answers).toEqual([true, true, true, true, false, false, false, false])
+  })
+})

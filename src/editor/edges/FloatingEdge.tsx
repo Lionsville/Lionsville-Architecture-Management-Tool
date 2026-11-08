@@ -168,20 +168,49 @@ function segmentHandleAt(a: Point, b: Point, chip: Point | undefined): Point {
   return Math.hypot(b.x - a.x, b.y - a.y) < 2 * CHIP_CLEARANCE_PX ? mid : quarter;
 }
 
+/** A bent line's pill: kept clear of the chip by the chip's own size on a leg that runs straight, by the rule of thumb on a slanted one. */
+function legPillAt(a: Point, b: Point, axis: LegAxis, chip: Point | undefined, size: { width: number; height: number } | undefined, scale: number): Point {
+  if (axis === 'diagonal' || !chip || !size) return segmentHandleAt(a, b, chip);
+  return pillClearOfChip({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, axis, a, b, { at: chip, ...size }, scale);
+}
+
 /**
  * The chip's size on screen, measured only while its line is selected: that is
  * when the handles are up and must keep off it, and measuring every line on every
  * zoom would cost a layout each.
+ *
+ * The label inside is measured, not the box placing it: the label holds its size
+ * on screen by a scale of its own, which its wrapper's box does not see, so at 60%
+ * the wrapper read 0.6 of what shows. Whole pixels, because where the chip stands
+ * moves its box by a hundredth of one, and a size that follows the place it set
+ * moved it back and forth until React gave up (its error 185).
  */
 function useChipSize(selected: boolean | undefined) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ width: number; height: number } | undefined>(undefined);
+  const updates = useRef({ count: 0, frame: false });
   useLayoutEffect(() => {
-    const box = selected ? ref.current?.getBoundingClientRect() : undefined;
-    const next = box && box.width > 0 ? { width: box.width, height: box.height } : undefined;
-    setSize((was) => (was?.width === next?.width && was?.height === next?.height ? was : next));
+    const element = ref.current;
+    const box = selected ? (element?.firstElementChild ?? element)?.getBoundingClientRect() : undefined;
+    const next = box && box.width > 0 ? { width: Math.ceil(box.width), height: Math.ceil(box.height) } : undefined;
+    if (size?.width === next?.width && size?.height === next?.height) return;
+    // A guard rather than a cure: should a measure ever follow what it moves again,
+    // the chip stands still for a frame instead of the board coming down.
+    if (loopGuard(updates.current)) setSize(next);
   });
   return { ref, size };
+}
+
+/** Lets a rendering write a measure a few times a frame and no more; true when it may. */
+export function loopGuard(budget: { count: number; frame: boolean }, most = 4): boolean {
+  if (!budget.frame) {
+    budget.frame = true;
+    const reset = () => { budget.count = 0; budget.frame = false; };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(reset);
+    else setTimeout(reset, 16);
+  }
+  budget.count += 1;
+  return budget.count <= most;
 }
 
 /**
@@ -225,6 +254,7 @@ export function chipClearOfPills(
   chip: { at: Point; width: number; height: number },
   pills: readonly { at: Point; axis: LegAxis }[],
   scale: number,
+  cards: readonly Rect[] = [],
 ): Point {
   const half = { x: (chip.width / 2) * scale, y: (chip.height / 2) * scale };
   const gap = 4 * scale;
@@ -239,6 +269,8 @@ export function chipClearOfPills(
     const size = pillHalf(pill.axis);
     return Math.abs(pill.at.x - at.x) < half.x + size.x && Math.abs(pill.at.y - at.y) < half.y + size.y;
   });
+  const onCard = (at: Point) => cards.some((card) =>
+    at.x - half.x < card.x + card.width && card.x < at.x + half.x && at.y - half.y < card.y + card.height && card.y < at.y + half.y);
   const hit = covering(chip.at);
   if (hit.length === 0) return chip.at;
   const places = hit.flatMap((pill) => {
@@ -249,17 +281,29 @@ export function chipClearOfPills(
     ];
   }).filter((at) => covering(at).length === 0);
   if (places.length === 0) return chip.at;
+  // A place off the line's own cards first, so the label does not cover a name to clear a pill.
+  const clear = places.filter((at) => !onCard(at));
+  // Above wins a tie, and only a step shorter by half a pixel on screen beats one
+  // listed before it: up and down are always the same length, and a hair's
+  // difference must not decide between them, or the chip changes sides as it is drawn.
   const away = (at: Point) => Math.hypot(at.x - chip.at.x, at.y - chip.at.y);
-  return places.reduce((one, other) => (away(other) < away(one) ? other : one));
+  return (clear.length > 0 ? clear : places).reduce((one, other) => (away(other) < away(one) - scale / 2 ? other : one));
 }
 
-/** Where the chip is drawn: a chip the board placed steps off a pill that could not step off it; one the person placed or holds stays put. */
-function chipStandsAt({ anchor, shown, handles, held, data, size, pills, scale }: {
-  anchor: Point; shown: boolean | undefined; handles: boolean | undefined; held: Point | null | undefined; data: { labelPosition?: Point } | undefined
-  size: { width: number; height: number } | undefined; pills: readonly { at: Point; axis: LegAxis }[]; scale: number
+/**
+ * Where the chip is drawn while its line's pills are up: off any pill that could
+ * not step off it, once, from where the pills were placed — the pills are placed
+ * from the legs and the chip's own anchor, never from where this puts it, so
+ * nothing here feeds back. A label the person holds stays under the pointer; one
+ * placed, by the person or the board, steps aside only while the pills are up,
+ * and is never written there.
+ */
+function chipStandsAt({ anchor, shown, handles, held, size, pills, scale, cards }: {
+  anchor: Point; shown: boolean | undefined; handles: boolean | undefined; held: Point | null | undefined
+  size: { width: number; height: number } | undefined; pills: readonly { at: Point; axis: LegAxis }[]; scale: number; cards: readonly Rect[]
 }): Point {
-  if (!shown || !handles || held || data?.labelPosition || !size) return anchor;
-  return chipClearOfPills({ at: anchor, ...size }, pills, scale);
+  if (!shown || !handles || held || !size) return anchor;
+  return chipClearOfPills({ at: anchor, ...size }, pills, scale, cards);
 }
 
 /** What a segment drag is about, captured at pointer-down. */
@@ -672,8 +716,8 @@ export const FloatingEdge = memo(function FloatingEdge({
           axis = aligned ? exit : exit === 'horizontal' ? 'vertical' : 'horizontal';
           at = pillClearOfChip({ x: labelX, y: labelY }, axis, a, b, chipAt && chipBox.size && { at: chipAt, ...chipBox.size }, handleScale);
         } else {
-          at = segmentHandleAt(a, b, chipAt);
           axis = legAxis(a, b);
+          at = legPillAt(a, b, axis, chipAt, chipBox.size, handleScale);
         }
         // The pill lies ALONG the leg it moves.
         const angle =
@@ -685,7 +729,7 @@ export const FloatingEdge = memo(function FloatingEdge({
         return { index: i, at, angle, axis, cursor: axis === 'horizontal' ? 'ns-resize' : axis === 'vertical' ? 'ew-resize' : 'move' };
       })
     : [];
-  const chipShownAt = chipStandsAt({ anchor, shown: showChip, handles: showHandles, held: dragLabel, data, size: chipBox.size, pills: segmentHandles, scale: handleScale });
+  const chipShownAt = chipStandsAt({ anchor, shown: showChip, handles: showHandles, held: dragLabel, size: chipBox.size, pills: segmentHandles, scale: handleScale, cards: [sourceRect, targetRect] });
 
   return (
     <>
@@ -795,7 +839,7 @@ export const FloatingEdge = memo(function FloatingEdge({
           {segmentHandles.map((handle) => (
             <div
               key={`segment-${handle.index}`}
-              className="nodrag nopan"
+              className="nodrag nopan lv-edge-pill"
               data-testid={`segment-${id}-${handle.index}`}
               onPointerDown={beginSegmentDrag(handle.index)}
               onContextMenu={(event) => {
