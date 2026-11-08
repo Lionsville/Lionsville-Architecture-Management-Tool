@@ -30,7 +30,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
         'Klicken Sie unter **Ansichten hier** auf **Application landscape**: Das Board öffnet sich, und die zweite Zeile zeigt seinen Reiter.',
         'Klicken Sie auf **Acme Logistics** im Pfad der ersten Zeile, um zur Startseite der Organisation zu gehen.',
         'Klicken Sie auf **‹** (oder {key:Cmd+[|Alt+Left} auf dem Desktop), um zum Board zurückzukehren, genau wie Sie es verlassen haben.',
-        'Drücken Sie {key:Mod+K}, tippen Sie *Roadmap* und drücken Sie die Eingabetaste, um von überall die Roadmap zu öffnen.',
+        'Drücken Sie {key:Mod+K}, tippen Sie *Roadmap* und drücken Sie {key:Enter}, um von überall die Roadmap zu öffnen.',
       ],
     },
   },
@@ -56,7 +56,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       title: 'Eine neue Anwendung zeichnen und verbinden',
       steps: [
         'Öffnen Sie **Application landscape** und doppelklicken Sie auf eine leere Stelle im Anwendungsband.',
-        'Tippen Sie *Route Optimiser* und drücken Sie die Eingabetaste: Die Karte wird gezeichnet und gewählt.',
+        'Tippen Sie *Route Optimiser* und drücken Sie {key:Enter}: Die Karte wird gezeichnet und gewählt.',
         'Zeigen Sie auf die Karte und ziehen Sie vom Knubbel an ihrem Rand zu **Order Management**.',
         'Geben Sie der Linie im Panel die Beschriftung *routes* und das Protokoll *REST*.',
         'Drücken Sie {key:Mod+Z}, wenn es nicht gemeint war: erst geht die Linie, dann die Karte.',

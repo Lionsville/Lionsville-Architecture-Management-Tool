@@ -30,7 +30,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
         'Klik onder **Weergaven hier** op **Application landscape**: het bord opent en rij twee toont het tabblad.',
         'Klik op **Acme Logistics** in het pad in rij één om naar de startpagina van de organisatie te gaan.',
         'Klik op **‹** (of {key:Cmd+[|Alt+Left} op de desktop) om terug te gaan naar het bord, precies zoals je het verliet.',
-        'Druk op {key:Mod+K}, typ *roadmap* en druk op Enter om vanaf elke plek de roadmap te openen.',
+        'Druk op {key:Mod+K}, typ *roadmap* en druk op {key:Enter} om vanaf elke plek de roadmap te openen.',
       ],
     },
   },
@@ -56,7 +56,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       title: 'Een nieuwe applicatie tekenen en verbinden',
       steps: [
         'Open **Application landscape** en dubbelklik op een lege plek in de applicatieband.',
-        'Typ *Route Optimiser* en druk op Enter: de kaart wordt getekend en geselecteerd.',
+        'Typ *Route Optimiser* en druk op {key:Enter}: de kaart wordt getekend en geselecteerd.',
         'Wijs de kaart aan en sleep vanaf het nopje aan haar rand naar **Order Management**.',
         'Geef de lijn in het paneel het label *routes* en het protocol *REST*.',
         'Druk op {key:Mod+Z} als het niet was wat je bedoelde: eerst gaat de lijn, dan de kaart.',

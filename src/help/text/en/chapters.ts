@@ -30,7 +30,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
         'Under **Views here**, press **Application landscape**: the board opens, and row two shows its tab.',
         'Press **Acme Logistics** in the trail in row one to go to the organisation’s home.',
         'Press **‹** (or {key:Cmd+[|Alt+Left} on the desktop) to go back to the board, exactly as you left it.',
-        'Press {key:Mod+K}, type *roadmap* and press Enter to open the roadmap from anywhere.',
+        'Press {key:Mod+K}, type *roadmap* and press {key:Enter} to open the roadmap from anywhere.',
       ],
     },
   },
@@ -56,7 +56,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       title: 'Draw a new application and connect it',
       steps: [
         'Open **Application landscape** and double-press an empty place in the application band.',
-        'Type *Route Optimiser* and press Enter: the card is drawn and selected.',
+        'Type *Route Optimiser* and press {key:Enter}: the card is drawn and selected.',
         'Point at the card and drag from the dot at its edge to **Order Management**.',
         'In the panel, give the line the label *routes* and the protocol *REST*.',
         'Press {key:Mod+Z} if it was not what you meant: the line goes, then the card.',

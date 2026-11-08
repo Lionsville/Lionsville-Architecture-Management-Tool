@@ -80,7 +80,25 @@ describe('a press that is a key', () => {
   })
 })
 
-describe.each([['en', EN], ['nl', NL], ['de', DE]] as const)('the %s help', (_, text) => {
+/**
+ * Enter, Escape, Tab, Delete and an arrow named as words, outside a key
+ * placeholder: a Mac shows ↩ ⎋ ⇥ ⌫ ↓ for them on every other screen, and German
+ * said one key three ways. A browser's tab and the Delete a menu says are not keys.
+ */
+const KEY_AS_WORD: Record<'en' | 'nl' | 'de', RegExp> = {
+  en: /\b(Enter|Escape|Esc)\b|\bDelete key\b|\b(down|up|left|right) arrows?\b|\b(up|left) and (down|right) arrows\b|(?<!\b(an?|the|own) )\bTab\b/,
+  nl: /\b(Enter|Escape|Esc|Delete)\b|\bpijlen? (omlaag|omhoog|links|rechts)\b|(?<!\b(een|de|het|eigen) )\bTab\b/,
+  de: /\b(Enter|Escape|Esc|Eingabetaste|Entf(-Taste)?|Rücktaste)\b|\bPfeile? (nach )?(unten|links|rechts|hoch|runter)\b(?! (rechts|links))|(?<!\b(ein|der|den|dem|einem|einen|anderen|anderer|diesem|dieser|dieses|jedem|jeder|eigenen|Ein) |Browser-)\bTab\b/,
+}
+
+describe.each([['en', EN], ['nl', NL], ['de', DE]] as const)('the %s help', (language, text) => {
+  it('names Enter, Escape, Tab, Delete and the arrows as keys, so a Mac shows their glyphs', () => {
+    const worded = helpStrings(text)
+      .filter(([, said]) => KEY_AS_WORD[language].test(said.replace(/\{key:[^}]*\}/g, ' ').replace(/`[^`]*`/g, ' ')))
+      .map(([path, said]) => `${path}: ${said.replace(/\{key:[^}]*\}/g, ' ').match(KEY_AS_WORD[language])![0]} in ${said.slice(0, 60)}`)
+    expect(worded).toEqual([])
+  })
+
   it('names keys rather than draw ⌘, ⇧, ⌥ or ⌃, so Windows and Linux read their own', () => {
     const drawn = helpStrings(text).filter(([, said]) => MODIFIER_GLYPHS.test(said)).map(([path, said]) => `${path}: ${said.slice(0, 80)}`)
     expect(drawn).toEqual([])

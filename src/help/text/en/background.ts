@@ -186,9 +186,9 @@ everything after it?") that {key:Mod+Z} already answers.` },
 | \`?\` | Every shortcut |
 | F1 | The help, at the screen you are on |
 | {key:Mod+F} | Find an element |
-| Enter | Open the selected element's documentation |
+| {key:Enter} | Open the selected element's documentation |
 | F2 | Rename the selection |
-| Delete | Remove the selection, after asking |
+| {key:Delete} | Remove the selection, after asking |
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Undo, redo — one stack over everything |
 | {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Copy, cut, paste, duplicate |
 | Arrows, {key:Shift} Arrows | Nudge by a grid step, by a pixel |
@@ -451,15 +451,15 @@ every box. They are worked out from the rows and cannot be moved: a box is
 where its members are. It is off until asked for, as the plain C4 picture
 keeps to one level, and the view remembers.
 
-**Keyboard.** Tab walks the elements on the canvas, Enter selects the focused
+**Keyboard.** {key:Tab} walks the elements on the canvas, {key:Enter} selects the focused
 one and {key:Shift+Enter} adds it to the selection. The arrow keys nudge the
 selection by a grid step, {key:Shift} by one pixel. \`?\` shows every shortcut.
 
-Lines and the names of domain groups are in the same walk, and Enter selects
-them too; {key:Shift+F10} opens the menu of whatever is selected, and Enter on the
+Lines and the names of domain groups are in the same walk, and {key:Enter} selects
+them too; {key:Shift+F10} opens the menu of whatever is selected, and {key:Enter} on the
 element that is already selected opens its documentation. To draw a line
-without the mouse, choose **Start connection to…** from an element's menu, Tab
-to the other end and press Enter. On a landscape tab, ↓ lists its container
+without the mouse, choose **Start connection to…** from an element's menu, {key:Tab}
+to the other end and press {key:Enter}. On a landscape tab, ↓ lists its container
 diagrams and {key:Shift+F10} opens the tab's menu. Resizing an element, a band or a
 group, moving a group and bending a line still need a pointer.` },
     { title: `Elements`, text: `Seven kinds: application, component, external system, input channel,
@@ -470,7 +470,7 @@ on the right shows it: its kind, a name that wraps, one line of facts, and three
 tabs. With nothing selected there is no panel and the board has the width; press
 the name of the view that is up for **This view**, what it is and holds and its
 tidy. Every fact is a row of label and value, and a press turns the value into a
-field: Enter or leaving keeps it, Escape puts it back, and the foot says what the
+field: {key:Enter} or leaving keeps it, {key:Escape} puts it back, and the foot says what the
 field is for. A field with nothing in it stays out of the panel until **+ Owner,
 vendor…** adds it. The element's page, its **record**, shows the same rows with
 every field, an empty one as a dash: the two are built from one list, so they
@@ -644,7 +644,7 @@ field now, so the roadmap's checks can name a person.` },
     { title: `Documentation`, text: `Every element has a markdown description, and it can be a whole page. Its first
 lines stand in the panel; a press writes them there with the same editor, and
 **Open the page** opens the same text on the element's **record**. So do
-**Record ›** beside its name, **Open documentation** in the element's menu, Enter
+**Record ›** beside its name, **Open documentation** in the element's menu, {key:Enter}
 on the selected element, and a double-click on anything that is not an
 application.
 
@@ -658,7 +658,7 @@ already). *Appearance* stays beside the board, where the card is.
 **Edit** opens a window with nothing but the source and the result beside it;
 **Fields** brings the rows back beside it. {key:Mod+B} and {key:Mod+I} wrap the selection. The text
 is saved after a short pause, one undo step for the whole of it. **Done** ends the
-writing, and **Cancel**, or Escape, takes it back to what it was, asking first if
+writing, and **Cancel**, or {key:Escape}, takes it back to what it was, asking first if
 anything changed.
 
 An empty page can **start from the template**: a header table and the usual
@@ -977,7 +977,7 @@ the rest of the session, and a note says it is now on the organisation chart.` }
 page offers the two places to start: **New journey** and **New area**.
 Everything else is a **+** where the thing would go, and they all work the same
 way — what you made appears, it is selected, and the cursor is in its name, so
-you type over what it was called and press Enter.
+you type over what it was called and press {key:Enter}.
 
 - **New journey** makes the journey and its first phase, *Start*, and points
   this sheet at it, because a band that is a header with nothing under it is not
@@ -1036,7 +1036,7 @@ whether a stakeholder is from outside the organisation, and the lifecycle a
 capability is in — a capability being built is in the same phase as an
 application being built. Moving one thing under another is refused if it would
 put a thing inside itself; the refusal is offered in the list, not hidden from
-it. The eye in the top bar hides the stakeholder rail, and the magnifying glass beside it finds anything on the page by name — pick a hit, or press Enter for the first, and the page scrolls to it, selects it and rings it for a moment.
+it. The eye in the top bar hides the stakeholder rail, and the magnifying glass beside it finds anything on the page by name — pick a hit, or press {key:Enter} for the first, and the page scrolls to it, selects it and rings it for a moment.
 
 Opening an application from a capability's coverage takes you to a board that
 actually draws it, switching boards if the one you are on does not — and to the
@@ -1075,8 +1075,8 @@ are the other canvases': {key:Mod} with + − 0, the wheel, a pinch, {key:Shift+
 still says \`tab=overview\` lands here.
 
 Colour and Day are the sheet's, and nothing moves for them: a function not there yet on the
-day is dashed, one gone is struck through. Tab goes block by block, the arrows go from
-tile to tile across blocks with the page following, Enter opens the panel and Esc comes back
+day is dashed, one gone is struck through. {key:Tab} goes block by block, the arrows go from
+tile to tile across blocks with the page following, {key:Enter} opens the panel and {key:Escape} comes back
 to the tile. **{key:Mod+F}** finds, and lights what it finds.
 
 **Read** and **Design** are two postures. In Read a drag pans, and nothing on the page
@@ -1085,7 +1085,7 @@ moves. In **Design** (\`tab=design\`) you may:
 - drag a block by its title or pull its corner; it snaps to a grid of 8 and to its
   neighbours' edges, {key:Alt} lets go. The first move writes every block, so the page stops
   following the first layout. Space lifts a block for the keyboard, the arrows move it, {key:Shift}
-  resizes, {key:Alt} steps a unit, Space drops and Esc puts it back;
+  resizes, {key:Alt} steps a unit, Space drops and {key:Escape} puts it back;
 - drag a tile within its block to a cell, and the others flow round it; or onto another
   area or grouping, which moves it in the model, on every view, as *Move to…* in the panel
   does. What another scope keeps is refused, in the panel's words;
@@ -1151,7 +1151,7 @@ are kept in other scopes, each scope is put back on its own.
 you type, and {key:Mod+F} comes to it. A person found has their unit gone to and their
 assignment opened. **Me** goes to the unit where you hold a role; say who you are
 first, with **This is me** on the People page. On the chart, the arrows walk the
-boxes, Enter picks and goes down, {key:Shift} and Enter goes up, M moves the unit and F
+boxes, {key:Enter} picks and goes down, {key:Shift} and {key:Enter} goes up, M moves the unit and F
 focuses on it.
 
 **A box** says the unit's type and name and one line per role: *Head: Anna de
@@ -1189,7 +1189,7 @@ place a plan's later move would make into a loop is refused, with why. **Move th
 too** lists the units beside it under the same parent, none ticked. Before anything
 is written, **Who manages it** says who manages each unit from above, today and
 after the move, and a plan's move of the unit is named with its day. Nothing is
-written until **Move**, and Esc leaves it. The unit keeps its id, so its people, its
+written until **Move**, and {key:Escape} leaves it. The unit keeps its id, so its people, its
 reporting lines, the scopes it serves and its comments stay with it, and the units
 inside it come along. It is one step in each scope that keeps a unit moved, all of
 them or none; where that is only this scope, {key:Mod+Z} takes it back, and where other
@@ -1542,8 +1542,8 @@ it. There **Preview** shows that document as it will read, in the same place, an
 on a wide window **Side by side** shows both, as it opens on the widest. Every field has an example
 under it, and a field left empty says what is missing in its place, and the
 count beside the button. Every dialog on the page keeps what is written in
-it: a click beside it does not close it, Escape does not once something is
-written, and Enter in a one-line field does what the button does. Under the title, two
+it: a click beside it does not close it, {key:Escape} does not once something is
+written, and {key:Enter} in a one-line field does what the button does. Under the title, two
 hints that never stop you: **Seen before?** lists observations of the chosen
 scope whose titles share words with yours, each with **Seen again**, which
 asks the day and a note, as on the reader, and records a sighting on that one
@@ -1666,7 +1666,7 @@ it: the reader names each solution, and says to move it to another root cause
 or unlink it first. A new cause can be made a root cause as it is written.
 
 **Every action on a reader is a small button** with an icon and a word or
-two, and hovering it, or reaching it with Tab, says in full what it does and
+two, and hovering it, or reaching it with {key:Tab}, says in full what it does and
 what it is refused for. An observation offers *Seen again*, *Cause*, *Edit*,
 *Merge*, *Move to scope*, *Archive* and *Delete*; a cause *Deeper cause*, *Root cause*,
 *Make root cause*, *Verify* — *Unverify* once it is verified — and *Merge*;
@@ -1716,9 +1716,9 @@ ring, a solution as a square. Dashed is assumed and solid verified, in both,
 and the legend under the picture follows the size. The picture starts
 **fitted** to the window, and fits again when what it draws changes until you
 zoom; the zoom buttons, and {key:Mod} with the scroll wheel, zoom it, and dragging the
-background pans it. **Hovering a record** — or reaching it with Tab — traces
+background pans it. **Hovering a record** — or reaching it with {key:Tab} — traces
 its chain both ways: everything linked to it stays and the rest dims, and its
-full title, its label and its scope show under it. Enter or a click reads
+full title, its label and its scope show under it. {key:Enter} or a click reads
 it. The same records under the same filters land in the same place every
 time.` },
     { title: `Solutions`, text: `The third tab, **Solutions**, starts where the analysis ends: what the team

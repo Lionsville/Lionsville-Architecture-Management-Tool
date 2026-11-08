@@ -200,9 +200,9 @@ alles daarna?") die {key:Mod+Z} al beantwoordt.` },
 | \`?\` | Alle sneltoetsen |
 | F1 | De help, bij het scherm waar je bent |
 | {key:Mod+F} | Element zoeken |
-| Enter | Documentatie van het geselecteerde element openen |
+| {key:Enter} | Documentatie van het geselecteerde element openen |
 | F2 | Selectie hernoemen |
-| Delete | Selectie weghalen, na navraag |
+| {key:Delete} | Selectie weghalen, na navraag |
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Ongedaan maken, opnieuw — één stapel over alles |
 | {key:Mod+C} {key:Mod+X} {key:Mod+V}, {key:Mod+D} | Kopiëren, knippen, plakken, dupliceren |
 | Pijltjes, {key:Shift} Pijltjes | Verplaatsen per rasterstap, per pixel |
@@ -486,16 +486,16 @@ draait buiten elk kader. Ze worden uit de rijen afgeleid en zijn niet te
 verplaatsen: een kader staat waar zijn leden staan. Ze staan uit tot iemand erom vraagt, want
 de kale C4-plaat blijft op één niveau, en de weergave onthoudt het.
 
-**Toetsenbord.** Tab loopt langs de elementen op de plaat, Enter selecteert het
+**Toetsenbord.** {key:Tab} loopt langs de elementen op de plaat, {key:Enter} selecteert het
 element onder de focus en {key:Shift+Enter} voegt het toe aan de selectie. De pijltjes
 verplaatsen de selectie een rasterstap, met {key:Shift} één pixel. \`?\` toont alle
 sneltoetsen.
 
-Koppelingen en de namen van domeingroepen zitten in dezelfde rondgang, en Enter
-selecteert ze ook; {key:Shift+F10} opent het menu van wat geselecteerd is, en Enter op
+Koppelingen en de namen van domeingroepen zitten in dezelfde rondgang, en {key:Enter}
+selecteert ze ook; {key:Shift+F10} opent het menu van wat geselecteerd is, en {key:Enter} op
 het element dat al geselecteerd is opent de documentatie ervan. Een koppeling
 trek je zonder muis met **Koppeling starten naar…** uit het menu van een
-element: ga met Tab naar het andere eind en druk op Enter. Op een tab van een
+element: ga met {key:Tab} naar het andere eind en druk op {key:Enter}. Op een tab van een
 landschap toont ↓ de containerdiagrammen en opent {key:Shift+F10} het menu van de tab.
 Een element, een baan of een groep groter of kleiner maken, een groep
 verplaatsen en een koppeling een knik geven gaan nog met een aanwijzer.` },
@@ -507,8 +507,8 @@ het **paneel** rechts toont het: zijn soort, een naam die afbreekt, één regel
 feiten en drie tabbladen. Met niets geselecteerd is er geen paneel en heeft het
 bord de breedte; klik op de naam van de weergave die open staat voor
 **Deze weergave**, wat ze is en bevat en hoe ze wordt geordend. Elk feit is een rij van label en
-waarde, en een klik maakt van de waarde een veld: Enter of verlaten bewaart,
-Escape zet terug, en de voet zegt waar het veld voor is. Een veld zonder inhoud
+waarde, en een klik maakt van de waarde een veld: {key:Enter} of verlaten bewaart,
+{key:Escape} zet terug, en de voet zegt waar het veld voor is. Een veld zonder inhoud
 blijft uit het paneel tot **+ Eigenaar, leverancier…** het toevoegt. De pagina van
 het element, zijn **gegevenspagina**, toont dezelfde rijen met elk veld, een leeg
 veld als streepje: beide komen uit één lijst, dus ze kunnen niet uit elkaar
@@ -691,7 +691,7 @@ een veld, zodat de controles van de roadmap een persoon kunnen noemen.` },
 De eerste regels staan in het paneel; een klik schrijft ze daar met dezelfde
 editor, en **De pagina openen** opent dezelfde tekst op de **gegevenspagina** van het
 element. Dat doen ook de link naast de naam, **Documentatie openen** in het
-elementmenu, Enter op het geselecteerde element, en een dubbelklik op alles wat
+elementmenu, {key:Enter} op het geselecteerde element, en een dubbelklik op alles wat
 geen applicatie is.
 
 De pagina leest als één geheel: de tekst met haar inhoud, dan dezelfde rijen als
@@ -705,7 +705,7 @@ kaart is.
 **Bewerken** opent een venster met niets dan de bron en het resultaat ernaast;
 **Velden** haalt de rijen erbij. {key:Mod+B} en {key:Mod+I} omhullen de selectie. De tekst wordt
 bewaard na een korte pauze, één stap in Ongedaan maken voor het geheel. **Klaar**
-beëindigt het schrijven, en **Annuleren**, of Escape, zet haar terug op wat ze was,
+beëindigt het schrijven, en **Annuleren**, of {key:Escape}, zet haar terug op wat ze was,
 en vraagt het eerst als er iets is veranderd.
 
 Een lege pagina kan **beginnen met het sjabloon**: een koptabel en de
@@ -1045,7 +1045,7 @@ nu in het organogram staat.` },
 pagina biedt de twee plekken om te beginnen: **Nieuwe klantreis** en
 **Nieuw gebied**. De rest is telkens een **+** op de plek waar het ding komt, en ze
 werken allemaal hetzelfde — wat je maakt verschijnt, is gekozen, en de cursor
-staat in de naam, dus je typt over wat het heette en drukt op Enter.
+staat in de naam, dus je typt over wat het heette en drukt op {key:Enter}.
 
 - **Nieuwe klantreis** maakt de klantreis én de eerste fase, *Begin*, en laat
   dit blad hem tekenen; een band die een kop is met niets eronder is niet wat je
@@ -1113,7 +1113,7 @@ applicatie die gebouwd wordt. Iets onder iets anders hangen wordt geweigerd als
 het daarmee in zichzelf zou komen te zitten; die weigering staat in de lijst en
 wordt er niet uit weggelaten. Het oog in de bovenbalk verbergt de
 belanghebbenden, en het vergrootglas ernaast vindt alles op de pagina op naam —
-kies een treffer, of druk op Enter voor de eerste, en de pagina scrolt ernaartoe,
+kies een treffer, of druk op {key:Enter} voor de eerste, en de pagina scrolt ernaartoe,
 selecteert het en omcirkelt het even.
 
 Een applicatie openen vanuit de invulling van een capability brengt je naar een
@@ -1155,8 +1155,8 @@ De toetsen zijn die van de andere canvassen: {key:Mod} met + − 0, het wiel, kn
 adres dat nog \`tab=overview\` zegt, komt hier uit.
 
 Kleur en Dag zijn die van het blad, en er beweegt niets voor: een functie die er op die dag
-nog niet is, is gestippeld, een die weg is doorgestreept. Tab gaat per blok, de pijltjes van
-tegel naar tegel over blokken heen terwijl de pagina meeloopt, Enter opent het paneel en Esc
+nog niet is, is gestippeld, een die weg is doorgestreept. {key:Tab} gaat per blok, de pijltjes van
+tegel naar tegel over blokken heen terwijl de pagina meeloopt, {key:Enter} opent het paneel en {key:Escape}
 komt terug op de tegel. **{key:Mod+F}** zoekt, en licht op wat het vindt.
 
 **Lezen** en **Ontwerpen** zijn twee houdingen. Bij Lezen schuift een sleep, en beweegt er niets
@@ -1165,7 +1165,7 @@ op de pagina. Bij **Ontwerpen** (\`tab=design\`) kun je:
 - een blok aan de titel slepen of aan de hoek trekken; het klikt op een raster van 8 en op de
   randen van de buren, {key:Alt} laat los. De eerste beweging schrijft elk blok, zodat de pagina de
   eerste indeling niet meer volgt. Spatie pakt een blok op voor het toetsenbord, pijltjes
-  verplaatsen, {key:Shift} verandert de grootte, {key:Alt} stapt per eenheid, spatie zet neer en Esc zet terug;
+  verplaatsen, {key:Shift} verandert de grootte, {key:Alt} stapt per eenheid, spatie zet neer en {key:Escape} zet terug;
 - een tegel binnen zijn blok naar een cel slepen, en de andere stromen eromheen; of op een ander
   gebied of andere groepering, wat haar in het model verplaatst, op elke weergave, zoals
   *Verplaatsen naar…* in het paneel. Wat een andere scope bewaart, wordt geweigerd in de woorden van het paneel;
@@ -1235,7 +1235,7 @@ scopes staan, wordt elke scope op zichzelf teruggezet.
 terwijl je typt, en {key:Mod+F} komt ernaartoe. Bij een gevonden persoon gaat het organogram
 naar de eenheid en opent de toewijzing. **Ik** gaat naar de eenheid waar jij een rol
 hebt; zeg eerst wie je bent, met **Dit ben ik** op de pagina Mensen. Op het organogram
-lopen de pijlen door de vakken, Enter kiest en gaat omlaag, {key:Shift} en Enter gaat
+lopen de pijlen door de vakken, {key:Enter} kiest en gaat omlaag, {key:Shift} en {key:Enter} gaat
 omhoog, M verplaatst de eenheid en F zet de focus erop.
 
 **Een vak** zegt het type en de naam van de eenheid en één regel per rol: *Hoofd:
@@ -1273,7 +1273,7 @@ van een plan een lus zou worden, wordt geweigerd, met de reden. **Deze ook verpl
 noemt de eenheden ernaast onder dezelfde ouder, geen aangevinkt. Voordat iets wordt
 geschreven, zegt **Wie haar aanstuurt** wie elke eenheid van bovenaf aanstuurt, vandaag en na
 de verplaatsing, en wordt een verplaatsing door een plan met haar dag genoemd. Niets
-wordt geschreven tot **Verplaatsen**, en Esc laat het. De eenheid houdt haar id, dus
+wordt geschreven tot **Verplaatsen**, en {key:Escape} laat het. De eenheid houdt haar id, dus
 haar mensen, rapportagelijnen, bediende scopes en opmerkingen blijven bij haar, en de
 eenheden erin gaan mee. Het is één stap in elke scope die een verplaatste eenheid
 bewaart, allemaal of geen; waar dat alleen deze scope is, neemt {key:Mod+Z} het terug, en waar
@@ -1645,8 +1645,8 @@ venster als het document dat ze is: de titel, elk kopje met zijn tekst eronder,
 document zoals het gelezen wordt, op dezelfde plek, en op een breed venster toont
 **Naast elkaar** beide, zoals het op de breedste opent. Onder elk veld staat een voorbeeld, en een veld dat leeg blijft
 zegt op die plek wat er ontbreekt, en naast de knop hoeveel. Elke dialoog op
-de pagina houdt vast wat erin staat: een klik ernaast sluit hem niet, Escape
-niet meer zodra er iets geschreven is, en Enter in een veld van één regel doet
+de pagina houdt vast wat erin staat: een klik ernaast sluit hem niet, {key:Escape}
+niet meer zodra er iets geschreven is, en {key:Enter} in een veld van één regel doet
 wat de knop doet. Onder de titel staan twee hints die je nooit
 tegenhouden: **Al eerder gezien?** noemt waarnemingen van de gekozen scope
 waarvan de titel woorden met de jouwe deelt, elk met **Opnieuw gezien**, dat
@@ -1790,7 +1790,7 @@ koppelen. Een nieuwe oorzaak kan bij het schrijven meteen grondoorzaak
 worden.
 
 **Elke actie in een lezer is een kleine knop** met een pictogram en een of
-twee woorden, en er met de muis boven hangen, of er met Tab op komen, zegt
+twee woorden, en er met de muis boven hangen, of er met {key:Tab} op komen, zegt
 voluit wat hij doet en waarvoor hij geweigerd wordt. Een waarneming biedt
 *Opnieuw gezien*, *Oorzaak*, *Bewerken*, *Samenvoegen*, *Naar scope
 verplaatsen*, *Archiveren* en *Verwijderen*; een oorzaak *Diepere oorzaak*, *Grondoorzaak*, *Tot
@@ -1846,9 +1846,9 @@ een dubbele ring, een oplossing als een vierkant. Gestreept is aangenomen en
 doorgetrokken geverifieerd, in beide, en de legenda onder de tekening volgt
 de grootte. De tekening begint **passend** in het venster, en past zich
 opnieuw aan als wat ze toont verandert, tot je zoomt; de zoomknoppen, en {key:Mod} met het scrollwiel, zoomen, en slepen over de achtergrond verschuift
-haar. **Boven een record hangen** — of er met Tab op komen — volgt de keten
+haar. **Boven een record hangen** — of er met {key:Tab} op komen — volgt de keten
 beide kanten op: alles wat eraan gekoppeld is blijft en de rest vervaagt, en
-de volledige titel, het label en de scope staan eronder. Enter of een klik
+de volledige titel, het label en de scope staan eronder. {key:Enter} of een klik
 leest het. Dezelfde records onder dezelfde filters komen elke keer op
 dezelfde plek.` },
     { title: `Oplossingen`, text: `Het derde tabblad, **Oplossingen**, begint waar de analyse ophoudt: wat het

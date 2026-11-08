@@ -211,7 +211,7 @@ würde eine Frage aufwerfen („und alles danach?“), die {key:Mod+Z} bereits b
 | \`?\` | Jedes Tastenkürzel |
 | F1 | Die Hilfe, beim Bildschirm, auf dem Sie sind |
 | {key:Mod+F} | Ein Element suchen |
-| Enter | Die Dokumentation des ausgewählten Elements öffnen |
+| {key:Enter} | Die Dokumentation des ausgewählten Elements öffnen |
 | F2 | Die Auswahl umbenennen |
 | Delete | Die Auswahl entfernen, nach Rückfrage |
 | {key:Mod+Z}, {key:Mod+Shift+Z} | Rückgängig, Wiederholen — ein Stapel über alles |
@@ -518,16 +518,16 @@ abgeleitet und lassen sich nicht verschieben: ein Rahmen ist dort, wo seine
 Mitglieder sind. Sie sind aus, bis jemand danach fragt, denn das schlichte C4-Bild
 bleibt auf einer Ebene, und die Ansicht merkt es sich.
 
-**Tastatur.** Tab geht die Elemente auf der Zeichenfläche durch, Enter wählt das
+**Tastatur.** {key:Tab} geht die Elemente auf der Zeichenfläche durch, {key:Enter} wählt das
 fokussierte aus, und {key:Shift+Enter} fügt es der Auswahl hinzu. Die Pfeiltasten
 verschieben die Auswahl um einen Rasterschritt, mit {key:Shift} um ein Pixel. \`?\`
 zeigt jedes Tastenkürzel.
 
 Verbindungen und die Namen von Domänengruppen liegen auf demselben Weg, und
-Enter wählt auch sie aus; {key:Shift+F10} öffnet das Menü dessen, was ausgewählt ist,
-und Enter auf dem bereits ausgewählten Element öffnet seine Dokumentation. Eine
+{key:Enter} wählt auch sie aus; {key:Shift+F10} öffnet das Menü dessen, was ausgewählt ist,
+und {key:Enter} auf dem bereits ausgewählten Element öffnet seine Dokumentation. Eine
 Verbindung ziehen Sie ohne Maus mit **Verbindung beginnen zu…** aus dem Menü
-eines Elements: mit Tab zum anderen Ende gehen und Enter drücken. Auf dem Tab
+eines Elements: mit {key:Tab} zum anderen Ende gehen und {key:Enter} drücken. Auf dem Tab
 einer Landschaft listet ↓ ihre Containerdiagramme, und {key:Shift+F10} öffnet das
 Menü des Tabs. Ein Element, ein Band oder eine Gruppe in der Größe ändern, eine
 Gruppe verschieben und einer Verbindung einen Knick geben braucht weiterhin
@@ -540,8 +540,8 @@ aus, und das **Panel** rechts zeigt es: seine Art, einen Namen, der umbricht, ei
 Zeile Fakten und drei Reiter. Ist nichts ausgewählt, gibt es kein Panel und das
 Board hat die Breite; klicken Sie auf den Namen der offenen Ansicht für
 **Diese Ansicht**, was sie ist und enthält und wie sie aufräumt. Jeder Fakt ist eine Zeile
-aus Beschriftung und Wert, und ein Klick macht aus dem Wert ein Feld: Enter oder
-Verlassen behält ihn, Escape setzt ihn zurück, und der Fuß sagt, wofür das Feld
+aus Beschriftung und Wert, und ein Klick macht aus dem Wert ein Feld: {key:Enter} oder
+Verlassen behält ihn, {key:Escape} setzt ihn zurück, und der Fuß sagt, wofür das Feld
 ist. Ein Feld ohne Inhalt bleibt aus dem Panel, bis **+ Verantwortlicher,
 Anbieter…** es hinzufügt. Die Seite des Elements, seine **Steckbrief**, zeigt
 dieselben Zeilen mit jedem Feld, ein leeres als Strich: beide entstehen aus einer
@@ -699,7 +699,7 @@ und die Adresse trägt es (\`?day=2027-06-01\`), also öffnet ein Link dieselbe 
 **Zurück zu heute**, oder **Zurück zu** dem eigenen Tag des Boards, ist ein Klick. **Zum Tag
 der Ansicht machen** im Band ist der bewusste Schritt: eine Bearbeitung, ein Eintrag in der
 Aktivität, und {key:Mod+Z} nimmt ihn zurück. Das geht auch für heute, was ein datiertes Board zurück
-in den Kalender setzt. Ein auf seinen Tag gespeichertes Board nennt diesen Tag auf seinem Tab
+in den Kalender setzt. Ein auf seinen Tag gespeichertes Board nennt diesen Tag auf seinem {key:Tab}
 und bleibt darauf bearbeitbar, und wer eine Rolle innehat, lässt sich am angesehenen Tag noch
 ändern. Ein von einem Board geöffnetes Containerdiagramm nimmt dessen Tag mit, und sein Weg
 zurück führt zu diesem Board.
@@ -732,7 +732,7 @@ Checks der Roadmap eine Person nennen können.` },
 Die ersten Zeilen stehen im Panel; ein Klick schreibt sie dort mit demselben Editor,
 und **Seite öffnen** öffnet denselben Text auf den **Steckbrief** des Elements. Das
 tun auch der Link neben dem Namen, **Dokumentation öffnen** im Menü des Elements,
-Enter auf dem ausgewählten Element und ein Doppelklick auf alles, was keine
+{key:Enter} auf dem ausgewählten Element und ein Doppelklick auf alles, was keine
 Anwendung ist.
 
 Die Seite liest sich als ein Ganzes: der Text mit seinem Inhalt, dann dieselben
@@ -746,7 +746,7 @@ wo die Karte ist.
 **Bearbeiten** öffnet ein Fenster mit nichts als dem Quelltext und dem Ergebnis
 daneben; **Felder** holt die Zeilen dazu. {key:Mod+B} und {key:Mod+I} umschließen die Auswahl. Der Text
 wird nach einer kurzen Pause gespeichert, ein Rückgängig-Schritt für das Ganze.
-**Fertig** beendet das Schreiben, und **Abbrechen** oder Escape setzt ihn auf das
+**Fertig** beendet das Schreiben, und **Abbrechen** oder {key:Escape} setzt ihn auf das
 zurück, was er war, und fragt zuerst, wenn sich etwas geändert hat.
 
 Eine leere Seite kann **mit der Vorlage beginnen**: eine Kopftabelle und die
@@ -1106,7 +1106,7 @@ und die leere Seite bietet die zwei Stellen zum Beginnen: **Neue Kundenreise**
 und **Neues Gebiet**. Alles andere ist ein **+** dort, wo das Ding hinkäme, und
 sie funktionieren alle gleich — was Sie angelegt haben, erscheint, es ist
 ausgewählt, und der Cursor steht in seinem Namen, sodass Sie überschreiben, wie
-es hieß, und Enter drücken.
+es hieß, und {key:Enter} drücken.
 
 - **Neue Kundenreise** legt die Kundenreise und ihre erste Phase, *Beginn*, an
   und richtet dieses Blatt darauf, denn ein Band, das eine Überschrift mit
@@ -1179,7 +1179,7 @@ derselben Phase wie eine Anwendung im Aufbau. Ein Ding unter ein anderes zu
 verschieben wird abgelehnt, wenn es das Ding in sich selbst legen würde; die
 Ablehnung steht in der Liste, statt darin verborgen zu sein. Das Auge in der
 oberen Leiste blendet die Leiste der Beteiligten aus, und die Lupe daneben findet
-alles auf der Seite nach Namen — einen Treffer wählen, oder Enter für den ersten,
+alles auf der Seite nach Namen — einen Treffer wählen, oder {key:Enter} für den ersten,
 und die Seite rollt dorthin, wählt es aus und umrandet es für einen Moment.
 
 Eine Anwendung aus der Abdeckung einer Fähigkeit zu öffnen bringt Sie zu einem
@@ -1223,8 +1223,8 @@ Tasten sind die der anderen Leinwände: {key:Mod} mit + − 0, das Rad, Zusammen
 Adresse, die noch \`tab=overview\` sagt, landet hier.
 
 Farbe und Tag sind die des Blatts, und nichts bewegt sich dafür: eine Funktion, die es an dem Tag
-noch nicht gibt, ist gestrichelt, eine, die weg ist, durchgestrichen. Tab geht blockweise, die
-Pfeile von Kachel zu Kachel über Blöcke hinweg, die Seite folgt, Enter öffnet das Panel und Esc
+noch nicht gibt, ist gestrichelt, eine, die weg ist, durchgestrichen. {key:Tab} geht blockweise, die
+Pfeile von Kachel zu Kachel über Blöcke hinweg, die Seite folgt, {key:Enter} öffnet das Panel und {key:Escape}
 kehrt zur Kachel zurück. **{key:Mod+F}** sucht und hebt hervor, was es findet.
 
 **Lesen** und **Gestalten** sind zwei Haltungen. Beim Lesen schiebt ein Ziehen, und nichts auf der
@@ -1234,7 +1234,7 @@ Seite bewegt sich. Beim **Gestalten** (\`tab=design\`) können Sie:
   den Kanten der Nachbarn ein, {key:Alt} lässt los. Die erste Bewegung schreibt jeden Block, sodass die
   Seite der ersten Anordnung nicht mehr folgt. Die Leertaste nimmt einen Block für die Tastatur auf,
   die Pfeile verschieben, {key:Shift} ändert die Größe, {key:Alt} geht einheitenweise, die Leertaste setzt ab und
-  Esc stellt zurück;
+  {key:Escape} stellt zurück;
 - eine Kachel innerhalb ihres Blocks in eine Zelle ziehen, und die anderen fließen darum herum;
   oder auf ein anderes Gebiet oder eine Gruppierung, was sie im Modell verschiebt, auf jeder
   Ansicht, wie *Verschieben nach…* im Panel. Was ein anderer Bereich aufbewahrt, wird mit den Worten
@@ -1308,7 +1308,7 @@ sich zurückgesetzt.
 Tippen, und {key:Mod+F} führt dorthin. Bei einer gefundenen Person geht das Organigramm zur Einheit
 und öffnet die Zuordnung. **Mich finden** geht zur Einheit, in der Sie eine Rolle haben; sagen Sie zuerst,
 wer Sie sind, mit **Das bin ich** auf der Seite Personen. Im Organigramm gehen die Pfeile
-durch die Kästen, Enter wählt und geht nach unten, {key:Shift} und Enter nach oben, M
+durch die Kästen, {key:Enter} wählt und geht nach unten, {key:Shift} und {key:Enter} nach oben, M
 verschiebt die Einheit und F setzt den Fokus darauf.
 
 **Ein Kasten** sagt Typ und Namen der Einheit und eine Zeile je Rolle: *Leitung: Anna de
@@ -1347,7 +1347,7 @@ Verschiebung eines Plans zur Schleife machte, wird abgelehnt, mit Grund. **Diese
 verschieben** nennt die Einheiten daneben unter derselben übergeordneten, keine angehakt.
 Bevor etwas geschrieben wird, sagt **Wer sie führt**, wer jede Einheit von oben führt, heute
 und nach dem Umzug, und eine Verschiebung durch einen Plan wird mit ihrem Tag genannt. Nichts
-wird geschrieben bis **Verschieben**, und Esc verlässt es. Die Einheit behält ihre Id, also
+wird geschrieben bis **Verschieben**, und {key:Escape} verlässt es. Die Einheit behält ihre Id, also
 bleiben ihre Personen, Berichtslinien, bedienten Bereiche und Kommentare bei ihr, und die
 Einheiten darin kommen mit. Es ist ein Schritt in jedem Bereich, der eine verschobene Einheit
 führt, alle oder keiner; wo das nur dieser Bereich ist, nimmt {key:Mod+Z} es zurück, und wo auch andere
@@ -1737,7 +1737,7 @@ Fenster zeigt **Nebeneinander** beides, wie es auf dem breitesten öffnet.
 Unter jedem Feld steht ein Beispiel, und ein leer gelassenes Feld sagt an
 dieser Stelle, was fehlt, und neben der Schaltfläche, wie viele. Jeder Dialog
 auf der Seite behält, was in ihm steht: Ein Klick daneben schließt ihn nicht,
-Escape nicht mehr, sobald etwas geschrieben ist, und Enter in einem
+{key:Escape} nicht mehr, sobald etwas geschrieben ist, und {key:Enter} in einem
 einzeiligen Feld tut, was die Schaltfläche tut. Unter dem Titel stehen
 zwei Hinweise, die nie aufhalten: **Schon einmal gesehen?** nennt
 Beobachtungen des gewählten Bereiche, deren Titel Wörter mit Ihrem teilt, jede
@@ -1885,7 +1885,7 @@ verschieben oder zu lösen. Eine neue Ursache kann schon beim Schreiben zur
 Grundursache werden.
 
 **Jede Aktion in einem Leser ist eine kleine Schaltfläche** mit einem Symbol
-und ein oder zwei Wörtern, und darüber zu fahren, oder sie mit Tab zu
+und ein oder zwei Wörtern, und darüber zu fahren, oder sie mit {key:Tab} zu
 erreichen, sagt ausführlich, was sie tut und wofür sie abgelehnt wird. Eine
 Beobachtung bietet *Erneut gesehen*, *Ursache*, *Bearbeiten*,
 *Zusammenführen*, *In Bereich verschieben*, *Archivieren* und *Löschen*; eine Ursache *Tiefere
@@ -1945,10 +1945,10 @@ mit doppeltem Ring, eine Lösung als Quadrat. Gestrichelt heißt vermutet und
 durchgezogen verifiziert, in beiden, und die Legende unter dem Bild folgt der
 Größe. Das Bild beginnt **eingepasst** ins Fenster und passt sich erneut an,
 wenn sich ändert, was es zeigt, bis Sie zoomen; die Zoom-Schaltflächen, und {key:Mod} mit dem Mausrad, zoomen, und Ziehen über den Hintergrund
-verschiebt es. **Über einem Eintrag verweilen** — oder ihn mit Tab
+verschiebt es. **Über einem Eintrag verweilen** — oder ihn mit {key:Tab}
 erreichen — verfolgt seine Kette in beide Richtungen: Alles, was damit
 verknüpft ist, bleibt, und der Rest verblasst, und der volle Titel, die
-Kennung und der Bereich stehen darunter. Enter oder ein Klick liest ihn.
+Kennung und der Bereich stehen darunter. {key:Enter} oder ein Klick liest ihn.
 Dieselben Einträge unter denselben Filtern landen jedes Mal an derselben
 Stelle.` },
     { title: `Lösungen`, text: `Der dritte Reiter, **Lösungen**, beginnt, wo die Analyse endet: was das Team
