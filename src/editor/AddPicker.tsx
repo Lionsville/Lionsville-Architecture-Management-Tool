@@ -90,7 +90,7 @@ export function AddPicker({ parts, diagram }: { parts: EditorParts; diagram: Des
     }
     state.actions.addElement({
       kind, name: typed,
-      ...(request.at ?? {}),
+      ...(request.at ?? { clearOf: drawnLines() }),
       ...(request.connectFrom ? { connectFrom: request.connectFrom } : {}),
     });
   };
@@ -134,4 +134,20 @@ export function AddPicker({ parts, diagram }: { parts: EditorParts; diagram: Des
       )}
     />
   );
+}
+
+/**
+ * The lines on the board as they are drawn, in the board's own units: the
+ * router's routes are kept on the screen and in no record, so where a card
+ * placed for itself must keep clear of them, they are read off the paths. Each
+ * path's points in order stand for it, its corners' control points with them.
+ */
+function drawnLines(): Point[][] {
+  if (typeof document === 'undefined') return []
+  return [...document.querySelectorAll<SVGPathElement>('.lv-board .react-flow__edge-path')].map((path) => {
+    const numbers = (path.getAttribute('d') ?? '').match(/-?\d+(?:\.\d+)?(?:e-?\d+)?/gi)?.map(Number) ?? []
+    const points: Point[] = []
+    for (let at = 0; at + 1 < numbers.length; at += 2) points.push({ x: numbers[at]!, y: numbers[at + 1]! })
+    return points
+  }).filter((points) => points.length > 1)
 }

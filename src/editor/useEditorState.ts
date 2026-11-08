@@ -162,6 +162,8 @@ export interface ElementSeed {
   group?: string;
   /** A line in hand comes from here: it arrives connected, in the same step. */
   connectFrom?: ElementId;
+  /** The lines as the board draws them now, routes and all, which a card placed for itself keeps clear of. */
+  clearOf?: readonly (readonly Point[])[];
   // Optional pre-seed style (U7c/D10 quick-style-from-palette). Absent = inherit,
   // exactly as before. These are the SAME fields the inspector Appearance tab
   // edits — one source of truth, no new columns, no migration.
@@ -719,7 +721,7 @@ export function useEditorState(props: SolutionDesignEditorProps): EditorState {
         // the rects that are really there, clear of the lines and the groups' edges.
         const elementsById = new Map(currentModel().elements.map((e) => [e.id, e]));
         const figureOf = (other: string, zone: Layer7Zone | undefined) => { const held = elementsById.get(other); return held ? nodeFigure(held, zone) : undefined; };
-        const placement = seedPlacement(seed, diagram, id, figureOf, slotObstaclesOn(diagram, currentModel().relations, figureOf));
+        const placement = seedPlacement(seed, diagram, id, figureOf, slotObstaclesOn(diagram, currentModel().relations, figureOf, seed.clearOf));
         geometry(transaction([
           { type: 'element.create', element },
           placeOn(diagram.id, [placement]),

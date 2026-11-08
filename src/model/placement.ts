@@ -714,31 +714,19 @@ export function segmentMeetsRect(a: Point, b: Point, rect: Rect): boolean {
   return true;
 }
 
-function clearOf(candidate: Rect, occupied: readonly Rect[], avoid: SlotObstacles | undefined): boolean {
-  if (occupied.some((rect) => rectsIntersect(candidate, rect))) return false;
-  if (!avoid) return true;
-  const wide: Rect = {
-    x: candidate.x - LINE_CLEARANCE, y: candidate.y - LINE_CLEARANCE,
-    width: candidate.width + LINE_CLEARANCE * 2, height: candidate.height + LINE_CLEARANCE * 2,
-  };
-  for (const line of avoid.lines ?? []) {
-    for (let i = 0; i + 1 < line.length; i += 1) if (segmentMeetsRect(line[i]!, line[i + 1]!, wide)) return false;
-  }
-  const inside = (rect: Rect) => candidate.x >= rect.x && candidate.y >= rect.y
-    && candidate.x + candidate.width <= rect.x + rect.width && candidate.y + candidate.height <= rect.y + rect.height;
-  return !(avoid.groups ?? []).some((rect) => rectsIntersect(candidate, rect) && !inside(rect));
-}
-
 /**
  * What a card added to a board keeps clear of: each line between two of its
- * members, from centre to centre through the bends a person gave it, and its
- * domain groups. The centres stand in for where the router lets a line leave a
- * card; a little more room than the line takes does no harm to a new card.
+ * members, from centre to centre through the bends a person gave it, the lines
+ * as they are drawn where the caller can see them, and its domain groups. The
+ * centres stand in for where a line leaves a card; a little more room than the
+ * line takes does no harm to a new card.
  */
 export function slotObstaclesOn(
   diagram: Pick<DesignDiagram, 'members' | 'geometry'>,
   relations: readonly { id: string; sourceId: ElementId; targetId: ElementId }[],
   figureOf: (id: ElementId, zone: Layer7Zone | undefined) => NodeFigure | undefined,
+  /** The lines as they are drawn, where whoever asks can see them: a route the router chose is stored nowhere. */
+  drawn: readonly (readonly Point[])[] = [],
 ): SlotObstacles {
   const centres = new Map<ElementId, Point>();
   for (const placed of placedNodes(diagram)) {
@@ -748,13 +736,36 @@ export function slotObstaclesOn(
     centres.set(placed.id, { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
   }
   const bends = new Map((diagram.geometry?.routes ?? []).map((route) => [route.relationId, route.waypoints]));
-  const lines: Point[][] = [];
+  const lines: (readonly Point[])[] = [];
   for (const relation of relations) {
     const from = centres.get(relation.sourceId);
     const to = centres.get(relation.targetId);
     if (from && to) lines.push([from, ...(bends.get(relation.id) ?? []), to]);
   }
-  return { lines, groups: diagram.geometry?.groups ?? [] };
+  return { lines: [...lines, ...drawn], groups: diagram.geometry?.groups ?? [] };
+}
+
+/**
+ * How badly a card here would sit: refused where it overlaps a card, and
+ * otherwise a count — a group's edge it crosses weighs more than any line,
+ * then each line that runs through it. Zero is a place clear of everything.
+ */
+function costOf(candidate: Rect, occupied: readonly Rect[], avoid: SlotObstacles | undefined): number {
+  if (occupied.some((rect) => rectsIntersect(candidate, rect))) return Number.POSITIVE_INFINITY
+  if (!avoid) return 0
+  const wide: Rect = {
+    x: candidate.x - LINE_CLEARANCE, y: candidate.y - LINE_CLEARANCE,
+    width: candidate.width + LINE_CLEARANCE * 2, height: candidate.height + LINE_CLEARANCE * 2,
+  }
+  const inside = (rect: Rect) => candidate.x >= rect.x && candidate.y >= rect.y
+    && candidate.x + candidate.width <= rect.x + rect.width && candidate.y + candidate.height <= rect.y + rect.height
+  let cost = 1000 * (avoid.groups ?? []).filter((rect) => rectsIntersect(candidate, rect) && !inside(rect)).length
+  for (const line of avoid.lines ?? []) {
+    for (let i = 0; i + 1 < line.length; i += 1) {
+      if (segmentMeetsRect(line[i]!, line[i + 1]!, wide)) { cost += 1; break }
+    }
+  }
+  return cost
 }
 
 /**
@@ -766,10 +777,11 @@ export function slotObstaclesOn(
  * not one per occupant, because one wide card can cover several slots.
  *
  * Where `avoid` is given, the slot keeps clear of those lines and group edges
- * too; where every slot is taken, a finer walk over the area finds the room
- * the cascade's grid passes over. Only an area with no room anywhere falls
- * back, first to a place clear of the cards alone, then to the slot past the
- * last occupant — which leaves the area, as it always did.
+ * too, and the room the cascade's grid passes over is walked as well, finer:
+ * the first place clear of everything wins, and on a board too busy for one,
+ * the place that crosses the fewest. Only an area with no room for the card
+ * at all falls back to the slot past the last occupant, which leaves the area,
+ * as it always did.
  */
 export function freeSlotIn(
   area: Rect,
@@ -784,38 +796,31 @@ export function freeSlotIn(
   // is no bound on how many slots are taken. Walked in order, so the answer
   // is the same for the same board.
   const bound = Math.max(occupied.length + 1, slotsIn(area, figure, inset));
-  const fits = (slot: { x: number; y: number }, obstacles: SlotObstacles | undefined) =>
-    clearOf({ ...slot, width: size.width, height: size.height }, occupied, obstacles);
   const inArea = slotsIn(area, figure, inset);
-  const passes = avoid ? [avoid, undefined] : [undefined];
-  for (const obstacles of passes) {
-    // The slots past the area's own are left to the last resort: one free there is outside the band.
-    for (let index = 0; index < inArea; index += 1) {
-      const slot = cascadeSlot(area, figure, index, inset);
-      if (fits(slot, obstacles)) return slot;
-    }
-    const fine = fineSlot(area, size, inset, (slot) => fits(slot, obstacles));
-    if (fine) return fine;
-  }
+  const cost = (slot: { x: number; y: number }) => costOf({ ...slot, width: size.width, height: size.height }, occupied, avoid);
+  let best: { slot: { x: number; y: number }; cost: number } | undefined;
+  const weigh = (slot: { x: number; y: number }) => {
+    const said = cost(slot);
+    if (said < (best?.cost ?? Number.POSITIVE_INFINITY)) best = { slot, cost: said };
+    return said === 0;
+  };
+  // The slots past the area's own are left to the last resort: one free there is outside the band.
+  for (let index = 0; index < inArea; index += 1) if (weigh(cascadeSlot(area, figure, index, inset))) return best!.slot;
+  if (avoid) for (const slot of fineSlots(area, size, inset)) if (weigh(slot)) return best!.slot;
+  if (best) return best.slot;
   for (let index = inArea; index < bound; index += 1) {
     const slot = cascadeSlot(area, figure, index, inset);
-    if (fits(slot, undefined)) return slot;
+    if (!occupied.some((rect) => rectsIntersect({ ...slot, ...size }, rect))) return slot;
   }
   return cascadeSlot(area, figure, bound, inset);
 }
 
-/** The first place on a fine grid inside the area's inset where a card of this size fits, row by row. */
-function fineSlot(
-  area: Rect, size: { width: number; height: number }, inset: { x: number; y: number } | undefined,
-  fits: (slot: { x: number; y: number }) => boolean,
-): { x: number; y: number } | undefined {
+/** The places on a fine grid inside the area's inset where a card of this size stands within it, row by row. */
+function* fineSlots(area: Rect, size: { width: number; height: number }, inset: { x: number; y: number } | undefined): Generator<{ x: number; y: number }> {
   const pad = inset ?? { x: ZONE_INSET, y: ZONE_INSET };
   for (let y = area.y + pad.y; y + size.height <= area.y + area.height - pad.y / 2; y += FINE_STEP) {
-    for (let x = area.x + pad.x; x + size.width <= area.x + area.width - pad.x; x += FINE_STEP) {
-      if (fits({ x, y })) return { x, y };
-    }
+    for (let x = area.x + pad.x; x + size.width <= area.x + area.width - pad.x; x += FINE_STEP) yield { x, y };
   }
-  return undefined;
 }
 
 /**

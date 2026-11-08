@@ -442,9 +442,13 @@ describe('a new card kept clear of lines and group edges', () => {
     expect(taken.some((rect) => rectsIntersect({ ...slot, ...NODE_SIZES.application }, rect))).toBe(false);
   });
 
-  it('falls back to a place clear of the cards alone where the lines leave no room', () => {
-    const everywhere = [[{ x: 0, y: 0 }, { x: 2000, y: 2000 }], [{ x: 2000, y: 0 }, { x: 0, y: 2000 }], [{ x: 0, y: 200 }, { x: 2000, y: 200 }], [{ x: 0, y: 400 }, { x: 2000, y: 400 }], [{ x: 0, y: 300 }, { x: 2000, y: 300 }], [{ x: 0, y: 500 }, { x: 2000, y: 500 }]];
-    expect(freeSlotIn(area, 'application', [], undefined, { lines: everywhere })).toEqual(cascadeSlot(area, 'application', 0));
+  it('takes the place that crosses the fewest lines where the lines leave no room clear of them all', () => {
+    // Rows of lines too close for a card between any two, and one row more in the area's lower half.
+    const rows = [140, 230, 320, 410, 500, 560].map((y) => [{ x: 0, y }, { x: 2000, y }]);
+    const slot = freeSlotIn(area, 'application', [], undefined, { lines: rows });
+    const card = { ...slot, ...NODE_SIZES.application };
+    const crossed = rows.filter((line) => segmentMeetsRect(line[0]!, line[1]!, { x: card.x - 8, y: card.y - 8, width: card.width + 16, height: card.height + 16 })).length;
+    expect(crossed).toBe(1);
   });
 
   it('reads a board’s lines centre to centre through their bends, and its groups', () => {
