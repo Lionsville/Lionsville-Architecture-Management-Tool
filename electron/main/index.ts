@@ -361,6 +361,16 @@ if (ownUserData) {
   app.setPath('userData', ownUserData)
   app.setAppLogsPath(join(ownUserData, 'logs'))
 }
+/**
+ * Chromium's own switch for the same thing, `--user-data-dir=<folder>`, moves
+ * `userData` and leaves the log where every development run on the machine
+ * writes it. Runs side by side then wrote one file between them, and a
+ * renderer gone in one could not be told from another's. A run given a folder
+ * of its own keeps its log there too.
+ */
+else if (!app.isPackaged && app.commandLine.hasSwitch('user-data-dir')) {
+  app.setAppLogsPath(join(app.getPath('userData'), 'logs'))
+}
 
 /** A run's directory where no launcher made one: said, because nothing will remove it. */
 function madeForThisRun(): string {
