@@ -486,7 +486,7 @@ export const GROWN = {
   'src/agent/place.ts': { complexity: 35 },
   'src/agent/screen.ts': { complexity: 26 },
   'src/app/bootLanding.ts': { complexity: 26 },
-  'src/app/frame/AppFrame.tsx': { complexity: 39 },
+  'src/app/frame/AppFrame.tsx': { complexity: 38 },
   'src/app/history/useProjectHistory.ts': { lines: 153 },
   'src/app/main.tsx': { complexity: 35 },
   'src/app/useShellAgent.ts': { complexity: 42, lines: 154 },
