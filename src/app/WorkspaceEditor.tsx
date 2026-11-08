@@ -385,6 +385,7 @@ function mapPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView):
       maps={maps.map((held) => ({ id: held.id, name: held.name, here: held.id === diagram.id }))}
       onOpenMap={pages.openView}
       {...(sheet ? { onSheet: () => pages.openView(sheet.id) } : !view.readOnly ? { onSheet: sheets.create } : {})}
+      {...(sheet?.asOf !== undefined ? { sheetDay: sheet.asOf } : {})}
       {...(!view.readOnly ? {
         onCreateMap: pages.createMap,
         onRename: (name: string) => diagrams.onRenameDiagram(diagram.id, name),

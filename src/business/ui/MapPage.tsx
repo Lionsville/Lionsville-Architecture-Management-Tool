@@ -19,7 +19,7 @@
  * start, because no one having started is not 142 faults.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import Box from '@mui/material/Box'
 import { useTheme } from '@mui/material/styles'
 import type { DesignDiagram, DesignElement, DesignModel, ElementId, Relation } from '../../model'
@@ -104,6 +104,8 @@ export type MapPageProps = {
   days?: readonly DayGroup[]
   /** The sheet's other readings: to this scope's sheet, made where it has none and the person may. */
   onSheet?(): void
+  /** The day the sheet is saved on: Coverage reads it there where it keeps no day of its own, as the poster and Names do. */
+  sheetDay?: string
   /** Every map in this scope, to change between them. */
   maps?: readonly OtherView[]
   onOpenMap?(id: string): void
@@ -312,15 +314,19 @@ function CoverageMatrix({ laidOut, name, cells, folded, pick, onPick, onColumn, 
 }) {
   const { rowById } = cells
   const banded = laidOut.groups.length > 1 || laidOut.groups.some((group) => group.where !== undefined)
+  // Who does it, by name: a bare 1 on a group read as a count of people under a summary saying 0 by people.
   const peopleOf = (id: string) => {
     const row = rowById.get(id)
     if (!row || row.assignedTo.length === 0) return null
-    const says = t('map.peopleTip', { names: row.assignedNames.join(', ') })
-    return <span title={says}>{row.leaf ? <Mark kind="cov-people" label={says} /> : row.assignedTo.length}</span>
+    const [first, ...more] = row.assignedNames
+    return <span className="map-page__doneBy" title={t('map.peopleTip', { names: row.assignedNames.join(', ') })}>{more.length > 0 ? t('map.doneByMore', { name: first ?? '', count: more.length }) : first}</span>
   }
+  // The capability column as wide as its longest name, within bounds, where it cut names at 240px beside an empty window.
+  const longest = Math.max(0, ...laidOut.rows.map((row) => row.element.name.length))
+  const deepest = Math.max(0, ...laidOut.rows.map((row) => row.depth))
   const answerOf = (id: string) => { const row = rowById.get(id); return row ? verdict(row, t) : null }
   return (
-    <div data-testid="map-grid" data-guide="map.grid" style={{ display: 'contents' }}>
+    <div data-testid="map-grid" data-guide="map.grid" style={{ display: 'contents', '--map-head': `calc(${longest}ch * 0.82 + ${deepest} * var(--s-3) + 2.5rem)` } as CSSProperties}>
       <Matrix
         key={version} label={name} rowHeading={t('map.function')} rotateHeads
         rows={laidOut.rows.map((row) => ({ id: row.element.id, label: row.element.name, ...(row.parentId !== undefined ? { parent: row.parentId } : {}) }))}
@@ -630,7 +636,7 @@ export function MapPage(props: MapPageProps) {
   const sheetLevel = usePlaceTabFor('sheet')
   const { lookDay, look, readOnly, chooseDay } = useMapDay(props)
   const { exporting, exportPng } = useMapPicture(props, page, pick?.id)
-  const laidOut = useLaidOutMap(props, lookDay, allColumns)
+  const laidOut = useLaidOutMap(props, lookDay ?? (props.map?.asOf === undefined ? props.sheetDay : undefined), allColumns)
   const folds = useUnfolded(model)
   const pickRow = (id: ElementId) => { setPick({ kind: 'row', id }); folds.reveal(id) }
   const { locatedId, locate } = useLocated(page, pickRow, 'data-kit-row')
@@ -648,7 +654,7 @@ export function MapPage(props: MapPageProps) {
         props={props} readOnly={readOnly} t={t}
         at={{
           hasRows, counts, filter, onFilter: setFilter, level, onLevel: (to) => { setLevel(to); folds.reset() },
-          day: lookDay ?? map?.asOf, onDay: chooseDay, finding, onFinding: () => (finding ? closeFind() : setFinding(true)),
+          day: lookDay ?? map?.asOf ?? props.sheetDay, onDay: chooseDay, finding, onFinding: () => (finding ? closeFind() : setFinding(true)),
           onExport: () => setExportOpen(true), onRename: () => setRenaming(map?.name), onDraws: () => setDrawsOpen(true),
           allColumns, onAllColumns: setAllColumns,
           onReading: (to) => { if (to !== 'coverage') { sheetLevel(to); props.onSheet?.() } },

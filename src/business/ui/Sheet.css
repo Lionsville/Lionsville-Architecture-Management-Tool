@@ -12,6 +12,7 @@
 .sheet-page__keyRow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-4); border-bottom: 1px solid var(--line); }
 .sheet-page__keyRow .kit-key { border: 0; box-shadow: none; background: transparent; padding: 0; }
 .sheet-page__keyEnd { margin-inline-start: auto; }
+.sheet-page > .sheet-page__keyRow { border-bottom: 0; border-top: 1px solid var(--line); }
 .sheet-page__link { min-height: var(--target-min);  appearance: none; border: 0; padding: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
 .sheet-page__link:focus-visible,
 .sheet-row__main:focus-visible,
@@ -145,7 +146,17 @@
 .map-page__summary { color: var(--ink); }
 .map-page__dock { flex: none; display: flex; min-height: 0; }
 .map-page__grid { flex: 1 1 auto; min-width: 0; min-height: 0; display: flex; }
-.map-page__grid > .kit-matrix { flex: 1 1 auto; }
+.map-page__grid .kit-matrix { flex: 1 1 auto; --kit-matrix-head: clamp(10rem, var(--map-head, 15rem), 26.25rem); }
+@media (min-width: 1300px) { .map-page__grid .kit-matrix { --kit-matrix-answer: 7rem; } }
+.map-page__doneBy { display: block; max-width: calc(var(--kit-matrix-answer) - 2 * var(--s-2)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--fw-regular); }
+/* A short window keeps the matrix the room: closer rows at the small size (never under 11px), rotated names held to a fifth
+   of the height, and the line under it on one line. At 1100x700 and 150% it showed three rows. */
+@media (max-height: 760px) {
+  .map-page__line { padding-block: 2px; font-size: var(--t-small); }
+  .map-page__grid .kit-matrix { --cell-size: 1.375rem; font-size: var(--t-small); }
+  .map-page__grid .kit-matrix[data-rotate] .kit-matrix__colName { max-height: min(9rem, 20vh); }
+  .map-page__grid .kit-matrix .kit-matrix__line { min-height: 0; padding-block: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: var(--t-small); }
+}
 .sheet-page[data-exporting] .kit-matrix__scroll { overflow: visible; }
 .map-verdict[data-gap] { color: var(--warn); font-weight: var(--fw-medium); }
 .map-column__row { display: flex; gap: var(--s-2); }
