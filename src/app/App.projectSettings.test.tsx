@@ -104,7 +104,7 @@ describe('a scope’s settings, from the scope that is open', () => {
     })
   })
 
-  it('puts a field back with Escape and keeps the page; the next Escape closes it', async () => {
+  it('puts a field back with Escape and keeps the page; the next Escape leaves the field, and the one after closes it', async () => {
     renderApp({ repositories: heldRepositories([project()]), boot: { initialProject: project() } })
     await openSettings()
     const name = await screen.findByTestId('settings-name') as HTMLInputElement
@@ -112,7 +112,11 @@ describe('a scope’s settings, from the scope that is open', () => {
     fireEvent.keyDown(name, { key: 'Escape' })
     expect(name.value).toBe('Landscape')
     expect(screen.getByTestId('scope-settings-page')).toBeDefined()
+    // A field typed in is left on Escape, never the page with it.
     fireEvent.keyDown(name, { key: 'Escape' })
+    expect(screen.getByTestId('scope-settings-page')).toBeDefined()
+    expect(document.activeElement).not.toBe(name)
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByTestId('scope-settings-page')).toBeNull())
   })
 
