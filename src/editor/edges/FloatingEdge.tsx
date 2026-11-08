@@ -126,8 +126,6 @@ const SEGMENT_HANDLE_PX = { width: 18, height: 8 };
 const HANDLE_HIT_PX = 16;
 /** How long a chip stays after the pointer leaves the line, so it can be reached. */
 const HOVER_LEAVE_MS = 150;
-/** A chip shown by hover alone sits this many SCREEN pixels above the pointer, never under it. */
-const HOVER_LIFT_PX = 18;
 /** The bar drawn on a fixed side while the line is selected: along the side, across the leg. */
 const SIDE_MARKER_PX = { along: 14, across: 3 };
 
@@ -241,10 +239,6 @@ export const FloatingEdge = memo(function FloatingEdge({
   // moving from the path onto the chip fires a leave before the enter, and a chip
   // that unmounted on the leave would never receive the enter.
   const [hovered, setHovered] = useState(false);
-  // Where the pointer is on the line, in flow space, for a chip shown by hover
-  // alone: a busy board's label appears where you are looking, not at a
-  // midpoint that may be a screen away along a long routed line.
-  const [pointerAt, setPointerAt] = useState<Point | null>(null);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelLeave = () => {
     if (leaveTimer.current !== null) clearTimeout(leaveTimer.current);
@@ -253,9 +247,6 @@ export const FloatingEdge = memo(function FloatingEdge({
   const onHoverEnter = () => {
     cancelLeave();
     setHovered(true);
-  };
-  const onLineMove = (event: React.MouseEvent) => {
-    setPointerAt(routeEditing.toFlowPosition({ x: event.clientX, y: event.clientY }));
   };
   const onHoverLeave = () => {
     cancelLeave();
@@ -502,13 +493,10 @@ export const FloatingEdge = memo(function FloatingEdge({
   // to reshape, and the first edit claims it.
   const editable = routeEditable(routeEditing), showHandles = Boolean(selected) && editable;
   // Chip anchor: live drag position > stored per-diagram anchor > path midpoint.
-  // A chip up only because the line is under the pointer follows the pointer
-  // instead, lifted clear of the cursor; the moment the line is selected or the
-  // label edited it goes back to where it lives, so it can be dragged from there.
-  const hoverOnly = !routeEditing.showLabels && !selected && !editing && !dragLabel;
-  const anchor = hoverOnly && pointerAt
-    ? { x: pointerAt.x, y: pointerAt.y - HOVER_LIFT_PX * handleScale }
-    : (dragLabel ?? data?.labelPosition ?? { x: labelX, y: labelY });
+  // A chip up because the line is under the pointer stands where it stands when
+  // the line is selected: one that followed the pointer lay over the card the
+  // line ran into, and jumped away the moment the line was picked.
+  const anchor = dragLabel ?? data?.labelPosition ?? { x: labelX, y: labelY };
   // An empty selected edge still shows a ghost chip so the text is addable in place.
   // With labels hidden board-wide, a chip is shown only while the line is under
   // the pointer, selected, or being edited — a busy board reads its lines bare, and
@@ -609,7 +597,7 @@ export const FloatingEdge = memo(function FloatingEdge({
     <>
       {/* The group carries the hover, since BaseEdge takes no handlers of its
           own; its interaction path is what makes a 1.5 px line easy to reach. */}
-      <g onMouseEnter={onHoverEnter} onMouseMove={onLineMove} onMouseLeave={onHoverLeave}>
+      <g onMouseEnter={onHoverEnter} onMouseLeave={onHoverLeave}>
         <BaseEdge
           id={id}
           path={path}

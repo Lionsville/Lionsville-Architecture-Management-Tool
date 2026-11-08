@@ -463,7 +463,7 @@ export const GROWN = {
   'src/editor/canvas/DomainGroupLayer.tsx': { lines: 188 },
   'src/editor/canvas/Layer7Canvas.tsx': { lines: 189 },
   'src/editor/canvas/ZoneLayer.tsx': { lines: 203 },
-  'src/editor/edges/FloatingEdge.tsx': { complexity: 63, lines: 478 },
+  'src/editor/edges/FloatingEdge.tsx': { complexity: 58, lines: 471 },
   'src/editor/graph.ts': { complexity: 37 },
   'src/editor/use-canvas-shortcuts.ts': { complexity: 33 },
   'src/editor/useEditorState.ts': { lines: 728 },

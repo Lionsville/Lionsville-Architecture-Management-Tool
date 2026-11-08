@@ -269,7 +269,7 @@
 .lv-edge-chip { z-index: 9; }
 /* On a board of many lines a label is a quiet note on the ground, one step under a card's own small text, and
    what it runs over stops at its edge. Its words and how it is carried run on as one, so it stays two lines. */
-.lv-board[data-kind='layer7'] .kit-linelabel { max-width: 170px; padding: 0 var(--s-1); background: var(--canvas-ground); font-size: var(--canvas-t-label); }
+.lv-board[data-kind='layer7'] .kit-linelabel { max-width: 170px; padding: 0 var(--s-1); background: var(--canvas-ground); font-size: var(--canvas-t-xs); }
 .lv-board[data-kind='layer7'] .kit-linelabel:not([data-picked]) { border-color: transparent; }
 .lv-board[data-kind='layer7'] .kit-linelabel__how { display: inline; margin-inline-start: .5em; }
 
