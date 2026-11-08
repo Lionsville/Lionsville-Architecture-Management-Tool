@@ -116,6 +116,11 @@ export async function chooseDirectory(): Promise<DirectoryHandleLike | undefined
   return handle
 }
 
+/** This tab's folder let go of: the next boot starts where it would with none chosen. */
+export async function forgetDirectory(): Promise<void> {
+  await transact('readwrite', (store) => store.delete(KEY))
+}
+
 /**
  * The folder this tab worked in last, if it may still use it.
  *

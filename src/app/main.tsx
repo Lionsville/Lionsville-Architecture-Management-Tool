@@ -239,6 +239,7 @@ async function workFrom(kind: string, opening: unknown): Promise<boolean> {
   }
   shell = withDesktopDrawing(overSource(shell, parts), Boolean(commands))
   sourced = true
+  choseFrom = undefined
   return true
 }
 
@@ -259,7 +260,10 @@ function take(way: RegisteredConnect, chose: () => Promise<unknown>): Promise<vo
     // The trail says where a pick got to, because "nothing happened" has been
     // reported and where it was is not what it holds.
     shell.diagnostics.report({ level: 'info', where: 'source', message: 'a place was chosen' })
+    const from = { shell, sourced, stored, way }
     if (!await workFrom(way.kind, opening)) return
+    // Never back into the example, which is a visit and not where work is kept.
+    choseFrom = visiting ? undefined : from
     const remember = way.connect.remember
     if (remember) {
       stored = remember(stored, opening)
@@ -276,6 +280,39 @@ function take(way: RegisteredConnect, chose: () => Promise<unknown>): Promise<vo
     shell.diagnostics.report({ level: 'error', where: 'source', message: 'the source was not opened', cause })
     renderApp(stored, undefined, { cause, key: way.connect.failedKey })
   })
+}
+
+/**
+ * Where work was kept before the place just chosen, for as long as that place
+ * is the source: what its provider goes back to when the move it was chosen
+ * for left something behind (`SourceChromeProps.back`) — a copy into a folder
+ * that did not come whole. The place chosen stays in the Recent list; it is
+ * no longer the one worked from last.
+ */
+let choseFrom: { readonly shell: typeof shell; readonly sourced: boolean; readonly stored: unknown; readonly way: RegisteredConnect } | undefined
+
+function backPart(): { back?: () => void } {
+  return choseFrom ? { back: goBack } : {}
+}
+
+function goBack(): void {
+  const from = choseFrom
+  if (!from) return
+  choseFrom = undefined
+  shell = from.shell
+  sourced = from.sourced
+  shell.diagnostics.report({ level: 'info', where: 'source', message: 'went back to where work was kept before' })
+  // What the place chosen remembered is taken back, and nothing else the
+  // window wrote to the preferences meanwhile; the app is drawn either way.
+  const forget = from.way.connect.forget
+  void shell.preferences.read()
+    .then(async (now) => {
+      const kept = forget ? await forget(now) : from.stored as Record<string, unknown>
+      await shell.preferences.write(kept)
+      stored = kept
+    })
+    .catch(reportPreferences)
+    .finally(() => renderApp(stored, undefined))
 }
 
 /**
@@ -634,6 +671,7 @@ function renderApp(
           own: shell.own,
           historyNoteKey: shell.historyNoteKey,
           historyKept: shell.historyKept,
+          ...backPart(),
           shareAddress: shell.shareAddress,
           drawingOrigin: shell.drawingOrigin,
           people: shell.people,

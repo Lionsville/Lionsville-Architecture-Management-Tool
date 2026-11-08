@@ -345,6 +345,13 @@ export type SourceChromeProps<Own = unknown> = {
    * kept, and the provider then replaces nothing.
    */
   flush: () => Promise<void>
+  /**
+   * Go back to where work was kept before this source was chosen, as it was:
+   * what a provider asks when the move it was chosen for came to less than it
+   * said — a copy that left something behind — so the person goes on working
+   * where all of it still is. Absent where there is nowhere to go back to.
+   */
+  back?: () => void
 }
 
 /** What a panel opened from the chip that names a source is handed: a chrome's, and the way to close it. */

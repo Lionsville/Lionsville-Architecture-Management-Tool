@@ -490,6 +490,7 @@ export function chromeProps(parts: ShellParts, kind: string): SourceChromeProps 
     flush: () => (provider.openScope?.flush?.() ?? Promise.resolve()).catch((cause: unknown) => {
       throw new Error(reasonIn(cause, parts.services.s))
     }),
+    ...(opened && parts.props.provider?.back ? { back: parts.props.provider.back } : {}),
   }
 }
 

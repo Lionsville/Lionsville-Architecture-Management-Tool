@@ -300,6 +300,8 @@ export type AppProvider = {
   historyNoteKey?: string
   /** Whether a history is kept here already (`ProviderParts.historyKept`). */
   historyKept?: () => Promise<boolean>
+  /** Back to where work was kept before this source was chosen, where it was just chosen (`SourceChromeProps.back`). */
+  back?: () => void
   /** The address a link to the open source starts from (`ProviderParts.shareAddress`). */
   shareAddress?: () => string | undefined
   /**

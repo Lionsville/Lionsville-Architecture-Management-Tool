@@ -225,6 +225,13 @@ export type SourceConnect<Opening = void> = {
    * writer.
    */
   remember?(preferences: unknown, opening: Opening): Record<string, unknown>
+  /**
+   * {@link SourceConnect.remember} taken back: the place just chosen is not
+   * the one worked from last after all — the person went back to where they
+   * were — so the next boot does not resume it. Answers the blob with this
+   * provider's keys gone, having let go of whatever it keeps elsewhere.
+   */
+  forget?(preferences: unknown): Promise<Record<string, unknown>>
   /** The places this machine has worked from lately, most recent first: one click away rather than one dialog. */
   recent?(): Promise<readonly SourceRecent[]>
   /**

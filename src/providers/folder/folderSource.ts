@@ -13,12 +13,12 @@
  */
 import { desktopFiles } from '../../adapters/desktop/desktopFiles'
 import {
-  canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory,
+  canChooseDirectory, chooseDirectory as chooseBrowserDirectory, rememberedDirectory, forgetDirectory,
 } from '../../adapters/folder/browser/workingDirectory'
 import type { SourceProvider } from '../../platform/sourceProvider'
 import type { SourceDestination } from '../../ports/ProviderParts'
 import type { FolderBase, FolderOpening, FolderParts } from './openFolder'
-import { readWorkingDirectory, withWorkingDirectory } from './remembered'
+import { readWorkingDirectory, withoutWorkingDirectory, withWorkingDirectory } from './remembered'
 
 /**
  * The folder's own way in: the picker this app has always had.
@@ -119,6 +119,10 @@ export const FOLDER_SOURCE: SourceProvider<FolderParts, FolderOpening, FolderBas
     offer: ({ source }) => (source.provider === 'folder' ? { labelKey: 'picker.changeFolder' } : undefined),
     resume: resumeFolder,
     remember: (preferences, opening) => withWorkingDirectory(preferences, opening.root),
+    forget: async (preferences) => {
+      if (!desktopFiles()) await forgetDirectory()
+      return withoutWorkingDirectory(preferences)
+    },
     recent: async () => {
       const files = desktopFiles()
       if (!files) return []

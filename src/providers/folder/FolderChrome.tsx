@@ -52,11 +52,11 @@ function reasonFor(outcome: SyncRefusal | SyncRefused, s: (key: StringKey) => st
 }
 
 /** Drawn whatever the source; about the folder only while a folder is the source. */
-export function FolderChrome({ own, notify, reread, flush, preferences }: SourceChromeProps<FolderOwn>) {
+export function FolderChrome({ own, notify, reread, flush, preferences, back }: SourceChromeProps<FolderOwn>) {
   if (!own) return null
   return (
     <>
-      {own.adoption && <FolderAdoptionQuestion own={own} adoption={own.adoption} preferences={preferences} reread={reread} flush={flush} />}
+      {own.adoption && <FolderAdoptionQuestion own={own} adoption={own.adoption} preferences={preferences} reread={reread} flush={flush} {...(back ? { back } : {})} />}
       {own.sync && <SyncStrip own={own} notify={notify} reread={reread} flush={flush} />}
     </>
   )

@@ -28,6 +28,13 @@ export function readWorkingDirectory(stored: unknown): string | undefined {
   return typeof raw === 'string' && raw.length > 0 ? raw : undefined
 }
 
+/** The same blob, pointed at no folder. */
+export function withoutWorkingDirectory(stored: unknown): Record<string, unknown> {
+  const kept = stored && typeof stored === 'object' ? { ...stored as Record<string, unknown> } : {}
+  delete kept.workingDirectory
+  return kept
+}
+
 /** The same blob, pointed at a folder. */
 export function withWorkingDirectory(stored: unknown, root: string): Record<string, unknown> {
   const kept = stored && typeof stored === 'object' ? { ...stored as Record<string, unknown> } : {}

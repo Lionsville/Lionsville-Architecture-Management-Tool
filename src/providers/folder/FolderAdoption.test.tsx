@@ -37,6 +37,7 @@ function blob(initial: Record<string, unknown> = {}) {
 
 async function ask(options: {
   from?: Repositories; into?: Repositories; preferences?: ReturnType<typeof blob>; language?: Language; flush?: () => Promise<void>
+  back?: () => void
 } = {}) {
   const from = options.from ?? await kept()
   const into = options.into ?? memoryRepositories()
@@ -49,7 +50,7 @@ async function ask(options: {
     <LanguageProvider language={options.language ?? 'en'}>
       <FolderChrome
         current own={own} preferences={preferences} reread={reread} flush={flush} notify={vi.fn()}
-        open={() => {}} screen={{} as never} movedBy={'person' as never}
+        open={() => {}} screen={{} as never} movedBy={'person' as never} {...(options.back ? { back: options.back } : {})}
       />
     </LanguageProvider>,
   )
@@ -141,6 +142,38 @@ describe('the question a folder pick asks', () => {
     expect(said).toContain('Copied into “test2”, read back and found the same: 1 scope.')
     expect(said).toContain('Could not be read whole in this browser, so they are still only here (1): globex.')
     expect(screen.getByRole('dialog', { name: 'Not all of your work was copied' })).toBeDefined()
+  })
+
+  it('goes back to where the work was kept before, once a copy that left something behind is closed', async () => {
+    const back = vi.fn()
+    await ask({ from: await keptWithOneUnread(), back })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    const said = screen.getByTestId('adopt-outcome').textContent
+    expect(said).toContain('You go on working in this browser')
+    expect(said).not.toContain('Nothing has changed in this browser')
+    expect(back).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Go on in this browser' }))
+    expect(back).toHaveBeenCalledTimes(1)
+  })
+
+  it('goes back as well after a copy that did not run', async () => {
+    const back = vi.fn()
+    await ask({ flush: () => Promise.reject(new Error('the disk is full')), back })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    fireEvent.click(screen.getByTestId('adopt-close'))
+    expect(back).toHaveBeenCalledTimes(1)
+  })
+
+  it('stays in the folder after a whole copy, with somewhere to go back to all the same', async () => {
+    const back = vi.fn()
+    const { reread } = await ask({ back })
+    fireEvent.click(screen.getByTestId('adopt-copy'))
+    await settled()
+    expect(reread).toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('adopt-close'))
+    expect(back).not.toHaveBeenCalled()
   })
 
   it('offers to try again the scopes that could not be written, and asks again at the next pick until they are', async () => {

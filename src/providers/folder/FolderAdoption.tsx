@@ -50,7 +50,7 @@ import { adoptionOutcome, pathsOf, reasonIn } from './adoptionWords'
 import type { FolderAdoption, FolderOwn } from './folderOwn'
 import { mayOfferAdoption, readAdoptedFolders, readDeclinedFolders, readMigratedFolders } from './remembered'
 
-type AdoptionProps = Pick<SourceChromeProps<FolderOwn>, 'preferences' | 'reread' | 'flush'> & {
+type AdoptionProps = Pick<SourceChromeProps<FolderOwn>, 'preferences' | 'reread' | 'flush' | 'back'> & {
   own: FolderOwn
   adoption: FolderAdoption
 }
@@ -60,9 +60,9 @@ type Stage =
   | { at: 'closed' }
   | { at: 'asking'; differs: readonly string[] }
   | { at: 'copying'; progress?: CopyProgress; stopping?: true }
-  | { at: 'said'; alert?: true; title: string; lines: readonly string[]; again?: true }
+  | { at: 'said'; alert?: true; title: string; lines: readonly string[]; again?: true; staying?: true }
 
-export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flush }: AdoptionProps) {
+export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flush, back }: AdoptionProps) {
   const { t: s } = useStrings()
   const [stage, setStage] = useState<Stage>({ at: 'closed' })
   // Once, as the folder opens: whether to ask at all. An answer given while
@@ -108,9 +108,15 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
       // This folder has had its answer; the next is a fair question.
       preferences.write({ declinedFolders: [...new Set([...readDeclinedFolders(preferences.read()), adoption.root])] })
     }
+    // A copy that left something behind is not where the work goes on: the
+    // folder holds less than this browser does, so closing goes back to it.
+    const staying = !whole && back !== undefined
     reread()
-    setStage({ at: 'said', title: said.title, lines: said.lines, ...(said.again ? { again: true as const } : {}) })
-  }, [own, adoption, preferences, reread, s])
+    setStage({
+      at: 'said', title: said.title, lines: staying ? [...said.lines.filter((line) => line !== s('folder.adoptBrowserKept')), s('folder.adoptStaying')] : said.lines,
+      ...(said.again ? { again: true as const } : {}), ...(staying ? { staying: true as const } : {}),
+    })
+  }, [own, adoption, preferences, reread, s, back])
 
   const copy = useCallback(() => {
     const controller = new AbortController()
@@ -124,9 +130,13 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
       }))
       .then(copied, (cause: unknown) => {
         own.report('migration', cause)
-        setStage({ at: 'said', alert: true, title: s('folder.adoptFailedTitle'), lines: [s('folder.adoptFailed', { message: reasonIn(cause, s) }), s('folder.adoptBrowserKept')] })
+        setStage({
+          at: 'said', alert: true, title: s('folder.adoptFailedTitle'),
+          lines: [s('folder.adoptFailed', { message: reasonIn(cause, s) }), s(back ? 'folder.adoptStaying' : 'folder.adoptBrowserKept')],
+          ...(back ? { staying: true as const } : {}),
+        })
       })
-  }, [own, adoption, flush, copied, s])
+  }, [own, adoption, flush, copied, s, back])
 
   const stop = useCallback(() => {
     running.current?.abort()
@@ -138,7 +148,10 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
     preferences.write({ declinedFolders: [...new Set([...readDeclinedFolders(preferences.read()), adoption.root])] })
   }, [adoption, preferences])
 
-  const close = useCallback(() => setStage({ at: 'closed' }), [])
+  const close = useCallback(() => {
+    setStage({ at: 'closed' })
+    if (stage.at === 'said' && stage.staying) back?.()
+  }, [stage, back])
 
   const title = stage.at === 'said' ? stage.title : stage.at === 'copying' ? s('folder.adoptCopyingTitle') : s('folder.adoptTitle')
   return (
@@ -159,7 +172,7 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
             <Button size="small" onClick={copy} data-testid="adopt-again">{s('folder.adoptAgain')}</Button>
           )}
           {stage.at === 'said' && (
-            <Button size="small" variant="primary" onClick={close} data-testid="adopt-close">{s('folder.adoptClose')}</Button>
+            <Button size="small" variant="primary" onClick={close} data-testid="adopt-close">{s(stage.staying ? 'folder.adoptStay' : 'folder.adoptClose')}</Button>
           )}
         </>
       )}

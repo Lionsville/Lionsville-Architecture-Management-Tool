@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   mayOfferAdoption, readDeclinedFolders, readMigratedFolders, readWorkingDirectory, withDeclinedFolder,
-  withMigratedFolder, withWorkingDirectory,
+  withMigratedFolder, withoutWorkingDirectory, withWorkingDirectory,
 } from './remembered'
 
 describe('the folder this machine works in', () => {
@@ -22,6 +22,11 @@ describe('the folder this machine works in', () => {
   it('forgets the scope that was open, which was in the folder before', () => {
     expect(withWorkingDirectory({ language: 'nl', lastScope: 'acme', lastProject: 'x' }, '/work'))
       .toEqual({ language: 'nl', workingDirectory: '/work' })
+  })
+
+  it('lets go of the folder and of nothing else, for a person who went back to where they were', () => {
+    expect(withoutWorkingDirectory({ language: 'nl', workingDirectory: '/work', textSize: 112 })).toEqual({ language: 'nl', textSize: 112 })
+    expect(withoutWorkingDirectory(undefined)).toEqual({})
   })
 })
 
