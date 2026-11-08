@@ -1886,6 +1886,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'work.couldNotSave': 'Nicht gespeichert',
   'work.lastSaved': 'Zuletzt gespeichert',
   'work.lastCopy': 'Letzte Kopie gespeichert',
+  'work.keptNow': 'Jetzt aufbewahrt in',
+  'work.workFrom': 'Von {name} aus arbeiten',
   'work.never': 'Nie',
   'work.history': 'Verlauf',
   'work.historyKept': 'Geführt',

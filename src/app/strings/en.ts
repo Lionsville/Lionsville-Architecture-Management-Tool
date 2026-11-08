@@ -2113,6 +2113,8 @@ export const EN = {
   'work.couldNotSave': 'Could not save',
   'work.lastSaved': 'Last saved',
   'work.lastCopy': 'Last copy saved',
+  'work.keptNow': 'Now kept in',
+  'work.workFrom': 'Work from {name}',
   'work.never': 'Never',
   'work.history': 'History',
   'work.historyKept': 'Kept',

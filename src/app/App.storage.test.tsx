@@ -88,6 +88,14 @@ describe('what the root’s home says you are working from', () => {
     expect(screen.getAllByText('Everything here is kept as files in the folder above.').length).toBeGreaterThan(0)
   })
 
+  it('says where the work is now as words under Move it, never as a button', async () => {
+    renderApp({ source: folder, provider: folderSays })
+    fireEvent.click(screen.getByTestId('saved-indicator'))
+    expect(await screen.findByText('Now kept in')).toBeDefined()
+    const panel = document.querySelector<HTMLElement>('[data-guide="frame.yourWork"]')!
+    expect(within(panel).queryByRole('button', { name: /Architecture/ })).toBeNull()
+  })
+
   it('says where everything is kept on the first page, in its provider\'s sentence', async () => {
     renderApp({ source: folder, provider: folderSays })
     expect(await screen.findByText(/Everything here is kept as files in the folder above\./)).toBeDefined()

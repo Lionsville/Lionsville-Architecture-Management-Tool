@@ -121,8 +121,10 @@ function WorkFacts({ parts, facts, history }: { parts: ShellParts; facts: Screen
 
 /** Every act that moves work, each a command on the stream the menu sends. */
 function WorkActs({ parts, facts, history }: { parts: ShellParts; facts: ScreenFacts | undefined; history: boolean }) {
-  const { services: { s }, commands: { bus: { send } }, agent, provider } = parts
+  const { services: { s }, commands: { bus: { send } }, agent, provider, props, source } = parts
   const ways = provider.offered ?? []
+  // Where the work is now is said, not pressed: a name on a button read as a way to somewhere else.
+  const here = props.provider?.publishesSteps ? undefined : sourceLabel(source, s, undefined, props.provider?.sayings?.labelKey)
   return (
     <>
       <PanelSection title={s('frame.keepIt')}>
@@ -133,13 +135,14 @@ function WorkActs({ parts, facts, history }: { parts: ShellParts; facts: ScreenF
         </div>
       </PanelSection>
       <PanelSection title={s('frame.moveIt')}>
+        {here && <Fact label={s('work.keptNow')} value={here} />}
         <div className="kit-work__acts">
           <Button size="small" variant="quiet" onClick={() => send({ type: 'open' })} data-testid="work-open">{s('menu.open')}</Button>
           {ways.map((way) => (
             <Button key={way.kind} size="small" variant="quiet" onClick={way.onConnect} data-testid={`work-way-${way.kind}`}>{s(way.labelKey as StringKey)}</Button>
           ))}
-          {ways.flatMap((way) => (way.recent ?? []).map((held) => (
-            <Button key={held.key} size="small" variant="quiet" onClick={() => way.onReopen?.(held.key)} data-testid="work-recent">{held.label}</Button>
+          {ways.flatMap((way) => (way.recent ?? []).filter((held) => held.label !== source.name).map((held) => (
+            <Button key={held.key} size="small" variant="quiet" onClick={() => way.onReopen?.(held.key)} data-testid="work-recent">{s('work.workFrom', { name: held.label })}</Button>
           )))}
         </div>
       </PanelSection>
