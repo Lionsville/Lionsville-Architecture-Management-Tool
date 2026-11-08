@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { LANGUAGES } from './strings'
-import { formatDay, formatMoment, parseDay } from './dates'
+import { firstWeekday, formatDay, formatMoment, numericDay, parseDay, typedDayIn, weekStartOf } from './dates'
 
 describe('parseDay', () => {
   it('reads a YYYY-MM-DD day as that local day, whitespace and all', () => {
@@ -91,5 +91,28 @@ describe('formatMoment', () => {
   it('reads the clock when not told the time', () => {
     const said = formatMoment(new Date(), 'en')
     expect(said).not.toContain(String(new Date().getFullYear()))
+  })
+})
+
+describe('a day in figures', () => {
+  it('is written in each language\'s order and separator', () => {
+    expect(numericDay('2026-11-08', 'nl')).toBe('08-11-2026')
+    expect(numericDay('2026-11-08', 'de')).toBe('08.11.2026')
+    expect(numericDay('2026-11-08', 'en')).toBe('08/11/2026')
+    expect(numericDay('', 'de')).toBe('')
+  })
+
+  it('is read back in that order, or as the records keep it', () => {
+    expect(typedDayIn('8.11.2026', 'de')).toBe('2026-11-08')
+    expect(typedDayIn('08-11-2026', 'nl')).toBe('2026-11-08')
+    expect(typedDayIn('2026-11-08', 'en')).toBe('2026-11-08')
+    expect(typedDayIn('30.02.2026', 'de')).toBeUndefined()
+  })
+
+  it('starts a week where the locale does: Monday here, Sunday in the United States', () => {
+    expect(firstWeekday('nl')).toBe(1)
+    expect(firstWeekday('de')).toBe(1)
+    expect(firstWeekday('en')).toBe(1)
+    expect(weekStartOf('en-US')).toBe(7)
   })
 })

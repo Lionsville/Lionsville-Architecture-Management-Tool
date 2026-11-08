@@ -69,7 +69,7 @@ describe('what a folded unit hides', () => {
 
   it('says it in Dutch and German too', () => {
     const rolled = { units: 3, people: 9, vacant: 1, findings: 2 }
-    expect(rollUpWords(rolled, translator('nl')).map((part) => part.text)).toEqual(['3 eenheden', '9 mensen', '1 rol vacant', '2 om naar te kijken'])
+    expect(rollUpWords(rolled, translator('nl')).map((part) => part.text)).toEqual(['3 eenheden', '9 mensen', '1 rol vacant', '2 om na te kijken'])
     expect(rollUpWords(rolled, translator('de')).map((part) => part.text)).toEqual(['3 Einheiten', '9 Personen', '1 Rolle unbesetzt', '2 zum Ansehen'])
   })
 })

@@ -9,6 +9,7 @@
  * register is only read.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { numericDay } from '../../i18n/dates'
 import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useRef, useState } from 'react'
 import { axeFindings } from '../../app/testing/axe'
@@ -504,7 +505,7 @@ describe('leaving', () => {
     await fromMenu('Mark as left…')
     const dialog = await answerDialog('Mark Pia Schulz as left')
     expect(row('pe-pia').textContent).not.toContain('Left')
-    expect((within(dialog).getByTestId('people-last-day') as HTMLInputElement).value).toBe(TODAY)
+    expect((within(dialog).getByTestId('people-last-day') as HTMLInputElement).value).toBe(numericDay(TODAY, 'en'))
     fireEvent.change(within(dialog).getByTestId('people-last-day'), { target: { value: '2026-10-31' } })
     const effects = within(dialog).getByTestId('people-leave-effects').textContent
     expect(effects).toContain('Ends 2 roles on that day: Lead in Dock crew, Member in Parcel.')

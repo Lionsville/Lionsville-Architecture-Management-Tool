@@ -243,7 +243,7 @@ describe('the chain', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /^Observed by/ }), { target: { value: 'W.S.' } })
     fireEvent.change(screen.getByRole('textbox', { name: /^Who or what it affected/ }), { target: { value: 'Sales' } })
     // Date seen starts at today, and waits behind More.
-    expect((screen.getByTestId('form-date') as HTMLInputElement).value).toBe('2026-09-20')
+    expect((screen.getByTestId('form-date') as HTMLInputElement).value).toBe('20/09/2026')
     expect(screen.queryByLabelText('Share with the scopes above')).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Record observation' }))
     const next = lastChange(onChange)
@@ -807,7 +807,7 @@ describe('merging, moving, and a cause’s root step', () => {
     const { onChange } = mount()
     openRow('o1')
     fireEvent.click(screen.getByTestId('observation-seen-again'))
-    expect((screen.getByTestId('seen-date') as HTMLInputElement).value).toBe('2026-09-20')
+    expect((screen.getByTestId('seen-date') as HTMLInputElement).value).toBe('20/09/2026')
     fireEvent.change(screen.getByTestId('seen-date'), { target: { value: '2026-09-21' } })
     fireEvent.click(screen.getByTestId('seen-confirm'))
     expect(onChange).not.toHaveBeenCalled()

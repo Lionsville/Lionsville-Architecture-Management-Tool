@@ -132,7 +132,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.date.choose': 'Kies een dag',
   'kit.date.previous': 'Vorige maand',
   'kit.date.next': 'Volgende maand',
-  'kit.date.format': 'jjjj-mm-dd',
+  'kit.date.format': 'dd-mm-jjjj',
   'kit.viewbar.label': 'Weergave',
   'kit.card.agent': 'Gewijzigd door een agent, nog niet nagekeken',
   'kit.zone.fold': '{name} inklappen',

@@ -273,7 +273,7 @@ describe('milestones and decisions', () => {
     const { actions } = setup()
     fireEvent.click(screen.getAllByRole('button', { name: '+ Milestone' })[0])
     const name = screen.getByRole('textbox', { name: 'Milestone' })
-    expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('2028-01-31')
+    expect((screen.getByLabelText('Date') as HTMLInputElement).value).toBe('31/01/2028')
     fireEvent.change(name, { target: { value: 'The end' } })
     fireEvent.keyDown(name, { key: 'Enter' })
     expect(actions.updateTransition).toHaveBeenCalledWith('tr-1', { milestones: [...PLAN.milestones, { date: '2028-01-31', name: 'The end' }] })

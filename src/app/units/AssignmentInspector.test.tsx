@@ -10,6 +10,7 @@
  * correction through the unit's dialog, and *Open in People*.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { numericDay } from '../../i18n/dates'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 import { renderShell } from '../testing/renderShell'
@@ -134,7 +135,7 @@ describe('an assignment chosen on the chart', () => {
     renderShell(<Harness id="as-1" commands={commands} />)
     fireEvent.click(screen.getByTestId('assignment-end-ask'))
     const until = screen.getByTestId('assignment-until') as HTMLInputElement
-    expect(until.value).toBe(TODAY)
+    expect(until.value).toBe(numericDay(TODAY, 'en'))
     fireEvent.change(until, { target: { value: '2026-11-30' } })
     fireEvent.click(screen.getByTestId('assignment-end-on'))
     expect(commands).toEqual([{ type: 'assignment.update', id: 'as-1', patch: { until: '2026-11-30' } }])
@@ -146,7 +147,7 @@ describe('an assignment chosen on the chart', () => {
     renderShell(<Harness id="as-1" commands={[]} asOf="2027-01-01" />)
     fireEvent.click(screen.getByTestId('assignment-end-ask'))
     const until = screen.getByTestId('assignment-until') as HTMLInputElement
-    expect(until.value).toBe('2026-12-31')
+    expect(until.value).toBe('31/12/2026')
     fireEvent.change(until, { target: { value: '2026-05-01' } })
     expect(screen.getByTestId('assignment-end-on').getAttribute('aria-disabled')).toBe('true')
     expect(screen.getByText('Its last day cannot be before its first, 1 Jun 2026.')).toBeTruthy()

@@ -6,9 +6,11 @@
  * own date field drew its segments and its calendar in the system's colours and
  * type, and in the system's light or dark rather than the app's.
  *
- * The value is a `YYYY-MM-DD` day or nothing, as the browser's was. What is typed
- * is said out only when it is a day — written so, or day first as `8-11-2026` or
- * `8.11.2026` — or when the box is emptied; a half-typed day stays in the box, and
+ * The value is a `YYYY-MM-DD` day or nothing, as the browser's was, and the box
+ * shows it in figures as the app's language writes them (08-11-2026, 08.11.2026,
+ * 08/11/2026), never the machine's. What is typed is said out only when it is a
+ * day — in that order, or written as the records keep it — or when the box is
+ * emptied; a half-typed day stays in the box, and
  * leaving it puts back the day held. The calendar beside it opens on the day held,
  * or today, and is walked with the arrows, the page keys for a month, Enter to take
  * a day and Escape to leave it.
@@ -16,7 +18,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
 import type { FocusEvent, KeyboardEvent } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
-import { formatDay, parseDay } from '../../i18n/dates'
+import { firstWeekday, formatDay, numericDay, parseDay, typedDayIn } from '../../i18n/dates'
 import { LOCALE } from '../../i18n/strings'
 import type { Language } from '../../i18n/languages'
 import { CalendarIcon, CaretIcon } from '../icons'
@@ -49,18 +51,12 @@ export type DateInputProps = {
   'data-testid'?: string
 }
 
-const DAY_FIRST = /^(\d{1,2})[-.](\d{1,2})[-.](\d{4})$/
 const pad = (n: number) => String(n).padStart(2, '0')
 export const dayOf = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
-/** What was typed, as a day; nothing where it is not one. */
-export function typedDay(typed: string): string | undefined {
-  const text = typed.trim()
-  if (parseDay(text)) return text
-  const match = DAY_FIRST.exec(text)
-  if (!match) return undefined
-  const day = `${match[3]}-${pad(Number(match[2]))}-${pad(Number(match[1]))}`
-  return parseDay(day) ? day : undefined
+/** What was typed, as a day in the language's order; nothing where it is not one. */
+export function typedDay(typed: string, language: Language = 'en'): string | undefined {
+  return typedDayIn(typed, language)
 }
 
 export function DateInput({ value, onChange, min, max, onBlur, onKeyDown, disabled, 'data-fit': fit, 'data-guide': guide, ...rest }: DateInputProps) {
@@ -68,12 +64,13 @@ export function DateInput({ value, onChange, min, max, onBlur, onKeyDown, disabl
   const box = useRef<HTMLSpanElement>(null)
   const ownId = useId()
   const id = rest.id ?? ownId
-  const [typed, setTyped] = useState(value)
+  const shown = (day: string) => numericDay(day, language)
+  const [typed, setTyped] = useState(() => shown(value))
   const [seen, setSeen] = useState(value)
   // A ref as well: the box's blur comes as the calendar takes the focus, before a render says it is open.
   const choosing = useRef(false)
   const [open, setOpen] = useState(false)
-  if (seen !== value) { setSeen(value); setTyped(value) }
+  if (seen !== value) { setSeen(value); setTyped(shown(value)) }
 
   const show = (to: boolean) => { choosing.current = to; setOpen(to) }
   // Back to the box once the calendar has gone: while it is there its trap would take the focus back.
@@ -86,19 +83,19 @@ export function DateInput({ value, onChange, min, max, onBlur, onKeyDown, disabl
   const close = () => { back.current = true; show(false) }
   const type = (text: string) => {
     setTyped(text)
-    const day = text.trim() === '' ? '' : typedDay(text)
+    const day = text.trim() === '' ? '' : typedDayIn(text, language)
     if (day !== undefined && day !== value) onChange(day)
   }
   const left = (event: FocusEvent) => {
     // The calendar taking the focus is not leaving: a row or a form around this must not hear it as that.
     if (choosing.current) { event.stopPropagation(); return }
     if (box.current?.contains(event.relatedTarget as Node | null)) return
-    setTyped(value)
+    setTyped(shown(value))
     onBlur?.()
   }
   const take = (day: string) => {
     close()
-    setTyped(day)
+    setTyped(shown(day))
     if (day !== value) onChange(day)
   }
   return (
@@ -157,12 +154,15 @@ const shifted = (day: string, by: { days?: number; months?: number }) => {
   return dayOf(date)
 }
 
-/** The weeks of the month a day is in, Monday first, each day as `YYYY-MM-DD`. */
-export function monthWeeks(day: string): string[][] {
+/**
+ * The weeks of the month a day is in, each day as `YYYY-MM-DD`, a week starting
+ * on `weekStart` (1 Monday to 7 Sunday, as `Intl` counts them).
+ */
+export function monthWeeks(day: string, weekStart = 1): string[][] {
   const date = parseDay(day)!
   const first = new Date(date.getFullYear(), date.getMonth(), 1)
   const start = new Date(first)
-  start.setDate(1 - ((first.getDay() + 6) % 7))
+  start.setDate(1 - ((first.getDay() - (weekStart % 7) + 7) % 7))
   const weeks: string[][] = []
   for (const at = new Date(start); weeks.length < 6; ) {
     const week: string[] = []
@@ -193,7 +193,8 @@ function Calendar({ language, held, min, max, onTake, t }: {
   const month = at.slice(0, 7)
   const locale = LOCALE[language]
   const title = parseDay(`${month}-01`)!.toLocaleDateString(locale, { month: 'long', year: 'numeric' })
-  const weekdays = monthWeeks('2024-01-01')[0]!.map((day) => parseDay(day)!.toLocaleDateString(locale, { weekday: 'short' }))
+  const weekStart = firstWeekday(language)
+  const weekdays = monthWeeks('2024-01-01', weekStart)[0]!.map((day) => parseDay(day)!.toLocaleDateString(locale, { weekday: 'short' }))
   const outside = (day: string) => (min !== undefined && day < min) || (max !== undefined && day > max)
   const go = (by: { days?: number; months?: number }) => { moved.current = true; setAt(shifted(at, by)) }
   const keys = (event: KeyboardEvent) => {
@@ -224,7 +225,7 @@ function Calendar({ language, held, min, max, onTake, t }: {
           <tr>{weekdays.map((name) => <th key={name} scope="col" abbr={name}>{name}</th>)}</tr>
         </thead>
         <tbody>
-          {monthWeeks(at).map((week) => (
+          {monthWeeks(at, weekStart).map((week) => (
             <tr key={week[0]}>
               {week.map((day) => (
                 <td key={day} role="gridcell" aria-selected={day === held}>

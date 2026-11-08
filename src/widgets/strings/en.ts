@@ -131,7 +131,7 @@ export const EN = {
   'kit.date.choose': 'Choose a day',
   'kit.date.previous': 'Previous month',
   'kit.date.next': 'Next month',
-  'kit.date.format': 'yyyy-mm-dd',
+  'kit.date.format': 'dd/mm/yyyy',
   'kit.viewbar.label': 'View',
   'kit.card.agent': 'Changed by an agent, not yet reviewed',
   'kit.zone.fold': 'Fold {name}',

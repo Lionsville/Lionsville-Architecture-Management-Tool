@@ -132,7 +132,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.date.choose': 'Tag wählen',
   'kit.date.previous': 'Vorheriger Monat',
   'kit.date.next': 'Nächster Monat',
-  'kit.date.format': 'JJJJ-MM-TT',
+  'kit.date.format': 'TT.MM.JJJJ',
   'kit.viewbar.label': 'Ansicht',
   'kit.card.agent': 'Von einem Agenten geändert, noch nicht geprüft',
   'kit.zone.fold': '{name} einklappen',

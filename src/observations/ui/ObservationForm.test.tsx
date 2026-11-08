@@ -156,7 +156,7 @@ describe('the new observation form', { timeout: 20_000 }, () => {
     expect(seenBefore.textContent).toContain('OB-0001 Nightly batch overruns')
     fireEvent.click(within(seenBefore).getByRole('button', { name: 'Seen again' }))
     expect(onChange).not.toHaveBeenCalled()
-    expect((screen.getByTestId('seen-date') as HTMLInputElement).value).toBe('2026-09-20')
+    expect((screen.getByTestId('seen-date') as HTMLInputElement).value).toBe('20/09/2026')
     fireEvent.change(screen.getByTestId('seen-date'), { target: { value: '2026-09-18' } })
     fireEvent.change(screen.getByTestId('seen-note'), { target: { value: 'Thursday run' } })
     fireEvent.click(screen.getByTestId('seen-confirm'))

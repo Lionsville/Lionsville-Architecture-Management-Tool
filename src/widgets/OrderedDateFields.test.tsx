@@ -35,7 +35,7 @@ describe('OrderedDateFields', () => {
     const retired = screen.getByLabelText('retired') as HTMLInputElement
     fireEvent.change(retired, { target: { value: '2027-01-01' } })
     expect(onChange).not.toHaveBeenCalled()
-    expect(retired.value).toBe('2027-01-01')
+    expect(retired.value).toBe('01/01/2027')
     expect(retired.getAttribute('aria-invalid')).toBe('true')
     expect(screen.getByText('Runs backwards')).toBeTruthy()
     fireEvent.change(retired, { target: { value: '2027-09-01' } })
