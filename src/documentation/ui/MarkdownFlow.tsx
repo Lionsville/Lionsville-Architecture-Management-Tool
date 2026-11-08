@@ -11,9 +11,10 @@
  * first part holds the seat until another is pressed, so the bar is there from the
  * start and does not appear under the pointer.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
+import { refusePress, useReadOnlyPreview } from './quietPreview'
 import './MarkdownDocument.css'
 
 type Flow = {
@@ -79,11 +80,13 @@ export function MarkdownFlowBeside({ view, writing, reading, 'data-testid': test
   'data-testid'?: string
 }) {
   const { t } = useStrings()
+  const read = useRef<HTMLDivElement>(null)
+  useReadOnlyPreview(read, view)
   return (
     <div className="md-beside" data-view={view}>
       <div className="md-beside__write" hidden={view === 'preview'}>{writing}</div>
       {view !== 'write' && (
-        <div className="md-beside__read" data-testid={testId}>
+        <div className="md-beside__read" ref={read} data-testid={testId} onClickCapture={refusePress} onKeyDownCapture={refusePress} onAuxClickCapture={refusePress}>
           {view === 'side' && <div className="md-beside__head">{t('md.preview')}</div>}
           {reading}
         </div>

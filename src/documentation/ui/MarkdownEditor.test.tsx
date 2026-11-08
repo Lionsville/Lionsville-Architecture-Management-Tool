@@ -18,7 +18,7 @@ import { FocusedWindow } from '../../widgets/kit/FocusedWindow'
 import type { DocumentAttachments } from '../attachments'
 import { AttachmentsProvider } from './Attachments'
 import { MarkdownEditor } from './MarkdownEditor'
-import { MarkdownFlow, MarkdownFlowBar } from './MarkdownFlow'
+import { MarkdownFlow, MarkdownFlowBar, MarkdownFlowBeside } from './MarkdownFlow'
 import type { MarkdownEditorProps } from './MarkdownEditor'
 import { MarkdownView } from './MarkdownView'
 
@@ -186,6 +186,15 @@ describe('MarkdownEditor, how the text is shown', () => {
     const link = screen.getByRole('link', { name: 'Other' })
     expect(link.getAttribute('tabindex')).toBe('-1')
     fireEvent.keyDown(link, { key: 'Enter' })
+    expect(fireEvent.click(link)).toBe(false)
+    expect(opened).not.toHaveBeenCalled()
+  })
+
+  it('keeps a full window’s reading beside the writing as still: a link there neither opens nor takes the Tab', () => {
+    const opened = vi.fn()
+    renderShell(<MarkdownFlowBeside view="side" writing={<textarea aria-label="Text" />} reading={<a href="#/-/document/other" onClick={opened}>Other</a>} />)
+    const link = screen.getByRole('link', { name: 'Other' })
+    expect(link.getAttribute('tabindex')).toBe('-1')
     expect(fireEvent.click(link)).toBe(false)
     expect(opened).not.toHaveBeenCalled()
   })
