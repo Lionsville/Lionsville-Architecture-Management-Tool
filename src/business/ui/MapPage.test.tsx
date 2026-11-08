@@ -72,6 +72,12 @@ describe('the matrix', () => {
     )
   })
 
+  it('says what its depth control is, in the words the chart uses, and what a number in a cell is', () => {
+    open()
+    expect(screen.getByTestId('map-levels').textContent).toBe('Levels123')
+    expect(screen.getByTestId('map-legend').textContent).toContain('how many of its functions it supports')
+  })
+
   it('marks the capability a system supports, and says how many on a section above it', () => {
     open()
     allLevels()

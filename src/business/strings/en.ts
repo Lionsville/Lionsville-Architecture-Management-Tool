@@ -207,7 +207,7 @@ export const EN = {
   'map.coverage': 'Coverage',
   'map.thisScope': 'This scope',
   'map.summary': '{covered} covered · {manual} by people · {uncovered} uncovered',
-  'map.legend': '● supports it · a number: how many under it it supports',
+  'map.legend': '● supports it · a number: how many of its functions it supports',
   'map.uncovered': 'uncovered',
   'map.byPeople': 'by people',
   'map.gapsOne': '1 gap',

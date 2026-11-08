@@ -14,7 +14,7 @@ import type { StringKey, Translate } from '../../i18n'
 import { CHART_LEVELS } from '../../model/orgChart'
 import { DayControl } from '../../widgets/kit/DayControl'
 import { Segmented } from '../../widgets/kit/Segmented'
-import { ViewBar, ViewBarMenu } from '../../widgets/kit/ViewBar'
+import { ViewBar, ViewBarLabelled, ViewBarMenu } from '../../widgets/kit/ViewBar'
 import { CHART_PEOPLE } from './useChartFolds'
 import type { ChartPeople } from './useChartFolds'
 
@@ -46,14 +46,13 @@ export function ChartBar({ level, onLevel, people, onPeople, lines, onLines, add
     <ViewBar
       label={t('chart.barLabel')} data-guide="chart.bar"
       reading={(
-        <span className="chart-bar__levels" data-testid="chart-levels">
-          {t('chart.levels')}
+        <ViewBarLabelled label={t('chart.levels')} data-testid="chart-levels">
           <Segmented
             label={t('chart.levels')} value={level === undefined ? '' : String(level)} data-guide="chart.foldAll"
             onChange={(value) => onLevel(value === 'all' ? undefined : Number(value))}
             options={[...CHART_LEVELS.map((one) => ({ value: String(one), label: String(one) })), { value: 'all', label: t('chart.levelsAll') }]}
           />
-        </span>
+        </ViewBarLabelled>
       )}
       show={(
         <>

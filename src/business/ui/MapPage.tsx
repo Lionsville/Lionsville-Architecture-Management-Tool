@@ -44,7 +44,7 @@ import { Panel, PanelSection } from '../../widgets/kit/Panel'
 import { Segmented } from '../../widgets/kit/Segmented'
 import { Toast } from '../../widgets/kit/Toast'
 import type { ToastWords } from '../../widgets/kit/Toast'
-import { ViewBar, ViewBarButton } from '../../widgets/kit/ViewBar'
+import { ViewBar, ViewBarButton, ViewBarLabelled } from '../../widgets/kit/ViewBar'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField, TextInput } from '../../widgets/kit/Field'
 import { SeamResizer } from '../../widgets/SeamResizer'
@@ -276,10 +276,12 @@ function MapBar({ props, readOnly, t, at }: {
               ]}
             />
             {at.filter === 'all' && (
-              <Segmented
-                label={t('map.levels')} value={String(at.level)} onChange={(to) => at.onLevel(Number(to))} data-guide="map.levels"
-                options={[1, 2, 3].map((one) => ({ value: String(one), label: String(one) }))}
-              />
+              <ViewBarLabelled label={t('map.levels')} data-testid="map-levels">
+                <Segmented
+                  label={t('map.levels')} value={String(at.level)} onChange={(to) => at.onLevel(Number(to))} data-guide="map.levels"
+                  options={[1, 2, 3].map((one) => ({ value: String(one), label: String(one) }))}
+                />
+              </ViewBarLabelled>
             )}
           </>
         ) : undefined}

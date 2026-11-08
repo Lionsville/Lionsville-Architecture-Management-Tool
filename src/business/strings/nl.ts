@@ -183,7 +183,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'map.coverage': 'Dekking',
   'map.thisScope': 'Dit niveau',
   'map.summary': '{covered} gedekt · {manual} door mensen · {uncovered} ongedekt',
-  'map.legend': '● ondersteunt het · een getal: hoeveel eronder het ondersteunt',
+  'map.legend': '● ondersteunt het · een getal: hoeveel van zijn functies het ondersteunt',
   'map.uncovered': 'ongedekt',
   'map.byPeople': 'door mensen',
   'map.gapsOne': '1 gat',

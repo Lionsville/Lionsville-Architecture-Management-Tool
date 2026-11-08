@@ -115,6 +115,16 @@ export function ViewBarPanel({ label, on, busy, 'data-guide': guide, children }:
   )
 }
 
+/** A word before a control on the bar, as *Levels 1 2 3 All*: said once, read the same on every view. */
+export function ViewBarLabelled({ label, children, 'data-testid': testId }: { label: string; children: ReactNode; 'data-testid'?: string }) {
+  return (
+    <span className="kit-viewbar__labelled" data-testid={testId}>
+      <span aria-hidden="true">{label}</span>
+      {children}
+    </span>
+  )
+}
+
 /** A heading over a group of a panel's rows. */
 export function ViewBarHeading({ children }: { children: ReactNode }) {
   return <div className="kit-viewbar__heading">{children}</div>
