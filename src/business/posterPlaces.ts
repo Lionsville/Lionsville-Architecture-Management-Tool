@@ -116,6 +116,22 @@ export function posterBlockFloor(laidOut: LaidOutSheet, sheet: PosterSheet, id: 
   return area ? contentHeightAt(sizeOf(area, sheet.areaSpans), width, sheet.poster?.tile ?? 'm') : MIN_BLOCK
 }
 
+/**
+ * The top-left corner an area may be dropped at: right of the stakeholders'
+ * column and below the journey band, where they are on the page. A block
+ * dropped past them would lie under them, its name and its tiles hidden and
+ * its bar out of reach. The band and the column themselves go anywhere on the page.
+ */
+export function freeCorner(blocks: readonly PosterBlock[], id: string, bandId: string | undefined): { x: number; y: number } {
+  if (id === bandId || id === POSTER_COLUMN_ID) return { x: 0, y: 0 }
+  const column = blocks.find((block) => block.id === POSTER_COLUMN_ID)
+  const band = bandId === undefined ? undefined : blocks.find((block) => block.id === bandId)
+  return {
+    x: column ? column.x + column.width + POSTER_GAP : 0,
+    y: band ? band.y + band.height + POSTER_GAP : 0,
+  }
+}
+
 /** Whether a sheet says where anything is. */
 export function isPlaced(sheet: PosterSheet): boolean {
   return (sheet.geometry?.nodes.length ?? 0) > 0 || (sheet.geometry?.groups?.length ?? 0) > 0

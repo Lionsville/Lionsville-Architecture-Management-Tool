@@ -21,7 +21,7 @@ import { plural } from '../../i18n/strings'
 import { Button } from '../../widgets/kit/Button'
 import { POSTER_COLUMN_ID, POSTER_TILE, POSTER_TILES, overlapsOf } from '../posterLayout'
 import type { PosterBlock } from '../posterLayout'
-import { posterBlockFloor } from '../posterPlaces'
+import { freeCorner, posterBlockFloor } from '../posterPlaces'
 import type { PosterPlaces, PosterSheet } from '../posterPlaces'
 import type { LaidOutSheet } from '../sheet'
 import { locatedSelector } from '../../widgets/useLocated'
@@ -165,8 +165,9 @@ function useSnapping(camera: PosterCamera, places: PosterPlaces, sheet: PosterSh
       if (back !== undefined) { guide(along, back); return back - size }
       return free ? Math.round(value) : Math.round(value / GRID) * GRID
     }
-    // Never off the page's top or left edge: places there are not read as a poster's (`readsAsPoster`).
-    return { ...wanted, x: Math.max(0, place('x', wanted.width)), y: Math.max(0, place('y', wanted.height)) }
+    // Never off the page's top or left edge, where places are not read as a poster's (`readsAsPoster`), nor under the band or the column.
+    const corner = freeCorner(places.blocks, id, laidOut.journey?.element.id)
+    return { ...wanted, x: Math.max(corner.x, place('x', wanted.width)), y: Math.max(corner.y, place('y', wanted.height)) }
   }
 
   const pulled = (id: string, wanted: Rect, free: boolean): Rect => {

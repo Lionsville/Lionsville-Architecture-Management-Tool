@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignDiagram, DesignElement } from '../model'
 import { overlapsOf, POSTER_COLUMN_ID, POSTER_WIDTH } from './posterLayout'
-import { isPlaced, posterFirstLayout, posterPlaces, posterTiles, readsAsPoster } from './posterPlaces'
+import { freeCorner, isPlaced, posterFirstLayout, posterPlaces, posterTiles, readsAsPoster } from './posterPlaces'
 import { sheetPage } from './sheet'
 import { denseSheet, DENSE_SHEET } from './testFixtures'
 
@@ -142,5 +142,21 @@ describe('what takes a tile', () => {
   it('is a capability of its block, and one under it is counted on it rather than placed', () => {
     const tiles = posterTiles([cap('a', 1), cap('a1', 2), cap('a2', 3), cap('b', 1)])
     expect(tiles.map((tile) => [tile.capability.element.id, tile.inside])).toEqual([['a', 2], ['b', 0]])
+  })
+})
+
+describe('where an area may be dropped', () => {
+  const blocks = [
+    { id: POSTER_COLUMN_ID, x: 0, y: 0, width: 180, height: 900 },
+    { id: 'journey', x: 190, y: 0, width: 1670, height: 120 },
+    { id: 'area-1', x: 190, y: 130, width: 400, height: 300 },
+  ]
+  it('is right of the column and below the band, never under them', () => {
+    expect(freeCorner(blocks, 'area-1', 'journey')).toEqual({ x: 190, y: 130 })
+  })
+  it('is anywhere on the page for the band and the column themselves, and with neither drawn', () => {
+    expect(freeCorner(blocks, 'journey', 'journey')).toEqual({ x: 0, y: 0 })
+    expect(freeCorner(blocks, POSTER_COLUMN_ID, 'journey')).toEqual({ x: 0, y: 0 })
+    expect(freeCorner([], 'area-1', undefined)).toEqual({ x: 0, y: 0 })
   })
 })
