@@ -114,9 +114,9 @@ export const EN = {
   'menu.addHere': 'Add here',
   'menu.addDomainGroupHere': 'Add domain group here',
   'menu.selectAll': 'Select all',
-  'menu.tidy': 'Tidy layout',
-  'menu.routeConnections': 'Route connections',
-  'menu.routeConnectionsAll': 'Re-route everything (ignore pins)',
+  'menu.tidy': 'Tidy the board',
+  'menu.routeConnections': 'Route the lines',
+  'menu.routeConnectionsAll': 'Route all lines again',
   'menu.fitView': 'Fit view',
   'menu.showGrid': 'Show grid',
   'menu.snapToGrid': 'Snap to grid',
@@ -247,8 +247,8 @@ export const EN = {
   // --- canvas --------------------------------------------------------------
   'canvas.connectHint': 'Click a target element, or Tab to it and press Enter — Esc cancels',
   'canvas.edgeName': 'From {source} to {target}',
-  'canvas.gridToggle': 'Toggle grid visibility',
-  'canvas.snapToggle': 'Toggle snap to grid',
+  'canvas.gridToggle': 'Show grid',
+  'canvas.snapToggle': 'Snap to grid',
   'canvas.alignLeft': 'Align left',
   'canvas.alignCenterX': 'Align horizontal centres',
   'canvas.alignRight': 'Align right',
@@ -724,7 +724,7 @@ export const EN = {
   'error.routeOne': 'The connection could not be routed. Reload the page and try again.',
   'error.export': 'The PNG export failed. Reload the page and try again.',
   'note.overCap': 'this view has more connections than routing can handle',
-  'note.reclassify': "press 'Route connections' once so this view's existing lines can move",
+  'note.reclassify': "press 'Route the lines' once so this view's existing lines can move",
 
   // --- PNG title block -----------------------------------------------------
   'format.perMonth': '{amount}/mo',

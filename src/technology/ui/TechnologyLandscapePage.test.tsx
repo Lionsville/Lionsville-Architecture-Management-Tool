@@ -452,7 +452,7 @@ describe('Day and Colour', () => {
   it('a value pressed on the key quiets the rest', () => {
     open({ model: dated(), today: '2027-02-01' })
     fireEvent.click(screen.getByRole('button', { name: 'Colour' }))
-    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Its own lifecycle' }))
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Lifecycle' }))
     fireEvent.click(within(screen.getByRole('group', { name: 'Key' })).getByRole('button', { name: /retiring/ }))
     expect(rowOf('OpenShift').dataset.state).toContain('dim')
     expect(rowOf('Event broker').dataset.state ?? '').not.toContain('dim')

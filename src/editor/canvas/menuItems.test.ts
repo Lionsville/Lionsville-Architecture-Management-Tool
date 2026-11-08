@@ -406,7 +406,7 @@ describe('menuItemsFor — pane', () => {
     const order = ids(items);
     expect(order.indexOf('route-connections-all')).toBe(order.indexOf('route-connections') + 1);
     expect(byId(items, 'route-connections-all')).toMatchObject({
-      label: 'Re-route everything (ignore pins)',
+      label: 'Route all lines again',
       action: 'route-connections-all',
     });
     expect(byId(menuItemsFor(PANE, ctx({ canRouteConnectionsAll: true, layoutBusy: true })), 'route-connections-all').disabled).toBe(true);

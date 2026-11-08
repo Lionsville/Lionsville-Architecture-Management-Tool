@@ -388,7 +388,7 @@ describe('DiagramCanvas — connection menu', () => {
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     const root = menu('Canvas menu');
     const labels = within(root).getAllByRole('menuitem').map((i) => i.querySelector('.MuiListItemText-primary')?.textContent);
-    expect(labels.indexOf('Re-route everything (ignore pins)')).toBe(labels.indexOf('Route connections') + 1);
+    expect(labels.indexOf('Route all lines again')).toBe(labels.indexOf('Route the lines') + 1);
   });
 
   it('a bend handle offers "Remove bend point"', async () => {
@@ -415,8 +415,8 @@ describe('DiagramCanvas — canvas menu', () => {
     const root = menu('Canvas menu');
     expect(within(root).getByText('Paste here').closest('[role="menuitem"]')?.getAttribute('aria-disabled')).toBe('true');
     expect(within(root).getByText('Add domain group here')).toBeDefined();
-    expect(within(root).getByText('Tidy layout')).toBeDefined();
-    expect(within(root).getByText('Route connections')).toBeDefined();
+    expect(within(root).getByText('Tidy the board')).toBeDefined();
+    expect(within(root).getByText('Route the lines')).toBeDefined();
     expect(within(root).getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked')).toBe('false');
 
     fireEvent.click(within(openSubmenu(root, 'Add here')).getByText('Application'));
@@ -463,8 +463,8 @@ describe('DiagramCanvas — canvas menu', () => {
     fireEvent.contextMenu(pane(), { clientX: 700, clientY: 500 });
     fireEvent.click(within(menu('Canvas menu')).getByRole('menuitemcheckbox', { name: 'Snap to grid' }));
     fireEvent.click(screen.getByRole('button', { name: 'Grid' }));
-    expect(screen.getByRole('menuitemcheckbox', { name: 'Toggle grid visibility' }).getAttribute('aria-checked')).toBe('true');
-    expect(screen.getByRole('menuitemcheckbox', { name: 'Toggle snap to grid' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Show grid' }).getAttribute('aria-checked')).toBe('true');
+    expect(screen.getByRole('menuitemcheckbox', { name: 'Snap to grid' }).getAttribute('aria-checked')).toBe('true');
   });
 
   it('Select all selects the diagram content', async () => {
