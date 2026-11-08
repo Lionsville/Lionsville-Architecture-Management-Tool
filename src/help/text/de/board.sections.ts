@@ -211,7 +211,7 @@ export const SECTIONS: SectionTexts = {
     'Die Zeichenfläche',
     ['Doppelklicken Sie auf die Linie oder auf ihre Beschriftung zum Bearbeiten.'],
     'Doppelklicken Sie auf die Linie von Handheld scanners zu Warehouse Management, um zu sehen, dass sie auf Scan service landet.'],
-  'container.create': ['Ein Containerdiagramm anlegen', 'Legt das C4containerdiagramm unter einer Anwendung an: Die Anwendung wird zur Grenze, und die Anwendungen, mit denen sie spricht, werden um sie gesetzt, ihre Linien bereit zum Landen.',
+  'container.create': ['Ein Containerdiagramm anlegen', 'Legt das C4-Containerdiagramm unter einer Anwendung an: Die Anwendung wird zur Grenze, und die Anwendungen, mit denen sie spricht, werden um sie gesetzt, ihre Linien bereit zum Landen.',
     'Rechtsklick auf eine Anwendung ▸ Containerdiagramm anlegen; Darin ▸ Anlegen im Panel',
     ['Wählen Sie die Anwendung.', 'Wählen Sie Containerdiagramm anlegen in ihrem Menü oder Anlegen im Panel.'],
     'Legen Sie das Containerdiagramm für Dispatch an.'],
