@@ -106,11 +106,11 @@ export function ResponsibilitiesTab({ model, readOnly, dispatch, makeId, facts, 
   return (
     <>
       <RaciTree
-        model={model} parts={parts} unitName={unit?.name} readOnly={readOnly} selectedNode={selectedNode} onPick={pickNode} onNew={addResponsibility}
+        model={model} parts={parts} unitName={unit?.name} readOnly={readOnly} selectedNode={selectedNode} onPick={pickNode}
         opened={opened} onOpened={setOpened}
       />
       <div className="op-grid">
-        <GridBar model={model} facts={facts} look={look} onLook={onLook} view={view} onView={onView} arranging={arranging} onArrange={onArrange} onExport={onSave ? exportGrid : undefined} />
+        <GridBar model={model} facts={facts} look={look} onLook={onLook} view={view} onView={onView} arranging={arranging} onArrange={onArrange} onExport={onSave ? exportGrid : undefined} onNew={readOnly ? undefined : addResponsibility} />
         <GridHead title={title} grid={grid} all={model.roles.length} unit={unit} onOpenUnit={onOpenUnit} needing={needing.length} needingHere={needingHere} look={look} onLook={onLook} />
         {noRoles
           ? <p className="op-quiet">{t('operating.noRolesForMatrix')}</p>
@@ -151,10 +151,10 @@ function gridCsv(grid: RaciGridData, whole: boolean, model: OperatingModel, t: T
   }, model.roles)
 }
 
-/** The left: find, new, and the tree of the groups, each marked by what is below it. */
-function RaciTree({ model, parts, unitName, readOnly, selectedNode, onPick, onNew, opened, onOpened }: {
+/** The left: find, and the tree of the groups, each marked by what is below it. New is the bar's. */
+function RaciTree({ model, parts, unitName, selectedNode, onPick, opened, onOpened }: {
   model: OperatingModel; parts: readonly RaciPart[]; unitName: string | undefined; readOnly: boolean; selectedNode: string | null
-  onPick(id: string): void; onNew(): void; opened: ReadonlySet<string>; onOpened(next: ReadonlySet<string>): void
+  onPick(id: string): void; opened: ReadonlySet<string>; onOpened(next: ReadonlySet<string>): void
 }) {
   const { t } = useStrings()
   const [find, setFind] = useState('')
@@ -163,7 +163,6 @@ function RaciTree({ model, parts, unitName, readOnly, selectedNode, onPick, onNe
   return (
     <div className="op-tree" data-testid="operating-tree">
       <FindField fill label={t('operating.findResponsibility')} value={find} onChange={setFind} />
-      {!readOnly && <div className="op-actions"><Button variant="plain" data-guide="operating.newResponsibility" onClick={onNew}>{t('operating.newResponsibility')}</Button></div>}
       <TreeList
         label={t('operating.partsLabel')} nodes={nodes} selectedId={selectedNode} onSelect={onPick} open={folks ? new Set(nodes.map((one) => one.id)) : opened} dataGuide="operating.raciTree"
         onOpen={(id, on) => { const next = new Set(opened); if (on) next.add(id); else next.delete(id); onOpened(next) }}
@@ -223,9 +222,11 @@ function NoPartLine({ folded, open, readOnly, onAdd }: { folded: readonly Role[]
 }
 
 /** How much to show, of which unit, and what can be done with it. */
-function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrange, onExport }: {
+function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrange, onExport, onNew }: {
   model: OperatingModel; facts: OrganisationFacts | undefined; look: RaciLook; onLook(look: RaciLook): void; view: MatrixView; onView(view: MatrixView): void
   arranging: boolean; onArrange(on: boolean): void; onExport: ((whole: boolean) => void) | undefined
+  /** New responsibility, at the bar's far end, where every tab of the page has its New. Absent: read only. */
+  onNew: (() => void) | undefined
 }) {
   const { t } = useStrings()
   const groupOptions = groupsOf(model.responsibilities)
@@ -267,6 +268,7 @@ function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrang
               ]}
             />
           )}
+          {onNew && <span className="op-end"><Button variant="plain" data-guide="operating.newResponsibility" onClick={onNew}>{t('operating.newResponsibility')}</Button></span>}
         </div>
   )
 }

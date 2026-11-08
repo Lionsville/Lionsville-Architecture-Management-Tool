@@ -11,6 +11,8 @@
 .op-concept { margin: 0; max-width: 60ch; color: var(--ink-2); }
 .op-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
 .op-grow { flex: 1; }
+/* New … at the far end of a tab's bar, on whichever line it wraps to: one place for it on every tab. */
+.op-end { margin-inline-start: auto; }
 /* A reader's foot: what is next at the start, what takes it away alone at the far end. */
 .op-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin-block-start: var(--s-3); padding-block-start: var(--s-2); border-top: 1px solid var(--line); }
 .op-foot__away { margin-inline-start: auto; }
@@ -92,10 +94,12 @@ button.op-line:hover { background: var(--surface-2); }
 .op-tree { width: 300px; flex: none; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3); overflow: auto; background: var(--surface); border-inline-end: 1px solid var(--line); }
 .op-need { color: var(--bad); font-size: var(--t-small); white-space: nowrap; }
 /* The grid takes the room under its head and scrolls inside itself, so its role names stay stuck on top (they stick to
-   the grid's own scroll box, never the column's). It keeps at least 24rem, or the column's height: past that the column
+   the grid's own scroll box, never the column's). With many rows it keeps at least 24rem, or the column's height: past that the column
    scrolls as one page to show it whole, where a grid squeezed under its head showed three rows on a small window. */
 .op-grid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-3) var(--s-4); overflow: auto; }
-.op-grid .kit-matrix { flex: 0 1 auto; min-height: min(24rem, 100%); }
+.op-gridBox { flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; }
+.op-gridBox[data-tall] { min-height: min(24rem, 100%); }
+.op-gridBox > .kit-matrix { flex: 0 1 auto; min-height: 0; }
 .op-gridHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
 .op-gridHead h2 { margin: 0; font-size: var(--t-body); font-weight: var(--fw-strong); }
 .op-picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); padding: var(--s-1) 0; }

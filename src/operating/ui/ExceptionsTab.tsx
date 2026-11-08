@@ -152,7 +152,7 @@ export function ExceptionsTab({ model, exceptions, readOnly, dispatch, onBackBel
       />
       <p className="op-small">{t('operating.exFootnote')}</p>
       <Preview
-        ids={ids} currentId={open ? open.key : null} onSelect={(id) => onSelect(id ?? undefined)} title={open ? titleOf(open, model, t) : ''}
+        ids={ids} currentId={open ? open.key : null} onSelect={(id) => onSelect(id ?? undefined)} title={open ? titleOf(open, model, t) : ''} kind={t('operating.exKind')}
         listWord={t('operating.exWord')}
         facts={open && (
           <>

@@ -23,14 +23,14 @@ import type { RoleId, UnitType, UnitTypeId } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
-import { Panel } from '../../widgets/kit/Panel'
+import { claimKey, keyClaimed } from '../../widgets/kit/keys'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { PageClose } from '../../widgets/PageClose'
 import { PageDialog } from '../../widgets/PageDialog'
 import { SeamResizer } from '../../widgets/SeamResizer'
 import { useSeamWidth } from '../../widgets/useSeamWidth'
 import { usePlaceLook, usePlaceTab } from '../../widgets/placeTab'
-import { editResponsibility, editRole, editUnitType, itemOf, removeResponsibility, removeRole, removeSlot, removeUnitType } from '../edit'
+import { itemOf, removeResponsibility, removeRole, removeSlot, removeUnitType } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
 import { exceptionsOf } from '../exceptions'
 import { libraryLanguage } from '../library'
@@ -52,12 +52,9 @@ import type { ReaderParts } from './ReaderParts'
 import { RemoveConfirm } from './RemoveConfirm'
 import type { RoleHolders } from './RemoveConfirm'
 import { ResponsibilitiesTab } from './ResponsibilitiesTab'
-import { ResponsibilityReader } from './ResponsibilityReader'
-import { RoleReader } from './RoleReader'
+import { RecordPreview } from './RecordPreview'
 import { RolesTab } from './RolesTab'
-import { SlotReader } from './SlotReader'
 import { StructureTab } from './StructureTab'
-import { UnitTypeReader } from './UnitTypeReader'
 import { useLibraryStep } from './useLibraryStep'
 import type { LibraryStep } from './useLibraryStep'
 import './Operating.css'
@@ -199,7 +196,8 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   const flat = tab === 'responsibilities'
   return (
     <PageDialog open={props.open} topInset={props.windowChrome?.topInset} onClose={props.onClose} aria-label={t('operating.title')}>
-      <div className="op-page">
+      {/* One Escape does one thing: Arrange beside the grid closes before the page does. */}
+      <div className="op-page" onKeyDown={(event) => { if (event.key === 'Escape' && arranging && !keyClaimed(event)) { claimKey(event); setArranging(false) } }}>
         <div className="op-bar">
           <Tabs
             label={t('operating.title')} value={tab} onChange={(next) => chooseTab(next)}
@@ -229,14 +227,8 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
               setTab={setTab} matrixView={matrixView} setMatrixView={setMatrixView} arranging={arranging} setArranging={setArranging} exceptions={exceptions} openItem={openItem}
             />
           </div>
-          {beside && (arranging || picked) && (
+          {tab === 'responsibilities' && arranging && (
             <SeamResizer orientation="vertical" region="after" value={asideWidth} min={260} max={720} defaultValue={360} onChange={setAsideWidth} label={t('common.resizeColumn')} />
-          )}
-          {beside && picked && !arranging && (
-            <Reader
-              width={asideWidth} picked={picked} parts={parts} slotOpen={slotOpen} onSlot={setSlotOpen} onClose={() => select(undefined)} slotAside={taking}
-              removeSlotOf={removeSlotOf} naming={naming} part={tab === 'responsibilities' ? look.part : undefined}
-            />
           )}
           {tab === 'responsibilities' && arranging && (
             <ArrangePanel
@@ -246,6 +238,13 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           )}
         </div>
       </div>
+      {/* Every record on the page reads in one frame, over it: the roles' list opens its own the same way. */}
+      {beside && !arranging && (
+        <RecordPreview
+          picked={picked} parts={parts} onSelect={select} slotOpen={slotOpen} onSlot={setSlotOpen} slotAside={taking}
+          removeSlotOf={removeSlotOf} naming={naming} part={tab === 'responsibilities' ? look.part : undefined}
+        />
+      )}
       <RemoveConfirm
         item={toRemove} holders={toRemove?.kind === 'role' ? props.roleHolders?.(toRemove.item.id) : undefined}
         onCancel={() => setRemoving(undefined)} onConfirm={confirmRemove}
@@ -326,50 +325,6 @@ function TabBody({ tab, parts, props, readOnly, libraries, fromLibrary, selected
               />
             )}
     </>
-  )
-}
-
-/** The panel beside the structure or the grid: an item, or one role of a unit type. */
-function Reader({ width, picked, parts, slotOpen, onSlot, onClose, slotAside, removeSlotOf, part, naming }: {
-  width: number; picked: OperatingItem; parts: ReaderParts; slotOpen: RoleId | undefined; onSlot(role: RoleId | undefined): void; onClose(): void
-  slotAside: ReactNode; removeSlotOf(type: UnitType, index: number): void; part: string | undefined
-  /** The item just made, whose name opens for typing. */
-  naming: { id: string; nonce: number } | undefined
-}) {
-  const { t } = useStrings()
-  const { readOnly, dispatch, model } = parts
-  const kind = { unitType: t('operating.unitType'), role: t('operating.role'), responsibility: t('operating.responsibility') }[picked.kind]
-  const rename = { unitType: editUnitType, role: editRole, responsibility: editResponsibility }[picked.kind]
-  const slotAt = picked.kind === 'unitType' && slotOpen !== undefined ? picked.item.slots.findIndex((slot) => slot.role === slotOpen) : -1
-  if (picked.kind === 'unitType' && slotAt >= 0) {
-    const slot = picked.item.slots[slotAt]
-    const type = picked.item
-    return (
-      <Panel
-        kind={type.name} name={model.roles.find((role) => role.id === slot.role)?.name ?? slot.role} onClose={() => onSlot(undefined)} width={width} dataGuide="operating.reader"
-        actions={<button type="button" className="op-link op-small" onClick={() => onSlot(undefined)}>{t('operating.backToType', { type: type.name })}</button>}
-      >
-        <SlotReader type={type} slot={slot} index={slotAt} parts={parts} onTakeOut={() => removeSlotOf(type, slotAt)} />
-      </Panel>
-    )
-  }
-  return (
-    <Panel
-      kind={kind} name={picked.item.name} onClose={onClose} width={width} dataGuide="operating.reader"
-      {...(naming?.id === picked.item.id ? { renameRequest: naming.nonce, renameAtOnce: true } : {})}
-      {...(readOnly ? {} : { onRename: (name: string) => { dispatch(rename(picked.item.id, 'name', name)) } })}
-    >
-      <div data-testid="operating-inspector">
-        {picked.kind === 'unitType' && <UnitTypeReader type={picked.item} parts={parts} onOpenSlot={onSlot} slotAside={slotAside} />}
-        {picked.kind === 'role' && (
-          <RoleReader
-            role={picked.item} parts={parts} partName={part}
-            partDuties={part === undefined ? undefined : model.responsibilities.filter((one) => (one.group?.trim() ?? '') === part).map((one) => one.id)}
-          />
-        )}
-        {picked.kind === 'responsibility' && <ResponsibilityReader responsibility={picked.item} parts={parts} />}
-      </div>
-    </Panel>
   )
 }
 

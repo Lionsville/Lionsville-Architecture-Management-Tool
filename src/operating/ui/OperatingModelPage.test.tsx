@@ -223,6 +223,8 @@ describe('the operating model\'s page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New responsibility' }))
     expect(document.activeElement?.tagName).toBe('TEXTAREA')
     expect(screen.getByTestId('operating-folded').textContent).toContain('Press the + column')
+    // Named in the page's one reader, over the grid: closed, the grid is pressed again.
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Responsibility' })).getByRole('button', { name: 'Close' }))
     fireEvent.click(screen.getByRole('columnheader', { name: /^\+/ }))
     expect(screen.getByTestId('operating-folded').textContent).not.toContain('Press the + column')
   })
@@ -331,6 +333,7 @@ describe('the operating model\'s page', () => {
     fireEvent.click(screen.getByTestId('unit-type-ut-1').querySelector('button') as Element)
     expect(screen.queryByTestId('operating-remove')).toBeNull()
     expect(screen.queryByTestId('operating-change-place')).toBeNull()
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }))
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
     expect(screen.queryByRole('button', { name: 'New responsibility' })).toBeNull()
     fireEvent.click(cell('Plan the routes', 'Planner'))

@@ -75,6 +75,8 @@
   overflow-wrap: anywhere;
 }
 
+.kit-preview__kind { flex: none; padding: var(--s-4) var(--s-5) 0; color: var(--ink-2); font-size: var(--t-small); }
+.kit-preview__title[data-kinded] { padding-top: var(--s-1); }
 .kit-preview__next { flex: none; padding: 0 var(--s-5) var(--s-3); }
 .kit-preview__link { margin-inline-end: var(--s-2); }
 

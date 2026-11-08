@@ -50,6 +50,12 @@ const dialog = () => screen.getByRole('dialog', { hidden: false })
 const address = () => screen.getByTestId('address').textContent
 
 describe('the preview', () => {
+  it('says what the record is over its title, where told', () => {
+    renderShell(<Preview ids={['a']} currentId="a" onSelect={() => {}} title="Department" kind="Unit type"><p>Body</p></Preview>)
+    const title = screen.getByRole('heading', { name: 'Department' })
+    expect(title.previousElementSibling?.textContent).toBe('Unit type')
+  })
+
   it('is not there until a row is selected, and a press writes the address', () => {
     renderShell(<Host />)
     expect(screen.queryByRole('dialog')).toBeNull()

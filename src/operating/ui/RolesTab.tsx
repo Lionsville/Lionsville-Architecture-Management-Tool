@@ -22,12 +22,11 @@ import { useDensity } from '../../widgets/kit/density'
 import { listed } from '../../widgets/kit/listView'
 import { FRESH_VIEW } from '../../widgets/kit/listView'
 import type { ListView } from '../../widgets/kit/listView'
-import { Preview } from '../../widgets/kit/Preview'
 import { newRole, setRule } from '../edit'
 import type { OperatingModel } from '../edit'
 import type { ReaderParts } from './ReaderParts'
 import { partWords, roleNamed } from './reading'
-import { RoleReader } from './RoleReader'
+import { RecordPreview } from './RecordPreview'
 
 const RULE_WORDS = {
   applicationOwner: ['operating.rule.applicationOwner', 'operating.rule.applicationOwnerAfter', 'operating.rule.applicationOwnerUnset'],
@@ -129,9 +128,7 @@ export function RolesTab({ parts, makeId, selected, onSelect, onNew }: {
         }))}
         empty={<p className="op-quiet">{t('operating.noRolesFound')}</p>}
       />
-      <Preview ids={ids} currentId={open ? open.id : null} onSelect={(id) => onSelect(id ?? undefined)} title={open?.name ?? ''} listWord={t('operating.rolesWord')} dataGuide="operating.rolePreview">
-        {open && <RoleReader role={open} parts={parts} />}
-      </Preview>
+      <RecordPreview picked={open && { kind: 'role', item: open }} ids={ids} onSelect={onSelect} parts={parts} dataGuide="operating.rolePreview" />
     </>
   )
 }

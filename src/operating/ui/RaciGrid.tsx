@@ -29,6 +29,8 @@ const WORD: Record<Raci, 'operating.raci.R' | 'operating.raci.A' | 'operating.ra
 export const needWords = (count: number, t: Translate): string => (count === 0 ? t('operating.needNone') : t('operating.needMany', { count }))
 
 const GROUP = (name: string) => `group:${name}`
+/** Past this many rows the grid keeps a height of its own, and scrolls inside it with its heads stuck. */
+const TALL_FROM = 8
 
 export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, litRole, onOpenRole, onOpenRow, rotateNames, unit, facts, label, onFoldNone }: {
   grid: Grid; allRoles: readonly Role[]; readOnly: boolean; dispatch(command: Command): void
@@ -77,6 +79,7 @@ export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, lit
     : { label: t('operating.needs'), of: (row: string): ReactNode => needOfRow(row, allRoles, t) }
   return (
     <>
+      <div className="op-gridBox" data-tall={rows.length > TALL_FROM || undefined}>
       <Matrix
         label={label} rowHeading={t('operating.responsibility')} rows={rows} columns={columns} wrapRows rotateHeads={rotateNames}
         columnGroups={grid.folded.length ? [{ id: 'none', label: t('operating.noPartColumn'), short: `+${grid.folded.length}` }] : []}
@@ -95,6 +98,7 @@ export function RaciGrid({ grid, allRoles, readOnly, dispatch, pick, onPick, lit
         })}
         dataGuide="operating.matrix"
       />
+      </div>
       {pick && !readOnly && !pick.row.startsWith('group:') && (
         <div className="op-picker" data-guide="operating.cell" data-testid="operating-cell-picker">
           <span className="op-picker__letters" role="group" aria-label={t('operating.setLetter')}>

@@ -77,14 +77,17 @@ export function StructureTab({ model, readOnly, selected, onSelect, dispatch, ma
   }
   return (
     <>
+      {/* The words, and New at the far end of their line, as every tab of the page has it. */}
+      <div className="op-actions">
       <p className="op-concept" data-testid="operating-concept">{t('operating.concept')}</p>
       {!readOnly && (
-        <div className="op-actions">
+        <span className="op-end op-actions">
           <Button variant="plain" data-guide="operating.newUnitType" onClick={() => add(newUnitType(t('operating.newUnitTypeName'), makeId, model))}>{t('operating.newUnitType')}</Button>
           <Button variant="plain" data-guide="operating.newRole" onClick={() => add(newRole(t('operating.newRoleName'), makeId, model))}>{t('operating.newRole')}</Button>
           <Button variant="plain" data-guide="operating.fromLibrary" onClick={onFromLibrary}>{t('operating.fromLibrary')}</Button>
-        </div>
+        </span>
       )}
+      </div>
       <div style={{ overflowX: 'auto', flex: 'none' }}>
         <StructureLanes
           structure={structure} label={t('operating.structure')} named="operating.structure"

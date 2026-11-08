@@ -233,6 +233,12 @@ describe('a library brought in from its dialog', () => {
 })
 
 describe('what came in, on the Libraries tab', () => {
+  // What came in opens in the page's one reader, over the page: closed, the tabs are pressed again.
+  const closeReader = async () => {
+    const reader = document.querySelector('.kit-preview')
+    if (reader) fireEvent.keyDown(reader, { key: 'Escape' })
+    await waitFor(() => expect(document.querySelector('.kit-preview')).toBeNull())
+  }
   const openCard = async (name: string) => {
     fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
     fireEvent.click(screen.getByRole('row', { name: new RegExp(`^${name}`) }))
@@ -246,6 +252,7 @@ describe('what came in, on the Libraries tab', () => {
     fireEvent.change(within(pane()).getByLabelText('Scrum Team: called here'), { target: { value: 'Squad' } })
     fireEvent.click(within(pane()).getByRole('button', { name: /^Bring in 4 items/ }))
     await closed()
+    await closeReader()
     const scrum = await openCard('Scrum')
     const squad = unitTypeList(kept.model()).find((type) => type.name === 'Squad')!
     expect(within(scrum).getByTestId(`came-in-${squad.id}`).textContent).toBe('Squad')
@@ -255,8 +262,8 @@ describe('what came in, on the Libraries tab', () => {
     expect(await axeFindings()).toEqual([])
     // Pressing the term opens the item where it is edited.
     fireEvent.click(within(scrum).getByRole('button', { name: 'Scrum Team' }))
-    expect(screen.getByRole('tab', { name: 'Structure', selected: true })).toBeTruthy()
-    expect(within(screen.getByRole('complementary', { name: 'Squad' })).getByTestId('operating-inspector')).toBeTruthy()
+    expect(screen.getByRole('tab', { name: 'Structure', selected: true, hidden: true })).toBeTruthy()
+    expect(within(screen.getByRole('dialog', { name: 'Squad' })).getByTestId('operating-inspector')).toBeTruthy()
   })
 
   it('says nothing of a type placed on the way in, and a move since against where it was put', async () => {
@@ -267,6 +274,7 @@ describe('what came in, on the Libraries tab', () => {
     expect(within(pane()).getByLabelText('Stream-aligned team: sits in')).toHaveProperty('value', 'beside:ut-team')
     fireEvent.click(within(pane()).getByRole('button', { name: 'Bring in 1 item as one step' }))
     await closed()
+    await closeReader()
     const aligned = unitTypeList(kept.model()).find((type) => type.basedOn?.entry === 'stream-aligned')!
     const library = await openCard('Team Topologies')
     expect(within(library).queryByText(/sits at the top/)).toBeNull()
@@ -276,6 +284,7 @@ describe('what came in, on the Libraries tab', () => {
     fireEvent.click(screen.getByTestId('operating-change-place'))
     fireEvent.click(within(screen.getByTestId('operating-place-ticks')).getByRole('checkbox', { name: 'At the top, under the organisation itself' }))
     expect(kept.sent.at(-1)).toMatchObject({ type: 'unitType.update', id: aligned.id, patch: { top: true } })
+    await closeReader()
     const again = await openCard('Team Topologies')
     expect(within(again).getByText(/sits at the top/)).toBeTruthy()
     fireEvent.keyDown(again, { key: 'Escape' })

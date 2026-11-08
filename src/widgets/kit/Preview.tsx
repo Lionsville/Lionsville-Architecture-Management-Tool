@@ -38,6 +38,8 @@ export type PreviewProps = {
   readonly currentId: string | null
   readonly onSelect: (id: string | null) => void
   readonly title: ReactNode
+  /** What the record is, said over its title as a panel says it: *Unit type*. */
+  readonly kind?: string
   /** What the title says in words, where `title` is not a plain string. */
   readonly titleText?: string
   readonly code?: string
@@ -59,7 +61,7 @@ export type PreviewProps = {
 
 const WRITES = 'input, textarea, select, [contenteditable="true"]'
 
-export function Preview({ ids, currentId, onSelect, title, code, listWord, openFull, actions, next: nextStep, facts, foot, children, dataGuide }: PreviewProps) {
+export function Preview({ ids, currentId, onSelect, title, kind, code, listWord, openFull, actions, next: nextStep, facts, foot, children, dataGuide }: PreviewProps) {
   const { t } = useStrings()
   const titleId = useId()
   const body = useRef<HTMLDivElement>(null)
@@ -107,7 +109,8 @@ export function Preview({ ids, currentId, onSelect, title, code, listWord, openF
           {actions}
           <button type="button" className="kit-preview__icon" aria-label={t('common.close')} onClick={() => onSelect(null)}><CloseIcon /></button>
         </div>
-        <h2 className="kit-preview__title" id={titleId}>{title}</h2>
+        {kind && <div className="kit-preview__kind">{kind}</div>}
+        <h2 className="kit-preview__title" id={titleId} data-kinded={kind ? '' : undefined}>{title}</h2>
         {nextStep && <div className="kit-preview__next">{nextStep}</div>}
         <div className="kit-preview__body" ref={body} tabIndex={0} role="region" aria-labelledby={titleId}>
           <div className="kit-preview__text">{children}</div>
