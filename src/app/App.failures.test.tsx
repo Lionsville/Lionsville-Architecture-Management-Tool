@@ -13,7 +13,8 @@
  */
 import { afterEach, describe, expect, it } from 'vitest'
 import { laidOut } from '../model/testFixtures';
-import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { ShellError } from '../platform/errors'
 import { answering, heldRepositories } from './testing/heldRepositories'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import { renderApp } from './testing/renderShell'
@@ -175,3 +176,70 @@ describe('a scope whose record will not save', () => {
   })
 })
 
+
+/**
+ * A view renamed from its row on a scope's home, where the folder will not be
+ * written: the row keeps the name that is kept, the word says Not saved, the
+ * toast says the folder's truth and why and points at Your work, and Your
+ * work makes it again or puts it back.
+ */
+describe('a view renamed on a home, where the folder refuses', () => {
+  async function renameRefused(refusing: { now: boolean }) {
+    const held = heldRepositories([project('warehouse', 'Warehouse')])
+    const projects = answering(held, {
+      apply: (work) => (refusing.now ? Promise.reject(new ShellError('shell.folderNoAccess')) : held.scopes.apply(work)),
+    })
+    const shown = renderApp({
+      repositories: projects,
+      boot: { initialProject: undefined, initialHome: 'acme/warehouse' },
+      provider: { sayings: { labelKey: 'shell.sourceFolder', whereKey: 'folder.where', keepFailedKey: 'folder.keepFailed' } },
+    })
+    fireEvent.click(await screen.findByRole('button', { name: 'More for L7' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Rename view…' }))
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'Order flow' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save' }))
+    return { ...shown, held }
+  }
+  const word = () => screen.getByTestId('saved-indicator')
+  const nameKept = async (held: ReturnType<typeof heldRepositories>) => (await held.read('acme/warehouse'))?.model.diagrams[0]?.name
+
+  it('says the folder did not take it and why, never the browser\u2019s sentence, and keeps the old name', async () => {
+    await renameRefused({ now: true })
+    const toast = await screen.findByRole('alert')
+    await waitFor(() => expect(toast.textContent).toContain('The folder did not take the change, so it is not saved.'))
+    expect(toast.textContent).toContain('it is read-only, or kept from this app')
+    expect(toast.textContent).not.toContain('browser')
+    await waitFor(() => expect(word().textContent).toContain('Not saved'))
+    expect(screen.getByRole('button', { name: 'More for L7' })).toBeDefined()
+    fireEvent.click(within(toast).getByRole('button', { name: 'See Your work' }))
+    expect((await screen.findByTestId('work-not-kept')).textContent).toContain('The folder did not take the change')
+    expect(screen.getByTestId('work-retry')).toBeDefined()
+    expect(screen.getByTestId('work-put-back')).toBeDefined()
+  })
+
+  it('lands on Try again once the folder may be written, and the row says the new name', async () => {
+    const refusing = { now: true }
+    const { held } = await renameRefused(refusing)
+    await waitFor(() => expect(word().textContent).toContain('Not saved'))
+    fireEvent.click(word())
+    refusing.now = false
+    fireEvent.click(await screen.findByTestId('work-retry'))
+    await waitFor(() => expect(screen.queryByTestId('work-not-kept')).toBeNull())
+    expect(await nameKept(held)).toBe('Order flow')
+    await waitFor(() => expect(document.querySelector('[aria-label="More for Order flow"]')).not.toBeNull())
+    await waitFor(() => expect(word().getAttribute('data-tone')).not.toBe('problem'))
+  })
+
+  it('puts it back, leaving the name that is kept and the word calm', async () => {
+    const { held } = await renameRefused({ now: true })
+    await waitFor(() => expect(word().textContent).toContain('Not saved'))
+    fireEvent.click(word())
+    fireEvent.click(await screen.findByTestId('work-put-back'))
+    await waitFor(() => expect(screen.queryByTestId('work-not-kept')).toBeNull())
+    await waitFor(() => expect(word().getAttribute('data-tone')).not.toBe('problem'))
+    expect(await nameKept(held)).toBe('L7')
+    // By its name rather than its role: the panel open over the home hides the page from role queries.
+    expect(document.querySelector('[aria-label="More for L7"]')).not.toBeNull()
+  })
+})

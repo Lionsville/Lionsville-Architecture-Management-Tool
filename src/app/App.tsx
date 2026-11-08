@@ -496,7 +496,8 @@ export function App(given: AppProps) {
   const { props, refusals, landed } = useWatchedWrites(given)
   const parts = useShellParts(props, refusals)
   // A refused write that lands when tried again is read back as any write is: the tree, its index, the people.
-  landed.current = () => { parts.writes.treeChanged(); parts.people.refresh() }
+  // And the notice's latch lets go, so a refusal after it is said again rather than swallowed.
+  landed.current = () => { parts.writes.treeChanged(); parts.people.refresh(); parts.services.reportKept(true) }
   // A refusal's toast points at *Your work*, which is the frame's: it can open it now.
   parts.services.openWork.current = () => parts.agent.setPanel('work')
   const { prefs, s, toasts } = parts.services

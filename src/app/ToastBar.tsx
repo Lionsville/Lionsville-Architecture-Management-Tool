@@ -76,7 +76,8 @@ export function ToastBar({ toast, open, onClose, onExited }: ToastBarProps) {
         // does the thing, so it cannot be pressed twice.
         action={toast?.action
           ? (
-            <Button color="inherit" size="small" onClick={() => { onClose(); toast.action?.onClick() }}>
+            // On one line: an offer broken over three reads as three words, not one button.
+            <Button color="inherit" size="small" sx={{ whiteSpace: 'nowrap', flex: 'none' }} onClick={() => { onClose(); toast.action?.onClick() }}>
               {toast.action.label}
             </Button>
           )
