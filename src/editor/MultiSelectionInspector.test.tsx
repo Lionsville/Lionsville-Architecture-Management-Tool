@@ -183,13 +183,16 @@ describe('MultiSelectionInspector: it says what is selected, and what each field
     expect(screen.getByRole('heading', { name: 'Change the connection' })).toBeDefined();
   });
 
-  it('offers the delete where people look, over the whole selection', () => {
+  it('offers removing and deleting at the end of ⋯, over the whole selection', () => {
     const onRequestDelete = vi.fn();
     const selection = { ...none, elementIds: ['a1', 'a2'] };
     const { actions } = renderFull(selection, { onRequestDelete });
-    fireEvent.click(screen.getByRole('button', { name: 'Delete 2…' }));
+    const more = () => fireEvent.click(screen.getByRole('button', { name: 'More' }));
+    more();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete 2 from model…' }));
     expect(onRequestDelete).toHaveBeenCalledWith(selection);
-    fireEvent.click(screen.getByRole('button', { name: 'From this view' }));
+    more();
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Remove from view' }));
     expect(actions.removeFromDiagram).toHaveBeenCalledTimes(2);
   });
 });

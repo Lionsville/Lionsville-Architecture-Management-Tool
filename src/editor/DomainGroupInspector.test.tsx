@@ -52,6 +52,8 @@ function renderInspector(
   return { actions };
 }
 
+const MORE = 'More';
+
 describe('DomainGroupInspector', () => {
   const tidy = () => fireEvent.click(screen.getByRole('tab', { name: 'Tidy group' }));
 
@@ -60,9 +62,10 @@ describe('DomainGroupInspector', () => {
     expect(screen.getByText('2 elements inside')).toBeDefined();
   });
 
-  it('removes the group, the obvious target the right-click menu never was', () => {
+  it('removes the group from the end of ⋯, where every panel keeps its removing', () => {
     const { actions } = renderInspector();
-    fireEvent.click(screen.getByRole('button', { name: 'Remove group' }));
+    fireEvent.click(screen.getByRole('button', { name: MORE }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Remove group' }));
     expect(actions.removeDomainGroup).toHaveBeenCalledWith('Core');
   });
 

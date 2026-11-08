@@ -133,7 +133,7 @@ export function MultiSelectionInspector({
       kind={selectionWords(elementIds.length, elements, selection.connectionIds.length, selection.domainGroups.length, t)}
       name={t('inspector.selected', { count: total })}
       facts={canEdit ? t('inspector.bulkNote') : undefined}
-      actions={deleteAll && <MoreMenu label={t('inspector.more')} size="small" items={[{ label: t('inspector.deleteCount', { count: total }), final: true, onSelect: deleteAll }]} />}
+      actions={<RemoveMore removeFromView={removeFromView} deleteAll={deleteAll} count={total} t={t} />}
       // Only lines cannot be dragged together, so the hint says only what they can do.
       help={help ?? t(elementIds.length > 0 || selection.domainGroups.length > 0 ? 'inspector.multiHint' : 'inspector.multiHintLines')}
     >
@@ -154,20 +154,18 @@ export function MultiSelectionInspector({
         </>
       )}
       {canEdit && elementIds.length > 1 && <Arrange count={elementIds.length} landscape={diagram?.kind === 'layer7'} t={t} />}
-      <RemoveActs removeFromView={removeFromView} deleteAll={deleteAll} count={total} t={t} />
     </Panel>
   );
 }
 
-function RemoveActs({ removeFromView, deleteAll, count, t }: { removeFromView: (() => void) | undefined; deleteAll: (() => void) | undefined; count: number; t: Translate }) {
+/** Removing and deleting, in one place on every panel: the end of ⋯. */
+function RemoveMore({ removeFromView, deleteAll, count, t }: { removeFromView: (() => void) | undefined; deleteAll: (() => void) | undefined; count: number; t: Translate }) {
   if (!removeFromView && !deleteAll) return null;
   return (
-    <PanelSection title={t('inspector.remove')}>
-      <div className="inspector-actions">
-        {removeFromView && <Button size="small" onClick={removeFromView}>{t('inspector.fromThisView')}</Button>}
-        {deleteAll && <Button size="small" variant="danger" onClick={deleteAll}>{t('inspector.deleteCount', { count })}</Button>}
-      </div>
-    </PanelSection>
+    <MoreMenu label={t('inspector.more')} size="small" items={[
+      ...(removeFromView ? [{ label: t('inspector.fromThisView'), onSelect: removeFromView }] : []),
+      ...(deleteAll ? [{ label: t('inspector.deleteCount', { count }), final: true, onSelect: deleteAll }] : []),
+    ]} />
   );
 }
 
