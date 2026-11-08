@@ -1911,6 +1911,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'example.keepUnder': 'Onder mijn organisatie houden',
   'example.keepNot': 'Niet nu',
   'example.keepUnwritten': 'Er is niets bewaard: de laatste wijziging kon niet eerst worden weggeschreven. {reason}',
+  'example.markedBecause': 'Kwam mee met het voorbeeld',
   'work.today': 'Vandaag, {time}',
   'work.manual': 'Waar je werk staat, in de help',
   'work.couldNotSave': 'Niet bewaard',

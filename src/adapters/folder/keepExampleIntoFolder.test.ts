@@ -169,7 +169,7 @@ describe('the example filed under an organisation that holds work, as it reads t
         model: { ...emptyContent('Globex').model, elements: [{ id: 'ours', kind: 'application', name: 'Our system' } as never] },
       })
     }
-    const base = (await keepVisit((await visit()).scopes, made.into, named)).under ?? ''
+    const base = (await keepVisit((await visit()).scopes, made.into, named, 'Came with the example')).under ?? ''
     const back = made.reopen()
     const tree = await back.scopes.tree()
     const paths = nodesOf(tree.root).map((node) => node.address).filter((path) => isWithinScope(path, base))
@@ -183,6 +183,13 @@ describe('the example filed under an organisation that holds work, as it reads t
     const open = found.filter((finding) => !marked.has(`${finding.scope} ${checkMarkId(checkMarkFor(finding as never, { on: DAY }))}`))
     return { base, tree, scopes, found, open, marked }
   }
+
+  it('marks the capabilities it brings with the reason the keep gave, so Accepted says why', async () => {
+    const { scopes } = await landed(true)
+    const marks = [...scopes.values()].flatMap((scope) => scope.model.checkMarks ?? [])
+    expect(marks.length).toBeGreaterThan(0)
+    expect(new Set(marks.map((mark) => mark.reason))).toEqual(new Set(['Came with the example']))
+  })
 
   it('names its own scopes wherever it names one: units\' lines gone with their roles, topic links and evaluations under the child', async () => {
     const { base, tree, scopes } = await landed(true)

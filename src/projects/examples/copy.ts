@@ -173,6 +173,8 @@ export async function keepVisit(
   from: ScopeReader,
   to: { scopes: ScopeReader & Pick<ScopeRepository, 'create' | 'apply' | 'remove'>; images: Pick<ImageRepository, 'put'> },
   named: { key: string; label: string; description: string; path: ScopePath },
+  /** Why the capabilities it brings are marked as intended, where it is filed under an organisation: in the person's words. */
+  markedBecause?: string,
 ): Promise<KeptVisit> {
   const paths = nodesOf((await from.tree()).root).map((node) => node.address)
   const read = await Promise.all(paths.map((path) => readScope(from, path)))
@@ -184,7 +186,7 @@ export async function keepVisit(
     await placeCopy(to, copy)
     return {}
   }
-  await placeCopy(to, filedUnder(copy, under, await readScope(to.scopes, ROOT_SCOPE), today()))
+  await placeCopy(to, filedUnder(copy, under, await readScope(to.scopes, ROOT_SCOPE), today(), markedBecause))
   return { under }
 }
 
@@ -208,7 +210,9 @@ export async function keepVisit(
  * forty capabilities to somebody else's. Each such finding is marked as
  * intended, as a person would, in the scope it is about — read off the copy
  * over the organisation as it is, so a function the organisation does name is
- * no finding and is not marked — and stays under *Accepted*, to be taken back.
+ * no finding and is not marked — and stays under *Accepted*, to be taken back,
+ * with `reason` as the reason a person reads there (*Came with the example*),
+ * said in their language by the caller, since a reason is kept as written.
  *
  * **Its top is not an organisation.** It was the example's, and filed under
  * one it is a part of it: a domain, as a scope made under a home is, so its
@@ -217,14 +221,14 @@ export async function keepVisit(
  * over plain actors they would only say they have no units.
  */
 export function filedUnder(
-  copy: readonly ScopeSnapshot[], under: ScopePath, organisation: ScopeSnapshot | undefined, on: string,
+  copy: readonly ScopeSnapshot[], under: ScopePath, organisation: ScopeSnapshot | undefined, on: string, reason?: string,
 ): ScopeSnapshot[] {
   const plain = copy.map((scope) => withoutUnitViews(withoutOperatingModel(scope.path === under ? asDomain(withoutOrganisationOnly(scope)) : scope)))
   const index = indexScopes([...(organisation ? [{ ...organisation, path: ROOT_SCOPE }] : []), ...plain])
   const marks = new Map<ScopePath, CheckMark[]>()
   for (const finding of identityFindings(index)) {
     if (finding.key !== 'check.proposal' || !isWithinScope(finding.scope, under)) continue
-    marks.set(finding.scope, [...marks.get(finding.scope) ?? [], checkMarkFor(finding, { on })])
+    marks.set(finding.scope, [...marks.get(finding.scope) ?? [], checkMarkFor(finding, { on, ...(reason !== undefined ? { reason } : {}) })])
   }
   return plain.map((scope) => {
     const marked = marks.get(scope.path)

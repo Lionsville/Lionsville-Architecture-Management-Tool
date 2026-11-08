@@ -2145,6 +2145,7 @@ export const EN = {
   'example.keepUnder': 'Keep it under my organisation',
   'example.keepNot': 'Not now',
   'example.keepUnwritten': 'Nothing was kept: the latest change could not be written first. {reason}',
+  'example.markedBecause': 'Came with the example',
   'work.today': 'Today, {time}',
   'work.manual': 'Where your work is kept, in the help',
   'work.couldNotSave': 'Could not save',

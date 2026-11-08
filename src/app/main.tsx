@@ -437,7 +437,8 @@ function keepExample(): void {
 function keepNow(): void {
   if (!enteredFrom || !visiting) return
   const { offer } = visiting
-  void keepVisit(shell.repositories.scopes, enteredFrom.shell.repositories, { key: offer.key, label: offer.label, description: offer.description, path: offer.path })
+  void keepVisit(shell.repositories.scopes, enteredFrom.shell.repositories, { key: offer.key, label: offer.label, description: offer.description, path: offer.path },
+    bootWords()('example.markedBecause'))
     .then((kept) => leaveExample(kept.under === undefined ? 'example.kept' : 'example.keptUnder'))
     .catch(keptNot)
 }

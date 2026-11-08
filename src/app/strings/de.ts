@@ -1915,6 +1915,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'example.keepUnder': 'Unter meiner Organisation behalten',
   'example.keepNot': 'Nicht jetzt',
   'example.keepUnwritten': 'Nichts wurde behalten: Die letzte Änderung konnte nicht zuerst geschrieben werden. {reason}',
+  'example.markedBecause': 'Kam mit dem Beispiel',
   'work.today': 'Heute, {time}',
   'work.manual': 'Wo Ihre Arbeit liegt, in der Hilfe',
   'work.couldNotSave': 'Nicht gespeichert',
