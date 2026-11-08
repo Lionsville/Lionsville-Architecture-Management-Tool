@@ -313,7 +313,9 @@ describe('the operating model\'s page', () => {
     fireEvent.change(name, { target: { value: 'Station' } })
     fireEvent.keyDown(name, { key: 'Enter' })
     expect(screen.getByTestId('unit-type-ut-1').textContent).toContain('Station')
-    fireEvent.click(screen.getByTestId('operating-remove'))
+    // Delete stands last in the record's ⋯, as on a board's panel.
+    fireEvent.click(within(screen.getByTestId('operating-inspector').closest('[role="dialog"]')!).getByRole('button', { name: 'More' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete from model…' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(screen.queryByTestId('unit-type-ut-1')).toBeNull())
     expect(sent.at(-1)?.type).toBe('transaction')
@@ -332,6 +334,7 @@ describe('the operating model\'s page', () => {
     expect(screen.queryByRole('button', { name: 'New unit type' })).toBeNull()
     fireEvent.click(screen.getByTestId('unit-type-ut-1').querySelector('button') as Element)
     expect(screen.queryByTestId('operating-remove')).toBeNull()
+    expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
     expect(screen.queryByTestId('operating-change-place')).toBeNull()
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }))
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))

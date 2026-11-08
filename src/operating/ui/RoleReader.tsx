@@ -111,7 +111,7 @@ export function RoleReader({ role, parts, partName, partDuties }: {
         <RoleColumn role={role} parts={parts} />
         <OverTime kind="role" item={role} others={model.roles} readOnly={readOnly} dispatch={dispatch} />
       </Fold>
-      <ReaderFoot item={{ kind: 'role', item: role }} parts={parts} />
+      <ReaderFoot parts={parts} />
     </div>
   )
 }

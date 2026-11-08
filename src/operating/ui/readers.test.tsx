@@ -238,10 +238,11 @@ describe('a responsibility read', () => {
     expect(screen.queryByRole('button', { name: 'Lead' })).toBeNull()
   })
 
-  it('ends in the page’s one foot, its removal alone at the far end, as the exception’s way back is', () => {
+  it('ends in the page’s one foot with its history, its delete in the head’s ⋯ rather than at the foot', () => {
     renderShell(<ResponsibilityReader responsibility={of('plan')} parts={parts({ onOpenHistory: vi.fn() })} />)
     const foot = screen.getByTestId('operating-reader-foot')
-    expect(foot.querySelector('.op-foot__away')?.textContent).toBe('Delete')
+    expect(foot.querySelector('.op-foot__away')).toBeNull()
+    expect(screen.queryByTestId('operating-remove')).toBeNull()
     expect(foot.firstElementChild?.textContent).toBe('History')
     cleanup()
     exceptions({ start: 'by-type' })

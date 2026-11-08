@@ -63,7 +63,7 @@ export function ResponsibilityReader({ responsibility, parts }: { responsibility
         )}
       </div>
       <div className="op-rowEnd"><span /><SourceWord basedOn={responsibility.basedOn} /></div>
-      <ReaderFoot item={{ kind: 'responsibility', item: responsibility }} parts={parts} />
+      <ReaderFoot parts={parts} />
     </div>
   )
 }

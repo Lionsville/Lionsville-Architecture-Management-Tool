@@ -13,8 +13,8 @@ import { useStrings } from '../../i18n'
 import type { MarkdownEditor as MarkdownEditorShape } from '../../documentation/ui/MarkdownEditor'
 import { lazyPart } from '../../widgets/lazyPart'
 import { PencilIcon } from '../../widgets/icons'
-import { Button } from '../../widgets/kit/Button'
 import { DateInput, PropertyRow, PropertyRows } from '../../widgets/kit/Field'
+import { MoreMenu } from '../../widgets/kit/Menu'
 import { setDay, setSuccessors } from '../edit'
 import type { OperatingItem, OperatingModel } from '../edit'
 import { entryOf } from '../library'
@@ -158,15 +158,29 @@ export function ReaderActions({ children, away }: { children?: ReactNode; away?:
   )
 }
 
-/** The end of every reader: the host's aside, then the foot with history and removing it. */
-export function ReaderFoot({ item, parts }: { item: OperatingItem; parts: ReaderParts }) {
+/**
+ * ⋯ at the head of a reader, the panel's and the preview's alike: deleting the
+ * thing stands last in it, in the danger ink, as it does on a board's panel —
+ * never a button of its own at the foot. Nothing for a reader who may not.
+ */
+export function ReaderMore({ item, parts }: { item: OperatingItem | undefined; parts: ReaderParts }) {
+  const { t } = useStrings()
+  if (parts.readOnly || !item) return null
+  return (
+    <MoreMenu
+      label={t('operating.more')} size="small"
+      items={[{ label: t('operating.deleteFromModel'), final: true, 'data-testid': 'operating-remove', onSelect: () => parts.onRemove(item.item.id) }]}
+    />
+  )
+}
+
+/** The end of every reader: the host's aside, then the foot with its history. */
+export function ReaderFoot({ parts }: { parts: ReaderParts }) {
   const { t } = useStrings()
   return (
     <>
       {parts.aside}
-      <ReaderActions
-        away={!parts.readOnly && <Button variant="danger" size="small" data-testid="operating-remove" onClick={() => parts.onRemove(item.item.id)}>{t('operating.remove')}</Button>}
-      >
+      <ReaderActions>
         {parts.onOpenHistory && <button type="button" className="op-link" data-testid="operating-history" onClick={parts.onOpenHistory}>{t('operating.history')}</button>}
       </ReaderActions>
     </>

@@ -5,8 +5,8 @@
  * The one frame every record of the operating model is read and written in: a unit
  * type, a role, a responsibility, and a role inside a unit type. The large preview
  * over the page, as a list row opens one everywhere else: what it is and its name
- * on top, ‹ › to the next of its kind, the facts, and the reader's own foot with
- * the ways onward at its start and what takes the record away alone at its end.
+ * on top, ‹ › to the next of its kind, ⋯ with the delete last in it as on a
+ * board's panel, the facts, and the reader's own foot with the ways onward.
  * A unit type read in a side panel and a role in a full window, with their actions
  * in different places, made the same kind of act sit in four places on one page.
  */
@@ -17,6 +17,7 @@ import { PanelName } from '../../widgets/kit/Panel'
 import { Preview } from '../../widgets/kit/Preview'
 import { editResponsibility, editRole, editUnitType } from '../edit'
 import type { OperatingItem } from '../edit'
+import { ReaderMore } from './ReaderParts'
 import type { ReaderParts } from './ReaderParts'
 import { ResponsibilityReader } from './ResponsibilityReader'
 import { RoleReader } from './RoleReader'
@@ -65,6 +66,7 @@ export function RecordPreview({ picked, ids, onSelect, parts, naming, slotOpen, 
         />
       )}
       dataGuide={dataGuide}
+      actions={<ReaderMore item={picked} parts={parts} />}
     >
       {picked && (
         <div data-testid="operating-inspector">

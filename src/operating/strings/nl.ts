@@ -94,6 +94,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'operating.orderNowhere': 'Het valt nergens onder: geef het eerst een plek.',
   'operating.holdsNothing': 'Er mag niets onder vallen.',
   'operating.remove': 'Verwijderen',
+  'operating.more': 'Meer',
+  'operating.deleteFromModel': 'Uit het model verwijderen…',
   'operating.removeUnitType': '{name} verwijderen? Eenheidstypen die eronder mogen vallen, zeggen dat dan niet meer.',
   'operating.removeRole': '{name} verwijderen? De rol verdwijnt uit de eenheidstypen die haar hebben en uit de regels die haar noemen.',
   'operating.removeRoleHeldOne': '{count} persoon heeft haar vandaag of later, in {units}.',

@@ -93,7 +93,7 @@ export function UnitTypeReader({ type, parts, onOpenSlot, slotAside }: {
         <TypeOrder type={type} lane={laneOf.get(type.id)} siblings={laneOf.get(type.id) === undefined ? [] : lanes[(laneOf.get(type.id) as number) - 1].types} parts={parts} />
         <OverTime kind="unitType" item={type} others={model.unitTypes} readOnly={readOnly} dispatch={dispatch} />
       </Fold>
-      <ReaderFoot item={{ kind: 'unitType', item: type }} parts={parts} />
+      <ReaderFoot parts={parts} />
     </>
   )
 }

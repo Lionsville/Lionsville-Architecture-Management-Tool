@@ -94,6 +94,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'operating.orderNowhere': 'Er gehört nirgends hin: Geben Sie ihm zuerst einen Platz.',
   'operating.holdsNothing': 'Darunter darf nichts gehören.',
   'operating.remove': 'Löschen',
+  'operating.more': 'Mehr',
+  'operating.deleteFromModel': 'Aus dem Modell löschen…',
   'operating.removeUnitType': '{name} löschen? Einheitstypen, die darunter stehen dürfen, sagen das dann nicht mehr.',
   'operating.removeRole': '{name} löschen? Die Rolle verschwindet aus den Einheitstypen, die sie haben, und aus den Regeln, die sie nennen.',
   'operating.removeRoleHeldOne': '{count} Person hat sie heute oder später, in {units}.',

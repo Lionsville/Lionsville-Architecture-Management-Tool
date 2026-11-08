@@ -101,6 +101,8 @@ export const EN = {
   'operating.orderNowhere': 'It sits nowhere: give it a place first.',
   'operating.holdsNothing': 'Nothing may sit in it.',
   'operating.remove': 'Delete',
+  'operating.more': 'More',
+  'operating.deleteFromModel': 'Delete from model…',
   'operating.removeUnitType': 'Delete {name}? Unit types that may sit in it no longer say so.',
   'operating.removeRole': 'Delete {name}? It leaves the unit types that hold it and the rules that name it.',
   'operating.removeRoleHeldOne': '{count} person holds it today or later, in {units}.',
