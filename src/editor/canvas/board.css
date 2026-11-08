@@ -49,8 +49,15 @@
   zoom: calc(1 / var(--canvas-zoom, 1));
 }
 .lv-tile .kit-card__name { padding-right: calc(var(--lv-corner, 0) * 18px / var(--canvas-zoom, 1)); }
-/* A band's low tile has room for one line of its name far off; the rest is on hover. */
-[data-distance='far'] .lv-tile--low .kit-card__name { -webkit-line-clamp: 1; }
+/*
+ * A band's low tile on a landscape says its name on two lines, as an application's
+ * card does, and nothing else: set close and centred so two lines fit its box down to the floor
+ * (56 px at 60% leaves 33 on screen). It once kept one line far off, and cut a
+ * short name such as a role's to its first word.
+ */
+.lv-board:not([data-kind='container']) .lv-tile--low { padding-block: calc(1px / var(--canvas-zoom, 1)); }
+.lv-board:not([data-kind='container']) .lv-tile--low .kit-card__head { align-items: center; }
+.lv-board:not([data-kind='container']) .lv-tile--low .kit-card__name { -webkit-line-clamp: 2; line-height: var(--lh-close); }
 
 /* A container diagram: boxes say what they are at every distance, and the context recedes. */
 .lv-board[data-kind='container'] .lv-tile { text-align: center; }
@@ -58,6 +65,17 @@
 .lv-board[data-kind='container'] .lv-tile[data-context] { background: var(--c4-context-fill); }
 .lv-board[data-kind='container'] .lv-tile .kit-card__head { justify-content: center; }
 .lv-board[data-kind='container'] .lv-tile .kit-card__name { padding-right: 0; -webkit-line-clamp: 2; }
+/*
+ * A box's name is centred and as wide as the box, so a corner mark (a stand-in's ⚠, a
+ * document) sits on the box's top edge, clear of it: inside the corner it lay over a
+ * centred name such as a role's, and narrowing the name instead broke its word in two.
+ */
+.lv-board[data-kind='container'] .lv-tile__corner {
+  top: calc(-1 * var(--s-2) / var(--canvas-zoom, 1));
+  padding-inline: 2px;
+  border-radius: var(--r-2);
+  background: var(--canvas-ground);
+}
 .lv-board[data-kind='container'][data-distance='far'] .lv-tile .kit-card__sub { display: block; }
 .lv-board[data-kind='container'][data-distance='far'] .lv-tile__description { display: none; }
 /* The cylinder: a lid on the box and a curve at its foot, in the box's own edge. */

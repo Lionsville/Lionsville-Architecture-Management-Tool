@@ -213,7 +213,7 @@ export function nodeGeometryOf(node: PlacedNode): NodeGeometry {
 export const NODE_SIZES: Record<NodeFigure, { width: number; height: number }> = {
   application: { width: 200, height: 130 },
   component: { width: 200, height: 120 },
-  actor: { width: 150, height: 48 },
+  actor: { width: 150, height: 56 },
   externalSystem: { width: 180, height: 96 },
   inputChannel: { width: 160, height: 56 },
   managementTool: { width: 160, height: 56 },

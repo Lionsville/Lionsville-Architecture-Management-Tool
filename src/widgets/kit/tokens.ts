@@ -137,7 +137,8 @@ export const SCALE = {
   // A canvas keeps its own type: in px, so no text size reaches a card, and its zoom is what makes it larger.
   'canvas-t-xs': '12px', 'canvas-t-sm': '13px', 'canvas-t-md': '14px', 'canvas-t-lg': '16px', 'canvas-t-label': '11px', 'canvas-t-near': '9.5px', 'canvas-mark': '10px', 'canvas-target': '24px',
   't-canvas-name': '13px', 'fw-regular': '400', 'fw-medium': '500', 'fw-strong': '600',
-  'lh-tight': '1.25', 'lh-body': '1.45', 'measure-reader': '68ch', 's-1': '4px', 's-2': '8px',
+  // A short card's two lines of name, set close so both fit its box at the floor.
+  'lh-close': '1.1', 'lh-tight': '1.25', 'lh-body': '1.45', 'measure-reader': '68ch', 's-1': '4px', 's-2': '8px',
   's-3': '12px', 's-4': '16px', 's-5': '24px', 's-6': '32px', 'r-1': '2px', 'r-2': '3px', 'r-3': '6px',
   // What holds text grows with it. A panel stops growing before it leaves the work no room.
   'ctl-h': '1.875rem', 'bar-h': '2.75rem', 'tabs-h': '2.25rem', 'viewbar-h': '2.25rem', 'band-h': '2rem',

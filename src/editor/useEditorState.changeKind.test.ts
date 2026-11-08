@@ -7,7 +7,7 @@ import { laidOut } from '../model/testFixtures';
 import { act } from '@testing-library/react';
 import type { DesignModel } from '../model/types';
 import { DEFAULT_ZONE_SIZES, HOME_ZONE } from '../model/zones';
-import { placedNode, placementRect, rectsIntersect, NODE_MAX_SIZE } from '../model/placement';
+import { placedNode, placementRect, rectsIntersect, NODE_MAX_SIZE, NODE_SIZES } from '../model/placement';
 import { renderEditorState } from './testing/editorHost';
 
 /**
@@ -127,7 +127,7 @@ describe('changeElementKind', () => {
     const [a, b] = [placement('a')!, placement('b')!];
     expect(rectsIntersect(placementRect('actor', a), placementRect('actor', b))).toBe(false);
     // The first had nothing in its way, and its row is where the clamp sent it.
-    expect(a).toMatchObject({ zone: 'actors', x: 40, y: 102 });
+    expect(a).toMatchObject({ zone: 'actors', x: 40, y: 150 - NODE_SIZES.actor.height });
   });
 
   it('is one undo step', () => {

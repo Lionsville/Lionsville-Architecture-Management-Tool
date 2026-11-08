@@ -204,7 +204,7 @@ describe('clampPlacementIntoZone', () => {
 
   it('slides a band member back inside its band', () => {
     const stranded = { id: 'e1', zone: 'actors' as const, x: 20, y: 400 };
-    expect(clampPlacementIntoZone(stranded, 'actor', shrunk)).toMatchObject({ x: 20, y: 102 });
+    expect(clampPlacementIntoZone(stranded, 'actor', shrunk)).toMatchObject({ x: 20, y: 150 - NODE_SIZES.actor.height });
   });
 
   it('gives up a size the user set, but never invents one', () => {
