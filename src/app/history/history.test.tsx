@@ -313,6 +313,12 @@ describe('reading one back', () => {
     expect(await screen.findByText('Deleted Crews')).toBeDefined()
   })
 
+  it('names a snapshot nobody gave a subject by its time and who made it', async () => {
+    show([entry({ subject: undefined })])
+    await openIt()
+    expect(within(await screen.findByTestId('history-list')).getByText(/ · W\. Simons$/)).toBeDefined()
+  })
+
   it('says so when the scope was not there then', async () => {
     show([entry()])
     await openIt()

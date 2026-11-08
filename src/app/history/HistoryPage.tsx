@@ -32,6 +32,7 @@ import type { HostModel } from '../../model/hostModel'
 import { isAdrLocked } from '../../model/adr'
 import { STATUS_LABEL } from '../../decisions/adrScope'
 import { formatDay } from '../../i18n/dates'
+import { clockTime } from '../clockTime'
 import { LOCALE } from '../../i18n'
 import type { Language, Translate } from '../../i18n'
 import { PageDialog } from '../../widgets/PageDialog'
@@ -123,8 +124,12 @@ function dayOf(at: number): string {
  * (`HistoryEntry.moved`) — the move, in the language on screen, whatever a
  * source wrote beside it.
  */
-function titleOf(entry: HistoryEntry, s: Translate): string {
-  return entry.moved ? s('activity.scopeMoved', { from: entry.moved.from, to: entry.moved.to }) : entry.subject ?? ''
+function titleOf(entry: HistoryEntry, s: Translate, language: Language): string {
+  if (entry.moved) return s('activity.scopeMoved', { from: entry.moved.from, to: entry.moved.to })
+  if (entry.subject) return entry.subject
+  // A source that keeps no subject (a server cuts its entries as the steps come)
+  // still gives the row a name: the time and who, never an empty line.
+  return [clockTime(new Date(entry.at), language), entry.by, entry.via].filter(Boolean).join(' · ')
 }
 
 /** The counts in words: four glyphs with no words need the help. */
@@ -181,7 +186,7 @@ function groupedByDay(entries: readonly HistoryEntry[], language: Language, s: T
   }
   return [...days].map(([day, held]) => ({
     id: day, label: formatDay(day, language),
-    rows: held.map((entry) => ({ id: entry.id, text: titleOf(entry, s), ...(entry.labels.length > 0 ? { note: entry.labels.join(', ') } : {}) })),
+    rows: held.map((entry) => ({ id: entry.id, text: titleOf(entry, s, language), ...(entry.labels.length > 0 ? { note: entry.labels.join(', ') } : {}) })),
   }))
 }
 
@@ -322,7 +327,7 @@ export function HistoryPage(props: HistoryPageProps) {
         ids={entries.map((entry) => entry.id)}
         currentId={chosen?.id ?? null}
         onSelect={(id) => onChoose(id ?? undefined)}
-        title={chosenEntry ? titleOf(chosenEntry, s) : ''}
+        title={chosenEntry ? titleOf(chosenEntry, s, language) : ''}
         foot={chosenEntry && (
           <SnapshotFoot
             entry={chosenEntry} changes={changes} subject={subject} whole={whole} refusal={refusalOf(subject, current, s)}
