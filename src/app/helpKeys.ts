@@ -26,6 +26,7 @@ import type { DesignDiagram } from '../model/types'
 import type { HostCommand } from '../platform/hostCommands'
 import type { ShellParts } from './shellParts'
 import { FIRST_RUN_HELP, PANEL_HELP, helpForScreen } from '../platform/helpPlaces'
+import { chordHeld } from '../widgets/kit/keys'
 
 const TEXT_INPUTS = /^(text|search|email|url|tel|password|number|date|datetime-local|month|week|time)$/
 
@@ -54,7 +55,8 @@ export type HelpKey = 'shortcuts' | 'help' | 'whole' | undefined
 export function helpKeyOf(event: Pick<KeyboardEvent, 'key' | 'shiftKey' | 'metaKey' | 'ctrlKey' | 'altKey'>): HelpKey {
   if (event.altKey) return undefined
   if (event.key === 'F1') return 'help'
-  const modified = event.metaKey || event.ctrlKey
+  // Either one: Ctrl+? is no text field's key on a Mac, and the help is wanted from both.
+  const modified = chordHeld(event)
   // With ⌘ or Ctrl held, some keyboards report the key under ? as / with Shift.
   if (modified && (event.key === '?' || (event.key === '/' && event.shiftKey))) return 'whole'
   return event.key === '?' && !modified ? 'shortcuts' : undefined
