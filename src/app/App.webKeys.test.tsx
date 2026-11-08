@@ -57,3 +57,12 @@ describe('the menu’s keys on the web', () => {
     expect(press('t')).toBe(false)
   })
 })
+
+describe('the menu’s keys in the example', () => {
+  it('says the example is not kept where Save saves nothing', async () => {
+    renderApp({ repositories: heldRepositories(organisation), visiting: { name: 'One', onKeep: () => {}, onLeave: () => {} } })
+    await screen.findAllByText('Acme')
+    expect(press('s')).toBe(true)
+    expect(await screen.findByText('The example is not kept. Keep it as your start to save it.')).toBeTruthy()
+  })
+})

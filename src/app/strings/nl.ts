@@ -1953,6 +1953,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'openInto.copyFirst': 'Eerst een kopie van {scope} bewaren…',
   'openInto.replaceAndLose': 'Vervangen en kwijtraken wat hier staat',
   'share.noAddressAt': 'Dit werk staat hier: {place}. Niemand anders kan het op een adres bereiken. Een link werkt waar werk op een server staat waar mensen op inloggen.',
+  'share.example': 'Dit is het voorbeeld. Het wordt nergens bewaard, dus er is geen adres om te delen.',
   'share.noLinkTitle': 'Hier is geen link te delen',
   'share.handOver': 'Om het aan iemand te geven: bewaar een kopie en stuur het bestand.',
   'history.snapshotOf': 'Een momentopname maken van {name}',

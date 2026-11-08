@@ -67,8 +67,8 @@ function overflowFor(parts: ShellParts, can: { history: boolean; scope: boolean 
   return {
     ...parts.provider.overflowSource,
     can: { connect: Boolean(parts.provider.offered?.some((way) => way.hostMenu)), picture: parts.frame.get().screen?.boardUp === true, ...can },
-    onCommand: bus.send,
     ...(parts.props.visiting ? { visiting: true } : {}),
+    onCommand: bus.send,
   }
 }
 
@@ -611,7 +611,7 @@ export function AppDialogs({ parts }: { parts: ShellParts }) {
         )}
         s={s}
       />
-      <ShareLinkDialog answer={parts.share.answer} onCopy={parts.share.copy} onClose={parts.share.close} onSaveCopy={() => parts.commands.bus.send({ type: 'export' })} {...(props.provider?.sayings?.labelKey ? { place: sourceLabel(parts.source, s, undefined, props.provider.sayings.labelKey) } : {})} s={s} />
+      <ShareLinkDialog example={props.visiting !== undefined} answer={parts.share.answer} onCopy={parts.share.copy} onClose={parts.share.close} onSaveCopy={() => parts.commands.bus.send({ type: 'export' })} {...(props.provider?.sayings?.labelKey ? { place: sourceLabel(parts.source, s, undefined, props.provider.sayings.labelKey) } : {})} s={s} />
     </>
   )
 }

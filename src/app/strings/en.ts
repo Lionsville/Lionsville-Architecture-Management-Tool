@@ -2187,6 +2187,7 @@ export const EN = {
   'openInto.copyFirst': 'Save a copy of {scope} first…',
   'openInto.replaceAndLose': 'Replace and lose what is here',
   'share.noAddressAt': 'This work is kept here: {place}. Nobody else can reach it at an address. A link works where work is kept on a server that people sign in to.',
+  'share.example': 'This is the example. It is not kept anywhere, so there is no address to share.',
   'share.noLinkTitle': 'No link to share from here',
   'share.handOver': 'To hand it to someone, save a copy and send the file.',
   'history.snapshotOf': 'Take a snapshot of {name}',

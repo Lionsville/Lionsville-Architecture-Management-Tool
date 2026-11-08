@@ -16,7 +16,7 @@ import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import type { ShareAnswer } from '../useShareLink'
 
-export function ShareLinkDialog({ answer, onCopy, onClose, onSaveCopy, place, s }: {
+export function ShareLinkDialog({ answer, onCopy, onClose, onSaveCopy, place, example = false, s }: {
   /** What the last press came to; absent, the dialog is shut. */
   answer: ShareAnswer | undefined
   onCopy: () => void
@@ -25,6 +25,8 @@ export function ShareLinkDialog({ answer, onCopy, onClose, onSaveCopy, place, s 
   onSaveCopy?: () => void
   /** Where the work is kept, in the source's word: a refusal says the true one. */
   place?: string
+  /** The example is up: nothing of it is kept, so there is nothing a link could reach, and no copy to hand over. */
+  example?: boolean
   s: Translate
 }) {
   const link = answer && 'link' in answer ? answer.link : undefined
@@ -39,7 +41,7 @@ export function ShareLinkDialog({ answer, onCopy, onClose, onSaveCopy, place, s 
         cancel: { onClick: onClose, label: s('common.close') },
         outcome: link !== undefined
           ? { onClick: onCopy, label: s('share.copy') }
-          : noAddress && onSaveCopy && { onClick: () => { onClose(); onSaveCopy() }, 'data-testid': 'share-save-copy', label: s('menu.exportWorkingFile') },
+          : noAddress && !example && onSaveCopy && { onClick: () => { onClose(); onSaveCopy() }, 'data-testid': 'share-save-copy', label: s('menu.exportWorkingFile') },
       }}
     >
       {link !== undefined && (
@@ -48,8 +50,8 @@ export function ShareLinkDialog({ answer, onCopy, onClose, onSaveCopy, place, s 
           <TextField label={s('share.linkLabel')} value={link} onChange={() => undefined} readOnly onFocus={(event) => event.target.select()} data-testid="share-link" />
         </>
       )}
-      {refused && <p data-testid="share-refused">{noAddress && place ? s('share.noAddressAt', { place }) : s(refused)}</p>}
-      {noAddress && <p>{s('share.handOver')}</p>}
+      {refused && <p data-testid="share-refused">{example && noAddress ? s('share.example') : noAddress && place ? s('share.noAddressAt', { place }) : s(refused)}</p>}
+      {noAddress && !example && <p>{s('share.handOver')}</p>}
     </Dialog>
   )
 }

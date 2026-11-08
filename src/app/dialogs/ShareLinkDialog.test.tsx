@@ -45,6 +45,12 @@ describe('ShareLinkDialog', () => {
     expect(onClose).toHaveBeenCalled()
   })
 
+  it('says in the example that nothing of it is kept, and offers no copy of it', () => {
+    renderShell(<ShareLinkDialog example place="Example · not kept" answer={{ refused: 'share.noAddress' }} onCopy={() => {}} onClose={() => {}} onSaveCopy={() => {}} s={s} />)
+    expect(screen.getByTestId('share-refused').textContent).toBe(s('share.example'))
+    expect(screen.queryByTestId('share-save-copy')).toBeNull()
+  })
+
   it('is shut with nothing to show', () => {
     renderShell(<ShareLinkDialog answer={undefined} onCopy={() => {}} onClose={() => {}} s={s} />)
     expect(screen.queryByTestId('share-link-dialog')).toBeNull()

@@ -377,7 +377,7 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         if (!key) return
         event.preventDefault()
         if (key.run) send(key.run)
-        else if (key.refused) parts.services.toasts.notify(parts.services.s(key.refused), 'info')
+        else if (key.refused) parts.services.toasts.notify(parts.services.s(key.refused === 'menu.saveNothingOpen' && parts.props.visiting ? 'menu.saveExample' : key.refused), 'info')
       }
     }
     window.addEventListener('keydown', onKey, true)

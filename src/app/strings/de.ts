@@ -1957,6 +1957,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'openInto.copyFirst': 'Zuerst eine Kopie von {scope} speichern…',
   'openInto.replaceAndLose': 'Ersetzen und verlieren, was hier ist',
   'share.noAddressAt': 'Diese Arbeit liegt hier: {place}. Niemand sonst erreicht sie unter einer Adresse. Ein Link funktioniert, wo Arbeit auf einem Server liegt, bei dem sich Menschen anmelden.',
+  'share.example': 'Das ist das Beispiel. Es wird nirgends behalten, also gibt es keine Adresse zum Teilen.',
   'share.noLinkTitle': 'Von hier lässt sich kein Link teilen',
   'share.handOver': 'Um es jemandem zu geben: Speichern Sie eine Kopie und senden Sie die Datei.',
   'history.snapshotOf': 'Eine Momentaufnahme von {name} festhalten',
