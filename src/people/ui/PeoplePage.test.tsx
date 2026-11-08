@@ -597,6 +597,9 @@ describe('forgetting and removing', () => {
     fireEvent.click(within(dialog).getByTestId('people-remove-confirm'))
     await waitFor(() => expect(rowOf('pe-gone')).toBeNull())
     await waitFor(() => expect(screen.queryByTestId('people-person')).toBeNull())
+    // Said as the removal it was, not as somebody the register never had.
+    await waitFor(() => expect(screen.getByText('Deleted from the register.')).toBeDefined())
+    expect(screen.queryByText('Nobody in the register has that id.')).toBeNull()
   })
 })
 

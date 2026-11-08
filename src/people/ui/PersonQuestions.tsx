@@ -25,6 +25,7 @@ import { DateField } from '../../widgets/kit/Field'
 import { Picker } from '../../widgets/kit/Picker'
 import { heldOn, keptName, leavingOn, vacancyOf } from '../hold'
 import type { MergeLeaving, Person } from '../person'
+import type { PersonId } from '../../model/person'
 import { entriesOf, mergeAsks } from '../person'
 import { shownEntry, shownText } from '../shown'
 import type { Translate } from '../shown'
@@ -165,8 +166,9 @@ function Forget({ person, register, saying, onClose, s }: Asked & { person: Pers
   )
 }
 
-function Remove({ person, register, saying, onClose, s }: Asked & { person: Person }) {
+function Remove({ person, register, saying, onClose, onRemoving, s }: Asked & { person: Person; onRemoving?: (id: PersonId) => void }) {
   const remove = () => {
+    onRemoving?.(person.id)
     void saying.run(register.remove(person.id), () => s('people.removeDone'))
     onClose()
   }
@@ -272,11 +274,13 @@ function Merge({ one, other, register, saying, onClose, s }: Asked & { one: Pers
   )
 }
 
-export function PersonQuestion({ question, day, register, saying, onAsk, onClose, s }: Asked & {
+export function PersonQuestion({ question, day, register, saying, onAsk, onClose, onRemoving, s }: Asked & {
   question: Question | undefined
   /** The day the page reads: what a last day starts from. */
   day: string
   onAsk: (next: Question) => void
+  /** Told as *Delete now* is pressed, before the entry goes: the page's own removal, which its reader is not to call somebody gone. */
+  onRemoving?: (id: PersonId) => void
 }) {
   if (!question) return null
   const asked = { register, saying, onClose, s }
@@ -284,7 +288,7 @@ export function PersonQuestion({ question, day, register, saying, onAsk, onClose
     case 'leave': return <Leave {...asked} person={question.person} day={day} />
     case 'takeBack': return <TakeBack {...asked} person={question.person} />
     case 'forget': return <Forget {...asked} person={question.person} />
-    case 'remove': return <Remove {...asked} person={question.person} />
+    case 'remove': return <Remove {...asked} person={question.person} {...(onRemoving ? { onRemoving } : {})} />
     case 'mergePick': return <MergePick {...asked} person={question.person} onPicked={(other) => onAsk({ kind: 'merge', one: question.person, other })} />
     default: return <Merge key={`${question.one.id}|${question.other.id}`} {...asked} one={question.one} other={question.other} />
   }

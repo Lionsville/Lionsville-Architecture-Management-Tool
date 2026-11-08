@@ -205,12 +205,16 @@ function usePersonUp(open: boolean, select: PersonId | undefined, register: Peop
   }, [open])
   const person = record === undefined ? undefined : resolvePerson(record, registerOf(register.people ?? []))
   const gone = open && register.people !== undefined && record !== undefined && !person
+  /** Entries this page's own *Delete now* removed: gone as asked, and said by the removal (*Deleted from the register.*), not as nobody. */
+  const removedHere = useRef(new Set<PersonId>())
   useEffect(() => {
     if (!gone) return
     chooseNow.current(undefined)
+    if (removedHere.current.delete(record)) return
     void saying.run(Promise.resolve({ refused: 'people.unknown' as const }), () => '')
-  }, [gone, saying])
-  return { person, choose }
+  }, [gone, record, saying])
+  const removing = useCallback((id: PersonId) => { removedHere.current.add(id) }, [])
+  return { person, choose, removing }
 }
 
 type ListPartProps = {
@@ -415,7 +419,7 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
   const [holding, setHolding] = useState<Person | undefined>(undefined)
   const [question, setQuestion] = useState<Question | undefined>(undefined)
   const saying = useSaying(s)
-  const { person, choose } = usePersonUp(open, select, register, saying)
+  const { person, choose, removing } = usePersonUp(open, select, register, saying)
   const page = useFindReady(open, register.people !== undefined, person !== undefined)
 
   const people = useMemo(() => register.people ?? [], [register.people])
@@ -475,7 +479,7 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
       </Dialog>
       {correcting && <CorrectPerson person={correcting} register={register} saying={saying} onClose={() => setCorrecting(undefined)} s={s} />}
       {holding && <WhatWeHold person={holding} register={register} copyText={copyText} onClose={() => setHolding(undefined)} s={s} />}
-      <PersonQuestion question={question} day={day} register={register} saying={saying} onAsk={setQuestion} onClose={() => setQuestion(undefined)} s={s} />
+      <PersonQuestion question={question} day={day} register={register} saying={saying} onAsk={setQuestion} onClose={() => setQuestion(undefined)} onRemoving={removing} s={s} />
       <CsvImport open={importing} register={register} saying={saying} {...(readText ? { readText } : {})} onClose={() => setImporting(false)} s={s} />
       <Toast toast={saying.said ? { key: saying.said.key, message: saying.said.text } : null} onClose={saying.clear} />
     </PageDialog>
