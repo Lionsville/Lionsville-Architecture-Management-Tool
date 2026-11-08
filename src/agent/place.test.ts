@@ -530,3 +530,10 @@ describe('a record\'s page or a block\'s, opened already being written', () => {
     expect(writePlace({ scope: 'acme', page: 'document', id: 'crm', edit: true })).toBe('#/acme/-/document/crm?edit')
   })
 })
+
+describe('a topic\'s address', () => {
+  it('is the catalogue on the topic, by its path, and reads back', () => {
+    const place = { scope: '', page: 'topics', id: 'topics/security' } as const
+    expect(readPlace(writePlace(place))).toEqual(place)
+  })
+})

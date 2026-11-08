@@ -83,6 +83,8 @@ export type TopicsAccess = {
   openPrinciples(topic: ScopePath, id?: string): void
   /** The topic's own home, where it lives. */
   openHome(topic: ScopePath): void
+  /** *Copy link* to the topic, as every record's ⋯ has; absent where no link can be made. */
+  copyLink?(topic: ScopePath): void
 }
 
 const TopicsContext = createContext<TopicsAccess | undefined>(undefined)

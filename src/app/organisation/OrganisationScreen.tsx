@@ -108,6 +108,8 @@ export type OrganisationScreenProps = {
   onVisitExample?: (offer: ExampleOffer) => void
   /** Make a link to this scope, and say it. */
   onShareScope?: (scope: ScopePath) => void
+  /** *Copy link* to a topic, from its ⋯ in the catalogue. */
+  onShareTopic?: (topic: ScopePath) => void
   order: ProjectOrder
   onOrderChange: (order: ProjectOrder) => void
   /**
@@ -275,7 +277,7 @@ export type OrganisationScreenProps = {
 }
 
 export function OrganisationScreen({
-  organisation, examples, onVisitExample, onShareScope, order, sourceDescription, sourceSayings = {}, sourcePage,
+  organisation, examples, onVisitExample, onShareScope, onShareTopic, order, sourceDescription, sourceSayings = {}, sourcePage,
   waysIn, publishesSteps,
   onGoHome, findings, register = [], technology = [], initiatives = 0, localObservations = 0, platformTree, takenUp,
   onOpenRegisterRow, onOpenRegisterPage, onLinkFromRegister, pageRequest, onPageChange, people, servedBy,
@@ -397,7 +399,7 @@ export function OrganisationScreen({
   return (
     <HomeRecords
       store={topics} tree={tree} principlesAt={principlesAt} writable={writable} today={today} open={organisation.open} goHome={closePagesAndGoHome}
-      openCatalogue={(topic) => homePages.open('topics', topic)} openBlock={(block, evaluation) => homePages.open('blocks', block, evaluation)} s={s}
+      openCatalogue={(topic) => homePages.open('topics', topic)} openBlock={(block, evaluation) => homePages.open('blocks', block, evaluation)} s={s} copyLink={onShareTopic}
     >
     <Box sx={{ flex: '1 1 auto', minHeight: 0, minWidth: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
       <HomeFacts

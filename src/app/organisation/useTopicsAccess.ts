@@ -55,6 +55,8 @@ export type TopicsDeps = {
   goHome: (path: ScopePath) => void
   /** The catalogue, over the home that is up, on a topic. */
   openCatalogue: (topic?: ScopePath) => void
+  /** *Copy link* to a topic: its place in the catalogue (ADR-0033, amended); absent where the source has no address. */
+  copyLink?: ((topic: ScopePath) => void) | undefined
   s: Translate
 }
 
@@ -182,6 +184,7 @@ export function topicsAccess(deps: TopicsDeps, version: number): TopicsAccess {
     openCatalogue: deps.openCatalogue,
     openPrinciples: (topic, id) => deps.open(topic, { page: 'principles', ...(id !== undefined ? { id } : {}) }),
     openHome: deps.goHome,
+    ...(deps.copyLink ? { copyLink: deps.copyLink } : {}),
   }
 }
 
@@ -200,6 +203,7 @@ export function useTopicsAccess(deps: TopicsDeps): TopicsAccess {
       open: (path, page) => latest.current.open(path, page),
       goHome: (path) => latest.current.goHome(path),
       openCatalogue: (topic) => latest.current.openCatalogue(topic),
+      ...(now.copyLink ? { copyLink: (topic: ScopePath) => latest.current.copyLink?.(topic) } : {}),
     }, version.current)
   }, [tree, today, principlesAt, blocksAt])
 }

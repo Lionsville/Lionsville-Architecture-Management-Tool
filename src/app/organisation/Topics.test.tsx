@@ -111,6 +111,16 @@ describe('the catalogue', () => {
     await waitFor(() => expect(access.remove).toHaveBeenCalledWith('topics/data'))
   })
 
+  it('copies a link to the topic from its ⋯, read-only too', async () => {
+    const copyLink = vi.fn()
+    const { access } = accessOver({ writable: () => false, copyLink })
+    renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/security" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'More' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: s('common.copyLink') }))
+    expect(copyLink).toHaveBeenCalledWith('topics/security')
+    expect(screen.queryByRole('menuitem', { name: `${s('topics.remove')}…` })).toBeNull()
+  })
+
   it('offers no change to a person who may only read the topic, nor a new topic where they may not write the place', () => {
     const { access } = accessOver({ writable: () => false })
     renderShell(<TopicsProvider value={access}><TopicsPage open select="topics/security" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></TopicsProvider>)

@@ -199,10 +199,14 @@ export function TopicDetail({ topic, access, ids, onSelect, onSubtopic }: {
           <RecordActions
             verbs={<Button variant="quiet" onClick={() => access.openHome(topic.id)} data-testid="topic-home">{t('topics.openHome')}</Button>}
             {...(may ? { edit: { onPress: () => setEditing(true), testId: 'topic-edit' } } : {})}
-            more={may ? [{
-              label: `${t('topics.remove')}…`, final: true, onSelect: () => setRemoving(true), 'data-testid': 'topic-delete',
-              ...(refused ? { refused: t('topics.removeRefusedShort') } : {}),
-            }] : []}
+            more={[
+              // Read-only too: reading is what a link is for.
+              ...(access.copyLink ? [{ label: t('common.copyLink'), onSelect: () => access.copyLink?.(topic.id), 'data-testid': 'topic-copy-link' }] : []),
+              ...(may ? [{
+                label: `${t('topics.remove')}…`, final: true, onSelect: () => setRemoving(true), 'data-testid': 'topic-delete',
+                ...(refused ? { refused: t('topics.removeRefusedShort') } : {}),
+              }] : []),
+            ]}
           />
         )}
       >

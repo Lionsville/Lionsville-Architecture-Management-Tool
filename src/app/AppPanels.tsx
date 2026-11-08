@@ -287,6 +287,8 @@ function Home({ parts }: { parts: ShellParts }) {
           examples={props.examples}
           {...(props.onVisitExample ? { onVisitExample: props.onVisitExample } : {})}
           onShareScope={(scope) => parts.share.shareTo({ scope, page: 'home' })}
+          // A topic is read in the organisation's catalogue, by its path (ADR-0042): that is its address.
+          onShareTopic={(topic) => parts.share.shareTo({ scope: ROOT_SCOPE, page: 'topics', id: topic })}
           order={parts.order.order}
           onOrderChange={parts.order.chooseOrder}
           source={parts.source}
