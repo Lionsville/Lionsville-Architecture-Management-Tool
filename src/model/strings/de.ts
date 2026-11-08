@@ -230,7 +230,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.action.markShared': 'Als geteilt markieren',
   'check.action.setSuccessor': 'Nachfolger nennen…',
   'check.action.openScope': 'Die Startseite des Bereichs öffnen',
-  'check.list.toLookAt': '{count} zum Ansehen',
+  'check.list.toLookAt': '{count} zur Durchsicht',
   'check.list.notes.one': '{count} Hinweis',
   'check.list.notes.other': '{count} Hinweise',
   'check.list.showNotes': 'Hinweise zeigen ({count})',
