@@ -68,6 +68,7 @@ function overflowFor(parts: ShellParts, can: { history: boolean; scope: boolean 
     ...parts.provider.overflowSource,
     can: { connect: Boolean(parts.provider.offered?.some((way) => way.hostMenu)), picture: parts.frame.get().screen?.boardUp === true, ...can },
     onCommand: bus.send,
+    ...(parts.props.visiting ? { visiting: true } : {}),
   }
 }
 

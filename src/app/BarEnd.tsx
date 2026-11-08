@@ -59,6 +59,8 @@ export type ToolbarOverflow = {
   onSourceWork?: SourceWorkChanged
   /** What the row had no room for: first in the menu. */
   folded?: readonly MenuEntry[]
+  /** The example is being visited, where nothing is kept. */
+  visiting?: boolean
 }
 
 export function BarEnd({ agent, button, chip, overflow, s }: {
@@ -86,6 +88,7 @@ export function BarEnd({ agent, button, chip, overflow, s }: {
           sourceEntries={overflow.sourceEntries}
           onSourceWork={overflow.onSourceWork}
           folded={overflow.folded}
+          visiting={overflow.visiting}
           s={s}
         />
       )}

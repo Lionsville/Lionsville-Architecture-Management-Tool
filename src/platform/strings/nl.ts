@@ -60,6 +60,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.website': 'Website',
   'menu.exportPicture': 'Afbeelding exporteren…',
   'menu.notNow': 'Nu niet beschikbaar',
+  'menu.saveExample': 'Het voorbeeld wordt niet bewaard. Neem het over om het te bewaren.',
   'menu.saveNothingOpen': 'Er staat niets open. Je werk wordt vanzelf bewaard; open een scope om nu te bewaren.',
   // The desktop's menu bar: the items Electron's roles would otherwise say in English.
   'menubar.window': 'Venster',

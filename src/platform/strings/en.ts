@@ -72,6 +72,7 @@ export const EN = {
   'menu.website': 'Website',
   'menu.exportPicture': 'Export picture…',
   'menu.notNow': 'Not available now',
+  'menu.saveExample': 'The example is not kept. Keep it as your start to save it.',
   'menu.saveNothingOpen': 'Nothing is open. Work saves itself as you go; open a scope to save it now.',
   // The desktop's menu bar: the items Electron's roles would otherwise say in English.
   'menubar.window': 'Window',

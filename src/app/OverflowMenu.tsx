@@ -47,6 +47,8 @@ export type OverflowMenuProps = {
   onSourceWork?: SourceWorkChanged
   /** What the row had no room for: first, above a line. */
   folded?: readonly MenuEntry[]
+  /** The example is being visited: Save's refusal says nothing here is kept, not that work saves itself. */
+  visiting?: boolean | undefined
   s: Translate
 }
 
@@ -57,7 +59,7 @@ function keyCap(accelerator: string | undefined, language: Language): string | u
   return acceleratorName(accelerator, mac, language)
 }
 
-export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, folded = [], s }: OverflowMenuProps) {
+export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, folded = [], visiting, s }: OverflowMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const { language } = useStrings()
   const choose = (command: HostCommand) => () => { setAnchor(null); onCommand(command) }
@@ -95,7 +97,7 @@ export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, fold
       label: s(entry.label),
       onSelect: choose(entry.command),
       ...(shortcut ? { shortcut } : {}),
-      ...(needsScope ? { refused: s('menu.saveNothingOpen') } : {}),
+      ...(needsScope ? { refused: s(visiting ? 'menu.saveExample' : 'menu.saveNothingOpen') } : {}),
     })
   }
   items.push({ line: true }, { label: s(PREFERENCES_ITEM.label), onSelect: choose(PREFERENCES_ITEM.command), shortcut: keyCap(PREFERENCES_ITEM.accelerator, language) ?? '' })
