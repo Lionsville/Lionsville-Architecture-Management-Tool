@@ -6,7 +6,6 @@ import { Panel, useStore, useStoreApi } from '@xyflow/react';
 import { useStrings } from '../../i18n/LanguageContext';
 import { Button } from '../../widgets/kit/Button';
 
-const SETTLE_MS = 300;
 const STEP = 12;
 /** A line runs along a box's edge when it enters it: only its inside counts. */
 const INSET = 6;
@@ -35,8 +34,11 @@ export function LinesCrossing({ onRoute, boundary }: { onRoute: (lines: readonly
   const edges = useStore((state) => state.edges);
   const nodes = useStore((state) => state.nodes);
   const [lines, setLines] = useState<readonly string[]>([]);
+  // Checked in the frame after the boxes are measured and the lines drawn, never on a timer: a fixed wait
+  // landed the notice about half a second into an open, after the page had looked done (15–20 ms of work).
   useEffect(() => {
-    const timer = setTimeout(() => {
+    if (!nodes.every((node) => node.measured?.width !== undefined || node.width !== undefined)) return undefined;
+    const frame = requestAnimationFrame(() => {
       const root = flow.getState().domNode;
       if (!root) return;
       const boxes = nodes.filter((node) => node.id !== boundary).map((node) => ({
@@ -53,9 +55,10 @@ export function LinesCrossing({ onRoute, boundary }: { onRoute: (lines: readonly
         const points = Array.from({ length: Math.ceil(length / STEP) }, (_, index) => path.getPointAtLength(index * STEP));
         return [{ id: edge.id, source: edge.source, target: edge.target, points }];
       });
-      setLines(linesThroughBoxes(routes, boxes));
-    }, SETTLE_MS);
-    return () => clearTimeout(timer);
+      const through = linesThroughBoxes(routes, boxes);
+      setLines((held) => (held.length === through.length && held.every((id, at) => id === through[at]) ? held : through));
+    });
+    return () => cancelAnimationFrame(frame);
   }, [edges, nodes, flow, boundary]);
   if (lines.length === 0) return null;
   return (

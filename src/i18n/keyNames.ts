@@ -104,10 +104,12 @@ export function onMac(): boolean {
 const KEY_PLACEHOLDER = /\{key:([^}\s|]+)(?:\|([^}\s]+))?\}/g
 
 /** A sentence with every key it names said for this platform and language: "undone with ⌘Z", "undone with Strg+Z". */
-export function fillKeys(text: string, language: Language = 'en', mac: boolean = onMac()): string {
+export function fillKeys(text: string, language: Language = 'en', mac?: boolean): string {
   if (!text.includes('{key:')) return text
+  // Asked only of a sentence that names a key: every word on screen passes through here, and the browser's answer is not free.
+  const isMac = mac ?? onMac()
   return text.replace(KEY_PLACEHOLDER, (_, onAMac: string, elsewhere?: string) =>
-    acceleratorName(mac ? onAMac : elsewhere ?? onAMac, mac, language))
+    acceleratorName(isMac ? onAMac : elsewhere ?? onAMac, isMac, language))
 }
 
 /** The modifier glyphs a sentence may not carry itself: it names the key, and `fillKeys` draws it. */

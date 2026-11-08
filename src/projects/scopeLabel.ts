@@ -42,8 +42,20 @@ function above(path: ScopePath, byPath: ReadonlyMap<ScopePath, ScopeSummary>): S
 
 /** Every scope in a tree by its path, which is what both answers walk over. */
 export function scopesByPath(scopes: readonly ScopeSummary[]): Map<ScopePath, ScopeSummary> {
-  return new Map(scopes.map((scope) => [scope.path, scope]))
+  let held = byPathOf.get(scopes)
+  if (!held) {
+    held = new Map(scopes.map((scope) => [scope.path, scope]))
+    byPathOf.set(scopes, held)
+  }
+  return held
 }
+
+/**
+ * Each listing's table, made once: a list of observations names every row's
+ * scope and the scopes above it, and made the table afresh for each name.
+ * A listing is replaced, never changed, when the tree changes.
+ */
+const byPathOf = new WeakMap<readonly ScopeSummary[], Map<ScopePath, ScopeSummary>>()
 
 /**
  * The organisation this scope sits in, as a name to show — or nothing, when
