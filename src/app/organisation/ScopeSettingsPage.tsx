@@ -82,7 +82,7 @@ export type ScopeSettingsPageProps = {
    * The field to give the focus to as the page opens (`PAGE_FIELDS`), as the
    * tree's *Move to…* lands on *Filed under*; the nonce says it is asked again.
    */
-  field?: { readonly name: string; readonly nonce: number }
+  field?: { readonly name: string; readonly nonce: number } | undefined
   s: Translate
 }
 
@@ -101,18 +101,7 @@ export function ScopeSettingsPage({
 }: ScopeSettingsPageProps) {
   const [held, setTab] = usePlaceTab('general')
   const tab = held as SettingsTab
-  // Every field a way in names is on General: asked for one, the page is there,
-  // and the field has the focus once it is drawn, after the page's own first focus.
-  const general = useRef<HTMLDivElement | null>(null)
-  const landOn = open ? field?.name : undefined
-  const landNonce = field?.nonce
-  const onGeneral = tab === 'general'
-  useEffect(() => {
-    if (landOn === undefined) return undefined
-    if (!onGeneral) { setTab('general'); return undefined }
-    const frame = requestAnimationFrame(() => { if (general.current) focusSettingsField(general.current, landOn) })
-    return () => cancelAnimationFrame(frame)
-  }, [landOn, landNonce, onGeneral, setTab])
+  const general = useLandOnField(open ? field : undefined, tab === 'general', setTab)
   const [asked, setAsked] = useState<ScopePath | undefined>(undefined)
   const steps = useRef<SettingsUndo[]>([])
   const path = target.path
@@ -220,6 +209,24 @@ export function ScopeSettingsPage({
       </Dialog>
     </PageDialog>
   )
+}
+
+/**
+ * Every field a way in names is on General: asked for one, the page goes there,
+ * and the field has the focus once it is drawn, after the page's own first focus.
+ * Returns the ref for General's section.
+ */
+function useLandOnField(field: { readonly name: string; readonly nonce: number } | undefined, onGeneral: boolean, setTab: (tab: string) => void) {
+  const general = useRef<HTMLDivElement | null>(null)
+  const name = field?.name
+  const nonce = field?.nonce
+  useEffect(() => {
+    if (name === undefined) return undefined
+    if (!onGeneral) { setTab('general'); return undefined }
+    const frame = requestAnimationFrame(() => { if (general.current) focusSettingsField(general.current, name) })
+    return () => cancelAnimationFrame(frame)
+  }, [name, nonce, onGeneral, setTab])
+  return general
 }
 
 type Apply = (patch: Partial<ScopeSettingsPatch>, name: string, back: Partial<ScopeSettingsPatch>) => void

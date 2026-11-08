@@ -446,8 +446,7 @@ export function OrganisationScreen({
       </Box>
 
       <ScopeSettingsPage
-        open={homePages.openPage === 'settings'} onClose={homePages.close} target={home} document={root} tree={orderedTree}
-        {...(homePages.asked?.page === 'settings' && homePages.asked.field !== undefined ? { field: { name: homePages.asked.field, nonce: homePages.asked.nonce } } : {})}
+        open={homePages.openPage === 'settings'} onClose={homePages.close} target={home} document={root} tree={orderedTree} field={fieldAsked(homePages.asked)}
         readOnly={!writable(home.path)} unitTypes={unitTypes} s={s} onUndoChange={setSettingsUndo}
         onApply={organisation.applySettings}
         {...(aboveClient(home, everyScope) ? { aboveClient: aboveClient(home, everyScope) } : {})}
@@ -549,6 +548,11 @@ function HomeViewDialogs({ organisation, s }: { organisation: Organisation; s: T
 }
 
 /** Whether a place of the frame is one this screen draws over its home, rather than a scope's own page. */
+/** The field the settings page was asked to land on, where it was: *Move to…*'s Filed under. */
+function fieldAsked(asked: OrgPageRequest | undefined): { name: string; nonce: number } | undefined {
+  return asked?.page === 'settings' && asked.field !== undefined ? { name: asked.field, nonce: asked.nonce } : undefined
+}
+
 function isHomePage(page: Page): page is OrgPage {
   return ['register', 'technologyRegister', 'people', 'checks', 'topics', 'blocks'].includes(page)
 }
