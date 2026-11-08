@@ -18,7 +18,8 @@ import { SOLUTION_SORTS, SOLUTION_STATUSES } from '../../model/buildingBlock'
 import type { SolutionBlock, SolutionBlockStatus, SolutionSort } from '../../model/types'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { Select, SelectField, TextField } from '../../widgets/kit/Field'
+import { SelectField, TextField } from '../../widgets/kit/Field'
+import { MenuButton } from '../../widgets/kit/Menu'
 import { List } from '../../widgets/kit/List'
 import { useBlocks } from './BlocksContext'
 import { SORT_WORD } from './EvaluationGrid'
@@ -48,7 +49,13 @@ export function BlockSolutions({ row }: { row: BlockRow }) {
         supplier: sbb.supplier ?? '—',
         sort: t(SORT_WORD[sbb.sort]),
         status: may
-          ? <Select value={sbb.status} aria-label={t('blocks.statusOf', { name: sbb.name })} onChange={(value) => setStatus(sbb.id, value as SolutionBlockStatus)} options={SOLUTION_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]) }))} />
+          // Read as the word it is, a press away from the others: a reading table holds no standing fields.
+          ? (
+            <MenuButton
+              variant="quiet" size="small" label={t(STATUS_WORD[sbb.status])} menuLabel={t('blocks.statusOf', { name: sbb.name })} aria-label={t('blocks.statusOf', { name: sbb.name })}
+              items={SOLUTION_STATUSES.map((one) => ({ label: t(STATUS_WORD[one]), checked: one === sbb.status, radio: true, onSelect: () => setStatus(sbb.id, one) }))}
+            />
+          )
           : t(STATUS_WORD[sbb.status]),
         weighed: weighed.join(', ') || '—',
         chosen: chosen.join(', ') || '—',
