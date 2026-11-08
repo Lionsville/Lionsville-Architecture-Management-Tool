@@ -1,5 +1,16 @@
-/* The one switch for how much a screen holds (a person's preference): every row measure follows from it. */
+/*
+ * The one switch for how much a screen holds (a person's preference): every row
+ * measure follows from it, and the frame's two rows, its controls and a panel's
+ * sections with them, so Compact is seen on every screen and not in one list.
+ */
 :root[data-density='compact'] {
   --row-h: var(--row-h-dense);
   --row-prop: 22px;
+  --bar-h: 2.25rem;
+  --tabs-h: 1.875rem;
+  --ctl-h: 1.625rem;
 }
+:root[data-density='compact'] .kit-panel__body { padding-block: var(--s-1); }
+:root[data-density='compact'] .kit-panel__section + .kit-panel__section,
+:root[data-density='compact'] .kit-props + .kit-panel__section { margin-top: var(--s-2); }
+:root[data-density='compact'] .kit-tree__foot { padding-block: 0; }

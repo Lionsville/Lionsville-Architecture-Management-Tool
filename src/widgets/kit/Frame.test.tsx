@@ -42,6 +42,15 @@ describe('what a view floats stays under a page', () => {
   })
 })
 
+describe('the density switch', () => {
+  // It was written and never imported, so Compact set an attribute nothing read.
+  it('is loaded with the frame, and moves the rows, the frame’s bars and its controls', () => {
+    expect(readFileSync('src/widgets/kit/Frame.tsx', 'utf8')).toMatch(/import '\.\/density\.css'/)
+    const css = readFileSync('src/widgets/kit/density.css', 'utf8')
+    for (const measure of ['--row-h', '--bar-h', '--tabs-h', '--ctl-h']) expect(css).toContain(`${measure}:`)
+  })
+})
+
 describe('a page in the frame', () => {
   it('is a place in the main column and no dialog, with the rows beside it to press', () => {
     inFrame(<PageDialog open onClose={() => {}} aria-label="Decisions"><p>body</p></PageDialog>)
