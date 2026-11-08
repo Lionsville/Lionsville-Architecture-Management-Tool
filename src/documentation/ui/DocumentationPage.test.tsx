@@ -134,13 +134,13 @@ describe('DocumentationPage', () => {
     expect(source()).toBeNull();
     expect(screen.getByTestId('source').textContent).toBe('Holds every order until [Billing](element:e2) takes it.');
     expect(screen.getByRole('heading', { name: 'Order Management' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Edit text' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Edit' })).toBeTruthy();
   });
 
   it('takes a pasted picture in and writes the reference where the caret is', async () => {
     const onAddImage = vi.fn(async () => 'screenshot.png');
     setup({ element: element({ description: 'Before.' }), onAddImage });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     const area = source()!;
     area.setSelectionRange(area.value.length, area.value.length);
 
@@ -157,7 +157,7 @@ describe('DocumentationPage', () => {
     // document on top of it would be the second bad thing to happen.
     const onAddImage = vi.fn(async () => undefined);
     setup({ element: element({ description: 'Before.' }), onAddImage });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
 
     await act(async () => {
       fireEvent.paste(source()!, { clipboardData: transfer([imageFile()]) });
@@ -171,7 +171,7 @@ describe('DocumentationPage', () => {
     // Copying from a rich document carries both; the words are what was meant.
     const onAddImage = vi.fn(async () => 'x.png');
     setup({ element: element({ description: 'Before.' }), onAddImage });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
 
     await act(async () => {
       fireEvent.paste(source()!, { clipboardData: transfer([imageFile()], 'some words') });
@@ -194,7 +194,7 @@ describe('DocumentationPage', () => {
 
   it('offers no picture affordance to a host that cannot take one', async () => {
     setup({ element: element({ description: 'Before.' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
 
     await act(async () => {
       fireEvent.paste(source()!, { clipboardData: transfer([imageFile()]) });
@@ -205,13 +205,13 @@ describe('DocumentationPage', () => {
 
   it('offers no Edit to a read-only reader', () => {
     setup({ readOnly: true });
-    expect(screen.queryByRole('button', { name: 'Edit text' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
   });
 
   it('commits a draft once it has been quiet, and again on the way back to Read', () => {
     vi.useFakeTimers();
     const { updateElement } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     const area = source();
     expect(area).not.toBeNull();
     fireEvent.change(area!, { target: { value: 'One.' } });
@@ -231,7 +231,7 @@ describe('DocumentationPage', () => {
 
   it('clears the description when the draft is emptied', () => {
     const { updateElement } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(source()!, { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: undefined }, 'field:e1:description');
@@ -279,7 +279,7 @@ describe('DocumentationPage', () => {
     // dialog now; what is per element resets when the element changes.
     const { props, rerender, updateElement } = setup();
     const dialog = screen.getByRole('dialog');
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(source()!, { target: { value: 'Rewritten.' } });
 
     rerender(
@@ -300,7 +300,7 @@ describe('DocumentationPage', () => {
   it('reads every section the host hands in, after the text, and the rows stay in reach while writing', () => {
     setup();
     expect(screen.getByText('Facts of Order Management')).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.getAllByText('Facts of Order Management').length).toBeGreaterThan(1);
   });
 
@@ -328,7 +328,7 @@ describe('DocumentationPage', () => {
 
   it('Cancel takes the text back to what it was, asking first, and Escape is Cancel', () => {
     const { props } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(source()!, { target: { value: 'Rewritten.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
     fireEvent.click(screen.getByRole('button', { name: /Leave and drop/ }));
@@ -345,7 +345,7 @@ describe('DocumentationPage', () => {
 
   it('commits a pending draft when the page goes away', () => {
     const { updateElement, unmount } = setup();
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.change(source()!, { target: { value: 'Unsaved words.' } });
     unmount();
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'Unsaved words.' }, 'field:e1:description');
@@ -371,7 +371,7 @@ describe('DocumentationPage — the pictures the project holds (ADR-0009)', () =
       images,
       ...overrides,
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     return { ...view, images };
   }
 
@@ -416,7 +416,7 @@ describe('DocumentationPage — the pictures the project holds (ADR-0009)', () =
 
   it('offers no list to a host that has none', () => {
     setup({ element: element({ description: 'x' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     expect(screen.queryByRole('button', { name: /^Pictures/ })).toBeNull();
   });
 });
@@ -424,7 +424,7 @@ describe('DocumentationPage — the pictures the project holds (ADR-0009)', () =
 describe('DocumentationPage — help with the markdown', () => {
   it('opens a table of what the page draws, with pictures when the host takes them', () => {
     setup({ element: element({ description: 'x' }), onAddImage: vi.fn(async () => 'x.png') });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
     const help = within(screen.getByTestId('markdown-help'));
     expect(help.getByText('[[Order Management]]')).toBeTruthy();
@@ -434,7 +434,7 @@ describe('DocumentationPage — help with the markdown', () => {
 
   it('withdraws the picture row on a host that cannot take one in', () => {
     setup({ element: element({ description: 'x' }) });
-    fireEvent.click(screen.getByRole('button', { name: 'Edit text' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
     fireEvent.click(screen.getByRole('button', { name: 'Markdown help' }));
     const help = within(screen.getByTestId('markdown-help'));
     expect(help.queryByText('![caption](image:file.png)')).toBeNull();

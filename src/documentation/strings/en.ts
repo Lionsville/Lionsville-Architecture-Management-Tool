@@ -30,7 +30,6 @@ export const EN = {
   'doc.decisions': 'Decisions and open issues',
   'field.openDocumentation': 'Open the page',
   'field.openDocumentationTip': 'Write and read the whole description on its page, with room and the sections of the template',
-  'doc.editText': 'Edit text',
   'doc.writeText': 'Write text',
   'doc.noPage': 'No page written yet.',
   'doc.text': 'Text',

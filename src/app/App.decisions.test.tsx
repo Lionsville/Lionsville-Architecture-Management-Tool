@@ -78,7 +78,7 @@ describe('a decision from the scope above', () => {
     fireEvent.click(fold)
     fireEvent.click(within(list).getByText('Fulfilment is one capability'))
     expect(await screen.findByTestId('adr-from-ancestor')).toBeDefined()
-    expect(screen.queryByRole('button', { name: 'Edit text' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull()
   })
 
   /** A record is edited where it lives, so the way out is the scope itself. */

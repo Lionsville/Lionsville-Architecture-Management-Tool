@@ -177,7 +177,7 @@ describe('who proposed and who signed a decision', () => {
   it('shows a forgotten signer\'s and proposer\'s kept names alone where the record is still written, never their pseudonyms', async () => {
     const open: Partial<Adr> = { status: 'reviewing', signers: [decision.signers[0]] }
     const view = renderShell(page(BEFORE, open))
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit text' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
     const writing = () => within(screen.getAllByTestId('adr-signers').at(-1)!)
     expect((await writing().findByTestId('adr-signer-0-picked')).textContent).toBe('Kim Bakker')
     view.rerender(page(AFTER, open))
@@ -196,10 +196,10 @@ describe('who proposed and who signed a decision', () => {
         model={{ name: 'Orders', elements: [], relations: [], diagrams: [], decisions: [{ ...decision, status: 'reviewing', proposedAs: undefined, signers: [{ name: { person: 'pe-kim' } }] }] }}
         makeId={(prefix) => `${prefix}-1`} today={() => '2026-10-11'} renderMarkdown={(md) => <MarkdownView markdown={md} />} initialAdrId="ad-1" />
     )))
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit text' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
     const table = screen.getAllByTestId('adr-signers').at(-1)!
     chooseValue(within(table).getByRole('combobox', { name: 'Verdict' }), 'approved')
-    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     const [next] = changed.mock.calls.at(-1)! as [Adr[]]
     expect(next[0].signers[0]).toMatchObject({ name: { person: 'pe-kim' }, verdict: 'approved', signedAs: 'Kim Bakker' })
     expect(next[0].proposedAs).toBe('Eva Lind')

@@ -34,7 +34,7 @@ import { FindField } from '../../widgets/kit/FindField';
 import { FocusedWindow, useWritingView } from '../../widgets/kit/FocusedWindow';
 import { List } from '../../widgets/kit/List';
 import type { ListGroup } from '../../widgets/kit/List';
-import { MoreMenu } from '../../widgets/kit/Menu';
+import { RecordActions } from '../../widgets/kit/RecordActions';
 import type { MenuEntry } from '../../widgets/kit/Menu';
 import { PanelName } from '../../widgets/kit/Panel';
 import { RecordPage } from '../../widgets/kit/RecordPage';
@@ -128,7 +128,7 @@ function RecordText({ rendered, readOnly, headings, template, onWrite, onHeading
           <p>{t('doc.noPage')}</p>
           {!readOnly && (
             <div className="doc-record__acts">
-              <Button size="small" onClick={() => onWrite()} data-guide="record.editText">{t('doc.writeText')}</Button>
+              <Button size="small" onClick={() => onWrite()}>{t('doc.writeText')}</Button>
               <Button size="small" variant="quiet" onClick={() => onWrite(template.text)}>{template.label}</Button>
             </div>
           )}
@@ -138,11 +138,6 @@ function RecordText({ rendered, readOnly, headings, template, onWrite, onHeading
   }
   return (
     <div ref={ref} data-testid="doc-content" className="doc-record__text">
-      {!readOnly && (
-        <div className="doc-record__acts">
-          <Button size="small" onClick={() => onWrite()} data-guide="record.editText">{t('doc.editText')}</Button>
-        </div>
-      )}
       {headings.length > 0 && (
         <nav className="doc-record__contents" aria-label={t('doc.contents')}>
           <span>{t('doc.contents')}</span>
@@ -365,8 +360,11 @@ export function DocumentationPage(props: DocumentationPageProps) {
             <>
               <Button size="small" variant="quiet" aria-label={t('doc.previous')} reason={previous ? undefined : t('doc.firstInList')} onClick={() => previous && navigate(previous)}>‹ {t('doc.previousShort')}</Button>
               <Button size="small" variant="quiet" aria-label={t('doc.next')} reason={next ? undefined : t('doc.lastInList')} onClick={() => next && navigate(next)}>{t('doc.nextShort')} ›</Button>
-              {props.onOpenHistory && <Button size="small" variant="quiet" onClick={props.onOpenHistory}>{t('common.history')}</Button>}
-              {props.menu && props.menu.length > 0 && <MoreMenu items={props.menu} size="small" />}
+              <RecordActions
+                verbs={props.onOpenHistory && <Button variant="quiet" onClick={props.onOpenHistory}>{t('common.history')}</Button>}
+                {...(readOnly ? {} : { edit: { onPress: () => startWriting(), guide: 'record.editText' } })}
+                more={props.menu ?? []}
+              />
               <PageClose onClose={close} label={t('doc.close')} />
             </>
           )}

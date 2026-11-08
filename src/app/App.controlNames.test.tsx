@@ -515,7 +515,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click((await within(dialog).findAllByText('A proposal of its own'))[0])
   }],
   ['and written', ['decision.writing'], async () => {
-    fireEvent.click(await screen.findByRole('button', { name: 'Edit text' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   }]],
   [['the roadmap', ['roadmap.newPlan', 'roadmap.findings', 'roadmap.axis'], async () => {
     await page('Roadmap')

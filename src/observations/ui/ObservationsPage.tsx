@@ -538,6 +538,11 @@ function phaseRows(counted: PictureCounts): PhaseRow[] {
   return [...plain, ...lit]
 }
 
+/** The whole record has one way back, its named crumb (‹ Seen), and Escape goes the same way: the tab row's ‹ and × stand aside. */
+function OffTheRecord({ full, children }: { full: boolean; children: ReactNode }) {
+  return full ? null : <>{children}</>
+}
+
 export function ObservationsPage(props: ObservationsPageProps) {
   const {
     open, onClose, model, below = [], onChange, initialId, initialNonce, readOnly = false, s, today, makeId,
@@ -990,8 +995,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
       <LanguageProvider language={props.language}>
         <Box className="chain-page" ref={located.ref} sx={located.ring}>
           <div className="chain-page__tabs" data-testid="observation-topbar">
-            {/* The whole record has one way back, its named crumb (‹ Seen); Escape goes the same way. */}
-            {!full && <PageBack onBack={leaving.leave} label={leaving.said} />}
+            <OffTheRecord full={full}><PageBack onBack={leaving.leave} label={leaving.said} /></OffTheRecord>
             <Tabs<Tab>
               label={s('observation.title')} value={stage} onChange={setStage}
               items={[
@@ -1002,7 +1006,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
               ]}
             />
             <span className="chain-page__tabsGrow" />
-            {!full && <PageClose onClose={leaving.leave} label={leaving.closeSaid} />}
+            <OffTheRecord full={full}><PageClose onClose={leaving.leave} label={leaving.closeSaid} /></OffTheRecord>
           </div>
           {full && selected && selectedKey ? (
             <RecordFull held={selected} heldKey={selectedKey} ctx={readerCtx} page={pageWrites} backLabel={s(STAGE_WORD[stage])} onBack={() => setFull(false)} />
