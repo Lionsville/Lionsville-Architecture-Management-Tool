@@ -3,14 +3,15 @@
 
 /* The frame the three Guidance pages share, and the plain lines their readers are made of. */
 .guidance { display: flex; flex-direction: column; flex: 1; min-height: 0; background: var(--surface); }
-.guidance__head { flex-shrink: 0; padding: var(--s-2) var(--s-3) 0; }
+/* The tab band where every page with stages has it, and the page's gutter round all of it. */
+.guidance__head { flex-shrink: 0; padding: 0 var(--s-4); }
 .guidance__purpose { margin: var(--s-2) 0; color: var(--ink-2); font-size: var(--t-body); max-width: 90ch; }
 .guidance__link { all: unset; color: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .guidance__link:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 2px; }
-.guidance__body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
-.guidance__bar { flex-shrink: 0; padding-block-end: var(--s-2); }
-.guidance__list { flex: 1; min-height: 0; overflow: auto; }
-.guidance__note { margin: 0; padding: var(--s-2) var(--s-3); color: var(--ink-2); font-size: var(--t-small); }
+.guidance__body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; padding-inline: var(--s-4); }
+.guidance__bar { flex-shrink: 0; padding: 0 var(--s-4) var(--s-2); }
+.guidance__list { flex: 1; min-height: 0; overflow: auto; padding-inline: var(--s-4); }
+.guidance__note { margin: 0; padding: var(--s-2) var(--s-4); color: var(--ink-2); font-size: var(--t-small); }
 .guidance__which { border-collapse: collapse; width: 100%; font-size: var(--t-body); margin-top: var(--s-3); text-align: start; }
 .guidance__which th, .guidance__which td { padding: var(--s-1) var(--s-2); border-bottom: 1px solid var(--line); text-align: start; vertical-align: top; }
 .guidance__which th { color: var(--ink-2); font-weight: 600; }

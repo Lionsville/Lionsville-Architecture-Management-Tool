@@ -10,6 +10,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'principles.cardDescribe': 'Was Entwürfe und Entscheidungen hier leitet.',
   'principles.cardCount': '{own} hier · {inForce} geltend',
   'principles.cardNone': 'Noch keine geschrieben',
+  'principles.countLine': 'Prinzipien: {principles} · Gruppen: {groups}',
   'principles.search': 'Ein Prinzip suchen',
   'principles.statusFilter': 'Status',
   'principles.manageGroups': 'Gruppen',

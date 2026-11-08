@@ -76,6 +76,8 @@ export type FilterWordsProps = {
   readonly onReset?: () => void
   /** Said when the list is narrowed: *3 of 44*. */
   readonly shown?: { readonly count: number; readonly total: number }
+  /** What the whole list holds, said in that place while nothing narrows it: *52 principles · 10 groups*. */
+  readonly summary?: ReactNode
   /** The page's own action, at the end of the bar. */
   readonly actions?: ReactNode
   readonly dataGuide?: string
@@ -222,7 +224,7 @@ function FieldPart({ field, values, onValues }: {
 
 export function FilterWords({
   find, onFind, findLabel, noFind, fields = [], filters = {}, onFilters, filterExtra, words = [], onClear, filterGuide, groups, group, onGroup,
-  columns, shownColumns = [], onColumns, density, onDensity, onReset, shown, actions, dataGuide,
+  columns, shownColumns = [], onColumns, density, onDensity, onReset, shown, summary, actions, dataGuide,
 }: FilterWordsProps) {
   const { t } = useStrings()
   const on = fields.flatMap((field) => (filters[field.id] ?? []).map((value) => {
@@ -257,9 +259,9 @@ export function FilterWords({
             onReset={onReset} name={`kit-density-${dataGuide ?? 'list'}`}
           />
         )}
-        {shown && shown.count !== shown.total && (
+        {shown && shown.count !== shown.total ? (
           <span className="kit-filter__shown" role="status">{t('kit.filter.shown', { count: shown.count, total: shown.total })}</span>
-        )}
+        ) : summary !== undefined && <span className="kit-filter__shown" data-testid="filter-summary">{summary}</span>}
         {actions && <span className="kit-filter__actions">{actions}</span>}
       </div>
       {saidOn > 0 && (

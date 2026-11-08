@@ -145,6 +145,7 @@ export function PrinciplesPage({ open, onClose, scope, select, nonce, onSelect, 
                 find={view.find} onFind={(find) => setView((was) => ({ ...was, find }))} findLabel={t('principles.search')}
                 filters={view.filters} onFilters={(filters) => setView((was) => ({ ...was, filters }))}
                 shown={{ count: kept.length, total: count((one) => one.principle.status !== 'retired') }}
+                summary={t('principles.countLine', { principles: count((one) => one.principle.status !== 'retired'), groups: own.groups.length })}
                 fields={[
                   { id: 'status', label: t('principles.statusFilter'), options: PRINCIPLE_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]), count: count((held) => held.principle.status === one) })) },
                   { id: 'regime', label: t('principles.regimeFilter'), options: PRINCIPLE_REGIMES.map((one) => ({ value: one, label: t(REGIME_WORD[one]), count: count((held) => held.principle.regime === one) })) },
