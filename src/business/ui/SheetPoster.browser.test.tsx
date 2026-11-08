@@ -17,7 +17,7 @@ import acmeLogistics from '../../adapters/folder/format/examples/acme-logistics.
 import { scopeFromFolder } from '../../adapters/folder/format/folderFormat'
 import { LanguageProvider } from '../../i18n/LanguageContext'
 import { tokenVariables } from '../../widgets/kit/tokens'
-import type { DesignElement } from '../../model'
+import type { DesignDiagram, DesignElement } from '../../model'
 import { DEFAULT_LENS, lensValue } from '../lens'
 import { coverageOf } from '../coverage'
 import { contentHeight, contentHeightAt, minWidth, POSTER_COLUMN_ID } from '../posterLayout'
@@ -151,7 +151,7 @@ describe('a block in a real browser', () => {
 
   it('is no taller than the first layout gives it, on a dense sheet of 188 functions in 17 areas', () => {
     const elements = denseSheet()
-    const diagram = { id: 'dense', kind: 'sheet', name: 'Dense', members: [], areas: elements.filter((one) => !one.parentId).map((one) => one.id), showActors: false, geometry: { nodes: [] } } as const
+    const diagram = { id: 'dense', kind: 'sheet', name: 'Dense', members: [], areas: elements.filter((one) => !one.parentId).map((one) => one.id), showActors: false, geometry: { nodes: [] } } as DesignDiagram
     const laidOut = sheetPage({ elements, relations: [] }, diagram)
     const host = draw(laidOut, elements)
     host.querySelector<HTMLElement>('[data-testid="poster-stage"]')!.style.transform = 'none'
