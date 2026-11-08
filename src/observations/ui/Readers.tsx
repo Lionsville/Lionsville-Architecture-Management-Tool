@@ -20,9 +20,7 @@
  */
 import { useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import IconButton from '@mui/material/IconButton'
 import Link from '@mui/material/Link'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n'
 import type { Translate } from '../../i18n'
@@ -32,7 +30,8 @@ import { fillEmptySections } from '../../documentation/documentation'
 import { MarkdownDocument } from '../../documentation/ui/MarkdownDocument'
 import type { MarkdownRenderOptions } from '../../documentation/documentation'
 import type { DocumentImages } from '../../documentation/ui/MarkdownEditor'
-import { ScopeIcon, UnlinkIcon } from '../../widgets/icons'
+import { ScopeIcon } from '../../widgets/icons'
+import { MoreMenu } from '../../widgets/kit/Menu'
 import { CompactForms, Term, Value } from '../../widgets/CompactForms'
 
 export { Term, Value }
@@ -168,22 +167,23 @@ export function LinkList({ links, onOpen }: {
   links: readonly { key: string; label: string; note?: string; onRemove?: () => void; removeLabel?: string }[]
   onOpen: (key: string) => void
 }) {
+  const { t } = useStrings()
   return (
     <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
       {links.map((one) => (
         // The row wraps rather than squeezing: the label takes what is left and
-        // breaks, and the note and the button keep their own width.
+        // breaks, and the note and the ⋯ keep their own width. Unlinking changes the
+        // model, so it waits behind the row's ⋯ rather than standing as a glyph to hit.
         <Box component="li" key={one.key} sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 1, rowGap: 0, alignItems: 'center', py: 0.25 }}>
           <Link component="button" type="button" onClick={() => onOpen(one.key)} sx={{ fontSize: 'inherit', textAlign: 'left', minWidth: 0, overflowWrap: 'anywhere' }}>
             {one.label}
           </Link>
           {one.note && <Typography variant="caption" color="text.secondary" sx={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{one.note}</Typography>}
           {one.onRemove && (
-            <Tooltip title={one.removeLabel ?? ''}>
-              <IconButton size="small" aria-label={one.removeLabel} onClick={one.onRemove} data-testid="link-unlink" sx={{ p: 0.25, flexShrink: 0 }}>
-                <UnlinkIcon size={14} />
-              </IconButton>
-            </Tooltip>
+            <MoreMenu
+              size="small" label={one.removeLabel ?? t('observation.unlink')}
+              items={[{ label: t('observation.unlink'), hint: one.removeLabel, onSelect: one.onRemove, 'data-testid': 'link-unlink' }]}
+            />
           )}
         </Box>
       ))}
