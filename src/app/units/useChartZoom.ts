@@ -11,6 +11,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { canvasZoomProps, clampZoom, ZOOM_HOME } from '../../widgets/kit/zoom'
+import { textScale } from '../../widgets/kit/tokens'
 import type { Point } from '../../widgets/kit/zoom'
 import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom'
 
@@ -21,7 +22,8 @@ export function fitZoom(pane: { width: number; height: number }, drawing: { widt
 }
 
 export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { current: HTMLElement | null }) {
-  const [zoom, setZoom] = useState(ZOOM_HOME)
+  // At a larger text size the chart opens larger, all of it, as a board is framed (`canvasZoomProps`).
+  const [zoom, setZoom] = useState(() => clampZoom(ZOOM_HOME * textScale()))
   const latest = useRef(zoom)
   latest.current = zoom
   const to = useCallback((next: number, at?: Point) => {
@@ -60,6 +62,6 @@ export function useChartZoom(page: { current: HTMLDivElement | null }, stage: { 
     page.current = element
     attachZoom(element)
   }, [page, attachZoom])
-  const props = canvasZoomProps(zoom)
+  const props = canvasZoomProps(zoom, undefined, textScale())
   return { zoom, target, attach, canvas: { 'data-distance': props['data-distance'], style: props.style as CSSProperties } }
 }

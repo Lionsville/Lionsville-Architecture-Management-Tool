@@ -7,6 +7,7 @@ import type { Rect } from '../../model/types';
 import { canvasRooms } from '../../widgets/kit/canvasRoom';
 import { frameInRooms, NO_INSETS, ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom';
 import type { Insets } from '../../widgets/kit/zoom';
+import { textScale } from '../../widgets/kit/tokens';
 
 /**
  * The options every "fit the board" shares.
@@ -74,7 +75,9 @@ export function sheetOf(board: ParentNode): Rect | undefined {
  * for the room even at the floor starts at its top left there, and the rest is a pan.
  */
 export function viewportOverRect(rect: Rect, width: number, height: number, rooms: Insets | readonly Insets[] = NO_INSETS): Viewport | undefined {
-  return frameInRooms(rect, { width, height }, Array.isArray(rooms) ? rooms : [rooms as Insets], { floor: MIN_ZOOM, ceiling: FIT_ALL.maxZoom });
+  // At a larger text size the drawing is framed larger, all of it (`canvasZoomProps`): its floor and its 100% scale with it.
+  const scale = textScale();
+  return frameInRooms(rect, { width, height }, Array.isArray(rooms) ? rooms : [rooms as Insets], { floor: Math.min(MIN_ZOOM * scale, MAX_ZOOM), ceiling: Math.min(FIT_ALL.maxZoom * scale, MAX_ZOOM) });
 }
 
 /**

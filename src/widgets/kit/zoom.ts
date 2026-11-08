@@ -130,9 +130,17 @@ export const DENSE_LABEL_WORDS_FROM = 0.9
  * `--canvas-zoom` is what a size is held against, and it stops at 1: zoomed out,
  * words and strokes keep their size on screen so a far board stays readable;
  * zoomed in past 100%, they grow with the drawing, so ⌘+ reads larger.
+ *
+ * `scale` is the person's text size (`textScale`). A canvas's type is in pixels,
+ * so its words and its boxes keep the proportions its layout was worked out in;
+ * the text size reaches it as a scale on the whole drawing instead, which a fit
+ * frames at (`frameScale`), and every distance here is read against it: at 150%
+ * a board at 90% reads as one at 60% does at 100%, every word and box half as
+ * large again.
  */
-export function canvasZoomProps(zoom: number, wordsFrom = LABEL_WORDS_FROM): { 'data-distance': ReadingDistance; 'data-labels': 'words' | 'numbers'; style: Record<'--canvas-zoom', string> } {
-  return { 'data-distance': readingDistance(zoom), 'data-labels': zoom < wordsFrom ? 'numbers' : 'words', style: { '--canvas-zoom': String(Math.min(zoom, 1)) } }
+export function canvasZoomProps(zoom: number, wordsFrom = LABEL_WORDS_FROM, scale = 1): { 'data-distance': ReadingDistance; 'data-labels': 'words' | 'numbers'; style: Record<'--canvas-zoom', string> } {
+  const read = zoom / scale
+  return { 'data-distance': readingDistance(read), 'data-labels': read < wordsFrom ? 'numbers' : 'words', style: { '--canvas-zoom': String(Math.min(read, 1)) } }
 }
 
 /**
