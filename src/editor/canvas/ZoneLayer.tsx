@@ -189,8 +189,7 @@ export function ZoneLayer({
           }}
         />
       )}
-      <div
-        {...{ [CANVAS_SHEET]: `${board.x},${board.y},${board.width},${board.height}` }}
+      <div {...{ [CANVAS_SHEET]: `${board.x},${board.y},${board.width},${board.height}` }}
         style={{
           position: 'absolute',
           left: board.x,

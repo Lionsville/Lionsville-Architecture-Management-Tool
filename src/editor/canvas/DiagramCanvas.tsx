@@ -77,6 +77,7 @@ import type { OverlayLegendProps } from './OverlayLegend';
 import { BoardChrome, BoardConnectionLine, boardAttributes, EmptyBoardNote, useAskAdd } from './BoardOverlays';
 import type { AddRequest } from '../AddPicker';
 import type { OverlayMark } from '../theme/overlayColors';
+import { linesInTabOrder, selectGroup } from './tabOrder';
 import { MAX_ZOOM, MIN_ZOOM, useFitBoard } from './fitAll';
 import { BoardFocusProvider, BoardFocusSheet, useBoardFocusing } from './boardFocus';
 import { useBoardFrame, useReadingDistance } from './useBoardFrame';
@@ -600,13 +601,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
 
   const [nodes, setNodes] = useState<ElementNode[]>(derivedNodes);
   const [edges, setEdges] = useState<FloatingEdgeModel[]>(derivedEdges);
-  // Tab walks the cards, not every line first (React Flow draws the lines ahead of the
-  // cards): a line is reached from its card, so only the lines of what is selected take a tab.
-  const tabbableEdges = useMemo(() => edges.map((edge) => {
-    if (edge.focusable === false || edge.focusable === true) return edge;
-    const reached = selectedConnectionIds.has(edge.id) || selectedElementIds.has(edge.source) || selectedElementIds.has(edge.target);
-    return reached ? { ...edge, focusable: true } : edge;
-  }), [edges, selectedConnectionIds, selectedElementIds]);
+  const tabbableEdges = useMemo(() => linesInTabOrder(edges, selectedElementIds, selectedConnectionIds), [edges, selectedConnectionIds, selectedElementIds]);
   // The selection embedded in the nodes/edges we last handed React Flow. RF
   // echoes whatever it was given back through `onSelectionChange`, and a push
   // can be one render stale: a host model update landing while a click is in
@@ -1354,14 +1349,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
       const point = screenToFlowPosition({ x: event.clientX, y: event.clientY });
       const target = resolvePaneMenuTarget?.(point) ?? { kind: 'pane' as const };
       // A group with nothing to offer (read-only) still gets the canvas menu.
-      if (tryOpenMenu(target, { event })) {
-        // The menu acts on the group, so the panel says the group too, as a card's right-click does.
-        if (target.kind === 'group' && !props.selection.domainGroups.includes(target.groupId)) {
-          onSelectionChange({ elementIds: [], connectionIds: [], domainGroups: [target.groupId] });
-        }
-      } else if (target.kind !== 'pane') {
-        tryOpenMenu({ kind: 'pane' }, { event });
-      }
+      if (!tryOpenMenu(target, { event })) { if (target.kind !== 'pane') tryOpenMenu({ kind: 'pane' }, { event }); } else if (target.kind === 'group' && !props.selection.domainGroups.includes(target.groupId)) onSelectionChange(selectGroup(target.groupId));
     },
     [resolvePaneMenuTarget, screenToFlowPosition, tryOpenMenu, props.selection, onSelectionChange],
   );
@@ -1669,8 +1657,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         <NodeResizeContext.Provider value={nodeResize}>
         <ReactFlow
           nodes={nodes}
-          edges={tabbableEdges}
-          edgesFocusable={false}
+          edges={tabbableEdges} edgesFocusable={false}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           colorMode={theme.palette.mode}

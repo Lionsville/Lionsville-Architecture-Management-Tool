@@ -229,9 +229,7 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
                   }
                   onContextMenu={(event) => {
                     if (props.readOnly) return;
-                    event.stopPropagation();
-                    // The menu acts on the group, so the panel says the group too, as a card's right-click does.
-                    if (!isSelected) props.onSelect(group.id);
+                    event.stopPropagation(); if (!isSelected) props.onSelect(group.id); // the panel says what the menu acts on
                     menu.open({ kind: 'group', groupId: group.id }, event);
                   }}
                   style={{
