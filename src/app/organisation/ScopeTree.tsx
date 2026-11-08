@@ -243,7 +243,10 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
         {above && <><span className="kit-tree__above">{above}</span><span className="kit-tree__sep" aria-hidden> / </span></>}
         <span className="kit-tree__own" data-testid={`open-${scope.path}`}><Marked text={scope.name} asked={asked} /></span>
       </button>
+      {/* A space between the words, which the flex row does not draw: read as text, the name and the count are two words, not one. */}
+      {' '}
       {warns && <span className="kit-tree__warn" title={s('org.typeMismatchTip')}><Mark kind="review" size={12} />{s('org.typeMismatch')}</span>}
+      {warns && ' '}
       {unread
         ? <span className="kit-tree__holds" data-testid="scope-not-read">{s('org.notRead')}</span>
         : count > 0 && <span className="kit-tree__holds" data-testid="scope-holds">{count}</span>}
@@ -269,6 +272,7 @@ export function RootRow({ tree, name, current, count, words, onHome, menuOf, s }
       <span className="kit-tree__fold" aria-hidden />
       {/* In a span of its own, as a scope's name is: a flex button cuts bare text without its ellipsis, hard against the count. */}
       <button type="button" className="kit-tree__name" tabIndex={-1} aria-hidden><span className="kit-tree__own">{name}</span></button>
+      {' '}
       {count > 0 && <span className="kit-tree__holds">{count}</span>}
       <span className="kit-tree__menu">
         {items.length > 0 && <MoreMenu size="small" tabIndex={-1} label={s('frame.scopeMenu', { name })} items={items} />}
