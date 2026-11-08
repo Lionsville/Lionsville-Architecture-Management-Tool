@@ -177,6 +177,7 @@
 .poster-block .poster-st:hover > .poster-add, .poster-block .poster-st:focus-within > .poster-add,
 .poster-block .poster-person-row:hover > .poster-add, .poster-block .poster-person-row:focus-within > .poster-add { opacity: 1; }
 .poster-person-row > .poster-add--icon { inset-inline-start: auto; inset-inline-end: 0; inset-block-start: 50%; transform: translateY(-50%); }
+.poster-st > .poster-add--icon { inset-inline-start: auto; inset-inline-end: 0; }
 .poster-add--item { position: absolute; inset-block-start: 0; inset-inline-end: 0; }
 .poster-band__cell > .poster-add { position: absolute; inset-block-end: 0; inset-inline-end: 0; z-index: 2; }
 .poster-adds { position: absolute; inset-block-end: 2px; inset-inline-end: 12px; display: flex; gap: 2px; background: var(--surface); }
