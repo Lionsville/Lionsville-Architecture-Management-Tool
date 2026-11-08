@@ -139,7 +139,8 @@ export function Panel({
       </div>
       {tabs && tabs.length > 0 && tab !== undefined && onTab && (
         <div className="kit-panel__tabs">
-          <Tabs items={tabs} value={tab} onChange={onTab} label={name} />
+          {/* Another tab puts this one's away, and a draft written on it with it: asked first. */}
+          <Tabs items={tabs} value={tab} onChange={(next) => leaveWithDrafts(() => onTab(next), undefined, surface)} label={name} />
         </div>
       )}
       <div className="kit-panel__body" tabIndex={0} role="region" aria-label={name} aria-busy={loading || undefined}>

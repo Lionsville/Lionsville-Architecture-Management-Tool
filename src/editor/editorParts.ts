@@ -15,6 +15,7 @@ import type { AddRequests } from './AddPicker';
 import type { EditorDialogState } from './EditorDialogs';
 import type { useDoubleClicks } from './useEditorHandle';
 import type { ViewportMemory } from './canvas/viewportMemory';
+import type { PanelDrafts } from './usePanelDrafts';
 
 /**
  * The editor body's state, as the hooks that hold it hand it out: one object
@@ -29,6 +30,8 @@ export interface EditorParts {
   writable: boolean;
   /** Looking at the board on a day that is not its own (ADR-0027, amended). */
   looking: boolean;
+  /** The side panel as a surface for drafts, and the person's selection asked through it (`usePanelDrafts`). */
+  panel: PanelDrafts;
   /** The board a container diagram was opened from, where it was opened from one. */
   cameFrom?: string;
   view: ViewSettings;

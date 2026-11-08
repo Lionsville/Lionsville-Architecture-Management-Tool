@@ -21,6 +21,7 @@ import { MultiSelectionInspector } from './MultiSelectionInspector';
 import { moveFor } from './EditorDocumentationPage';
 import { ThisViewPanel } from './inspector/ThisViewPanel';
 import { EMPTY_SELECTION, selectionCount } from './useEditorState';
+import { DraftArea } from '../widgets/kit/drafts';
 import type { EditorParts } from './editorParts';
 
 /**
@@ -49,7 +50,7 @@ export function InspectorDock({ parts, diagram }: { parts: EditorParts; diagram:
         onToggleCollapsed={() => view.setInspectorCollapsed((on) => !on)}
         width={view.inspectorWidth}
       >
-        {inspector}
+        <DraftArea surface={parts.panel.surface}>{inspector}</DraftArea>
       </InspectorPanel>
     </>
   );

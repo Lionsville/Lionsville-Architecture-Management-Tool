@@ -110,6 +110,10 @@ function Harness({ handlers, clipboardRef, pasteCountRef, mounted = true }: Harn
         <button type="button" data-testid="inspector-button" />
         <input data-testid="inspector-field" />
       </div>
+      {/* The side panel's body, with a comment box in it. */}
+      <div data-testid="panel-body" role="region" aria-label="Panel" tabIndex={0}>
+        <textarea data-testid="comment-box" />
+      </div>
       {/* Stands in for the panel seam: an ARIA separator whose whole keyboard
           contract is ← and →, the keys the canvas would otherwise nudge with. */}
       <div data-testid="seam" role="separator" tabIndex={0} />
@@ -288,6 +292,17 @@ describe('useCanvasShortcuts — dispatch', () => {
       domainGroups: [],
     });
     expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('leaves a box being written in on the first Escape and lets go of the selection on the second', () => {
+    const { view, setSelection } = setup();
+    const box = view.getByTestId('comment-box');
+    box.focus();
+    fireEvent.keyDown(box, { key: 'Escape' });
+    expect(setSelection).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(view.getByTestId('panel-body'));
+    fireEvent.keyDown(view.getByTestId('panel-body'), { key: 'Escape' });
+    expect(setSelection).toHaveBeenCalledWith({ elementIds: [], connectionIds: [], domainGroups: [] });
   });
 
   it('Escape deselects, Delete asks, Shift+Arrow nudges by 1px, and ? opens the help', () => {

@@ -268,6 +268,9 @@ export function useCanvasShortcuts(
         && !(target instanceof Element && target.closest('[role="dialog"], [role="alertdialog"], [role="menu"]'));
       if (!inside && !around) return;
       if (isShortcutIgnoredTarget(target) || keepsItsChord('deselect', target)) return;
+      // The first Escape in a box written in — a comment in the panel — leaves the box and keeps
+      // what is in it; the next lets go of the selection, which asks about it (`usePanelDrafts`).
+      if (leavesWritingFirst(event, target)) return;
       const def = CANVAS_SHORTCUTS.find((one) => one.id === 'deselect');
       if (!def || !matchEvent(event, def, platformRef.current)) return;
       if (def.when && !def.when({ readOnly: h.readOnly, hasSelection: !isSelectionEmpty(h.selection) })) return;
@@ -400,6 +403,16 @@ function pasteOffset(payload: ClipboardPayload, step: number, view: ViewActions)
 }
 
 const asCopies = (h: CanvasShortcutHandlers, payload: ClipboardPayload) => (h.copyName ? namedAsCopies(payload, h.model, h.copyName) : payload);
+
+/** A box written in, as a comment's: Escape there leaves it for the region it is in, and goes no further. */
+function leavesWritingFirst(event: KeyboardEvent, target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement) || !target.matches('textarea, [contenteditable="true"], [contenteditable=""]')) return false;
+  claimKey(event);
+  const region = target.parentElement?.closest<HTMLElement>('[role="region"][tabindex]');
+  if (region) region.focus({ preventScroll: true });
+  else target.blur();
+  return true;
+}
 
 function dispatch(
   id: string,

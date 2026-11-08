@@ -22,6 +22,7 @@ import { standInsFor, heldIdsOf } from './elementInspectorFacts';
 import type { EditorParts } from './editorParts';
 import { labelsOn } from './useViewSettings';
 import { SelectionInspector } from './EditorInspectorDock';
+import { DraftArea } from '../widgets/kit/drafts';
 import { usePersonNames } from '../people/ui/names';
 import type { PersonRef } from '../model/person';
 
@@ -57,7 +58,7 @@ export function LaidOutView({ parts, diagram, pageBar, onDock }: { parts: Editor
         pageBar,
         outline: { width: view.outlineWidth, onWidth: view.setOutlineWidth },
         ...(diagram.kind === 'technology' ? {
-          record: <SelectionInspector parts={parts} diagram={diagram} />,
+          record: <DraftArea surface={parts.panel.surface}><SelectionInspector parts={parts} diagram={diagram} /></DraftArea>,
           ...(readOnly ? {} : { onDelete: (elementId: string) => parts.deletes.setDeleteTarget(elementId) }),
           onDay: (day: string | undefined) => parts.board.viewing.show(diagram.id, day),
           ownerText: (owner: PersonRef) => names.text(owner),
@@ -71,7 +72,7 @@ export function LaidOutView({ parts, diagram, pageBar, onDock }: { parts: Editor
           } : {}),
         },
         ...(state.selectedElement ? { selectedId: state.selectedElement.id } : {}),
-        onSelect: (elementId) => state.setSelection(elementId === undefined ? EMPTY_SELECTION : selectElement(elementId)),
+        onSelect: (elementId) => parts.panel.choose(elementId === undefined ? EMPTY_SELECTION : selectElement(elementId)),
         onAdd: (seed) => state.actions.addElement(seed),
         onHost: (elementId, platformId) => {
           const standIn = technology?.standInFor(platformId);
@@ -103,6 +104,7 @@ export function BoardCanvas({ parts, diagram }: { parts: EditorParts; diagram: D
       <CanvasForDiagram
         diagram={diagram}
         state={state}
+        onSelectionChange={parts.panel.choose}
         readOnly={readOnly}
         autoRoute={layout.autoRoute}
         snapToGrid={view.snapToGrid}

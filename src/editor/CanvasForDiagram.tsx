@@ -20,6 +20,8 @@ import type { EditorState, Selection } from './useEditorState';
 export interface CanvasForDiagramProps {
   diagram: DesignDiagram;
   state: EditorState;
+  /** The person's selection, where a host asks it first; the editor's own setter otherwise. */
+  onSelectionChange?: (selection: Selection) => void;
   readOnly: boolean;
   /** Live auto-routing — drives the canvas's waypoint-free drag preview only. */
   autoRoute: boolean;
@@ -86,13 +88,14 @@ export interface CanvasForDiagramProps {
  * canvas, handed the same props.
  */
 export function CanvasForDiagram(props: CanvasForDiagramProps) {
-  const { diagram, state, onTidyGroup, groupTidyOptions, onGroupTidyOptionsChange, showDeployment, platformTree, onRouteLines, ...rest } = props;
+  const { diagram, state, onSelectionChange, onTidyGroup, groupTidyOptions, onGroupTidyOptionsChange, showDeployment, platformTree, onRouteLines, ...rest } = props;
   const shared = {
     ...rest,
     model: state.model,
     diagram,
     selection: state.selection,
-    onSelectionChange: state.setSelection,
+    // A press on the board is the person's, asked first where the panel holds a draft.
+    onSelectionChange: onSelectionChange ?? state.setSelection,
     actions: state.actions,
   };
   return diagram.kind === 'layer7' ? (

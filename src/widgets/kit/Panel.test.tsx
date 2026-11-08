@@ -4,10 +4,11 @@
 // @vitest-environment jsdom
 /** The one panel: a name that wraps and can be pressed where it may change, tabs, a foot that helps or undoes. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { Panel, PanelDockProvider, PanelName, PanelSection } from './Panel'
+import { DraftQuestion, draftHeld, useDraft } from './drafts'
 
 afterEach(() => cleanup())
 
@@ -40,6 +41,21 @@ describe('the panel', () => {
     fireEvent.click(screen.getByRole('tab', { name: /Comments/ }))
     expect(onTab).toHaveBeenCalledWith('comments')
     expect(screen.getByRole('tab', { name: /Comments\s*2/ })).toBeTruthy()
+  })
+
+  it('asks before another tab puts away one holding a draft, and stays on Keep writing', async () => {
+    function Draft() { useDraft(true); return null }
+    const onTab = vi.fn()
+    renderShell(<><DraftQuestion /><Panel kind="K" name="N" tabs={TABS} tab="comments" onTab={onTab}><Draft /></Panel></>)
+    fireEvent.click(screen.getByRole('tab', { name: /Properties/ }))
+    expect(onTab).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }))
+    expect(onTab).not.toHaveBeenCalled()
+    expect(draftHeld()).toBe(true)
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Leave with a draft?' })).toBeNull())
+    fireEvent.click(screen.getByRole('tab', { name: /Properties/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }))
+    expect(onTab).toHaveBeenCalledWith('properties')
   })
 
   it('is 320 by default, 520 when wide, and a dragged width wins', () => {

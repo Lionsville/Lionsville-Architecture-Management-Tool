@@ -16,6 +16,7 @@ import { LanguageProvider, useStrings } from '../i18n/LanguageContext';
 import { ViewportMemory } from './canvas/viewportMemory';
 import { EMPTY_SELECTION, useEditorState } from './useEditorState';
 import { useCanvasShortcuts } from './use-canvas-shortcuts';
+import { usePanelDrafts } from './usePanelDrafts';
 import { labelsOn, useViewSettings } from './useViewSettings';
 import { useBoardView } from './useBoardView';
 import { isLookingAway, useBoardDoors, useCarriedDay, useSelectionPerLevel, useShownDays } from './useShownDays';
@@ -227,8 +228,9 @@ function useEditorParts(given: SolutionDesignEditorProps) {
   const dialogs = useEditorDialogs(props.onShowShortcuts);
   const adding = useAddRequests();
   const clicks = useDoubleClicks(props, state, activeDiagram, docs.open);
+  const panel = usePanelDrafts(state);
   const parts: EditorParts = {
-    props, state, readOnly, writable, looking, cameFrom, view, board, layout, requests, docs, deletes, exports, dialogs, clicks, adding,
+    props, state, panel, readOnly, writable, looking, cameFrom, view, board, layout, requests, docs, deletes, exports, dialogs, clicks, adding,
     capturing: capture.capturing, ...session,
   };
   useEditorHandle({
@@ -295,7 +297,8 @@ function useKeyboard(
     actions: state.actions,
     undo: state.undo,
     redo: state.redo,
-    setSelection: state.setSelection,
+    // Escape and select-all are the person's: the panel's draft is asked about first.
+    setSelection: parts.panel.choose,
     clipboardRef: parts.clipboardRef,
     pasteCountRef: parts.pasteCountRef,
     copyName: (name) => t('menu.copyName', { name }),
