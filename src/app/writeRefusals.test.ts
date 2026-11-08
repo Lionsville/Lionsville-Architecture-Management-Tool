@@ -51,6 +51,36 @@ describe('watchRepositories', () => {
     expect(refusalOf(caught)).toBe(store.list()[0]!.id)
   })
 
+  /** Every write the app makes outside the open session, each refused once: each stands in the list, with its reason, to be made again. */
+  it('lists a refused write from every repository it watches, each with what refused it and a way to make it again', async () => {
+    const watchedWrites = {
+      scopes: ['apply', 'create', 'move', 'remove'],
+      images: ['put'],
+      settings: ['write'],
+      people: ['add', 'change', 'leave', 'takeBackLeaving', 'merge', 'forget', 'remove', 'bringIn', 'answerDistinct', 'takeBackDistinct'],
+    } as const
+    const held = memoryRepositories()
+    const refusing = Object.fromEntries(Object.entries(watchedWrites).map(([repository, writes]) => [
+      repository,
+      Object.assign(Object.create(held[repository as keyof typeof watchedWrites]) as object, Object.fromEntries(writes.map((write) => [
+        write, () => Promise.reject(new Error(`${repository}.${write} refused`)),
+      ]))),
+    ]))
+    const store = writeRefusals()
+    const repositories = watchRepositories({ ...held, ...refusing } as Repositories, store) as unknown as Record<string, Record<string, () => Promise<unknown>>>
+    let count = 0
+    for (const [repository, writes] of Object.entries(watchedWrites)) {
+      for (const write of writes) {
+        await repositories[repository]![write]!().catch(() => undefined)
+        count += 1
+        const last = store.list().at(-1)!
+        expect(store.list()).toHaveLength(count)
+        expect((last.cause as Error).message).toBe(`${repository}.${write} refused`)
+        await expect(last.retry()).resolves.toBe(false)
+      }
+    }
+  })
+
   it('leaves out a refusal that answers a question, and counts one that means nothing was kept', async () => {
     const store = writeRefusals()
     const held = memoryRepositories()
