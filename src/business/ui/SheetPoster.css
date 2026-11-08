@@ -71,11 +71,10 @@
 .poster-tile__label { display: none; }
 .poster-tile[data-labelled] .poster-tile__name { -webkit-line-clamp: 2; line-height: 13.5px; }
 .poster-tile[data-labelled] .poster-tile__label { display: flex; align-items: baseline; gap: 3px; max-width: 100%; min-width: 0; color: var(--ink-2); font-size: var(--canvas-t-sm); line-height: 13.5px; white-space: nowrap; }
-/* Who answers asks for the label: it takes two lines and the name one, where both on one line each cut the unit to "Transport pl…". */
+/* Who answers: the function is the tile's subject and keeps its two lines; the unit takes one line at the label's size, so
+   "Transport planner" reads whole on a tile's width, a longer one ends in … with its +N never cut, and the title says them all. */
 [data-lens="who"] .poster-tile[data-labelled] { padding-inline: 4px; }
-[data-lens="who"] .poster-tile[data-labelled] .poster-tile__name { -webkit-line-clamp: 1; }
-[data-lens="who"] .poster-tile[data-labelled] .poster-tile__label { white-space: normal; text-align: start; }
-[data-lens="who"] .poster-tile[data-labelled] .poster-tile__labelName { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+[data-lens="who"] .poster-tile[data-labelled] .poster-tile__label { font-size: var(--canvas-t-label); }
 .poster-tile__labelName { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .poster-tile__labelMore { flex: none; }
 .poster-tile__label::before { content: ""; flex: none; align-self: center; display: inline-block; width: 6px; height: 6px; margin-inline-end: 3px; background: var(--line-ink); vertical-align: 1px; }
