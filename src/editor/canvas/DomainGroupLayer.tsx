@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { useEffect, useRef, useState } from 'react';
-import { useReactFlow, ViewportPortal } from '@xyflow/react';
+import { EdgeLabelRenderer, useReactFlow, ViewportPortal } from '@xyflow/react';
 import { useTheme } from '@mui/material/styles';
 import type { Theme } from '@mui/material/styles';
 import { getNodeTokens } from '../theme/tokens';
@@ -176,8 +176,7 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
       <ViewportPortal>
         {boxes.map((group) => {
           const rect = preview && preview.id === group.id ? preview : group;
-          const held = named.get(group.id);
-          const label = held?.name ?? group.id;
+          const held = named.get(group.id), label = held?.name ?? group.id;
           const colors = groupColors(theme, held?.color);
           const isSelected = props.selected.includes(group.id);
           return (
@@ -281,6 +280,49 @@ export function DomainGroupLayer(props: DomainGroupLayerProps) {
           );
         })}
       </ViewportPortal>
+      <GroupNamesOverLines boxes={boxes} preview={preview} renaming={renaming?.groupId} groups={props.groups} selected={props.selected} />
     </>
+  );
+}
+
+/**
+ * Each name again, above the lines and below the cards, on the group's own fill: a
+ * line passing a group's name goes under it, not through it. The name read and
+ * pressed is the box's own under this, which it covers exactly, being laid out by
+ * the same rules from the same corner.
+ */
+function GroupNamesOverLines(props: {
+  boxes: readonly DomainGroupRect[];
+  preview: DomainGroupRect | null | undefined;
+  renaming: string | undefined;
+  groups: readonly DiagramGroup[];
+  selected: readonly string[];
+}) {
+  const { groups, selected, preview } = props;
+  const boxes = props.boxes.map((group) => (preview && preview.id === group.id ? preview : group)).filter((group) => group.id !== props.renaming);
+  const theme = useTheme();
+  const named = new Map(groups.map((group) => [group.id, group]));
+  return (
+    <EdgeLabelRenderer>
+      {boxes.map((rect) => {
+        const held = named.get(rect.id);
+        return (
+          <section
+            key={rect.id}
+            aria-hidden
+            className="kit-zone lv-group lv-group-name"
+            data-selected={selected.includes(rect.id) || undefined}
+            style={{
+              position: 'absolute',
+              transform: `translate(${rect.x}px, ${rect.y}px)`,
+              width: rect.width,
+              ...(groupColors(theme, held?.color).rail ? { borderLeft: 'calc(3px / var(--canvas-zoom, 1)) solid transparent' } : {}),
+            }}
+          >
+            <header className="kit-zone__head"><span className="kit-zone__name">{held?.name ?? rect.id}</span></header>
+          </section>
+        );
+      })}
+    </EdgeLabelRenderer>
   );
 }

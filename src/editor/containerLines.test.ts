@@ -75,6 +75,12 @@ describe('a container diagram, as data', () => {
     expect(nodes[0]?.data).toMatchObject({ hasContainerDiagram: true, containerCount: 2 });
   });
 
+  it('draws the boundary first and level with the lines, so its name is over them and every box over it', () => {
+    const late = { ...diagram, members: [...diagram.members!.filter((one) => one.id !== 'app'), { id: 'app' }] } as DesignDiagram;
+    const nodes = buildNodes({ model, diagram: late, readOnly: true, edgeColor: '' });
+    expect(nodes[0]).toMatchObject({ id: 'app', type: 'applicationBoundary', zIndex: 0 });
+  });
+
   it('says an empty boundary is empty', () => {
     const empty = { ...model, elements: model.elements.filter((one) => one.kind !== 'component'), relations: [] };
     const nodes = buildNodes({ model: empty, diagram, readOnly: true, edgeColor: '' });

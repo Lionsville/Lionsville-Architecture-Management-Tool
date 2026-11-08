@@ -165,7 +165,10 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       // that does change is still read: the observer fires on the box, and its
       // answer always measures, whatever is said here.
       measured: { width: rect.width, height: rect.height },
-      zIndex: isBoundary ? -10 : 0,
+      // The boundary is drawn first and so under every box, but over the lines: it is
+      // no obstacle to them, and a line between two boxes outside would otherwise run
+      // through its name. Only its head is filled; the rest lets the lines show.
+      zIndex: 0,
       draggable: !args.readOnly,
       selectable: true,
       selected: args.selectedElementIds?.has(element.id) ?? false,
@@ -194,6 +197,9 @@ export function buildNodes(args: BuildGraphArgs, previous?: readonly ElementNode
       },
     });
   }
+  // The boundary first, so every box is drawn over it (see its zIndex).
+  const boundaryAt = nodes.findIndex((node) => node.type === 'applicationBoundary');
+  if (boundaryAt > 0) nodes.unshift(...nodes.splice(boundaryAt, 1));
   return keepingUnchanged(withoutHelpOverContent(nodes), previous, sameNode);
 }
 

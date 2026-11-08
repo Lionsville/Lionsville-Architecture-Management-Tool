@@ -305,6 +305,17 @@ describe('Layer7Canvas — domain-group context menu', () => {
  * changeable, or the first wrong guess is permanent — and right-click is where a
  * group's other edits (rename, tidy, remove) already live.
  */
+describe('Layer7Canvas — a group name over the lines', () => {
+  it('says each name again among the line labels, hidden from the reader and the pointer', () => {
+    renderCanvas();
+    const copy = document.querySelector('.react-flow__edgelabel-renderer .lv-group-name');
+    expect(copy?.textContent).toBe('Core');
+    expect(copy?.getAttribute('aria-hidden')).toBe('true');
+    // The name pressed is the box's own, which is still there.
+    expect(screen.getByRole('button', { name: /Core/ })).toBeTruthy();
+  });
+});
+
 describe('Layer7Canvas — group colour', () => {
   const openColorPicker = (rightClickAt: (p: { x: number; y: number }) => void) => {
     rightClickAt({ x: GROUP.x + 40, y: GROUP.y + GROUP.height - 40 });

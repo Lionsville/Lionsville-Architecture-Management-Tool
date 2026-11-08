@@ -18,6 +18,10 @@
 
 /* A group holds its edge on screen as a zone does, and a selected one's is the heavier. */
 .lv-group[data-selected] { border-width: round(up, calc(3px / var(--canvas-zoom, 1)), 1px); }
+/* A group's name over the lines (DomainGroupLayer): its box's edges, unseen, place the name where the box's own sits. */
+.lv-group-name { height: auto; border-color: transparent; background: transparent; pointer-events: none; }
+.lv-group-name .kit-zone__name { white-space: nowrap; }
+.lv-group-name .kit-zone__head { width: fit-content; max-width: 100%; box-sizing: border-box; background: var(--zone-fill); }
 
 /* Say it once for a tile: fills its stored box and never spills out of it. */
 .lv-tile { width: 100%; height: 100%; overflow: hidden; }
@@ -112,6 +116,7 @@
 
 .lv-boundary { color: var(--ink); }
 .lv-boundary[data-selected] { --zone-edge: var(--selected-edge); }
+.lv-boundary .kit-zone__head { background: var(--canvas-ground); border-radius: var(--r-2); }
 .lv-boundary .kit-zone__aside { display: inline-flex; align-items: center; gap: 4px; }
 /*
  * Sized in canvas units, as graph.ts's EMPTY_HELP: it is drawn only where the
