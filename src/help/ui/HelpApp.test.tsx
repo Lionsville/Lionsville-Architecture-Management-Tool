@@ -111,6 +111,14 @@ describe('the help page', () => {
     expect(contents.getByRole('link', { name: document.activeElement?.textContent ?? '' }).getAttribute('aria-current')).toBe('location')
   }, 30_000)
 
+  it('opens at a place in the folded reference in another language, as a live switch of the app\'s language reloads it', async () => {
+    history.replaceState(null, '', '/help/?lang=nl#board~2')
+    render(<HelpApp initial="nl" />)
+    await waitFor(() => expect(document.activeElement?.id).toBe('board~2'), { timeout: 10_000 })
+    expect(document.activeElement?.closest('details')?.open).toBe(true)
+    expect(screen.getByRole('heading', { level: 2, name: 'Beginnen' })).toBeTruthy()
+  }, 30_000)
+
   it('changes language in place, and says so in the address', async () => {
     render(<HelpApp initial="en" />)
     await opened()
