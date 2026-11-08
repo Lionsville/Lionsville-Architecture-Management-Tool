@@ -420,7 +420,8 @@ export function PeoplePage({ open, onClose, register, select, readText, copyText
   const pairs = useMemo(() => duplicatePairs(people, register.distinct), [people, register.distinct])
   const { offered, answered } = reviewable(pairs, register)
   const reviewing = offered.length + answered.length > 0
-  const tab = (tabAsked === 'review' && !reviewing ? 'people' : tabAsked) as keyof typeof TAB_WORD
+  // The frame's tab is the page up's: a tab that is not one of these, read while another page is up, is People.
+  const tab = (tabAsked === 'review' && !reviewing) || !(tabAsked in TAB_WORD) ? 'people' : tabAsked as keyof typeof TAB_WORD
   const pick = useCallback((id: PersonId) => { if (tabAsked !== 'people') setTab('people'); choose(id) }, [tabAsked, setTab, choose])
   const mayAdd = mayDo(register, 'add')
   const looked = tab === 'people' ? look?.day : undefined

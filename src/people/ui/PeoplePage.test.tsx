@@ -25,6 +25,7 @@ import { changePeople } from '../register'
 import type { PeopleChange } from '../register'
 import type { PeopleRegisterAccess } from './access'
 import { PeoplePage } from './PeoplePage'
+import { PlaceTabContext } from '../../widgets/placeTab'
 
 afterEach(() => cleanup())
 
@@ -163,6 +164,15 @@ describe('the People page, as a directory', () => {
     find('lind')
     expect(rowOf('pe-pia')).toBeNull()
     expect(rowOf('pe-eva')).not.toBeNull()
+  })
+
+  it('reads a tab the frame holds for another page, as the register’s Services while People is mounted behind it, as its own first', () => {
+    renderShell(
+      <PlaceTabContext.Provider value={{ tab: 'services', choose: () => {} }}>
+        <Harness />
+      </PlaceTabContext.Provider>,
+    )
+    expect(screen.getByRole('tabpanel', { name: 'People' })).toBeDefined()
   })
 
   it('is one line a person, a word only where something differs', () => {
