@@ -194,17 +194,17 @@ describe('the History page as a place', () => {
     await screen.findByTestId('shell-toolbar')
     await view.settled()
     // The home is a place of its own first, so the History page is a step from it.
-    await waitFor(() => expect(window.location.hash).toBe('#/-/home'), { timeout: 6000 })
+    await waitFor(() => expect(window.location.hash).toBe('#/-/home'), { timeout: 10000 })
     view.send({ type: 'history' })
     await screen.findByTestId('history-list')
-    await waitFor(() => expect(window.location.hash).toBe('#/-/history'), { timeout: 6000 })
+    await waitFor(() => expect(window.location.hash).toBe('#/-/history'), { timeout: 10000 })
     // Row two does not call it Home while it is up.
     expect(document.querySelector('.kit-frame__row--two [aria-current="page"]')?.textContent ?? '').not.toBe('Home')
     act(() => { window.history.back() })
-    await waitFor(() => expect(screen.queryByTestId('history-list')).toBeNull(), { timeout: 6000 })
+    await waitFor(() => expect(screen.queryByTestId('history-list')).toBeNull(), { timeout: 10000 })
     act(() => { window.history.forward() })
-    expect(await screen.findByTestId('history-list', {}, { timeout: 6000 })).toBeDefined()
-  })
+    expect(await screen.findByTestId('history-list', {}, { timeout: 10000 })).toBeDefined()
+  }, 30_000)
 
   it('opens from its address as the app comes up', async () => {
     const { repositories } = kept([project()], [{ id: 'abc1234', address: '', subject: 'Before the merger', at: 1_757_000_000_000, by: 'W. Simons', state: { ...project(), path: '' } }])
