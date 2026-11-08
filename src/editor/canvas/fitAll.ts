@@ -152,7 +152,8 @@ export function usePrintFit(listening = true): void {
       const framed = printViewport(nodes, PRINT_ROOM, sheet);
       const bounds = printBounds(nodes, sheet);
       const board = domNode?.closest<HTMLElement>('[data-distance]') ?? domNode;
-      if (!framed || !bounds || !board) return;
+      // A page over the board (a record's document, the register) is what prints, as the frame's print rule says.
+      if (!framed || !bounds || !board || underAPage(board)) return;
       was ??= getViewport();
       // Drawn before the handler returns: the print is laid out as soon as it has.
       flushSync(() => { void setViewport(framed); });
@@ -174,4 +175,9 @@ export function usePrintFit(listening = true): void {
       window.removeEventListener('afterprint', after);
     };
   }, [getNodes, getViewport, setViewport, listening, flow, t]);
+}
+
+/** Whether a page stands over this board in the frame's main column: then the page prints, not the board. */
+function underAPage(board: HTMLElement): boolean {
+  return board.closest('.kit-frame__main')?.querySelector('.kit-place') != null;
 }
