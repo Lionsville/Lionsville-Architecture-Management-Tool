@@ -44,7 +44,7 @@ export const EN = {
   'menu.themeSystem': 'System',
   'menu.checkForUpdates': 'Check for updates…',
   /** The web's overflow button, which carries the same list as the menu bar. */
-  'menu.more': 'More',
+  'menu.more': 'Menu',
   // Edit: the four that are the app's, beside the clipboard roles.
   'menu.edit': 'Edit',
   'menu.undo': 'Undo',
