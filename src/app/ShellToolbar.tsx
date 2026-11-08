@@ -316,11 +316,21 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, s }: {
   // than a wrap.
   const pressed = useContext(CrumbPressContext)
   const go = (path: ScopePath) => { pressed(); onGoHome(path) }
-  // The organisation stays readable however long the names between are: it is
-  // the way back to the first screen, and the middle gives way first.
-  const shrinking = (order: number, least: string | 0 = order === 0 ? '6ch' : 0) => ({
+  // The name between gives way first, but only down to a few readable letters:
+  // then the organisation gives way, down to as many, and the open scope last.
+  // The order is a flex-shrink apart by orders of magnitude, so that while one
+  // name gives way the next loses under a hundredth of a pixel, which no
+  // ellipsis shows; and the open scope's is 1, not a fraction, because a line
+  // whose only shrinking item has a factor under 1 takes only that part of its
+  // shortfall and spills the rest over its neighbours. With the organisation
+  // never giving way, a long one cut the name between to one letter at 900 px
+  // and pushed the open scope's over the find field.
+  const shrinking = (order: number, least: string | 0 = 0) => ({
     minWidth: least, flexShrink: order, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
   } as const)
+  const giveWay = { between: 1e8, organisation: 1e4, open: 1 }
+  // About six letters and an ellipsis, with the crumb's padding and its ›.
+  const fewLetters = 'calc(5ch + 2.25rem)'
   // Deep in the tree the scopes between the organisation and the one above
   // this fold into a ⋯ of their own, rather than each being cut to a sliver:
   // the open scope is read first, the organisation second, the rest on a press.
@@ -355,7 +365,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, s }: {
             <Typography aria-hidden sx={{ fontSize: 'var(--t-small)', color: 'text.disabled' }}>›</Typography>
           </Box>
         )}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(index === 0 ? 0 : 40 - index, index === 0 ? '6ch' : '4ch') }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, fontSize: 'var(--t-body)', ...shrinking(index === 0 ? giveWay.organisation : giveWay.between, fewLetters) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>
             <Button
               size="small"
@@ -384,7 +394,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, s }: {
           color="inherit"
           onClick={() => go(currentPath)}
           data-testid="crumb-current"
-          sx={{ fontSize: 'var(--t-body)', fontWeight: 700, px: 0.5, py: 0, minHeight: 'var(--target-min)', textTransform: 'none', color: 'text.primary', ...shrinking(0.01, 'min(8ch, 100%)'), display: 'block' }}
+          sx={{ fontSize: 'var(--t-body)', fontWeight: 700, px: 0.5, py: 0, minHeight: 'var(--target-min)', textTransform: 'none', color: 'text.primary', ...shrinking(giveWay.open, 'min(8ch, 100%)'), display: 'block' }}
         >
           {current}
         </Button>
