@@ -5,7 +5,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { PreferenceRow, SettingsPage, SettingsSection, SettingSwitch } from './SettingsPage'
+import { PreferenceRow, SettingNotKept, SettingsPage, SettingsSection, SettingSwitch } from './SettingsPage'
 
 afterEach(() => cleanup())
 
@@ -33,5 +33,16 @@ describe('SettingsPage', () => {
     render(<SettingSwitch label="Grid" checked={false} onChange={onChange} />)
     fireEvent.click(screen.getByRole('switch', { name: 'Grid' }))
     expect(onChange).toHaveBeenCalledWith(true)
+  })
+
+  it('says a setting was not kept as an alert, with a way to try again and a way to put it back', () => {
+    const onTryAgain = vi.fn()
+    const onPutBack = vi.fn()
+    render(<SettingNotKept said="Not saved." tryAgain="Try again" putBack="Put back" onTryAgain={onTryAgain} onPutBack={onPutBack} />)
+    expect(screen.getByRole('alert').textContent).toContain('Not saved.')
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Put back' }))
+    expect(onTryAgain).toHaveBeenCalledOnce()
+    expect(onPutBack).toHaveBeenCalledOnce()
   })
 })

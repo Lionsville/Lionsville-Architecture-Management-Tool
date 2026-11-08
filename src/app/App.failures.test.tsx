@@ -97,4 +97,62 @@ describe('a scope whose record will not save', () => {
 
     await waitFor(() => expect(diagnostics.messages()).toContain('group.saveFailed'))
   })
+
+  /** The settings page over the warehouse, its writes refused while `refusing.now` says so. */
+  async function settingsRefusing(refusing: { now: boolean }) {
+    const held = heldRepositories([project('warehouse', 'Warehouse')])
+    const projects = answering(held, {
+      apply: (work) => (refusing.now ? Promise.reject(new Error('EACCES')) : held.scopes.apply(work)),
+    })
+    const shown = renderApp({ repositories: projects })
+    fireEvent.click(await screen.findByTestId('fold-acme'))
+    fireEvent.click(await screen.findByRole('button', { name: 'More for Warehouse' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Settings…' }))
+    const name = await screen.findByTestId('settings-name')
+    fireEvent.change(name, { target: { value: 'Warehouse renamed' } })
+    fireEvent.blur(name)
+    await screen.findByTestId('setting-not-kept')
+    return { ...shown, held, name: name as HTMLInputElement }
+  }
+
+  const word = () => screen.getByTestId('saved-indicator')
+
+  it('says Not saved on the frame and at the field, which keeps what was typed and says it is not kept', async () => {
+    await settingsRefusing({ now: true })
+    await waitFor(() => expect(word().getAttribute('data-tone')).toBe('problem'))
+    expect(word().textContent).toContain('Not saved')
+    expect(screen.getByTestId('setting-not-kept')).toBeDefined()
+    expect(screen.getByText('Not saved: this was not written where your work is kept.')).toBeDefined()
+  })
+
+  it('lands on Try again once the store takes it, and the word is calm again', async () => {
+    const refusing = { now: true }
+    const { held } = await settingsRefusing(refusing)
+    refusing.now = false
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await waitFor(() => expect(screen.queryByTestId('setting-not-kept')).toBeNull())
+    await waitFor(() => expect(word().getAttribute('data-tone')).not.toBe('problem'))
+    expect((await held.read('acme/warehouse'))?.model.name).toBe('Warehouse renamed')
+  })
+
+  it('puts the name back as it is kept, and the word is calm again with nothing unkept on screen', async () => {
+    const { held, name } = await settingsRefusing({ now: true })
+    fireEvent.click(screen.getByRole('button', { name: 'Put back' }))
+    await waitFor(() => expect(name.value).toBe('Warehouse'))
+    expect(screen.queryByTestId('setting-not-kept')).toBeNull()
+    await waitFor(() => expect(word().getAttribute('data-tone')).not.toBe('problem'))
+    expect((await held.read('acme/warehouse'))?.model.name).toBe('Warehouse')
+  })
+
+  it('offers the refused write again from Your work, where the field is no longer on screen', async () => {
+    const refusing = { now: true }
+    const { held } = await settingsRefusing(refusing)
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: 'Escape' })
+    fireEvent.click(word())
+    expect((await screen.findByTestId('work-not-kept')).textContent).toContain('not saved')
+    refusing.now = false
+    fireEvent.click(screen.getByTestId('work-retry'))
+    await waitFor(() => expect(screen.queryByTestId('work-not-kept')).toBeNull())
+    expect((await held.read('acme/warehouse'))?.model.name).toBe('Warehouse renamed')
+  })
 })

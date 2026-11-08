@@ -26,6 +26,15 @@ describe('the status word', () => {
     expect(word({ status: 'clean', saveFailed: true, savedAt: new Date(), connected: false })).toEqual({ text: s('shell.saveRefused'), alarm: true, tone: 'problem' })
   })
 
+  it('says a write refused outside the open scope ahead of everything, an editor and the source included, and nothing calm while it stands', () => {
+    const refused = { text: s('shell.saveRefused'), alarm: true, tone: 'problem' }
+    expect(word({ refused: true })).toEqual(refused)
+    expect(word({ refused: true, status: 'clean', savedAt: new Date() })).toEqual(refused)
+    expect(word({ refused: true, own: { state: 'saved', savedAt: new Date() } })).toEqual(refused)
+    expect(word({ refused: true, source: { text: 'All changes sent', tone: 'saved' } })).toEqual(refused)
+    expect(statusHead(word({ refused: true }).text).head).toBe('Not saved')
+  })
+
   it('keeps what a person has to act on ahead of being offline', () => {
     expect(word({ status: 'conflict', connected: false }).text).toBe(s('shell.conflict'))
     expect(word({ status: 'external-changed' }).alarm).toBe(true)

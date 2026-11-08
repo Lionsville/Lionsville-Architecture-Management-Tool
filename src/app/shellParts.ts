@@ -28,6 +28,7 @@ import type { CarriedOut } from '../ports/Interchange'
 import type { AdoptScopes } from './workingFileFlows'
 import type { FrameStore } from './frame/frameStore'
 import type { SessionFolds } from './sessionFolds'
+import type { WriteRefusals } from './writeRefusals'
 
 /**
  * The shell's state, as the hooks that hold it hand it out: one object per
@@ -63,6 +64,8 @@ export interface ShellParts {
   /** The observation filters this person saved, offered in every scope (ADR-0032 §8). */
   savedFilters: SavedFilters
   /** The one password dialog and the one *where does it land* dialog, lent to both file flows (ADR-0023, ADR-0025). */
+  /** Every write outside the open session that did not land, for the status word (`writeRefusals`). */
+  refusals?: WriteRefusals
   /** When a copy of this place's work last reached the person. */
   copies: { last: string | undefined; note: () => void }
   prompts: { password: ReturnType<typeof usePasswordPrompt>; openInto: ReturnType<typeof useOpenIntoPrompt> }

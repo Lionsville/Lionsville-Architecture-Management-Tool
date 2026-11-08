@@ -11,6 +11,7 @@
  * back: each change is either remembered or a step that can be undone.
  */
 import type { ReactNode } from 'react'
+import { Button } from './Button'
 import './SettingsPage.css'
 
 export type SettingsSide<V extends string = string> = { value: V; label: string }
@@ -118,5 +119,29 @@ export function SettingSwitch({ label, checked, onChange, hint, disabled, boxFir
       </span>
       <input type="checkbox" role="switch" aria-label={label} className="kit-settings__switch" checked={checked} disabled={disabled} onChange={(event) => onChange(event.target.checked)} data-testid={testId} />
     </label>
+  )
+}
+
+/**
+ * A setting that did not land, said under the field that still shows it: the
+ * sentence, and the two ways out — made again, or put back as it is kept. So
+ * a value typed and refused never reads as a value kept.
+ */
+export function SettingNotKept({ said, tryAgain, putBack, onTryAgain, onPutBack, busy = false }: {
+  said: string
+  tryAgain: string
+  putBack: string
+  onTryAgain: () => void
+  onPutBack: () => void
+  busy?: boolean
+}) {
+  return (
+    <div className="kit-settings__notkept" role="alert" data-testid="setting-not-kept">
+      <p className="kit-settings__notkept-said">{said}</p>
+      <div className="kit-settings__notkept-acts">
+        <Button size="small" variant="primary" disabled={busy} onClick={onTryAgain}>{tryAgain}</Button>
+        <Button size="small" variant="plain" disabled={busy} onClick={onPutBack}>{putBack}</Button>
+      </div>
+    </div>
   )
 }

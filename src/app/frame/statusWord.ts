@@ -38,6 +38,12 @@ export type StatusFacts = {
   readonly source?: SourceWord | undefined
   /** An editor's work, which the model does not hold yet: what is true of the screen while it is up. */
   readonly own?: OwnWork | undefined
+  /**
+   * A write made outside the open session that did not land and has been
+   * neither made again nor put back (`app/writeRefusals`): ahead of
+   * everything, because every other word here would call that work safe.
+   */
+  readonly refused?: boolean | undefined
 }
 
 const WORDS: Partial<Record<DocumentStatus, StringKey>> = {
@@ -82,6 +88,11 @@ function savedWord(savedAt: Date, { place, placeAsStarted }: StatusFacts, langua
 }
 
 export function statusWord(facts: StatusFacts, language: Language, s: Translate): StatusWord {
+  return facts.refused ? said(s('shell.saveRefused'), 'problem') : keptWord(facts, language, s)
+}
+
+/** The word where nothing written outside the open session is waiting to be tried again. */
+function keptWord(facts: StatusFacts, language: Language, s: Translate): StatusWord {
   const { status, saveFailed, savedAt, publishesSteps, sourceStatus, connected, place, transient, source, own } = facts
   if (own) return ownWord(own, language, s)
   if (source) return { text: source.text, tone: source.tone, alarm: source.tone === 'problem' || source.tone === 'waiting', ...(source.short === undefined ? {} : { short: source.short }) }

@@ -61,7 +61,7 @@ import { FrameCommandsContext, useFrameState } from './frameStore'
 import type { FrameState, PaletteLine, ScreenFacts } from './frameStore'
 import { FOUND_PLACES, MORE_PLACES, ORGANISATION_PLACES, placeShows, SCOPE_PLACES } from './places'
 import type { FramePlace } from './places'
-import { ActivityPanel, statusOf, YourWorkPanel } from './FramePanels'
+import { ActivityPanel, statusOf, useWriteRefusals, YourWorkPanel } from './FramePanels'
 import { ScopeTreePanel } from './ScopeTreePanel'
 import { recentFrom, recentOf, RECENT_KEY, remembered } from './recentPlaces'
 import { sourceKey } from '../../platform/workingSource'
@@ -654,7 +654,8 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   const chip = frameChip(parts)
   const scopeOpen = facts?.kind === 'workspace'
   const { prefs } = parts.services
-  const word = statusOf(parts, facts, prefs.language, s, state.work)
+  const refused = useWriteRefusals(parts).length > 0
+  const word = statusOf(parts, facts, prefs.language, s, state.work, refused)
   const calm = useStatusCalm(word.tone)
   // The order is the word's: a word that turns calm or not starts the row over, as a language does.
   const order = rowOneFolds(calm)

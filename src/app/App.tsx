@@ -92,6 +92,8 @@ import { FIRST_RUN_HELP } from '../platform/helpPlaces'
 import { useShareLink } from './useShareLink'
 import { useGuardedNavigation, useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices } from './useShellServices'
+import { watchRepositories, writeRefusals, WriteRefusalsContext } from './writeRefusals'
+import type { WriteRefusals } from './writeRefusals'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
 import { SessionFolds } from './sessionFolds'
@@ -482,8 +484,11 @@ function readingOf(page: InitialPage | undefined): { tab?: string; tabOf?: Page 
   return page && isViewPageName(page.page) && 'tab' in page && page.tab !== undefined ? { tab: page.tab, tabOf: page.page as Page } : {}
 }
 
-export function App(props: AppProps) {
-  const parts = useShellParts(props)
+export function App(given: AppProps) {
+  const { props, refusals, landed } = useWatchedWrites(given)
+  const parts = useShellParts(props, refusals)
+  // A refused write that lands when tried again is read back as any write is: the tree, its index, the people.
+  landed.current = () => { parts.writes.treeChanged(); parts.people.refresh() }
   const { prefs, s, toasts } = parts.services
   // Every page under the shell reads a person through the one register (ADR-0036 §8).
   const names = useMemo(() => personNames(parts.people, s), [parts.people, s])
@@ -509,6 +514,7 @@ export function App(props: AppProps) {
       {/* The open source's provider's action on a problem, for every boundary
           below: nothing where it offers none. */}
       <ProblemOfferContext.Provider value={parts.services.problem}>
+      <WriteRefusalsContext.Provider value={refusals}>
       <PersonNamesProvider names={names}>
       {/* What each list of findings has unfolded, and its notes shown, for as long as the window is open. */}
       <SessionMemoryContext.Provider value={parts.folds}>
@@ -554,6 +560,7 @@ export function App(props: AppProps) {
       </SeamWidthsProvider>
       </SessionMemoryContext.Provider>
       </PersonNamesProvider>
+      </WriteRefusalsContext.Provider>
       </ProblemOfferContext.Provider>
       </LanguageProvider>
     </ThemeProvider>
@@ -568,7 +575,20 @@ export function App(props: AppProps) {
  * that read a scope, change it and put it back whole are this function's own
  * and stay here, where the store is.
  */
-function useShellParts(props: AppProps): ShellParts {
+/**
+ * The app's repositories with every write watched (`writeRefusals`): what
+ * every screen below writes through, so a refusal anywhere reaches the one
+ * word that says whether work is safe.
+ */
+function useWatchedWrites(given: AppProps) {
+  const landed = useRef<() => void>(() => {})
+  const [refusals] = useState(() => writeRefusals(() => landed.current()))
+  const repositories = useMemo(() => watchRepositories(given.repositories, refusals), [given.repositories, refusals])
+  const props = useMemo(() => ({ ...given, repositories }), [given, repositories])
+  return { props, refusals, landed }
+}
+
+function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
   const { agent, diagnostics, repositories } = props
   const base = useShellBase(props)
   const { source, host, services, nav, tree, agentServer, commands, organisation, refreshTree, writable } = base
@@ -724,7 +744,7 @@ function useShellParts(props: AppProps): ShellParts {
     frame: base.frame, writable,
     services, nav, tree, organisation, findings, home, ancestry, agentServer, agent: shellAgent, machine,
     commands, provider, order, savedFilters, prompts, todayDay, share: base.share, people, folds,
-    copies: base.copies,
+    copies: base.copies, ...(refusals ? { refusals } : {}),
     writes: { readTreeModels, carryOut, adoptScopes, readScope: readScopeAt, treeChanged },
   }
 }

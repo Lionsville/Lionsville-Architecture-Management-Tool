@@ -6,6 +6,7 @@
  * when, what the bar says about that, and the session handed to whoever
  * answers for the source.
  */
+import { unwatched } from './writeRefusals'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ShellError } from '../platform/errors'
 import { imageEntryOf } from '../model/imageEntry'
@@ -134,10 +135,13 @@ export function useScopeSessionSeam(
  * time it is written.
  */
 export function useScopeWriter(
-  scopes: ScopeReader & Pick<ScopeRepository, 'apply'>, images: Pick<ImageRepository, 'put'>, project: ScopeSnapshot,
+  watchedScopes: ScopeReader & Pick<ScopeRepository, 'apply'>, watchedImages: Pick<ImageRepository, 'put'>, project: ScopeSnapshot,
 ): ScopeWriter {
   const { id, path } = project
   return useMemo<ScopeWriter>(() => {
+    // The session says its own failures, and makes its own writes again: the watch is for everything else.
+    const scopes = unwatched(watchedScopes)
+    const images = unwatched(watchedImages)
     let known = id
     const identity = async (): Promise<string> => {
       known ??= nodeAt(await scopes.tree(), path)?.id
@@ -160,5 +164,5 @@ export function useScopeWriter(
         return { ...await imageEntryOf(name, bytes), contentAddress }
       },
     }
-  }, [scopes, images, id, path])
+  }, [watchedScopes, watchedImages, id, path])
 }

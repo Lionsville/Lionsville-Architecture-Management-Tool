@@ -21,7 +21,7 @@
  * The two sections of defaults are seeds, not settings that reach back: each says
  * what it falls back on, and what a change does not reach.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { Translate } from '../../i18n'
 import { AspectColumnsEditor, settleFreshAspectKeys } from '../../editor'
@@ -42,7 +42,7 @@ import { usePlaceTab } from '../../widgets/placeTab'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { Field, TextField, TextInput } from '../../widgets/kit/Field'
-import { focusSettingsField, PreferenceRow, SettingsField, SettingsPage, SettingsSection } from '../../widgets/kit/SettingsPage'
+import { focusSettingsField, PreferenceRow, SettingNotKept, SettingsField, SettingsPage, SettingsSection } from '../../widgets/kit/SettingsPage'
 import { MarkdownField } from '../../documentation/ui/MarkdownField'
 import { renderMarkdown } from '../../documentation/ui/renderMarkdown'
 import type { ScopeSettingsPatch } from '../App'
@@ -50,6 +50,8 @@ import { ScopeField } from './ScopeField'
 import { TypeField } from './TypeField'
 import { claimKey } from '../../widgets/kit/keys'
 import { focusLeaves } from '../../widgets/kit/Surface'
+import { WriteRefusalsContext } from '../writeRefusals'
+import type { SettingsApplied } from './useOrganisation'
 
 export const SETTINGS_TABS = ['general', 'links', 'exports', 'landscapes'] as const
 type SettingsTab = (typeof SETTINGS_TABS)[number]
@@ -68,7 +70,8 @@ export type ScopeSettingsPageProps = {
   /** What the scope above says, for what an empty field falls back on. */
   aboveClient?: string
   readOnly: boolean
-  onApply: (path: ScopePath, patch: ScopeSettingsPatch) => void
+  /** Answers whether it landed, where it can: a field whose change was refused says so and offers it again. */
+  onApply: (path: ScopePath, patch: ScopeSettingsPatch) => void | Promise<SettingsApplied>
   /** Removal, which asks. Absent at the root. */
   onDelete?: () => void
   /** Where a link to it is made and said. */
@@ -108,19 +111,22 @@ export function ScopeSettingsPage({
   useEffect(() => { steps.current = []; onUndoChange?.(undefined) }, [path, onUndoChange])
   // Closing the page keeps its steps: a rename read on the home is still a step its undo takes back.
 
-  const apply = useCallback((patch: Partial<ScopeSettingsPatch>, name: string, back: Partial<ScopeSettingsPatch>) => {
+  const apply = useCallback(async (patch: Partial<ScopeSettingsPatch>, name: string, back: Partial<ScopeSettingsPatch>): Promise<SettingsApplied> => {
     const whole = patchOf(target)
-    onApply(path, { ...whole, ...patch })
+    const answer = await Promise.resolve(onApply(path, { ...whole, ...patch })) ?? LANDED
+    // A change that did not land is no step: undo would take back what is not there.
+    if (!answer.ok) return answer
     const undo: SettingsUndo = {
       name,
       run: () => {
-        onApply(path, { ...patchOf(target), ...patch, ...back })
+        void onApply(path, { ...patchOf(target), ...patch, ...back })
         steps.current.pop()
         onUndoChange?.(steps.current.at(-1))
       },
     }
     steps.current.push(undo)
     onUndoChange?.(undo)
+    return answer
   }, [target, path, onApply, onUndoChange])
   const parent = parentScope(path) ?? ROOT_SCOPE
   const name = target.name.trim() || s('common.organisation')
@@ -145,7 +151,7 @@ export function ScopeSettingsPage({
             <SettingsField name="name">
             <CommittedText
               key={`name:${path}`} label={s('group.name')} hint={s('settings.nameHelp')} held={target.name} readOnly={readOnly} required data-testid="settings-name"
-              onCommit={(next) => apply({ name: next }, s('settings.undoName'), { name: target.name })}
+              onCommit={(next) => apply({ name: next }, s('settings.undoName'), { name: target.name })} s={s}
             />
             </SettingsField>
             {canMove && !readOnly && (
@@ -156,7 +162,7 @@ export function ScopeSettingsPage({
             <SettingsField name="type">
             <TypeField
               type={typeChoiceOf(target)} unitTypes={unitTypes} readOnly={readOnly} s={s}
-              onChange={(type) => apply({ type }, s('settings.undoType'), { type: typeChoiceOf(target) })}
+              onChange={(type) => { void apply({ type }, s('settings.undoType'), { type: typeChoiceOf(target) }) }}
               // The organisation is served by no unit, so its help says nothing of Served by.
               {...(topicNext(typeChoiceOf(target)) ? { help: s('org.kindTopicMoves') } : !canMove && unitTypes.length > 0 ? { help: s('org.typeHelpUnserved') } : {})}
             />
@@ -164,7 +170,7 @@ export function ScopeSettingsPage({
             {servedBy}
             <SettingsField name="description">
             <CommittedDescription
-              key={`description:${path}`} held={target.description ?? ''} readOnly={readOnly} placeholder={s('group.descriptionPlaceholder')}
+              key={`description:${path}`} held={target.description ?? ''} readOnly={readOnly} placeholder={s('group.descriptionPlaceholder')} s={s}
               onCommit={(description) => apply({ description }, s('settings.undoDescription'), { description: target.description ?? '' })}
             />
             </SettingsField>
@@ -195,7 +201,7 @@ export function ScopeSettingsPage({
         open={asked !== undefined} title={s('settings.moveTitle', { name })} onClose={() => setAsked(undefined)}
         actions={{
           cancel: { onClick: () => setAsked(undefined), label: s('common.cancel') },
-          outcome: { 'data-testid': 'settings-move', onClick: () => { if (asked !== undefined) onApply(path, { ...patchOf(target), parent: asked }); setAsked(undefined) }, label: s('settings.moveConfirm') },
+          outcome: { 'data-testid': 'settings-move', onClick: () => { if (asked !== undefined) void onApply(path, { ...patchOf(target), parent: asked }); setAsked(undefined) }, label: s('settings.moveConfirm') },
         }}
       >
         <p>{s('settings.moveBody', { name, below: flattenScopes(target).length - 1 })}</p>
@@ -222,7 +228,7 @@ function useLandOnField(field: { readonly name: string; readonly nonce: number }
   return general
 }
 
-type Apply = (patch: Partial<ScopeSettingsPatch>, name: string, back: Partial<ScopeSettingsPatch>) => void
+type Apply = (patch: Partial<ScopeSettingsPatch>, name: string, back: Partial<ScopeSettingsPatch>) => Promise<SettingsApplied>
 
 function ExportsSection({ target, model, above, readOnly, apply, s }: {
   target: ScopeSummary; model: ScopeSnapshot['model'] | undefined; above: string; readOnly: boolean; apply: Apply; s: Translate
@@ -232,12 +238,12 @@ function ExportsSection({ target, model, above, readOnly, apply, s }: {
       <CommittedText
         key={`client:${target.path}`} label={s('group.client')} held={target.client ?? ''} readOnly={readOnly} data-testid="settings-client"
         hint={s('settings.clientFallback', { name: above })}
-        onCommit={(client) => apply({ client }, s('settings.undoClient'), { client: target.client ?? '' })}
+        onCommit={(client) => apply({ client }, s('settings.undoClient'), { client: target.client ?? '' })} s={s}
       />
       <CommittedText
         key={`author:${target.path}:${model ? 'read' : 'waiting'}`} label={s('settings.defaultAuthor')} held={model?.defaultAuthor ?? ''} readOnly={readOnly || !model} data-testid="settings-author"
         hint={s('settings.authorFallback')}
-        onCommit={(defaultAuthor) => apply({ defaultAuthor }, s('settings.undoAuthor'), { defaultAuthor: model?.defaultAuthor ?? '' })}
+        onCommit={(defaultAuthor) => apply({ defaultAuthor }, s('settings.undoAuthor'), { defaultAuthor: model?.defaultAuthor ?? '' })} s={s}
       />
     </SettingsSection>
   )
@@ -251,7 +257,7 @@ function LandscapesSection({ path, model, readOnly, apply, s }: {
     <SettingsSection title={s('settings.landscapes')} note={s('settings.defaultColumns')}>
       {model && (
         <AspectsNow
-          key={`${path}:${JSON.stringify(held)}`} held={held} readOnly={readOnly}
+          key={`${path}:${JSON.stringify(held)}`} held={held} readOnly={readOnly} s={s}
           onCommit={(defaultAspectConfig) => apply({ defaultAspectConfig }, s('settings.undoAspects'), { defaultAspectConfig: [...held] })}
         />
       )}
@@ -259,56 +265,127 @@ function LandscapesSection({ path, model, readOnly, apply, s }: {
   )
 }
 
-/** A text box that lands as it is left, or on Enter, and goes back to what is held on Esc. */
-function CommittedText({ label, hint, held, onCommit, readOnly, required, 'data-testid': testId }: {
-  label: string; hint?: string; held: string; onCommit: (next: string) => void; readOnly?: boolean; required?: boolean; 'data-testid'?: string
-}) {
-  const [typed, setTyped] = useState(held)
-  // What is held moved underneath, by an undo or another hand: the field follows.
-  useEffect(() => setTyped(held), [held])
-  const commit = () => {
-    const next = typed.trim()
-    if (next === held.trim()) return
-    if (required && next.length === 0) { setTyped(held); return }
-    onCommit(next)
+const LANDED: SettingsApplied = { ok: true }
+
+/** How a field's change lands: the change. Answers whether it did, where it can. */
+type Land<T> = (next: T) => void | Promise<SettingsApplied>
+
+/**
+ * A field's change, and what became of it. Refused, the field keeps what was
+ * typed and says it is not kept, with the change offered again or put back;
+ * either way out lets go of that refusal on the frame (`writeRefusals`), so the
+ * status word is calm again exactly when nothing on screen is unkept.
+ */
+function useLanding<T>(land: Land<T>) {
+  const refusals = useContext(WriteRefusalsContext)
+  const [refused, setRefused] = useState<{ value: T; refusal?: number } | undefined>(undefined)
+  const [busy, setBusy] = useState(false)
+  const standing = useRef(refused)
+  standing.current = refused
+  const letGo = () => {
+    const id = standing.current?.refusal
+    if (id !== undefined) refusals?.forget(id)
   }
+  const commit = async (next: T) => {
+    setBusy(true)
+    const answer = await Promise.resolve(land(next)) ?? LANDED
+    setBusy(false)
+    // A refusal made again is the one that stands now: the one before it goes either way.
+    letGo()
+    setRefused(answer.ok ? undefined : { value: next, ...(answer.refusal !== undefined ? { refusal: answer.refusal } : {}) })
+  }
+  const putBack = () => { letGo(); setRefused(undefined) }
+  return {
+    refused: refused !== undefined, busy,
+    commit: (next: T) => { void commit(next) },
+    retry: () => { if (standing.current) void commit(standing.current.value) },
+    putBack,
+  }
+}
+
+/** A field's landing as what draws it reads it. */
+type Landing = { readonly refused: boolean; readonly busy: boolean; readonly retry: () => void; readonly putBack: () => void }
+
+/** What a refused field says under itself, and its two ways out. */
+function NotKeptUnder({ landing, onPutBack, s }: { landing: Landing; onPutBack: () => void; s: Translate }) {
+  if (!landing.refused) return null
   return (
-    <TextField
-      label={label} {...(hint ? { hint } : {})} value={typed} onChange={setTyped} readOnly={readOnly} data-testid={testId} onBlur={commit}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') { event.preventDefault(); commit() }
-        // A field with something to put back claims the key; one with nothing lets it close the page.
-        if (event.key === 'Escape' && typed !== held) { claimKey(event); setTyped(held) }
-      }}
+    <SettingNotKept
+      said={s('settings.notKept')} tryAgain={s('common.tryAgain')} putBack={s('work.putBack')} busy={landing.busy}
+      onTryAgain={landing.retry} onPutBack={() => { landing.putBack(); onPutBack() }}
     />
   )
 }
 
-/** The description, in the shared editor: it lands as the person leaves the field. */
-function CommittedDescription({ held, onCommit, readOnly, placeholder }: { held: string; onCommit: (next: string) => void; readOnly: boolean; placeholder: string }) {
+/** A text box that lands as it is left, or on Enter, and goes back to what is held on Esc. */
+function CommittedText({ label, hint, held, onCommit, readOnly, required, s, 'data-testid': testId }: {
+  label: string; hint?: string; held: string; onCommit: Land<string>; readOnly?: boolean; required?: boolean; s: Translate; 'data-testid'?: string
+}) {
   const [typed, setTyped] = useState(held)
+  const landing = useLanding(onCommit)
+  // What is held moved underneath, by an undo or another hand: the field follows.
+  useEffect(() => setTyped(held), [held])
+  const commit = () => {
+    const next = typed.trim()
+    if (next === held.trim()) { if (landing.refused) landing.putBack(); return }
+    if (required && next.length === 0) { setTyped(held); return }
+    landing.commit(next)
+  }
+  return (
+    <>
+      <TextField
+        label={label} {...(hint ? { hint } : {})} value={typed} onChange={setTyped} readOnly={readOnly} data-testid={testId} onBlur={commit}
+        {...(landing.refused ? { error: s('settings.notKept') } : {})}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') { event.preventDefault(); commit() }
+          // A field with something to put back claims the key; one with nothing lets it close the page.
+          if (event.key === 'Escape' && typed !== held) { claimKey(event); setTyped(held); landing.putBack() }
+        }}
+      />
+      {landing.refused && <NotKeptActs landing={landing} onPutBack={() => setTyped(held)} s={s} />}
+    </>
+  )
+}
+
+/** Under a field that already says it is not kept: the two ways out, without saying it twice. */
+function NotKeptActs({ landing, onPutBack, s }: { landing: Landing; onPutBack: () => void; s: Translate }) {
+  return (
+    <div className="kit-settings__notkept-acts" data-testid="setting-not-kept">
+      <Button size="small" variant="primary" disabled={landing.busy} onClick={landing.retry}>{s('common.tryAgain')}</Button>
+      <Button size="small" variant="plain" disabled={landing.busy} onClick={() => { landing.putBack(); onPutBack() }}>{s('work.putBack')}</Button>
+    </div>
+  )
+}
+
+/** The description, in the shared editor: it lands as the person leaves the field. */
+function CommittedDescription({ held, onCommit, readOnly, placeholder, s }: { held: string; onCommit: Land<string>; readOnly: boolean; placeholder: string; s: Translate }) {
+  const [typed, setTyped] = useState(held)
+  const landing = useLanding(onCommit)
   useEffect(() => setTyped(held), [held])
   return (
-    <div onBlur={(event) => { if (focusLeaves(event) && typed.trim() !== held.trim()) onCommit(typed.trim()) }}>
+    <div onBlur={(event) => { if (focusLeaves(event) && typed.trim() !== held.trim()) landing.commit(typed.trim()) }}>
       <MarkdownField value={typed} onChange={setTyped} disabled={readOnly} renderMarkdown={renderMarkdown} placeholder={placeholder} />
+      <NotKeptUnder landing={landing} onPutBack={() => setTyped(held)} s={s} />
     </div>
   )
 }
 
 /** The aspects, landing as a whole row's change settles, with their fresh keys read from what was typed. */
-function AspectsNow({ held, onCommit, readOnly }: { held: readonly AspectConfigEntry[]; onCommit: (next: AspectConfigEntry[]) => void; readOnly: boolean }) {
+function AspectsNow({ held, onCommit, readOnly, s }: { held: readonly AspectConfigEntry[]; onCommit: Land<AspectConfigEntry[]>; readOnly: boolean; s: Translate }) {
   const [columns, setColumns] = useState<AspectConfigEntry[]>([...held])
   const [fresh, setFresh] = useState<string[]>([])
+  const landing = useLanding(onCommit)
   const latest = useRef({ columns, fresh })
   latest.current = { columns, fresh }
   const commit = () => {
     const next = settleFreshAspectKeys(latest.current.columns, latest.current.fresh).filter((column) => column.label.trim().length > 0)
-    if (JSON.stringify(next) !== JSON.stringify(held)) onCommit(next)
+    if (JSON.stringify(next) !== JSON.stringify(held)) landing.commit(next)
   }
   if (readOnly) return <ul>{held.map((column) => <li key={column.key}>{column.label}</li>)}</ul>
   return (
     <div onBlur={(event) => { if (focusLeaves(event)) commit() }}>
       <AspectColumnsEditor columns={columns} fresh={fresh} onChange={(next, nextFresh) => { setColumns(next); setFresh(nextFresh); latest.current = { columns: next, fresh: nextFresh } }} />
+      <NotKeptUnder landing={landing} onPutBack={() => { setColumns([...held]); setFresh([]) }} s={s} />
     </div>
   )
 }
@@ -319,12 +396,13 @@ function AspectsNow({ held, onCommit, readOnly }: { held: readonly AspectConfigE
  * somebody halfway through typing an address has not made a mistake yet. What
  * cannot be rendered is dropped as it lands, by `normaliseLinks`.
  */
-function LinksField({ links, onCommit, readOnly, s }: { links: readonly RecordLink[]; onCommit: (links: RecordLink[]) => void; readOnly: boolean; s: Translate }) {
+function LinksField({ links, onCommit, readOnly, s }: { links: readonly RecordLink[]; onCommit: Land<RecordLink[]>; readOnly: boolean; s: Translate }) {
   const [rows, setRows] = useState<RecordLink[]>(links.map((link) => ({ ...link })))
+  const landing = useLanding(onCommit)
   const rowsNow = useRef(rows)
   rowsNow.current = rows
   const commit = (next: RecordLink[] = rowsNow.current) => {
-    if (JSON.stringify(next) !== JSON.stringify(links)) onCommit(next)
+    if (JSON.stringify(next) !== JSON.stringify(links)) landing.commit(next)
   }
   const edit = (index: number, patch: Partial<RecordLink>) => setRows(rows.map((link, at) => (at === index ? { ...link, ...patch } : link)))
   const leftRow = (event: { currentTarget: HTMLElement; relatedTarget: EventTarget | null }) => {
@@ -353,6 +431,7 @@ function LinksField({ links, onCommit, readOnly, s }: { links: readonly RecordLi
           </div>
         )
       })}
+      <NotKeptUnder landing={landing} onPutBack={() => setRows(links.map((link) => ({ ...link })))} s={s} />
       {!readOnly && <div><Button size="small" onClick={() => setRows([...rows, { label: '', url: '' }])}>{s('group.addLink')}</Button></div>}
     </div>
   )

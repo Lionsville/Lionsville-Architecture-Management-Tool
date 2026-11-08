@@ -12,7 +12,7 @@
  * with what can lose it, because a person expects *Save* to be what protects them
  * and it does nothing a moment later would not have done.
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { LOCALE } from '../../i18n'
 import type { Language, StringKey, Translate } from '../../i18n'
 import { helpAt } from '../helpAt'
@@ -31,12 +31,13 @@ import { statusWord } from './statusWord'
 import { useFrameState } from './frameStore'
 import type { OwnWork, ScreenFacts } from './frameStore'
 import { PANEL_HELP } from '../../platform/helpPlaces'
+import type { WriteRefusal } from '../writeRefusals'
 
 /** The place each window's word first said, kept by its frame: a save there needs no more than its time. */
 const firstPlace = new WeakMap<object, string>()
 
 /** The word on row one: the work's state and, where the source has a word for it, its place. */
-export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, language: Language, s: Translate, own?: OwnWork) {
+export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, language: Language, s: Translate, own?: OwnWork, refused?: boolean) {
   const { props, provider, source } = parts
   // A source of the provider's own says its own place, on its own chip: the word is for the three that have none.
   const named = provider.chip === undefined && !provider.ChipPanel && !provider.ChipFace && !facts?.publishesSteps
@@ -44,9 +45,46 @@ export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, lang
   if (place !== undefined && !firstPlace.has(parts.frame)) firstPlace.set(parts.frame, place)
   return statusWord({
     status: facts?.status, saveFailed: facts?.saveFailed, savedAt: facts?.savedAt, publishesSteps: facts?.publishesSteps,
-    sourceStatus: facts?.sourceStatus, connected: props.provider?.connected?.(), source: props.provider?.frame?.word?.(), own,
+    sourceStatus: facts?.sourceStatus, connected: props.provider?.connected?.(), source: props.provider?.frame?.word?.(), own, refused,
     ...(place !== undefined ? { place, placeAsStarted: firstPlace.get(parts.frame) === place, transient: source.transient, visiting: props.visiting !== undefined } : {}),
   }, language, s)
+}
+
+const NONE: readonly WriteRefusal[] = []
+const NEVER = () => () => {}
+
+/** The writes outside the open session that did not land, drawn again as the list moves. */
+export function useWriteRefusals(parts: ShellParts): readonly WriteRefusal[] {
+  const refusals = parts.refusals
+  return useSyncExternalStore(refusals?.subscribe ?? NEVER, refusals?.list ?? (() => NONE))
+}
+
+/**
+ * What did not land, and the two ways out of it: made again, as it was made,
+ * or put back, which lets the change go and leaves what is kept as it is.
+ * A field that still shows what was typed says so beside it as well
+ * (`ScopeSettingsPage`); here is where the rest are answered.
+ */
+function NotKept({ parts, refused }: { parts: ShellParts; refused: readonly WriteRefusal[] }) {
+  const { services: { s } } = parts
+  const [trying, setTrying] = useState(false)
+  if (refused.length === 0 || !parts.refusals) return null
+  const { retry, forget } = parts.refusals
+  const why = refused.find((one) => one.key !== undefined)?.key
+  return (
+    <PanelSection title={s('work.couldNotSave')}>
+      <p className="kit-work__say" data-testid="work-not-kept">{s('work.notKept')}{why ? ` ${s(why)}` : ''}</p>
+      <div className="kit-work__acts">
+        <Button
+          size="small" variant="primary" disabled={trying} data-testid="work-retry"
+          onClick={() => { setTrying(true); void retry().finally(() => setTrying(false)) }}
+        >
+          {s('common.tryAgain')}
+        </Button>
+        <Button size="small" variant="plain" onClick={() => forget()} data-testid="work-put-back">{s('work.putBack')}</Button>
+      </div>
+    </PanelSection>
+  )
 }
 
 function day(iso: Date | string, language: Language, s: Translate): string {
@@ -168,18 +206,20 @@ function WorkActs({ parts, facts, history }: { parts: ShellParts; facts: ScreenF
 
 export function YourWorkPanel({ parts, facts }: { parts: ShellParts; facts: ScreenFacts | undefined }) {
   const own = useFrameState(parts.frame).work
+  const refused = useWriteRefusals(parts)
   const { services: { s, prefs }, agent, props, provider } = parts
   const history = facts?.kind === 'workspace' ? props.repositories.history !== undefined : parts.home.history.available
   const Own = provider.YourWork
   const where = props.provider?.sayings?.whereKey ?? props.provider?.description
   return (
     <Panel helpAt={PANEL_HELP.work}
-      kind={s('frame.yourWork')} name={statusOf(parts, facts, prefs.language, s, own).text || s('frame.yourWork')} dataGuide="frame.yourWork"
+      kind={s('frame.yourWork')} name={statusOf(parts, facts, prefs.language, s, own, refused.length > 0).text || s('frame.yourWork')} dataGuide="frame.yourWork"
       facts={where !== undefined ? s(where as StringKey) : undefined} onClose={() => agent.setPanel(undefined)} help={s('frame.appliesToAll')}
       helpLink={{ label: s('work.manual'), onPress: () => props.hostControls.openHelp(helpAt(prefs, PANEL_HELP.whereKept)) }}
     >
       {/* What this host says of its own comes first: it is what a person opened this to read. */}
       {Own && <Own {...workProps(parts)} />}
+      <NotKept parts={parts} refused={refused} />
       <WorkFacts parts={parts} facts={facts} history={history} />
       <WorkActs parts={parts} facts={facts} history={history} />
     </Panel>

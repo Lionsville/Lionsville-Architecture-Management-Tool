@@ -26,6 +26,7 @@
  * What it does not own: the toasts, the trail and the theme, which outlive one
  * screen and arrive as the narrowest callbacks that will do.
  */
+import { refusalOf } from '../../projects/refusalTag'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { StringKey, Translate } from '../../i18n'
 import { bareScope, flattenScopes, NOT_LISTED } from '../../projects/scope'
@@ -52,6 +53,9 @@ import { isTopic, TOPICS_PLACE, topicFiledUnder } from '../../projects/topics'
 import { typeChosen } from '../../projects/scopeType'
 
 /** Which dialog is up. One at a time, because they all ask about one scope. */
+/** Whether a scope's settings landed; where not, the refused write it was, where the watch counted one (`writeRefusals`). */
+export type SettingsApplied = { readonly ok: true } | { readonly ok: false; readonly refusal?: number }
+
 export type OrganisationDialog =
   | { kind: 'none' }
   /**
@@ -170,7 +174,8 @@ export type Organisation = HomeViews & {
   addBoard: (path: ScopePath) => void
   setNewBoardName: (name: string) => void
   createBoard: () => void
-  applySettings: (path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed) => void
+  /** Answers whether it landed, and which refused write it was where it did not, for the field that made it to say so. */
+  applySettings: (path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed) => Promise<SettingsApplied>
   confirmDelete: () => void
   open: (path: ScopePath, page?: InitialPage) => void
   /**
@@ -424,8 +429,8 @@ export function useOrganisation({
    * and everything under it go to the new address together, identities and
    * all, and the stand-ins elsewhere that named it follow (`moveScope`).
    */
-  const applySettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed) => {
-    void (async () => {
+  const applySettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed): Promise<SettingsApplied> => {
+    return (async (): Promise<SettingsApplied> => {
       const listing = summaryOf(await scopes.tree())
       const to = filedTo(listing, path, patch)
       const moving = to !== (parentScope(path) ?? ROOT_SCOPE) && path !== ROOT_SCOPE
@@ -439,18 +444,21 @@ export function useOrganisation({
       } catch (cause) {
         // A refusal is the repository's answer, said in its words.
         onFailure('organisation.settings', cause, cause instanceof ShellError ? cause.key : 'group.saveFailed')
-        return
+        const refusal = refusalOf(cause)
+        return refusal === undefined ? { ok: false } : { ok: false, refusal }
       }
       refresh()
-      if (landed) { notify(landed.message, landed.severity); return }
+      if (landed) { notify(landed.message, landed.severity); return { ok: true } }
       // A field that landed says nothing: it is on screen, and undo takes it back.
-      if (!moving && (was === undefined || was === name)) return
+      if (!moving && (was === undefined || was === name)) return { ok: true }
       notify(moving ? s('settings.moved', { name }) : s('group.renamed', { name }), 'success')
-    })().catch((cause: unknown) => {
+      return { ok: true }
+    })().catch((cause: unknown): SettingsApplied => {
       // A backstop, not a handler: everything above is caught where it can be
-      // answered. A throw that reaches here happened in the synchronous tail,
-      // which no boundary can see from inside an async function.
+      // answered. A throw that reaches here happened before the write — the
+      // tree would not be read — so nothing landed.
       onFailure('organisation.settings', cause, 'group.saveFailed')
+      return { ok: false }
     })
   }, [scopes, repositories, refresh, notify, onFailure, s])
 
@@ -524,7 +532,7 @@ export function useOrganisation({
    */
   const nameOrganisation = useCallback((name: string, landed?: Landed) => {
     if (!name.trim()) return
-    applySettings(ROOT_SCOPE, { name: name.trim() }, landed)
+    void applySettings(ROOT_SCOPE, { name: name.trim() }, landed)
   }, [applySettings])
 
   return useMemo(() => ({

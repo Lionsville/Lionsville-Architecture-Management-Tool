@@ -26,6 +26,7 @@ import type { IndexedScope, IndexRead, OrganisationIndex } from '../ports/Organi
 import type { Created, Refused, ScopeNode, ScopeRepository, ScopeTree } from '../ports/ScopeRepository'
 import { dataUrl, readDataUrl } from './dataUrl'
 import { holdsWorkBeyondItsName } from './organisationWork'
+import { carryRefusal } from './refusalTag'
 import { addressesNameWithin, readdressRef, readdressScope } from './readdress'
 import { SCOPE_MOVED, scopeMoved } from './revision'
 import { resolveActive } from './scope'
@@ -168,7 +169,7 @@ export function refusedError(refused: ScopeRefusal): Error {
 
 /** The answer, or the refusal it was, thrown. */
 export function landed<T extends object>(answer: T | Refused): T {
-  if ('refused' in answer) throw refusedError(answer.refused)
+  if ('refused' in answer) throw carryRefusal(refusedError(answer.refused), answer)
   return answer
 }
 
@@ -203,7 +204,7 @@ export async function changeScope(
     if (!commands?.length) return held
     const answer = await scopes.apply([{ scope: held.id, steps: commands.map((command) => stepOf(command)), expects: held.revision }])
     if (!('refused' in answer)) return readScope(scopes, address)
-    if (answer.refused !== SCOPE_MOVED || tried >= CHANGE_TRIES) throw refusedError(answer.refused)
+    if (answer.refused !== SCOPE_MOVED || tried >= CHANGE_TRIES) throw carryRefusal(refusedError(answer.refused), answer)
   }
 }
 
@@ -244,7 +245,7 @@ export async function changeScopes(
       const after = await readScopes(scopes, wanted)
       return new Map(wanted.map((address, at) => [address, after[at] ?? held.get(address)!]))
     }
-    if (answer.refused !== SCOPE_MOVED || tried >= CHANGE_TRIES) throw refusedError(answer.refused)
+    if (answer.refused !== SCOPE_MOVED || tried >= CHANGE_TRIES) throw carryRefusal(refusedError(answer.refused), answer)
   }
 }
 
