@@ -352,8 +352,11 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, capped =
   // had the open scope's name cut at 900 px and 150 % while the status word and
   // Help stood whole. Once nothing is left to fold, the floor is the names up
   // to two fifths of the row, and the trail takes the shortfall: barely
-  // shrinking while the find field still can, since a shrink of 1 cut a name by
-  // a pixel, and so to an ellipsis, beside a long word. A trail shorter than
+  // shrinking while the find field and the status word's tail still can, since
+  // a shrink of 1 cut a name by a pixel, and so to an ellipsis, beside a long
+  // word. Barely is under a layout unit (1/64 px): at 0.001 its share was a
+  // fifth of a pixel, and the organisation's name lost its last letters to an
+  // ellipsis beside a find field with room to spare. A trail shorter than
   // its floor keeps no empty room after it; a browser without calc-size keeps
   // a floor of 13 rem there, and the room it leaves stands after the switcher,
   // as part of the row's spacing.
@@ -361,7 +364,7 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, after, capped =
     <Box
       data-testid="crumbs" data-guide="shell.crumbs"
       sx={{
-        display: 'flex', alignItems: 'center', gap: 0.25, flex: '0 0.001 auto', maxWidth: 'max-content',
+        display: 'flex', alignItems: 'center', gap: 0.25, flex: '0 1e-6 auto', maxWidth: 'max-content',
         ...(capped
           ? { minWidth: 'min(13rem, 40cqw)', '@supports (min-width: calc-size(max-content, size))': { minWidth: 'calc-size(max-content, min(size, 40cqw))' } }
           : { minWidth: 'max-content' }),

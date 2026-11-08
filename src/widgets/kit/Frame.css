@@ -166,8 +166,9 @@
 .kit-lines__row small { display: block; color: var(--ink-2); }
 
 /* Under 75 rem the word gives way to its icon and count before anything overlaps. In rem and on the frame, since a media query knows neither the text size nor what the frame was given. The find field gives way by its own width (above). */
+/* A word with no icon and count of its own is not capped here: it stands whole or folds whole to its mark, measured, rather than being cut at a width. */
 @container kit-frame (max-width: 75rem) {
-  .kit-frame__status { max-width: 8rem; }
+  .kit-frame__status:has(.kit-frame__status-short) { max-width: 8rem; }
   .kit-frame__status:has(.kit-frame__status-short) .kit-frame__status-word { display: none; }
   .kit-frame__status-short { display: inline; }
 }
