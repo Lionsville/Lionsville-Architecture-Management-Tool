@@ -12,9 +12,8 @@ import { useStrings } from '../../i18n/LanguageContext'
 import { plural } from '../../i18n/strings'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { GuidanceEmpty, GuidanceFrame } from '../../principles/ui/GuidanceFrame'
-import { Button } from '../../widgets/kit/Button'
-import { FilterWords } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
+import { ListPage } from '../../widgets/kit/ListPage'
 import { PageDialog } from '../../widgets/PageDialog'
 import { matchesQuery } from '../../model/textSearch'
 import { useTopics } from './TopicsContext'
@@ -56,20 +55,16 @@ export function TopicsPage({ open, select, nonce, onClose, windowChrome }: {
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={t('topics.title')}>
       <GuidanceFrame tab="topics">
         {rows.length === 0 ? <div className="guidance__body"><GuidanceEmpty tab="topics" {...(newOne ? { action: newOne } : {})} /></div> : (
-          <>
-            <div className="guidance__bar">
-              <FilterWords
-                find={find} onFind={setFind} findLabel={t('topics.search')} shown={{ count: shown.length, total: rows.length }}
-                actions={access.mayCreate() && <Button variant="primary" onClick={() => setMaking({})} data-testid="topics-new" data-guide="topics.new">{t('topics.new')}</Button>}
-              />
-            </div>
-            <div className="guidance__list" data-testid="topics-catalogue">
-              <List
-                label={t('topics.title')} groups={[{ id: '', label: '', rows: listRows }]} selectedId={current?.id ?? null} onOpen={setPicked}
-                empty={<p className="guidance__note" role="status">{t('topics.searchEmpty', { query: find })}</p>}
-              />
-            </div>
-          </>
+          <ListPage
+            filter={{ find, onFind: setFind, findLabel: t('topics.search'), shown: { count: shown.length, total: rows.length } }}
+            {...(newOne ? { create: { label: newOne.label, onPress: newOne.onPress, guide: 'topics.new', testId: 'topics-new' } } : {})}
+            listTestId="topics-catalogue"
+          >
+            <List
+              label={t('topics.title')} groups={[{ id: '', label: '', rows: listRows }]} selectedId={current?.id ?? null} onOpen={setPicked}
+              empty={<p className="guidance__note" role="status">{t('topics.searchEmpty', { query: find })}</p>}
+            />
+          </ListPage>
         )}
       </GuidanceFrame>
       {current && (

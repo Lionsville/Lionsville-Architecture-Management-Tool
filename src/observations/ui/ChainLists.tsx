@@ -56,12 +56,15 @@ export type StageData = {
   countOnly?: boolean
 }
 
-/** The columns somebody can turn on: everything the register's table had. */
-export const OBSERVATION_COLUMNS = ['number', 'date', 'where', 'impact', 'seen', 'recordedBy', 'causes'] as const
+/**
+ * The columns somebody can turn on: everything the register's table had but the
+ * number, which every stage's row says as its code, as a cause's and a solution's do.
+ */
+export const OBSERVATION_COLUMNS = ['date', 'where', 'impact', 'seen', 'recordedBy', 'causes'] as const
 
 export function observationColumns(s: Translate): ListColumn[] {
   const said = {
-    number: s('observation.colNumber'), date: s('observation.colDate'), where: s('observation.colWhere'), impact: s('observation.colImpact'),
+    date: s('observation.colDate'), where: s('observation.colWhere'), impact: s('observation.colImpact'),
     seen: s('observation.colSeen'), recordedBy: s('observation.colRecordedBy'), causes: s('observation.colCauses'),
   }
   return OBSERVATION_COLUMNS.map((id) => ({ id, label: said[id], width: id === 'where' || id === 'causes' ? 'minmax(120px, 1fr)' : 'minmax(84px, 120px)' }))
@@ -73,6 +76,7 @@ function observationRow(one: Observation, scope: string | undefined, d: StageDat
   const { s } = d
   const key = nodeKey(one.id, scope)
   if (d.countOnly) return { id: key, text: one.title }
+  const code = formatObservationNumber(one.number)
   const into = d.analysedInto(one.id, scope)
   const recorder = one.recordedBy ? recordedByText(one.recordedBy, d.names, s) : ''
   const tone = toneOf(one)
@@ -82,10 +86,9 @@ function observationRow(one: Observation, scope: string | undefined, d: StageDat
   // What kind it is, at a glance down the list; named in words where the row does not already say it.
   const rail = said === toneWord && toneWord ? { tone: RAIL[tone] } : { tone: RAIL[tone], label: s(TONE_WORD[tone]) }
   return {
-    id: key, text: one.title, testId: `observation-row-${key}`, rail,
+    id: key, code, text: one.title, testId: `observation-row-${key}`, rail,
     ...(mark ? { mark } : {}), ...(said ? { note: said } : {}),
     cells: {
-      number: <span className="chain-mono">{formatObservationNumber(one.number)}</span>,
       date: formatDay(one.date, d.language),
       where: one.where ?? '',
       impact: s(IMPACT_LABEL[one.impact]),

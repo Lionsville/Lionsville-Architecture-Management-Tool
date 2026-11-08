@@ -110,7 +110,8 @@ describe('the chain', () => {
     expect(within(groups).getByText('Waiting for a why · 1')).toBeDefined()
     expect(within(groups).getByText('Has a why · 1')).toBeDefined()
     expect(within(groups).getByText('Local to Intake · 1')).toBeDefined()
-    expect(screen.getByTestId('observation-row-o1').textContent).toBe('Nightly batch overruns')
+    // Its number is its code, as a cause's and a solution's are on their stages.
+    expect(screen.getByTestId('observation-row-o1').textContent).toBe('OB-0001Nightly batch overruns')
     expect(screen.getByTestId('observation-row-acme/claims/intake#in1').textContent).toContain('Two records')
     const order = [...groups.querySelectorAll('[data-key]')].map((one) => one.getAttribute('data-key'))
     expect(order).toEqual(['o2', 'o1', 'acme/claims/intake#in1'])

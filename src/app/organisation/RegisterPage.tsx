@@ -36,7 +36,6 @@ import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceListView, usePlaceTab } from '../../widgets/placeTab'
 import { Button } from '../../widgets/kit/Button'
-import { FilterWords } from '../../widgets/kit/FilterWords'
 import type { FilterChoice, FilterField } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
 import type { ListColumn, ListGroup } from '../../widgets/kit/List'
@@ -48,6 +47,8 @@ import { PageState } from '../../widgets/kit/PageState'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { askToEdit } from '../../widgets/kit/editOnArrival'
 import { RecordActions } from '../../widgets/kit/RecordActions'
+import { ListPage } from '../../widgets/kit/ListPage'
+import type { ListPageProps } from '../../widgets/kit/ListPage'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { Toast } from '../../widgets/kit/Toast'
 import type { ToastWords } from '../../widgets/kit/Toast'
@@ -209,7 +210,11 @@ const ITEM_LABEL = { applications: 'register.colName', services: 'register.colSe
 /** Under twelve rows there is nothing to narrow, so Filter and Group stay away; which columns show is still asked of View. */
 const FEW = 12
 
-function RegisterList<R extends Shown>({ tab, rows, how, columns, view, setView, words, s }: {
+/** What the register says over its list: a `ListPage`'s head. */
+type RegisterHead = Pick<ListPageProps, 'title' | 'about' | 'tabs' | 'testId' | 'headTestId'>
+
+function RegisterList<R extends Shown>({ head, tab, rows, how, columns, view, setView, words, s }: {
+  head: RegisterHead
   tab: RegisterTab; rows: readonly R[]; how: ListHow<R>; columns: readonly Drawn<R>[]; view: ListView; setView: (next: ListView) => void
   words: RegisterWords; s: Translate
 }) {
@@ -230,33 +235,34 @@ function RegisterList<R extends Shown>({ tab, rows, how, columns, view, setView,
   const named = tab === 'applications' ? 'register' : 'technologyRegister'
   const nearest = view.find && count === 0 ? didYouMean(view.find, rows.flatMap((row) => how.words(row))) : null
   return (
-    <>
-      <FilterWords
-        find={view.find} onFind={(find) => setView({ ...view, find })} findLabel={s('register.find')}
-        {...(few ? {} : {
+    <ListPage
+      {...head}
+      filter={{
+        find: view.find, onFind: (find) => setView({ ...view, find }), findLabel: s('register.find'),
+        ...(few ? {} : {
           fields: filterFields(tab, rows, words, s), filters: view.filters, onFilters: (filters: ListView['filters']) => setView({ ...view, filters }),
           groups: groupChoices(tab, s), group: view.group, onGroup: (group: string | null) => setView({ ...view, group }),
-        })}
-        columns={columns.map(({ id, label }) => ({ id, label }))} shownColumns={shownIds} onColumns={(next) => setView({ ...view, columns: next })}
-        density={density} onDensity={setDensity} onReset={() => setView(FRESH_VIEW)}
-        shown={{ count, total: rows.length }}
+        }),
+        columns: columns.map(({ id, label }) => ({ id, label })), shownColumns: shownIds, onColumns: (next) => setView({ ...view, columns: next }),
+        density, onDensity: setDensity, onReset: () => setView(FRESH_VIEW),
+        shown: { count, total: rows.length },
+      }}
+      listTestId={tab === 'applications' ? 'register-table' : 'technology-register-table'}
+    >
+      <List
+        label={s(ITEM_LABEL[tab])} groups={drawn} density={density} columns={shownColumns} itemLabel={s(ITEM_LABEL[tab])} itemSortable
+        sort={view.sort ?? { column: '', descending: false }} onSort={(sort) => setView({ ...view, sort: sort.column === '' && !sort.descending ? null : sort })}
+        selectedId={view.select} onOpen={(id) => setView({ ...view, select: id })}
+        rowGuide={`${named}.row`}
+        empty={(
+          <p className="org-page__nomatch" role="status">
+            {s('register.noMatchAll', { query: view.find.trim() })}{' '}
+            {nearest && <Button variant="quiet" onClick={() => setView({ ...view, find: nearest })}>{s('register.didYouMean', { word: nearest })}</Button>}
+            <Button variant="quiet" onClick={() => setView({ ...view, find: '', filters: {} })}>{s('register.clearFind')}</Button>
+          </p>
+        )}
       />
-      <div data-testid={tab === 'applications' ? 'register-table' : 'technology-register-table'}>
-        <List
-          label={s(ITEM_LABEL[tab])} groups={drawn} density={density} columns={shownColumns} itemLabel={s(ITEM_LABEL[tab])} itemSortable
-          sort={view.sort ?? { column: '', descending: false }} onSort={(sort) => setView({ ...view, sort: sort.column === '' && !sort.descending ? null : sort })}
-          selectedId={view.select} onOpen={(id) => setView({ ...view, select: id })}
-          rowGuide={`${named}.row`}
-          empty={(
-            <p className="org-page__nomatch" role="status">
-              {s('register.noMatchAll', { query: view.find.trim() })}{' '}
-              {nearest && <Button variant="quiet" onClick={() => setView({ ...view, find: nearest })}>{s('register.didYouMean', { word: nearest })}</Button>}
-              <Button variant="quiet" onClick={() => setView({ ...view, find: '', filters: {} })}>{s('register.clearFind')}</Button>
-            </p>
-          )}
-        />
-      </div>
-    </>
+    </ListPage>
   )
 }
 
@@ -345,40 +351,39 @@ export function RegisterPage(props: RegisterPageProps) {
     setView(FRESH_VIEW)
   }
 
+  // The register's head, the same over its list and over a tab with nothing in it yet.
+  const head: RegisterHead = {
+    title: s('register.title'), testId: 'register-page', headTestId: tab === 'applications' ? 'register-topbar' : 'technology-register-topbar',
+    about: <span data-testid="register-findings">{coverageSentence(tab, rows, technology, scopes, s)}</span>,
+    ...(nothingAtAll ? {} : {
+      tabs: (
+        <Tabs
+          label={s('register.title')} value={tab} onChange={chooseTab} data-guide="register.tabs"
+          items={[
+            { value: 'applications', label: s('register.tabApplications'), count: rows.length },
+            { value: 'services', label: s('register.tabServices'), count: services.length },
+            { value: 'platforms', label: s('register.tabPlatforms'), count: platforms.length },
+          ]}
+        />
+      ),
+    }),
+  }
   return (
     <PageDialog open={open} onClose={onClose} aria-label={s('register.title')}>
-      <div className="org-page" data-testid="register-page">
-        <div className="org-page__head" data-testid={tab === 'applications' ? 'register-topbar' : 'technology-register-topbar'}>
-          <div className="org-page__title">
-            <h1 className="org-page__name">{s('register.title')}</h1>
-            <span className="org-page__covers" data-testid="register-findings">{coverageSentence(tab, rows, technology, scopes, s)}</span>
-          </div>
-          {!nothingAtAll && (
-            <Tabs
-              label={s('register.title')} value={tab} onChange={chooseTab} data-guide="register.tabs"
-              items={[
-                { value: 'applications', label: s('register.tabApplications'), count: rows.length },
-                { value: 'services', label: s('register.tabServices'), count: services.length },
-                { value: 'platforms', label: s('register.tabPlatforms'), count: platforms.length },
-              ]}
-            />
-          )}
-        </div>
-        <div className="org-page__body">
-          {nothingAtAll || shown.length === 0 ? (
-            <PageState
-              state="empty" title={s(EMPTY_TITLE[tab])} body={s('register.emptyBody')}
-              {...(onHome ? { action: { label: s('register.emptyGo'), onPress: onHome } } : {})}
-            />
-          ) : tab === 'applications' ? (
-            <RegisterList tab={tab} rows={rows} how={applicationsHow} columns={applicationColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
-          ) : tab === 'services' ? (
-            <RegisterList tab={tab} rows={services} how={servicesHow} columns={serviceColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
-          ) : (
-            <RegisterList tab={tab} rows={platforms} how={platformsHow} columns={platformColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
-          )}
-        </div>
-      </div>
+      {nothingAtAll || shown.length === 0 ? (
+        <ListPage {...head}>
+          <PageState
+            state="empty" title={s(EMPTY_TITLE[tab])} body={s('register.emptyBody')}
+            {...(onHome ? { action: { label: s('register.emptyGo'), onPress: onHome } } : {})}
+          />
+        </ListPage>
+      ) : tab === 'applications' ? (
+        <RegisterList head={head} tab={tab} rows={rows} how={applicationsHow} columns={applicationColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
+      ) : tab === 'services' ? (
+        <RegisterList head={head} tab={tab} rows={services} how={servicesHow} columns={serviceColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
+      ) : (
+        <RegisterList head={head} tab={tab} rows={platforms} how={platformsHow} columns={platformColumns(words, found, s)} view={view} setView={setView} words={words} s={s} />
+      )}
       <RecordPreview
         tab={tab} ids={ids} current={current} words={words} onSelect={(id) => setView({ ...view, select: id })} s={s}
         onOpen={onOpen} onOpenPage={onOpenPage} onReport={onReport} readOnly={readOnly}

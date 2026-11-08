@@ -15,11 +15,10 @@ import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { matchesQuery } from '../../model/textSearch'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { GuidanceEmpty, GuidanceFrame } from '../../principles/ui/GuidanceFrame'
-import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { FilterWords } from '../../widgets/kit/FilterWords'
 import { SelectField, TextField } from '../../widgets/kit/Field'
 import { List } from '../../widgets/kit/List'
+import { ListPage } from '../../widgets/kit/ListPage'
 import type { ListGroup } from '../../widgets/kit/List'
 import { Preview, PreviewFact } from '../../widgets/kit/Preview'
 import { RecordActions } from '../../widgets/kit/RecordActions'
@@ -113,20 +112,16 @@ export function BlocksRegisterPage({ open, at, select, onClose, windowChrome }: 
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={t('blocks.registerTitle')}>
       <GuidanceFrame tab="blocks">
         {every.length === 0 ? <div className="guidance__body"><GuidanceEmpty tab="blocks" {...(newOne ? { action: newOne } : {})} /></div> : (
-          <>
-            <div className="guidance__bar">
-              <FilterWords
-                find={find} onFind={setFind} findLabel={t('blocks.search')} shown={{ count: rows.length, total: every.length }}
-                actions={mayMake && <Button variant="primary" onClick={() => setMaking(true)} data-testid="blocks-new" data-guide="blocks.new">{t('blocks.new')}</Button>}
-              />
-            </div>
-            <div className="guidance__list" data-testid="blocks-register">
-              <List
-                label={t('blocks.registerTitle')} groups={drawn} selectedId={current?.block.id ?? null} onOpen={setPicked}
-                empty={<p className="guidance__note" role="status">{t('blocks.searchEmpty', { query: find })}</p>}
-              />
-            </div>
-          </>
+          <ListPage
+            filter={{ find, onFind: setFind, findLabel: t('blocks.search'), shown: { count: rows.length, total: every.length } }}
+            {...(newOne ? { create: { label: newOne.label, onPress: newOne.onPress, guide: 'blocks.new', testId: 'blocks-new' } } : {})}
+            listTestId="blocks-register"
+          >
+            <List
+              label={t('blocks.registerTitle')} groups={drawn} selectedId={current?.block.id ?? null} onOpen={setPicked}
+              empty={<p className="guidance__note" role="status">{t('blocks.searchEmpty', { query: find })}</p>}
+            />
+          </ListPage>
         )}
       </GuidanceFrame>
       {current && <BlockPreview access={access} row={current} ids={drawn.flatMap((group) => group.rows.map((one) => one.id))} onSelect={setPicked} />}

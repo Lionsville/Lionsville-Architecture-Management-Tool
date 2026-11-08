@@ -22,6 +22,7 @@ and behaves is said here, once.
 | `windowArea.ts` | the window's corner, the one seam with the host: `WINDOW_BAR` on a top bar that stands at the top of the window (clear of the macOS traffic lights, the window's drag handle, its controls presses; nothing in full screen, on Windows, Linux or in a tab), `WINDOW_COVER` on a surface of ours fixed over the whole window, and `showWindowArea`, what the host says on the root. Dialogs, menus and poppers are never drag regions. `build/windowArea.test.ts` holds every full-window surface to it |
 | `FocusedWindow.tsx` | the dialog family's full-window member: the window's bar, Cancel that asks, Save; the writing takes the width and height the column of facts leaves, each scrolls on its own, and the facts fold under it on a narrow window (`useInFocusedWindow` for a field that grows) |
 | `Toast.tsx` | **Toast**: one, six seconds, Undo or Put back; goes when any dialog opens |
+| `editOnArrival.ts` | **Open it already editing**: `askToEdit(page, id)` before a move, `useEditAsked` on the page that writes that record; ✎ Edit on a preview, `?edit` and an agent's `edit` |
 | `drafts.tsx` | **Leave with a draft?**: whatever holds something written and not sent or saved says so (`useDraft`), whatever leaves a page asks first (`leaveWithDrafts`; `PageDialog`'s Escape, `PageClose`, `PageBack`), one question the shell draws once (`DraftQuestion`) |
 | `Field.tsx` | **Field** with the label above (`TextField`, `SelectField`, `DateField`, `TextInput`, `TextArea`, `Select`, `DateInput`) and **PropertyRow** in `PropertyRows`: 24 px, press to edit, one at a time, a date as a kind of edit, `help` said while edited (`onHelp`), `startOpen` for a row just asked for |
 | | `GrowingTextArea`, a box as tall as its text with no scroll of its own, and `TitleField` and `TitleRead`, a record's title written and read in one place and size, for a form that reads as a page |
@@ -40,6 +41,7 @@ and behaves is said here, once.
 | `ListMore.tsx` | **List more**: the end of a list that is not all there, how many are kept back and the button that brings them; `List`'s `more`, or under a map |
 | `density.ts` | how much a screen holds: the person's one choice, Comfortable or Compact, named once and offered by Preferences and a list's View alike; the app keeps it and sets it on the root (`density.css`) |
 | `FilterWords.tsx` | **Filter words**: Find, Filter, Group and View in one bar; what is on said in words, each with its × |
+| `ListPage.tsx` | **List page**: every page of records laid out once: the head (its name and count where no tab row names it, what it covers, its tabs), the bar (`FilterWords`, the page's quiet tools, New last as the one accent) and the quiet `List` in the gutter, a `Preview` on select |
 | `Preview.tsx` | the large **Preview** over a list, opened only by selecting a row: ‹ ›, arrows, Esc back to the row, carried by the address |
 | `TreeList.tsx` | **Tree list**: a short tree to choose a part by: nodes that fold and can be picked, a note and a count, one tab stop |
 | `Panel.tsx` | **Panel**: the one reader and inspector: identity, tabs, body, a foot that helps or undoes. `PanelDockProvider`: the column holding it says its width and its fold, so a screen hands a panel in without knowing it is docked. `PanelName`, a name pressed to edit, for a record's title too; `PanelLink`, a word that goes somewhere |
@@ -189,8 +191,8 @@ In a test of a whole app: `placePage()` from `app/testing/placePage.ts` is what
 
 A list is composed the same way every time: `usePlaceListView('<page>')` for what
 it shows, which is in the address (`?q=`, `?group=`, `?sort=`, `?cols=`, `?f.<field>=`)
-with the record picked as the place's id; `listed` for the rows, `FilterWords` and
-`List` over them, `Preview` over those with `ids` in the order drawn. A page with
+with the record picked as the place's id; `listed` for the rows, a `ListPage` with
+its `FilterWords` and the `List` over them, `Preview` over those with `ids` in the order drawn. A page with
 records to pick adds itself to `RECORD_PAGES` in `agent/place.ts`, so picking one
 is not a step Back walks through.
 

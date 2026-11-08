@@ -16,8 +16,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
-import { FilterWords } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
+import { ListPage } from '../../widgets/kit/ListPage'
 import type { ListGroup } from '../../widgets/kit/List'
 import { FRESH_VIEW, listed } from '../../widgets/kit/listView'
 import type { ListHow, ListView } from '../../widgets/kit/listView'
@@ -139,42 +139,38 @@ export function PrinciplesPage({ open, onClose, scope, select, nonce, onSelect, 
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={t('principles.title')}>
       <GuidanceFrame tab="principles">
         {empty ? <div className="guidance__body"><GuidanceEmpty tab="principles" {...(newOne ? { action: newOne } : {})} /></div> : (
-          <>
-            <div className="guidance__bar">
-              <FilterWords
-                find={view.find} onFind={(find) => setView((was) => ({ ...was, find }))} findLabel={t('principles.search')}
-                filters={view.filters} onFilters={(filters) => setView((was) => ({ ...was, filters }))}
-                shown={{ count: kept.length, total: count((one) => one.principle.status !== 'retired') }}
-                summary={t('principles.countLine', { principles: count((one) => one.principle.status !== 'retired'), groups: own.groups.length })}
-                fields={[
-                  { id: 'status', label: t('principles.statusFilter'), options: PRINCIPLE_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]), count: count((held) => held.principle.status === one) })) },
-                  { id: 'regime', label: t('principles.regimeFilter'), options: PRINCIPLE_REGIMES.map((one) => ({ value: one, label: t(REGIME_WORD[one]), count: count((held) => held.principle.regime === one) })) },
-                  ...(own.groups.length ? [{ id: 'group', label: t('principles.groupFilter'), options: own.groups.map((one) => ({ value: one.id, label: one.name, count: count((held) => held.scope === scope && held.principle.groups.includes(one.id)) })) }] : []),
-                ]}
-                actions={mayWrite && (
-                  <>
-                    <Button variant="plain" onClick={() => setGroupsOpen(true)} data-testid="principles-groups">{t('principles.manageGroups')}</Button>
-                    <Button variant="primary" onClick={() => setEditing({ scope })} data-testid="principles-new" data-guide="principles.new">{t('principles.new')}</Button>
-                  </>
-                )}
-              />
-            </div>
-            {own.principles.length === 0 && mayWrite && <p className="guidance__note">{t('principles.noneOwn', { scope: label })}</p>}
-            <div className="guidance__list" data-testid="principles-list">
-              <List
-                label={t('principles.title')} groups={groups} selectedId={picked ? rowId(picked) : null}
-                onOpen={(id) => pick(refOf(id))}
-                empty={(
-                  <div className="guidance__note" role="status">
-                    <p>{t('principles.searchEmpty', { query: view.find })}</p>
-                    <p>{t('principles.searchReads')}</p>
-                    <Button variant="plain" onClick={() => setView((was) => ({ ...was, filters: { ...was.filters, status: [...PRINCIPLE_STATUSES] } }))}>{t('principles.includeRetired')}</Button>
-                    {mayWrite && view.find.trim() && <>{' '}<Button variant="quiet" onClick={() => setEditing({ scope, title: view.find.trim() })}>{t('principles.writeAsNew')}</Button></>}
-                  </div>
-                )}
-              />
-            </div>
-          </>
+          <ListPage
+            filter={{
+              find: view.find, onFind: (find) => setView((was) => ({ ...was, find })), findLabel: t('principles.search'),
+              filters: view.filters, onFilters: (filters) => setView((was) => ({ ...was, filters })),
+              shown: { count: kept.length, total: count((one) => one.principle.status !== 'retired') },
+              summary: t('principles.countLine', { principles: count((one) => one.principle.status !== 'retired'), groups: own.groups.length }),
+              fields: [
+                { id: 'status', label: t('principles.statusFilter'), options: PRINCIPLE_STATUSES.map((one) => ({ value: one, label: t(STATUS_WORD[one]), count: count((held) => held.principle.status === one) })) },
+                { id: 'regime', label: t('principles.regimeFilter'), options: PRINCIPLE_REGIMES.map((one) => ({ value: one, label: t(REGIME_WORD[one]), count: count((held) => held.principle.regime === one) })) },
+                ...(own.groups.length ? [{ id: 'group', label: t('principles.groupFilter'), options: own.groups.map((one) => ({ value: one.id, label: one.name, count: count((held) => held.scope === scope && held.principle.groups.includes(one.id)) })) }] : []),
+              ],
+            }}
+            {...(mayWrite ? {
+              tools: <Button variant="plain" onClick={() => setGroupsOpen(true)} data-testid="principles-groups">{t('principles.manageGroups')}</Button>,
+              create: { label: t('principles.new'), onPress: () => setEditing({ scope }), guide: 'principles.new', testId: 'principles-new' },
+            } : {})}
+            {...(own.principles.length === 0 && mayWrite ? { note: <p className="guidance__note">{t('principles.noneOwn', { scope: label })}</p> } : {})}
+            listTestId="principles-list"
+          >
+            <List
+              label={t('principles.title')} groups={groups} selectedId={picked ? rowId(picked) : null}
+              onOpen={(id) => pick(refOf(id))}
+              empty={(
+                <div className="guidance__note" role="status">
+                  <p>{t('principles.searchEmpty', { query: view.find })}</p>
+                  <p>{t('principles.searchReads')}</p>
+                  <Button variant="plain" onClick={() => setView((was) => ({ ...was, filters: { ...was.filters, status: [...PRINCIPLE_STATUSES] } }))}>{t('principles.includeRetired')}</Button>
+                  {mayWrite && view.find.trim() && <>{' '}<Button variant="quiet" onClick={() => setEditing({ scope, title: view.find.trim() })}>{t('principles.writeAsNew')}</Button></>}
+                </div>
+              )}
+            />
+          </ListPage>
         )}
       </GuidanceFrame>
       {current && picked && (

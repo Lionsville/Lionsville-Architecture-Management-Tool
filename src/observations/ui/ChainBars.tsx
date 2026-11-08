@@ -9,13 +9,11 @@
  * Presentational: what the controls mean is `usePictureFilters`, which the page hands
  * in whole.
  */
-import type { ReactNode } from 'react'
 import type { Translate } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
 import { TextField } from '../../widgets/kit/Field'
-import { FilterWords } from '../../widgets/kit/FilterWords'
 import { ListMore } from '../../widgets/kit/ListMore'
-import type { FilterField, FilterWord } from '../../widgets/kit/FilterWords'
+import type { FilterField, FilterWord, FilterWordsProps } from '../../widgets/kit/FilterWords'
 import { CHAINS_ALL, CHAINS_FIRST, CHAINS_MORE } from '../chain'
 import type { MapWindow } from '../chain'
 import { OBSERVATION_TONES } from '../observation'
@@ -51,11 +49,11 @@ export type ChainFilterProps = {
   onShowArchived: (show: boolean) => void
   /** Columns are the Seen list's. */
   columns?: { readonly choices: readonly { id: string; label: string }[]; readonly shown: readonly string[]; readonly onChange: (next: readonly string[]) => void }
-  actions?: ReactNode
   s: Translate
 }
 
-export function ChainFilter({ f, scopeLabel, showMerged, onShowMerged, showArchived, onShowArchived, columns, actions, s }: ChainFilterProps) {
+/** What the stages' one bar offers — Find, Filter and the Seen list's View — for the page's `ListPage`. */
+export function chainFilterWords({ f, scopeLabel, showMerged, onShowMerged, showArchived, onShowArchived, columns, s }: ChainFilterProps): Omit<FilterWordsProps, 'actions'> {
   const set = (patch: Partial<Filters>) => f.setFilters({ ...f.filters, ...patch })
   const fields: FilterField[] = [
     { id: 'tone', label: s('observation.toneLabel'), guide: 'observations.tone', options: OBSERVATION_TONES.map((one) => ({ value: one, label: s(TONE_WORD[one]) })) },
@@ -87,18 +85,17 @@ export function ChainFilter({ f, scopeLabel, showMerged, onShowMerged, showArchi
       id: 'scopes', word: s('observation.scopesOffWord', { count: f.filters.scopesOff.length }), label: s('observation.filterScopes'), onRemove: () => set({ scopesOff: [] }),
     }] : []),
   ]
-  return (
-    <FilterWords
-      find={f.filters.search}
-      onFind={(search) => set({ search })}
-      findLabel={s('observation.findEvery')}
-      fields={fields}
-      filters={filters}
-      onFilters={onFilters}
-      words={words}
-      onClear={() => f.setFilters({ ...f.filters, observations: '', causes: '', roots: '', scopesOff: [] })}
-      filterGuide="observations.filters"
-      filterExtra={(
+  return {
+    find: f.filters.search,
+    onFind: (search) => set({ search }),
+    findLabel: s('observation.findEvery'),
+    fields,
+    filters,
+    onFilters,
+    words,
+    onClear: () => f.setFilters({ ...f.filters, observations: '', causes: '', roots: '', scopesOff: [] }),
+    filterGuide: 'observations.filters',
+    filterExtra: (
         <div className="chain-filter" role="search" aria-label={s('observation.filters')} data-testid="filter-row" data-guide="observations.filterRow">
           {f.mineSays && <p className="chain-note" data-testid={`filter-mine-${f.mineSays}`}>{s(MINE_SAYS[f.mineSays])}</p>}
           {TEXT_FILTERS.map(({ field, label, example }) => (
@@ -112,12 +109,10 @@ export function ChainFilter({ f, scopeLabel, showMerged, onShowMerged, showArchi
             <SavedPopover list={f.saved.list} canSave={f.active > 0} onSave={f.saved.save} onRecall={f.saved.recall} onDelete={f.saved.remove} s={s} />
           </div>
         </div>
-      )}
-      {...(columns ? { columns: columns.choices, shownColumns: columns.shown, onColumns: columns.onChange } : {})}
-      {...(f.result.filtering ? { shown: { count: f.result.shown, total: f.result.total } } : {})}
-      actions={actions}
-    />
-  )
+    ),
+    ...(columns ? { columns: columns.choices, shownColumns: columns.shown, onColumns: columns.onChange } : {}),
+    ...(f.result.filtering ? { shown: { count: f.result.shown, total: f.result.total } } : {}),
+  }
 }
 
 /**

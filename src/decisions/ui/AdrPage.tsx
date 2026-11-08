@@ -35,8 +35,7 @@ import type { AboutGroup } from '../adrList'
 import type { HostModel } from '../../model/hostModel'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { PageDialog } from '../../widgets/PageDialog'
-import { Button } from '../../widgets/kit/Button'
-import { FilterWords } from '../../widgets/kit/FilterWords'
+import { ListPage } from '../../widgets/kit/ListPage'
 import type { FilterField } from '../../widgets/kit/FilterWords'
 import { List } from '../../widgets/kit/List'
 import type { ListGroup, ListRow } from '../../widgets/kit/List'
@@ -435,36 +434,28 @@ export function AdrPage(props: AdrPageProps) {
             />
           )
           : (
-            <div className="adr-page">
-              <div className="adr-page__inner">
-                <header className="adr-page__head">
-                  <h1>{s('adr.title')}</h1>
-                  {!readOnly && <Button variant="primary" onClick={() => setCreating(true)} data-guide="decisions.new">{s('adr.new')}</Button>}
-                </header>
-                <FilterWords
-                  find={view.find}
-                  onFind={(find) => setView((was) => ({ ...was, find }))}
-                  findLabel={s('adr.searchPlaceholder')}
-                  fields={[aboutFilter]}
-                  filters={view.filters}
-                  onFilters={(filters) => setView((was) => ({ ...was, filters }))}
-                  dataGuide="decisions.filter"
-                />
-                <div data-testid="adr-list">
-                  <List
-                    key={folds.join()}
-                    label={s('adr.title')}
-                    groups={groups}
-                    selectedId={selectedId}
-                    onOpen={setSelectedId}
-                    defaultFolded={folds}
-                    empty={<p className="adr-note">{finding ? s('adr.searchEmpty', { query: view.find.trim() }) : s('adr.listEmpty')}</p>}
-                    dataGuide="decisions.list"
-                    rowGuide="decisions.row"
-                  />
-                </div>
-              </div>
-            </div>
+            <ListPage
+              title={s('adr.title')} count={allRecords.length}
+              filter={{
+                find: view.find, onFind: (find) => setView((was) => ({ ...was, find })), findLabel: s('adr.searchPlaceholder'),
+                fields: [aboutFilter], filters: view.filters, onFilters: (filters) => setView((was) => ({ ...was, filters })),
+                dataGuide: 'decisions.filter',
+              }}
+              {...(readOnly ? {} : { create: { label: s('adr.new'), onPress: () => setCreating(true), guide: 'decisions.new' } })}
+              listTestId="adr-list"
+            >
+              <List
+                key={folds.join()}
+                label={s('adr.title')}
+                groups={groups}
+                selectedId={selectedId}
+                onOpen={setSelectedId}
+                defaultFolded={folds}
+                empty={<p className="adr-note">{finding ? s('adr.searchEmpty', { query: view.find.trim() }) : s('adr.listEmpty')}</p>}
+                dataGuide="decisions.list"
+                rowGuide="decisions.row"
+              />
+            </ListPage>
           )}
 
         <OpenRecord

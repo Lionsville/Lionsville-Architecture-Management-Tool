@@ -38,6 +38,8 @@ import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
+import { ListPage } from '../../widgets/kit/ListPage'
+import type { ListPageCreate } from '../../widgets/kit/ListPage'
 import { List } from '../../widgets/kit/List'
 import type { ListGroup } from '../../widgets/kit/List'
 import { Segmented } from '../../widgets/kit/Segmented'
@@ -76,7 +78,7 @@ import { inSentence } from '../../i18n/languages'
 import { preselectedCause, useLifecycle } from './ObservationLifecycle'
 import { PictureMenu } from './PictureMenu'
 import type { MenuAction, PictureTarget } from './PictureMenu'
-import { BulkActions, ChainEmpty, ChainFilter, HiddenBar, MapWindowBar, ResultsSaid } from './ChainBars'
+import { BulkActions, ChainEmpty, chainFilterWords, HiddenBar, MapWindowBar, ResultsSaid } from './ChainBars'
 import { RecordDialogs, pictureMenuActions, useSolveMap } from './ChainWiring'
 import type { SolutionAsk } from './ChainWiring'
 import { hiddenRows, observationColumns, recordsBelow, stageGroups } from './ChainLists'
@@ -959,7 +961,8 @@ export function ObservationsPage(props: ObservationsPageProps) {
       onAsk={forms.askGroup} onMerge={merging.open}
     />
   )
-  const actions = (
+  // How the stage is read: quiet, before New at the bar's end (`ListPage`).
+  const tools = (
     <span className="chain-page__actions">
       <span className="chain-page__said" data-testid="picture-count">
         {stageSaid[stage]}
@@ -977,11 +980,9 @@ export function ObservationsPage(props: ObservationsPageProps) {
           options={[{ value: 'list', label: s('observation.lensList') }, { value: 'map', label: s('observation.lensMap') }]}
         />
       )}
-      {!readOnly && (stage === 'solutions' || stage === 'results'
-        ? <Button variant="primary" onClick={() => setProposing(preselectedCause(causes, selected))} data-testid="solution-new" data-guide="solutions.new">{s('solution.new')}</Button>
-        : <Button variant="primary" onClick={forms.openNew} data-testid="observation-new" data-guide="observations.new">{s('observation.new')}</Button>)}
     </span>
   )
+  const create = readOnly ? undefined : newOn(stage, () => setProposing(preselectedCause(causes, selected)), forms.openNew, s)
 
   // The preview walks the list as it is drawn, from one group into the next, as Principles' does.
   const previewIds = groups.flatMap((one) => one.rows.map((row) => row.id))
@@ -1046,14 +1047,14 @@ export function ObservationsPage(props: ObservationsPageProps) {
           ) : nothingYet && !forms.panel ? (
             <ChainEmpty {...(readOnly ? {} : { onNew: forms.openNew })} s={s} />
           ) : (
-            <>
-              <div className="chain-page__tools">
-                <ChainFilter
-                  f={f} scopeLabel={labelOf} showMerged={showMerged} onShowMerged={setShowMerged} showArchived={showArchived} onShowArchived={setShowArchived}
-                  {...(stage === 'register' ? { columns: { choices: observationColumns(s), shown: shownColumns, onChange: setShownColumns } } : {})}
-                  actions={actions} s={s}
-                />
-              </div>
+            <ListPage
+              filter={chainFilterWords({
+                f, scopeLabel: labelOf, showMerged, onShowMerged: setShowMerged, showArchived, onShowArchived: setShowArchived,
+                ...(stage === 'register' ? { columns: { choices: observationColumns(s), shown: shownColumns, onChange: setShownColumns } } : {}),
+                s,
+              })}
+              tools={tools} {...(create ? { create } : {})} body="fill"
+            >
               <div className="chain-page__work" data-testid="observation-body" data-map={onMap || undefined}>
                 <div className="chain-page__main">
                   {!onMap ? list : stage === 'analysis' ? picture : solutionsMap}
@@ -1064,7 +1065,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
                 </div>
                 {side}
               </div>
-            </>
+            </ListPage>
           )}
         </Box>
         {showPreview && (
@@ -1107,6 +1108,13 @@ export function ObservationsPage(props: ObservationsPageProps) {
       </LanguageProvider>
     </PageDialog>
   )
+}
+
+/** New at the bar's end: a solution where solutions are listed, an observation elsewhere. */
+function newOn(stage: Tab, propose: () => void, record: () => void, s: Translate): ListPageCreate {
+  return stage === 'solutions' || stage === 'results'
+    ? { label: s('solution.new'), onPress: propose, testId: 'solution-new', guide: 'solutions.new' }
+    : { label: s('observation.new'), onPress: record, testId: 'observation-new', guide: 'observations.new' }
 }
 
 const STAGE_WORD = { register: 'observation.stageSeen', analysis: 'observation.stageWhy', solutions: 'observation.stageSolve', results: 'observation.stageResults' } as const

@@ -1,0 +1,15 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* One list page: head, bar and list in the page's gutter, the same on every page of records. */
+.kit-list-page { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0; background: var(--surface); color: var(--ink); }
+.kit-list-page__head { flex: none; padding: var(--s-3) var(--s-4) 0; }
+.kit-list-page__title { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); }
+.kit-list-page__name { margin: 0; font-size: var(--t-large); font-weight: var(--fw-strong); color: var(--ink); }
+.kit-list-page__count { font-size: var(--t-body); color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.kit-list-page__about { font-size: var(--t-small); color: var(--ink-2); }
+/* The bar's own padding lines Find up with the list's rows under it. */
+.kit-list-page__bar { flex: none; padding: 0 var(--s-1); border-bottom: 1px solid var(--line); }
+.kit-list-page__body { flex: 1; min-height: 0; min-width: 0; }
+.kit-list-page__body[data-body='scroll'] { overflow: auto; padding-inline: var(--s-4); }
+.kit-list-page__body[data-body='fill'] { display: flex; }

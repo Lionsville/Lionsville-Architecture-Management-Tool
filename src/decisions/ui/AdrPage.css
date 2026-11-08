@@ -1,10 +1,6 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
 
-.adr-page { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: auto; color: var(--ink); background: var(--surface); }
-.adr-page__inner { width: 100%; max-width: var(--w-dialog-l); margin-inline: auto; padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); }
-.adr-page__head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); }
-.adr-page__head h1 { margin: 0; font-size: var(--t-large); font-weight: var(--fw-strong); }
 
 .adr-record { display: flex; flex-direction: column; gap: var(--s-2); min-width: 0; }
 .adr-standing { margin: 0; }
