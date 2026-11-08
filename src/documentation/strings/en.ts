@@ -74,6 +74,7 @@ export const EN = {
   // The pictures a project holds, listed beside the source so one can be put
   // in again or taken out (ADR-0009). Deleting is not undoable, so it asks.
   'doc.pictures': 'Pictures',
+  'doc.choosePicture': 'Choose a picture…',
   'doc.picturesNone': 'No pictures in this scope yet. Paste or drop one into the text.',
   'doc.pictureUsedHere': 'Used on this page',
   'doc.insertPicture': 'Insert',

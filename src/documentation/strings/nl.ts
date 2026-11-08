@@ -64,6 +64,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'doc.insertTemplate': 'Begin met het sjabloon',
   'doc.emptyHint': 'Schakel naar Bewerken om te schrijven, of begin met het sjabloon.',
   'doc.pictures': 'Afbeeldingen',
+  'doc.choosePicture': 'Een afbeelding kiezen…',
   'doc.picturesNone': 'Nog geen afbeeldingen in deze scope. Plak of sleep er een in de tekst.',
   'doc.pictureUsedHere': 'Op deze pagina gebruikt',
   'doc.insertPicture': 'Invoegen',

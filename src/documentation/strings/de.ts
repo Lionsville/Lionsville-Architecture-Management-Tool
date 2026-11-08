@@ -64,6 +64,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'doc.insertTemplate': 'Mit der Vorlage beginnen',
   'doc.emptyHint': 'Wechseln Sie zu Bearbeiten, um zu schreiben, oder beginnen Sie mit der Vorlage.',
   'doc.pictures': 'Bilder',
+  'doc.choosePicture': 'Ein Bild wählen…',
   'doc.picturesNone': 'Noch keine Bilder in diesem Bereich. Fügen Sie eines in den Text ein oder ziehen Sie es hinein.',
   'doc.pictureUsedHere': 'Auf dieser Seite verwendet',
   'doc.insertPicture': 'Einfügen',

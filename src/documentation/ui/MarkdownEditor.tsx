@@ -404,7 +404,9 @@ function FlowHead({ fieldId, hintId, editor }: { fieldId: string; hintId: string
 }
 
 /** What stands above the text: a pane's bar, a field's row, or a flow's heading with the one bar lent to it while it is in use. */
-function EditorTop({ fieldId, seat, variant, canAttach, editor, ...bar }: Omit<ComponentProps<typeof PaneBar>, never> & {
+function EditorTop({ fieldId, seat, variant, canAttach, editor, take, ...bar }: Omit<ComponentProps<typeof PaneBar>, never> & {
+  /** Files chosen from the pictures' strip, taken as a paste is. */
+  take: (files: readonly File[]) => void
   fieldId: string
   seat: ReturnType<typeof useFlowSeat>
   variant: NonNullable<MarkdownEditorProps['variant']>
@@ -414,7 +416,10 @@ function EditorTop({ fieldId, seat, variant, canAttach, editor, ...bar }: Omit<C
   const [helpOpen, setHelpOpen] = useState(false)
   const { images, showPictures, canWrite, put } = bar
   const pictures = images && showPictures && canWrite && (
-    <PictureList images={images} value={editor.value} onInsert={(image) => put(pictureMarkdown(image.name, image.name.replace(/\.[^.]+$/, '')))} />
+    <PictureList
+      images={images} value={editor.value} onInsert={(image) => put(pictureMarkdown(image.name, image.name.replace(/\.[^.]+$/, '')))}
+      {...(editor.onAddImage ? { onChoose: (file: File) => take([file]) } : {})}
+    />
   )
   if (variant === 'field') return <><FieldBar fieldId={fieldId} label={editor.label} required={editor.required} note={editor.note} tools={bar.tools} switcher={bar.switcher} />{pictures}</>
   if (variant === 'pane') return <><PaneBar {...bar} editor={editor} />{pictures}</>
@@ -553,7 +558,7 @@ export function MarkdownEditor(props: MarkdownEditorProps) {
       <EditorTop
         fieldId={fieldId} seat={seat} variant={variant} tools={tools} switcher={switcher} canWrite={canWrite} editor={props} canAttach={canAttach}
         images={images} pickFile={pickFile} insert={completion.insert} put={put} headings={headings} caret={caret} moveTo={moveTo}
-        showPictures={showPictures} onPictures={setShowPictures}
+        showPictures={showPictures} onPictures={setShowPictures} take={files.take}
       />
 
       <div className="md-editor__body" data-view={view}>
@@ -731,13 +736,24 @@ function useSlashBlocks({ apply, template, value, hasPictures, onPictures, pickF
 }
 
 /** The scope's pictures, beside the text: one can be put in again or taken out. Deleting is the one thing ⌘Z cannot take back, so it asks. */
-function PictureList({ images, value, onInsert }: { images: DocumentImages; value: string; onInsert(image: ImageEntry): void }) {
+function PictureList({ images, value, onInsert, onChoose }: { images: DocumentImages; value: string; onInsert(image: ImageEntry): void; onChoose?: (file: File) => void }) {
   const { t } = useStrings()
   const [deleting, setDeleting] = useState<string | undefined>(undefined)
+  const chooser = useRef<HTMLInputElement>(null)
   const usedHere = useMemo(() => new Set(imagesUsedIn(value)), [value])
   const usedBy = deleting ? images.usedBy(deleting) : []
   return (
     <div className="md-editor__pictures" data-testid="doc-pictures">
+      {/* Paste and drop are not the only ways in: a person without a picture on the clipboard chooses a file. */}
+      {onChoose && (
+        <>
+          <Button size="small" variant="outlined" onClick={() => chooser.current?.click()} data-testid="doc-picture-choose">{t('doc.choosePicture')}</Button>
+          <input
+            ref={chooser} type="file" accept="image/*" hidden aria-hidden="true" tabIndex={-1}
+            onChange={(event) => { const file = event.target.files?.[0]; if (file) onChoose(file); event.target.value = '' }}
+          />
+        </>
+      )}
       {images.library.length === 0 && <span className="md-editor__nothing">{t('doc.picturesNone')}</span>}
       {images.library.map((image) => (
         <div className="md-editor__picture" key={image.name}>
