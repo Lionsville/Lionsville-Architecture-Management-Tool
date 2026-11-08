@@ -40,3 +40,13 @@ export function applyTextSize(size: TextSize): void {
   root.style.fontSize = size === DEFAULT_TEXT_SIZE ? '' : `${size}%`
   root.dataset.textSize = String(size)
 }
+
+/**
+ * How many times larger than the default the root's text is set: 1.5 at 150%.
+ * A width kept in pixels at the default text size is drawn this many times
+ * wider, so it is a width in rem and what fits in it at 100% fits at every size.
+ */
+export function textScale(): number {
+  const held = Number(rootElement()?.dataset.textSize)
+  return TEXT_SIZES.some((size) => size === held) ? held / DEFAULT_TEXT_SIZE : 1
+}

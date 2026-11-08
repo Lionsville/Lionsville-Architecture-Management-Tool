@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { useMemo, useState } from 'react'
 import { OUTLINE_LIMITS } from '../../editor/panels'
+import { applyTextSize } from '../../platform/textSize'
 import type { HostModel } from '../../model/hostModel'
 import type { UnitType } from '../../model/operatingModel'
 import type { DesignDiagram, DesignElement } from '../../model/types'
@@ -113,6 +114,21 @@ describe('the outline\'s width', () => {
     fireEvent.keyDown(handle, { key: 'Home' })
     expect(handle.getAttribute('aria-valuenow')).toBe(String(OUTLINE_LIMITS.default))
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('opens in rem: at 150% it is drawn half as wide again, and a drag is kept at the default size', () => {
+    applyTextSize(150)
+    try {
+      const onWidth = vi.fn()
+      renderShell(<Kept onWidth={onWidth} />)
+      expect(screen.getByTestId('chart-outline').style.width).toBe('450px')
+      const handle = seam()
+      expect(handle.getAttribute('aria-valuenow')).toBe('450')
+      fireEvent.keyDown(handle, { key: 'Home' })
+      expect(onWidth).toHaveBeenLastCalledWith(OUTLINE_LIMITS.default)
+    } finally {
+      applyTextSize(100)
+    }
   })
 
   it('follows the pointer off where the drag started, no wider than its maximum, and is kept where the workspace keeps it', () => {

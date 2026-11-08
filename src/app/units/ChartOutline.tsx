@@ -32,6 +32,7 @@ import type { Translate } from '../../i18n'
 import type { ChartUnit, OrgChart } from '../../model/orgChart'
 import type { ElementId } from '../../model/types'
 import { OUTLINE_LIMITS } from '../../editor/panels'
+import { textScale } from '../../platform/textSize'
 import { CaretIcon } from '../../widgets/icons'
 import { Button } from '../../widgets/kit/Button'
 import { SeamResizer } from '../../widgets/SeamResizer'
@@ -84,8 +85,11 @@ function parentOf(units: readonly ChartUnit[], id: ElementId): ChartUnit | undef
 export function ChartOutline({ units, folded, onToggle, current, onPick, order, find, moveTo, canMove, width, t }: ChartOutlineProps) {
   const box = useRef<HTMLElement | null>(null)
   const [own, setOwn] = useState<number>(OUTLINE_LIMITS.default)
-  const wide = width?.width ?? own
-  const onWidth = width?.onWidth ?? setOwn
+  // Kept in pixels at the default text size and drawn in rem, so the foot's three
+  // buttons that fit on one line at 100% (Verschieben…, Verplaatsen naar…) fit at 150%.
+  const scale = textScale()
+  const wide = (width?.width ?? own) * scale
+  const onWidth = (next: number) => (width?.onWidth ?? setOwn)(Math.round(next / scale))
   const [focusedRow, setFocusedRow] = useState<ElementId | undefined>(undefined)
   const drawn = rowsDrawn(units, folded)
   const rover = [focusedRow, current].find((id) => id !== undefined && drawn.some((row) => row.id === id)) ?? drawn[0]?.id
@@ -133,8 +137,8 @@ export function ChartOutline({ units, folded, onToggle, current, onPick, order, 
       </nav>
       <div data-testid="chart-outline-seam" className="chart-outline__seam">
         <SeamResizer
-          orientation="vertical" region="before" value={wide} min={OUTLINE_LIMITS.min} max={OUTLINE_LIMITS.max}
-          defaultValue={OUTLINE_LIMITS.default} onChange={onWidth} label={t('chart.resizeOutline')}
+          orientation="vertical" region="before" value={wide} min={Math.round(OUTLINE_LIMITS.min * scale)} max={Math.round(OUTLINE_LIMITS.max * scale)}
+          defaultValue={Math.round(OUTLINE_LIMITS.default * scale)} onChange={onWidth} label={t('chart.resizeOutline')}
         />
       </div>
     </>

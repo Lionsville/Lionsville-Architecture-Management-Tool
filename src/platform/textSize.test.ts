@@ -3,7 +3,7 @@
 
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest'
-import { applyTextSize, movedTextSize, readTextSize } from './textSize'
+import { applyTextSize, movedTextSize, readTextSize, textScale } from './textSize'
 
 describe('the text size', () => {
   afterEach(() => applyTextSize(100))
@@ -30,5 +30,13 @@ describe('the text size', () => {
     applyTextSize(100)
     expect(document.documentElement.style.fontSize).toBe('')
     expect(document.documentElement.dataset.textSize).toBe('100')
+  })
+
+  it('says how many times the default the text is drawn, so a width in pixels can be drawn in rem', () => {
+    expect(textScale()).toBe(1)
+    applyTextSize(150)
+    expect(textScale()).toBe(1.5)
+    applyTextSize(90)
+    expect(textScale()).toBe(0.9)
   })
 })
