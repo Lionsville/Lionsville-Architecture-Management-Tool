@@ -86,7 +86,8 @@ describe('the date control', () => {
   it('offers the days worth looking at', () => {
     renderEditor({ ...model(), elements: [{ id: 'e', kind: 'application', name: 'Yard', lifecycle: 'planned', isManaged: true, aspects: {}, lifecycleDates: { live: '2031-03-01' } }] } as DesignModel);
     fireEvent.click(control());
-    fireEvent.click(screen.getByText(`Yard goes live · ${day('2031-03-01')}`));
+    expect(screen.getByText('Yard goes live')).toBeTruthy();
+    fireEvent.click(screen.getByText(day('2031-03-01')));
     expect(control().textContent).toContain(day('2031-03-01'));
   });
 

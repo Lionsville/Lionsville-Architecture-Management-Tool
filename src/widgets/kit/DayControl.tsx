@@ -15,12 +15,29 @@ import { useStrings } from '../../i18n/LanguageContext'
 import { Button } from './Button'
 import { DateInput } from './DateInput'
 import { ViewBarMenu } from './ViewBar'
+import type { MenuEntry } from './Menu'
 import './DayControl.css'
 
 export type DayGroup = {
   /** Where these days come from, such as a plan. */
   heading?: string
   days: readonly { day: string; label: string }[]
+}
+
+const TODAY_LINE = Symbol('today')
+
+/** Today on this computer, as a day is written. */
+function todayHere(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+/** The days in order, with a line where the past ends and what is still to come begins. */
+export function pastThenComing<T extends { day: string }>(days: readonly T[], today = todayHere()): (T | typeof TODAY_LINE)[] {
+  const sorted = [...days].sort((a, b) => a.day.localeCompare(b.day))
+  const first = sorted.findIndex((one) => one.day >= today)
+  if (first <= 0) return sorted
+  return [...sorted.slice(0, first), TODAY_LINE, ...sorted.slice(first)]
 }
 
 export function DayControl({ day, groups = [], onChange, onKeep, keepLabel, outsideData, note, 'data-guide': guide }: {
@@ -56,8 +73,10 @@ export function DayControl({ day, groups = [], onChange, onKeep, keepLabel, outs
           { label: t('kit.day.today'), checked: day === undefined, onSelect: () => onChange(undefined) },
           ...groups.flatMap((group) => [
             ...(group.heading ? [{ heading: group.heading }] : [{ line: true as const }]),
-            ...group.days.map((held) => ({
-              label: `${held.label} · ${formatDay(held.day, language)}`,
+            ...pastThenComing(group.days).map((held): MenuEntry => (held === TODAY_LINE ? { line: true } : {
+              // The date first, where the eye runs down the list; what happens then under it.
+              label: formatDay(held.day, language),
+              detail: held.label,
               checked: held.day === day,
               onSelect: () => onChange(held.day),
             })),

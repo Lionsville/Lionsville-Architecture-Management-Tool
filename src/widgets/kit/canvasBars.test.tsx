@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { axeFindings } from '../../app/testing/axe'
 import { CanvasDock } from './CanvasDock'
 import { ColourMenu } from './ColourMenu'
-import { DayControl } from './DayControl'
+import { DayControl, pastThenComing } from './DayControl'
 import { keyValues, KeyStrip, OTHER_VALUE } from './KeyStrip'
 import { ViewBar, ViewBarAct, ViewBarButton, ViewBarCheck, ViewBarHeading, ViewBarMenu, ViewBarPanel } from './ViewBar'
 
@@ -144,12 +144,20 @@ describe('the Day control', () => {
     expect(container.querySelector('[data-on]')).toBeTruthy()
   })
 
+  it('puts a line where the past ends and the days to come begin, in order', () => {
+    const days = [{ day: '2027-03-01', label: 'later' }, { day: '2020-01-01', label: 'earlier' }]
+    expect(pastThenComing(days, '2026-11-08').map((one) => (typeof one === 'symbol' ? '|' : one.day))).toEqual(['2020-01-01', '|', '2027-03-01'])
+    expect(pastThenComing(days, '2019-01-01').some((one) => typeof one === 'symbol')).toBe(false)
+  })
+
   it('offers today, the days worth looking at by where they come from, and a chosen day', () => {
     const onChange = vi.fn()
     render(<DayControl day="2027-09-01" groups={groups} onChange={onChange} />)
     fireEvent.click(screen.getByRole('button'))
     expect(screen.getByText('From plan TR-0001')).toBeTruthy()
-    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'New prices live · 1 Mar 2027' }))
+    // The date first, what happens then under it.
+    expect(screen.getByText('New prices live').className).toBe('kit-menu__reason')
+    fireEvent.click(screen.getByRole('menuitemcheckbox', { name: /^1 Mar 2027/ }))
     expect(onChange).toHaveBeenLastCalledWith('2027-03-01')
     fireEvent.click(screen.getByRole('button'))
     fireEvent.click(screen.getByRole('menuitemcheckbox', { name: 'Today' }))
