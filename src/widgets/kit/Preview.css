@@ -111,3 +111,17 @@
   .kit-preview__body { grid-template-columns: minmax(0, 1fr); row-gap: var(--s-4); }
   .kit-preview__facts { position: static; }
 }
+
+/*
+ * On paper a record is its text: none of the screen's controls — the arrows, the count, History…,
+ * ⋯, the close — and no page index, so the text takes the sheet's width and a table in it is not
+ * squeezed to a word a line. The record's code stays, as the paper's own heading.
+ */
+@media print {
+  .kit-preview { position: static; inset: auto; width: auto; max-height: none; height: auto; border: 0; box-shadow: none; }
+  .kit-preview__head { border-bottom: 0; }
+  .kit-preview__head > :not(.kit-preview__code), .kit-preview__next, .kit-preview__foot { display: none !important; }
+  .kit-preview__body { grid-template-columns: minmax(0, 1fr) !important; }
+  .kit-preview__facts { position: static; }
+  .kit-preview__facts > :has(nav) { display: none !important; }
+}

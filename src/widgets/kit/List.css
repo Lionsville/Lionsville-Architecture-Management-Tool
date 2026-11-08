@@ -218,3 +218,8 @@
   color: var(--ink-2);
   font-size: var(--t-body);
 }
+
+/* On paper nothing is cut to an ellipsis, so a name wraps in its own column rather than running into the next. */
+@media print {
+  .kit-list__text, .kit-list__fact { white-space: normal !important; text-overflow: clip; }
+}
