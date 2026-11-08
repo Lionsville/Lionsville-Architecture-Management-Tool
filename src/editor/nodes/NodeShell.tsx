@@ -51,6 +51,7 @@ export function NodeShell({
   sx,
   restingShadow = 'none',
   selectionRing = true,
+  lifecycleBadge = true,
   children,
 }: {
   element: DesignElement;
@@ -71,6 +72,8 @@ export function NodeShell({
    * diagram would frame the components inside it.
    */
   selectionRing?: boolean;
+  /** Draw the phase in the corner. The boundary says it in its own head instead. */
+  lifecycleBadge?: boolean;
   children: ReactNode;
 }) {
   const tokens = getNodeTokens(useTheme());
@@ -121,7 +124,7 @@ export function NodeShell({
         )}
         <NodeHandles connectable={!readOnly} />
       </Box>
-      <LifecycleBadge lifecycle={shown} show={showLifecycle} />
+      <LifecycleBadge lifecycle={shown} show={showLifecycle && lifecycleBadge} />
     </Box>
   );
 }

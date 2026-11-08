@@ -132,7 +132,9 @@
 .lv-boundary { color: var(--ink); }
 .lv-boundary[data-selected] { --zone-edge: var(--selected-edge); }
 .lv-boundary .kit-zone__head { background: var(--canvas-ground); border-radius: var(--r-2); }
-.lv-boundary .kit-zone__aside { display: inline-flex; align-items: center; gap: 4px; }
+/* Its name in whole words, and what it is goes under it where the box is too narrow for both on a line. */
+.lv-boundary .kit-zone__head { flex-wrap: wrap; }
+.lv-boundary .kit-zone__aside { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 /*
  * Sized in canvas units, as graph.ts's EMPTY_HELP: it is drawn only where the
  * boundary holds it whole under its head, so it scales with the board rather
@@ -261,6 +263,8 @@
   line-height: var(--lh-tight);
   white-space: nowrap;
 }
+/* In a corner, which holds its size by its own zoom already: sized by the zoom twice, it was 1.7 times too large at 60 %. */
+.lv-tile__corner .lv-life { font-size: var(--canvas-t-xs); }
 .lv-life[data-phase='planned'] { color: var(--life-planned); }
 .lv-life[data-phase='retiring'] { color: var(--life-retiring); }
 .lv-life[data-phase='retired'] { color: var(--ink-2); }

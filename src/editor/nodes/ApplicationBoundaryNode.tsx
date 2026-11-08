@@ -3,10 +3,12 @@
 
 import { memo, useContext } from 'react';
 import { useStrings } from '../../i18n/LanguageContext';
+import { CanvasName } from '../../widgets/kit/Card';
 import { PageState } from '../../widgets/kit/PageState';
 import { Zone } from '../../widgets/kit/Zone';
 import { ContainerBoardContext } from '../canvas/containerBoard';
 import { iconSlotSize, NodeIcon, NodeShell } from './NodeShell';
+import { lifecycleWord } from './LifecycleBadge';
 import type { ElementNodeProps } from './nodeData';
 
 /**
@@ -14,6 +16,9 @@ import type { ElementNodeProps } from './nodeData';
  * dashed zone, with its name first and top left, since it names what is being looked
  * at. It is a real node (selectable, and lines from the context attach to its sides) but
  * sits behind everything by a negative z-index set in graph building.
+ *
+ * Its phase is said in its head after its type, at the head's size: in the shell's corner
+ * it was scaled for the zoom twice and lay over the type at the diagram's opening zoom.
  *
  * Its own logo belongs on the frame around it. It takes no resizer, as the diagram sizes
  * it, and no selection ring: it recolours its edge instead, because a ring round a whole
@@ -38,10 +43,12 @@ export const ApplicationBoundaryNode = memo(function ApplicationBoundaryNode({
       showLifecycle={data.showLifecycle}
       phase={data.phase}
       selectionRing={false}
+      lifecycleBadge={false}
     >
       <Zone
         kind="boundary"
         name={element.name}
+        nameAs={<CanvasName text={element.name} />}
         className="lv-boundary"
         data-testid="boundary-fill"
         data-selected={selected || undefined}
@@ -51,6 +58,7 @@ export const ApplicationBoundaryNode = memo(function ApplicationBoundaryNode({
           <>
             <NodeIcon element={element} size={iconSlotSize(element, 16)} />
             {`[${t('c4.application')}]`}
+            {data.showLifecycle && lifecycleWord(data.phase ?? element.lifecycle, t)}
           </>
         )}
       >
