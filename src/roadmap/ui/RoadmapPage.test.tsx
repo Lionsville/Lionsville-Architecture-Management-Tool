@@ -387,6 +387,15 @@ describe('the handle on the ruler', () => {
     expect(actions.setAsOf).toHaveBeenCalledWith('2026-09-09')
   })
 
+  it('writes nothing while the board is looked at on another day, and New plan says why', () => {
+    const { actions } = setup({ asOf: '2027-01-01', looking: true })
+    const make = screen.getByRole('button', { name: 'New plan' })
+    expect(make.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(make)
+    expect(screen.queryByRole('dialog', { name: 'What is the plan called?' })).toBeNull()
+    expect(actions.addTransition).not.toHaveBeenCalled()
+  })
+
   it('says the day the board shows, and goes when no board is behind the page', () => {
     setup({ asOf: '2027-01-01' })
     expect(screen.getByText(/Board shows 1 Jan 2027/)).toBeTruthy()

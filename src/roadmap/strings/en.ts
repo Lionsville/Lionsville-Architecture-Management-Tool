@@ -16,6 +16,7 @@ export const EN = {
   'roadmap.plans': 'Plans',
   'roadmap.newPlan': 'New plan',
   'roadmap.newPlanTitle': 'What is the plan called?',
+  'roadmap.newPlanLooking': 'Not while you look at another day: go back to today to make a plan',
   'roadmap.noPlans': 'No plans yet.',
   'roadmap.planFrom': 'From',
   'roadmap.planTo': 'To',

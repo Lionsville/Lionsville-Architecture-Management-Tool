@@ -12,6 +12,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'roadmap.plans': 'Plannen',
   'roadmap.newPlan': 'Nieuw plan',
   'roadmap.newPlanTitle': 'Hoe heet het plan?',
+  'roadmap.newPlanLooking': 'Niet terwijl je naar een andere dag kijkt: ga terug naar vandaag om een plan te maken',
   'roadmap.noPlans': 'Nog geen plannen.',
   'roadmap.planFrom': 'Van',
   'roadmap.planTo': 'Tot',

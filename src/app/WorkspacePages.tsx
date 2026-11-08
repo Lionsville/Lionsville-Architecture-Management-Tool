@@ -9,7 +9,7 @@
 import { handOver } from './handOver'
 import { createElement, useMemo } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
-import { shownAsOf } from '../editor'
+import { isLookingAway, shownAsOf } from '../editor'
 import type { AdrPage as AdrPageShape } from '../decisions/ui/AdrPage'
 import type { ObservationsPage as ObservationsPageShape } from '../observations/ui/ObservationsPage'
 import type { OperatingModelPage as OperatingModelPageShape } from '../operating/ui/OperatingModelPage'
@@ -332,6 +332,8 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
   const { onOpenScope, onShareLink } = props.navigation
   const { plans } = pages
   const open = session.model.diagrams.find((d) => d.id === session.activeDiagramId)
+  // Reading changes nothing (decision 4): while the board is looked at on another day, the roadmap and a plan write nothing.
+  const looking = open !== undefined && isLookingAway(open, viewing.days)
   // A plan may rest on a record filed above this scope; its gate reads those too.
   const { ancestorDecisions } = props.tree
   const decidedAbove = useMemo(() => ancestorDecisions.flatMap((one) => one.decisions), [ancestorDecisions])
@@ -347,6 +349,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         asOf={open ? shownAsOf(open, viewing.days) : undefined}
         boardBehind={open !== undefined}
         readOnly={readOnly}
+        looking={looking}
         actions={plans.roadmapActions}
         {...(plans.roadmapSelect !== undefined ? { select: plans.roadmapSelect } : {})}
         remember={`roadmap\u0000${props.project.path}`}
@@ -367,7 +370,7 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         decisions={session.model.decisions}
         ancestorDecisions={decidedAbove}
         today={todayDay}
-        readOnly={readOnly}
+        readOnly={readOnly || looking}
         actions={plans.planActions}
         renderMarkdown={pictures.renderDocument}
         onAddImage={files.addImage}
@@ -377,15 +380,15 @@ function PlanPages({ parts }: { parts: WorkspaceParts }) {
         windowChrome={pageChrome}
         initiativeToggle={props.project.path !== ''}
         describe={readings.describeForMap}
-        {...(plans.plan ? { organisation: planOrganisation(parts, plans.plan) } : {})}
+        {...(plans.plan ? { organisation: planOrganisation(parts, plans.plan, readOnly || looking) } : {})}
       />
     </>
   )
 }
 
 /** What a plan does to the organisation (ADR-0036 §6), drawn here because all of it is the organisation's. */
-function planOrganisation(parts: WorkspaceParts, plan: NonNullable<WorkspaceParts['pages']['plans']['plan']>): { facts: ReactNode; main: ReactNode } {
-  const { props, session, readOnly, readings, landMoves, showElement, pages } = parts
+function planOrganisation(parts: WorkspaceParts, plan: NonNullable<WorkspaceParts['pages']['plans']['plan']>, readOnly: boolean): { facts: ReactNode; main: ReactNode } {
+  const { props, session, readings, landMoves, showElement, pages } = parts
   const shared: PlanOrganisationProps = {
     plan, scope: props.project.path, model: session.model, index: props.tree.index, people: props.shell.people, readOnly,
     dispatch: session.dispatch, makeId: props.shell.makeId, land: landMoves, scopeLabel: readings.scopeLabel, s: props.shell.s,

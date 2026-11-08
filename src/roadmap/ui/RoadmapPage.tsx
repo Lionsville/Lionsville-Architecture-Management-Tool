@@ -110,6 +110,11 @@ export type RoadmapPageProps = {
   /** Whether a board is open behind the page for the handle to move. */
   boardBehind?: boolean
   readOnly: boolean
+  /**
+   * The board behind is looked at on another day: nothing is written while a
+   * person looks (decision 4), so the page writes nothing, and *New plan* says why.
+   */
+  looking?: boolean
   actions: RoadmapActions
   /** Where the session keeps what its list of findings has unfolded: the open scope's roadmap. */
   remember?: string
@@ -132,7 +137,9 @@ function asView(held: unknown): AxisView | undefined {
 const FIND_FROM_ROWS = 8
 
 export function RoadmapPage(props: RoadmapPageProps) {
-  const { model, today, readOnly, actions } = props
+  const { model, today, actions } = props
+  const looking = props.looking === true && !props.readOnly
+  const readOnly = props.readOnly || looking
   const { t } = useStrings()
   const [newTitle, setNewTitle] = useState<string | null>(null)
   const [names, setNames] = useSeamWidth('roadmap.labels', 260)
@@ -208,7 +215,14 @@ export function RoadmapPage(props: RoadmapPageProps) {
       <div className="roadmap-page">
         <header className="roadmap-head">
           <h1 className="roadmap-title">{t('roadmap.title')}</h1>
-          {!readOnly && <Button variant="primary" onClick={() => setNewTitle('')} data-guide="roadmap.newPlan">{t('roadmap.newPlan')}</Button>}
+          {(!readOnly || looking) && (
+            <Button
+              variant="primary" onClick={() => setNewTitle('')} data-guide="roadmap.newPlan"
+              {...(looking ? { reason: t('roadmap.newPlanLooking') } : {})}
+            >
+              {t('roadmap.newPlan')}
+            </Button>
+          )}
           <PageClose onClose={props.onClose} />
         </header>
         <div className="roadmap-body">
