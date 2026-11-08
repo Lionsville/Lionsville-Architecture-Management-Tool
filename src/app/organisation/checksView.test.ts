@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { CHECK_CATALOGUE } from '../../model/checkCatalogue'
 import type { CheckKey } from '../../model/checkCatalogue'
-import { firstCheck, foundGroups, heldByTwo, walkable, workSections } from './checksView'
+import { acceptedCount, firstAccepted, firstCheck, foundGroups, heldByTwo, walkable, workSections } from './checksView'
 import type { CheckInstance, CheckRow } from './treeChecks'
 
 const instance = (key: CheckKey, over: Partial<CheckInstance> = {}): CheckInstance => ({
@@ -19,6 +19,17 @@ describe('the work list', () => {
   it('lists only what was found under each weight, and folds the rest into a line each', () => {
     const sections = workSections(CATEGORIES, 'weight')
     expect(sections.map((one) => [one.kind, one.count])).toEqual([['fix', 2], ['review', 3], ['nothing', 1], ['notCounted', 1]])
+  })
+
+  it('lists a check whose findings were all marked as intended under what was accepted, not among those that found nothing', () => {
+    const allMarked: CheckRow = { ...row('check.proposal', 0), marked: Array.from({ length: 46 }, () => ({ instance: instance('check.proposal'), mark: {} as never, keptIn: 'a' })) }
+    const categories = [{ category: 'landscape' as const, rows: [...CATEGORIES[0]!.rows, allMarked] }]
+    const sections = workSections(categories, 'weight')
+    expect(sections.map((one) => [one.kind, one.count])).toEqual([['fix', 2], ['review', 3], ['accepted', 46], ['nothing', 1], ['notCounted', 1]])
+    expect(sections.find((one) => one.kind === 'nothing')?.rows.map((one) => one.key)).toEqual(['check.drift'])
+    expect(acceptedCount(categories)).toBe(46)
+    expect(firstAccepted(categories)).toBe('check.proposal')
+    expect(firstAccepted(CATEGORIES)).toBeUndefined()
   })
 
   it('opens on the first fix, not on a review with more found', () => {

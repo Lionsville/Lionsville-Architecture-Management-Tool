@@ -22,7 +22,7 @@ export const WORK_GROUPS: readonly WorkGroup[] = ['weight', 'category', 'scope']
 export type WorkSection = {
   readonly id: string
   /** A key of what names it: a weight, a category, a scope; the page says the words. */
-  readonly kind: 'fix' | 'review' | 'note' | 'nothing' | 'notCounted' | 'category' | 'scope' | 'all'
+  readonly kind: 'fix' | 'review' | 'note' | 'accepted' | 'nothing' | 'notCounted' | 'category' | 'scope' | 'all'
   readonly category?: CheckCategory
   readonly scope?: ScopePath
   readonly rows: readonly CheckRow[]
@@ -31,6 +31,18 @@ export type WorkSection = {
 }
 
 const found = (rows: readonly CheckRow[]) => rows.reduce((sum, row) => sum + row.shown.length, 0)
+const marked = (rows: readonly CheckRow[]) => rows.reduce((sum, row) => sum + row.marked.length, 0)
+
+/** How many findings were marked as intended, over the whole page: said in its head, so a mark is never out of sight. */
+export function acceptedCount(categories: readonly { rows: readonly CheckRow[] }[]): number {
+  return marked(categories.flatMap((one) => one.rows))
+}
+
+/** The check to show when Accepted is asked for and none is picked: the one with the most marks. */
+export function firstAccepted(categories: readonly { rows: readonly CheckRow[] }[]): CheckKey | undefined {
+  return [...categories.flatMap((one) => one.rows)].filter((row) => row.marked.length > 0).sort((a, b) => b.marked.length - a.marked.length)[0]?.key
+}
+
 const biggest = (rows: readonly CheckRow[]) => [...rows].sort((a, b) => b.shown.length - a.shown.length)
 
 export function workSections(categories: readonly { category: CheckCategory; rows: readonly CheckRow[] }[], group: WorkGroup): readonly WorkSection[] {
@@ -52,12 +64,16 @@ export function workSections(categories: readonly { category: CheckCategory; row
     return [...byScope].sort(([a], [b]) => a.localeCompare(b)).map(([scope, rows]) => ({ id: `scope:${scope}`, kind: 'scope', scope, rows, count: found(rows) }))
   }
   const of = (weight: CheckRow['entry']['weight']) => biggest(every.filter((row) => row.entry.weight === weight && row.counted && row.shown.length > 0))
-  const nothing = every.filter((row) => row.counted && row.shown.length === 0)
+  // A check whose every finding was marked as intended found something: it is listed
+  // with what was accepted, where it can be taken back, not among the checks that found nothing.
+  const accepted = every.filter((row) => row.counted && row.shown.length === 0 && row.marked.length > 0)
+  const nothing = every.filter((row) => row.counted && row.shown.length === 0 && row.marked.length === 0)
   const notCounted = every.filter((row) => !row.counted)
   const sections: WorkSection[] = [
     { id: 'fix', kind: 'fix', rows: of('fix'), count: found(of('fix')) },
     { id: 'review', kind: 'review', rows: of('review'), count: found(of('review')) },
     { id: 'note', kind: 'note', rows: of('note'), count: found(of('note')) },
+    { id: 'accepted', kind: 'accepted', rows: accepted, count: marked(accepted) },
     { id: 'nothing', kind: 'nothing', rows: nothing, count: nothing.length },
     { id: 'notCounted', kind: 'notCounted', rows: notCounted, count: notCounted.length },
   ]

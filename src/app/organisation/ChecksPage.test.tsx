@@ -154,6 +154,19 @@ describe('the Checks page', () => {
     expect(marking.takeBack).toHaveBeenCalledWith({ scope: '', mark })
   })
 
+  it('keeps what was accepted in sight: the head counts it, its check is listed under Accepted as intended, and a press opens it there', () => {
+    const mark = { check: 'check.interactionUnused' as const, key: 'i-1 ops sales', on: '2026-10-02', reason: 'They design the API together' }
+    page({}, [{ scope: '', mark }])
+    // Not among the checks that found nothing, which would say 0 of it.
+    const heads = screen.getAllByRole('row').filter((one) => one.getAttribute('aria-expanded') !== null).map((one) => one.textContent)
+    expect(heads.some((one) => one?.includes('Accepted as intended'))).toBe(true)
+    expect(listRow(/Interaction not used by any interface/)?.textContent).toContain('1 accepted')
+    fireEvent.click(screen.getByTestId('checks-accepted-count'))
+    expect(screen.getByTestId('checks-accepted-count').textContent).toBe('1 accepted as intended')
+    expect(detail().dataset.check).toBe('check.interactionUnused')
+    expect(within(detail()).getByTestId('accepted-reason').textContent).toContain('They design the API together')
+  })
+
   it('says of a check only an open scope works out where it is found, in words and with a way there, and no count', () => {
     const onOpenScope = vi.fn()
     page({ request: { select: 'check.notDrawn' }, onOpenScope })

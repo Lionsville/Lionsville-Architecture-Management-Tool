@@ -54,7 +54,7 @@ import { Toast } from '../../widgets/kit/Toast'
 import type { ToastWords } from '../../widgets/kit/Toast'
 import { useCheckMarking } from '../checkMarking'
 import type { CheckMarking } from '../checkMarking'
-import { firstCheck, foundGroups, heldByTwo, WORK_GROUPS, workSections } from './checksView'
+import { acceptedCount, firstAccepted, firstCheck, foundGroups, heldByTwo, WORK_GROUPS, workSections } from './checksView'
 import type { WorkGroup, WorkSection } from './checksView'
 import { FindingActions } from './FindingActions'
 import type { FindingActionsProps, FixDone } from './FindingActions'
@@ -103,6 +103,7 @@ const toWeight = (key: WorkGroup, s: Translate) => s(`checks.group.${key}`)
 function sectionLabel(section: WorkSection, scopeName: (path: ScopePath) => string, s: Translate): string {
   switch (section.kind) {
     case 'fix': case 'review': case 'note': return s(`checks.section.${section.kind}`)
+    case 'accepted': return s('checks.section.accepted')
     case 'nothing': return s('checks.section.nothing')
     case 'notCounted': return s('checks.section.notCounted')
     case 'category': return s(CHECK_CATEGORY_LABEL[section.category ?? 'landscape'])
@@ -119,6 +120,16 @@ function workSentence(counts: Readonly<Record<CheckWeight, number>>, reviews: re
     return held !== undefined ? s('checks.heldByTwo', { said, held }) : said
   })
   return parts.length > 0 ? `${parts.join('. ')}.` : s('checks.nothing')
+}
+
+/** The head's last words: how many were marked as intended, pressed to see them where they can be taken back. */
+function AcceptedSaid({ count, onShow, s }: { count: number; onShow: () => void; s: Translate }) {
+  if (count === 0) return null
+  return (
+    <Button variant="quiet" size="small" data-testid="checks-accepted-count" onClick={onShow}>
+      {s('checks.acceptedN', { count })}
+    </Button>
+  )
 }
 
 /** A reason, and the press that marks: the explanation stays in view while deciding. */
@@ -363,7 +374,15 @@ export function ChecksPage(props: ChecksPageProps) {
 
   const picked = every.find((row) => row.key === view.select)
   const firstKey = useMemo(() => firstCheck(rows), [rows])
-  const current = picked ?? every.find((row) => row.key === firstKey)
+  // Accepted asked for with no check picked — an address, a link — is the check with the most marks.
+  const acceptedKey = useMemo(() => firstAccepted(rows), [rows])
+  const current = picked ?? every.find((row) => row.key === (tab === 'accepted' ? acceptedKey ?? firstKey : firstKey))
+  const accepted = useMemo(() => acceptedCount(rows), [rows])
+  const showAccepted = () => {
+    if (!acceptedKey) return
+    setView({ ...view, select: acceptedKey, find: '', group: null, sort: null })
+    setTab('accepted')
+  }
   const reviews = useMemo(() => every.filter((row) => row.entry.weight === 'review' && row.shown.length > 0), [every])
 
   const groups: readonly ListGroup[] = sections.map((section) => ({
@@ -373,7 +392,9 @@ export function ChecksPage(props: ChecksPageProps) {
       attributes: { 'data-testid': `checks-row-${row.key}`, 'data-check': row.key },
       text: s(row.entry.name), mark: <Mark kind={row.entry.weight} label={s(CHECK_WEIGHT_LABEL[row.entry.weight].name)} />,
       // Under its own heading the words would say the heading again on every line.
-      ...(row.counted ? { note: String(row.shown.length) } : section.kind === 'notCounted' ? {} : { note: s('checks.openToCount') }),
+      ...(!row.counted ? (section.kind === 'notCounted' ? {} : { note: s('checks.openToCount') })
+        : row.shown.length === 0 && row.marked.length > 0 ? { note: s('checks.acceptedShort', { count: row.marked.length }) }
+          : { note: String(row.shown.length) }),
     })),
   }))
   const selectedId = current && by === 'scope'
@@ -393,7 +414,9 @@ export function ChecksPage(props: ChecksPageProps) {
     const key = id.includes('@') ? id.slice(0, id.indexOf('@')) as CheckKey : id as CheckKey
     // What narrowed one check's list means nothing on the next.
     setView({ ...view, select: key, find: '', group: null, sort: null })
-    setTab('found')
+    // A check with nothing open and something accepted opens on what was accepted.
+    const chosen = every.find((row) => row.key === key)
+    setTab(chosen && chosen.shown.length === 0 && chosen.marked.length > 0 ? 'accepted' : 'found')
   }
   const total = counts.fix + counts.review + counts.note
   return (
@@ -404,6 +427,7 @@ export function ChecksPage(props: ChecksPageProps) {
             <h1 className="org-page__name">{s('checks.title')}</h1>
             <ScopeOfChecks at={at} scopes={scopes} onScope={onScope} scopeName={scopeName} s={s} />
             <span className="org-page__covers" data-testid="checks-counts">{workSentence(counts, reviews, s)}</span>
+            <AcceptedSaid count={accepted} onShow={showAccepted} s={s} />
           </div>
         </div>
         <FilterWords
@@ -447,6 +471,7 @@ export function ChecksPage(props: ChecksPageProps) {
 
 function sectionKindOf(row: CheckRow): WorkSection['kind'] {
   if (!row.counted) return 'notCounted'
-  return row.shown.length === 0 ? 'nothing' : row.entry.weight
+  if (row.shown.length === 0) return row.marked.length > 0 ? 'accepted' : 'nothing'
+  return row.entry.weight
 }
 
