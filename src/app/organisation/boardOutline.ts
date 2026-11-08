@@ -3,7 +3,8 @@
 
 /**
  * The boards of a scope in the order its home lists them: each container
- * diagram under the landscape its application is on.
+ * diagram under the landscape its application is on, and an enterprise map under
+ * the sheet it is a reading of (`model/sheetReading`).
  *
  * A landscape with twenty applications can have twenty container diagrams,
  * and as rows of their own beside it they bury the handful of boards a person
@@ -20,12 +21,13 @@
  * listed at the end rather than dropped.
  */
 import type { DesignDiagram } from '../../model'
+import { isSheetReading } from '../../model/sheetReading'
 
-/** A board that is not a container diagram, and the container diagrams under it. */
+/** A board that is not a container diagram, and the views read under it. */
 export interface BoardEntry {
   board: DesignDiagram
-  /** Empty for everything but a landscape, and for a landscape with none. */
-  containers: DesignDiagram[]
+  /** A landscape's container diagrams, or the first sheet's maps; empty for everything else. */
+  under: DesignDiagram[]
 }
 
 export interface BoardOutline {
@@ -37,8 +39,10 @@ export interface BoardOutline {
 
 export function outlineBoards(boards: readonly DesignDiagram[]): BoardOutline {
   const entries: BoardEntry[] = boards
-    .filter((board) => board.kind !== 'container')
-    .map((board) => ({ board, containers: [] }))
+    .filter((board) => board.kind !== 'container' && !isSheetReading(board, boards))
+    .map((board) => ({ board, under: [] }))
+  const sheet = entries.find((entry) => entry.board.kind === 'sheet')
+  for (const board of boards) if (isSheetReading(board, boards)) sheet?.under.push(board)
   const landscapes = entries.filter((entry) => entry.board.kind === 'layer7')
   const loose: DesignDiagram[] = []
   for (const board of boards) {
@@ -47,7 +51,7 @@ export function outlineBoards(boards: readonly DesignDiagram[]): BoardOutline {
     const home = application === undefined
       ? undefined
       : landscapes.find((entry) => entry.board.members.some((member) => member.id === application))
-    if (home) home.containers.push(board)
+    if (home) home.under.push(board)
     else loose.push(board)
   }
   return { entries, loose }

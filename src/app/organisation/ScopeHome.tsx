@@ -247,8 +247,8 @@ function viewRows(views: readonly DesignDiagram[], pages: OrganisationPages, onD
     ),
   })
   return [
-    // Container diagrams straight after their landscape: a closer look at one box on it, in the order they are read.
-    ...entries.flatMap(({ board, containers }) => [rowOf(board, 0), ...containers.map((one) => rowOf(one, 1))]),
+    // Container diagrams straight after their landscape, a closer look at one box on it, and a map after its sheet.
+    ...entries.flatMap(({ board, under }) => [rowOf(board, 0), ...under.map((one) => rowOf(one, 1))]),
     ...loose.map((one) => rowOf(one, 1)),
   ]
 }

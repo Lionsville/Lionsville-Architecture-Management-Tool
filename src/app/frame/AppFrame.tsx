@@ -19,6 +19,7 @@ import type { Destination, Page, Screen } from '../../agent/screen'
 import { HOME_PAGES, viewPage } from '../../agent/screen'
 import type { DesignDiagram } from '../../model/types'
 import { matchesQuery } from '../../model/textSearch'
+import { isSheetReading } from '../../model/sheetReading'
 import { flattenScopes } from '../../projects/scope'
 import type { ScopeSummary } from '../../projects/scope'
 import { ROOT_SCOPE } from '../../projects/scopePath'
@@ -549,15 +550,18 @@ function RowTwoStart({ parts, facts, at, pageUp }: { parts: ShellParts; facts: S
   // this scope's views: the same names over it, changing at every press, read as
   // where you are (the owner, 7 November 2026). A page over a home keeps them.
   const views = facts?.kind === 'home' && !homeHere ? facts : undefined
+  // The tabs the workspace draws for the same scope: a container diagram is a closer look at a landscape and a map
+  // a reading of the sheet, neither a tab of its own.
+  const tabs = (views?.views ?? []).filter((view, _at, all) => view.kind !== 'container' && !isSheetReading(view, all))
   return (
     <>
       <button type="button" className="kit-frame__tab" aria-current={homeHere ? 'page' : undefined} data-testid="frame-home" data-guide="frame.home" onClick={() => agent.openSomewhere({ scope: at, page: 'home' })}>
         {s('frame.home')}
       </button>
       {/* A home's views scroll, as a scope's tabs do, when the row has no room for them all. */}
-      {(views?.views ?? []).length > 0 && (
+      {tabs.length > 0 && (
         <div className="kit-frame__homeviews">
-          {(views?.views ?? []).map((view) => (
+          {tabs.map((view) => (
         <button key={view.id} type="button" className="kit-frame__tab" data-testid={`frame-view-${view.id}`} onClick={() => agent.openSomewhere({ scope: at, page: viewPage(view.kind as DesignDiagram['kind']), id: view.id })}>
           {view.name}
         </button>

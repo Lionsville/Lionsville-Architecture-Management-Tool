@@ -29,6 +29,7 @@ import { OWN_MENU_ATTR } from './isEditableTarget';
 import { menuItemsFor, type MenuItem as MenuItemModel } from './canvas/menuItems';
 import { detectPlatform } from './keymap';
 import type { DesignDiagram, DesignModel, ElementId, Point } from '../model/types';
+import { isSheetReading } from '../model/sheetReading';
 import { AddIcon, CaretIcon, RadarIcon } from '../widgets/icons';
 import { useStrings } from '../i18n/LanguageContext';
 import { DayControl } from '../widgets/kit/DayControl';
@@ -261,7 +262,7 @@ function tabList(kind: DesignDiagram['kind'], props: EditorToolbarProps): TabLis
       return props.onOpenSheet ? 'sheet' : 'none'
     case 'map':
       // Coverage is a reading of the sheet, in the sheet's own tab, wherever there is a sheet for it to be a reading of.
-      return props.onOpenMap && !props.model.diagrams.some((diagram) => diagram.kind === 'sheet') ? 'map' : 'none'
+      return props.onOpenMap && !isSheetReading({ kind }, props.model.diagrams) ? 'map' : 'none'
     case 'technology':
       return props.onOpenTechnology ? 'technology' : 'none'
     case 'drawing':

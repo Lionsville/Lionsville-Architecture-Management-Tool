@@ -118,6 +118,24 @@ describe('row two on a home', () => {
     await waitFor(() => expect(within(screen.getByTestId('frame-views')).queryByRole('tab')).toBeNull())
   })
 
+  it('lists over a page the tabs the workspace draws: a map is the sheet\u2019s Coverage, not a tab, while there is a sheet', async () => {
+    const root = scope('', 'Acme Logistics', true)
+    const views = [
+      ...root.model.diagrams,
+      laidOut({ id: 'sh', kind: 'sheet', name: 'Business architecture', placements: [] }),
+      laidOut({ id: 'mp', kind: 'map', name: 'Enterprise map', placements: [] }),
+    ]
+    const agent = wire()
+    renderApp({ agent: agent.gateway, repositories: heldRepositories([{ ...root, model: { ...root.model, diagrams: views } }]), boot: { initialProject: undefined } })
+    await screen.findByTestId('organisation-cards')
+    fireEvent.click(screen.getByTestId('tree-place-register'))
+    await placePage()
+    const row = screen.getByTestId('frame-places')
+    expect(within(row).getByTestId('frame-view-sh')).toBeDefined()
+    expect(within(row).getByTestId('frame-view-l7')).toBeDefined()
+    expect(within(row).queryByTestId('frame-view-mp')).toBeNull()
+  })
+
   it('leaves what a page over a home shows as it was', async () => {
     await home()
     fireEvent.click(screen.getByTestId('tree-place-register'))
