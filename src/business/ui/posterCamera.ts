@@ -160,8 +160,10 @@ export function usePosterCamera(page: Size, viewId: string | undefined) {
     const props = canvasZoomProps(camera.current.zoom, WORDS_FROM, scale.current)
     if (on.dataset.distance !== props['data-distance']) on.dataset.distance = props['data-distance']
     if (on.dataset.labels !== props['data-labels']) on.dataset.labels = props['data-labels']
-    // Only the far sizes read it, and an inherited property touches every descendant: a step inside reading distance pays nothing.
-    if (props['data-distance'] === 'far') on.style.setProperty('--canvas-zoom', props.style['--canvas-zoom'])
+    // The far sizes read it exactly. Inside reading distance only Design's add presses read it, to hold their target at 24px on the
+    // screen, and an inherited property touches every descendant: there it moves in steps of 5%, so a wheel's zoom pays a handful.
+    const zoomVar = props['data-distance'] === 'far' ? props.style['--canvas-zoom'] : String(Math.floor(Number(props.style['--canvas-zoom']) * 20) / 20)
+    if (on.style.getPropertyValue('--canvas-zoom') !== zoomVar) on.style.setProperty('--canvas-zoom', zoomVar)
     for (const tell of listeners.current) tell(camera.current.zoom)
   }, [])
   const to = useCallback((zoom: number, at?: Point) => {

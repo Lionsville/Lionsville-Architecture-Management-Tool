@@ -176,13 +176,19 @@
 [data-posture="design"] .poster-block { overflow: visible; }
 .poster-add { display: inline-flex; flex: none; opacity: 0; }
 .poster-add button { position: relative; appearance: none; min-width: 20px; height: 18px; padding: 0 4px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--canvas-t-sm); font-weight: var(--fw-regular); line-height: 1; cursor: pointer; }
-/* A full 24px target round a press drawn 18px high, so the head it stands in keeps its height. */
-.poster-add button::after { content: ''; position: absolute; inset: -4px -2px; }
+/* A full 24px target round a press drawn 18px high, so the head it stands in keeps its height. The press is drawn in the
+   canvas's pixels and shrinks with its zoom; the target is held at 24px on the screen (25 / zoom here, a pixel spare for
+   where it falls between two), at 90% and at Fit too. */
+.poster-add button::after {
+  content: ''; position: absolute;
+  inset-block: min(-4px, calc(9px - 12.5px / var(--canvas-zoom, 1)));
+  inset-inline: min(-2px, calc(10px - 12px / var(--canvas-zoom, 1)));
+}
 .poster-block:hover .poster-add, .poster-block:focus-within .poster-add, .poster-item:hover .poster-add, .poster-item:focus-within .poster-add { opacity: 1; }
 .poster-add--icon { position: absolute; inset-block-start: 0; inset-inline-start: 0; z-index: 2; }
 /* Where the press sits among many like it, it shows on its own cell, step or stakeholder only, at a full target, clear of the words. */
 .poster-band__cell > .poster-add button, .poster-st > .poster-add button, .poster-person-row > .poster-add button { min-width: var(--canvas-target); height: var(--canvas-target); }
-.poster-band__cell > .poster-add button::after, .poster-st > .poster-add button::after, .poster-person-row > .poster-add button::after { inset: 0; }
+.poster-band__cell > .poster-add button::after, .poster-st > .poster-add button::after, .poster-person-row > .poster-add button::after { inset: min(0px, calc(12px - 12.5px / var(--canvas-zoom, 1))); }
 /* A step with presses keeps their column clear, so on hover they stand beside its words, not over their end. */
 .poster-st:has(> .poster-add) .poster-step,
 .poster-band__cell:has(> .poster-add) > .poster-st:last-of-type .poster-step { padding-inline-end: calc(var(--canvas-target) + 2px); }
