@@ -18,7 +18,7 @@ import { PLACE_STATE_KEY } from '../agent/place'
 import type { AgentAnswer, AgentRequest } from '../agent/tools'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ScopeSnapshot } from '../projects/scope'
-import { useDraft } from '../widgets/kit/drafts'
+import { draftHeld, useDraft } from '../widgets/kit/drafts'
 import { heldRepositories } from './testing/heldRepositories'
 import { renderApp } from './testing/renderShell'
 
@@ -172,6 +172,34 @@ describe('moving away with a draft', () => {
     // Long enough for a look to be written, were one going to be: the entry is still the board's.
     await new Promise((resolve) => setTimeout(resolve, 300))
     expect(entryPlace()).toEqual({ scope: 'acme/retail', page: 'board', id: 'r7' })
+  })
+
+  it('leaves History alone on Back to the screen under it, and keeps the draft there guarded', async () => {
+    const { ask, where } = await organisationOnScreen()
+    await ask('app.open', { scope: 'acme/retail', page: 'board', id: 'r7' })
+    await waitFor(() => expect(entryPlace()).toEqual({ scope: 'acme/retail', page: 'board', id: 'r7' }))
+    render(<Draft />)
+    await ask('app.open', { scope: 'acme/retail', page: 'history' })
+    await waitFor(() => expect(entryPlace()).toEqual({ scope: 'acme/retail', page: 'history' }))
+    window.history.back()
+    await waitFor(async () => expect((await where()).page).toBeUndefined())
+    expect(screen.queryByTestId('draft-question')).toBeNull()
+    expect(window.location.hash).toBe('#/acme/retail/-/board/r7')
+    // Nothing was asked and nothing was dropped: the next way off still asks.
+    expect(draftHeld()).toBe(true)
+  })
+
+  it('keeps History up, at its address, on Keep writing from a way past it', async () => {
+    const { ask, where } = await organisationOnScreen()
+    await ask('app.open', { scope: 'acme/retail', page: 'board', id: 'r7' })
+    render(<Draft />)
+    await ask('app.open', { scope: 'acme/retail', page: 'history' })
+    await waitFor(() => expect(entryPlace()).toEqual({ scope: 'acme/retail', page: 'history' }))
+    fireEvent.click(within(screen.getByTestId('frame-places')).getByTestId('frame-page-decisions'))
+    await keepWriting()
+    expect(((await where()).page as { page: string } | undefined)?.page).toBe('history')
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    expect(entryPlace()).toEqual({ scope: 'acme/retail', page: 'history' })
   })
 
   it('refuses an agent’s app.open with the reason, and lets it move once the draft is gone', async () => {

@@ -11,7 +11,7 @@
  * things: the look at the screen after every move, and `openFor`, the one way
  * a destination is opened — by an agent, by a provider's chrome, and by Back.
  */
-import { readFinding, writeFinding } from '../agent/place'
+import { placeOf, readFinding, samePlace, writeFinding } from '../agent/place'
 import type { CheckKey } from '../model/checkCatalogue'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Translate } from '../i18n'
@@ -156,7 +156,7 @@ export function useShellAgent(deps: {
   const lastLook = useRef<Screen | undefined>(undefined)
   const { frame } = deps
   const screenNow = useCallback(
-    (): Screen => inFrame(screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage, orgRecord }), frame),
+    (under?: 'under'): Screen => (under ? laidOver : inFrame)(screenOf(agentSessionRef.current, project, { home, homeName, organisationName, orgPage, orgRecord }), frame),
     [project, home, homeName, organisationName, orgPage, orgRecord, frame],
   )
   /** The element selected on the view on screen, where one is: what a link selects again (ADR-0033, amended). */
@@ -168,15 +168,15 @@ export function useShellAgent(deps: {
    * moving the app — nothing there to open, a scope that could not be read,
    * or a fallback onto the home that was already up with nothing over it.
    */
-  const preferences = useRef(deps)
-  preferences.current = deps
+  const preferences = useLatest(deps)
   const moved = useRef<(to: Destination & { scope: string }, nothing: () => void) => void>(NOBODY)
   const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY, stay?: () => void) => {
-    leaveFramePages(frame, to.page, preferences.current.closePreferences)
+    const shut = () => leaveFramePages(frame, to.page, preferences.current.closePreferences)
     // A panel beside the work moves nothing; every other way to go is asked here, whoever is going.
-    if (to.page !== undefined && FRAME_PAGES.includes(to.page)) { openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, preferences.current.openPreferences); return }
-    throughGuard(frame, to, () => { askEditOf(to); moved.current(to, nothing) }, stay)
-  }, [homeAt, project, home, frame])
+    if (to.page !== undefined && FRAME_PAGES.includes(to.page)) { shut(); openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, preferences.current.openPreferences); return }
+    if (backUnder(frame, () => screenNow('under'), to)) { shut(); return }
+    throughGuard(frame, to, () => { shut(); askEditOf(to); moved.current(to, nothing) }, stay) // shut with the move: Keep writing leaves it up, at its address
+  }, [homeAt, project, home, frame, screenNow])
   moved.current = (to, nothing) => {
     const listPage = holdInFrame(frame, to)
     const record = to.page === 'people' ? to.id ?? to.select : undefined
@@ -504,6 +504,22 @@ function framePageOf(held: FrameState): 'preferences' | 'history' | undefined {
   return held.history ? 'history' : undefined
 }
 
+/**
+ * Back from the frame's page (History, Preferences) to the screen it stands
+ * over leaves that page alone: the screen under it, and a draft written there,
+ * stay where they are, and are neither asked about nor dropped.
+ */
+function backUnder(frame: FrameStore | undefined, under: () => Screen, to: Destination & { scope: string }): boolean {
+  return frame !== undefined && framePageOf(frame.get()) !== undefined && samePlace(placeOf(under()), to)
+}
+
+/** The latest of a value, read from a callback that should not change with it. */
+function useLatest<T>(value: T): { readonly current: T } {
+  const held = useRef(value)
+  held.current = value
+  return held
+}
+
 /** A move anywhere else shuts what the frame holds over the screen. */
 function leaveFramePages(frame: FrameStore | undefined, to: Page | undefined, closePreferences: (() => void) | undefined): void {
   if (to !== 'preferences' && frame?.get().preferences) closePreferences?.()
@@ -513,9 +529,14 @@ function leaveFramePages(frame: FrameStore | undefined, to: Page | undefined, cl
 /** The screen with what the frame holds laid over it: its panel, a tab the page keeps there, and what the view keeps there. */
 function inFrame(screen: Screen, frame: FrameStore | undefined): Screen {
   const held = frame?.get()
+  const framed = held && framePageOf(held)
+  return framed ? { ...screen, page: { page: framed } as Screen['page'] } : laidOver(screen, frame)
+}
+
+/** The screen with what the frame holds laid over it but its page: the screen that page stands over, as it is when that page shuts. */
+function laidOver(screen: Screen, frame: FrameStore | undefined): Screen {
+  const held = frame?.get()
   if (!held) return screen
-  const framed = framePageOf(held)
-  if (framed) return { ...screen, page: { page: framed } as Screen['page'] }
   const page = screen.page
   // A view may have readings as a page has tabs, and they go in its address the same way.
   const view = screen.open?.view
