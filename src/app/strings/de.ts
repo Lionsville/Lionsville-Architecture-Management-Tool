@@ -395,7 +395,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'agent.connected': '{name} ist verbunden.',
   'agent.moved':
     'Port {from} war beim Start der App belegt, daher lauscht sie jetzt an {port}. Ein Agent, der mit dem alten Port eingerichtet ist, braucht die neue Adresse.',
-  'agent.desktopOnly': 'Einen Agenten zu verbinden braucht die Desktop-App — nur sie kann auf diesem Rechner lauschen. Öffnen Sie diesen Bereich dort, und der Schalter ist hier.',
+  'agent.desktopOnly': 'Einen Agenten zu verbinden braucht die Desktop-App — nur sie kann auf diesem Rechner lauschen. Öffnen Sie diesen Bereich in der Desktop-App; der Schalter steht dort in diesem Dialog.',
   'agent.recipes': 'IHREN CLIENT VERBINDEN',
   'agent.recipesNote': 'Der Port und das Token unten gehören zu diesem Rechner. Wählen Sie Ihren Client und fügen Sie ein.',
   'agent.tabClaude': 'Claude Code',
@@ -1965,6 +1965,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'history.snapshotWhy': 'Ein benannter Punkt in diesem Verlauf, zum Zurückblicken oder Zurückgehen.',
   'history.messageHint': 'Aus Ihren Änderungen vorgeschlagen',
   'prefs.owner': 'Nur für Sie, auf diesem Computer. Sie gelten sofort und werden nicht mit Ihrer Arbeit gespeichert.',
+  'prefs.ownerBrowser': 'Nur für Sie, in diesem Browser und nur für diese Seite. Sie gelten sofort und werden nicht mit Ihrer Arbeit gespeichert.',
   'prefs.canvas': 'Zeichenfläche',
   'prefs.canvasNote': 'Auch auf der Zeichenfläche selbst umschaltbar, die sie hier speichert.',
   'prefs.grid': 'Raster',

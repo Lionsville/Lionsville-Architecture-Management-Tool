@@ -60,7 +60,7 @@ export const EN = {
    * says so: the app keeps its own copy until somebody moves it on purpose.
    */
   'folder.adoptTitle': 'Bring your work into this folder?',
-  'folder.adoptBody': 'Your work is kept inside the app at the moment. “{name}” can take a copy of it, or open as it is. Nothing is deleted either way — the app keeps its copy until you move it on purpose.',
+  'folder.adoptBody': 'Your work is kept in this browser at the moment. “{name}” can take a copy of it, or open as it is. Nothing is deleted either way — the app keeps its copy until you move it on purpose.',
   'folder.adoptCopy': 'Copy my work in',
   'folder.adoptSkip': 'Open the folder as it is',
   'picker.chooseFolder': 'Open a folder…',

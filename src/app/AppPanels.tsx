@@ -550,6 +550,7 @@ export function FramePages({ parts }: { parts: ShellParts }) {
   const PreferencesPanel = provider.PreferencesPanel
   return (
     <PreferencesPage
+      inBrowser={!parts.hostMenu}
       open={machine.open}
       onClose={() => machine.setOpen(false)}
       language={prefs.language}

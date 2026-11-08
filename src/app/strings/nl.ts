@@ -391,7 +391,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'agent.connected': '{name} is gekoppeld.',
   'agent.moved':
     'Poort {from} was bezet toen de app startte, dus hij luistert nu op {port}. Een agent die met de oude poort is ingesteld heeft het nieuwe adres nodig.',
-  'agent.desktopOnly': 'Een agent koppelen vraagt de desktop-app — alleen die kan op deze machine luisteren. Open deze scope daar en de schakelaar staat hier.',
+  'agent.desktopOnly': 'Een agent koppelen vraagt de desktop-app — alleen die kan op deze machine luisteren. Open deze scope in de desktop-app; de schakelaar staat daar in dit venster.',
   'agent.recipes': 'JE CLIENT KOPPELEN',
   'agent.recipesNote': 'De poort en het token hieronder zijn van deze machine. Kies je client en plak.',
   'agent.tabClaude': 'Claude Code',
@@ -1961,6 +1961,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'history.snapshotWhy': 'Een benoemd punt in deze geschiedenis, om op terug te kijken of naar terug te gaan.',
   'history.messageHint': 'Voorgesteld op basis van je wijzigingen',
   'prefs.owner': 'Alleen voor jou, op deze computer. Ze gelden meteen en gaan niet mee met je werk.',
+  'prefs.ownerBrowser': 'Alleen voor jou, in deze browser en alleen voor deze site. Ze gelden meteen en gaan niet mee met je werk.',
   'prefs.canvas': 'Canvas',
   'prefs.canvasNote': 'Ook te schakelen op het canvas zelf, dat ze hier onthoudt.',
   'prefs.grid': 'Raster',

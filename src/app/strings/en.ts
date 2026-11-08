@@ -539,7 +539,7 @@ export const EN = {
   'agent.moved':
     'Port {from} was taken when the app started, so it listens on {port} now. An agent configured with the old port needs the new address.',
   /** A browser tab: the explanation stands, and this replaces the switch. */
-  'agent.desktopOnly': 'Connecting an agent needs the desktop app — only it can listen on this machine. Open this scope there and the switch is here.',
+  'agent.desktopOnly': 'Connecting an agent needs the desktop app — only it can listen on this machine. Open this scope in the desktop app; the switch is in this dialog there.',
   'agent.recipes': 'CONNECT YOUR CLIENT',
   'agent.recipesNote': 'The port and the token below are this machine\u2019s. Pick your client and paste.',
   'agent.tabClaude': 'Claude Code',
@@ -2195,6 +2195,7 @@ export const EN = {
   'history.snapshotWhy': 'A named point in this history, to look back at or go back to.',
   'history.messageHint': 'Suggested from your changes',
   'prefs.owner': 'Yours, on this computer. They apply at once and do not travel with your work.',
+  'prefs.ownerBrowser': 'Yours, in this browser and for this site only. They apply at once and do not travel with your work.',
   'prefs.canvas': 'Canvas',
   'prefs.canvasNote': 'Also switched on the canvas itself, which remembers them here.',
   'prefs.grid': 'Grid',

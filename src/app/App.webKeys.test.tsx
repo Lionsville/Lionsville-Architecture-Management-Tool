@@ -66,3 +66,10 @@ describe('the menu’s keys in the example', () => {
     expect(await screen.findByText('The example is not kept. Keep it as your start to save it.')).toBeTruthy()
   })
 })
+
+describe('the web’s own words', () => {
+  it('says the preferences are this browser’s, for this site', async () => {
+    renderApp({ repositories: heldRepositories(organisation), boot: { initialFramePage: 'preferences' } })
+    expect(await screen.findByText(/Yours, in this browser and for this site only/)).toBeTruthy()
+  })
+})

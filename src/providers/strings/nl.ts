@@ -39,7 +39,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'folder.body': 'Kies een map; deze app bewaart je werk daarin als bestanden die je kunt lezen, back-uppen, synchroniseren en committen. In de app zelf blijft niets staan.',
   'folder.choose': 'Een map openen…',
   'folder.adoptTitle': 'Je werk meenemen naar deze map?',
-  'folder.adoptBody': 'Je werk wordt nu in de app zelf bewaard. “{name}” kan er een kopie van krijgen, of openen zoals hij is. Er wordt in geen van beide gevallen iets verwijderd — de app houdt zijn eigen kopie tot je die zelf verplaatst.',
+  'folder.adoptBody': 'Je werk wordt nu in deze browser bewaard. “{name}” kan er een kopie van krijgen, of openen zoals hij is. Er wordt in geen van beide gevallen iets verwijderd — de app houdt zijn eigen kopie tot je die zelf verplaatst.',
   'folder.adoptCopy': 'Mijn werk erin kopiëren',
   'folder.adoptSkip': 'De map openen zoals hij is',
   'picker.chooseFolder': 'Een map openen…',

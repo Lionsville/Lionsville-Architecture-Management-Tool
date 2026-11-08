@@ -65,12 +65,14 @@ export type PreferencesPageProps = {
    * draws nothing.
    */
   sourcePanel?: ReactNode
+  /** Kept by this browser for this site, rather than by this computer for the app. */
+  inBrowser?: boolean
   s: Translate
 }
 
 export function PreferencesPage({
   open, onClose, language, onLanguageChange, themeMode, onThemeChange, order, onOrderChange, density, onDensityChange, textSize, onTextSizeChange, editor, onEditorChange,
-  updates, sourcePanel, s,
+  updates, sourcePanel, inBrowser = false, s,
 }: PreferencesPageProps) {
   const canvas = mergePreferences(editor)
   const change = (patch: Partial<EditorPreferences>) => onEditorChange({ ...canvas, ...patch })
@@ -79,7 +81,7 @@ export function PreferencesPage({
   return (
     <PageDialog open={open} onClose={onClose} topInset={0} aria-label={s('prefs.title')} data-testid="preferences-page">
       <PageClose onClose={onClose} />
-      <SettingsPage title={s('prefs.title')} owner={s('prefs.owner')} data-guide="prefs.page">
+      <SettingsPage title={s('prefs.title')} owner={s(inBrowser ? 'prefs.ownerBrowser' : 'prefs.owner')} data-guide="prefs.page">
         <SettingsSection title={s('prefs.general')}>
           <PreferenceRow label={s('prefs.language')}>
             <Segmented
