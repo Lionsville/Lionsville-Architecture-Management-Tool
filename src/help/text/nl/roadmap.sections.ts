@@ -16,7 +16,7 @@ export const SECTIONS: SectionTexts = {
     'Boven de liniaal en de regels.',
     ['Houd ⌘ of Ctrl ingedrukt en draai aan het wieltje om te zoomen, of druk op ⌘ of Ctrl met + of −.', 'Houd Shift ingedrukt en draai aan het wieltje, of veeg opzij, om te scrollen.', 'Met de focus op de liniaal scrollen de pijlen links en rechts hem.'],
     'Zoom in op september om de pilotmijlpaal van TR-0002 te onderscheiden van het begin van het plan.',
-    '⌘/Ctrl + wieltje, ⌘/Ctrl + / −; Shift + wieltje; ← → op de liniaal'],
+    '⌘ met het wieltje, ⌘+ en ⌘− (Ctrl op Windows en Linux); Shift met het wieltje; ← → op de liniaal'],
   'roadmap.today': ['Terug naar het standaardvenster', 'Zet de as terug op drie maanden terug en negen vooruit vanaf de huidige maand, in Maanden.',
     'Vandaag, boven de liniaal.',
     ['Druk op Vandaag.'],

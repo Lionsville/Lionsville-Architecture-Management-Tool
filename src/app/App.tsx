@@ -83,6 +83,8 @@ import { AttachmentsProvider } from '../documentation/ui/Attachments'
 import { useScopeAncestry } from './useScopeAncestry'
 import { useShellAgent } from './useShellAgent'
 import { useHostFacts, useShellCommands, useWindowTitle } from './useShellCommands'
+import { helpHere, useHelpKeys } from './helpKeys'
+import { FIRST_RUN_HELP } from '../platform/helpPlaces'
 import { useShareLink } from './useShareLink'
 import { useGuardedNavigation, useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices } from './useShellServices'
@@ -493,6 +495,8 @@ export function App(props: AppProps) {
   const seams = useSeamWidths(prefs)
   const keeps = useViewerKeeps(prefs)
   const firstRun = firstRunUp(parts)
+  const framed = !props.provider?.sourceNeeded && firstRun === 'no'
+  useHelpKeys({ send: parts.commands.bus.send, framed, place: () => (framed ? helpHere(parts) : FIRST_RUN_HELP) })
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
        dark / system) and must be able to change with it. CssBaseline sits inside

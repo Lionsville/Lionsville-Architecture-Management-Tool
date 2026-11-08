@@ -24,6 +24,7 @@ import type { ChartSummary as ChartSummaryShape } from './ChartSummary'
 import { unitLanding, unitViewsHere } from './unitViewsHere'
 import { planBodyTemplate } from '../../roadmap/planTemplate'
 import { helpAt } from '../helpAt'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 import type { UnitMaking } from './useNewUnit'
 import { flattenScopes } from '../../projects/scope'
 import { ROOT_SCOPE } from '../../projects/scopePath'
@@ -120,7 +121,7 @@ function UnitViewPage({ kind, parts, diagram, view }: { kind: Kind; parts: Works
       }}
       onOpenPlan={(id) => parts.show({ page: 'plan', id, scope })}
       onOpenOperating={make.onOpenOperating}
-      onReadMore={() => props.host.controls.openHelp(helpAt({ language: props.shell.language }, 'conway.grid'))}
+      onReadMore={() => props.host.controls.openHelp(helpAt({ language: props.shell.language }, PANEL_HELP.conwayGrid))}
       {...(landscape ? { onOpenLandscape: () => parts.show({ page: 'board', id: landscape.id, scope }) } : {})}
     />
   )

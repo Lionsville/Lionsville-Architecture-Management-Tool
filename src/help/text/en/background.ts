@@ -184,6 +184,7 @@ everything after it?") that ⌘Z already answers.` },
     { title: `Shortcuts worth knowing`, text: `| Keys | Does |
 |---|---|
 | \`?\` | Every shortcut |
+| F1 | The help, at the screen you are on |
 | ⌘F / Ctrl+F | Find an element |
 | Enter | Open the selected element's documentation |
 | F2 | Rename the selection |

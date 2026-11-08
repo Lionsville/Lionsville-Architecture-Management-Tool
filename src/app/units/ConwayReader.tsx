@@ -44,6 +44,7 @@ import { useCheckMarking } from '../checkMarking'
 import { modeWords, STANDING_WORD } from './ConwayGrid'
 import { findingText } from './conwayWords'
 import type { UnitViewsHere } from './unitViewsHere'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 
 /** What the reader is on: nothing, two units, one unit or one application. */
 export type ConwayChosen =
@@ -203,7 +204,7 @@ function WhatToLookAt({ map, pairs, sum, shown, accepted, here, day, acting, onP
   }
   const when = t('conway.onDay', { day: formatDay(day, language) })
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.conway}
       kind={when} name={t(low ? 'conway.giveOwners' : 'conway.toLookAt')} dataGuide="conway.reader"
       help={t(low ? 'conway.help.owners' : 'conway.help.look')}
       {...(onReadMore ? { helpLink: { label: t('conway.readMore'), onPress: onReadMore } } : {})}
@@ -398,7 +399,7 @@ function PairReader({ props, chosen }: { props: ConwayReaderProps; chosen: { a?:
   const actions = pairAnswers(acting, facts, canSay, t)
   const question = standing ? PAIR_QUESTION[standing] : undefined
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.conway}
       kind={t(standing ? STANDING_WORD[standing] : 'conway.state.nothing')} name={name} dataGuide="conway.reader"
       actions={<BackToAll onAll={onAll} t={t} />}
       facts={pairSentence(said, standing, lines, open.length, t)}
@@ -449,7 +450,7 @@ function UnitReader({ props, id }: { props: ConwayReaderProps; id: ElementId }) 
   const say = acting?.sayHow(id)
   const over = shown.find((one) => one.kind === 'overLimit' && one.unitId === id)
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.conway}
       kind={type?.name ?? t('conway.party')} name={here.name(id)} dataGuide="conway.reader"
       actions={<BackToAll onAll={onAll} t={t} />}
       {...(you.has(id) ? { facts: <span data-testid="conway-you-reader">{t('unit.you')}</span> } : {})}
@@ -491,7 +492,7 @@ function ApplicationReader({ props, id }: { props: ConwayReaderProps; id: Elemen
   const owner = map.groups.find((group) => group.applications.some((app) => app.id === id))?.unitId
   const others = on.lines.filter((line) => line.status !== 'inside')
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.conway}
       kind={t('conway.application')} name={on.app.name} dataGuide="conway.reader"
       actions={<BackToAll onAll={onAll} t={t} />}
       facts={owner !== undefined ? t('conway.ownedBy', { name: here.name(on.app.partyId ?? owner) }) : t(on.app.ownerNamed ? 'conway.ownerNamed' : 'conway.noOwner')}

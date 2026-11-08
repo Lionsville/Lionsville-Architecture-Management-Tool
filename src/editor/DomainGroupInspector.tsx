@@ -19,6 +19,7 @@ import { zoneWords } from './inspector/elementRows';
 import { TidySettingsPanel } from './TidySettingsPanel';
 import type { EditorActions } from './useEditorState';
 import './inspector/inspector.css';
+import { PANEL_HELP } from '../platform/helpPlaces';
 
 export interface DomainGroupInspectorProps {
   /** The selected group: what the placements' `group` says. It reads as its name, never as this. */
@@ -49,7 +50,7 @@ export function DomainGroupInspector(props: DomainGroupInspectorProps) {
   const zone = members[0]?.zone;
   const shownName = diagram.groups?.find((group) => group.id === name)?.name ?? name;
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.group}
       kind={t('section.domainGroup')}
       name={shownName}
       {...(readOnly ? {} : { onRename: (next: string) => actions.renameDomainGroup(name, next) })}

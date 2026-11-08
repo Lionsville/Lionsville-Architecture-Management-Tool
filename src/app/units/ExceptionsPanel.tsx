@@ -16,6 +16,7 @@ import type { ElementId } from '../../model/types'
 import type { PersonNames } from '../../people/ui/names'
 import { Panel, PanelSection } from '../../widgets/kit/Panel'
 import type { ChartException } from './chartLines'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 
 export function ExceptionsPanel({ exceptions, organisation, names, onGoTo, onOperating, onClose, t }: {
   exceptions: readonly ChartException[]; organisation: Organisation; names: PersonNames
@@ -30,7 +31,7 @@ export function ExceptionsPanel({ exceptions, organisation, names, onGoTo, onOpe
   const lines = exceptions.filter((one) => one.kind === 'line')
   const placements = exceptions.filter((one) => one.kind === 'placement')
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.exceptions}
       kind={t('chart.exceptionsKind')} name={t('chart.exceptionsTitle')} onClose={onClose} dataGuide="chart.exceptions"
       facts={t('chart.exceptionsLead', { count: exceptions.length })}
     >

@@ -22,6 +22,7 @@ import { Picker } from '../../widgets/kit/Picker'
 import type { PickerOption } from '../../widgets/kit/Picker'
 import { CloseIcon } from '../../widgets/icons'
 import { PHASE_WORD } from './landscapeWords'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 
 export type ReaderDoors = {
   onEditRecord?: ((id: ElementId) => void) | undefined
@@ -288,7 +289,7 @@ export function LandscapeReader(props: Props) {
   if (!shown) {
     return (
       <div className="tl-reader" data-testid="landscape-rest">
-        <Panel kind={t('landscape.page')} name={t('landscape.helpTitle')} {...(props.restFoot ? { help: props.restFoot } : {})} {...(props.undo ? { undo: props.undo } : {})}>
+        <Panel helpAt={PANEL_HELP.technology} kind={t('landscape.page')} name={t('landscape.helpTitle')} {...(props.restFoot ? { help: props.restFoot } : {})} {...(props.undo ? { undo: props.undo } : {})}>
           {props.rest}
         </Panel>
       </div>
@@ -297,7 +298,7 @@ export function LandscapeReader(props: Props) {
   const application = props.selected?.startsWith('application:') ? props.selected.slice('application:'.length) : undefined
   return (
     <div className="tl-reader" data-testid="landscape-inspector">
-      <Panel
+      <Panel helpAt={PANEL_HELP.technology}
         kind={shown.kind} name={shown.name} dataGuide="landscape.inspector" onClose={props.onClose}
         {...(shown.status ? { status: shown.status } : {})}
         {...(props.undo ? { undo: props.undo } : application && props.writes ? { help: props.savedIn(application) } : {})}

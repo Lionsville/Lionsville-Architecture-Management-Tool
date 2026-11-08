@@ -28,7 +28,19 @@ export type HelpSectionOutline = {
 export type HelpChapterOutline = {
   /** The chapter's address: `help/#<id>`. Plain words, so it never meets a section's. */
   readonly id: string
+  /** The one or two sections most people come to the chapter for, linked under its opening lines. */
+  readonly first?: readonly string[]
   readonly sections: readonly HelpSectionOutline[]
+}
+
+/** The address of Getting started, which the help opens on. */
+export const GETTING_STARTED = 'getting-started'
+
+/** Getting started: a handful of steps, each a few lines and a picture, read in two minutes. */
+export type GettingStartedText = {
+  readonly title: string
+  readonly intro: string
+  readonly steps: readonly { readonly title: string; readonly text: string; readonly picture: string }[]
 }
 
 /**
@@ -41,9 +53,10 @@ export type SectionText = readonly [
 
 export type SectionTexts = Readonly<Record<string, SectionText>>
 
-/** A chapter's own words: its title, a line to say what it is about, and one worked example. */
+/** A chapter's own words: its title, two or three lines on what it is for, and one worked example. */
 export type ChapterText = {
   readonly title: string
+  /** What the chapter is for, and what most people do there, before any detail. */
   readonly intro: string
   readonly worked?: { readonly title: string; readonly steps: readonly string[] }
   /** What its picture shows, said for a reader who cannot see it. */
@@ -57,6 +70,8 @@ export type Backgrounds = Readonly<Record<string, readonly Background[]>>
 
 /** Everything the help says in one language. */
 export type HelpText = {
+  /** Core's alone; a build composed from this one adds chapters, not a second start. */
+  readonly start?: GettingStartedText
   readonly chapters: Readonly<Record<string, ChapterText>>
   readonly sections: SectionTexts
   readonly background: Backgrounds

@@ -38,6 +38,7 @@ import { pickEdit } from './inspector/rowTools';
 import { useArrangeSeat } from './inspector/arrangeSeat';
 import type { EditorActions, Selection } from './useEditorState';
 import './inspector/inspector.css';
+import { PANEL_HELP } from '../platform/helpPlaces';
 
 const LIFECYCLES: Lifecycle[] = ['planned', 'live', 'retiring', 'retired'];
 
@@ -128,7 +129,7 @@ export function MultiSelectionInspector({
     : undefined;
 
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.several}
       kind={selectionWords(elementIds.length, elements, selection.connectionIds.length, selection.domainGroups.length, t)}
       name={t('inspector.selected', { count: total })}
       facts={canEdit ? t('inspector.bulkNote') : undefined}

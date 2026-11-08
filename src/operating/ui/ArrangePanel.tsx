@@ -15,6 +15,7 @@ import { Segmented } from '../../widgets/kit/Segmented'
 import { moveGroup, moveResponsibility, moveRole } from '../edit'
 import type { OperatingModel } from '../edit'
 import type { MatrixOrder } from '../matrixView'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 
 function Row({ label, up, down, words, dispatch }: { label: string; up: Command | undefined; down: Command | undefined; words: readonly [string, string]; dispatch(command: Command): void }) {
   // A greyed arrow says why it is off, not what it would have done.
@@ -37,7 +38,7 @@ export function ArrangePanel({ width, model, order, onOrder, part, dispatch, onC
   const up = t('operating.orderUp')
   const down = t('operating.orderDown')
   return (
-    <Panel kind={t('operating.arrange')} name={t('operating.arrangeName')} onClose={onClose} width={width} dataGuide="operating.arrange">
+    <Panel helpAt={PANEL_HELP.arrange} kind={t('operating.arrange')} name={t('operating.arrangeName')} onClose={onClose} width={width} dataGuide="operating.arrange">
       <Segmented
         label={t('operating.matrixOrder')} value={order} onChange={onOrder} data-guide="operating.matrixOrder"
         options={[{ value: 'own', label: t('operating.orderOwn') }, { value: 'name', label: t('operating.orderName') }]}

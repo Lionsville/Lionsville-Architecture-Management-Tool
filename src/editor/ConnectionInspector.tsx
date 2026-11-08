@@ -41,6 +41,7 @@ import { DASH, RowSet, pickEdit } from './inspector/rowTools';
 import type { RowSpec } from './inspector/rowTools';
 import type { EditorActions } from './useEditorState';
 import './inspector/inspector.css';
+import { PANEL_HELP } from '../platform/helpPlaces';
 
 export const LINE_STYLE_OPTIONS: { value: EdgeLineStyle | ''; labelKey: StringKey }[] = [
   { value: '', labelKey: 'option.solidDefault' },
@@ -143,7 +144,7 @@ export function ConnectionInspector({
   const badge = { none: t('route.none'), auto: t('route.auto'), manual: t('route.manual') }[routeStatus];
 
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.connection}
       kind={t('section.connection')}
       name={`${name(connection.sourceId)} ${connection.isBidirectional ? '↔' : '→'} ${name(connection.targetId)}`}
       facts={[connection.certainty ? t(`certainty.${connection.certainty}` as StringKey) : undefined, badge, bendCount > 0 ? bends : undefined].filter(Boolean).join(' · ')}

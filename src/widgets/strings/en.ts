@@ -74,6 +74,8 @@ export const EN = {
   'kit.panel.expand': 'Show the panel',
   'kit.panel.collapse': 'Fold the panel away',
   'kit.panel.undo': 'Undo',
+  'kit.help.here': 'Help on this',
+  'kit.help.on': 'Help on {about}',
   'kit.matrix.empty': 'nothing',
   'kit.matrix.foldable': 'folds',
   'kit.matrix.foldedColumn': '{group}, {count}',

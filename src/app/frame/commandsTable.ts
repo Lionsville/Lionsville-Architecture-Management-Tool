@@ -49,3 +49,17 @@ export function keyCap(keys: string, mac: boolean): string {
   }
   return keys.split('+').map((part) => said[part] ?? part).join(mac ? '' : '+')
 }
+
+/**
+ * The keys the frame and the shell answer on every screen, that are on no menu:
+ * the find, the tree, the help at this screen and the sheet of keys itself
+ * (`AppFrame`'s `useFrameKeys`, `helpKeys.ts`). The sheet lists them, and the
+ * help may name no key that is not here, on a menu or in the canvas's keymap
+ * (`help/helpKeys.test.ts`).
+ */
+export const FRAME_KEYS = (mac: boolean): readonly (readonly [StringKey, string])[] => [
+  ['frame.find', mac ? '⌘K' : 'Ctrl K'],
+  ['frame.treeToggle', mac ? '⌘\\' : 'Ctrl \\'],
+  ['frame.helpHere', 'F1'],
+  ['menu.shortcuts', '?'],
+]

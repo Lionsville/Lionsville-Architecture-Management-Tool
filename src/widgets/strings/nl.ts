@@ -75,6 +75,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'kit.panel.expand': 'Het paneel tonen',
   'kit.panel.collapse': 'Het paneel wegvouwen',
   'kit.panel.undo': 'Ongedaan maken',
+  'kit.help.here': 'Help hierbij',
+  'kit.help.on': 'Help bij {about}',
   'kit.matrix.empty': 'niets',
   'kit.matrix.foldable': 'vouwt in',
   'kit.matrix.foldedColumn': '{group}, {count}',

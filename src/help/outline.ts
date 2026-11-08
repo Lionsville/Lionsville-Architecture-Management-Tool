@@ -13,6 +13,7 @@ import type { HelpChapterOutline } from './types'
 export const CHAPTERS: readonly HelpChapterOutline[] = [
   {
     id: 'start',
+    first: ['first.name', 'first.example'],
     sections: [
       { id: 'first.language', controls: ['first.language'], seeAlso: ['prefs.language'] },
       { id: 'first.example', controls: ['first.example'], seeAlso: ['example.keep', 'example.leave'] },
@@ -26,6 +27,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'frame',
+    first: ['tree.open', 'frame.palette'],
     sections: [
       { id: 'frame.back', menu: ['menu.back'], seeAlso: ['frame.forward', 'frame.address'] },
       { id: 'frame.forward', menu: ['menu.forward'], seeAlso: ['frame.back'] },
@@ -40,7 +42,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
       { id: 'frame.agent', controls: ['frame.agent'], menu: ['menu.connectAgent'], seeAlso: ['frame.agentBand'] },
       { id: 'frame.agentBand', seeAlso: ['frame.agent', 'frame.undo'] },
       { id: 'frame.textSize', controls: ['frame.textSize', 'frame.textSmaller', 'frame.textSizeNow', 'frame.textLarger', 'frame.textSizeReset', 'prefs.textSize'], menu: ['menu.textLarger', 'menu.textSmaller', 'menu.textDefault'] },
-      { id: 'frame.help', controls: ['frame.help', 'shell.website'], menu: ['menu.userManual', 'menu.website', 'menu.getDesktopApp'], seeAlso: ['frame.palette'] },
+      { id: 'frame.help', controls: ['frame.help', 'frame.helpHere', 'shell.website'], menu: ['menu.userManual', 'menu.website', 'menu.getDesktopApp'], seeAlso: ['frame.palette'] },
       { id: 'frame.shortcutsSheet', menu: ['menu.shortcuts'], seeAlso: ['frame.palette'] },
       { id: 'frame.checkUpdates', menu: ['menu.checkForUpdates'], on: 'desktop' },
       { id: 'frame.overflow', on: 'web', seeAlso: ['file.open', 'file.saveCopy', 'prefs.page'] },
@@ -80,6 +82,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'work',
+    first: ['file.saveCopy', 'file.open'],
     sections: [
       { id: 'file.open', controls: ['frame.yourWork'], menu: ['menu.open'], seeAlso: ['file.saveCopy', 'file.openFolder'] },
       { id: 'file.openFolder', controls: ['frame.yourWork'], menu: ['menu.connect', 'menu.openRecent'], seeAlso: ['first.desktopFolder', 'prefs.folder', 'file.open'] },
@@ -109,6 +112,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'board',
+    first: ['board.add', 'board.connect'],
     sections: [
       { id: 'board.open', controls: ['board.canvas'], seeAlso: ['board.zoom', 'board.select'] },
       { id: 'board.distances', seeAlso: ['board.zoom'] },
@@ -176,6 +180,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'panel',
+    first: ['panel.editRow', 'record.open'],
     sections: [
       { id: 'panel.select', controls: ['board.inspector'], seeAlso: ['panel.collapse', 'record.open', 'panel.thisView'] },
       { id: 'panel.collapse', controls: ['board.inspector'], seeAlso: ['panel.select'] },
@@ -222,6 +227,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'technology',
+    first: ['technology.select', 'technology.drag'],
     sections: [
       { id: 'technology.open', controls: ['landscape.bar'], seeAlso: ['technology.newView', 'technology.select', 'technology.matrix'] },
       { id: 'technology.newView', controls: ['org.newBoard'], writes: true, seeAlso: ['technology.open'] },
@@ -246,6 +252,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'sheet',
+    first: ['sheet.coveredBy', 'map.open'],
     sections: [
       { id: 'sheet.open', controls: ['sheet.canvas'], seeAlso: ['poster.readings', 'sheet.newSheet'] },
       { id: 'sheet.newSheet', controls: ['org.newBoard'], writes: true, seeAlso: ['sheet.fromAbove'] },
@@ -271,6 +278,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'poster',
+    first: ['poster.open', 'poster.colour'],
     sections: [
       { id: 'poster.open', controls: ['sheet.reading'], seeAlso: ['poster.readings', 'poster.zoom'] },
       { id: 'poster.readings', controls: ['sheet.reading'], seeAlso: ['poster.open', 'map.open'] },
@@ -309,6 +317,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'chart',
+    first: ['chart.assign', 'conway.verdict'],
     sections: [
       { id: 'chart.make', writes: true, seeAlso: ['chart.open', 'conway.make'] },
       { id: 'chart.open', controls: ['chart.outline', 'chart.bar'], seeAlso: ['chart.levels', 'chart.pick'] },
@@ -356,6 +365,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'drawing',
+    first: ['drawing.create', 'drawing.edit'],
     sections: [
       { id: 'drawing.create', controls: ['drawing.chooser'], writes: true, seeAlso: ['drawing.createFromElement', 'drawing.edit'] },
       { id: 'drawing.createFromElement', controls: ['drawing.chooser'], writes: true, seeAlso: ['drawing.create', 'drawing.elementDrawings'] },
@@ -377,6 +387,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'decisions',
+    first: ['decisions.new', 'decisions.accept'],
     sections: [
       { id: 'decisions.open', controls: ['decisions.list', 'decisions.row'], seeAlso: ['decisions.read', 'decisions.find', 'decisions.about'] },
       { id: 'decisions.read', controls: ['decision.record'], seeAlso: ['decisions.open', 'decisions.history'] },
@@ -410,6 +421,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'observations',
+    first: ['obs-new', 'obs-ask-why'],
     sections: [
       { id: 'obs-open', controls: ['org.card.observations'], seeAlso: ['obs-stages', 'obs-address'] },
       { id: 'obs-stages', controls: ['observations.tabRegister', 'observations.tabAnalysis', 'observations.tabSolutions', 'observations.tabResults'], seeAlso: ['obs-lens', 'obs-results'] },
@@ -464,6 +476,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'roadmap',
+    first: ['roadmap.newPlan', 'plan.replace'],
     sections: [
       { id: 'roadmap.open', controls: ['roadmap.axis'], seeAlso: ['plan.open', 'roadmap.findings'] },
       { id: 'roadmap.scale', controls: ['roadmap.axis'], seeAlso: ['roadmap.zoom', 'roadmap.fit'] },
@@ -515,6 +528,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'registers',
+    first: ['register.open', 'checks.open'],
     sections: [
       { id: 'register.open', controls: ['org.card.register'], seeAlso: ['register.tabs', 'checks.open'] },
       { id: 'register.tabs', controls: ['register.tabs', 'technologyRegister.row', 'technologyRegister.colMaster', 'technologyRegister.colFindings'], seeAlso: ['register.open', 'register.report'] },
@@ -544,6 +558,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'operating',
+    first: ['operating.structure', 'operating.raciGrid'],
     sections: [
       { id: 'operating.open', controls: ['org.card.operating'], seeAlso: ['operating.tabs', 'operating.readElsewhere'] },
       { id: 'operating.tabs', controls: ['operating.tabUnits', 'operating.tabRoles', 'operating.tabRaci', 'operating.tabExceptions', 'operating.tabLibraries'], seeAlso: ['operating.open'] },
@@ -598,6 +613,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'people',
+    first: ['people.add', 'people.find'],
     sections: [
       { id: 'people.open', controls: ['org.card.people'], seeAlso: ['people.find', 'people.person', 'chart.open'] },
       { id: 'people.find', controls: ['people.find'], seeAlso: ['people.filter', 'people.searchEverywhere', 'people.addTyped'] },
@@ -628,6 +644,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
   },
   {
     id: 'guidance',
+    first: ['principles.new', 'topics.read'],
     sections: [
       { id: 'guidance.open', controls: ['org.card.principles'], seeAlso: ['guidance.whichOne', 'principles.read', 'topics.read', 'blocks.read'] },
       { id: 'guidance.whichOne', seeAlso: ['guidance.open'] },

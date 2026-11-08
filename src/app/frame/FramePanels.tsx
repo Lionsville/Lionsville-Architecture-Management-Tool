@@ -28,6 +28,7 @@ import { sourceLabel } from '../ShellToolbar'
 import { statusWord } from './statusWord'
 import { useFrameState } from './frameStore'
 import type { OwnWork, ScreenFacts } from './frameStore'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 
 /** The word on row one: the work's state and, where the source has a word for it, its place. */
 export function statusOf(parts: ShellParts, facts: ScreenFacts | undefined, language: Language, s: Translate, own?: OwnWork) {
@@ -154,10 +155,10 @@ export function YourWorkPanel({ parts, facts }: { parts: ShellParts; facts: Scre
   const Own = provider.YourWork
   const where = props.provider?.sayings?.whereKey ?? props.provider?.description
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.work}
       kind={s('frame.yourWork')} name={statusOf(parts, facts, prefs.language, s, own).text || s('frame.yourWork')} dataGuide="frame.yourWork"
       facts={where !== undefined ? s(where as StringKey) : undefined} onClose={() => agent.setPanel(undefined)} help={s('frame.appliesToAll')}
-      helpLink={{ label: s('work.manual'), onPress: () => props.hostControls.openHelp(helpAt(prefs, 'work~0')) }}
+      helpLink={{ label: s('work.manual'), onPress: () => props.hostControls.openHelp(helpAt(prefs, PANEL_HELP.whereKept)) }}
     >
       {/* What this host says of its own comes first: it is what a person opened this to read. */}
       {Own && <Own {...workProps(parts)} />}
@@ -172,7 +173,7 @@ export function ActivityPanel({ parts, facts }: { parts: ShellParts; facts: Scre
   const scopeOpen = facts?.kind === 'workspace'
   const history = scopeOpen ? props.repositories.history !== undefined : parts.home.history.available
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.activity}
       kind={s('shell.activity')} name={facts?.name ?? s('shell.activity')} dataGuide="frame.activity"
       facts={facts?.kind === 'workspace' && !props.provider?.publishesSteps ? s('frame.activityUndo') : undefined}
       onClose={() => agent.setPanel(undefined)}

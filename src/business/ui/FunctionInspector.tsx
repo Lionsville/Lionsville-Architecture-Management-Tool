@@ -49,6 +49,7 @@ import { coverageFor, coverageOf } from '../coverage'
 import { MAX_SPAN, withSpan } from '../grid'
 import type { MapDescribe } from '../map'
 import { childrenOf, descendantsOf, wouldCycle } from '../tree'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 
 /**
  * A new thing in one of the sheet's trees.
@@ -450,7 +451,7 @@ export function FunctionInspector(props: FunctionInspectorProps) {
   return (
     <div className="sheet-panel__testid" data-testid="sheet-inspector">
       {/* One per record: a name half typed is about the one it was typed on, and must not land on the next. */}
-      <Panel
+      <Panel helpAt={PANEL_HELP.function}
         key={element.id} kind={capitalised(t(kindWord(element, model)))} name={element.name} dataGuide="sheet.inspector" {...optional}
         actions={props.onOpenDocumentation && (
           <button

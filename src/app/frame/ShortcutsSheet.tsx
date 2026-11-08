@@ -9,7 +9,7 @@ import type { StringKey, Translate } from '../../i18n'
 import { CANVAS_SHORTCUTS, detectPlatform, formatChord } from '../../editor/keymap'
 import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
-import { keyCap } from './commandsTable'
+import { FRAME_KEYS, keyCap } from './commandsTable'
 import type { CommandRow } from './commandsTable'
 
 /**
@@ -27,12 +27,6 @@ function canvasRows(platform: ReturnType<typeof detectPlatform>): { label: Strin
   }
   return rows
 }
-
-const FRAME_KEYS = (mac: boolean): readonly (readonly [StringKey, string])[] => [
-  ['frame.find', mac ? '⌘K' : 'Ctrl K'],
-  ['frame.treeToggle', mac ? '⌘\\' : 'Ctrl \\'],
-  ['menu.shortcuts', '?'],
-]
 
 export function ShortcutsSheet({ open, onClose, rows, mac, s }: {
   open: boolean; onClose: () => void; rows: readonly CommandRow[]; mac: boolean; s: Translate

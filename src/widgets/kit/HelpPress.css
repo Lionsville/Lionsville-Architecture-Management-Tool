@@ -1,0 +1,14 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* The help's ?, drawn as a small ring so it reads as help and not as a word. */
+.kit-help-press {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: var(--t-small);
+  font-weight: 600;
+  line-height: 1;
+}

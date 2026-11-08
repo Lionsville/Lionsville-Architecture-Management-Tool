@@ -30,6 +30,8 @@ import type { StackedBand } from '../../widgets/kit/Band'
 import { Button, IconButton } from '../../widgets/kit/Button'
 import { Frame } from '../../widgets/kit/Frame'
 import { MenuButton, MoreMenu } from '../../widgets/kit/Menu'
+import { HelpPlaceProvider } from '../../widgets/kit/HelpPress'
+import { helpHere, takesText } from '../helpKeys'
 import type { MenuAct, MenuEntry, MenuSpacer } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
 import { PlaceFacetsContext, PlaceListContext, PlaceReadingContext, PlaceTabContext } from '../../widgets/placeTab'
@@ -136,6 +138,8 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
     go({ scope: at, page: 'home' })
     openAgentDialog()
   }, [noAgentsPage, at, go, openAgentDialog])
+  const sendCommand = parts.commands.bus.send
+  const openHelpAt = useMemo(() => (at: string) => sendCommand({ type: 'manual', section: at }), [sendCommand])
   const tree = (onHomeBare || state.pinned) && !facts?.bare && !holding && <TreeFor parts={parts} at={at} page={page} />
   return (
     <FrameCommandsContext.Provider value={lines}>
@@ -143,6 +147,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
         <PlaceListContext.Provider value={lists}>
         <PlaceFacetsContext.Provider value={facets}>
       <PlaceReadingContext.Provider value={reading}>
+        <HelpPlaceProvider value={openHelpAt}>
         <Frame
           pageUp={pageUp}
           rowOne={<RowOne parts={parts} state={state} at={at} />}
@@ -159,6 +164,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           {holding && Hold ? <Hold {...slot} /> : children}
           {!holding && page === 'agents' && <AgentsPlace parts={parts} at={at} />}
         </Frame>
+        </HelpPlaceProvider>
         <ShortcutsSheet open={sheetOpen} onClose={() => setSheetOpen(false)} rows={commandsTable(canOf(parts, facts), isMac() ? 'darwin' : 'other')} mac={isMac()} s={s} />
       </PlaceReadingContext.Provider>
         </PlaceFacetsContext.Provider>
@@ -220,7 +226,15 @@ export function menuKeyCommand(press: KeyPress, can: ReturnType<typeof canOf>, b
   return hit.command
 }
 
-/** ⌘\ pins the tree, `?` opens the sheet where no canvas has its own, and Esc shuts a panel first. */
+/** ⌘Z, ⇧⌘Z and ⌘Y (Ctrl on Windows and Linux), as the canvas's keymap reads them. */
+export function undoKey(event: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'shiftKey' | 'altKey'>): 'undo' | 'redo' | undefined {
+  if (!(event.metaKey || event.ctrlKey) || event.altKey) return undefined
+  const key = event.key.toLowerCase()
+  if (key === 'z') return event.shiftKey ? 'redo' : 'undo'
+  return key === 'y' && !event.shiftKey ? 'redo' : undefined
+}
+
+/** ⌘\ pins the tree and Esc shuts a panel first; `?` and F1 are the shell's, on every screen (`helpKeys.ts`). */
 function useFrameKeys(parts: ShellParts, state: FrameState) {
   const { frame } = parts
   const send = parts.commands.bus.send
@@ -228,8 +242,6 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
   const boardUp = state.screen?.boardUp === true
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null
-      const typing = target !== null && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
       if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
         event.preventDefault()
         const pinned = !frame.get().pinned
@@ -237,7 +249,13 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         parts.services.prefs.writePreference({ treePinned: pinned })
         return
       }
-      if (event.key === '?' && !typing && !boardUp && !document.querySelector('[role="dialog"]')) { send({ type: 'shortcuts' }); return }
+      if ((!parts.hostMenu || event.key.toLowerCase() === 'y') && !boardUp && undoKey(event) && !takesText(event.target)) {
+        // Row one's ↶ and ↷ by their keys, on a host with no Edit menu to hear them: a board has its own.
+        const facts = frame.get().screen
+        const act = undoKey(event) === 'redo' ? facts?.redo : facts?.undo
+        if (act?.can) { event.preventDefault(); event.stopPropagation(); act.run() }
+        return
+      }
       if (!parts.hostMenu && (event.metaKey || event.ctrlKey) && !document.querySelector('[role="dialog"]')) {
         const command = menuKeyCommand(event, canOf(parts, frame.get().screen), boardUp, /Mac|iPhone|iPad/.test(navigator.platform))
         if (command) { event.preventDefault(); send(command); return }
@@ -522,7 +540,8 @@ function AgentButton({ parts }: { parts: ShellParts }) {
 function helpEntries(parts: ShellParts): (MenuAct | MenuSpacer)[] {
   const { services: { s }, commands: { bus } } = parts
   const help = offered(HELP_MENU, 'web', { history: false, connect: false, scope: true })
-  const items: (MenuAct | MenuSpacer)[] = help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command) }] : []))
+  const here: MenuAct = { label: s('frame.helpHere'), shortcut: 'F1', onSelect: () => bus.send({ type: 'manual', section: helpHere(parts) }) }
+  const items: (MenuAct | MenuSpacer)[] = [here, ...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : {}) }] : []))]
   if (!parts.hostMenu) {
     const open = (href: string) => () => parts.props.hostControls.openExternal(href)
     items.push({ line: true }, { label: s(DESKTOP_APP_LINK.label), onSelect: open(DESKTOP_APP_LINK.href) }, { label: s(WEBSITE_LINK.label), onSelect: open(WEBSITE_LINK.href), 'data-guide': 'shell.website' })
@@ -530,8 +549,23 @@ function helpEntries(parts: ShellParts): (MenuAct | MenuSpacer)[] {
   return items
 }
 
+/**
+ * The ? in row one opens the help at this screen's place (`platform/helpPlaces.ts`),
+ * as F1 does; Help beside it is the whole help, the keys and the ways out.
+ */
 function HelpMenu({ parts }: { parts: ShellParts }) {
-  return <MenuButton label={parts.services.s('frame.help')} variant="quiet" size="small" items={helpEntries(parts)} data-guide="frame.help" />
+  const { services: { s }, commands: { bus } } = parts
+  return (
+    <>
+      <IconButton
+        label={s('frame.helpHere')} tip={`${s('frame.helpHere')} (F1)`} size="small" data-testid="frame-help-here" data-guide="frame.helpHere"
+        onClick={() => bus.send({ type: 'manual', section: helpHere(parts) })}
+      >
+        <span aria-hidden="true" className="kit-help-press">?</span>
+      </IconButton>
+      <MenuButton label={s('frame.help')} variant="quiet" size="small" items={helpEntries(parts)} data-guide="frame.help" />
+    </>
+  )
 }
 
 function TreeGlyph() {

@@ -211,6 +211,7 @@ würde eine Frage aufwerfen („und alles danach?“), die ⌘Z bereits beantwor
     { title: `Tastenkürzel, die man kennen sollte`, text: `| Tasten | Tut |
 |---|---|
 | \`?\` | Jedes Tastenkürzel |
+| F1 | Die Hilfe, beim Bildschirm, auf dem Sie sind |
 | ⌘F / Ctrl+F | Ein Element suchen |
 | Enter | Die Dokumentation des ausgewählten Elements öffnen |
 | F2 | Die Auswahl umbenennen |

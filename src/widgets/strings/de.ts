@@ -75,6 +75,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.panel.expand': 'Das Panel anzeigen',
   'kit.panel.collapse': 'Das Panel einklappen',
   'kit.panel.undo': 'Rückgängig',
+  'kit.help.here': 'Hilfe dazu',
+  'kit.help.on': 'Hilfe zu {about}',
   'kit.matrix.empty': 'nichts',
   'kit.matrix.foldable': 'einklappbar',
   'kit.matrix.foldedColumn': '{group}, {count}',

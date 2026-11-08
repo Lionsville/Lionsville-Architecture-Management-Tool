@@ -62,6 +62,7 @@ import { weightCount } from './NeedsAttention'
 import type { CheckInstance, CheckPlace, CheckRow } from './treeChecks'
 import './RegisterPage.css'
 import './ChecksPage.css'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 
 export type ChecksPageProps = {
   open: boolean
@@ -297,7 +298,7 @@ function CheckReader({ row, tab, setTab, view, setView, finding, marking, index,
   ]
   return (
     <div className="checks-page__reader" data-testid="checks-detail" data-check={row.key} aria-live="polite">
-      <Panel
+      <Panel helpAt={PANEL_HELP.check}
         kind={`${s(CHECK_WEIGHT_LABEL[entry.weight].name)} · ${s(CHECK_CATEGORY_LABEL[entry.category])}`} kindIcon={<Mark kind={entry.weight} />} name={s(entry.name)}
         tabs={tabs} tab={accepted ? 'accepted' : 'found'} onTab={setTab}
       >

@@ -20,6 +20,7 @@ import { createContext, useContext, useLayoutEffect } from 'react'
 import type { CSSProperties, ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { BackIcon, CloseIcon, ForwardIcon } from '../icons'
+import { HelpPress } from './HelpPress'
 import { PressName } from './PressName'
 import { Tabs } from './Tabs'
 import type { TabItem } from './Tabs'
@@ -74,6 +75,8 @@ export type PanelProps = {
   readonly undo?: PanelUndo
   /** A way to read more, always there beside whatever the foot is saying. */
   readonly helpLink?: { readonly label: string; readonly onPress: () => void }
+  /** The help's id for what this panel is (`platform/helpPlaces.ts`): a ? in the head opens it there. */
+  readonly helpAt?: string
   readonly loading?: boolean
   readonly children?: ReactNode
   readonly dataGuide?: string
@@ -98,7 +101,7 @@ export function PanelName({ name, onRename, renameRequest, renameAtOnce, unheade
 
 export function Panel({
   kind, kindIcon, name, onRename, renameRequest, renameAtOnce, facts, status, actions, onClose, collapsed, onCollapse: ownCollapse, tabs, tab, onTab, wide, width: ownWidth,
-  help, undo, helpLink, loading, children, dataGuide: ownGuide,
+  help, undo, helpLink, helpAt, loading, children, dataGuide: ownGuide,
 }: PanelProps) {
   const { t } = useStrings()
   const dock = useContext(PanelDockContext)
@@ -123,6 +126,7 @@ export function Panel({
           <span className="kit-panel__kind">{kind}</span>
           <span className="kit-panel__actions">
             {actions}
+            {helpAt && <HelpPress at={helpAt} about={kind} />}
             {onCollapse && <button type="button" className="kit-panel__icon" aria-label={t('kit.panel.collapse')} aria-expanded onClick={() => onCollapse(true)}><ForwardIcon /></button>}
             {onClose && <button type="button" className="kit-panel__icon" aria-label={t('common.close')} onClick={onClose}><CloseIcon /></button>}
           </span>

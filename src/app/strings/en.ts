@@ -1838,6 +1838,7 @@ export const EN = {
   'newView.drawingFits': 'Good for a one-off explanation, a notation the boards do not have, or a layout that carries the message. It will not follow the model; it tells you when it has fallen behind.',
   'newView.drawingLimit': 'You need the desktop app or a shared server to draw it. Until then it stays empty, and an agent can still write to it.',
   'frame.help': 'Help',
+  'frame.helpHere': 'Help on this page',
   'frame.agent': 'Agent',
   'frame.agents': 'Agents',
   'frame.findScope': 'Find a scope',

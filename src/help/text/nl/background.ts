@@ -198,6 +198,7 @@ alles daarna?") die ⌘Z al beantwoordt.` },
     { title: `Sneltoetsen om te kennen`, text: `| Toetsen | Doet |
 |---|---|
 | \`?\` | Alle sneltoetsen |
+| F1 | De help, bij het scherm waar je bent |
 | ⌘F / Ctrl+F | Element zoeken |
 | Enter | Documentatie van het geselecteerde element openen |
 | F2 | Selectie hernoemen |

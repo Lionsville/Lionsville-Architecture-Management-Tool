@@ -1610,6 +1610,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'newView.drawingFits': 'Goed voor een eenmalige uitleg, een notatie die de borden niet hebben, of een indeling die de boodschap draagt. Ze volgt het model niet; ze zegt wanneer ze achterloopt.',
   'newView.drawingLimit': 'Om te tekenen heb je de desktop-app of een gedeelde server nodig. Tot die tijd blijft ze leeg, en een agent kan er nog steeds naar schrijven.',
   'frame.help': 'Help',
+  'frame.helpHere': 'Help bij deze pagina',
   'frame.agent': 'Agent',
   'frame.agents': 'Agents',
   'frame.findScope': 'Zoek een scope',

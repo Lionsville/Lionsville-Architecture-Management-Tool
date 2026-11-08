@@ -21,6 +21,7 @@ import type { PickOption } from '../../widgets/PickToAdd'
 import type { MovePlanning } from './MoveUnitDialog'
 import { refusalText } from './MoveUnitDialog'
 import { managedByWords } from './moveWords'
+import { PANEL_HELP } from '../../platform/helpPlaces'
 
 export type MovePanelProps = {
   unitId: ElementId
@@ -44,7 +45,7 @@ export function MovePanel({ unitId, organisation, name, personName, planning, on
   const { parent, setParent, options, current, along, toggleAlong, beside, plan, parentId, said, ready, move } = planning
   return (
     <div className="chart-move__holder" data-testid="move-unit-dialog">
-    <Panel
+    <Panel helpAt={PANEL_HELP.move}
       kind={s('unitMove.panelKind')} name={s('unitMove.panelName', { name: name(unitId) })} onClose={onClose} dataGuide="chart.moveUnit"
       facts={<span data-testid="move-unit-now">{current === undefined ? s('unitMove.atTopNow') : s('unitMove.sitsNow', { parent: name(current) })}</span>}
     >

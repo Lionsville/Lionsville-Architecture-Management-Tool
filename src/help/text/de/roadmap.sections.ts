@@ -16,7 +16,7 @@ export const SECTIONS: SectionTexts = {
     'Über dem Lineal und den Zeilen.',
     ['Halten Sie ⌘ oder Strg und drehen Sie am Rad zum Zoomen, oder drücken Sie ⌘ oder Strg mit + oder −.', 'Halten Sie Umschalt und drehen Sie am Rad oder wischen Sie seitwärts, um zu scrollen.', 'Mit Fokus auf dem Lineal scrollen die Pfeile links und rechts es.'],
     'Zoomen Sie in den September, um den Pilot-Meilenstein von TR-0002 vom Beginn des Plans zu unterscheiden.',
-    '⌘/Strg + Rad, ⌘/Strg + / −; Umschalt + Rad; ← → auf dem Lineal'],
+    '⌘ mit dem Rad, ⌘+ und ⌘− (Strg unter Windows und Linux); Umschalt mit dem Rad; ← → auf dem Lineal'],
   'roadmap.today': ['Zurück zum Standardfenster', 'Setzt die Achse auf drei Monate zurück und neun voraus ab dem aktuellen Monat, in Monaten.',
     'Heute, über dem Lineal.',
     ['Drücken Sie Heute.'],

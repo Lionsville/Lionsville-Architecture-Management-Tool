@@ -16,7 +16,7 @@ export const SECTIONS: SectionTexts = {
     'Over the ruler and rows.',
     ['Hold ⌘ or Ctrl and turn the wheel to zoom, or press ⌘ or Ctrl with + or −.', 'Hold Shift and turn the wheel, or swipe sideways, to scroll.', 'With the ruler focused, the left and right arrows scroll it.'],
     'Zoom in on September to tell the pilot milestone of TR-0002 from the plan\'s start.',
-    '⌘/Ctrl + wheel, ⌘/Ctrl + / −; Shift + wheel; ← → on the ruler'],
+    '⌘ with the wheel, ⌘+ and ⌘− (Ctrl on Windows and Linux); Shift with the wheel; ← → on the ruler'],
   'roadmap.today': ['Back to the default window', 'Returns the axis to three months back and nine ahead of the current month, at Months.',
     'Today, above the ruler.',
     ['Press Today.'],

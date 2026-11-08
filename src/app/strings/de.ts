@@ -1611,6 +1611,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'newView.drawingFits': 'Gut für eine einmalige Erklärung, eine Notation, die die Boards nicht haben, oder ein Layout, das die Botschaft trägt. Sie folgt dem Modell nicht; sie sagt, wann sie zurückliegt.',
   'newView.drawingLimit': 'Zum Zeichnen brauchen Sie die Desktop-App oder einen gemeinsamen Server. Bis dahin bleibt sie leer, und ein Agent kann weiterhin hineinschreiben.',
   'frame.help': 'Hilfe',
+  'frame.helpHere': 'Hilfe zu dieser Seite',
   'frame.agent': 'Agent',
   'frame.agents': 'Agenten',
   'frame.findScope': 'Einen Bereich suchen',

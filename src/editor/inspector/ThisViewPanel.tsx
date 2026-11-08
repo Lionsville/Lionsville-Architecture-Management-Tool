@@ -21,6 +21,7 @@ import type { ThisViewTab } from '../EditorDialogs';
 import type { EditorParts } from '../editorParts';
 import { LinesTab, UnlandedLines } from './LinesTab';
 import { TidySettingsPanel } from '../TidySettingsPanel';
+import { PANEL_HELP } from '../../platform/helpPlaces';
 
 export function ThisViewPanel({ parts, diagram, onClose }: { parts: EditorParts; diagram: DesignDiagram; onClose(): void }) {
   const { t, language } = useStrings();
@@ -37,7 +38,7 @@ export function ThisViewPanel({ parts, diagram, onClose }: { parts: EditorParts;
   const columns = aspectConfigFor(diagram).map((entry) => entry.label).join(', ');
   const canTidy = !readOnly && (diagram.kind === 'layer7' || diagram.kind === 'container');
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.view}
       {...(container
         ? containerHead(parts, diagram, day, t)
         : { kind: t('inspector.thisView'), name: diagram.name, facts: t('inspector.viewFacts', { elements: drawn.size, lines: lines.length, day }) })}

@@ -32,6 +32,7 @@ import { Panel, PanelLink } from '../widgets/kit/Panel';
 import type { ElementInspectorProps } from './ElementInspectorProps';
 import { InspectorSection } from './InspectorSection';
 import { PanelAppearance, PanelProperties } from './inspector/elementRows';
+import { PANEL_HELP } from '../platform/helpPlaces';
 
 export type { ElementInspectorProps };
 export { shapeOptionsFor } from './elementInspectorFacts';
@@ -97,7 +98,7 @@ export function ElementInspector(props: ElementInspectorProps) {
     )
     : undefined;
   return (
-    <Panel
+    <Panel helpAt={PANEL_HELP.element}
       kind={kindLabel(element.kind, t)}
       name={element.name}
       {...(readOnly || nameOwned ? {} : {
