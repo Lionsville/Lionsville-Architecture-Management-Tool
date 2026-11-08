@@ -20,7 +20,8 @@ export function useReadOnlyPreview(boxRef: RefObject<HTMLDivElement | null>, sho
     // A browser puts a box that scrolls in the Tab order of its own accord; this one stays out of it too.
     box.setAttribute('tabindex', '-1')
     const quiet = () => {
-      for (const one of box.querySelectorAll<HTMLElement>(PRESSABLE)) {
+      // A table's or a code block's own scroll is put in the Tab order by the browser as well.
+      for (const one of box.querySelectorAll<HTMLElement>(`${PRESSABLE}, .MuiTableContainer-root, pre`)) {
         if (one.getAttribute('tabindex') !== '-1') one.setAttribute('tabindex', '-1')
       }
     }
