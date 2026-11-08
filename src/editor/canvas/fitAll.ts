@@ -78,6 +78,16 @@ export function fitFloorAt(scale: number): number {
 }
 
 /**
+ * Where a board left earlier in the session goes back to, at the text size now: a
+ * place under the floor this size gives was left at a smaller size, and is framed
+ * again instead, since at 150% a board put back at 61% cut its names and said its
+ * lines as numbers while every board opened since stood at 90%.
+ */
+export function keptAtTextSize<T extends { zoom: number }>(kept: T | undefined, scale: number): T | undefined {
+  return kept && kept.zoom >= fitFloorAt(scale) - 0.005 ? kept : undefined;
+}
+
+/**
  * The viewport that frames this rectangle of the board in a pane of this size, in
  * the room its dock and its key leave (`widgets/kit/canvasRoom`). A board too large
  * for the room even at the floor starts at its top left there, and the rest is a pan.

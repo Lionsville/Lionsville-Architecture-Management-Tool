@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Node } from '@xyflow/react'
-import { printViewport, PRINT_ROOM } from './fitAll'
+import { keptAtTextSize, printViewport, PRINT_ROOM } from './fitAll'
 
 const card = (id: string, x: number, y: number): Node => ({ id, position: { x, y }, width: 200, height: 100, data: {} })
 
@@ -24,5 +24,16 @@ describe('the board framed for the browser’s Print', () => {
   it('never prints a small board larger than it is, and frames nothing where there is nothing', () => {
     expect(printViewport([card('a', 0, 0)])!.zoom).toBe(1)
     expect(printViewport([])).toBeUndefined()
+  })
+})
+
+describe('a board left earlier, opened again at the text size now', () => {
+  it('goes back where it was at or over the floor this size gives, and is framed again under it', () => {
+    const left = { x: 10, y: 20, zoom: 0.61 }
+    expect(keptAtTextSize(left, 1)).toBe(left)
+    // Left at 61% at 100% text, opened at 150%: the floor is 90%.
+    expect(keptAtTextSize(left, 1.5)).toBeUndefined()
+    expect(keptAtTextSize({ ...left, zoom: 0.9 }, 1.5)).toEqual({ ...left, zoom: 0.9 })
+    expect(keptAtTextSize(undefined, 1.5)).toBeUndefined()
   })
 })

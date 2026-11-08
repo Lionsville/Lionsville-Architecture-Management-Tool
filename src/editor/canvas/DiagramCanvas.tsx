@@ -80,7 +80,8 @@ import { BoardChrome, BoardConnectionLine, boardAttributes, EmptyBoardNote, useA
 import type { AddRequest } from '../AddPicker';
 import type { OverlayMark } from '../theme/overlayColors';
 import { FLOW_OPTIONS, linesInTabOrder, selectGroup } from './flowParts';
-import { MAX_ZOOM, MIN_ZOOM, useFitBoard } from './fitAll';
+import { keptAtTextSize, MAX_ZOOM, MIN_ZOOM, useFitBoard } from './fitAll';
+import { textScale } from '../../widgets/kit/tokens';
 import { BoardFocusProvider, BoardFocusSheet, useBoardFocusing } from './boardFocus';
 import { useBoardFrame, useReadingDistance } from './useBoardFrame';
 import { DENSE_LABEL_WORDS_FROM } from '../../widgets/kit/zoom';
@@ -496,7 +497,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const viewports = props.viewports;
   const viewportOwner = useRef(props.diagram.id);
   viewportOwner.current = props.diagram.id;
-  const kept = useRef(viewports?.recall(props.diagram.id));
+  const kept = useRef(keptAtTextSize(viewports?.recall(props.diagram.id), textScale()));
   const [initialised, setInitialised] = useState(false);
   const handleViewportChange = useCallback((viewport: Viewport) => {
     viewports?.keep(viewportOwner.current, viewport);
