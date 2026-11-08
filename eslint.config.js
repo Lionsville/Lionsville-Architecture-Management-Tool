@@ -458,7 +458,7 @@ export const GROWN = {
   'src/app/useModelSession.ts': { lines: 364 },
   'src/documentation/bpmn.ts': { complexity: 31 },
   'src/documentation/ui/BpmnBlock.tsx': { complexity: 41 },
-  'src/documentation/ui/DocumentationPage.tsx': { complexity: 28 },
+  'src/documentation/ui/DocumentationPage.tsx': { complexity: 27 },
   'src/editor/EditorToolbar.tsx': { complexity: 26, lines: 192 },
   'src/editor/canvas/DiagramCanvas.tsx': { complexity: 29, lines: 1024 },
   'src/editor/canvas/DomainGroupLayer.tsx': { lines: 188 },
