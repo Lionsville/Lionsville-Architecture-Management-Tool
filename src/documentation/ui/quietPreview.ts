@@ -17,6 +17,8 @@ export function useReadOnlyPreview(boxRef: RefObject<HTMLDivElement | null>, sho
   useEffect(() => {
     const box = boxRef.current
     if (!box) return undefined
+    // A browser puts a box that scrolls in the Tab order of its own accord; this one stays out of it too.
+    box.setAttribute('tabindex', '-1')
     const quiet = () => {
       for (const one of box.querySelectorAll<HTMLElement>(PRESSABLE)) {
         if (one.getAttribute('tabindex') !== '-1') one.setAttribute('tabindex', '-1')
