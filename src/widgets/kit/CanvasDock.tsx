@@ -42,12 +42,14 @@ export type CanvasDockProps = {
   corner?: boolean
   /** Where − and + stop, for a canvas with a range of its own. */
   floor?: number
+  /** Where Fit stops, said in its hint, where it is not the floor. */
+  fitFloor?: number
   ceiling?: number
   'data-testid'?: string
 }
 
 
-export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gridItems, map, extra, note, corner = true, floor = ZOOM_FLOOR, ceiling = ZOOM_CEILING, 'data-testid': testId }: CanvasDockProps) {
+export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gridItems, map, extra, note, corner = true, floor = ZOOM_FLOOR, fitFloor, ceiling = ZOOM_CEILING, 'data-testid': testId }: CanvasDockProps) {
   const { t } = useStrings()
   const mod = isMac() ? '⌘' : 'Ctrl+'
   const shift = isMac() ? '⇧' : 'Shift+'
@@ -68,7 +70,7 @@ export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gri
         <Button variant="quiet" size="small" aria-label={t('kit.dock.zoomIn')} data-limit={zoom >= ceiling || undefined} onClick={onZoomIn} data-testid="zoom-in">+</Button>
       </Tooltip>
       <span className="kit-dock__rule" />
-      <Tooltip title={hint(t('kit.dock.fitHint', { percent: Math.round(floor * 100) }), `${shift}1`)} placement="top">
+      <Tooltip title={hint(t('kit.dock.fitHint', { percent: Math.round((fitFloor ?? floor) * 100) }), `${shift}1`)} placement="top">
         <Button variant="quiet" size="small" onClick={onFit} data-testid="zoom-fit">{t('kit.dock.fit')}</Button>
       </Tooltip>
       <Tooltip title={hint(t('kit.dock.homeHint'), `${mod}0`)} placement="top">

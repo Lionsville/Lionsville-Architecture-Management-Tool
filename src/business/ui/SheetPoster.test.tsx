@@ -51,6 +51,14 @@ describe('the poster', () => {
     expect(screen.getByRole('heading', { name: 'Area one' })).toBeTruthy()
   })
 
+  it('fits no further out than where its words are drawn, and zooms out past that on asking', () => {
+    inLanguage(<Poster />)
+    act(() => { for (let i = 0; i < 12; i++) fireEvent.click(screen.getByTestId('zoom-out')) })
+    act(() => { fireEvent.click(screen.getByTestId('zoom-fit')) })
+    expect(Number(screen.getByTestId('zoom-value').textContent?.replace('%', ''))).toBeGreaterThanOrEqual(70)
+    expect(screen.getByTestId('poster-stage').dataset.distance).not.toBe('far')
+  })
+
   it('does not render a tile on a zoom: the camera and the distance are written to the element', () => {
     const commits = vi.fn()
     inLanguage(<Profiler id="poster" onRender={commits}><Poster /></Profiler>)

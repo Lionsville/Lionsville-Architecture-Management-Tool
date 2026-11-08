@@ -40,7 +40,7 @@ import { IconOrImage } from './posterIcons'
 import { usePosterGestures } from './PosterDesign'
 import type { PosterDesign } from './PosterDesign'
 import { PosterItem } from './PosterItem'
-import { POSTER_ZOOM, usePosterCamera } from './posterCamera'
+import { FIT_FLOOR, POSTER_ZOOM, usePosterCamera } from './posterCamera'
 import { unitTargets, UnitLabel } from './Responsible'
 import type { Who } from './Responsible'
 import { lookOf, valueWord } from './sheetLook'
@@ -478,7 +478,7 @@ function Dock({ listen, onGo, extra }: { listen(to: (zoom: number) => void): () 
   useEffect(() => listen(setZoom), [listen])
   return (
     <CanvasDock
-      corner={false} zoom={zoom} floor={POSTER_ZOOM.floor} ceiling={POSTER_ZOOM.ceiling} data-testid="poster-dock" extra={extra}
+      corner={false} zoom={zoom} floor={POSTER_ZOOM.floor} fitFloor={FIT_FLOOR} ceiling={POSTER_ZOOM.ceiling} data-testid="poster-dock" extra={extra}
       onZoomIn={() => onGo('in')} onZoomOut={() => onGo('out')} onFit={() => onGo('fit')} onHome={() => onGo('home')}
     />
   )

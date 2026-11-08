@@ -32,6 +32,12 @@ const SETTLE_MS = 140
  * near 77%, and a band of empty chevrons there said nothing. Below 70% `far` hides them with the rest.
  */
 const WORDS_FROM = 0.7
+/**
+ * Fit stops where the words do: under 70% the band and the tiles are empty boxes, and Fit landed at 57-61% on a
+ * laptop. A page larger than the window shows its top left, the rest one pan away, as a board does. Overview and
+ * zooming out still go further, by asking.
+ */
+export const FIT_FLOOR = WORDS_FROM
 /** A person can pan as far as they like, short of losing the page: this much of it stays in the window. */
 const STAYS_IN_VIEW = 64
 /** How much room to leave round something brought on screen, and the strip it must clear. */
@@ -50,7 +56,7 @@ const whole = (page: Size) => ({ x: 0, y: 0, ...page })
 
 /** The whole page in the room the dock leaves, centred. */
 function fitOf(pane: Size, page: Size, insets: Insets): Camera {
-  return frameInRoom(whole(page), pane, insets, { floor: POSTER_ZOOM.floor, ceiling: 1 }) ?? { x: insets.left, y: insets.top, zoom: POSTER_ZOOM.floor }
+  return frameInRoom(whole(page), pane, insets, { floor: FIT_FLOOR, ceiling: 1 }) ?? { x: insets.left, y: insets.top, zoom: FIT_FLOOR }
 }
 
 /** At Fit where that can be read, centred; otherwise at a readable zoom from the top left, with the rest a pan. */
