@@ -27,4 +27,16 @@ describe('opening a record already being written', () => {
     act(() => askToEdit('document', 'erp'))
     expect(start).toHaveBeenCalledTimes(2)
   })
+
+  it('hands the ask back where the page that took it while up is drawn afresh at once, and the new one takes it', () => {
+    const start = vi.fn()
+    const first = renderHook(() => useEditAsked('blocks', 'gw', start))
+    act(() => askToEdit('blocks', 'gw'))
+    expect(start).toHaveBeenCalledTimes(1)
+    first.unmount()
+    const again = vi.fn()
+    renderHook(() => useEditAsked('blocks', 'gw', again))
+    expect(again).toHaveBeenCalledTimes(1)
+    expect(takeEditAsked('blocks', 'gw')).toBe(false)
+  })
 })

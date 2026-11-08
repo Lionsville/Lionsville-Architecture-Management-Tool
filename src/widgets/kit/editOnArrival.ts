@@ -31,15 +31,29 @@ export function takeEditAsked(page: string, id: string): boolean {
   return true
 }
 
-/** Start writing when this page shows this record and was asked to, as it opens or while it is up. */
+/** How long a page that took the ask while it was up may go and hand it back: the move that asked may draw the page again. */
+const HAND_BACK_MS = 1000
+
+/**
+ * Start writing when this page shows this record and was asked to, as it opens or
+ * while it is up. The same record asked for again while it is up — a link with
+ * `?edit` to the block on screen — may draw its page afresh on the way (the home
+ * under it read again): a page that took the ask and goes at once hands it back,
+ * for the page drawn in its place to take up.
+ */
 export function useEditAsked(page: string, id: string | undefined, start: () => void): void {
   const latest = useRef(start)
   latest.current = start
   useEffect(() => {
     if (id === undefined) return undefined
-    const look = () => { if (takeEditAsked(page, id)) latest.current() }
-    look()
+    let takenAt: number | undefined
+    const take = () => takeEditAsked(page, id)
+    if (take()) latest.current()
+    const look = () => { if (take()) { takenAt = Date.now(); latest.current() } }
     listeners.add(look)
-    return () => { listeners.delete(look) }
+    return () => {
+      listeners.delete(look)
+      if (takenAt !== undefined && Date.now() - takenAt < HAND_BACK_MS && asked === undefined) asked = keyOf(page, id)
+    }
   }, [page, id])
 }
