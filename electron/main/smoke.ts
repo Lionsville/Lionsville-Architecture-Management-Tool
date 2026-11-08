@@ -440,7 +440,9 @@ async function drawingsFirstHalf(run: DrawingRun, results: SmokeResult[]): Promi
     const showSaveDialog = dialog.showSaveDialog
     const offered: string[] = []
     let answer: string | undefined
-    dialog.showSaveDialog = ((options: { defaultPath?: string }) => {
+    // The host opens the panel on its window when it has one, so the options come second then.
+    dialog.showSaveDialog = ((first: unknown, second?: { defaultPath?: string }) => {
+      const options = (second ?? first) as { defaultPath?: string }
       offered.push(options.defaultPath ?? '')
       return Promise.resolve(answer ? { canceled: false, filePath: answer } : { canceled: true, filePath: '' })
     }) as unknown as typeof dialog.showSaveDialog
@@ -994,7 +996,9 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     const showSaveDialog = dialog.showSaveDialog
     const offered: string[] = []
     const saved = join(workIn, 'smoke-board.png')
-    dialog.showSaveDialog = ((options: { defaultPath?: string }) => {
+    // The host opens the panel on its window when it has one, so the options come second then.
+    dialog.showSaveDialog = ((first: unknown, second?: { defaultPath?: string }) => {
+      const options = (second ?? first) as { defaultPath?: string }
       offered.push(options.defaultPath ?? '')
       return Promise.resolve({ canceled: false, filePath: saved })
     }) as unknown as typeof dialog.showSaveDialog
