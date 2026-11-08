@@ -18,6 +18,7 @@ import type { Language, StringKey, Translate } from '../../i18n'
 import { formatDay } from '../../i18n/dates'
 import { formatAdrNumber } from '../../decisions'
 import type { DesignDiagram } from '../../model'
+import { isSheetReading } from '../../model/sheetReading'
 import { useBlocks } from '../../blocks/ui/BlocksContext'
 import type { ScopeSummary } from '../../projects/scope'
 import { flattenScopes } from '../../projects/scope'
@@ -233,15 +234,18 @@ function keptLink(kept: Kept): LineLink {
 
 function viewRows(views: readonly DesignDiagram[], pages: OrganisationPages, onDelete: HomeDoors['onDeleteView'], onOpen: (id: string) => void, language: Language, s: Translate): ListRow[] {
   const { entries, loose } = outlineBoards(views)
+  // A map read on the sheet is called what the sheet's bar calls it; where a scope keeps several, each says its own name after.
+  const readings = views.filter((view) => isSheetReading(view, views))
+  const named = (view: DesignDiagram) => (!readings.includes(view) ? view.name : readings.length > 1 ? `${s('org.mapView')} · ${view.name}` : s('org.mapView'))
   const rowOf = (view: DesignDiagram, indent: number): ListRow => ({
-    id: view.id, ...doorOf(view, pages), text: view.name, mark: <BoardKindIcon kind={view.kind} size={16} />, fact: viewFact(view, pages, language, s),
+    id: view.id, ...doorOf(view, pages), text: named(view), mark: <BoardKindIcon kind={view.kind} size={16} />, fact: viewFact(view, pages, language, s),
     ...(indent > 0 ? { indent } : {}),
     end: (
       <MoreMenu
-        size="small" label={s('frame.scopeMenu', { name: view.name })}
+        size="small" label={s('frame.scopeMenu', { name: named(view) })}
         items={[
           { label: s('org.rowOpen'), onSelect: () => onOpen(view.id) },
-          ...(onDelete ? [{ label: s('org.rowDelete'), final: true, onSelect: () => onDelete({ id: view.id, name: view.name }) }] : []),
+          ...(onDelete ? [{ label: s('org.rowDelete'), final: true, onSelect: () => onDelete({ id: view.id, name: named(view) }) }] : []),
         ]}
       />
     ),

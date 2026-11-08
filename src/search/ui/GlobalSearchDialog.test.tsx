@@ -114,7 +114,7 @@ describe('what the chip beside a title says', () => {
 
   it('names the kind within the kind', () => {
     expect(chipOf(hit({ variant: 'platformService' }), s)).toBe('Platform service')
-    expect(chipOf(hit({ kind: 'view', variant: 'map' }), s)).toBe('Enterprise map')
+    expect(chipOf(hit({ kind: 'view', variant: 'map' }), s)).toBe('Coverage')
     expect(chipOf(hit({ kind: 'relation', variant: 'hostedOn' }), s)).toBe('Hosted on')
     expect(chipOf(hit({ kind: 'view', variant: 'somethingNew' }), s)).toBeUndefined()
     expect(chipOf(hit({}), s)).toBeUndefined()

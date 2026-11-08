@@ -424,6 +424,18 @@ describe('the organisation screen — its own pages', () => {
     expect(await screen.findByTestId('map-body', {}, { timeout: 3000 })).toBeDefined()
   })
 
+  it('calls a map read on the sheet what the sheet’s bar calls it', async () => {
+    const both = organisation()
+    both.model.diagrams = [
+      { id: 'sh', kind: 'sheet', name: 'Business architecture', members: [], geometry: { nodes: [] } },
+      { id: 'mp', kind: 'map', name: 'Enterprise map', members: [], geometry: { nodes: [] } },
+    ]
+    renderApp({ repositories: heldRepositories([both]), today: TODAY })
+    await waitFor(() => expect(screen.getByTestId('open-map').getAttribute('role')).toBe('row'))
+    expect(screen.getByTestId('open-map').textContent).toContain('Coverage')
+    expect(screen.getByTestId('open-map').textContent).not.toContain('Enterprise map')
+  })
+
   it('counts the initiatives of the domains on the roadmap card, off the index', async () => {
     const retail: ScopeSnapshot = {
       ...organisation(), path: 'acme/retail',

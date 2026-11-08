@@ -54,7 +54,7 @@ export const EN = {
   'gsearch.view.layer7': 'Landscape',
   'gsearch.view.container': 'Container diagram',
   'gsearch.view.sheet': 'Business architecture',
-  'gsearch.view.map': 'Enterprise map',
+  'gsearch.view.map': 'Coverage',
   'gsearch.view.technology': 'Technology landscape',
   'gsearch.view.drawing': 'Drawing',
   'gsearch.view.chart': 'Organisation chart',

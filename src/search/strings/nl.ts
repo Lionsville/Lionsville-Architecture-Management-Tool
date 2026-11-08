@@ -53,7 +53,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'gsearch.view.layer7': 'Landschap',
   'gsearch.view.container': 'Containerdiagram',
   'gsearch.view.sheet': 'Bedrijfsarchitectuur',
-  'gsearch.view.map': 'Bedrijfskaart',
+  'gsearch.view.map': 'Dekking',
   'gsearch.view.technology': 'Technologielandschap',
   'gsearch.view.drawing': 'Tekening',
   'gsearch.view.chart': 'Organogram',
