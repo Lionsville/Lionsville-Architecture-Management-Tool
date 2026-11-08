@@ -35,6 +35,7 @@ import {
   openingView, rulerCells, scaleOf, scrolledView, sideOf, viewAround, viewAtScale, viewBetween, viewWith, zoomedView,
 } from './timeScale'
 import type { AxisScale, AxisView } from './timeScale'
+import { chordHeld } from './keys'
 import './TimeAxis.css'
 
 const AxisContext = createContext<{ view: AxisView; width: number }>({ view: { start: '2000-01-01', days: 365 }, width: 0 })
@@ -118,7 +119,7 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
     const element = root.current
     if (!element) return undefined
     const wheel = (event: WheelEvent) => {
-      if (event.ctrlKey || event.metaKey) return
+      if (chordHeld(event)) return
       const sideways = event.deltaX !== 0 ? event.deltaX : event.shiftKey ? event.deltaY : 0
       if (sideways === 0) return
       event.preventDefault()

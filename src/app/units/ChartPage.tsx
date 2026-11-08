@@ -104,6 +104,7 @@ import { movedText, UNIT_MOVE_BARRIER } from './useMoveUnit'
 import { useNewUnit } from './useNewUnit'
 import type { NewUnit, UnitMaking } from './useNewUnit'
 import { useSiblingOrder } from './useSiblingOrder'
+import { commandKey } from '../../widgets/kit/keys'
 import './chart.css'
 
 export type ChartPageProps = {
@@ -479,7 +480,7 @@ function focusBox(stage: HTMLElement | null, id: ElementId) {
 function useFindKey(stage: { current: HTMLElement | null }) {
   useEffect(() => {
     const onKey = (event: globalThis.KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.key.toLowerCase() !== 'f') return
+      if (!commandKey(event) || event.altKey || event.key.toLowerCase() !== 'f') return
       if (document.activeElement?.closest('[aria-modal="true"]')) return
       const box = stage.current?.closest('[data-testid="chart-page"]')?.querySelector<HTMLInputElement>('[data-testid="chart-find-input"]')
       if (!box) return

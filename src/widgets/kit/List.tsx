@@ -23,6 +23,7 @@ import type { CSSProperties, DragEvent, KeyboardEvent, MouseEvent, ReactNode } f
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon } from '../icons'
 import type { ListSort } from './listView'
+import { commandKey } from './keys'
 import './hidden.css'
 import './List.css'
 
@@ -441,7 +442,7 @@ export function List({
       ArrowLeft: () => { if (head) fold(id, true) },
       ArrowRight: () => { if (head) fold(id, false) },
     }
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'a' && ticks) {
+    if (commandKey(event) && event.key.toLowerCase() === 'a' && ticks) {
       event.preventDefault()
       change(new Set(rowIds))
       return

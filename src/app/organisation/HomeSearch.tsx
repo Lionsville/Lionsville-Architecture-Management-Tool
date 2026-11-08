@@ -28,6 +28,7 @@ import type { InitialPage } from '../App'
 import { initialPageFor } from '../bootLanding'
 import { useFrameCommands } from '../frame/frameStore'
 import type { TreeRead } from './useHomeChecks'
+import { commandKey } from '../../widgets/kit/keys'
 
 export type HomeSearchProps = {
   /** Whose home this is, and its own document where it has been read. */
@@ -53,7 +54,7 @@ export function HomeSearch({ at, root, tree, treeRead, onOpen, onOpenPerson, sea
   // is open, so the two never listen at once.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
+      if (commandKey(event) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         setOpen(true)
       }

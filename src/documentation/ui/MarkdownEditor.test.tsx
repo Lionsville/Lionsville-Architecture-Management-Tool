@@ -98,7 +98,7 @@ describe('MarkdownEditor, the keys', () => {
   it('wraps a selection in bold on ⌘B, and takes it off again', () => {
     const { onChange, area } = setup()
     area.setSelectionRange(0, 5)
-    fireEvent.keyDown(area, { key: 'b', metaKey: true })
+    fireEvent.keyDown(area, { key: 'b', ctrlKey: true })
     expect(onChange).toHaveBeenLastCalledWith('**Hello**')
   })
 

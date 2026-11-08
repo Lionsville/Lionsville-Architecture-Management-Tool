@@ -54,6 +54,7 @@ import { PictureThumbnail, usePictureScope } from './Pictures'
 import { caretRect, InsertMenu, useReferenceCompletion } from './ReferenceCompletion'
 import type { Completion, SlashBlock } from './ReferenceCompletion'
 import type { Referable } from '../references'
+import { commandKey } from '../../widgets/kit/keys'
 import './MarkdownEditor.css'
 
 /**
@@ -242,7 +243,7 @@ function useKeys({ completion, selection, apply, onSubmit, toolbarRef }: {
     if (completion.onKeyDown(event)) return
     const state = selection()
     if (!state) return
-    const mod = event.metaKey || event.ctrlKey
+    const mod = commandKey(event)
     const handled = (edit: Edit | undefined) => {
       if (!edit) return
       event.preventDefault()

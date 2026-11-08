@@ -8,6 +8,7 @@
  * them: a board, whose viewport is React Flow's, and a picture in a scrolling
  * window, whose zoom is a number on a state.
  */
+import { chordHeld } from './keys'
 
 /** Below this a name can no longer be read at its fixed size: the map scrolls instead. */
 export const ZOOM_FLOOR = 0.6
@@ -70,7 +71,7 @@ export type ZoomChord = Pick<KeyboardEvent, 'key' | 'code' | 'metaKey' | 'ctrlKe
  * canvas. `=` is + without the Shift, and on a numeric keypad the code says it.
  */
 export function modZoomKey(event: ZoomChord): ZoomHow | undefined {
-  if (!event.metaKey && !event.ctrlKey) return undefined
+  if (!chordHeld(event)) return undefined
   if (event.altKey) return undefined
   if (event.key === '+' || event.key === '=' || event.code === 'NumpadAdd') return 'in'
   if (event.key === '-' || event.key === '_' || event.code === 'NumpadSubtract') return 'out'
@@ -84,7 +85,7 @@ export function modZoomKey(event: ZoomChord): ZoomHow | undefined {
  * character on every layout.
  */
 export function plainZoomKey(event: ZoomChord): ZoomHow | undefined {
-  if (event.metaKey || event.ctrlKey || event.altKey) return undefined
+  if (chordHeld(event) || event.altKey) return undefined
   if (event.shiftKey) {
     if (event.code === 'Digit1') return 'fit'
     if (event.code === 'Digit2') return 'home'

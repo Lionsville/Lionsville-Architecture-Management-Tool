@@ -75,7 +75,7 @@ describe('the two rows', () => {
     expect(screen.getByTestId('frame-tree')).toBeDefined()
     await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })
     await waitFor(() => expect(screen.queryByTestId('frame-tree')).toBeNull())
-    fireEvent.keyDown(window, { key: '\\', metaKey: true })
+    fireEvent.keyDown(window, { key: '\\', ctrlKey: true })
     expect(await screen.findByTestId('frame-tree')).toBeDefined()
     expect(screen.getByTestId('scope-retail/depot').getAttribute('aria-current')).toBe('page')
   })
@@ -299,7 +299,7 @@ describe('⌘K', () => {
 
   it('offers the commands of the one table, with their keys', async () => {
     await home()
-    fireEvent.keyDown(window, { key: 'k', metaKey: true })
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
     const field = await screen.findByRole('combobox')
     fireEvent.change(field, { target: { value: 'keyboard' } })
     fireEvent.click(await screen.findByTestId('palette-help:menu.shortcuts'))

@@ -7,7 +7,7 @@
  * workspace's wider search over the whole tree, and a hit opens the scope
  * that holds it.
  */
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { heldRepositories } from '../testing/heldRepositories'
 import { laidOut } from '../../model/testFixtures'
@@ -15,7 +15,7 @@ import type { ScopeSnapshot } from '../../projects/scope'
 import { renderApp } from '../testing/renderShell'
 import { installReactFlowMocks } from '../../editor/reactFlowTestSetup'
 
-afterEach(() => cleanup())
+afterEach(() => { cleanup(); vi.restoreAllMocks() })
 beforeAll(() => installReactFlowMocks())
 
 const board = () => laidOut({ id: 'l7', kind: 'layer7' as const, name: 'L7', placements: [{ id: 'billing', x: 0, y: 0 }] })
@@ -41,7 +41,7 @@ const show = () => renderApp({ repositories: heldRepositories(TREE()), today: ()
 describe('search on a home', () => {
   it('finds an element in a scope folded away under the tree, and opens it there', async () => {
     show()
-    fireEvent.keyDown(window, { key: 'k', metaKey: true })
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
     fireEvent.change(await screen.findByRole('combobox'), { target: { value: 'billing' } })
     const hit = await screen.findByRole('option', { name: /Billing engine/ })
     expect(hit.textContent).toContain('Warehouse')
@@ -53,6 +53,16 @@ describe('search on a home', () => {
 
   it('opens on ⌘K, as in the workspace', async () => {
     show()
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    expect(await screen.findByRole('combobox')).toBeDefined()
+  })
+
+  it('on a Mac opens on ⌘K and leaves Ctrl+K to the text field, where it kills to the end of the line', async () => {
+    vi.spyOn(navigator, 'platform', 'get').mockReturnValue('MacIntel')
+    show()
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
+    await new Promise((settle) => setTimeout(settle, 50))
+    expect(screen.queryByRole('combobox')).toBeNull()
     fireEvent.keyDown(window, { key: 'k', metaKey: true })
     expect(await screen.findByRole('combobox')).toBeDefined()
   })

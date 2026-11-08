@@ -229,7 +229,7 @@ describe('bulk selection', () => {
     first.focus()
     key(first, 'ArrowDown', { shiftKey: true })
     expect(screen.getByText('2 selected')).toBeTruthy()
-    key(first, 'a', { metaKey: true })
+    key(first, 'a', { ctrlKey: true })
     expect(screen.getByText('3 selected')).toBeTruthy()
     key(first, 'Escape')
     expect(screen.queryByText(/selected$/)).toBeNull()

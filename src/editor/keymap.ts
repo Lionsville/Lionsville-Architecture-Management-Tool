@@ -18,6 +18,7 @@
  */
 
 import type { StringKey } from '../i18n/strings';
+import { chordHeld, isMac } from '../widgets/kit/keys';
 
 /** Which primary modifier `'Mod'` maps to. */
 export type Platform = 'mac' | 'other';
@@ -157,12 +158,9 @@ export const CANVAS_SHORTCUTS: ShortcutDef[] = [
   { id: 'find', keys: ['Mod', 'f'], labelKey: 'shortcut.find', group: 'general' },
 ];
 
-/** Detect the platform from the UA-client-hints API, falling back to platform. */
+/** The platform, as the kit's `isMac` says it: one answer for every key in the app. */
 export function detectPlatform(): Platform {
-  if (typeof navigator === 'undefined') return 'other';
-  const nav = navigator as Navigator & { userAgentData?: { platform?: string } };
-  const raw = nav.userAgentData?.platform ?? navigator.platform ?? '';
-  return /mac/i.test(raw) ? 'mac' : 'other';
+  return isMac() ? 'mac' : 'other';
 }
 
 /** The event property `'Mod'` resolves to on the given platform. */
@@ -205,7 +203,7 @@ export function matchEvent(event: KeyChord, def: ShortcutDef, platform: Platform
   const modProp = resolveMod(platform);
   const otherPrimary = modProp === 'metaKey' ? 'ctrlKey' : 'metaKey';
 
-  if (needMod ? !event[modProp] || event[otherPrimary] : event.metaKey || event.ctrlKey) {
+  if (needMod ? !event[modProp] || event[otherPrimary] : chordHeld(event)) {
     return false;
   }
   if (needAlt !== event.altKey) return false;

@@ -32,6 +32,7 @@ import type { InitialPage } from './App'
 import { initialPageFor } from './bootLanding'
 import type { ModelSession } from './useModelSession'
 import type { WorkspaceParts } from './workspaceParts'
+import { commandKey } from '../widgets/kit/keys'
 
 /**
  * The scope's settings and what to do with an element dropped from the
@@ -94,7 +95,7 @@ export function useWorkspaceDialogs(deps: {
   // canvas finder; this is the wider one.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
+      if (commandKey(event) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
         event.preventDefault()
         setSearchOpen(true)
       }

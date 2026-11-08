@@ -29,6 +29,7 @@ and behaves is said here, once.
 | `Segmented.tsx` | **Segmented switch**: a radio group, a menu when it runs out of room below 1024 px |
 | `Mark.tsx` | **Mark**: the closed set of sixteen, `MARK_KINDS` |
 | `roving.ts` | the arrows of a row of choices, shared by tabs and the switch |
+| `keys.ts` | the two rules every key handler keeps: the command key is the platform's (`commandKey`: ⌘ on a Mac, Ctrl elsewhere, never either; `chordHeld` where any chord means stand aside; `build/platformModifier.test.ts` holds the tree to it), and one Escape does one thing, innermost first (`claimKey`, `keyClaimed`; the outer listeners hear it in the bubble phase) |
 | `listView.ts` | what a list shows as data: find, filters, group, sort, columns, selection; read from and written to the address; the rows a view keeps; *Did you mean* |
 | `List.tsx` | **List**: a row is the item and nothing else, one line or wrapped; groups that fold; columns only when asked for; ticks and bulk; the keyboard; focus handed back to the row; `doors`, for rows that are ways on, as on a home: pressable at rest; a row's `rail`, a thin mark at its start in a tone (`--rail-good`, `--rail-bad`, `--rail-neutral`), named in words unless the row says its kind |
 | `ListMore.tsx` | **List more**: the end of a list that is not all there, how many are kept back and the button that brings them; `List`'s `more`, or under a map |

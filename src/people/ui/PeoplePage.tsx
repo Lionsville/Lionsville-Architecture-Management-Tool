@@ -64,6 +64,7 @@ import { PersonQuestion } from './PersonQuestions'
 import type { Question } from './PersonQuestions'
 import { PolicyPanel } from './PolicyPanel'
 import { WhatWeHold } from './WhatWeHold'
+import { chordHeld } from '../../widgets/kit/keys'
 
 export type { PeopleLook }
 
@@ -178,7 +179,7 @@ function useFindReady(open: boolean, ready: boolean, personUp: boolean) {
     if (!open) return undefined
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null
-      if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.key !== '/' || chordHeld(event) || event.altKey) return
       if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return
       const found = field()
       if (found) { event.preventDefault(); found.focus() }

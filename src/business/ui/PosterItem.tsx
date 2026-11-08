@@ -12,6 +12,7 @@ import type { PosterItem as PosterItemRecord, PosterItemPlace } from '../../mode
 import type { Translate } from '../../i18n'
 import { usePictureByAddress, LibraryPicture } from '../../documentation/ui/Pictures'
 import type { PosterDesign } from './PosterDesign'
+import { commandKey } from '../../widgets/kit/keys'
 
 function Picture({ item }: { item: PosterItemRecord }) {
   const entry = usePictureByAddress(item.image ?? '')
@@ -46,7 +47,7 @@ export function PosterItem({ item, at, design, t }: { item: PosterItemRecord; at
             onKeyDown={(event) => {
               event.stopPropagation()
               if (event.key === 'Escape') { event.preventDefault(); setWriting(false) }
-              if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) { event.preventDefault(); finish(event.currentTarget.value) }
+              if (event.key === 'Enter' && commandKey(event)) { event.preventDefault(); finish(event.currentTarget.value) }
             }}
           />
         )

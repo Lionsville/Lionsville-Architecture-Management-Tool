@@ -20,6 +20,7 @@ import { MenuButton } from './Menu'
 import type { MenuEntry } from './Menu'
 import { Tooltip } from './Tooltip'
 import { ZOOM_CEILING, ZOOM_FLOOR } from './zoom'
+import { isMac } from './keys'
 import './CanvasDock.css'
 
 type Toggle = { on: boolean; onToggle: () => void; keys?: string; 'data-guide'?: string }
@@ -45,7 +46,6 @@ export type CanvasDockProps = {
   'data-testid'?: string
 }
 
-const isMac = () => typeof navigator !== 'undefined' && /mac/i.test(navigator.platform ?? '')
 
 export function CanvasDock({ zoom, onZoomIn, onZoomOut, onFit, onHome, grid, gridItems, map, extra, note, corner = true, floor = ZOOM_FLOOR, ceiling = ZOOM_CEILING, 'data-testid': testId }: CanvasDockProps) {
   const { t } = useStrings()

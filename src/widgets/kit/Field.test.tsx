@@ -224,7 +224,7 @@ describe('PropertyRow', () => {
     fireEvent.change(box, { target: { value: 'More words' } })
     expect(fireEvent.keyDown(box, { key: 'Enter' })).toBe(true)
     expect(kept).not.toHaveBeenCalled()
-    fireEvent.keyDown(box, { key: 'Enter', metaKey: true })
+    fireEvent.keyDown(box, { key: 'Enter', ctrlKey: true })
     expect(kept).toHaveBeenCalledWith('More words')
     press('Edit About: More words')
     fireEvent.blur(screen.getByRole('textbox', { name: 'About' }))

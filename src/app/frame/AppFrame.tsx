@@ -68,8 +68,8 @@ import { TONE_MARK } from './statusWord'
 import { NewViewDialog } from '../NewViewDialog'
 import { DESKTOP_APP_LINK, FILE_MENU, PREFERENCES_ITEM, WEBSITE_LINK, HELP_MENU, acceleratorMatches, offered } from '../../platform/menu'
 import type { KeyPress, MenuItemSpec } from '../../platform/menu'
+import { commandKey, chordHeld, isMac } from '../../widgets/kit/keys'
 
-const isMac = () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
 export function AppFrame({ parts, children }: { parts: ShellParts; children: ReactNode }) {
   const { frame } = parts
@@ -257,7 +257,7 @@ export function modalUp(): boolean {
 
 /** ⌘Z, ⇧⌘Z and ⌘Y (Ctrl on Windows and Linux), as the canvas's keymap reads them. */
 export function undoKey(event: Pick<KeyboardEvent, 'key' | 'metaKey' | 'ctrlKey' | 'shiftKey' | 'altKey'>): 'undo' | 'redo' | undefined {
-  if (!(event.metaKey || event.ctrlKey) || event.altKey) return undefined
+  if (!commandKey(event) || event.altKey) return undefined
   const key = event.key.toLowerCase()
   if (key === 'z') return event.shiftKey ? 'redo' : 'undo'
   return key === 'y' && !event.shiftKey ? 'redo' : undefined
@@ -271,7 +271,7 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
   const boardUp = state.screen?.boardUp === true
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key === '\\') {
+      if (commandKey(event) && event.key === '\\') {
         event.preventDefault()
         const pinned = !frame.get().pinned
         frame.set({ pinned })
@@ -288,8 +288,8 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         if (act?.can) { event.preventDefault(); event.stopPropagation(); act.run() }
         return
       }
-      if (!parts.hostMenu && (event.metaKey || event.ctrlKey) && !modalUp()) {
-        const command = menuKeyCommand(event, canOf(parts, frame.get().screen), boardUp, /Mac|iPhone|iPad/.test(navigator.platform))
+      if (!parts.hostMenu && chordHeld(event) && !modalUp()) {
+        const command = menuKeyCommand(event, canOf(parts, frame.get().screen), boardUp, isMac())
         if (command) { event.preventDefault(); send(command); return }
       }
       if (event.key === 'Escape' && hasPanel && !modalUp() && !document.querySelector('[role="menu"]')) {

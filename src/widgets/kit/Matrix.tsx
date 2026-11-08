@@ -19,6 +19,7 @@ import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon } from '../icons'
 import { Mark } from './Mark'
+import { commandKey, chordHeld } from './keys'
 import './Matrix.css'
 
 export type MatrixColumn = {
@@ -370,8 +371,8 @@ export function Matrix({
       ArrowUp: () => go(row - 1, column),
       ArrowRight: () => go(row, column + 1),
       ArrowLeft: () => go(row, column - 1),
-      Home: () => go(event.metaKey || event.ctrlKey ? 0 : row, 0),
-      End: () => go(event.metaKey || event.ctrlKey ? shownRows.length - 1 : row, drawn.length - 1),
+      Home: () => go(commandKey(event) ? 0 : row, 0),
+      End: () => go(commandKey(event) ? shownRows.length - 1 : row, drawn.length - 1),
     }
     const step = walk[event.key]
     if (step) {
@@ -391,7 +392,7 @@ export function Matrix({
       return
     }
     const letter = event.key.toLowerCase()
-    if (here && keys?.includes(letter) && !event.metaKey && !event.ctrlKey && !event.altKey) {
+    if (here && keys?.includes(letter) && !chordHeld(event) && !event.altKey) {
       event.preventDefault()
       onKey?.(here, letter)
     }

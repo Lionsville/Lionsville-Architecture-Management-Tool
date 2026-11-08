@@ -9,6 +9,7 @@
  */
 import type { ChartUnit } from '../../model/orgChart'
 import type { ElementId } from '../../model/types'
+import { chordHeld } from '../../widgets/kit/keys'
 
 export type TreeStep = 'up' | 'down' | 'previous' | 'next'
 
@@ -37,7 +38,7 @@ export function stepInTree(units: readonly ChartUnit[], folded: ReadonlySet<Elem
 
 /** What a key on a box means: the step it takes, a pick, or a verb. Nothing for a key that is not the chart's. */
 export function chartKey(event: { key: string; shiftKey: boolean; altKey: boolean; ctrlKey: boolean; metaKey: boolean }): TreeStep | 'pick' | 'move' | 'focus' | undefined {
-  if (event.altKey || event.ctrlKey || event.metaKey) return undefined
+  if (event.altKey || chordHeld(event)) return undefined
   switch (event.key) {
     case 'ArrowUp': return 'up'
     case 'ArrowDown': return 'down'

@@ -99,6 +99,7 @@ import type { SheetSettingsDialog as SheetSettingsDialogShape } from './SheetSet
 import { lensWord, lookOf, valueWord } from './sheetLook'
 import { useRail } from './useRail'
 import { WINDOW_COVER } from '../../widgets/kit/windowArea'
+import { commandKey } from '../../widgets/kit/keys'
 import './Sheet.css'
 
 export type { SheetClaims } from './SheetAuthor'
@@ -832,7 +833,7 @@ function usePosterFindKey(on: boolean, finding: boolean, toggle: () => void) {
   useEffect(() => {
     if (!on) return undefined
     const keys = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'f') return
+      if (!commandKey(event) || event.shiftKey || event.altKey || event.key.toLowerCase() !== 'f') return
       event.preventDefault()
       event.stopPropagation()
       if (!finding) toggle()

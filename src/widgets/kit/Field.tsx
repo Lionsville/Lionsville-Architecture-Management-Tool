@@ -27,6 +27,7 @@ import { useStrings } from '../../i18n/LanguageContext'
 import type { Translate } from '../../i18n'
 import { MenuButton } from './Menu'
 import type { MenuEntry } from './Menu'
+import { commandKey } from './keys'
 import './Field.css'
 
 /** What ties a control to its label and to the words under it. */
@@ -413,7 +414,7 @@ function RowEditing({ label, edit, startsFrom, refusal, check, onCommit, onClose
       event.preventDefault()
       event.stopPropagation()
       cancel()
-    } else if (event.key === 'Enter' && (edit !== 'long' || event.metaKey || event.ctrlKey)) {
+    } else if (event.key === 'Enter' && (edit !== 'long' || commandKey(event))) {
       event.preventDefault()
       commit(draft, true)
     }

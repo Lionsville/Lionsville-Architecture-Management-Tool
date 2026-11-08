@@ -42,6 +42,7 @@ import { POSTER_ZOOM, usePosterCamera } from './posterCamera'
 import { unitTargets, UnitLabel } from './Responsible'
 import type { Who } from './Responsible'
 import { lookOf, valueWord } from './sheetLook'
+import { chordHeld } from '../../widgets/kit/keys'
 import './SheetPoster.css'
 
 export { heldInView, openingCamera, POSTER_ZOOM } from './posterCamera'
@@ -472,7 +473,7 @@ function usePan(pane: { current: HTMLDivElement | null }, panBy: (dx: number, dy
     const on = pane.current
     if (!on) return undefined
     const wheel = (event: WheelEvent) => {
-      if (event.ctrlKey || event.metaKey) return
+      if (chordHeld(event)) return
       event.preventDefault()
       panBy(-event.deltaX, -event.deltaY)
     }

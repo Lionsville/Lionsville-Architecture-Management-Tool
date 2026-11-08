@@ -26,6 +26,7 @@ import type { PosterPlaces, PosterSheet } from '../posterPlaces'
 import type { LaidOutSheet } from '../sheet'
 import { locatedSelector } from '../../widgets/useLocated'
 import type { PosterCamera } from './posterCamera'
+import { chordHeld } from '../../widgets/kit/keys'
 
 /** What placing and mapping on a poster writes. Each is one step. */
 export type PosterActions = {
@@ -266,7 +267,7 @@ function useLift({ design, camera, say, t, commit, rectOf }: {
     const tile = element.closest<HTMLElement>('.poster-tile')
     if (tile) {
       const key = event.key.toLowerCase()
-      if ((key === 'l' || key === 'a') && !event.metaKey && !event.ctrlKey && tile.dataset.elementId) {
+      if ((key === 'l' || key === 'a') && !chordHeld(event) && tile.dataset.elementId) {
         event.preventDefault()
         design.onPick(key === 'l' ? 'team' : 'application', tile.dataset.elementId, tile)
         return true
