@@ -23,6 +23,9 @@
  * folder with no git — it upgrades anyway and says so in the trail. Refusing
  * to open somebody's work for want of an entry would be the worse answer.
  */
+import { browserStorage } from '../../adapters/webStorage/available'
+import { pageServices, pendingSteps } from '../../adapters/webStorage/pendingSteps'
+import type { PendingSteps } from '../../ports/PendingSteps'
 import type { FolderChannel } from '../../adapters/desktop/rememberingWrites'
 import type { DirectoryHandleLike } from '../../adapters/folder/DirectoryHandle'
 import { FileSystemFolderSettings } from '../../adapters/folder/FileSystemFolderSettings'
@@ -202,6 +205,17 @@ async function historyKeptIn(git: FolderGit): Promise<boolean> {
   }
 }
 
+/**
+ * A folder in a tab: what a write has not yet taken, held at once in this
+ * browser beside the folder's handle, for the next open of this folder to put
+ * back. The desktop's window waits for its last write and needs none.
+ */
+function heldInThisTab(root: string): { pendingSteps?: PendingSteps } {
+  // A process with no page — a suite, a server — has no tab to hold anything for.
+  const kept = typeof window === 'undefined' ? undefined : browserStorage()
+  return kept ? { pendingSteps: pendingSteps(`folder:${root}`, kept, pageServices()) } : {}
+}
+
 /** The folder, pulled and brought up to date, and its repositories over it. */
 export async function openFolder(opening: FolderOpening, base: FolderBase): Promise<FolderParts> {
   const { handle, name, root, git, steps, places, stamps, person, sync, channel } = opening
@@ -238,6 +252,6 @@ export async function openFolder(opening: FolderOpening, base: FolderBase): Prom
     historyKept: () => historyKeptIn(history),
     ...(channel ? { changes: watching(channel, root, diagnostics) } : {}),
     // A folder in a tab has no window that waits for its last write: a reload or a close takes what was not written yet.
-    ...(channel ? {} : { writeAfterMs: TAB_FOLDER_WRITE_AFTER_MS }),
+    ...(channel ? {} : { writeAfterMs: TAB_FOLDER_WRITE_AFTER_MS, ...heldInThisTab(root) }),
   }
 }

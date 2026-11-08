@@ -31,7 +31,7 @@
  * it always has. *Keep mine* writes ours onto theirs, and puts on screen the
  * scope as that left it.
  */
-import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
   AUTOSAVE_IDLE_MS, documentSession, hasUnsavedWork, openSession, shouldSaveNow,
 } from '../projects/documentSession'
@@ -44,6 +44,7 @@ import { isScopeMoved } from '../projects/revision'
 import type { ScopeSnapshot } from '../projects/scope'
 import { contentOf, stepOf } from '../projects/scopeAccess'
 import type { Revision, ScopeCommand, ScopeDescription, ScopeStep } from '../projects/scopeState'
+import type { PendingSteps } from '../ports/PendingSteps'
 import type { SessionJournal } from './useModelSession'
 import type { KeepNotice } from './useKeepNotice'
 
@@ -169,10 +170,21 @@ export function useDocumentSession(deps: {
   onSourceWork?: SourceWorkChanged
   /** How long an edit waits before it is written, where the source says otherwise than `AUTOSAVE_IDLE_MS` (`ProviderParts.writeAfterMs`). */
   writeAfterMs?: number
+  /**
+   * Where what is not yet written is held the moment it is made, so a page
+   * that goes before its write lands loses nothing (`ports/PendingSteps.ts`).
+   */
+  pendingSteps?: PendingSteps
+  /**
+   * The revision the scope was read at when it was opened. A session's first
+   * write expects nothing (it learns the revision from the answer), but a
+   * line held for it must say what it was made against.
+   */
+  openedAt?: Revision | undefined
 }): DocumentSessionHook {
   const {
     session, writer, onSaved, onResult, watch, onAdopt, onUnsavedWork,
-    sourceStatus, onSourceWork, writeAfterMs: idleMs = AUTOSAVE_IDLE_MS,
+    sourceStatus, onSourceWork, writeAfterMs: idleMs = AUTOSAVE_IDLE_MS, pendingSteps, openedAt,
   } = deps
   const { model, logoLibrary, snapshot } = session
 
@@ -195,7 +207,7 @@ export function useDocumentSession(deps: {
   }, [])
   const editedAt = useRef(0)
 
-  const writes = useScopeWrites(session, writer, onAdopt)
+  const writes = useScopeWrites(session, writer, onAdopt, pendingSteps, openedAt)
   /** The write in flight, where one is: what a flush waits for before it writes what is left. */
   const running = useRef<Promise<void> | undefined>(undefined)
   const save = useCallback((trigger: SaveTrigger, failedTo?: (cause: unknown) => void): Promise<void> => {
@@ -254,6 +266,9 @@ export function useDocumentSession(deps: {
    * arms the wait.
    */
   const opened = useRef(true)
+  // Held in the same turn as the change, before anything paints: a page that
+  // goes a moment later has it in its line, whatever the write is doing.
+  useLayoutEffect(() => { writes.hold() }, [model, logoLibrary, writes])
   /**
    * The first layout of a board a machine wrote, written by itself where
    * nothing else waits (ADR-0048's rule for a sheet, said for a board): a
@@ -486,6 +501,7 @@ async function mineOverTheirs(writer: ScopeWriter, steps: readonly ScopeStep[], 
  */
 function useScopeWrites(
   session: SavableSession, writer: ScopeWriter, onAdopt: ((project: ScopeSnapshot) => void) | undefined,
+  pending: PendingSteps | undefined, openedAt?: Revision,
 ) {
   const { snapshot, journal } = session
   const known = useRef<Known | undefined>(undefined)
@@ -499,47 +515,71 @@ function useScopeWrites(
     known.current = { revision: project.revision, described: describedOf(project), adopted: journal.adopted() }
   }, [onAdopt, journal])
 
-  return useMemo(() => ({
+  return useMemo(() => {
     /**
-     * `only: 'steps'` writes the session's steps and leaves what the scope
-     * says about itself for the next whole write: what a quiet write takes.
+     * The changes still to be written, as steps. Not the view the scope opens
+     * on, which rides with the next write and is no change of anybody's to
+     * put back.
      */
-    write: async (options: { only?: 'steps' } = {}): Promise<void> => {
-      // A document was adopted in place of the one opened, and written where
-      // it came from: where the scope stands now is learnt, not assumed.
-      if (known.current!.adopted !== journal.adopted()) {
+    const unwritten = (): ScopeStep[] => journal.pending().map(({ stepId, command, at }) => ({ stepId, command, at }))
+    /** The line for this scope, said again: what is unwritten now, against the revision it expects. */
+    const hold = () => {
+      if (!pending) return
+      const { id, path } = snapshot()
+      const scope = { ...(id !== undefined ? { id } : {}), address: path }
+      const base = known.current!.revision ?? openedAt
+      // A scope with no revision yet has nothing a put back could be held to.
+      if (base === undefined || over.current) { pending.clear(scope); return }
+      pending.hold(scope, base, unwritten())
+    }
+    return {
+      hold,
+      /**
+       * `only: 'steps'` writes the session's steps and leaves what the scope
+       * says about itself for the next whole write: what a quiet write takes.
+       */
+      write: async (options: { only?: 'steps' } = {}): Promise<void> => {
+        // A document was adopted in place of the one opened, and written where
+        // it came from: where the scope stands now is learnt, not assumed.
+        if (known.current!.adopted !== journal.adopted()) {
+          const read = await writer.read()
+          known.current = { revision: read?.revision, described: read ? describedOf(read) : known.current!.described, adopted: journal.adopted() }
+        }
+        const sent = journal.pending()
+        const was = known.current!.described
+        const now = options.only === 'steps' ? was : describedOf(snapshot())
+        const steps: ScopeStep[] = [
+          ...sent.map(({ stepId, command, at }) => ({ stepId, command, at })),
+          ...changesOf(was, now).map((command) => stepOf(command)),
+        ]
+        if (steps.length === 0) return
+        const onTheirs = over.current
+        const revision = onTheirs ? await mineOverTheirs(writer, steps, snapshot) : await writer.write(steps, known.current!.revision)
+        journal.written(sent.length)
+        known.current = { ...known.current!, revision, described: now }
+        // What landed is let go of; whatever was done while it ran is held again against the revision it now expects.
+        hold()
+        if (!onTheirs) return
+        // Ours went onto theirs, so what is kept is both: that is what is shown.
+        over.current = false
         const read = await writer.read()
-        known.current = { revision: read?.revision, described: read ? describedOf(read) : known.current!.described, adopted: journal.adopted() }
-      }
-      const pending = journal.pending()
-      const was = known.current!.described
-      const now = options.only === 'steps' ? was : describedOf(snapshot())
-      const steps: ScopeStep[] = [
-        ...pending.map(({ stepId, command, at }) => ({ stepId, command, at })),
-        ...changesOf(was, now).map((command) => stepOf(command)),
-      ]
-      if (steps.length === 0) return
-      const onTheirs = over.current
-      const revision = onTheirs ? await mineOverTheirs(writer, steps, snapshot) : await writer.write(steps, known.current!.revision)
-      journal.written(pending.length)
-      known.current = { ...known.current!, revision, described: now }
-      if (!onTheirs) return
-      // Ours went onto theirs, so what is kept is both: that is what is shown.
-      over.current = false
-      const read = await writer.read()
-      if (read) take(read)
-    },
-    takeTheirs: async (): Promise<boolean> => {
-      const read = await writer.read()
-      if (!read) return false
-      take(read)
-      return true
-    },
-    overTheirs: () => { over.current = true },
-    /** Is there anything this session has not written? */
-    pending: (): boolean => journal.pending().length > 0
-      || changesOf(known.current!.described, describedOf(snapshot())).length > 0,
-  }), [writer, journal, snapshot, take])
+        if (read) take(read)
+        hold()
+      },
+      takeTheirs: async (): Promise<boolean> => {
+        const read = await writer.read()
+        if (!read) return false
+        take(read)
+        hold()
+        return true
+      },
+      // Mine over theirs expects no revision, so no line can be held to one: the prompt answers for it.
+      overTheirs: () => { over.current = true; hold() },
+      /** Is there anything this session has not written? */
+      pending: (): boolean => journal.pending().length > 0
+        || changesOf(known.current!.described, describedOf(snapshot())).length > 0,
+    }
+  }, [writer, journal, snapshot, take, pending, openedAt])
 }
 
 /**

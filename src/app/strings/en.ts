@@ -613,6 +613,7 @@ export const EN = {
   'shell.placeUnknown': 'The address names a page this app does not have, so it opened where it was.',
   'shell.placeGone': 'What the address pointed at is not there, so it opened the nearest place.',
   'shell.placeNoScope': 'There is no scope “{scope}”, so this is the organisation’s home.',
+  'shell.pendingRecovered': 'Recovered a change that hadn’t finished saving.',
   'shell.decisions': 'Decisions',
   'shell.decisionsTip': 'Architecture decision records \u2014 for the group, the landscape and each application',
   'shell.observations': 'Observations',

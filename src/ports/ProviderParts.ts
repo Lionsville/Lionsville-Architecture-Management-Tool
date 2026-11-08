@@ -31,6 +31,7 @@ import type {
 import type { WorkingSource } from '../platform/workingSource'
 import type { ScopeSnapshot } from '../projects/scope'
 import type { ScopePath } from '../projects/scopePath'
+import type { PendingSteps } from './PendingSteps'
 import type { PreferencesStore } from './PreferencesStore'
 import type { Repositories } from './Repositories'
 import type { ScopeSession } from './ScopeSession'
@@ -93,6 +94,12 @@ export type ProviderParts<Own = unknown> = {
    * the write held, so it writes almost at once.
    */
   writeAfterMs?: number
+  /**
+   * Where the open scope's steps are held the moment they are made, until
+   * their write lands (`PendingSteps`): for a source whose writes no window
+   * waits for. Read back when the source opens.
+   */
+  pendingSteps?: PendingSteps
   /**
    * What the bar, the subtitle and a removal say of this source, where it is
    * not what its registration says: a source that opened as something less

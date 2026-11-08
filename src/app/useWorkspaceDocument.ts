@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ShellError } from '../platform/errors'
 import { imageEntryOf } from '../model/imageEntry'
 import type { ImageRepository } from '../ports/ImageRepository'
+import type { PendingSteps } from '../ports/PendingSteps'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import { keptAt, landed, nodeAt, snapshotOf } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
@@ -40,8 +41,12 @@ export function useWorkspaceDocument(deps: {
   onTreeChanged: () => void
   /** How long an edit waits before it is written, where the source says. */
   writeAfterMs?: number | undefined
+  /** Where the steps are held until written, where the source holds them. */
+  pendingSteps?: PendingSteps | undefined
+  /** The revision the scope was read at when it was opened. */
+  openedAt?: string | undefined
 }): WorkspaceDocument {
-  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onKeptResult, onTreeChanged, writeAfterMs } = deps
+  const { session, writer, watch, sourceStatus, onSourceWork, onUnsavedWork, onKeptResult, onTreeChanged, writeAfterMs, pendingSteps, openedAt } = deps
   /**
    * What the bar says about saving. Two pieces of state, not one: the last
    * accepted time is worth keeping through a failure — it is the honest answer
@@ -72,6 +77,8 @@ export function useWorkspaceDocument(deps: {
     onSourceWork,
     onUnsavedWork,
     ...(writeAfterMs !== undefined ? { writeAfterMs } : {}),
+    ...(pendingSteps ? { pendingSteps } : {}),
+    openedAt,
     // Their version, once it has been read: straight onto the session, without
     // a relayout — a project read back from its folder carries its geometry.
     onAdopt: useCallback((held: ScopeSnapshot) => session.adopt(held, false), [session]),

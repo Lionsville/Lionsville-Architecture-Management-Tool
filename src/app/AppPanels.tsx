@@ -141,6 +141,7 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         readOnly: sourceIsReadOnly(parts.source) || (props.provider?.readOnlyAt?.(project.path) ?? false),
         status: props.provider?.status,
         writeAfterMs: props.provider?.writeAfterMs,
+        pendingSteps: props.provider?.pendingSteps,
         onWork: props.provider?.onWork,
         onSession,
         publishesSteps: props.provider?.publishesSteps ?? false,

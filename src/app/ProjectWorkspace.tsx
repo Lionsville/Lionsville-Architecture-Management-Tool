@@ -319,7 +319,7 @@ function useSessionParts(props: ProjectWorkspaceProps) {
   const landscapes = useTechnologyLandscape({ session, makeId, s })
   const pictures = useDocumentPictures(session)
   const document = useWorkspaceDocument({
-    session, writer, watch: source.watch, sourceStatus: source.status, onSourceWork: source.onWork, writeAfterMs: source.writeAfterMs,
+    session, writer, watch: source.watch, sourceStatus: source.status, onSourceWork: source.onWork, writeAfterMs: source.writeAfterMs, pendingSteps: source.pendingSteps, openedAt: project.revision,
     onUnsavedWork: host.onUnsavedWork, onKeptResult: source.onResult, onTreeChanged,
   })
   const alsoHere = useScopeSessionSeam(project, session, source.onSession, document.document.flush)

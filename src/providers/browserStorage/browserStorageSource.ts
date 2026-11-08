@@ -20,6 +20,7 @@
  * database that only fails after waiting on another tab falls the same way,
  * and then its strip says so.
  */
+import { pageServices, pendingSteps } from '../../adapters/webStorage/pendingSteps'
 import { browserRepositories } from '../../adapters/webStorage/browserRepositories'
 import type { BrowserDatabase } from '../../adapters/webStorage/browserRepositories'
 import type { EarlierWords } from '../../adapters/webStorage/earlierScopes'
@@ -120,6 +121,8 @@ export const BROWSER_STORAGE_SOURCE: SourceProvider<BrowserParts, BrowserOpening
       ...(tabs ? { changes: tabs.changes } : {}),
       // A write here is cheap and local, and a tab reloaded or closed before one lands loses it: almost at once.
       writeAfterMs: BROWSER_WRITE_AFTER_MS,
+      // ...and what a write had not yet taken is held at once, for the next open to put back.
+      pendingSteps: pendingSteps('browser', storage, pageServices()),
     }
     return { ...parts, settled: () => settle(parts, kept, () => fallen, answering) }
   },

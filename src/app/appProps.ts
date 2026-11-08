@@ -28,6 +28,7 @@ import type {
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { HostControls } from '../ports/HostControls'
 import type { Interchange } from '../ports/Interchange'
+import type { PendingSteps } from '../ports/PendingSteps'
 import type { Repositories } from '../ports/Repositories'
 import type { UpdateSettingsStore } from '../ports/UpdateSettings'
 import type {
@@ -126,6 +127,8 @@ export type AppProvider = {
   status?: (work: SourceWork) => SourceStatus
   /** How long the open scope waits after an edit before it writes (`ProviderParts.writeAfterMs`). */
   writeAfterMs?: number
+  /** Where the open scope's steps are held until written (`ProviderParts.pendingSteps`). */
+  pendingSteps?: PendingSteps | undefined
   /**
    * The source says its answer to {@link AppProvider.status} has moved, so
    * the bar asks again. Absent for all three sources that ship, whose every

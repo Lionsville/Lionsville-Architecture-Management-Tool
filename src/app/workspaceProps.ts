@@ -28,6 +28,7 @@ import type { HostCommand } from '../platform/hostCommands'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { HostControls } from '../ports/HostControls'
 import type { HistoryRepository } from '../ports/HistoryRepository'
+import type { PendingSteps } from '../ports/PendingSteps'
 import type { Repositories } from '../ports/Repositories'
 import type { SourceComments } from '../ports/ProviderParts'
 import type { CrashTrail } from './ErrorBoundary'
@@ -74,6 +75,8 @@ export type WorkspaceSource = {
   status?: (work: SourceWork) => SourceStatus
   /** How long an edit waits before it is written, where the source says (`ProviderParts.writeAfterMs`). */
   writeAfterMs?: number | undefined
+  /** Where the open scope's steps are held until written (`ProviderParts.pendingSteps`). */
+  pendingSteps?: PendingSteps | undefined
   /**
    * The source says its answer to {@link WorkspaceSource.status} has moved.
    * Absent where the document's own machine is the whole answer.

@@ -26,6 +26,7 @@ import type { DocumentSessionHook, SavableSession, ScopeWriter } from './useDocu
 import type { PendingStep, SessionJournal } from './useModelSession'
 import { ShellError } from '../platform/errors'
 import type { ScopeStep } from '../projects/scopeState'
+import type { PendingScope, PendingSteps } from '../ports/PendingSteps'
 
 beforeEach(() => vi.useFakeTimers())
 afterEach(() => { vi.useRealTimers(); cleanup() })
@@ -632,7 +633,7 @@ describe('a source that says its own answer has moved', () => {
 describe('what a write carries', () => {
   type Written = { steps: readonly ScopeStep[]; expects?: string }
 
-  function writing(answer: (written: Written) => Promise<string> = () => Promise.resolve('r2')) {
+  function writing(answer: (written: Written) => Promise<string> = () => Promise.resolve('r2'), pendingSteps?: PendingSteps) {
     const written: Written[] = []
     let pending: PendingStep[] = []
     let snapshot: ScopeSnapshot = { ...project(), revision: 'r1', images: [] }
@@ -655,6 +656,7 @@ describe('what a write carries', () => {
       hook = useDocumentSession({
         session: { model, activeDiagramId: snapshot.activeDiagramId, logoLibrary: snapshot.logoLibrary, snapshot: () => snapshot, journal },
         writer, onSaved: () => {}, onResult: () => {}, onAdopt: () => {},
+        ...(pendingSteps ? { pendingSteps } : {}),
       })
       return null
     }
@@ -675,6 +677,41 @@ describe('what a write carries', () => {
     name: 'map.png', mediaType: 'image/png', size: 3, width: 1, height: 1,
     contentAddress: `sha256:${'a'.repeat(64)}`,
   }
+
+  /** A line that remembers what it was last told for the scope. */
+  function line() {
+    const told: { scope: PendingScope; base?: string; steps: readonly ScopeStep[] }[] = []
+    const pendingSteps: PendingSteps = {
+      hold: (scope, base, steps) => { told.push({ scope, base, steps }); return true },
+      clear: (scope) => { told.push({ scope, steps: [] }) },
+      left: () => Promise.resolve([]),
+    }
+    return { pendingSteps, last: () => told.at(-1) }
+  }
+
+  it('holds a change the moment it is made, against the revision it expects, and lets it go once written', async () => {
+    const held = line()
+    const view = writing(undefined, held.pendingSteps)
+    view.change({ model: { ...project().model, name: 'One' } }, rename('One'))
+    expect(held.last()).toMatchObject({ scope: { address: 'acme/landscape' }, base: 'r1' })
+    expect(held.last()!.steps.map((step) => step.command)).toEqual([rename('One')])
+    await act(async () => { await view.hook().forceSave() })
+    expect(held.last()!.steps).toEqual([])
+  })
+
+  it('keeps holding what a refused write did not take, and holds the next change against the new revision', async () => {
+    const held = line()
+    let refuse = true
+    const view = writing(() => refuse ? Promise.reject(new Error('quota')) : Promise.resolve('r2'), held.pendingSteps)
+    view.change({ model: { ...project().model, name: 'One' } }, rename('One'))
+    await act(async () => { await view.hook().forceSave() })
+    expect(held.last()!.steps.map((step) => step.command)).toEqual([rename('One')])
+    refuse = false
+    await act(async () => { await view.hook().forceSave() })
+    view.change({ model: { ...project().model, name: 'Two' } }, rename('Two'))
+    expect(held.last()).toMatchObject({ base: 'r2' })
+    expect(held.last()!.steps.map((step) => step.command)).toEqual([rename('Two')])
+  })
 
   it('writes the session’s commands as steps, expecting the revision last known, and the next from the answer', async () => {
     const view = writing()

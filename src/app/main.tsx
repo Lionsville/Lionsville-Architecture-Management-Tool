@@ -60,6 +60,7 @@ import type { RegisteredConnect } from './composition'
 import type { SourceLocation, SourceRecent, SourceWayIn } from '../platform/sourceProvider'
 import { readLanguage, withoutLastScope } from '../projects/preferences'
 import { applyTextSize, readTextSize } from '../platform/textSize'
+import { recoverPending } from '../projects/pendingRecovery'
 import { readScope } from '../projects/scopeAccess'
 import { sourceKey } from '../platform/workingSource'
 import {
@@ -294,7 +295,7 @@ function take(way: RegisteredConnect, chose: () => Promise<unknown>): Promise<vo
     // just now belongs on it without a restart.
     if (way === hostWay) await readRecents()
     shell.diagnostics.report({ level: 'info', where: 'source', message: 'the source is open' })
-    renderApp(stored, undefined)
+    renderApp(stored, await recoveredPart())
   }).catch((cause: unknown) => {
     shell.diagnostics.report({ level: 'error', where: 'source', message: 'the source was not opened', cause })
     renderApp(stored, undefined, { cause, key: way.connect.failedKey })
@@ -309,6 +310,22 @@ function take(way: RegisteredConnect, chose: () => Promise<unknown>): Promise<vo
  * no longer the one worked from last.
  */
 let choseFrom: { readonly shell: typeof shell; readonly sourced: boolean; readonly stored: unknown; readonly way: RegisteredConnect } | undefined
+
+/**
+ * What a page that went before its write landed held for the source just
+ * opened, put back before anything reads it (`projects/pendingRecovery.ts`),
+ * and said once — over any other notice, because it is about the person's
+ * work rather than an address.
+ */
+async function recoveredPart(): Promise<{ notice?: 'shell.pendingRecovered' }> {
+  const put = await recoverPending(shell.repositories.scopes, shell.pendingSteps, (message, cause) => {
+    shell.diagnostics.report({ level: 'warn', where: 'source', message, ...(cause !== undefined ? { cause } : {}) })
+  }).catch((cause: unknown) => {
+    shell.diagnostics.report({ level: 'warn', where: 'source', message: 'held changes could not be read back', cause })
+    return 0
+  })
+  return put > 0 ? { notice: 'shell.pendingRecovered' } : {}
+}
 
 /** What the boot says as it comes up, with what the sentence names. */
 function noticePart(landing: Pick<BootLanding, 'notice' | 'noticeWith'> | undefined) {
@@ -723,6 +740,7 @@ function renderApp(
         provider={{
           status: shell.sourceStatus,
           writeAfterMs: shell.writeAfterMs,
+          pendingSteps: shell.pendingSteps,
           onWork: shell.onSourceWork,
           description: shell.sayings?.describeKey ?? sourceDescription(shell.source),
           chip: sourceChip(shell.source),
@@ -812,6 +830,7 @@ void settled()
     const askedExample = EXAMPLE_OFFERS.find((offer) => offer.key === new URLSearchParams(window.location.search).get('example'))
     if (askedExample) await enterExample(askedExample)
     await readRecents()
+    const recovered = await recoveredPart()
     // Where a way in is needed first, there is nothing to reopen: the only
     // place a scope could be is where the boot composed, which is exactly what
     // ADR-0003 retired. The first screen asks instead. A place in the fragment
@@ -825,7 +844,7 @@ void settled()
     // press away there, and nobody opens on a page they did not expect. An address still wins.
     const decided = bootDecidedBy(needed ? undefined : bootPlace, shell.opensAt, undefined)
     if ('place' in decided) {
-      renderApp(storedPreferences, { ...await landingAtPlace(decided.place), dialog: askedDialog })
+      renderApp(storedPreferences, { ...await landingAtPlace(decided.place), ...recovered, dialog: askedDialog })
       return
     }
     const lastScope = decided.read
@@ -841,7 +860,7 @@ void settled()
     // such thing as lands where the app would have anyway, and says so once
     // it is up, rather than in silence (ADR-0033).
     const notice = !needed && unknownPlace(window.location.hash) ? { notice: 'shell.placeUnknown' as const } : {}
-    renderApp(storedPreferences, { ...landing, ...notice, dialog: askedDialog })
+    renderApp(storedPreferences, { ...landing, ...notice, ...recovered, dialog: askedDialog })
   })
   .catch((error: unknown) => {
     shell.diagnostics.report({
