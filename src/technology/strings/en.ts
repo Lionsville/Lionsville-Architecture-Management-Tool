@@ -98,6 +98,7 @@ export const EN = {
   'landscape.colourLifecycle': 'Its own lifecycle',
   'landscape.colourCategory': 'Category',
   'landscape.colourOwner': 'Who answers',
+  'landscape.lensOff': 'Take the colouring off',
   'landscape.dayGoes': 'When something goes',
   'landscape.dayGoesOne': '{name} goes',
   'landscape.applicationsOne': '{count} application',

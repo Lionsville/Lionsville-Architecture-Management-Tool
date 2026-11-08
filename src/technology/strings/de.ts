@@ -93,6 +93,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'landscape.colourLifecycle': 'Eigener Lebenszyklus',
   'landscape.colourCategory': 'Kategorie',
   'landscape.colourOwner': 'Wer verantwortlich ist',
+  'landscape.lensOff': 'Die Einfärbung ausschalten',
   'landscape.dayGoes': 'Wann etwas wegfällt',
   'landscape.dayGoesOne': '{name} fällt weg',
   'landscape.applicationsOne': '{count} Anwendung',

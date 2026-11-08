@@ -93,6 +93,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'landscape.colourLifecycle': 'Eigen levenscyclus',
   'landscape.colourCategory': 'Categorie',
   'landscape.colourOwner': 'Wie verantwoordelijk is',
+  'landscape.lensOff': 'De kleuring uitzetten',
   'landscape.dayGoes': 'Wanneer iets verdwijnt',
   'landscape.dayGoesOne': '{name} verdwijnt',
   'landscape.applicationsOne': '{count} applicatie',

@@ -12,6 +12,7 @@ import type { ElementId } from '../../model'
 import { nodeKey, platformList, serviceList } from '../../model/technologyLandscape'
 import type { LandscapeApplication, NodeKey, TechnologyLandscape } from '../../model/technologyLandscape'
 import { useStrings } from '../../i18n'
+import { KeyStrip } from '../../widgets/kit/KeyStrip'
 import { Matrix } from '../../widgets/kit/Matrix'
 import type { MatrixCell, MatrixPick } from '../../widgets/kit/Matrix'
 
@@ -78,6 +79,10 @@ export function LandscapeMatrix({ landscape, selected, onSelect, onToggle }: {
           },
         } : {})}
       />
+      <KeyStrip all values={[
+        { id: 'uses', label: t('landscape.matrixUses'), shown: <span aria-hidden="true">●</span> },
+        { id: 'implied', label: t('landscape.matrixImplied'), shown: <span aria-hidden="true">○</span> },
+      ]} />
     </div>
   )
 }

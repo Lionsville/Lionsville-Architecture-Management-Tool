@@ -383,15 +383,15 @@ function keepOf(props: TechnologyLandscapePageProps, lens: LandscapeColour | und
   return onKeepColour && !readOnly && lens && kept !== lens ? () => onKeepColour(lens) : undefined
 }
 
-function LandscapeFoot({ dropWord, lens, colouring, onKeep, chain }: {
-  dropWord: string | undefined; lens: LandscapeColour | undefined; colouring: ReturnType<typeof useColouring>; onKeep: (() => void) | undefined; chain: boolean
+function LandscapeFoot({ dropWord, lens, colouring, onKeep, onLensOff, chain }: {
+  dropWord: string | undefined; lens: LandscapeColour | undefined; colouring: ReturnType<typeof useColouring>; onKeep: (() => void) | undefined; onLensOff: () => void; chain: boolean
 }) {
   const { t } = useStrings()
   if (!dropWord && !lens && !chain) return null
   return (
     <div className="tl-foot">
       {dropWord && <div className="tl-verb" role="status" data-testid="landscape-verb">{dropWord}</div>}
-      {lens && <KeyStrip values={colouring.values} pressed={colouring.pressed} onPress={colouring.setPressed} {...(onKeep ? { onKeep } : {})} />}
+      {lens && <KeyStrip values={colouring.values} pressed={colouring.pressed} onPress={colouring.setPressed} {...(onKeep ? { onKeep } : {})} onClose={{ label: t('landscape.lensOff'), press: onLensOff }} />}
       {chain && (
         <div className="tl-legend" data-testid="landscape-legend">
           {LINE_KINDS.map(({ kind, label }) => (
@@ -566,7 +566,7 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
             {!isEmpty && (
               <LandscapeFoot
                 dropWord={gestures.dropWord} lens={lens} colouring={colouring} chain={chain}
-                onKeep={keepOf(props, lens)}
+                onKeep={keepOf(props, lens)} onLensOff={() => setLens(undefined)}
               />
             )}
           </div>

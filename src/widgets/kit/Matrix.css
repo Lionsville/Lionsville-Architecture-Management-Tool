@@ -12,6 +12,17 @@
   font-size: var(--t-body);
 }
 .kit-matrix__scroll { flex: 1; min-height: 0; overflow: auto; }
+/* The columns run on: the end fades, so a cut column does not read as the last. */
+.kit-matrix { position: relative; }
+.kit-matrix:has(> .kit-matrix__scroll[data-more-end])::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: var(--s-6);
+  background: linear-gradient(to left, var(--surface), transparent);
+  pointer-events: none;
+}
 .kit-matrix__table { border-collapse: separate; border-spacing: 0; }
 
 /* Colour comes from the col and the row, so a step of the arrow repaints without redrawing the cells. */
@@ -54,7 +65,7 @@
 .kit-matrix__cell:not([data-absent]):hover { box-shadow: inset 0 0 0 1px var(--line-strong); }
 .kit-matrix:focus-within .kit-matrix__colHead[data-crossed] { background: var(--crosshair); color: var(--ink); }
 .kit-matrix__colHead[data-folded] { color: var(--ink); cursor: pointer; }
-.kit-matrix__colName { display: block; width: max-content; max-width: 6.5rem; hyphens: auto; }
+.kit-matrix__colName { display: block; width: max-content; max-width: 6.5rem; min-width: min-content; hyphens: manual; }
 .kit-matrix[data-rotate] .kit-matrix__colName { max-height: 9rem; max-width: none; writing-mode: vertical-rl; transform: rotate(180deg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .kit-matrix__colHead[data-opens] { cursor: pointer; color: var(--ink); }

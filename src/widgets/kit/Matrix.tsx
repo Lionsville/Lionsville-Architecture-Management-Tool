@@ -331,6 +331,28 @@ function pointerLine(
   return row?.label ?? column?.label
 }
 
+/**
+ * Whether the columns run on past the matrix's end, so the edge says there is more
+ * to scroll to: a seventh column cut off under a panel looked like the last one.
+ */
+function useMoreAtEnd(): [(element: HTMLDivElement | null) => void, boolean] {
+  const [more, setMore] = useState(false)
+  const watching = useRef<() => void>(undefined)
+  const ref = useCallback((element: HTMLDivElement | null) => {
+    watching.current?.()
+    watching.current = undefined
+    if (!element) return
+    const measure = () => setMore(Math.ceil(element.scrollLeft + element.clientWidth) < element.scrollWidth - 1)
+    measure()
+    element.addEventListener('scroll', measure, { passive: true })
+    const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(measure)
+    observer?.observe(element)
+    if (element.firstElementChild) observer?.observe(element.firstElementChild)
+    watching.current = () => { element.removeEventListener('scroll', measure); observer?.disconnect() }
+  }, [])
+  return [ref, more]
+}
+
 export function Matrix({
   label, rowHeading, rows, columns, columnGroups, cellOf, answer, answers: moreAnswers, selected, onSelect, keys, onKey, hint,
   defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, openFoldable, onOpenColumn, absent, litColumn, wrapRows, groupBand, rotateHeads, dataGuide,
@@ -338,6 +360,7 @@ export function Matrix({
   const answers = useMemo(() => [...(answer ? [answer] : []), ...(moreAnswers ?? [])], [answer, moreAnswers])
   const { t } = useStrings()
   const table = useRef<HTMLTableElement>(null)
+  const [scroll, moreAtEnd] = useMoreAtEnd()
   const [foldedRows, toggleRow] = useFolded(defaultFoldedRows, onFoldRow)
   const [foldedGroups, toggleGroup] = useFolded(defaultFoldedGroups, onFoldGroup)
   const drawn = useMemo(() => drawnColumns(columns, columnGroups, foldedGroups), [columns, columnGroups, foldedGroups])
@@ -465,7 +488,7 @@ export function Matrix({
 
   return (
     <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-wrap={wrapRows || undefined} data-band={(groupBand && columnGroups) ? '' : undefined} data-guide={dataGuide}>
-      <div className="kit-matrix__scroll">
+      <div className="kit-matrix__scroll" ref={scroll} data-more-end={moreAtEnd || undefined}>
         <table ref={table} role="grid" aria-label={label} className="kit-matrix__table" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocus} onPointerOver={onPointerOver} onPointerLeave={leave}>
           <colgroup>
             <col />
