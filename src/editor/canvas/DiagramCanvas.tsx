@@ -484,7 +484,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
   const theme = useTheme();
   const tokens = getNodeTokens(theme);
   const { screenToFlowPosition, flowToScreenPosition, getNodes, getNodesBounds, fitView, getViewport, setViewport } = useReactFlow();
-  const fitBoard = useFitBoard();
+  const fitBoard = useFitBoard({ onPrint: true });
 
   // Where each diagram was left, for the session (`viewportMemory.ts`). The
   // memory is the editor's, not this component's: the canvas is mounted anew
