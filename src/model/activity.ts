@@ -55,6 +55,12 @@ export type StepSummary = {
    */
   from?: string
   to?: string
+  /**
+   * Whom a step chosen words for (`CommandMeta.said`) is about, as the source
+   * that keeps the steps knows them: an identity, which a source that knows
+   * who is looking may read to say *yours*. Never shown as it is.
+   */
+  about?: string
 }
 
 /**
@@ -129,6 +135,12 @@ function elementUpdated(id: string, to: unknown, before: Model, count: number): 
 }
 
 export function summarise(commands: readonly Command[], before: Model): StepSummary {
+  // Words chosen by whoever made the step say it as they chose (`CommandMeta.said`).
+  const said = commands.length === 1 ? commands[0]?.said : undefined
+  return said ?? summariseCommands(commands, before)
+}
+
+function summariseCommands(commands: readonly Command[], before: Model): StepSummary {
   // A restore says what it is before its members say what it took.
   const restore = commands.find((c) => c.type === 'restore')
   if (restore?.type === 'restore') {

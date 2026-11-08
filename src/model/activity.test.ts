@@ -40,6 +40,12 @@ describe('summarise', () => {
     expect(summarise([transaction([])], before())).toEqual({ key: 'activity.nothing' })
   })
 
+  it('says the words whoever made the step chose for it, on the command or the transaction that is the step', () => {
+    const said = { key: 'activity.elementChanged' as const, name: 'Billing · Category', about: 'subject-b' }
+    expect(summarise([{ type: 'element.update', id: 'billing', patch: { description: 'x' }, said }], before())).toEqual(said)
+    expect(summarise([{ ...transaction([{ type: 'element.update', id: 'billing', patch: { description: 'x' } }]), said }], before())).toEqual(said)
+  })
+
   it('names a change after the row it is about, as it was rather than as it became', () => {
     expect(summarise([{
       type: 'element.create', element: element('warehouse', 'Warehouse'),

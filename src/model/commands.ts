@@ -30,6 +30,7 @@
  * from the commands, so there is no second thing to keep true.
  */
 import type { StringKey } from '../i18n/strings'
+import type { StepSummary } from './activity'
 import type { Adr } from './adr'
 import type { AspectScale } from './aspectScale'
 import type { Transition } from './transition'
@@ -378,6 +379,15 @@ export type CommandMeta = {
    * act either way, and it is the stack above that refuses.
    */
   barrier?: StringKey
+  /**
+   * The words the step is listed by, where whoever made it chose them because
+   * its commands alone would say less than happened: a change kept over
+   * somebody else's reads as that, not as one more edit of the field.
+   * `summarise` answers it as it is; on a transaction, the outermost's counts.
+   * Carried with the command wherever it goes, so every list that names the
+   * step — this session's, a source's log — says the same.
+   */
+  said?: StepSummary
 }
 
 export type Command = CommandBody & CommandMeta
