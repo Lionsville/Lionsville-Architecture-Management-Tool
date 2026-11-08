@@ -40,7 +40,7 @@ export const SECTIONS: SectionTexts = {
     ['Klik op het chevron op een groepsregel.', 'Klik er nog eens op om uit te klappen.'],
     'Groepeer per categorie en klap Finance in om de applicaties als één regel te lezen.',
     'Pijl links / rechts op een groepsregel'],
-  'technology.colour': ['Kleuren naar één vraag', 'Kleurt de regels naar één vraag: waar het op staat, de eigen levenscyclus, de categorie of wie ervoor verantwoordelijk is, met een sleutel onderaan.',
+  'technology.colour': ['Kleuren naar één vraag', 'Kleurt de regels naar één vraag: waar het op staat, de eigen levenscyclus, de categorie of de eigenaar, met een sleutel onderaan.',
     'Kleur, in de balk.',
     ['Klik op Kleur en kies een vraag.', 'Klik op een waarde in de sleutel om de regels zonder die waarde stiller te maken.'],
     'Kleur op Waar het op staat om te zien welke applicaties op iets staan dat uit gebruik gaat.'],

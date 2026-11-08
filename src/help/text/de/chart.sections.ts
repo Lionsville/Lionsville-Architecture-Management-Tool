@@ -49,7 +49,7 @@ export const SECTIONS: SectionTexts = {
   'chart.keyboard': ['Mit der Tastatur durch das Organigramm gehen', 'Auf einem Kasten gehen die Pfeile durch den gezeichneten Baum (hinauf zum Elternteil, hinunter zum ersten Kind, links und rechts zwischen Geschwistern); die Eingabetaste wählt und geht hinunter, Umschalt+Eingabe geht hinauf, M verschiebt die Einheit und F fokussiert sie. Die Gliederung ist ein eigener Baum.',
     'Mit Tab auf einen Kasten im Organigramm.',
     ['Gehen Sie mit Tab zum Kasten einer Einheit.', 'Nutzen Sie die Pfeiltasten, Eingabetaste, Umschalt+Eingabe, M oder F.'],
-    'Klicken Sie von Terminal aus Pfeil nach unten, um Dock crew zu erreichen, dann Pfeil nach rechts für Yard crew.',
+    'Drücken Sie von Terminal aus Pfeil nach unten, um Dock crew zu erreichen, dann Pfeil nach rechts für Yard crew.',
     'Pfeile, Eingabetaste, Umschalt+Eingabe, M, F'],
   'chart.focus': ['Auf eine Einheit fokussieren', 'Zeichnet eine Einheit und was darunter ist, mit dem Weg nach oben in einer Zeile und Zurück zum ganzen Organigramm. Der Fokus steht in der Adresse (?focus=), sodass ein Link oder ein Agent ihn auch öffnet.',
     'Fokus auf einem gewählten Kasten oder F auf einem Kasten.',

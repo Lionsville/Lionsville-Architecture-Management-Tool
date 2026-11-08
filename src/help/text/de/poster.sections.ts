@@ -33,7 +33,7 @@ export const SECTIONS: SectionTexts = {
   'poster.keyboard': ['Sich mit der Tastatur über das Poster bewegen', 'Jeder Block ist ein Halt für Tab, in Lesereihenfolge; die Pfeile gehen von Kachel zu Kachel über Blöcke hinweg, und die Seite folgt. Die Eingabetaste öffnet das Panel; Esc im Panel kehrt zur Kachel zurück.',
     'Geben Sie dem Poster den Fokus: Tab aus der Leiste.',
     ['Gehen Sie mit Tab zu einem Block.', 'Gehen Sie mit den Pfeiltasten von Kachel zu Kachel.', 'Drücken Sie die Eingabetaste, um das Panel zu öffnen.'],
-    'Gehen Sie mit Tab zur Kundenreise, klicken Sie dreimal ↓ bis Bill, → zu Collections, Eingabetaste zum Lesen.',
+    'Gehen Sie mit Tab zur Kundenreise, drücken Sie dreimal ↓ bis Bill, → zu Collections, Eingabetaste zum Lesen.',
     'Tab, Pfeile, Eingabetaste, Esc'],
   'poster.colour': ['Das Poster nach einer Frage färben', 'Färbt die Kacheln nach jeweils einer Frage: Abgedeckt durch, Wer antwortet, Domänen, Lebenszyklus, Abzulösende Anwendungen oder eine Skala, die die Organisation führt. Der Platz jeder Kachel bleibt gleich.',
     'Farbe: … in der Leiste des Blatts.',

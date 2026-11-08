@@ -40,7 +40,7 @@ export const SECTIONS: SectionTexts = {
     ['Klicken Sie auf den Pfeil auf einer Gruppenzeile.', 'Klicken Sie darauf erneut zum Aufklappen.'],
     'Gruppieren Sie nach Kategorie und klappen Sie Finance ein, um seine Anwendungen als eine Zeile zu lesen.',
     'Pfeil links / rechts auf einer Gruppenzeile'],
-  'technology.colour': ['Nach einer Frage färben', 'Färbt die Zeilen nach einer Frage: worauf sie steht, ihr eigener Lebenszyklus, die Kategorie oder wer für sie verantwortlich ist, mit einer Legende unten.',
+  'technology.colour': ['Nach einer Frage färben', 'Färbt die Zeilen nach einer Frage: worauf sie steht, ihr eigener Lebenszyklus, die Kategorie oder ihr Eigentümer, mit einer Legende unten.',
     'Farbe, in der Leiste.',
     ['Klicken Sie auf Farbe und wählen Sie eine Frage.', 'Klicken Sie auf einen Wert in der Legende, um die Zeilen ohne ihn zurücktreten zu lassen.'],
     'Färben Sie nach Worauf es steht, um zu sehen, welche Anwendungen auf etwas stehen, das abgelöst wird.'],

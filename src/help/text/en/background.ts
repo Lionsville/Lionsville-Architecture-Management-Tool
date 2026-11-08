@@ -577,8 +577,8 @@ more than four hundred boxes it declines and says so, rather than thinking for
 several minutes: split the board across diagrams, or tidy one domain group at a
 time.
 
-By hand: **align** and **distribute** a selection from the floating toolbar or
-the selection menu, a **grid** with optional snapping, nudge with the arrows,
+By hand: **align** and **distribute** a selection from the panel or the
+right-click menu, a **grid** with optional snapping, nudge with the arrows,
 **fit view** (Shift+1) and 100 % (Shift+2).` },
     { title: `Diagram settings`, text: `Right-click a diagram tab, **Diagram settings…**.
 
@@ -640,7 +640,7 @@ field now, so the roadmap's checks can name a person.` },
   view.
 - **Comments.** The thread, with its count on the tab.
 
-**⋯** beside the name holds **Move…**, **Change kind** and **Remove / delete…**.` },
+**⋯** beside the name holds **Move…**, **Change kind** and **Remove from view or delete from model…**.` },
     { title: `Documentation`, text: `Every element has a markdown description, and it can be a whole page. Its first
 lines stand in the panel; a press writes them there with the same editor, and
 **Open the page** opens the same text on the element's **record**. So do

@@ -654,8 +654,8 @@ bleibt, während es läuft, und die Schaltfläche Automatisch anordnen derweil z
 ab und sagt es, statt mehrere Minuten nachzudenken: verteilen Sie das Board auf
 mehrere Diagramme, oder räumen Sie eine Domänengruppe nach der anderen auf.
 
-Von Hand: eine Auswahl **ausrichten** und **verteilen** aus der schwebenden
-Werkzeugleiste oder dem Auswahlmenü, ein **Raster** mit optionalem Einrasten,
+Von Hand: eine Auswahl **ausrichten** und **verteilen** aus dem Panel
+oder dem Rechtsklickmenü, ein **Raster** mit optionalem Einrasten,
 Verschieben mit den Pfeilen, **Einpassen** (Shift+1) und 100 % (Shift+2).` },
     { title: `Diagrammeinstellungen`, text: `Klicken Sie mit rechts auf einen Diagrammreiter, **Diagrammeinstellungen…**.
 

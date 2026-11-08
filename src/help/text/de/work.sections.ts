@@ -17,7 +17,7 @@ export const SECTIONS: SectionTexts = {
   'file.save': ['Jetzt speichern', 'Schreibt den offenen Bereich jetzt. Die Arbeit speichert sich auch selbst ein paar Sekunden nachdem Sie aufhören; ohne offenen Bereich ist Speichern grau, mit dem Grund.',
     'Ihre Arbeit, Aufbewahren; Menü ⋯; Menü Datei auf dem Desktop',
     ['Klicken Sie auf Speichern oder {key:Mod+S}'],
-    'Klicken Sie auf Application landscape {key:Mod+S}, bevor Sie den Laptop zuklappen.',
+    'Drücken Sie in Application landscape {key:Mod+S}, bevor Sie den Laptop zuklappen.',
     '{key:Mod+S}'],
   'file.saveCopy': ['Eine Kopie speichern', 'Speichert die ganze Organisation in einer .lvarch-Datei unter einem Passwort, auf welchem Bildschirm Sie auch sind. Fragt das Passwort zweimal; nichts stellt ein verlorenes wieder her. Wählen Sie "Namen weglassen" für eine Kopie, die die Organisation verlässt: Jede Person geht als ihr Pseudonym mit.',
     'Ihre Arbeit, Aufbewahren; Menü ⋯; Menü Datei auf dem Desktop',

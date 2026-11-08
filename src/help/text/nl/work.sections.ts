@@ -21,7 +21,7 @@ export const SECTIONS: SectionTexts = {
     '{key:Mod+S}'],
   'file.saveCopy': ['Een kopie bewaren', 'Bewaart de hele organisatie in één .lvarch-bestand onder een wachtwoord, op welk scherm je ook bent. Vraagt het wachtwoord twee keer; niets kan een vergeten wachtwoord terughalen. Kies "Namen weglaten" voor een kopie die de organisatie verlaat: iedereen gaat mee als zijn pseudoniem.',
     'Je werk, Bewaren; menu ⋯; menu Bestand op de desktop',
-    ['Druk op "Kopie bewaren…" ({key:Shift+Mod+E})', 'Typ het wachtwoord twee keer', 'Kies onder Mensen in de kopie of de namen erin blijven', 'Klik op "Kies waar het komt…"'],
+    ['Druk op "Kopie bewaren…" ({key:Shift+Mod+E})', 'Typ het wachtwoord twee keer', 'Kies onder Mensen in de kopie of de namen erin blijven', 'Klik op "Kies waar je bewaart…"'],
     'Bewaar een kopie van Acme Logistics als acme-logistics.lvarch zonder namen, om naar een externe reviewer te sturen.',
     '{key:Shift+Mod+E}'],
   'file.exportPicture': ['Een afbeelding exporteren', 'Exporteert de open weergave als PNG met een voorbeeld: licht of donker, alle lijnlabels, een titelblok met klant, auteur en datum (lege velden noemen waar ze vandaan komen), en een legenda. Een heel grote afbeelding vraagt eerst.',

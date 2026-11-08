@@ -23,7 +23,7 @@ export const SECTIONS: SectionTexts = {
     '↑ ↓ durch die Liste'],
   'obs-preview': ['Einen Eintrag in der Vorschau sehen', 'Eine Zeile zu wählen öffnet eine große Vorschau über der Liste: der Text des Eintrags, seine Fakten daneben, wo er in der Kette steht, und die nächste Frage mit ihrer Aktion. Die Pfeile oder ‹ › gehen zum vorigen und nächsten Eintrag derselben Gruppe; Escape schließt sie auf die gezeigte Zeile.',
     'Klicken Sie auf eine Zeile, oder drücken Sie die Eingabetaste auf einer Zeile mit Fokus, in der Liste jeder Stufe.',
-    ['Klicken Sie auf eine Zeile.', 'Lesen Sie die Vorschau; klicken Sie auf ›, oder klicken Sie auf Pfeil rechts für den nächsten Eintrag.', 'Drücken Sie Escape oder ×, um zur Liste zurückzukehren.'],
+    ['Klicken Sie auf eine Zeile.', 'Lesen Sie die Vorschau; klicken Sie auf ›, oder drücken Sie Pfeil rechts für den nächsten Eintrag.', 'Drücken Sie Escape oder ×, um zur Liste zurückzukehren.'],
     'Klicken Sie auf A customer is quoted one price and billed another: Die Vorschau sagt Groß, 6-mal gesehen, und dass es bei Lösen steht.',
     'Eingabetaste öffnet · ← → voriger und nächster · Esc schließt'],
   'obs-next-step': ['Den nächsten Schritt tun, den ein Eintrag verlangt', 'Vorschau und Panel jedes Eintrags tragen ein Feld Weiter mit der Frage, die die Kette als nächste stellt, und ihrer Aktion: Warum geschieht das? bei einer wartenden Beobachtung, Und warum ist das so? bei einer Ursache, Was würde das beseitigen? bei einer Grundursache, Bereit, es zu versuchen? oder Was hat es gezeigt? bei einer Lösung und einem Experiment.',

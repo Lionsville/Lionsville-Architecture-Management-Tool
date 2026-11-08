@@ -10,7 +10,7 @@ export const SECTIONS: SectionTexts = {
     'Öffnen Sie Personen, um zu sehen, wer in Acme Logistics eine Rolle hält: Anna de Vries ist Head of Terminal, Tom Berger ist Lead of Dock crew.'],
   'people.find': ['Eine Person im Register suchen', 'Kürzt die Liste, während Sie tippen. Es sucht im Namen, in der Arbeitsadresse, den gehaltenen Rollen und ihren Einheiten und in den Wörtern einer Zeile (Extern, Hält nichts, Ausgeschieden). Passt niemand, bietet es die nächsten Namen an und das Hinzufügen des getippten Namens.',
     'Das Suchfeld über der Liste auf dem Reiter Personen. Es hat den Fokus, wenn die Seite öffnet.',
-    ['Tippen Sie einen Teil eines Namens, einer Adresse, einer Rolle oder Einheit.', 'Drücken Sie ↓, um vom Feld in die Liste zu gehen, dann die Eingabetaste, um die Person zu öffnen.', 'Klicken Sie irgendwo auf der Seite /, um ins Feld zurückzukehren.'],
+    ['Tippen Sie einen Teil eines Namens, einer Adresse, einer Rolle oder Einheit.', 'Drücken Sie ↓, um vom Feld in die Liste zu gehen, dann die Eingabetaste, um die Person zu öffnen.', 'Drücken Sie irgendwo auf der Seite /, um ins Feld zurückzukehren.'],
     'Tippen Sie Dock crew, um Tom Berger und Lena Fischer zu listen; tippen Sie Marrek, und die Seite fragt: Meinten Sie Marek Nowak?',
     '/ setzt den Fokus ins Feld; ↓ geht in die Liste'],
   'people.filter': ['Filtern und Spalten wählen', 'Filter zeigt nur die Personen in einem Zustand (aktiv, ausgeschieden, vergessen, jeder mit einer Zahl), einer Art (intern oder extern) oder die nichts halten. Ansicht fügt neben Hält Spalten hinzu: Art, Zustand und Arbeitsadresse. Eine Spaltenüberschrift sortiert danach.',

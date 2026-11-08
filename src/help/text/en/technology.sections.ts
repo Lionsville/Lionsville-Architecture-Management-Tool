@@ -40,7 +40,7 @@ export const SECTIONS: SectionTexts = {
     ['Press the chevron on a group row.', 'Press it again to unfold.'],
     'Group by category and fold Finance to read its applications as one row.',
     'Arrow Left / Right on a group row'],
-  'technology.colour': ['Colour by one question', 'Colours the rows by one question: what it stands on, its own lifecycle, category, or who answers for it, with a key along the foot.',
+  'technology.colour': ['Colour by one question', 'Colours the rows by one question: what it stands on, its own lifecycle, category, or its owner, with a key along the foot.',
     'Colour, in the bar.',
     ['Press Colour and pick a question.', 'Press a value in the key to quiet the rows without it.'],
     'Colour by What it stands on to see which applications stand on something retiring.'],

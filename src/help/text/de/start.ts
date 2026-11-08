@@ -35,7 +35,7 @@ export const START: GettingStartedText = {
     },
     {
       title: 'Wie es weitergeht',
-      text: 'Klicken Sie auf jedem Bildschirm das **?** in Zeile eins oder F1: Die Hilfe öffnet sich bei diesem Bildschirm. Klicken Sie außerhalb eines Textfelds **?** auf der Tastatur für die Tastenkürzel. Jedes Panel hat ebenfalls ein **?** im Kopf. Lesen Sie weiter bei *Sich zurechtfinden* und *Landschaftsboards und Containerdiagramme*.',
+      text: 'Klicken Sie auf jedem Bildschirm auf das **?** in Zeile eins, oder drücken Sie F1: Die Hilfe öffnet sich bei diesem Bildschirm. Drücken Sie außerhalb eines Textfelds **?** auf der Tastatur für die Tastenkürzel. Jedes Panel hat ebenfalls ein **?** im Kopf. Lesen Sie weiter bei *Sich zurechtfinden* und *Landschaftsboards und Containerdiagramme*.',
       picture: 'Zeile eins mit dem ?, das die Hilfe bei diesem Bildschirm öffnet, und Hilfe daneben.',
     },
   ],

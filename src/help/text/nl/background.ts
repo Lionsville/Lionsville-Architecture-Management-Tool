@@ -615,8 +615,8 @@ van meer dan vierhonderd blokken slaat het over en zegt dat, in plaats van er
 minuten over te doen: verdeel het bord over meerdere diagrammen, of leg één
 domeingroep tegelijk netjes.
 
-Met de hand: **uitlijnen** en **verdelen** van een selectie via de zwevende
-werkbalk of het selectiemenu, een **raster** met optioneel uitlijnen, verplaatsen
+Met de hand: **uitlijnen** en **verdelen** van een selectie via het paneel
+of het rechtsklikmenu, een **raster** met optioneel uitlijnen, verplaatsen
 met de pijltjes, **passend maken** (Shift+1) en 100 % (Shift+2).` },
     { title: `Diagraminstellingen`, text: `Rechtsklik een diagramtabblad, **Diagraminstellingen…**.
 
