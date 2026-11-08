@@ -10,7 +10,7 @@
  * *Comment removed*, and nothing offered where the scope is only read.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { useState } from 'react'
 import { renderShell } from '../../app/testing/renderShell'
 import { translator } from '../../i18n'
@@ -97,6 +97,9 @@ function write(testId: string, text: string) {
 const first: Comment = { id: 'cm-1', about: web, by: { person: 'pe-tom' }, at: AT, body: 'Who runs **this**?' }
 const mine: Comment = { id: 'cm-2', about: web, by: { person: 'pe-eva' }, at: AT, body: 'The web team.', replyTo: 'cm-1' }
 
+/** A comment's ⋯, opened. */
+const moreOf = (id: string) => fireEvent.click(within(screen.getByTestId(`comment-${id}`)).getByRole('button', { name: 'More for this comment' }))
+
 describe('a thread', () => {
   it('says there is nothing yet, and writes a comment as you', () => {
     renderShell(<Harness start={scope()} me="pe-eva" />)
@@ -132,10 +135,15 @@ describe('a thread', () => {
     expect(held().at(-1)).toMatchObject({ body: 'And the shop team', replyTo: 'cm-1' })
   })
 
-  it('edits your own comment and says it was edited, and offers no edit of anybody else’s', () => {
+  it('edits your own comment and says it was edited, and offers no edit of anybody else’s', async () => {
     renderShell(<Harness start={scope([first, mine])} me="pe-eva" />)
+    moreOf('cm-1')
     expect(screen.queryByTestId('comment-edit-cm-1')).toBeNull()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+    moreOf('cm-2')
     fireEvent.click(screen.getByTestId('comment-edit-cm-2'))
+    // The writing starts where Edit was pressed, not at the top of the page.
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByTestId('comment-edit-field')))
     write('comment-edit-field', 'The web team, for now.')
     expect(held()[1]).toEqual({ ...mine, body: 'The web team, for now.', edited: AT })
     expect(screen.getByTestId('comment-cm-2').textContent).toContain('edited')
@@ -143,16 +151,21 @@ describe('a thread', () => {
 
   it('removes a comment as a tombstone the replies stay under', () => {
     renderShell(<Harness start={scope([first, mine])} me="pe-eva" />)
+    moreOf('cm-1')
     fireEvent.click(screen.getByTestId('comment-remove-cm-1'))
     expect(held()[0]).toEqual({ ...first, body: '', removed: { at: AT, by: { person: 'pe-eva' } } })
     expect(screen.getByTestId('comment-cm-1').textContent).toContain('Comment removed')
     expect(screen.getByTestId('comment-cm-2')).toBeTruthy()
     expect(screen.getByTestId('comment-count').textContent).toBe('Comments (1)')
+    // Put back from the toast, as a step of its own.
+    fireEvent.click(screen.getByRole('button', { name: /Put back/ }))
+    expect(held()[0]).toEqual(first)
   })
 
   it('offers removing another’s comment only to who may moderate', () => {
     renderShell(<Harness start={scope([first, mine])} me="pe-eva" mayModerate={false} />)
-    expect(screen.queryByTestId('comment-remove-cm-1')).toBeNull()
+    expect(within(screen.getByTestId('comment-cm-1')).queryByRole('button', { name: 'More for this comment' })).toBeNull()
+    moreOf('cm-2')
     expect(screen.getByTestId('comment-remove-cm-2')).toBeTruthy()
   })
 

@@ -20,6 +20,8 @@ export const EN = {
   'comments.save': 'Save',
   'comments.cancel': 'Cancel',
   'comments.remove': 'Remove',
+  'comments.removedToast': 'Comment removed',
+  'comments.more': 'More for this comment',
   'comments.removeTip': 'Takes this comment out of the thread and leaves a mark where it stood, so the replies keep their place',
   'comments.removed': 'Comment removed',
   'comments.edited': 'edited',

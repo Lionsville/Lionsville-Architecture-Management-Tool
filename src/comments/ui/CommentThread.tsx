@@ -27,9 +27,7 @@
  */
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
 import Link from '@mui/material/Link'
-import Tooltip from '@mui/material/Tooltip'
 import Typography from '@mui/material/Typography'
 import { useStrings } from '../../i18n/LanguageContext'
 import { formatMoment } from '../../i18n/dates'
@@ -46,6 +44,10 @@ import { useSaying } from '../../people/ui/access'
 import { usePersonNames } from '../../people/ui/names'
 import type { PersonNames } from '../../people/ui/names'
 import { PersonPicker } from '../../people/ui/PersonPicker'
+import { Button } from '../../widgets/kit/Button'
+import { MoreMenu } from '../../widgets/kit/Menu'
+import { Toast } from '../../widgets/kit/Toast'
+import type { ToastWords } from '../../widgets/kit/Toast'
 import { commentCount, replyTarget, threadOf } from '../thread'
 import { useComments } from './CommentsContext'
 import type { CommentsAccess } from './CommentsContext'
@@ -121,6 +123,7 @@ function OpenThread({ access, about, headed, nameOf, openFrom }: {
   const [writing, setWriting] = useState<Writing | undefined>(undefined)
   const [asking, setAsking] = useState<{ body: string; replyTo?: string } | undefined>(undefined)
   const [refused, setRefused] = useState(false)
+  const [toast, setToast] = useState<ToastWords | null>(null)
   const entries = useMemo(() => threadOf(access.comments, about), [access.comments, about])
   const count = useMemo(() => commentCount(access.comments, about), [access.comments, about])
 
@@ -143,7 +146,12 @@ function OpenThread({ access, about, headed, nameOf, openFrom }: {
     reply: (to, body) => write(body, replyTarget(access.comments, to)),
     edit: (id, body) => said(access.dispatch({ type: 'comment.update', id, body, edited: access.now() })),
     remove: (id) => {
-      if (me !== undefined) said(access.dispatch({ type: 'comment.remove', id, removed: { at: access.now(), by: pickedPerson(me) } }))
+      const before = access.comments.find((one) => one.id === id)
+      if (me === undefined || !before) return
+      // Taken out at once, and put back from the toast as one step of its own: the log may be everybody's.
+      if (said(access.dispatch({ type: 'comment.remove', id, removed: { at: access.now(), by: pickedPerson(me) } }))) {
+        setToast({ key: `${id}:${Date.now()}`, message: t('comments.removedToast'), undo: { onPress: () => { setToast(null); access.dispatch({ type: 'comment.put', comment: before }) }, shared: true } })
+      }
     },
     ...(nameOf ? { nameOf } : {}),
     ...(openFrom ? { openFrom } : {}),
@@ -163,7 +171,7 @@ function OpenThread({ access, about, headed, nameOf, openFrom }: {
           )}
           {writing?.kind === 'reply' && writing.to === comment.id && (
             <Box sx={{ pl: 2 }}>
-              <Composer label={t('comments.writeReply')} submit={t('comments.reply')} testId="comment-reply-field"
+              <Composer label={t('comments.writeReply')} submit={t('comments.reply')} testId="comment-reply-field" autoFocus
                 onSubmit={(body) => actions.reply(comment.id, body)} onCancel={() => setWriting(undefined)} />
             </Box>
           )}
@@ -177,6 +185,7 @@ function OpenThread({ access, about, headed, nameOf, openFrom }: {
           void names.access?.setMe(id)
         }} />
         : <NewComment access={access} names={names} writing={writing} onWrite={(body) => write(body)} />}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </ThreadFrame>
   )
 }
@@ -196,37 +205,48 @@ function NewComment({ access, names, writing, onWrite }: {
 function AskMe({ names, onPicked, onCancel }: { names: PersonNames; onPicked: (id: PersonId) => void; onCancel: () => void }) {
   const { t } = useStrings()
   const saying = useSaying(t)
+  // While the picker writes a new person it has its own Cancel: one question, one way out.
+  const [adding, setAdding] = useState(false)
   if (!names.access) return null
   return (
     <Box data-testid="comment-who" sx={{ display: 'grid', gap: 0.75, p: 1, border: 1, borderColor: 'divider', borderRadius: 1 }}>
       <Typography sx={{ fontSize: 'var(--t-small)' }}>{t('comments.who')}</Typography>
-      <PersonPicker register={names.access} saying={saying} value={undefined} onChange={(id) => { if (id) onPicked(id) }} s={t} />
-      <Box><Button size="small" onClick={onCancel}>{t('comments.cancel')}</Button></Box>
+      <PersonPicker register={names.access} saying={saying} value={undefined} onChange={(id) => { if (id) onPicked(id) }} onAdding={setAdding} s={t} />
+      {!adding && <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}><Button variant="quiet" size="small" onClick={onCancel}>{t('comments.cancel')}</Button></Box>}
     </Box>
   )
 }
 
 /** A text field and its button: a comment, a reply or an edit. */
-function Composer({ label, submit, initial = '', testId, onSubmit, onCancel, clears = false }: {
+function Composer({ label, submit, initial = '', testId, onSubmit, onCancel, clears = false, autoFocus = false }: {
   label: string; submit: string; initial?: string; testId: string; onSubmit: (body: string) => void; onCancel?: () => void; clears?: boolean
+  /** Where a press opened it (Reply, Edit): the writing starts there, not at the top of the page. */
+  autoFocus?: boolean
 }) {
   const { t } = useStrings()
   const [body, setBody] = useState(initial)
+  // A frame on: the menu Edit was chosen from hands the focus back to its button as it closes.
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!autoFocus) return undefined
+    const frame = requestAnimationFrame(() => box.current?.querySelector<HTMLElement>('textarea')?.focus())
+    return () => cancelAnimationFrame(frame)
+  }, [autoFocus])
   const send = () => {
     if (body.trim() === '') return
     onSubmit(body.trim())
     if (clears) setBody('')
   }
   return (
-    <Box sx={{ display: 'grid', gap: 0.75 }}>
+    <Box ref={box} sx={{ display: 'grid', gap: 0.75 }}>
       <MarkdownEditor
         label={label} value={body} onChange={setBody} minRows={2} attachable={false} testId={testId} onSubmit={send}
         renderPreview={(text) => renderMarkdown(text)}
       />
       {/* Trailing, as GitHub's comment box and a macOS sheet: Cancel, then the button that sends, at the right. */}
       <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-        {onCancel && <Button size="small" onClick={onCancel}>{t('comments.cancel')}</Button>}
-        <Button size="small" variant="contained" disabled={body.trim() === ''} onClick={send} data-testid={`${testId}-send`}>{submit}</Button>
+        {onCancel && <Button variant="quiet" size="small" onClick={onCancel}>{t('comments.cancel')}</Button>}
+        <Button size="small" variant="primary" disabled={body.trim() === ''} onClick={send} data-testid={`${testId}-send`}>{submit}</Button>
       </Box>
     </Box>
   )
@@ -270,11 +290,14 @@ function Entry({ comment, actions }: { comment: Comment; actions: EntryActions }
       ref={root} data-testid={`comment-${comment.id}`} data-pointed={pointed ? 'true' : undefined}
       sx={{ display: 'grid', gap: 0.25, ...(pointed ? { outline: 2, outlineColor: 'primary.main', outlineOffset: 4, borderRadius: 1 } : {}) }}
     >
-      <Typography sx={{ fontSize: 'var(--t-small)', color: 'text.secondary' }}>{byline}</Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography sx={{ flex: 1, minWidth: 0, fontSize: 'var(--t-small)', color: 'text.secondary' }}>{byline}</Typography>
+        {!gone && !editing && <EntryMore comment={comment} mine={mine} actions={actions} />}
+      </Box>
       {comment.from && <CameWith from={comment.from} actions={actions} />}
       {gone && <Typography sx={{ fontSize: 'var(--t-small)', fontStyle: 'italic', color: 'text.secondary' }}>{t('comments.removed')}</Typography>}
       {!gone && editing && (
-        <Composer label={t('comments.edit')} submit={t('comments.save')} initial={comment.body} testId="comment-edit-field"
+        <Composer label={t('comments.edit')} submit={t('comments.save')} initial={comment.body} testId="comment-edit-field" autoFocus
           onSubmit={(body) => actions.edit(comment.id, body)} onCancel={() => actions.setWriting(undefined)} />
       )}
       {!gone && !editing && <Box sx={{ fontSize: 'var(--t-body)' }}>{renderMarkdown(comment.body)}</Box>}
@@ -302,29 +325,28 @@ function CameWith({ from, actions }: { from: CommentFrom; actions: EntryActions 
   )
 }
 
-function EntryButtons({ comment, mine, actions }: { comment: Comment; mine: boolean; actions: EntryActions }) {
+/** Reply under a comment, where a person may answer it. */
+function EntryButtons({ comment, actions }: { comment: Comment; mine: boolean; actions: EntryActions }) {
   const { t } = useStrings()
   const target = comment.replyTo ?? comment.id
-  const mayRemove = actions.mayComment && actions.me !== undefined && (mine || actions.mayModerate)
+  if (!actions.mayComment) return null
   return (
     <Box sx={{ display: 'flex', gap: 0.5 }}>
-      {actions.mayComment && (
-        <Button size="small" data-testid={`comment-reply-${comment.id}`} onClick={() => actions.setWriting({ kind: 'reply', to: target })}>
-          {t('comments.reply')}
-        </Button>
-      )}
-      {actions.mayComment && mine && (
-        <Button size="small" data-testid={`comment-edit-${comment.id}`} onClick={() => actions.setWriting({ kind: 'edit', id: comment.id })}>
-          {t('comments.edit')}
-        </Button>
-      )}
-      {mayRemove && (
-        <Tooltip title={t('comments.removeTip')}>
-          <Button size="small" color="error" data-testid={`comment-remove-${comment.id}`} onClick={() => actions.remove(comment.id)}>
-            {t('comments.remove')}
-          </Button>
-        </Tooltip>
-      )}
+      <Button variant="quiet" size="small" data-testid={`comment-reply-${comment.id}`} onClick={() => actions.setWriting({ kind: 'reply', to: target })}>
+        {t('comments.reply')}
+      </Button>
     </Box>
   )
+}
+
+/** A comment's ⋯, at the right of its byline: Edit on your own, and Remove last, as every record's ⋯ has Delete. */
+function EntryMore({ comment, mine, actions }: { comment: Comment; mine: boolean; actions: EntryActions }) {
+  const { t } = useStrings()
+  const mayRemove = actions.mayComment && actions.me !== undefined && (mine || actions.mayModerate)
+  const items = [
+    ...(actions.mayComment && mine ? [{ label: t('comments.edit'), onSelect: () => actions.setWriting({ kind: 'edit', id: comment.id }), 'data-testid': `comment-edit-${comment.id}` }] : []),
+    ...(mayRemove ? [{ label: t('comments.remove'), hint: t('comments.removeTip'), final: true, onSelect: () => actions.remove(comment.id), 'data-testid': `comment-remove-${comment.id}` }] : []),
+  ]
+  if (items.length === 0) return null
+  return <MoreMenu size="small" label={t('comments.more')} items={items} />
 }

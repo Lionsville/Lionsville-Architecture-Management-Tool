@@ -16,6 +16,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'comments.save': 'Speichern',
   'comments.cancel': 'Abbrechen',
   'comments.remove': 'Entfernen',
+  'comments.removedToast': 'Kommentar entfernt',
+  'comments.more': 'Mehr zu diesem Kommentar',
   'comments.removeTip': 'Nimmt diesen Kommentar aus dem Verlauf und lässt eine Markierung an seiner Stelle, damit die Antworten ihren Platz behalten',
   'comments.removed': 'Kommentar entfernt',
   'comments.edited': 'bearbeitet',

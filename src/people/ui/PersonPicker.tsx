@@ -44,6 +44,8 @@ export type PersonPickerProps = {
   note?: (person: Person) => string | undefined
   /** What the search starts with: a name already typed into the field it picks for. */
   initialQuery?: string
+  /** Told when the picker turns into its New person form and back, which brings a Cancel of its own. */
+  onAdding?: (adding: boolean) => void
   s: Translate
 }
 
@@ -54,9 +56,10 @@ export function pickable(people: readonly Person[], query: string): Person[] {
     .sort((one, other) => (one.name ?? '').localeCompare(other.name ?? ''))
 }
 
-export function PersonPicker({ register, saying, value, onChange, note, initialQuery, s }: PersonPickerProps) {
+export function PersonPicker({ register, saying, value, onChange, note, initialQuery, onAdding, s }: PersonPickerProps) {
   const [query, setQuery] = useState(initialQuery ?? '')
-  const [adding, setAdding] = useState(false)
+  const [adding, setAddingHere] = useState(false)
+  const setAdding = (next: boolean) => { setAddingHere(next); onAdding?.(next) }
   const people = useMemo(() => register.people ?? [], [register.people])
   const found = useMemo(() => pickable(people, query), [people, query])
   const picked = value === undefined ? undefined : resolvePerson(value, registerOf(people))
