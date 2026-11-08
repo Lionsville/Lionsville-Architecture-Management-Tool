@@ -176,7 +176,7 @@ export function BulkActions({ ticked, stage, here, onClear, onAsk, onMerge, s }:
           variant="primary" size="small" reason={oneScope ? undefined : s('observation.bulkOneScope')} data-testid="bulk-ask-why"
           onClick={() => { onAsk(at.map((one) => one.id), at[0]?.scope); onClear() }}
         >
-          {s('observation.bulkAskWhy', { count: ticked.size })}
+          {ticked.size === 1 ? s('observation.bulkAskWhyOne') : s('observation.bulkAskWhy', { count: ticked.size })}
         </Button>
       )}
       <Button
@@ -227,7 +227,7 @@ export function MapWindowBar({ window: drawn, kept, loose, belowInView, onKeep, 
     )
   }
   return loose > 0
-    ? <ListMore {...name} said={s('observation.mapPileHidden', { count: loose })}>{showAll}</ListMore>
+    ? <ListMore {...name} said={loose === 1 ? s('observation.mapPileHiddenOne') : s('observation.mapPileHidden', { count: loose })}>{showAll}</ListMore>
     : <ListMore {...name} said={s('observation.mapAll', { total: totalChains })} />
 }
 

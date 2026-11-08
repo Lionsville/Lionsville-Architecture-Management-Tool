@@ -560,6 +560,13 @@ function escapeClosesPanel(event: ReactKeyboardEvent, onMap: boolean, selectedKe
   setSelectedKey(undefined)
 }
 
+/** *5 causes · 1 open end*: each count in its own number. */
+function saidWhy(causes: number, open: number, s: Translate): string {
+  if (causes === 1 && open === 1) return s('observation.saidWhyBothOne')
+  if (causes === 1) return s('observation.saidWhyCauseOne', { open })
+  return open === 1 ? s('observation.saidWhyOpenOne', { causes }) : s('observation.saidWhy', { causes, open })
+}
+
 /** What answering a solution's question of why does: drop it, or waive its experiment. */
 const ANSWER = { drop: dropSolution, waive: waiveExperiment } as const
 
@@ -930,7 +937,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const rootCount = rootCauses(causes).length
   const stageSaid: Record<Tab, ReactNode> = {
     register: <span data-testid="stage-said">{seenSaid(records, s)}</span>,
-    analysis: <span data-testid="stage-said">{s('observation.saidWhy', { causes: causes.filter((one) => !isCauseMerged(causes, one.id)).length, open: counted.openEnds })}</span>,
+    analysis: <span data-testid="stage-said">{saidWhy(causes.filter((one) => !isCauseMerged(causes, one.id)).length, counted.openEnds, s)}</span>,
     solutions: (
       <span data-testid="solution-phases" data-guide="solutions.phases">
         <span data-testid="solution-coverage">

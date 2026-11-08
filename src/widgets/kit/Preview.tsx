@@ -43,7 +43,7 @@ export type PreviewProps = {
   /** What the title says in words, where `title` is not a plain string. */
   readonly titleText?: string
   readonly code?: string
-  /** What the count is a count of: *waiting*. The position reads *1 of 17 waiting*. */
+  /** What the count is a count of: *waiting*. The position reads *1 of 17 waiting*, and *1 of 1* alone, where the word would be a plural of one. */
   readonly listWord?: string
   /** *Open full record*, in the head, quiet, before what can be done. */
   readonly openFull?: { readonly label?: string; readonly onPress: () => void; readonly testId?: string }
@@ -100,7 +100,7 @@ export function Preview({ ids, currentId, onSelect, title, kind, code, listWord,
           <button type="button" className="kit-preview__icon" aria-label={t('kit.preview.next')} disabled={!next} onClick={() => next && onSelect(next)}><ForwardIcon /></button>
           {index >= 0 && (
             <span className="kit-preview__position" aria-live="polite">
-              {t('kit.preview.position', { at: index + 1, total: ids.length })}{listWord ? ` ${listWord}` : ''}
+              {t('kit.preview.position', { at: index + 1, total: ids.length })}{listWord && ids.length > 1 ? ` ${listWord}` : ''}
             </span>
           )}
           {code && <span className="kit-preview__code">{code}</span>}
