@@ -76,6 +76,8 @@ describe('the tree', () => {
     // One number on the row; the words on hover and on the scope's home.
     expect(retail.getAttribute('title')).toContain('1 view')
     expect(within(retail).getByTestId('scope-holds').textContent).toBe('1')
+    // Its name says the number it shows, so the words on screen are the words to say it by (WCAG 2.5.3).
+    expect(retail.getAttribute('aria-label')).toBe('Retail, 1')
     expect(screen.getByTestId('scope-finance').getAttribute('title')).toContain('1 view')
   })
 

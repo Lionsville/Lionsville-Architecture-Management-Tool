@@ -207,6 +207,9 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
   const foldName = s(shut ? 'org.expand' : 'org.collapse', { name: scope.name })
   const items = unread ? [] : menuOf(scope)
   const named = above ? `${above} / ${scope.name}` : scope.name
+  // The row's name says what it shows, its count or its mark too: a name short of the words on screen
+  // is a name a speech user cannot say to press it (WCAG 2.5.3).
+  const said = [named, warns ? s('org.typeMismatch') : '', unread ? s('org.notRead') : count > 0 ? String(count) : ''].filter(Boolean).join(', ')
   return (
     // The press anywhere on the row is the way home; the name is the button
     // that carries it for a keyboard and a screen reader, and the controls at
@@ -214,7 +217,7 @@ function ScopeRow({ scope, depth, shut, hasBranch, current, foldable, above, unr
     <div
       className="kit-tree__row"
       // One Tab stop for the whole tree: the panel moves it with the arrows (`useTreeKeys`).
-      role="treeitem" tabIndex={-1} aria-level={depth + 1} aria-label={named} data-name={scope.name}
+      role="treeitem" tabIndex={-1} aria-level={depth + 1} aria-label={said} data-name={scope.name}
       data-enter={enters || undefined}
       aria-expanded={foldable && hasBranch ? !shut : undefined} aria-disabled={unread || undefined}
       data-testid={`scope-${scope.path}`}
@@ -259,7 +262,7 @@ export function RootRow({ tree, name, current, count, words, onHome, menuOf, s }
   return (
     <div
       className="kit-tree__row" data-testid="scope-root" aria-current={current ? 'page' : undefined}
-      role="treeitem" tabIndex={-1} aria-level={1} aria-label={name} data-name={name}
+      role="treeitem" tabIndex={-1} aria-level={1} aria-label={count > 0 ? `${name}, ${count}` : name} data-name={name}
       data-quiet={count === 0 || undefined} title={[name, words].filter(Boolean).join('\n')}
       onClick={() => onHome(ROOT_SCOPE)}
     >
