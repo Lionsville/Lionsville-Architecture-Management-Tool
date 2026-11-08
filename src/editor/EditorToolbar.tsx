@@ -583,13 +583,16 @@ export type NewViewProps = Pick<EditorToolbarProps,
  * new landscape straight away where the host makes no other kind. Drawn in row
  * two with no tabs before it too, where a scope's last view went.
  */
+/** The ink every other icon button in the rows wears; MUI's own is pure white in dark, the brightest thing in row two. */
+const NEW_VIEW_INK = { color: 'var(--ink-2)' } as const
+
 export function NewViewMenu({ props }: { props: NewViewProps }) {
   const { t } = useStrings();
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   if (!props.onCreateSheet) {
     return (
       <Tooltip title={t('toolbar.newDiagram')}>
-        <IconButton size="small" aria-label={t('toolbar.newDiagram')} onClick={props.onCreateLayer7Diagram}>
+        <IconButton size="small" sx={NEW_VIEW_INK} aria-label={t('toolbar.newDiagram')} onClick={props.onCreateLayer7Diagram}>
           <AddIcon />
         </IconButton>
       </Tooltip>
@@ -600,7 +603,7 @@ export function NewViewMenu({ props }: { props: NewViewProps }) {
     const landscape = props.onCreateLayer7Diagram;
     return (
       <Tooltip title={t('toolbar.newDiagram')}>
-        <IconButton size="small" aria-label={t('toolbar.newDiagram')} aria-haspopup="dialog" data-testid="tab-new-view" onClick={() => props.onNewView?.(landscape)}>
+        <IconButton size="small" sx={NEW_VIEW_INK} aria-label={t('toolbar.newDiagram')} aria-haspopup="dialog" data-testid="tab-new-view" onClick={() => props.onNewView?.(landscape)}>
           <AddIcon />
         </IconButton>
       </Tooltip>
@@ -621,6 +624,7 @@ export function NewViewMenu({ props }: { props: NewViewProps }) {
       <Tooltip title={t('toolbar.newDiagram')}>
         <IconButton
           size="small"
+          sx={NEW_VIEW_INK}
           aria-label={t('toolbar.newDiagram')}
           aria-haspopup="menu"
           onClick={(event) => setAnchor(event.currentTarget)}

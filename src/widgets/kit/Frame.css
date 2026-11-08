@@ -45,7 +45,7 @@
 .kit-frame__tab:focus-visible, .kit-frame__find:focus-visible, .kit-frame__status:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
 .kit-frame__find {
   appearance: none; font: inherit; cursor: pointer; flex: 0 1 300px; min-width: 36px; height: var(--ctl-h); display: inline-flex; align-items: center; gap: var(--s-2);
-  padding-inline: var(--s-2); color: var(--ink-2); background: var(--ground); border: 1px solid var(--line); border-radius: var(--r-3);
+  padding-inline: var(--s-2); color: var(--ink-2); background: var(--ground); border: 1px solid var(--line-strong); border-radius: var(--r-3);
   overflow: hidden; white-space: nowrap;
 }
 .kit-frame__find span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: start; }

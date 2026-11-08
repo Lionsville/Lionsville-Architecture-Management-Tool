@@ -52,6 +52,8 @@
   cursor: not-allowed;
 }
 .kit-button[data-icon][data-refused] { background: transparent; border-color: transparent; }
+/* An icon that is off has no words to grey: it fades, so ↶ with nothing to undo does not read as ↶ with something. */
+.kit-button[data-icon]:disabled > svg, .kit-button[data-icon][data-refused] > svg { opacity: .4; }
 .kit-button[aria-busy='true'] { cursor: progress; }
 
 .kit-button__working {
