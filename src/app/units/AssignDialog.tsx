@@ -191,12 +191,16 @@ export function AssignDialog(props: AssignDialogProps) {
       title={s(held ? 'assign.editTitle' : 'assign.title', { role: role?.name ?? form.roleId, unit: unit.name })}
       actions={(
         <>
-          {held && !held.until && !(held.from && held.from > endOn) && (
-            <Button size="small" onClick={() => done({ type: 'assignment.update', id: held.id, patch: { until: endOn } })} data-testid="assign-end">
-              {s('assign.endToday', { day: formatDay(endOn, language) })}
-            </Button>
+          {held && (
+            <span className="kit-dialog__start">
+              <Button size="small" variant="danger" onClick={() => done({ type: 'assignment.remove', id: held.id })} data-testid="assign-remove">{s('assign.remove')}</Button>
+              {!held.until && !(held.from && held.from > endOn) && (
+                <Button size="small" onClick={() => done({ type: 'assignment.update', id: held.id, patch: { until: endOn } })} data-testid="assign-end">
+                  {s('assign.endToday', { day: formatDay(endOn, language) })}
+                </Button>
+              )}
+            </span>
           )}
-          {held && <Button size="small" variant="danger" onClick={() => done({ type: 'assignment.remove', id: held.id })} data-testid="assign-remove">{s('assign.remove')}</Button>}
           <Button onClick={onClose}>{s('assign.cancel')}</Button>
           <Button type="submit" variant="primary" reason={form.person && form.roleId ? undefined : s('assign.pickFirst')} data-testid="assign-save">
             {s(held ? 'assign.saveChange' : 'assign.save')}

@@ -235,6 +235,18 @@ describe('the People page, as a directory', () => {
     expect(screen.getByTestId('people-counts').textContent).toBe('3 active · 1 left · 1 forgotten')
   })
 
+  it('makes the one already there the default where a match shows: Enter takes her, and adding anyway is a press', async () => {
+    renderShell(<Harness />)
+    fireEvent.click(screen.getByTestId('people-add'))
+    const field = screen.getByTestId('people-add-name')
+    fireEvent.change(field, { target: { value: 'Pia Schultz' } })
+    expect(within(screen.getByTestId('people-add-similar')).getByRole('button', { name: 'Use this one' }).dataset.variant).toBe('primary')
+    expect(screen.getByTestId('people-add-save').dataset.variant).toBe('plain')
+    fireEvent.keyDown(field, { key: 'Enter' })
+    await waitFor(() => expect(screen.getByTestId('people-person-name').textContent).toBe('Pia Schulz'))
+    expect(screen.getByTestId('people-counts').textContent).toBe('3 active · 1 left · 1 forgotten')
+  })
+
   it('adds somebody nobody resembles, and says it is no step', async () => {
     renderShell(<Harness />)
     fireEvent.click(screen.getByTestId('people-add'))

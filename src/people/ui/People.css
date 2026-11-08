@@ -36,6 +36,7 @@
 .people-lines { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; padding-block: 2px; }
 .people-stack { display: flex; flex-direction: column; gap: var(--s-3); }
 .people-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.people-actions--end { justify-content: flex-end; }
 .people-note { margin: 0; color: var(--ink-2); font-size: var(--t-small); }
 .people-warn { padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-radius: var(--r-2); }
 .people-warn__title { margin: 0 0 var(--s-1); font-weight: 600; }

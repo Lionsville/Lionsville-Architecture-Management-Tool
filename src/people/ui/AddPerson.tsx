@@ -74,7 +74,10 @@ export function AddPerson({ register, saying, onAdded, onUse, onCancel, initialN
     if (event.key !== 'Enter' || !(event.target instanceof HTMLInputElement)) return
     event.preventDefault()
     event.stopPropagation()
-    if (name.trim()) add()
+    // The register has no undo: with somebody like this already there, Enter takes them, and adding anyway is a press.
+    const first = similar[0]
+    if (first) onUse(first.person.id)
+    else if (name.trim()) add()
   }
   return (
     <div role="group" aria-label={s('people.add')} className="people-stack" data-testid="people-add-form" onKeyDown={onEnter}>
@@ -88,26 +91,27 @@ export function AddPerson({ register, saying, onAdded, onUse, onCancel, initialN
         <div className="people-warn" data-testid="people-add-similar">
           <p className="people-warn__title">{s('people.isItOne')}</p>
           <div className="people-lines">
-            {similar.map(({ person, sign }) => (
+            {similar.map(({ person, sign }, at) => (
               <div key={person.id} className="people-actions">
                 <span>
                   {shownText(shownEntry(person), s)} · {tellsApart(person, register, s)}
                   <span className="people-quiet"> · {s(SIGN_LABEL[sign])}</span>
                 </span>
-                <Button size="small" onClick={() => onUse(person.id)}>{s('people.useThis')}</Button>
+                <Button size="small" variant={at === 0 ? 'primary' : 'plain'} onClick={() => onUse(person.id)}>{s('people.useThis')}</Button>
               </div>
             ))}
           </div>
           <p className="people-note">{s('people.addAnywayNote')}</p>
         </div>
       ) : name.trim().length > 2 && <p className="people-note">{s('people.noOneLike')}</p>}
-      <div className="people-actions">
-        <Button variant="primary" disabled={!name.trim()} onClick={add} data-testid="people-add-save">
+      <p className="people-note">{s('people.notAStep')}</p>
+      {/* The dialogs' order: Cancel, then what it is for, at the end; adding anyway is no longer the default where a match shows. */}
+      <div className="people-actions people-actions--end">
+        <Button onClick={onCancel}>{s('people.cancel')}</Button>
+        <Button variant={similar.length > 0 ? 'plain' : 'primary'} disabled={!name.trim()} onClick={add} data-testid="people-add-save">
           {s(similar.length > 0 ? 'people.addAnyway' : 'people.addSave')}
         </Button>
-        <Button onClick={onCancel}>{s('people.cancel')}</Button>
       </div>
-      <p className="people-note">{s('people.notAStep')}</p>
     </div>
   )
 }
