@@ -59,7 +59,8 @@
 .tl-column .kit-list__row[draggable='true'] { cursor: grab; }
 
 .tl-swatch { display: inline-block; width: var(--mark-size); height: var(--mark-size); border-radius: 2px; }
-.tl-swatch[data-outline] { border: 1px solid var(--line-strong); box-sizing: border-box; }
+/* No value is dashed: a solid hollow square is Edit uses' box for "not used, press to use", beside it on the next column. */
+.tl-swatch[data-outline] { border: 1px dashed var(--line-strong); box-sizing: border-box; }
 /* A value's number in its colour: the ground's ink reads on every lens colour in both modes, as the board's tag does. */
 .tl-swatch[data-code] {
   flex: none; box-sizing: border-box; width: auto; min-width: calc(var(--mark-size) + 6px); height: auto; padding: 0 3px;
