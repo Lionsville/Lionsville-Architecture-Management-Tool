@@ -123,9 +123,9 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
       onClose={props.onClose}
       maxWidth="xs"
       fullWidth
-      // Anchored high: the dialog must not sit over the middle of the board it
-      // is about to pan.
-      sx={{ '& .MuiDialog-container': { alignItems: 'flex-start', pt: '12vh' } }}
+      // Anchored high and at the right, under the bar's Find: the dialog must not
+      // sit over the middle of the board it is about to pan, nor over the cards it rings.
+      sx={{ '& .MuiDialog-container': { alignItems: 'flex-start', justifyContent: 'flex-end', pt: '12vh', pr: 2 } }}
       // No scrim: what is found is on the board behind, and must stay in sight while typing.
       slotProps={{ backdrop: { invisible: true } }}
     >
@@ -172,7 +172,8 @@ export function ElementSearchDialog(props: ElementSearchDialogProps) {
         id="lv-search-results"
         role="listbox"
         aria-label={t('search.results')}
-        sx={{ maxHeight: 320, overflowY: 'auto', pb: 0.5 }}
+        // About four rows, and the rest a scroll: a long list covered most of the cards it rings.
+        sx={{ maxHeight: 'calc(4 * 2.75rem + 0.25rem)', overflowY: 'auto', pb: 0.5 }}
       >
         {hits.map((hit, index) => (
           <ListItemButton
