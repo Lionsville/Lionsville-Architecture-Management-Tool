@@ -45,6 +45,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.help': 'Hilfe',
   'menu.userManual': 'Lionsville Architect-Hilfe',
   'menu.shortcuts': 'Tastenkürzel…',
+  'menu.visitExample': 'Im Beispiel umsehen',
   'menu.go': 'Gehe zu',
   'menu.back': 'Zurück',
   'menu.forward': 'Vorwärts',

@@ -56,6 +56,7 @@ export const EN = {
   'menu.help': 'Help',
   'menu.userManual': 'Lionsville Architect help',
   'menu.shortcuts': 'Keyboard shortcuts…',
+  'menu.visitExample': 'Look around the example',
   /** The desktop's Go menu (ADR-0033), between View and Window as on every Mac. */
   'menu.go': 'Go',
   'menu.back': 'Back',

@@ -87,6 +87,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const pageUp = page !== undefined
   const onHomeBare = !parts.nav.project && !pageUp
   const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts)
+  useExampleCommand(parts)
   useFrameKeys(parts, state)
   useRememberPlace(parts, screen)
   const lines = usePaletteLines(parts, at, go)
@@ -196,7 +197,30 @@ export function canOf(parts: ShellParts, facts: ScreenFacts | undefined) {
     history: parts.nav.project ? parts.props.repositories.history !== undefined : parts.home.history.available,
     connect: Boolean(parts.provider.offered?.some((way) => way.hostMenu)),
     scope: facts?.kind === 'workspace',
+    example: exampleOffered(parts),
   }
+}
+
+/** Whether the example can be visited from here: this build offers one, and it is not being visited already. */
+function exampleOffered(parts: ShellParts): boolean {
+  return parts.props.onVisitExample !== undefined && parts.props.examples.length > 0 && !parts.props.visiting
+}
+
+/**
+ * Help's *Look around the example*, from any screen and with nothing open: the
+ * first example this build offers, visited as the first page visits it. Where
+ * it cannot be — none offered, or one is being visited — the menu bar's item
+ * does nothing, as every item main cannot see the screen for.
+ */
+function useExampleCommand(parts: ShellParts) {
+  const latest = useRef(parts)
+  latest.current = parts
+  useEffect(() => parts.commands.bus.on((command) => {
+    if (command.type !== 'example') return
+    const { props } = latest.current
+    if (!exampleOffered(latest.current)) return
+    props.onVisitExample?.(props.examples[0])
+  }), [parts.commands.bus])
 }
 
 /** The one sheet of keys, on every screen and over a board alike: `?`, the Help menu's item and a board's own ⋯ open it. */
@@ -547,7 +571,7 @@ function AgentButton({ parts }: { parts: ShellParts }) {
 /** The ? in row one: the manual, the keys, and the two ways out of this build on a host with no menu bar. */
 function helpEntries(parts: ShellParts): (MenuAct | MenuSpacer)[] {
   const { services: { s }, commands: { bus } } = parts
-  const help = offered(HELP_MENU, 'web', { history: false, connect: false, scope: true })
+  const help = offered(HELP_MENU, 'web', { history: false, connect: false, scope: true, example: exampleOffered(parts) })
   const here: MenuAct = { label: s('frame.helpHere'), shortcut: 'F1', onSelect: () => bus.send({ type: 'manual', section: helpHere(parts) }) }
   const items: (MenuAct | MenuSpacer)[] = [here, ...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : entry.accelerator ? { shortcut: keyCap(entry.accelerator, isMac()) } : {}) }] : []))]
   if (!parts.hostMenu) {

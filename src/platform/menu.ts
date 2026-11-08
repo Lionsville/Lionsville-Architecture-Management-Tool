@@ -56,7 +56,7 @@ export function titleCase(label: string): string {
  * What an item needs the shell to have before it is worth offering: a history
  * to keep, a way in the host names to take, a scope open to act on.
  */
-export type MenuNeed = 'history' | 'connect' | 'scope' | 'picture'
+export type MenuNeed = 'history' | 'connect' | 'scope' | 'picture' | 'example'
 
 export type MenuItemSpec = {
   readonly kind: 'item'
@@ -159,6 +159,9 @@ export const HELP_MENU_ITEM: MenuItemSpec = item('menu.userManual', { type: 'man
 export const HELP_MENU: readonly MenuEntry[] = [
   HELP_MENU_ITEM,
   item('menu.shortcuts', { type: 'shortcuts' }),
+  // The example as a place, from any screen: the first page offers it only while
+  // the organisation is empty, and an organisation with work had no way back to it.
+  item('menu.visitExample', { type: 'example' }, undefined, ['example']),
 ]
 
 /**
@@ -293,6 +296,8 @@ export type MenuCapabilities = {
   readonly connect: boolean
   /** Is a scope open, for the items that act on one? */
   readonly scope: boolean
+  /** Is this build offering the example to visit, and is it not being visited already? */
+  readonly example?: boolean
   /** Is a board up, whose picture can be taken? */
   readonly picture?: boolean
 }

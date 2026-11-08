@@ -83,6 +83,8 @@ export type HostCommand =
   | { type: 'manual'; section?: string }
   /** Help: the shortcut overlay the `?` button already opens. */
   | { type: 'shortcuts' }
+  /** Help: the shipped example, as a place to look around and leave, whatever this organisation holds. */
+  | { type: 'example' }
   /**
    * The Go menu's two, its keys and the trackpad's swipe (ADR-0033): the
    * window's own history, moved from inside the page — the same Back and

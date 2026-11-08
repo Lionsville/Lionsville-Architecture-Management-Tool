@@ -87,6 +87,26 @@ describe('the example, visited', () => {
   })
 })
 
+/** Once the organisation holds work the first page is gone, and Help is the way to the example from any screen. */
+describe('the example, from Help', () => {
+  const working = () => heldRepositories([{ path: '', model: { name: 'Northline', elements: [], relations: [], diagrams: [] }, activeDiagramId: '', logoLibrary: [] }])
+
+  it('is offered under Help over an organisation that holds work, and visits the example', async () => {
+    const onVisitExample = vi.fn()
+    renderApp({ repositories: working(), offersFirstRun: true, examples: [example], onVisitExample })
+    fireEvent.click(await screen.findByRole('button', { name: 'Help' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Look around the example' }))
+    expect(onVisitExample).toHaveBeenCalledWith(example)
+  })
+
+  it('is not offered while the example is being visited', async () => {
+    renderApp({ repositories: working(), offersFirstRun: true, examples: [example], onVisitExample: vi.fn(), visiting: { name: 'One', onKeep: vi.fn(), onLeave: vi.fn() } })
+    fireEvent.click(await screen.findByRole('button', { name: 'Help' }))
+    await screen.findByRole('menuitem', { name: /Keyboard shortcuts/ })
+    expect(screen.queryByRole('menuitem', { name: 'Look around the example' })).toBeNull()
+  })
+})
+
 describe('Your work', () => {
   it('says the place in a sentence, what can lose it, and when a copy was last saved', async () => {
     renderApp({ repositories: heldRepositories([]), provider: { sayings: { labelKey: 'shell.sourceBrowser', whereKey: 'browser.where', riskKey: 'browser.risk' } } })

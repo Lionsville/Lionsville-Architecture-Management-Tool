@@ -22,6 +22,12 @@ describe('the one table of commands', () => {
     expect(types).toContain('export')
   })
 
+  it('offers the example to look around, from any screen, only where it can be visited', () => {
+    const row = commandsTable({ history: false, connect: false, scope: false, example: true }, 'darwin').find((one) => one.command.type === 'example')
+    expect(row).toMatchObject({ group: 'help', label: 'menu.visitExample' })
+    expect(commandsTable({ ...everything, example: false }, 'darwin').some((one) => one.command.type === 'example')).toBe(false)
+  })
+
   it('gives every row a name of its own', () => {
     const ids = commandsTable(everything, 'darwin').map((row) => row.id)
     expect(new Set(ids).size).toBe(ids.length)
