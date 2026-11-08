@@ -12,7 +12,7 @@ import { claimKey } from '../../model/keys'
 import type { Diagram, Model } from '../../model/normalised'
 import { boxesOf, groupList, placedOn } from '../../model/normalised'
 import {
-  clampPlacementIntoZone, defaultContainerPosition, defaultZonePosition, freeSlotIn, spotNear,
+  clampPlacementIntoZone, containerBoxes, defaultContainerPosition, defaultZonePosition, freeSlotIn, spotNear,
   groupRectAround, placementRect, rectsIntersect, unionRects,
 } from '../../model/placement'
 import { HOME_ZONE, zoneRect } from '../../model/zones'
@@ -43,11 +43,23 @@ export function seedPlacement(
     return {
       placement: {
         id: elementId,
-        ...(asked ?? defaultContainerPosition(nodeFigure(element), diagram.order.members.length)),
+        ...(asked ?? defaultContainerPosition(nodeFigure(element), diagram.order.members.length, drawnBoxes(model, diagram, elementId))),
       },
     }
   }
   return seedOnLandscape(model, diagram, elementId, element, args, asked)
+}
+
+/** The boxes of a container diagram as drawn, but its boundary's: what a new box keeps clear of. */
+function drawnBoxes(model: Model, diagram: Diagram, except: ElementId): Rect[] {
+  const stored = new Map<string, Rect>()
+  for (const id of diagram.order.members) {
+    const element = model.elements[id]
+    const placement = placedOn(diagram, id)
+    if (id === except || id === diagram.applicationElementId || !element || !placement) continue
+    stored.set(id, placementRect(nodeFigure(element), placement))
+  }
+  return [...containerBoxes(stored).values()]
 }
 
 /** A new card on a landscape: in its band, and in its group's box when it names one. */

@@ -20,7 +20,6 @@ import {
   memberOf,
   nodeGeometryOf,
   placedNodes,
-  placementRect,
   placementSize,
   containerBoxSize,
 } from '../model/placement';
@@ -1583,7 +1582,8 @@ export async function layersByCategory(model: DesignModel, diagram: DesignDiagra
   const moves = new Map(categoryLayerMoves(placedNodes(diagram).flatMap((placement) => {
     const element = byId.get(placement.id);
     if (element?.kind !== 'component') return [];
-    return [{ id: placement.id, ...placementRect('component', placement), ...(element.category ? { category: element.category } : {}) }];
+    // At the size it is drawn, as every layout of a container diagram measures a box.
+    return [{ id: placement.id, x: placement.x, y: placement.y, ...containerBoxSize('component', placement), ...(element.category ? { category: element.category } : {}) }];
   })).map((move) => [move.id, move]));
   const placements = placedNodes(diagram).map((placement) => {
     const move = moves.get(placement.id);

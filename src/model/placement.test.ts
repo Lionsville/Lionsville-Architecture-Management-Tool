@@ -15,6 +15,7 @@ import {
   containerBoxSize,
   containerBoxes,
   defaultContainerPosition,
+  drawnContainerBoxes,
   defaultZonePosition,
   seedPlacement,
   freeSlotIn,
@@ -686,6 +687,26 @@ describe('a box on a container diagram', () => {
     const first = defaultContainerPosition('actor', 0);
     const second = defaultContainerPosition('actor', 1);
     expect(second.y - first.y).toBeGreaterThan(containerBoxSize('actor').height);
+  });
+
+  it('steps past a box of another figure in the column, as it is drawn', () => {
+    // An application drawn first in the column, 130 high: the person counted after it was placed by its own pitch, into it.
+    const application = { ...defaultContainerPosition('application', 2), ...containerBoxSize('application') };
+    const person = { ...defaultContainerPosition('actor', 3, [application]), ...containerBoxSize('actor') };
+    expect(rectsIntersect(person, application)).toBe(false);
+    expect(person.y).toBeGreaterThanOrEqual(application.y + application.height);
+  });
+
+  it('places a new box clear of every box drawn there but the boundary', () => {
+    const diagram = {
+      id: 'c', kind: 'container' as const, applicationElementId: 'app',
+      members: [{ id: 'app' }, { id: 'ext' }, { id: 'p' }],
+      geometry: { nodes: [{ id: 'app', x: 0, y: 0, width: 800, height: 600 }, { id: 'ext', x: -280, y: 40 }, { id: 'p', x: -280, y: 150, width: 104, height: 40 }] },
+    };
+    const figures: Record<string, NodeFigure> = { app: 'application', ext: 'externalSystem', p: 'actor' };
+    const placed = seedPlacement({ kind: 'actor' }, diagram, 'new', (id) => figures[id]);
+    const drawn = { ...placed, ...containerBoxSize('actor') };
+    for (const box of drawnContainerBoxes(diagram, (id) => figures[id], 'new')) expect(rectsIntersect(drawn, box)).toBe(false);
   });
 });
 

@@ -660,7 +660,7 @@ export type PlacementSeed = Pick<DesignElement, 'kind' | 'outside' | 'ref'> & {
  */
 export function seedPlacement(
   seed: PlacementSeed,
-  diagram: Pick<DesignDiagram, 'id' | 'kind' | 'members' | 'geometry'>,
+  diagram: Pick<DesignDiagram, 'id' | 'kind' | 'members' | 'geometry' | 'applicationElementId'>,
   elementId: ElementId,
   figureOf?: (id: ElementId, zone: Layer7Zone | undefined) => NodeFigure | undefined,
   avoid?: SlotObstacles,
@@ -675,8 +675,9 @@ export function seedPlacement(
       seed.position ?? freeZonePosition(zone, figure, occupied, diagram.geometry, avoid);
     return { id: elementId, zone, group: seed.group, ...position };
   }
-  const position =
-    seed.position ?? defaultContainerPosition(nodeFigure(seed), diagram.members.length);
+  const figure = nodeFigure(seed);
+  const occupied = drawnContainerBoxes(diagram, (id) => figureOf?.(id, undefined) ?? figure, elementId);
+  const position = seed.position ?? defaultContainerPosition(figure, diagram.members.length, occupied);
   return { id: elementId, ...position };
 }
 
@@ -850,23 +851,54 @@ export function freeZonePosition(
 /**
  * Default positions on a container diagram: components cascade inside the
  * boundary area; context elements (actors, external systems) cascade in a
- * column to the left of it.
+ * column to the left of it. Each box is measured at the size it is drawn
+ * ({@link containerBoxSize}), and where `occupied` — the boxes there, as they
+ * are drawn ({@link containerBoxes}) — holds one at the slot, the cascade goes
+ * on to the next slot clear of all of them: a person counted after an
+ * application in the one column was placed by its own height and drawn into
+ * the application above it.
  */
 export function defaultContainerPosition(
   figure: NodeFigure,
   existingOfKindGroup: number,
+  occupied: readonly Rect[] = [],
 ): { x: number; y: number } {
   const size = containerBoxSize(figure);
-  if (figure === 'component') {
-    const perRow = 3;
-    const row = Math.floor(existingOfKindGroup / perRow);
-    const col = existingOfKindGroup % perRow;
-    return {
-      x: 80 + col * (size.width + 40),
-      y: 80 + row * (size.height + 48),
-    };
+  const slot = (index: number) => {
+    if (figure === 'component') {
+      const perRow = 3;
+      return { x: 80 + (index % perRow) * (size.width + 40), y: 80 + Math.floor(index / perRow) * (size.height + 48) };
+    }
+    return { x: -280, y: 40 + index * (size.height + 32) };
+  };
+  const clear = (at: { x: number; y: number }) =>
+    !occupied.some((box) => rectsIntersect(expandRect({ ...at, ...size }, CONTAINER_GAP), box));
+  for (let index = existingOfKindGroup; index < existingOfKindGroup + occupied.length + 1; index += 1) {
+    if (clear(slot(index))) return slot(index);
   }
-  return { x: -280, y: 40 + existingOfKindGroup * (size.height + 32) };
+  return slot(existingOfKindGroup + occupied.length + 1);
+}
+
+/** The least room kept between two boxes a cascade places on a container diagram. */
+const CONTAINER_GAP = 16;
+
+/**
+ * The boxes of a container diagram as they are drawn, but the boundary's,
+ * which holds the components rather than standing beside them: what a new box
+ * is placed clear of.
+ */
+export function drawnContainerBoxes(
+  diagram: Pick<DesignDiagram, 'applicationElementId' | 'members' | 'geometry'>,
+  figureOf: (id: ElementId) => NodeFigure | undefined,
+  except?: ElementId,
+): Rect[] {
+  const stored = new Map<string, Rect>();
+  for (const placement of placedNodes(diagram)) {
+    if (placement.id === diagram.applicationElementId || placement.id === except) continue;
+    const figure = figureOf(placement.id);
+    if (figure) stored.set(placement.id, placementRect(figure, placement));
+  }
+  return [...containerBoxes(stored).values()];
 }
 
 /** Never let a group box get so small it cannot hold a card. */
