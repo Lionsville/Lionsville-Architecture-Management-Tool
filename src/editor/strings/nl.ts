@@ -109,7 +109,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'menu.addHere': 'Hier toevoegen',
   'menu.addDomainGroupHere': 'Hier een domeingroep toevoegen',
   'menu.selectAll': 'Alles selecteren',
-  'menu.tidy': 'Bord opruimen',
+  'menu.tidy': 'Bord ordenen',
   'menu.routeConnections': 'Lijnen routeren',
   'menu.routeConnectionsAll': 'Alle lijnen opnieuw routeren',
   'menu.fitView': 'Passend maken',

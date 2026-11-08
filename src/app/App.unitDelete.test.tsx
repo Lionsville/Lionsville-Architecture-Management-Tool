@@ -108,7 +108,7 @@ async function askToDelete(id: string) {
   fireEvent.keyDown(card, { key: 'Enter' })
   await waitFor(() => expect(document.querySelector('[data-guide="board.inspector"]')).not.toBeNull())
   fireEvent.click(within(document.querySelector<HTMLElement>('[data-guide="board.inspector"]')!).getByRole('button', { name: 'More' }))
-  fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove or delete the record…' }))
+  fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove from view or delete from model…' }))
   return screen.findByRole('dialog')
 }
 
@@ -128,7 +128,7 @@ describe('deleting a unit on a board', { timeout: 20_000 }, () => {
     expect(within(parts).getByTestId('unit-delete-also').textContent).toContain('It is responsible for 1 capability')
     expect(await axeFindings()).toEqual([])
 
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the record' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete from model' }))
     // Shipping's part, written as that scope's step: its team moved, the application's team cleared, the row gone.
     await waitFor(async () => {
       const shipping = (await held.read('shipping'))!.model
@@ -157,7 +157,7 @@ describe('deleting a unit on a board', { timeout: 20_000 }, () => {
     expect(within(inside).queryByTestId('unit-delete-too')).toBeNull()
     fireEvent.click(within(inside).getByTestId('unit-delete-more'))
     fireEvent.click(within(inside).getByTestId('unit-delete-too').querySelector('input')!)
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete the record' }))
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Delete from model' }))
     await waitFor(async () => expect((await held.read('shipping'))!.model.elements.map((one) => one.id)).toEqual(['tms', 'book']))
     send({ type: 'save' })
     await waitFor(async () => expect((await held.read(''))!.model.elements.map((one) => one.id)).toEqual(['south']))

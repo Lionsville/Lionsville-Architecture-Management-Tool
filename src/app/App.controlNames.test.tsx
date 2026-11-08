@@ -621,7 +621,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(screen.getByTestId('chart-outline-move-to'))
     await screen.findByTestId('move-unit-dialog')
   }]],
-  // Deleting a unit with a unit inside it, from its card's Remove or delete the record… (3.6.2).
+  // Deleting a unit with a unit inside it, from its card's Remove from view or delete from model… (3.6.2).
   [['a unit asked to be deleted', ['unitDelete.end', 'unitDelete.inside'], async () => {
     const boarded = example.map((one) => (one.path === '' ? divisionOnABoard(one) : one))
     renderApp({ repositories: heldRepositories(boarded), boot: { initialProject: boarded.find((one) => one.path === '')! } })
@@ -629,7 +629,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     await selectCard('north')
     await waitFor(() => expect(document.querySelector(controlSelector('board.inspector'))).not.toBeNull())
     fireEvent.click(within(document.querySelector<HTMLElement>(controlSelector('board.inspector'))!).getByRole('button', { name: 'More' }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove or delete the record…' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Remove from view or delete from model…' }))
     await screen.findByTestId('unit-deletion')
   }]],
   // A Conway map: the verdict and the grid, the panel on nothing, on a pair and on a unit, and the second reading.
