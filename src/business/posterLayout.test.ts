@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { bandRowsFor, bandStepRoomy, contentHeight, firstLayout, freePlace, minWidth, nameLikelyCut, overlapsOf, POSTER_COLUMN_ID, POSTER_GAP, POSTER_WIDTH, readingOrder, tileCells, tileColumns, contentHeightAt, flowColumns, paperLayout } from './posterLayout'
 import type { PosterAreaSize, PosterBlock } from './posterLayout'
+import { denseSheet } from './testFixtures'
 
 const plain = (id: string, tiles: number, span?: number): PosterAreaSize => ({ id, groupings: [], loose: tiles, ...(span !== undefined ? { span } : {}) })
 const overlap = (a: PosterBlock, b: PosterBlock) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
@@ -96,6 +97,35 @@ describe('the first layout', () => {
   it('does not let a block wider than the page push out of it', () => {
     const wide = firstLayout({ areas: [plain('a', 600)] })
     expect(wide.blocks[0]?.width).toBe(POSTER_WIDTH)
+  })
+})
+
+describe('the first layout of a dense sheet, 188 functions in 17 areas', () => {
+  const elements = denseSheet()
+  const under = (id: string) => elements.filter((one) => one.parentId === id)
+  const areas: PosterAreaSize[] = elements.filter((one) => !one.parentId).map((area) => ({
+    id: area.id,
+    groupings: under(area.id).filter((one) => under(one.id).length > 0).map((one) => under(one.id).length),
+    loose: under(area.id).filter((one) => under(one.id).length === 0).length,
+  }))
+  const laid = firstLayout({ areas })
+
+  it('keeps every block on the page, side by side and close, with no gap wider than the page\'s', () => {
+    expect(laid.blocks).toHaveLength(17)
+    for (const block of laid.blocks) {
+      expect(block.x).toBeGreaterThanOrEqual(0)
+      expect(block.x + block.width).toBeLessThanOrEqual(POSTER_WIDTH)
+    }
+    const covered = laid.blocks.reduce((sum, block) => sum + block.width * block.height, 0)
+    expect(covered / (laid.width * laid.height)).toBeGreaterThan(0.85)
+  })
+
+  it('gives an area wider than the page the height its groupings take wrapped at the page\'s width', () => {
+    for (const block of laid.blocks) {
+      const area = areas.find((one) => one.id === block.id)!
+      expect(block.height).toBeGreaterThanOrEqual(contentHeightAt(area, block.width))
+    }
+    for (const a of laid.blocks) for (const b of laid.blocks) if (a !== b) expect(overlap(a, b)).toBe(false)
   })
 })
 

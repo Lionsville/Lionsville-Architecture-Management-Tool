@@ -171,11 +171,18 @@ function shelves(areas: readonly PosterAreaSize[], x: number, y: number, width: 
     const room = width - POSTER_GAP * (shelf.length - 1)
     const least = shelf.map((area) => Math.min(minWidth(area, size), room))
     const total = least.reduce((sum, one) => sum + one, 0)
-    const height = Math.max(...shelf.map((area) => contentHeight(area, size)))
     let left = x
-    shelf.forEach((area, index) => {
+    const widths = shelf.map((_, index) => {
       // The last takes what rounding left, so the right edge is the page's.
       const wide = index === shelf.length - 1 ? x + width - left : Math.round(((least[index] ?? 0) / total) * room)
+      left += wide + POSTER_GAP
+      return wide
+    })
+    // An area wider than the page is drawn at the page's width, where its groupings wrap: as tall as that, or it runs into the shelf under it.
+    const height = Math.max(...shelf.map((area, index) => Math.max(contentHeight(area, size), contentHeightAt(area, widths[index] ?? width, size))))
+    left = x
+    shelf.forEach((area, index) => {
+      const wide = widths[index] ?? 0
       blocks.push({ id: area.id, x: left, y: top, width: wide, height })
       left += wide + POSTER_GAP
     })

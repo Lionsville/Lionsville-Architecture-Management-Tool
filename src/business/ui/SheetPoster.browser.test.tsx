@@ -24,6 +24,7 @@ import { contentHeight, contentHeightAt, minWidth, POSTER_COLUMN_ID } from '../p
 import type { PosterAreaSize } from '../posterLayout'
 import { posterFirstLayout } from '../posterPlaces'
 import { sheetPage } from '../sheet'
+import { denseSheet } from '../testFixtures'
 import type { LaidOutSheet } from '../sheet'
 import { SheetPoster } from './SheetPoster'
 
@@ -142,6 +143,22 @@ describe('a block in a real browser', () => {
     const wrong: string[] = []
     for (const block of layout.blocks) {
       if (block.id === POSTER_COLUMN_ID || block.id === laidOut.journey?.element.id) continue
+      const height = measured(host, block.id)
+      if (height > block.height + 0.5) wrong.push(`${block.id}: drawn ${height}, given ${block.height}`)
+    }
+    expect(wrong).toEqual([])
+  })
+
+  it('is no taller than the first layout gives it, on a dense sheet of 188 functions in 17 areas', () => {
+    const elements = denseSheet()
+    const diagram = { id: 'dense', kind: 'sheet', name: 'Dense', members: [], areas: elements.filter((one) => !one.parentId).map((one) => one.id), showActors: false, geometry: { nodes: [] } } as const
+    const laidOut = sheetPage({ elements, relations: [] }, diagram)
+    const host = draw(laidOut, elements)
+    host.querySelector<HTMLElement>('[data-testid="poster-stage"]')!.style.transform = 'none'
+    const layout = posterFirstLayout(laidOut, diagram)
+    expect(layout.blocks).toHaveLength(17)
+    const wrong: string[] = []
+    for (const block of layout.blocks) {
       const height = measured(host, block.id)
       if (height > block.height + 0.5) wrong.push(`${block.id}: drawn ${height}, given ${block.height}`)
     }

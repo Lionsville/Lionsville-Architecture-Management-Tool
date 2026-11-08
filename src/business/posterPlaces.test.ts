@@ -4,8 +4,9 @@
 import { describe, expect, it } from 'vitest'
 import type { DesignDiagram, DesignElement } from '../model'
 import { overlapsOf, POSTER_COLUMN_ID, POSTER_WIDTH } from './posterLayout'
-import { isPlaced, posterFirstLayout, posterPlaces, posterTiles } from './posterPlaces'
+import { isPlaced, posterFirstLayout, posterPlaces, posterTiles, readsAsPoster } from './posterPlaces'
 import { sheetPage } from './sheet'
+import { denseSheet, DENSE_SHEET } from './testFixtures'
 
 const el = (id: string, over: Partial<DesignElement>): DesignElement => ({ id, name: id, kind: 'function', lifecycle: 'live', isManaged: true, aspects: {}, ...over })
 
@@ -103,6 +104,36 @@ describe('a placed sheet', () => {
     expect(places.blocks.map((block) => block.id)).toEqual(['sales'])
     for (const block of places.waiting) expect(block.y).toBeGreaterThanOrEqual(places.height)
     expect(overlapsOf(places.waiting)).toEqual([])
+  })
+})
+
+describe('places kept by something other than a poster', () => {
+  const dense = denseSheet()
+  const areas = dense.filter((one) => !one.parentId).map((one) => one.id)
+  const denseDiagram = (nodes: { id: string; x: number; y: number }[] = []): DesignDiagram => ({ id: 'd', kind: 'sheet', name: 'Dense', members: [], areas, geometry: { nodes } })
+  const densePage = (diagram: DesignDiagram) => sheetPage({ elements: dense, relations: [] }, diagram, [], {})
+
+  it('are not drawn: a dense sheet whose blocks sit off the page and far apart opens at its first layout', () => {
+    expect(dense).toHaveLength(DENSE_SHEET.elements)
+    expect(areas).toHaveLength(DENSE_SHEET.areas)
+    // As a board of cards would have kept them: a column off the left edge, 1,700 apart.
+    const stale = denseDiagram(areas.map((id, at) => ({ id, x: -280 + (at % 2) * 1700, y: Math.floor(at / 2) * 1700 })))
+    const places = posterPlaces(densePage(stale), stale)
+    expect(places).toMatchObject({ placed: false, ignored: true, waiting: [] })
+    expect(places.blocks).toEqual(posterFirstLayout(densePage(stale), stale).blocks)
+    expect(Math.min(...places.blocks.map((block) => block.x))).toBe(0)
+    expect(places.height).toBeLessThan(2 * POSTER_WIDTH)
+  })
+
+  it('are told apart from a poster placed by hand, which is drawn as it is', () => {
+    const first = posterFirstLayout(densePage(denseDiagram()), denseDiagram()).blocks
+    expect(readsAsPoster(first)).toBe(true)
+    expect(readsAsPoster(first.map((block, at) => (at === 0 ? { ...block, x: -8 } : block)))).toBe(false)
+    expect(readsAsPoster(first.map((block, at) => ({ ...block, y: block.y + at * 1700 })))).toBe(false)
+    // One block pulled well away from the rest is still a poster.
+    expect(readsAsPoster(first.map((block, at) => (at === 1 ? { ...block, x: 2400 } : block)))).toBe(true)
+    const kept = denseDiagram(first.map(({ id, x, y }) => ({ id, x, y: y + 40 })))
+    expect(posterPlaces(densePage(kept), kept)).toMatchObject({ placed: true })
   })
 })
 

@@ -165,7 +165,8 @@ function useSnapping(camera: PosterCamera, places: PosterPlaces, sheet: PosterSh
       if (back !== undefined) { guide(along, back); return back - size }
       return free ? Math.round(value) : Math.round(value / GRID) * GRID
     }
-    return { ...wanted, x: place('x', wanted.width), y: place('y', wanted.height) }
+    // Never off the page's top or left edge: places there are not read as a poster's (`readsAsPoster`).
+    return { ...wanted, x: Math.max(0, place('x', wanted.width)), y: Math.max(0, place('y', wanted.height)) }
   }
 
   const pulled = (id: string, wanted: Rect, free: boolean): Rect => {

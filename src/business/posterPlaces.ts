@@ -31,6 +31,33 @@ export type PosterPlaces = {
   bandRows: 1 | 2
   /** Whether anybody has placed anything, which is when it stops following the first layout. */
   placed: boolean
+  /**
+   * The geometry said places no poster has: blocks off the page's top or left
+   * edge, or many spread so thin they cover a tenth of what they span. Such
+   * places were kept by something other than this poster, and the first layout
+   * is drawn instead until somebody places a block.
+   */
+  ignored?: true
+}
+
+/**
+ * Below this share of the room they span, this many blocks or more were not
+ * placed as a poster: a board's cards kept 1,700 apart cover a few per cent.
+ * A person who pulls one or two blocks of a small sheet aside is far above it.
+ */
+const LEAST_FILL = 0.1
+const SPREAD_FROM = 6
+
+/** Whether places read as a poster's: on the page, and close enough together to be one. */
+export function readsAsPoster(blocks: readonly PosterBlock[]): boolean {
+  if (blocks.some((block) => block.x < 0 || block.y < 0)) return false
+  if (blocks.length < SPREAD_FROM) return true
+  const left = Math.min(...blocks.map((block) => block.x))
+  const top = Math.min(...blocks.map((block) => block.y))
+  const right = Math.max(...blocks.map((block) => block.x + block.width))
+  const bottom = Math.max(...blocks.map((block) => block.y + block.height))
+  const covered = blocks.reduce((sum, block) => sum + block.width * block.height, 0)
+  return covered >= LEAST_FILL * (right - left) * (bottom - top)
 }
 
 /**
@@ -113,6 +140,7 @@ export function posterPlaces(laidOut: LaidOutSheet, sheet: PosterSheet): PosterP
     }
     else later.push(block)
   }
+  if (!readsAsPoster(blocks)) return { width: first.width, height: first.height, blocks: first.blocks, waiting: [], bandRows: first.bandRows, placed: false, ignored: true }
   const bottom = Math.max(0, ...blocks.map((block) => block.y + block.height))
   const right = Math.max(POSTER_WIDTH, ...blocks.map((block) => block.x + block.width))
   const height = sheet.paper !== undefined && sheet.paper !== 'wide' && sheet.paper !== 'fit' ? Math.max(PAPER_HEIGHT, bottom) : bottom
