@@ -263,15 +263,19 @@ export function rootFontPx(): number {
 
 /**
  * A cell's words as its width holds them: with its year where there is room, the
- * month alone where there is not (*Aug*, never *Aug 2…*), and nothing where not
- * even that fits. The cell's title keeps the whole.
+ * month alone where there is not (*Aug*, never *Aug 2…*), its first letter where
+ * not even that fits — a ruler of *J F M A* still reads as months, a ruler of
+ * bare ticks reads as nothing — and nothing below that. The cell's title keeps
+ * the whole.
  */
 export function fittedCellWord(cell: Pick<RulerCell, 'unit' | 'day' | 'withYear'>, locale: string, px: number, charPx: number): string {
   const room = px - 8
   const whole = cellWord(cell, locale)
   if (whole.length * charPx <= room) return whole
   const short = cellWord({ ...cell, withYear: false }, locale)
-  return short.length * charPx <= room ? short : ''
+  if (short.length * charPx <= room) return short
+  const letter = cell.unit === 'month' ? short.charAt(0).toLocaleUpperCase(locale) : ''
+  return letter !== '' && charPx <= room ? letter : ''
 }
 
 /** The window in words: "Aug 2026" and "Jul 2027", for a sentence of the caller's. */

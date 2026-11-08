@@ -46,7 +46,9 @@ describe('the window', () => {
     const cell = { unit: 'month' as const, day: '2026-08-01', withYear: true }
     expect(fittedCellWord(cell, 'en-GB', 120, 7)).toBe('Aug 2026')
     expect(fittedCellWord(cell, 'en-GB', 40, 7)).toBe('Aug')
-    expect(fittedCellWord(cell, 'en-GB', 20, 7)).toBe('')
+    // A month too narrow for its short name keeps its letter (at 150 % on a small window), and only a sliver says nothing.
+    expect(fittedCellWord(cell, 'en-GB', 20, 7)).toBe('A')
+    expect(fittedCellWord(cell, 'en-GB', 12, 7)).toBe('')
   })
 
   it('scrolls by the ruler’s pixels', () => {
