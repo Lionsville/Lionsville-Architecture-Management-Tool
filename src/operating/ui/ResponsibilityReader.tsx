@@ -11,11 +11,11 @@ import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { editResponsibility, moveResponsibility } from '../edit'
 import { groupsOf } from '../matrixView'
-import { Prose, ReaderFoot, SourceWord } from './ReaderParts'
-import type { ReaderParts } from './ReaderParts'
+import { Prose, ReaderFoot, SourceWord, stackedFrame } from './ReaderParts'
+import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { claimKey } from '../../widgets/kit/keys'
 
-export function ResponsibilityReader({ responsibility, parts }: { responsibility: Responsibility; parts: ReaderParts }) {
+export function ResponsibilityReader({ responsibility, parts, frame = stackedFrame }: { responsibility: Responsibility; parts: ReaderParts; frame?: ReaderFrame }) {
   const { t } = useStrings()
   const { model, readOnly, dispatch } = parts
   const groupsId = useId()
@@ -28,10 +28,9 @@ export function ResponsibilityReader({ responsibility, parts }: { responsibility
     const raci = raciOf(role, responsibility.id)
     return raci ? [{ role, raci }] : []
   })
-  return (
-    <div data-testid="operating-responsibility-reader">
-      <Prose label={t('operating.description')} value={responsibility.description ?? ''} readOnly={readOnly} render={parts.renderMarkdown}
-        onChange={(next) => dispatch(editResponsibility(responsibility.id, 'description', next))} testId="operating-description" />
+  // Its group, its place among the group's and where it came from: the facts beside the text.
+  const facts = (
+    <>
       <PropertyRows readOnly={readOnly}>
         <PropertyRow
           label={t('operating.group')} value={responsibility.group ?? ''} empty={t('operating.noGroup')}
@@ -46,13 +45,6 @@ export function ResponsibilityReader({ responsibility, parts }: { responsibility
           onCommit={(value) => dispatch(editResponsibility(responsibility.id, 'group', value))}
         />
       </PropertyRows>
-      <PanelSection title={t('operating.whoHasPart')}>
-        {parties.length === 0
-          ? <span className="op-quiet">{t('operating.nobodyHasPart')}</span>
-          : parties.map(({ role, raci }) => (
-            <div className="op-duty" key={role.id}><b>{raci}</b><button type="button" className="op-link" onClick={() => parts.onSelect(role.id)}>{role.name}</button></div>
-          ))}
-      </PanelSection>
       <div className="op-rowEnd">
         <span>{t('operating.responsibilityOrderAt', { place: at + 1, count: mates.length, group: group || t('operating.noGroup') })}</span>
         {!readOnly && (
@@ -62,8 +54,22 @@ export function ResponsibilityReader({ responsibility, parts }: { responsibility
           </span>
         )}
       </div>
-      <div className="op-rowEnd"><span /><SourceWord basedOn={responsibility.basedOn} /></div>
-      <ReaderFoot parts={parts} />
+      <SourceWord basedOn={responsibility.basedOn} />
+    </>
+  )
+  const body = (
+    <div data-testid="operating-responsibility-reader">
+      <Prose label={t('operating.description')} value={responsibility.description ?? ''} readOnly={readOnly} render={parts.renderMarkdown}
+        onChange={(next) => dispatch(editResponsibility(responsibility.id, 'description', next))} testId="operating-description" />
+      <PanelSection title={t('operating.whoHasPart')}>
+        {parties.length === 0
+          ? <span className="op-quiet">{t('operating.nobodyHasPart')}</span>
+          : parties.map(({ role, raci }) => (
+            <div className="op-duty" key={role.id}><b>{raci}</b><button type="button" className="op-link" onClick={() => parts.onSelect(role.id)}>{role.name}</button></div>
+          ))}
+      </PanelSection>
+      {parts.aside}
     </div>
   )
+  return frame({ body, facts, foot: <ReaderFoot parts={parts} /> })
 }

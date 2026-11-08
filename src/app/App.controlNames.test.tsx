@@ -544,9 +544,9 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await within(screen.getByTestId('structure-lanes')).findByRole('button', { name: 'Scrum Team' }))
   }],
   ['its libraries', ['operating.tabLibraries', 'operating.libraries', 'operating.compare'], async () => {
-    // The type is read over the page: closed first, as a person would.
-    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Scrum Team' }), { key: 'Escape' })
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'Scrum Team' })).toBeNull())
+    // The type is read beside the structure: put away first, as a person would.
+    fireEvent.keyDown(screen.getByRole('complementary', { name: 'Scrum Team' }), { key: 'Escape' })
+    await waitFor(() => expect(screen.queryByRole('complementary', { name: 'Scrum Team' })).toBeNull())
     fireEvent.click(screen.getByRole('tab', { name: 'Libraries' }))
     fireEvent.click(await screen.findByTestId('operating-compare'))
   }],

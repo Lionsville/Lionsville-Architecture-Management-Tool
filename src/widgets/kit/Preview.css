@@ -125,3 +125,7 @@
   .kit-preview__facts { position: static; }
   .kit-preview__facts > :has(nav) { display: none !important; }
 }
+
+/* A name that is pressed to rename (`PanelName`) takes the title's size here, not the panel's. */
+.kit-preview__title .kit-panel__name,
+.kit-preview__title .kit-panel__nameField { font-size: inherit; }

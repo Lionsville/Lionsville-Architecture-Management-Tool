@@ -234,7 +234,7 @@ describe('a responsibility read', () => {
 
   it('says nobody has a part, and where it stands with no group', () => {
     renderShell(<ResponsibilityReader responsibility={of('loose')} parts={parts()} />)
-    expect(screen.getByTestId('operating-responsibility-reader').textContent).toContain('1')
+    expect(document.body.textContent).toContain('1 of 1 in')
     expect(screen.queryByRole('button', { name: 'Lead' })).toBeNull()
   })
 

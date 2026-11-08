@@ -16,7 +16,7 @@
  * `usePlaceLook`), so a person, a link and an agent reach the same screen.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
+import type { KeyboardEvent, ReactNode } from 'react'
 import type { Command } from '../../model/commands'
 import type { MakeId } from '../../model/keys'
 import type { RoleId, UnitType, UnitTypeId } from '../../model/operatingModel'
@@ -52,7 +52,7 @@ import type { ReaderParts } from './ReaderParts'
 import { RemoveConfirm } from './RemoveConfirm'
 import type { RoleHolders } from './RemoveConfirm'
 import { ResponsibilitiesTab } from './ResponsibilitiesTab'
-import { RecordPreview } from './RecordPreview'
+import { RecordPanel } from './RecordPreview'
 import { RolesTab } from './RolesTab'
 import { StructureTab } from './StructureTab'
 import { useLibraryStep } from './useLibraryStep'
@@ -194,10 +194,30 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
   }
   const beside = tab === 'structure' || tab === 'responsibilities'
   const flat = tab === 'responsibilities'
+  const reading = beside && !arranging && picked !== undefined
+  const main = useRef<HTMLDivElement>(null)
+  const panel = useRef<HTMLDivElement>(null)
+  // The record read beside closes back to where it stands in the lanes or the grid, where the focus was in it.
+  const closeReader = () => {
+    const was = picked?.item.id
+    const inside = panel.current?.contains(document.activeElement) === true
+    if (slotOpen !== undefined) setSlotOpen(undefined)
+    else select(undefined)
+    if (inside && was) requestAnimationFrame(() => focusIn(main.current, was))
+  }
+  // A new responsibility's name kept: its row's first letter is what is set next, so the grid takes the focus there.
+  const named = (id: string) => {
+    if (naming?.id !== id || tab !== 'responsibilities') return
+    setTimeout(() => { if (panel.current?.contains(document.activeElement)) focusIn(main.current, id, true) }, 0)
+  }
+  const onEscape = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape' || keyClaimed(event)) return
+    if (arranging) { claimKey(event); setArranging(false) } else if (reading) { claimKey(event); closeReader() }
+  }
   return (
     <PageDialog open={props.open} topInset={props.windowChrome?.topInset} onClose={props.onClose} aria-label={t('operating.title')}>
-      {/* One Escape does one thing: Arrange beside the grid closes before the page does. */}
-      <div className="op-page" onKeyDown={(event) => { if (event.key === 'Escape' && arranging && !keyClaimed(event)) { claimKey(event); setArranging(false) } }}>
+      {/* One Escape does one thing: Arrange or the record beside the grid closes before the page does. */}
+      <div className="op-page" onKeyDown={onEscape}>
         <div className="op-bar">
           <Tabs
             label={t('operating.title')} value={tab} onChange={(next) => chooseTab(next)}
@@ -221,14 +241,22 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           </div>
         )}
         <div className="op-body">
-          <div className="op-main" data-flat={flat || undefined}>
+          <div className="op-main" data-flat={flat || undefined} ref={main}>
             <TabBody
               tab={tab} parts={parts} props={props} readOnly={readOnly} libraries={libraries} fromLibrary={fromLibrary} selected={selected} select={select} onMade={(id) => { select(id); setNaming((was) => ({ id, nonce: (was?.nonce ?? 0) + 1 })) }} look={look} setLook={setLook}
               setTab={setTab} matrixView={matrixView} setMatrixView={setMatrixView} arranging={arranging} setArranging={setArranging} exceptions={exceptions} openItem={openItem}
             />
           </div>
-          {tab === 'responsibilities' && arranging && (
+          {((tab === 'responsibilities' && arranging) || reading) && (
             <SeamResizer orientation="vertical" region="after" value={asideWidth} min={260} max={720} defaultValue={360} onChange={setAsideWidth} label={t('common.resizeColumn')} />
+          )}
+          {reading && (
+            <div className="op-aside" ref={panel}>
+              <RecordPanel
+                width={asideWidth} picked={picked} parts={parts} onSelect={select} slotOpen={slotOpen} onSlot={setSlotOpen} slotAside={taking}
+                removeSlotOf={removeSlotOf} naming={naming} onNamed={named} part={tab === 'responsibilities' ? look.part : undefined}
+              />
+            </div>
           )}
           {tab === 'responsibilities' && arranging && (
             <ArrangePanel
@@ -238,13 +266,6 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
           )}
         </div>
       </div>
-      {/* Every record on the page reads in one frame, over it: the roles' list opens its own the same way. */}
-      {beside && !arranging && (
-        <RecordPreview
-          picked={picked} parts={parts} onSelect={select} slotOpen={slotOpen} onSlot={setSlotOpen} slotAside={taking}
-          removeSlotOf={removeSlotOf} naming={naming} part={tab === 'responsibilities' ? look.part : undefined}
-        />
-      )}
       <RemoveConfirm
         item={toRemove} holders={toRemove?.kind === 'role' ? props.roleHolders?.(toRemove.item.id) : undefined}
         onCancel={() => setRemoving(undefined)} onConfirm={confirmRemove}
@@ -256,6 +277,23 @@ export function OperatingModelPage(props: OperatingModelPageProps) {
       />
     </PageDialog>
   )
+}
+
+/**
+ * Where a record stands in the lanes or the grid, focused: a responsibility's row
+ * (its first letter, where `letter`), a unit type's card, a role's first chip.
+ */
+function focusIn(main: HTMLElement | null, id: string, letter = false) {
+  if (!main) return
+  // Matched by reading the marks rather than a selector, so an id needs no escaping.
+  const first = (selector: string, mark: (one: HTMLElement) => string | undefined) =>
+    Array.from(main.querySelectorAll<HTMLElement>(selector)).find((one) => mark(one) === id)
+  const row = first('[data-kit-row]', (one) => one.dataset.kitRow)
+  const cell = letter ? row?.parentElement?.querySelector<HTMLElement>('td[data-kit-cell]') : undefined
+  const card = first('[data-testid^="unit-type-"]', (one) => one.dataset.testid?.slice('unit-type-'.length))
+  const chip = first('button[data-testid^="role-"]', (one) => one.dataset.testid?.slice('role-'.length))
+  const target = cell ?? row ?? card?.querySelector<HTMLElement>('.op-card__name') ?? chip
+  target?.focus()
 }
 
 /** The part the grid shows, as the tab reads it: with none said and no unit or whole organisation, its first group. */

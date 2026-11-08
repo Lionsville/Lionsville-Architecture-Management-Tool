@@ -124,3 +124,8 @@ button.op-line:hover { background: var(--surface-2); }
 .op-section { display: flex; flex-direction: column; gap: var(--s-2); }
 .op-section h3 { margin: 0; font-size: var(--t-body); font-weight: var(--fw-strong); }
 .op-diffs { margin: 0; padding-inline-start: 1.2em; }
+
+/* The record read beside the lanes or the grid: the panel's column, its own height, the page beside it live. */
+.op-aside { display: flex; flex: none; min-height: 0; }
+/* A reader's facts: in the preview's column beside the text, and in the panel first, under the name. */
+.op-facts { display: flex; flex-direction: column; gap: var(--s-1); padding-block-end: var(--s-2); margin-block-end: var(--s-2); border-bottom: 1px solid var(--line); }

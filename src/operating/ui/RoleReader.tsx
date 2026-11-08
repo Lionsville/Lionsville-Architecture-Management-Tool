@@ -16,15 +16,16 @@ import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { editRole, moveRole, setFlag, setRoleReportsTo } from '../edit'
 import { LinesEditor } from './LinesEditor'
-import { Fold, OverTime, Prose, ReaderFoot, SourceWord, Tick } from './ReaderParts'
-import type { ReaderParts } from './ReaderParts'
+import { Fold, OverTime, Prose, ReaderFoot, SourceWord, stackedFrame, Tick } from './ReaderParts'
+import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { roleNamed } from './reading'
 import { ReportedBy } from './SlotReader'
 
 const PLACES_SHOWN = 5
 
-export function RoleReader({ role, parts, partName, partDuties }: {
+export function RoleReader({ role, parts, partName, partDuties, frame = stackedFrame }: {
   role: Role; parts: ReaderParts
+  frame?: ReaderFrame
   /** The part of the responsibilities looked at, for saying the role's letters there first. */
   partName?: string | undefined
   partDuties?: readonly string[] | undefined
@@ -57,13 +58,19 @@ export function RoleReader({ role, parts, partName, partDuties }: {
     )
   }
   const shownDuties = partDuties && !allDuties ? role.duties.filter((duty) => partDuties.includes(duty.responsibility)) : role.duties
-  return (
+  // Where it is held, by how many, and where it came from: the facts beside the text.
+  const said = (
+    <>
+      <div data-testid="operating-held-in">{t('operating.heldInLine', { types: holding.length ? holding.map((type) => type.name).join(', ') : t('operating.inNoType') })}</div>
+      {facts && <div data-testid="operating-holders">{t('operating.holdersLine', { people, vacant })}</div>}
+      <SourceWord basedOn={role.basedOn} />
+    </>
+  )
+  const body = (
     <div data-testid="operating-role-reader">
       <Prose label={t('operating.purpose')} value={role.purpose ?? ''} readOnly={readOnly} render={parts.renderMarkdown}
         onChange={(next) => dispatch(editRole(role.id, 'purpose', next))} testId="operating-purpose" />
       <PanelSection>
-        <div data-testid="operating-held-in">{t('operating.heldInLine', { types: holding.length ? holding.map((type) => type.name).join(', ') : t('operating.inNoType') })}</div>
-        {facts && <div data-testid="operating-holders">{t('operating.holdersLine', { people, vacant })}</div>}
         {lineRow('solid', t('operating.lineSolid'))}
         {lineRow('dotted', t('operating.lineDotted'))}
       </PanelSection>
@@ -103,7 +110,6 @@ export function RoleReader({ role, parts, partName, partDuties }: {
       )}
       <ReportedBy slotRole={role.id} parts={parts} />
       <Tick checked={role.manages === true} disabled={readOnly} onChange={(on) => dispatch(setFlag('role', role.id, 'manages', on))}>{t('operating.managesHint')}</Tick>
-      <div className="op-rowEnd"><span /><SourceWord basedOn={role.basedOn} /></div>
       <Fold label={t('operating.moreRole')} testId="operating-more">
         <PropertyRows readOnly={readOnly}>
           <PropertyRow label={t('operating.short')} value={role.short ?? ''} empty={t('operating.noShort')} edit="text" onCommit={(value) => dispatch(editRole(role.id, 'short', value))} />
@@ -111,9 +117,10 @@ export function RoleReader({ role, parts, partName, partDuties }: {
         <RoleColumn role={role} parts={parts} />
         <OverTime kind="role" item={role} others={model.roles} readOnly={readOnly} dispatch={dispatch} />
       </Fold>
-      <ReaderFoot parts={parts} />
+      {parts.aside}
     </div>
   )
+  return frame({ body, facts: said, foot: <ReaderFoot parts={parts} /> })
 }
 
 function RoleColumn({ role, parts }: { role: Role; parts: ReaderParts }) {

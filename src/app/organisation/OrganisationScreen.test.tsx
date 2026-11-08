@@ -307,7 +307,7 @@ describe('the organisation screen — its own pages', () => {
     renderApp({ repositories: heldRepositories([withGuild]), today: TODAY })
     const detail = await checkOnPage('fix', 'check.unitTypeNowhere')
     fireEvent.click(within(pressFound(detail, 'attention--ut-guild')).getByRole('button', { name: /Open/ }))
-    expect(within(await screen.findByRole('dialog', { name: 'Guild' })).getByTestId('operating-inspector')).toBeTruthy()
+    expect(within(await screen.findByRole('complementary', { name: 'Guild' })).getByTestId('operating-inspector')).toBeTruthy()
     expect(within(screen.getByTestId('tray-nowhere')).getByTestId('nowhere-ut-guild')).toBeTruthy()
   })
 

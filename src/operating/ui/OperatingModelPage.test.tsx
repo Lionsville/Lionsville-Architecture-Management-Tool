@@ -223,10 +223,27 @@ describe('the operating model\'s page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'New responsibility' }))
     expect(document.activeElement?.tagName).toBe('TEXTAREA')
     expect(screen.getByTestId('operating-folded').textContent).toContain('Press the + column')
-    // Named in the page's one reader, over the grid: closed, the grid is pressed again.
-    fireEvent.click(within(screen.getByRole('dialog', { name: 'Responsibility' })).getByRole('button', { name: 'Close' }))
+    // Named in the panel beside the grid, which stays live: the + column is pressed with the name still open.
+    expect(screen.getByRole('complementary', { name: 'Responsibility' })).toBeTruthy()
     fireEvent.click(screen.getByRole('columnheader', { name: /^\+/ }))
     expect(screen.getByTestId('operating-folded').textContent).not.toContain('Press the + column')
+  })
+
+  it('reads a new responsibility beside the grid, and once named hands the focus to its first letter, where A is set', async () => {
+    const sent = show(MODEL())
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    fireEvent.click(screen.getByRole('button', { name: 'New responsibility' }))
+    const name = document.activeElement as HTMLTextAreaElement
+    expect(within(screen.getByRole('complementary', { name: 'Responsibility' })).getByRole('textbox')).toBe(name)
+    fireEvent.change(name, { target: { value: 'Approve the budget' } })
+    fireEvent.keyDown(name, { key: 'Enter' })
+    await waitFor(() => expect(document.activeElement?.getAttribute('aria-label')).toMatch(/^Approve the budget, /))
+    fireEvent.keyDown(document.activeElement as Element, { key: 'a' })
+    expect(sent.at(-1)?.type).toBe('role.update')
+    // The panel is still up beside the grid; Escape puts it away, and the next one leaves the page.
+    expect(screen.getByRole('complementary', { name: 'Approve the budget' })).toBeTruthy()
+    fireEvent.keyDown(document.activeElement as Element, { key: 'Escape' })
+    expect(screen.queryByRole('complementary', { name: 'Approve the budget' })).toBeNull()
   })
 
   it('opens a role from its heading, keeping the column lit and the grid as it was', () => {
@@ -336,7 +353,7 @@ describe('the operating model\'s page', () => {
     expect(screen.queryByTestId('operating-remove')).toBeNull()
     expect(screen.queryByRole('button', { name: 'More' })).toBeNull()
     expect(screen.queryByTestId('operating-change-place')).toBeNull()
-    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Close' }))
+    fireEvent.click(within(screen.getByRole('complementary', { name: 'Depot' })).getByRole('button', { name: 'Close' }))
     fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
     expect(screen.queryByRole('button', { name: 'New responsibility' })).toBeNull()
     fireEvent.click(cell('Plan the routes', 'Planner'))

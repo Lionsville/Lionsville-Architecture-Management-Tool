@@ -17,12 +17,13 @@ import { Field, TextInput } from '../../widgets/kit/Field'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { setReportsTo, setSlot } from '../edit'
 import { LinesEditor } from './LinesEditor'
-import type { ReaderParts } from './ReaderParts'
+import { ReaderFoot, stackedFrame } from './ReaderParts'
+import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { howManyWords, lineWords, roleNamed, slotReading } from './reading'
 import { plural } from '../../i18n/strings'
 
-export function SlotReader({ type, slot, index, parts, onTakeOut }: {
-  type: UnitType; slot: RoleSlot; index: number; parts: ReaderParts; onTakeOut(): void
+export function SlotReader({ type, slot, index, parts, onTakeOut, frame = stackedFrame }: {
+  type: UnitType; slot: RoleSlot; index: number; parts: ReaderParts; onTakeOut(): void; frame?: ReaderFrame
 }) {
   const { t } = useStrings()
   const { model, readOnly } = parts
@@ -37,7 +38,19 @@ export function SlotReader({ type, slot, index, parts, onTakeOut }: {
     return why
   }
   const typeSays = linesSaid(slot.reportsTo).find((one) => one.kind === 'solid')
-  return (
+  const units = parts.facts?.unitsOfType(type.id).length
+  // How many it takes and how far the answer reaches: the facts beside the text.
+  const facts = (
+    <>
+      <div className="op-rowEnd">
+        <span>{t('operating.howMany', { many: howManyWords(slot, t) })}</span>
+        {!readOnly && <Button variant="quiet" size="small" data-testid="operating-change-many" aria-expanded={changing === 'many'} onClick={() => setChanging(changing === 'many' ? undefined : 'many')}>{t('operating.change')}</Button>}
+      </div>
+      {changing === 'many' && !readOnly && <HowMany type={type} slot={slot} index={index} name={name} parts={parts} />}
+      {units !== undefined && <p className="op-small">{plural(t, { one: 'operating.appliesToOne', other: 'operating.appliesTo' }, units)}</p>}
+    </>
+  )
+  const body = (
     <div data-testid="operating-slot-reader">
       <p className="op-question">{t('operating.whoManager')}</p>
       <p className="op-answer" data-testid="operating-slot-answer">
@@ -58,31 +71,27 @@ export function SlotReader({ type, slot, index, parts, onTakeOut }: {
       {changing === 'solid' && !readOnly && (
         <LinesEditor roleId={slot.role} name={name} kind="solid" said={linesSaid(slot.reportsTo)} inherited={linesSaid(role?.reportsTo)} roles={model.roles} onChange={write} testId="operating-slot-lines" />
       )}
-      <SlotRows type={type} slot={slot} index={index} name={name} parts={parts} changing={changing} onChanging={setChanging} write={write} />
-      {!readOnly && (
-        <div className="op-actions">
-          <Button variant="danger" size="small" aria-label={t('operating.slotRemove', { role: name })} onClick={onTakeOut}>{t('operating.takeOut')}</Button>
-        </div>
-      )}
+      <FunctionalLine slot={slot} name={name} parts={parts} changing={changing} onChanging={setChanging} write={write} />
       <ReportedBy slotRole={slot.role} parts={parts} />
     </div>
   )
+  // Taking it out of the type stands alone at the foot's far end, where no other press lands on it.
+  const away = !readOnly && <Button variant="danger" size="small" aria-label={t('operating.slotRemove', { role: name })} onClick={onTakeOut}>{t('operating.takeOut')}</Button>
+  return frame({ body, facts, foot: <ReaderFoot parts={parts} away={away} /> })
 }
 
-/** The rows under the answer: how far it reaches, the functional line, how many. */
-function SlotRows({ type, slot, index, name, parts, changing, onChanging, write }: {
-  type: UnitType; slot: RoleSlot; index: number; name: string; parts: ReaderParts
+/** The functional line under the answer, with its Change. */
+function FunctionalLine({ slot, name, parts, changing, onChanging, write }: {
+  slot: RoleSlot; name: string; parts: ReaderParts
   changing: LineKind | 'many' | undefined; onChanging(next: LineKind | 'many' | undefined): void
   write(next: Parameters<typeof setReportsTo>[2]): string | undefined
 }) {
   const { t } = useStrings()
-  const { model, readOnly, facts } = parts
+  const { model, readOnly } = parts
   const role = model.roles.find((one) => one.id === slot.role)
   const dotted = slotReading(slot, role, 'dotted')
-  const units = facts?.unitsOfType(type.id).length
   return (
     <>
-      {units !== undefined && <p className="op-small">{plural(t, { one: 'operating.appliesToOne', other: 'operating.appliesTo' }, units)}</p>}
       <div className="op-rowEnd">
         <span>{t('operating.functionalLine', { line: dotted.line?.role !== undefined ? roleNamed(model.roles, dotted.line.role) : t('operating.none') })}</span>
         {!readOnly && <Button variant="quiet" size="small" data-testid="operating-change-functional" aria-expanded={changing === 'dotted'} onClick={() => onChanging(changing === 'dotted' ? undefined : 'dotted')}>{t('operating.change')}</Button>}
@@ -90,11 +99,6 @@ function SlotRows({ type, slot, index, name, parts, changing, onChanging, write 
       {changing === 'dotted' && !readOnly && (
         <LinesEditor roleId={slot.role} name={name} kind="dotted" said={linesSaid(slot.reportsTo)} inherited={linesSaid(role?.reportsTo)} roles={model.roles} onChange={write} testId="operating-slot-lines" />
       )}
-      <div className="op-rowEnd">
-        <span>{t('operating.howMany', { many: howManyWords(slot, t) })}</span>
-        {!readOnly && <Button variant="quiet" size="small" data-testid="operating-change-many" aria-expanded={changing === 'many'} onClick={() => onChanging(changing === 'many' ? undefined : 'many')}>{t('operating.change')}</Button>}
-      </div>
-      {changing === 'many' && !readOnly && <HowMany type={type} slot={slot} index={index} name={name} parts={parts} />}
     </>
   )
 }

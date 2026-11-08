@@ -263,7 +263,7 @@ describe('what came in, on the Libraries tab', () => {
     // Pressing the term opens the item where it is edited.
     fireEvent.click(within(scrum).getByRole('button', { name: 'Scrum Team' }))
     expect(screen.getByRole('tab', { name: 'Structure', selected: true, hidden: true })).toBeTruthy()
-    expect(within(screen.getByRole('dialog', { name: 'Squad' })).getByTestId('operating-inspector')).toBeTruthy()
+    expect(within(screen.getByRole('complementary', { name: 'Squad' })).getByTestId('operating-inspector')).toBeTruthy()
   })
 
   it('says nothing of a type placed on the way in, and a move since against where it was put', async () => {

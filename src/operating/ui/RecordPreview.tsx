@@ -2,23 +2,30 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The one frame every record of the operating model is read and written in: a unit
- * type, a role, a responsibility, and a role inside a unit type. The large preview
- * over the page, as a list row opens one everywhere else: what it is and its name
- * on top, ‹ › to the next of its kind, ⋯ with the delete last in it as on a
- * board's panel, the facts, and the reader's own foot with the ways onward.
- * A unit type read in a side panel and a role in a full window, with their actions
- * in different places, made the same kind of act sit in four places on one page.
+ * The two frames a record of the operating model is read in, around one reader
+ * each (`ReaderFrame`): a unit type, a role, a responsibility, and a role inside a
+ * unit type.
+ *
+ * Where the record is opened from a list (Roles), it reads in the large preview
+ * over the page, as a list row opens one everywhere: what it is and its name on
+ * top, ‹ › to the next of its kind, ⋯ with the delete last in it, the text with
+ * the facts in their column beside it, and the foot in its bar.
+ *
+ * Where the page itself is the work (the structure's lanes, the RACI's grid), it
+ * reads in the panel beside it: the lanes light what was pressed, and a letter is
+ * set in the grid with the record still open. The preview's scrim hid both, and
+ * every new responsibility had to be put away before its A could be set.
  */
 import type { ReactNode } from 'react'
 import { useStrings } from '../../i18n'
+import type { Translate } from '../../i18n'
 import type { RoleId, UnitType } from '../../model/operatingModel'
-import { PanelName } from '../../widgets/kit/Panel'
+import { Panel, PanelName } from '../../widgets/kit/Panel'
 import { Preview } from '../../widgets/kit/Preview'
 import { editResponsibility, editRole, editUnitType } from '../edit'
 import type { OperatingItem } from '../edit'
-import { ReaderMore } from './ReaderParts'
-import type { ReaderParts } from './ReaderParts'
+import { ReaderMore, stackedFrame } from './ReaderParts'
+import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { ResponsibilityReader } from './ResponsibilityReader'
 import { RoleReader } from './RoleReader'
 import { SlotReader } from './SlotReader'
@@ -32,6 +39,8 @@ export type RecordPreviewProps = {
   parts: ReaderParts
   /** The item just made, whose name opens for typing. */
   naming?: { id: string; nonce: number } | undefined
+  /** Told when a name is kept: the grid takes the focus back for the new row's letters. */
+  onNamed?(id: string): void
   slotOpen?: RoleId | undefined
   onSlot?(role: RoleId | undefined): void
   slotAside?: ReactNode
@@ -42,46 +51,118 @@ export type RecordPreviewProps = {
   dataGuide?: string
 }
 
+const kindWord = (kind: OperatingItem['kind'], t: Translate) =>
+  ({ unitType: t('operating.unitType'), role: t('operating.role'), responsibility: t('operating.responsibility') })[kind]
+
+/** The large preview, over a list. */
 export function RecordPreview({ picked, ids, onSelect, parts, naming, slotOpen, onSlot, slotAside, removeSlotOf, part, dataGuide = 'operating.reader' }: RecordPreviewProps) {
   const { t } = useStrings()
-  const { readOnly, dispatch, model } = parts
-  const kindOf = { unitType: t('operating.unitType'), role: t('operating.role'), responsibility: t('operating.responsibility') }
+  if (!picked) return null
   const wordOf = { unitType: t('operating.unitTypesWord'), role: t('operating.rolesWord'), responsibility: t('operating.responsibilitiesWord') }
-  const walk = ids ?? (picked ? siblings(picked, parts) : [])
+  const walk = ids ?? siblings(picked, parts)
   const close = () => { onSlot?.(undefined); onSelect(undefined) }
-  const slotAt = picked?.kind === 'unitType' && slotOpen !== undefined ? picked.item.slots.findIndex((slot) => slot.role === slotOpen) : -1
-  if (picked?.kind === 'unitType' && slotAt >= 0) {
-    return <SlotPreview type={picked.item} at={slotAt} walk={walk} close={close} onSelect={onSelect} parts={parts} onSlot={onSlot} removeSlotOf={removeSlotOf} dataGuide={dataGuide} />
+  const slot = slotOf(picked, slotOpen, parts)
+  if (slot) {
+    const { type, at, name } = slot
+    // A role inside a type is not one of a list: no pager, and the way back to its type in the head.
+    return (
+      <SlotReader type={type} slot={type.slots[at]} index={at} parts={parts} onTakeOut={() => removeSlotOf?.(type, at)} frame={({ body, facts, foot }) => (
+        <Preview
+          ids={[]} currentId={type.id} onSelect={(id) => (id === null ? close() : onSelect(id))} kind={t('operating.roleIn', { type: type.name })} title={name} titleText={name}
+          dataGuide={dataGuide} facts={facts} foot={foot}
+          actions={<button type="button" className="kit-preview__link" onClick={() => onSlot?.(undefined)}>{t('operating.backToType', { type: type.name })}</button>}
+        >
+          {body}
+        </Preview>
+      )} />
+    )
   }
-  const rename = picked && { unitType: editUnitType, role: editRole, responsibility: editResponsibility }[picked.kind]
-  return (
+  const frame: ReaderFrame = ({ body, facts, foot }) => (
     <Preview
-      ids={walk} currentId={picked ? picked.item.id : null} onSelect={(id) => (id === null ? close() : onSelect(id))}
-      kind={picked ? kindOf[picked.kind] : undefined} titleText={picked?.item.name} listWord={picked ? wordOf[picked.kind] : undefined}
-      title={picked && (
-        <PanelName
-          unheaded name={picked.item.name}
-          {...(naming?.id === picked.item.id ? { renameRequest: naming.nonce, renameAtOnce: true } : {})}
-          {...(readOnly || !rename ? {} : { onRename: (name: string) => { dispatch(rename(picked.item.id, 'name', name)) } })}
-        />
-      )}
-      dataGuide={dataGuide}
-      actions={<ReaderMore item={picked} parts={parts} />}
+      ids={walk} currentId={picked.item.id} onSelect={(id) => (id === null ? close() : onSelect(id))}
+      kind={kindWord(picked.kind, t)} titleText={picked.item.name} listWord={wordOf[picked.kind]}
+      title={<RecordName picked={picked} parts={parts} naming={naming} />}
+      dataGuide={dataGuide} actions={<ReaderMore item={picked} parts={parts} />} facts={facts} foot={foot}
     >
-      {picked && (
-        <div data-testid="operating-inspector">
-          {picked.kind === 'unitType' && <UnitTypeReader type={picked.item} parts={parts} onOpenSlot={(role) => onSlot?.(role)} slotAside={slotAside} />}
-          {picked.kind === 'role' && (
-            <RoleReader
-              role={picked.item} parts={parts} partName={part}
-              partDuties={part === undefined ? undefined : model.responsibilities.filter((one) => (one.group?.trim() ?? '') === part).map((one) => one.id)}
-            />
-          )}
-          {picked.kind === 'responsibility' && <ResponsibilityReader responsibility={picked.item} parts={parts} />}
-        </div>
-      )}
+      <div data-testid="operating-inspector">{body}</div>
     </Preview>
   )
+  return <ReaderOf picked={picked} parts={parts} part={part} onSlot={onSlot} slotAside={slotAside} frame={frame} />
+}
+
+/** The panel, beside the structure or the grid. */
+export function RecordPanel({ picked, onSelect, parts, naming, onNamed, slotOpen, onSlot, slotAside, removeSlotOf, part, width, dataGuide = 'operating.reader' }: RecordPreviewProps & { width: number }) {
+  const { t } = useStrings()
+  if (!picked) return null
+  const slot = slotOf(picked, slotOpen, parts)
+  if (slot) {
+    const { type, at, name } = slot
+    return (
+      <SlotReader type={type} slot={type.slots[at]} index={at} parts={parts} onTakeOut={() => removeSlotOf?.(type, at)} frame={(layout) => (
+        <Panel
+          kind={t('operating.roleIn', { type: type.name })} name={name} onClose={() => onSlot?.(undefined)} width={width} dataGuide={dataGuide}
+          actions={<button type="button" className="op-link op-small" onClick={() => onSlot?.(undefined)}>{t('operating.backToType', { type: type.name })}</button>}
+        >
+          {stackedFrame(layout)}
+        </Panel>
+      )} />
+    )
+  }
+  const rename = renameOf(picked, parts)
+  const frame: ReaderFrame = (layout) => (
+    <Panel
+      kind={kindWord(picked.kind, t)} name={picked.item.name} onClose={() => onSelect(undefined)} width={width} dataGuide={dataGuide}
+      actions={<ReaderMore item={picked} parts={parts} />}
+      {...(naming?.id === picked.item.id ? { renameRequest: naming.nonce, renameAtOnce: true } : {})}
+      {...(rename ? { onRename: (name: string) => { rename(name); onNamed?.(picked.item.id) } } : {})}
+    >
+      <div data-testid="operating-inspector">{stackedFrame(layout)}</div>
+    </Panel>
+  )
+  return <ReaderOf picked={picked} parts={parts} part={part} onSlot={onSlot} slotAside={slotAside} frame={frame} />
+}
+
+/** The reader the picked record's kind is read with, in the frame it is handed. */
+function ReaderOf({ picked, parts, part, onSlot, slotAside, frame }: {
+  picked: OperatingItem; parts: ReaderParts; part: string | undefined
+  onSlot: ((role: RoleId | undefined) => void) | undefined; slotAside: ReactNode; frame: ReaderFrame
+}) {
+  if (picked.kind === 'unitType') return <UnitTypeReader type={picked.item} parts={parts} onOpenSlot={(role) => onSlot?.(role)} slotAside={slotAside} frame={frame} />
+  if (picked.kind === 'role') {
+    return (
+      <RoleReader
+        role={picked.item} parts={parts} partName={part} frame={frame}
+        partDuties={part === undefined ? undefined : parts.model.responsibilities.filter((one) => (one.group?.trim() ?? '') === part).map((one) => one.id)}
+      />
+    )
+  }
+  return <ResponsibilityReader responsibility={picked.item} parts={parts} frame={frame} />
+}
+
+/** The name in the preview's title: pressed to rename where it may be, open for typing where it was just made. */
+function RecordName({ picked, parts, naming }: { picked: OperatingItem; parts: ReaderParts; naming: RecordPreviewProps['naming'] }) {
+  const rename = renameOf(picked, parts)
+  return (
+    <PanelName
+      unheaded name={picked.item.name}
+      {...(naming?.id === picked.item.id ? { renameRequest: naming.nonce, renameAtOnce: true } : {})}
+      {...(rename ? { onRename: (name: string) => { rename(name) } } : {})}
+    />
+  )
+}
+
+function renameOf(picked: OperatingItem, parts: ReaderParts): ((name: string) => void) | undefined {
+  if (parts.readOnly) return undefined
+  const edit = { unitType: editUnitType, role: editRole, responsibility: editResponsibility }[picked.kind]
+  return (name) => parts.dispatch(edit(picked.item.id, 'name', name))
+}
+
+/** The role inside a unit type that is open, where one is. */
+function slotOf(picked: OperatingItem, slotOpen: RoleId | undefined, parts: ReaderParts) {
+  if (picked.kind !== 'unitType' || slotOpen === undefined) return undefined
+  const at = picked.item.slots.findIndex((slot) => slot.role === slotOpen)
+  if (at < 0) return undefined
+  return { type: picked.item, at, name: parts.model.roles.find((role) => role.id === slotOpen)?.name ?? slotOpen }
 }
 
 /** The records of one kind, in the model's order, for ‹ › where the page hands no order of its own. */
@@ -89,23 +170,4 @@ function siblings(picked: OperatingItem, parts: ReaderParts): string[] {
   const { model } = parts
   const all = picked.kind === 'unitType' ? model.unitTypes : picked.kind === 'role' ? model.roles : model.responsibilities
   return all.map((one) => one.id)
-}
-
-/** A role inside a unit type, read in the same frame, with the way back to its type. */
-function SlotPreview({ type, at, walk, close, onSelect, parts, onSlot, removeSlotOf, dataGuide }: {
-  type: UnitType; at: number; walk: readonly string[]; close(): void; onSelect(id: string | undefined): void; parts: ReaderParts
-  onSlot?: ((role: RoleId | undefined) => void) | undefined; removeSlotOf?: ((type: UnitType, index: number) => void) | undefined; dataGuide: string
-}) {
-  const { t } = useStrings()
-  const slot = type.slots[at]
-  const name = parts.model.roles.find((role) => role.id === slot.role)?.name ?? slot.role
-  return (
-    <Preview
-      ids={walk} currentId={type.id} onSelect={(id) => (id === null ? close() : onSelect(id))} kind={t('operating.roleIn', { type: type.name })} title={name} titleText={name}
-      dataGuide={dataGuide} listWord={t('operating.unitTypesWord')}
-      actions={<button type="button" className="kit-preview__link" onClick={() => onSlot?.(undefined)}>{t('operating.backToType', { type: type.name })}</button>}
-    >
-      <SlotReader type={type} slot={slot} index={at} parts={parts} onTakeOut={() => removeSlotOf?.(type, at)} />
-    </Preview>
-  )
 }

@@ -6,7 +6,7 @@
  * wrote, the tick, the fold, and a role's or a type's days.
  */
 import { useState } from 'react'
-import type { ComponentProps, ReactNode } from 'react'
+import type { ComponentProps, ReactElement, ReactNode } from 'react'
 import type { Command } from '../../model/commands'
 import type { BasedOn, Role, UnitType } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
@@ -47,6 +47,24 @@ export type ReaderParts = {
 }
 
 export type { LineChange }
+
+/**
+ * A reader in its three parts, which the frame it is read in places: the large
+ * preview puts the facts in its column beside the text and the foot in its bar,
+ * the panel beside the structure or the grid stacks them. One reader, so a record
+ * reads the same wherever it is opened.
+ */
+export type ReaderLayout = { readonly body: ReactNode; readonly facts?: ReactNode; readonly foot?: ReactNode }
+export type ReaderFrame = (layout: ReaderLayout) => ReactElement
+
+/** The panel's way, and a reader's on its own: the facts first, then the text, then the foot. */
+export const stackedFrame: ReaderFrame = ({ body, facts, foot }) => (
+  <>
+    {facts && <div className="op-facts">{facts}</div>}
+    {body}
+    {foot}
+  </>
+)
 
 /** Words a person wrote: read as text, written in the one editor. Nothing is a form until it is pressed. */
 export function Prose({ label, value, onChange, readOnly, render, testId }: {
@@ -174,15 +192,12 @@ export function ReaderMore({ item, parts }: { item: OperatingItem | undefined; p
   )
 }
 
-/** The end of every reader: the host's aside, then the foot with its history. */
-export function ReaderFoot({ parts }: { parts: ReaderParts }) {
+/** The end of every reader: its history at the start, and what takes it away, where it has a word of its own, at the far end. */
+export function ReaderFoot({ parts, away }: { parts: ReaderParts; away?: ReactNode }) {
   const { t } = useStrings()
   return (
-    <>
-      {parts.aside}
-      <ReaderActions>
-        {parts.onOpenHistory && <button type="button" className="op-link" data-testid="operating-history" onClick={parts.onOpenHistory}>{t('operating.history')}</button>}
-      </ReaderActions>
-    </>
+    <ReaderActions away={away}>
+      {parts.onOpenHistory && <button type="button" className="op-link" data-testid="operating-history" onClick={parts.onOpenHistory}>{t('operating.history')}</button>}
+    </ReaderActions>
   )
 }

@@ -16,14 +16,15 @@ import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { MenuButton } from '../../widgets/kit/Menu'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { addSlot, editUnitType, moveUnitType, setFlag, setLimit, setWithin } from '../edit'
-import { Fold, OverTime, Prose, ReaderFoot, SourceWord, Tick } from './ReaderParts'
-import type { ReaderParts } from './ReaderParts'
+import { Fold, OverTime, Prose, ReaderFoot, SourceWord, stackedFrame, Tick } from './ReaderParts'
+import type { ReaderFrame, ReaderParts } from './ReaderParts'
 import { howManyWords, lineWords, slotReading } from './reading'
 
-export function UnitTypeReader({ type, parts, onOpenSlot, slotAside }: {
+export function UnitTypeReader({ type, parts, onOpenSlot, slotAside, frame = stackedFrame }: {
   type: UnitType; parts: ReaderParts; onOpenSlot(role: RoleId): void
   /** What the host says while a role somebody holds is being taken out. */
   slotAside: ReactNode
+  frame?: ReaderFrame
 }) {
   const { t } = useStrings()
   const { model, readOnly, dispatch, facts } = parts
@@ -35,10 +36,9 @@ export function UnitTypeReader({ type, parts, onOpenSlot, slotAside }: {
   const holds = [...lanes.flatMap((one) => one.types), ...nowhere].filter((one) => one.within.includes(type.id))
   const free = model.roles.filter((role) => !type.slots.some((slot) => slot.role === role.id))
   const count = facts?.unitsOfType(type.id).length
-  return (
+  // Where it sits, what it may hold, its units and where it came from: the facts beside the text.
+  const said = (
     <>
-      <Prose label={t('operating.purpose')} value={type.purpose ?? ''} readOnly={readOnly} render={parts.renderMarkdown}
-        onChange={(next) => dispatch(editUnitType(type.id, 'purpose', next))} testId="operating-purpose" />
       <PanelSection title={t('operating.sitsInTitle')}>
         <div className="op-rowEnd">
           <span data-testid="operating-sits">{sits.length ? sits.join(', ') : t('operating.nowhere')}</span>
@@ -52,6 +52,16 @@ export function UnitTypeReader({ type, parts, onOpenSlot, slotAside }: {
         )}
         <div className="op-small">{t('operating.mayHoldLine', { names: holds.length ? holds.map((one) => one.name).join(', ') : t('operating.holdsNothing') })}</div>
       </PanelSection>
+      {count !== undefined && parts.onOpenChart && (
+        <button type="button" className="op-link" data-testid="operating-units-link" onClick={parts.onOpenChart}>{t(count === 1 ? 'operating.onChartOne' : 'operating.onChartOther', { count })}</button>
+      )}
+      <SourceWord basedOn={type.basedOn} />
+    </>
+  )
+  const body = (
+    <>
+      <Prose label={t('operating.purpose')} value={type.purpose ?? ''} readOnly={readOnly} render={parts.renderMarkdown}
+        onChange={(next) => dispatch(editUnitType(type.id, 'purpose', next))} testId="operating-purpose" />
       <PanelSection title={t('operating.slots')}>
         <div className="op-lines">
           {type.slots.map((slot) => {
@@ -74,12 +84,6 @@ export function UnitTypeReader({ type, parts, onOpenSlot, slotAside }: {
           </div>
         )}
       </PanelSection>
-      <div className="op-rowEnd">
-        {count !== undefined && parts.onOpenChart
-          ? <button type="button" className="op-link" data-testid="operating-units-link" onClick={parts.onOpenChart}>{t(count === 1 ? 'operating.onChartOne' : 'operating.onChartOther', { count })}</button>
-          : <span />}
-        <SourceWord basedOn={type.basedOn} />
-      </div>
       <Fold label={t('operating.moreType')} testId="operating-more">
         <Tick checked={type.spans === true} disabled={readOnly} onChange={(on) => dispatch(setFlag('unitType', type.id, 'spans', on))}>{t('operating.spans')}</Tick>
         <PropertyRows readOnly={readOnly}>
@@ -93,9 +97,10 @@ export function UnitTypeReader({ type, parts, onOpenSlot, slotAside }: {
         <TypeOrder type={type} lane={laneOf.get(type.id)} siblings={laneOf.get(type.id) === undefined ? [] : lanes[(laneOf.get(type.id) as number) - 1].types} parts={parts} />
         <OverTime kind="unitType" item={type} others={model.unitTypes} readOnly={readOnly} dispatch={dispatch} />
       </Fold>
-      <ReaderFoot parts={parts} />
+      {parts.aside}
     </>
   )
+  return frame({ body, facts: said, foot: <ReaderFoot parts={parts} /> })
 }
 
 function TypeOrder({ type, lane, siblings, parts }: { type: UnitType; lane: number | undefined; siblings: readonly UnitType[]; parts: ReaderParts }) {
