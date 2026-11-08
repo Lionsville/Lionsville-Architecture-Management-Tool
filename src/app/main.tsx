@@ -376,6 +376,14 @@ function waysIn(): readonly SourceWayIn[] {
 let enteredFrom: { readonly shell: typeof shell; readonly sourced: boolean } | undefined
 let visiting: { readonly offer: ExampleOffer; readonly asking?: true } | undefined
 
+/** The address's query without the example in it, `?` included where anything is left. */
+function withoutExample(): string {
+  const search = new URLSearchParams(window.location.search)
+  search.delete('example')
+  const query = search.toString()
+  return query ? `?${query}` : ''
+}
+
 function addressVisiting(key: string | undefined): void {
   const search = new URLSearchParams(window.location.search)
   if (key === undefined) search.delete('example')
@@ -403,16 +411,41 @@ function visitExample(offer: ExampleOffer): void {
   })
 }
 
-function leaveExample(notice?: 'example.kept' | 'example.keptUnder'): void {
+function leaveExample(notice?: 'example.kept' | 'example.keptUnder', where: 'home' | 'here' = 'home'): void {
   if (!enteredFrom) return
   shell = enteredFrom.shell
   sourced = enteredFrom.sourced
   enteredFrom = undefined
   visiting = undefined
-  addressVisiting(undefined)
-  window.location.hash = '#/-/home'
+  // Out to a new entry, leaving the visit's own as they were, `?example=` and all: Back to one of them is back in the example.
+  if (where === 'home') window.history.pushState(null, '', `${window.location.pathname}${withoutExample()}#/-/home`)
   renderApp(stored, notice ? { initialProject: undefined, notice } : undefined)
 }
+
+/**
+ * Back and Forward across the edge of a visit. Every place in the example is
+ * addressed with `?example=`, and a place the window returns to is where its
+ * address says, as a reload of it would be: into the example again from what
+ * was left for it, and out of it to an address that does not name it — never a
+ * place of the visit over the organisation it was left back to.
+ */
+window.addEventListener('popstate', () => {
+  const key = new URLSearchParams(window.location.search).get('example')
+  if (key === null) {
+    if (visiting) leaveExample(undefined, 'here')
+    return
+  }
+  const offer = EXAMPLE_OFFERS.find((held) => held.key === key)
+  if (visiting || !offer) return
+  void enterExample(offer).then(async (entered) => {
+    if (!entered) return
+    const place = readPlace(window.location.hash)
+    renderApp(stored, place ? await landingAtPlace(place) : undefined)
+  }).catch((cause: unknown) => {
+    shell.diagnostics.report({ level: 'error', where: 'source', message: 'the example was not opened again', cause })
+    renderApp(stored, undefined, { cause })
+  })
+})
 
 function keptNot(cause: unknown): void {
   shell.diagnostics.report({ level: 'error', where: 'source', message: 'the example was not kept', cause })
