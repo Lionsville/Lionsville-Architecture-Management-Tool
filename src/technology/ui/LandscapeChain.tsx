@@ -105,8 +105,13 @@ export type ChainProps = {
   onDragStart: ((id: ElementId) => void) | undefined
   onDragOverRow(key: NodeKey | undefined): void
   onDropRow(key: NodeKey): void
-  /** An application is being dragged: the lines of what was picked before recede while it is. */
+  /** The drag ended, dropped anywhere or nowhere: nothing stays marked. */
+  onDragEnd?(): void
+  /** An application is being dragged: the lines of what was picked before recede while it is, and its row is marked. */
   dragging?: boolean
+  draggedId?: ElementId
+  /** What a drop on the target row would say, said beside that row while the drag is over it. */
+  dropWord?: string
   groupLabel(key: string, label: string | undefined): string
 }
 
@@ -127,12 +132,15 @@ export function LandscapeChain(props: ChainProps) {
     if (showing.touched?.has(key)) words.push('strong')
     else if ((showing.selected !== undefined && showing.touched) || props.quiet(key)) words.push('dim')
     if (props.dropTarget === key) words.push('target')
+    if (props.draggedId !== undefined && key === nodeKey.application(props.draggedId)) words.push('dragged')
     return words.filter(Boolean).join(' ') || undefined
-  }, [showing.touched, showing.selected, props.quiet, props.dropTarget])
+  }, [showing.touched, showing.selected, props.quiet, props.dropTarget, props.draggedId])
   const hides = useCallback((key: NodeKey) => showing.onlyTouched && showing.selected !== undefined && !showing.touched?.has(key), [showing.onlyTouched, showing.selected, showing.touched])
 
-  const row = (key: NodeKey, text: string, note: string | undefined, depth: number, state: string | undefined): ListRow => {
+  const row = (key: NodeKey, text: string, said: string | undefined, depth: number, state: string | undefined): ListRow => {
     const mark = props.markOf(key)
+    // The drop's sentence stands beside the row it would land on, where the eye is, in place of the row's own note.
+    const note = props.dropWord !== undefined && props.dropTarget === key ? props.dropWord : said
     return {
       id: key, text,
       ...(note ? { note } : {}),
@@ -195,6 +203,7 @@ export function LandscapeChain(props: ChainProps) {
       onDoubleClick={onDouble}
       onDragOver={props.onDragStart ? (event) => { const key = targetOf(event); if (key) event.preventDefault(); props.onDragOverRow(key) } : undefined}
       onDrop={props.onDragStart ? (event) => { const key = targetOf(event); if (key) { event.preventDefault(); props.onDropRow(key) } } : undefined}
+      onDragEnd={props.onDragEnd}
     >
       <svg className="tl-lines" data-testid="landscape-lines" aria-hidden="true">
         {paths.map((one) => (

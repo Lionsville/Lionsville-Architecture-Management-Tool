@@ -333,10 +333,20 @@ describe('dragging an application', () => {
     const onSetUse = vi.fn()
     open({ onSetUse, onSetHost: vi.fn() })
     fireEvent.dragStart(rowOf('Customer portal'), { dataTransfer })
+    // The row in hand is marked, and the sentence stands beside the row it would land on.
+    expect(rowOf('Customer portal').getAttribute('data-state')).toContain('dragged')
     fireEvent.dragOver(rowOf('Message brokering'), { dataTransfer })
+    expect(rowOf('Message brokering').textContent).toContain('Customer portal will use Message brokering')
     expect(screen.getByTestId('landscape-verb').textContent).toBe('Customer portal will use Message brokering')
     fireEvent.drop(rowOf('Message brokering'), { dataTransfer })
     expect(onSetUse).toHaveBeenCalledWith('portal', 'brokering', true)
+    expect(rowOf('Customer portal').getAttribute('data-state') ?? '').not.toContain('dragged')
+  })
+  it('lets the mark go when the drag ends on nothing', () => {
+    open({ onSetUse: vi.fn(), onSetHost: vi.fn() })
+    fireEvent.dragStart(rowOf('Customer portal'), { dataTransfer })
+    fireEvent.dragEnd(rowOf('Customer portal'), { dataTransfer })
+    expect(rowOf('Customer portal').getAttribute('data-state') ?? '').not.toContain('dragged')
   })
   it('tells rather than writes what is already said', () => {
     const notify = vi.fn()

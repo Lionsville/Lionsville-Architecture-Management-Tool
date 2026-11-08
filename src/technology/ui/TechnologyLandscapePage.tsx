@@ -421,7 +421,8 @@ function LandscapeFoot({ dropWord, lens, colouring, onKeep, onLensOff, chain }: 
   if (!dropWord && !lens && !chain) return null
   return (
     <div className="tl-foot">
-      {dropWord && <div className="tl-verb" role="status" data-testid="landscape-verb">{dropWord}</div>}
+      {/* Said beside the row it would land on; here only for a screen reader, which is told as it changes. */}
+      {dropWord && <div className="tl-verb kit-hidden" role="status" data-testid="landscape-verb">{dropWord}</div>}
       {lens && <KeyStrip values={colouring.values} pressed={colouring.pressed} onPress={colouring.setPressed} {...(onKeep ? { onKeep } : {})} onClose={{ label: t('landscape.lensOff'), press: onLensOff }} />}
       {chain && (
         <div className="tl-legend" data-testid="landscape-legend">
@@ -581,10 +582,12 @@ export function TechnologyLandscapePage(props: TechnologyLandscapePageProps) {
                 {chain ? (
                   <LandscapeChain
                     showing={showing} landscape={shown} markOf={markOf} quiet={colouring.quiet} dropTarget={gestures.dropTarget} dragging={gestures.dragging !== undefined} groupLabel={groupLabel}
+                    {...(gestures.dragging !== undefined ? { draggedId: gestures.dragging } : {})} {...(gestures.dropWord !== undefined ? { dropWord: gestures.dropWord } : {})}
                     noteOfApplication={notes.application} noteOfService={notes.service} noteOfPlatform={notes.platform}
                     onPress={gestures.press} onOpen={open}
                     onAdd={add ? (kind, parentId, at) => setAdding({ kind, ...(parentId !== undefined ? { parentId } : {}), at: at ?? { x: 400, y: 200 } }) : undefined}
                     onDragStart={writes ? (id) => { gestures.setDragging(id); setTicking(undefined) } : undefined}
+                    onDragEnd={() => { gestures.setDragging(undefined); gestures.setDropTarget(undefined) }}
                     onDragOverRow={gestures.setDropTarget} onDropRow={gestures.drop}
                   />
                 ) : (
