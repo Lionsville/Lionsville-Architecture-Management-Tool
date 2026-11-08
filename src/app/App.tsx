@@ -46,6 +46,7 @@ import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly, sourceKey } from '../platform/workingSource'
+import { recentFrom, RECENT_KEY, renamedIn } from './frame/recentPlaces'
 import type { WorkingSource } from '../platform/workingSource'
 import { textFromBytes } from '../projects/text'
 import { usePeopleRegister } from './organisation/usePeopleRegister'
@@ -94,7 +95,7 @@ import { FIRST_RUN_HELP } from '../platform/helpPlaces'
 import { useShareLink } from './useShareLink'
 import { useGuardedNavigation, useShellNavigation } from './useShellNavigation'
 import { useOpeningFailures, useProjectOrder, useSavedFilters, useShellServices } from './useShellServices'
-import { watchRepositories, writeRefusals, WriteRefusalsContext } from './writeRefusals'
+import { watchRepositories, writeRefusals, WriteRefusalsContext, writesUnderway } from './writeRefusals'
 import type { WriteRefusals } from './writeRefusals'
 import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
@@ -493,11 +494,12 @@ function readingOf(page: InitialPage | undefined): { tab?: string; tabOf?: Page 
 }
 
 export function App(given: AppProps) {
-  const { props, refusals, landed } = useWatchedWrites(given)
+  const { props, refusals, landed, letGo } = useWatchedWrites(given)
   const parts = useShellParts(props, refusals)
   // A refused write that lands when tried again is read back as any write is: the tree, its index, the people.
   // And the notice's latch lets go, so a refusal after it is said again rather than swallowed.
   landed.current = () => { parts.writes.treeChanged(); parts.people.refresh(); parts.services.reportKept(true) }
+  letGo.current = () => { parts.services.reportKept('letGo') }
   // A refusal's toast points at *Your work*, which is the frame's: it can open it now.
   parts.services.openWork.current = () => parts.agent.setPanel('work')
   const { prefs, s, toasts } = parts.services
@@ -557,7 +559,7 @@ export function App(given: AppProps) {
         <AppNotices parts={parts} />
         <AppDialogs parts={parts} />
         <DraftQuestion />
-        <ClosingSaving on={parts.commands.bus.on} leave={props.host?.onLeaveAnyway} />
+        <ClosingSaving on={parts.commands.bus.on} leave={props.host?.onLeaveAnyway} keep={props.host?.onKeepWriting} send={refusals.sendUnsent} />
         <ToastBar
           toast={toasts.toast}
           open={toasts.open}
@@ -593,10 +595,11 @@ export function App(given: AppProps) {
  */
 function useWatchedWrites(given: AppProps) {
   const landed = useRef<() => void>(() => {})
-  const [refusals] = useState(() => writeRefusals(() => landed.current()))
+  const letGo = useRef<() => void>(() => {})
+  const [refusals] = useState(() => writeRefusals(() => landed.current(), () => letGo.current()))
   const repositories = useMemo(() => watchRepositories(given.repositories, refusals), [given.repositories, refusals])
   const props = useMemo(() => ({ ...given, repositories }), [given, repositories])
-  return { props, refusals, landed }
+  return { props, refusals, landed, letGo }
 }
 
 function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
@@ -821,7 +824,7 @@ function useShellBase(props: AppProps) {
       ...(props.boot.initialFacets ? { facets: props.boot.initialFacets } : {}),
     })
   })
-  const host = useHostWithOwnWork(given, frame)
+  const host = useHostWithOwnWork(given, frame, writesUnderway(repositories.scopes))
   // Read once per render rather than per card: a finding re-derived because a
   // millisecond passed is a model walked again for nothing.
   const todayDay = useMemo(() => today(), [today])
@@ -899,6 +902,11 @@ function useShellBase(props: AppProps) {
     // A source holding this home says so itself, on the place: a toast over it would be a second, shorter copy.
     onFailure: (where, cause, key) => { if (!props.provider?.frame?.holding?.()) failed(where, cause, key) },
     onKeptResult: reportKept,
+    onViewRenamed: (path, id, name) => {
+      const by = sourceKey(source)
+      const stored = prefs.readPreferences()[RECENT_KEY] as Record<string, unknown> | undefined
+      prefs.writePreference({ [RECENT_KEY]: { ...stored, [by]: renamedIn(recentFrom(stored, by), path, id, name) } })
+    },
     writable,
     s,
   })

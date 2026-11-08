@@ -54,6 +54,7 @@ import type { ScopePath } from '../projects/scopePath'
 import type { ScopeCommand } from '../projects/scopeState'
 import { stepFor } from './useChangeBelow'
 import type { BelowScopes } from './useChangeBelow'
+import { holdWrite } from './writeRefusals'
 
 /** The open scope, as a change across reads and writes it: through the session over it. */
 export type AcrossSession = {
@@ -166,10 +167,10 @@ export async function landAcross(deps: AcrossDeps, paths: readonly ScopePath[], 
       await deps.scopes.settle?.(deps.scope)
       before = deps.session.indexed()
     }
-    const landed = await changeScopes(deps.scopes, others, (held) => {
+    const landed = await holdWrite(deps.scopes, changeScopes(deps.scopes, others, (held) => {
       worked = workOut(deps, paths, held, change)
       return 'stop' in worked ? undefined : worked.steps
-    })
+    }))
     if (!landed) return { ok: false, reason: 'gone' }
   } catch (error) {
     const refused = refusedAcross(error)

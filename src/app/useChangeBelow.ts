@@ -37,6 +37,7 @@ import type { ScopeRepository } from '../ports/ScopeRepository'
 import { changeScope } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopePath } from '../projects/scopePath'
+import { holdWrite } from './writeRefusals'
 
 /** As much of a scope repository as a change below takes: read a scope, and apply a step to it. */
 export type BelowScopes = ScopeReader & Pick<ScopeRepository, 'apply' | 'settle'>
@@ -77,7 +78,7 @@ export async function landBelow(
   let made = false
   let found = false
   try {
-    await changeScope(scopes, path, (held) => {
+    await holdWrite(scopes, changeScope(scopes, path, (held) => {
       found = true
       const model = fromArrays(held.model)
       const next = change({
@@ -87,7 +88,7 @@ export async function landBelow(
       const step = next && stepFor(model, next)
       made = step !== undefined
       return step ? [step] : undefined
-    })
+    }))
   } catch (error) {
     const refused = refusalOf(error)
     if (refused) return refused

@@ -67,6 +67,11 @@ export function remembered(list: readonly RecentPlace[], place: RecentPlace): Re
   return [place, ...list.filter((one) => !same(one, place))].slice(0, KEPT)
 }
 
+/** A view renamed where a place on the list is that view: the list says what it is called now. */
+export function renamedIn(list: readonly RecentPlace[], scope: string, id: string, name: string): RecentPlace[] {
+  return list.map((one) => (one.scope === scope && one.id === id && one.name !== undefined && one.name !== name ? { ...one, name } : one))
+}
+
 /** What a preference holds, read as a stored value is: whatever is not a place is passed over. */
 export function recentFrom(stored: unknown, key: string): RecentPlace[] {
   const held = (stored as Record<string, unknown> | undefined)?.[key]

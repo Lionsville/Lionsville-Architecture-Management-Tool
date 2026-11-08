@@ -19,7 +19,7 @@ import { useKeepNotice } from './useKeepNotice'
 function mount(sourceFailure?: (cause: unknown) => string | undefined) {
   const notify = vi.fn()
   const { result } = renderHook(() => useKeepNotice(notify, translator('en'), sourceFailure))
-  return { notify, report: (ok: boolean, cause?: unknown) => result.current(ok, cause) }
+  return { notify, report: (ok: boolean | 'letGo', cause?: unknown) => result.current(ok, cause) }
 }
 
 describe('useKeepNotice', () => {
@@ -44,6 +44,16 @@ describe('useKeepNotice', () => {
     report(true)
     expect(notify).toHaveBeenCalledTimes(2)
     expect(notify).toHaveBeenLastCalledWith('Saving works again.', 'success')
+  })
+
+  it('says the next refusal after everything was put back, and says nothing of the putting back', () => {
+    const { notify, report } = mount()
+    report(false)
+    report('letGo')
+    expect(notify).toHaveBeenCalledOnce()
+    report(false)
+    expect(notify).toHaveBeenCalledTimes(2)
+    expect(notify).toHaveBeenLastCalledWith(expect.stringContaining('not saved'), 'error')
   })
 
   it('can report a second outage after a recovery', () => {

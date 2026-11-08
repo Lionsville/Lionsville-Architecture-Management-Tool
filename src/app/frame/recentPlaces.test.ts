@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Screen } from '../../agent/screen'
-import { recentFrom, recentOf, remembered, stillThere } from './recentPlaces'
+import { recentFrom, recentOf, remembered, renamedIn, stillThere } from './recentPlaces'
 import type { RecentPlace } from './recentPlaces'
 
 const AT = '2026-11-07T10:00:00.000Z'
@@ -24,6 +24,13 @@ describe('recentOf', () => {
 })
 
 describe('the list', () => {
+  it('says a view renamed by its new name, and leaves every other place as it was', () => {
+    const list = [place('s', 'v1'), place('t', 'v1'), { scope: 's', page: 'decisions', in: 's', at: AT } as RecentPlace]
+    const renamed = renamedIn(list, 's', 'v1', 'Linehaul')
+    expect(renamed.map((one) => one.name)).toEqual(['Linehaul', 'v1', undefined])
+    expect(renamed[1]).toBe(list[1])
+  })
+
   it('moves a place up rather than listing it twice, and stops at twelve', () => {
     const list = Array.from({ length: 12 }, (_, at) => place('s', `v${at}`))
     const again = remembered(list, place('s', 'v3'))

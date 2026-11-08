@@ -12,7 +12,7 @@ import type { Repositories } from '../ports/Repositories'
 import { changeScope, ensureScope, readScope } from '../projects/scopeAccess'
 import { refusalOf } from '../projects/refusalTag'
 import { SCOPE_MOVED } from '../projects/revision'
-import { unwatched, watchRepositories, writeRefusals } from './writeRefusals'
+import { holdWrite, unwatched, watchRepositories, whenLanded, writeRefusals, writesUnderway } from './writeRefusals'
 
 /** Memory repositories whose writes refuse while `refusing.now` says so: a folder made read-only and writable again. */
 function refusingWhile(refusing: { now: boolean }): Repositories {
@@ -145,7 +145,8 @@ describe('watchRepositories', () => {
 
   it('puts back one refusal, or every one, and tells whoever listens', async () => {
     const refusing = { now: true }
-    const store = writeRefusals()
+    const letGo = vi.fn()
+    const store = writeRefusals(undefined, letGo)
     const heard = vi.fn()
     store.subscribe(heard)
     const repositories = watchRepositories(refusingWhile(refusing), store)
@@ -153,9 +154,78 @@ describe('watchRepositories', () => {
     await repositories.people.add({ name: 'Bo' }).catch(() => undefined)
     store.forget(store.list()[0]!.id)
     expect(store.list()).toHaveLength(1)
+    expect(letGo).not.toHaveBeenCalled()
     store.forget()
     expect(store.list()).toHaveLength(0)
     expect(heard).toHaveBeenCalledTimes(4)
+    // Once nothing stands, said once, so the next refusal is said again.
+    expect(letGo).toHaveBeenCalledOnce()
+    store.forget()
+    expect(letGo).toHaveBeenCalledOnce()
+  })
+
+  it('does what the maker asked once a refused write lands when made again, and nothing for one put back', async () => {
+    const refusing = { now: true }
+    const store = writeRefusals()
+    const repositories = watchRepositories(refusingWhile(refusing), store)
+    const ada = await repositories.people.add({ name: 'Ada' }).catch((cause: unknown) => cause)
+    const bo = await repositories.people.add({ name: 'Bo' }).catch((cause: unknown) => cause)
+    const landed = vi.fn()
+    const putBack = vi.fn()
+    whenLanded(repositories.people, refusalOf(ada), landed)
+    whenLanded(repositories.people, refusalOf(bo), putBack)
+    store.forget(refusalOf(bo))
+    refusing.now = false
+    expect(await store.retry()).toBe(true)
+    expect(landed).toHaveBeenCalledOnce()
+    expect(putBack).not.toHaveBeenCalled()
+  })
+
+  it('counts every write outside the open session from its call until it settles, landed or refused', async () => {
+    const refusing = { now: false }
+    const store = writeRefusals()
+    const counts: number[] = []
+    store.watchUnderway(() => counts.push(store.underway()))
+    const repositories = watchRepositories(refusingWhile(refusing), store)
+    expect(writesUnderway(repositories.scopes)).toBe(store)
+    // A write method, counted from the call: no read comes first that the count could miss.
+    const going = repositories.people.add({ name: 'Bo' })
+    expect(store.underway()).toBe(1)
+    await going
+    expect(store.underway()).toBe(0)
+    refusing.now = true
+    await repositories.people.add({ name: 'Ada' }).catch(() => undefined)
+    expect(store.underway()).toBe(0)
+    expect(Math.max(...counts)).toBeGreaterThan(0)
+  })
+
+  it('counts a change typed and not sent as one to come, sends it when asked, and lets go of it', () => {
+    const store = writeRefusals()
+    const send = vi.fn()
+    const release = store.holdUnsent(send)
+    expect(store.underway()).toBe(1)
+    store.sendUnsent()
+    expect(send).toHaveBeenCalledOnce()
+    release()
+    release()
+    expect(store.underway()).toBe(0)
+  })
+
+  it('counts a change that reads before it writes from its first read, where the repository is watched', async () => {
+    const store = writeRefusals()
+    const repositories = watchRepositories(memoryRepositories(), store)
+    let open: () => void = () => {}
+    const reading = new Promise<void>((resolve) => { open = resolve })
+    const held = holdWrite(repositories.scopes, reading.then(() => ensureScope(repositories.scopes, 'rail', { name: 'Rail' })))
+    // Nothing written yet, and already under way: a quit now waits for it.
+    expect(store.underway()).toBe(1)
+    open()
+    await held
+    expect(store.underway()).toBe(0)
+    // Where nobody watches, the work is handed back as it was.
+    const plain = memoryRepositories()
+    const work = Promise.resolve(3)
+    expect(holdWrite(plain.scopes, work)).toBe(work)
   })
 
   it('keeps what it does not watch as it was, and hands the session the repository underneath', async () => {

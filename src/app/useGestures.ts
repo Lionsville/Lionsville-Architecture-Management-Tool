@@ -44,6 +44,7 @@ import { changeScope } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import type { Notify } from './useToasts'
+import { holdWrite } from './writeRefusals'
 
 /** Which dialog is up. One at a time, because both are about one record. */
 export type GestureChoice =
@@ -185,7 +186,7 @@ export function useGestures(deps: {
         // between: the definition is written into the scope as it stands, so a
         // colleague's change to it survives the gesture (`changeScope`) — with
         // a unit's assignments, in the same step (ADR-0036 §4).
-        const written = await changeScope(scopes, write.path, (held) => [writeCommand(held.model, write)])
+        const written = await holdWrite(scopes, changeScope(scopes, write.path, (held) => [writeCommand(held.model, write)]))
         if (!written) {
           notify(s(GESTURE_REFUSAL['gesture.noSuchScope']), 'warning')
           return

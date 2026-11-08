@@ -17,6 +17,7 @@ import { bareScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { renderApp } from './testing/renderShell'
 import { chooseValue, optionValues } from '../widgets/kit/testing/select'
+import { draftHeld } from '../widgets/kit/drafts'
 
 vi.mock('../editor', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../editor')>()
@@ -102,6 +103,49 @@ describe('a scope’s settings, from the scope that is open', () => {
       expect(held?.model.defaultAuthor).toBe('Ada')
       expect(held?.model.diagrams[0].author).toBe('Grace')
     })
+  })
+
+  it('holds a name typed and not left as a write to come, and sends it when the window is closing', async () => {
+    const listeners: ((command: HostCommand) => void)[] = []
+    const store = heldRepositories([project()])
+    const unsaved = vi.fn()
+    renderApp({
+      repositories: store, boot: { initialProject: project() },
+      host: { onUnsavedWork: unsaved, commands: (listener) => { listeners.push(listener); return () => { listeners.splice(listeners.indexOf(listener), 1) } } },
+    })
+    await openSettings()
+    const name = await screen.findByTestId('settings-name')
+    unsaved.mockClear()
+    fireEvent.change(name, { target: { value: 'Typed, not left' } })
+    // Not a draft to ask about: a change the window waits for.
+    expect(draftHeld()).toBe(false)
+    expect(unsaved).toHaveBeenLastCalledWith(true)
+    act(() => { for (const held of [...listeners]) held({ type: 'closing', saving: true }) })
+    await waitFor(async () => expect((await saved(store))?.model.name).toBe('Typed, not left'))
+    await waitFor(() => expect(unsaved).toHaveBeenLastCalledWith(false))
+  })
+
+  it('says closing would lose a rename from the moment it is committed until it has landed', async () => {
+    let open: () => void = () => {}
+    const gate = new Promise<void>((resolve) => { open = resolve })
+    const held = heldRepositories([project()])
+    const store = answering(held, { tree: () => gate.then(() => held.scopes.tree()) })
+    const unsaved = vi.fn()
+    renderApp({ repositories: store, boot: { initialProject: project() }, host: { onUnsavedWork: unsaved } })
+    await openSettings()
+    await act(async () => { open(); await Promise.resolve() })
+    let reopen: () => void = () => {}
+    const second = new Promise<void>((resolve) => { reopen = resolve })
+    store.scopes.tree = () => second.then(() => held.scopes.tree())
+    unsaved.mockClear()
+    const name = await screen.findByTestId('settings-name')
+    fireEvent.change(name, { target: { value: 'Renamed' } })
+    fireEvent.blur(name)
+    // Still reading the tree, nothing written: already unsaved, so a quit now waits for it.
+    expect(unsaved).toHaveBeenLastCalledWith(true)
+    await act(async () => { reopen(); await Promise.resolve() })
+    await waitFor(async () => expect((await saved(held))?.model.name).toBe('Renamed'))
+    await waitFor(() => expect(unsaved).toHaveBeenLastCalledWith(false))
   })
 
   it('puts a field back with Escape and keeps the page; the next Escape leaves the field, and the one after closes it', async () => {

@@ -53,6 +53,7 @@ import { changeScopes } from '../../projects/scopeAccess'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeCommand } from '../../projects/scopeState'
 import type { BelowScopes } from '../useChangeBelow'
+import { holdWrite } from '../writeRefusals'
 
 /** Why the open scope's part of a move written across scopes cannot be undone here. */
 export const MOVE_BARRIER: StringKey = 'move.barrier'
@@ -153,7 +154,7 @@ export async function landPeopleMoves(
   const changed: ScopePath[] = []
   if (others.length > 0) {
     try {
-      const landed = await changeScopes(deps.scopes, others, (held) => {
+      const landed = await holdWrite(deps.scopes, changeScopes(deps.scopes, others, (held) => {
         written.length = 0
         changed.length = 0
         const out = new Map<ScopePath, ScopeCommand[]>()
@@ -167,7 +168,7 @@ export async function landPeopleMoves(
           changed.push(path)
         }
         return out
-      })
+      }))
       if (!landed) return { ok: false, reason: 'gone' }
     } catch (error) {
       if (error instanceof ShellError) return { ok: false, reason: error.key }

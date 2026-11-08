@@ -28,7 +28,7 @@ import type { AccentShades } from '../widgets/kit/tokens'
 import { useShellPreferences } from './useShellPreferences'
 import type { PreferencesWriter, ShellPreferences } from './useShellPreferences'
 import { useKeepNotice } from './useKeepNotice'
-import type { KeepNotice } from './useKeepNotice'
+import type { KeepReport } from './useKeepNotice'
 import { useToasts } from './useToasts'
 import type { Notify, ToastAction, Toasts } from './useToasts'
 import { isFault, notKeptSentence } from './notKept'
@@ -43,7 +43,7 @@ export type ShellServices = {
   prefs: ShellPreferences
   s: Translate
   /** Whether a write was taken, for the notice the source words. */
-  reportKept: KeepNotice
+  reportKept: KeepReport
   failed: Failed
   /**
    * The action on a notice about a problem, where the open source's provider
@@ -104,8 +104,8 @@ export function useShellServices(deps: {
    * hop breaks the knot — the notice is looked up when it fires, not when the
    * writer is built.
    */
-  const noticeRef = useRef<KeepNotice>(() => {})
-  const reportKept = useCallback<KeepNotice>(
+  const noticeRef = useRef<KeepReport>(() => {})
+  const reportKept = useCallback<KeepReport>(
     (ok, cause) => noticeRef.current(ok, cause), [])
 
   const shades = useAccentShades(accent, diagnostics)

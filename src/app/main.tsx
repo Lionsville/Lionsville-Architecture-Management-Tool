@@ -173,6 +173,8 @@ function sayWhatClosingLoses(): void {
 if (commands) watchDrafts((holding) => { drafting = holding; sayWhatClosingLoses() })
 /** The person left a draft at the question a closing window asked: the window goes. */
 const leaveAnyway = commands ? () => commands.leaveAnyway() : undefined
+/** The person kept writing at that question: the window stays. */
+const keepWriting = commands ? () => commands.keepWriting() : undefined
 
 /**
  * What the boot read, kept where the failure handler can still see it.
@@ -789,6 +791,7 @@ function renderApp(
             sayWhatClosingLoses()
           },
           onLeaveAnyway: leaveAnyway,
+          onKeepWriting: keepWriting,
           onThemeMode: commands?.reportTheme,
           onWindowZoom: commands?.zoomWindow,
           onLanguage: commands?.reportLanguage,

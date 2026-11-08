@@ -22,6 +22,7 @@ import { ShellError } from '../../platform/errors'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { refusalOf } from '../../projects/refusalTag'
 import { changeScope } from '../../projects/scopeAccess'
+import { holdWrite, whenLanded } from '../writeRefusals'
 import type { ScopeCommand } from '../../projects/scopeState'
 import type { ScopePath } from '../../projects/scopePath'
 import type { Repositories } from '../../ports/Repositories'
@@ -68,12 +69,14 @@ export function deleteViewCommands(held: ScopeSnapshot, id: string): { forward: 
   }
 }
 
-export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, s }: {
+export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, onViewRenamed, s }: {
   repositories: Pick<Repositories, 'scopes'>
   refresh: () => void
   notify: (message: string, severity: 'success' | 'error', undo?: ToastUndo) => void
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   onKeptResult: (kept: boolean, cause?: unknown) => void
+  /** A view's new name landed: what the screen remembers it as elsewhere (*Continue*) follows. */
+  onViewRenamed?: (path: ScopePath, id: string, name: string) => void
   s: Translate
 }): HomeViews {
   const { scopes } = repositories
@@ -91,7 +94,7 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
   /** Put one step back, wherever it is on the list: the toast's Undo may come after another change. */
   const takeBack = useCallback((step: HomeStep) => {
     setSteps((held) => held.filter((one) => one.id !== step.id))
-    changeScope(scopes, step.path, () => step.back)
+    holdWrite(scopes, changeScope(scopes, step.path, () => step.back))
       .then(() => { refresh(); return undefined })
       .catch((cause: unknown) => failed('organisation.undoView', cause))
   }, [scopes, refresh, failed])
@@ -100,11 +103,12 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
   const change = useCallback(async (path: ScopePath, name: string, work: (held: ScopeSnapshot) => { forward: ScopeCommand[]; back: ScopeCommand[] } | undefined) => {
     let back: readonly ScopeCommand[] = []
     // Expecting what was read, and worked out again over a scope that moved in between.
-    const next = await changeScope(scopes, path, (held) => {
+    // Under way from its read: a quit in between waits for it (`holdWrite`).
+    const next = await holdWrite(scopes, changeScope(scopes, path, (held) => {
       const made = work(held)
       back = made?.back ?? []
       return made?.forward
-    })
+    }))
     if (!next || back.length === 0) return undefined
     const step: HomeStep = { id: Date.now() + Math.random(), name, path, back }
     setSteps((held) => [...held, step])
@@ -132,8 +136,15 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
       const was = held.model.diagrams.find((diagram) => diagram.id === view.id)
       if (!was || was.name === name) return undefined
       return { forward: [{ type: 'diagram.rename', id: view.id, name }], back: [{ type: 'diagram.rename', id: view.id, name: was.name }] }
-    }).catch((cause: unknown) => failed('organisation.renameView', cause))
-  }, [viewDialog, change, failed, s])
+    }).then((step) => {
+      if (step) onViewRenamed?.(path, view.id, name)
+      return undefined
+    }).catch((cause: unknown) => {
+      // Refused, it may land later from *Your work*: *Continue* follows then.
+      whenLanded(scopes, refusalOf(cause), () => onViewRenamed?.(path, view.id, name))
+      failed('organisation.renameView', cause)
+    })
+  }, [viewDialog, change, failed, onViewRenamed, scopes, s])
 
   const newest = steps.at(-1)
   const viewUndo = useMemo<FrameStep | undefined>(

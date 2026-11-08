@@ -18,7 +18,9 @@ import type { Notify, ToastAction } from './useToasts'
 
 /**
  * `report(true)` after a successful write, `report(false)` after a failed one —
- * with whatever the write was refused with, where the caller has it.
+ * with whatever the write was refused with, where the caller has it — and
+ * `report('letGo')` once every refused change has been put back: nothing was
+ * kept again, so nothing is said, but the next refusal is news and is said.
  *
  * The cause is here for one reader: a source that says in its own words what a
  * refusal where it keeps work means. Optional because most of the places that
@@ -26,6 +28,8 @@ import type { Notify, ToastAction } from './useToasts'
  * would not write — and a source is asked either way.
  */
 export type KeepNotice = (ok: boolean, cause?: unknown) => void
+/** The shell's own notice: a write's answer, or that every refused change was put back. */
+export type KeepReport = (ok: boolean | 'letGo', cause?: unknown) => void
 
 /**
  * @param sourceFailure What the source this work is kept in says a refusal there
@@ -37,9 +41,10 @@ export type KeepNotice = (ok: boolean, cause?: unknown) => void
  */
 export function useKeepNotice(
   notify: Notify, s: Translate, sourceFailure?: SourceFailure, keepFailedKey?: KeepFailedKey, seeWork?: ToastAction,
-): KeepNotice {
+): KeepReport {
   const failed = useRef(false)
-  return useCallback((ok: boolean, cause?: unknown) => {
+  return useCallback((ok: boolean | 'letGo', cause?: unknown) => {
+    if (ok === 'letGo') { failed.current = false; return }
     if (ok && failed.current) {
       failed.current = false
       notify(s('shell.keptAgain'), 'success')

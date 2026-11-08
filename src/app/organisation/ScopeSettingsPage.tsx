@@ -305,6 +305,31 @@ function useLanding<T>(land: Land<T>) {
   }
 }
 
+/**
+ * A field typed in and not left yet — the cursor still in it — held as a write
+ * to come. Such a field lands only as it is left, so the window closed or the
+ * app quit with the cursor in it dropped what was typed without a word. Held
+ * here, closing waits with *Saving…* and sends it (`writeRefusals.holdUnsent`):
+ * the change is kept rather than asked about, as every other change is. And a
+ * page left another way, with a key, sends it as it goes. Compared with what
+ * was last sent rather than what is held: a change on its way is a write the
+ * window already waits for.
+ */
+function useUnsentField(typed: string, held: string, readOnly: boolean | undefined, send: () => void) {
+  const refusals = useContext(WriteRefusalsContext)
+  const [sent, setSent] = useState(held)
+  useEffect(() => setSent(held), [held])
+  const unsent = !readOnly && typed !== sent
+  const latest = useRef(send)
+  latest.current = send
+  const holding = useRef(unsent)
+  holding.current = unsent
+  useEffect(() => (unsent ? refusals?.holdUnsent(() => latest.current()) : undefined), [unsent, refusals])
+  // Left with the cursor still in it, another way than a blur: what was typed goes with the page.
+  useEffect(() => () => { if (holding.current) latest.current() }, [])
+  return setSent
+}
+
 /** A field's landing as what draws it reads it. */
 type Landing = { readonly refused: boolean; readonly busy: boolean; readonly retry: () => void; readonly putBack: () => void }
 
@@ -325,12 +350,14 @@ function CommittedText({ label, hint, held, onCommit, readOnly, required, s, 'da
 }) {
   const [typed, setTyped] = useState(held)
   const landing = useLanding(onCommit)
+  const sent = useUnsentField(typed.trim(), held.trim(), readOnly, () => commit())
   // What is held moved underneath, by an undo or another hand: the field follows.
   useEffect(() => setTyped(held), [held])
   const commit = () => {
     const next = typed.trim()
-    if (next === held.trim()) { if (landing.refused) landing.putBack(); return }
+    if (next === held.trim()) { sent(next); if (landing.refused) landing.putBack(); return }
     if (required && next.length === 0) { setTyped(held); return }
+    sent(next)
     landing.commit(next)
   }
   return (
@@ -341,7 +368,7 @@ function CommittedText({ label, hint, held, onCommit, readOnly, required, s, 'da
         onKeyDown={(event) => {
           if (event.key === 'Enter') { event.preventDefault(); commit() }
           // A field with something to put back claims the key; one with nothing lets it close the page.
-          if (event.key === 'Escape' && typed !== held) { claimKey(event); setTyped(held); landing.putBack() }
+          if (event.key === 'Escape' && typed !== held) { claimKey(event); setTyped(held); sent(held.trim()); landing.putBack() }
         }}
       />
       {landing.refused && <NotKeptActs landing={landing} onPutBack={() => setTyped(held)} s={s} />}
@@ -363,9 +390,11 @@ function NotKeptActs({ landing, onPutBack, s }: { landing: Landing; onPutBack: (
 function CommittedDescription({ held, onCommit, readOnly, placeholder, s }: { held: string; onCommit: Land<string>; readOnly: boolean; placeholder: string; s: Translate }) {
   const [typed, setTyped] = useState(held)
   const landing = useLanding(onCommit)
+  const send = () => { if (typed.trim() !== held.trim()) { sent(typed.trim()); landing.commit(typed.trim()) } }
+  const sent = useUnsentField(typed.trim(), held.trim(), readOnly, send)
   useEffect(() => setTyped(held), [held])
   return (
-    <div onBlur={(event) => { if (focusLeaves(event) && typed.trim() !== held.trim()) landing.commit(typed.trim()) }}>
+    <div onBlur={(event) => { if (focusLeaves(event)) send() }}>
       <MarkdownField value={typed} onChange={setTyped} disabled={readOnly} renderMarkdown={renderMarkdown} placeholder={placeholder} />
       <NotKeptUnder landing={landing} onPutBack={() => setTyped(held)} s={s} />
     </div>
@@ -379,8 +408,10 @@ function AspectsNow({ held, onCommit, readOnly, s }: { held: readonly AspectConf
   const landing = useLanding(onCommit)
   const latest = useRef({ columns, fresh })
   latest.current = { columns, fresh }
+  const sent = useUnsentField(JSON.stringify(columns), JSON.stringify(held), readOnly, () => commit())
   const commit = () => {
     const next = settleFreshAspectKeys(latest.current.columns, latest.current.fresh).filter((column) => column.label.trim().length > 0)
+    sent(JSON.stringify(latest.current.columns))
     if (JSON.stringify(next) !== JSON.stringify(held)) landing.commit(next)
   }
   if (readOnly) return <ul>{held.map((column) => <li key={column.key}>{column.label}</li>)}</ul>
@@ -391,6 +422,9 @@ function AspectsNow({ held, onCommit, readOnly, s }: { held: readonly AspectConf
     </div>
   )
 }
+
+/** What a list of links says, for telling a draft: a row with nothing typed in it is not one. */
+const linksSaid = (rows: readonly RecordLink[]) => JSON.stringify(rows.filter((link) => link.label.trim() || link.url.trim()))
 
 /**
  * Where the rest of its material lives, as links: a label and an address each,
@@ -403,7 +437,9 @@ function LinksField({ links, onCommit, readOnly, s }: { links: readonly RecordLi
   const landing = useLanding(onCommit)
   const rowsNow = useRef(rows)
   rowsNow.current = rows
+  const sent = useUnsentField(linksSaid(rows), linksSaid(links), readOnly, () => commit())
   const commit = (next: RecordLink[] = rowsNow.current) => {
+    sent(linksSaid(next))
     if (JSON.stringify(next) !== JSON.stringify(links)) landing.commit(next)
   }
   const edit = (index: number, patch: Partial<RecordLink>) => setRows(rows.map((link, at) => (at === index ? { ...link, ...patch } : link)))

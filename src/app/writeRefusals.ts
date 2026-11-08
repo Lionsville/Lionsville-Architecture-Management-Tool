@@ -21,6 +21,17 @@
  * `shell.unreadableNotSaved`). A refusal that answers the question a dialog
  * asked — an address taken, a scope moved in between and worked out again —
  * is that dialog's to say, and is not a write lost.
+ *
+ * **And every write still under way.** None of these writes is the open
+ * session's, so none of them told the window that closing would lose
+ * something: a rename committed in a scope's settings and a quit a moment
+ * later closed the window under the write as if nothing were pending, and
+ * the rename was gone. So the same watch counts each write from the moment it
+ * is made until it settles, landed or refused (`underway`), and the window
+ * waits for it with *Saving…* as it does for the open scope's
+ * (`frame/unsavedTogether`). A change that reads before it writes — the
+ * tree, then the scope as it stands — is counted from its first read by the
+ * hook that makes it (`holdWrite`): the read is part of the write.
  */
 import { createContext } from 'react'
 import type { StringKey } from '../i18n'
@@ -41,6 +52,21 @@ export type WriteRefusal = {
 
 export type WriteRefusals = {
   readonly list: () => readonly WriteRefusal[]
+  /**
+   * What its maker does once that refused write lands when made again: what
+   * the screen remembers of it outside the place it is kept — a view's name on
+   * *Continue* — which a write made again from *Your work* cannot know of.
+   */
+  readonly whenLanded: (id: number, then: () => void) => void
+  /**
+   * A change typed and not sent yet — a settings field that lands only as it
+   * is left, with the cursor still in it — held as a write to come until the
+   * returned function lets go: closing the window waits for it with *Saving…*
+   * and has it sent (`sendUnsent`), rather than dropping it or asking.
+   */
+  readonly holdUnsent: (send: () => void) => () => void
+  /** Every change held as typed and not sent, sent now: the window is closing. */
+  readonly sendUnsent: () => void
   readonly subscribe: (listener: () => void) => () => void
   /** One refusal let go of — put back by whoever made it — or every one. */
   readonly forget: (id?: number) => void
@@ -51,22 +77,61 @@ export type WriteRefusals = {
 /** The refusals that mean a write was not kept, rather than an answer to a question. */
 const NOT_KEPT: ReadonlySet<string> = new Set(['shell.scopeReadOnly', 'shell.unreadableNotSaved'])
 
-type Store = WriteRefusals & {
+/** How many writes outside the open session are under way, and word whenever that changes. */
+export type WritesUnderway = {
+  /** Writes made and not settled, and changes typed and not sent yet ({@link WriteRefusals.holdUnsent}). */
+  readonly underway: () => number
+  readonly watchUnderway: (listener: () => void) => () => void
+  /** Counts `work` as a write under way until it settles, landed or not, and hands it back as it was. */
+  readonly hold: <T>(work: Promise<T>) => Promise<T>
+}
+
+type Store = WriteRefusals & WritesUnderway & {
   readonly add: (refusal: Omit<WriteRefusal, 'id'>) => number
 }
 
 /** The list, kept outside React so a write anywhere reaches it and a word on the frame reads it. */
-export function writeRefusals(onLanded: () => void = () => {}): Store {
+export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => void = () => {}): Store {
   let held: readonly WriteRefusal[] = []
   let next = 0
   const listeners = new Set<() => void>()
   const set = (to: readonly WriteRefusal[]) => { held = to; for (const listener of [...listeners]) listener() }
-  const forget = (id?: number) => {
+  const after = new Map<number, () => void>()
+  const drop = (id?: number) => {
     const left = id === undefined ? [] : held.filter((one) => one.id !== id)
+    if (id === undefined) after.clear()
+    else after.delete(id)
     if (left.length !== held.length) set(left)
   }
+  // Put back by the person: once nothing stands, the next refusal is news again, and is said.
+  const forget = (id?: number) => {
+    const had = held.length
+    drop(id)
+    if (had > 0 && held.length === 0) onLetGo()
+  }
+  let underway = 0
+  const unsent = new Map<symbol, () => void>()
+  const watchingUnderway = new Set<() => void>()
+  const told = () => { for (const listener of [...watchingUnderway]) listener() }
+  const counted = (by: number) => { underway += by; told() }
+  const hold = <T,>(work: Promise<T>): Promise<T> => {
+    counted(1)
+    // Settled either way, and counted down before whoever awaits it hears: what it answered is theirs.
+    return work.finally(() => counted(-1))
+  }
   return {
+    underway: () => underway + unsent.size,
+    holdUnsent: (send) => {
+      const key = Symbol('unsent')
+      unsent.set(key, send)
+      told()
+      return () => { if (unsent.delete(key)) told() }
+    },
+    sendUnsent: () => { for (const send of [...unsent.values()]) send() },
+    watchUnderway: (listener) => { watchingUnderway.add(listener); return () => { watchingUnderway.delete(listener) } },
+    hold,
     list: () => held,
+    whenLanded: (id, then) => { if (held.some((one) => one.id === id)) after.set(id, then) },
     subscribe: (listener) => { listeners.add(listener); return () => { listeners.delete(listener) } },
     forget,
     add: (refusal) => {
@@ -74,17 +139,19 @@ export function writeRefusals(onLanded: () => void = () => {}): Store {
       set([...held, { ...refusal, id: next }])
       return next
     },
-    retry: async () => {
+    // Made again from *Your work*: under way like the first time.
+    retry: () => hold((async () => {
       // One after the other, in the order they were made: two changes to one scope are made as they were meant to land.
       const tried: boolean[] = []
       for (const one of held) {
         const landed = await one.retry().catch(() => false)
-        if (landed) forget(one.id)
+        const then = after.get(one.id)
+        if (landed) { drop(one.id); then?.() }
         tried.push(landed)
       }
       if (tried.some(Boolean)) onLanded()
       return tried.every(Boolean)
-    },
+    })()),
   }
 }
 
@@ -121,7 +188,7 @@ function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Pro
       return { cause }
     }
   }
-  return async (...args: A): Promise<R> => {
+  const made = async (...args: A): Promise<R> => {
     const first = await attempt(args)
     const failed = 'cause' in first || first.key !== undefined
     if (!failed) return first.answer
@@ -145,10 +212,14 @@ function watched<A extends unknown[], R>(store: Store, call: (...args: A) => Pro
     tagRefusal(first.answer as Answer, id)
     return first.answer
   }
+  // Under way from the call until it settles.
+  return (...args: A): Promise<R> => store.hold(made(...args))
 }
 
 /** What a watched repository hands back for `unwatched`: the session says its own failures. */
 const RAW = Symbol('unwatched')
+/** What a watched repository hands back for the count of writes under way. */
+const UNDERWAY = Symbol('underway')
 
 /**
  * Wrap the named methods of one repository, keeping everything else it has —
@@ -158,8 +229,10 @@ function watch<T extends object>(store: Store, repository: T, writes: readonly (
   const names = new Set<string | symbol>(writes)
   const made = new Map<string | symbol, unknown>()
   return new Proxy(repository, {
+    has: (target, prop) => prop === UNDERWAY || Reflect.has(target, prop),
     get(target, prop) {
       if (prop === RAW) return target
+      if (prop === UNDERWAY) return store
       const value: unknown = Reflect.get(target, prop, target)
       if (typeof value !== 'function') return value
       if (!names.has(prop)) return (value as (...args: unknown[]) => unknown).bind(target)
@@ -172,6 +245,31 @@ function watch<T extends object>(store: Store, repository: T, writes: readonly (
 /** A repository as it was before it was watched: for the open session, whose failures are its own to say. */
 export function unwatched<T extends object>(repository: T): T {
   return ((repository as Record<symbol, unknown>)[RAW] as T | undefined) ?? repository
+}
+
+/** Have `then` done once the refused write `id` lands when made again, where the repository is watched. */
+export function whenLanded(repository: object, id: number | undefined, then: () => void): void {
+  if (id !== undefined) storeOf(repository)?.whenLanded(id, then)
+}
+
+/** The count of writes under way that a watched repository keeps, or none for one nobody watches. */
+export function writesUnderway(repository: object): WritesUnderway | undefined {
+  return storeOf(repository)
+}
+
+/** Asked with `in` first: a repository somebody else wraps may answer any property it does not know with a throw. */
+function storeOf(repository: object): Store | undefined {
+  return UNDERWAY in repository ? (repository as Record<symbol, Store | undefined>)[UNDERWAY] : undefined
+}
+
+/**
+ * A change that reads before it writes, counted as a write under way from its
+ * first read until it settles, where the repository is watched. A quit while
+ * its reads are still out would otherwise find nothing pending and close the
+ * window before the write was made.
+ */
+export function holdWrite<T>(repository: object, work: Promise<T>): Promise<T> {
+  return writesUnderway(repository)?.hold(work) ?? work
 }
 
 /** The app's repositories, with every write watched. Reads go through untouched. */

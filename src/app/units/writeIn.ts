@@ -25,6 +25,7 @@ import type { ScopeSnapshot } from '../../projects/scope'
 import { changeScope, changeScopes } from '../../projects/scopeAccess'
 import type { ScopePath } from '../../projects/scopePath'
 import type { BelowScopes } from '../useChangeBelow'
+import { holdWrite } from '../writeRefusals'
 
 /** Where a change to another scope went: landed, or why not — a refusal by its key. */
 export type WrittenIn = { ok: true } | { ok: false; reason: 'unchanged' | 'gone' | 'readOnly' | (string & {}) }
@@ -40,11 +41,11 @@ export async function writeIn(
   if (!deps.writable(path)) return { ok: false, reason: 'shell.scopeReadOnly' }
   let made = false
   try {
-    const after = await changeScope(deps.scopes, path, (held) => {
+    const after = await holdWrite(deps.scopes, changeScope(deps.scopes, path, (held) => {
       const commands = change(held)
       made = (commands?.length ?? 0) > 0
       return commands
-    })
+    }))
     if (!after) return { ok: false, reason: 'gone' }
   } catch (error) {
     if (error instanceof ShellError) return { ok: false, reason: error.key }
@@ -69,7 +70,7 @@ export async function writeInEach(
   if (refused) return { ok: false, reason: 'shell.scopeReadOnly' }
   let made = false
   try {
-    const after = await changeScopes(deps.scopes, changes.map(({ path }) => path), (held) => {
+    const after = await holdWrite(deps.scopes, changeScopes(deps.scopes, changes.map(({ path }) => path), (held) => {
       const commands = new Map<ScopePath, ScopeCommand[]>()
       for (const { path, change } of changes) {
         const scope = held.get(path)
@@ -78,7 +79,7 @@ export async function writeInEach(
       }
       made = commands.size > 0
       return commands
-    })
+    }))
     if (!after) return { ok: false, reason: 'gone' }
   } catch (error) {
     if (error instanceof ShellError) return { ok: false, reason: error.key }

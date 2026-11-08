@@ -43,6 +43,7 @@ import { changeScope, ensureScope, readScope, readScopeKnown, summaryOf } from '
 import { createScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt, writeSettings } from '../../projects/scopeTree'
 import type { Repositories } from '../../ports/Repositories'
 import { opensOnNothing } from '../useShellNavigation'
+import { holdWrite } from '../writeRefusals'
 import { useScopeFolds } from './useScopeFolds'
 import type { ToastUndo } from '../useToasts'
 import { useHomeViews } from './useHomeViews'
@@ -110,6 +111,8 @@ export type UseOrganisationInput = {
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Latched storage notice: a store that refuses says so once, standing. */
   onKeptResult: (ok: boolean, cause?: unknown) => void
+  /** A view renamed on a home landed, now or when made again: *Continue* says its new name. */
+  onViewRenamed?: (path: ScopePath, id: string, name: string) => void
   /**
    * May this person change the scope at this path? What `open` asks before it
    * gives a scope with no document one (R2 below). Every scope may be written
@@ -311,7 +314,7 @@ async function moveFiled(scopes: Repositories['scopes'], index: Repositories['in
 const ANYWHERE = () => true
 
 export function useOrganisation({
-  repositories, active, at, onEnter, onHome, notify, onFailure, onKeptResult, s, onTreeChanged, writable = ANYWHERE,
+  repositories, active, at, onEnter, onHome, notify, onFailure, onKeptResult, onViewRenamed, s, onTreeChanged, writable = ANYWHERE,
 }: UseOrganisationInput): Organisation {
   const { scopes } = repositories
   const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
@@ -323,7 +326,7 @@ export function useOrganisation({
 
   const folds = useScopeFolds(tree)
   /** A view renamed or deleted from its row, and taken back (`useHomeViews`). */
-  const views = useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, s })
+  const views = useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, ...(onViewRenamed ? { onViewRenamed } : {}), s })
 
   const addUnder = useCallback((parent: ScopePath) => setDialog({ kind: 'newScope', parent, name: '', withBoard: false, type: '' }), [])
   const setNewScopeType = useCallback((type: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, type } : held)), [])
@@ -353,7 +356,8 @@ export function useOrganisation({
     const wanted = { parent: dialog.parent, name: dialog.name.trim(), withBoard: dialog.withBoard, type: dialog.type, servedBy: dialog.servedBy }
     if (!wanted.name) return
     setDialog({ kind: 'none' })
-    void (async () => {
+    // Under way from the first read: a quit in between waits for it (`holdWrite`).
+    void holdWrite(scopes, (async () => {
       // The tree's own gesture (`projects/scopeTree.ts`), the agent's as well:
       // a scope the listing could not read in the way is refused, not written over.
       const made = await createScopeAt(scopes, {
@@ -367,7 +371,7 @@ export function useOrganisation({
       onHome?.(made.path)
       notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
       if (wanted.servedBy !== undefined && link) await link(made.path, wanted.servedBy, wanted.name)
-    })().catch((cause: unknown) => {
+    })()).catch((cause: unknown) => {
       // Where work is kept refusing is what the standing notice says, and it
       // is latched, so a burst says it once.
       onFailure('organisation.create', cause)
@@ -391,7 +395,7 @@ export function useOrganisation({
     const wanted = { path: dialog.path, name: dialog.name.trim() }
     if (!wanted.name) return
     setDialog({ kind: 'none' })
-    void (async () => {
+    void holdWrite(scopes, (async () => {
       // A scope the tree no longer has is made on the spot. The board is added
       // to the scope as it stands, expecting what was read and worked out
       // again over a scope that moved in between, and its id claimed against
@@ -412,7 +416,7 @@ export function useOrganisation({
       refresh()
       onTreeChanged?.()
       notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
-    })().catch((cause: unknown) => {
+    })()).catch((cause: unknown) => {
       onFailure('organisation.board', cause)
       onKeptResult(false, cause)
     })
@@ -430,7 +434,8 @@ export function useOrganisation({
    * all, and the stand-ins elsewhere that named it follow (`moveScope`).
    */
   const applySettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed): Promise<SettingsApplied> => {
-    return (async (): Promise<SettingsApplied> => {
+    // Under way from the tree's read, not from the write after it: a quit a moment after the commit waits for it.
+    return holdWrite(scopes, (async (): Promise<SettingsApplied> => {
       const listing = summaryOf(await scopes.tree())
       const to = filedTo(listing, path, patch)
       const moving = to !== (parentScope(path) ?? ROOT_SCOPE) && path !== ROOT_SCOPE
@@ -459,14 +464,14 @@ export function useOrganisation({
       // tree would not be read — so nothing landed.
       onFailure('organisation.settings', cause, 'group.saveFailed')
       return { ok: false }
-    })
+    }))
   }, [scopes, repositories, refresh, notify, onFailure, s])
 
   const confirmDelete = useCallback(() => {
     if (dialog.kind !== 'delete') return
     const target = dialog.target
     setDialog({ kind: 'none' })
-    void removeScopeAt(scopes, target.path).then(
+    void holdWrite(scopes, removeScopeAt(scopes, target.path)).then(
       refresh,
       (cause: unknown) => onFailure('organisation.remove', cause, 'picker.deleteFailed'),
     )

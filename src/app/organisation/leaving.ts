@@ -46,6 +46,7 @@ import type { Person } from '../../people/person'
 import type { Repositories } from '../../ports/Repositories'
 import { changeScopes } from '../../projects/scopeAccess'
 import type { ScopeCommand } from '../../projects/scopeState'
+import { holdWrite } from '../writeRefusals'
 
 /** Why the open scope's part of a leave cannot be undone there. */
 export const LEAVE_BARRIER: StringKey = 'leave.barrier'
@@ -120,7 +121,7 @@ function stepsForEachScope(
       .map((scope) => scope.address)
     let counted = 0
     if (others.length > 0) {
-      await changeScopes(deps.repositories.scopes, others, (held) => {
+      await holdWrite(deps.repositories.scopes, changeScopes(deps.repositories.scopes, others, (held) => {
         counted = 0
         const steps = new Map<string, ScopeCommand[]>()
         for (const [path, scope] of held) {
@@ -130,7 +131,7 @@ function stepsForEachScope(
           steps.set(path, [step.command])
         }
         return steps
-      })
+      }))
       if (counted > 0) deps.onTreeChanged?.()
     }
     if (open && here) {
