@@ -82,7 +82,7 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
             {ways.map((way) => (
               <Button key={way.kind} size="small" variant="quiet" onClick={way.onConnect} data-testid={`first-kept-${way.kind}`}>{said(way.firstLabelKey ?? way.labelKey)}</Button>
             ))}
-            {!parts.hostMenu && <Button size="small" variant="quiet" onClick={() => props.hostControls.openExternal(DESKTOP_APP_LINK.href)}>{s(DESKTOP_APP_LINK.label)}</Button>}
+            {!parts.hostMenu && <Button size="small" variant="quiet" onClick={() => props.hostControls.openExternal(DESKTOP_APP_LINK.href)}>{`${s(DESKTOP_APP_LINK.label)} ↗`}</Button>}
           </div>
           <p>{s('first.nothingLeaves')}</p>
         </>
