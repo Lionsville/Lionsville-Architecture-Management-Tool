@@ -80,7 +80,8 @@ describe('topics on the homes', () => {
     await wire.ask('app.open', { scope: '', page: 'topics', id: 'topics/security' })
     await screen.findByTestId('topic-detail')
     expect(screen.getByRole('heading', { name: 'Security' })).toBeTruthy()
-    expect((await wire.ask('app.current')).page).toEqual({ page: 'topics' })
+    // The topic up is in the place, as every record's preview is.
+    expect((await wire.ask('app.current')).page).toEqual({ page: 'topics', id: 'topics/security' })
     await wire.ask('app.open', { scope: '', page: 'blocks', id: 'blk-gw' })
     expect(await screen.findByRole('tab', { name: 'Requirements' })).toBeTruthy()
     expect((await wire.ask('app.current')).page).toEqual({ page: 'blocks', id: 'blk-gw' })
