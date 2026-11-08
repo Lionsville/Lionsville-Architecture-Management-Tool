@@ -48,7 +48,8 @@ export type OverflowMenuProps = {
   /** What the row had no room for: first, above a line. */
   folded?: readonly MenuEntry[]
   /** The example is being visited: Save's refusal says nothing here is kept, not that work saves itself. */
-  visiting?: boolean | undefined
+  /** Visiting the example; `copy` where a keep files a copy under work that is there. */
+  visiting?: boolean | 'copy' | undefined
   s: Translate
 }
 
@@ -92,13 +93,13 @@ export function OverflowMenu({ can, onCommand, sourceEntries, onSourceWork, fold
     if (entry.kind === 'separator') { items.push({ line: true }); continue }
     if (entry.kind !== 'item') continue
     // In the example nothing is kept, inside a scope too: Save says so wherever it is asked.
-    const needsScope = entry.needs?.includes('scope') && (!can.scope || visiting === true)
+    const needsScope = entry.needs?.includes('scope') && (!can.scope || (visiting !== undefined && visiting !== false))
     const shortcut = keyCap(entry.accelerator, language)
     items.push({
       label: s(entry.label),
       onSelect: choose(entry.command),
       ...(shortcut ? { shortcut } : {}),
-      ...(needsScope ? { refused: s(visiting ? 'menu.saveExample' : 'menu.saveNothingOpen') } : {}),
+      ...(needsScope ? { refused: s(visiting === 'copy' ? 'menu.saveExampleCopy' : visiting ? 'menu.saveExample' : 'menu.saveNothingOpen') } : {}),
     })
   }
   items.push({ line: true }, { label: s(PREFERENCES_ITEM.label), onSelect: choose(PREFERENCES_ITEM.command), shortcut: keyCap(PREFERENCES_ITEM.accelerator, language) ?? '' })

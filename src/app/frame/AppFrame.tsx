@@ -301,6 +301,12 @@ export function menuKey(
   return { run: hit.command }
 }
 
+/** A refusal of Save in the example, in the words of the button the band shows: keep as the start, or keep a copy under work that is there. */
+function exampleWord(refused: StringKey, visiting: { holdsWork?: boolean } | undefined): StringKey {
+  if (!visiting || (refused !== 'menu.saveNothingOpen' && refused !== 'menu.saveExample')) return refused
+  return visiting.holdsWork ? 'menu.saveExampleCopy' : 'menu.saveExample'
+}
+
 /**
  * Is something modal up, that owns the keys until it is closed? A dialog that
  * says so, or MUI's. Not the on-screen guidance, which is a dialog that is not
@@ -391,7 +397,7 @@ function useFrameKeys(parts: ShellParts, state: FrameState) {
         if (key.run) send(key.run)
         // A refusal is the whole answer: a board's own keymap does not save behind it.
         else if (key.refused) event.stopPropagation()
-        if (key.refused) parts.services.toasts.notify(parts.services.s(key.refused === 'menu.saveNothingOpen' && parts.props.visiting ? 'menu.saveExample' : key.refused), 'info')
+        if (key.refused) parts.services.toasts.notify(parts.services.s(exampleWord(key.refused, parts.props.visiting)), 'info')
       }
     }
     window.addEventListener('keydown', onKey, true)

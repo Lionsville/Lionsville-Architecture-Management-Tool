@@ -67,6 +67,13 @@ describe('the menu’s keys in the example', () => {
     expect(press('s')).toBe(true)
     expect(await screen.findByText('The example is not kept. Keep it as your start to save it.')).toBeTruthy()
   })
+
+  it('names the button the band shows where the example is kept as a copy under work that is there', async () => {
+    renderApp({ repositories: heldRepositories(organisation), visiting: { name: 'One', onKeep: () => {}, onLeave: () => {}, holdsWork: true } })
+    await screen.findAllByText('Acme')
+    expect(press('s')).toBe(true)
+    expect(await screen.findByText('The example is not kept. Keep a copy in your organisation to save it.')).toBeTruthy()
+  })
 })
 
 describe('the web’s own words', () => {

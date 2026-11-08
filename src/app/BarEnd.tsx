@@ -60,7 +60,7 @@ export type ToolbarOverflow = {
   /** What the row had no room for: first in the menu. */
   folded?: readonly MenuEntry[]
   /** The example is being visited, where nothing is kept. */
-  visiting?: boolean
+  visiting?: boolean | 'copy'
 }
 
 export function BarEnd({ agent, button, chip, overflow, s }: {

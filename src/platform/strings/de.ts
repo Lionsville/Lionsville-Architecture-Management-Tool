@@ -61,6 +61,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.exportPicture': 'Bild exportieren…',
   'menu.notNow': 'Derzeit nicht verfügbar',
   'menu.saveExample': 'Das Beispiel wird nicht gespeichert. Übernehmen Sie es, um es zu speichern.',
+  'menu.saveExampleCopy': 'Das Beispiel wird nicht gespeichert. Behalten Sie eine Kopie in Ihrer Organisation, um es zu speichern.',
   'menu.saveNothingOpen': 'Nichts ist geöffnet. Ihre Arbeit wird automatisch gespeichert; öffnen Sie einen Bereich, um jetzt zu speichern.',
   // The desktop's menu bar: the items Electron's roles would otherwise say in English.
   'menubar.window': 'Fenster',
