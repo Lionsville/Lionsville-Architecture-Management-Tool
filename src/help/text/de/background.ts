@@ -1298,8 +1298,8 @@ das Organigramm. Eine Einheit dort zu wählen oder mit ihrem Pfeil aufzuklappen,
 sie auch im Organigramm auf, mit jeder Einheit darüber, scrollt dorthin und wählt sie.
 Einklappen in der Gliederung klappt nur die Gliederung ein. Die Pfeiltasten gehen durch
 sie, rechts öffnet und links schließt. Die Breite bestimmen Sie: Ziehen Sie die Naht rechts davon,
-oder geben Sie der Naht den Fokus und nutzen Sie die Pfeiltasten. Unten verschieben **Nach oben** und
-**Nach unten** die gewählte Einheit unter den Einheiten ihres Typs in derselben Einheit: ein
+oder geben Sie der Naht den Fokus und nutzen Sie die Pfeiltasten. Unten verschieben **Hoch** und
+**Runter** die gewählte Einheit unter den Einheiten ihres Typs in derselben Einheit: ein
 Schritt in jedem Bereich, der eine davon führt. Wo alle in diesem Bereich liegen, nimmt
 Rückgängig die Verschiebung zurück; wo manche in anderen liegen, wird jeder Bereich für
 sich zurückgesetzt.
@@ -1335,7 +1335,7 @@ einer eingeklappten Einheit endet, sagt das auf der Linie, und die Legende steht
 ihrer Ecke, sodass eine neue Linie nichts verschiebt.
 
 **Eine Einheit an einen anderen Platz verschieben.** Eine falsch abgelegte Einheit zieht
-um, ohne neu verknüpft zu werden: **Verschieben nach…** auf dem gewählten Kasten, unten in
+um, ohne neu verknüpft zu werden: **Verschieben…** auf dem gewählten Kasten, unten in
 der Gliederung, **Steht unter** in ihrem Inspektor, M, oder durch Ziehen auf eine andere.
 Ein Feld öffnet sich neben dem Organigramm, das mit seinen hervorgehobenen Plätzen sichtbar
 bleibt: jede Einheit der Organisation, welcher Bereich sie auch führt, gewählt durch Klick
@@ -2475,7 +2475,7 @@ Die Abschnitte einer Einheit, in dieser Reihenfolge:
 
 - **Steht unter**: die Einheit, in der sie an dem Tag steht, oder *Ganz oben*.
   Wo Sie die Einheit ändern dürfen, ist es eine Schaltfläche, die
-  **Verschieben nach…** öffnet (siehe *Eine Einheit an eine andere Stelle
+  **Verschieben…** öffnet (siehe *Eine Einheit an eine andere Stelle
   verschieben*, unter *Das Organigramm*).
 - **Rollen, heute**: jede Rolle, die ihr Typ hat, mit der gewünschten Anzahl,
   und wer sie heute innehat — mit dem Namen aus dem Register, dem Anteil, wo
