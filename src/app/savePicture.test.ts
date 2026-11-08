@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it, vi } from 'vitest'
-import { pictureCause, pictureFailed, pictureLine, pngSize } from './savePicture'
+import { pdfLine, pictureCause, pictureFailed, pictureLine, pngSize } from './savePicture'
 
 /** The first 24 bytes of a PNG of this size: the signature, then IHDR's length, type, width and height. */
 function pngOf(width: number, height: number): Uint8Array {
@@ -38,5 +38,12 @@ describe('the line a picture export leaves on the log', () => {
     expect(report).toHaveBeenCalledWith({ level: 'error', where: 'chartExport', message: 'picture export (chartExport): failed: the browser could not draw the page as an image (an error event)' })
     expect(pictureCause(new Error('no bitmap'))).toBe('no bitmap')
     expect(pictureCause('gone')).toBe('gone')
+  })
+  it('says a PDF by its paper, its size where the host made it, and how it ended, and nothing of the name', () => {
+    const a1 = { widthMm: 841, heightMm: 594 }
+    expect(pdfLine('posterExport', a1, { outcome: 'saved', bytes: 412_000 }, 1830)).toBe('pdf export (posterExport): 841 × 594 mm, 412000 bytes, saved 1.83 s after')
+    expect(pdfLine('posterExport', a1, { outcome: 'cancelled' }, 900)).toBe('pdf export (posterExport): 841 × 594 mm, cancelled 0.90 s after')
+    expect(pdfLine('drawingPrint', a1, { outcome: 'failed', cause: new Error('a path') }, 10)).toBe('pdf export (drawingPrint): 841 × 594 mm, failed 0.01 s after')
+    expect(pdfLine('posterExport', a1, { outcome: 'printed' }, 4000)).toBe('pdf export (posterExport): 841 × 594 mm, handed to the print dialog 4.00 s after')
   })
 })

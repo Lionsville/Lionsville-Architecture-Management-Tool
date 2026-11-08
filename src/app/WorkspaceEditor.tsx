@@ -31,7 +31,7 @@ import { shellTheme } from './theme'
 import type { WorkspaceParts } from './workspaceParts'
 import { hostCommands, useCommands } from '../model/technologyWrites'
 import type { WrittenIn } from './units/writeIn'
-import { pictureFailed, savePicture } from './savePicture'
+import { pictureFailed, printDocument, savePicture } from './savePicture'
 import type { StringKey } from '../i18n'
 import { renamedBy } from './renamedBy'
 
@@ -275,7 +275,7 @@ function sheetPage(parts: WorkspaceParts, diagram: DesignDiagram, view: PageView
       onOpenDocumentation={(id) => requests.openDocumentation(id, diagram.id)}
       // Through the one way a picture is saved, so the sheet's and the poster's leave their line on the log as well.
       onSave={(doc) => savePicture(parts, doc.name, doc.bytes, doc.where)}
-      onPrint={files.printPage}
+      onPrint={(doc) => printDocument(parts, doc, 'posterExport')}
       addImage={files.addImage}
       {...(view.readOnly ? {} : { poster: parts.sheets.poster })}
       scopeName={parts.readings.scopeLabel(parts.props.project.path)}

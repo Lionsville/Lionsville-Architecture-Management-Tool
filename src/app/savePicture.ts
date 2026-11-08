@@ -5,6 +5,7 @@
 import type { Diagnostics } from '../ports/Diagnostics'
 import { refused } from '../widgets/pictureRefused'
 import { handOver } from './handOver'
+import type { PrintOutcome } from './useProjectFiles'
 import type { WorkspaceParts } from './workspaceParts'
 
 /** The size a PNG says in its header, or none where the bytes are not one. */
@@ -72,4 +73,30 @@ export function savePicture(parts: WorkspaceParts, name: string, png: Uint8Array
       notify(s('shell.saveFileFailed', { message: cause instanceof Error ? cause.message : String(cause) }), 'error')
     },
   })
+}
+
+/**
+ * The one line a PDF leaves on the log, as a picture's does: its paper, its size
+ * where the host made the file, how it ended and how long that took. A print handed
+ * to the browser's own dialog says only that it was handed over. No name, no path.
+ */
+export function pdfLine(where: string, paper: { widthMm: number; heightMm: number }, ended: PrintOutcome, ms: number): string {
+  return [
+    `pdf export (${where}): ${paper.widthMm} × ${paper.heightMm} mm`,
+    ...(ended.bytes !== undefined ? [`${ended.bytes} bytes`] : []),
+    `${ended.outcome === 'printed' ? 'handed to the print dialog' : ended.outcome} ${seconds(ms)} after`,
+  ].join(', ')
+}
+
+/** A page on paper through the host, leaving its line on the log: the poster's Export… and a drawing's Print. */
+export async function printDocument(
+  parts: Pick<WorkspaceParts, 'props' | 'files'>,
+  doc: { name: string; widthMm: number; heightMm: number },
+  where: string,
+): Promise<void> {
+  const { diagnostics } = parts.props.host
+  const asked = Date.now()
+  const ended = await parts.files.printPage(doc)
+  diagnostics.report({ level: 'info', where, message: pdfLine(where, doc, ended, Date.now() - asked) })
+  if (ended.outcome === 'failed') diagnostics.report({ level: 'error', where, message: 'shell.saveFileFailed', cause: ended.cause })
 }

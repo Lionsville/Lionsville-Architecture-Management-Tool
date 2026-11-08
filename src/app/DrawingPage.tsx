@@ -17,6 +17,7 @@ import { DESKTOP_APP_LINK } from '../platform/menu'
 import { MORE_PLACES, ORGANISATION_PLACES, SCOPE_PLACES } from './frame/places'
 import type { DrawingViewProps } from './DrawingView'
 import { NewViewDialog } from './NewViewDialog'
+import { printDocument } from './savePicture'
 import { unitLanding } from './units/unitViewsHere'
 import type { WorkspaceParts } from './workspaceParts'
 
@@ -42,7 +43,7 @@ export function drawingViewProps(
   diagram: DesignDiagram,
   view: Pick<PageView, 'readOnly'>,
 ): DrawingViewProps {
-  const { props, session, show, pages } = parts
+  const { props, session, show, pages, files } = parts
   const { s, language } = props.shell
   const translate = s as Parameters<typeof kindLabel>[1]
   const drawings = pages?.drawings
@@ -58,7 +59,7 @@ export function drawingViewProps(
     readOnly: view.readOnly,
     dispatch: session.dispatch,
     documents: props.files.documents,
-    ...(parts.files ? { print: parts.files.printPage } : {}),
+    ...(files ? { print: (doc) => printDocument({ props, files }, doc, 'drawingPrint') } : {}),
     diagnostics: props.host.diagnostics,
     notify: props.shell.notify,
     // A box that points at a unit opens it on the scope's chart, where there is one (ADR-0036 §7).

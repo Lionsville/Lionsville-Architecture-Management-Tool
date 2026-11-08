@@ -51,9 +51,10 @@ export interface DocumentGateway {
   /**
    * The page as it now stands for print, to a PDF the user is asked where to put:
    * text and lines rather than pixels, at the page's own `@page` size. Absent where the
-   * only way to paper is a browser's own print dialog.
+   * only way to paper is a browser's own print dialog. Answers the PDF's size in bytes where
+   * it knows it, for the log.
    */
-  print?(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled'>
+  print?(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled' | { bytes: number }>
 
   /** A chosen file as text. */
   readText(blob: Blob): Promise<string>

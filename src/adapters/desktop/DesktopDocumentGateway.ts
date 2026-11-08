@@ -39,10 +39,10 @@ export class DesktopDocumentGateway implements DocumentGateway {
     return await this.files.saveDocument(doc.name, bytes, doc.mediaType) ? undefined : 'cancelled'
   }
 
-  async print(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled'> {
+  async print(doc: { name: string; widthMm: number; heightMm: number }): Promise<'cancelled' | { bytes: number }> {
     if (!this.files.printToPdf) throw new Error('shell.pathRefused')
     const bytes = await this.files.printToPdf(doc.widthMm, doc.heightMm)
-    return await this.files.saveDocument(doc.name, bytes, 'application/pdf') ? undefined : 'cancelled'
+    return await this.files.saveDocument(doc.name, bytes, 'application/pdf') ? { bytes: bytes.byteLength } : 'cancelled'
   }
 
   readText(blob: Blob): Promise<string> {

@@ -46,7 +46,7 @@ export type ProjectFileChannel = {
   save(doc: SavedDocument): Promise<void | 'cancelled'>
   /** A save goes to the downloads without asking where (`DocumentGateway.downloads`). */
   readonly downloads?: boolean
-  print?(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled'>
+  print?(doc: { name: string; widthMm: number; heightMm: number }): Promise<void | 'cancelled' | { bytes: number }>
   readBytes(blob: Blob): Promise<Uint8Array>
   readDataUrl(blob: Blob): Promise<string>
 }
@@ -57,7 +57,7 @@ export type ProjectFiles = {
   /** A picture of a page — the sheet at a paper size — through the same gateway, so the desktop gets a save dialog. */
   savePicture: (doc: { name: string; bytes: Uint8Array; mediaType: 'image/png' | 'application/pdf' }) => void
   /** The page as it stands for print: a PDF where the host makes one, else the browser's own print dialog. */
-  printPage: (doc: { name: string; widthMm: number; heightMm: number }) => Promise<void>
+  printPage: (doc: { name: string; widthMm: number; heightMm: number }) => Promise<PrintOutcome>
   openFile: (file: File) => void
   /**
    * The same act, from bytes somebody else read.
@@ -80,6 +80,13 @@ export type ProjectFiles = {
    */
   removeImage: (name: string) => void
 }
+
+/**
+ * How a page on paper ended: saved as a PDF (with its size where the host knows it),
+ * the save panel cancelled, the PDF not made or not written, or handed to the
+ * browser's own print dialog, which says nothing of what was done in it.
+ */
+export type PrintOutcome = { outcome: 'saved' | 'cancelled' | 'failed' | 'printed'; bytes?: number; cause?: unknown }
 
 export type ProjectFilesDeps = {
   session: ModelSession
@@ -324,16 +331,24 @@ export function useProjectFiles(deps: ProjectFilesDeps): ProjectFiles {
     void handOverFile(doc, s('shell.savedPicture'))
   }, [handOverFile, s])
 
-  const printPage = useCallback(async (doc: { name: string; widthMm: number; heightMm: number }) => {
+  const printPage = useCallback(async (doc: { name: string; widthMm: number; heightMm: number }): Promise<PrintOutcome> => {
     if (!documents.print) {
       // The copy on paper is taken away when this answers, so not before the dialog has gone.
       await new Promise<void>((done) => {
         window.addEventListener('afterprint', () => done(), { once: true })
         window.print()
       })
-      return
+      return { outcome: 'printed' }
     }
-    if (await documents.print(doc) !== 'cancelled') notify(s('shell.savedPicture'), 'success')
+    try {
+      const answer = await documents.print(doc)
+      if (answer === 'cancelled') return { outcome: 'cancelled' }
+      notify(s('shell.savedPicture'), 'success')
+      return { outcome: 'saved', ...(answer ? { bytes: answer.bytes } : {}) }
+    } catch (err) {
+      notify(s('shell.saveFileFailed', { message: reasonOf(err) }), 'error')
+      return { outcome: 'failed', cause: err }
+    }
   }, [documents, notify, s])
 
   return { saveWorkingFile, savePicture, printPage, openFile, openDocument, addLogo, addImage, removeImage }
