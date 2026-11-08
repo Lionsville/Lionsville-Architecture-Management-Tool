@@ -59,8 +59,9 @@ export function panelWidth(kind: PanelKind, stored: unknown): number {
  * does not collapse. Its floor is the palette's, below which a unit's type and
  * name stop fitting on a row; its ceiling is wider, because a deep chart
  * indents, and a page has no inspector of its own competing for the width.
+ * It opens wide enough for the three buttons at its foot on one line in German.
  */
-export const OUTLINE_LIMITS = { default: 240, min: 180, max: 480 } as const;
+export const OUTLINE_LIMITS = { default: 256, min: 180, max: 480 } as const;
 
 /** A stored outline width made usable, the way {@link panelWidth} makes a panel's. */
 export function outlineWidth(stored: unknown): number {
