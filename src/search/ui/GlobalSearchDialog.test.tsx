@@ -157,3 +157,41 @@ describe('a kind with more hits than it shows', () => {
     expect(screen.queryByTestId('palette-all:element')).toBeNull()
   })
 })
+
+describe('a person previewed', () => {
+  const people = Object.assign(() => new Set<string>(), {
+    entries: (tokens: readonly string[]) => [{ id: 'pe-1', title: 'Sam Kestle', state: 'active' }, { id: 'pe-2', title: 'Alex Rowe', state: 'active' }]
+      .filter((one) => tokens.every((token) => one.title.toLowerCase().includes(token))),
+  })
+  const held = {
+    elements: [element('u1', 'Billing team', { kind: 'actor' }), element('u2', 'Payments', { kind: 'actor' })],
+    relations: [], diagrams: [],
+    roles: [{ id: 'member', name: 'Member' }, { id: 'lead', name: 'Lead', manages: true }],
+    assignments: [
+      { id: 'a1', unitId: 'u1', roleId: 'member', person: { person: 'pe-1' } },
+      { id: 'a2', unitId: 'u2', roleId: 'lead', person: { person: 'pe-1' } },
+      { id: 'a3', unitId: 'u1', roleId: 'member', person: { person: 'pe-2' } },
+    ],
+  } as unknown as HostModel
+
+  const preview = (query: string) => {
+    renderShell(<GlobalSearchDialog open sources={treeSources({ scope: '', model: held, above: [], tree: [] })} scopeLabel={scopeLabel} people={people} onClose={() => {}} onChoose={() => {}} s={translator('en')} />)
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: query } })
+    return screen.getAllByTestId('palette-preview-holds').map((line) => line.textContent)
+  }
+
+  it('says every role they hold, a managing one first, one to a line', () => {
+    const lines = preview('kestle')
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toContain('Lead')
+    expect(lines[0]).toContain('Payments')
+    expect(lines[1]).toContain('Member')
+    expect(lines[1]).toContain('Billing team')
+  })
+
+  it('says the one role of a person who holds one', () => {
+    const lines = preview('alex')
+    expect(lines).toHaveLength(1)
+    expect(lines[0]).toContain('Member')
+  })
+})
