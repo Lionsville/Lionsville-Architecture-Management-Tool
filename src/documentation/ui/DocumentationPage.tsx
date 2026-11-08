@@ -230,6 +230,8 @@ function useRecordText(element: DesignElement, actions: DocumentationActions) {
     const { draft: text, stored, id, actions: a } = latest.current;
     if (text === stored) return;
     a.updateElement(id, { description: text || undefined }, fieldEdit(id, 'description'));
+    // Written: a second commit before the next render (Cancel, then a door that closes the page) has nothing to add.
+    latest.current = { ...latest.current, stored: text };
   }, []);
 
   // Quiet for a moment → the draft reaches the model.

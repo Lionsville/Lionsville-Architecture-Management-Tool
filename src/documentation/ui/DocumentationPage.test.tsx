@@ -11,7 +11,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { laidOut } from '../../model/testFixtures';
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { useLeaveThrough } from '../../widgets/kit/drafts';
 import { axeFindings } from '../../app/testing/axe';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { DocumentationPage, type DocumentationPageProps } from './DocumentationPage';
@@ -226,6 +227,34 @@ describe('DocumentationPage', () => {
     fireEvent.change(area!, { target: { value: 'One. Two. Three.' } });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'One. Two. Three.' }, 'field:e1:description');
+    expect(source()).toBeNull();
+  });
+
+  it('takes a door in the fields column through the editor: it asks, and on Leave puts the text back before it goes, writing nothing unsaved', async () => {
+    vi.useFakeTimers();
+    const door = vi.fn();
+    function Door() {
+      const through = useLeaveThrough();
+      return <button type="button" onClick={() => through(door)}>Show on technology landscape ›</button>;
+    }
+    const { updateElement } = setup({ recordSections: () => [{ id: 'facts', heading: 'Facts', children: <Door /> }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit' }));
+    fireEvent.change(source()!, { target: { value: 'Holds every order. Second edit.' } });
+    // Quiet long enough that the draft reached the model while it was written.
+    act(() => { vi.advanceTimersByTime(1500); });
+    vi.useRealTimers();
+    const pressDoor = () => fireEvent.click(within(screen.getByRole('dialog', { name: /Editing/ })).getByRole('button', { name: 'Show on technology landscape ›' }));
+    pressDoor();
+    expect(screen.getByRole('heading', { name: 'Leave with a draft?' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Keep writing' }));
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Leave with a draft?' })).toBeNull());
+    expect(door).not.toHaveBeenCalled();
+    expect(source()).not.toBeNull();
+    pressDoor();
+    fireEvent.click(screen.getByRole('button', { name: 'Leave and drop it' }));
+    expect(door).toHaveBeenCalledOnce();
+    // The text as it was opened is what stands: the edit was not kept without Save.
+    expect(updateElement).toHaveBeenLastCalledWith('e1', { description: 'Holds every order until [[Billing]] takes it.' }, 'field:e1:description');
     expect(source()).toBeNull();
   });
 

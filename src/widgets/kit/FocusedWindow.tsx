@@ -24,14 +24,18 @@
  * knows what the window asks today, full screen included.
  *
  * **Cancel asks first if anything changed**, and only then; Escape is Cancel.
+ * A door out in the column of facts (*Show on technology landscape ›*, a plan's
+ * link) is Cancel and then the door: it asks the same question, and on *Leave and
+ * drop it* puts the text back before it goes, so nothing is written without Save
+ * (`LeaveThrough`).
  * Escape in a list that is open inside the body closes the list first, since the
  * list stops the key.
  *
  * **What holds the save** is said by the save button (`saveRefused`) and at the
  * field, which is the screen's. Save is one step for Undo, also the screen's.
  */
-import { LeaveQuestion, useDraft } from './drafts'
-import { createContext, useContext, useId, useState } from 'react'
+import { LeaveQuestion, LeaveThrough, useDraft } from './drafts'
+import { createContext, useCallback, useContext, useId, useState } from 'react'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ReactNode } from 'react'
 import MuiDialog from '@mui/material/Dialog'
@@ -105,15 +109,30 @@ export function FocusedWindow({
 }: FocusedWindowProps) {
   const { t } = useStrings()
   const titleId = useId()
-  const [asking, setAsking] = useState(false)
+  /** The question up, and the door it was asked for, if one was. */
+  const [asking, setAsking] = useState<{ then?: () => void } | undefined>(undefined)
   // A change not saved is a draft for whatever else would leave the page under the window.
-  useDraft(open && changed)
+  const letGo = useDraft(open && changed)
   const [asideFolded, setAsideFolded] = useState(false)
 
   const cancel = () => {
     if (working) return
-    if (changed) setAsking(true)
+    if (changed) setAsking({})
     else onCancel()
+  }
+  const through = useCallback((go: () => void) => {
+    if (working) return
+    if (changed) { setAsking({ then: go }); return }
+    onCancel()
+    go()
+  }, [working, changed, onCancel])
+  const leave = () => {
+    const then = asking?.then
+    setAsking(undefined)
+    // Dropped here, before the door asks again for the page it leaves: what was written is going back.
+    letGo()
+    onCancel()
+    then?.()
   }
 
   return (
@@ -158,12 +177,14 @@ export function FocusedWindow({
         </div>
       </div>
       <InFocusedWindow.Provider value>
-        <div className="kit-focused__body">
-          <div className="kit-focused__main">{children}</div>
-          {aside && <div className="kit-focused__aside" data-folded={asideFolded || undefined}>{aside}</div>}
-        </div>
+        <LeaveThrough value={through}>
+          <div className="kit-focused__body">
+            <div className="kit-focused__main">{children}</div>
+            {aside && <div className="kit-focused__aside" data-folded={asideFolded || undefined}>{aside}</div>}
+          </div>
+        </LeaveThrough>
       </InFocusedWindow.Provider>
-      <LeaveQuestion open={asking} onKeep={() => setAsking(false)} onLeave={() => { setAsking(false); onCancel() }} />
+      <LeaveQuestion open={asking !== undefined} onKeep={() => setAsking(undefined)} onLeave={leave} />
     </MuiDialog>
   )
 }

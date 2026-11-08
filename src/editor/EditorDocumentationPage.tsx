@@ -16,6 +16,7 @@ import { elementMenu } from './ElementInspector';
 import type { ElementInspectorProps } from './ElementInspectorProps';
 import { RecordSectionBody, recordSectionsOf } from './inspector/elementRows';
 import { useStrings } from '../i18n/LanguageContext';
+import { useLeaveThrough } from '../widgets/kit/drafts';
 import type { ShowOnDoor, SolutionDesignEditorProps } from './props';
 import type { EditorState } from './useEditorState';
 import type { Documentation } from './useEditorRequests';
@@ -90,7 +91,7 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
       recordSections={(shown) => recordSectionsOf(shown, t).map((section) => ({
         id: section.id,
         heading: section.heading,
-        children: <RecordSectionBody props={inspector} section={section.id} unit={inspector.unitSection?.section} />,
+        children: <SectionThroughDoors inspector={inspector} section={section.id} />,
       }))}
       menu={elementMenu({ ...inspector, onRequestDelete: () => { docs.close(); onRequestDelete(element.id); } }, t, { drawing: true, kinds: false })}
       onNavigate={docs.open}
@@ -102,6 +103,34 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
       railWidth={{ value: docs.railWidth, onChange: docs.setRailWidth }}
     />
   );
+}
+
+/**
+ * A record's section with its doors out — to a view, a plan, another page —
+ * going through the surface it stands on: on the page they ask about a draft
+ * before the page goes, and in the full-window editor's column of facts they are
+ * that editor's Cancel first, so its text is put back rather than written
+ * without Save (`useLeaveThrough`).
+ */
+function SectionThroughDoors({ inspector, section }: { inspector: ElementInspectorProps; section: Parameters<typeof RecordSectionBody>[0]['section'] }) {
+  const through = useLeaveThrough();
+  return <RecordSectionBody props={doorsThrough(inspector, through)} section={section} unit={inspector.unitSection?.section} />;
+}
+
+function doorsThrough(p: ElementInspectorProps, through: (go: () => void) => void): ElementInspectorProps {
+  const via = <A extends unknown[]>(go: (...args: A) => void) => (...args: A) => through(() => go(...args));
+  return {
+    ...p,
+    onRequestDelete: via(p.onRequestDelete),
+    ...(p.onReplace ? { onReplace: via(p.onReplace) } : {}),
+    ...(p.showOnTechnology ? { showOnTechnology: { ...p.showOnTechnology, open: via(p.showOnTechnology.open) } } : {}),
+    ...(p.onCreateContainer ? { onCreateContainer: via(p.onCreateContainer) } : {}),
+    ...(p.onCreateDrawing ? { onCreateDrawing: via(p.onCreateDrawing) } : {}),
+    ...(p.onOpenDrawing ? { onOpenDrawing: via(p.onOpenDrawing) } : {}),
+    ...(p.plans ? { plans: { ...p.plans, onOpen: via(p.plans.onOpen) } } : {}),
+    ...(p.onOpenView ? { onOpenView: via(p.onOpenView) } : {}),
+    ...(p.onNavigate ? { onNavigate: via(p.onNavigate) } : {}),
+  };
 }
 
 /** What the record's rows are handed: what the panel beside the board is, and where each door goes from a page. */
@@ -143,7 +172,8 @@ function recordInspector({ props, state, readOnly, docs, element, diagram, onReq
     onOpenDrawing: (diagrams.onOpenDrawing ?? props.document.onActiveDiagramChange)
       ? (id) => { docs.close(); (diagrams.onOpenDrawing ?? props.document.onActiveDiagramChange)(id); }
       : undefined,
-    plans: props.plans ? { list: props.plans.list, onOpen: props.plans.onOpen } : undefined,
+    // The plan takes the page's place, at its own address, as a decision's *Linked to* does: Back comes back to this page.
+    plans: props.plans ? { list: props.plans.list, onOpen: (id) => { docs.close(); props.plans?.onOpen(id); } } : undefined,
     onOpenView: (id) => { docs.close(); props.document.onActiveDiagramChange(id); },
     onNavigate: docs.open,
   };
