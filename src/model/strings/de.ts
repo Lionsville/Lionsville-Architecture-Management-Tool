@@ -336,6 +336,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.elementRated': '{name} bewertet',
   'activity.agentSessionPutBack': 'Zurückgesetzt, was {name} getan hat',
   'activity.elementChanged': '{name} geändert',
+  'activity.elementRenamed': '{name} in {to} umbenannt',
+  'activity.elementRenamedTo': 'In {to} umbenannt',
   'activity.elementDeleted': '{name} gelöscht',
   'activity.standInsRefreshed': '{count} Platzhalter aktualisiert',
   'activity.elementLinked': '{name} verknüpft',

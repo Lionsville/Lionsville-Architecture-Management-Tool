@@ -355,6 +355,8 @@ export const EN = {
   'activity.elementRated': 'Rated {name}',
   'activity.agentSessionPutBack': 'Put back what {name} did',
   'activity.elementChanged': 'Changed {name}',
+  'activity.elementRenamed': 'Renamed {name} to {to}',
+  'activity.elementRenamedTo': 'Renamed to {to}',
   'activity.elementDeleted': 'Deleted {name}',
   'activity.standInsRefreshed': 'Refreshed {count} stand-ins',
   'activity.elementLinked': 'Linked {name}',

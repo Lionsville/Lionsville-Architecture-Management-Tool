@@ -336,6 +336,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.elementRated': '{name} gewaardeerd',
   'activity.agentSessionPutBack': 'Teruggezet wat {name} deed',
   'activity.elementChanged': '{name} gewijzigd',
+  'activity.elementRenamed': '{name} hernoemd naar {to}',
+  'activity.elementRenamedTo': 'Hernoemd naar {to}',
   'activity.elementDeleted': '{name} verwijderd',
   'activity.standInsRefreshed': '{count} verwijzingen bijgewerkt',
   'activity.elementLinked': '{name} gekoppeld',

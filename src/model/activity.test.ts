@@ -46,8 +46,15 @@ describe('summarise', () => {
     }], before())).toMatchObject({ key: 'activity.elementAdded', name: 'Warehouse' })
     expect(summarise([{ type: 'element.delete', id: 'billing' }], before()))
       .toMatchObject({ key: 'activity.elementDeleted', name: 'Billing' })
+    // A rename says what it did, from and to; any other change names the row as it was.
     expect(summarise([{
       type: 'element.update', id: 'billing', patch: { name: 'Invoicing' },
+    }], before())).toEqual({ key: 'activity.elementRenamed', name: 'Billing', to: 'Invoicing' })
+    expect(summarise([{
+      type: 'element.update', id: 'gone', patch: { name: 'Invoicing' },
+    }], before())).toEqual({ key: 'activity.elementRenamedTo', to: 'Invoicing' })
+    expect(summarise([{
+      type: 'element.update', id: 'billing', patch: { description: 'Sends the bills' },
     }], before())).toMatchObject({ key: 'activity.elementChanged', name: 'Billing' })
     // An update to something deleted in the same breath: a log line is not the
     // place to say "unknown".

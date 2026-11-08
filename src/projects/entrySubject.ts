@@ -69,6 +69,8 @@ function sentence(summary: StepSummary, t: Translate): string {
     count: summary.count ?? 1,
     asOf: summary.asOf ?? '',
     type: summary.typeKey ? t(summary.typeKey) : '',
+    from: summary.from ?? '',
+    to: summary.to ?? '',
   })
 }
 

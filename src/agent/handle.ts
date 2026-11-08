@@ -801,7 +801,7 @@ function listActivity(rawArgs: unknown, session: SessionView): AgentAnswer {
     // fact about the step rather than as one nobody said.
     ...(step.via !== undefined ? { via: step.via } : {}),
     what: session.translate(step.summary.key, {
-      name: step.summary.name ?? '', count: step.summary.count ?? 0, asOf: step.summary.asOf ?? '',
+      name: step.summary.name ?? '', count: step.summary.count ?? 0, asOf: step.summary.asOf ?? '', from: step.summary.from ?? '', to: step.summary.to ?? '',
     }),
     ...step.summary,
     commands: step.commands.length,
@@ -843,7 +843,7 @@ function undoSession(session: SessionView, shell: ShellView | undefined): AgentA
     return top === undefined ? refused('agent.badArguments', 'nothing to undo') : refused('agent.notYours', 'the newest step is not this session\'s')
   }
   const undone = run.steps.map((step) => session.translate(step.summary.key, {
-    name: step.summary.name ?? '', count: step.summary.count ?? 0, asOf: step.summary.asOf ?? '',
+    name: step.summary.name ?? '', count: step.summary.count ?? 0, asOf: step.summary.asOf ?? '', from: step.summary.from ?? '', to: step.summary.to ?? '',
   }))
   if (!session.undoRun?.(of)) return refused('agent.stale', 'the session\'s steps no longer apply')
   return json({
@@ -859,7 +859,7 @@ function undoSteps(args: Record<string, unknown>, session: SessionView): AgentAn
     const top = newestOurs(session.history())
     if (!top || top.origin !== 'agent' || top.barrier !== undefined) break
     const what = session.translate(top.summary.key, {
-      name: top.summary.name ?? '', count: top.summary.count ?? 0, asOf: top.summary.asOf ?? '',
+      name: top.summary.name ?? '', count: top.summary.count ?? 0, asOf: top.summary.asOf ?? '', from: top.summary.from ?? '', to: top.summary.to ?? '',
     })
     session.undo()
     undone.push(what)

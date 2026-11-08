@@ -115,6 +115,19 @@ const RESTORED: Record<Restored['what'], StringKey> = {
   agentSession: 'activity.agentSessionPutBack',
 }
 
+/**
+ * A rename is named by what it did, from the step itself: five renames read
+ * "Changed <the name it has now>" five times, and nobody could tell from the
+ * list what any of them had done. Any other change names the row as it was.
+ */
+function elementUpdated(id: string, to: unknown, before: Model, count: number): StepSummary {
+  const was = before.elements[id]?.name
+  if (typeof to === 'string' && to !== was && count === 1) {
+    return was === undefined ? { key: 'activity.elementRenamedTo', to } : { key: 'activity.elementRenamed', name: was, to }
+  }
+  return { key: 'activity.elementChanged', name: was, count }
+}
+
 export function summarise(commands: readonly Command[], before: Model): StepSummary {
   // A restore says what it is before its members say what it took.
   const restore = commands.find((c) => c.type === 'restore')
@@ -140,11 +153,7 @@ export function summarise(commands: readonly Command[], before: Model): StepSumm
     case 'element.create':
       return { key: 'activity.elementAdded', name: lead.element.name, count: many('element.create') }
     case 'element.update':
-      return {
-        key: 'activity.elementChanged',
-        name: before.elements[lead.id]?.name,
-        count: many('element.update'),
-      }
+      return elementUpdated(lead.id, lead.patch.name, before, many('element.update'))
     case 'element.rate':
       return { key: 'activity.elementRated', name: before.elements[lead.id]?.name }
     case 'element.delete':
