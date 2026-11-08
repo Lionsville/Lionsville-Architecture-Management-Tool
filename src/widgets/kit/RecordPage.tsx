@@ -78,11 +78,15 @@ function useCurrentSection(root: React.RefObject<HTMLDivElement | null>, ids: re
   useEffect(() => {
     const scroller = root.current
     if (!scroller) return undefined
-    const atEnd = () => scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 2
+    const atEnd = () => scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1
+    const last = ids.at(-1)
     const observer = typeof IntersectionObserver === 'undefined' ? undefined : new IntersectionObserver((seen) => {
       if (pressed.current) return
+      // At the end the last section is the one, whatever crossed the band on the way: the observer hears only what changed,
+      // and after one jump to the end (a long wheel, the scroll bar dragged) that is a section above it, heard after the scroll.
+      if (atEnd() && last !== undefined) { setCurrentRaw(last); return }
       const shown = seen.filter((one) => one.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)
-      const pick = atEnd() ? shown.at(-1) : shown[0]
+      const pick = shown[0]
       if (pick) setCurrentRaw(pick.target.id.replace('kit-record-', ''))
     }, { root: scroller, rootMargin: '0px 0px -70% 0px' })
     for (const id of ids) {
@@ -92,18 +96,20 @@ function useCurrentSection(root: React.RefObject<HTMLDivElement | null>, ids: re
     // The person's own scroll lets go of a pressed section.
     const own = () => { pressed.current = false }
     // The observer hears a section cross the top band only: a short last section never does, so the end is heard on its own.
-    const last = ids.at(-1)
     const onScroll = () => { if (!pressed.current && last !== undefined && atEnd()) setCurrentRaw(last) }
     scroller.addEventListener('scroll', onScroll, { passive: true })
     scroller.addEventListener('wheel', own, { passive: true })
     scroller.addEventListener('touchmove', own, { passive: true })
     scroller.addEventListener('keydown', own)
+    // The scroll bar dragged is the person's scroll too.
+    scroller.addEventListener('pointerdown', own)
     return () => {
       observer?.disconnect()
       scroller.removeEventListener('scroll', onScroll)
       scroller.removeEventListener('wheel', own)
       scroller.removeEventListener('touchmove', own)
       scroller.removeEventListener('keydown', own)
+      scroller.removeEventListener('pointerdown', own)
     }
   }, [root, ids])
   const setCurrent = useCallback((id: string) => { pressed.current = true; setCurrentRaw(id) }, [])

@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 /** One head, one scroll, a named way back, and an outline only once a record is long. */
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { renderShell } from '../../app/testing/renderShell'
 import { RecordPage } from './RecordPage'
@@ -60,6 +60,27 @@ describe('the record page', () => {
     scroll.scrollTop = 600
     fireEvent.scroll(scroll)
     expect(within(screen.getByRole('navigation')).getByRole('button', { name: 'Section 3' }).getAttribute('aria-current')).toBe('location')
+  })
+
+  it('keeps the last section marked after one jump to the end, when the observer hears a section above it afterwards', () => {
+    let heard: ((entries: { isIntersecting: boolean; target: Element; boundingClientRect: { top: number } }[]) => void) | undefined
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(callback: typeof heard) { heard = callback }
+      observe() {}
+      disconnect() {}
+    })
+    try {
+      renderShell(<RecordPage title="T" sections={sections(4)} />)
+      const scroll = screen.getByRole('region', { name: 'The record' })
+      Object.defineProperties(scroll, { scrollHeight: { value: 1000 }, clientHeight: { value: 400 } })
+      scroll.scrollTop = 600
+      fireEvent.scroll(scroll)
+      const above = document.getElementById('kit-record-s2')!
+      act(() => heard?.([{ isIntersecting: true, target: above, boundingClientRect: { top: 0 } }]))
+      expect(within(screen.getByRole('navigation')).getByRole('button', { name: 'Section 3' }).getAttribute('aria-current')).toBe('location')
+    } finally {
+      vi.unstubAllGlobals()
+    }
   })
 
   it('asks before the way back drops a draft on the page', async () => {
