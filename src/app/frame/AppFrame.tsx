@@ -66,7 +66,7 @@ import { ScopeTreePanel } from './ScopeTreePanel'
 import { recentFrom, recentOf, RECENT_KEY, remembered } from './recentPlaces'
 import { sourceKey } from '../../platform/workingSource'
 import { holdingsOf } from '../organisation/holdings'
-import { TALLY_WORDS, talliedPage, tallyOf } from './pageTally'
+import { holdsPage, TALLY_WORDS, talliedPage, tallyOf } from './pageTally'
 import type { PanelTally } from './ScopeTreePanel'
 import { newViewChoices } from '../organisation/newViewChoices'
 import { registerSummary } from '../organisation/register'
@@ -569,14 +569,15 @@ function TreeFor({ parts, at, page, onDone, findFirst = false }: { parts: ShellP
   // Removal is asked by the organisation's dialog on a home; from a scope that
   // is open, that home is one move away, and that is the move.
   // Beside a record page a scope's row keeps the page and moves it there; elsewhere it is the scope's home.
+  // A scope that cannot hold the page (documentation, with no element to open on) lands on its home: never on an empty place.
   const tallied = talliedPage(page)
-  const onHome = (path: ScopePath) => leave(() => agent.openSomewhere({ scope: path, page: tallied ?? 'home' }))()
+  const { models } = parts.tree
+  const onHome = (path: ScopePath) => leave(() => agent.openSomewhere({ scope: path, page: tallied && holdsPage(tallied, path, models) ? tallied : 'home' }))()
   const fromHome = (then: (scope: ScopeSummary) => void) => (scope: ScopeSummary) => {
     onDone?.()
     if (nav.project) nav.goHome(at)
     then(scope)
   }
-  const { models } = parts.tree
   const holdings = useMemo(() => holdingsOf(organisation.tree, models), [organisation.tree, models])
   const { index } = parts.tree
   const tally = useMemo<PanelTally | undefined>(() => {

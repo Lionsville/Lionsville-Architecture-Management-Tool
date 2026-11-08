@@ -34,6 +34,18 @@ export function talliedPage(page: Page | undefined): Tallied | undefined {
   return (TALLIED as readonly string[]).includes(page ?? '') ? page as Tallied : undefined
 }
 
+/**
+ * Whether a scope can hold the page, so a row of the tree beside it keeps the
+ * page there. Documentation opens on an element and is refused where the scope
+ * keeps none, stand-ins included (`useWorkspaceRequests`), which left the scope
+ * open on its empty place; the rest are lists, and an empty list is still the
+ * page. A scope not read yet is not known to hold anything.
+ */
+export function holdsPage(kind: Tallied, path: ScopePath, models: readonly ScopeModel[]): boolean {
+  if (kind !== 'documentation') return true
+  return (models.find((one) => one.path === path)?.model.elements.length ?? 0) > 0
+}
+
 /** What the tree says of a tally: the column's head, its *With …* tab, and one count in words. */
 export const TALLY_WORDS: Record<Tallied, { head: StringKey; with: StringKey; one: StringKey; other: StringKey }> = {
   documentation: { head: 'frame.tallyElements', with: 'frame.tallyWithElements', one: 'frame.tallyElementOne', other: 'frame.tallyElementOther' },

@@ -17,7 +17,7 @@ import type { ScopeModel, ScopeSummary } from '../../projects/scope'
 import { modelOf, summaryOf } from '../../projects/scopeAccess'
 import { indexScopes } from '../../projects/scopeIndex'
 import { holdingsOf } from '../organisation/holdings'
-import { TALLIED, talliedPage, tallyOf } from './pageTally'
+import { holdsPage, TALLIED, talliedPage, tallyOf } from './pageTally'
 
 const node = (path: string, children: ScopeSummary[] = [], personal = false): ScopeSummary => ({ path, name: path || 'Org', diagrams: 0, children, ...(personal ? { personal } : {}) })
 const model = (path: string, over: Partial<ScopeModel['model']>): ScopeModel => ({ path, model: { elements: [], relations: [], ...over } })
@@ -32,6 +32,18 @@ describe('which page has a tally', () => {
     expect(talliedPage('document')).toBe('documentation')
     expect(talliedPage('register')).toBeUndefined()
     expect(talliedPage(undefined)).toBeUndefined()
+  })
+})
+
+describe('whether a scope can hold the page', () => {
+  const models = [model('a', { elements: [{ id: 'e', kind: 'application', name: 'E' } as never] }), model('topic', {})]
+  it('is documentation only where the scope keeps an element; a scope not read yet keeps none', () => {
+    expect(holdsPage('documentation', 'a', models)).toBe(true)
+    expect(holdsPage('documentation', 'topic', models)).toBe(false)
+    expect(holdsPage('documentation', 'unread', models)).toBe(false)
+  })
+  it('is every list page anywhere: an empty list is still the page', () => {
+    for (const kind of TALLIED.filter((one) => one !== 'documentation')) expect(holdsPage(kind, 'topic', models)).toBe(true)
   })
 })
 
