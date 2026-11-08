@@ -18,7 +18,7 @@ import type { ScopePath } from '../projects/scopePath'
 import type { BootDialog, BootNotice } from './bootLanding'
 import type { Page } from '../agent/screen'
 import type { InitialPage } from './App'
-import type { WindowZoom } from '../platform/hostCommands'
+import type { ScreenOffers, WindowZoom } from '../platform/hostCommands'
 import type { ThemeMode } from '../platform/theme'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
@@ -361,8 +361,8 @@ export type AppHost = {
   onThemeMode?: (mode: ThemeMode) => void
   /** The zoom keys with no canvas under them, on a host whose menu bar owns them. */
   onWindowZoom?: (how: WindowZoom) => void
-  /** Whether a scope is open, for the menu bar's items that act on one (ADR-0005, amended). */
-  onScopeOpen?: (open: boolean) => void
+  /** Whether a scope is open, for the menu bar's items that act on one (ADR-0005, amended), and with none whether the home can take a step back. */
+  onScopeOpen?: (open: boolean, offers?: ScreenOffers) => void
   /** Tell the host which language the app is in, so what it asks itself is asked in it. */
   onLanguage?: (language: string) => void
   /**

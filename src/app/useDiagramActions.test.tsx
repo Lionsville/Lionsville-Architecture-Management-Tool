@@ -151,7 +151,7 @@ describe('a container view', () => {
     act(() => view.actions().confirmDeleteDiagram())
     expect(view.model().diagrams.map((d) => d.id)).toEqual(['d1', 'd2'])
     expect(view.model().elements.some((e) => e.parentId === 'billing')).toBe(false)
-    expect(view.notify).toHaveBeenCalledWith('“Billing — containers” deleted.', 'success')
+    expect(view.notify).toHaveBeenCalledWith('“Billing — containers” deleted.', 'success', { undo: { onPress: expect.any(Function) } })
     let gone: HostModel | undefined
     act(() => { gone = view.dispatch({ type: 'element.delete', id: 'billing' }) })
     expect(gone?.elements.some((e) => e.id === 'billing')).toBe(false)
@@ -213,7 +213,7 @@ describe('deleting', () => {
     expect(view.model().diagrams).toEqual([])
     expect(view.model().elements.map((e) => e.id)).toEqual(['billing'])
     expect(view.activeId()).toBe('d1')
-    expect(view.notify).toHaveBeenCalledWith('“L7” deleted.', 'success')
+    expect(view.notify).toHaveBeenCalledWith('“L7” deleted.', 'success', { undo: { onPress: expect.any(Function) } })
 
     act(() => view.undo())
     expect(view.model().diagrams.map((d) => d.id)).toEqual(['d1'])
@@ -226,7 +226,27 @@ describe('deleting', () => {
     act(() => view.actions().confirmDeleteDiagram())
     expect(view.model().diagrams.map((d) => d.id)).toEqual(['d2'])
     expect(view.activeId()).toBe('d2')
-    expect(view.notify).toHaveBeenCalledWith('“L7” deleted.', 'success')
+    expect(view.notify).toHaveBeenCalledWith('“L7” deleted.', 'success', { undo: { onPress: expect.any(Function) } })
+  })
+
+  it('takes the delete back from its toast, the same step ⌘Z takes, while it is the newest', () => {
+    const view = mount()
+    act(() => view.actions().requestDeleteDiagram('d1'))
+    act(() => view.actions().confirmDeleteDiagram())
+    const undo = (view.notify.mock.calls.at(-1)?.[2] as { undo: { onPress: () => void } }).undo
+    act(() => undo.onPress())
+    expect(view.model().diagrams.map((d) => d.id)).toEqual(['d1', 'd2'])
+  })
+
+  it('takes nothing else back from a stale toast, and says why', () => {
+    const view = mount()
+    act(() => view.actions().requestDeleteDiagram('d1'))
+    act(() => view.actions().confirmDeleteDiagram())
+    const undo = (view.notify.mock.calls.at(-1)?.[2] as { undo: { onPress: () => void } }).undo
+    act(() => { view.dispatch({ type: 'diagram.rename', id: 'd2', name: 'Renamed' }) })
+    act(() => undo.onPress())
+    expect(view.model().diagrams.map((d) => [d.id, d.name])).toEqual([['d2', 'Renamed']])
+    expect(view.notify).toHaveBeenLastCalledWith('Other changes came after it. Undo those first, or bring the view back from History.', 'info')
   })
 
   it('leaves everything alone when the dialog is cancelled', () => {

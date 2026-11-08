@@ -31,8 +31,8 @@ import type { StringKey, Translate } from '../../i18n'
 import { bareScope, flattenScopes, NOT_LISTED } from '../../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../../projects/scope'
 import { claimKey, idsIn } from '../../model/keys'
-import { removeContainerDiagram, toDiagram } from '../../model'
-import type { Command, DesignDiagram, ElementId } from '../../model'
+import { toDiagram } from '../../model'
+import type { DesignDiagram, ElementId } from '../../model'
 import { ShellError } from '../../platform/errors'
 import {
   parentScope, ROOT_SCOPE, scopePathLabel,
@@ -43,6 +43,9 @@ import { createScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt, writeSet
 import type { Repositories } from '../../ports/Repositories'
 import { opensOnNothing } from '../useShellNavigation'
 import { useScopeFolds } from './useScopeFolds'
+import type { ToastUndo } from '../useToasts'
+import { useHomeViews } from './useHomeViews'
+import type { HomeViews } from './useHomeViews'
 import type { InitialPage, ScopeSettingsPatch } from '../App'
 import { isTopic, TOPICS_PLACE, topicFiledUnder } from '../../projects/topics'
 import { typeChosen } from '../../projects/scopeType'
@@ -59,8 +62,6 @@ export type OrganisationDialog =
   /** A landscape for a scope that is already there, at any level (ADR-0012 §1). */
   | { kind: 'newBoard'; path: ScopePath; name: string }
   | { kind: 'delete'; target: ScopeSummary }
-  /** One board of a scope, from the table on its home. */
-  | { kind: 'deleteBoard'; path: ScopePath; board: { id: string; name: string } }
 
 export type UseOrganisationInput = {
   /** Where the scopes are kept: the tree, each one's state, and the steps and moves that change them. */
@@ -100,7 +101,7 @@ export type UseOrganisationInput = {
   onEnter: (scope: ScopeSnapshot, page?: InitialPage) => void
   /** To a scope's home: where a scope just filed is arrived at. */
   onHome?: (path: ScopePath) => void
-  notify: (message: string, severity: 'success' | 'error' | 'warning') => void
+  notify: (message: string, severity: 'success' | 'error' | 'warning', undo?: ToastUndo) => void
   onFailure: (where: string, cause: unknown, key?: StringKey) => void
   /** Latched storage notice: a store that refuses says so once, standing. */
   onKeptResult: (ok: boolean) => void
@@ -113,7 +114,7 @@ export type UseOrganisationInput = {
   s: Translate
 }
 
-export type Organisation = {
+export type Organisation = HomeViews & {
   /** The whole tree, root first. Re-read after every write. */
   tree: ScopeSummary
   /** Whose home this is. */
@@ -168,13 +169,6 @@ export type Organisation = {
   addBoard: (path: ScopePath) => void
   setNewBoardName: (name: string) => void
   createBoard: () => void
-  /**
-   * Take a board off a scope, from the table on its home. The only place a
-   * container diagram can be deleted: it is not a tab, so the tab menu that
-   * deletes a landscape never reaches it.
-   */
-  askDeleteBoard: (path: ScopePath, board: { id: string; name: string }) => void
-  confirmDeleteBoard: () => void
   applySettings: (path: ScopePath, patch: ScopeSettingsPatch) => void
   confirmDelete: () => void
   open: (path: ScopePath, page?: InitialPage) => void
@@ -305,6 +299,8 @@ export function useOrganisation({
 
 
   const folds = useScopeFolds(tree)
+  /** A view renamed or deleted from its row, and taken back (`useHomeViews`). */
+  const views = useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, s })
 
   const addUnder = useCallback((parent: ScopePath) => setDialog({ kind: 'newScope', parent, name: '', withBoard: false, type: '' }), [])
   const setNewScopeType = useCallback((type: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, type } : held)), [])
@@ -399,47 +395,6 @@ export function useOrganisation({
     })
   }, [dialog, scopes, onEnter, refresh, notify, onFailure, onKeptResult, s, onTreeChanged])
 
-  const askDeleteBoard = useCallback((path: ScopePath, board: { id: string; name: string }) => {
-    setDialog({ kind: 'deleteBoard', path, board })
-  }, [])
-
-  /**
-   * Read-patch-write, like making a board: the home is outside any session.
-   * The active board moves on to the first that remains, so a scope entered
-   * next does not start on a board that is not there.
-   */
-  const confirmDeleteBoard = useCallback(() => {
-    if (dialog.kind !== 'deleteBoard') return
-    const { path, board } = dialog
-    setDialog({ kind: 'none' })
-    void (async () => {
-      // Expecting what was read, and taken off again over a scope that moved
-      // in between, so a board somebody drew meanwhile is not taken with it.
-      // A container view is the DETAIL of an application, not the
-      // application: the containers go, the interfaces they were carrying are
-      // written on the landscape first, and the application stays where it
-      // was drawn (`model/containerDiagram.ts`). A landscape has no such
-      // insides, so it is the plain drop it always was.
-      const next = await changeScope(scopes, path, (held) => {
-        const taken = new Set(idsIn(held.model))
-        const command: Command = removeContainerDiagram(held.model, board.id, () => claimKey('interface', taken))
-          ?? { type: 'diagram.delete', id: board.id }
-        const moving = held.activeDiagramId === board.id
-          ? held.model.diagrams.find((diagram) => diagram.id !== board.id)?.id ?? ''
-          : undefined
-        return [command, ...(moving !== undefined ? [{ type: 'scope.describe', patch: { activeDiagramId: moving } } as const] : [])]
-      })
-      if (!next) return
-      refresh()
-      notify(s('shell.deleted', { name: board.name }), 'success')
-    })().catch((cause: unknown) => {
-      // The reducer's own refusal is said in its words; anything else is where
-      // work is kept not answering.
-      if (cause instanceof ShellError) { notify(s(cause.key), 'error'); return }
-      onFailure('organisation.deleteBoard', cause)
-      onKeptResult(false)
-    })
-  }, [dialog, scopes, refresh, notify, onFailure, onKeptResult, s])
 
   /**
    * Apply a scope's edited record: what it is called, what it is, who its
@@ -561,13 +516,13 @@ export function useOrganisation({
     tree, listed, listFailed, listedNow, at, root, ready, refresh, dialog, ...folds,
     addUnder, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, setNewScopeType, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
-    askDeleteBoard, confirmDeleteBoard,
+    ...views,
     applySettings, confirmDelete, open, nameOrganisation,
   }), [
     tree, listed, listFailed, listedNow, at, root, ready, refresh, dialog, folds,
     addUnder, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
     setNewScopeWithBoard, setNewScopeType, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
-    askDeleteBoard, confirmDeleteBoard,
+    views,
     applySettings, confirmDelete, open, nameOrganisation,
   ])
 }

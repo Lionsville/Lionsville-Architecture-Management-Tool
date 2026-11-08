@@ -9,7 +9,8 @@ import Alert from '@mui/material/Alert'
 import type { AlertColor } from '@mui/material/Alert'
 import Button from '@mui/material/Button'
 import Snackbar from '@mui/material/Snackbar'
-import type { Toast } from './useToasts'
+import { Toast } from '../widgets/kit/Toast'
+import type { Toast as ShellToast } from './useToasts'
 
 /** An error gets longer, because it usually says something you have to read. */
 export const HIDE_AFTER_MS = { error: 12_000, other: 5_000 }
@@ -25,7 +26,7 @@ export function hideAfter(severity: AlertColor | undefined): number {
 }
 
 export type ToastBarProps = {
-  toast: Toast | null
+  toast: ShellToast | null
   open: boolean
   onClose: () => void
   onExited: () => void
@@ -41,11 +42,15 @@ export type ToastBarProps = {
  * the duration by a millisecond, alternately, which nobody can see and the
  * timer cannot miss.
  */
-export function hideAfterFor(toast: Toast | null): number {
+export function hideAfterFor(toast: ShellToast | null): number {
   return hideAfter(toast?.severity) + ((toast?.repeats ?? 0) % 2)
 }
 
 export function ToastBar({ toast, open, onClose, onExited }: ToastBarProps) {
+  // A change with its Undo is the kit's toast, the same one every page's own change raises.
+  if (toast?.undo) {
+    return <Toast toast={open ? { key: toast.key, message: toast.message, undo: toast.undo } : null} onClose={() => { onClose(); onExited() }} />
+  }
   return (
     <Snackbar
       key={toast?.key}

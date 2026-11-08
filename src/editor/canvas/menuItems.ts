@@ -10,6 +10,8 @@ import { DEFAULT_TRANSLATE, type StringKey, type Translate } from '../../i18n/st
 import { zoneMenuLabel } from '../../model/zones';
 import { paletteLabel } from './paletteItems';
 import type { AlignAxis, DistributeAxis } from '../../layout/alignDistribute';
+import { viewActions } from '../viewActions';
+import type { ViewActionId } from '../viewActions';
 
 /**
  * CONTEXT MENUS — the pure half.
@@ -86,7 +88,8 @@ export type MenuActionId =
   | 'duplicate-diagram'
   | 'duplicate-diagram-as-of'
   | 'delete-diagram'
-  | 'diagram-history';
+  | 'diagram-history'
+  | 'open-view';
 
 /** The parameter a submenu entry carries alongside its action. */
 export interface MenuActionArgs {
@@ -110,6 +113,8 @@ export interface MenuActionArgs {
    * to (ADR-0013). `undefined` on the last entry — back to the boundary.
    */
   containerId?: ElementId;
+  /** A view to open: one of a landscape's container views, from its tab. */
+  diagramId?: string;
 }
 
 export interface MenuItem {
@@ -208,6 +213,8 @@ export interface TabMenuFacts {
   canDelete: boolean;
   /** The host keeps a history and can show this diagram's (ADR-0008). */
   canHistory?: boolean;
+  /** A landscape's container views, listed first in its tab's menu. */
+  containers?: readonly { id: string; name: string }[];
 }
 
 export interface MenuContext {
@@ -765,24 +772,30 @@ function groupItems(ctx: MenuContext): MenuItem[] {
 
 function tabItems(ctx: MenuContext): MenuItem[] {
   const tab = ctx.tab;
-  if (!tab || ctx.readOnly) return [];
+  if (!tab) return [];
   const t = ctx.t ?? DEFAULT_TRANSLATE;
   const items: MenuItem[] = [];
-  if (tab.canRename) items.push({ id: 'rename-diagram', label: t('menu.renameDiagram'), action: 'rename-diagram' });
-  if (tab.canConfigure) items.push({ id: 'diagram-settings', label: t('menu.diagramSettings'), action: 'diagram-settings' });
-  if (tab.canDuplicate) items.push({ id: 'duplicate-diagram', label: t('menu.duplicateDiagram'), action: 'duplicate-diagram' });
-  // A copy dated for a day the landscape has not reached yet — which is how a
-  // future diagram is made here, rather than by forking the project (ADR-0009).
-  if (tab.canDuplicate) items.push({ id: 'duplicate-diagram-as-of', label: t('menu.duplicateDiagramAsOf'), action: 'duplicate-diagram-as-of' });
-  if (tab.canHistory) items.push({ id: 'diagram-history', label: t('common.history'), action: 'diagram-history' });
-  if (tab.canDelete) {
-    if (items.length > 0) items.push(sep('sep-delete'));
-    items.push({
-      id: 'delete-diagram',
-      label: t('menu.deleteDiagram'),
-      danger: true,
-      action: 'delete-diagram',
-    });
+  // A landscape's container views are a closer look at it, so its tab lists them first.
+  // Each one entry, a press away: a submenu would hide them behind a hover.
+  for (const one of tab.containers ?? []) {
+    items.push({ id: `open-view-${one.id}`, label: t('menu.containersOf', { name: one.name }), action: 'open-view', args: { diagramId: one.id } });
+  }
+  const opened = items.length;
+  // The same list the view's own ⋯ and its row on the home draw (`viewActions`).
+  // A copy dated for a day the landscape has not reached yet is how a future
+  // diagram is made here, rather than by forking the project (ADR-0009).
+  // Somebody who may only read opens a container view, and changes nothing.
+  for (const action of ctx.readOnly ? [] : viewActions({ ...tab, canDuplicateAsOf: true }, t)) {
+    if (action.id === 'open') continue;
+    if (action.danger && items.length > 0) items.push(sep('sep-delete'));
+    else if (opened > 0 && items.length === opened) items.push(sep('sep-views'));
+    items.push({ id: TAB_ACTION[action.id], label: action.label, action: TAB_ACTION[action.id], ...(action.danger ? { danger: true } : {}) });
   }
   return items;
 }
+
+/** A view's action as the tab menu's own action. */
+const TAB_ACTION = {
+  open: 'open-view', rename: 'rename-diagram', settings: 'diagram-settings', duplicate: 'duplicate-diagram',
+  duplicateAsOf: 'duplicate-diagram-as-of', history: 'diagram-history', delete: 'delete-diagram',
+} as const satisfies Record<ViewActionId, MenuActionId>;

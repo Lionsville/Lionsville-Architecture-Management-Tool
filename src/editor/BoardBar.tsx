@@ -9,7 +9,8 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
 import { useStrings } from '../i18n/LanguageContext';
-import { LANGUAGES, LANGUAGE_NAME, type Language } from '../i18n/strings';
+import { LANGUAGES, LANGUAGE_NAME, type Language, type Translate } from '../i18n/strings';
+import { viewActions } from './viewActions';
 import { aspectConfigFor } from '../model/aspects';
 import { colourByAspect, colourByOne, VALUE_COLOUR_BY, type ColourBy } from '../model/overlay';
 import { ColourMenu, type ColourQuestion } from '../widgets/kit/ColourMenu';
@@ -176,6 +177,29 @@ function ColourBar({ props }: { props: EditorToolbarProps }) {
   );
 }
 
+/**
+ * The view's own acts at the head of its ⋯, the list its tab's ⌄ and its row on
+ * the home draw too (`viewActions`); delete is the last thing in the menu.
+ */
+function viewEntries(props: EditorToolbarProps, t: Translate): MenuEntry[] {
+  if (props.readOnly) return [];
+  const view = props.activeDiagram;
+  const run = {
+    rename: () => props.onRenameDiagram?.(view.id, view.name),
+    duplicate: () => props.onDuplicateDiagram?.(view.id),
+    delete: () => props.onDeleteDiagram?.(view.id),
+  } as const;
+  const acts = viewActions({
+    canRename: Boolean(props.onRenameDiagram),
+    // A second container view about one application would be two answers to what is inside it.
+    canDuplicate: Boolean(props.onDuplicateDiagram) && view.kind !== 'container',
+    canDelete: Boolean(props.onDeleteDiagram),
+  }, t).flatMap((act) => (act.id === 'rename' || act.id === 'duplicate' || act.id === 'delete'
+    ? [{ label: act.label, onSelect: run[act.id], ...(act.danger ? { final: true } : {}) }]
+    : []));
+  return acts.length > 0 ? [...acts, { line: true }] : [];
+}
+
 export function BoardBar({ props, framed, pageBar, day, add, show }: {
   props: EditorToolbarProps;
   /** The frame's row one has undo. */
@@ -190,6 +214,7 @@ export function BoardBar({ props, framed, pageBar, day, add, show }: {
   const editing = !props.readOnly && !props.looking && !props.laidOut;
   const onCanvas = !props.laidOut;
   const more: MenuEntry[] = [
+    ...viewEntries(props, t),
     { label: t('toolbar.shortcuts'), onSelect: props.onOpenHelp, shortcut: '?' },
     ...(props.onLanguageChange ? [{
       label: t('common.language'),

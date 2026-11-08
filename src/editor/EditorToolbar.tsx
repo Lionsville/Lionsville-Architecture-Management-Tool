@@ -11,7 +11,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
-import ListItemText from '@mui/material/ListItemText';
 import { SurfaceMenu as Menu } from '../widgets/kit/Surface';
 import MenuItem from '@mui/material/MenuItem';
 import Tab from '@mui/material/Tab';
@@ -347,6 +346,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
                 canDuplicate: Boolean(props.onDuplicateDiagram) && tabMenu.kind !== 'container',
                 canDelete: Boolean(props.onDeleteDiagram),
                 canHistory: Boolean(props.onDiagramHistory),
+                containers: containerEntries(props.model, tabMenu.diagramId),
               },
             },
           )
@@ -364,7 +364,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
   };
   /** The same menu from a button rather than a right-click: it opens under the button. */
   const openTabMenuBelow = (element: HTMLElement, diagramId: string) => {
-    if (!hasTabMenu) return;
+    if (!hasTabMenu && containerEntries(props.model, diagramId).length === 0) return;
     const box = element.getBoundingClientRect();
     const kind = props.model.diagrams.find((d) => d.id === diagramId)?.kind ?? 'layer7';
     setTabMenu({ diagramId, kind, screen: { x: box.left, y: box.bottom } });
@@ -387,11 +387,11 @@ export function EditorToolbar(props: EditorToolbarProps) {
         setDuplicateAsOf({ diagramId: diagram.id, day: diagram.asOf ?? '' });
         return;
       case 'delete-diagram':
-        props.onDeleteDiagram?.(diagram.id);
-        return;
+        return props.onDeleteDiagram?.(diagram.id);
       case 'diagram-history':
-        props.onDiagramHistory?.(diagram.id);
-        return;
+        return props.onDiagramHistory?.(diagram.id);
+      case 'open-view':
+        return item.args?.diagramId ? props.onActiveDiagramChange(item.args.diagramId) : undefined;
     }
   };
 
@@ -465,15 +465,13 @@ export function EditorToolbar(props: EditorToolbarProps) {
                 value={diagram.id} aria-label={diagram.asOf ? `${diagram.name} ${formatDay(diagram.asOf, language)}` : diagram.name}
                 // Pressing the name of the view that is up asks about the view itself: *This view*.
                 onClick={diagram.id === props.activeDiagram.id && !host?.pageUp ? props.onOpenThisView : undefined}
-                {...tabMenuDoors(diagram.id, openTabMenu, hasTabMenu ? openTabMenuBelow : undefined)}
+                {...tabMenuDoors(diagram.id, openTabMenu, openTabMenuBelow)}
                 label={
                   <TabLabel
                     diagram={diagram}
-                    model={props.model}
-                    onActiveDiagramChange={props.onActiveDiagramChange}
                     // In the frame a view's settings are in its tab's menu, and the ring is gone.
                     onOpenDiagramSettings={props.readOnly || framed ? undefined : props.onOpenDiagramSettings}
-                    onContainerMenu={hasTabMenu ? openTabMenu : undefined}
+                    onMenu={hasTabMenu || containerEntries(props.model, diagram.id).length > 0 ? openTabMenuBelow : undefined}
                   />
                 }
               />
@@ -686,33 +684,27 @@ function tabKeyDown(
   openMenuBelow: ((element: HTMLElement, diagramId: string) => void) | undefined,
 ): void {
   const tab = event.currentTarget;
-  if (event.key === 'ArrowDown') {
-    const caret = tab.querySelector<HTMLElement>('[data-tab-action="containers"]');
-    if (!caret) return;
-    event.preventDefault();
-    caret.click();
-    return;
-  }
-  const menuKey = event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey);
+  const menuKey = event.key === 'ArrowDown' || event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey);
   if (!menuKey || !openMenuBelow) return;
   event.preventDefault();
   openMenuBelow(tab, diagramId);
 }
 
 /**
- * A Layer 7 tab's label: the name and, when applications placed on this
- * landscape have container diagrams, a small chevron that lists them. Container
- * diagrams used to be reachable only by double-clicking their application; now
- * they are one click from the tab they belong to, and the breadcrumb still takes
- * over once one is open.
+ * A tab's label: the name, the day a dated view shows, and a ⌄ that opens the
+ * view's menu — on every tab of every kind, however many there are, so a view
+ * can be renamed or deleted where it is looked at. A landscape's container
+ * views are listed in that menu, a closer look at one box on it; they used to
+ * have a ⌄ of their own, and two carets on one tab said nothing about which
+ * did what.
  */
 /**
  * The two controls a tab carries beside its name, for the pointer. Spans, not
  * IconButtons, and out of the accessibility tree: a Tab is already a <button>,
  * and a control inside a button is one a screen reader cannot reach and a
  * keyboard should not have to stop at. The keyboard reaches both from the tab
- * itself ({@link tabMenuDoors}): ↓ opens the container diagrams, Shift+F10 or the
- * Menu key the tab's menu, whose *Settings…* is the other.
+ * itself ({@link tabMenuDoors}): ↓, Shift+F10 or the Menu key open the menu,
+ * whose *Settings…* is the other.
  */
 const TAB_ACTION_SX = {
   display: 'inline-flex',
@@ -725,34 +717,22 @@ const TAB_ACTION_SX = {
 
 function TabLabel({
   diagram,
-  model,
-  onActiveDiagramChange,
   onOpenDiagramSettings,
-  onContainerMenu,
+  onMenu,
 }: {
   diagram: DesignDiagram;
-  model: DesignModel;
-  onActiveDiagramChange(diagramId: string): void;
   /** Absent when the host offers no settings, and when the editor is read-only. */
   onOpenDiagramSettings?(diagramId: string): void;
-  /**
-   * Right-click on a container view's entry: the diagram menu a tab has,
-   * for a view that has no tab. Absent where there is no menu to offer.
-   */
-  onContainerMenu?(event: React.MouseEvent, diagramId: string): void;
+  /** The view's menu, under the tab. Absent where there is nothing to offer. */
+  onMenu?(anchor: HTMLElement, diagramId: string): void;
 }) {
   const { t, language } = useStrings();
-  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
-  const placed = new Set(placedNodes(diagram).map((p) => p.id));
-  const containers = model.diagrams.filter(
-    (d) => d.kind === 'container' && d.applicationElementId && placed.has(d.applicationElementId),
-  );
-  const nameOf = (d: DesignDiagram) =>
-    model.elements.find((e) => e.id === d.applicationElementId)?.name ?? d.name;
-  const open = (event: React.MouseEvent | React.KeyboardEvent) => {
+  const openMenu = (event: React.MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();
-    setAnchor(event.currentTarget as HTMLElement);
+    // Under the tab, not under the caret: the menu is the tab's.
+    const tab = (event.currentTarget as HTMLElement).closest('[role="tab"]') as HTMLElement | null;
+    onMenu?.(tab ?? (event.currentTarget as HTMLElement), diagram.id);
   };
   const openSettings = (event: React.MouseEvent | React.KeyboardEvent) => {
     event.stopPropagation();
@@ -764,56 +744,20 @@ function TabLabel({
     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
       <span>{diagram.name}</span>
       {diagram.asOf && <span className="editor-tab__day">{formatDay(diagram.asOf, language)}</span>}
-      {containers.length > 0 && (
-        <>
-          <Tooltip title={t('toolbar.containerDiagrams')}>
-            <Box
-              component="span"
-              aria-hidden
-              data-tab-action="containers"
-              aria-label={t('toolbar.containerDiagramsOf', { name: diagram.name })}
-              onClick={open}
-              sx={TAB_ACTION_SX}
-            >
-              <CaretIcon />
-            </Box>
-          </Tooltip>
-          <Menu
-            open={Boolean(anchor)}
-            anchorEl={anchor}
-            onClose={() => setAnchor(null)}
-            slotProps={{
-              list: {
-                dense: true,
-                'aria-label': t('toolbar.containerDiagramsOf', { name: diagram.name }),
-              },
-            }}
+      {onMenu && (
+        <Tooltip title={t('menu.tabLabel')}>
+          <Box
+            component="span"
+            aria-hidden
+            data-tab-action="menu"
+            data-testid={`tab-menu-${diagram.id}`}
+            aria-label={t('toolbar.viewMenuOf', { name: diagram.name })}
+            onClick={openMenu}
+            sx={TAB_ACTION_SX}
           >
-            {containers.map((container) => (
-              <MenuItem
-                key={container.id}
-                onClick={() => {
-                  setAnchor(null);
-                  onActiveDiagramChange(container.id);
-                }}
-                onContextMenu={onContainerMenu && ((event: React.MouseEvent) => {
-                  // The dropdown is a portal in the DOM and a child of the tab
-                  // in React's tree, so without this the tab's own right-click
-                  // handler fires next and opens the landscape's menu instead.
-                  event.stopPropagation();
-                  setAnchor(null);
-                  onContainerMenu(event, container.id);
-                })}
-              >
-                <ListItemText
-                  primary={nameOf(container)}
-                  secondary={t('toolbar.containerView')}
-                  slotProps={{ primary: { sx: { fontSize: 'var(--t-body)' } }, secondary: { sx: { fontSize: 'var(--t-small)' } } }}
-                />
-              </MenuItem>
-            ))}
-          </Menu>
-        </>
+            <CaretIcon />
+          </Box>
+        </Tooltip>
       )}
       {onOpenDiagramSettings && (
         <Tooltip title={t('toolbar.diagramSettings')}>
@@ -894,6 +838,16 @@ function Breadcrumb({
       )}
     </div>
   );
+}
+
+/** The container views of the applications a landscape places, by application: what its tab's menu lists first. */
+function containerEntries(model: DesignModel, diagramId: string): { id: string; name: string }[] {
+  const diagram = model.diagrams.find((d) => d.id === diagramId);
+  if (!diagram || diagram.kind !== 'layer7') return [];
+  const placed = new Set(placedNodes(diagram).map((p) => p.id));
+  return model.diagrams
+    .filter((d) => d.kind === 'container' && d.applicationElementId !== undefined && placed.has(d.applicationElementId))
+    .map((d) => ({ id: d.id, name: model.elements.find((e) => e.id === d.applicationElementId)?.name ?? d.name }));
 }
 
 /** Where a level up goes: the board this was opened from, else the first board that places it, else the first board. */

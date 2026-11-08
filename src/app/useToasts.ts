@@ -15,16 +15,22 @@ import type { AlertColor } from '@mui/material/Alert'
 export type ToastAction = { label: string; onClick: () => void }
 
 /**
+ * A change that landed, and the step that takes it back: drawn by the kit's
+ * toast, whose button says Undo with its key, rather than as an offer.
+ */
+export type ToastUndo = { undo: { onPress: () => void; shortcut?: string } }
+
+/**
  * One message. The key restarts the bar when a new message arrives.
  *
  * `repeats` counts the times the same words arrived again while they were
  * still up: the bar restarts its timer on it rather than drawing the message a
  * second time (`ToastBar`).
  */
-export type Toast = { key: number; message: string; severity: AlertColor; action?: ToastAction; repeats?: number }
+export type Toast = { key: number; message: string; severity: AlertColor; action?: ToastAction; undo?: ToastUndo['undo']; repeats?: number }
 
 /** What every place with something to report is handed. */
-export type Notify = (message: string, severity?: AlertColor, action?: ToastAction) => void
+export type Notify = (message: string, severity?: AlertColor, action?: ToastAction | ToastUndo) => void
 
 export type Toasts = {
   toast: Toast | null
@@ -60,11 +66,11 @@ export function useToasts(): Toasts {
   const notify = useCallback<Notify>((message, severity = 'info', action) => {
     const held = standing.current
     let next: Toast
-    if (held && !action && !held.action && held.message === message && held.severity === severity) {
+    if (held && !action && !held.action && !held.undo && held.message === message && held.severity === severity) {
       next = { ...held, repeats: (held.repeats ?? 0) + 1 }
     } else {
       seq.current += 1
-      next = { key: seq.current, message, severity, ...(action ? { action } : {}) }
+      next = { key: seq.current, message, severity, ...(action ? ('undo' in action ? { undo: action.undo } : { action }) : {}) }
     }
     standing.current = next
     setToast(next)

@@ -74,7 +74,7 @@ function contexts(): MenuContext[] {
           element: ELEMENTS[i % ELEMENTS.length],
           connection: CONNECTIONS[i % CONNECTIONS.length],
           selection: { elementCount: 3, landscapeCount: 2 },
-          tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, canHistory: true },
+          tab: { canRename: true, canConfigure: true, canDuplicate: true, canDelete: true, canHistory: true, containers: [{ id: 'cd1', name: 'Billing' }] },
         });
       }
     }
@@ -136,6 +136,7 @@ describe('the menu action table', () => {
       'duplicate-diagram-as-of': 'tabMenu',
       'delete-diagram': 'tabMenu',
       'diagram-history': 'tabMenu',
+      'open-view': 'tabMenu',
     });
   });
 

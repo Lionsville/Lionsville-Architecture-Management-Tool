@@ -829,7 +829,7 @@ function useShellBase(props: AppProps) {
   // The mouse's back and forward buttons, where the host asks for Back and Forward (ADR-0033).
   useMouseHistoryButtons(host.windowChrome ?? NO_WINDOW_CHROME)
   useHostFacts({
-    project, onScopeOpen: host.onScopeOpen, themeMode: prefs.themeMode, onThemeMode: host.onThemeMode,
+    project, onScopeOpen: host.onScopeOpen, frame, themeMode: prefs.themeMode, onThemeMode: host.onThemeMode,
     language: prefs.language, onLanguage: host.onLanguage,
   })
   const order = useProjectOrder(prefs)

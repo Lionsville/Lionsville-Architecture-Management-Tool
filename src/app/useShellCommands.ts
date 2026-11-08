@@ -13,7 +13,7 @@
  * refs, so the subscription does not chase the identity of the hooks that
  * hold them.
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { helpAt } from './helpAt'
 import type { ThemeMode } from '../platform/theme'
@@ -22,11 +22,12 @@ import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { HostControls } from '../ports/HostControls'
 import { goInHistory } from './BackForward'
-import type { WindowZoom } from '../platform/hostCommands'
+import type { ScreenOffers, WindowZoom } from '../platform/hostCommands'
 import { setHostOwnsZoomKeys, zoomCanvasInUse } from '../widgets/kit/useCanvasZoom'
 import { useHostCommands } from './useHostCommands'
 import type { CommandBus, CommandStream } from './useHostCommands'
 import type { ShellPreferences } from './useShellPreferences'
+import type { FrameStore } from './frame/frameStore'
 
 /** The home's snapshot and history, while the organisation screen is up. */
 export type HomeHistoryDoors = { openDialog: () => void; openPage: () => void }
@@ -99,14 +100,24 @@ export function useShellCommands(deps: {
 export function useHostFacts(deps: {
   /** The scope that is open: said again when another opens, as it always was. */
   project: ScopeSnapshot | undefined
-  onScopeOpen: ((open: boolean) => void) | undefined
+  onScopeOpen: ((open: boolean, offers?: ScreenOffers) => void) | undefined
+  /** Where the screen up says what it offers: a view whose picture can be taken. */
+  frame?: FrameStore
   themeMode: ThemeMode
   onThemeMode: ((mode: ThemeMode) => void) | undefined
   language?: string
   onLanguage?: ((language: string) => void) | undefined
 }): void {
-  const { project, onScopeOpen, themeMode, onThemeMode, language, onLanguage } = deps
-  useEffect(() => { onScopeOpen?.(project !== undefined) }, [onScopeOpen, project])
+  const { project, onScopeOpen, frame, themeMode, onThemeMode, language, onLanguage } = deps
+  const open = project !== undefined
+  const [picture, setPicture] = useState(false)
+  useEffect(() => {
+    if (!frame) return undefined
+    const read = () => { const facts = frame.get().screen; setPicture(facts?.kind === 'workspace' && facts.boardUp === true) }
+    read()
+    return frame.subscribe(read)
+  }, [frame])
+  useEffect(() => { onScopeOpen?.(open, { picture: open && picture }) }, [onScopeOpen, open, picture])
   useEffect(() => { onThemeMode?.(themeMode) }, [onThemeMode, themeMode])
   useEffect(() => { if (language) onLanguage?.(language) }, [onLanguage, language])
 }

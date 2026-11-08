@@ -160,7 +160,7 @@ describe('the tree', () => {
     show()
     fireEvent.click(await screen.findByRole('button', { name: 'More for Acme Logistics' }))
     await screen.findByRole('menuitem', { name: 'Settings…' })
-    expect(screen.queryByRole('menuitem', { name: 'Delete…' })).toBeNull()
+    expect(screen.queryByRole('menuitem', { name: 'Delete view…' })).toBeNull()
   })
 
   it('removes a scope and everything filed under it, once confirmed', async () => {
@@ -604,11 +604,11 @@ describe('the boards on a landscape’s home', () => {
     fireEvent.click(await screen.findByTestId('home-finance'))
     const boards = await screen.findByTestId('boards')
     fireEvent.click(within(within(boards).getByTestId('board-now')).getByRole('button', { name: 'More for Finance today' }))
-    expect(await screen.findByRole('menuitem', { name: 'Delete…' })).toBeDefined()
+    expect(await screen.findByRole('menuitem', { name: 'Delete view…' })).toBeDefined()
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
     fireEvent.click(within(within(boards).getByTestId('board-cd')).getByRole('button', { name: 'More for Ledger' }))
-    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete…' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete view…' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Delete' }))
     await waitFor(() => expect(within(screen.getByTestId('boards')).queryByTestId('board-cd')).toBeNull())
     expect(within(screen.getByTestId('boards')).getByTestId('board-now')).toBeDefined()

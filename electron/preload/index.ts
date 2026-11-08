@@ -96,7 +96,7 @@ const commands: DesktopCommands = {
   },
   reportUnsaved: (unsaved) => { void ipcRenderer.invoke('app:unsaved', unsaved) },
   reportTheme: (mode: ThemeMode) => { void ipcRenderer.invoke('app:theme', mode) },
-  reportScopeOpen: (open) => { void ipcRenderer.invoke('app:scopeOpen', open) },
+  reportScopeOpen: (open, offers) => { void ipcRenderer.invoke('app:scopeOpen', open, offers?.picture === true) },
   reportLanguage: (language) => { void ipcRenderer.invoke('app:language', language) },
   zoomWindow: (how) => { void ipcRenderer.invoke('app:zoomWindow', how) },
 }

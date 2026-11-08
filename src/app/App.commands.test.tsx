@@ -16,7 +16,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { laidOut } from '../model/testFixtures';
-import { act, cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { heldRepositories } from './testing/heldRepositories'
 import type { HostCommand } from '../platform/hostCommands'
 import { DESKTOP_APP_LINK, FILE_MENU, HELP_MENU, PREFERENCES_ITEM, THEME_ITEMS, offered } from '../platform/menu'
@@ -190,11 +190,26 @@ describe('commands from the host', () => {
   it('reports whether a scope is open, so the items about one can be enabled only then', async () => {
     // The third fact main is told (ADR-0005, amended): true with the project
     // open, false once the person is back on the organisation's home.
-    const reported: boolean[] = []
-    show({ host: { onScopeOpen: (open) => reported.push(open) } })
-    expect(reported).toEqual([true])
+    // Said again as what the screen offers moves (a board up, whose picture
+    // can be taken), so it is the facts that are pinned, not how often.
+    const reported: { open: boolean; picture: boolean }[] = []
+    show({ host: { onScopeOpen: (open, offers) => reported.push({ open, picture: offers?.picture === true }) } })
+    expect(reported.every((one) => one.open)).toBe(true)
+    await waitFor(() => expect(reported.at(-1)).toEqual({ open: true, picture: true }))
     fireEvent.click(screen.getByTestId('crumb-'))
-    await waitFor(() => expect(reported.at(-1)).toBe(false))
+    await waitFor(() => expect(reported.at(-1)).toEqual({ open: false, picture: false }))
+  })
+
+  it('takes a view deleted from a home back on Edit › Undo', async () => {
+    const view = show()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Home' })[0] as HTMLElement)
+    await waitFor(() => expect(screen.getByTestId('board-d1')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'More for L7' }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete view…' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete' }))
+    await waitFor(() => expect(screen.queryByTestId('board-d1')).toBeNull())
+    view.send({ type: 'undo' })
+    await waitFor(() => expect(screen.getByTestId('board-d1')).toBeTruthy())
   })
 
   it('opens the help in the app\'s language, at the section asked for, with nothing open', async () => {

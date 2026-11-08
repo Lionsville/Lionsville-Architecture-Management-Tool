@@ -206,7 +206,7 @@ describe('menuItemsFor — node', () => {
     ).not.toContain('domain-group');
   });
 
-  it('disables "Remove from diagram" for the boundary application, with a reason', () => {
+  it('disables "Remove from view" for the boundary application, with a reason', () => {
     const items = menuItemsFor(
       NODE,
       ctx({ diagramKind: 'container', element: app({ zone: undefined, isBoundaryApplication: true }) }),
@@ -540,6 +540,17 @@ describe('menuItemsFor — tab', () => {
     expect(remove.danger).toBe(true);
   });
 
+  it('lists a landscape\'s container views first, a press each, and only those to somebody who may only read', () => {
+    const containers = [{ id: 'cd1', name: 'Billing' }];
+    const items = menuItemsFor(TAB, tab({ containers }));
+    expect(ids(items)).toEqual([
+      'open-view-cd1', 'rename-diagram', 'diagram-settings', 'duplicate-diagram', 'duplicate-diagram-as-of', 'delete-diagram',
+    ]);
+    expect(byId(items, 'open-view-cd1')).toEqual(expect.objectContaining({ label: 'Containers of Billing', action: 'open-view', args: { diagramId: 'cd1' } }));
+    expect(items.filter((i) => i.divider)).toHaveLength(2);
+    expect(ids(menuItemsFor(TAB, tab({ containers }, { readOnly: true })))).toEqual(['open-view-cd1']);
+  });
+
   it('is empty in read-only mode and without tab facts', () => {
     expect(menuItemsFor(TAB, tab({}, { readOnly: true }))).toEqual([]);
     expect(menuItemsFor(TAB, ctx())).toEqual([]);
@@ -643,7 +654,7 @@ describe('menuItemsFor — change kind', () => {
       'change-kind',
     );
     expect(entry.disabled).toBe(true);
-    expect(entry.disabledReason).toBe('This diagram does not hold that kind');
+    expect(entry.disabledReason).toBe('This view does not hold that kind');
   });
 
   it('is not offered at all in read-only mode', () => {

@@ -285,8 +285,8 @@ describe('useOrganisation', () => {
       activeDiagramId: 'cd', logoLibrary: [],
     }])
     await settle()
-    act(() => held().askDeleteBoard('retail', { id: 'cd', name: 'ERP' }))
-    await act(async () => { held().confirmDeleteBoard(); await Promise.resolve() })
+    act(() => held().askDeleteView('retail', { id: 'cd', name: 'ERP', kind: 'container' }))
+    await act(async () => { held().confirmDeleteView(); await Promise.resolve() })
     await settle()
     const retail = await store.read('retail')
     expect(retail?.model.diagrams.map((d) => d.id)).toEqual(['l7'])
@@ -310,14 +310,54 @@ describe('useOrganisation', () => {
       activeDiagramId: 'cd', logoLibrary: [],
     }])
     await settle()
-    act(() => held().askDeleteBoard('retail', { id: 'cd', name: 'ERP' }))
-    expect(held().dialog).toEqual({ kind: 'deleteBoard', path: 'retail', board: { id: 'cd', name: 'ERP' } })
-    await act(async () => { held().confirmDeleteBoard(); await Promise.resolve() })
+    act(() => held().askDeleteView('retail', { id: 'cd', name: 'ERP', kind: 'container' }))
+    expect(held().viewDialog).toEqual({ kind: 'delete', path: 'retail', view: { id: 'cd', name: 'ERP', kind: 'container' } })
+    await act(async () => { held().confirmDeleteView(); await Promise.resolve() })
     await settle()
     const retail = await store.read('retail')
     expect(retail?.model.diagrams.map((d) => d.id)).toEqual(['l7'])
     expect(retail?.activeDiagramId).toBe('l7')
-    expect(held().dialog).toEqual({ kind: 'none' })
+    expect(held().viewDialog).toEqual({ kind: 'none' })
+  })
+
+  it('takes a view deleted from a home back as one step, the active view with it', async () => {
+    const { held, store } = mount([{
+      path: 'platforms',
+      model: {
+        name: 'Platforms', elements: [], relations: [],
+        diagrams: [{ id: 'tech', kind: 'technology', name: 'Technology landscape', members: [], geometry: { nodes: [] } }],
+      },
+      activeDiagramId: 'tech', logoLibrary: [],
+    }])
+    await settle()
+    expect(held().viewUndo).toBeUndefined()
+    act(() => held().askDeleteView('platforms', { id: 'tech', name: 'Technology landscape', kind: 'technology' }))
+    await act(async () => { held().confirmDeleteView(); await Promise.resolve() })
+    await settle()
+    expect((await store.read('platforms'))?.model.diagrams).toEqual([])
+    expect(held().viewUndo).toEqual(expect.objectContaining({ can: true, name: 'Undo deleting “Technology landscape”' }))
+    await act(async () => { held().viewUndo?.run(); await Promise.resolve() })
+    await settle()
+    const back = await store.read('platforms')
+    expect(back?.model.diagrams.map((d) => [d.id, d.kind, d.name])).toEqual([['tech', 'technology', 'Technology landscape']])
+    expect(back?.activeDiagramId).toBe('tech')
+    expect(held().viewUndo).toBeUndefined()
+  })
+
+  it('renames a view from a home, and takes the name back', async () => {
+    const { held, store } = mount([{
+      path: 'retail',
+      model: { name: 'Retail', elements: [], relations: [], diagrams: [{ id: 'l7', kind: 'layer7', name: 'Now', members: [], geometry: { nodes: [] } }] },
+      activeDiagramId: 'l7', logoLibrary: [],
+    }])
+    await settle()
+    act(() => held().askRenameView('retail', { id: 'l7', name: 'Now', kind: 'layer7' }))
+    await act(async () => { held().renameView('Today'); await Promise.resolve() })
+    await settle()
+    expect((await store.read('retail'))?.model.diagrams[0]?.name).toBe('Today')
+    await act(async () => { held().viewUndo?.run(); await Promise.resolve() })
+    await settle()
+    expect((await store.read('retail'))?.model.diagrams[0]?.name).toBe('Now')
   })
 
   it('carries the page a scope was opened for', async () => {

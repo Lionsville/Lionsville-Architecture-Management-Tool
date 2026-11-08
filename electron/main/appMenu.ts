@@ -50,7 +50,7 @@ import { Menu, MenuItem, shell, webContents } from 'electron'
 import type { MenuItemConstructorOptions, WebContents } from 'electron'
 import type { DesktopDirectory } from '../../src/adapters/desktop/channel'
 import { fileMenuSlot, goMenuSlot, helpMenuTail, replacingSlot } from './menuLayout'
-import type { HostCommand } from '../../src/platform/hostCommands'
+import type { HostCommand, ScreenOffers } from '../../src/platform/hostCommands'
 import {
   EDIT_ITEMS, FILE_MENU, HELP_MENU, HELP_MENU_ITEM, PREFERENCES_ITEM, SETTINGS_ITEM, TEXT_SIZE_ITEMS, THEME_ITEMS, WEBSITE_LINK, goMenu, preferencesPlacement, titleCase,
   ZOOM_ALIASES, ZOOM_ITEMS,
@@ -166,7 +166,7 @@ function itemFor(spec: MenuItemSpec): MenuItemConstructorOptions {
     label: label(spec.label as keyof typeof EN),
     accelerator: spec.accelerator,
     click: () => sendCommand(spec.command),
-    ...(spec.needs?.includes('scope') ? { id: scopeId(spec), enabled: scopeOpen } : {}),
+    ...(spec.needs?.includes('scope') || spec.needs?.includes('picture') ? { id: scopeId(spec), enabled: enabledFor(spec) } : {}),
   }
 }
 
@@ -263,6 +263,8 @@ let theme: ThemeMode = 'system'
 
 /** What the renderer last said about having a scope open. */
 let scopeOpen = false
+/** What the screen up offers beyond a scope being open (`ScreenOffers`). */
+let offers: ScreenOffers = {}
 
 /**
  * Build (or rebuild) the application menu.
@@ -320,10 +322,21 @@ export function reportTheme(mode: ThemeMode): void {
   tickTheme()
 }
 
-/** The renderer said whether a scope is open. The items about one follow. */
-export function reportScopeOpen(open: boolean): void {
+/** The renderer said whether a scope is open, and what the screen up offers. The items about one follow. */
+export function reportScopeOpen(open: boolean, screen: ScreenOffers = {}): void {
   scopeOpen = open
+  offers = screen
   tickScope()
+}
+
+/**
+ * An item that needs a scope is enabled while one is open; Export Picture…
+ * only while a view whose picture can be taken is up, since over nothing it
+ * did nothing.
+ */
+export function enabledFor(spec: MenuItemSpec): boolean {
+  if (spec.needs?.includes('picture')) return scopeOpen && offers.picture === true
+  return scopeOpen
 }
 
 function tickTheme(): void {
@@ -344,9 +357,9 @@ function tickScope(): void {
     ...Object.values(EDIT_ITEMS),
   ]
   for (const spec of specs) {
-    if (!spec.needs?.includes('scope')) continue
+    if (!spec.needs?.includes('scope') && !spec.needs?.includes('picture')) continue
     const held = menu.getMenuItemById(scopeId(spec))
-    if (held) held.enabled = scopeOpen
+    if (held) held.enabled = enabledFor(spec)
   }
 }
 

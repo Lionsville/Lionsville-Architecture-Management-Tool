@@ -207,3 +207,26 @@ describe('the zoom keys with no canvas under them', () => {
     expect(level).toBe(0)
   })
 })
+
+describe('the items that need something on screen', () => {
+  it('enables nothing about a scope with none open, Export Picture… included', async () => {
+    const menu = await fresh()
+    const { FILE_MENU, PICTURE_ITEM } = await import('../../src/platform/menu')
+    const save = FILE_MENU.find((entry) => entry.kind === 'item' && entry.command.type === 'save')
+    if (save?.kind !== 'item') throw new Error('no Save')
+    menu.reportScopeOpen(false, { picture: true })
+    expect(menu.enabledFor(save)).toBe(false)
+    expect(menu.enabledFor(PICTURE_ITEM)).toBe(false)
+  })
+
+  it('enables Export Picture… only while a view whose picture can be taken is up', async () => {
+    const menu = await fresh()
+    const { PICTURE_ITEM } = await import('../../src/platform/menu')
+    menu.reportScopeOpen(true)
+    expect(menu.enabledFor(PICTURE_ITEM)).toBe(false)
+    menu.reportScopeOpen(true, { picture: true })
+    expect(menu.enabledFor(PICTURE_ITEM)).toBe(true)
+    menu.reportScopeOpen(false, { picture: true })
+    expect(menu.enabledFor(PICTURE_ITEM)).toBe(false)
+  })
+})

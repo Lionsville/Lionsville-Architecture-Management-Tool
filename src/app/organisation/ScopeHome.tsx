@@ -49,6 +49,8 @@ import type { TechnologySummary } from '../../projects/technologyRegister'
 import { plural } from '../../i18n/strings'
 import type { FindingTarget } from '../../roadmap/findingTarget'
 import type { InitialPage } from '../App'
+import { viewActions } from '../../editor/viewActions'
+import type { HomeView } from './useHomeViews'
 import type { OrgPage } from '../useShellAgent'
 
 /** The presses a home's rows lead to. */
@@ -59,7 +61,8 @@ export type HomeDoors = {
   onHomePage: (page: OrgPage) => void
   onFinding: (target: FindingTarget) => void
   /** The acts on a view, for somebody who may write here. */
-  onDeleteView?: ((view: { id: string; name: string }) => void) | undefined
+  onDeleteView?: ((view: HomeView) => void) | undefined
+  onRenameView?: ((view: HomeView) => void) | undefined
   onNewView: readonly MenuEntry[]
   onNewScope?: (() => void) | undefined
 }
@@ -232,7 +235,7 @@ function keptLink(kept: Kept): LineLink {
   return { label: kept.label, onPress: kept.open, 'data-testid': kept.id, ...(kept.guide ? { 'data-guide': kept.guide } : {}), ...(kept.fact ? { title: kept.fact } : {}) }
 }
 
-function viewRows(views: readonly DesignDiagram[], pages: OrganisationPages, onDelete: HomeDoors['onDeleteView'], onOpen: (id: string) => void, language: Language, s: Translate): ListRow[] {
+function viewRows(views: readonly DesignDiagram[], pages: OrganisationPages, acts: ViewActs, onOpen: (id: string) => void, language: Language, s: Translate): ListRow[] {
   const { entries, loose } = outlineBoards(views)
   // A map read on the sheet is called what the sheet's bar calls it; where a scope keeps several, each says its own name after.
   const readings = views.filter((view) => isSheetReading(view, views))
@@ -240,21 +243,31 @@ function viewRows(views: readonly DesignDiagram[], pages: OrganisationPages, onD
   const rowOf = (view: DesignDiagram, indent: number): ListRow => ({
     id: view.id, ...doorOf(view, pages), text: named(view), mark: <BoardKindIcon kind={view.kind} size={16} />, fact: viewFact(view, pages, language, s),
     ...(indent > 0 ? { indent } : {}),
-    end: (
-      <MoreMenu
-        size="small" label={s('frame.scopeMenu', { name: named(view) })}
-        items={[
-          { label: s('org.rowOpen'), onSelect: () => onOpen(view.id) },
-          ...(onDelete ? [{ label: s('org.rowDelete'), final: true, onSelect: () => onDelete({ id: view.id, name: named(view) }) }] : []),
-        ]}
-      />
-    ),
+    end: <MoreMenu size="small" label={s('frame.scopeMenu', { name: named(view) })} items={viewMenu(view, named(view), acts, onOpen, s)} />,
   })
   return [
     // Container diagrams straight after their landscape, a closer look at one box on it, and a map after its sheet.
     ...entries.flatMap(({ board, under }) => [rowOf(board, 0), ...under.map((one) => rowOf(one, 1))]),
     ...loose.map((one) => rowOf(one, 1)),
   ]
+}
+
+/** What a home may do to its views: absent for somebody who may only read. */
+type ViewActs = { readonly onDelete?: ((view: HomeView) => void) | undefined; readonly onRename?: ((view: HomeView) => void) | undefined }
+
+/** A view's row menu: the list a view's tab and its bar draw too (`editor/viewActions`). */
+function viewMenu(view: DesignDiagram, shownAs: string, acts: ViewActs, onOpen: (id: string) => void, s: Translate): MenuEntry[] {
+  // Renamed from the name it has, deleted under the name its row shows.
+  const run = {
+    open: () => onOpen(view.id),
+    rename: () => acts.onRename?.({ id: view.id, name: view.name, kind: view.kind }),
+    delete: () => acts.onDelete?.({ id: view.id, name: shownAs, kind: view.kind }),
+  } as const
+  return viewActions({ canOpen: true, canRename: acts.onRename !== undefined, canDelete: acts.onDelete !== undefined }, s).flatMap((action) => (
+    action.id === 'open' || action.id === 'rename' || action.id === 'delete'
+      ? [{ label: action.label, onSelect: run[action.id], ...(action.danger ? { final: true } : {}) }]
+      : []
+  ))
 }
 
 /** The organisation's first sheet, map and technology landscape keep the stable names their cards had. */
@@ -365,7 +378,7 @@ export function ScopeHome(props: ScopeHomeProps) {
       {atRoot && onContinue && <Continue recent={recent} at={at} onContinue={onContinue} language={language} s={s} />}
       {views.length > 0 && (
         <Section title={s('org.viewsHere')} data-testid="boards" data-guide="org.boards">
-          <List label={s('org.viewsHere')} density="compact" doors groups={[{ id: 'views', label: '', rows: viewRows(views, pages, writable ? doors.onDeleteView : undefined, onOpenView, language, s) }]} onOpen={onOpenView} />
+          <List label={s('org.viewsHere')} density="compact" doors groups={[{ id: 'views', label: '', rows: viewRows(views, pages, writable ? { onDelete: doors.onDeleteView, onRename: doors.onRenameView } : {}, onOpenView, language, s) }]} onOpen={onOpenView} />
         </Section>
       )}
       {shown.length > 0 && (

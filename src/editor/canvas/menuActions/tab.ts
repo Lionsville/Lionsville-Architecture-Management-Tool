@@ -15,4 +15,5 @@ export const TAB_ACTIONS = {
   'duplicate-diagram-as-of': { answeredBy: 'tabMenu' },
   'delete-diagram': { answeredBy: 'tabMenu' },
   'diagram-history': { answeredBy: 'tabMenu' },
+  'open-view': { answeredBy: 'tabMenu' },
 } satisfies MenuActionFamily;

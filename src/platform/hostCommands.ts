@@ -112,6 +112,12 @@ export type HostCommand =
  * disabled is the honest state and the platform's convention. Main asks
  * nothing else, and these three should not quietly become the tenth.
  */
+/**
+ * What the screen up offers that a menu bar cannot see: whether a view whose
+ * picture can be taken is up, so Export Picture… is not enabled over nothing.
+ */
+export type ScreenOffers = { readonly picture?: boolean }
+
 export type HostCommands = {
   /** Every command, until the returned function is called. */
   on(listener: (command: HostCommand) => void): () => void
@@ -119,8 +125,11 @@ export type HostCommands = {
   reportUnsaved(unsaved: boolean): void
   /** Which theme is on, so the View menu's radio can be right. */
   reportTheme(mode: ThemeMode): void
-  /** Is a scope open, so the items about one can be enabled only while it is. */
-  reportScopeOpen(open: boolean): void
+  /**
+   * Is a scope open, so the items about one can be enabled only while it is —
+   * and what the screen up offers beyond that (`ScreenOffers`).
+   */
+  reportScopeOpen(open: boolean, offers?: ScreenOffers): void
   /** Which language the app is in, so what the host asks itself is asked in it. */
   reportLanguage(language: string): void
   /** Zoom the whole window: the zoom keys with no canvas under them. */

@@ -79,21 +79,20 @@ function renderToolbar(props: {
   );
 }
 
-const diagramMenu = () => screen.getByRole('menu', { name: 'Diagram menu' });
+const diagramMenu = () => screen.getByRole('menu', { name: 'View menu' });
 
 describe('the menu of a container view', () => {
-  it('opens with a right-click on its entry in the dropdown, and deletes from there', () => {
+  it('offers rename, settings and delete from its own header, and no duplicate', () => {
     const onDeleteDiagram = vi.fn();
-    renderToolbar({ onDeleteDiagram, onRenameDiagram: vi.fn(), onOpenDiagramSettings: vi.fn(), onDuplicateDiagram: vi.fn() });
-    fireEvent.click(screen.getByLabelText('Container diagrams of Landscape'));
-    fireEvent.contextMenu(screen.getByText('Billing'));
+    renderToolbar({ activeDiagram: container, onDeleteDiagram, onRenameDiagram: vi.fn(), onOpenDiagramSettings: vi.fn(), onDuplicateDiagram: vi.fn() });
+    fireEvent.click(screen.getByLabelText('Menu of the container view of Billing'));
     const menu = diagramMenu();
-    expect(within(menu).getByText('Rename diagram…')).toBeTruthy();
+    expect(within(menu).getByText('Rename view…')).toBeTruthy();
     expect(within(menu).getByText('Board settings…')).toBeTruthy();
     // No duplicate: a second view about the same application would be two
     // answers to "what is inside it".
-    expect(within(menu).queryByText('Duplicate diagram')).toBeNull();
-    fireEvent.click(within(menu).getByText('Delete diagram…'));
+    expect(within(menu).queryByText('Duplicate view')).toBeNull();
+    fireEvent.click(within(menu).getByText('Delete view…'));
     expect(onDeleteDiagram).toHaveBeenCalledWith('cd1');
   });
 
@@ -101,9 +100,9 @@ describe('the menu of a container view', () => {
     const onDeleteDiagram = vi.fn();
     const onOpenDiagramSettings = vi.fn();
     renderToolbar({ activeDiagram: container, onDeleteDiagram, onOpenDiagramSettings });
-    fireEvent.click(screen.getByLabelText('Menu of the container diagram of Billing'));
+    fireEvent.click(screen.getByLabelText('Menu of the container view of Billing'));
     const menu = diagramMenu();
-    const remove = within(menu).getByText('Delete diagram…').closest('[role="menuitem"]');
+    const remove = within(menu).getByText('Delete view…').closest('[role="menuitem"]');
     expect(remove?.getAttribute('aria-disabled')).not.toBe('true');
     fireEvent.click(within(menu).getByText('Board settings…'));
     expect(onOpenDiagramSettings).toHaveBeenCalledWith('cd1');
@@ -111,9 +110,9 @@ describe('the menu of a container view', () => {
 
   it('is absent while the editor is read-only, and where the host offers nothing', () => {
     renderToolbar({ activeDiagram: container, onDeleteDiagram: vi.fn(), readOnly: true });
-    expect(screen.queryByLabelText('Menu of the container diagram of Billing')).toBeNull();
+    expect(screen.queryByLabelText('Menu of the container view of Billing')).toBeNull();
     cleanup();
     renderToolbar({ activeDiagram: container });
-    expect(screen.queryByLabelText('Menu of the container diagram of Billing')).toBeNull();
+    expect(screen.queryByLabelText('Menu of the container view of Billing')).toBeNull();
   });
 });

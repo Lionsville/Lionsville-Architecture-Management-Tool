@@ -523,7 +523,7 @@ void app.whenReady().then(() => {
   // Whether the window asking is in full screen, for a page that loads in one.
   ipcMain.handle('window:isFullScreen', (event) => BrowserWindow.fromWebContents(event.sender)?.isFullScreen() ?? false)
   // And the third: whether a scope is open, so the items about one are enabled only while it is.
-  ipcMain.handle('app:scopeOpen', (_event, held: unknown) => { reportScopeOpen(held === true) })
+  ipcMain.handle('app:scopeOpen', (_event, held: unknown, picture: unknown) => { reportScopeOpen(held === true, { picture: picture === true }) })
 
   // The held commands first, then the documents: see `appMenu.ts`.
   ipcMain.handle('app:listening', (event) => {

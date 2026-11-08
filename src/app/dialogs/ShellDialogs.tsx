@@ -12,6 +12,7 @@
 import type { Translate } from '../../i18n'
 import type { DesignDiagram } from '../../model'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
+import { DELETE_VIEW_BODY } from './deleteViewBody'
 import { NewDiagramDialog } from './NewDiagramDialog'
 
 export type ShellDialogsProps = {
@@ -31,9 +32,7 @@ export function ShellDialogs({
   diagramToDelete, onCancelDelete, onConfirmDelete,
   newDiagramName, onNewDiagramNameChange, onConfirmNewDiagram,
 }: ShellDialogsProps) {
-  const deleteBody = diagramToDelete?.kind === 'layer7'
-    ? 'shell.deleteLandscapeBody'
-    : 'shell.deleteContainerBody'
+  const deleteBody = DELETE_VIEW_BODY[diagramToDelete?.kind ?? 'layer7']
 
   return (
     <>

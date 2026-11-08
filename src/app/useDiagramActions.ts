@@ -139,6 +139,7 @@ export function useDiagramActions(deps: {
     const command = removeContainerDiagram(current, id, () => claimKey('interface', taken))
       ?? { type: 'diagram.delete' as const, id }
     if (!session.dispatch(command)) return
+    const step = session.history().at(-1)?.stepId
     // The active diagram gone? Then on to the first one that remains. With
     // none left the scope stays open on its empty place, still naming the
     // view that went, so ⌘Z puts it back on screen as well as in the model.
@@ -146,7 +147,10 @@ export function useDiagramActions(deps: {
       const left = session.indexed()
       session.setActiveDiagramId(left.order.diagrams[0] ?? id)
     }
-    notify(s('shell.deleted', { name: target.name }), 'success')
+    // The toast's Undo is this step, and only while it is still the newest: under a later one, ⌘Z would take back that one first.
+    notify(s('shell.deleted', { name: target.name }), 'success', {
+      undo: { onPress: () => { if (session.history().at(-1)?.stepId === step) session.undo(); else notify(s('shell.undoPassed'), 'info') } },
+    })
   }, [deleteId, session, notify, s])
 
   return {

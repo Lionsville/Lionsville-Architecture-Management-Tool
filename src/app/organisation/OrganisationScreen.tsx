@@ -87,10 +87,13 @@ import { HomeSearch } from './HomeSearch'
 import { ServedBy } from './ServedBy'
 import type { ServedByAccess } from './useServedBy'
 import type { Organisation } from './useOrganisation'
+import type { FrameStep } from '../frame/frameStore'
 import { holdingsOf } from './holdings'
 import { newViewChoices } from './newViewChoices'
 import { homeMeta, ScopeHome } from './ScopeHome'
 import { FirstChoices, NamedNothingYet } from './HomeFirstRun'
+import { DELETE_VIEW_BODY } from '../dialogs/deleteViewBody'
+import { RenameDiagramDialog } from '../../editor/RenameDiagramDialog'
 
 /** A scope's settings arrive the first time they are asked for. */
 const ScopeSettingsPage = lazyPart<ComponentProps<typeof ScopeSettingsPageShape>>(
@@ -394,7 +397,7 @@ export function OrganisationScreen({
         kind="home" path={home.path} name={heading} openSearch={() => searchDoor.current()} typeLink={typeLink} bare={firstRun}
         bands={unread.length > 0 ? [unreadBand(unread, organisation.refresh, s)] : []}
         {...(writable(home.path) ? { onNewView: () => organisation.addBoard(at) } : {})}
-        {...(settingsUndo ? { undo: { can: true, run: settingsUndo.run, name: settingsUndo.name } } : {})}
+        {...undoOf(settingsUndo, organisation.viewUndo)}
         {...(root && root.path === at ? { views: root.model.diagrams } : {})}
       />
       <HomeSearch
@@ -426,7 +429,7 @@ export function OrganisationScreen({
                     ready={atRoot ? organisation.listed && ready : ready} draws={draws} writable={mayWrite} localObservations={localObservations} initiatives={initiatives}
                     register={registerCounts} technology={technologyCounts} principlesAt={principlesAt} holdings={holdings}
                     open={organisation.open} onGoHome={onGoHome} onHomePage={(page) => homePages.open(page)} onFinding={(target) => organisation.open(at, target)}
-                    onDeleteView={(view) => organisation.askDeleteBoard(at, view)} onNewView={newView}
+                    onDeleteView={(view) => organisation.askDeleteView(at, view)} onRenameView={(view) => organisation.askRenameView(at, view)} onNewView={newView}
                     {...(mayWrite ? { onNewScope: () => organisation.addUnder(at) } : {})}
                     {...(recent ? { recent } : {})} onContinue={onContinue} today={today} language={language} s={s}
                   />
@@ -510,14 +513,35 @@ function HomeDialogs({ organisation, at, tree, unitTypes, servedBy, sourceSaying
         onCancel={organisation.closeDialog}
         onConfirm={organisation.confirmDelete}
       />
+      <HomeViewDialogs organisation={organisation} s={s} />
+    </>
+  )
+}
+
+/** What row one's undo takes back on a home: the settings page's newest change while it is up, else a view's change from its row. */
+function undoOf(settings: SettingsUndo | undefined, view: FrameStep | undefined): { undo?: FrameStep } {
+  if (settings) return { undo: { can: true, run: settings.run, name: settings.name } }
+  return view ? { undo: view } : {}
+}
+
+/** A view deleted or renamed from its row: the question, said of its kind, and the name. */
+function HomeViewDialogs({ organisation, s }: { organisation: Organisation; s: Translate }) {
+  const asked = organisation.viewDialog
+  return (
+    <>
       <ConfirmDialog
-        open={dialog.kind === 'deleteBoard'}
-        title={s('shell.deleteDiagramTitle', { name: dialog.kind === 'deleteBoard' ? dialog.board.name : '' })}
-        body={s('shell.deleteContainerBody')}
+        open={asked.kind === 'delete'}
+        title={s('shell.deleteDiagramTitle', { name: asked.kind === 'delete' ? asked.view.name : '' })}
+        // What goes with it, said of the kind of view it is.
+        body={s(DELETE_VIEW_BODY[asked.kind === 'delete' ? asked.view.kind : 'layer7'])}
         confirmLabel={s('common.delete')}
         cancelLabel={s('common.cancel')}
-        onCancel={organisation.closeDialog}
-        onConfirm={organisation.confirmDeleteBoard}
+        onCancel={organisation.closeViewDialog}
+        onConfirm={organisation.confirmDeleteView}
+      />
+      <RenameDiagramDialog
+        {...(asked.kind === 'rename' ? { target: asked.view } : {})}
+        onRename={(_id, name) => organisation.renameView(name)} onClose={organisation.closeViewDialog}
       />
     </>
   )

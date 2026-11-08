@@ -117,6 +117,9 @@ export const EN = {
     '{count} container views were removed: their applications left the model. Undo does not bring those views back.',
   'shell.duplicated': '“{name}” duplicated.',
   'shell.deleted': '“{name}” deleted.',
+  'org.undoDeleteView': 'Undo deleting “{name}”',
+  'org.undoRenameView': 'Undo renaming “{name}”',
+  'shell.undoPassed': 'Other changes came after it. Undo those first, or bring the view back from History.',
   /**
    * A count and what it counts, with no grammar between them. The label is a
    * relation's type or an element's kind, translated from the table its module
@@ -219,10 +222,23 @@ export const EN = {
   /** The name a newly created container view gets. */
   'shell.containerDiagram': '{name} · containers',
   'shell.deleteDiagramTitle': 'Delete view “{name}”?',
-  'shell.deleteLandscapeBody':
+  /** What deleting a view takes with it, said of its own kind: a laid-out view loses nothing but itself. */
+  'shell.deleteBody.layer7':
     'The placements, groups and routes of this landscape are lost. The elements themselves stay in the model, and container views remain.',
-  'shell.deleteContainerBody':
+  'shell.deleteBody.container':
     'The containers on this view go with it, and the interfaces they carried move up to the application. The application itself stays on the landscape.',
+  'shell.deleteBody.sheet':
+    'The sheet goes, with where its blocks were placed on its poster. The functions, steps and stakeholders on it stay in the model.',
+  'shell.deleteBody.map':
+    'The map goes. It is laid out from the functions and the rows, which all stay in the model.',
+  'shell.deleteBody.technology':
+    'The technology landscape goes. It is read from the records, so every application, service and platform on it stays in the model.',
+  'shell.deleteBody.drawing':
+    'The drawing goes, with everything drawn on it. What it points at stays in the model.',
+  'shell.deleteBody.chart':
+    'The organisation chart goes. It is laid out from the units, so every unit, role and assignment on it stays.',
+  'shell.deleteBody.conway':
+    'The Conway map goes. It is read from the units and the applications they own, which all stay in the model.',
   /**
    * What you are working from — the first thing on the bar, because it was
    * the one thing the bar did not say (ADR-0005). A folder by its name: the
@@ -869,6 +885,9 @@ export const EN = {
   'checks.section.review': 'To review · probably a gap or a risk',
   'checks.section.note': 'Notes · may well be intended',
   'checks.section.nothing': 'Checks that found nothing',
+  'checks.section.accepted': 'Accepted as intended',
+  'checks.acceptedN': '{count} accepted as intended',
+  'checks.acceptedShort': '{count} accepted',
   'checks.section.notCounted': 'Count only where the scope is open',
   'checks.heldByTwo': '{said}, {held} of them in two checks',
   'checks.wholeOrganisation': 'Whole organisation',
@@ -885,9 +904,6 @@ export const EN = {
   'checks.colUnder': 'Sits under',
   'checks.foundBy.role': 'Role',
   'checks.foundBy.unitType': 'Unit type',
-  'checks.section.accepted': 'Accepted as intended',
-  'checks.acceptedN': '{count} accepted as intended',
-  'checks.acceptedShort': '{count} accepted',
   'checks.foundBy.master': 'Kept in',
   'checks.markN': 'Mark {count} as intended',
   'checks.markReturns': 'One step in each scope that keeps them. If what one is about changes, it returns.',

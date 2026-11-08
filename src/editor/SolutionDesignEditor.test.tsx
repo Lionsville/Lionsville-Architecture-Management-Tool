@@ -242,7 +242,7 @@ describe('SolutionDesignEditor (smoke, jsdom)', () => {
   it('hides the palette and add-diagram affordances when readOnly', () => {
     renderEditor({ readOnly: true });
     expect(screen.queryByRole('complementary', { name: 'Element palette' })).toBeNull();
-    expect(screen.queryByLabelText('New Layer 7 diagram')).toBeNull();
+    expect(screen.queryByLabelText('New Layer 7 view')).toBeNull();
     expect(screen.getByText('Read-only')).toBeDefined();
   });
 
@@ -1087,22 +1087,22 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     renderEditor({ model: twoLandscapes(), onRenameDiagram, onDuplicateDiagram, onDeleteDiagram });
 
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — EU/ }));
-    const menu = screen.getByRole('menu', { name: 'Diagram menu' });
-    fireEvent.click(within(menu).getByText('Duplicate diagram'));
+    const menu = screen.getByRole('menu', { name: 'View menu' });
+    fireEvent.click(within(menu).getByText('Duplicate view'));
     expect(onDuplicateDiagram).toHaveBeenCalledExactlyOnceWith('d1');
 
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — US/ }));
-    fireEvent.click(within(screen.getByRole('menu', { name: 'Diagram menu' })).getByText('Delete diagram…'));
+    fireEvent.click(within(screen.getByRole('menu', { name: 'View menu' })).getByText('Delete view…'));
     expect(onDeleteDiagram).toHaveBeenCalledExactlyOnceWith('d3');
     expect(onRenameDiagram).not.toHaveBeenCalled();
   });
 
-  it('"Rename diagram…" collects the new name in a dialog and hands it to the host', () => {
+  it('"Rename view…" collects the new name in a dialog and hands it to the host', () => {
     const onRenameDiagram = vi.fn();
     renderEditor({ model: twoLandscapes(), onRenameDiagram });
 
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — EU/ }));
-    fireEvent.click(within(screen.getByRole('menu', { name: 'Diagram menu' })).getByText('Rename diagram…'));
+    fireEvent.click(within(screen.getByRole('menu', { name: 'View menu' })).getByText('Rename view…'));
 
     const dialog = screen.getByRole('dialog');
     const field = within(dialog).getByLabelText('Name') as HTMLInputElement;
@@ -1129,10 +1129,10 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     renderEditor({ model: modelWithPlacement('d1'), onDeleteDiagram });
 
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — EU/ }));
-    const menu = screen.getByRole('menu', { name: 'Diagram menu' });
-    expect(within(menu).queryByText('Rename diagram…')).toBeNull();
-    expect(within(menu).queryByText('Duplicate diagram')).toBeNull();
-    const remove = within(menu).getByRole('menuitem', { name: /Delete diagram/ });
+    const menu = screen.getByRole('menu', { name: 'View menu' });
+    expect(within(menu).queryByText('Rename view…')).toBeNull();
+    expect(within(menu).queryByText('Duplicate view')).toBeNull();
+    const remove = within(menu).getByRole('menuitem', { name: /Delete view/ });
     expect(remove.getAttribute('aria-disabled')).not.toBe('true');
     fireEvent.click(remove);
     expect(onDeleteDiagram).toHaveBeenCalledWith('d1');
@@ -1142,7 +1142,7 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
     const onDiagramHistory = vi.fn();
     renderEditor({ model: twoLandscapes(), onDiagramHistory });
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — US/ }));
-    fireEvent.click(within(screen.getByRole('menu', { name: 'Diagram menu' })).getByText('History…'));
+    fireEvent.click(within(screen.getByRole('menu', { name: 'View menu' })).getByText('History…'));
     expect(onDiagramHistory).toHaveBeenCalledExactlyOnceWith('d3');
   });
 
@@ -1156,66 +1156,74 @@ describe('SolutionDesignEditor — diagram tab menu', () => {
   it('opens no tab menu without any diagram callbacks, nor in read-only', () => {
     renderEditor({ model: twoLandscapes() });
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — EU/ }));
-    expect(screen.queryByRole('menu', { name: 'Diagram menu' })).toBeNull();
+    expect(screen.queryByRole('menu', { name: 'View menu' })).toBeNull();
     cleanup();
 
     renderEditor({ model: twoLandscapes(), readOnly: true, onDeleteDiagram: vi.fn(), onRenameDiagram: vi.fn() });
     fireEvent.contextMenu(screen.getByRole('tab', { name: /Layer 7 — EU/ }));
-    expect(screen.queryByRole('menu', { name: 'Diagram menu' })).toBeNull();
+    expect(screen.queryByRole('menu', { name: 'View menu' })).toBeNull();
   });
 
   it('opens the tab menu from the keyboard: Shift+F10 or the Menu key on the focused tab', () => {
     renderEditor({ model: twoLandscapes(), onDeleteDiagram: vi.fn(), onRenameDiagram: vi.fn() });
     const tab = screen.getByRole('tab', { name: /Layer 7 — EU/ });
     fireEvent.keyDown(tab, { key: 'F10', shiftKey: true });
-    expect(screen.getByRole('menu', { name: 'Diagram menu' })).toBeDefined();
+    expect(screen.getByRole('menu', { name: 'View menu' })).toBeDefined();
     // The tab's menu, and not the canvas's as well: the chord is the tab's.
     expect(screen.getAllByRole('menu')).toHaveLength(1);
     cleanup();
 
     renderEditor({ model: twoLandscapes(), onDeleteDiagram: vi.fn(), onRenameDiagram: vi.fn() });
     fireEvent.keyDown(screen.getByRole('tab', { name: /Layer 7 — EU/ }), { key: 'ContextMenu' });
-    expect(screen.getByRole('menu', { name: 'Diagram menu' })).toBeDefined();
+    expect(screen.getByRole('menu', { name: 'View menu' })).toBeDefined();
   });
 });
 
 describe('SolutionDesignEditor — container diagrams under their landscape tab', () => {
-  it('shows a chevron on a landscape whose applications have container diagrams, listing and switching to them', () => {
-    const { props } = renderEditor({ model: modelWithPlacement('d1') });
+  // One ⌄ on every tab opens the view's menu; a landscape's container views are listed first in it.
+  const containerViews = () => screen.getByRole('menuitem', { name: 'Containers of Webshop' });
 
-    const chevron = screen.getByLabelText('Container diagrams of Layer 7 — EU');
-    fireEvent.click(chevron);
-    const menu = screen.getByRole('menu', { name: 'Container diagrams of Layer 7 — EU' });
-    expect(within(menu).getByText('Webshop')).toBeDefined();
-    expect(within(menu).getByText('Container view')).toBeDefined();
-
-    fireEvent.click(within(menu).getByText('Webshop'));
+  it('lists a landscape\'s container views in its tab\'s menu, and switches to one', () => {
+    const { props } = renderEditor({ model: modelWithPlacement('d1'), onRenameDiagram: vi.fn() });
+    fireEvent.click(screen.getByTestId('tab-menu-d1'));
+    const menu = screen.getByRole('menu', { name: 'View menu' });
+    expect(within(menu).getByText('Rename view…')).toBeDefined();
+    fireEvent.click(containerViews());
     expect(props.onActiveDiagramChange).toHaveBeenCalledWith('d2');
-    // Clicking the chevron must not have switched tabs by itself.
+    // Opening the menu must not have switched tabs by itself.
     expect(props.onActiveDiagramChange).not.toHaveBeenCalledWith('d1');
   });
 
-  it('shows no chevron when no placed application has a container diagram', () => {
-    renderEditor(); // a1 exists with container d2, but is not placed on d1
-    expect(screen.queryByLabelText(/Container diagrams of/)).toBeNull();
+  it('lists no container views when no placed application has one', () => {
+    renderEditor({ onRenameDiagram: vi.fn() }); // a1 exists with container d2, but is not placed on d1
+    fireEvent.click(screen.getByTestId('tab-menu-d1'));
+    expect(screen.queryByRole('menuitem', { name: /Containers of/ })).toBeNull();
   });
 
-  it('keeps the chevron in read-only mode — it is navigation', () => {
-    renderEditor({ model: modelWithPlacement('d1'), readOnly: true });
-    expect(screen.getByLabelText('Container diagrams of Layer 7 — EU')).toBeDefined();
+  it('keeps the container views in read-only mode — they are navigation — and offers nothing else there', () => {
+    renderEditor({ model: modelWithPlacement('d1'), readOnly: true, onRenameDiagram: vi.fn(), onDeleteDiagram: vi.fn() });
+    fireEvent.click(screen.getByTestId('tab-menu-d1'));
+    expect(containerViews()).toBeDefined();
+    expect(screen.queryByText('Rename view…')).toBeNull();
+    expect(screen.queryByText('Delete view…')).toBeNull();
   });
 
-  it('opens them from the keyboard: ↓ on the focused tab, with nothing inside the tab to tab to', () => {
-    const { props } = renderEditor({ model: modelWithPlacement('d1') });
+  it('opens the menu from the keyboard: ↓ on the focused tab, with nothing inside the tab to tab to', () => {
+    renderEditor({ model: modelWithPlacement('d1') });
     const tab = screen.getByRole('tab', { name: /Layer 7 — EU/ });
     // A control inside a tab is a button inside a button: out of the tree.
     expect(within(tab).queryByRole('button')).toBeNull();
-
     tab.focus();
     fireEvent.keyDown(tab, { key: 'ArrowDown' });
-    const menu = screen.getByRole('menu', { name: 'Container diagrams of Layer 7 — EU' });
-    fireEvent.click(within(menu).getByText('Webshop'));
-    expect(props.onActiveDiagramChange).toHaveBeenCalledWith('d2');
+    expect(screen.getByRole('menu', { name: 'View menu' })).toBeDefined();
   });
 
+  it('gives a single tab its ⌄ too, of a laid-out kind as of a landscape', () => {
+    const onDeleteDiagram = vi.fn();
+    renderEditor({ onDeleteDiagram, onRenameDiagram: vi.fn() });
+    expect(screen.getAllByRole('tab')).toHaveLength(1);
+    fireEvent.click(screen.getByTestId('tab-menu-d1'));
+    fireEvent.click(within(screen.getByRole('menu', { name: 'View menu' })).getByText('Delete view…'));
+    expect(onDeleteDiagram).toHaveBeenCalledWith('d1');
+  });
 });

@@ -58,6 +58,9 @@ export const DE: Record<keyof typeof EN, string> = {
     '{count} Containeransichten wurden entfernt: ihre Anwendungen haben das Modell verlassen. Rückgängig bringt diese Ansichten nicht zurück.',
   'shell.duplicated': '„{name}“ dupliziert.',
   'shell.deleted': '„{name}“ gelöscht.',
+  'org.undoDeleteView': 'Löschen von „{name}“ rückgängig machen',
+  'org.undoRenameView': 'Umbenennen von „{name}“ rückgängig machen',
+  'shell.undoPassed': 'Danach kamen andere Änderungen. Machen Sie diese zuerst rückgängig, oder holen Sie die Ansicht aus dem Verlauf zurück.',
   'shell.leftOutPart': '{count} × {label}',
   'shell.savedPicture': 'Bild gespeichert.',
   'shell.savedWorkingFile':
@@ -125,10 +128,22 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.copyOf': '{name} (Kopie)',
   'shell.containerDiagram': '{name} · Container',
   'shell.deleteDiagramTitle': 'Ansicht „{name}“ löschen?',
-  'shell.deleteLandscapeBody':
+  'shell.deleteBody.layer7':
     'Die Platzierungen, Gruppen und Routen dieser Landschaft gehen verloren. Die Elemente selbst bleiben im Modell, und Containeransichten bleiben bestehen.',
-  'shell.deleteContainerBody':
+  'shell.deleteBody.container':
     'Die Container dieser Ansicht gehen mit, und die Schnittstellen, die sie trugen, wandern auf die Anwendung. Die Anwendung selbst bleibt auf der Landschaft.',
+  'shell.deleteBody.sheet':
+    'Das Blatt geht, mit der Stelle, an der seine Blöcke auf dem Poster standen. Die Funktionen, Schritte und Beteiligten darauf bleiben im Modell.',
+  'shell.deleteBody.map':
+    'Die Karte geht. Sie wird aus den Funktionen und den Beziehungen angeordnet, die alle im Modell bleiben.',
+  'shell.deleteBody.technology':
+    'Die Technologielandschaft geht. Sie wird aus den Einträgen gelesen, also bleibt jede Anwendung, jeder Dienst und jede Plattform darauf im Modell.',
+  'shell.deleteBody.drawing':
+    'Die Zeichnung geht, mit allem, was darauf gezeichnet ist. Worauf sie verweist, bleibt im Modell.',
+  'shell.deleteBody.chart':
+    'Das Organigramm geht. Es wird aus den Einheiten angeordnet, also bleibt jede Einheit, Rolle und Zuordnung darauf bestehen.',
+  'shell.deleteBody.conway':
+    'Die Conway-Karte geht. Sie wird aus den Einheiten und den Anwendungen gelesen, die ihnen gehören, und die bleiben alle im Modell.',
   'shell.chooseBoard': 'Welches Board?',
   'shell.chooseBoardHint': '{name} ist auf mehr als einem Board gezeichnet.',
   'shell.chooseBoardAsOf': 'Stand {day}',
@@ -665,6 +680,9 @@ export const DE: Record<keyof typeof EN, string> = {
   'checks.section.review': 'Zu prüfen · wohl eine Lücke oder ein Risiko',
   'checks.section.note': 'Hinweise · vielleicht so gewollt',
   'checks.section.nothing': 'Prüfungen ohne Befund',
+  'checks.section.accepted': 'Als beabsichtigt akzeptiert',
+  'checks.acceptedN': '{count} als beabsichtigt akzeptiert',
+  'checks.acceptedShort': '{count} akzeptiert',
   'checks.section.notCounted': 'Zählen nur bei geöffnetem Bereich',
   'checks.heldByTwo': '{said}, davon {held} in zwei Prüfungen',
   'checks.wholeOrganisation': 'Gesamte Organisation',
@@ -680,9 +698,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'checks.colMarked': 'Markiert',
   'checks.colUnder': 'Liegt unter',
   'checks.foundBy.role': 'Rolle',
-  'checks.section.accepted': 'Als beabsichtigt akzeptiert',
-  'checks.acceptedN': '{count} als beabsichtigt akzeptiert',
-  'checks.acceptedShort': '{count} akzeptiert',
   'checks.foundBy.unitType': 'Einheitstyp',
   'checks.foundBy.master': 'Geführt in',
   'checks.markN': '{count} als gewollt markieren',

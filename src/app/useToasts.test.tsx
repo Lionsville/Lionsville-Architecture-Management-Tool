@@ -116,6 +116,26 @@ describe('ToastBar', () => {
     expect(onClose).toHaveBeenCalledOnce()
   })
 
+  it('draws a change with its Undo as the kit\'s toast, and takes the step back on the press', () => {
+    const onClose = vi.fn()
+    const onExited = vi.fn()
+    const onPress = vi.fn()
+    renderShell(<ToastBar toast={{ ...toast('success'), undo: { onPress } }} open onClose={onClose} onExited={onExited} />)
+    expect(screen.getByTestId('kit-toast').textContent).toContain('a message')
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(onPress).toHaveBeenCalledOnce()
+    expect(onClose).toHaveBeenCalled()
+  })
+
+  it('keeps a message with an Undo apart from the same words without one', () => {
+    const { result } = renderHook(() => useToasts())
+    act(() => result.current.notify('gone', 'success'))
+    const first = result.current.toast?.key
+    act(() => result.current.notify('gone', 'success', { undo: { onPress: () => {} } }))
+    expect(result.current.toast?.key).not.toBe(first)
+    expect(result.current.toast?.undo).toBeDefined()
+  })
+
   it('gives an error longer on screen than anything else, because it has to be read', () => {
     expect(hideAfter('error')).toBeGreaterThan(hideAfter('success'))
     expect(hideAfter('success')).toBe(hideAfter(undefined))
