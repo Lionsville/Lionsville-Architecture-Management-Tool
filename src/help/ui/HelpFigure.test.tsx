@@ -100,3 +100,16 @@ describe('the cut of a picture laid out whole', () => {
     expect(measureCut(picture('<span></span>', { picture: [100, 50, 400, 300] }))).toBeUndefined()
   })
 })
+
+describe('the organisation chart\'s picture', () => {
+  it('says a role nobody holds in the chart\'s own word, in the help\'s language', async () => {
+    const { LanguageProvider } = await import('../../i18n/LanguageContext')
+    const { ChartPicture } = await import('./pictures/screens')
+    for (const [language, word] of [['en', 'vacant'], ['nl', 'vacature'], ['de', 'unbesetzt']] as const) {
+      const { container, unmount } = render(<LanguageProvider language={language}><ChartPicture /></LanguageProvider>)
+      const vacant = [...container.querySelectorAll('[data-vacant]')].map((role) => role.textContent)
+      expect(vacant).toEqual([word, word])
+      unmount()
+    }
+  })
+})

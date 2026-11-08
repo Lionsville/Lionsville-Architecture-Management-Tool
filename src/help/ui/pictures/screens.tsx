@@ -10,6 +10,7 @@
 import type { ReactNode } from 'react'
 import { Card } from '../../../widgets/kit/Card'
 import { Mark } from '../../../widgets/kit/Mark'
+import { useStrings } from '../../../i18n/LanguageContext'
 import { Btn, Chip, Rows, Say, Screen, SidePanel, Tree, ViewBar } from './parts'
 
 const TRAIL = ['Acme Logistics', 'Warehouse', 'Application landscape']
@@ -143,8 +144,11 @@ export function PosterPicture() {
 }
 
 export function ChartPicture() {
+  // The example's names are its own and stay English; the word for a role nobody holds is the chart's.
+  const { t } = useStrings()
+  const vacant = t('unit.vacant').replace(/^\+\s*/, '')
   const box = (type: string, name: string, roles: [string, string][]) => (
-    <div className="hp-unit"><div className="hp-unit__type">{type}</div><b>{name}</b>{roles.map(([role, who]) => <div key={role} className="hp-unit__role">{role}: <span data-vacant={who === '' || undefined}>{who || 'vacant'}</span></div>)}</div>
+    <div className="hp-unit"><div className="hp-unit__type">{type}</div><b>{name}</b>{roles.map(([role, who]) => <div key={role} className="hp-unit__role">{role}: <span data-vacant={who === '' || undefined}>{who || vacant}</span></div>)}</div>
   )
   return (
     <Screen crop trail={['Acme Logistics']} tabs={['Organisation chart']} on={0}>
