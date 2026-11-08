@@ -20,6 +20,7 @@ import { useStrings } from '../../i18n/LanguageContext'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { GuidanceFrame } from '../../principles/ui/GuidanceFrame'
 import { Button } from '../../widgets/kit/Button'
+import { RecordActions } from '../../widgets/kit/RecordActions'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceTab } from '../../widgets/placeTab'
@@ -46,6 +47,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
   const [tab, setTab] = usePlaceTab('about')
   const [chapter, setChapter] = useState<string | undefined>(undefined)
   const [evaluating, setEvaluating] = useState<string | undefined>(openOn)
+  const [editAsked, setEditAsked] = useState(false)
   const shown = useRef(id)
   useEffect(() => {
     if (!open) return
@@ -68,6 +70,11 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
             <Button variant="quiet" onClick={onClose}>{t('blocks.backToList')}</Button>
             <h1 className="guidance-record__title">{block.name}</h1>
             <span className="guidance-read__quiet">{t('blocks.keptInScope', { scope: access.scopeLabel(scope) })}</span>
+            <span className="guidance-read__spring" />
+            {/* The block's text is its record's text: ✎ Edit in the head, as on every record (`RecordActions`). */}
+            {access.mayWrite(scope) && (
+              <RecordActions edit={{ onPress: () => { setTab('about'); setEditAsked(true) }, testId: 'block-document-edit' }} />
+            )}
           </div>
           <div className="guidance-record__tabs">
             <Tabs<TabKey>
@@ -85,7 +92,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
             ? <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />
             : (
               <div className="guidance-record__body">
-                {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} />}
+                {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} editAsked={editAsked} onEditTaken={() => setEditAsked(false)} />}
                 {now === 'requirements' && <BlockRequirements row={row} onChapter={toChapter} />}
                 {now === 'options' && <BlockSolutions row={row} />}
                 {now === 'used' && <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />}

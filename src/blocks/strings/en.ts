@@ -141,7 +141,6 @@ export const EN = {
   'blocks.moreOf': 'More for {name}',
   'blocks.linkElement': 'Link…',
   'blocks.placeTopic': 'topic',
-  'blocks.editText': 'Edit text',
   'blocks.editingDocument': 'Editing {name}',
   'blocks.openIn': 'Open in {scope}',
   'blocks.backToList': '‹ All building blocks',

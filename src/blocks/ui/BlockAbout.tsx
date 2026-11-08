@@ -14,7 +14,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
-import { Button } from '../../widgets/kit/Button'
 import { FocusedWindow, useWritingView } from '../../widgets/kit/FocusedWindow'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { useBlocks } from './BlocksContext'
@@ -54,7 +53,12 @@ export function useBlockDocument(block: string): { text: string | undefined; wro
   return { text, wrote: setText }
 }
 
-export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; chapter: string | undefined; onChapterShown: () => void }) {
+export function BlockAbout({ row, chapter, onChapterShown, editAsked = false, onEditTaken }: {
+  row: BlockRow; chapter: string | undefined; onChapterShown: () => void
+  /** The page head's ✎ Edit was pressed: the text opens in the full window, and says so with `onEditTaken`. */
+  editAsked?: boolean
+  onEditTaken?: () => void
+}) {
   const access = useBlocks()
   const { t } = useStrings()
   const { block, scope } = row
@@ -62,8 +66,13 @@ export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; ch
   const [draft, setDraft] = useState<string | undefined>(undefined)
   const { view, views } = useWritingView()
   const read = useChapter(chapter, draft === undefined && document.text !== undefined, onChapterShown)
+  // Not before the document is read: a draft started from nothing would be saved over it.
+  useEffect(() => {
+    if (!editAsked || document.text === undefined) return
+    setDraft(document.text)
+    onEditTaken?.()
+  }, [editAsked, document.text, onEditTaken])
   if (!access) return null
-  const may = access.mayWrite(scope)
   const keep = () => {
     if (draft !== undefined && draft !== document.text) {
       access.update(block.id, { description: draft })
@@ -76,12 +85,7 @@ export function BlockAbout({ row, chapter, onChapterShown }: { row: BlockRow; ch
   const keeper = access.scopeLabel(scope)
   return (
     <div className="guidance-read">
-      <div className="guidance-record__line">
-        <p className="guidance-record__intro">{t('blocks.documentIntro')}</p>
-        <span className="guidance-read__spring" />
-        {/* Not before the document is read: a draft started from nothing would be saved over it. */}
-        {may && <Button variant="plain" disabled={document.text === undefined} onClick={() => setDraft(document.text ?? '')} data-testid="block-document-edit">{t('blocks.editText')}</Button>}
-      </div>
+      <p className="guidance-record__intro">{t('blocks.documentIntro')}</p>
       <div ref={read} className="guidance-record__doc" data-testid="block-document">
         {document.text === undefined ? null
           : document.text.trim() ? <MarkdownView markdown={document.text} /> : <p className="guidance-read__empty">{t('blocks.documentEmpty')}</p>}

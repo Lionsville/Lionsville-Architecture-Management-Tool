@@ -143,7 +143,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'blocks.moreOf': 'Meer voor {name}',
   'blocks.linkElement': 'Koppelen…',
   'blocks.placeTopic': 'onderwerp',
-  'blocks.editText': 'Tekst bewerken',
   'blocks.editingDocument': '{name} bewerken',
   'blocks.openIn': 'Openen in {scope}',
   'blocks.backToList': '‹ Alle bouwstenen',

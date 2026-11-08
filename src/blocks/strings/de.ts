@@ -143,7 +143,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'blocks.moreOf': 'Mehr zu {name}',
   'blocks.linkElement': 'Verknüpfen…',
   'blocks.placeTopic': 'Thema',
-  'blocks.editText': 'Text bearbeiten',
   'blocks.editingDocument': '{name} bearbeiten',
   'blocks.openIn': 'In {scope} öffnen',
   'blocks.backToList': '‹ Alle Bausteine',

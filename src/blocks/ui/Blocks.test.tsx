@@ -219,9 +219,10 @@ describe('a building block\'s page', () => {
     expect(access.openScope).toHaveBeenCalledWith('topics/integration')
   })
 
-  it('offers no editing of its document before it has been read', () => {
+  it('starts no draft of its document before it has been read, so nothing is saved over it', () => {
     page(accessOver({ document: () => new Promise(() => {}) }))
-    expect(screen.getByTestId('block-document-edit')).toHaveProperty('disabled', true)
+    fireEvent.click(screen.getByTestId('block-document-edit'))
+    expect(screen.queryByRole('button', { name: 'Save' })).toBeNull()
   })
 
   const onOptions = () => fireEvent.click(screen.getByRole('tab', { name: s('blocks.solutions') }))
