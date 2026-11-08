@@ -12,6 +12,7 @@
  * places. How a screen plugs in is written down in `widgets/kit/README.md`.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import useMediaQuery from '@mui/material/useMediaQuery'
 import type { ComponentProps, ReactNode } from 'react'
 import { SurfacePopover as Popover } from '../../widgets/kit/Surface'
 import type { StringKey, Translate } from '../../i18n'
@@ -74,6 +75,9 @@ import type { KeyPress, MenuItemSpec, MenuNeed } from '../../platform/menu'
 import { chordHeld, claimKey, commandKey, isMac, keyClaimed } from '../../widgets/kit/keys'
 
 
+/** A window a phone gives: under it the row keeps the place, the word and ⋯, and the tree stands over the page. */
+const PHONE = '(max-width: 600px)'
+
 export function AppFrame({ parts, children }: { parts: ShellParts; children: ReactNode }) {
   const { frame } = parts
   const state = useFrameState(frame)
@@ -88,6 +92,8 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const screen = agent.screen ?? agent.screenNow()
   const page = screen.page?.page
   const pageUp = page !== undefined
+  // A phone has no room for the tree beside a home: it is the toggle's to bring, over the page. Asked here so a turn of the phone draws again.
+  useMediaQuery(PHONE, { noSsr: true })
   const onHomeBare = treeAlwaysOn(parts, pageUp)
   const [sheetOpen, setSheetOpen] = useShortcutsSheet(parts)
   useExampleCommand(parts)
@@ -599,14 +605,15 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   return (
     <>
       <span ref={anchor} hidden />
-      <BackForward s={s} />
+      {/* A phone's row has no room for them: the browser has its own ‹ ›, and its ⌘Z is a menu away. */}
+      <span className="kit-frame__steps"><BackForward s={s} /></span>
       <TreeToggle parts={parts} pinned={state.pinned} onHome={treeAlwaysOn(parts)} />
       <Trail parts={parts} at={at} name={name} />
       <div className="kit-frame__grow" />
       <FindField openSearch={facts?.openSearch} s={s} />
       <div className="kit-frame__grow" />
       {/* An editor has an undo of its own, for shapes; the model's here would take back the wrong thing. */}
-      {!state.work && <UndoRedo facts={facts} s={s} />}
+      {!state.work && <span className="kit-frame__steps"><UndoRedo facts={facts} s={s} /></span>}
       <SafeWords parts={parts} state={state} activity={gone < 1} />
       {gone < 2 && <AgentButton parts={parts} />}
       <BarEnd button={frameBarButton(parts, scopeOpen ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
@@ -619,9 +626,9 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   )
 }
 
-/** A home with no page over it docks the tree whatever the preference says. */
+/** A home with no page over it docks the tree whatever the preference says — but on a phone, which has no room beside it. */
 function treeAlwaysOn(parts: ShellParts, pageUp = (parts.agent.screen ?? parts.agent.screenNow()).page !== undefined): boolean {
-  return !parts.nav.project && !pageUp
+  return !parts.nav.project && !pageUp && !(window.matchMedia?.(PHONE).matches ?? false)
 }
 
 /**

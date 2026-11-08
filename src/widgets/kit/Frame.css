@@ -14,6 +14,7 @@
 .kit-frame__views .MuiTabs-root { min-height: var(--tabs-h); }
 .kit-frame__views .MuiTab-root { min-height: var(--tabs-h); padding-block: 0; text-transform: none; }
 .kit-frame__grow { flex: 1 1 0; min-width: 0; }
+.kit-frame__steps { display: contents; }
 .kit-frame__body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
 /* Its own width and nothing it holds: without the min-width a name that cannot wrap widens the column past what was asked. */
 .kit-frame__tree { flex: 0 0 auto; width: var(--panel-w-tree); min-width: 0; max-width: 60vw; min-height: 0; display: flex; overflow: hidden; background: var(--surface); }
@@ -142,4 +143,13 @@
 @container kit-frame (max-width: 56rem) {
   .kit-frame__panel { position: absolute; inset-block: 0; inset-inline-end: 0; z-index: 5; max-width: 90%; box-shadow: var(--shadow); }
   .kit-frame__tree { max-width: 45cqw; }
+}
+
+/* A phone's width: row one keeps where you are, whether it is safe and ⋯, and lets the rest go; the tree stands over the page when it is asked for. */
+@container kit-frame (max-width: 37.5rem) {
+  .kit-frame__steps { display: none; }
+  .kit-frame__row--one { gap: 0; padding-inline: var(--s-1); }
+  .kit-frame__row--one > :last-child { flex-shrink: 0; }
+  .kit-frame__status { min-width: 0; flex-shrink: 0; }
+  .kit-frame__tree { position: absolute; inset-block: 0; inset-inline-start: 0; z-index: 5; width: min(var(--panel-w-tree), 85cqw); max-width: 85cqw; box-shadow: var(--shadow); }
 }
