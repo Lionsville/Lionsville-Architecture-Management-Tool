@@ -324,10 +324,12 @@ export function Crumbs({ crumbs, current, currentPath, onGoHome, s }: {
   } as const)
   // In the frame the trail shares the row with two spacers around the find field
   // and the status word. It starts at the width its names need, so the spacers
-  // share only what is left, and where the row is short the status word, which
-  // shrinks a hundred times faster, gives way before a name does.
+  // share only what is left. Where the row is short it barely shrinks while
+  // anything else still can — the status word and the find field give way
+  // first — and takes the rest of the shortfall once they are at their least:
+  // a shrink of 1 cut a name by a pixel, and so to an ellipsis, beside a long word.
   return (
-    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '0 1 auto', maxWidth: 'max-content' }}>
+    <Box data-testid="crumbs" data-guide="shell.crumbs" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, minWidth: 'min(13rem, 40cqw)', flex: '0 0.001 auto', maxWidth: 'max-content' }}>
       {crumbs.map((crumb, index) => (
         <Box key={crumb.path} sx={{ display: 'flex', alignItems: 'center', gap: 0.25, ...shrinking(index === 0 ? 0 : 40 - index) }}>
           <Tooltip title={s('shell.crumbTip', { name: crumb.name })}>

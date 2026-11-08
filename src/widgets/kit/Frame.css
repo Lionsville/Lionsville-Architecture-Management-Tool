@@ -52,8 +52,8 @@
 .kit-frame__status {
   appearance: none; border: 0; background: none; font: inherit; cursor: pointer; color: var(--ink-2); white-space: nowrap;
   height: var(--ctl-h); padding-inline: var(--s-2); border-radius: var(--r-3); max-width: 24rem; overflow: hidden; text-overflow: ellipsis;
-  /* Where the row is short it gives way before what stands left of it (the trail): the panel behind it says the rest. */
-  flex: 0 100 auto; min-width: 6rem;
+  /* Where the row is short it gives way before the trail does: the panel behind it says the rest. */
+  flex: 0 1 auto; min-width: 6rem;
 }
 .kit-frame__status { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--t-body); }
 .kit-frame__status-word { overflow: hidden; text-overflow: ellipsis; }
