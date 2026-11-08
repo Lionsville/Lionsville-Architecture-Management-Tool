@@ -37,8 +37,16 @@
  * held unwritten is written first, so the copy never writes over an edit. A
  * folder that already holds other work is said before anybody answers: that
  * work stays as it is, and those scopes are not brought.
+ *
+ * **The folder is not where work goes on until the copy is whole.** From the
+ * moment a copy starts its folder is on the adopting list, which a start reads
+ * and does not reopen; a copy that came whole takes it off. One that left
+ * something behind goes back to where work was kept before at once, as the
+ * outcome is known, and the outcome is said over the source it went back to
+ * ({@link LeftBehindSaid}): a reload, or a closed tab, with that sentence up
+ * lands where all of the work still is, and never on the partial copy.
  */
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Dialog, DialogFacts } from '../../widgets/kit/Dialog'
 import { Progress } from '../../widgets/kit/Progress'
 import { useStrings } from '../../i18n'
@@ -47,11 +55,41 @@ import type { CopyProgress, CopyTally } from '../../projects/copyScopes'
 import type { SourceChromeProps } from '../../ports/ProviderParts'
 import { adoptionOutcome, pathsOf, reasonIn } from './adoptionWords'
 import type { FolderAdoption, FolderOwn } from './folderOwn'
-import { mayOfferAdoption, readAdoptedFolders, readDeclinedFolders, readMigratedFolders } from './remembered'
+import { adoptingFoldersWith, mayOfferAdoption, readAdoptedFolders, readDeclinedFolders, readMigratedFolders } from './remembered'
 
 type AdoptionProps = Pick<SourceChromeProps<FolderOwn>, 'preferences' | 'reread' | 'flush' | 'back'> & {
   own: FolderOwn
   adoption: FolderAdoption
+}
+
+/** What a copy that left something behind said, kept past the switch back so it can still be read. */
+type Said = { title: string; lines: readonly string[]; alert?: true }
+let leftBehind: Said | undefined
+const hearing = new Set<() => void>()
+function sayLeftBehind(said: Said | undefined): void {
+  leftBehind = said
+  for (const heard of hearing) heard()
+}
+const listen = (heard: () => void) => { hearing.add(heard); return () => { hearing.delete(heard) } }
+
+/**
+ * The outcome of a copy that left something behind, said over where work went
+ * back to: drawn by the folder's chrome while the folder is not the source.
+ */
+export function LeftBehindSaid() {
+  const { t: s } = useStrings()
+  const said = useSyncExternalStore(listen, () => leftBehind, () => undefined)
+  if (!said) return null
+  const close = () => sayLeftBehind(undefined)
+  return (
+    <Dialog open size="m" title={said.title} onClose={close} actions={{ outcome: { onClick: close, 'data-testid': 'adopt-close', label: s('folder.adoptStay') } }}>
+      <div data-testid="adopt-folder">
+        <div role={said.alert ? 'alert' : 'status'} data-testid="adopt-outcome">
+          {said.lines.map((line) => <p key={line}>{line}</p>)}
+        </div>
+      </div>
+    </Dialog>
+  )
 }
 
 /** Where the question stands: not up, asked, copying, or saying what came of the copy. */
@@ -59,7 +97,7 @@ type Stage =
   | { at: 'closed' }
   | { at: 'asking'; differs: readonly string[] }
   | { at: 'copying'; progress?: CopyProgress; stopping?: true }
-  | { at: 'said'; alert?: true; title: string; lines: readonly string[]; again?: true; staying?: true }
+  | { at: 'said'; alert?: true; title: string; lines: readonly string[]; again?: true }
 
 export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flush, back }: AdoptionProps) {
   const { t: s } = useStrings()
@@ -108,19 +146,26 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
       preferences.write({ declinedFolders: [...new Set([...readDeclinedFolders(preferences.read()), adoption.root])] })
     }
     // A copy that left something behind is not where the work goes on: the
-    // folder holds less than this browser does, so closing goes back to it.
+    // folder holds less than this browser does, so the work goes back there at
+    // once, and what came of the copy is said over it.
     const staying = !whole && back !== undefined
+    if (staying) {
+      sayLeftBehind({ title: said.title, lines: [...said.lines.filter((line) => line !== s('folder.adoptBrowserKept')), s('folder.adoptStaying')] })
+      back()
+      return
+    }
+    // Whole, or with nowhere to go back to: this folder is where work goes on.
+    preferences.write({ adoptingFolders: adoptingFoldersWith(preferences.read(), adoption.root, false) })
     reread()
-    setStage({
-      at: 'said', title: said.title, lines: staying ? [...said.lines.filter((line) => line !== s('folder.adoptBrowserKept')), s('folder.adoptStaying')] : said.lines,
-      ...(said.again ? { again: true as const } : {}), ...(staying ? { staying: true as const } : {}),
-    })
+    setStage({ at: 'said', title: said.title, lines: said.lines, ...(said.again ? { again: true as const } : {}) })
   }, [own, adoption, preferences, reread, s, back])
 
   const copy = useCallback(() => {
     const controller = new AbortController()
     running.current = controller
     setStage({ at: 'copying' })
+    // Not where work goes on until the copy is whole: a start under it does not reopen this folder.
+    preferences.write({ adoptingFolders: adoptingFoldersWith(preferences.read(), adoption.root, true) })
     void flush()
       .then(() => copyScopes(adoption.from, adoption.into, {
         signal: controller.signal,
@@ -129,13 +174,16 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
       }))
       .then(copied, (cause: unknown) => {
         own.report('migration', cause)
-        setStage({
-          at: 'said', alert: true, title: s('folder.adoptFailedTitle'),
-          lines: [s('folder.adoptFailed', { message: reasonIn(cause, s) }), s(back ? 'folder.adoptStaying' : 'folder.adoptBrowserKept')],
-          ...(back ? { staying: true as const } : {}),
-        })
+        const lines = [s('folder.adoptFailed', { message: reasonIn(cause, s) }), s(back ? 'folder.adoptStaying' : 'folder.adoptBrowserKept')]
+        if (back) {
+          sayLeftBehind({ alert: true, title: s('folder.adoptFailedTitle'), lines })
+          back()
+          return
+        }
+        preferences.write({ adoptingFolders: adoptingFoldersWith(preferences.read(), adoption.root, false) })
+        setStage({ at: 'said', alert: true, title: s('folder.adoptFailedTitle'), lines })
       })
-  }, [own, adoption, flush, copied, s, back])
+  }, [own, adoption, flush, copied, s, back, preferences])
 
   const stop = useCallback(() => {
     running.current?.abort()
@@ -147,10 +195,7 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
     preferences.write({ declinedFolders: [...new Set([...readDeclinedFolders(preferences.read()), adoption.root])] })
   }, [adoption, preferences])
 
-  const close = useCallback(() => {
-    setStage({ at: 'closed' })
-    if (stage.at === 'said' && stage.staying) back?.()
-  }, [stage, back])
+  const close = useCallback(() => { setStage({ at: 'closed' }) }, [])
 
   const title = stage.at === 'said' ? stage.title : stage.at === 'copying' ? s('folder.adoptCopyingTitle') : s('folder.adoptTitle')
   return (
@@ -164,7 +209,7 @@ export function FolderAdoptionQuestion({ own, adoption, preferences, reread, flu
           cancel: { onClick: stop, disabled: stage.stopping, 'data-testid': 'adopt-stop', label: s(stage.stopping ? 'folder.adoptStopping' : 'folder.adoptStop') },
         } : stage.at === 'said' ? {
           also: [stage.again && { onClick: copy, 'data-testid': 'adopt-again', label: s('folder.adoptAgain') }],
-          outcome: { onClick: close, 'data-testid': 'adopt-close', label: s(stage.staying ? 'folder.adoptStay' : 'folder.adoptClose') },
+          outcome: { onClick: close, 'data-testid': 'adopt-close', label: s('folder.adoptClose') },
         } : undefined
       }
     >

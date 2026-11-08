@@ -130,3 +130,23 @@ export function mayOfferAdoption(stored: unknown, root: string): boolean {
   if (readAdoptedFolders(stored).length > 0) return false
   return !readDeclinedFolders(stored).includes(root)
 }
+
+/**
+ * The folders a copy into is under way for, or came to less than whole: none
+ * of them is where this machine works yet, so none is opened again on its
+ * own at the next start. A copy that came whole takes its folder off; one
+ * that left something behind leaves it on, and the work goes on where all
+ * of it still is.
+ */
+export function readAdoptingFolders(stored: unknown): string[] {
+  if (!stored || typeof stored !== 'object') return []
+  const raw = (stored as Record<string, unknown>).adoptingFolders
+  return Array.isArray(raw) ? raw.filter((held): held is string => typeof held === 'string') : []
+}
+
+/** The list with this folder on it, or off it; nothing where it is empty, so a blob that never had one is left as it was. */
+export function adoptingFoldersWith(stored: unknown, root: string, on: boolean): string[] | undefined {
+  const rest = readAdoptingFolders(stored).filter((held) => held !== root)
+  const list = on ? [...rest, root] : rest
+  return list.length > 0 ? list : undefined
+}

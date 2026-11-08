@@ -29,7 +29,7 @@ import type { SyncRefusal, SyncRefused, SyncSide } from '../../platform/sync'
 import { Button as KitButton } from '../../widgets/kit/Button'
 import { PanelSection } from '../../widgets/kit/Panel'
 import type { SourceChromeProps, SourceYourWorkProps } from '../../ports/ProviderParts'
-import { FolderAdoptionQuestion } from './FolderAdoption'
+import { FolderAdoptionQuestion, LeftBehindSaid } from './FolderAdoption'
 import type { FolderOwn } from './folderOwn'
 
 export const SYNC_REFUSAL_LABEL: Record<SyncRefusal, StringKey> = {
@@ -53,9 +53,11 @@ function reasonFor(outcome: SyncRefusal | SyncRefused, s: (key: StringKey) => st
 
 /** Drawn whatever the source; about the folder only while a folder is the source. */
 export function FolderChrome({ own, notify, reread, flush, preferences, back }: SourceChromeProps<FolderOwn>) {
-  if (!own) return null
+  // A copy that left something behind went back to where work was: what came of it is said there.
+  if (!own) return <LeftBehindSaid />
   return (
     <>
+      <LeftBehindSaid />
       {own.adoption && <FolderAdoptionQuestion own={own} adoption={own.adoption} preferences={preferences} reread={reread} flush={flush} {...(back ? { back } : {})} />}
       {own.sync && <SyncStrip own={own} notify={notify} reread={reread} flush={flush} />}
     </>

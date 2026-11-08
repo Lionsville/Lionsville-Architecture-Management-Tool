@@ -7,7 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import {
-  mayOfferAdoption, readDeclinedFolders, readMigratedFolders, readWorkingDirectory, withDeclinedFolder,
+  adoptingFoldersWith, mayOfferAdoption, readAdoptingFolders, readDeclinedFolders, readMigratedFolders, readWorkingDirectory, withDeclinedFolder,
   withMigratedFolder, withoutWorkingDirectory, withWorkingDirectory,
 } from './remembered'
 
@@ -94,5 +94,15 @@ describe('mayOfferAdoption', () => {
     // A no is about a place. The work is still stranded, so the next folder is
     // a fair question.
     expect(mayOfferAdoption(withDeclinedFolder({}, '/a'), '/b')).toBe(true)
+  })
+})
+
+describe('the folders a copy has not come whole to', () => {
+  it('puts a folder on and takes it off, keeps the others, and leaves nothing where none is left', () => {
+    expect(adoptingFoldersWith({}, '/a', true)).toEqual(['/a'])
+    expect(adoptingFoldersWith({ adoptingFolders: ['/b', '/a'] }, '/a', false)).toEqual(['/b'])
+    expect(adoptingFoldersWith({ adoptingFolders: ['/a'] }, '/a', false)).toBeUndefined()
+    expect(readAdoptingFolders({ adoptingFolders: ['/a', 3] })).toEqual(['/a'])
+    expect(readAdoptingFolders('rubbish')).toEqual([])
   })
 })

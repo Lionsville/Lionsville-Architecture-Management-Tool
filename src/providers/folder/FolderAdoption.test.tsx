@@ -144,16 +144,19 @@ describe('the question a folder pick asks', () => {
     expect(screen.getByRole('dialog', { name: 'Not all of your work was copied' })).toBeDefined()
   })
 
-  it('goes back to where the work was kept before, once a copy that left something behind is closed', async () => {
+  it('goes back to where the work was kept before the moment a copy leaves something behind, and says so there', async () => {
     const back = vi.fn()
-    await ask({ from: await keptWithOneUnread(), back })
+    const { preferences } = await ask({ from: await keptWithOneUnread(), back })
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
+    // Gone back already: a reload with the outcome up lands where all of the work is.
+    expect(back).toHaveBeenCalledTimes(1)
+    expect(preferences.read()).toMatchObject({ adoptingFolders: ['/test2'] })
     const said = screen.getByTestId('adopt-outcome').textContent
     expect(said).toContain('You go on working in this browser')
     expect(said).not.toContain('Nothing has changed in this browser')
-    expect(back).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Go on in this browser' }))
+    await waitFor(() => expect(screen.queryByTestId('adopt-outcome')).toBeNull())
     expect(back).toHaveBeenCalledTimes(1)
   })
 
@@ -162,16 +165,19 @@ describe('the question a folder pick asks', () => {
     await ask({ flush: () => Promise.reject(new Error('the disk is full')), back })
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
-    fireEvent.click(screen.getByTestId('adopt-close'))
     expect(back).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByTestId('adopt-close'))
+    await waitFor(() => expect(screen.queryByTestId('adopt-outcome')).toBeNull())
   })
 
   it('stays in the folder after a whole copy, with somewhere to go back to all the same', async () => {
     const back = vi.fn()
-    const { reread } = await ask({ back })
+    const { reread, preferences } = await ask({ back, preferences: blob({ adoptingFolders: ['/elsewhere'] }) })
     fireEvent.click(screen.getByTestId('adopt-copy'))
     await settled()
     expect(reread).toHaveBeenCalled()
+    // Where work goes on now: a start opens it again.
+    expect(preferences.read()).toMatchObject({ adoptingFolders: ['/elsewhere'] })
     fireEvent.click(screen.getByTestId('adopt-close'))
     expect(back).not.toHaveBeenCalled()
   })

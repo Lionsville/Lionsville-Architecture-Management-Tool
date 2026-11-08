@@ -18,7 +18,7 @@ import {
 import type { SourceProvider } from '../../platform/sourceProvider'
 import type { SourceDestination } from '../../ports/ProviderParts'
 import type { FolderBase, FolderOpening, FolderParts } from './openFolder'
-import { readWorkingDirectory, withoutWorkingDirectory, withWorkingDirectory } from './remembered'
+import { readAdoptingFolders, readWorkingDirectory, withoutWorkingDirectory, withWorkingDirectory } from './remembered'
 
 /**
  * The folder's own way in: the picker this app has always had.
@@ -57,6 +57,13 @@ function nameOf(root: string): string {
  * one.
  */
 async function resumeFolder(preferences: unknown): Promise<FolderOpening | undefined> {
+  const opening = await rememberedOpening(preferences)
+  // A folder a copy into has not come whole to is not where work goes on: a
+  // reload with the copy's outcome up, or under the copy, opens where all of it still is.
+  return opening && !readAdoptingFolders(preferences).includes(opening.root) ? opening : undefined
+}
+
+async function rememberedOpening(preferences: unknown): Promise<FolderOpening | undefined> {
   const files = desktopFiles()
   if (!files) {
     const handle = canChooseDirectory() ? await rememberedDirectory() : undefined
