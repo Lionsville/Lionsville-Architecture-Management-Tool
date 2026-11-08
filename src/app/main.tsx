@@ -426,12 +426,16 @@ function withoutExample(): string {
   return query ? `?${query}` : ''
 }
 
-function addressVisiting(key: string | undefined): void {
+/**
+ * The visit's address, as a new entry: the page it was opened from keeps its
+ * own, so Back from the example's first place returns there rather than out
+ * of the app.
+ */
+function addressVisiting(key: string): void {
   const search = new URLSearchParams(window.location.search)
-  if (key === undefined) search.delete('example')
-  else search.set('example', key)
+  search.set('example', key)
   const query = search.toString()
-  window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`)
+  window.history.pushState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash}`)
 }
 
 async function enterExample(offer: ExampleOffer): Promise<boolean> {
