@@ -40,7 +40,7 @@
   text-align: start;
   cursor: pointer;
 }
-.kit-viewbar__act:hover { background: var(--surface-2); }
+.kit-viewbar__act:hover { background: var(--press-hover); }
 .kit-viewbar__act:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); }
 .kit-viewbar__act:disabled { color: var(--ink-3); cursor: default; background: transparent; }
 .kit-viewbar__says { color: var(--ink-3); font-size: var(--t-small); white-space: nowrap; }

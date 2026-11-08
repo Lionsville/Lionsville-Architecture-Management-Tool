@@ -26,7 +26,8 @@
 .kit-button[data-variant='primary']:active { background: color-mix(in srgb, var(--accent) 76%, var(--ink)); }
 
 .kit-button[data-variant='quiet'] { background: transparent; border-color: transparent; }
-.kit-button[data-variant='quiet']:hover { background: var(--surface-2); }
+/* A quiet press has no outline to show it is one: its hover is the kit's press fill, which reads in the dark as well. */
+.kit-button[data-variant='quiet']:hover { background: var(--press-hover); }
 .kit-button[data-variant='quiet']:active { background: var(--line); }
 /* A quiet control that is off stays quiet, by specificity over the refused look below: a filled ground would read as pressed. */
 .kit-button[data-variant='quiet']:disabled { background: transparent; border-color: transparent; }

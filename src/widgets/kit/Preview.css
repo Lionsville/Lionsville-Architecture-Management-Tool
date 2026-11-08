@@ -49,7 +49,7 @@
   color: var(--ink);
   cursor: pointer;
 }
-.kit-preview__icon:hover:not(:disabled) { background: var(--surface-2); }
+.kit-preview__icon:hover:not(:disabled) { background: var(--press-hover); }
 /* At either end of the list ‹ or › fades, as the kit's icon buttons do, so it does not read as a way on. */
 .kit-preview__icon:disabled { color: var(--ink-dim); opacity: .4; cursor: default; }
 .kit-preview__link {

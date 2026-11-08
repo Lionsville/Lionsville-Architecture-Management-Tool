@@ -115,7 +115,7 @@
   color: var(--ink-2);
   cursor: pointer;
 }
-.kit-panel__icon:hover { background: var(--surface-2); color: var(--ink); }
+.kit-panel__icon:hover { background: var(--press-hover); color: var(--ink); }
 .kit-panel__link {
   min-height: var(--target-min);
   padding: 0;

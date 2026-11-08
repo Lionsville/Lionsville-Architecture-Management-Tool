@@ -35,7 +35,7 @@
   color: var(--ink-2);
   cursor: pointer;
 }
-.kit-filter__remove:hover { color: var(--ink); background: var(--surface-2); }
+.kit-filter__remove:hover { color: var(--ink); background: var(--press-hover); }
 .kit-filter__link {
   padding: 0;
   border: 0;

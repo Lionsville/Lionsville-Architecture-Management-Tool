@@ -16,7 +16,7 @@
   color: var(--ink-3);
   cursor: pointer;
 }
-.kit-date__open:hover:not(:disabled) { background: var(--surface-2); color: var(--ink); }
+.kit-date__open:hover:not(:disabled) { background: var(--press-hover); color: var(--ink); }
 .kit-date__open:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 0; }
 .kit-date__open:disabled { cursor: default; }
 

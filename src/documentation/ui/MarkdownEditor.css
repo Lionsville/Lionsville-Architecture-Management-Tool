@@ -30,7 +30,7 @@
   width: 26px; height: 26px; padding: 0; border: 0; border-radius: var(--r-2);
   background: transparent; color: var(--ink-2); font: inherit; font-size: var(--t-body); cursor: pointer;
 }
-.md-editor__tool:hover { background: var(--surface-2); color: var(--ink); }
+.md-editor__tool:hover { background: var(--press-hover); color: var(--ink); }
 .md-editor__tool:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: var(--focus-ring-offset); }
 .md-editor__tool[aria-pressed='true'], .md-editor__tool[aria-expanded='true'] { background: var(--accent-soft); color: var(--accent); }
 .md-editor__tool b { font-weight: 700; }
