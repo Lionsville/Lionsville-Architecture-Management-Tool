@@ -58,6 +58,10 @@
 .poster-tile[data-quiet] { opacity: var(--dim-opacity); }
 .poster__stage[data-finding] .poster-tile:not([data-hit]) { opacity: var(--dim-opacity); }
 [data-hit] { outline: 2px solid var(--focus-ring); outline-offset: 0; }
+/* The match Find stands on is the one picked: a heavier ring over its fill, so it is told from the other matches. */
+.poster-tile[data-hit][aria-current="true"] { outline: 4px solid var(--focus-ring); outline-offset: -2px; }
+.poster-person[data-hit], .poster-column__group [data-hit], .poster-grouping__name[data-hit], .poster-item[data-hit] { outline-offset: 2px; }
+.poster-person[data-hit][aria-current="true"], .poster-item[data-hit][aria-current="true"] { outline-width: 4px; background: var(--selected-soft); }
 .poster-tile__name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: var(--t-canvas-name); line-height: 14px; hyphens: auto; text-wrap: balance; }
 .poster-tile__near { display: none; }
 .poster-tile__label { display: none; }
@@ -122,8 +126,13 @@
 .poster-band[data-roomy] .poster-step { font-size: var(--canvas-t-sm); line-height: 13.5px; overflow-wrap: break-word; }
 .poster-step[data-outside] { background: none; outline: 1px dashed var(--zone-edge); outline-offset: -1px; }
 .poster-step__name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; min-width: 0; }
-
-[data-labels="numbers"] .poster-step__name { visibility: hidden; }
+/* A step is a chevron, and its clip-path cuts away any outline: what is picked, found or focused is drawn inside the shape,
+   as a fill and a bar along its top and foot, which the clip leaves whole. */
+.poster-step[aria-current="true"] { background: var(--selected-soft); box-shadow: inset 0 3px 0 var(--selected-edge), inset 0 -3px 0 var(--selected-edge); }
+.poster-step[data-hit] { outline: 0; box-shadow: inset 0 2px 0 var(--focus-ring), inset 0 -2px 0 var(--focus-ring); }
+.poster-step[data-hit][aria-current="true"] { box-shadow: inset 0 4px 0 var(--focus-ring), inset 0 -4px 0 var(--focus-ring); }
+.poster-step:focus-visible { outline: 0; background: var(--crosshair); box-shadow: inset 0 3px 0 var(--focus-ring), inset 0 -3px 0 var(--focus-ring); }
+.poster-step:focus-visible .poster-step__name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 2px; }
 
 /* Far: the picture of the whole. No height changes, or an agent's placing overlaps. */
 /* Hidden rather than gone: going far then lays nothing out, and a name is back at once. */
