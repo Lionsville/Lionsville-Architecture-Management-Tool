@@ -1892,6 +1892,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'first.start': 'Beginnen',
   'first.started': '“{name}” is aangemaakt.',
   'first.lookAround': 'Rondkijken in een voorbeeld',
+  'first.exampleSaid': '{description} Het voorbeeld is in het Engels.',
   'first.exampleApart': 'Probeer alles: je eigen werk blijft apart.',
   'first.openExample': 'Voorbeeld openen',
   'first.carryOn': 'Verder met werk dat je hebt',

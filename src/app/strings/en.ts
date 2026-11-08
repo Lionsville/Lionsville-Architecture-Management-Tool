@@ -2125,6 +2125,8 @@ export const EN = {
   'first.start': 'Start',
   'first.started': '“{name}” is started.',
   'first.lookAround': 'Look around an example',
+  /** The example's own description, which is in English, and where the language is not English a word that it is. */
+  'first.exampleSaid': '{description}',
   'first.exampleApart': 'Try anything: your own work stays apart.',
   'first.openExample': 'Open the example',
   'first.carryOn': 'Carry on with work you have',

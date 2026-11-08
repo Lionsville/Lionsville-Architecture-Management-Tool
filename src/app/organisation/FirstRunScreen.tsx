@@ -96,7 +96,7 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
         <Button variant="primary" disabled={!name.trim()} onClick={start} data-testid="first-run-start">{s('first.start')}</Button>
       </FirstRunWay>
       {props.onVisitExample && props.examples.map((example) => (
-        <FirstRunWay key={example.key} title={s('first.lookAround')} body={`${example.description} ${s('first.exampleApart')}`}>
+        <FirstRunWay key={example.key} title={s('first.lookAround')} body={`${s('first.exampleSaid', { description: example.description })} ${s('first.exampleApart')}`}>
           <Button onClick={() => props.onVisitExample?.(example)} data-testid="open-example" data-guide="first.example">{s('first.openExample')}</Button>
         </FirstRunWay>
       ))}

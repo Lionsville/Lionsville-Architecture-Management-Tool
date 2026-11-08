@@ -1896,6 +1896,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'first.start': 'Beginnen',
   'first.started': '„{name}“ ist angelegt.',
   'first.lookAround': 'Ein Beispiel ansehen',
+  'first.exampleSaid': '{description} Das Beispiel ist auf Englisch.',
   'first.exampleApart': 'Probieren Sie alles aus: Ihre eigene Arbeit bleibt getrennt.',
   'first.openExample': 'Beispiel öffnen',
   'first.carryOn': 'Mit vorhandener Arbeit weitermachen',
