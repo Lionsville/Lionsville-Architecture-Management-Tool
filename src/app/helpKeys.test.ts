@@ -8,6 +8,8 @@
  */
 import { cleanup, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ScreenPage } from '../agent/screen'
+import type { HostCommand } from '../platform/hostCommands'
 import { helpKeyOf, helpPlaceOf, takesText, useHelpKeys } from './helpKeys'
 
 const press = (key: string, target: EventTarget = document.body, more: KeyboardEventInit = {}) => {
@@ -53,6 +55,25 @@ describe('the place the help opens at', () => {
     expect(helpPlaceOf({ open: { path: 'a', name: 'A', view: { id: 'v', name: 'V', kind: 'sheet' } } }, 'poster')).toBe('poster')
     expect(helpPlaceOf({ home: { path: '', name: 'Acme' }, panel: 'activity' })).toBe('frame.activity')
   })
+
+  // The reviewer, on the desktop: F1 answered the view under a page. Every page,
+  // over a board and over a chart, answers as itself.
+  const pages: readonly [ScreenPage, string][] = [
+    [{ page: 'decisions' }, 'decisions'], [{ page: 'observations' }, 'observations'], [{ page: 'roadmap' }, 'roadmap'],
+    [{ page: 'document', id: 'e1' }, 'record.open'], [{ page: 'plan', id: 'p1' }, 'plan.open'],
+    [{ page: 'platform', id: 'x' }, 'technology.platformReport'], [{ page: 'service', id: 'x' }, 'technology.serviceReport'],
+    [{ page: 'register' }, 'register.open'], [{ page: 'people' }, 'people'], [{ page: 'checks' }, 'checks.open'],
+    [{ page: 'operating' }, 'operating'], [{ page: 'principles' }, 'principles.read'], [{ page: 'topics' }, 'topics.read'],
+    [{ page: 'blocks' }, 'blocks.read'], [{ page: 'settings' }, 'scope.settings'], [{ page: 'preferences' }, 'prefs.page'],
+    [{ page: 'agents' }, 'agent'],
+  ]
+  for (const kind of ['layer7', 'chart']) {
+    for (const [page, place] of pages) {
+      it(`is ${place} on ${page.page} with a ${kind} view open underneath`, () => {
+        expect(helpPlaceOf({ open: { path: '', name: 'Acme', view: { id: 'v', name: 'V', kind } }, page })).toBe(place)
+      })
+    }
+  }
 })
 
 describe('the keys, heard on the window', () => {
@@ -97,8 +118,18 @@ describe('the keys, heard on the window', () => {
     const desk = vi.fn()
     renderHook(() => useHelpKeys({ send: desk, place: () => 'board', framed: true, hostMenu: true }))
     expect(press('?', document.body, { metaKey: true }).defaultPrevented).toBe(false)
-    press('F1')
-    expect(desk.mock.calls).toEqual([[{ type: 'manual', section: 'board' }]])
+    // F1 too: the menu bar's item carries it and sends Help on this page.
+    expect(press('F1').defaultPrevented).toBe(false)
+    expect(desk).not.toHaveBeenCalled()
+  })
+
+  it('answers Help on this page from a menu, ⌘K or row one with the one place', () => {
+    const send = vi.fn()
+    let heard: ((command: HostCommand) => void) | undefined
+    renderHook(() => useHelpKeys({ send, on: (listener) => { heard = listener; return () => { heard = undefined } }, place: () => 'decisions', framed: true }))
+    heard?.({ type: 'manualHere' })
+    heard?.({ type: 'shortcuts' })
+    expect(send.mock.calls).toEqual([[{ type: 'manual', section: 'decisions' }]])
   })
 
   it('opens the help\'s own list of keys where there is no frame to show the sheet', () => {

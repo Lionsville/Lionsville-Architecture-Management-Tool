@@ -44,6 +44,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'menu.editSelectAll': 'Alles auswählen',
   'menu.help': 'Hilfe',
   'menu.userManual': 'Lionsville Architect-Hilfe',
+  'menu.helpHere': 'Hilfe zu dieser Seite',
   'menu.shortcuts': 'Tastenkürzel…',
   'menu.visitExample': 'Im Beispiel umsehen',
   'menu.go': 'Gehe zu',

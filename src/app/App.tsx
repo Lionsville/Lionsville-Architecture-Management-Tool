@@ -489,7 +489,7 @@ export function App(props: AppProps) {
   const keeps = useViewerKeeps(prefs)
   const firstRun = firstRunUp(parts)
   const framed = !props.provider?.sourceNeeded && firstRun === 'no'
-  useHelpKeys({ send: parts.commands.bus.send, framed, hostMenu: parts.hostMenu, place: () => (framed ? helpHere(parts) : FIRST_RUN_HELP) })
+  useHelpKeys({ send: parts.commands.bus.send, on: parts.commands.bus.on, framed, hostMenu: parts.hostMenu, place: () => (framed ? helpHere(parts) : FIRST_RUN_HELP) })
   return (
     /* The theme lives here and not at module level: it hangs off state (light /
        dark / system) and must be able to change with it. CssBaseline sits inside

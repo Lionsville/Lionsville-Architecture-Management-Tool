@@ -160,6 +160,9 @@ export const HELP_MENU_ITEM: MenuItemSpec = item('menu.userManual', { type: 'man
 
 export const HELP_MENU: readonly MenuEntry[] = [
   HELP_MENU_ITEM,
+  // F1 on the menu bar as well, so the desktop's Help menu says the key; the page
+  // leaves F1 to that menu where there is one (`app/helpKeys.ts`).
+  item('menu.helpHere', { type: 'manualHere' }, 'F1'),
   item('menu.shortcuts', { type: 'shortcuts' }),
   // The example as a place, from any screen: the first page offers it only while
   // the organisation is empty, and an organisation with work had no way back to it.

@@ -95,7 +95,7 @@ import { EN } from '../../src/platform/strings/en'
  */
 export const HELD_AT_MOST = 16
 const KEPT_WHILE_HELD: ReadonlySet<HostCommand['type']> = new Set<HostCommand['type']>([
-  'connect', 'reopen', 'open', 'openDocument', 'preferences', 'theme', 'textSize', 'connectAgent', 'manual', 'shortcuts',
+  'connect', 'reopen', 'open', 'openDocument', 'preferences', 'theme', 'textSize', 'connectAgent', 'manual', 'manualHere', 'shortcuts',
 ])
 const held: HostCommand[] = []
 let listening = false

@@ -122,8 +122,8 @@ describe('with no scope open', () => {
   })
 
   it('keeps the manual and the sheet of keys, which is on every screen', () => {
-    expect(labels(offered(HELP_MENU, 'web', nothing))).toEqual(['menu.userManual', 'menu.shortcuts'])
-    expect(labels(offered(HELP_MENU, 'web', { ...nothing, scope: true }))).toEqual(['menu.userManual', 'menu.shortcuts'])
+    expect(labels(offered(HELP_MENU, 'web', nothing))).toEqual(['menu.userManual', 'menu.helpHere', 'menu.shortcuts'])
+    expect(labels(offered(HELP_MENU, 'web', { ...nothing, scope: true }))).toEqual(['menu.userManual', 'menu.helpHere', 'menu.shortcuts'])
   })
 
   it('makes Delete and Select All need a scope, and Undo and Redo none, with the accelerator the key had', () => {

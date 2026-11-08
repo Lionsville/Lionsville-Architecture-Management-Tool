@@ -81,6 +81,12 @@ export type HostCommand =
    * its own on the desktop, a pop-up or a tab in a browser.
    */
   | { type: 'manual'; section?: string }
+  /**
+   * Help on this page (F1): the help at the place of the screen that is up.
+   * The menu bar cannot know that place, so the page answers it
+   * (`app/helpKeys.ts`) with the one resolver every way in reads.
+   */
+  | { type: 'manualHere' }
   /** Help: the shortcut overlay the `?` button already opens. */
   | { type: 'shortcuts' }
   /** Help: the shipped example, as a place to look around and leave, whatever this organisation holds. */

@@ -31,7 +31,7 @@ import { Button, IconButton } from '../../widgets/kit/Button'
 import { Frame } from '../../widgets/kit/Frame'
 import { MenuButton, MoreMenu } from '../../widgets/kit/Menu'
 import { HelpPlaceProvider } from '../../widgets/kit/HelpPress'
-import { helpHere, takesText } from '../helpKeys'
+import { takesText } from '../helpKeys'
 import type { MenuAct, MenuEntry, MenuSpacer } from '../../widgets/kit/Menu'
 import { Tooltip } from '../../widgets/kit/Tooltip'
 import { PlaceFacetsContext, PlaceListContext, PlaceReadingContext, PlaceTabContext } from '../../widgets/placeTab'
@@ -620,8 +620,7 @@ function AgentButton({ parts }: { parts: ShellParts }) {
 function helpEntries(parts: ShellParts): (MenuAct | MenuSpacer)[] {
   const { services: { s }, commands: { bus } } = parts
   const help = offered(HELP_MENU, 'web', { history: false, connect: false, scope: true, example: exampleOffered(parts) })
-  const here: MenuAct = { label: s('frame.helpHere'), shortcut: 'F1', onSelect: () => bus.send({ type: 'manual', section: helpHere(parts) }) }
-  const items: (MenuAct | MenuSpacer)[] = [here, ...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : entry.accelerator ? { shortcut: keyCap(entry.accelerator, isMac()) } : {}) }] : []))]
+  const items: (MenuAct | MenuSpacer)[] = [...help.flatMap((entry) => (entry.kind === 'item' ? [{ label: s(entry.label), onSelect: () => bus.send(entry.command), ...(entry.command.type === 'shortcuts' ? { shortcut: '?' } : entry.accelerator ? { shortcut: keyCap(entry.accelerator, isMac()) } : {}) }] : []))]
   if (!parts.hostMenu) {
     const open = (href: string) => () => parts.props.hostControls.openExternal(href)
     items.push({ line: true }, { label: s(DESKTOP_APP_LINK.label), onSelect: open(DESKTOP_APP_LINK.href) }, { label: s(WEBSITE_LINK.label), onSelect: open(WEBSITE_LINK.href), 'data-guide': 'shell.website' })
@@ -639,7 +638,7 @@ function HelpMenu({ parts }: { parts: ShellParts }) {
     <>
       <IconButton
         label={s('frame.helpHere')} tip={`${s('frame.helpHere')} (F1)`} size="small" data-testid="frame-help-here" data-guide="frame.helpHere"
-        onClick={() => bus.send({ type: 'manual', section: helpHere(parts) })}
+        onClick={() => bus.send({ type: 'manualHere' })}
       >
         <span aria-hidden="true" className="kit-help-press">?</span>
       </IconButton>

@@ -82,19 +82,31 @@ export function helpHere(parts: Pick<ShellParts, 'agent' | 'frame'>): string {
 
 export function useHelpKeys(deps: {
   send: (command: HostCommand) => void
+  /** The commands as they come, for *Help on this page* from a menu, ⌘K or row one's ?. */
+  on?: (listener: (command: HostCommand) => void) => () => void
   /** Where the help answers for what is up; undefined on the first page. */
   place: () => string
   /** The frame is up and shows the sheet of keys; without it, `?` opens the help's own list of them. */
   framed: boolean
-  /** A menu bar that answers ⌘? itself, as the desktop's does. */
+  /** A menu bar that answers ⌘? and F1 itself, as the desktop's does. */
   hostMenu?: boolean
 }) {
   const latest = useRef(deps)
   latest.current = deps
+  const { on } = deps
+  // Every way to the help at this screen ends here, so they cannot disagree on
+  // the place: F1, row one's ?, the Help menu's item, ⌘K's row and the desktop's
+  // menu bar all send `manualHere`, and this one resolver answers it.
+  useEffect(() => on?.((command) => {
+    if (command.type === 'manualHere') latest.current.send({ type: 'manual', section: latest.current.place() })
+  }), [on])
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const said = helpKeyOf(event)
-      if (!said || event.defaultPrevented || (said === 'whole' && latest.current.hostMenu)) return
+      if (!said || event.defaultPrevented) return
+      // The desktop's menu bar carries both chords; on macOS its accelerator fires
+      // whether or not the page took the key, so answering here too would open twice.
+      if (said !== 'shortcuts' && latest.current.hostMenu) return
       if (takesText(event.target) && !(said === 'shortcuts' && emptySearch(event.target))) return
       event.preventDefault()
       event.stopPropagation()
