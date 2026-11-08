@@ -94,9 +94,9 @@ export function useHelpKeys(deps: {
   const latest = useRef(deps)
   latest.current = deps
   const { on } = deps
-  // Every way to the help at this screen ends here, so they cannot disagree on
-  // the place: F1, row one's ?, the Help menu's item, ⌘K's row and the desktop's
-  // menu bar all send `manualHere`, and this one resolver answers it.
+  // Every way to the help at this screen ends at `place`, so they cannot disagree:
+  // row one's ?, the Help menu's item, ⌘K's row and the desktop's menu bar send
+  // `manualHere`, answered here, and F1 on the web is answered below.
   useEffect(() => on?.((command) => {
     if (command.type === 'manualHere') latest.current.send({ type: 'manual', section: latest.current.place() })
   }), [on])
