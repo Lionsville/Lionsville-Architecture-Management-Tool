@@ -157,6 +157,32 @@ describe('a scope whose record will not save', () => {
     expect((await held.read('acme/warehouse'))?.model.name).toBe('Warehouse renamed')
   })
 
+  it('puts the field back too where Your work puts its change back: what is kept, no notice, nothing to land', async () => {
+    const refusing = { now: true }
+    const { held, name } = await settingsRefusing(refusing)
+    fireEvent.click(word())
+    fireEvent.click(await screen.findByTestId('work-put-back'))
+    await waitFor(() => expect(name.value).toBe('Warehouse'))
+    expect(screen.queryByTestId('setting-not-kept')).toBeNull()
+    expect(screen.queryByText('Not saved: this was not written where your work is kept.')).toBeNull()
+    await waitFor(() => expect(word().getAttribute('data-tone')).not.toBe('problem'))
+    // Nothing is left that would land the change put back, and nothing was written.
+    refusing.now = false
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+    expect((await held.read('acme/warehouse'))?.model.name).toBe('Warehouse')
+  })
+
+  it('drops the field\u2019s notice where Your work lands its change, keeping what it shows', async () => {
+    const refusing = { now: true }
+    const { held, name } = await settingsRefusing(refusing)
+    refusing.now = false
+    fireEvent.click(word())
+    fireEvent.click(await screen.findByTestId('work-retry'))
+    await waitFor(() => expect(screen.queryByTestId('setting-not-kept')).toBeNull())
+    expect(name.value).toBe('Warehouse renamed')
+    expect((await held.read('acme/warehouse'))?.model.name).toBe('Warehouse renamed')
+  })
+
   it('makes two refused fields of one scope again from Your work, each keeping the other', async () => {
     const refusing = { now: true }
     const { held, name } = await settingsRefusing(refusing)

@@ -277,16 +277,34 @@ type Land<T> = (next: T) => void | Promise<SettingsApplied>
  * typed and says it is not kept, with the change offered again or put back;
  * either way out lets go of that refusal on the frame (`writeRefusals`), so the
  * status word is calm again exactly when nothing on screen is unkept.
+ *
+ * And the other way: the same refusal made again or put back from *Your
+ * work* settles the field too. Put back there, the field shows what is kept
+ * (`restore`) and drops its notice and its buttons, which would otherwise
+ * still offer to land the change the person chose to drop; landed there, it
+ * drops the notice and keeps what it shows, which is now what is kept.
  */
-function useLanding<T>(land: Land<T>) {
+function useLanding<T>(land: Land<T>, restore: () => void) {
   const refusals = useContext(WriteRefusalsContext)
   const [refused, setRefused] = useState<{ value: T; refusal?: number } | undefined>(undefined)
   const [busy, setBusy] = useState(false)
   const standing = useRef(refused)
   standing.current = refused
+  const restoring = useRef(restore)
+  restoring.current = restore
+  const id = refused?.refusal
+  useEffect(() => {
+    if (id === undefined || !refusals) return undefined
+    const mine = (ids: readonly number[]) => standing.current?.refusal === id && ids.includes(id)
+    const offPutBack = refusals.watchPutBack((ids) => { if (mine(ids)) { standing.current = undefined; setRefused(undefined); restoring.current() } })
+    const offLanded = refusals.watchLanded((landed) => { if (mine(landed.map((one) => one.id))) { standing.current = undefined; setRefused(undefined) } })
+    return () => { offPutBack(); offLanded() }
+  }, [id, refusals])
   const letGo = () => {
-    const id = standing.current?.refusal
-    if (id !== undefined) refusals?.forget(id)
+    const refusal = standing.current?.refusal
+    // Its own way out: not news to hear back from the list.
+    standing.current = undefined
+    if (refusal !== undefined) refusals?.forget(refusal)
   }
   const commit = async (next: T) => {
     setBusy(true)
@@ -349,7 +367,8 @@ function CommittedText({ label, hint, held, onCommit, readOnly, required, s, 'da
   label: string; hint?: string; held: string; onCommit: Land<string>; readOnly?: boolean; required?: boolean; s: Translate; 'data-testid'?: string
 }) {
   const [typed, setTyped] = useState(held)
-  const landing = useLanding(onCommit)
+  // Put back from Your work: what is kept is shown, and nothing typed is left to send.
+  const landing = useLanding(onCommit, () => { setTyped(held); sent(held.trim()) })
   const sent = useUnsentField(typed.trim(), held.trim(), readOnly, () => commit())
   // What is held moved underneath, by an undo or another hand: the field follows.
   useEffect(() => setTyped(held), [held])
@@ -389,7 +408,7 @@ function NotKeptActs({ landing, onPutBack, s }: { landing: Landing; onPutBack: (
 /** The description, in the shared editor: it lands as the person leaves the field. */
 function CommittedDescription({ held, onCommit, readOnly, placeholder, s }: { held: string; onCommit: Land<string>; readOnly: boolean; placeholder: string; s: Translate }) {
   const [typed, setTyped] = useState(held)
-  const landing = useLanding(onCommit)
+  const landing = useLanding(onCommit, () => { setTyped(held); sent(held.trim()) })
   const send = () => { if (typed.trim() !== held.trim()) { sent(typed.trim()); landing.commit(typed.trim()) } }
   const sent = useUnsentField(typed.trim(), held.trim(), readOnly, send)
   useEffect(() => setTyped(held), [held])
@@ -405,7 +424,7 @@ function CommittedDescription({ held, onCommit, readOnly, placeholder, s }: { he
 function AspectsNow({ held, onCommit, readOnly, s }: { held: readonly AspectConfigEntry[]; onCommit: Land<AspectConfigEntry[]>; readOnly: boolean; s: Translate }) {
   const [columns, setColumns] = useState<AspectConfigEntry[]>([...held])
   const [fresh, setFresh] = useState<string[]>([])
-  const landing = useLanding(onCommit)
+  const landing = useLanding(onCommit, () => { setColumns([...held]); setFresh([]); sent(JSON.stringify(held)) })
   const latest = useRef({ columns, fresh })
   latest.current = { columns, fresh }
   const sent = useUnsentField(JSON.stringify(columns), JSON.stringify(held), readOnly, () => commit())
@@ -434,7 +453,7 @@ const linksSaid = (rows: readonly RecordLink[]) => JSON.stringify(rows.filter((l
  */
 function LinksField({ links, onCommit, readOnly, s }: { links: readonly RecordLink[]; onCommit: Land<RecordLink[]>; readOnly: boolean; s: Translate }) {
   const [rows, setRows] = useState<RecordLink[]>(links.map((link) => ({ ...link })))
-  const landing = useLanding(onCommit)
+  const landing = useLanding(onCommit, () => { setRows(links.map((link) => ({ ...link }))); sent(linksSaid(links)) })
   const rowsNow = useRef(rows)
   rowsNow.current = rows
   const sent = useUnsentField(linksSaid(rows), linksSaid(links), readOnly, () => commit())

@@ -104,6 +104,13 @@ export type WriteRefusals = {
    * still to land, and then holds a scope that moves under it again.
    */
   readonly watchLanded: (listener: (landed: readonly WriteRefusal[]) => void) => () => void
+  /**
+   * Word of the refusals put back, by number, whoever put them back: a field
+   * that still shows what was typed under its own *Try again* has to show what
+   * is kept again once *Your work* put its change back, or it offers to land
+   * what the person chose to drop.
+   */
+  readonly watchPutBack: (listener: (ids: readonly number[]) => void) => () => void
 }
 
 /** The refusals that mean a write was not kept, rather than an answer to a question. */
@@ -137,9 +144,12 @@ export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => vo
     if (left.length !== held.length) set(left)
   }
   // Put back by the person: once nothing stands, the next refusal is news again, and is said.
+  const puttingBack = new Set<(ids: readonly number[]) => void>()
   const forget = (id?: number) => {
     const had = held.length
+    const going = held.filter((one) => id === undefined || one.id === id).map((one) => one.id)
     drop(id)
+    if (going.length > 0) for (const listener of [...puttingBack]) listener(going)
     if (had > 0 && held.length === 0) onLetGo()
   }
   let underway = 0
@@ -173,6 +183,7 @@ export function writeRefusals(onLanded: () => void = () => {}, onLetGo: () => vo
       return next
     },
     watchLanded: (listener) => { landing.add(listener); return () => { landing.delete(listener) } },
+    watchPutBack: (listener) => { puttingBack.add(listener); return () => { puttingBack.delete(listener) } },
     handOver: (refusals) => {
       const made = refusals.map((one, at) => ({ ...one, id: next + at + 1 }))
       next += refusals.length
