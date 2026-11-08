@@ -39,7 +39,7 @@ import { Tooltip } from '../../widgets/kit/Tooltip'
 import { PlaceFacetsContext, PlaceListContext, PlaceReadingContext, PlaceTabContext } from '../../widgets/placeTab'
 import type { PlaceReading, PlaceTo, ViewFacets } from '../../widgets/placeTab'
 import { PageDialog } from '../../widgets/PageDialog'
-import { BackForward } from '../BackForward'
+import { BackForward, goInHistory } from '../BackForward'
 import { BarEnd } from '../BarEnd'
 import { frameBarButton, frameChip, frameOverflow } from '../AppPanels'
 import { Crumbs, crumbsFor, SourceChipView } from '../ShellToolbar'
@@ -633,8 +633,9 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
   const chip = frameChip(parts)
   const scopeOpen = facts?.kind === 'workspace'
   const { prefs } = parts.services
-  // What goes first when the row runs out: the words beside the work, the size last, since it is what makes room for reading.
-  const { folded: gone, anchor } = useRowFold(4, `${prefs.textSize} ${prefs.language}`)
+  // What goes first when the row runs out: the words beside the work, the size, since it is what makes room for reading,
+  // and Forward after everything, beside a Back that never goes: Back is the press people miss most.
+  const { folded: gone, anchor } = useRowFold(5, `${prefs.textSize} ${prefs.language}`)
   const { t } = useStrings()
   const sizing = { size: prefs.textSize, steps: TEXT_SIZES, normal: DEFAULT_TEXT_SIZE, onChoose: prefs.chooseTextSize }
   const togglePanel = (panel: 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
@@ -644,19 +645,20 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
     // In ⋯, which says Lionsville Architect Help itself, the folded Help leaves that line out.
     ...(gone >= 3 ? [{ label: s('frame.help'), items: helpEntries(parts, !parts.hostMenu) }] : []),
     ...(gone >= 4 ? textSizeEntries(sizing, t) : []),
+    ...(gone >= 5 ? [{ label: s('shell.forward'), onSelect: () => goInHistory('forward') }] : []),
   ]
   const overflow = frameOverflow(parts, scopeOpen)
   return (
     <>
       <span ref={anchor} hidden />
-      {/* A phone's row has no room for them: the browser has its own ‹ ›, and its ⌘Z is a menu away. */}
-      <span className="kit-frame__steps"><BackForward s={s} /></span>
+      {/* Back stays at every width; Forward folds into ⋯ last of all (above). */}
+      <BackForward s={s} forward={gone < 5} />
       <TreeToggle parts={parts} pinned={state.pinned} onHome={treeAlwaysOn(parts)} />
       <Trail parts={parts} at={at} name={name} />
       <div className="kit-frame__grow" />
       <FindField openSearch={facts?.openSearch} s={s} />
       <div className="kit-frame__grow" />
-      {/* An editor has an undo of its own, for shapes; the model's here would take back the wrong thing. */}
+      {/* An editor has an undo of its own, for shapes; the model's here would take back the wrong thing. A phone's row has no room for them: its ⌘Z is a menu away. */}
       {!state.work && <span className="kit-frame__steps"><UndoRedo facts={facts} s={s} /></span>}
       <SafeWords parts={parts} state={state} activity={gone < 1} />
       {gone < 2 && <AgentButton parts={parts} />}

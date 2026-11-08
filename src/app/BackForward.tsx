@@ -118,7 +118,11 @@ export function useMouseHistoryButtons(chrome: WindowChrome): void {
  * and a browser's own Back is out of sight in full screen. They press the one
  * history the browser's own moves too.
  */
-export function BackForward({ s }: { s: Translate }) {
+export function BackForward({ s, forward = true }: {
+  s: Translate
+  /** Whether Forward stands beside Back: a row with no room for both folds Forward into its ⋯ and keeps Back. */
+  forward?: boolean
+}) {
   const { canGoBack, canGoForward } = useHistoryEnds()
   const button = { width: 28, height: 28, color: 'text.secondary' } as const
   return (
@@ -131,13 +135,15 @@ export function BackForward({ s }: { s: Translate }) {
           </IconButton>
         </span>
       </Tooltip>
-      <Tooltip title={s('shell.forward')}>
-        <span>
-          <IconButton size="small" aria-label={s('shell.forward')} disabled={!canGoForward} onClick={() => window.history.forward()} sx={button}>
-            <ForwardIcon />
-          </IconButton>
-        </span>
-      </Tooltip>
+      {forward && (
+        <Tooltip title={s('shell.forward')}>
+          <span>
+            <IconButton size="small" aria-label={s('shell.forward')} disabled={!canGoForward} onClick={() => window.history.forward()} sx={button}>
+              <ForwardIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+      )}
     </Box>
   )
 }
