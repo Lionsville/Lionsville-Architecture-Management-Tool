@@ -11,7 +11,6 @@
 export const EN = {
 
   // --- architecture decision records -----------------------------------------
-  'adr.removeColumn': 'Remove',
   'adr.groupOpen': 'Still open',
   'adr.groupInForce': 'In force',
   'adr.groupEnded': 'Ended',
@@ -71,7 +70,6 @@ export const EN = {
   'adr.newTitleHelp': 'State the decision as a short sentence: \u201cUse PostgreSQL for the order store\u201d.',
   'adr.create': 'Create and write',
   'adr.searchPlaceholder': 'Find a decision',
-  'adr.searchField': 'Search decisions',
   'adr.listEmpty': 'No decisions recorded here yet.',
   'adr.searchEmpty': 'No decision matches \u201c{query}\u201d.',
   'adr.statusProposed': 'Proposed',

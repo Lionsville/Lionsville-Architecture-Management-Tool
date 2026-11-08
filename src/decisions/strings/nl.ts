@@ -13,7 +13,6 @@ import type { EN } from './en'
 
 export const NL: Record<keyof typeof EN, string> = {
 
-  'adr.removeColumn': 'Verwijderen',
   'adr.groupOpen': 'Nog open',
   'adr.groupInForce': 'Van kracht',
   'adr.groupEnded': 'Beëindigd',
@@ -72,7 +71,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'adr.newTitleHelp': 'Formuleer het besluit als korte zin: \u201cGebruik PostgreSQL voor de orderopslag\u201d.',
   'adr.create': 'Maken en schrijven',
   'adr.searchPlaceholder': 'Zoek een besluit',
-  'adr.searchField': 'Besluiten zoeken',
   'adr.listEmpty': 'Hier zijn nog geen besluiten vastgelegd.',
   'adr.searchEmpty': 'Geen besluit komt overeen met \u201c{query}\u201d.',
   'adr.statusProposed': 'Voorgesteld',

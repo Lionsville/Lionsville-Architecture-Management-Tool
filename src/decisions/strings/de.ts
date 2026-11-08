@@ -13,7 +13,6 @@ import type { EN } from './en'
 
 export const DE: Record<keyof typeof EN, string> = {
 
-  'adr.removeColumn': 'Entfernen',
   'adr.groupOpen': 'Noch offen',
   'adr.groupInForce': 'In Kraft',
   'adr.groupEnded': 'Beendet',
@@ -72,7 +71,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'adr.newTitleHelp': 'Formulieren Sie die Entscheidung als kurzen Satz: \u201ePostgreSQL für den Auftragsspeicher verwenden\u201c.',
   'adr.create': 'Anlegen und schreiben',
   'adr.searchPlaceholder': 'Eine Entscheidung suchen',
-  'adr.searchField': 'Entscheidungen suchen',
   'adr.listEmpty': 'Hier sind noch keine Entscheidungen festgehalten.',
   'adr.searchEmpty': 'Keine Entscheidung passt zu \u201e{query}\u201c.',
   'adr.statusProposed': 'Vorgeschlagen',
