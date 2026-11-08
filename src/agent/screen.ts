@@ -83,9 +83,10 @@ export function viewPage(kind: DesignDiagram['kind']): Page {
  * agent reaches them, and moving to one moves nothing else. A scope's settings are
  * a page of its home.
  */
-export const FRAME_PANELS = ['work', 'activity', 'settle'] as const
+export const FRAME_PANELS = ['work', 'activity', 'settle', 'source'] as const
 export type FramePanel = (typeof FRAME_PANELS)[number]
 // Settling is a panel with no page of its own: it is reached only while something waits to be settled.
+// `source` is the open source's own panel, where its provider draws one (`SourceFrame.Panel`): no page of its own either.
 // The history is a page over the scope's home or its workspace, whichever is up: the frame holds it, as the preferences.
 export const FRAME_PAGES: readonly Page[] = ['work', 'activity', 'preferences', 'history']
 

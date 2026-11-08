@@ -1379,6 +1379,31 @@ describe('the button a registered provider draws in the bar', () => {
     expect(order()).toEqual(['agent-glyph', 'bar-bell', 'working-source'])
   })
 
+  it('opens the source\'s own panel in the frame\'s panel slot, where the page gives way to it, and the frame shuts it', async () => {
+    function Toggle({ panel }: { panel?: { open: boolean; set: (open: boolean) => void } }) {
+      return <button type="button" data-testid="bar-toggle" aria-expanded={panel?.open ?? false} onClick={() => panel?.set(!panel.open)}>Notes</button>
+    }
+    function Notes({ closePanel }: { closePanel?: () => void }) {
+      return <section aria-label="Notes" data-testid="source-panel"><button type="button" onClick={closePanel}>Shut</button></section>
+    }
+    renderApp({ repositories: heldRepositories(tree), source: elsewhere, boot: { initialProject: tree[2] }, provider: { barButton: Toggle as never, frame: { Panel: Notes } } })
+    const toggle = await waitFor(() => { const one = within(screen.getByTestId('shell-toolbar')).getByTestId('bar-toggle'); return one })
+    expect(screen.queryByTestId('source-panel')).toBeNull()
+    fireEvent.click(toggle)
+    const panel = await screen.findByTestId('source-panel')
+    expect(panel.closest('.kit-frame__panel')).not.toBeNull()
+    await waitFor(() => expect(within(screen.getByTestId('shell-toolbar')).getByTestId('bar-toggle').getAttribute('aria-expanded')).toBe('true'))
+    // Its own × shuts it through the frame, and moves nothing else.
+    fireEvent.click(within(panel).getByRole('button', { name: 'Shut' }))
+    await waitFor(() => expect(screen.queryByTestId('source-panel')).toBeNull())
+    expect(screen.getByTestId('crumb-acme')).toBeTruthy()
+    // The source's own control opens it again, and shuts it.
+    fireEvent.click(within(screen.getByTestId('shell-toolbar')).getByTestId('bar-toggle'))
+    await screen.findByTestId('source-panel')
+    fireEvent.click(within(screen.getByTestId('shell-toolbar')).getByTestId('bar-toggle'))
+    await waitFor(() => expect(screen.queryByTestId('source-panel')).toBeNull())
+  })
+
   it('is drawn in the language that is on', async () => {
     renderApp({ repositories: heldRepositories(tree), source: elsewhere, provider: { barButton: Bell } }, { language: 'nl' })
     await waitFor(() => expect(inBar()?.textContent).toBe('Bel aanbellen'))

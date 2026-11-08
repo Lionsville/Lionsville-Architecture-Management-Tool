@@ -37,7 +37,7 @@ import type { HomeStore } from './organisation/HomeRecords'
 import type { ScopeSession } from './useModelSession'
 import { watchTreeShape } from './treeShape'
 import type { ShellParts } from './shellParts'
-import type { SourceChromeProps } from '../ports/ProviderParts'
+import type { BarButtonProps, SourceChromeProps } from '../ports/ProviderParts'
 import { sourceLabel } from './ShellToolbar'
 import type { ToolbarChip } from './ShellToolbar'
 import { reasonIn } from './messageFor'
@@ -453,10 +453,17 @@ export function frameBarButton(parts: ShellParts, where: 'workspace' | 'organisa
         <Button
           where={where} open={agent.openSomewhere} screen={agent.screen ?? agent.screenNow()} movedBy={agent.movedBy}
           notify={toasts.notify} session={where === 'workspace' ? provider.openScope : undefined} own={provider.own}
+          {...(props.provider?.frame?.Panel ? { panel: sourcePanelOf(agent) } : {})}
         />
       </LanguageProvider>
     </ErrorBoundary>
   )
+}
+
+/** The source's own frame panel as its bar button reads and moves it: open where the frame holds it, set without moving anything else. */
+function sourcePanelOf(agent: ShellParts['agent']): NonNullable<BarButtonProps['panel']> {
+  const screen = agent.screen ?? agent.screenNow()
+  return { open: screen.panel === 'source', set: (open) => agent.setPanel(open ? 'source' : undefined) }
 }
 
 /**

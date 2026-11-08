@@ -395,6 +395,12 @@ export type BarButtonProps<Own = unknown> = {
   session?: ScopeSession
   /** What this provider handed with its parts. */
   own?: Own
+  /**
+   * The source's own frame panel (`SourceFrame.Panel`), where it draws one:
+   * whether it is open beside the page, and the way to open or shut it, which
+   * moves nothing else. Absent where the source has no panel.
+   */
+  panel?: { readonly open: boolean; readonly set: (open: boolean) => void }
 }
 
 /**
@@ -508,6 +514,8 @@ export type SourceSlotProps<Own = unknown> = SourceYourWorkProps<Own> & {
   localAgent?: () => void
   /** Through the host, so an address can be copied wherever this is running. */
   copyText?: (text: string) => Promise<void>
+  /** Shuts the frame's panel this is drawn in, where it is one, and moves nothing else. */
+  closePanel?: () => void
 }
 
 /**
@@ -539,6 +547,14 @@ export type SourceFrame<Own = unknown> = {
   readonly YourWork?: ComponentType<SourceSlotProps<Own>>
   /** The frame's panel `settle`: which of two changes to one thing stays. */
   readonly Settle?: ComponentType<SourceSlotProps<Own>>
+  /**
+   * The frame's panel `source`: a panel of the source's own, docked where
+   * Activity and Your work stand, so the page gives way to it rather than lying
+   * under it. Opened and shut by the source's own control (`BarButtonProps`'s
+   * `panel`), and shut by the frame like any other panel: another opened, or
+   * its own × through `closePanel`.
+   */
+  readonly Panel?: ComponentType<SourceSlotProps<Own>>
   /** The page `agents`. Without one, *Connect an agent* is the dialog. */
   readonly Agents?: ComponentType<SourceSlotProps<Own>>
 }

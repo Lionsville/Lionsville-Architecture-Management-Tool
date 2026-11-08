@@ -17,7 +17,7 @@ import type { ComponentProps, ReactNode } from 'react'
 import { SurfacePopover as Popover } from '../../widgets/kit/Surface'
 import type { StringKey, Translate } from '../../i18n'
 import { translator } from '../../i18n/strings'
-import type { Destination, Page, Screen } from '../../agent/screen'
+import type { Destination, FramePanel, Page, Screen } from '../../agent/screen'
 import { HOME_PAGES, viewPage } from '../../agent/screen'
 import type { DesignDiagram } from '../../model/types'
 import { matchesQuery, matchesStems } from '../../model/textSearch'
@@ -74,7 +74,7 @@ import { rowOneFolds, statusCalm, BUSY_ORDINARY_MS } from './rowOneFolds'
 import type { RowOneFold } from './rowOneFolds'
 import { statusHead, TONE_MARK } from './statusWord'
 import type { StatusWord } from './statusWord'
-import type { StatusTone } from '../../ports/ProviderParts'
+import type { SourceSlotProps, StatusTone } from '../../ports/ProviderParts'
 import { NewViewDialog } from '../NewViewDialog'
 import { DESKTOP_APP_LINK, FILE_MENU, PREFERENCES_ITEM, WEBSITE_LINK, HELP_MENU, acceleratorMatches, offered } from '../../platform/menu'
 import type { KeyPress, MenuItemSpec, MenuNeed } from '../../platform/menu'
@@ -146,8 +146,8 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   const sourceFrame = parts.props.provider?.frame
   const holding = !parts.nav.project && (sourceFrame?.holding?.() ?? false)
   const Hold = sourceFrame?.Hold
-  const Settle = sourceFrame?.Settle
-  const slot = { own: parts.provider.own, session: parts.provider.openScope, open: go, copyText: parts.props.hostControls.copyText }
+  const setPanel = parts.agent.setPanel
+  const slot = { own: parts.provider.own, session: parts.provider.openScope, open: go, copyText: parts.props.hostControls.copyText, closePanel: () => setPanel(undefined) }
   // A source with no page of its own for agents keeps the dialog: the address lands there, on the home.
   const noAgentsPage = page === 'agents' && sourceFrame?.Agents === undefined
   const openAgentDialog = parts.agentServer.bar.onOpen
@@ -174,9 +174,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
           rowTwoEnd={<RowTwoEnd parts={parts} at={at} page={page} />}
           band={<FrameBands parts={parts} facts={facts} />}
           tree={tree || undefined}
-          panel={state.panel === 'work' ? <YourWorkPanel parts={parts} facts={facts} />
-            : state.panel === 'activity' ? <ActivityPanel parts={parts} facts={facts} />
-              : state.panel === 'settle' && Settle ? <Settle {...slot} /> : undefined}
+          panel={framePanel(state.panel, parts, facts, slot)}
           accented={Boolean(parts.props.provider?.accent)}
           panelName={state.panel}
         >
@@ -191,6 +189,15 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
       </PlaceTabContext.Provider>
     </FrameCommandsContext.Provider>
   )
+}
+
+/** What stands in the frame's panel slot: the frame's own panels, or the source's where it drew them. */
+function framePanel(panel: FramePanel | undefined, parts: ShellParts, facts: ScreenFacts | undefined, slot: SourceSlotProps): ReactNode {
+  const own = parts.props.provider?.frame
+  if (panel === 'work') return <YourWorkPanel parts={parts} facts={facts} />
+  if (panel === 'activity') return <ActivityPanel parts={parts} facts={facts} />
+  const Drawn = panel === 'settle' ? own?.Settle : panel === 'source' ? own?.Panel : undefined
+  return Drawn ? <Drawn {...slot} /> : undefined
 }
 
 /** A place worth coming back to is written down as it is arrived at, for *Continue*: a preference of this computer's. */
