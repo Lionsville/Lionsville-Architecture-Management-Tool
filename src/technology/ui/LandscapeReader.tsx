@@ -240,7 +240,8 @@ function shownApplication(props: Props, id: ElementId, held: boolean, t: Transla
     // While the rows carry ticks, the way out of them stands in the head where the eye is.
     record: (
       <>
-        {ticking && writes && <PanelLink data-testid="landscape-edit-uses" onPress={() => writes.onTicking(undefined)}>{t('landscape.editDone')}</PanelLink>}
+        {/* A button of its own, apart from the link beside it: it ends a mode, where Record › goes somewhere. */}
+        {ticking && writes && <span className="tl-done"><Button variant="primary" size="small" data-testid="landscape-edit-uses" onClick={() => writes.onTicking(undefined)}>{t('landscape.editDone')}</Button></span>}
         {recordLink(doors, id, held, app.known, t)}
       </>
     ),

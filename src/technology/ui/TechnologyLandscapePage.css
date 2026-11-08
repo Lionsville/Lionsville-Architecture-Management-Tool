@@ -114,3 +114,6 @@
 
 /* While an application is dragged, the lines of what was picked before recede: the drop is what is being said. */
 .tl-board[data-dragging] .tl-lines { opacity: var(--dim-opacity); }
+
+/* While Edit uses is on, Done stands in the panel's head apart from Record ›, with a rule between. */
+.tl-done { display: inline-flex; align-items: center; margin-inline-end: var(--s-3); padding-inline-end: var(--s-3); border-inline-end: 1px solid var(--line); }
