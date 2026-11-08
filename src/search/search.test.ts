@@ -283,4 +283,19 @@ describe('a person found', () => {
     const hits = searchAll({ sources: [{ scope: '', model }], query: 'sam', kinds: ['person'], people, day: '2026-06-01' })
     expect(hits.map((hit) => hit.holds)).toEqual([{ role: 'Lead', unit: 'Payments', more: 1 }, undefined])
   })
+
+  it('reads every role they were given where no day is said', () => {
+    const hits = searchAll({ sources: [{ scope: '', model }], query: 'sam', kinds: ['person'], people })
+    expect(hits[1]?.holds).toEqual({ role: 'Lead', unit: 'Billing team', more: 0 })
+  })
+
+  it('says a role and a unit by id where no scope searched defines them, and nothing where a scope holds no organisation', () => {
+    const elsewhere = { assignments: [{ id: 'a9', unitId: 'u-far', roleId: 'ro-far', person: { person: 'pe-1' } }] } as unknown as HostModel
+    const hits = searchAll({ sources: [{ scope: 'far', model: elsewhere }, { scope: 'none', model: {} as HostModel }], query: 'sam', kinds: ['person'], people })
+    expect(hits[0]?.holds).toEqual({ role: 'ro-far', unit: 'u-far', more: 0 })
+  })
+
+  it('is nobody where no register is searched', () => {
+    expect(searchAll({ sources: [{ scope: '', model }], query: 'sam', kinds: ['person'] })).toEqual([])
+  })
 })
