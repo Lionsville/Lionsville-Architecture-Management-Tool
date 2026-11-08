@@ -24,9 +24,9 @@ import type { ElementNodeProps } from './nodeData';
  * it, and no selection ring: it recolours its edge instead, because a ring round a whole
  * diagram would read as a frame round the containers.
  *
- * The inside lets the pointer through: this node can end up painted over its children
- * while selected, and must not swallow a press meant for them. Only the head is
- * pressed, so the handles are the shell's, outside the zone. Empty, the inside says
+ * The inside lets the pointer through, to the containers and to the lines between them,
+ * which it is drawn over: the head and the rim along its edge are what take a hover or a
+ * press (board.css). The handles are the shell's, outside the zone. Empty, the inside says
  * what goes here and offers the first step.
  */
 export const ApplicationBoundaryNode = memo(function ApplicationBoundaryNode({
@@ -64,9 +64,13 @@ export const ApplicationBoundaryNode = memo(function ApplicationBoundaryNode({
       >
         {data.c4Empty && <EmptyBoundary name={element.name} />}
       </Zone>
+      {RIM_SIDES.map((side) => <div key={side} className="lv-boundary__rim" data-side={side} data-testid={`boundary-rim-${side}`} />)}
     </NodeShell>
   );
 });
+
+/** Its edge, a strip a side: with the head, all of the box that takes the pointer (board.css). */
+const RIM_SIDES = ['top', 'right', 'bottom', 'left'] as const;
 
 /** What a new diagram is for and its first step, where a person can take it. Holds its size, as the name does. */
 function EmptyBoundary({ name }: { name: string }) {

@@ -102,6 +102,8 @@ import { serializeSelection, type ClipboardPayload } from '../../model/clipboard
 import { claimKey } from '../../widgets/kit/keys';
 
 const edgeTypes = { floating: FloatingEdge };
+/** While a card is picked to end a line, the boundary is a card like any other, not the see-through box it is otherwise (board.css). */
+const PICKABLE = { pointerEvents: 'all !important' } as const;
 
 /** Re-exported for the keymap and tests that always imported it from here. */
 export { GRID_SIZE } from './gridSize';
@@ -1659,7 +1661,7 @@ export function DiagramCanvas(props: DiagramCanvasProps) {
         // without this a line the keyboard reached looked like every other.
         '& .react-flow__edge:focus-visible .react-flow__edge-path': FOCUSED_LINE,
         ...(connectFrom !== null
-          ? { cursor: 'crosshair', '& .react-flow__pane, & .react-flow__node': { cursor: 'crosshair' } }
+          ? { cursor: 'crosshair', '& .react-flow__pane, & .react-flow__node': { cursor: 'crosshair' }, '& .react-flow__node-applicationBoundary': PICKABLE }
           : {}),
       }}
     >

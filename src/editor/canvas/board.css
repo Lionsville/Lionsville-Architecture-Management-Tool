@@ -129,6 +129,23 @@
 .lv-tile__type { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lv-tile__under { color: var(--ink-2); font-size: calc(var(--canvas-t-xs) / var(--canvas-zoom, 1)); font-weight: var(--fw-strong); line-height: var(--lh-tight); white-space: nowrap; }
 
+/*
+ * The boundary is drawn over the lines between the containers inside it (graph.ts),
+ * so its box lets the pointer through to them: a line inside is hovered, labelled and
+ * pressed as one outside is. Its head and its rim are what take it, and the whole box
+ * again while a line is being drawn, so a line can still be dropped onto it (and while
+ * a card is picked to end one: DiagramCanvas's PICKABLE).
+ * React Flow says the wrapper's pointer-events inline, hence the !important.
+ */
+.lv-board .react-flow__node-applicationBoundary { pointer-events: none !important; }
+.lv-board[data-connecting] .react-flow__node-applicationBoundary { pointer-events: all !important; }
+.lv-boundary__rim { position: absolute; pointer-events: auto; --rim: calc(8px / var(--canvas-zoom, 1)); }
+.lv-boundary__rim[data-side='top'], .lv-boundary__rim[data-side='bottom'] { left: 0; right: 0; height: var(--rim); }
+.lv-boundary__rim[data-side='left'], .lv-boundary__rim[data-side='right'] { top: 0; bottom: 0; width: var(--rim); }
+.lv-boundary__rim[data-side='top'] { top: calc(var(--rim) / -2); }
+.lv-boundary__rim[data-side='bottom'] { bottom: calc(var(--rim) / -2); }
+.lv-boundary__rim[data-side='left'] { left: calc(var(--rim) / -2); }
+.lv-boundary__rim[data-side='right'] { right: calc(var(--rim) / -2); }
 .lv-boundary { color: var(--ink); }
 .lv-boundary[data-selected] { --zone-edge: var(--selected-edge); }
 .lv-boundary .kit-zone__head { background: var(--canvas-ground); border-radius: var(--r-2); }

@@ -80,4 +80,11 @@ describe('ApplicationBoundaryNode', () => {
     const title = getByTestId('boundary-title');
     expect(getComputedStyle(title).pointerEvents).toBe('auto');
   });
+
+  it('has a rim on every side, so it is also taken by its edge (board.css lets nothing else take the pointer)', () => {
+    const { getByTestId } = renderNode(baseProps());
+    for (const side of ['top', 'right', 'bottom', 'left']) {
+      expect(getByTestId(`boundary-rim-${side}`).classList.contains('lv-boundary__rim')).toBe(true);
+    }
+  });
 });
