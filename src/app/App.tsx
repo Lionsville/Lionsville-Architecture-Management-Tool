@@ -684,7 +684,9 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
    * the two file flows is asking: the workspace's, with a scope open, or the
    * home's below, with nothing open.
    */
-  const prompts = { password: usePasswordPrompt(s, () => copyAbout(organisation.tree, s), props.documents.downloads), openInto: useOpenIntoPrompt(s) }
+  // The open scope as its session has it now: a view made a moment ago is in the copy before the tree's summary has caught up.
+  const openViews = useRef<() => { path: string; views: number } | undefined>(() => undefined)
+  const prompts = { password: usePasswordPrompt(s, () => copyAbout(organisation.tree, s, openViews.current()), props.documents.downloads), openInto: useOpenIntoPrompt(s) }
   /** What is folded shut on each view's trees, for as long as the window is open (`sessionFolds.ts`). */
   const [folds] = useState(() => new SessionFolds())
   const home = useHomeParts({
@@ -740,6 +742,10 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
     ...(props.boot.initialFramePage ? { initialFramePage: props.boot.initialFramePage } : {}),
     ...(props.boot.initialPageLook ? { initialPageLook: props.boot.initialPageLook } : {}),
   })
+  openViews.current = () => {
+    const model = shellAgent.openSession()?.current()
+    return project && model ? { path: project.path, views: model.diagrams.length } : undefined
+  }
   base.screenRef.current = shellAgent.screenNow
   openScopeRef.current = shellAgent.openSession
   base.selectedRef.current = shellAgent.selectedNow
@@ -764,9 +770,9 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
 }
 
 /** What a copy of the whole organisation holds, as the dialog asking for its password says it. */
-function copyAbout(tree: ScopeSummary, s: Translate) {
+function copyAbout(tree: ScopeSummary, s: Translate, open?: { path: string; views: number }) {
   const every = flattenScopes(tree)
-  const views = every.reduce((sum, scope) => sum + scope.diagrams, 0)
+  const views = every.reduce((sum, scope) => sum + (open && scope.path === open.path ? open.views : scope.diagrams), 0)
   return { name: tree.name.trim() || s('common.organisation'), holds: s('seal.holds', { scopes: plural(s, { one: 'org.scopesOne', other: 'org.scopesOther' }, every.length), views: plural(s, { one: 'seal.viewsOne', other: 'seal.viewsOther' }, views) }) }
 }
 
