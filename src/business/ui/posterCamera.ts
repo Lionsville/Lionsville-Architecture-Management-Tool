@@ -27,8 +27,11 @@ const READABLE = 0.9
 const MARGIN = 8
 /** How long after the last move the page is sharpened, and the place kept. */
 const SETTLE_MS = 140
-/** Below this a step's words have stopped being read, and go. */
-const WORDS_FROM = 0.8
+/**
+ * A step's words go where a tile's name goes, at the far distance, and not before: Fit on a laptop lands
+ * near 77%, and a band of empty chevrons there said nothing. Below 70% `far` hides them with the rest.
+ */
+const WORDS_FROM = 0.7
 /** A person can pan as far as they like, short of losing the page: this much of it stays in the window. */
 const STAYS_IN_VIEW = 64
 /** How much room to leave round something brought on screen, and the strip it must clear. */
