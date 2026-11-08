@@ -115,7 +115,7 @@ export const SECTIONS: SectionTexts = {
     'Die schmale Kante rechts vom Baum.',
     ['Ziehen Sie die Kante.', 'Oder geben Sie ihr den Fokus und drücken Sie ← oder →; Pos1 setzt sie zurück.'],
     'Machen Sie den Baum breiter, um lange Bereichsnamen zu lesen.',
-    '← → ({key:Shift} für größere Schritte), Pos1'],
+    '← → (mit {key:Shift} in größeren Schritten), Pos1'],
   'tree.open': ['Einen Bereich aus dem Baum öffnen', 'Der Baum neben jeder Startseite listet jeden Bereich, jeder mit dem, was hier und darunter liegt. Ein Klick auf eine Zeile öffnet die Startseite dieses Bereichs.',
     'Das Baum-Panel links von einer Startseite.',
     ['Klicken Sie auf den Namen eines Bereichs.'],
