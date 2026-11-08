@@ -158,7 +158,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'folder.adoptClose': 'Schließen',
   'folder.adoptStay': 'In diesem Browser weiterarbeiten',
   'browser.risk': 'Es wird beim Arbeiten gespeichert. Das Löschen der Browserdaten entfernt es, also bewahren Sie eine Kopie sicher auf.',
-  'memory.risk': 'Dieser Browser hat den Speicher verweigert. Alles ist weg, sobald dieser Tab schließt.',
+  'memory.risk': 'Ihre Arbeit wird nicht behalten: Dieser Browser hat den Speicher verweigert, also ist alles weg, sobald dieser Tab schließt. Speichern Sie zwischendurch eine Kopie, oder arbeiten Sie in einem Ordner.',
   'folder.risk': 'Drei Sekunden nach dem Anhalten geschrieben. Ein Ordner lässt sich sichern, synchronisieren und committen.',
   'example.label': 'Beispiel · nicht gespeichert',
   'example.where': 'Das ist das Beispiel: Hier wird nichts gespeichert.',

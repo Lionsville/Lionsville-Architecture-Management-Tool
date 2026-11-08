@@ -200,7 +200,7 @@ export const EN = {
   'folder.adoptClose': 'Close',
   'folder.adoptStay': 'Go on in this browser',
   'browser.risk': 'It is saved as you work. Clearing this browser\'s data removes it, so keep a copy somewhere safe.',
-  'memory.risk': 'This browser refused its storage. Everything goes when this tab closes.',
+  'memory.risk': 'Your work is not kept: this browser refused its storage, so everything goes when this tab closes. Save a copy as you go, or work in a folder.',
   'folder.risk': 'Written three seconds after you stop. A folder can be backed up, synced and committed.',
   'example.label': 'Example · not kept',
   'example.where': 'This is the example: nothing here is kept.',

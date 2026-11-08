@@ -49,7 +49,13 @@ export function FirstRunScreen({ parts }: { parts: ShellParts }) {
   const said = (key: string) => s(key as StringKey)
   const sayings = props.provider?.sayings
   const place = sayings?.labelKey ? s(sayings.labelKey as StringKey, { name: parts.source.name }) : parts.source.name
-  const start = () => { if (name.trim()) organisation.nameOrganisation(name) }
+  const start = () => {
+    if (!name.trim()) return
+    // Started, and where that is kept: in the warning colour where it is kept nowhere.
+    const where = sayings?.whereKey ?? props.provider?.description
+    const message = [s('first.started', { name: name.trim() }), where ? said(where) : ''].filter(Boolean).join(' ')
+    organisation.nameOrganisation(name, { message, severity: parts.source.transient ? 'warning' : 'success' })
+  }
   return (
     <FirstRunPage
       brand={s('first.brand')}

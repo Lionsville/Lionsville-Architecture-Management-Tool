@@ -147,7 +147,7 @@ describe('openSource', () => {
 
   /**
    * And the three that ship bring none, so a refused save says what it has
-   * always said: that this browser could not save the design.
+   * always said: that this browser could not save your work.
    */
   it('leaves the sentence for a refusal to this tree where no provider gives one', async () => {
     expect((await openSource('memory', undefined, opening())).sourceFailure).toBeUndefined()

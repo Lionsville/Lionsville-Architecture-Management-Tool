@@ -109,7 +109,7 @@ describe('a browser whose database will not open', () => {
     const { parts } = await settle({ storage: await keptBefore() })
     expect(parts.source).toEqual(BROWSER_KEEPING_NOTHING)
     expect(parts.source.transient).toBe(true)
-    expect(parts.sayings).toMatchObject({ labelKey: 'shell.sourceMemory', describeKey: 'shell.sourceTipMemory', whereKey: 'memory.where' })
+    expect(parts.sayings).toMatchObject({ labelKey: 'shell.sourceMemory', describeKey: 'shell.sourceTipMemory', whereKey: 'memory.where', riskKey: 'memory.risk' })
     expect(parts.historyNoteKey).toBe('memory.historyNote')
   })
 

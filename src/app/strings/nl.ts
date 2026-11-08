@@ -38,7 +38,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.keepMine': 'Die van mij',
   'shell.saveACopy': 'Kopie bewaren…',
   'shell.keepFailed':
-    'Deze browser kon het ontwerp niet bewaren (opslag vol of geblokkeerd). Bewaar een kopie, anders is het bij het sluiten van het tabblad weg.',
+    'Deze browser kon je werk niet bewaren (opslag vol of geblokkeerd). Bewaar een kopie, anders is het bij het sluiten van het tabblad weg.',
   'shell.keptAgain': 'Bewaren in deze browser lukt weer.',
   'shell.sourceNotOpened': 'Die bron kon niet worden geopend: {message}',
   'shell.crashed': 'Er ging iets mis op dit scherm.',
@@ -1885,6 +1885,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'first.startOwn': 'Begin je eigen',
   'first.nameLabel': 'Naam van je organisatie',
   'first.start': 'Beginnen',
+  'first.started': '“{name}” is aangemaakt.',
   'first.lookAround': 'Rondkijken in een voorbeeld',
   'first.exampleApart': 'Probeer alles: je eigen werk blijft apart.',
   'first.openExample': 'Voorbeeld openen',

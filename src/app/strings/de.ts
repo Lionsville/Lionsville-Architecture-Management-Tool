@@ -38,7 +38,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.keepMine': 'Meine behalten',
   'shell.saveACopy': 'Kopie speichern…',
   'shell.keepFailed':
-    'Dieser Browser konnte den Entwurf nicht speichern (Speicher voll oder blockiert). Speichern Sie eine Kopie, sonst ist er beim Schließen des Tabs verloren.',
+    'Dieser Browser konnte Ihre Arbeit nicht speichern (Speicher voll oder blockiert). Speichern Sie eine Kopie, sonst ist sie beim Schließen des Tabs verloren.',
   'shell.keptAgain': 'Speichern in diesem Browser funktioniert wieder.',
   'shell.sourceNotOpened': 'Diese Quelle konnte nicht geöffnet werden: {message}',
   'shell.crashed': 'Auf diesem Bildschirm ist etwas schiefgegangen.',
@@ -1886,6 +1886,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'first.startOwn': 'Eigene beginnen',
   'first.nameLabel': 'Name Ihrer Organisation',
   'first.start': 'Beginnen',
+  'first.started': '„{name}“ ist angelegt.',
   'first.lookAround': 'Ein Beispiel ansehen',
   'first.exampleApart': 'Probieren Sie alles aus: Ihre eigene Arbeit bleibt getrennt.',
   'first.openExample': 'Beispiel öffnen',

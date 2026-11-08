@@ -85,7 +85,7 @@ export type SourceWorkChanged = (listener: () => void) => () => void
  * for it.
  *
  * A save that was not taken says one thing above this line — *this browser
- * could not save the design (storage full or blocked)* — and for a source that
+ * could not save your work (storage full or blocked)* — and for a source that
  * is not this browser that sentence is not vague, it is wrong: it names the
  * wrong place, blames a quota that is not the one that ran out, and tells
  * somebody to keep a working file when the copy that matters is somewhere else

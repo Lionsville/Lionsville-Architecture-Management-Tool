@@ -260,6 +260,8 @@ export type ProviderSayings = {
   readonly describeKey?: string
   readonly whereKey?: string
   readonly removeKey?: string
+  /** What can lose the work here, where this opening says otherwise than its kind: memory's, where a browser's storage refused. */
+  readonly riskKey?: string
 }
 
 /** How a provider's chrome says something in passing, as the app says its own. */

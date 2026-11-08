@@ -679,7 +679,7 @@ describe('a way in a registered provider brought', () => {
 /**
  * What a refused write says, where the source is not this browser.
  *
- * Our sentence is *this browser could not save the design (storage full or
+ * Our sentence is *this browser could not save your work (storage full or
  * blocked)*, which is right for the three sources that ship and wrong for
  * anywhere else: it names the wrong place, blames a quota that is not the one
  * that ran out, and tells somebody to keep a working file when the copy that
@@ -729,7 +729,7 @@ describe('a refusal where the source keeps work', () => {
     await copy()
     await waitFor(() => expect(screen.getByRole('alert').textContent)
       .toContain('Elsewhere is not taking changes'))
-    expect(screen.getByRole('alert').textContent).not.toContain('could not save the design')
+    expect(screen.getByRole('alert').textContent).not.toContain('could not save your work')
   })
 
   /**
@@ -742,7 +742,7 @@ describe('a refusal where the source keeps work', () => {
     // The failure still reached the trail, which is where a failure always goes.
     await waitFor(() => expect(diagnostics.recent()
       .some((entry) => entry.where === 'organisation.create')).toBe(true))
-    expect(screen.queryByText(/could not save the design/)).toBeNull()
+    expect(screen.queryByText(/could not save your work/)).toBeNull()
   })
 
   /** And the three that ship say what they have always said, byte for byte. */
@@ -750,7 +750,7 @@ describe('a refusal where the source keeps work', () => {
     refuse({ source: { provider: 'browserStorage', name: '', key: '' } })
     await copy()
     await waitFor(() => expect(screen.getByRole('alert').textContent)
-      .toContain('could not save the design'))
+      .toContain('could not save your work'))
   })
 })
 

@@ -169,12 +169,19 @@ export type Organisation = HomeViews & {
   addBoard: (path: ScopePath) => void
   setNewBoardName: (name: string) => void
   createBoard: () => void
-  applySettings: (path: ScopePath, patch: ScopeSettingsPatch) => void
+  applySettings: (path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed) => void
   confirmDelete: () => void
   open: (path: ScopePath, page?: InitialPage) => void
-  /** Give the root a name, from the field a fresh folder shows instead of a heading. */
-  nameOrganisation: (name: string) => void
+  /**
+   * Give the root a name, from the field a fresh folder shows instead of a
+   * heading — and, from the first page, what to say once it has landed: that
+   * the organisation is started, and where it is kept, rather than a rename.
+   */
+  nameOrganisation: (name: string, landed?: Landed) => void
 }
+
+/** What a write says once it has landed, in place of the rename it would otherwise announce. */
+export type Landed = { readonly message: string; readonly severity: 'success' | 'warning' }
 
 /** What a scope is called for a document made for it: its name in the listing, else its address's last word. */
 function nameOf(tree: ScopeSummary, path: ScopePath): string {
@@ -406,7 +413,7 @@ export function useOrganisation({
    * and everything under it go to the new address together, identities and
    * all, and the stand-ins elsewhere that named it follow (`moveScope`).
    */
-  const applySettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch) => {
+  const applySettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed) => {
     void (async () => {
       const listing = summaryOf(await scopes.tree())
       const to = filedTo(listing, path, patch)
@@ -424,14 +431,10 @@ export function useOrganisation({
         return
       }
       refresh()
+      if (landed) { notify(landed.message, landed.severity); return }
       // A field that landed says nothing: it is on screen, and undo takes it back.
       if (!moving && (was === undefined || was === name)) return
-      notify(
-        moving
-          ? s('settings.moved', { name })
-          : s('group.renamed', { name }),
-        'success',
-      )
+      notify(moving ? s('settings.moved', { name }) : s('group.renamed', { name }), 'success')
     })().catch((cause: unknown) => {
       // A backstop, not a handler: everything above is caught where it can be
       // answered. A throw that reaches here happened in the synchronous tail,
@@ -507,9 +510,9 @@ export function useOrganisation({
    * has just chosen a folder should be able to say whose landscape it is
    * without opening a dialog about a scope they have not met yet.
    */
-  const nameOrganisation = useCallback((name: string) => {
+  const nameOrganisation = useCallback((name: string, landed?: Landed) => {
     if (!name.trim()) return
-    applySettings(ROOT_SCOPE, { name: name.trim() })
+    applySettings(ROOT_SCOPE, { name: name.trim() }, landed)
   }, [applySettings])
 
   return useMemo(() => ({

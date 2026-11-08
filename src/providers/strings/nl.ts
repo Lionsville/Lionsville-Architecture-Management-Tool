@@ -158,7 +158,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'folder.adoptClose': 'Sluiten',
   'folder.adoptStay': 'Verder in deze browser',
   'browser.risk': 'Het wordt bewaard terwijl je werkt. Browsergegevens wissen verwijdert het, dus bewaar ergens een kopie.',
-  'memory.risk': 'Deze browser weigerde opslag. Alles is weg zodra dit tabblad sluit.',
+  'memory.risk': 'Je werk wordt niet bewaard: deze browser weigerde opslag, dus alles is weg zodra dit tabblad sluit. Bewaar onderweg een kopie, of werk in een map.',
   'folder.risk': 'Geschreven drie seconden nadat je stopt. Een map kun je back-uppen, synchroniseren en committen.',
   'example.label': 'Voorbeeld · niet bewaard',
   'example.where': 'Dit is het voorbeeld: hier wordt niets bewaard.',

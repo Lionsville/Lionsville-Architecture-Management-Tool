@@ -79,7 +79,7 @@ export const EN = {
   'shell.keepMine': 'Keep mine',
   'shell.saveACopy': 'Save a copy…',
   'shell.keepFailed':
-    'This browser could not save the design (storage full or blocked). Save a copy, or it is gone when you close the tab.',
+    'This browser could not save your work (storage full or blocked). Save a copy, or it is gone when you close the tab.',
   'shell.keptAgain': 'Saving in this browser works again.',
   /**
    * The same sentence for a source that is not a folder: a way in a
@@ -2114,6 +2114,7 @@ export const EN = {
   'first.startOwn': 'Start your own',
   'first.nameLabel': 'Name of your organisation',
   'first.start': 'Start',
+  'first.started': '“{name}” is started.',
   'first.lookAround': 'Look around an example',
   'first.exampleApart': 'Try anything: your own work stays apart.',
   'first.openExample': 'Open the example',

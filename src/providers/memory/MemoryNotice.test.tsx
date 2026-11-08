@@ -18,7 +18,7 @@ const props = (current: boolean): SourceChromeProps => ({
 describe('the notice where nothing is kept', () => {
   it('stands from the first render where memory is the source', () => {
     render(<MemoryNotice {...props(true)} />)
-    expect(screen.getByTestId('storage-notice').textContent).toContain('This browser could not save the design')
+    expect(screen.getByTestId('storage-notice').textContent).toContain('This browser could not save your work')
   })
 
   it('says nothing where the source is somewhere else', () => {

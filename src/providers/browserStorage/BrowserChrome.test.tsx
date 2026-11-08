@@ -121,7 +121,7 @@ describe('where the database would not open at all', () => {
     const { fell } = show()
     expect(screen.queryByTestId('storage-notice')).toBeNull()
     act(() => fell(false))
-    expect(screen.getByTestId('storage-notice').textContent).toContain('This browser could not save the design')
+    expect(screen.getByTestId('storage-notice').textContent).toContain('This browser could not save your work')
   })
 
   it('says where the work shown came from, where memory shows what the older storage kept', () => {

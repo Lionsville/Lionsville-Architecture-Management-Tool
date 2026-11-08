@@ -68,6 +68,7 @@ const KEEPS_NOTHING: ProviderSayings = {
   describeKey: 'shell.sourceTipMemory',
   whereKey: 'memory.where',
   removeKey: 'picker.deleteBodyBrowser',
+  riskKey: 'memory.risk',
 }
 
 /** A database that is never there, for the strip that asks after one. */

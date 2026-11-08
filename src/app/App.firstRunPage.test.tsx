@@ -25,7 +25,7 @@ describe('an organisation nobody has started', () => {
   const start = () => {
     const onVisitExample = vi.fn()
     const repositories = heldRepositories([])
-    renderApp({ repositories, offersFirstRun: true, examples: [example], onVisitExample, provider: { sayings: { labelKey: 'shell.sourceBrowser', riskKey: 'browser.risk' } } })
+    renderApp({ repositories, offersFirstRun: true, examples: [example], onVisitExample, provider: { sayings: { labelKey: 'shell.sourceBrowser', whereKey: 'browser.where', riskKey: 'browser.risk' } } })
     return { onVisitExample, repositories }
   }
 
@@ -46,6 +46,21 @@ describe('an organisation nobody has started', () => {
     await screen.findByTestId('organisation-next')
     expect(screen.queryByTestId('first-run-page')).toBeNull()
     expect((await repositories.read(''))?.model.name).toBe('Northline')
+    // Started, not renamed, and where it is kept.
+    expect(await screen.findByText('“Northline” is started. Everything here is kept in this browser.')).toBeTruthy()
+  })
+
+  it('says a start kept nowhere in the warning colour, and that it is not kept', async () => {
+    renderApp({
+      repositories: heldRepositories([]), offersFirstRun: true, source: { provider: 'browserStorage', name: '', key: '', transient: true },
+      provider: { sayings: { labelKey: 'shell.sourceMemory', whereKey: 'memory.where', riskKey: 'memory.risk' } },
+    })
+    expect((await screen.findByTestId('first-risk')).textContent).toContain('Your work is not kept')
+    expect(screen.queryByText(/saved as you work/)).toBeNull()
+    fireEvent.change(screen.getByTestId('organisation-name-field'), { target: { value: 'Northline' } })
+    fireEvent.click(screen.getByTestId('first-run-start'))
+    const said = await screen.findByText(/“Northline” is started\. Everything here is kept nowhere yet/)
+    expect(said.closest('[role="alert"]')?.className ?? said.closest('.MuiAlert-root')?.className ?? '').toMatch(/warning|Warning/)
   })
 
   it('opens the example as a place, writing nothing here', async () => {

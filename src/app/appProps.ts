@@ -164,7 +164,7 @@ export type AppProvider = {
    *
    * Absent for the three that ship, and for a registered provider that gives
    * none, and a refused save then says what it has always said: that this
-   * browser could not save the design.
+   * browser could not save your work.
    */
   keepFailure?: SourceFailure
   /**
