@@ -1,0 +1,31 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* Room for three discs whoever is there, laid from the end so the row does not shift as they come and go. */
+.kit-faces {
+  --kit-faces-disc: 1.5rem;
+  --kit-faces-overlap: 0.375rem;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  inline-size: calc(3 * var(--kit-faces-disc) - 2 * var(--kit-faces-overlap));
+}
+.kit-faces__disc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  inline-size: var(--kit-faces-disc);
+  block-size: var(--kit-faces-disc);
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: var(--accent-soft);
+  color: var(--ink);
+  font-size: var(--t-small);
+  font-weight: var(--fw-strong);
+  line-height: 1;
+  letter-spacing: 0;
+}
+.kit-faces__disc + .kit-faces__disc { margin-inline-start: calc(0px - var(--kit-faces-overlap)); }
+.kit-faces__rest { background: var(--surface-2); color: var(--ink-2); }

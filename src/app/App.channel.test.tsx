@@ -367,18 +367,18 @@ describe('two workspaces over one command channel', () => {
     // been told anything yet, and its bar says nothing rather than saying it is
     // alone.
     await waitFor(() => {
-      expect(within(b.container).getByTestId('also-here').textContent).toBe('Also here: A. Author')
+      expect(within(b.container).getByTestId('also-here').getAttribute('aria-label')).toBe('Also here: A. Author')
     })
     expect(within(a.container).queryByTestId('also-here')).toBeNull()
 
     // Their step arriving is what makes this side ask the channel who is there.
     await askB('element.add', { kind: 'application', name: 'Ledger' })
     await waitFor(() => {
-      expect(within(a.container).getByTestId('also-here').textContent).toBe('Also here: B. Bee')
+      expect(within(a.container).getByTestId('also-here').getAttribute('aria-label')).toBe('Also here: B. Bee')
     })
     // Each names the other and neither names itself: a bar that names you back
     // is a bar nobody trusts.
-    expect(within(b.container).getByTestId('also-here').textContent).toBe('Also here: A. Author')
+    expect(within(b.container).getByTestId('also-here').getAttribute('aria-label')).toBe('Also here: A. Author')
   })
 })
 

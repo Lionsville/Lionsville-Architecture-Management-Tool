@@ -790,6 +790,6 @@ describe('the stable control names', { timeout: 20_000 }, () => {
   // presence makes true: the row is drawn with a name, as the channel would.
   it('are on the row while somebody else is here', () => {
     renderShell(<AlsoHere names={['Ada']} s={(key) => key} />)
-    expect(document.querySelector(controlSelector('shell.alsoHere'))?.textContent).toContain('shell.alsoHere')
+    expect(document.querySelector(controlSelector('shell.alsoHere'))?.getAttribute('aria-label')).toContain('shell.alsoHere')
   })
 })

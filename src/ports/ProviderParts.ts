@@ -510,6 +510,13 @@ export type SourceSlotProps<Own = unknown> = SourceYourWorkProps<Own> & {
 export type SourceFrame<Own = unknown> = {
   /** Asked again whenever `onWork` fires. Nothing: the frame's own word. */
   readonly word?: () => SourceWord | undefined
+  /**
+   * Who else is at a scope whose home is up, names only, the way a scope
+   * session's `alsoHere` says it while the scope is open. Asked again whenever
+   * `onWork` fires, so a source that hears somebody arrive says so through
+   * that. Nothing, or an empty list: nobody is said to be there.
+   */
+  readonly alsoHere?: (scope: ScopePath) => readonly string[]
   /** Drawn under the agent's band, whichever screen is up. */
   readonly bands?: (open: SourceOpen) => readonly SourceBand[]
   /**

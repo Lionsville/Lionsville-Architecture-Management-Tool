@@ -28,6 +28,7 @@ import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import { AgentIcon, CaretIcon, iconSize, RedoIcon, SearchIcon, UndoIcon } from '../../widgets/icons'
 import { BandStack } from '../../widgets/kit/Band'
+import { Faces } from '../../widgets/kit/Faces'
 import type { StackedBand } from '../../widgets/kit/Band'
 import { Button, IconButton } from '../../widgets/kit/Button'
 import { Frame } from '../../widgets/kit/Frame'
@@ -625,9 +626,9 @@ function Trail({ parts, at, name, capped }: { parts: ShellParts; at: ScopePath; 
   )
 }
 
-/** Who else has this scope open, names only; said only while somebody has. */
+/** Who else has this scope open, names only; said only while somebody has, as discs that keep the crumb its room. */
 export function AlsoHere({ names, s }: { names: readonly string[]; s: Translate }) {
-  return <span className="kit-frame__also" data-testid="also-here" data-guide="shell.alsoHere">{s('shell.alsoHere', { names: names.join(', ') })}</span>
+  return <Faces names={names} label={s('shell.alsoHere', { names: names.join(', ') })} testId="also-here" dataGuide="shell.alsoHere" />
 }
 
 /**
@@ -684,7 +685,7 @@ function RowOne({ parts, state, at }: { parts: ShellParts; state: FrameState; at
       <div className="kit-frame__grow" />
       {/* An editor has an undo of its own, for shapes; the model's here would take back the wrong thing. A phone's row has no room for them: its ⌘Z is a menu away. */}
       {!state.work && <span className="kit-frame__steps"><UndoRedo facts={facts} s={s} /></span>}
-      <SafeWords parts={parts} state={state} word={word} calm={calm} least={allFolded} activity={!folded('activity')} wordShown={!folded('status')} />
+      <SafeWords parts={parts} state={state} at={at} word={word} calm={calm} least={allFolded} activity={!folded('activity')} wordShown={!folded('status')} />
       {!folded('agent') && <AgentButton parts={parts} />}
       <BarEnd button={frameBarButton(parts, scopeOpen ? 'workspace' : 'organisation')} chip={chip && <SourceChipView {...chip} s={s} />} s={s} />
       {!folded('size') && <TextSizeControl {...sizing} />}
@@ -751,14 +752,15 @@ function UndoRedo({ facts, s }: { facts: ScreenFacts | undefined; s: Translate }
 }
 
 /** Whether work is safe, who else is here, and what was lately done: the word and the two panels behind it. */
-function SafeWords({ parts, state, word, calm, least, activity, wordShown }: {
-  parts: ShellParts; state: FrameState; word: StatusWord; calm: boolean; least: boolean; activity: boolean; wordShown: boolean
+function SafeWords({ parts, state, at, word, calm, least, activity, wordShown }: {
+  parts: ShellParts; state: FrameState; at: ScopePath; word: StatusWord; calm: boolean; least: boolean; activity: boolean; wordShown: boolean
 }) {
   const { services: { s } } = parts
   const facts = state.screen
   const { head, tail } = statusHead(word.text)
   const togglePanel = (panel: 'work' | 'activity') => parts.agent.setPanel(state.panel === panel ? undefined : panel)
-  const here = facts?.alsoHere ?? []
+  // An open scope's session says who else is in it; a home is asked of the source, again whenever it says its answer moved.
+  const here = facts?.kind === 'workspace' ? facts.alsoHere ?? [] : parts.props.provider?.frame?.alsoHere?.(at) ?? []
   return (
     <>
       {word.text !== '' && (

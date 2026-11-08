@@ -107,7 +107,6 @@
 .kit-frame__status:hover { background: var(--surface-2); color: var(--ink); }
 .kit-frame__status[data-alarm='true'] { color: var(--bad); font-weight: var(--fw-strong); }
 .kit-frame__kbd { font-family: var(--font-mono); font-size: var(--t-small); color: var(--ink-2); border: 1px solid var(--line); border-radius: 3px; padding-inline: 4px; flex: 0 0 auto; }
-.kit-frame__also { color: var(--ink-2); font-size: var(--t-small); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 
 .kit-tree { --kit-tree-menu: 28px; --kit-tree-end: calc(var(--kit-tree-menu) + var(--s-2)); flex: 1 1 auto; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
 .kit-tree__find { padding: var(--s-2); display: flex; gap: var(--s-1); align-items: center; }

@@ -52,6 +52,15 @@ describe('a source on the frame', () => {
     await waitFor(() => expect(window.location.hash).toContain('agents'))
   })
 
+  it('says who else is at the scope whose home is up, as discs named in full', async () => {
+    const asked: string[] = []
+    withFrame({ alsoHere: (scope) => { asked.push(scope); return ['Bram Jansen'] } })
+    const here = await screen.findByTestId('also-here')
+    expect(here.getAttribute('aria-label')).toBe('Also here: Bram Jansen')
+    expect(here.textContent).toBe('BJ')
+    expect(asked).toContain('')
+  })
+
   it('keeps the dialog where it has no such page', async () => {
     renderApp({ repositories: heldRepositories([root]) })
     fireEvent.click(await screen.findByTestId('agent-glyph'))
