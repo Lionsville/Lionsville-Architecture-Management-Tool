@@ -22,6 +22,7 @@ import { canvasZoomProps } from '../../widgets/kit/zoom';
 import type { Rect } from '../../model/types';
 import { viewportOverNodes, viewportOverRect } from './fitAll';
 import { canvasRooms } from '../../widgets/kit/canvasRoom';
+import { useTextScale } from '../../widgets/kit/useTextScale';
 
 /** How long a board waits for a layout pass before it is shown as it stands. */
 const LAYOUT_WAIT_MS = 5000;
@@ -78,6 +79,30 @@ export function useBoardFrame({ container, nodes, kept, awaiting, ready, emptyFr
     frame();
     return () => { cancelled = true; };
   }, [ready, awaiting, container, flow]);
+
+  // A text size changed grows or shrinks every card, so the frame chosen for the old
+  // size cuts the board off or leaves it small: framed again once the cards have
+  // been measured at the new size, two frames on.
+  const scale = useTextScale();
+  const framedAt = useRef(scale);
+  useEffect(() => {
+    if (!settled.current || framedAt.current === scale) return undefined;
+    framedAt.current = scale;
+    let handle = requestAnimationFrame(() => {
+      handle = requestAnimationFrame(() => {
+        const box = container.current?.getBoundingClientRect();
+        const { width, height, nodes: measured } = flow.getState();
+        const w = box?.width || width;
+        const h = box?.height || height;
+        if (w === 0 || h === 0) return;
+        const { emptyFrame: sheet, setViewport: put } = latest.current;
+        const rooms = container.current ? canvasRooms(container.current) : undefined;
+        const viewport = measured.length > 0 ? viewportOverNodes(measured, w, h, rooms, sheet) : sheet && viewportOverRect(sheet, w, h, rooms);
+        if (viewport) put(viewport);
+      });
+    });
+    return () => cancelAnimationFrame(handle);
+  }, [scale, container, flow]);
 
   useEffect(() => {
     if (!awaiting || framed) return undefined;

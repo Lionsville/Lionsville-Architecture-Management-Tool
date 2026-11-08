@@ -56,6 +56,7 @@ and behaves is said here, once.
 | `Band.tsx` | **Band**: a state of the window in words with one way out; `BandStack` never shows two |
 | `zoom.ts` | how far a canvas zooms and what each input means; `canvasZoomProps`, the seam for the three reading distances |
 | `useCanvasZoom.ts` | one zoom behaviour for every canvas: ⌘ or Ctrl with + − 0, the wheel, a pinch, ⇧ 1, a board's = − and ⇧ 2 |
+| `useTextScale.ts` | the person's text size on the root, followed as it changes: a width worked out in a script, a canvas framed again |
 | `ViewBar.tsx` | the View bar and its words: one that opens a menu, one that acts, one that opens a panel of acts and settings (`ViewBarPanel`, with `ViewBarAct`, `ViewBarCheck`, `ViewBarHeading`); the order is here and not in the screens |
 | `ColourMenu.tsx`, `KeyStrip.tsx` | the one Colour menu, its questions under headings with a long list one level down, and the key strip made from what is drawn, saying what it is of, with Keep and the way to take it down; `all` for a notation, which gathers nothing up |
 | `DayControl.tsx` | the one Day control |

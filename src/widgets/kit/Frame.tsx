@@ -20,7 +20,8 @@ import { SeamResizer } from '../SeamResizer'
 import { useSeamWidth } from '../useSeamWidth'
 import { PlaceHostContext } from './placeHost'
 import type { PlaceHost } from './placeHost'
-import { px, textScale } from './tokens'
+import { px } from './tokens'
+import { useTextScale } from './useTextScale'
 import { WINDOW_BAR } from './windowArea'
 import './Frame.css'
 // The density switch's measures: on the root, so whatever the frame draws follows them.
@@ -46,21 +47,6 @@ export type FrameProps = {
   /** Is a page up over the view? */
   readonly pageUp: boolean
   readonly children: ReactNode
-}
-
-/**
- * The text scale on the root, followed as a person changes it: what the tree's
- * width is measured in.
- */
-function useTextScale(): number {
-  const [scale, setScale] = useState(textScale)
-  useEffect(() => {
-    if (typeof MutationObserver === 'undefined') return undefined
-    const watch = new MutationObserver(() => setScale(textScale()))
-    watch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-text-size'] })
-    return () => watch.disconnect()
-  }, [])
-  return scale
 }
 
 function useWindowWidth(): number {
