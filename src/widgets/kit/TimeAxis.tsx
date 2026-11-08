@@ -33,7 +33,7 @@ import { useCanvasZoom } from './useCanvasZoom'
 import type { ZoomTarget } from './useCanvasZoom'
 import {
   AXIS_SCALES, barInView, cellWord, dayAt, dayNumber, dayString, fitView, fractionOf, lastDayOf, mergedMilestones, monthWords,
-  openingView, rulerCells, scaleOf, scrolledView, sideOf, viewAround, viewAtScale, viewBetween, viewWith, zoomedView,
+  fittedCellWord, openingView, rootFontPx, rulerCells, rulerCharPx, scaleOf, scrolledView, sideOf, viewAround, viewAtScale, viewBetween, viewWith, zoomedView,
 } from './timeScale'
 import type { AxisScale, AxisView } from './timeScale'
 import { chordHeld, claimKey } from './keys'
@@ -75,6 +75,7 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
   const ruler = useRef<HTMLDivElement>(null)
   const root = useRef<HTMLDivElement | null>(null)
   const [width, setWidth] = useState(0)
+  const charPx = rulerCharPx(rootFontPx())
   const latest = useRef({ view, onViewChange, width })
   latest.current = { view, onViewChange, width }
 
@@ -179,7 +180,7 @@ export function TimeAxis({ view, onViewChange, today, day, onDayChange, dates = 
             <div className="kit-time__cells">
               {rulerCells(view, width).map((cell) => (
                 <span key={cell.key} className="kit-time__cell" title={cellWord(cell, locale)} data-major={cell.major || undefined} style={{ left: `${cell.left * 100}%`, width: `${cell.width * 100}%` }}>
-                  {cell.width * width >= 22 || width === 0 ? cellWord(cell, locale) : ''}
+                  {width === 0 ? cellWord(cell, locale) : fittedCellWord(cell, locale, cell.width * width, charPx)}
                 </span>
               ))}
             </div>

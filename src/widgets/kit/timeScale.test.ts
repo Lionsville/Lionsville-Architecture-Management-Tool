@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { barInView, cellWord, dayAt, dayNumber, dayString, fitView, fractionOf, lastDayOf, mergedMilestones, monthWords, openingView, rulerCells, scaleOf, scrolledView, sideOf, viewAtScale, viewBetween, viewWith, zoomedView, AXIS_MAX_DAYS, AXIS_MIN_DAYS } from './timeScale'
+import { barInView, cellWord, fittedCellWord, dayAt, dayNumber, dayString, fitView, fractionOf, lastDayOf, mergedMilestones, monthWords, openingView, rulerCells, scaleOf, scrolledView, sideOf, viewAtScale, viewBetween, viewWith, zoomedView, AXIS_MAX_DAYS, AXIS_MIN_DAYS } from './timeScale'
 
 const year = openingView('2026-11-07')
 
@@ -40,6 +40,13 @@ describe('the window', () => {
     const middle = dayNumber(year.start) + year.days / 2
     const next = viewAtScale(year, 'weeks', away)
     expect(Math.abs(dayNumber(next.start) + next.days / 2 - middle)).toBeLessThanOrEqual(1)
+  })
+
+  it('drops a cell\'s year where its width cannot hold it, and never cuts a word', () => {
+    const cell = { unit: 'month' as const, day: '2026-08-01', withYear: true }
+    expect(fittedCellWord(cell, 'en-GB', 120, 7)).toBe('Aug 2026')
+    expect(fittedCellWord(cell, 'en-GB', 40, 7)).toBe('Aug')
+    expect(fittedCellWord(cell, 'en-GB', 20, 7)).toBe('')
   })
 
   it('scrolls by the ruler’s pixels', () => {

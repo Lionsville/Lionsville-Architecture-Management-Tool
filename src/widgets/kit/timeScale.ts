@@ -252,6 +252,28 @@ export function cellWord(cell: Pick<RulerCell, 'unit' | 'day' | 'withYear'>, loc
   return date.toLocaleDateString(locale, { day: 'numeric', month: 'short', ...(cell.withYear ? { year: 'numeric' as const } : {}), timeZone: 'UTC' })
 }
 
+/** The width of a character of the ruler's small type, at a root font size: an estimate a cell's words are fitted by. */
+export const rulerCharPx = (rootPx: number) => rootPx * 0.8125 * 0.56
+
+/** The root's font size in px, which a person's text size sets: 16 where there is no page to ask. */
+export function rootFontPx(): number {
+  if (typeof document === 'undefined' || typeof getComputedStyle === 'undefined') return 16
+  return parseFloat(getComputedStyle(document.documentElement).fontSize) || 16
+}
+
+/**
+ * A cell's words as its width holds them: with its year where there is room, the
+ * month alone where there is not (*Aug*, never *Aug 2…*), and nothing where not
+ * even that fits. The cell's title keeps the whole.
+ */
+export function fittedCellWord(cell: Pick<RulerCell, 'unit' | 'day' | 'withYear'>, locale: string, px: number, charPx: number): string {
+  const room = px - 8
+  const whole = cellWord(cell, locale)
+  if (whole.length * charPx <= room) return whole
+  const short = cellWord({ ...cell, withYear: false }, locale)
+  return short.length * charPx <= room ? short : ''
+}
+
 /** The window in words: "Aug 2026" and "Jul 2027", for a sentence of the caller's. */
 export function monthWords(view: AxisView, locale: string): { from: string; to: string } {
   const say = (day: string) => {

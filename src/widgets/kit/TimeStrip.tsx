@@ -15,7 +15,7 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { formatDay } from '../../i18n/dates'
 import { useStrings } from '../../i18n/LanguageContext'
 import { LOCALE } from '../../i18n/strings'
-import { barInView, cellWord, fitView, fractionOf, mergedMilestones, rulerCells, sideOf } from './timeScale'
+import { barInView, fittedCellWord, fitView, fractionOf, mergedMilestones, rootFontPx, rulerCells, rulerCharPx, sideOf } from './timeScale'
 import type { AxisView } from './timeScale'
 import './TimeStrip.css'
 
@@ -51,12 +51,14 @@ export function TimeStrip({ label, today, from, to, items, pickedId, onPick, 'da
   const view: AxisView = fitView(days) ?? { start: today, days: 365 }
   const band = from || to ? barInView(view, from, to) : undefined
   const clusters = mergedMilestones(view, width, items)
+  // A larger text size takes more room per word: the room a label needs grows with it, so two never overprint.
+  const charPx = rulerCharPx(rootFontPx())
   return (
     <div ref={box} className="kit-strip" role="group" aria-label={label} data-guide={guide}>
       <div className="kit-strip__ruler" aria-hidden="true">
         {rulerCells(view, width).map((cell) => (
           <span key={cell.key} className="kit-strip__cell" data-major={cell.major || undefined} style={{ left: `${cell.left * 100}%`, width: `${cell.width * 100}%` }}>
-            {cell.width * width >= 40 ? cellWord(cell, LOCALE[language]) : ''}
+            {fittedCellWord(cell, LOCALE[language], cell.width * width, charPx)}
           </span>
         ))}
       </div>
@@ -73,8 +75,8 @@ export function TimeStrip({ label, today, from, to, items, pickedId, onPick, 'da
         const said = cluster.items.map((item) => `${formatDay(item.day, language)} ${item.label}`).join('; ')
         // A word runs towards the middle, and shares its line with every other cluster.
         const flip = cluster.left > 0.75
-        const room = (flip ? cluster.left - (clusters[at - 2]?.left ?? 0) : (clusters[at + 2]?.left ?? 1) - cluster.left) * width >= ROOM_FOR_A_WORD
         const words = many ? t('kit.axis.together', { count: cluster.items.length }) : `${formatDay(first.day, language)} ${first.label}`
+        const room = (flip ? cluster.left - (clusters[at - 2]?.left ?? 0) : (clusters[at + 2]?.left ?? 1) - cluster.left) * width >= Math.max(ROOM_FOR_A_WORD, words.length * charPx)
         const inside = (
           <>
             <span className="kit-strip__diamond" aria-hidden="true" />
