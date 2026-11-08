@@ -205,11 +205,17 @@
 
 [data-posture="design"] .poster-block { content-visibility: visible; }
 .poster-tray .kit-segmented { display: flex; }
-/* Three words in 272 px: at the tray's own size they fit in German too, and a longer one ends in an ellipsis rather than being cut. */
-.poster-tray .kit-segmented__option { flex: 1 1 auto; min-width: 0; padding-inline: var(--s-1); overflow: hidden; font-size: var(--t-small); text-overflow: ellipsis; }
+/*
+ * Three words in the tray's width: a word that does not fit on one line takes a second ("Onderliggende / scopes")
+ * rather than running into its neighbour or being cut, and the tray grows with the text size, so a larger size cuts
+ * no word either.
+ */
+.poster-tray .kit-segmented { height: auto; min-height: var(--ctl-h); }
+.poster-tray .kit-segmented__option { flex: 1 1 auto; min-width: 0; padding-inline: var(--s-1); font-size: var(--t-small); line-height: 1.2; white-space: normal; overflow-wrap: break-word; }
+.poster-tray .kit-segmented__word { white-space: normal; }
 
 /* The tray: what is dragged on from Design, with a press on a selection for those who do not drag. */
-.poster-tray { flex: none; width: 272px; box-sizing: border-box; min-height: 0; display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-2); border-inline-end: 1px solid var(--line); background: var(--surface); font-size: var(--t-small); }
+.poster-tray { flex: none; width: 17rem; box-sizing: border-box; min-height: 0; display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-2); border-inline-end: 1px solid var(--line); background: var(--surface); font-size: var(--t-small); }
 .poster-tray__list { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
 .poster-tray__heading { margin: var(--s-2) 0 2px; color: var(--ink-2); font-weight: var(--fw-strong); }
 .poster-tray__why { color: var(--ink-2); margin-block-end: 2px; }
