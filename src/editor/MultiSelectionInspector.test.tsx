@@ -170,11 +170,11 @@ describe('MultiSelectionInspector: it says what is selected, and what each field
 
   it('speaks of dragging only where something selected can be dragged', () => {
     renderFull({ ...none, connectionIds: ['c1', 'c2'] });
-    expect(screen.queryByText(/Drag any selected node/)).toBeNull();
+    expect(screen.queryByText(/Drag any selected card/)).toBeNull();
     expect(screen.getByText(en['inspector.multiHintLines'])).toBeDefined();
     cleanup();
     renderFull({ ...none, elementIds: ['a1'], connectionIds: ['c1'] });
-    expect(screen.getByText(/Drag any selected node/)).toBeDefined();
+    expect(screen.getByText(/Drag any selected card/)).toBeDefined();
   });
 
   it('heads each part with what it changes when both kinds are selected', () => {

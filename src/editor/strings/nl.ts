@@ -254,7 +254,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'node.actorFigure': 'Actorfiguur',
   'node.external': 'EXTERN',
   'bar.add': 'Toevoegen',
-  'bar.keepOpen': 'Soorten open houden',
+  'bar.keepOpen': 'Soorten naast het bord houden',
   'bar.arrange': 'Ordenen',
   'bar.arranging': 'Bezig met ordenen…',
   'bar.tidy': 'Bord ordenen',
@@ -414,7 +414,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'inspector.groupsOne': '{count} domeingroep',
   'inspector.groupsOther': '{count} domeingroepen',
   'inspector.multiHint':
-    'Sleep een geselecteerd element om ze samen te verplaatsen. Shift-klik voegt toe of haalt weg; Escape maakt de selectie leeg.',
+    'Sleep een geselecteerde kaart om ze samen te verplaatsen. Shift-klik voegt toe of haalt weg; Escape maakt de selectie leeg.',
   'inspector.multiHintLines': 'Shift-klik voegt toe of haalt weg; Escape maakt de selectie leeg.',
   'inspector.bulkTitle': 'OP ALLES TOEPASSEN',
   'inspector.bulkLifecycle': 'Levenscyclus',

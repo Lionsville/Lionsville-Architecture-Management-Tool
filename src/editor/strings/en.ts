@@ -265,7 +265,7 @@ export const EN = {
   'node.actorFigure': 'Actor figure',
   'node.external': 'EXTERNAL',
   'bar.add': 'Add',
-  'bar.keepOpen': 'Keep the kinds open',
+  'bar.keepOpen': 'Keep the kinds beside the board',
   'bar.arrange': 'Arrange',
   'bar.arranging': 'Arranging…',
   'bar.tidy': 'Tidy the board',
@@ -426,7 +426,7 @@ export const EN = {
   'inspector.groupsOne': '{count} domain group',
   'inspector.groupsOther': '{count} domain groups',
   'inspector.multiHint':
-    'Drag any selected node to move them together. Shift-click to add or remove items; Escape to clear.',
+    'Drag any selected card to move them together. Shift-click to add or remove items; Escape to clear.',
   'inspector.multiHintLines': 'Shift-click to add or remove items; Escape to clear.',
   'inspector.bulkTitle': 'APPLY TO ALL',
   'inspector.bulkLifecycle': 'Lifecycle',

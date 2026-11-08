@@ -254,7 +254,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'node.actorFigure': 'Akteurfigur',
   'node.external': 'EXTERN',
   'bar.add': 'Hinzufügen',
-  'bar.keepOpen': 'Arten geöffnet lassen',
+  'bar.keepOpen': 'Arten neben dem Board lassen',
   'bar.arrange': 'Anordnen',
   'bar.arranging': 'Wird angeordnet…',
   'bar.tidy': 'Board aufräumen',
@@ -414,7 +414,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'inspector.groupsOne': '{count} Domänengruppe',
   'inspector.groupsOther': '{count} Domänengruppen',
   'inspector.multiHint':
-    'Ziehen Sie ein ausgewähltes Element, um alle gemeinsam zu verschieben. Umschalt-Klick fügt hinzu oder entfernt; Escape hebt die Auswahl auf.',
+    'Ziehen Sie eine ausgewählte Karte, um alle gemeinsam zu verschieben. Umschalt-Klick fügt hinzu oder entfernt; Escape hebt die Auswahl auf.',
   'inspector.multiHintLines': 'Umschalt-Klick fügt hinzu oder entfernt; Escape hebt die Auswahl auf.',
   'inspector.bulkTitle': 'AUF ALLE ANWENDEN',
   'inspector.bulkLifecycle': 'Lebenszyklus',
