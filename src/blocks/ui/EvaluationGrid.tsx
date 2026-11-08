@@ -108,7 +108,7 @@ export function RequirementsGrid({ block, onChange, rowEnd }: {
     onChange?.({ contexts: next })
   }
   return (
-    <div data-testid="requirements-grid">
+    <div className="guidance-grid" data-testid="requirements-grid">
       <Matrix
         label={t('blocks.requirements')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected}
         rows={capabilities.map((one) => ({ id: one.id, label: labelOf(one) }))}
@@ -173,7 +173,7 @@ export function EvaluationGrid({ block, evaluation: kept, onChange }: {
     setCoverage(pick.column, pick.row, { level: levelFor(key, evaluation.coverage[pick.column]?.[pick.row]?.level ?? 0) })
   }
   return (
-    <div data-testid="evaluation-grid">
+    <div className="guidance-grid" data-testid="evaluation-grid">
       <Matrix
         label={t('blocks.evaluationGrid')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected}
         rows={[...(block.capabilities ?? []).map((one) => ({ id: one.id, label: `${labelOf(one)}${one.must ? ` · ${t('blocks.must')}` : ''}` })), { id: FIT_ROW, label: t('blocks.fitHere') }]}

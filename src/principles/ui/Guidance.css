@@ -57,3 +57,8 @@
 .guidance-ball__cell { display: inline-flex; align-items: center; gap: var(--s-1); font-size: var(--t-body); }
 .guidance-legend { display: flex; flex-wrap: wrap; gap: var(--s-3); margin: 0; padding: 0; list-style: none; color: var(--ink-2); font-size: var(--t-small); }
 .guidance-legend li { display: inline-flex; gap: var(--s-1); align-items: center; }
+
+/* A block's grids: the capability's name takes the room the page has, rather than the matrix's narrow default. */
+.guidance-grid .kit-matrix { --kit-matrix-head: clamp(240px, 34vw, 520px); }
+/* Where used: a row opens its grid, a way on, so the pointer says it can be pressed. */
+.guidance-where .kit-list__row:not(.kit-list__row--header) { cursor: pointer; }

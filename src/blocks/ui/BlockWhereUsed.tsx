@@ -47,7 +47,7 @@ export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter }: {
     <>
       <p className="guidance-record__intro">{t('blocks.whereUsedIntro')}</p>
       {evaluations.length === 0 ? <p className="guidance-record__intro">{t('blocks.noEvaluations')}</p> : (
-        <div data-testid="block-evaluations">
+        <div className="guidance-where" data-testid="block-evaluations">
           <List
             label={t('blocks.whereUsed')} itemLabel={t('blocks.colScope')} groups={[{ id: '', label: '', rows }]}
             onOpen={(id) => onEvaluate(evaluations.find((one) => rowOf(one.scope) === id)?.scope)}
