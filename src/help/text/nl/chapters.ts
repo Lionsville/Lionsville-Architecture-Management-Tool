@@ -157,7 +157,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
         'Open **Besluiten** in rij twee en klik op **Nieuw besluit**.',
         'Geef het de titel *Eén schrijver per scope* en zeg waar het over gaat.',
         'Schrijf de context en de opties in **Bewerken**, en klik op **Bewaren**.',
-        'Stuur het ter review, en als de reviewers hebben getekend, klik op **Accepteren**.',
+        'Stuur het ter review, en als de reviewers hebben getekend, klik op **Aanvaarden**.',
       ],
     },
   },
@@ -239,7 +239,7 @@ export const CHAPTERS: Readonly<Record<string, ChapterText>> = {
       title: 'Een principe schrijven en citeren',
       steps: [
         'Open **Richtlijnen** en klik op **Principes** op **Nieuw principe**.',
-        'Schrijf *Kopen voor bouwen*, flexibel, en accepteer het.',
+        'Schrijf *Kopen voor bouwen*, flexibel, en aanvaard het.',
         'Open een besluit en zeg onder **Principes** dat het *Kopen voor bouwen* volgt.',
       ],
     },

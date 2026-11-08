@@ -88,7 +88,7 @@ export const SECTIONS: SectionTexts = {
     'Het paneel rechts van een bord, met een lijn geselecteerd, tabblad Weergave',
     ['Selecteer de lijn en open Weergave.', 'Klik op Kleur, Lijnstijl of Pijlpunten om ze te wijzigen.', 'Klik onder Route op Vastzetten om de route te houden, of Terug naar automatisch.'],
     'Zet de route vast van de lijn van Handheld scanners naar Warehouse Management.'],
-  'panel.lineMenu': ['Een lijn buigen, verankeren en labelen vanuit het menu', 'Klik rechts op een lijn voor Buigpunt hier toevoegen, Alle buigpunten verwijderen, Route vastzetten, Terug naar automatische route, Verankeren aan, Lijnvorm, Richting, Label bewerken, Labelpositie terugzetten en Koppeling verwijderen.',
+  'panel.lineMenu': ['Een lijn buigen, verankeren en labelen vanuit het menu', 'Klik rechts op een lijn voor Hier een knikpunt toevoegen, Alle knikpunten weghalen, Route vastzetten, Terug naar automatische route, Aanhechten aan, Lijnvorm, Richting, Label bewerken, Labelpositie herstellen en Koppeling verwijderen.',
     'Klik rechts op een lijn op een bord',
     ['Klik rechts op de lijn, of geef haar de focus en druk op {key:Shift+F10}.', 'Kies de actie.'],
     'Voeg een buiging toe aan de lijn van Dispatch naar Partner carriers zodat ze de groep Billing ontwijkt.',

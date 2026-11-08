@@ -91,7 +91,7 @@ export const SECTIONS: SectionTexts = {
     ['Klik op Over het register onderaan de pagina.'],
     'Lees Over het register voordat je de medewerkers van de afdeling Terminal importeert.'],
   'people.searchEverywhere': ['Een persoon vanaf elke plek vinden', '{key:Mod+K} vindt mensen vanaf elk scherm, voor iedereen die het register mag lezen, en opent hun pagina. Een vergeten persoon wordt alleen op pseudoniem gevonden, en nooit op adres.',
-    'Zoeken of een opdracht geven in de bovenste balk, of {key:Mod+K}.',
+    'Zoek of voer een opdracht uit in de bovenste balk, of {key:Mod+K}.',
     ['Druk op {key:Mod+K}.', 'Typ een deel van de naam.', 'Kies de persoon om de pagina te openen.'],
     'Druk vanaf de dekking op {key:Mod+K}, typ Marek, en open Marek Nowak, Head of Planning.',
     '{key:Mod+K}'],

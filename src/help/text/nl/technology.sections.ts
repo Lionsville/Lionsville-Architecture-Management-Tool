@@ -77,7 +77,7 @@ export const SECTIONS: SectionTexts = {
   'technology.platformReport': ['Lezen wat er wegvalt als een platform verdwijnt', 'Het platformrapport: een zin met hoeveel applicaties het zouden verliezen en hoe, de feiten, één regel per ding dat erop staat (containers met hun applicatie), en de koppelvlakken die eroverheen lopen.',
     'Als het wegviel… in de lezer van een platform; dubbelklik op een platformregel; adres #/<scope>/-/platform/<id>.',
     ['Kies een platform.', 'Klik op Als het wegviel….'],
-    'Als OpenShift verdween: 16 applicaties zouden het verliezen, Cloud landing zone zou blijven.',
+    'Als OpenShift wegviel: 16 applicaties zouden het verliezen, Cloud landing zone zou blijven.',
     'Dubbelklik'],
   'technology.serviceReport': ['Lezen wat er strandt als een dienst wordt ingetrokken', 'Het dienstrapport: wie op de dienst leunt, waardoorheen, vanuit welke scope, en of elk zou stranden of er op tijd vanaf is.',
     'Als het wegviel… in de lezer van een dienst; dubbelklik op een dienstregel; adres #/<scope>/-/service/<id>.',
