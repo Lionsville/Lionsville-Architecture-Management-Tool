@@ -130,6 +130,8 @@ describe('the two rows', () => {
     await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })
     fireEvent.click(await screen.findByTestId('scope-switcher-open'))
     const switcher = await screen.findByTestId('scope-switcher')
+    expect(screen.getByRole('dialog', { name: 'Switch scope' })).toBeDefined()
+    await waitFor(() => expect(document.activeElement).toBe(within(switcher).getByTestId('tree-find')))
     fireEvent.change(within(switcher).getByTestId('tree-find'), { target: { value: 'retail' } })
     fireEvent.click(within(switcher).getByTestId('home-retail'))
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Retail'))

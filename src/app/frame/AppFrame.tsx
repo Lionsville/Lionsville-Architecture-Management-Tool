@@ -442,7 +442,7 @@ function AgentsPlace({ parts, at }: { parts: ShellParts; at: ScopePath }) {
   )
 }
 
-function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath; page: Page | undefined; onDone?: () => void }) {
+function TreeFor({ parts, at, page, onDone, findFirst = false }: { parts: ShellParts; at: ScopePath; page: Page | undefined; onDone?: () => void; findFirst?: boolean }) {
   const { organisation, order, services: { s, prefs }, agent, nav } = parts
   const { writable } = parts
   const leave = (then: () => void) => () => { onDone?.(); then() }
@@ -468,7 +468,7 @@ function TreeFor({ parts, at, page, onDone }: { parts: ShellParts; at: ScopePath
       onNewScopeUnder={(path) => atHome(() => organisation.addUnder(path))}
       newViewItems={(path) => newViewChoices(s, () => atHome(() => organisation.addBoard(path)), (kind) => { onDone?.(); organisation.open(path, { page: 'make', kind }) })}
       placeFact={(place) => placeFact(place, parts)}
-      writable={writable} language={prefs.language} s={s}
+      writable={writable} language={prefs.language} s={s} findFirst={findFirst}
       {...(parts.frame.get().screen?.typeLink ? { typeLink: parts.frame.get().screen?.typeLink } : {})}
     />
   )
@@ -507,13 +507,17 @@ function Trail({ parts, at, name }: { parts: ShellParts; at: ScopePath; name: st
       <Popover
         open={anchor !== null} anchorEl={anchor} onClose={() => setAnchor(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }} transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        // It says it opens a dialog, so it is one, named; and it keeps its edge on a dark page beside a docked tree of the same colour.
+        slotProps={{ paper: { role: 'dialog', 'aria-label': s('frame.switchScope'), className: 'kit-switcher__paper' } }}
       >
         {anchor && (
           <div className="kit-switcher" data-testid="scope-switcher">
+            <TreeFor parts={parts} at={at} page={page} onDone={() => setAnchor(null)} findFirst />
             {parts.writable(at) && (
-              <Button variant="quiet" size="small" onClick={() => { setAnchor(null); parts.agent.openSomewhere({ scope: at, page: 'settings' }) }}>{s('settings.open')}</Button>
+              <div className="kit-switcher__foot">
+                <Button variant="quiet" size="small" onClick={() => { setAnchor(null); parts.agent.openSomewhere({ scope: at, page: 'settings' }) }}>{s('frame.settingsOf', { name })}</Button>
+              </div>
             )}
-            <TreeFor parts={parts} at={at} page={page} onDone={() => setAnchor(null)} />
           </div>
         )}
       </Popover>

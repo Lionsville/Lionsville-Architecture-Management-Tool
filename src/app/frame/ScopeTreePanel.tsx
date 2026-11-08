@@ -60,6 +60,8 @@ export type ScopeTreePanelProps = TreeActs & {
   go: (to: Destination & { scope: string }) => void
   writable: (path: ScopePath) => boolean
   typeLink?: ((path: ScopePath) => TypeLink | undefined) | undefined
+  /** Over the work from the trail's chevron: what is typed goes to the find at once. */
+  findFirst?: boolean
   /** What the foot says of a place beside its name, and on hover, where it is known. */
   placeFact?: ((page: Page) => { count: string; words: string } | undefined) | undefined
   today: string
@@ -156,7 +158,7 @@ function useFootFold(panel: RefObject<HTMLDivElement | null>, rows: RefObject<HT
 }
 
 export function ScopeTreePanel({
-  tree, at, page, order, onOrderChange, folds, holdings, onHome, go, writable, typeLink, placeFact, today, language, s, ...acts
+  tree, at, page, order, onOrderChange, folds, holdings, onHome, go, writable, typeLink, placeFact, today, language, s, findFirst = false, ...acts
 }: ScopeTreePanelProps) {
   const [find, setFind] = useState('')
   const [show, setShow] = useState<Show>('all')
@@ -190,7 +192,7 @@ export function ScopeTreePanel({
     <div className="kit-tree" data-testid="scope-tree-panel" ref={panelRef}>
       <div className="kit-tree__find">
         <FindField
-          fill label={s('frame.findScope')} value={find} data-testid="tree-find" onChange={setFind}
+          fill label={s('frame.findScope')} value={find} data-testid="tree-find" onChange={setFind} autoFocus={findFirst}
           onKeyDown={(event) => {
             const first = matching?.[0]
             if (event.key === 'Enter' && first !== undefined) { event.preventDefault(); onHome(first) }

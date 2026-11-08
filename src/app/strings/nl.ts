@@ -1526,6 +1526,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.treeToggle': 'Scopeboom open houden',
   'frame.treeOnHome': 'Een thuis toont de boom altijd',
   'frame.switchScope': 'Andere scope kiezen',
+  'frame.settingsOf': 'Instellingen van {name}…',
   'frame.home': 'Start',
   'frame.more': 'Meer',
   'frame.newView': 'Nieuwe weergave',

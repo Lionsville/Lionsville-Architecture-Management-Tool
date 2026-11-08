@@ -1527,6 +1527,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.treeToggle': 'Scope-Baum geöffnet halten',
   'frame.treeOnHome': 'Eine Startseite zeigt den Baum immer',
   'frame.switchScope': 'Bereich wechseln',
+  'frame.settingsOf': 'Einstellungen von {name}…',
   'frame.home': 'Start',
   'frame.more': 'Mehr',
   'frame.newView': 'Neue Ansicht',

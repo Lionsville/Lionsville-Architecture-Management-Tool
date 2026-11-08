@@ -1755,6 +1755,7 @@ export const EN = {
   'frame.treeToggle': 'Keep the scope tree open',
   'frame.treeOnHome': 'A home always shows the tree',
   'frame.switchScope': 'Switch scope',
+  'frame.settingsOf': 'Settings of {name}…',
   'frame.home': 'Home',
   'frame.more': 'More',
   'frame.newView': 'New view',
