@@ -148,7 +148,10 @@ describe('the Checks page', () => {
     fireEvent.click(within(detail()).getByRole('tab', { name: /Accepted/ }))
     const accepted = within(detail()).getByTestId('checks-accepted')
     expect(within(accepted).getByTestId('accepted-reason').textContent).toContain('“They design the API together”')
-    // Take back is on the line itself, nothing pressed first.
+    // Take back is on the line itself, nothing pressed first, and in its last cell, after the reason.
+    const line = within(accepted).getByTestId('finding-take-back').closest('[role=row]')!
+    const cells = line.querySelectorAll(':scope > [role=gridcell]')
+    expect(cells[cells.length - 1].contains(within(accepted).getByTestId('finding-take-back'))).toBe(true)
     fireEvent.click(within(accepted).getByTestId('finding-take-back'))
     expect(marking.takeBackAll).toHaveBeenCalledWith(taken)
     expect(await screen.findByText(/1 taken back to Found/)).toBeTruthy()

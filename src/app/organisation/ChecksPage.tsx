@@ -285,16 +285,18 @@ function AcceptedList({ row, index, marking, scopeName, onTakenBack, s }: {
       reason: <span data-testid="accepted-reason">{mark.reason ? `\u201c${mark.reason}\u201d` : s(CHECK_MARK_WORDS.noReason)}</span>,
       on: formatDay(mark.on, language),
       master: instance.scope !== undefined ? scopeName(instance.scope) : undefined,
+      // The row's last cell, where the eye ends up after the reason, and not beside the name.
+      takeBack: mayTakeBack(keptIn)
+        ? <Button variant="quiet" size="small" data-guide="findings.takeBack" data-testid="finding-take-back" onClick={() => takeBack([id])}>{s(CHECK_MARK_WORDS.takeBack)}</Button>
+        : undefined,
     },
-    ...(mayTakeBack(keptIn) ? {
-      end: <Button variant="quiet" size="small" data-guide="findings.takeBack" data-testid="finding-take-back" onClick={() => takeBack([id])}>{s(CHECK_MARK_WORDS.takeBack)}</Button>,
-    } : {}),
     actions: <span className="org-finding"><p className="checks-page__text">{instance.text}</p></span>,
   }))
   const columns: readonly ListColumn[] = [
     { id: 'reason', label: s('checks.colReason') },
     { id: 'on', label: s('checks.colMarked'), width: 'minmax(96px, 140px)' },
     { id: 'master', label: s('register.colMaster') },
+    { id: 'takeBack', label: '', width: 'max-content' },
   ]
   const canTick = row.marked.some((one) => mayTakeBack(one.keptIn))
   return (
