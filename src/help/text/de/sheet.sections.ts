@@ -15,7 +15,7 @@ export const SECTIONS: SectionTexts = {
   'sheet.journeyStakeholders': ['Die Kundenreise und die Beteiligten zeigen', 'In Namen werden das Band der Kundenreise und die Leiste der Beteiligten mit eigenen Schaltflächen gezeigt oder verborgen.',
     'Kundenreise und Beteiligte, in der Leiste in Namen.',
     ['Klicken Sie auf Kundenreise oder Beteiligte.'],
-    'Zeigen Sie Beteiligte in Namen, um zur Durchsicht, wer die externen Parteien sind.'],
+    'Zeigen Sie Beteiligte in Namen, um zu sehen, wer die externen Parteien sind.'],
   'sheet.select': ['Eine Funktion wählen, um sie zu lesen', 'Ein Gebiet, eine Gruppierung oder Fähigkeit zu wählen, umrandet sie und öffnet ihr Panel: Abgedeckt durch, Wer sie hält (antwortet dafür, übergeben an, aufgenommen von), ihre Beschreibung, ihr Lebenszyklus und ihr Platz. Eine Gruppierung sagt, wie viele darunter abgedeckt sind.',
     'Jede Kachel auf dem Poster oder Zeile in Namen.',
     ['Klicken Sie auf eine Kachel oder Zeile; oder gehen Sie mit {key:Tab} zu einem Block, mit den Pfeilen zu einer Kachel, {key:Enter}.', '{key:Escape} kehrt zur Kachel zurück.'],

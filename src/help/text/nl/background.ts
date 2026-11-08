@@ -318,8 +318,8 @@ browser. De desktop is degene die moet kiezen.` },
     { title: `Deze browser`, text: `Een tabblad zonder map bewaart je werk in deze browser, voor deze site. Het
 label op de startpagina van de organisatie zegt **In deze browser**, en je werk
 blijft daar na een herstart staan tot jij of de browser de gegevens van de
-site wist. Na de eerste keer bewaren vraagt de app de browser om het ook bij
-te ordenen; sommige browsers, Firefox bijvoorbeeld, leggen die
+site wist. Na de eerste keer bewaren vraagt de app de browser om het ook te
+bewaren als hij opslag opruimt; sommige browsers, Firefox bijvoorbeeld, leggen die
 vraag aan jou voor. Browseropslag is klein, dus
 de app zegt één keer dat hij voor ongeveer viervijfde vol zit: een browser
 stopt zonder te vragen met bewaren. Heeft een ander tabblad nog een oudere

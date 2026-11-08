@@ -12,7 +12,7 @@ export const SECTIONS: SectionTexts = {
   'panel.collapse': ['Das Panel einklappen oder verbreitern', 'Der Pfeil am Ende der oberen Zeile des Panels klappt es zu einer schmalen Leiste ein, und die Naht an seiner linken Kante zieht es breiter oder schmaler; beides wird gemerkt.',
     'Das Panel rechts von einem Board, Pfeil oben rechts und die linke Kante',
     ['Klicken Sie auf › am Ende der oberen Zeile des Panels, um es einzuklappen.', 'Klicken Sie auf ‹ auf der Leiste, um es zurückzuholen.', 'Ziehen Sie die linke Kante des Panels oder geben Sie ihr den Fokus und nutzen Sie ← →, um die Breite zu ändern.'],
-    'Klappen Sie das Panel ein, während Sie Application landscape anordnen, und holen Sie es zurück, um Billing zur Durchsicht.',
+    'Klappen Sie das Panel ein, während Sie Application landscape anordnen, und holen Sie es zurück, um Billing anzusehen.',
     '← → auf der Naht mit Fokus'],
   'panel.rename': ['Umbenennen, was gewählt ist', 'Der Name oben im Panel wird mit einem Klick bearbeitbar; {key:Enter} oder Verlassen behält ihn, {key:Escape} setzt ihn zurück.',
     'Das Panel rechts von einem Board, der Name unter der Art',

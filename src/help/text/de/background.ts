@@ -338,8 +338,8 @@ Wort in diesem Browser. Der Desktop ist derjenige, der wählen muss.` },
 Website. Das Etikett auf dem Zuhause der
 Organisation sagt **In diesem Browser**, und Ihre Arbeit bleibt dort über
 Neustarts hinweg, bis Sie oder der Browser die Daten der Website löschen. Nach
-dem ersten Speichern bittet die App den Browser, sie auch beim Automatisch anordnen zu
-behalten; manche Browser, etwa Firefox, stellen Ihnen diese Frage.
+dem ersten Speichern bittet die App den Browser, sie auch dann zu
+behalten, wenn er Speicher freigibt; manche Browser, etwa Firefox, stellen Ihnen diese Frage.
 Browser-Speicher ist klein, deshalb sagt die App einmal, wenn er zu etwa vier
 Fünfteln voll ist: ein Browser hört ohne Nachfrage auf zu speichern. Hat ein
 anderer Tab noch eine ältere Version der App offen, oder wurde die App in
