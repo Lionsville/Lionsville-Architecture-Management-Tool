@@ -7,14 +7,15 @@
  * the whole of it on a press: the reviewer read the pictures' words at seven
  * pixels, as shapes.
  */
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { translator } from '../../i18n'
 import { HelpFigure, measureCut } from './HelpFigure'
 
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  vi.unstubAllGlobals()
   delete (Range.prototype as { getClientRects?: unknown }).getClientRects
 })
 
@@ -31,6 +32,33 @@ describe('a figure', () => {
     expect((whole.querySelector('.help-screen') as HTMLElement).style.width).toBe('560px')
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     expect(whole.hasAttribute('open')).toBe(false)
+  })
+
+  it('is measured when it is laid out anew, never because its cut was set, so a layout that answers differently each time cannot loop', () => {
+    // A browser that has not settled its layout answers another box each time it is asked: the help went blank in a loop.
+    let asked = 0
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      asked += 1
+      const crop = this.hasAttribute('data-crop')
+      return { left: 0, top: crop ? asked : 0, width: crop ? 100 : 560, height: crop ? 40 : 300, right: 0, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect
+    })
+    // jsdom has no line boxes; the picture is cut at the box its part asks for.
+    const lines = Range.prototype as unknown as { getClientRects?: () => DOMRect[] }
+    const had = lines.getClientRects
+    lines.getClientRects = () => []
+    onTestFinished(() => { lines.getClientRects = had })
+    const watched: Array<() => void> = []
+    vi.stubGlobal('ResizeObserver', class { constructor(private readonly then: () => void) { watched.push(then) } observe() {} disconnect() {} })
+    const Picture = () => <div data-crop=""><span>Views here</span></div>
+    const { rerender } = render(<HelpFigure Picture={Picture} caption="A scope's home" t={translator('en')} width={560} />)
+    rerender(<HelpFigure Picture={Picture} caption="A scope's home, again" t={translator('en')} width={560} />)
+    const crop = document.querySelector('.help-crop') as HTMLElement
+    const first = crop.style.height
+    expect(first).not.toBe('')
+    const askedBefore = asked
+    // Laid out anew — a document shown again, a fold opened — it is measured again.
+    act(() => { watched.forEach((then) => then()) })
+    expect(asked).toBeGreaterThan(askedBefore)
   })
 })
 

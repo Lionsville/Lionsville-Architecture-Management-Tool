@@ -52,14 +52,19 @@ export function HelpFigure({ Picture, caption, t, width, column, small }: {
   const foot = useRef<HTMLParagraphElement>(null)
   const [cut, setCut] = useState<Box | undefined>()
   const [scale, setScale] = useState(1)
-  // After every render, since a language changed in place changes the lines; offsets inside the picture, so the
-  // cut it is moved by does not move the cut.
+  // Measured when the picture is laid out anew — a language changed in place changes its lines, a document shown
+  // again or a fold opened gives it a size — and never because the cut was set: measured after every render, a
+  // browser that had not settled the layout yet answered two cuts in turn, and the help went blank in a loop.
   useLayoutEffect(() => {
     const picture = inner.current
     if (!picture) return
-    const next = measureCut(picture, most)
-    setCut((was) => (same(was, next) ? was : next))
-  })
+    const measure = () => { const next = measureCut(picture, most); setCut((was) => (same(was, next) ? was : next)) }
+    measure()
+    if (typeof ResizeObserver !== 'function') return
+    const watch = new ResizeObserver(measure)
+    watch.observe(picture)
+    return () => watch.disconnect()
+  }, [most, t, Picture])
   useEffect(() => {
     let current = true
     document.fonts?.ready.then(() => {

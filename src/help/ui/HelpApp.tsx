@@ -12,6 +12,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { flushSync } from 'react-dom'
 import { LANGUAGES, LANGUAGE_NAME, translator } from '../../i18n/strings'
 import type { Language } from '../../i18n/languages'
 import { LanguageProvider } from '../../i18n/LanguageContext'
@@ -89,7 +90,13 @@ export function HelpApp({ initial }: { initial: Language }) {
   const hits = useMemo(() => searchHelp(index, query), [index, query])
   const onSearchKey = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Escape') setQuery('')
-    if (event.key === 'Enter' && hits[0]) { location.hash = hits[0].id; setQuery('') }
+    if (event.key === 'Enter' && hits[0]) {
+      // The document is shown again before the address moves, as a pressed hit's link does: a place gone to while
+      // the document is hidden is unfolded and scrolled to under React's feet, and the window was left blank.
+      const id = hits[0].id
+      flushSync(() => setQuery(''))
+      location.hash = id
+    }
   }
 
   return (

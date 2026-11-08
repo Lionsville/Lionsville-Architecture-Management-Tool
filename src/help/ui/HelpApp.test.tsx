@@ -78,6 +78,24 @@ describe('the help page', () => {
     expect((search as HTMLInputElement).value).toBe('')
   }, 30_000)
 
+  it('goes to a hit in the folded reference on Enter, and the page stays', async () => {
+    render(<HelpApp initial="en" />)
+    await opened()
+    const search = screen.getByTestId('help-search') as HTMLInputElement
+    fireEvent.change(search, { target: { value: 'future diagram' } })
+    await waitFor(() => expect(document.querySelector('#help-hits a')).toBeTruthy())
+    const first = document.querySelector('#help-hits a') as HTMLAnchorElement
+    const id = first.getAttribute('href')?.slice(1) ?? ''
+    expect(id).toContain('~')
+    act(() => { fireEvent.keyDown(search, { key: 'Enter' }) })
+    await act(async () => { window.dispatchEvent(new HashChangeEvent('hashchange')); await Promise.resolve() })
+    expect(location.hash).toBe(`#${id}`)
+    expect(search.value).toBe('')
+    await waitFor(() => expect(document.activeElement?.id).toBe(id))
+    expect(document.activeElement?.closest('details')?.open).toBe(true)
+    expect(screen.getByRole('heading', { level: 2, name: 'Getting started' })).toBeTruthy()
+  }, 30_000)
+
   it('opens on Getting started, the tasks before the reference, and a place in the reference unfolded', async () => {
     history.replaceState(null, '', '/help/?lang=en#board~2')
     render(<HelpApp initial="en" />)
