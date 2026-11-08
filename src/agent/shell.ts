@@ -18,7 +18,7 @@ import { isCheckKey } from '../model/checkCatalogue'
 import type { HostModel } from '../model/hostModel'
 import type { DesignDiagram } from '../model/types'
 import type { Driving } from './driving'
-import { arrived, CHART_LINES, HOME_PAGES, isChartLines, isPageField, isPageTab, NEEDS_ID, PAGE_FIELDS, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
+import { arrived, CHART_LINES, FRAME_PAGES, HOME_PAGES, isChartLines, isPageField, isPageTab, NEEDS_ID, PAGE_FIELDS, PAGE_TABS, scopeOf, VIEW_PAGES, viewPage } from './screen'
 import type { Destination, Page, Screen } from './screen'
 import { isLookDay } from './place'
 import type { AgentAnswer } from './tools'
@@ -51,6 +51,12 @@ export type ShellView = {
   /** The connected client's name, from its handshake; absent when the app was not told one. */
   client(): string | undefined
   driving: Driving
+  /**
+   * Is the person writing something not yet saved or sent — a comment, a new
+   * record, an editor with a change — that moving the app would drop? Nothing
+   * held where absent.
+   */
+  draft?(): boolean
 }
 
 /** What a session lends to these answers: the open scope's document, as it stands. */
@@ -219,6 +225,11 @@ export async function openApp(rawArgs: unknown, session: OpenScope | undefined, 
   target = asItsHome(target)
 
   const to = { scope, ...target }
+  // A person's words are theirs to keep or drop: the agent is never the one who
+  // drops them. A panel beside the work moves nothing, so it is opened anyway.
+  if (shell.draft?.() && !(to.page !== undefined && FRAME_PAGES.includes(to.page))) {
+    return refused('agent.draftOpen', 'the person is writing something not yet saved on the screen that is up')
+  }
   await shell.open(to)
   const deadline = Date.now() + ARRIVAL_TIMEOUT_MS
   let there = arrived(shell.screen(), to, scope)

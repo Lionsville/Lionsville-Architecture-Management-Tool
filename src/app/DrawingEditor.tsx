@@ -126,7 +126,7 @@ type Props = {
 type Stage = 'opening' | 'silent' | 'ready'
 
 /** A question about leaving: where to, and how to go once it is answered. */
-type Leaving = { to?: string; go: () => void }
+type Leaving = { to?: string; go: () => void; stay?: (() => void) | undefined }
 
 export function DrawingEditor(props: Props) {
   const { origin, language, mode, name, s } = props
@@ -312,9 +312,9 @@ function useDrawingFrame(props: Props) {
   useEffect(() => {
     if (!store || !unsaved) return undefined
     store.set({
-      guard: (to, go) => {
+      guard: (to, go, stay) => {
         if (latest.current.staysHere?.(to)) return false
-        setLeaving({ ...optional(latest.current.whereTo?.(to)), go })
+        setLeaving({ ...optional(latest.current.whereTo?.(to)), go, stay })
         return true
       },
     })
@@ -337,7 +337,7 @@ function useDrawingFrame(props: Props) {
     frame, stage, attempt, work, refusal, merged, selected, leaving, save,
     done: () => { if (unsaved && stage === 'ready') setLeaving({ go: close }); else close() },
     retry: () => { setStage('opening'); setAttempt((count) => count + 1) },
-    stay: () => setLeaving(undefined),
+    stay: () => { leaving?.stay?.(); setLeaving(undefined) },
     leaveUnsaved: () => { if (leaving) go(leaving) },
     saveAndLeave: async () => { if (await save() && leaving) go(leaving) },
     point: (element: PaletteElement | undefined) => { if (selected) post(pointMessage(selected.shape, element)) },

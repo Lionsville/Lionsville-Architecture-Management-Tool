@@ -17,7 +17,7 @@ import { PlaceHistory } from './placeHistory'
  * the shell does with it. Off where there is no window to keep one in.
  */
 export function usePlaceHistory(deps: {
-  open: (place: Place) => void
+  open: (place: Place, stay?: () => void) => void
   nearest: (place: Place) => Promise<Place>
   failed: (cause: unknown) => void
 }): (screen: Screen) => void {
@@ -26,7 +26,7 @@ export function usePlaceHistory(deps: {
   const latest = useRef(deps)
   latest.current = deps
   const [places] = useState(() => (typeof window === 'undefined' ? undefined : new PlaceHistory(window, {
-    open: (place) => latest.current.open(place),
+    open: (place, stay) => latest.current.open(place, stay),
     nearest: (place) => latest.current.nearest(place),
     failed: (cause) => latest.current.failed(cause),
   })))

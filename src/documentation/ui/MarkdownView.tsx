@@ -44,6 +44,7 @@ import Markdown, { defaultUrlTransform } from 'react-markdown'
 import type { Components, ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useStrings } from '../../i18n/LanguageContext'
+import { leaveWithDrafts } from '../../widgets/kit/drafts'
 import { ATTACHMENT_SCHEME, attachmentOfHref } from '../attachments'
 import { imageNameOfSource } from '../images'
 import { IMAGE_REFERENCE } from '../../model/imageName'
@@ -211,7 +212,8 @@ function components(
         const id = decodeURIComponent(href.slice(ELEMENT_LINK_SCHEME.length))
         const follow = (event: MouseEvent) => {
           event.preventDefault()
-          onElementLink?.(id)
+          // A link leaves the page it is on: a draft there is asked about first (`kit/drafts`).
+          leaveWithDrafts(() => onElementLink?.(id))
         }
         return (
           <Link href={href} onClick={follow} data-element-link={id} sx={{ fontWeight: 500 }}>

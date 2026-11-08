@@ -21,6 +21,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import type { PaletteLine } from '../../search/ui/GlobalSearchDialog'
 import type { StackedBand } from '../../widgets/kit/Band'
 import type { ActivityEntry, ActivityMenuProps } from '../ActivityMenu'
+import { leaveWithDrafts } from '../../widgets/kit/drafts'
 
 /** A view named in row two, on a screen that draws no tabs of its own: a home. */
 export type FrameView = { readonly id: string; readonly name: string; readonly kind: string }
@@ -83,9 +84,10 @@ export type OwnWork = { readonly state: 'clean' | 'dirty' | 'saving' | 'saved' |
 /**
  * What stands between a move and work a move would lose. Handed the move and how
  * to make it, it answers true where it has taken the move over, and makes it or
- * not once the person has said; false where the move goes ahead as if unasked.
+ * not once the person has said — `stay` where they kept to their work; false
+ * where the move goes ahead as if unasked.
  */
-export type LeaveGuard = (to: Destination, go: () => void) => boolean
+export type LeaveGuard = (to: Destination, go: () => void, stay?: () => void) => boolean
 
 export type FrameState = {
   readonly work?: OwnWork
@@ -185,7 +187,13 @@ export function useFrameFacts(facts: ScreenFacts): void {
   }, [store])
 }
 
-/** A move asked of whatever guards it, and made here where nothing does. */
-export function throughGuard(store: FrameStore | undefined, to: Destination, go: () => void): void {
-  if (!store?.get().guard?.(to, go)) go()
+/**
+ * A move asked of whatever guards it, and made here where nothing does: the
+ * screen's own guard (an editor's unsaved work), then any draft in a box on the
+ * page (`kit/drafts`). Every way to go passes here — the tree, the tabs, row
+ * two, ⌘K, Back and Forward, an agent — so none drops what is being written.
+ */
+export function throughGuard(store: FrameStore | undefined, to: Destination, go: () => void, stay?: () => void): void {
+  const past = () => leaveWithDrafts(go, stay)
+  if (!store?.get().guard?.(to, past, stay)) past()
 }

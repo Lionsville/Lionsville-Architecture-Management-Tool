@@ -34,6 +34,7 @@ import { initialPageFor } from './bootLanding'
 import type { ModelSession } from './useModelSession'
 import type { WorkspaceParts } from './workspaceParts'
 import { commandKey } from '../widgets/kit/keys'
+import { leaveWithDrafts } from '../widgets/kit/drafts'
 
 /**
  * The scope's settings and what to do with an element dropped from the
@@ -78,7 +79,8 @@ export function useWorkspaceDialogs(deps: {
    * same three words the agent's `app.open` takes, so a hit and an agent land
    * in the same place.
    */
-  const chooseHit = useCallback((hit: SearchHit) => {
+  // A hit leaves the page that is up, and a draft on it is asked about first (`kit/drafts`).
+  const chooseHit = useCallback((hit: SearchHit) => leaveWithDrafts(() => {
     if (hit.kind === 'person') {
       onOpenPeople?.(hit.id)
       return
@@ -90,7 +92,7 @@ export function useWorkspaceDialogs(deps: {
       // A hit on a comment opens the record's reader, and the thread under it marks the comment and brings it into view (ADR-0037 §7).
       if (hit.kind === 'comment') pointComment(hit.id)
     }
-  }, [scope, show, onOpenScope, onOpenPeople, pointComment])
+  }), [scope, show, onOpenScope, onOpenPeople, pointComment])
 
   // ⌘K / Ctrl+K from anywhere in the workspace. The editor's own ⌘F stays the
   // canvas finder; this is the wider one.

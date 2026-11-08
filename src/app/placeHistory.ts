@@ -32,6 +32,13 @@
  *   first worked out to where it lands now (`nearestPlace`), and the entry is
  *   written over with that, so a reload goes there too.
  *
+ * - **Kept from going.** A move the person's work holds back (an editor's
+ *   unsaved change, a draft in a box: `frameStore`'s `throughGuard`) is taken
+ *   back once they say they stay: the window goes back as far as it moved, so
+ *   the address says the place the screen still shows. How far it moved is
+ *   read from each entry's number in its state, which every entry written here
+ *   carries.
+ *
  * What is kept in an entry beside the place is whatever other code kept
  * there: the state is merged into, never replaced, and the query string is
  * left as it is — only the fragment carries a place. The first entry keeps
@@ -50,12 +57,17 @@ export const SETTLE_MS = 150
 /** How long Back may take to land before a look is a person's move again. */
 export const ARRIVAL_MS = 10_000
 
+/** Where in the window's history an entry stands, kept in its state beside the place. */
+export const STEP_STATE_KEY = 'lvarch.step'
+
 /** As much of a window as the history needs. */
 export type HistoryWindow = {
   readonly history: {
     readonly state: unknown
     pushState(state: unknown, unused: string, url?: string): void
     replaceState(state: unknown, unused: string, url?: string): void
+    /** Move by entries; where absent, a move kept from going is written over instead. */
+    go?(delta: number): void
   }
   readonly location: { readonly href: string; readonly hash: string }
   addEventListener(type: 'popstate' | 'hashchange', listener: (event: { state?: unknown }) => void): void
@@ -63,8 +75,8 @@ export type HistoryWindow = {
 }
 
 export type PlaceHistoryOptions = {
-  /** Open a place, the way `app.open` moves the app. */
-  open: (place: Place) => void
+  /** Open a place, the way `app.open` moves the app; `stay` where the person's work keeps the app where it is. */
+  open: (place: Place, stay: () => void) => void
   /** Where a place lands now: itself, or as near to it as there is. */
   nearest: (place: Place) => Promise<Place>
   /** Somewhere a failure is said, for a place that could not be worked out. */
@@ -89,6 +101,10 @@ export class PlaceHistory {
   #moving: Moving | undefined
   /** Which Back is the latest, so a slow one does not open after a later one. */
   #pops = 0
+  /** The number of the current entry (`STEP_STATE_KEY`). */
+  #step: number
+  /** A move kept from going is being taken back: the window's next move is that, and opens nothing. */
+  #returning = false
   readonly #onPop = (event: { state?: unknown }) => { this.popped(event.state) }
   readonly #onHash = () => { this.hashChanged() }
 
@@ -100,6 +116,7 @@ export class PlaceHistory {
       clearTimer: (timer) => clearTimeout(timer as ReturnType<typeof setTimeout>),
       ...options,
     }
+    this.#step = stepIn(window.history.state) ?? 0
   }
 
   /** Listen for the window's own moves; the answer stops listening and drops a look not yet written. */
@@ -144,10 +161,19 @@ export class PlaceHistory {
 
   /** The window moved: open the place its entry holds. */
   popped(state: unknown): void {
+    const step = stepIn(state)
+    if (this.#returning) {
+      // The window going back to where the screen stayed: nothing to open.
+      this.#returning = false
+      if (step !== undefined) this.#step = step
+      return
+    }
     const place = placeInState(state) ?? readPlace(this.#window.location.hash)
     // An entry the app never wrote: not one of its places, and nothing to open.
     if (place === undefined) return
-    this.#arrive(place)
+    const by = step === undefined ? undefined : step - this.#step
+    if (step !== undefined) this.#step = step
+    this.#arrive(place, by)
   }
 
   /**
@@ -164,10 +190,14 @@ export class PlaceHistory {
     this.#arrive(place)
   }
 
-  /** Open a place the window moved to, as Back opens one: worked out to where it lands first. */
-  #arrive(place: Place): void {
+  /**
+   * Open a place the window moved to, as Back opens one: worked out to where it
+   * lands first. `by` is how many entries the window moved, where that is known.
+   */
+  #arrive(place: Place, by?: number): void {
     this.#cancel()
     this.#moving = { from: this.#seen, until: this.#options.now() + ARRIVAL_MS }
+    const was = this.#entry
     this.#entry = place
     const pop = ++this.#pops
     this.#options.nearest(place).then((near) => {
@@ -179,13 +209,31 @@ export class PlaceHistory {
       // and an entry the browser made for a pasted link is given its place.
       const rewrite = oldPlaceForm(this.#window.location.hash) || placeInState(this.#window.history.state) === undefined
       if (!samePlace(near, place) || near.select !== undefined || rewrite) this.#write('replace', withoutSelect(near))
-      this.#options.open(near)
+      this.#options.open(near, () => this.#stayed(pop, was, by))
     }, (cause: unknown) => {
       if (pop !== this.#pops) return
       // Not worked out: opened as the entry says, which is what a link to it does.
       this.#options.failed?.(cause)
-      this.#options.open(place)
+      this.#options.open(place, () => this.#stayed(pop, was, by))
     })
+  }
+
+  /**
+   * The person kept to their work where the window had moved: the window goes
+   * back by as much as it went, or, where that is not known, the entry it is on
+   * is written over with the place the screen still shows.
+   */
+  #stayed(pop: number, was: Place | undefined, by: number | undefined): void {
+    if (pop !== this.#pops) return
+    this.#moving = undefined
+    const { history } = this.#window
+    if (by !== undefined && by !== 0 && history.go) {
+      this.#entry = was
+      this.#returning = true
+      history.go(-by)
+      return
+    }
+    if (was !== undefined) this.#write('replace', was)
   }
 
   #cancel(): void {
@@ -197,7 +245,11 @@ export class PlaceHistory {
   #write(step: 'push' | 'replace', place: Place): void {
     const { history, location } = this.#window
     const first = this.#entry === undefined
-    const state = { ...(typeof history.state === 'object' && history.state !== null ? history.state : {}), [PLACE_STATE_KEY]: place }
+    const number = step === 'push' ? this.#step + 1 : this.#step
+    const state = {
+      ...(typeof history.state === 'object' && history.state !== null ? history.state : {}),
+      [PLACE_STATE_KEY]: place, [STEP_STATE_KEY]: number,
+    }
     const url = new URL(location.href)
     // The first entry keeps a fragment that is somebody else's.
     if (!(first && url.hash !== '' && readPlace(url.hash) === undefined)) url.hash = writePlace(place)
@@ -205,7 +257,15 @@ export class PlaceHistory {
     if (step === 'push') history.pushState(state, '', to)
     else history.replaceState(state, '', to)
     this.#entry = place
+    this.#step = number
   }
+}
+
+/** An entry's number, where the history wrote one. */
+function stepIn(state: unknown): number | undefined {
+  if (typeof state !== 'object' || state === null) return undefined
+  const held = (state as Record<string, unknown>)[STEP_STATE_KEY]
+  return typeof held === 'number' ? held : undefined
 }
 
 /** A place as the history keeps it: what a link selected on arrival is not part of it. */

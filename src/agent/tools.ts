@@ -3803,7 +3803,8 @@ const SPECS = [
       + 'draw it, nothing is selected. Opening never '
       + 'makes a view. With no page a scope opens on its canvas, or on its home when it draws '
       + 'nothing. Answers with app.current once the app has arrived. Starts a driving session, which the '
-      + 'person sees as a banner and can stop.',
+      + 'person sees as a banner and can stop. Refused agent.draftOpen while the person is writing something not yet '
+      + 'saved that the move would drop.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -4020,6 +4021,8 @@ export type AgentRefusal =
   | 'agent.mayNotModerate'
   /** The person pressed Stop on the driving banner (ADR-0019), and nobody has asked to start again. */
   | 'agent.stopped'
+  /** The person is writing something on screen that moving the app would drop: theirs to keep or leave. */
+  | 'agent.draftOpen'
   /** A change, a picture or undo addressed to a scope that is not the one open in the app (ADR-0012, step 13). */
   | 'agent.scopeNotOpen'
   /** `scope` names a path the tree has no scope at. */
@@ -4116,6 +4119,10 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.stopped':
     'The person pressed Stop on the agent banner and ended the session. Do not carry on by yourself: tell '
     + 'them where you got to, and call session.start only when they ask you to continue. Reads still answer.',
+  'agent.draftOpen':
+    'The person is writing something on the screen that is up — a comment, a new record, or a change in an editor — '
+    + 'that is not saved yet, and moving the app would drop it. Do not move the app: tell them, and ask them to save '
+    + 'or send it, or to leave it, then call again. Reads, and changes to the open scope, still answer.',
   'agent.readOnly': 'The project is read-only; nothing can be changed.',
   'agent.conflict': 'The project changed elsewhere and the person is deciding which version stands. Try again afterwards.',
   'agent.unknownTool': 'No such tool.',

@@ -8,7 +8,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { PLACE_STATE_KEY } from '../agent/place'
 import type { Place } from '../agent/place'
-import { ARRIVAL_MS, PlaceHistory, SETTLE_MS } from './placeHistory'
+import { ARRIVAL_MS, PlaceHistory, SETTLE_MS, STEP_STATE_KEY } from './placeHistory'
 import type { HistoryWindow } from './placeHistory'
 
 type Entry = { state: unknown; url: string }
@@ -29,6 +29,7 @@ function fakeWindow(start = 'https://app.example/index.html?tenant=t1', state: u
       replaceState(next, _unused, url) {
         entries[at] = { state: next, url: new URL(url ?? entries[at].url, entries[at].url).href }
       },
+      go: (delta) => go(delta),
     },
     location: {
       get href() { return entries[at].url },
@@ -60,8 +61,9 @@ function setUp(win = fakeWindow(), nearest: (place: Place) => Promise<Place> = (
   let now = 0
   let timer: { run: () => void } | undefined
   const opened: Place[] = []
+  const stays: (() => void)[] = []
   const history = new PlaceHistory(win.win, {
-    open: (place) => { opened.push(place) },
+    open: (place, stay) => { opened.push(place); stays.push(stay) },
     nearest,
     now: () => now,
     setTimer: (run) => { timer = { run }; return timer },
@@ -70,7 +72,7 @@ function setUp(win = fakeWindow(), nearest: (place: Place) => Promise<Place> = (
   const stop = history.listen()
   const settle = () => { const held = timer; timer = undefined; held?.run() }
   const look = (place: Place) => { history.look(place); settle() }
-  return { history, ...win, opened, settle, look, stop, pending: () => timer !== undefined, pass: (ms: number) => { now += ms } }
+  return { history, ...win, opened, stays, settle, look, stop, pending: () => timer !== undefined, pass: (ms: number) => { now += ms } }
 }
 
 const home: Place = { scope: '', page: 'home' }
@@ -92,8 +94,8 @@ describe('a look at the screen', () => {
     look(board)
     expect(entries).toHaveLength(2)
     expect(entries[1].url).toBe('https://app.example/?tenant=t1#/acme/-/board/l7')
-    expect(entries[1].state).toEqual({ kept: 'theirs', [PLACE_STATE_KEY]: board })
-    expect(entries[0].state).toEqual({ kept: 'theirs', [PLACE_STATE_KEY]: home })
+    expect(entries[1].state).toEqual({ kept: 'theirs', [PLACE_STATE_KEY]: board, [STEP_STATE_KEY]: 1 })
+    expect(entries[0].state).toEqual({ kept: 'theirs', [PLACE_STATE_KEY]: home, [STEP_STATE_KEY]: 0 })
   })
 
   it('writes nothing for a look that finds the same place', () => {
@@ -236,7 +238,7 @@ describe('Back and Forward', () => {
     await Promise.resolve()
     expect(opened).toEqual([{ ...board, select: 'app-1' }])
     expect(new URL(entries.at(-1)!.url).hash).toBe('#/acme/-/board/l7')
-    expect(entries.at(-1)!.state).toEqual({ 'lvarch.place': board })
+    expect(entries.at(-1)!.state).toEqual({ 'lvarch.place': board, 'lvarch.step': 0 })
   })
 
   it('opens a link pasted into the bar of an open window where the browser says only that the fragment changed', async () => {
@@ -335,5 +337,48 @@ describe('Back and Forward', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+})
+
+describe('a move the person\'s work keeps from going', () => {
+  it('takes Back back: the window returns to the entry the screen still shows', async () => {
+    const { look, go, opened, stays, entries, at, settle } = setUp()
+    look(home)
+    look(board)
+    expect(at()).toBe(1)
+    go(-1)
+    await Promise.resolve()
+    expect(opened).toEqual([home])
+    stays[0]()
+    expect(at()).toBe(1)
+    expect(new URL(entries[at()].url).hash).toBe('#/acme/-/board/l7')
+    // The screen never moved, and a look at it now writes nothing.
+    look(board)
+    settle()
+    expect(entries).toHaveLength(2)
+    expect(opened).toEqual([home])
+  })
+
+  it('takes Forward back the same way', async () => {
+    const { look, go, opened, stays, at } = setUp()
+    look(home)
+    look(board)
+    go(-1)
+    await Promise.resolve()
+    look(home)
+    go(1)
+    await Promise.resolve()
+    expect(opened).toEqual([home, board])
+    stays[1]()
+    expect(at()).toBe(0)
+  })
+
+  it('writes the place back over a pasted link\'s entry, whose distance is not known', async () => {
+    const { look, paste, stays, entries } = setUp()
+    look(home)
+    paste('#/acme/-/board/l7', 'hashchange')
+    await Promise.resolve()
+    stays[0]()
+    expect(new URL(entries.at(-1)!.url).hash).toBe(new URL(entries[0].url).hash)
   })
 })

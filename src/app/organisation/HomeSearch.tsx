@@ -29,6 +29,7 @@ import { initialPageFor } from '../bootLanding'
 import { useFrameCommands } from '../frame/frameStore'
 import type { TreeRead } from './useHomeChecks'
 import { commandKey } from '../../widgets/kit/keys'
+import { leaveWithDrafts } from '../../widgets/kit/drafts'
 
 export type HomeSearchProps = {
   /** Whose home this is, and its own document where it has been read. */
@@ -79,8 +80,11 @@ export function HomeSearch({ at, root, tree, treeRead, onOpen, onOpenPerson, sea
 
   const choose = useCallback((hit: SearchHit) => {
     setOpen(false)
-    if (hit.kind === 'person') onOpenPerson?.(hit.id)
-    else onOpen(hit.scope ?? at, initialPageFor({ page: hit.opens.page, id: hit.opens.id }))
+    // A hit leaves the page that is up, and a draft on it is asked about first (`kit/drafts`).
+    leaveWithDrafts(() => {
+      if (hit.kind === 'person') onOpenPerson?.(hit.id)
+      else onOpen(hit.scope ?? at, initialPageFor({ page: hit.opens.page, id: hit.opens.id }))
+    })
   }, [onOpen, onOpenPerson, at])
 
   // The way in is row one's field: this says how to get here, and what ⌘K holds beside the records.

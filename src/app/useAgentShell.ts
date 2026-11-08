@@ -30,6 +30,7 @@ import type { TreeView } from '../agent/tree'
 import type { AgentServerStatus } from '../platform/agentServer'
 import type { AgentGateway } from '../ports/AgentGateway'
 import { useAgentGateway } from './useAgentGateway'
+import { draftHeld } from '../widgets/kit/drafts'
 
 /**
  * What the workspace registers while a scope is open: the handler's session
@@ -108,6 +109,7 @@ export function useAgentShell({ gateway, status, tree, people, scopes, screen, o
       return now.kind === 'connected' ? now.client.name : undefined
     },
     driving,
+    draft: draftHeld,
   }), [driving])
 
   // The client went: goodbye, or quiet long enough for main to forget it.

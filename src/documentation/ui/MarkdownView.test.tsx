@@ -20,6 +20,7 @@ import { ViewEmbedsProvider } from './ViewEmbed'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import { MarkdownView } from './MarkdownView'
+import { DraftQuestion, useDraft } from '../../widgets/kit/drafts'
 import { renderShell } from '../../app/testing/renderShell'
 
 afterEach(() => cleanup())
@@ -92,6 +93,16 @@ describe('MarkdownView', () => {
     expect(onElementLink).toHaveBeenCalledWith('el-42')
     // fireEvent returns false when a handler called preventDefault.
     expect(event).toBe(false)
+  })
+
+  it('asks first where a draft on the page would be lost, and follows on Leave and drop it', () => {
+    const onElementLink = vi.fn()
+    function Draft() { useDraft(true); return null }
+    renderShell(<><DraftQuestion /><Draft /><MarkdownView markdown={'see [Billing](element:el-42)'} onElementLink={onElementLink} /></>)
+    fireEvent.click(screen.getByRole('link', { name: 'Billing' }))
+    expect(onElementLink).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByTestId('draft-leave'))
+    expect(onElementLink).toHaveBeenCalledWith('el-42')
   })
 
   it('keeps an element link intact when no one is listening', () => {

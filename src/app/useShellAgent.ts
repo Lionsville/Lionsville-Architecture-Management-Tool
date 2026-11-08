@@ -165,11 +165,11 @@ export function useShellAgent(deps: {
   const preferences = useRef(deps)
   preferences.current = deps
   const moved = useRef<(to: Destination & { scope: string }, nothing: () => void) => void>(NOBODY)
-  const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY) => {
+  const openFor = useCallback((to: Destination & { scope: string }, nothing: () => void = NOBODY, stay?: () => void) => {
     leaveFramePages(frame, to.page, preferences.current.closePreferences)
     // A panel beside the work moves nothing; every other way to go is asked here, whoever is going.
     if (to.page !== undefined && FRAME_PAGES.includes(to.page)) { openInFrame(to.page, to.scope === (project?.path ?? home) ? undefined : () => homeAt(to.scope, 'home'), frame, preferences.current.openPreferences); return }
-    throughGuard(frame, to, () => moved.current(to, nothing))
+    throughGuard(frame, to, () => moved.current(to, nothing), stay)
   }, [homeAt, project, home, frame])
   moved.current = (to, nothing) => {
     const listPage = holdInFrame(frame, to)
@@ -218,7 +218,8 @@ export function useShellAgent(deps: {
     if (near.page !== place.page || near.id !== place.id || near.scope !== place.scope) notify(s('shell.placeGone'), 'info')
     return near
   }, [tree, project, report, notify, s])
-  const lookAtPlace = usePlaceHistory({ open: openFor, nearest, failed: report })
+  // Back kept from its place by the person's work is taken back: the address returns to where the screen still is.
+  const lookAtPlace = usePlaceHistory({ open: (place, stay) => openFor(place, NOBODY, stay), nearest, failed: report })
   /**
    * Where the app is, as `app.current` says it (ADR-0019), held as state so a
    * provider's chrome is drawn again when it moves — `screenNow` is read at

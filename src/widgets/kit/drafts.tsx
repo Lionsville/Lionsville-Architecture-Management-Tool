@@ -17,7 +17,9 @@ import { useStrings } from '../../i18n/LanguageContext'
 import { Dialog } from './Dialog'
 
 const held = new Set<symbol>()
-let asker: ((go: () => void) => void) | undefined
+/** A move held at the question: made on a yes, and told it stays on Keep writing. */
+type Asked = { go: () => void; stay?: (() => void) | undefined }
+let asker: ((asked: Asked) => void) | undefined
 const watchers = new Set<(holding: boolean) => void>()
 const told = () => { for (const watcher of [...watchers]) watcher(held.size > 0) }
 
@@ -47,33 +49,43 @@ export function draftHeld(): boolean {
   return held.size > 0
 }
 
-/** Leave, asking first where a draft would be lost: `go` runs at once, after a yes, or not at all. */
-export function leaveWithDrafts(go: () => void): void {
+/**
+ * Leave, asking first where a draft would be lost: `go` runs at once, after a
+ * yes, or not at all — and then `stay` runs, for a move that has to be taken
+ * back where it was already half made (the window's Back has moved its address).
+ */
+export function leaveWithDrafts(go: () => void, stay?: () => void): void {
   if (!draftHeld() || !asker) { go(); return }
-  asker(go)
+  asker({ go, stay })
 }
 
 /** The question, drawn once by the shell; with none drawn, leaving does not wait on one. */
 export function DraftQuestion() {
   const { t } = useStrings()
-  const [going, setGoing] = useState<(() => void) | undefined>(undefined)
+  const [going, setGoing] = useState<Asked | undefined>(undefined)
   useEffect(() => {
-    asker = (go) => setGoing(() => go)
+    // A second move asked while the first waits: the first stays where it is.
+    asker = (asked) => setGoing((was) => { was?.stay?.(); return asked })
     // The window itself closing: the browser's own question, the only one it allows there.
     const onUnload = (event: BeforeUnloadEvent) => { if (draftHeld()) event.preventDefault() }
     window.addEventListener('beforeunload', onUnload)
     return () => { asker = undefined; window.removeEventListener('beforeunload', onUnload) }
   }, [])
   const leave = () => {
-    const go = going
+    const asked = going
     setGoing(undefined)
     held.clear()
     told()
-    go?.()
+    asked?.go()
+  }
+  const stay = () => {
+    const asked = going
+    setGoing(undefined)
+    asked?.stay?.()
   }
   return (
     <Dialog
-      open={going !== undefined} title={t('kit.draft.title')} onClose={() => setGoing(undefined)} onSubmit={() => setGoing(undefined)}
+      open={going !== undefined} title={t('kit.draft.title')} onClose={stay} onSubmit={stay}
       data-testid="draft-question"
       actions={{
         // Leaving is something else done with the draft, set apart; keeping on writing is the answer.
