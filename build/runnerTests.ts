@@ -81,13 +81,6 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/app/history/history.test.tsx', // 22 s
   'src/app/history/putBack.test.tsx', // 4 s
   'src/app/observationForm.test.tsx', // 7 s
-  'src/app/organisation/ChecksPage.test.tsx', // 6 s
-  'src/app/organisation/HomeSearch.test.tsx', // 4 s
-  'src/app/organisation/OrganisationScreen.test.tsx', // 41 s
-  'src/app/organisation/OrganisationScreen.topics.test.tsx', // 14 s
-  'src/app/organisation/OrganisationScreen.tree.test.tsx', // 41 s
-  'src/app/organisation/ServedBy.test.tsx', // 20 s
-  'src/app/organisation/Topics.test.tsx', // 7 s
   'src/app/personReaders.test.tsx', // 6 s
   'src/app/questionDialogs.test.tsx', // 7 s
   'src/app/useAgentGateway.test.tsx', // 5 s
@@ -152,6 +145,13 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/observations/ui/SolutionsTab.test.tsx', // 26 s
   'src/operating/ui/LibraryDialog.test.tsx', // 23 s
   'src/operating/ui/OperatingModelPage.test.tsx', // 49 s
+  'src/organisation/ChecksPage.test.tsx', // 6 s
+  'src/organisation/HomeSearch.test.tsx', // 4 s
+  'src/organisation/OrganisationScreen.test.tsx', // 41 s
+  'src/organisation/OrganisationScreen.topics.test.tsx', // 14 s
+  'src/organisation/OrganisationScreen.tree.test.tsx', // 41 s
+  'src/organisation/ServedBy.test.tsx', // 20 s
+  'src/organisation/Topics.test.tsx', // 7 s
   'src/people/ui/PeoplePage.test.tsx', // 28 s
   'src/platform/node/git.test.ts', // 71 s
   'src/platform/node/gitEntries.test.ts', // 49 s

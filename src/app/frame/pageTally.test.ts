@@ -16,7 +16,7 @@ import { flattenScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSummary } from '../../projects/scope'
 import { modelOf, summaryOf } from '../../projects/scopeAccess'
 import { indexScopes } from '../../projects/scopeIndex'
-import { holdingsOf } from '../organisation/holdings'
+import { holdingsOf } from '../../organisation/holdings'
 import { holdsPage, TALLIED, talliedPage, tallyOf } from './pageTally'
 
 const node = (path: string, children: ScopeSummary[] = [], personal = false): ScopeSummary => ({ path, name: path || 'Org', diagrams: 0, children, ...(personal ? { personal } : {}) })

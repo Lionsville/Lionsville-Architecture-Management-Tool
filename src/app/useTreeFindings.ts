@@ -29,7 +29,7 @@ import { technologyRows } from '../projects/technologyRegister'
 import { readScopesKnown } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { OrganisationIndex } from '../ports/OrganisationIndex'
-import { registerRows } from './organisation/register'
+import { registerRows } from '../organisation/register'
 import { platformTreeOf } from './platformTree'
 
 /**

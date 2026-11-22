@@ -11,7 +11,7 @@
  * are written in **one** `apply` over the source's repositories, each
  * expecting what was read, so all of them land or none does
  * (`projects/scopeAccess.changeScopes`), as leaving writes its ends
- * (`app/organisation/leaving.ts`). **The open scope's part goes through its
+ * (`organisation/leaving.ts`). **The open scope's part goes through its
  * session**, for the reason `useChangeAcross.ts` gives: the session may hold
  * work not yet written. It is asked of the reducer before anything is
  * applied, so a part it would refuse refuses the whole.

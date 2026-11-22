@@ -73,7 +73,7 @@ export const CONWAY_CHECK_KEYS = ['check.interfaceUndeclared', 'check.interactio
 
 /**
  * A service nothing delivers, read off the technology rows the organisation's
- * home already counts (`app/organisation/attention.ts`, ADR-0014).
+ * home already counts (`organisation/attention.ts`, ADR-0014).
  */
 export const TECHNOLOGY_CHECK_KEYS = ['check.unrealised'] as const
 

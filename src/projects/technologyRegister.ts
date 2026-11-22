@@ -16,7 +16,7 @@
  * platform is, what it realises, what it hosts with everything under it, and
  * the service it belongs to where there is one.
  *
- * **Nothing is materialised**, for the reason `app/organisation/register.ts`
+ * **Nothing is materialised**, for the reason `organisation/register.ts`
  * gives: a materialised list is a merge conflict every domain touches, and a
  * derived one is right by construction. Pure, and tested in node, so the card
  * and the page cannot disagree.

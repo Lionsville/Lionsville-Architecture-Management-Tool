@@ -1,0 +1,564 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * The organisation screen's wiring: what it may do, which dialog is up, and
+ * where a person lands on leaving it.
+ *
+ * A page's wiring is a hook, not a stretch of the workspace (`CLAUDE.md`), and
+ * this screen is the case that rule was written for: the tree, the root's own
+ * document, five dialogs, a collapsed set and four store operations would
+ * otherwise be a dozen `useState`s in `App`. `App` composes it and renders.
+ *
+ * What it owns that the picker's caller used to:
+ *
+ * - **the tree**, and re-reading it after every write;
+ * - **the root's own document**, loaded once and again after a refresh, because
+ *   the cards' counts are not in a listing (`organisationPages`);
+ * - **creating a scope**, ancestors included — a folder with no `scope.json` is
+ *   not a scope (ADR-0012 §1), so a child filed under one is filed under
+ *   nothing;
+ * - **a scope's record**, read-patch-write so the content survives a settings
+ *   save, and — when the parent changed — save-then-remove over the whole
+ *   subtree;
+ * - **opening**, which is where a person lands on leaving this screen.
+ *
+ * What it does not own: the toasts, the trail and the theme, which outlive one
+ * screen and arrive as the narrowest callbacks that will do.
+ */
+import { refusalOf } from '../projects/refusalTag'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import type { StringKey, Translate } from '../i18n'
+import { bareScope, flattenScopes, NOT_LISTED } from '../projects/scope'
+import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
+import { claimKey, idsIn } from '../model/keys'
+import { toDiagram } from '../model'
+import type { DesignDiagram, ElementId } from '../model'
+import { ShellError } from '../platform/errors'
+import {
+  parentScope, ROOT_SCOPE, scopePathLabel,
+} from '../projects/scopePath'
+import type { ScopePath } from '../projects/scopePath'
+import { changeScope, ensureScope, readScope, readScopeKnown, summaryOf } from '../projects/scopeAccess'
+import { createScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt, writeSettings } from '../projects/scopeTree'
+import type { Repositories } from '../ports/Repositories'
+import { opensOnNothing } from '../session/initialPage'
+import { holdWrite } from '../session/writeRefusals'
+import { useScopeFolds } from './useScopeFolds'
+import type { ToastUndo } from '../session/reporting'
+import { useHomeViews } from './useHomeViews'
+import type { HomeViews } from './useHomeViews'
+import type { InitialPage } from '../session/initialPage'
+import type { ScopeSettingsPatch } from '../session/scopeSettings'
+import { isTopic, TOPICS_PLACE, topicFiledUnder } from '../projects/topics'
+import { typeChosen } from '../projects/scopeType'
+
+/** Which dialog is up. One at a time, because they all ask about one scope. */
+/** Whether a scope's settings landed; where not, the refused write it was, where the watch counted one (`writeRefusals`). */
+export type SettingsApplied = { readonly ok: true } | { readonly ok: false; readonly refusal?: number }
+
+export type OrganisationDialog =
+  | { kind: 'none' }
+  /**
+   * `withBoard` off makes a domain on purpose — a scope that files others and
+   * draws nothing itself. `servedBy`, the unit picked to serve it, linked once
+   * it is made (ADR-0036, amended 13 October 2026).
+   */
+  | { kind: 'newScope'; parent: ScopePath; name: string; withBoard: boolean; type: string; servedBy?: ElementId }
+  /** A landscape for a scope that is already there, at any level (ADR-0012 §1). */
+  | { kind: 'newBoard'; path: ScopePath; name: string }
+  | { kind: 'delete'; target: ScopeSummary }
+
+export type UseOrganisationInput = {
+  /** Where the scopes are kept: the tree, each one's state, and the steps and moves that change them. */
+  repositories: Pick<Repositories, 'scopes' | 'index' | 'images'>
+  /**
+   * A scope was written that was not there before — the example copied in,
+   * a scope or a board created. The shell reads the index again on it: a
+   * browser tab has no watcher to say so, and an index that never heard of
+   * the landscape just copied in answers "nobody" for every application on
+   * the organisation's map.
+   */
+  onTreeChanged?: () => void
+  /**
+   * Is this screen the one on show?
+   *
+   * The tree is read whatever is up, because the open workspace's settings
+   * dialog offers it as a parent to file under. The **home scope's own
+   * document** is read only while this screen is up: it is a whole model, and
+   * loading one behind a canvas nobody is looking at is the shape ADR-0004
+   * keeps catching.
+   */
+  active: boolean
+  /**
+   * Whose home the screen is: the root's, or a scope's beneath it.
+   *
+   * Every scope is the same document (ADR-0012 §1), so every scope has the
+   * same home — its identity, its own pages as cards, and the tree filed under
+   * it. The root's is the organisation screen; a domain's is the same screen
+   * one level down, reached from a crumb on the bar or a row in the tree.
+   */
+  at: ScopePath
+  /**
+   * Enter a scope, on the page it was opened for. The hook decides WHICH scope
+   * and which page; what entering means — the preference, the remount — is the
+   * shell's.
+   */
+  onEnter: (scope: ScopeSnapshot, page?: InitialPage) => void
+  /** To a scope's home: where a scope just filed is arrived at. */
+  onHome?: (path: ScopePath) => void
+  notify: (message: string, severity: 'success' | 'error' | 'warning', undo?: ToastUndo) => void
+  onFailure: (where: string, cause: unknown, key?: StringKey) => void
+  /** Latched storage notice: a store that refuses says so once, standing. */
+  onKeptResult: (ok: boolean, cause?: unknown) => void
+  /** A view renamed on a home landed, now or when made again: *Continue* says its new name. */
+  onViewRenamed?: (path: ScopePath, id: string, name: string) => void
+  /**
+   * May this person change the scope at this path? What `open` asks before it
+   * gives a scope with no document one (R2 below). Every scope may be written
+   * where absent, which is every source that ships.
+   */
+  writable?: (path: ScopePath) => boolean
+  s: Translate
+}
+
+export type Organisation = HomeViews & {
+  /** The whole tree, root first. Re-read after every write. */
+  tree: ScopeSummary
+  /** Whose home this is. */
+  at: ScopePath
+  /**
+   * The home scope's own document, for the cards. `undefined` until it has
+   * been read once — which `ready` is what tells a screen apart from an empty
+   * scope.
+   */
+  root: ScopeSnapshot | undefined
+  ready: boolean
+  /**
+   * Whether the listing has been read at least once: before it has, a home it
+   * does not hold yet is a home nobody has looked for, not one that is gone.
+   */
+  listed: boolean
+  /** The listing would not read: what is shown is no answer about what is there. */
+  listFailed: boolean
+  /**
+   * Whether the listing is the one read since the last `refresh`. A home made
+   * a moment ago is not in the listing read before it was made, and is not
+   * gone for that: until this is true, a missing home is one being looked for.
+   */
+  listedNow: boolean
+  refresh: () => void
+  dialog: OrganisationDialog
+  /** Which scopes are folded shut (`useScopeFolds`). Per session: a fold is not a preference. */
+  collapsed: ReadonlySet<ScopePath>
+  toggleCollapsed: (path: ScopePath) => void
+  openAll: () => void
+  foldAll: () => void
+  addUnder: (parent: ScopePath) => void
+  askDelete: (target: ScopeSummary) => void
+  closeDialog: () => void
+  setNewScopeName: (name: string) => void
+  setNewScopeParent: (parent: ScopePath) => void
+  setNewScopeWithBoard: (withBoard: boolean) => void
+  setNewScopeType: (type: string) => void
+  setNewScopeServedBy: (unitId: ElementId | undefined) => void
+  /**
+   * Make the scope the dialog asks for. `link` writes the unit picked to
+   * serve it, once the scope is there and entered; whatever it answers, the
+   * scope stays.
+   */
+  create: (link?: (path: ScopePath, unitId: ElementId, name: string) => Promise<void>) => void
+  /**
+   * Give a scope a board of its own. The organisation's, a domain's or a
+   * team's: a landscape is a scope that draws, and nothing in the tree says
+   * which scopes may (§1) — which is why the dialog is on every home and not
+   * only on one that already draws.
+   */
+  addBoard: (path: ScopePath) => void
+  setNewBoardName: (name: string) => void
+  createBoard: () => void
+  /** Answers whether it landed, and which refused write it was where it did not, for the field that made it to say so. */
+  applySettings: (path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed) => Promise<SettingsApplied>
+  confirmDelete: () => void
+  open: (path: ScopePath, page?: InitialPage) => void
+  /**
+   * Give the root a name, from the field a fresh folder shows instead of a
+   * heading — and, from the first page, what to say once it has landed: that
+   * the organisation is started, and where it is kept, rather than a rename.
+   */
+  nameOrganisation: (name: string, landed?: Landed) => void
+}
+
+/** What a write says once it has landed, in place of the rename it would otherwise announce. */
+export type Landed = { readonly message: string; readonly severity: 'success' | 'warning' }
+
+/** What a scope is called for a document made for it: its name in the listing, else its address's last word. */
+function nameOf(tree: ScopeSummary, path: ScopePath): string {
+  const listed = flattenScopes(tree).find((scope) => scope.path === path)?.name.trim()
+  return listed || scopePathLabel(path)
+}
+
+/** A new scope refused because a scope nobody could read is at its address, or above it. */
+function refuseInTheWay(onFailure: UseOrganisationInput['onFailure']): void {
+  onFailure('organisation.create.unreadable', undefined, 'shell.unreadableInTheWay')
+}
+
+/**
+ * The two reads this screen is drawn from: the tree, and the home's own
+ * document.
+ */
+function useHomeReads({ scopes, active, at, revision, onFailure }: {
+  scopes: Repositories['scopes']
+  active: boolean
+  at: ScopePath
+  revision: number
+  onFailure: UseOrganisationInput['onFailure']
+}): { tree: ScopeSummary; root: ScopeSnapshot | undefined; ready: boolean; listed: boolean; listFailed: boolean; listedNow: boolean } {
+  const [tree, setTree] = useState<ScopeSummary>(NOT_LISTED)
+  const [listed, setListed] = useState(false)
+  const [listFailed, setListFailed] = useState(false)
+  /** The revision the listing on screen was read at. */
+  const [listedAt, setListedAt] = useState(-1)
+  const [root, setRoot] = useState<ScopeSnapshot | undefined>(undefined)
+  const [ready, setReady] = useState(false)
+
+  /**
+   * How a failure is reported is not an input to reading the tree.
+   *
+   * Read through a ref so it cannot re-trigger the effect below: `onFailure`
+   * hangs off the toasts and the language and changes identity as they do, and
+   * a dependency that changes on render is not a needless read but an endless
+   * one — the same reason `App` keeps its own `failed` in a ref.
+   */
+  const failedRef = useRef(onFailure)
+  failedRef.current = onFailure
+  /** The listing on screen, read through a ref: the home's own read takes an identity from it where it has one, and is not read again for it. */
+  const listing = useRef(tree)
+  listing.current = tree
+
+  /**
+   * The listing, and the home scope's own document beside it.
+   *
+   * Two reads and not one per card. An empty tree and a tree that would not
+   * read look identical on this screen, and one of them means "you have nothing
+   * here" while the other means "your work is still there, somewhere" — so a
+   * refusal says which. Two effects: a crumb is another home in the same
+   * tree, and one effect over both listed the whole tree on every crumb.
+   */
+  useEffect(() => {
+    let live = true
+    void scopes.tree().then(
+      (held) => { if (live) { setTree(summaryOf(held)); setListFailed(false); setListed(true); setListedAt(revision) } },
+      (cause: unknown) => {
+        if (!live) return
+        // Not read, as before any read: an agent's check of a path takes it as given (`TreeView.listed`).
+        setTree(NOT_LISTED)
+        setListFailed(true)
+        setListed(true)
+        setListedAt(revision)
+        failedRef.current('organisation.list', cause, 'picker.listFailed')
+      },
+    )
+    return () => { live = false }
+  }, [scopes, revision])
+
+  // A different home is a different document, and `ready` drops first, so
+  // the cards do not say a domain's numbers under the organisation's name.
+  useEffect(() => {
+    let live = true
+    if (!active) return () => { live = false }
+    setReady(false)
+    void readScopeKnown(scopes, at, idAt(listing.current, at)).then(
+      (held) => { if (live) { setRoot(held); setReady(true) } },
+      (cause: unknown) => {
+        if (!live) return
+        setRoot(undefined)
+        setReady(true)
+        // No message: what the cards count is decoration beside a tree that is
+        // perfectly readable, and the trail still takes the cause.
+        failedRef.current('organisation.root', cause)
+      },
+    )
+    return () => { live = false }
+  }, [scopes, active, at, revision])
+
+  return { tree, root, ready, listed, listFailed, listedNow: listed && listedAt === revision }
+}
+
+/** A scope's identity in a listing held, where the listing came from a repository that keeps one. */
+export function idAt(tree: ScopeSummary, path: ScopePath): string | undefined {
+  return flattenScopes(tree).find((one) => one.path === path)?.id
+}
+
+/**
+ * Where a scope's settings file it: where the person asked, and — where they
+ * said it is a topic and it is not one yet — under the topics place, or the
+ * topic it was to go under (ADR-0042 §2): making a scope a topic moves it.
+ */
+function filedTo(listing: ScopeSummary, path: ScopePath, patch: ScopeSettingsPatch): ScopePath {
+  const asked = patch.parent ?? parentScope(path) ?? ROOT_SCOPE
+  const nodes = flattenScopes(listing)
+  if (patch.type !== 'kind:topic' || path === TOPICS_PLACE || isTopic(path, nodes)) return asked
+  return topicFiledUnder(nodes, asked)
+}
+
+/** A scope filed under `to` by its settings, the topics place made first where that is where it goes. */
+async function moveFiled(scopes: Repositories['scopes'], index: Repositories['index'], path: ScopePath, to: ScopePath, placeName: string): Promise<void> {
+  if (to === TOPICS_PLACE) await fileTopicsPlace(scopes, placeName)
+  await moveScopeUnder(scopes, index, path, to, { listing: summaryOf(await scopes.tree()), strict: true })
+}
+
+/** Every scope may be written: what the hook is told by every source that ships. */
+const ANYWHERE = () => true
+
+export function useOrganisation({
+  repositories, active, at, onEnter, onHome, notify, onFailure, onKeptResult, onViewRenamed, s, onTreeChanged, writable = ANYWHERE,
+}: UseOrganisationInput): Organisation {
+  const { scopes } = repositories
+  const [dialog, setDialog] = useState<OrganisationDialog>({ kind: 'none' })
+  const [revision, setRevision] = useState(0)
+
+  const refresh = useCallback(() => setRevision((held) => held + 1), [])
+  const { tree, root, ready, listed, listFailed, listedNow } = useHomeReads({ scopes, active, at, revision, onFailure })
+
+
+  const folds = useScopeFolds(tree)
+  /** A view renamed or deleted from its row, and taken back (`useHomeViews`). */
+  // Every identity the tree has shown at an address, kept past a read that lost the scope: a folder moved away still has one to be refused by.
+  const knownIds = useRef(new Map<ScopePath, string>())
+  for (const one of flattenScopes(tree)) if (one.id !== undefined) knownIds.current.set(one.path, one.id)
+  const knownIdAt = useCallback((path: ScopePath) => knownIds.current.get(path), [])
+  const views = useHomeViews({ repositories, refresh, notify, onFailure, onKeptResult, ...(onViewRenamed ? { onViewRenamed } : {}), idAt: knownIdAt, s })
+
+  const addUnder = useCallback((parent: ScopePath) => setDialog({ kind: 'newScope', parent, name: '', withBoard: false, type: '' }), [])
+  const setNewScopeType = useCallback((type: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, type } : held)), [])
+  const askDelete = useCallback((target: ScopeSummary) => setDialog({ kind: 'delete', target }), [])
+  const closeDialog = useCallback(() => setDialog({ kind: 'none' }), [])
+  const setNewScopeName = useCallback((name: string) => setDialog((held) => (held.kind === 'newScope' ? { ...held, name } : held)), [])
+  const setNewScopeParent = useCallback((parent: ScopePath) => setDialog((held) => (held.kind === 'newScope' ? { ...held, parent } : held)), [])
+  const setNewScopeWithBoard = useCallback((withBoard: boolean) => setDialog((held) => (held.kind === 'newScope' ? { ...held, withBoard } : held)), [])
+  const setNewScopeServedBy = useCallback((unitId: ElementId | undefined) => setDialog((held) => servedByPicked(held, unitId)), [])
+  const addBoard = useCallback((path: ScopePath) => {
+    setDialog({ kind: 'newBoard', path, name: s('common.newDiagram') })
+  }, [s])
+  const setNewBoardName = useCallback((name: string) => setDialog((held) => (held.kind === 'newBoard' ? { ...held, name } : held)), [])
+
+  /**
+   * Create a scope under another one.
+   *
+   * **The ancestors are created too** when they are not there, as domains named
+   * after their addresses, from the top down and before the new scope itself,
+   * so an interrupted run leaves a tree that is whole as far as it got. A scope
+   * that draws is made with its first board, as the step that adds it. The
+   * unit picked to serve it is linked last, after the scope is said, so a link
+   * refused is the notice left standing.
+   */
+  const create = useCallback((link?: (path: ScopePath, unitId: ElementId, name: string) => Promise<void>) => {
+    if (dialog.kind !== 'newScope') return
+    const wanted = { parent: dialog.parent, name: dialog.name.trim(), withBoard: dialog.withBoard, type: dialog.type, servedBy: dialog.servedBy }
+    if (!wanted.name) return
+    setDialog({ kind: 'none' })
+    // Under way from the first read: a quit in between waits for it (`holdWrite`).
+    void holdWrite(scopes, (async () => {
+      // The tree's own gesture (`projects/scopeTree.ts`), the agent's as well:
+      // a scope the listing could not read in the way is refused, not written over.
+      const made = await createScopeAt(scopes, {
+        parent: wanted.parent, name: wanted.name, withBoard: wanted.withBoard, boardName: s('common.newDiagram'), ancestors: 'make',
+      })
+      if ('refused' in made) return refuseInTheWay(onFailure)
+      if (wanted.type) await changeScope(scopes, made.path, () => [{ type: 'scope.describe', patch: typeChosen(wanted.type) }])
+      // On its home, where its first step is offered: a new scope is not a blank canvas to be left on.
+      refresh()
+      onTreeChanged?.()
+      onHome?.(made.path)
+      notify(s('common.scopeCreated', { name: wanted.name }), 'success')
+      if (wanted.servedBy !== undefined && link) await link(made.path, wanted.servedBy, wanted.name)
+    })()).catch((cause: unknown) => {
+      // Where work is kept refusing is what the standing notice says, and it
+      // is latched, so a burst says it once.
+      onFailure('organisation.create', cause)
+      onKeptResult(false, cause)
+    })
+  }, [dialog, scopes, refresh, onTreeChanged, onHome, notify, onFailure, onKeptResult, s])
+
+  /**
+   * Add a board to a scope that is already there, and land on it.
+   *
+   * Read-patch-write like the settings dialog, because the home is outside
+   * any session: there is no stack to put a `diagram.create` on until the
+   * scope is open, and it is opened on the board just made. The id is the key
+   * the file would give it, claimed against everything the document already
+   * names, so a second landscape beside the first is `landscape-2` and not a
+   * collision. A scope the store no longer has is made on the spot — its
+   * `scope.json` may have gone under us — rather than refused.
+   */
+  const createBoard = useCallback(() => {
+    if (dialog.kind !== 'newBoard') return
+    const wanted = { path: dialog.path, name: dialog.name.trim() }
+    if (!wanted.name) return
+    setDialog({ kind: 'none' })
+    void holdWrite(scopes, (async () => {
+      // A scope the tree no longer has is made on the spot. The board is added
+      // to the scope as it stands, expecting what was read and worked out
+      // again over a scope that moved in between, and its id claimed against
+      // what it holds.
+      await ensureScope(scopes, wanted.path, { name: scopePathLabel(wanted.path) })
+      let board = ''
+      const next = await changeScope(scopes, wanted.path, (held) => {
+        const diagram: DesignDiagram = {
+          id: claimKey(s('common.newDiagram'), new Set(idsIn(held.model))),
+          kind: 'layer7', name: wanted.name, members: [], geometry: { nodes: [] },
+          ...(held.model.defaultAspectConfig ? { aspectConfig: [...held.model.defaultAspectConfig] } : {}),
+        }
+        board = diagram.id
+        return [{ type: 'diagram.create', diagram: toDiagram(diagram) }, { type: 'scope.describe', patch: { activeDiagramId: diagram.id } }]
+      })
+      if (!next) return
+      onEnter(next, { page: 'board', id: board })
+      refresh()
+      onTreeChanged?.()
+      notify(s('common.scopeCreated', { name: wanted.name }), 'success')
+    })()).catch((cause: unknown) => {
+      onFailure('organisation.board', cause)
+      onKeptResult(false, cause)
+    })
+  }, [dialog, scopes, onEnter, refresh, notify, onFailure, onKeptResult, s, onTreeChanged])
+
+
+  /**
+   * Apply a scope's edited record: what it is called, what it is, who its
+   * drawings are made out to, where its material lives — and where it is filed.
+   *
+   * As the steps they are, over the scope as it stands, so its model,
+   * decisions and plans survive a change this dialog cannot see; a scope with
+   * no document yet is made first. A **move** is the repository's: the scope
+   * and everything under it go to the new address together, identities and
+   * all, and the stand-ins elsewhere that named it follow (`moveScope`).
+   */
+  const applySettings = useCallback((path: ScopePath, patch: ScopeSettingsPatch, landed?: Landed): Promise<SettingsApplied> => {
+    // Under way from the tree's read, not from the write after it: a quit a moment after the commit waits for it.
+    return holdWrite(scopes, (async (): Promise<SettingsApplied> => {
+      const listing = summaryOf(await scopes.tree())
+      const to = filedTo(listing, path, patch)
+      const moving = to !== (parentScope(path) ?? ROOT_SCOPE) && path !== ROOT_SCOPE
+      const name = patch.name.trim() || scopePathLabel(path)
+      const was = flattenScopes(listing).find((scope) => scope.path === path)?.name
+      try {
+        await writeSettings(scopes, path, name, patch, patch.changed ? new Set(patch.changed) : undefined)
+        if (moving) {
+          await moveFiled(scopes, repositories.index, path, to, s('topics.title'))
+        }
+      } catch (cause) {
+        // A refusal is the repository's answer, said in its words.
+        onFailure('organisation.settings', cause, cause instanceof ShellError ? cause.key : 'group.saveFailed')
+        const refusal = refusalOf(cause)
+        return refusal === undefined ? { ok: false } : { ok: false, refusal }
+      }
+      refresh()
+      if (landed) { notify(landed.message, landed.severity); return { ok: true } }
+      // A field that landed says nothing: it is on screen, and undo takes it back.
+      if (!moving && (was === undefined || was === name)) return { ok: true }
+      notify(moving ? s('settings.moved', { name }) : s('group.renamed', { name }), 'success')
+      return { ok: true }
+    })().catch((cause: unknown): SettingsApplied => {
+      // A backstop, not a handler: everything above is caught where it can be
+      // answered. A throw that reaches here happened before the write — the
+      // tree would not be read — so nothing landed.
+      onFailure('organisation.settings', cause, 'group.saveFailed')
+      return { ok: false }
+    }))
+  }, [scopes, repositories, refresh, notify, onFailure, s])
+
+  const confirmDelete = useCallback(() => {
+    if (dialog.kind !== 'delete') return
+    const target = dialog.target
+    setDialog({ kind: 'none' })
+    void holdWrite(scopes, removeScopeAt(scopes, target.path)).then(
+      refresh,
+      (cause: unknown) => onFailure('organisation.remove', cause, 'picker.deleteFailed'),
+    )
+  }, [dialog, scopes, refresh, onFailure])
+
+  /**
+   * Where a person lands on leaving this screen.
+   *
+   * A scope that draws nothing is an ordinary scope (ADR-0012 §1) and this is
+   * the screen that can open one: the card that asked for it names the page,
+   * and the workspace shows that page over a canvas with nothing on it. Without
+   * a page named, a scope with no views has nothing to show, so the tree offers
+   * *Open* only on one that draws.
+   *
+   * **A page asked for on a scope with no document** — a root with scopes
+   * under it and no `scope.json` of its own, a folder somebody made by hand —
+   * is a page on a scope that has not been written yet, not a failure. For
+   * somebody who may write there the scope is written first, bare and whole,
+   * in ONE write: a source whose changes travel as steps refuses a step on a
+   * scope that does not exist, so the session opened on it could not start
+   * it. Then it is read back and entered, as the example's copy is. For
+   * somebody who may only read, nothing is written and the page opens empty —
+   * the workspace asks the source the same question and opens it read-only.
+   *
+   * A failure is said once, through `onFailure`: it used to be said here too,
+   * which was the same toast twice.
+   */
+  const open = useCallback((path: ScopePath, page?: InitialPage) => {
+    void (async () => {
+      // A view of the home's own scope opens from the document read at the revision on screen; another by the listing's identity.
+      const found = ready && root?.path === path ? root : await readScopeKnown(scopes, path, idAt(tree, path))
+      if (found) { onEnter(found, page); return }
+      if (!opensOnNothing(page)) {
+        // Nothing there, and nothing asked for that a scope has before it is
+        // written: somebody removed it between the listing and the press. The
+        // listing is read again, and that is said.
+        refresh()
+        onFailure('organisation.open.gone', undefined, 'picker.loadFailed')
+        return
+      }
+      const bare = bareScope(path, nameOf(tree, path))
+      if (!writable(path)) { onEnter(bare, page); return }
+      // Made only where nothing is: a scope somebody made in between is
+      // theirs and is the one entered.
+      await ensureScope(scopes, path, { name: bare.model.name })
+      const written = await readScope(scopes, path)
+      if (!written) {
+        onFailure('organisation.open.unwritten', undefined, 'picker.loadFailed')
+        return
+      }
+      onEnter(written, page)
+      refresh()
+      onTreeChanged?.()
+    })().catch((cause: unknown) => onFailure('organisation.open', cause, 'picker.loadFailed'))
+  }, [scopes, tree, root, ready, writable, onEnter, refresh, onTreeChanged, onFailure])
+
+  /**
+   * The root's name, from the field a fresh folder shows instead of a heading.
+   *
+   * The same write as the settings dialog's, with one field in it: a person who
+   * has just chosen a folder should be able to say whose landscape it is
+   * without opening a dialog about a scope they have not met yet.
+   */
+  const nameOrganisation = useCallback((name: string, landed?: Landed) => {
+    if (!name.trim()) return
+    void applySettings(ROOT_SCOPE, { name: name.trim() }, landed)
+  }, [applySettings])
+
+  return useMemo(() => ({
+    tree, listed, listFailed, listedNow, at, root, ready, refresh, dialog, ...folds,
+    addUnder, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
+    setNewScopeWithBoard, setNewScopeType, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
+    ...views,
+    applySettings, confirmDelete, open, nameOrganisation,
+  }), [
+    tree, listed, listFailed, listedNow, at, root, ready, refresh, dialog, folds,
+    addUnder, askDelete, closeDialog, setNewScopeName, setNewScopeParent,
+    setNewScopeWithBoard, setNewScopeType, setNewScopeServedBy, create, addBoard, setNewBoardName, createBoard,
+    views,
+    applySettings, confirmDelete, open, nameOrganisation,
+  ])
+}
+
+/** The new-scope dialog with the unit picked to serve it, or none. Any other dialog stays as it is. */
+export function servedByPicked(held: OrganisationDialog, unitId: ElementId | undefined): OrganisationDialog {
+  if (held.kind !== 'newScope') return held
+  return { kind: 'newScope', parent: held.parent, name: held.name, withBoard: held.withBoard, type: held.type, ...(unitId !== undefined ? { servedBy: unitId } : {}) }
+}

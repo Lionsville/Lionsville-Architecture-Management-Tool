@@ -52,7 +52,7 @@ describe('findings', () => {
   it('are said only by the components that say them as links', () => {
     expect(naming(/\bCHECK_SENTENCE\b/)).toEqual(['roadmap/labels.ts', 'roadmap/ui/FindingSentence.tsx'])
     expect(naming(/\bfindingSentence\b/)).toEqual([
-      'app/organisation/attention.ts', 'projects/checks.ts',
+      'organisation/attention.ts', 'projects/checks.ts',
       'units/ChartSummary.tsx', 'units/PlanStillOpen.tsx', 'units/UnitSection.tsx',
     ])
   })
@@ -65,7 +65,7 @@ describe('findings', () => {
   })
 
   it('are listed by check on the Checks page, from every place that works them out over the tree', () => {
-    expect(naming(/<CheckReader\b/)).toEqual(['app/organisation/ChecksPage.tsx'])
-    expect(naming(/\btreeInstances\(/)).toEqual(['app/organisation/treeChecks.ts', 'app/organisation/useHomeChecks.ts'])
+    expect(naming(/<CheckReader\b/)).toEqual(['organisation/ChecksPage.tsx'])
+    expect(naming(/\btreeInstances\(/)).toEqual(['organisation/treeChecks.ts', 'organisation/useHomeChecks.ts'])
   })
 })

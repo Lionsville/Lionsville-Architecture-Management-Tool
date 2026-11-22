@@ -19,7 +19,7 @@ import { flattenScopes } from '../../projects/scope'
 import type { ScopeModel, ScopeSummary } from '../../projects/scope'
 import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
-import type { Holdings } from '../organisation/holdings'
+import type { Holdings } from '../../organisation/holdings'
 
 /** The pages whose records are kept per scope, and so are counted on the tree beside them. */
 export const TALLIED = ['documentation', 'decisions', 'observations', 'roadmap', 'principles', 'blocks'] as const
