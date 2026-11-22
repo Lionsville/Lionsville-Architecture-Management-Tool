@@ -30,6 +30,7 @@ import { choosableScopes, topicsInForce } from '../../projects/topics'
 import type { BlocksAccess, EvaluationRow } from '../../blocks/ui/BlocksContext'
 import type { InitialPage } from '../App'
 import type { BelowScopes } from '../useChangeBelow'
+import { handOver } from '../handOver'
 import { refusalKey, writeIn } from '../units/writeIn'
 
 export type BlocksDeps = {
@@ -46,6 +47,10 @@ export type BlocksDeps = {
   open: (path: ScopePath, page?: InitialPage) => void
   /** A block's page over the home, on a scope's evaluation where one is named. */
   openBlock: (block: string, evaluation?: ScopePath) => void
+  /** The host's clipboard, where it hands one (`HostControls.copyText`). */
+  copyText?: (text: string) => Promise<void>
+  /** The host's save, where it hands one: what every export saves a file through (`DocumentGateway.save`). */
+  saveDocument?: (doc: { name: string; mediaType: string; text: string }) => Promise<void | 'cancelled'>
   s: Translate
 }
 
@@ -177,6 +182,27 @@ export function blocksAccess(deps: BlocksDeps, version: number): BlocksAccess {
     openBlock: deps.openBlock,
     makeId: deps.makeId,
     today: () => deps.today,
+    ...carryOut(deps),
+  }
+}
+
+/** A comparison carried out: copied through the host's clipboard, saved through its save, each said done or not. */
+function carryOut(deps: BlocksDeps): Pick<BlocksAccess, 'copyText' | 'saveCsv'> {
+  const { copyText, saveDocument } = deps
+  return {
+    ...(copyText ? {
+      copyText: (text: string) => {
+        void copyText(text).then(() => deps.notify(deps.s('blocks.tableCopied'), 'success'), () => deps.notify(deps.s('blocks.tableCopyFailed'), 'error'))
+      },
+    } : {}),
+    ...(saveDocument ? {
+      saveCsv: (name: string, text: string) => {
+        void handOver(() => saveDocument({ name, mediaType: 'text/csv', text }), {
+          saved: () => deps.notify(deps.s('blocks.csvSaved', { name }), 'success'),
+          failed: (cause) => deps.notify(deps.s('blocks.csvSaveFailed', { message: String(cause) }), 'error'),
+        })
+      },
+    } : {}),
   }
 }
 
@@ -193,6 +219,8 @@ export function useBlocksAccess(deps: BlocksDeps): BlocksAccess {
       written: () => latest.current.written(),
       open: (path, page) => latest.current.open(path, page),
       openBlock: (block, evaluation) => latest.current.openBlock(block, evaluation),
+      ...(latest.current.copyText ? { copyText: (text: string) => latest.current.copyText!(text) } : {}),
+      ...(latest.current.saveDocument ? { saveDocument: (doc: { name: string; mediaType: string; text: string }) => latest.current.saveDocument!(doc) } : {}),
     }, version.current)
   }, [tree, index, today])
 }

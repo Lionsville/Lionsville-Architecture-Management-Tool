@@ -36,6 +36,9 @@ export type HomeStore = Pick<TopicsDeps, 'scopes' | 'index' | 'written' | 'notif
   makeId: (prefix: string) => string
   /** The source's history, where a record's changes are read (ADR-0038, amended §11); absent where it keeps none. */
   history?: HistoryRepository
+  /** The host's clipboard and its save, for what a page carries out: a comparison as a table or a CSV. */
+  copyText?: (text: string) => Promise<void>
+  saveDocument?: (doc: { name: string; mediaType: string; text: string }) => Promise<void | 'cancelled'>
 }
 
 type Reads = Omit<TopicsDeps, keyof HomeStore | 'blocksAt'> & {

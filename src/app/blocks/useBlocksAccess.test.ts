@@ -179,3 +179,31 @@ describe('the building blocks over a home', () => {
     expect(deps.openBlock).toHaveBeenCalledWith('blk-gw', 'sales')
   })
 })
+
+describe('a comparison carried out', () => {
+  it('goes through the host\'s clipboard and its save, each said done or not, and is not offered where the host hands neither', async () => {
+    const repositories = memoryRepositories()
+    await place(repositories, '', { name: 'Acme' })
+    const copyText = vi.fn(async () => undefined)
+    const saveDocument = vi.fn(async () => undefined)
+    const { deps, access } = await wired(repositories, { copyText, saveDocument })
+    access.copyText!('a\tb\n')
+    access.saveCsv!('gateway-sales.csv', 'a,b\n')
+    expect(copyText).toHaveBeenCalledWith('a\tb\n')
+    expect(saveDocument).toHaveBeenCalledWith({ name: 'gateway-sales.csv', mediaType: 'text/csv', text: 'a,b\n' })
+    await vi.waitFor(() => expect(deps.notify).toHaveBeenCalledTimes(2))
+    expect(deps.notify).toHaveBeenCalledWith(s('blocks.tableCopied'), 'success')
+    expect(deps.notify).toHaveBeenCalledWith(s('blocks.csvSaved', { name: 'gateway-sales.csv' }), 'success')
+    const bare = await again(repositories)
+    expect(bare.copyText).toBeUndefined()
+    expect(bare.saveCsv).toBeUndefined()
+  })
+
+  it('says a copy the host refused', async () => {
+    const repositories = memoryRepositories()
+    await place(repositories, '', { name: 'Acme' })
+    const { deps, access } = await wired(repositories, { copyText: vi.fn(async () => { throw new Error('denied') }) })
+    access.copyText!('x')
+    await vi.waitFor(() => expect(deps.notify).toHaveBeenCalledWith(s('blocks.tableCopyFailed'), 'error'))
+  })
+})

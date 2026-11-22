@@ -86,6 +86,10 @@ export type BlocksAccess = {
   openBlock(block: string, evaluation?: string): void
   makeId(prefix: string): string
   today(): string
+  /** Text onto the clipboard through the host, said done or not; absent where the host has no clipboard to hand. */
+  copyText?(text: string): void
+  /** A CSV handed to the person through the host's save, said saved or not; absent where nothing can be saved. */
+  saveCsv?(name: string, text: string): void
 }
 
 const BlocksContext = createContext<BlocksAccess | undefined>(undefined)

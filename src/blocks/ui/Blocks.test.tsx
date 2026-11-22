@@ -411,6 +411,22 @@ describe('a building block\'s page', () => {
     expect(vi.mocked(access.updateEvaluation).mock.lastCall![1].coverage['sb-a']!['cap-audit']).toEqual({ level: 2, how: 'Signed logs' })
   })
 
+  it('carries a comparison out as the grid reads it: copied as a table, saved as CSV, also by who may only read', async () => {
+    const access = accessOver({ mayWrite: () => false, copyText: vi.fn(), saveCsv: vi.fn() })
+    page(access, { evaluation: 'sales' })
+    const more = () => within(screen.getByTestId('evaluation-view')).getAllByRole('button', { name: 'More' })[0]!
+    fireEvent.click(more())
+    fireEvent.click(await screen.findByRole('menuitem', { name: s('blocks.copyTable') }))
+    const copied = vi.mocked(access.copyText!).mock.lastCall![0]
+    expect(copied.split('\n')[0]).toBe('Capability\tmust\tNeeded here\tManaged bus\tManaged bus: note\tBroker A\tBroker A: note')
+    expect(copied).toContain('Keeps an audit trail\tmust\t2/4 Useful\t4/4 Fully covered\t\t2/4 Half covered, 2 short of what is needed here\tLogs only')
+    fireEvent.click(more())
+    fireEvent.click(await screen.findByRole('menuitem', { name: s('blocks.saveCsv') }))
+    expect(vi.mocked(access.saveCsv!).mock.lastCall![0]).toBe('message-gateway-sales.csv')
+    expect(vi.mocked(access.saveCsv!).mock.lastCall![1]).toContain('Keeps an audit trail,must,2/4 Useful,4/4 Fully covered,,"2/4 Half covered, 2 short of what is needed here",Logs only')
+    expect(screen.queryByRole('menuitem', { name: s('blocks.removeEvaluation') })).toBeNull()
+  })
+
   it('proposes a decision choosing the best option that fails no must, and opens it', async () => {
     const access = accessOver()
     page(access, { evaluation: 'sales' })

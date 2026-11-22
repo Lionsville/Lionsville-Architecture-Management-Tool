@@ -20,7 +20,10 @@ import { SelectField } from '../../widgets/kit/Field'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
-import { EvaluationGrid } from './EvaluationGrid'
+import { COVER_WORD, EvaluationGrid, fitWord, NEED_WORD } from './EvaluationGrid'
+import { readComparison } from './comparisonReading'
+import { asCsv, asTabbed, comparisonFileName, comparisonTable } from './comparisonTable'
+import type { TableWords } from './comparisonTable'
 import './Blocks.css'
 
 const toggled = (list: readonly string[], item: string) => (list.includes(item) ? list.filter((one) => one !== item) : [...list, item])
@@ -54,6 +57,12 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
   const save = (next: Evaluation) => access.updateEvaluation(scope, next)
   const chosen = (block.sbbs ?? []).find((one) => one.id === evaluation.chosen)
   const used = (block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id))
+  // Carried out as the grid reads it, for anybody who may read it.
+  const table = () => comparisonTable(readComparison(block, evaluation), tableWords(t))
+  const carried = [
+    ...(access.copyText ? [{ label: t('blocks.copyTable'), onSelect: () => access.copyText!(asTabbed(table())), 'data-testid': 'evaluation-copy' }] : []),
+    ...(access.saveCsv ? [{ label: t('blocks.saveCsv'), onSelect: () => access.saveCsv!(comparisonFileName(block.name, access.scopeLabel(scope)), asCsv(table())), 'data-testid': 'evaluation-csv' }] : []),
+  ]
   return (
     <div className="guidance-record__body" data-testid="evaluation-view">
       {/* One line for the way back, the name and the acts, so the grid starts high on a small screen. */}
@@ -62,7 +71,7 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
         <h2 className="guidance-record__title">{t('blocks.evaluationTitle', { block: block.name, scope: access.scopeLabel(scope) })}</h2>
         <span className="guidance-read__spring" />
         {may && <Button variant="primary" disabled={evaluation.options.length === 0 || evaluation.contexts.length === 0} onClick={() => setProposing(true)} data-testid="block-propose">{t('blocks.propose')}</Button>}
-        {may && <MoreMenu items={[{ label: t('blocks.removeEvaluation'), final: true, onSelect: () => setRemoving(true) }]} />}
+        {(may || carried.length > 0) && <MoreMenu items={[...carried, ...(may ? [{ label: t('blocks.removeEvaluation'), final: true, onSelect: () => setRemoving(true) }] : [])]} />}
       </div>
       {chosen && (
         <Band
@@ -97,6 +106,16 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
       </Dialog>
     </div>
   )
+}
+
+/** The words a comparison is carried out in: the grid's own. */
+function tableWords(t: ReturnType<typeof useStrings>['t']): TableWords {
+  return {
+    capability: t('blocks.capability'), must: t('blocks.must'), needed: t('blocks.needLevel'), rank: t('blocks.rankCol'), fit: t('blocks.fitHere'),
+    chosen: t('blocks.chosen'), note: t('blocks.note'),
+    needWord: (level) => t(NEED_WORD[level]), coverWord: (level) => t(COVER_WORD[level]),
+    fitWord: (option) => fitWord(option.fit, t), short: (count) => t('blocks.shortBy', { count }),
+  }
 }
 
 /** The decision one scope's evaluation becomes: the option it chooses, each option's fit, kept in that scope. */

@@ -252,12 +252,14 @@ function useHomeTopics(parts: ShellParts): HomeStore {
   const written = useRef(parts.writes.treeChanged)
   written.current = parts.writes.treeChanged
   const treeIndex = parts.tree.index
-  const { makeId } = parts.props
+  const { makeId, hostControls, documents } = parts.props
   return useMemo(() => ({
     scopes: repositories.scopes, index: repositories.index, notify, treeIndex, makeId,
     ...(repositories.history ? { history: repositories.history } : {}),
+    copyText: (text: string) => hostControls.copyText(text),
+    saveDocument: (doc: { name: string; mediaType: string; text: string }) => documents.save(doc),
     written: () => { refresh(); written.current() },
-  }), [repositories, refresh, notify, treeIndex, makeId])
+  }), [repositories, refresh, notify, treeIndex, makeId, hostControls, documents])
 }
 
 function Home({ parts }: { parts: ShellParts }) {
