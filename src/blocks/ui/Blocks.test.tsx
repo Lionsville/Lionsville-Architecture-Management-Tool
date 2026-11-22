@@ -118,6 +118,18 @@ describe('the register of building blocks', () => {
     expect(access.create).toHaveBeenCalledWith('topics/integration', 'Identity service')
   })
 
+  it('makes a new block on Enter, and nothing while it has no name', async () => {
+    const access = accessOver()
+    renderShell(<BlocksProvider value={access}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
+    fireEvent.click(screen.getByTestId('blocks-new'))
+    fireEvent.submit(screen.getByTestId('block-name').closest('form')!)
+    expect(access.create).not.toHaveBeenCalled()
+    fireEvent.change(screen.getByTestId('block-name'), { target: { value: 'Identity service' } })
+    fireEvent.submit(screen.getByTestId('block-name').closest('form')!)
+    await waitFor(() => expect(access.openBlock).toHaveBeenCalledWith('blk-new'))
+    expect(access.create).toHaveBeenCalledTimes(1)
+  })
+
   it('says nothing matched a search, and offers no new block to a person who may write nowhere', () => {
     renderShell(<BlocksProvider value={accessOver({ mayWrite: () => false })}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
     expect(screen.queryByTestId('blocks-new')).toBeNull()

@@ -167,6 +167,7 @@ function NewBlockDialog({ access, at, onClose }: { access: BlocksAccess; at: str
   return (
     <Dialog
       open size="m" title={t('blocks.new')} onClose={onClose}
+      onSubmit={() => { if (!busy && name.trim() && places.length > 0) make() }}
       actions={{
         cancel: { onClick: onClose, label: t('common.cancel') },
         outcome: { disabled: busy || !name.trim() || places.length === 0, onClick: make, 'data-testid': 'block-create', label: t('blocks.create') },
