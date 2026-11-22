@@ -3,7 +3,9 @@
 * Status: accepted; amended 1 October 2026 (a button of a provider's own in
   the bar, an action on a problem, a host's own tools, and a move a provider
   says is its own), as built the same day; amended 22 November 2026 (a step
-  resent and a scope subscribed again, in the contract), as built the same day
+  resent and a scope subscribed again, in the contract), as built the same day;
+  amended 22 November 2026 (the surface a build composed from this one
+  imports), as built the same day
 * Date: 2026-09-21
 * Deciders: Wouter Simons
 * Extends: ADR-0002 (every change is a command through one reducer), ADR-0005
@@ -1163,6 +1165,78 @@ two clauses every filling must show:
 the seq where it landed, whatever came after* and *hands a subscriber that
 subscribes again from a seq it holds nothing it already has*;
 `adapters/memory/InMemoryCommandChannel.ts` passes both unchanged.
+
+## Amended — the one a build that imports this tree by path needed
+
+*Amended 22 November 2026.* A build composed from this one takes this tree by
+path. There is no package of ours for it to install: it imports files. Every
+seam this record gave it is a name in some file — a port, the reducer, a part
+of the kit, the composition root's registration — and it named those files
+where they lay, several hundred of them. So where a file lay had become a
+contract nobody had written down. A file moved here, or a function moved from
+one file to the next, compiled here and passed here, and was a break found
+there, on the day that build next took a newer commit. A control's name has a
+list for exactly this reason (`platform/controlNames`), and a rename on it is
+a breaking change said in the release notes. The files had no list.
+
+* **`src/composed/` is the surface: what a build composed from this one
+  imports of `src/`, and all it imports.** Small entries by topic, in a folder
+  per kind of process that loads them: `process/` for a process with no
+  screen, which any process may load; `node/` for one with a node under it;
+  `renderer/` for the page; `testing/` for a suite. An entry re-exports names
+  from the files that hold them (`export { apply } from
+  '../../model/reducer'`) and holds nothing else. A file behind an entry moves
+  by changing the entry's line, and the build that imports the entry does not
+  know.
+* **Many small lists, never one barrel.** A module on an entry is evaluated by
+  every importer of that entry, so an entry is as narrow as its topic: the
+  writer of a description is apart from the kit because it is not in the first
+  download, the help's page apart from the help's chapters, what the desktop's
+  main process loads apart from everything a page loads. `export *` is
+  refused, and so is a module's barrel, which carries its module's pages with
+  its arithmetic.
+* **The surface is held by a list of names and types.**
+  `src/composed/SURFACE.txt` says every name every entry offers, what it is and
+  its type, and after them every type of this tree those name, followed until
+  nothing new is named: a build that reads a record's field depends on what
+  the record is, whether or not it names the type. The tree is held to the
+  list exactly. A name gone and a type changed are **breaking changes**, said
+  in the release notes as a control's name is; a name added is no break and
+  fails all the same until it is listed, so the list is never behind the tree.
+* **What is off it, on purpose.** Every implementation but the folder's own
+  format, which a process that keeps a folder runs as a library (ADR-0031 §4);
+  the fillings that keep work nowhere are offered to suites only. The editor,
+  every module's pages, the frame and the modules composed of features
+  (ADR-0049). The git under `platform/node/`. Every barrel, and every string
+  slice. What a build needs of those it asks for here, as a seam, the way
+  every amendment above was asked for.
+
+It does not cover the rest of the tree: `electron/` and `build/` are taken by
+path as before, and are few.
+
+**Consequences.** A file behind the surface moves freely. A field added to a
+record is one more line in a diff, in the commit that adds it. A name a build
+composed from this one comes to need is a line in an entry and a line in the
+list, and until then it is not importable — which is the point: what crosses
+is decided here, in a place a reader can find.
+
+**As built, 22 November 2026.** Thirty entries under `src/composed/`, holding
+the names a build composed from this one imported the day the surface was
+cut. Their rows in the import matrix (`eslint.config.js`): a process entry may
+read the modules that compute, the folder's format and the two files of the
+kit that are data (`NARROW_EDGES`); a node entry what `platform/node` reads,
+and `platform/node`; a renderer entry what the shell reads, and the shell; the
+testing entries are exempt, as `app/testing/` is; and no row lists any of
+them, so nothing in this tree imports its own surface. What an entry may hold
+is a rule of its own there (`SURFACE_ENTRIES`). `src/composed/process.test.ts`
+asks of every process and node entry what `agent/pure.test.ts` asks of the
+agent: nothing it reaches draws, every file it reaches is TypeScript node can
+erase, and node loads it from source. `build/composedSurface.ts` reads the
+surface with the compiler, `build/composedSurface.test.ts` holds it to the
+list, and `npm run composed:write` rewrites the list. Two things are cut from
+a line so that a change stays one line that can be read, and that file says
+both: a union of many members is said by the name it was declared under, and
+a line still too wide says what its type is written as.
 
 ## More Information
 

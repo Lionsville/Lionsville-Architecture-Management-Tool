@@ -168,7 +168,8 @@ Every module has pure files at its root, a `ui/` folder for its React side
 where it has one, and an `index.ts` that says what it is for. `editor/` is the
 exception: React through and through, so it keeps its subfolders; so are the
 modules composed of features (`session/`, `units/`, `guidance/`,
-`organisation/`), which are flat and have no `index.ts` at all. The `index`
+`organisation/`), which are flat and have no `index.ts` at all, and
+`composed/`, which is nothing but the entries another build imports. The `index`
 is a reading aid, not a fence: cross-module imports name the file they want,
 and the boundary that is enforced is the matrix below, not the barrel.
 
@@ -1379,6 +1380,27 @@ src/app/          The shell around the editor, and nothing else (ADR-0049):
                                       a chart left unfolded (`chartFolds`)
                     use*              the hooks: session, files, document, toasts
                     usePlans          the roadmap, a plan and Replace…, wired
+src/composed/     The surface a build composed from this one imports
+                  (ADR-0022, amended), and all it imports of `src/`: entries
+                  that re-export names from the files that hold them, and hold
+                  no code. Nothing in this tree imports it.
+                    process/          for a process with no screen, and so for
+                                      any: model · scopes · repositories ·
+                                      channel · provider · format · agent ·
+                                      screen · people · analysis · look ·
+                                      words · platform · desktop
+                    node/             for a process with a node under it:
+                                      workingFile · examples
+                    renderer/         for the page: provider · kit · markdown ·
+                                      words · help · helpPage, and `boot`, the
+                                      one entry imported for what it does
+                    testing/          for a suite: contracts · fixtures ·
+                                      render · session · domain · words · help
+                    SURFACE.txt       every name offered and its type, and
+                                      every type of this tree those name: the
+                                      list the tree is held to
+                                      (`build/composedSurface.ts`), rewritten
+                                      by `npm run composed:write`
 electron/         The desktop main process and preload.
                     files.ts · fileStore.ts · watch.ts   the file channel — and
                                       the caller of `platform/node/git`, which
@@ -1434,7 +1456,24 @@ written. **It is an allow-list in fact**: a file in a folder under `src/` that
 is not in `MODULES` fails the lint (`layering/known-module`, pinned by
 `build/layering.test.ts`), so a new module arrives with a row and a reason or
 not at all. If a rule blocks you, the design is telling you something; move the
-code, don't route around the rule. **And no loop**, which the matrix cannot see
+code, don't route around the rule. **Over all of it is the surface a build
+composed from this one imports** (`src/composed/`, ADR-0022 as amended): four
+rows, one per kind of process that loads an entry. A process entry may read
+the modules that compute, the folder's format and the two files of the kit
+that are data, and nothing that draws; a node entry what `platform/node`
+reads, and `platform/node`; a renderer entry what the shell reads, and the
+shell; the testing entries are exempt, as `app/testing/` is. No row lists any
+of them, so nothing in this tree imports its own surface. An entry is names
+re-exported from the file that holds each and nothing else — no `export *`,
+no barrel, no other entry, no code (`SURFACE_ENTRIES`) — and
+`src/composed/process.test.ts` asks of every process and node entry what
+`pure.test.ts` asks of the agent. **The surface is a public contract**, as a
+control's name is: `build/composedSurface.test.ts` holds every name and its
+type to `src/composed/SURFACE.txt` exactly, a name gone or a type changed is a
+breaking change said in the release notes, and a name added fails until
+`npm run composed:write` has listed it, in the same commit. A change to a
+record's field is therefore a changed line in that file: run the command and
+commit it with the change. **And no loop**, which the matrix cannot see
 because every edge of one may be allowed: `build/cycles.test.ts` reads the
 imports that survive compilation and fails on a loop between two files or
 between two modules (the composed string table set aside, as the matrix sets
@@ -1487,6 +1526,7 @@ it there.
 | a screen made of several features (the chart, a scope's home) | the composed module it belongs to (`src/units/`, `src/guidance/`, `src/organisation/`), or a new one with a row after them | jsdom |
 | something such a screen needs of the window | `src/session/`, filled by the shell | node or jsdom |
 | the shell around it all | `src/app/` | jsdom |
+| a name a build composed from this one needs | a line in the entry of its topic under `src/composed/`, and `npm run composed:write` | `build/composedSurface.test.ts`, `src/composed/process.test.ts` |
 
 If you find yourself writing `localStorage`, `fetch`, `FileReader` or
 `document.` anywhere outside `src/adapters/`, stop: that belongs behind a port.

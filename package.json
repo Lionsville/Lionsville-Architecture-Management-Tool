@@ -14,6 +14,8 @@
     "check": "npm run typecheck && npm run test:coverage && npm run coverage && npm run lint",
     "check:runner": "npm run typecheck && npm run test:runner && npm run lint",
     "check:all": "npm run check && npm run build",
+    "composed": "node build/composedSurface.ts",
+    "composed:write": "node build/composedSurface.ts --write",
     "coverage": "node --experimental-strip-types build/coverage.ts",
     "deps": "node build/dependencies.ts",
     "dev": "vite",
