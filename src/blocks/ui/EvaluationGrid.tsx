@@ -62,7 +62,7 @@ const HELD_FOR = 4000
  * the first rather than on what the screen was handed. A write refused, or
  * one that never comes back, lets go after a while and shows what is kept.
  */
-function useAhead<T>(kept: T): [T, (next: T) => void] {
+export function useAhead<T>(kept: T): [T, (next: T) => void] {
   const [ahead, setAhead] = useState<T | undefined>(undefined)
   const caughtUp = ahead !== undefined && JSON.stringify(ahead) === JSON.stringify(kept)
   useEffect(() => {
@@ -77,6 +77,11 @@ function useAhead<T>(kept: T): [T, (next: T) => void] {
 }
 
 const LEVEL_KEYS = ['0', '1', '2', '3', '4'] as const
+
+/** A press's step: a quarter more, after full back to none; with ⇧ a quarter less, stopping at none, where a step back to full would surprise. */
+function stepped(level: Level, by: 1 | -1): Level {
+  return by === 1 ? nextLevel(level) : Math.max(0, level - 1) as Level
+}
 
 /** What a key makes of a level: Space the next quarter, a digit that level. */
 function levelFor(key: string, level: Level): Level {
@@ -140,7 +145,7 @@ export function RequirementsGrid({ block, onChange, rowEnd }: {
           keys: [' ', ...LEVEL_KEYS], hint: t('blocks.gridHint'),
           onKey: (pick: MatrixPick, key: string) => setNeed(pick.column, pick.row, levelFor(key, needAt(pick))),
           pressWrites: {
-            step: (pick: MatrixPick, by: 1 | -1) => setNeed(pick.column, pick.row, nextLevel(needAt(pick), by)),
+            step: (pick: MatrixPick, by: 1 | -1) => setNeed(pick.column, pick.row, stepped(needAt(pick), by)),
             menu: (pick: MatrixPick) => levelMenu(NEED_WORD, needAt(pick), (level) => setNeed(pick.column, pick.row, level), t),
           },
         } : {})}
@@ -235,7 +240,7 @@ export function EvaluationGrid({ block, evaluation: kept, onChange }: {
     setCoverage(pick.column, pick.row, { level: levelFor(key, coverAt(pick)) })
   }
   const pressWrites = {
-    step: (pick: MatrixPick, by: 1 | -1) => { if (pick.row !== FIT_ROW) setCoverage(pick.column, pick.row, { level: nextLevel(coverAt(pick), by) }) },
+    step: (pick: MatrixPick, by: 1 | -1) => { if (pick.row !== FIT_ROW) setCoverage(pick.column, pick.row, { level: stepped(coverAt(pick), by) }) },
     menu: (pick: MatrixPick) => (pick.row === FIT_ROW ? [] : levelMenu(
       COVER_WORD, coverAt(pick), (level) => setCoverage(pick.column, pick.row, { level }), t,
       [{ label: t('blocks.noteMenu'), onSelect: () => setNote(pick) }],

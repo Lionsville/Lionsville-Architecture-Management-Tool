@@ -388,8 +388,12 @@ describe('a building block\'s page', () => {
     page(access, { evaluation: 'sales' })
     fireEvent.click(screen.getByTestId('evaluation-context-cx-filings'))
     expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, contexts: ['cx-partners', 'cx-filings'] })
+    expect(screen.getByTestId('evaluation-context-cx-filings')).toHaveProperty('checked', true)
+    // Before the tree is read again the second change builds on the first, as the grid's presses do.
     fireEvent.click(screen.getByTestId('evaluation-option-sb-b'))
-    expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, options: ['sb-a'], chosen: undefined, decidedBy: undefined })
+    expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, contexts: ['cx-partners', 'cx-filings'], options: ['sb-a'], chosen: undefined, decidedBy: undefined })
+    cleanup()
+    page(access, { evaluation: 'sales' })
     const cell = within(screen.getByRole('row', { name: /Keeps an audit trail/ })).getAllByRole('gridcell').find((one) => one.textContent?.includes(s('blocks.note')))!
     fireEvent.focus(cell)
     fireEvent.keyDown(cell, { key: ' ' })

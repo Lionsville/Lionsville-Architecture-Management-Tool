@@ -20,7 +20,7 @@ import { SelectField } from '../../widgets/kit/Field'
 import { MoreMenu } from '../../widgets/kit/Menu'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
-import { COVER_WORD, EvaluationGrid, fitWord, NEED_WORD } from './EvaluationGrid'
+import { COVER_WORD, EvaluationGrid, fitWord, NEED_WORD, useAhead } from './EvaluationGrid'
 import { readComparison } from './comparisonReading'
 import { asCsv, asTabbed, comparisonFileName, comparisonTable } from './comparisonTable'
 import type { TableWords } from './comparisonTable'
@@ -51,10 +51,13 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
   const [proposing, setProposing] = useState(false)
   const [removing, setRemoving] = useState(false)
   const { block } = row
-  const evaluation = access?.evaluationsOf(block.id).find((one) => one.scope === scope)?.evaluation
+  const kept = access?.evaluationsOf(block.id).find((one) => one.scope === scope)?.evaluation
+  // Ahead of what is kept until the tree is read again: a second tick builds on the first, and the box shows it at once.
+  const [ahead, setAhead] = useAhead(kept)
+  const evaluation = ahead ?? kept
   if (!access || !evaluation) return null
   const may = access.mayWrite(scope)
-  const save = (next: Evaluation) => access.updateEvaluation(scope, next)
+  const save = (next: Evaluation) => { setAhead(next); access.updateEvaluation(scope, next) }
   const chosen = (block.sbbs ?? []).find((one) => one.id === evaluation.chosen)
   const used = (block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id))
   // Carried out as the grid reads it, for anybody who may read it.
