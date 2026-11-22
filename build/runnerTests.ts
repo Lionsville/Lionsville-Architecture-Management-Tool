@@ -89,8 +89,6 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/app/organisation/ServedBy.test.tsx', // 20 s
   'src/app/organisation/Topics.test.tsx', // 7 s
   'src/app/personReaders.test.tsx', // 6 s
-  'src/app/principles/Citations.test.tsx', // 3 s
-  'src/app/principles/PrinciplesPage.test.tsx', // 12 s
   'src/app/questionDialogs.test.tsx', // 7 s
   'src/app/useAgentGateway.test.tsx', // 5 s
   'src/app/useProjectFiles.test.tsx', // 7 s
@@ -140,6 +138,8 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/editor/nodes/logoRendering.test.tsx', // 2 s
   'src/editor/textEdits.test.tsx', // 17 s
   'src/editor/useReadingLayout.test.ts', // 3 s
+  'src/guidance/Citations.test.tsx', // 3 s
+  'src/guidance/PrinciplesPage.test.tsx', // 12 s
   'src/layout/tidy.test.ts', // 3 s
   'src/model/commands/inverse.property.test.ts', // 2 s
   'src/observations/ui/FormDialog.test.tsx', // 4 s

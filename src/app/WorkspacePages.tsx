@@ -23,7 +23,7 @@ import type { RoadmapPage as RoadmapPageShape } from '../roadmap/ui/RoadmapPage'
 import type {
   PlatformReportPage as PlatformReportShape, ServiceReportPage as ServiceReportShape,
 } from '../technology/ui/ReportPage'
-import { PrinciplesPages } from './principles/PrinciplesPages'
+import { PrinciplesPages } from './PrinciplesPages'
 import { lazyPart } from '../widgets/lazyPart'
 import { ArrivingDialog, arrivingPage } from '../widgets/Arriving'
 import type { WorkspaceParts } from './workspaceParts'

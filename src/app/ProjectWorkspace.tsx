@@ -16,8 +16,8 @@
  * draws is the bar, the editor, the pages beside it and the dialogs, each a
  * component of its own over those parts.
  */
-import { ScopeReferences } from './references/ScopeReferences'
-import { ScopeBlockFacts } from './blocks/ScopeBlockFacts'
+import { ScopeReferences } from './ScopeReferences'
+import { ScopeBlockFacts } from './ScopeBlockFacts'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import Box from '@mui/material/Box'
 import type { ReactNode } from 'react'
@@ -61,7 +61,7 @@ import { useLiveViews } from './LiveViews'
 import { CommentsProvider } from '../comments/ui/CommentsContext'
 import { RecordChangesProvider } from '../comments/ui/RecordChanges'
 import { useRecordChangesAccess } from './history/useRecordChangesAccess'
-import { ScopePrinciples } from './principles/PrinciplesPages'
+import { ScopePrinciples } from './PrinciplesPages'
 import type { CommentsAccess } from '../comments/ui/CommentsContext'
 import type { SourceComments } from '../ports/ProviderParts'
 import type { ProjectWorkspaceProps } from './workspaceProps'

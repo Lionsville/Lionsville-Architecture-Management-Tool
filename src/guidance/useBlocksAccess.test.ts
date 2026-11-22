@@ -9,14 +9,14 @@
  * step where the record is kept, under that scope's rights.
  */
 import { describe, expect, it, vi } from 'vitest'
-import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
-import type { HostModel } from '../../model/hostModel'
-import type { Principle } from '../../model/principle'
-import type { Repositories } from '../../ports/Repositories'
-import { translator } from '../../i18n/strings'
-import { contentOf, modelsOf, placeWhole, readScope, summaryOf } from '../../projects/scopeAccess'
-import { indexScopes } from '../../projects/scopeIndex'
-import { adrGate, adrOpenItems } from '../../decisions/adr'
+import { memoryRepositories } from '../adapters/memory/memoryRepositories'
+import type { HostModel } from '../model/hostModel'
+import type { Principle } from '../model/principle'
+import type { Repositories } from '../ports/Repositories'
+import { translator } from '../i18n/strings'
+import { contentOf, modelsOf, placeWhole, readScope, summaryOf } from '../projects/scopeAccess'
+import { indexScopes } from '../projects/scopeIndex'
+import { adrGate, adrOpenItems } from '../decisions/adr'
 import { blocksAccess } from './useBlocksAccess'
 import type { BlocksDeps } from './useBlocksAccess'
 

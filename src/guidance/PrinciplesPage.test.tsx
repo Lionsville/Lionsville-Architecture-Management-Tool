@@ -11,26 +11,26 @@
 import { useMemo, useRef, useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
-import { renderShell } from '../testing/renderShell'
-import { axeFindings } from '../testing/axe'
-import type { Command } from '../../model/commands'
-import type { HostModel } from '../../model/hostModel'
-import { fromArrays, toArrays } from '../../model/normalised'
-import type { Principle } from '../../model/principle'
-import { apply } from '../../model/reducer'
-import { NO_WINDOW_CHROME } from '../../platform/windowChrome'
-import { PrinciplesPage } from '../../principles/ui/PrinciplesPage'
-import { PrinciplesProvider } from '../../principles/ui/PrinciplesContext'
-import type { ScopePrinciples } from '../../projects/scopeIndex'
+import { renderShell } from '../app/testing/renderShell'
+import { axeFindings } from '../app/testing/axe'
+import type { Command } from '../model/commands'
+import type { HostModel } from '../model/hostModel'
+import { fromArrays, toArrays } from '../model/normalised'
+import type { Principle } from '../model/principle'
+import { apply } from '../model/reducer'
+import { NO_WINDOW_CHROME } from '../platform/windowChrome'
+import { PrinciplesPage } from '../principles/ui/PrinciplesPage'
+import { PrinciplesProvider } from '../principles/ui/PrinciplesContext'
+import type { ScopePrinciples } from '../projects/scopeIndex'
 import { usePrinciplesAccess } from './usePrinciplesAccess'
-import { DraftQuestion, draftHeld } from '../../widgets/kit/drafts'
+import { DraftQuestion, draftHeld } from '../widgets/kit/drafts'
 
 afterEach(cleanup)
 
 /** A principle's thread, as a box whose text is a draft (`kit/drafts`), so a test writes a comment without the comments' host. */
-vi.mock('../../comments/ui/threadPart', async () => {
+vi.mock('../comments/ui/threadPart', async () => {
   const { useState } = await import('react')
-  const { useDraft } = await import('../../widgets/kit/drafts')
+  const { useDraft } = await import('../widgets/kit/drafts')
   function CommentThread() {
     const [text, setText] = useState('')
     useDraft(text !== '')

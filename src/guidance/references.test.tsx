@@ -10,15 +10,15 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
-import { renderShell } from '../testing/renderShell'
-import { translator } from '../../i18n'
-import type { Adr } from '../../model/adr'
-import type { Evaluation } from '../../model/evaluation'
-import type { Principle } from '../../model/principle'
-import type { DesignElement } from '../../model/types'
+import { renderShell } from '../app/testing/renderShell'
+import { translator } from '../i18n'
+import type { Adr } from '../model/adr'
+import type { Evaluation } from '../model/evaluation'
+import type { Principle } from '../model/principle'
+import type { DesignElement } from '../model/types'
 import { drawRef } from './RefDrawings'
 import type { RefReads } from './RefDrawings'
-import { referablesIn } from '../../search/referables'
+import { referablesIn } from '../search/referables'
 
 afterEach(cleanup)
 

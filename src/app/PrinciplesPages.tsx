@@ -10,20 +10,20 @@
  */
 import { useCallback, useMemo } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
-import type { PrinciplesPage as PrinciplesPageShape } from '../../principles/ui/PrinciplesPage'
-import { PrinciplesProvider } from '../../principles/ui/PrinciplesContext'
-import { flattenScopes } from '../../projects/scope'
-import { scopeDisplayName } from '../../projects/scopeLabel'
-import { topicsInForce } from '../../projects/topics'
-import type { ScopePath } from '../../projects/scopePath'
-import type { PrincipleRef } from '../../model/principle'
-import { lazyPart } from '../../widgets/lazyPart'
-import { arrivingPage } from '../../widgets/Arriving'
-import type { WorkspaceParts } from '../workspaceParts'
-import { usePrinciplesAccess } from './usePrinciplesAccess'
+import type { PrinciplesPage as PrinciplesPageShape } from '../principles/ui/PrinciplesPage'
+import { PrinciplesProvider } from '../principles/ui/PrinciplesContext'
+import { flattenScopes } from '../projects/scope'
+import { scopeDisplayName } from '../projects/scopeLabel'
+import { topicsInForce } from '../projects/topics'
+import type { ScopePath } from '../projects/scopePath'
+import type { PrincipleRef } from '../model/principle'
+import { lazyPart } from '../widgets/lazyPart'
+import { arrivingPage } from '../widgets/Arriving'
+import type { WorkspaceParts } from './workspaceParts'
+import { usePrinciplesAccess } from '../guidance/usePrinciplesAccess'
 
 const PrinciplesPage = lazyPart<ComponentProps<typeof PrinciplesPageShape>>(
-  () => import('../../principles/ui/PrinciplesPage').then((held) => held.PrinciplesPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
+  () => import('../principles/ui/PrinciplesPage').then((held) => held.PrinciplesPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },
 )
 
 /** The open scope's principles, and those above it, for every screen under the workspace. */

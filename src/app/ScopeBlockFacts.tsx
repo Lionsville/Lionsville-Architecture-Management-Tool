@@ -8,13 +8,13 @@
  */
 import { useCallback, useMemo } from 'react'
 import type { ReactNode } from 'react'
-import { BlockFactsProvider } from '../../blocks/ui/BlockFacts'
-import type { BlockFactsAccess } from '../../blocks/ui/BlockFacts'
-import { solutionsChosenAs } from '../../projects/chosenSolutions'
-import { flattenScopes } from '../../projects/scope'
-import { scopeDisplayName } from '../../projects/scopeLabel'
-import type { ScopePath } from '../../projects/scopePath'
-import type { WorkspaceParts } from '../workspaceParts'
+import { BlockFactsProvider } from '../blocks/ui/BlockFacts'
+import type { BlockFactsAccess } from '../blocks/ui/BlockFacts'
+import { solutionsChosenAs } from '../projects/chosenSolutions'
+import { flattenScopes } from '../projects/scope'
+import { scopeDisplayName } from '../projects/scopeLabel'
+import type { ScopePath } from '../projects/scopePath'
+import type { WorkspaceParts } from './workspaceParts'
 
 export function ScopeBlockFacts({ parts, children }: { parts: WorkspaceParts; children: ReactNode }) {
   const { index, scopes, groupName } = parts.props.tree
