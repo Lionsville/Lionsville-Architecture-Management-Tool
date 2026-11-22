@@ -8,7 +8,7 @@
  * view a destination with no id opens.
  */
 import { describe, expect, it } from 'vitest'
-import { arrived, landed, viewFor, viewPage } from './screen'
+import { arrived, landed, scopeOf, viewFor, viewPage } from './screen'
 import type { Screen } from './screen'
 
 const onBoard: Screen = { open: { path: 'acme/retail', name: 'Retail', view: { id: 'r7', name: 'Board', kind: 'layer7' } } }
@@ -100,5 +100,38 @@ describe('the view a destination opens', () => {
     expect(viewFor('chart', undefined, unitViews, 'b1')).toBe('oc')
     expect(viewFor('conway', undefined, unitViews, 'b1')).toBe('cw')
     expect(viewFor('chart', undefined, views, 'b1')).toBeUndefined()
+  })
+})
+
+describe('a page of the organisation’s over the scope that is open', () => {
+  // The scope stays said as open, and whose page it is beside it (ADR-0033, amended 22 November 2026).
+  const over: Screen = { ...onBoard, home: { path: '', name: 'Acme' }, page: { page: 'register' } }
+
+  it('is arrived at as the organisation’s page, and is not the organisation’s home', () => {
+    expect(arrived(over, { page: 'register' }, '')).toBe(true)
+    expect(arrived(over, { page: 'people' }, '')).toBe(false)
+    expect(arrived(over, { page: 'home' }, '')).toBe(false)
+    // The open scope's own register is another place: its home, with the scope closed.
+    expect(arrived(over, { page: 'register' }, 'acme/retail')).toBe(false)
+  })
+
+  it('has landed for a move sent to that page, and is about the organisation', () => {
+    expect(landed(over, { scope: '', page: 'register' })).toBe(true)
+    expect(landed(over, { scope: '', page: 'home' })).toBe(false)
+    expect(scopeOf(over)).toBe('')
+    expect(scopeOf(onBoard)).toBe('acme/retail')
+    expect(scopeOf(home('acme'))).toBe('acme')
+  })
+
+  it('takes a panel asked beside it of the scope that is open, or of the organisation', () => {
+    const withWork: Screen = { ...over, panel: 'work' }
+    expect(arrived(withWork, { page: 'work' }, 'acme/retail')).toBe(true)
+    expect(arrived(withWork, { page: 'work' }, '')).toBe(true)
+    expect(arrived(withWork, { page: 'work' }, 'acme/other')).toBe(false)
+  })
+
+  it('is left for the view once the page is gone', () => {
+    expect(arrived(onBoard, { page: 'board', id: 'r7' }, 'acme/retail')).toBe(true)
+    expect(arrived(over, { page: 'board', id: 'r7' }, 'acme/retail')).toBe(false)
   })
 })

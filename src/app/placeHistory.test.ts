@@ -413,3 +413,26 @@ describe('a move the person\'s work keeps from going', () => {
     expect(new URL(entries.at(-1)!.url).hash).toBe(new URL(entries[0].url).hash)
   })
 })
+
+describe('the place the looks settled on', () => {
+  it('is said once the looks settle, and a place passed through on the way is not', () => {
+    const win = fakeWindow()
+    let timer: { run: () => void } | undefined
+    const settled: Place[] = []
+    const history = new PlaceHistory(win.win, {
+      open: () => {}, nearest: (place) => Promise.resolve(place), settled: (place) => settled.push(place),
+      setTimer: (run) => { timer = { run }; return timer }, clearTimer: (held) => { if (held === timer) timer = undefined },
+    })
+    history.look(home)
+    timer?.run()
+    // A scope opened on one of its pages: its view for a moment, then the page.
+    history.look(board)
+    history.look(decisions())
+    timer?.run()
+    expect(settled).toEqual([home, decisions()])
+    // The same place again settles again, which is how a view renamed where it stands is heard of.
+    history.look(decisions())
+    timer?.run()
+    expect(settled).toEqual([home, decisions(), decisions()])
+  })
+})

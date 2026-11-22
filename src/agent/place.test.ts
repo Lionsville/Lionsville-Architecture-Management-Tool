@@ -176,6 +176,25 @@ describe('the place a screen is', () => {
   })
 })
 
+describe('a page of the organisation’s over the open scope, as a place', () => {
+  const board: Screen = { open: { path: 'acme/rail', name: 'Rail', view: { id: 'landscape', name: 'Landscape', kind: 'layer7' } } }
+  const over: Screen = { ...board, home: { path: '', name: 'Acme' }, page: { page: 'register', tab: 'services' } }
+
+  it('is the organisation’s place: what it stands over is no part of it', () => {
+    expect(placeOf(over)).toEqual({ scope: '', page: 'register', tab: 'services' })
+    expect(writePlace(placeOf(over)!)).toBe('#/-/register?tab=services')
+  })
+
+  it('is a step from the view under it, and a step back to it', () => {
+    expect(stepBetween(placeOf(board), placeOf(over)!)).toBe('push')
+    expect(stepBetween(placeOf(over), placeOf(board)!)).toBe('push')
+  })
+
+  it('leaves a page of the scope’s own, over the same view, the scope’s place', () => {
+    expect(placeOf({ ...board, page: { page: 'operating' } })).toEqual({ scope: 'acme/rail', page: 'operating' })
+  })
+})
+
 describe('what a move does to the history', () => {
   const board: Place = { scope: 'acme', page: 'board', id: 'l7' }
   it('replaces the entry for the first place, and does nothing for the same one', () => {

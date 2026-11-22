@@ -65,6 +65,7 @@ import { ScopePrinciples } from './principles/PrinciplesPages'
 import type { CommentsAccess } from '../comments/ui/CommentsContext'
 import type { SourceComments } from '../ports/ProviderParts'
 import type { ProjectWorkspaceProps } from './workspaceProps'
+import { usePlaceHost } from '../widgets/kit/placeHost'
 import { flattenScopes } from '../projects/scope'
 import { isWithinScope } from '../projects/scopePath'
 import { onlyPeopleIn } from '../model/managing'
@@ -73,6 +74,8 @@ import type { Model } from '../model/normalised'
 
 export function ProjectWorkspace(props: ProjectWorkspaceProps) {
   const parts = useWorkspaceParts(props)
+  // A page the frame says is up that is none of this workspace's: the organisation's, over the scope.
+  const overUp = usePlaceHost()?.pageUp ?? false
   const { diagnostics } = props.host
   const pictureFailed = useCallback((cause: unknown) => {
     diagnostics.report({ level: 'warn', where: 'pictures', message: 'a picture was not read', cause })
@@ -93,11 +96,13 @@ export function ProjectWorkspace(props: ProjectWorkspaceProps) {
           {parts.pickers.document.input}
           {parts.pickers.logo.input}
           {/* Inert under a page: what a page covers takes no focus and says nothing to a reader, rather than the whole board staying in the tree under every page. The pages are portals, so this reaches the board alone. */}
-          <Box inert={parts.pages.page() !== undefined || parts.requests.documentationShown !== undefined} sx={{ display: 'contents' }}>
+          <Box inert={parts.pages.page() !== undefined || parts.requests.documentationShown !== undefined || overUp} sx={{ display: 'contents' }}>
             <WorkspaceEditor parts={parts} />
           </Box>
           <HistoryDialogs parts={parts} />
           <WorkspacePages parts={parts} />
+          {/* After the scope's own pages, so it stands over whichever of them is up and leaves it as it was. */}
+          {props.navigation.over}
           <WorkspaceDialogs parts={parts} />
         </CheckMarkingContext.Provider>
       </ScopeViews>
@@ -493,7 +498,7 @@ function useScreenParts(
   const pages = useWorkspacePages({
     session, scope: project.path, makeId, s, viewing, focusElement: requests.focusElement,
     maps: base.maps, landscapes: base.landscapes, onGoHome: navigation.onGoHome, documentationShown: requests.documentationShown,
-    duplicateBoard: base.diagrams.onDuplicateDiagram,
+    duplicateBoard: base.diagrams.onDuplicateDiagram, onLeaveOver: navigation.onLeaveOver,
   })
   // A unit's *Sits under* beside a chart moves it with the chart in view, as the chart's own Move to… does.
   const shownView = session.model.diagrams.find((one) => one.id === session.activeDiagramId)

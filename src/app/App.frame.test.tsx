@@ -32,6 +32,8 @@ const scope = (path: string, name: string, draws: boolean): ScopeSnapshot => ({
   logoLibrary: [],
 })
 const TREE = () => [scope('', 'Acme Logistics', false), scope('retail', 'Retail', false), scope('retail/depot', 'Depot', true)]
+/** The same, with a second scope that draws: somewhere to go that has a view of its own. */
+const WITH_YARD = () => [...TREE(), { ...scope('retail/yard', 'Yard', true), model: { ...scope('retail/yard', 'Yard', true).model, diagrams: [laidOut({ id: 'y7', kind: 'layer7', name: 'Yard board', placements: [] })] }, activeDiagramId: 'y7' }]
 
 function wire() {
   let handler: ((request: AgentRequest) => Promise<AgentAnswer>) | undefined
@@ -50,9 +52,9 @@ const parsed = (answer: AgentAnswer): Record<string, unknown> => {
   return JSON.parse(answer.content[0].text)
 }
 
-async function home() {
+async function home(tree: ScopeSnapshot[] = TREE()) {
   const agent = wire()
-  const view = renderApp({ agent: agent.gateway, repositories: heldRepositories(TREE()), boot: { initialProject: undefined } })
+  const view = renderApp({ agent: agent.gateway, repositories: heldRepositories(tree), boot: { initialProject: undefined } })
   await waitFor(() => expect(agent.bound()).toBe(true))
   await screen.findByTestId('organisation-cards')
   return { ...view, ...agent }
@@ -214,11 +216,16 @@ describe('row two on a home', () => {
 
 describe('the way back to the view last worked on', () => {
   const chip = () => screen.queryByTestId('frame-last-view')
+  /** On the board long enough for it to be a place in the history, which is when it is the view last worked on. */
+  const onTheBoard = async (ask: (tool: string, args?: unknown) => Promise<AgentAnswer>) => {
+    expect(parsed(await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })).arrived).toBe(true)
+    await waitFor(() => expect(window.location.hash).toBe('#/retail/depot/-/board/l7'))
+  }
 
   it('stands right after Home on the scope’s home, by the view’s name, and one press opens the view', async () => {
     const { ask } = await home()
     expect(chip()).toBeNull()
-    expect(parsed(await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })).arrived).toBe(true)
+    await onTheBoard(ask)
     await within(screen.getByTestId('frame-views')).findByRole('tab', { name: 'The board', selected: true })
     // The view itself is up: its tab says so, and nothing offers a way back to where you are.
     expect(chip()).toBeNull()
@@ -235,7 +242,7 @@ describe('the way back to the view last worked on', () => {
 
   it('names the scope where the page that is up is another’s, and is there over a page of the view’s own scope', async () => {
     const { ask } = await home()
-    await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })
+    await onTheBoard(ask)
     await ask('app.open', { scope: 'retail/depot', page: 'decisions' })
     await placePage()
     expect((await screen.findByTestId('frame-last-view')).getAttribute('aria-label')).toBe('Back to The board')
@@ -246,7 +253,7 @@ describe('the way back to the view last worked on', () => {
 
   it('is found by ⌘K, so the keyboard reaches it from wherever the focus is', async () => {
     const { ask } = await home()
-    await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })
+    await onTheBoard(ask)
     fireEvent.click(screen.getByTestId('frame-home'))
     await screen.findByTestId('frame-last-view')
     fireEvent.click(screen.getByTestId('frame-find'))
@@ -262,6 +269,18 @@ describe('the way back to the view last worked on', () => {
     expect(back.getAttribute('aria-label')).toBe('Back to The board in Depot')
     fireEvent.click(back)
     await within(screen.getByTestId('frame-views')).findByRole('tab', { name: 'The board', selected: true })
+  })
+})
+
+describe('a scope opened straight on one of its pages', () => {
+  it('leaves the way back on the view somebody was on: the tab under the page is not it', async () => {
+    const { ask } = await home(WITH_YARD())
+    expect(parsed(await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })).arrived).toBe(true)
+    await waitFor(() => expect(window.location.hash).toBe('#/retail/depot/-/board/l7'))
+    // Another scope, on its decisions: its own view is under the page, and nobody was on it.
+    await ask('app.open', { scope: 'retail/yard', page: 'decisions' })
+    await waitFor(() => expect(window.location.hash).toBe('#/retail/yard/-/decisions'))
+    expect((await screen.findByTestId('frame-last-view')).getAttribute('aria-label')).toBe('Back to The board in Depot')
   })
 })
 

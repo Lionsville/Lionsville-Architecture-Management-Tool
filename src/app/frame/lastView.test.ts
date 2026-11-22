@@ -3,17 +3,18 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Screen } from '../../agent/screen'
-import { lastViewOf, lastViewsFrom, newestView, renamedView, wayBack, withLastView } from './lastView'
+import { lastViewOf, lastViewsFrom, newestView, noteLastView, renamedView, wayBack, withLastView } from './lastView'
 import type { LastView } from './lastView'
 
 const board: LastView = { scope: 'freight', in: 'Freight', page: 'board', id: 'landscape', name: 'Application landscape' }
 const onBoard: Screen = { open: { path: 'freight', name: 'Freight', view: { id: 'landscape', name: 'Application landscape', kind: 'layer7' } } }
 const anywhere = { scopeIs: () => true }
 
-describe('the view under a screen', () => {
-  it('is the open scope’s, whichever page stands over it', () => {
+describe('the view that is up', () => {
+  it('is the open scope’s, and none while a page stands over it: a scope opened on a page has a tab nobody was on', () => {
     expect(lastViewOf(onBoard)).toEqual(board)
-    expect(lastViewOf({ ...onBoard, page: { page: 'decisions' } })).toEqual(board)
+    expect(lastViewOf({ ...onBoard, page: { page: 'decisions' } })).toBeUndefined()
+    expect(lastViewOf({ ...onBoard, home: { path: '', name: 'Acme' }, page: { page: 'register' } })).toBeUndefined()
   })
 
   it('says the page that opens its kind', () => {
@@ -34,6 +35,17 @@ describe('what the frame keeps', () => {
     expect(newestView(held)).toEqual(other)
     expect(held.lastViews?.freight).toEqual(board)
     expect(newestView(withLastView(held, board))).toEqual(board)
+  })
+
+  it('notes a settled screen with a view up, and nothing for a page or a home', () => {
+    let held = {}
+    const frame = { get: () => held, set: (patch: object) => { held = { ...held, ...patch } } }
+    noteLastView(frame, { home: { path: '', name: 'Acme' } })
+    noteLastView(frame, { ...onBoard, page: { page: 'principles' } })
+    expect(newestView(held)).toBeUndefined()
+    noteLastView(frame, onBoard)
+    expect(newestView(held)).toEqual(board)
+    noteLastView(undefined, onBoard)
   })
 
   it('is the same object where a look found nothing new', () => {

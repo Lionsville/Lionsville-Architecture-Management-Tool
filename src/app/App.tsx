@@ -47,7 +47,7 @@ import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly, sourceKey } from '../platform/workingSource'
-import { recentFrom, RECENT_KEY, renamedIn } from './frame/recentPlaces'
+import { recentFrom, RECENT_KEY, rememberSettled, renamedIn } from './frame/recentPlaces'
 import { lastViewsFrom, renamedView } from './frame/lastView'
 import type { WorkingSource } from '../platform/workingSource'
 import { textFromBytes } from '../projects/text'
@@ -748,6 +748,8 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
     closePreferences: () => base.machine.setOpen(false),
     ...(props.boot.initialFramePage ? { initialFramePage: props.boot.initialFramePage } : {}),
     ...(props.boot.initialPageLook ? { initialPageLook: props.boot.initialPageLook } : {}),
+    readTree: treeChanged,
+    onSettled: useMemo(() => rememberSettled(services.prefs, sourceKey(source)), [services.prefs, source]),
   })
   openViews.current = () => {
     const model = shellAgent.openSession()?.current()

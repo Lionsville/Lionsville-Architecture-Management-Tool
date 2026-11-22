@@ -8,7 +8,10 @@
   link is a path, the old form is read, a pasted link moves an open window,
   and an element's page needs no view), accepted and built; amended
   8 November 2026 (a page of records keeps the tree beside it), accepted and built;
-  amended 22 November 2026 (a building block's comparison is a place), accepted and built
+  amended 22 November 2026 (a building block's comparison is a place; the
+  organisation's pages stand over the open scope, and the view last worked on
+  is one press away), accepted and built but for the pages named there as left
+  where they were
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -552,3 +555,95 @@ leaving a comparison is a step, so Back comes out of it, where another tab or
 another look on the same page replaces the entry. The tab keeps its key, `used`,
 which old links and agents name; on screen it is called *Comparisons*.
 
+## Amended 22 November 2026: the organisation's pages stand over the open scope, and the view last worked on is one press away
+
+From a board, *More* led to the organisation's register, its people, its
+checks, its operating model and its guidance by going to the organisation: the
+scope was closed, the trail named the organisation, row two's tabs became the
+organisation's views, and Documentation, Decisions, Observations and Roadmap
+beside them silently meant the organisation's. The scope's undo went with it.
+Back was the one press that led to the board again; nothing in the row marked
+the page that was up, and nothing named where the person had been.
+
+### A page of the organisation's stands over the scope
+
+The register (with its services and platforms), the people and the checks are
+read off the whole tree and keep nothing of their own in a session. Asked for
+while a scope is open — by *More*, the palette, a link pressed, Forward, or an
+agent's `app.open { scope: "", page: "register" }` — they are drawn over the
+workspace, as its history is, and **the scope stays open**: its name in the
+trail, its views in row two, its session and so its undo. Leaving the page —
+Esc, Back, a view's tab, the way back below, or any move to a view or a page of
+the scope — shows the scope again as it was, a page of its own that was up
+under it included. With no scope open nothing changes: they open over the
+organisation's home.
+
+The page is drawn inside the workspace, so a finding marked as intended there
+about the open scope is that scope's step through its session, not a write
+behind it. What the scope has not written yet is written as the page opens, so
+the page reads the scope as it stands. A way on from the page is a move like
+any other, made the one way the app is moved.
+
+**The operating model** is one model, kept at the organisation, and a workspace
+already reads it over whichever scope is open. From an open scope the frame's
+own ways to it — *More*, the palette, the tree's foot, a unit's
+responsibilities — now ask for it there, `#/<scope>/-/operating`: the scope
+stays open, the page says it is read only here and offers the way to the
+organisation, where it is edited. An agent's `app.open` for the operating model
+still names the organisation and opens it there, since an agent asks for it to
+write in it.
+
+### The address, and what an agent is told
+
+A page of the organisation's over a scope **has the organisation's address**,
+`#/-/register`: what it stands over is no part of the place, as the element
+selected on a board is not. Back from it is the entry before, which is the view
+it was opened from; Forward to it opens it over whichever scope is open then. A
+reload and a link land on the page over the organisation's home, with nothing
+open: a link to the register is a link to the register, and the way back below
+is there after a reload. No word was added to the grammar.
+
+`app.current` says both things that are true (`Screen`, unchanged in type): the
+scope `open`, with its view, and beside it `home`, the organisation whose `page`
+is up. `scopeOf`, `arrived`, `landed` and `placeOf` read that pair as the
+organisation's page; a reader that asks whether a home's page is up
+(`home` and `page`) is answered as before. A write with no scope named still
+lands in the scope that is open, which is what `open` says.
+
+### What row two says
+
+*More* is marked as a tab is while the page that is up was reached from it, and
+names it (*More: Register*); a scope's page that folded into *More* at a narrow
+width is named the same way. Under any page, no tab is the one chosen (as
+since 4.0.0), and the view the page stands over is now marked with a quiet line:
+it is where a press on its tab, or Esc, leads. The words in the row keep one
+meaning: while a page of the organisation's is up over a scope, Documentation,
+Decisions, Observations and Roadmap are that scope's, because the scope is
+still the one open.
+
+### The view last worked on, one press away
+
+Row two draws the view somebody was last on right after *Home*, on every page
+and every home, as `‹` and the view's name (`frame.lastView`); its accessible
+name and tooltip say where it leads, with the scope where that is not the one in
+the trail. It is not drawn while that view is up with nothing over it. The
+palette offers the same as *Back to …*.
+
+The frame keeps the last view of each scope and the scope worked in last. A view
+is noted where the window's history **settles** on it (`PlaceHistory`'s
+`settled`), never for a screen passed through: a scope opened straight on one of
+its pages shows the view under that page for a moment, and nobody was on it. It
+lasts as the list of places last worked in does, on this computer and per
+source: the frame starts from that list, so a reload offers the same way back,
+and nothing new is stored. That list is written on the same condition now.
+
+### What is deliberately left where it was
+
+Principles, topics and building blocks (*Guidance*) still open at the
+organisation, closing the scope: the organisation's principles are edited in a
+session of the organisation's, and topics and blocks write to scopes through
+the store, which the open scope's session would meet as a change made
+elsewhere. Standing them over an open scope needs a second session beside the
+open one, or their writes carried through it, and neither is decided here. The
+way back above leads from them to the view. A scope's settings, a source's own
+pages and its page for agents are pages of a home as before.

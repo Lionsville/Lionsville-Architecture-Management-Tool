@@ -58,15 +58,13 @@ import type { CommandRow } from './commandsTable'
 import { scopeLines, startsWords, viewLines } from './paletteFind'
 import type { TreeView } from './paletteFind'
 import { FrameCommandsContext, useFrameState } from './frameStore'
-import type { FrameState, FrameStore, PaletteLine, ScreenFacts } from './frameStore'
-import { lastViewOf, wayBack, withLastView } from './lastView'
+import type { FrameState, PaletteLine, ScreenFacts } from './frameStore'
+import { wayBack } from './lastView'
 import type { WayBack } from './lastView'
 import { FOUND_PLACES, MORE_PLACES, ORGANISATION_PLACES, placeShows, SCOPE_PLACES } from './places'
 import type { FramePlace } from './places'
 import { ActivityPanel, statusOf, useWriteRefusals, YourWorkPanel } from './FramePanels'
 import { ScopeTreePanel } from './ScopeTreePanel'
-import { recentFrom, recentOf, RECENT_KEY, remembered } from './recentPlaces'
-import { sourceKey } from '../../platform/workingSource'
 import { holdingsOf } from '../organisation/holdings'
 import { holdsPage, TALLY_WORDS, talliedPage, tallyOf } from './pageTally'
 import type { PanelTally } from './ScopeTreePanel'
@@ -110,8 +108,6 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   useExampleCommand(parts)
   useFrameKeys(parts, state)
   usePanelFocus(state.panel)
-  useRememberPlace(parts, screen)
-  useLastView(frame, screen)
   const back = useWayBack(parts, state, screen, at)
   const lines = usePaletteLines(parts, at, go, back)
   const { lookAgain } = agent
@@ -206,7 +202,6 @@ function framePanel(panel: FramePanel | undefined, parts: ShellParts, facts: Scr
   return Drawn ? <Drawn {...slot} /> : undefined
 }
 
-/** A place worth coming back to is written down as it is arrived at, for *Continue*: a preference of this computer's. */
 /**
  * The agent dialog belongs to the place it was opened on. An address that lands
  * on the agents page opens it over the home, and a person who then goes
@@ -226,34 +221,6 @@ export function useAgentDialogFollowsPlace(parts: Pick<ShellParts, 'agentServer'
     if (openedOn.current === undefined) { openedOn.current = place; return }
     if (openedOn.current !== place) closeDialog()
   }, [dialogOpen, place, closeDialog])
-}
-
-function useRememberPlace(parts: ShellParts, screen: Screen) {
-  const { services: { prefs }, source } = parts
-  const place = recentOf(screen, new Date().toISOString())
-  const key = place && `${place.scope}|${place.page}|${place.id ?? ''}`
-  const latest = useRef(place)
-  latest.current = place
-  useEffect(() => {
-    const here = latest.current
-    if (!here) return
-    const by = sourceKey(source)
-    const stored = prefs.readPreferences()[RECENT_KEY] as Record<string, unknown> | undefined
-    prefs.writePreference({ [RECENT_KEY]: { ...stored, [by]: remembered(recentFrom(stored, by), here) } })
-    // Once per arrival, whatever else moves on the screen.
-  }, [key])
-}
-
-/** The view under whatever is on screen is noted as the app arrives on it: what the way back in row two leads to (`lastView.ts`). */
-function useLastView(frame: FrameStore, screen: Screen) {
-  const seen = lastViewOf(screen)
-  const key = seen && `${seen.scope}\u0000${seen.id}\u0000${seen.name}\u0000${seen.in}`
-  const latest = useRef(seen)
-  latest.current = seen
-  useEffect(() => {
-    if (latest.current) frame.set(withLastView(frame.get(), latest.current))
-    // Once per view arrived at or renamed, whatever else moves on the screen.
-  }, [frame, key])
 }
 
 /** The way back row two offers here, where there is one: the view last worked on, unless it is the one that is up. */
@@ -527,6 +494,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
   const can = canOf(parts, parts.frame.get().screen)
   const canKey = JSON.stringify(can)
   const hasAgentsPage = parts.props.provider?.frame?.Agents !== undefined
+  const scopeOpen = parts.nav.project !== undefined
   // The way back by the keyboard, from wherever the focus is: ⌘K, and its first words.
   const backSaid = back && wayBackSaid(back, s)
   const backKey = back && JSON.stringify(back.to)
@@ -535,7 +503,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
     // A command is found by its English name too, so *zoom* and *save* find it in any language.
     const english = translator('en')
     const alsoCalled = new Map<string, string>()
-    const place = (one: FramePlace, scope: ScopePath) => rows.push({ id: `place:${one.page}`, group: s('frame.places'), label: s(one.label), run: () => go({ scope, page: one.page }) })
+    const place = (one: FramePlace, scope: ScopePath) => rows.push({ id: `place:${one.page}`, group: s('frame.places'), label: s(one.label), run: () => go(placeFrom(scopeOpen, at, { scope, page: one.page })) })
     if (backSaid !== undefined && backKey !== undefined) rows.push({ id: 'place:lastView', group: s('frame.places'), label: backSaid, run: () => go(JSON.parse(backKey)) })
     rows.push({ id: 'place:home', group: s('frame.places'), label: s('frame.home'), run: () => go({ scope: at, page: 'home' }) })
     SCOPE_PLACES.forEach((one) => place(one, at))
@@ -576,7 +544,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
         ...named.filter((row) => !row.lead),
       ]
     }
-  }, [s, language, at, go, send, canKey, hasAgentsPage, tree, views, want, organisation, mayFile, backSaid, backKey])
+  }, [s, language, at, go, send, canKey, hasAgentsPage, tree, views, want, organisation, mayFile, backSaid, backKey, scopeOpen])
 }
 
 /** The source's own page for agents: a place like any other, with an address and a way in with nothing open. */
@@ -620,7 +588,7 @@ function TreeFor({ parts, at, page, onDone, findFirst = false }: { parts: ShellP
     <ScopeTreePanel
       tree={organisation.tree} at={at} page={page} order={order.order} onOrderChange={order.chooseOrder} folds={organisation}
       holdings={holdings} today={parts.todayDay}
-      onHome={onHome} go={(to) => { onDone?.(); agent.openSomewhere(to) }}
+      onHome={onHome} go={(to) => { onDone?.(); agent.openSomewhere(placeFrom(nav.project !== undefined, at, to)) }}
       onSettings={(scope) => { onDone?.(); agent.openSomewhere({ scope: scope.path, page: 'settings' }) }} onDelete={fromHome(organisation.askDelete)}
       // Filed under is one of a scope's settings, so moving a scope is asked for there.
       onMove={(scope) => { onDone?.(); agent.openSomewhere({ scope: scope.path, page: 'settings', field: 'filedUnder' }) }}
@@ -1036,11 +1004,24 @@ function HomeNewView({ parts, at, onLandscape }: { parts: ShellParts; at: ScopeP
   )
 }
 
+/**
+ * Where one of the organisation's places leads from here (ADR-0033, amended 22
+ * November 2026). The operating model is one model, kept at the organisation,
+ * and a workspace reads it over whichever scope is open: so from an open scope
+ * it is opened there, to read, and the scope stays open — the page says where
+ * it is edited. Every other place is asked of the organisation, and the shell
+ * draws it over the open scope where it can.
+ */
+export function placeFrom(scopeOpen: boolean, at: ScopePath, to: Destination & { scope: string }): Destination & { scope: string } {
+  return scopeOpen && to.page === 'operating' && to.scope === ROOT_SCOPE ? { ...to, scope: at } : to
+}
+
 function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page: Page | undefined }) {
   const { services: { s }, agent } = parts
   const go = agent.openSomewhere
+  const scopeOpen = parts.nav.project !== undefined
   const more: MenuEntry[] = [
-    ...ORGANISATION_PLACES.map((one) => ({ label: s(one.label), checked: placeShows(one, page), onSelect: () => go({ scope: ROOT_SCOPE, page: one.page }) })),
+    ...ORGANISATION_PLACES.map((one) => ({ label: s(one.label), checked: placeShows(one, page), onSelect: () => go(placeFrom(scopeOpen, at, { scope: ROOT_SCOPE, page: one.page })) })),
     { line: true },
     ...MORE_PLACES.map((one) => ({ label: s(one.label), checked: page === one.page, onSelect: () => go({ scope: HOME_PAGES.includes(one.page) ? at : ROOT_SCOPE, page: one.page }) })),
   ]
@@ -1051,6 +1032,8 @@ function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page
   const foldedPlaces: MenuEntry[] = SCOPE_PLACES.slice(SCOPE_PLACES.length - gone).map((one) => (
     { label: s(one.label), checked: shows(one), 'data-testid': `frame-page-${one.page}`, onSelect: () => go({ scope: at, page: one.page } as Destination & { scope: string }) }
   ))
+  // The page that is up, where its way in is under More: one of the organisation's, or a scope's page that folded.
+  const under = [...ORGANISATION_PLACES, ...MORE_PLACES].find((one) => placeShows(one, page)) ?? SCOPE_PLACES.slice(SCOPE_PLACES.length - gone).find(shows)
   return (
     <>
       {/* While a place is left to fold, the views keep their width and the places go into More first (`data-row-folds`). */}
@@ -1063,7 +1046,11 @@ function RowTwoEnd({ parts, at, page }: { parts: ShellParts; at: ScopePath; page
           {s(one.label)}
         </button>
       ))}
-      <MenuButton label={s('frame.more')} variant="quiet" size="small" items={foldedPlaces.length > 0 ? [...foldedPlaces, { line: true }, ...more] : more} data-guide="frame.more" />
+      {/* A page reached from More is named on it, and More is marked as a tab is: the row always says which page is up. */}
+      <MenuButton
+        label={under ? s('frame.moreOn', { place: s(under.label) }) : s('frame.more')} current={under !== undefined} variant="quiet" size="small"
+        items={foldedPlaces.length > 0 ? [...foldedPlaces, { line: true }, ...more] : more} data-guide="frame.more" data-testid="frame-more"
+      />
     </>
   )
 }

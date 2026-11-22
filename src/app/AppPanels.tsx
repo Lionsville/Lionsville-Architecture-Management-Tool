@@ -24,6 +24,7 @@ import { useHistoryPlace } from './history/useHistoryPlace'
 import { SnapshotDialog } from './history/SnapshotDialog'
 import { FirstRun } from './organisation/FirstRun'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
+import { OrganisationOver } from './organisation/OrganisationOver'
 import { ProjectWorkspace } from './ProjectWorkspace'
 import { flattenScopes, sharedScopes } from '../projects/scope'
 import { sourceKey } from '../platform/workingSource'
@@ -170,8 +171,11 @@ function OpenWorkspace({ parts, project }: { parts: ShellParts; project: ScopeSn
         onShareLink: parts.share.shareTo,
         // The People page is the organisation's, on its home: an assignment's *Open in People* goes there with the person picked.
         ...(parts.people ? { onOpenPeople: (person: string) => parts.agent.openSomewhere({ scope: '', page: 'people', select: person }) } : {}),
-        onOpenUnitResponsibilities: (unitId: string) => parts.agent.openSomewhere({ scope: '', page: 'operating', tab: 'responsibilities', look: `unit=${encodeURIComponent(unitId)}` }),
+        // Read over this scope, which stays open: the operating model is one model, wherever it is read from.
+        onOpenUnitResponsibilities: (unitId: string) => parts.agent.openSomewhere({ scope: project.path, page: 'operating', tab: 'responsibilities', look: `unit=${encodeURIComponent(unitId)}` }),
         onOpenBlock: parts.agent.openBlock,
+        over: <OrganisationOver parts={parts} />,
+        onLeaveOver: parts.agent.leaveOver,
       }}
       host={{
         commands: parts.commands.bus.on,

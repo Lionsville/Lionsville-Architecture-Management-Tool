@@ -1568,6 +1568,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.lastView': 'Terug naar {name}',
   'frame.lastViewIn': 'Terug naar {name} in {scope}',
   'frame.more': 'Meer',
+  'frame.moreOn': 'Meer: {place}',
   'frame.newView': 'Nieuwe weergave',
   'drawing.editing': '{name} bewerken',
   'drawing.save': 'Bewaren',

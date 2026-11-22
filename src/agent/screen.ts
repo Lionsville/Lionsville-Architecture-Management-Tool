@@ -313,7 +313,12 @@ export type ScreenView = {
 }
 
 export type Screen = {
-  /** The scope open in the workspace; absent while a home is up. */
+  /**
+   * The scope open in the workspace; absent while a home is up with nothing
+   * open under it. It stays said while a page of the organisation's stands over
+   * the scope (ADR-0033, amended 22 November 2026): the scope is still open, its
+   * view under the page, and a write still lands in it.
+   */
   readonly open?: {
     readonly path: string
     readonly name: string
@@ -321,7 +326,11 @@ export type Screen = {
     /** It has no view at all, its last one removed while it was open: the empty place offering one. */
     readonly noView?: boolean
   }
-  /** Whose home is on screen while nothing is open. */
+  /**
+   * Whose home is on screen while nothing is open — and, beside `open`, whose
+   * page stands over the open scope: the organisation's, its register, its
+   * people or its checks, reached from a view without closing the scope.
+   */
   readonly home?: {
     readonly path: string
     readonly name: string
@@ -355,8 +364,13 @@ export type Screen = {
  */
 export type MovedBy = 'person' | 'agent' | 'provider'
 
-/** The scope a screen is about: the open one, else the home that is up. */
+/**
+ * The scope a screen is about: the open one, else the home that is up — and
+ * where a page of the organisation's stands over the open scope, the
+ * organisation, whose page it is.
+ */
 export function scopeOf(screen: Screen): string | undefined {
+  if (screen.open && screen.home) return screen.home.path
   return screen.open?.path ?? screen.home?.path
 }
 
@@ -381,10 +395,14 @@ function onPerson(screen: Screen, to: Destination): boolean {
   return to.page !== 'people' || to.id === undefined || (screen.page?.page === 'people' && screen.page.id === to.id)
 }
 
-/** A page of a scope's home, with nothing open over it: the home asked for, and the page on it. */
+/**
+ * A page of a scope's home: the home asked for, and the page on it — over that
+ * home with nothing open, or over the scope that stayed open under it. The home
+ * itself is up only with nothing open.
+ */
 function onHome(screen: Screen, page: Page, scope: string): boolean {
-  if (!screen.home || screen.home.path !== scope || screen.open) return false
-  if (page === 'home') return screen.page === undefined
+  if (!screen.home || screen.home.path !== scope) return false
+  if (page === 'home') return !screen.open && screen.page === undefined
   // The technology register's address lands on the register, on its tab.
   return screen.page?.page === (page === 'technologyRegister' ? 'register' : page)
 }
@@ -394,7 +412,9 @@ function onHome(screen: Screen, page: Page, scope: string): boolean {
  * is not, and a scope's own or the window's is up once the scope is right.
  */
 function arrivedInFrame(screen: Screen, page: Page, scope: string): boolean {
-  return scopeOf(screen) === scope && (!isFramePanel(page) || screen.panel === page)
+  // Beside a page of the organisation's over the open scope, a panel may be asked of either.
+  const here = scopeOf(screen) === scope || screen.open?.path === scope
+  return here && (!isFramePanel(page) || screen.panel === page)
 }
 
 /**
@@ -443,7 +463,8 @@ export function landed(screen: Screen, to: Destination & { scope: string }): boo
   const page = to.page
   if (page === undefined) return screen.open !== undefined && screen.page === undefined
   if (HOME_PAGES.includes(page)) {
-    return screen.open === undefined && (page === 'home' ? screen.page === undefined : screen.page?.page === page)
+    // A page of the organisation's lands over the scope that stayed open as well as over its home.
+    return page === 'home' ? screen.open === undefined && screen.page === undefined : screen.home !== undefined && screen.page?.page === page
   }
   // An open of a view the scope does not have lands on its home — with
   // nothing over the cards, as nothing is over the view it lands on otherwise.

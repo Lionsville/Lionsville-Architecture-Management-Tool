@@ -100,6 +100,12 @@ describe('Menu', () => {
     }
   })
 
+  it('says that one of its items is where the person is, when told so', () => {
+    renderShell(<><MenuButton label="More" items={[{ label: 'Register', onSelect: () => {} }]} /><MenuButton label="More: Register" current items={[{ label: 'Register', onSelect: () => {} }]} /></>)
+    expect(screen.getByRole('button', { name: 'More' }).getAttribute('aria-current')).toBeNull()
+    expect(screen.getByRole('button', { name: 'More: Register' }).getAttribute('aria-current')).toBe('page')
+  })
+
   it('walks with the arrows, and Escape closes and puts the focus back', async () => {
     renderShell(<MenuButton label="Colour" items={[{ label: 'One', onSelect: () => {} }, { label: 'Two', onSelect: () => {} }]} />)
     const button = screen.getByRole('button', { name: 'Colour' })

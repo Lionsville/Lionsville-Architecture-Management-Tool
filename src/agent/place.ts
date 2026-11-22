@@ -356,7 +356,7 @@ function pageWords(up: NonNullable<Screen['page']>): Pick<Place, 'id' | 'tab' | 
 export function placeOf(screen: Screen): Place | undefined {
   const beside = { ...(screen.panel !== undefined ? { panel: screen.panel } : {}), ...(screen.list !== undefined ? { list: screen.list } : {}), ...(screen.finding !== undefined ? { finding: screen.finding } : {}) }
   if (screen.open) {
-    const scope = screen.open.path
+    const scope = placeScope(screen.open.path, screen)
     if (screen.page) {
       const up = screen.page
       return { scope, page: up.page, ...pageWords(up), ...beside }
@@ -381,6 +381,11 @@ export function placeOf(screen: Screen): Place | undefined {
     return { scope: screen.home.path, page: up?.page ?? 'home', ...(up !== undefined ? pageWords(up) : {}), ...beside }
   }
   return undefined
+}
+
+/** A page of the organisation's over the open scope is the organisation's place (ADR-0033, amended 22 November 2026): what it stands over is no part of it. */
+function placeScope(open: string, screen: Screen): string {
+  return screen.page && screen.home ? screen.home.path : open
 }
 
 /** What a place says of the view it opens beyond which view: its reading, what it is grouped by, the pair chosen, a chart's focus and lines. */

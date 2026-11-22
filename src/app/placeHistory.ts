@@ -23,7 +23,9 @@
  *   next, and only the place the move settled on is written. A look that
  *   finds the place already waiting does not start the wait again, because
  *   the workspace looks on every render and typing would otherwise keep a
- *   move from ever being written.
+ *   move from ever being written. Whoever wants to know where somebody is,
+ *   rather than what was passed through, is told the settled place too
+ *   (`settled`): the frame keeps the view last worked on by it.
  * - **Back and Forward.** The window says it moved (`popstate`), and the place
  *   in the entry is opened the way `app.open` opens one. That move is the
  *   history moving and not a step: it is marked before it is made, the way an
@@ -83,6 +85,8 @@ export type PlaceHistoryOptions = {
   failed?: (cause: unknown) => void
   /** The fragment changed to one that means to be a place and is none: said, as the boot says it. */
   unknown?: () => void
+  /** A place the looks settled on, written or already the entry's: where somebody is, rather than passed through. */
+  settled?: (place: Place) => void
   now?: () => number
   setTimer?: (run: () => void, ms: number) => unknown
   clearTimer?: (timer: unknown) => void
@@ -93,7 +97,7 @@ type Moving = { from: Place | undefined; until: number }
 
 export class PlaceHistory {
   readonly #window: HistoryWindow
-  readonly #options: Required<Omit<PlaceHistoryOptions, 'failed' | 'unknown'>> & Pick<PlaceHistoryOptions, 'failed' | 'unknown'>
+  readonly #options: Required<Omit<PlaceHistoryOptions, 'failed' | 'unknown' | 'settled'>> & Pick<PlaceHistoryOptions, 'failed' | 'unknown' | 'settled'>
   /** The place the current entry holds, as this class last wrote or was told it. */
   #entry: Place | undefined
   /** The place the last look found, written or not. */
@@ -154,11 +158,13 @@ export class PlaceHistory {
       if (samePlace(place, moving.from) && !samePlace(place, this.#entry)) return
       this.#moving = undefined
       if (!samePlace(place, this.#entry)) this.#write('replace', place)
+      this.#options.settled?.(place)
       return
     }
     this.#moving = undefined
     const step = stepBetween(this.#entry, place)
     if (step !== 'none') this.#write(step, place)
+    this.#options.settled?.(place)
   }
 
   /** The window moved: open the place its entry holds. */

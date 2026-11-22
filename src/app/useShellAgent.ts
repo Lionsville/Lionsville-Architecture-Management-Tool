@@ -23,6 +23,7 @@ import type { PeopleView } from '../agent/people'
 import type { ScopesView } from '../agent/scopeTree'
 import type { ChartLines, Destination, FramePanel, MovedBy, Page, Screen } from '../agent/screen'
 import { throughGuard } from './frame/frameStore'
+import { noteLastView } from './frame/lastView'
 import { askToEdit } from '../widgets/kit/editOnArrival'
 import type { FrameState, FrameStore } from './frame/frameStore'
 import { boardsDrawing } from '../model'
@@ -121,36 +122,33 @@ export function useShellAgent(deps: {
   initialFramePage?: 'work' | 'activity' | 'preferences' | 'history'
   /** The tab and the look of the page the address arrived on: what the frame holds for it. */
   initialPageLook?: { page: Page; tab?: string; look?: string }
+  /** The tree and its index read again: what a page of the organisation's over the open scope reads, once that scope is written. */
+  readTree?: () => void
+  /** A screen the window's history settled on: where somebody is, for whoever keeps the places last worked in. */
+  onSettled?: (screen: Screen) => void
 }) {
   const { gateway, status, tree, project, home, homeName, organisationName, goHome, openScopeAt, notify, s } = deps
   const watchScreen = deps.watchScreen ?? false
   const report = deps.report ?? NOBODY
   const { orgPage, orgRecord, setOrgPage } = useOrgPage()
-  const [orgPageRequest, setOrgPageRequest] = useState<OrgPageRequest | undefined>(
-    () => (deps.initialHomePage ? { page: deps.initialHomePage, nonce: 1, ...pickOf(deps.initialHomePage, deps.initialPick) } : undefined),
-  )
+  const { orgPageRequest, setOrgPageRequest, askPage } = useOrgPageRequest(deps.initialHomePage, deps.initialPick)
   /**
    * A home is opened as itself: the home asked for, and the page over it said
    * every time — closed for `home` — because the screen may be up with a page
    * open over its cards, and a move to the home that left that page up would
    * not have arrived where it was sent.
    */
-  const homeAt = useCallback((scope: ScopePath, page: OrgPage | 'home', select?: string, evaluation?: string, returns?: true, finding?: string, field?: string) => {
+  const homeAt = useCallback((scope: ScopePath, ...asked: PageAsk) => {
     goHome(scope)
-    const picks = page === 'people' || page === 'checks' || page === 'topics' || page === 'blocks' || page === 'register'
-    setOrgPageRequest((prev) => ({
-      page, nonce: (prev?.nonce ?? 0) + 1, ...(picks && select !== undefined ? { select } : {}),
-      ...(page === 'blocks' && evaluation !== undefined ? { evaluation } : {}),
-      ...(returns ? { returns } : {}),
-      ...(finding !== undefined ? { finding } : {}), ...(page === 'settings' && field !== undefined ? { field } : {}),
-    }))
-  }, [goHome])
+    askPage(...asked)
+  }, [goHome, askPage])
   /** A building block's page over the organisation's home, on a scope's evaluation where one is named (ADR-0043 §8). */
   const openBlock = useCallback((block: string, evaluation?: string) => homeAt(ROOT_SCOPE, 'blocks', block, evaluation, true), [homeAt])
   // A request is for the screen that is up. Once a scope is open that screen
   // is gone, and the home that comes back later — by a crumb, or a scope with
   // nothing to show — comes back as itself, not with the page last asked for.
-  useEffect(() => { if (project) setOrgPageRequest(undefined) }, [project])
+  // Nor with a page that stood over the scope and was left: once none is up, none is asked for.
+  useEffect(() => { if (project && orgPage === undefined) setOrgPageRequest(undefined) }, [project, orgPage, setOrgPageRequest])
   const agentSessionRef = useRef<WorkspaceAgentView | undefined>(undefined)
   /** The screen the last look found: what an open that ends on a home compares that home with. */
   const lastLook = useRef<Screen | undefined>(undefined)
@@ -177,37 +175,12 @@ export function useShellAgent(deps: {
     if (backUnder(frame, () => screenNow('under'), to)) { shut(); return }
     throughGuard(frame, to, () => { shut(); askEditOf(to); moved.current(to, nothing) }, stay) // shut with the move: Keep writing leaves it up, at its address
   }, [homeAt, project, home, frame, screenNow])
-  moved.current = (to, nothing) => {
-    const listPage = holdInFrame(frame, to)
-    const record = to.page === 'people' ? to.id ?? to.select : undefined
-    if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
-      // The Checks page picks the check its id names; the People page the person in the frame, set above.
-      homeAt(to.scope, listPage as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.page === 'people' ? record : to.select, undefined, undefined, to.page === 'checks' ? to.select : undefined, to.field)
-      return
-    }
-    const open = agentSessionRef.current
-    if (project && project.path === to.scope && open) {
-      // A view's page with no id opens the one of its kind that is there, and
-      // the scope's home where there is none: an open never makes a view.
-      if (to.page !== undefined && VIEW_PAGES.includes(to.page)) {
-        const id = viewFor(to.page, to.id, open.current().diagrams, open.activeDiagramId())
-        if (id === undefined) { homeAt(to.scope, 'home'); return }
-        open.show({ ...to, id })
-        return
-      }
-      open.show(to)
-      return
-    }
-    // Where it lands on the home, the home as itself, as above.
-    openScopeAt(to.scope, initialPageFor(to), {
-      home: (path) => {
-        const before = lastLook.current
-        if (before !== undefined && arrived(before, { page: 'home' }, path)) nothing()
-        homeAt(path, 'home')
-      },
-      nothing,
-    })
-  }
+  const overUp = useLatest(project !== undefined && orgPage !== undefined)
+  /** A page of the organisation's that stood over the open scope is left: the scope shows again, as it was. */
+  const leaveOver = useCallback(() => { if (overUp.current) askPage('home') }, [askPage, overUp])
+  moved.current = (to, nothing) => moveTo(to, nothing, {
+    frame, project, open: agentSessionRef.current, lastLook, homeAt, askPage, leaveOver, openScopeAt, readTree: preferences.current.readTree,
+  })
   /**
    * The window's history (ADR-0033): every look below is handed to it, so a
    * move to another place is a step whoever made it, and Back opens the place
@@ -224,7 +197,7 @@ export function useShellAgent(deps: {
     sayLanded(place, near, s, (said) => notify(said, 'info'))
     return near
   }, [tree, project, report, notify, s])
-  const lookAtPlace = usePlaceHistory({ open: (place, stay) => openFor(place, NOBODY, stay), nearest, failed: report, unknown: () => notify(s('shell.placeUnknown'), 'info') })
+  const lookAtPlace = usePlaceHistory({ open: (place, stay) => openFor(place, NOBODY, stay), nearest, failed: report, unknown: () => notify(s('shell.placeUnknown'), 'info'), settled: (on) => { noteLastView(frame, on); preferences.current.onSettled?.(on) } })
   /**
    * Where the app is, as `app.current` says it (ADR-0019), held as state so a
    * provider's chrome is drawn again when it moves — `screenNow` is read at
@@ -326,10 +299,98 @@ export function useShellAgent(deps: {
     if (view) lookAgainRef.current()
   }, [registerAgent])
   return {
-    orgPageRequest, setOrgPage, openSomewhere, openBlock, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
+    orgPageRequest, setOrgPage, openSomewhere, openBlock, leaveOver, driving: agentShell.driving, stop: agentShell.stop, registerAgentSession,
     screen: where?.screen, movedBy: where?.by ?? 'person', screenNow, selectedNow, openSession, setPanel,
     lookAgain: useCallback(() => lookAgainRef.current(), []),
   }
+}
+
+/** What is asked of a home's pages: the page, and what it picks or lands on (`OrgPageRequest`). */
+type PageAsk = [page: OrgPage | 'home', select?: string, evaluation?: string, returns?: true, finding?: string, field?: string]
+
+/** The request the home's pages read, and the asking: one of them, or `home` for none. */
+function useOrgPageRequest(initial: OrgPage | undefined, pick: string | undefined) {
+  const [orgPageRequest, setOrgPageRequest] = useState<OrgPageRequest | undefined>(
+    () => (initial ? { page: initial, nonce: 1, ...pickOf(initial, pick) } : undefined),
+  )
+  const askPage = useCallback((...[page, select, evaluation, returns, finding, field]: PageAsk) => {
+    const picks = page === 'people' || page === 'checks' || page === 'topics' || page === 'blocks' || page === 'register'
+    setOrgPageRequest((prev) => ({
+      page, nonce: (prev?.nonce ?? 0) + 1, ...(picks && select !== undefined ? { select } : {}),
+      ...(page === 'blocks' && evaluation !== undefined ? { evaluation } : {}),
+      ...(returns ? { returns } : {}),
+      ...(finding !== undefined ? { finding } : {}), ...(page === 'settings' && field !== undefined ? { field } : {}),
+    }))
+  }, [])
+  return { orgPageRequest, setOrgPageRequest, askPage }
+}
+
+/**
+ * The organisation's pages that stand over the scope that is open (ADR-0033,
+ * amended 22 November 2026): its register, its people and its checks are read
+ * off the whole tree and keep nothing of their own in a session, so they are
+ * drawn over the workspace as its history is, and the scope stays open — its
+ * tabs in row two, its undo, its name in the trail. The other pages of a home
+ * write where a session would not see it, and still close the scope first.
+ */
+export const OVER_THE_SCOPE: readonly Page[] = ['register', 'technologyRegister', 'people', 'checks']
+
+/** Whether a destination is a page of the organisation's that opens over the scope that is open. */
+export function standsOver(to: Destination & { scope: string }, open: ScopePath | undefined): boolean {
+  return open !== undefined && to.scope === ROOT_SCOPE && to.page !== undefined && OVER_THE_SCOPE.includes(to.page)
+}
+
+/** What a move is made with: what the shell holds, and its ways to a home, to a page over it and into a scope. */
+type MoveWith = {
+  frame: FrameStore | undefined
+  project: ScopeSnapshot | undefined
+  open: WorkspaceAgentView | undefined
+  /** The screen the last look found, read when an open ends on a home. */
+  lastLook: { readonly current: Screen | undefined }
+  homeAt: (scope: ScopePath, ...asked: PageAsk) => void
+  askPage: (...asked: PageAsk) => void
+  leaveOver: () => void
+  openScopeAt: (path: ScopePath, page?: InitialPage, ends?: OpenEnds) => void
+  readTree: (() => void) | undefined
+}
+
+/** The move itself, once nothing guards it: a page of a home, a view or a page of the scope that is open, or another scope. */
+function moveTo(to: Destination & { scope: string }, nothing: () => void, held: MoveWith): void {
+  const { frame, project, open, homeAt, askPage, openScopeAt } = held
+  const listPage = holdInFrame(frame, to)
+  const record = to.page === 'people' ? to.id ?? to.select : undefined
+  if (to.page !== undefined && HOME_PAGES.includes(to.page)) {
+    // The Checks page picks the check its id names; the People page the person in the frame, set above.
+    const asked: PageAsk = [listPage as OrgPage | 'home', to.page === 'checks' || to.page === 'topics' || to.page === 'blocks' ? to.id : to.page === 'people' ? record : to.select, undefined, undefined, to.page === 'checks' ? to.select : undefined, to.field]
+    if (!standsOver(to, project?.path)) { homeAt(to.scope, ...asked); return }
+    // Over the scope that is open: what it has not written yet is written first, so the page reads the scope as it stands.
+    void open?.save().then(held.readTree, () => undefined)
+    askPage(...asked)
+    return
+  }
+  // Anywhere else leaves a page of the organisation's that stood over the scope.
+  held.leaveOver()
+  if (project && project.path === to.scope && open) {
+    // A view's page with no id opens the one of its kind that is there, and
+    // the scope's home where there is none: an open never makes a view.
+    if (to.page !== undefined && VIEW_PAGES.includes(to.page)) {
+      const id = viewFor(to.page, to.id, open.current().diagrams, open.activeDiagramId())
+      if (id === undefined) { homeAt(to.scope, 'home'); return }
+      open.show({ ...to, id })
+      return
+    }
+    open.show(to)
+    return
+  }
+  // Where it lands on the home, the home as itself, as above.
+  openScopeAt(to.scope, initialPageFor(to), {
+    home: (path) => {
+      const before = held.lastLook.current
+      if (before !== undefined && arrived(before, { page: 'home' }, path)) nothing()
+      homeAt(path, 'home')
+    },
+    nothing,
+  })
 }
 
 /**
@@ -587,7 +648,8 @@ function screenOf(
         ...(active ? { view: { id: active.id, name: active.name, kind: active.kind, ...(held.editingDrawing?.() === active.id ? { editing: true } : {}) } } : {}),
         ...(model.diagrams.length === 0 ? { noView: true } : {}),
       },
-      ...(page ? { page } : {}),
+      // A page of the organisation's over the scope: whose it is, and the page, over whatever the scope shows under it.
+      ...(orgPage ? { home: { path: ROOT_SCOPE, name: organisationName }, page: { page: orgPage } as Screen['page'] } : page ? { page } : {}),
     }
   }
   if (project) return { open: { path: project.path, name: project.model.name } }

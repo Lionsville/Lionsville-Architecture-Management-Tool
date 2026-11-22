@@ -297,15 +297,18 @@ export type MenuButtonProps = {
   'aria-label'?: string
   'data-guide'?: string
   'data-testid'?: string
+  /** One of its items is where the person is: the button says so, as a tab in a row of places does. */
+  current?: boolean
 }
 
 /** A word that opens a menu. */
-export function MenuButton({ label, menuLabel, items, variant = 'plain', size, 'aria-label': name, 'data-guide': guide, 'data-testid': testId }: MenuButtonProps) {
+export function MenuButton({ label, menuLabel, items, variant = 'plain', size, 'aria-label': name, 'data-guide': guide, 'data-testid': testId, current = false }: MenuButtonProps) {
   const { anchor, open, toggle, close } = useAnchored()
   return (
     <>
       <Button
         ref={anchor} variant={variant} size={size} aria-label={name} data-guide={guide} data-testid={testId} aria-haspopup="menu" aria-expanded={open}
+        aria-current={current ? 'page' : undefined}
         onClick={toggle}
       >
         {label}

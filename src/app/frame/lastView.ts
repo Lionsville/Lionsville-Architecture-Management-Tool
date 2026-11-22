@@ -9,8 +9,9 @@
  * where a board was: without this the diagram somebody left is several presses
  * away, and nothing on screen says which one it was. So the frame keeps the
  * last view of each scope and which scope was worked in last
- * (`FrameState.lastViews`, `lastScope`), noted at every look at the screen that
- * finds a view under it, and row two draws the newest right after Home.
+ * (`FrameState.lastViews`, `lastScope`), noted wherever the window's history
+ * settles on a view (`placeHistory.ts`), and row two draws the newest right
+ * after Home.
  *
  * **It lasts as the list of places last worked in does** (`recentPlaces.ts`):
  * on this computer, per source. The frame's own copy is the session's; as the
@@ -41,11 +42,15 @@ export type LastViews = {
   readonly lastScope?: string
 }
 
-/** The view under whatever is on screen: the open scope's, whichever page stands over it. Nothing on a home. */
+/**
+ * The view that is up: the open scope's, with no page over it. A view under a
+ * page is not noted — a scope opened straight on one of its pages has a tab
+ * under it that nobody was on — and nothing is on a home.
+ */
 export function lastViewOf(screen: Screen): LastView | undefined {
   const open = screen.open
   const view = open?.view
-  if (!open || !view) return undefined
+  if (!open || !view || screen.page !== undefined) return undefined
   return { scope: open.path, in: open.name, page: viewPage(view.kind as DesignDiagram['kind']), id: view.id, name: view.name }
 }
 
@@ -55,6 +60,16 @@ const sameView = (a: LastView | undefined, b: LastView) => a !== undefined && a.
 export function withLastView(held: LastViews, seen: LastView): LastViews {
   if (held.lastScope === seen.scope && sameView(held.lastViews?.[seen.scope], seen)) return held
   return { lastViews: { ...held.lastViews, [seen.scope]: seen }, lastScope: seen.scope }
+}
+
+/**
+ * A screen the app settled on, noted where a view is up on it. Asked of the
+ * history's settled places and not of every screen: a scope opened on one of
+ * its pages shows the view under it for a moment first, and nobody was on it.
+ */
+export function noteLastView(frame: { get(): LastViews; set(patch: LastViews): void } | undefined, settled: Screen): void {
+  const seen = lastViewOf(settled)
+  if (frame && seen) frame.set(withLastView(frame.get(), seen))
 }
 
 /** The view last worked on, of the scope last worked in. */

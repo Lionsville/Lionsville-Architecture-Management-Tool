@@ -1808,6 +1808,7 @@ export const EN = {
   'frame.lastView': 'Back to {name}',
   'frame.lastViewIn': 'Back to {name} in {scope}',
   'frame.more': 'More',
+  'frame.moreOn': 'More: {place}',
   'frame.newView': 'New view',
   'drawing.editing': 'Editing {name}',
   'drawing.save': 'Save',

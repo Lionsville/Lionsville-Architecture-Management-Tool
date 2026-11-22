@@ -308,6 +308,8 @@ describe('the tree', () => {
     fireEvent.click(await screen.findByTestId('home-finance'))
     fireEvent.click(await screen.findByTestId('board-l7'))
     await screen.findByRole('tab', { name: /L7/, selected: true })
+    // On the board until it is a place in the history: a view passed through on the way somewhere is not where anybody worked.
+    await waitFor(() => expect(window.location.hash).toMatch(/\/-\/board\/l7$/))
     fireEvent.click(screen.getByTestId('crumb-'))
     const continuing = await screen.findByTestId('continue')
     expect(continuing.textContent).toContain('L7')

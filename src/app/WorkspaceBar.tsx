@@ -25,6 +25,7 @@ import { FrameStoreContext, useFrameFacts } from './frame/frameStore'
 import type { WorkTrouble } from './frame/frameStore'
 import type { DesignDiagram } from '../model/types'
 import type { WorkspaceParts } from './workspaceParts'
+import { usePlaceHost } from '../widgets/kit/placeHost'
 
 /**
  * What a page is told of the window: nothing of the rows' duties, since the
@@ -105,7 +106,9 @@ export function WorkspaceBar({ parts }: { parts: WorkspaceParts }) {
   // the move (`activityMoves.ts`).
   const recentActivity = useMemo(() => scopeActivity(scope, keptLog, history), [scope, keptLog, history])
   const active = session.model.diagrams.find((one) => one.id === session.activeDiagramId)
-  const boardUp = pages.page() === undefined && requests.documentationShown === undefined
+  // Under any page the frame says is up, a page of the organisation's over the scope included, the keys are the frame's as on a page of the scope's own.
+  const pageOver = usePlaceHost()?.pageUp ?? false
+  const boardUp = !pageOver && pages.page() === undefined && requests.documentationShown === undefined
     && (active?.kind === 'layer7' || active?.kind === 'container')
   const looking = active !== undefined && isLookingAway(active, parts.viewing.days)
   const bands = useLookBand(parts, active, looking)

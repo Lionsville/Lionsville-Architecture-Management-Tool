@@ -1572,6 +1572,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.lastView': 'Zurück zu {name}',
   'frame.lastViewIn': 'Zurück zu {name} in {scope}',
   'frame.more': 'Mehr',
+  'frame.moreOn': 'Mehr: {place}',
   'frame.newView': 'Neue Ansicht',
   'drawing.editing': '{name} bearbeiten',
   'drawing.save': 'Speichern',

@@ -95,7 +95,7 @@ function PeopleDoor({ people, open, onClose, request, s, windowChrome }: {
   )
 }
 
-export function HomePages({ sourcePage, pages, at, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onOpenRow, onOpenRowPage, onLink, everyScope, treeRead, today, language, topics, s, windowChrome, ready = true }: {
+export function HomePages({ sourcePage, pages, at, register, technology, registerScopeName, scopeName, checks, people, readOnly, open, onHome, onChecksOf, onOpenRow, onOpenRowPage, onLink, everyScope, treeRead, today, language, topics, s, windowChrome, ready = true }: {
   pages: HomePagesState
   /** A page of the open source's provider's own, where one is asked for: drawn by the shell, which holds what it is handed. */
   sourcePage?: ((page: string, onClose: () => void) => ReactNode) | undefined
@@ -124,6 +124,8 @@ export function HomePages({ sourcePage, pages, at, register, technology, registe
   open: Organisation['open']
   /** A scope's home, where a finding about the scope itself is put right (ADR-0036, amended 17 October 2026). */
   onHome: (path: ScopePath) => void
+  /** The Checks page over another scope instead, where the pages do not stand over a home that simply moves under them. */
+  onChecksOf?: (path: ScopePath) => void
   onOpenRow: ((scope: ScopePath, id: ElementId) => void) | undefined
   onOpenRowPage: ((scope: ScopePath, id: ElementId) => void) | undefined
   onLink: ((scope: ScopePath, id: ElementId, to: ScopePath) => void) | undefined
@@ -170,7 +172,7 @@ export function HomePages({ sourcePage, pages, at, register, technology, registe
       <ChecksPage
         open={openPage === 'checks'} onClose={close} rows={checks.rows} counts={checks.counts}
         request={asked?.page === 'checks' ? asked : undefined} remember={`checks\u0000${at}`} at={at} scopes={scopes}
-        onScope={(path) => { close(); onHome(path); pages.open('checks') }} scopeName={scopeName} index={index} today={today} onGo={go} onLink={onLink} fixes={fixes}
+        onScope={onChecksOf ?? ((path) => { close(); onHome(path); pages.open('checks') })} scopeName={scopeName} index={index} today={today} onGo={go} onLink={onLink} fixes={fixes}
         {...(at !== ROOT_SCOPE ? { onOpenScope: () => open(at) } : {})} s={s} windowChrome={windowChrome}
       />
     </>

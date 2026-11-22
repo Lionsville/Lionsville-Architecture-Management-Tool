@@ -1072,8 +1072,9 @@ src/app/          The shell around the editor.
                                       postures (`ScopeTreePanel`), *Your work*
                                       and Activity (`FramePanels`), Preferences
                                       as a page, *Continue* (`recentPlaces`),
-                                      and what the screen under it says
-                                      (`frameStore`)
+                                      the way back to the view last worked on
+                                      (`lastView`), and what the screen under
+                                      it says (`frameStore`)
                     handOver          every save said only once it has, and
                                       nothing of a dialog the person closed
                     DrawingPage · DrawingEditorParts · DrawingPanels ·
@@ -1463,7 +1464,10 @@ under one would be filed under nothing.
 
 With no address the app lands on the **organisation screen**
 (`src/app/organisation/`), the root scope's home, where *Continue* lists the
-places last worked in on this computer (`app/frame/recentPlaces`). A home is its
+places last worked in on this computer (`app/frame/recentPlaces`). From an open
+scope the organisation's register, people and checks are drawn over the
+workspace instead (`organisation/OrganisationOver`; ADR-0033, amended 22
+November 2026), so the scope stays open under them. A home is its
 name, client, links and description, then one-line rows: the views here, what is
 kept here, and what it does not hold folded into one line of names. The tree is
 docked beside it (`app/frame/ScopeTreePanel`), each row saying how much is kept

@@ -18,6 +18,7 @@ import { createPortal } from 'react-dom';
 import { BoardBar, type BoardBarAdd, type BoardBarShow } from './BoardBar';
 import { Button as KitButton } from '../widgets/kit/Button';
 import { usePlaceHost } from '../widgets/kit/placeHost';
+import type { PlaceHost } from '../widgets/kit/placeHost';
 import { DateField } from '../widgets/kit/Field';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
@@ -461,7 +462,7 @@ export function EditorToolbar(props: EditorToolbarProps) {
               <Tab
                 key={diagram.id}
                 // The day a plan board is saved on is said on the tab, so its name says it too.
-                value={diagram.id} aria-label={diagram.asOf ? `${diagram.name} ${formatDay(diagram.asOf, language)}` : diagram.name}
+                value={diagram.id} aria-label={diagram.asOf ? `${diagram.name} ${formatDay(diagram.asOf, language)}` : diagram.name} {...wasHere(host, diagram.id, tabs, props)}
                 // Pressing the name of the view that is up asks about the view itself: *This view*.
                 onClick={diagram.id === props.activeDiagram.id && !host?.pageUp ? props.onOpenThisView : undefined}
                 {...tabMenuDoors(diagram.id, openTabMenu, openTabMenuBelow)}
@@ -653,6 +654,14 @@ function activeTabOf(props: EditorToolbarProps): string {
 
 function selectedTab(tabs: readonly DesignDiagram[], active: string): string | false {
   return tabs.some((d) => d.id === active) ? active : false;
+}
+
+/**
+ * While a page is up no tab is the one chosen, and the view under the page is
+ * still where the person was: its tab says so, quietly, and leads back to it.
+ */
+function wasHere(host: PlaceHost | undefined, id: string, tabs: readonly DesignDiagram[], props: EditorToolbarProps): { 'data-was-here'?: true } {
+  return host?.pageUp === true && selectedTab(tabs, activeTabOf(props)) === id ? { 'data-was-here': true } : {}
 }
 
 /**

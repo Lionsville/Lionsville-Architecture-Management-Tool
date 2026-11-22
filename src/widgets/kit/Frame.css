@@ -13,6 +13,10 @@
 
 .kit-frame__views .MuiTabs-root { min-height: var(--tabs-h); }
 .kit-frame__views .MuiTab-root { min-height: var(--tabs-h); padding-block: 0; text-transform: none; }
+/* Under a page no tab is the one chosen: the view the page stands over is marked as where the person was, in the line's own colour. */
+.kit-frame__views .MuiTab-root[data-was-here] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--line-strong); }
+/* More, while the page that is up was reached from it: marked as a tab is, to the row's own edge. */
+.kit-frame__row--two .kit-button[aria-current='page'] { color: var(--ink); font-weight: var(--fw-strong); min-height: var(--tabs-h); border-radius: 0; box-shadow: inset 0 -2px 0 var(--accent); }
 .kit-frame__grow { flex: 1 1 0; min-width: 0; }
 .kit-frame__steps { display: contents; }
 .kit-frame__body { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }

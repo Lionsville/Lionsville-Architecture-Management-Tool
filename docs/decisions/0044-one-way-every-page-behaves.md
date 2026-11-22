@@ -2,7 +2,9 @@
 
 * Status: accepted, 25 October 2026; implemented, 25 October 2026 (3.8.0);
   amended for 4.0.0 by ADR-0033 (*pages are places*): a page is left by Back,
-  Esc, *Home* or a view's tab, and its own × and the name `page.close` are gone
+  Esc, *Home* or a view's tab, and its own × and the name `page.close` are gone;
+  amended 22 November 2026 by ADR-0033 (*the organisation's pages stand over
+  the open scope*): such a page is left the same ways, for the scope as it was
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0005 (a top bar that says where you are), ADR-0033 (back goes
@@ -126,3 +128,16 @@ not the home bare.
 
 **Names**: `page.close`, `page.seam`, `shell.website`, `agent.download`.
 
+## Amended 22 November 2026: a page of the organisation's over an open scope
+
+The register, the people, the checks and the operating model, asked for while
+a scope is open, stand over that scope instead of closing it (ADR-0033, amended
+the same day). They behave as every page does: under the two rows, left by Esc,
+Back or a view's tab, with the page on top the one Esc closes where a page of
+the scope's own is under it. What leaving shows is the scope as it was. Rule 3
+holds as written: a crumb closes the page and goes where it says, which for the
+scope's own crumb is its home. Row two says which page is up in every case:
+a tab's mark for a scope's page, *More* marked and naming the page for one
+reached from it, and a quiet line on the view the page stands over.
+
+**Names**: `frame.lastView`.

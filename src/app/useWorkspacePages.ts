@@ -46,6 +46,8 @@ export function useWorkspacePages(deps: {
   documentationShown?: string | undefined
   /** The tab menu's *Duplicate as of…*, which a plan offers with its day. */
   duplicateBoard?: ((diagramId: string, day: string) => void) | undefined
+  /** A page of the organisation's that stands over this scope is left when a view of it is opened from its own tabs. */
+  onLeaveOver?: (() => void) | undefined
 }) {
   const { session, scope, makeId, s, viewing, focusElement, maps, landscapes, onGoHome, documentationShown } = deps
   // A platform's page (ADR-0013): read only, so it needs nobody's actions.
@@ -67,7 +69,7 @@ export function useWorkspacePages(deps: {
   const unitViews = useUnitViews({ session, makeId, s })
   /** The assignment chosen on an organisation chart, which the inspector beside it shows (ADR-0036 §7). */
   const chartChoice = useChartChoice()
-  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings, unitViews, operating, scopePages })
+  const openers = usePageOpeners({ session, records, plans, platformReading, maps, landscapes, drawings, unitViews, operating, scopePages, onLeaveOver: deps.onLeaveOver })
   /** An element selected on a view as it is opened, where the view draws it (ADR-0019, amended). */
   const viewSelect = useViewSelect({ session, focusElement, landscapes })
 
@@ -249,6 +251,7 @@ function usePageOpeners(deps: {
   unitViews: UnitViews
   operating: { show: (id?: string) => void; close: () => void }
   scopePages: { show: (page: ScopePageName, id?: string) => void }
+  onLeaveOver: (() => void) | undefined
 }) {
   const { session, maps, landscapes, drawings, unitViews } = deps
   const { show: showOperating, close: closeOperating } = deps.operating
@@ -291,12 +294,15 @@ function usePageOpeners(deps: {
     deps.scopePages.show('principles', id)
   }, [closeRecords, closePlans, closeReport, deps.scopePages])
   /** Every page beside the canvas shut, so the tab shows: what opening a view does first. */
+  const { onLeaveOver } = deps
   const closePages = useCallback(() => {
     closeRecords()
     closePlans()
     closeReport()
     closeOperating()
-  }, [closeRecords, closePlans, closeReport, closeOperating])
+    // And a page of the organisation's over the scope, which is none of these: a tab pressed under it shows the view.
+    onLeaveOver?.()
+  }, [closeRecords, closePlans, closeReport, closeOperating, onLeaveOver])
   /** A view on its tab, whichever kind: a board, a sheet, a map or a landscape (ADR-0016). */
   const openView = useCallback((id: string) => {
     closePages()

@@ -12,6 +12,7 @@
  * once per render, so a hook below must depend on a field and never on one
  * of these objects, which is new every time.
  */
+import type { ReactNode } from 'react'
 import type { PeopleRegisterAccess } from '../people/ui/access'
 import type { PersonId } from '../model/person'
 import type { Language, Translate } from '../i18n'
@@ -247,6 +248,14 @@ export type WorkspaceNavigation = {
    * address a link starts from is the source's. Absent, no reader draws one.
    */
   onShareLink?: (place: Place) => void
+  /**
+   * The organisation's pages, drawn over this scope while one is asked for
+   * (ADR-0033, amended 22 November 2026): the shell's to draw, since they read
+   * the whole tree, and drawn here so the scope stays open under them.
+   */
+  over?: ReactNode
+  /** A view or a page of this scope was opened from inside it: a page of the organisation's that stood over it is left. */
+  onLeaveOver?: () => void
   /**
    * Which page to show the moment this appears, when it was opened for one.
    *

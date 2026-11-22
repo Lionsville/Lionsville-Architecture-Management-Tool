@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import type { Screen } from '../../agent/screen'
-import { recentFrom, recentOf, remembered, renamedIn, stillThere } from './recentPlaces'
+import { RECENT_KEY, recentFrom, recentOf, rememberSettled, remembered, renamedIn, stillThere } from './recentPlaces'
 import type { RecentPlace } from './recentPlaces'
 
 const AT = '2026-11-07T10:00:00.000Z'
@@ -73,5 +73,27 @@ describe('the list', () => {
     const record = (id: string): RecentPlace => ({ scope: 'road', page: 'observations', id, in: 'Road', at: AT })
     const kept = [record('a'), record('b'), record('c'), place('road', 'v')]
     expect(stillThere(kept, () => true).map((one) => one.id)).toEqual(['a', 'v'])
+  })
+})
+
+describe('the places written down as the app settles', () => {
+  const board = { open: { path: 'freight', name: 'Freight', view: { id: 'landscape', name: 'Application landscape', kind: 'layer7' } } } as const
+  const kept = () => {
+    let held: Record<string, unknown> = {}
+    return { readPreferences: () => held, writePreference: (patch: Record<string, unknown>) => { held = { ...held, ...patch } }, writes: () => held }
+  }
+
+  it('writes a settled place under its source, once per arrival however often it settles', () => {
+    const prefs = kept()
+    let writes = 0
+    const remember = rememberSettled({ readPreferences: prefs.readPreferences, writePreference: (patch) => { writes += 1; prefs.writePreference(patch) } }, 'here')
+    remember(board)
+    remember(board)
+    expect(writes).toBe(1)
+    expect(recentFrom(prefs.writes()[RECENT_KEY], 'here').map((one) => one.name)).toEqual(['Application landscape'])
+    // Somewhere that is no place worth coming back to, and the board again: an arrival of its own.
+    remember({ home: { path: '', name: 'Acme' } })
+    remember(board)
+    expect(writes).toBe(2)
   })
 })

@@ -93,3 +93,26 @@ export function stillThere(list: readonly RecentPlace[], scopeIs: (path: string)
 }
 
 export const RECENT_KEY = 'recentPlaces'
+
+/** As much of the preferences as the list is kept in. */
+type Kept = { readPreferences(): Record<string, unknown>; writePreference(patch: Record<string, unknown>): void }
+
+/**
+ * A place worth coming back to, written down for *Continue* as the app settles
+ * on it: a preference of this computer's, under its source. Told every screen
+ * the window's history settles on (`PlaceHistory`'s `settled`), so a screen
+ * passed through on the way — the view under a page a scope was opened on — is
+ * never listed; and once per arrival, however long the app stays.
+ */
+export function rememberSettled(prefs: Kept, by: string): (settled: Screen) => void {
+  let last: string | undefined
+  return (settled) => {
+    const here = recentOf(settled, new Date().toISOString())
+    const key = here && `${here.scope}|${here.page}|${here.id ?? ''}`
+    if (key === last) return
+    last = key
+    if (!here) return
+    const stored = prefs.readPreferences()[RECENT_KEY] as Record<string, unknown> | undefined
+    prefs.writePreference({ [RECENT_KEY]: { ...stored, [by]: remembered(recentFrom(stored, by), here) } })
+  }
+}

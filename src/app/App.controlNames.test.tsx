@@ -287,6 +287,13 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))
     await screen.findByTestId('served-by')
   }]],
+  // The view last worked on, one press away from the home it was left for: on the board until it is a place in the history.
+  [['a home, after a board', ['frame.lastView'], async () => {
+    await onBoard()
+    await waitFor(() => expect(window.location.hash).toContain('/-/board/'))
+    fireEvent.click(screen.getByTestId('frame-home'))
+    await screen.findByTestId('boards')
+  }]],
   [['a landscape’s home', ['org.boards', 'org.newBoard'], async () => {
     show(false)
     fireEvent.click(await screen.findByTestId(`home-${landscape.path}`))
@@ -518,7 +525,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   }]],
   // A page over a view keeps the way back to that view in row two.
-  [['the roadmap', ['roadmap.newPlan', 'roadmap.findings', 'roadmap.axis', 'frame.lastView'], async () => {
+  [['the roadmap', ['roadmap.newPlan', 'roadmap.findings', 'roadmap.axis'], async () => {
     await page('Roadmap')
   }],
   ['a plan', ['plan.addElement', 'plan.milestone', 'plan.addDecision', 'plan.page', 'plan.status', 'plan.move', 'plan.editText'], async () => {
