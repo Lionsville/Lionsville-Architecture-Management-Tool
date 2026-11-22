@@ -260,3 +260,25 @@ The guard is unchanged; how it is told is not. Every change's schema says
 (`CONVENTIONS`) and in `rules.read ifRevision` (ADR-0007, amended the same
 day). The open question above is answered the same way it was: no warning
 on an unguarded write.
+
+## Amended 22 November 2026 — a change that reads before it writes is a script, tried first
+
+`batch` is still several commands as one step, and its dry run still says
+what they would do. What a batch cannot do is read, decide and then write.
+A script can (ADR-0050): `simulate` runs it with every scope it touches on a
+copy, each write built and refused by the handler as a plain one is, and
+answers what would change with a token; `run` lands exactly those commands
+as one step for each scope, each held to the revision it was tried at.
+
+* A script has no `batch` and no `undo`: it is the batch, and it lands
+  nothing to take back until it is run.
+* **One step still means one step.** A run on a session is one transaction
+  of the agent's: one undo, one line.
+* A simulation that is run on a scope that moved is refused `agent.stale`,
+  as a guarded write is, and is not worked out again over the scope as it
+  stands: what the person agreed to was a change to a scope that is gone.
+* What a write does to *another* scope — a merge across the tree, a unit
+  removed with what other scopes keep of it, a unit's domains given its
+  type — is not tried in a script and is refused there
+  (`agent.notInScript`); the plain tools do it as before.
+

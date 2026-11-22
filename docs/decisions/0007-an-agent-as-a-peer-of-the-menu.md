@@ -563,3 +563,26 @@ travelled in descriptions too: `checks.list` alone was 3,341 characters.
   `evaluation.read`) and every list given its page; the instructions 10,974
   before and 9,850 after. A server holds its own list to a ceiling where it
   is built.
+
+## Amended 22 November 2026 — a client may take a script instead of the tools
+
+The vocabulary is still the one contract, and the handler still the one
+place a call is answered. What a client is *offered* of it is now a choice
+(ADR-0050): the tools as before, which is what a client gets when it says
+nothing; the tools of code mode in their place — `api.describe`, `query`,
+`simulate`, `run`, `discard` — through which the same vocabulary is reached
+as methods of one object in a script; or both.
+
+* **The tool table is also the source of an API.** `lv.<area>.<verb>` is
+  generated from it (`agent/code/api.ts`), with signatures written from the
+  schemas a call is checked against; no tool is renamed, and what the rule
+  cannot place is one typed table. So *a tool name is published surface*
+  now holds for a method's name too, which is derived from it.
+* **`RespondOptions.mode`** (`mcpProtocol.ts`) decides the list and the call
+  together, as `tools` does: a tool a mode leaves out is `agent.unknownTool`
+  when called, with where it is instead.
+* **A call out of a script is answered by this handler**, so nothing about a
+  read, a refusal or a person's name is decided twice.
+* The ceiling on `tools/list` and on the instructions is of the tools as
+  offered when nothing is said, and is unchanged by this.
+

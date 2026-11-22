@@ -717,6 +717,21 @@ src/agent/        An agent as a peer of the menu (ADR-0007). Pure; the first
                     rules             the vocabulary's rules read on demand,
                                       one table keyed by topic and by tool,
                                       what `rules.read` answers
+                    code/             the same vocabulary reached from a
+                                      script (ADR-0050): `api`, `lv` generated
+                                      from the tool table, with what a script
+                                      may not call; `signature`, a method as
+                                      TypeScript from its schema; `describe`,
+                                      `api.describe`; `codeTools`, the tools
+                                      of code mode and the mode a client is
+                                      offered; `sandbox`, the port a script is
+                                      run behind, `quickjs` its one filling
+                                      and the only importer of the
+                                      interpreter; `limits`; `host`, what a
+                                      host fills; `script` · `query`, a script
+                                      run and counted; `trialSession`, a scope
+                                      tried on a copy; `simulate` · `held`,
+                                      a simulation, its token, and its run
                     mcpProtocol       the streamable-HTTP protocol the agent's
                                       server speaks, by hand: a request in, the
                                       framing out. No Electron, so it is tested
@@ -1876,6 +1891,7 @@ identifiers is still a list of a customer's identifiers.
 | Every tool | takes `scope`, a path; a read over another scope is answered from its document, anything that needs a session is refused `agent.scopeNotOpen` — and with nothing open at all, `agent.noProject`, whose sentence says to call `app.open`. `scope`, `ifRevision` and a person are said in a line in each schema and once whole (`CONVENTIONS` in `agent/method.ts`, `rules.read`); a description says what a tool does and takes, at most 400 characters, and one with more ends `(rules.read)`; `tools/list` and the instructions are held to a ceiling each (`agent/door.test.ts`) |
 | Every list read (amended 22 November 2026) | pages (`agent/paging.ts`, `LISTS` in `tools.ts`): `limit` with a default and a maximum per list, `fields`, and `next` to pass back as `cursor`, held to the question and to the rows it read — `moved: true` where the list changed between pages, `agent.pageMoved` where the row a page ended on is gone. Every answer is compact JSON |
 | `batch` (amended 22 November 2026) | `dryRun` answers each step and the `changes` (`model/diff.ts`) and lands nothing; a step's `ifRevision` is held to the batch's starting revision; `{ "$ref": "steps[n].field" }` resolved before a step is built (`agent/batchSteps.ts`), `agent.badReference` otherwise; at most 200 steps, `agent.tooManySteps` |
+| Code mode (ADR-0050) | `api.describe` `query` `simulate` `run` `discard`, beside the vocabulary (`agent/code/codeTools.ts`), offered by `RespondOptions.mode`: `tools` (when unsaid) · `code` · `both`. A script is an async function body with `lv` in scope, generated from the tool table (`code/api.ts`: `noun.verb` is `lv.<area>.<verb>`, the exceptions one table, the whole of it in `code/api.snapshot.txt`); `lv.in(path)` binds a scope. It runs in QuickJS as WebAssembly behind `code/sandbox.ts`, held to `code/limits.ts`, each inner call answered by `handle` (`CodeHost.ask`). `simulate` tries writes on a trial of each scope (`trialSession.ts`, `SessionView.inScript`) and answers the diff with a token (`sim_` and 128 bits, once, 15 minutes); `run` lands the kept commands as one step a scope, refused `agent.stale` where one moved. New refusals: `agent.scriptLimit` `agent.scriptFailed` `agent.notInScript` `agent.unknownSimulation` |
 | A numeric scale (ADR-0046) | `aspectScales` on the root scope's model, `{ key, label, code?, min, max }`, 1 to 5 unless said (`model/aspectScale.ts`); `ratings` on a function, by key, written with `element.rate`; read with `aspectScales.list`, written with `aspectScale.set` `aspectScale.remove` at the organisation and `element.rate` where the function is defined |
 | Whether it was checked (ADR-0047) | `certainty`, `confirmed` or `assumed`, on an element and a relation; absent is nobody having said |
 | An application's owner (ADR-0036, amended) | one field over two keys: `applicationOwner` reads `partyId` as the unit and `owner` as a name flagged as not one, `withOneOwner` in the reducer has setting one clear the other, `check.applicationOwnerNamed` a note where it is a name |
