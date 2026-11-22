@@ -86,7 +86,6 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/app/organisation/OrganisationScreen.test.tsx', // 41 s
   'src/app/organisation/OrganisationScreen.topics.test.tsx', // 14 s
   'src/app/organisation/OrganisationScreen.tree.test.tsx', // 41 s
- // 8 s
   'src/app/organisation/ServedBy.test.tsx', // 20 s
   'src/app/organisation/Topics.test.tsx', // 7 s
   'src/app/personReaders.test.tsx', // 6 s
