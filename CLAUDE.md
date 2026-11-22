@@ -166,7 +166,9 @@ notice still reads this repository's release page.
 Read this before adding a file; it answers "where does this go" in one pass.
 Every module has pure files at its root, a `ui/` folder for its React side
 where it has one, and an `index.ts` that says what it is for. `editor/` is the
-exception: React through and through, so it keeps its subfolders. The `index`
+exception: React through and through, so it keeps its subfolders; so are the
+modules composed of features (`session/`, `units/`, `guidance/`,
+`organisation/`), which are flat and have no `index.ts` at all. The `index`
 is a reading aid, not a fence: cross-module imports name the file they want,
 and the boundary that is enforced is the matrix below, not the barrel.
 
@@ -407,11 +409,11 @@ src/people/       The people register (ADR-0036): who the organisation's people
                                       *This is me* (settings, `of: person`),
                                       leaving and the consequences composed in
                                       (ending assignments,
-                                      `app/organisation/leaving`), *What we
+                                      `organisation/leaving`), *What we
                                       hold* and what a person holds on a day
                     ui/PeoplePage     a directory, one line each, over the
                                       shell's register hook
-                                      (`app/organisation/usePeopleRegister`); a
+                                      (`organisation/usePeopleRegister`); a
                                       person at their own address
                                       (`PersonReader`), the questions before what
                                       cannot be undone (`PersonQuestions`), a
@@ -1050,7 +1052,203 @@ src/providers/    A place work is kept, whole (ADR-0031 §4, as built): the
                                       at `?example=<key>`, nothing kept until
                                       *Keep this as my start*
                     strings/          what they say, in three languages
-src/app/          The shell around the editor.
+src/session/      What a window lends the pages drawn in it (ADR-0049): the
+                  seam between the shell and the modules composed of features.
+                  It draws no page and chooses nothing; the shell fills it —
+                  the contexts are provided there and the hooks called with
+                  the source's repositories.
+                    initialPage · scopeSettings · homePages · reporting ·
+                    sourceSayings · activity   the words the shell and a page
+                                      say to each other: the page a scope opens
+                                      on (`InitialPage`, `initialPageFor`,
+                                      `opensOnNothing`), what a scope's settings
+                                      may change, a home's pages, a failure and
+                                      an undo, a provider's sentences about its
+                                      source, an entry of the Activity list
+                    writeIn           a change written in the scope that keeps
+                                      it, under that scope's rights (ADR-0036,
+                                      amended 3.6.1), and the key a refusal says
+                    writeRefusals     every write that did not land, held for
+                                      the status word until it lands or is put
+                                      back, and every write still under way
+                    useChangeBelow    a change to a scope below made from the
+                                      observations page: that scope's step,
+                                      through `changeScope` (ADR-0032 §2)
+                    checkMarking      a finding marked as intended and a mark
+                                      taken back from any list: the open
+                                      scope's through its session, another's
+                                      as its step under its rights; handed
+                                      down as a context from the workspace
+                                      and a home, and a list's two places
+                                      filled (`useFindingMarks`)
+                    sessionFolds      what is folded on a tree, for as long as
+                                      the window is open and never saved: the
+                                      scope tree's toggle, and the shell's one
+                                      memory of each view's folds, by key
+                    handOver          every save said only once it has, and
+                                      nothing of a dialog the person closed
+                    deleteViewBody    what deleting a view takes with it, said
+                                      of its own kind
+                    frameStore        what the screen under the frame says about
+                                      itself (`useFrameFacts`), what the frame
+                                      holds across screens, and a move asked of
+                                      whatever guards it (`throughGuard`)
+                    places · recentPlaces   every place said once, and
+                                      *Continue*: the places last worked in
+src/units/        The organisation as units, drawn (ADR-0036, ADR-0039;
+                  composed, ADR-0049): of the people register, the operating
+                  model and the editor's panels, over what the window lends.
+                  It knows no frame, no workspace and no boot.
+                    an actor as a unit in its inspector
+                    (ADR-0036 §3, §4): UnitSection, drawn
+                    through `EditorOwnership.unitSection`,
+                    which says it leads where the actor
+                    has a type (`UnitSlot`: the unit
+                    first, the element folded below);
+                    AssignDialog; the organisation as the
+                    open scope's session has it, laid over
+                    the index (`organisationHere`); what a
+                    person holds, for the People page; a
+                    plan's moves, before and after, *Move
+                    the people* and what is still open on
+                    its day (`PlanOrganisation`,
+                    `MovePeople`, `PlanStillOpen`), what an
+                    ending leaves to
+                    decide on the operating model page
+                    (`EndedHolders`) and what a role taken
+                    out of a unit type leaves
+                    (`SlotHolders`), and the people's moves
+                    — and a unit's place among its
+                    siblings — landed as one step per scope
+                    (`landPeopleMoves`); the units of each
+                    type today and who holds a role, for
+                    the operating model page
+                    (`operatingCounts`)
+                    …and the two views (§7): ChartPage and
+                    ConwayPage with its grid (`ConwayGrid`),
+                    lines (`ConwayLines`, `conwayRoutes`),
+                    panel (`ConwayReader`) and findings' words
+                    (`conwayWords`), drawn in the tab through
+                    the shell's `app/UnitViewPages`, the chart's tree of
+                    boxes (`ChartUnitBox`), its connectors
+                    and lines at right angles
+                    (`chartGeometry`, `ChartLinesOverlay`),
+                    its bar, find and panels (`ChartBar`,
+                    `ChartFind`, `MovePanel`,
+                    `ExceptionsPanel`), and what a
+                    badge and a folded unit say
+                    (`chartWords`); its summary, opened
+                    from the line under the chart into
+                    the panel beside it — the counts,
+                    the findings, how to read it
+                    (`ChartSummary`), read off the page's
+                    own reading (`chartReading`); the
+                    chart's folds, for the session and keyed
+                    by the view, two levels on a first
+                    open (`useChartFolds`), its outline,
+                    which leads the chart's unfolding and
+                    is dragged wider on its seam
+                    (`ChartOutline`, 3.7.3) and a unit
+                    moved among its siblings there
+                    (`useSiblingOrder`); the assignment a chip
+                    chooses, in the inspector beside the
+                    chart (`useChartChoice`,
+                    `AssignmentInspector`, through
+                    `EditorPages.inspector`), with where
+                    its holder reports (`HolderLines`);
+                    the one form an override is said
+                    with (`LineTargetForm`); the lines
+                    drawn for the holder picked
+                    (`chartLines.holderLines`,
+                    `ChartLinesOverlay`, its legend); what a view
+                    in a scope is of, the plans that bring
+                    and end its units, and where a link to
+                    a unit lands (`unitViewsHere`); *Works
+                    with* and the dialog that declares an
+                    interaction (`Interactions`); making
+                    either view (`useUnitViews`)
+                    …and the links from either end
+                    (amended 3.6.1): what the pickers
+                    offer (`choices`), a link written in
+                    the scope that keeps it, under its
+                    rights (`session/writeIn`), and who is
+                    responsible on a sheet
+                    (`sheetResponsible`)
+                    …and a unit made on the chart (3.6.2):
+                    what may sit where and where it is
+                    filed (`newUnit`), the dialog
+                    (`NewUnitDialog`), its + controls
+                    (`AddUnit`), and the step and the pick
+                    after it (`useNewUnit`)
+                    …and a unit deleted (3.6.2): the
+                    question's part for a unit
+                    (`UnitDeletionParts`), and the delete
+                    landed over every scope it writes
+                    (`unitDeletionSlot`)
+                    …and a unit moved (3.7.1): where it may
+                    go (`choices.parentChoices`), the dialog
+                    (`MoveUnitDialog`) and the move landed
+                    over every scope it writes, from the
+                    chart's box and outline and the unit's
+                    *Sits under* (`useMoveUnit`)
+src/guidance/     Principles, building blocks and references read over the
+                  tree (ADR-0041, ADR-0043; composed, ADR-0049): what a page
+                  of any of them is handed. The pages are their features'.
+                    usePrinciplesAccess   what the principles' pages read and
+                                      write: the open scope's own, those in
+                                      force from above and from its topics,
+                                      citations, a merge, a decision proposed
+                    useBlocksAccess   every block and every scope's evaluation
+                                      off the tree's index, written in the scope
+                                      that keeps each, and a comparison carried
+                                      out as a table or a file
+                    RefDrawings       how a reference in a document is drawn
+                                      (`drawRef`): a principle, a decision, an
+                                      observation, a block, an evaluation
+src/organisation/ A scope's home, and what is read over the whole tree from
+                  it (composed, ADR-0049): of the features a home lists,
+                  `units` and `guidance`, over what the window lends. It knows
+                  no frame and no boot.
+                    OrganisationScreen · ScopeHome · homeRows ·
+                    holdings · ScopeTree · useOrganisation · the four
+                    dialogs every screen asks a scope about
+                    register · registerView · registerWords ·
+                    RegisterPage   every application, service
+                    and platform in the tree, derived (ADR-0012
+                    §2, ADR-0014), one page with a tab each; a
+                    page here rather than under `projects/ui/`,
+                    which may not import React; the fold over
+                    technology is `projects/technologyRegister`
+                    leaving   what leaving ends beyond the
+                    register: a person's assignments, one
+                    step per scope (ADR-0036 §10)
+                    ServedBy · useServedBy · servedByView
+                    a scope's *Served by* on its home and
+                    in its settings, its domain owner, and
+                    each edit written where the unit is
+                    HomeFirstRun   an organisation nobody has
+                    started; the first-run screen itself is the
+                    shell's (`app/FirstRunScreen`)
+                    ScopeSettingsPage   a scope's settings
+                    as a page, `#/<scope>/-/settings`
+                    HomePages · useHomePages   the pages
+                    over a home's rows, one at a time,
+                    each a part of its own, and what the
+                    one up was asked to pick
+                    treeChecks · useHomeChecks · checksView ·
+                    ChecksPage   every finding at or under a
+                    home off what the shell holds, split by the
+                    marks, counted by weight on the Checks line
+                    (`NeedsAttention`) and a work list on the
+                    Checks page (ADR-0036, amended);
+                    checkFixes · FindingActions, what puts a
+                    finding right where it is read;
+                    `app/frame/FindingBand`, the band that carries
+                    one to its field and back
+src/app/          The shell around the editor, and nothing else (ADR-0049):
+                  the boot, the composition, the frame, the workspace and
+                  the wiring. A screen composed of features is a module of
+                  its own above; what it needs of the window is `session/`.
                     main.tsx          the boot: every source opened through the
                                       registry — an address, the place worked
                                       from last, a way in pressed — and the app
@@ -1069,18 +1267,16 @@ src/app/          The shell around the editor.
                                       is answered for one fold at a time
                     App · ProjectWorkspace · ShellToolbar · ToastBar
                     frame/            what fills the kit's Frame: row one and
-                                      its status word (`statusWord`), every
-                                      place said once (`places`), one table of
-                                      commands for ⋯, ?, ⌘K and the sheet of
+                                      its status word (`statusWord`), one table
+                                      of commands for ⋯, ?, ⌘K and the sheet of
                                       keys (`commandsTable`), the tree in two
                                       postures (`ScopeTreePanel`), *Your work*
                                       and Activity (`FramePanels`), Preferences
-                                      as a page, *Continue* (`recentPlaces`),
-                                      the way back to the view last worked on
-                                      (`lastView`), and what the screen under
-                                      it says (`frameStore`)
-                    handOver          every save said only once it has, and
-                                      nothing of a dialog the person closed
+                                      as a page, and the way back to the view
+                                      last worked on (`lastView`); the places,
+                                      *Continue* and what the screen under it
+                                      says are the seam's (`session/places`,
+                                      `recentPlaces`, `frameStore`)
                     DrawingPage · DrawingEditorParts · DrawingPanels ·
                     drawingSkin · drawingExport   a drawing in draw.io, in the
                                       app's clothes, with what it points at
@@ -1108,157 +1304,25 @@ src/app/          The shell around the editor.
                                       its hooks hand the panels that draw it
                                       (Workspace*): the shape `editor/editorParts`
                                       gives the editor body
-                    sessionFolds      what is folded on a tree, for as long as
-                                      the window is open and never saved: the
-                                      scope tree's toggle, and the shell's one
-                                      memory of each view's folds, by key
-                    organisation/     the first screen: the root scope's home.
-                                      OrganisationScreen · ScopeHome · homeRows ·
-                                      holdings · ScopeTree · useOrganisation · the four
-                                      dialogs every screen asks a scope about
-                                      register · registerView · registerWords ·
-                                      RegisterPage   every application, service
-                                      and platform in the tree, derived (ADR-0012
-                                      §2, ADR-0014), one page with a tab each; a
-                                      page here rather than under `projects/ui/`,
-                                      which may not import React; the fold over
-                                      technology is `projects/technologyRegister`
-                                      leaving   what leaving ends beyond the
-                                      register: a person's assignments, one
-                                      step per scope (ADR-0036 §10)
-                                      ServedBy · useServedBy · servedByView
-                                      a scope's *Served by* on its home and
-                                      in its settings, its domain owner, and
-                                      each edit written where the unit is
-                                      FirstRunScreen · HomeFirstRun   an
-                                      organisation nobody has started
-                                      ScopeSettingsPage   a scope's settings
-                                      as a page, `#/<scope>/-/settings`
-                                      HomePages · useHomePages   the pages
-                                      over a home's rows, one at a time,
-                                      each a part of its own, and what the
-                                      one up was asked to pick
-                                      treeChecks · useHomeChecks · checksView ·
-                                      ChecksPage   every finding at or under a
-                                      home off what the shell holds, split by the
-                                      marks, counted by weight on the Checks line
-                                      (`NeedsAttention`) and a work list on the
-                                      Checks page (ADR-0036, amended);
-                                      checkFixes · FindingActions, what puts a
-                                      finding right where it is read;
-                                      `frame/FindingBand`, the band that carries
-                                      one to its field and back
-                    units/            an actor as a unit in its inspector
-                                      (ADR-0036 §3, §4): UnitSection, drawn
-                                      through `EditorOwnership.unitSection`,
-                                      which says it leads where the actor
-                                      has a type (`UnitSlot`: the unit
-                                      first, the element folded below);
-                                      AssignDialog; the organisation as the
-                                      open scope's session has it, laid over
-                                      the index (`organisationHere`); what a
-                                      person holds, for the People page; a
-                                      plan's moves, before and after, *Move
-                                      the people* and what is still open on
-                                      its day (`PlanOrganisation`,
-                                      `MovePeople`, `PlanStillOpen`), what an
-                                      ending leaves to
-                                      decide on the operating model page
-                                      (`EndedHolders`) and what a role taken
-                                      out of a unit type leaves
-                                      (`SlotHolders`), and the people's moves
-                                      — and a unit's place among its
-                                      siblings — landed as one step per scope
-                                      (`landPeopleMoves`); the units of each
-                                      type today and who holds a role, for
-                                      the operating model page
-                                      (`operatingCounts`)
-                                      …and the two views (§7): ChartPage and
-                                      ConwayPage with its grid (`ConwayGrid`),
-                                      lines (`ConwayLines`, `conwayRoutes`),
-                                      panel (`ConwayReader`) and findings' words
-                                      (`conwayWords`), drawn in the tab through
-                                      `UnitViewPages`, the chart's tree of
-                                      boxes (`ChartUnitBox`), its connectors
-                                      and lines at right angles
-                                      (`chartGeometry`, `ChartLinesOverlay`),
-                                      its bar, find and panels (`ChartBar`,
-                                      `ChartFind`, `MovePanel`,
-                                      `ExceptionsPanel`), and what a
-                                      badge and a folded unit say
-                                      (`chartWords`); its summary, opened
-                                      from the line under the chart into
-                                      the panel beside it — the counts,
-                                      the findings, how to read it
-                                      (`ChartSummary`), read off the page's
-                                      own reading (`chartReading`); the
-                                      chart's folds, for the session and keyed
-                                      by the view, two levels on a first
-                                      open (`useChartFolds`), its outline,
-                                      which leads the chart's unfolding and
-                                      is dragged wider on its seam
-                                      (`ChartOutline`, 3.7.3) and a unit
-                                      moved among its siblings there
-                                      (`useSiblingOrder`); the assignment a chip
-                                      chooses, in the inspector beside the
-                                      chart (`useChartChoice`,
-                                      `AssignmentInspector`, through
-                                      `EditorPages.inspector`), with where
-                                      its holder reports (`HolderLines`);
-                                      the one form an override is said
-                                      with (`LineTargetForm`); the lines
-                                      drawn for the holder picked
-                                      (`chartLines.holderLines`,
-                                      `ChartLinesOverlay`, its legend); what a view
-                                      in a scope is of, the plans that bring
-                                      and end its units, and where a link to
-                                      a unit lands (`unitViewsHere`); *Works
-                                      with* and the dialog that declares an
-                                      interaction (`Interactions`); making
-                                      either view (`useUnitViews`)
-                                      …and the links from either end
-                                      (amended 3.6.1): what the pickers
-                                      offer (`choices`), a link written in
-                                      the scope that keeps it, under its
-                                      rights (`writeIn`), and who is
-                                      responsible on a sheet
-                                      (`sheetResponsible`)
-                                      …and a unit made on the chart (3.6.2):
-                                      what may sit where and where it is
-                                      filed (`newUnit`), the dialog
-                                      (`NewUnitDialog`), its + controls
-                                      (`AddUnit`), and the step and the pick
-                                      after it (`useNewUnit`)
-                                      …and a unit deleted (3.6.2): the
-                                      question's part for a unit
-                                      (`UnitDeletionParts`), and the delete
-                                      landed over every scope it writes
-                                      (`unitDeletionSlot`)
-                                      …and a unit moved (3.7.1): where it may
-                                      go (`choices.parentChoices`), the dialog
-                                      (`MoveUnitDialog`) and the move landed
-                                      over every scope it writes, from the
-                                      chart's box and outline and the unit's
-                                      *Sits under* (`useMoveUnit`)
+                    UnitViewPages · PrinciplesPages · ScopeReferences ·
+                    ScopeBlockFacts · OrganisationOver · FirstRunScreen ·
+                    preloadViews      wiring that names a composed module: a
+                                      file whose props are the workspace's parts
+                                      or the shell's — the chart and the Conway
+                                      map in a view's tab, the principles',
+                                      blocks' and references' access handed to
+                                      the workspace, the organisation's pages
+                                      over an open scope, the first run — and
+                                      the scripts a home fetches while idle
                     useGestures · dialogs/MoveRecordDialog   the four gestures
                                       applied: the other scope first, the
                                       confirm, and the barrier on the stack (§10)
-                    useChangeBelow    a change to a scope below made from the
-                                      observations page: that scope's step,
-                                      through `changeScope` (ADR-0032 §2)
                     useChangeAcross   several scopes changed as one — a merge
                                       across the tree (ADR-0035 §5): the others
                                       in one apply, the open one through its
                                       session; built twice, the second with
                                       `origin: 'agent'` for the agent's seam
                                       (`SessionView.changeAcross`, §6)
-                    checkMarking      a finding marked as intended and a mark
-                                      taken back from any list: the open
-                                      scope's through its session, another's
-                                      as its step under its rights; handed
-                                      down as a context from the workspace
-                                      and a home, and a list's two places
-                                      filled (`useFindingMarks`)
                     useLibrary · dialogs/AddFromLibraryDialog   the palette's
                                       *Existing application…*: the picker over
                                       the register, and the one question it asks
@@ -1318,7 +1382,18 @@ narrowing costs nothing: no wrappers, just a smaller type.
 `eslint.config.js` and generated into one rule per module, each with its own
 sentence. `model` is the bottom and knows nobody; `app` is the top and knows
 everyone; nobody imports `app`, and nobody but `app/composition.ts` imports
-`adapters` or `providers`. `model`, `layout`, `platform`, `ports`, `projects`, `i18n` and
+`adapters` or `providers`. **Between the features and `app` is a tier where a
+feature is composed of features** (ADR-0049): `session`, the seam a window
+fills, and over it `units`, `guidance` and `organisation`, in that order. Each
+may import the features its row names, the seam, and the composed modules
+before it in the list, never one after it, so no loop between them is
+possible; only `app` and a composed module later in the list may import one,
+and none may import `app`. What a composed screen needs of the window it
+reads from `session`, which the shell fills. These four are refused by where
+a specifier goes (`../units/ChartPage`) and not by a name in it, since files
+elsewhere carry their names (`model/units.ts`), and for the same reason **a
+composed module has no `index.ts`**. `build/layering.test.ts` asks the linter
+each of these. `model`, `layout`, `platform`, `ports`, `projects`, `i18n` and
 `agent` may not import React, MUI, Emotion or React Flow at all — nor a `ui/`
 file, nor the barrel of a module that re-exports one, which is the same rule one
 step out: `agent/commandFor.ts` said `from '../business'` for six pure functions
@@ -1379,6 +1454,8 @@ it there.
 | a new kind of place to keep things | its repositories under `src/adapters/`, a provider under `src/providers/`, and a `registerSourceProvider` in `composition.ts` | the five repository suites |
 | inside the canvas/palette/inspector | `src/editor/` | jsdom (`// @vitest-environment jsdom`) |
 | a screen that is not the canvas | that module's `ui/` | jsdom |
+| a screen made of several features (the chart, a scope's home) | the composed module it belongs to (`src/units/`, `src/guidance/`, `src/organisation/`), or a new one with a row after them | jsdom |
+| something such a screen needs of the window | `src/session/`, filled by the shell | node or jsdom |
 | the shell around it all | `src/app/` | jsdom |
 
 If you find yourself writing `localStorage`, `fetch`, `FileReader` or
@@ -1467,10 +1544,10 @@ are not there: a folder with no `scope.json` is not a scope, and a child filed
 under one would be filed under nothing.
 
 With no address the app lands on the **organisation screen**
-(`src/app/organisation/`), the root scope's home, where *Continue* lists the
-places last worked in on this computer (`app/frame/recentPlaces`). From an open
+(`src/organisation/`), the root scope's home, where *Continue* lists the
+places last worked in on this computer (`session/recentPlaces`). From an open
 scope the organisation's register, people and checks are drawn over the
-workspace instead (`organisation/OrganisationOver`; ADR-0033, amended 22
+workspace instead (`app/OrganisationOver`; ADR-0033, amended 22
 November 2026), so the scope stays open under them. A home is its
 name, client, links and description, then one-line rows: the views here, what is
 kept here, and what it does not hold folded into one line of names. The tree is
@@ -1720,7 +1797,7 @@ identifiers is still a list of a customer's identifiers.
 | Where an address lands (ADR-0022, amended) | `Shell.opensAt` with no `view` lands on **that scope's home**, with a `view` on that board (`app/bootLanding.ts`'s `landingOf`); `{ scope: '' }` is a provider's way to start every fresh open on the organisation's home. With no address, the organisation's home, with *Continue*. The tree's *Open* goes to a scope's home too; a view is opened from the home's list |
 | A link to a place (ADR-0033, amended) | *Share with a Link…* (`{ type: 'share' }`, File menu, both hosts, no accelerator), answered by the shell from every screen: the open source's **`ProviderParts.shareAddress()`** — where somebody else reaches the same work, `undefined` for not now, absent for core's three — with the place as its fragment (`linkTo`, `agent/place.ts`), copied through `HostControls.copyText` and shown in `ShareLinkDialog`; with no address the dialog says why and nothing is copied (`app/useShareLink.ts`) |
 | A dialog an address may open (ADR-0022, amended) | `?open=preferences`, and nothing else (`BOOT_DIALOGS`): open at the first paint, taken out of the address at once |
-| A place's address (ADR-0033, amended) | the fragment `#/<scope path>/-/<page>[/<id>]`, the organisation's path empty: `#/-/home`, `#/<scope>/-/board/<view id>`, `#/<scope>/-/settings` for a scope's settings, `#/-/preferences` for this person's; a page's tab as `?tab=` (`PAGE_TABS`, `agent/screen.ts`); the example visited at `?example=<key>` before the fragment. Every place is listed once (`app/frame/places.ts`) |
+| A place's address (ADR-0033, amended) | the fragment `#/<scope path>/-/<page>[/<id>]`, the organisation's path empty: `#/-/home`, `#/<scope>/-/board/<view id>`, `#/<scope>/-/settings` for a scope's settings, `#/-/preferences` for this person's; a page's tab as `?tab=` (`PAGE_TABS`, `agent/screen.ts`); the example visited at `?example=<key>` before the fragment. Every place is listed once (`session/places.ts`) |
 | Words on screen for the working file (owner, 7 November 2026) | *a saved copy* and *password*, never *working file* and *seal*; the extension, the code's names and the format's stay as they are |
 | Typefaces and text size (ADR-0045) | Source Sans 3 and Source Code Pro, bundled under the OFL in `widgets/kit/fonts/`; five sizes in rem; a person's step `TEXT_SIZES` 90 · 100 · 112 · 125 · 150, kept as `textSize` in the preferences and set on the root (`platform/textSize.ts`) |
 | What a whole write expects (ADR-0022, amended) | a **revision**: `ScopeSnapshot.revision`, stamped by `load`, opaque, handed back as `save(scope, expects)`; a store holding anything else refuses `shell.scopeMoved` and writes nothing. A change to a scope outside the open session goes through `projects/scopeAccess.changeScope`, as steps that expect what was read and are worked out again over a scope that moved; `Shell.publishesSteps` says the open scope's steps are its write, and then the shell writes it whole nowhere |
@@ -1744,7 +1821,7 @@ identifiers is still a list of a customer's identifiers.
 | Marks on disk (ADR-0036, amended) | `_checks/marks.json` in each scope that keeps one: one JSON list, in the order the marks were made, each `{ "check", "key", "reason"?, "on" }` (`adapters/folder/format/checkMarkFile.ts`); a row of a fix, of a check the catalogue does not know, or with no key or day is passed over; a file that is not a list opens the scope read-only; browser storage and memory keep the list in the model |
 | A finding marked as intended (ADR-0036, amended) | a **mark**, `CheckMark` (`model/checkMarks.ts`): `check` — a review's or a note's, never a fix's — `key`, the instance's subjects' ids said per kind (`findingKey`; a subject changed brings the finding back), `reason` where given, and `on`, the day; kept in the scope of the finding's first subject — the scope a tree finding is about, the scope the dates were checked in, where the Conway map's row or element is kept (`projects/checkMarks.checkMarkScope`); commands `checkMark.add` · `checkMark.remove` (the id `checkMarkId`: the check, a space, the key), a fix refused `command.markFix`; the index lists `checkMarks()` with each one's scope, and `splitMarked` splits any list of findings into `shown` and `marked` — a scoped finding by its own scope's marks, the dates' by the scope given, the map's by any. `checks.list` answers the marked apart, under `marked`, each with its `mark` (`on`, `reason`); **no tool makes or takes back a mark** |
 | The operating model (ADR-0036) | records at the organisation: a **unit type** (the organisation's word for a kind of unit: `top`, `within`, `spans`, `slots` of a role with `min` and `max`, `limit`, and `order` in its lane — lanes, the rank and the order of units are `model/unitOrder.ts`), a **role** (`short`, `purpose`, `duties` — a responsibility each, marked `R` `A` `C` or `I` — and `manages`), a **responsibility** (`description`, `group`) and an **operating rule** (`applicationOwner` · `domainOwner` → a role), each with `basedOn` where a library gave it (and the `name` chosen then, where it was not the library's term, and a unit type's place then, `placed`, where it was not the library's), and a unit type or role with `alsoBasedOn` where a bring-in matched it to a library's entries; commands `unitType.*` `role.*` `responsibility.*` `operatingRule.*` (`add` · `update` · `remove`). A responsibility not exactly one role's `A` is `check.accountability`; a unit type neither at the top nor in a type that sits anywhere is `check.unitTypeNowhere`. Edited at the organisation only, on the operating model's page (`page: 'operating'`) |
-| Units and assignments (ADR-0036 §3, §4) | a **unit** is an actor with `unitTypeId`, `scopes` (the domains it serves) and `extraSlots` — owner's detail, never on a stand-in; an **assignment** is a record of the unit's scope: `unitId`, `roleId`, `person` (`{ person: id }`), `share` (a fraction, absent is all), `from`, `until`, `acting`; commands `assignment.add` · `assignment.update` (a correction, and an end: `until`) · `assignment.remove`, refused `command.datesOutOfOrder` where its days run backwards. The arithmetic on a day — slots, holders, a person's load, `managersOf` and `managedBy` — is `model/units.ts`; the index lists `units()`, `assignments()`, every plan's `moves()` and the root's `operatingModel()`; the checks read `check.roleVacant` `check.roleOverMax` `check.unitMisplaced` `check.unitSpans` `check.unitOverLimit` `check.assignmentEnded` `check.unitTypeEnded` `check.personOverloaded` off it on a day (`organisationFindings`). Leaving ends a person's assignments, one step per scope (`model/units.leavingStep`, which a server applying a leave applies too; `app/organisation/leaving.ts`) |
+| Units and assignments (ADR-0036 §3, §4) | a **unit** is an actor with `unitTypeId`, `scopes` (the domains it serves) and `extraSlots` — owner's detail, never on a stand-in; an **assignment** is a record of the unit's scope: `unitId`, `roleId`, `person` (`{ person: id }`), `share` (a fraction, absent is all), `from`, `until`, `acting`; commands `assignment.add` · `assignment.update` (a correction, and an end: `until`) · `assignment.remove`, refused `command.datesOutOfOrder` where its days run backwards. The arithmetic on a day — slots, holders, a person's load, `managersOf` and `managedBy` — is `model/units.ts`; the index lists `units()`, `assignments()`, every plan's `moves()` and the root's `operatingModel()`; the checks read `check.roleVacant` `check.roleOverMax` `check.unitMisplaced` `check.unitSpans` `check.unitOverLimit` `check.assignmentEnded` `check.unitTypeEnded` `check.personOverloaded` off it on a day (`organisationFindings`). Leaving ends a person's assignments, one step per scope (`model/units.leavingStep`, which a server applying a leave applies too; `organisation/leaving.ts`) |
 | The libraries (ADR-0036 §5) | Scrum, SAFe, the IT4IT value streams (3.0) and Team Topologies, shipped as data with a version in `src/operating/libraries/`, every word this project's own, with `alike` hints (`library:entry`) said on both ends; brought in as one transaction (`operating/bringIn.ts`), with `names`, `placements` and `reuse` by entry, settled first as the rows of *What will come in* (`operating/comingIn.ts`) in a dialog over the page (`operating/ui/LibraryDialog.tsx`), listed after as *What came in* (`operating/cameIn.ts`), and compared, never merged (`operating/compare.ts`) |
 | What a scope says it is | a **label**: `organisation` · `domain` · `programme` · `team` · `landscape` — never a branch |
 | What a view's two files are called | `diagrams/<id>.json` (what is on it) and `diagrams/<id>.geometry.json` (where it ended up) |
@@ -1754,7 +1831,7 @@ identifiers is still a list of a customer's identifiers.
 | Every mutating tool | takes `ifRevision`; every mutation answers with `revision` (ADR-0011) |
 | A plan for changing the landscape | a **transition**, `TR-0001` on screen; flagged `initiative`, it is drawn on the roadmap of every scope above it (ADR-0012 §7) |
 | Plans on disk | `transitions/NNNN-<slug>.md`, flat, numbers per project; a plan that moves units has rows under `moves:` (`unitId`, `parentId`, `on`), and one that moves none writes nothing |
-| Change over time (ADR-0036 §6) | a correction is an edit, a change has a day: a unit's lifecycle dates, an assignment's `from` and `until`, a unit type's and a role's `from`, `until` and `successors`, and a plan's **moves** (`Transition.moves`, shifted with the plan; an abandoned plan moves none). The organisation on a day is `model/units.organisationOn`; the day a screen reads it on is ADR-0027's look (`editor/dayShown`), the People page's keyed for the page. *Move the people* is `model/reorganisation` and lands one step per scope (`app/units/landPeopleMoves`), a barrier where other scopes were written; `check.unitTypeEnded` is a unit still of a type that has ended |
+| Change over time (ADR-0036 §6) | a correction is an edit, a change has a day: a unit's lifecycle dates, an assignment's `from` and `until`, a unit type's and a role's `from`, `until` and `successors`, and a plan's **moves** (`Transition.moves`, shifted with the plan; an abandoned plan moves none). The organisation on a day is `model/units.organisationOn`; the day a screen reads it on is ADR-0027's look (`editor/dayShown`), the People page's keyed for the page. *Move the people* is `model/reorganisation` and lands one step per scope (`units/landPeopleMoves`), a barrier where other scopes were written; `check.unitTypeEnded` is a unit still of a type that has ended |
 | What was seen, and why (ADR-0021, ADR-0032) | an **observation**, `OB-0001` on screen, `seen` times, `where` and `by` whom (free text), `about` the elements it names by id, its own or a stand-in's as a decision's `subjectId` is (ADR-0032, amended 22 November 2026; one the scope does not hold is `check.observationAboutGone`, a merge leaves the survivor about all of them, a move carries them and says which the target does not hold), local to its scope and read by every scope above it with nothing shared first (`scopeIndex.analysisBelow`; `shared` and its two events are history, read and not written); `archived` when fixed or no longer relevant — kept, out of the analysis, restored the same way; a **cause**, `CA-0001`, `assumed` → `verified`, `explains` observations and shallower causes with a `strength`, and a non-root cause of a scope below with that scope's path (§4) — never one above, one sideways or an observation below; a **root cause** is **said**: `root: true`, `RC-0001` on the cause's own number, and nothing explains it. *Make root* is refused while a cause explains it (`command.rootExplained`), *make cause* while a solution addresses it (`command.rootAddressed`), by the reducer whoever sent it. A cause that is no root and that nothing explains is an **open end**, `?`. Merging (ADR-0035) is an `absorbed` event on the survivor and a `merged` one on each record absorbed, observation or cause (`Cause.history`), each written where it lives — across scopes in one apply, planned by `observations/merge.ts`, on the merge screen; one of a scope below absorbed by an earlier build is written on the survivor only. **Moving** (ADR-0038 §1–§5) keeps the id and takes the target's next number: a `movedIn` event on the record there, a `moved` one on the tombstone it leaves (read as merged; the last of the two says which it is, so moving back revives it), every cause link that explained it cut and listed first, planned by `observations/move.ts`, on the move screen, across both scopes in one apply |
 | What is done about a cause (ADR-0026) | a **solution**, `SO-0001`, `addresses` root causes of its scope with a `strength` — a non-root cause is refused; `idea` → `shaped` → `testing` → `proven` → `adopted`, one step at a time, each forward step behind a gate read off its fields (`solutionGate`), `waived` with a reason the one way past the testing gate; `dropped` with a note and kept as a considered alternative; **implemented** is derived from its plan being `done`. An **experiment**, `EX-0001`, `tests` solutions — each with a `strength` where it is not normal — with a `hypothesis` and ends `confirmed` · `refuted` · `inconclusive`. The questions a record asks without stopping it: `worksAround` · `addsOnly` · `adoptedUnplanned`; the finding: seen again since it was implemented |
 | Observations on disk | `observations/NNNN-<slug>.md` and `observations/causes/NNNN-<slug>.md`, flat, numbers per scope; `observations/solutions/NNNN-<slug>.md` and `observations/experiments/NNNN-<slug>.md` beside the causes |
@@ -1763,7 +1840,7 @@ identifiers is still a list of a customer's identifiers.
 | Agent tools, principles, topics and building blocks (ADR-0041, ADR-0042, ADR-0043) | `principles.list` `topics.list` `blocks.list` — over the whole tree (`TREE_WIDE`), off `TreeView.records` (`projects/treeRecords.ts`, one fold for the app and a server) — and `references.list` (the open scope's or the named scope's catalogue, `search/referables.ts`, the markdown each is referred to by); `principle.add` `principle.update` `citation.add` `evaluation.add` `evaluation.rate` `evaluation.propose` (the decision drafted by `decisions/blockDecision.ts`, as the block's page drafts it) `block.update` (capabilities, contexts and solutions, each list whole) — each in the open scope; `agent/write/principleRecords`, `citing`, `evaluations`, `buildingBlocks`, by command family. `RECORDS_PARAGRAPH` (`agent/method.ts`) says how they hang together on connect |
 | Agent tools, the operating model (ADR-0036) | `unitTypes.list` `roles.list` `responsibilities.list` — answered from the organisation whatever scope is open, the unit types by lane, `order` and name with each one's lane — and `unitType.add` `unitType.update` `role.add` `role.update` — each taking `from`, `until` and `successors` — refused `agent.scopeNotOpen` unless the organisation is the scope open; `app.open` takes `page: 'operating'`, at the organisation only |
 | Agent tools, names (ADR-0036 §8) | every argument that names a person — `owner` (`element.add`/`update`, `plan.create`/`update`), `by` (`observation.record`/`update`, `experiment.plan`/`update`, `observation.merge`'s `values`), `proposedBy` and each signer's `name` (`decision.propose`/`update`) — takes text or `{ "person": id }` (`personArgument`, an `anyOf`); an id the register does not hold is refused `agent.unknownId`, a merged one written as the entry kept — the register as last read, not as last drawn (`PeopleRegisterAccess.current`), and a change to it answers only once it has been read again, so whom `person.add` added, or `person.leave` marked, is known to the very next call, `assignment.add` and `batch` included; every answer says a picked person as `{ person, name }`, the name or the pseudonym the policy gives (`agent/persons.ts`), and `search` and `project.export` ask the register first |
-| Reporting lines (ADR-0039) | a slot's `reportsTo {role, kind, from?, until?}` (kind `solid` or `dotted`) in `_operating/unit-types.json`, a unit's `reportingLines` (`{role, to?: {scope, unit, role}, kind, from?, until?}`, owner's detail, carried by `readdressLines` on a scope's move); a unit's own replaces its type's of the same kind, one with no `to` is by nesting; `reportingLinesOn` lands each (nearest unit above with the role, else the one unit that has it, else `dangling`/`ambiguous`); `managersOf(…, roleId?)` names `via` (`nesting` or `line`), `dottedLinesOf` apart; `ManagedReach.elsewhere`/`lines` (optional) and `reachesAssignment` follow a solid line, `reachVia`/`reachesPosition` say how; `check.reportingLoop` `check.reportingDangling` `check.reportingAmbiguous` (fix) and `check.reportingVacant` (review), about the unit a line runs from; a line to itself or closing a loop refused where it is written (`model/reporting.ts`), never by the reducer; the slot editor's *Reports to*, the unit's *Reporting lines* (`app/units/UnitLines.tsx`), the chart's *Reporting lines* switch (`chart.showLines`, `chartLines.ts`, `ChartLinesOverlay.tsx`); tools `reportingLine.set` `reportingLine.remove` `reportingLines.list` (tree-wide), `reportsTo` on `unitType.add`/`update` slots, refused `reportingLine.self` / `reportingLine.loop`; `assignments.list` gives each assignment `managedBy` with `via` and `dotted`; amended 17 October 2026 (3.7.3): an assignment's `reportsTo` (`{to: {scope, unit, role, person?}, kind, from?, until?}`), a holder's own, replacing their role's kind by kind and ending with the assignment (`personLinesOn`, `everyLineOn`, `linesOfHolder`), a target's `person` on either override landing on that one holder (`holdersAt`, `lineDecides`), a role held outside the slots an exception placement (`isExceptionPlacement`, no finding, the role's line applies); every line says `source` (`role` `type` `unit` `person`) and `override`; `via` gains `override` (a unit's own line, a holder's own), `managersOfHolder`, `ManagedReach.overrides`/`holders`/`away`, `reachViaHolder`/`reachesHolder`; `refusePersonLines`; the chart's three colours (`reportingLineColours`: reports to, reported by, override) for the holder picked (`holderLines`, `ChartLinesLegend`), *Reports to* in the assignment's inspector (`HolderLines`), one override form (`LineTargetForm`), the assign dialog's *Another role (an exception)*; tools `assignment.update`, `reportsTo` on `assignment.add`, `to.person` on `reportingLine.set`, and `STRUCTURE_DEFAULTS` in the instructions on connect |
+| Reporting lines (ADR-0039) | a slot's `reportsTo {role, kind, from?, until?}` (kind `solid` or `dotted`) in `_operating/unit-types.json`, a unit's `reportingLines` (`{role, to?: {scope, unit, role}, kind, from?, until?}`, owner's detail, carried by `readdressLines` on a scope's move); a unit's own replaces its type's of the same kind, one with no `to` is by nesting; `reportingLinesOn` lands each (nearest unit above with the role, else the one unit that has it, else `dangling`/`ambiguous`); `managersOf(…, roleId?)` names `via` (`nesting` or `line`), `dottedLinesOf` apart; `ManagedReach.elsewhere`/`lines` (optional) and `reachesAssignment` follow a solid line, `reachVia`/`reachesPosition` say how; `check.reportingLoop` `check.reportingDangling` `check.reportingAmbiguous` (fix) and `check.reportingVacant` (review), about the unit a line runs from; a line to itself or closing a loop refused where it is written (`model/reporting.ts`), never by the reducer; the slot editor's *Reports to*, the unit's *Reporting lines* (`units/UnitLines.tsx`), the chart's *Reporting lines* switch (`chart.showLines`, `chartLines.ts`, `ChartLinesOverlay.tsx`); tools `reportingLine.set` `reportingLine.remove` `reportingLines.list` (tree-wide), `reportsTo` on `unitType.add`/`update` slots, refused `reportingLine.self` / `reportingLine.loop`; `assignments.list` gives each assignment `managedBy` with `via` and `dotted`; amended 17 October 2026 (3.7.3): an assignment's `reportsTo` (`{to: {scope, unit, role, person?}, kind, from?, until?}`), a holder's own, replacing their role's kind by kind and ending with the assignment (`personLinesOn`, `everyLineOn`, `linesOfHolder`), a target's `person` on either override landing on that one holder (`holdersAt`, `lineDecides`), a role held outside the slots an exception placement (`isExceptionPlacement`, no finding, the role's line applies); every line says `source` (`role` `type` `unit` `person`) and `override`; `via` gains `override` (a unit's own line, a holder's own), `managersOfHolder`, `ManagedReach.overrides`/`holders`/`away`, `reachViaHolder`/`reachesHolder`; `refusePersonLines`; the chart's three colours (`reportingLineColours`: reports to, reported by, override) for the holder picked (`holderLines`, `ChartLinesLegend`), *Reports to* in the assignment's inspector (`HolderLines`), one override form (`LineTargetForm`), the assign dialog's *Another role (an exception)*; tools `assignment.update`, `reportsTo` on `assignment.add`, `to.person` on `reportingLine.set`, and `STRUCTURE_DEFAULTS` in the instructions on connect |
 | Agent tools, units and assignments (ADR-0036 §3, §4) | units through `element.add` / `element.update` (`unitTypeId`, `scopes`, `extraSlots`); `assignments.list` over the whole tree — its `scope` a filter (`TREE_WIDE`), the open scope as it is now, names or pseudonyms as the policy says, and for one unit its slots, its parent and who manages it, all on its `on` day with every plan's moves of that day — and `assignment.add` (a person by register id; one who has left is refused) and `assignment.end` in the scope that keeps the unit; `checks.list` takes `on` for the organisation's findings. An agent assigns and adds people; it never forgets, removes or merges one |
 | Agent tools, the two views and who works with whom (ADR-0036 §7) | `diagram.create` takes `chart` and `conway` by name; `views.list`, `app.open` (pages `chart` and `conway`, `select` a unit or an application on them) and `diagram.render` take them; `diagram.inspect` reads either off the tree with the open scope laid over it (`agent/inspectUnits.ts`): the units with each role's holders by register id and vacancies on the view's day, or the columns, the crossings and the findings. Two units working together is a relation, `relation.add` / `relation.update` with type `interacts` and a `mode` (`collaboration` · `service` · `facilitating`), refused `command.interactsEnds` unless actor to another actor |
 | Pictures a document holds | `images/<file>.png\|.jpg\|.svg\|.webp`, referred to as `../images/<file>` |
