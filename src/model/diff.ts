@@ -28,14 +28,8 @@
  * the caller's, in the caller's language.
  */
 import type { HostModel } from './hostModel'
-import type { Adr } from './adr'
-import type { Transition } from './transition'
-import type { Cause, Experiment, Observation, Solution } from './observation'
-import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import { checkMarkId } from './checkMarks'
 import type { CheckMark } from './checkMarks'
-import type { Principle } from './principle'
-import type { Comment } from './comment'
 import { RECORD_LISTS } from './recordKey'
 import type { RecordKey } from './recordKey'
 import { KIND_TABLE, KINDS, RECORD_LIST_NAMES } from './recordKinds'
@@ -238,10 +232,6 @@ function membershipChanges(
   return changes
 }
 
-function decisionsOf(model: HostModel): Map<string, Adr> {
-  return byId(model.decisions ?? [])
-}
-
 /**
  * Every change from `before` to `after`, in reading order.
  *
@@ -289,50 +279,7 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
     if (count > 0) changes.push({ kind: 'changed', what: 'geometry', id, name: now.name, count })
   }
 
-  const wasDecisions = decisionsOf(before)
-  const nowDecisions = decisionsOf(after)
-  for (const id of ids(wasDecisions, nowDecisions)) {
-    const was = wasDecisions.get(id)
-    const now = nowDecisions.get(id)
-    changes.push(...compare<Adr>('decision', id, was, now, (held) => held.title))
-  }
-
-  // Plans after the decisions they rest on (ADR-0009), and before the geometry.
-  const wasPlans = byId(before.transitions ?? [])
-  const nowPlans = byId(after.transitions ?? [])
-  for (const id of ids(wasPlans, nowPlans)) {
-    changes.push(...compare<Transition>(
-      'transition', id, wasPlans.get(id), nowPlans.get(id), (held) => held.title))
-  }
-
-  // Observations and their causes after the plans (ADR-0021): what was seen,
-  // then what was said to lie behind it.
-  const wasObservations = byId(before.observations ?? [])
-  const nowObservations = byId(after.observations ?? [])
-  for (const id of ids(wasObservations, nowObservations)) {
-    changes.push(...compare<Observation>(
-      'observation', id, wasObservations.get(id), nowObservations.get(id), (held) => held.title))
-  }
-  const wasCauses = byId(before.causes ?? [])
-  const nowCauses = byId(after.causes ?? [])
-  for (const id of ids(wasCauses, nowCauses)) {
-    changes.push(...compare<Cause>('cause', id, wasCauses.get(id), nowCauses.get(id), (held) => held.title))
-  }
-  // Then what is being done about it (ADR-0026).
-  const wasSolutions = byId(before.solutions ?? [])
-  const nowSolutions = byId(after.solutions ?? [])
-  for (const id of ids(wasSolutions, nowSolutions)) {
-    changes.push(...compare<Solution>(
-      'solution', id, wasSolutions.get(id), nowSolutions.get(id), (held) => held.title))
-  }
-  const wasExperiments = byId(before.experiments ?? [])
-  const nowExperiments = byId(after.experiments ?? [])
-  for (const id of ids(wasExperiments, nowExperiments)) {
-    changes.push(...compare<Experiment>(
-      'experiment', id, wasExperiments.get(id), nowExperiments.get(id), (held) => held.title))
-  }
-
-  changes.push(...operatingChanges(before, after))
+  changes.push(...markChanges(before, after))
 
   // Every list the descriptors say is compared record by record, and named as they say.
   const around: NamedAround = {
@@ -356,53 +303,11 @@ function listChanges<L extends RecordList>(list: L, before: HostModel, after: Ho
   return ids(was, now).flatMap((id) => compare(kind.kind as ChangeSubject, id, was.get(id), now.get(id), (one) => nameOf(one, around)))
 }
 
-/** The operating model (ADR-0036), each list by the name the organisation gives its items. */
-function operatingChanges(before: HostModel, after: HostModel): ModelChange[] {
-  const changes: ModelChange[] = []
-  const each = <T extends { id: string }>(what: ChangeSubject, was: readonly T[] | undefined, now: readonly T[] | undefined, nameOf: (held: T) => string) => {
-    const wasBy = byId(was ?? [])
-    const nowBy = byId(now ?? [])
-    for (const id of ids(wasBy, nowBy)) changes.push(...compare<T>(what, id, wasBy.get(id), nowBy.get(id), nameOf))
-  }
-  each<UnitType>('unitType', before.unitTypes, after.unitTypes, (held) => held.name)
-  each<Role>('role', before.roles, after.roles, (held) => held.name)
-  each<Responsibility>('responsibility', before.responsibilities, after.responsibilities, (held) => held.name)
-  each<OperatingRule>('operatingRule', before.operatingRules, after.operatingRules, (held) => held.id)
-  changes.push(...markChanges(before, after))
-  changes.push(...commentChanges(before, after))
-  changes.push(...principleChanges(before, after))
-  return changes
-}
-
-/** The principles (ADR-0041), by their titles. */
-function principleChanges(before: HostModel, after: HostModel): ModelChange[] {
-  const was = byId(before.principles ?? [])
-  const now = byId(after.principles ?? [])
-  return ids(was, now).flatMap((id) => compare<Principle>('principle', id, was.get(id), now.get(id), (held) => held.title))
-}
-
 /** What a scope calls one of its records, by its key: its title or its name. */
 function recordName(model: HostModel, about: RecordKey): string | undefined {
   const list = about.kind in RECORD_LISTS ? model[RECORD_LISTS[about.kind as keyof typeof RECORD_LISTS]] : undefined
   const held = (list as readonly { id: string; title?: string; name?: string }[] | undefined)?.find((one) => one.id === about.id)
   return held?.title ?? held?.name
-}
-
-/**
- * The comments (ADR-0037), each by its id and named by the record it is
- * about, as the scope calls that record: a diff never names the author, who
- * is a register id (ADR-0036 §8).
- */
-function commentChanges(before: HostModel, after: HostModel): ModelChange[] {
-  const wasBy = byId(before.comments ?? [])
-  const nowBy = byId(after.comments ?? [])
-  const nameIn = (model: HostModel, about: RecordKey) => {
-    const list = about.kind in RECORD_LISTS ? model[RECORD_LISTS[about.kind as keyof typeof RECORD_LISTS]] : undefined
-    const held = (list as readonly { id: string; title?: string; name?: string }[] | undefined)?.find((one) => one.id === about.id)
-    return held?.title ?? held?.name
-  }
-  const nameOf = (comment: Comment) => nameIn(after, comment.about) ?? nameIn(before, comment.about) ?? comment.about.id
-  return ids(wasBy, nowBy).flatMap((id) => compare<Comment>('comment', id, wasBy.get(id), nowBy.get(id), nameOf))
 }
 
 /**
