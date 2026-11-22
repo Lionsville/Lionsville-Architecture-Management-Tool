@@ -30,7 +30,7 @@ import type { BlocksRegisterPage as BlocksRegisterPageShape } from '../../blocks
 import type { BlockPage as BlockPageShape } from '../../blocks/ui/BlockPage'
 import type { RegisterRow } from './register'
 import type { RegisterPage as RegisterPageShape } from './RegisterPage'
-import { FrameStoreContext } from '../frame/frameStore'
+import { FrameStoreContext } from '../../session/frameStore'
 import { ROOT_SCOPE } from '../../projects/scopePath'
 import type { CheckInstance, CheckPlace, CheckRow } from './treeChecks'
 import type { HomeChecks, TreeRead } from './useHomeChecks'

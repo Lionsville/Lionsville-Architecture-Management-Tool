@@ -12,7 +12,7 @@
  * frame marked by an address or by Back opens or shuts the page.
  */
 import { useContext, useEffect, useRef } from 'react'
-import { FrameStoreContext } from '../frame/frameStore'
+import { FrameStoreContext } from '../../session/frameStore'
 
 export function useHistoryPlace(page: { pageOpen: boolean; openPage: () => void; closePage: () => void } | undefined): void {
   const frame = useContext(FrameStoreContext)

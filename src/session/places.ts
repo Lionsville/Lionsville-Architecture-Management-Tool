@@ -7,8 +7,8 @@
  * next. A new page gets a line here, a page in `agent/screen`'s `PAGES`, and
  * with that an address, a way in for a person and a way in for an agent.
  */
-import type { Page } from '../../agent/screen'
-import type { StringKey } from '../../i18n'
+import type { Page } from '../agent/screen'
+import type { StringKey } from '../i18n'
 
 export type FramePlace = {
   readonly page: Page

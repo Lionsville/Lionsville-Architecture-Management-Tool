@@ -24,8 +24,8 @@
 import { viewPage } from '../../agent/screen'
 import type { Destination, Screen } from '../../agent/screen'
 import type { DesignDiagram } from '../../model/types'
-import type { LastView } from './frameStore'
-import type { RecentPlace } from './recentPlaces'
+import type { LastView } from '../../session/frameStore'
+import type { RecentPlace } from '../../session/recentPlaces'
 
 export type { LastView }
 

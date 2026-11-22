@@ -14,7 +14,7 @@ import { translator } from '../i18n'
 import { linksFromXml } from '../model/drawing'
 import { renderShell } from './testing/renderShell'
 import { DrawingEditor, FRAME_SILENCE_MS } from './DrawingEditor'
-import { frameStore, FrameStoreContext } from './frame/frameStore'
+import { frameStore, FrameStoreContext } from '../session/frameStore'
 import type { DrawingKeeper } from './DrawingEditor'
 import {
   drawingConfig, drawingFrameQuery, drawingFrameSrc, DRAWING_FRAME_SANDBOX, elementShapeXml, exportedFile, exportRoute, frameEvent, frameTarget, loadMessage,

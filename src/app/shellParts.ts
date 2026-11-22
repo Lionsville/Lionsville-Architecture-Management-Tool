@@ -26,7 +26,7 @@ import type { ShareLink } from './useShareLink'
 import type { TreeFindings } from './useTreeFindings'
 import type { CarriedOut } from '../ports/Interchange'
 import type { AdoptScopes } from './workingFileFlows'
-import type { FrameStore } from './frame/frameStore'
+import type { FrameStore } from '../session/frameStore'
 import type { SessionFolds } from '../session/sessionFolds'
 import type { WriteRefusals } from '../session/writeRefusals'
 

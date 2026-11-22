@@ -28,7 +28,7 @@ import { walkable } from '../organisation/checksView'
 import type { CheckInstance, CheckPlace } from '../organisation/treeChecks'
 import type { ShellParts } from '../shellParts'
 import type { Destination } from '../../agent/screen'
-import type { FindingWalk, FrameStore } from './frameStore'
+import type { FindingWalk, FrameStore } from '../../session/frameStore'
 
 /** Where a finding opens, in the words an open takes. */
 export function destinationOf(place: CheckPlace, home: ScopePath): Destination & { scope: string } {

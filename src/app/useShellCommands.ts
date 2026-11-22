@@ -27,7 +27,7 @@ import { setHostOwnsZoomKeys, zoomCanvasInUse } from '../widgets/kit/useCanvasZo
 import { useHostCommands } from './useHostCommands'
 import type { CommandBus, CommandStream } from './useHostCommands'
 import type { ShellPreferences } from './useShellPreferences'
-import type { FrameStore } from './frame/frameStore'
+import type { FrameStore } from '../session/frameStore'
 
 /** The home's snapshot and history, while the organisation screen is up. */
 export type HomeHistoryDoors = { openDialog: () => void; openPage: () => void }

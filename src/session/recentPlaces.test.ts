@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import type { Screen } from '../../agent/screen'
+import type { Screen } from '../agent/screen'
 import { RECENT_KEY, recentFrom, recentOf, rememberSettled, remembered, renamedIn, stillThere } from './recentPlaces'
 import type { RecentPlace } from './recentPlaces'
 

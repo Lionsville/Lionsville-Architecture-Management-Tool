@@ -34,7 +34,7 @@ import { heldInWords, RootRow, ScopeTree, tallyWords, TopicTreeRow } from '../or
 import type { TopicRow, TreeTally } from '../organisation/ScopeTree'
 import type { Holdings } from '../organisation/holdings'
 import type { ScopeFolds } from '../organisation/useScopeFolds'
-import { ORGANISATION_PLACES, placeShows } from './places'
+import { ORGANISATION_PLACES, placeShows } from '../../session/places'
 import { useTreeKeys } from './treeKeys'
 
 /** What a row's ⋯ can do, each its own question on the home that answers it. */

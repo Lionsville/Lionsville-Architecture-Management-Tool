@@ -12,9 +12,9 @@
  * not say what a view is called and reading a scope per row is what a home must
  * not do (ADR-0004).
  */
-import type { Destination, Screen } from '../../agent/screen'
-import type { DesignDiagram } from '../../model/types'
-import { viewPage } from '../../agent/screen'
+import type { Destination, Screen } from '../agent/screen'
+import type { DesignDiagram } from '../model/types'
+import { viewPage } from '../agent/screen'
 
 export type RecentPlace = {
   readonly scope: string

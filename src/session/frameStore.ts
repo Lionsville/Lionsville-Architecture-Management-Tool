@@ -11,17 +11,17 @@
  * and the rows read them; a store and not a context value, so a keystroke's
  * new status draws the rows and not the whole workspace again.
  */
-import type { StepSummary } from '../../model'
-import type { ViewFacets } from '../../widgets/placeTab'
+import type { StepSummary } from '../model'
+import type { ViewFacets } from '../widgets/placeTab'
 import { createContext, useContext, useEffect, useRef, useSyncExternalStore } from 'react'
-import type { TypeLink } from '../../projects/scopeType'
-import type { Destination, FramePanel, Page } from '../../agent/screen'
-import type { CheckKey } from '../../model/checkCatalogue'
-import type { DocumentStatus } from '../../projects/documentSession'
-import type { ScopePath } from '../../projects/scopePath'
-import type { StackedBand } from '../../widgets/kit/Band'
-import type { ActivityEntry, RecentActivity } from '../../session/activity'
-import { leaveWithDrafts } from '../../widgets/kit/drafts'
+import type { TypeLink } from '../projects/scopeType'
+import type { Destination, FramePanel, Page } from '../agent/screen'
+import type { CheckKey } from '../model/checkCatalogue'
+import type { DocumentStatus } from '../projects/documentSession'
+import type { ScopePath } from '../projects/scopePath'
+import type { StackedBand } from '../widgets/kit/Band'
+import type { ActivityEntry, RecentActivity } from './activity'
+import { leaveWithDrafts } from '../widgets/kit/drafts'
 
 /** A view named in row two, on a screen that draws no tabs of its own: a home. */
 export type FrameView = { readonly id: string; readonly name: string; readonly kind: string }

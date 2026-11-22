@@ -19,8 +19,8 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import type { SourceChanges } from '../ports/ProviderParts'
 import type { Failed } from './useShellServices'
-import { throughGuard } from './frame/frameStore'
-import type { FrameStore } from './frame/frameStore'
+import { throughGuard } from '../session/frameStore'
+import type { FrameStore } from '../session/frameStore'
 import type { ShellPreferences } from './useShellPreferences'
 
 export type ShellNavigation = ReturnType<typeof useShellNavigation>

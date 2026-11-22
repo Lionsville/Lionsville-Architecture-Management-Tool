@@ -16,7 +16,7 @@
  * waited for first.
  */
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import type { FrameStore } from './frameStore'
+import type { FrameStore } from '../../session/frameStore'
 import type { WriteRefusals, WritesUnderway } from '../../session/writeRefusals'
 
 /** What the host is told: whether closing waits for a write, and how many refused changes it would leave. */

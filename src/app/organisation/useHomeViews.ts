@@ -26,7 +26,7 @@ import { holdWrite, whenLanded } from '../../session/writeRefusals'
 import type { ScopeCommand, ScopeId } from '../../projects/scopeState'
 import type { ScopePath } from '../../projects/scopePath'
 import type { Repositories } from '../../ports/Repositories'
-import type { FrameStep } from '../frame/frameStore'
+import type { FrameStep } from '../../session/frameStore'
 import type { ToastUndo } from '../../session/reporting'
 
 /** A view as its row names it. */

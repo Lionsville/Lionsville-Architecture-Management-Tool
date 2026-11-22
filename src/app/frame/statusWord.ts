@@ -15,7 +15,7 @@ import type { Language, StringKey, Translate } from '../../i18n'
 import type { DocumentStatus } from '../../projects/documentSession'
 import type { SourceWord, StatusTone } from '../../ports/ProviderParts'
 import { clockTime } from '../clockTime'
-import type { OwnWork } from './frameStore'
+import type { OwnWork } from '../../session/frameStore'
 
 export type StatusFacts = {
   /** Absent: nothing is open, so nothing is waiting here. */

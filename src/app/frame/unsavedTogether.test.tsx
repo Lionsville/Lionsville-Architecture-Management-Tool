@@ -4,7 +4,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, renderHook } from '@testing-library/react'
-import { frameStore, throughGuard } from './frameStore'
+import { frameStore, throughGuard } from '../../session/frameStore'
 import { useHostWithOwnWork } from './unsavedTogether'
 
 afterEach(() => cleanup())

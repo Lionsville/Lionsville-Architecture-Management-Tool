@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { placeOf, readPlace, writePlace } from '../../agent/place'
+import { placeOf, readPlace, writePlace } from '../agent/place'
 import { FOUND_PLACES, MORE_PLACES, ORGANISATION_PLACES, placeShows } from './places'
 
 describe('the five places', () => {
