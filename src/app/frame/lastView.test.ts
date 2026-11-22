@@ -76,9 +76,16 @@ describe('what the frame keeps', () => {
 describe('the way back row two offers', () => {
   const held = withLastView({}, board)
 
-  it('is none while that view is the one up, and there again with a page over it', () => {
+  it('is none while that view is the one up, and none under a page where its tab stands in the row', () => {
     expect(wayBack(held, onBoard, 'freight', anywhere)).toBeUndefined()
-    expect(wayBack(held, { ...onBoard, page: { page: 'roadmap' } }, 'freight', anywhere)).toEqual({ to: { scope: 'freight', page: 'board', id: 'landscape' }, name: 'Application landscape' })
+    expect(wayBack(held, { ...onBoard, page: { page: 'roadmap' } }, 'freight', anywhere)).toBeUndefined()
+    expect(wayBack(held, { ...onBoard, home: { path: '', name: 'Acme' }, page: { page: 'register' } }, 'freight', anywhere)).toBeUndefined()
+  })
+
+  it('is there under a page for a view that has no tab of its own', () => {
+    const containers: LastView = { scope: 'freight', in: 'Freight', page: 'board', id: 'wms', name: 'Warehouse Management' }
+    const onContainers: Screen = { open: { path: 'freight', name: 'Freight', view: { id: 'wms', name: 'Warehouse Management', kind: 'container' } }, page: { page: 'roadmap' } }
+    expect(wayBack(withLastView({}, containers), onContainers, 'freight', anywhere)).toEqual({ to: { scope: 'freight', page: 'board', id: 'wms' }, name: 'Warehouse Management' })
   })
 
   it('names the scope where that is not the one in the trail', () => {

@@ -85,7 +85,7 @@ export const SECTIONS: SectionTexts = {
     'Row two, Home at the left.',
     ['Press Home.'],
     'From the Roadmap of Application landscape, press Home to see what the scope holds.'],
-  'frame.lastView': ['Go back to the view you were on', 'Row two keeps the view you last worked on one press away, on every page: a home, a scope\'s pages and the organisation\'s places. It says the view\'s name, and its tooltip names the scope where that is another than the one in the trail. It is not shown while that view itself is on screen. It is remembered on this computer, so it is there after a reload.',
+  'frame.lastView': ['Go back to the view you were on', 'Row two keeps the view you last worked on one press away, on every page: a home, a scope\'s pages and the organisation\'s places. It says the view\'s name, and its tooltip names the scope where that is another than the one in the trail. It is not shown while that view itself is on screen, or while its tab stands in the row under a page: there the tab is the way back. It is remembered on this computer, so it is there after a reload.',
     'Row two, ‹ with the view\'s name, right after Home.',
     ['Press ‹ with the view\'s name.', 'Or open Find or run a command ({key:Mod+K}) and choose the line that starts with Back to.'],
     'From the home of Application landscape, ‹ Application landscape opens the board again.'],

@@ -240,15 +240,15 @@ describe('the way back to the view last worked on', () => {
     await waitFor(() => expect(window.location.hash).toBe('#/retail/depot/-/board/l7'))
   })
 
-  it('names the scope where the page that is up is another’s, and is there over a page of the view’s own scope', async () => {
+  it('is not drawn over a page of the view’s own scope, where its tab stands, and names the scope where the page that is up is another’s', async () => {
     const { ask } = await home()
     await onTheBoard(ask)
     await ask('app.open', { scope: 'retail/depot', page: 'decisions' })
     await placePage()
-    expect((await screen.findByTestId('frame-last-view')).getAttribute('aria-label')).toBe('Back to The board')
+    expect(screen.queryByTestId('frame-last-view')).toBeNull()
     await ask('app.open', { scope: 'retail', page: 'home' })
     await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Retail'))
-    expect(screen.getByTestId('frame-last-view').getAttribute('aria-label')).toBe('Back to The board in Depot')
+    expect((await screen.findByTestId('frame-last-view')).getAttribute('aria-label')).toBe('Back to The board in Depot')
   })
 
   it('is found by ⌘K, so the keyboard reaches it from wherever the focus is', async () => {

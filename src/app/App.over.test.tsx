@@ -107,9 +107,12 @@ describe('a page of the organisation’s, opened from a board', () => {
     expect(screen.getByTestId('frame-more').textContent).toBe('More')
   })
 
-  it('is left by the way back in row two, in one press', async () => {
+  it('draws no second way back beside the tab it stands over, and offers it again from the home', async () => {
     await onTheBoard()
     await more('Register')
+    // The board's tab is in the row under the page: the way back would be a second press to the same place.
+    expect(screen.queryByTestId('frame-last-view')).toBeNull()
+    fireEvent.click(screen.getByTestId('frame-home'))
     fireEvent.click(await screen.findByTestId('frame-last-view'))
     await waitFor(() => expect(placePageNow()).toBeNull())
     await boardUp()

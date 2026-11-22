@@ -85,7 +85,7 @@ export const SECTIONS: SectionTexts = {
     'Rij twee, Start links.',
     ['Klik op Start.'],
     'Klik vanaf de Roadmap van Application landscape op Start om te zien wat de scope bevat.'],
-  'frame.lastView': ['Terug naar de weergave waar je was', 'Rij twee houdt de weergave waaraan je het laatst werkte één klik weg, op elke pagina: een startpagina, de pagina\'s van een scope en de plekken van de organisatie. Er staat de naam van de weergave, en de tooltip noemt de scope als dat een andere is dan die in het pad. Hij staat er niet zolang die weergave zelf op het scherm staat. Hij wordt op deze computer onthouden en is er dus ook na opnieuw laden.',
+  'frame.lastView': ['Terug naar de weergave waar je was', 'Rij twee houdt de weergave waaraan je het laatst werkte één klik weg, op elke pagina: een startpagina, de pagina\'s van een scope en de plekken van de organisatie. Er staat de naam van de weergave, en de tooltip noemt de scope als dat een andere is dan die in het pad. Hij staat er niet zolang die weergave zelf op het scherm staat, of zolang haar tab in de rij staat onder een pagina: dan is de tab de weg terug. Hij wordt op deze computer onthouden en is er dus ook na opnieuw laden.',
     'Rij twee, ‹ met de naam van de weergave, direct na Start.',
     ['Klik op ‹ met de naam van de weergave.', 'Of open Zoek of voer een opdracht uit ({key:Mod+K}) en kies de regel die met Terug naar begint.'],
     'Vanaf de startpagina van Application landscape opent ‹ Application landscape het bord weer.'],

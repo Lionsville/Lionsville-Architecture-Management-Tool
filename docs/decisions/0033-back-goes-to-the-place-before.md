@@ -626,8 +626,12 @@ still the one open.
 Row two draws the view somebody was last on right after *Home*, on every page
 and every home, as `‹` and the view's name (`frame.lastView`); its accessible
 name and tooltip say where it leads, with the scope where that is not the one in
-the trail. It is not drawn while that view is up with nothing over it. The
-palette offers the same as *Back to …*.
+the trail. It is not drawn while that view is up with nothing over it, nor
+under a page that stands over it where the view's own tab is in the row: there
+the tab is the way back, and a second press to the same place pushed the
+scope's pages out of the row in a narrow window. A container diagram and a map
+have no tab of their own, so under a page they keep it. The palette offers the
+same as *Back to …*.
 
 The frame keeps the last view of each scope and the scope worked in last. A view
 is noted where the window's history **settles** on it (`PlaceHistory`'s

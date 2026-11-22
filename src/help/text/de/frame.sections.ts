@@ -85,7 +85,7 @@ export const SECTIONS: SectionTexts = {
     'Zweite Zeile, Start links.',
     ['Klicken Sie auf Start.'],
     'Klicken Sie in der Roadmap von Application landscape auf Start, um zu sehen, was der Bereich enthält.'],
-  'frame.lastView': ['Zurück zur Ansicht, auf der Sie waren', 'Die zweite Zeile hält die Ansicht, an der Sie zuletzt gearbeitet haben, auf jeder Seite einen Klick entfernt: auf einer Startseite, den Seiten eines Bereichs und den Orten der Organisation. Dort steht der Name der Ansicht, und der Tooltip nennt den Bereich, wenn es ein anderer ist als der im Pfad. Sie steht nicht da, solange diese Ansicht selbst auf dem Bildschirm ist. Sie wird auf diesem Computer gemerkt und ist deshalb auch nach dem Neuladen da.',
+  'frame.lastView': ['Zurück zur Ansicht, auf der Sie waren', 'Die zweite Zeile hält die Ansicht, an der Sie zuletzt gearbeitet haben, auf jeder Seite einen Klick entfernt: auf einer Startseite, den Seiten eines Bereichs und den Orten der Organisation. Dort steht der Name der Ansicht, und der Tooltip nennt den Bereich, wenn es ein anderer ist als der im Pfad. Sie steht nicht da, solange diese Ansicht selbst auf dem Bildschirm ist oder ihr Reiter unter einer Seite in der Zeile steht: dann ist der Reiter der Weg zurück. Sie wird auf diesem Computer gemerkt und ist deshalb auch nach dem Neuladen da.',
     'Zweite Zeile, ‹ mit dem Namen der Ansicht, direkt nach Start.',
     ['Klicken Sie auf ‹ mit dem Namen der Ansicht.', 'Oder öffnen Sie Suchen oder Befehl ausführen ({key:Mod+K}) und wählen Sie die Zeile, die mit Zurück zu beginnt.'],
     'Von der Startseite von Application landscape aus öffnet ‹ Application landscape das Board wieder.'],

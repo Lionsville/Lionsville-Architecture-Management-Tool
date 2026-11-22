@@ -104,14 +104,24 @@ export type WayBackFacts = {
 export type WayBack = { readonly to: Destination & { scope: string }; readonly name: string; readonly in?: string }
 
 /**
+ * A view whose tab stands in row two while its scope is open: every kind but a
+ * container diagram, which is a closer look at a landscape, and a map, which
+ * may be a reading of the sheet. Those two have no tab of their own to press.
+ */
+const hasTab = (kind: string) => kind !== 'container' && kind !== 'map'
+
+/**
  * The way back row two offers on this screen, or none: no view was worked on
- * yet, the view is the one that is up with nothing over it, its scope is gone,
+ * yet, the view is the one that is up with nothing over it, its tab stands in
+ * the row under the page that is up — a second way to the same press, which at
+ * a narrow window pushed the scope's pages out of the row — its scope is gone,
  * or the home that is up lists its scope's views and it is not among them.
  */
 export function wayBack(held: LastViews, screen: Screen, at: string, facts: WayBackFacts): WayBack | undefined {
   const last = newestView(held)
   if (!last) return undefined
-  if (screen.page === undefined && screen.open?.path === last.scope && screen.open.view?.id === last.id) return undefined
+  const under = screen.open?.path === last.scope && screen.open.view?.id === last.id ? screen.open.view : undefined
+  if (under && (screen.page === undefined || hasTab(under.kind))) return undefined
   if (!facts.scopeIs(last.scope)) return undefined
   const listed = facts.homeViews?.scope === last.scope ? facts.homeViews.views : undefined
   const now = listed?.find((view) => view.id === last.id)
