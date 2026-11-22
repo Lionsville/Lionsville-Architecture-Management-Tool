@@ -2986,7 +2986,7 @@ vier Reitern:
 - **Optionen** — der Katalog: Produkte, Dienste und Eigenentwicklungen, die
   ihn liefern könnten, je mit Anbieter und Status, und die Elemente in der
   Landschaft, die sie sind.
-- **Wo verwendet** — die **Bewertung** jedes Bereichs. **Für einen Bereich bewerten…**
+- **Vergleiche** — die **Bewertung** jedes Bereichs. **Für einen Bereich vergleichen…**
   beginnt eine für einen Bereich, mit den dort geltenden Kontexten, auf Wunsch
   mit den Bewertungen eines anderen Bereichs als Ausgangspunkt. Im Raster wird
   jede Option gegen jede Fähigkeit bewertet; die **Passung** ist, wie viel von

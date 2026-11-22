@@ -56,10 +56,10 @@ const parsed = (answer: AgentAnswer): Record<string, unknown> => {
   return JSON.parse(answer.content[0].text)
 }
 
-async function home() {
+async function home(boot: Parameters<typeof renderApp>[0] extends infer O ? O extends { boot?: infer B } ? B : never : never = {}) {
   const agent = wire()
   const repositories = heldRepositories(TREE())
-  const view = renderApp({ agent: agent.gateway, repositories, boot: { initialProject: undefined } })
+  const view = renderApp({ agent: agent.gateway, repositories, boot: { initialProject: undefined, ...boot } })
   await waitFor(() => expect(agent.bound()).toBe(true))
   await screen.findByTestId('organisation-cards')
   return { ...view, ...agent, repositories }
@@ -91,5 +91,54 @@ describe('a comparison in the frame', () => {
     await waitFor(() => expect(screen.getByTestId('evaluation-option-sb-b')).toHaveProperty('checked', true))
     await new Promise((resolve) => setTimeout(resolve, 50))
     expect(screen.getByTestId('evaluation-view')).toBeTruthy()
+  })
+})
+
+describe('a comparison as a place', () => {
+  const look = 'at=retail'
+
+  it('has an address of its own, which Back leaves and Forward comes back to', async () => {
+    const { ask } = await home()
+    parsed(await ask('app.open', { scope: '', page: 'blocks', id: 'blk-gw', tab: 'used' }))
+    // A place is written once it settles: the list first, so Back has somewhere to go.
+    await waitFor(() => expect(window.location.hash).toBe('#/-/blocks/blk-gw?tab=used'))
+    fireEvent.click(await screen.findByRole('row', { name: /Retail/ }))
+    await screen.findByTestId('evaluation-view')
+    await waitFor(() => expect(window.location.hash).toBe('#/-/blocks/blk-gw?tab=used&look=at%3Dretail'))
+    expect(parsed(await ask('app.current')).page).toEqual({ page: 'blocks', id: 'blk-gw', tab: 'used', look })
+    window.history.back()
+    await waitFor(() => expect(screen.queryByTestId('evaluation-view')).toBeNull())
+    expect(screen.getByTestId('block-evaluations')).toBeTruthy()
+    window.history.forward()
+    expect(await screen.findByTestId('evaluation-view')).toBeTruthy()
+  })
+
+  it('is reached by an agent, and by an address the app comes up on', async () => {
+    const { ask } = await home()
+    parsed(await ask('app.open', { scope: '', page: 'blocks', id: 'blk-gw', tab: 'used', look }))
+    expect(await screen.findByTestId('evaluation-view')).toBeTruthy()
+    cleanup()
+    window.history.replaceState(null, '', '/')
+    await home({ initialHomePage: 'blocks', initialList: { tab: 'used', pick: 'blk-gw' }, initialPageLook: { page: 'blocks', tab: 'used', look } })
+    expect(await screen.findByTestId('evaluation-view')).toBeTruthy()
+  })
+
+  it('is two presses from the home of the scope that made it', async () => {
+    const { ask } = await home()
+    parsed(await ask('app.open', { scope: 'retail', page: 'home' }))
+    fireEvent.click(await screen.findByTestId('home-comparisons'))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Message gateway' }))
+    expect(await screen.findByTestId('evaluation-view')).toBeTruthy()
+    await waitFor(() => expect(window.location.hash).toBe('#/retail/-/blocks/blk-gw?tab=used&look=at%3Dretail'))
+  })
+
+  it('opens the comparison just started', async () => {
+    const { ask } = await home()
+    parsed(await ask('app.open', { scope: '', page: 'blocks', id: 'blk-gw', tab: 'used' }))
+    fireEvent.click(await screen.findByTestId('block-evaluate'))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Many partners' }))
+    fireEvent.click(screen.getByTestId('evaluate-start'))
+    await waitFor(() => expect(window.location.hash).toMatch(/look=at%3D(?!retail)/))
+    expect(await screen.findByTestId('evaluation-view')).toBeTruthy()
   })
 })

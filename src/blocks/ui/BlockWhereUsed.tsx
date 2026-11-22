@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * A building block's *Where used* (ADR-0043 §4, §7): each scope's evaluation of
+ * A building block's *Comparisons* (ADR-0043 §4, §7; the tab was *Where used*): each scope's evaluation of
  * it, a row each, and *Evaluate for a scope…* — offering to copy the ratings of a
  * scope that evaluated it before, which are the new scope's own from then on. A row
  * opens that evaluation; accepting the decision it proposes writes the choice.

@@ -9,13 +9,17 @@
  * - *Requirements*: its capabilities and usage contexts, how much each context needs
  *   of each capability;
  * - *Options*: the catalogue of what could deliver it, where each is weighed and chosen;
- * - *Where used*: each scope's evaluation, and *Evaluate for a scope…*.
+ * - *Comparisons*: each scope's comparison of its options, and *Evaluate for a
+ *   scope…*; a comparison open over it (the tab's key stays `used`, which old
+ *   links and agents name).
  *
- * A page over the home it was opened from, reached from the list, a topic or the
- * block on a board; never the first view, so its script arrives when it is first
- * opened. Each tab has an address.
+ * A page over the home it was opened from, reached from the list, a topic, the
+ * block on a board or a scope's home; never the first view, so its script
+ * arrives when it is first opened. Each tab has an address, and so has a
+ * comparison: the page's look says whose (`comparisonPlace`), so a reload, Back
+ * and a link land on it.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import type { WindowChrome } from '../../platform/windowChrome'
 import { GuidanceFrame } from '../../principles/ui/GuidanceFrame'
@@ -23,20 +27,21 @@ import { Button } from '../../widgets/kit/Button'
 import { RecordActions } from '../../widgets/kit/RecordActions'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { PageDialog } from '../../widgets/PageDialog'
-import { usePlaceTab } from '../../widgets/placeTab'
+import { usePlaceLook, usePlaceTab } from '../../widgets/placeTab'
 import { BlockAbout, BlockTextWindow, useBlockDocument } from './BlockAbout'
 import { useEditAsked } from '../../widgets/kit/editOnArrival'
 import { BlockRequirements } from './BlockRequirements'
 import { BlockSolutions } from './BlockSolutions'
 import { BlockWhereUsed } from './BlockWhereUsed'
 import { useBlocks } from './BlocksContext'
+import { comparisonIn, comparisonLook } from './comparisonPlace'
 
 type TabKey = 'about' | 'requirements' | 'options' | 'used'
 
 export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, windowChrome }: {
   open: boolean
   id: string | undefined
-  /** A scope whose evaluation to open on: *Where used* on it. */
+  /** A scope whose comparison to open on: *Comparisons* on it. */
   evaluation?: string
   /** Moves with every request, so the same block asked for twice is opened twice. */
   nonce?: number
@@ -45,9 +50,15 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
 }) {
   const access = useBlocks()
   const { t } = useStrings()
-  const [tab, setTab] = usePlaceTab('about')
+  const [tab, setTab] = usePlaceTab('about', 'blocks')
   const [chapter, setChapter] = useState<string | undefined>(undefined)
-  const [evaluating, setEvaluating] = useState<string | undefined>(openOn)
+  const [look, setLook] = usePlaceLook('blocks')
+  const evaluating = comparisonIn(look)
+  /** A comparison open, or the list of them: the look first, since a look chosen on another tab takes the tab with it. */
+  const setEvaluating = useCallback((scope: string | undefined) => {
+    setLook(scope === undefined ? undefined : comparisonLook(scope))
+    if (scope !== undefined) setTab('used')
+  }, [setLook, setTab])
   const [editAsked, setEditAsked] = useState(false)
   const shown = useRef(id)
   // A request, and only a request: the block, the comparison asked for and the
@@ -55,11 +66,11 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
   // effect that ran on anything else closed the comparison after every write.
   useEffect(() => {
     if (!open) return
-    if (openOn !== undefined) { setEvaluating(openOn); setTab('used') }
-    // Another block opens on About; the first, and a reload, on the tab its address says.
+    if (openOn !== undefined) setEvaluating(openOn)
+    // Another block opens on About; the first, and a reload, on the tab and the comparison its address says.
     else if (shown.current !== undefined && shown.current !== id) { setEvaluating(undefined); setTab('about') }
     shown.current = id
-  }, [open, openOn, id, nonce, setTab])
+  }, [open, openOn, id, nonce, setTab, setEvaluating])
   const document = useBlockDocument(id ?? '')
   // ✎ Edit on the block's preview, an address with ?edit or an agent: the page opens with its text being written.
   useEditAsked('blocks', id, () => {
@@ -69,14 +80,16 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
   const row = id ? access?.block(id) : undefined
   if (!access || !row) return null
   const { block, scope } = row
-  const toChapter = (context: string) => { setChapter((block.contexts ?? []).find((one) => one.id === context)?.name); setTab('about') }
+  const toChapter = (context: string) => { setChapter((block.contexts ?? []).find((one) => one.id === context)?.name); setEvaluating(undefined); setTab('about') }
+  // Leaving the page leaves its comparison: the register it closes onto has none.
+  const close = () => { setEvaluating(undefined); onClose() }
   const now = (['about', 'requirements', 'options', 'used'] as const).find((one) => one === tab) ?? 'about'
   return (
-    <PageDialog open={open} topInset={windowChrome.topInset} onClose={onClose} aria-label={block.name}>
+    <PageDialog open={open} topInset={windowChrome.topInset} onClose={close} aria-label={block.name}>
       <GuidanceFrame tab="blocks">
         <div className="guidance-record" data-testid="block-page">
           <div className="guidance-record__head">
-            <Button variant="quiet" onClick={onClose}>{t('blocks.backToList')}</Button>
+            <Button variant="quiet" onClick={close}>{t('blocks.backToList')}</Button>
             <h1 className="guidance-record__title">{block.name}</h1>
             <span className="guidance-read__quiet">{t('blocks.keptInScope', { scope: access.scopeLabel(scope) })}</span>
             <span className="guidance-read__spring" />
@@ -89,7 +102,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
           <div className="guidance-record__tabs">
             <Tabs<TabKey>
               label={block.name} value={now}
-              onChange={(next) => { setTab(next); if (next === 'used') setEvaluating(undefined) }}
+              onChange={(next) => { setEvaluating(undefined); setTab(next) }}
               items={[
                 { value: 'about', label: t('blocks.about') },
                 { value: 'requirements', label: t('blocks.requirements') },

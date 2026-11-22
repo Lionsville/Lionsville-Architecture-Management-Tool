@@ -7,7 +7,8 @@
   and a link to one record), accepted and built; amended 17 October 2026 (a
   link is a path, the old form is read, a pasted link moves an open window,
   and an element's page needs no view), accepted and built; amended
-  8 November 2026 (a page of records keeps the tree beside it), accepted and built
+  8 November 2026 (a page of records keeps the tree beside it), accepted and built;
+  amended 22 November 2026 (a building block's comparison is a place), accepted and built
 * Date: 2026-10-01
 * Deciders: Wouter Simons
 * Extends: ADR-0019 (the screen an agent reads and the destination it opens:
@@ -530,3 +531,24 @@ A way in that is about one field lands on it. The tree's *Move to…* opens a sc
 A page reached from row two works by scope, and nothing on it said which scope that was or where else its records were. The pages whose records each scope keeps — documentation (an element's record too), decisions, observations, the roadmap, principles and building blocks (`TALLIED`, `app/frame/pageTally.ts`) — now dock the scope tree as a home does, whatever the tree's preference says, and on a phone leave it to the toggle as a home does. Beside such a page each row counts that page's records the scope keeps itself, under the page's word, never what is under it: the page reads the scopes below where it reads them, and a rolled-up number would say the same record once per scope above it. A scope with none shows no number, and reads quiet where nothing is found below it either; *With …* keeps the scopes that have some and the path down to them. The count is the page's own rule, off the index the shell already read: the elements kept and not a stand-in, the decision records filed, the live observations (`liveObservations`), every plan, the standing principles, the blocks kept. Pressing a row keeps the page and moves it to that scope, through the guard every move passes (`throughGuard`), so a draft is asked about first. The register, technology, people, the operating model, topics and Checks are the organisation's and keep the width to the work.
 
 A row keeps the page only where the scope can hold it (`holdsPage`): documentation opens on an element, so beside it a scope that keeps none — a topic, often — lands on its home instead, the tree docked and the scope marked; every list page holds anywhere, an empty list being still the page. And a scope open with no view at all, its empty place (*No view here yet*), docks the tree as a home does: it is a place in the frame, and the tree is the way on from it.
+
+## Amended 22 November 2026: a building block's comparison is a place
+
+A scope's comparison of a building block's options was a state of the block's
+page and nothing else: its address stayed the *Comparisons* tab's
+(`#/-/blocks/<id>?tab=used`), so a reload, a shared link and Back landed on the
+list of comparisons, and an agent could not open one. It is now said in the
+address by the page's **look** — what a page looks at within its tab, which an
+address, `app.open` and `app.current` already carry for any page — as
+`at=<scope path>`, the way the operating model's look says `unit=<id>`:
+
+    #/-/blocks/blk-gateway?tab=used&look=at%3Dacme%252Frail
+
+The organisation's own is `at=`, so a look that names the root is told from no
+look. No word is added to the grammar: a look is a query of the page's own,
+read and written whole (`blocks/ui/comparisonPlace.ts`). A home's page now says
+its look on the screen as a scope's page always did (`placeOf`), and opening or
+leaving a comparison is a step, so Back comes out of it, where another tab or
+another look on the same page replaces the entry. The tab keeps its key, `used`,
+which old links and agents name; on screen it is called *Comparisons*.
+

@@ -278,8 +278,12 @@ export type ScreenPage =
   | { readonly page: 'checks'; readonly id?: string; readonly tab?: string }
   /** The topics catalogue (ADR-0042 §3), over a home, on a topic where one is picked. */
   | { readonly page: 'topics' }
-  /** The register of building blocks (ADR-0043 §8), over a home, or a block's page where one is picked. */
-  | { readonly page: 'blocks'; readonly id?: string; readonly tab?: string }
+  /**
+   * The register of building blocks (ADR-0043 §8), over a home, or a block's page where one is picked;
+   * on its `used` tab (*Comparisons*), `look` names the scope whose comparison is open, `at=<path>`
+   * (ADR-0033, amended 22 November 2026).
+   */
+  | { readonly page: 'blocks'; readonly id?: string; readonly tab?: string; readonly look?: string }
   | { readonly page: 'settings'; readonly tab?: string }
   | { readonly page: 'preferences' }
   /** The scope's history of snapshots (ADR-0008), over its home or its workspace. */

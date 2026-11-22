@@ -17,11 +17,11 @@ const facts = (): BlockFactsAccess => ({
 })
 
 describe('what the inspector says about building blocks', () => {
-  it('says an element is the solution a scope chose, and opens that evaluation', () => {
+  it('says an element is the solution a scope chose, and opens that comparison', () => {
     const access = facts()
     renderShell(<BlockFactsProvider value={access}><BlockFacts element={{ id: 'app-broker', kind: 'application' }} /></BlockFactsProvider>)
     expect(screen.getByTestId('block-facts').textContent).toContain('Is Broker A, the Message gateway chosen for Sales.')
-    fireEvent.click(screen.getByRole('button', { name: 'The evaluation' }))
+    fireEvent.click(screen.getByRole('button', { name: 'The comparison' }))
     expect(access.openBlock).toHaveBeenCalledWith('blk-gw', 'sales')
   })
 

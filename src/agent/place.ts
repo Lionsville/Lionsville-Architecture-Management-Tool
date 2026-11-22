@@ -335,6 +335,15 @@ export function placeInState(state: unknown): Place | undefined {
   }
 }
 
+/** What a page up says of itself beyond its name: the record, the tab and the look, where it says them. */
+function pageWords(up: NonNullable<Screen['page']>): Pick<Place, 'id' | 'tab' | 'look'> {
+  return {
+    ...('id' in up && up.id !== undefined ? { id: up.id } : {}),
+    ...('tab' in up && up.tab !== undefined ? { tab: up.tab } : {}),
+    ...('look' in up && up.look !== undefined ? { look: up.look } : {}),
+  }
+}
+
 /**
  * The place a screen is: the scope that is open and its view or the page
  * over it, or, with nothing open, whose home is up and its page.
@@ -350,11 +359,7 @@ export function placeOf(screen: Screen): Place | undefined {
     const scope = screen.open.path
     if (screen.page) {
       const up = screen.page
-      return {
-        scope, page: up.page, ...('id' in up && up.id !== undefined ? { id: up.id } : {}),
-        ...('tab' in up && up.tab !== undefined ? { tab: up.tab } : {}),
-        ...('look' in up && up.look !== undefined ? { look: up.look } : {}), ...beside,
-      }
+      return { scope, page: up.page, ...pageWords(up), ...beside }
     }
     const view = screen.open.view
     // A scope whose last view went stays open on an empty place: its address is the scope's
@@ -372,11 +377,8 @@ export function placeOf(screen: Screen): Place | undefined {
     const up = screen.page
     // A panel over a bare home is the panel's own short address: `#/-/work`.
     if (up === undefined && (screen.panel === 'work' || screen.panel === 'activity')) return { scope: screen.home.path, page: screen.panel }
-    return {
-      scope: screen.home.path, page: up?.page ?? 'home',
-      ...(up !== undefined && 'id' in up && up.id !== undefined ? { id: up.id } : {}),
-      ...(up !== undefined && 'tab' in up && up.tab !== undefined ? { tab: up.tab } : {}), ...beside,
-    }
+    // A page over a home looks at something within its tab too: a building block's comparison (`at=<scope>`).
+    return { scope: screen.home.path, page: up?.page ?? 'home', ...(up !== undefined ? pageWords(up) : {}), ...beside }
   }
   return undefined
 }
@@ -418,6 +420,8 @@ export function stepBetween(from: Place | undefined, to: Place): 'push' | 'repla
   if (from.scope === to.scope && from.page === to.page && to.page !== undefined && RECORD_PAGES.includes(to.page) && from.panel === to.panel) return 'replace'
   // A focus is going somewhere: Back comes out of it. The lines drawn are not.
   if (from.focus !== to.focus) return 'push'
+  // So is a building block's comparison, said by its page's look (ADR-0033, amended 22 November 2026).
+  if (from.page === 'blocks' && to.page === 'blocks' && from.look !== to.look) return 'push'
   // Another tab on the same page is choosing as well, whichever page has tabs.
   if (from.scope === to.scope && from.page === to.page && from.id === to.id && from.panel === to.panel && Boolean(from.edit) === Boolean(to.edit)) return 'replace'
   return 'push'

@@ -3,7 +3,9 @@
 * Status: accepted, 25 October 2026; as built, 25 October 2026 (3.8.0):
   building blocks, their evaluations, the decision and where the choice is
   seen (§1–§8, §13); references in documents and live views (§9–§11); the
-  agent's tools (§12), by other names and without `evaluation.remove`
+  agent's tools (§12), by other names and without `evaluation.remove`;
+  amended 22 November 2026 (the comparison: set with the mouse, its answer
+  shown, a place of its own), accepted and built
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0009 §3 (a document that computes), ADR-0012 §7 (a decision
@@ -355,3 +357,39 @@ both. Removing an evaluation stays the page's. `references.list` answers the
 catalogue the editor's *Insert ▾* reads (`search/referables.ts`, moved there
 so the agent may read it), and the method sent on connect
 (`RECORDS_PARAGRAPH`) says to refer rather than copy.
+
+## Amended 22 November 2026: the comparison
+
+On screen an evaluation is a **comparison** from now on — of a block's options,
+for one scope — and the tab that lists them is *Comparisons* (it was *Where
+used*; its key stays `used`). The model, the format and the agent's tools keep
+the word *evaluation*.
+
+**A ball is set with the mouse, as §6 decided.** The grids were built on the
+kit's matrix, where a press selects and only selects — a rule made for a RACI,
+where reading a row must not write a letter — so a ball could be set only by
+keys nothing on screen named. The matrix now takes an opt-in, `pressWrites`: a
+press moves a ball a quarter on (after full, back to empty), ⇧ and a press a
+quarter back, and the cell's menu — a right press, Enter, the menu key, or the
+small ⋯ on the cell picked — offers the five levels by name, and on a
+comparison *Note…*. Space, 0–4 and N stay. A RACI hands in no `pressWrites`
+and is as it was; where nothing may be written a press only selects. A quiet
+line beside each grid says how a ball is set.
+
+**The grid shows its answer.** The options are columns in the order of their
+rank (`ranking`: a failed must after every option that fails none, then by
+fit), each saying its rank and fit at its top and *fails a must* where it
+does, the chosen one marked. A cell below what this scope needs is edged in the
+attention ink and says by how many quarters (*−2*); where the capability is a
+must and the cell is not full, it is filled as a finding is, since that fails
+the option. *Gaps only* leaves out the rows every weighed option covers, and
+the capabilities no context that applies here needs are left out until asked
+for. The grid and anything that carries it out read one reading of the
+comparison (`blocks/ui/comparisonReading.ts`).
+
+**A comparison is a place** (ADR-0033, amended the same day): its address is
+the block's page on *Comparisons*, its look naming the scope. A scope's home
+lists the comparisons that scope made on its *Building blocks* row, each two
+presses from the home, and *Compare for a scope… → Start* opens the comparison
+it started.
+

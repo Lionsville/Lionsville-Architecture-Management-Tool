@@ -2839,7 +2839,7 @@ tabbladen:
 - **Opties** — de catalogus: producten, diensten en wat zelf gebouwd
   wordt dat hem kan leveren, elk met leverancier en status, en de elementen
   in het landschap die het zijn.
-- **Waar gebruikt** — de **beoordeling** van elke scope. **Beoordelen
+- **Vergelijkingen** — de **beoordeling** van elke scope. **Vergelijken
   voor een scope…** begint er een, met de contexten die daar gelden,
   eventueel met de scores van de beoordeling van een andere scope. In het
   raster wordt elke optie gescoord op elke capability; de **fit** is hoeveel

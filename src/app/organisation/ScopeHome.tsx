@@ -167,10 +167,18 @@ function ownRows(props: ScopeHomeProps, principles: { own: number; inForce: numb
 function blocksRow({ at, atRoot, onHomePage, s }: ScopeHomeProps, blocks: NonNullable<ReturnType<typeof useBlocks>>): Kept {
   const all = blocks.blocks().length
   const { kept, evaluated } = blocks.blocksAt(at)
+  // The comparisons this scope made itself, each a press from the menu at the row's end: two presses from the home.
+  const compared = blocks.blocks().filter((one) => blocks.evaluationsOf(one.block.id).some((held) => held.scope === at))
   return {
     id: 'open-block-register', label: s('homeBlocks.card'), icon: <RegisterIcon />, guide: 'org.card.blocks',
     fact: atRoot ? plural(s, { one: 'homeBlocks.countAllOne', other: 'homeBlocks.countAll' }, all) : s('homeBlocks.countHere', { kept: kept.length, evaluated: evaluated.length }),
     holds: atRoot ? all > 0 : kept.length + evaluated.length > 0, open: () => onHomePage('blocks'),
+    ...(compared.length > 0 ? { end: (
+      <MenuButton
+        variant="quiet" size="small" label={s('homeBlocks.comparisons', { count: compared.length })} menuLabel={s('homeBlocks.comparisonsMenu')}
+        data-testid="home-comparisons" items={compared.map((one) => ({ label: one.block.name, onSelect: () => blocks.openBlock(one.block.id, at) }))}
+      />
+    ) } : {}),
   }
 }
 

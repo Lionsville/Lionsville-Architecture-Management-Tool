@@ -378,6 +378,15 @@ describe('what a list keeps in the address', () => {
     expect(readPlace(writePlace(place))).toEqual(place)
   })
 
+  it('carries a building block\'s comparison as its page\'s look: a screen says it, it is read back whole, and going to one is a step Back undoes', () => {
+    const list = { scope: '', page: 'blocks' as const, id: 'blk-gw', tab: 'used' }
+    const comparison = { ...list, look: 'at=acme%2Frail' }
+    expect(placeOf({ home: { path: '', name: 'Acme' }, page: { page: 'blocks', id: 'blk-gw', tab: 'used', look: 'at=acme%2Frail' } })).toEqual(comparison)
+    expect(writePlace(comparison)).toBe('#/-/blocks/blk-gw?tab=used&look=at%3Dacme%252Frail')
+    expect(readPlace(writePlace(comparison))).toEqual(comparison)
+    expect(stepBetween(list, comparison)).toBe('push')
+  })
+
   it('is another place, and choosing one replaces the entry rather than adding a Back', () => {
     const on = { scope: '', page: 'register' as const }
     expect(samePlace(on, { ...on, list: 'q=x' })).toBe(false)

@@ -2631,7 +2631,7 @@ list folded away, on four tabs:
 - **Options** — the catalogue: products, services and what is built in
   house that could deliver it, each with its supplier and status, and the
   elements in the landscape that are it.
-- **Where used** — every scope's **evaluation**. **Evaluate for a scope…**
+- **Comparisons** — every scope's **evaluation**. **Compare for a scope…**
   starts one, with the contexts that apply there, optionally copying the
   ratings of another scope's. In the grid each option is rated against each
   capability, N writes a note on how, and a cell with one says *note*; the
