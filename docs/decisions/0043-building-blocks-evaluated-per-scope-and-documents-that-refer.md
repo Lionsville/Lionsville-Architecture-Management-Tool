@@ -415,3 +415,25 @@ capability the block has already is not added twice
 holds it, so a second added before the tree is read again keeps the first.
 The need grid has a legend of its own, in the words of a need.
 
+## Amended 22 November 2026: the agent reads the grid, and rates several cells
+
+`blocks.list` answers each option's fit per scope and nothing under it, so
+an agent that wanted the grid a person sees — which cells are rated, at
+what level and with what note, what each capability is needed at and why —
+had no read for it, and `evaluation.rate` wrote one cell per call.
+
+* **`evaluation.read`** (`block`, `scope` the evaluating scope — the scope
+  open where it is not named — and `blockScope` where two scopes keep a
+  block of that id) answers one scope's evaluation as its grid: the
+  contexts that apply, what is needed of each capability and the contexts
+  that drive it (`needsOf`, `drivenBy`), every cell option by capability
+  with its level and note (no level where nobody rated it), each option's
+  fit with its terms, covered, needed and the musts it fails (`fitOf`,
+  `percent`), the ranking (`ranking`) and the option chosen with the
+  decision that chose it — all from `model/evaluation.ts`, the arithmetic
+  the page draws, so the two cannot disagree. The open scope is read as its
+  session holds it. Tree-wide, like `blocks.list`, so a host with nothing
+  open answers it too (`agent/records.ts`).
+* **`evaluation.rate` takes `cells`** — a list of `{ option, capability,
+  level, how }` — as well as one cell, all in one step. Half a cell, or no
+  cell at all, is refused.

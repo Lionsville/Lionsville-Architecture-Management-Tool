@@ -19,7 +19,7 @@
 import { agentRun } from './agentRun'
 import type { AgentSessionOf } from './agentRun'
 import { listReferences } from './references'
-import { listBlocks, listPrinciples, listTopics, readPrinciple, suggestPrinciplesFor } from './records'
+import { listBlocks, listPrinciples, listTopics, readEvaluation, readPrinciple, suggestPrinciplesFor } from './records'
 import type { OpenRecords } from './records'
 import { listChanges } from './changes'
 import type { ChangesOf } from './changes'
@@ -625,6 +625,7 @@ function treeWide(
     case 'principles.suggest': return suggestPrinciplesFor(tree, request.args, openRecords(session))
     case 'topics.list': return listTopics(tree, request.args)
     case 'blocks.list': return listBlocks(tree, request.args)
+    case 'evaluation.read': return readEvaluation(tree, request.args, session ? { path: session.scopePath(), current: session.current() } : undefined)
     // What a document may refer to: the open scope's, or the scope named (ADR-0043 §9).
     case 'references.list': return listReferences(request.args, tree, openDocument(session), session?.translate ?? shell?.translate)
     // Who holds which role, across the tree and the open scope as it is now (ADR-0036 §4).

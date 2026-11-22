@@ -12,7 +12,7 @@ import { blockDecision, supportsCopied } from '../../decisions/blockDecision'
 import { transaction } from '../../model/commands'
 import { evaluationId, startedEvaluation } from '../../model/evaluation'
 import { decisionList, evaluationsOf } from '../../model/normalised'
-import type { DesignElement } from '../../model/types'
+import type { BlockLevel, DesignElement } from '../../model/types'
 import { json, refused } from '../tools'
 import type { Args, Handler, WriteView } from './shared'
 import { text } from './shared'
@@ -67,21 +67,34 @@ export const proposeChoice: Handler = (args: Args, view) => {
   }
 }
 
+type Cell = { option: string; capability: string; level: BlockLevel; how?: string }
+
+/** The cells a rating names: the one said by option, capability and level, then those in cells, in order. */
+function cellsOf(args: Args): Cell[] | string {
+  const one = [args.option, args.capability, args.level]
+  const given = one.filter((value) => value !== undefined && value !== null).length
+  if (given !== 0 && given !== 3) return 'a cell needs option, capability and level together'
+  const listed = Array.isArray(args.cells) ? (args.cells as Cell[]) : []
+  const cells = [...(given === 3 ? [{ option: args.option, capability: args.capability, level: args.level, how: args.how } as Cell] : []), ...listed]
+  return cells.length ? cells : 'name a cell by option, capability and level, or several in cells'
+}
+
 export const rateEvaluation: Handler = (args: Args, view) => {
   const block = args.block as { scope?: string; id: string }
   const held = Object.values(evaluationsOf(view.model)).find((one) => one.block.id === block.id && (block.scope === undefined || one.block.scope === block.scope))
   if (!held) return refused('agent.unknownId', `this scope's evaluation of building block ${block.id}`)
-  const option = args.option as string
-  const capability = args.capability as string
-  const level = args.level as 0 | 1 | 2 | 3 | 4
-  const how = text(args.how)
-  const coverage = {
-    ...held.coverage,
-    [option]: { ...held.coverage[option], [capability]: { level, ...(how ? { how } : {}) } },
+  const cells = cellsOf(args)
+  if (typeof cells === 'string') return refused('agent.badArguments', cells)
+  const coverage = { ...held.coverage }
+  const options = [...held.options]
+  for (const { option, capability, level, how } of cells) {
+    const note = text(how)
+    coverage[option] = { ...coverage[option], [capability]: { level, ...(note ? { how: note } : {}) } }
+    if (!options.includes(option)) options.push(option)
   }
-  const options = held.options.includes(option) ? held.options : [...held.options, option]
+  const rated = cells.map(({ option, capability, level }) => ({ option, capability, level }))
   return {
     command: { type: 'evaluation.update', id: held.id, patch: { coverage, options }, origin: 'agent' },
-    answer: json({ evaluation: held.id, option, capability, level }),
+    answer: json(rated.length === 1 && args.cells === undefined ? { evaluation: held.id, ...rated[0] } : { evaluation: held.id, cells: rated }),
   }
 }

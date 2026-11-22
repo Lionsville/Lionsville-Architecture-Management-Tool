@@ -787,6 +787,24 @@ const SPECS = [
     },
   },
   {
+    name: 'evaluation.read',
+    tier: 'read',
+    description:
+      'One scope\'s evaluation of a building block as its grid (ADR-0043): what is needed of each capability and the '
+      + 'contexts that drive it, every cell — option by capability — with its level (0–4, absent where unrated) and note, '
+      + 'each option\'s fit with its terms and the musts it fails, the ranking and the option chosen.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        block: { type: 'string', description: 'The building block\'s id.' },
+        blockScope: { type: 'string', description: 'The scope that keeps the block, where two scopes keep one of that id.' },
+        scope: { type: 'string', description: 'The scope that evaluates it, by path. Default: the scope open.' },
+      },
+      required: ['block'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'references.list',
     tier: 'read',
     description:
@@ -2153,9 +2171,9 @@ const SPECS = [
     name: 'evaluation.rate',
     tier: 'write',
     description:
-      'Rate one option against one capability in the open scope\'s evaluation of a building block (ADR-0043 §5): level 0 '
-      + '(not covered) to 4 (fully), with how where it helps. An option not yet weighed here is added. blocks.list says the '
-      + 'capabilities, the options and the fit that follows.',
+      'Rate options against capabilities in the open scope\'s evaluation of a building block (ADR-0043 §5): one cell by '
+      + 'option, capability and level, or several in cells, as one step; level 0 (not covered) to 4 (fully), with how where '
+      + 'it helps. An option not yet weighed here is added. evaluation.read says the grid and the fit that follows.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2164,8 +2182,24 @@ const SPECS = [
         capability: { type: 'string', description: 'A capability\'s id.' },
         level: { type: 'integer', description: '0 (not covered) to 4 (fully).', minimum: 0, maximum: 4 },
         how: { type: 'string', description: 'How it covers it, where that helps.' },
+        cells: {
+          type: 'array',
+          description: 'Several cells, rated in the same step; with or instead of option, capability and level.',
+          items: {
+            type: 'object',
+            description: 'One cell.',
+            properties: {
+              option: { type: 'string', description: 'A solution\'s id.' },
+              capability: { type: 'string', description: 'A capability\'s id.' },
+              level: { type: 'integer', description: '0 to 4.', minimum: 0, maximum: 4 },
+              how: { type: 'string', description: 'How it covers it.' },
+            },
+            required: ['option', 'capability', 'level'],
+            additionalProperties: false,
+          },
+        },
       },
-      required: ['block', 'option', 'capability', 'level'],
+      required: ['block'],
       additionalProperties: false,
     },
   },
@@ -3903,7 +3937,7 @@ const SCOPE_ARGUMENT: ArgumentSchema = {
 /** About the whole tree rather than one scope: `scope` would mean nothing on them. */
 export const TREE_WIDE: readonly string[] = [
   'scopes.list', 'register.list', 'technology.list', 'checks.list', 'views.list', 'assignments.list', 'reportingLines.list',
-  'principles.list', 'principle.read', 'principles.suggest', 'topics.list', 'blocks.list',
+  'principles.list', 'principle.read', 'principles.suggest', 'topics.list', 'blocks.list', 'evaluation.read',
 ]
 
 /**

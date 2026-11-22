@@ -155,8 +155,9 @@ describe('the vocabulary', () => {
     for (const tool of TOOLS) {
       const has = 'scope' in tool.inputSchema.properties
       // `checks.list`, `views.list` and `assignments.list` spell `scope` as a
-      // filter, and `app.open` as its destination (ADR-0019); the rest take none.
-      if (['checks.list', 'views.list', 'assignments.list', 'app.open'].includes(tool.name)) expect(has, tool.name).toBe(true)
+      // filter, `evaluation.read` as the scope that evaluates, and `app.open`
+      // as its destination (ADR-0019); the rest take none.
+      if (['checks.list', 'views.list', 'assignments.list', 'evaluation.read', 'app.open'].includes(tool.name)) expect(has, tool.name).toBe(true)
       else if (TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) || ON_THE_REGISTER.includes(tool.name) || ON_THE_TREE.includes(tool.name)) {
         expect(has, tool.name).toBe(false)
       } else expect(has, tool.name).toBe(true)

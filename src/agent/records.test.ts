@@ -11,7 +11,7 @@ import type { Evaluation } from '../model/evaluation'
 import type { Principle } from '../model/principle'
 import type { TreeRecords } from '../model/treeRecords'
 import type { DesignElement } from '../model/types'
-import { listBlocks, listPrinciples, listTopics } from './records'
+import { listBlocks, listPrinciples, listTopics, readEvaluation } from './records'
 import { listReferences } from './references'
 import type { AgentAnswer } from './tools'
 import type { TreeView } from './tree'
@@ -84,6 +84,51 @@ describe('the tree’s principles, topics and building blocks, for an agent', ()
 
   it('answers empty, not refused, where the shell lends no records', () => {
     expect(body(listTopics({} as TreeView, {})).topics).toEqual([])
+  })
+})
+
+describe('a comparison\'s grid, for an agent (evaluation.read)', () => {
+  it('answers the needs, every cell, each option\'s fit with its terms and failed musts, the ranking and the choice', () => {
+    expect(body(readEvaluation(tree, { block: 'blk-gw', scope: 'sales' }))).toEqual({
+      scope: 'sales',
+      block: { scope: 'topics/integration', id: 'blk-gw', name: 'Message gateway' },
+      contexts: [{ id: 'cx-partners', name: 'Many partners' }],
+      needs: [
+        { capability: 'cap-route', text: 'Routes by content', need: 4, drivenBy: ['Many partners'] },
+        { capability: 'cap-audit', text: 'Keeps an audit trail', must: true, need: 2, drivenBy: ['Many partners'] },
+      ],
+      cells: [
+        { option: 'sb-a', capability: 'cap-route', level: 4 }, { option: 'sb-a', capability: 'cap-audit', level: 2 },
+        { option: 'sb-b', capability: 'cap-route', level: 2 }, { option: 'sb-b', capability: 'cap-audit', level: 4 },
+      ],
+      options: [
+        {
+          solution: 'sb-a', name: 'Broker A', rank: 2, fit: 100, covered: 6, needed: 6, failsMust: ['cap-audit'],
+          terms: [{ capability: 'cap-route', need: 4, coverage: 4, counted: 4 }, { capability: 'cap-audit', need: 2, coverage: 2, counted: 2 }],
+        },
+        {
+          solution: 'sb-b', name: 'Managed bus', rank: 1, fit: 67, covered: 4, needed: 6, failsMust: [],
+          terms: [{ capability: 'cap-route', need: 4, coverage: 2, counted: 2 }, { capability: 'cap-audit', need: 2, coverage: 4, counted: 2 }],
+        },
+      ],
+      ranking: ['sb-b', 'sb-a'],
+      chosen: 'sb-b', decidedBy: 'adr-2',
+    })
+  })
+
+  it('reads the open scope\'s evaluation as its session holds it, and leaves a cell nobody rated without a level', () => {
+    const open = { path: 'sales', current: { elements: [], evaluations: [{ ...sales, coverage: { 'sb-a': { 'cap-route': { level: 1 as const, how: 'By topic only' } } } }] } }
+    const cells = body(readEvaluation(tree, { block: 'blk-gw' }, open)).cells
+    expect(cells).toEqual([
+      { option: 'sb-a', capability: 'cap-route', level: 1, how: 'By topic only' }, { option: 'sb-a', capability: 'cap-audit' },
+      { option: 'sb-b', capability: 'cap-route' }, { option: 'sb-b', capability: 'cap-audit' },
+    ])
+  })
+
+  it('refuses a block nobody keeps, a scope that does not evaluate it, and no scope at all with nothing open', () => {
+    expect(readEvaluation(tree, { block: 'blk-none', scope: 'sales' })).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(readEvaluation(tree, { block: 'blk-gw', scope: 'stock' })).toMatchObject({ refusal: 'agent.unknownId' })
+    expect(readEvaluation(tree, { block: 'blk-gw' })).toMatchObject({ refusal: 'agent.badArguments' })
   })
 })
 

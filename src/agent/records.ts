@@ -7,7 +7,8 @@
  * view's `records` — the same fold the pages read — with nothing open. Each
  * takes `scope` as a filter, as every tree-wide read does.
  */
-import { percent, ranking } from '../model/evaluation'
+import { drivenBy, fitOf, needsOf, percent, ranking } from '../model/evaluation'
+import type { Evaluation } from '../model/evaluation'
 import type { HostModel } from '../model/hostModel'
 import { principleUse } from '../principles/principle'
 import { suggestPrinciples } from '../principles/suggest'
@@ -204,4 +205,67 @@ export function listBlocks(tree: TreeView | undefined, rawArgs: unknown): AgentA
         })),
     })),
   })
+}
+
+/** The open scope's evaluations and blocks as its session holds them, so a cell just rated reads back. */
+export type OpenEvaluations = { readonly path: string; readonly current: Pick<HostModel, 'evaluations' | 'elements'> }
+
+/**
+ * `evaluation.read` (ADR-0043, amended 22 November 2026): one scope's
+ * evaluation of one block as its grid — what is needed of each capability
+ * and which contexts drive it, every cell rated with its level and note, each
+ * option's fit with its terms and the musts it fails, the ranking and the
+ * choice — all from `model/evaluation.ts`, the arithmetic the page draws.
+ */
+export function readEvaluation(tree: TreeView | undefined, rawArgs: unknown, open?: OpenEvaluations): AgentAnswer {
+  const wrong = checkArguments(toolSpec('evaluation.read').inputSchema, rawArgs)
+  if (wrong) return refused('agent.badArguments', wrong)
+  const args = rawArgs as Args
+  const by = scopeAsked(rawArgs) ?? open?.path
+  if (by === undefined) return refused('agent.badArguments', 'name the scope that evaluates it in scope ("" is the organisation)')
+  const records = recordsOf(tree)
+  const openBlocks = (open?.current.elements ?? []).filter((one) => one.kind === 'buildingBlock').map((block) => ({ scope: open!.path, block }))
+  const kept = [...openBlocks, ...records.blocks().filter((one) => one.scope !== open?.path)]
+    .find((one) => one.block.id === args.block && (args.blockScope === undefined || one.scope === args.blockScope))
+  if (!kept) return refused('agent.unknownId', `building block ${String(args.block)} (blocks.list)`)
+  const held: readonly { scope: string; evaluation: Evaluation }[] = open && by === open.path
+    ? (open.current.evaluations ?? []).map((evaluation) => ({ scope: by, evaluation }))
+    : records.evaluations()
+  const evaluation = held.find((one) => one.scope === by && one.evaluation.block.id === kept.block.id && one.evaluation.block.scope === kept.scope)?.evaluation
+  if (!evaluation) return refused('agent.unknownId', `${by || 'the organisation'}'s evaluation of building block ${kept.block.id} (blocks.list says who evaluates it)`)
+  return json(evaluationGrid(by, kept.scope, kept.block, evaluation))
+}
+
+function evaluationGrid(by: string, keptIn: string, block: DesignElement, evaluation: Evaluation) {
+  const needs = needsOf(block, evaluation.contexts)
+  const capabilities = block.capabilities ?? []
+  const catalogue = block.sbbs ?? []
+  const ranked = ranking(block, evaluation)
+  return {
+    scope: by,
+    block: { scope: keptIn, id: block.id, name: block.name },
+    contexts: (block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id)).map((one) => ({ id: one.id, name: one.name })),
+    needs: capabilities.map((one) => ({
+      capability: one.id, text: one.text, ...(one.must ? { must: true } : {}),
+      need: needs[one.id] ?? 0, drivenBy: drivenBy(block, evaluation.contexts, one.id),
+    })),
+    cells: evaluation.options.flatMap((option) => capabilities.map((one) => {
+      const cell = evaluation.coverage[option]?.[one.id]
+      return { option, capability: one.id, ...(cell ? { level: cell.level, ...(cell.how ? { how: cell.how } : {}) } : {}) }
+    })),
+    options: evaluation.options.map((option) => {
+      const fit = fitOf(block, evaluation, option)
+      const sbb = catalogue.find((one) => one.id === option)
+      const rank = ranked.findIndex((one) => one.sbb.id === option)
+      return {
+        solution: option, ...(sbb ? { name: sbb.name } : { notInCatalogue: true }),
+        ...(rank >= 0 ? { rank: rank + 1 } : {}),
+        ...(fit.fit !== undefined ? { fit: percent(fit.fit) } : {}),
+        covered: fit.covered, needed: fit.needed, terms: fit.terms, failsMust: fit.failsMust,
+      }
+    }),
+    ranking: ranked.map((one) => one.sbb.id),
+    ...(evaluation.chosen ? { chosen: evaluation.chosen } : {}),
+    ...(evaluation.decidedBy ? { decidedBy: evaluation.decidedBy } : {}),
+  }
 }

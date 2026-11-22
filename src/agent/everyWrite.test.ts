@@ -235,7 +235,10 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'aspect.add': [{ args: { principle: 'pr-new-1', text: 'Ask' }, on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare', 'Weigh'] }]] }],
   'aspect.update': [{ args: { principle: 'pr-new-1', number: 1, text: 'Compare twice' }, on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare', 'Weigh'] }]] }],
   'aspect.remove': [{ args: { principle: 'pr-new-1', number: 2 }, on: [['principle.add', { title: 'Buy before build', statement: 'We buy first.', aspects: ['Compare', 'Weigh'] }]] }],
-  'evaluation.rate': [{ args: { block: { id: 'blk-gw' }, option: 'sb-a', capability: 'cap-route', level: 3 } }],
+  'evaluation.rate': [
+    { args: { block: { id: 'blk-gw' }, option: 'sb-a', capability: 'cap-route', level: 3 } },
+    { args: { block: { id: 'blk-gw' }, cells: [{ option: 'sb-a', capability: 'cap-route', level: 3 }, { option: 'sb-a', capability: 'cap-route', level: 2, how: 'Second word' }] } },
+  ],
   'evaluation.add': [{ args: { block: 'blk-id', contexts: ['Staff'] } }],
   'evaluation.propose': [{
     args: { block: 'blk-id', option: 'Gatekeeper' },

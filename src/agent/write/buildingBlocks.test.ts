@@ -18,7 +18,7 @@ import type { DesignElement } from '../../model/types'
 import type { TreeRecords } from '../../model/treeRecords'
 import type { AgentAnswer } from '../tools'
 import { updateBlock } from './buildingBlocks'
-import { proposeChoice, startEvaluation } from './evaluations'
+import { proposeChoice, rateEvaluation, startEvaluation } from './evaluations'
 import type { Prepared, WriteView } from './shared'
 
 const BLOCK: DesignElement = {
@@ -97,5 +97,30 @@ describe('an evaluation, from an agent', () => {
     expect((add as { decision: { body: string } }).decision.body).toContain('evaluation: blk-id')
     expect(cite).toMatchObject({ type: 'citation.add', citation: { about: { kind: 'decision' }, principle: { id: 'pr-buy' }, stance: 'supports' } })
     expect(refusal(proposeChoice({ block: 'blk-id', option: 'Our own' }, view({ evaluations: [here] })))).toBe('agent.badArguments')
+  })
+
+  it('rates one cell, or several in one step, adding an option not yet weighed', () => {
+    const here = { ...THERE, contexts: ['cx-staff'] }
+    const one = built(rateEvaluation({ block: { id: 'blk-id' }, option: 'sb-gate', capability: 'cap-mfa', level: 3, how: 'An app' }, view({ evaluations: [here] })))
+    expect(one.command).toMatchObject({ type: 'evaluation.update', patch: { coverage: { 'sb-gate': { 'cap-sso': { level: 4 }, 'cap-mfa': { level: 3, how: 'An app' } } } } })
+    const many = built(rateEvaluation({ block: { id: 'blk-id' }, cells: [
+      { option: 'sb-own', capability: 'cap-sso', level: 1 },
+      { option: 'sb-own', capability: 'cap-mfa', level: 0, how: 'Not built' },
+      { option: 'sb-gate', capability: 'cap-mfa', level: 4 },
+    ] }, view({ evaluations: [here] })))
+    expect(many.command).toMatchObject({
+      type: 'evaluation.update',
+      patch: {
+        options: ['sb-gate', 'sb-own'],
+        coverage: { 'sb-gate': { 'cap-sso': { level: 4 }, 'cap-mfa': { level: 4 } }, 'sb-own': { 'cap-sso': { level: 1 }, 'cap-mfa': { level: 0, how: 'Not built' } } },
+      },
+    })
+    expect(JSON.parse((many.answer as unknown as { content: { text: string }[] }).content[0].text)).toMatchObject({ cells: [{ option: 'sb-own' }, {}, {}] })
+  })
+
+  it('refuses a rating that names no cell, or half of one', () => {
+    const here = { ...THERE, contexts: ['cx-staff'] }
+    expect(refusal(rateEvaluation({ block: { id: 'blk-id' } }, view({ evaluations: [here] })))).toBe('agent.badArguments')
+    expect(refusal(rateEvaluation({ block: { id: 'blk-id' }, option: 'sb-gate', level: 2 }, view({ evaluations: [here] })))).toBe('agent.badArguments')
   })
 })
