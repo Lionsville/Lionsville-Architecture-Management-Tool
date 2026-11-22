@@ -128,11 +128,14 @@ export const recordObservation: Handler = (args, view) => {
   if (date > today) return refused('agent.badArguments', `date ${date} is in the future; today is ${today}`)
   const tone = toneArgument(args)
   if (typeof tone === 'object') return tone
+  const about = aboutArgument(args, view)
+  if (about !== undefined && !Array.isArray(about)) return about
   // Who recorded it is the person the agent acts for, via the agent, and never an argument (ADR-0038, amended §10).
   const recordedBy = recorderOf(view)
   const fresh = newObservation({
     id: view.makeId('ob'), number: nextObservationNumber(before.observations), title, date, t: view.translate,
     where: args.where,
+    ...(about ? { about } : {}),
     by: by.ref,
     ...(typeof args.impact === 'string' ? { impact: args.impact as ObservationImpact } : {}),
     ...(tone ? { tone } : {}),
@@ -141,6 +144,19 @@ export const recordObservation: Handler = (args, view) => {
   })
   const after = { ...before, observations: [...before.observations, fresh] }
   return finish(work, after, observationAnswer(after, fresh.id))
+}
+
+/**
+ * The elements an observation is about, by id (ADR-0032, amended 22 November
+ * 2026): each one an element this scope holds, its own or a stand-in, or the
+ * call is refused naming the first that is not. An empty list takes them all
+ * off; absent says nothing.
+ */
+function aboutArgument(args: Args, view: WriteView): string[] | AgentAnswer | undefined {
+  if (!Array.isArray(args.about)) return undefined
+  const ids = args.about.filter((one): one is string => typeof one === 'string')
+  const unknown = ids.find((id) => !view.model.elements[id])
+  return unknown === undefined ? ids : refused('agent.unknownId', `element ${unknown}: name an element this scope holds (elements.list)`)
 }
 
 /** What each of an observation's required facts is, for the refusal that asks for it. */
@@ -170,6 +186,9 @@ function observationPatch(args: Args, view: WriteView): ObservationPatch | Agent
     patch.by = by.ref
   }
   if (typeof args.body === 'string') patch.body = args.body
+  const about = aboutArgument(args, view)
+  if (about !== undefined && !Array.isArray(about)) return about
+  if (about) patch.about = about
   if (typeof args.impact === 'string') patch.impact = args.impact as ObservationImpact
   // Its tone, and may be changed any way (ADR-0038, amended §9).
   const tone = toneArgument(args)

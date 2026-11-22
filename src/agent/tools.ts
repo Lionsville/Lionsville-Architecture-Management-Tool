@@ -994,8 +994,8 @@ const SPECS = [
     tier: 'read',
     description:
       'Everything about one element: its fields, its documentation, its connections, where it is drawn, the decisions '
-      + 'about it, and who answers for it. A record with ref is a stand-in: its fields are the defining scope\'s, '
-      + 'changed there. (rules.read)',
+      + 'about it, the open observations on it, and who answers for it. A record with ref is a stand-in: its fields '
+      + 'are the defining scope\'s, changed there. (rules.read)',
     inputSchema: { type: 'object', properties: { id: ID('element') }, required: ['id'], additionalProperties: false },
   },
   {
@@ -1064,6 +1064,7 @@ const SPECS = [
         includeMerged: { type: 'boolean', description: 'Also list observations that were merged into another.' },
         includeArchived: { type: 'boolean', description: 'Also list observations that were archived.' },
         below: { type: 'boolean', description: 'true: the observations of the scopes below this one, each with its scope, instead of this scope\'s own.' },
+        about: { type: 'string', description: 'Only observations about this element, by id. Each observation answers the elements it is about as about.' },
       },
       additionalProperties: false,
     },
@@ -2115,6 +2116,7 @@ const SPECS = [
         title: { type: 'string', description: 'What was seen, in a few neutral words: no cause and no fix in it. Under 80 characters reads whole on the map; the rest belongs in body.' },
         body: { type: 'string', description: 'What was seen, the evidence, and who or what it affected, as markdown. Facts only: the reading of them is a cause.' },
         where: { type: 'string', description: 'Where it was seen: a system, a desk, a job. Prose, not an id. Required.' },
+        about: { type: 'array', items: { type: 'string' }, description: 'The elements it is about, by id: elements this scope holds, its own or stand-ins (elements.list). Where stays in words beside it.' },
         by: personArgument('Who saw it, or who wrote it down. Required.'),
         date: { type: 'string', description: 'The day it was seen, yyyy-mm-dd. Default: today. Not in the future.' },
         impact: { type: 'string', description: 'How much it matters to whoever it affected — not how sure anyone is. Default: minor.', enum: ['minor', 'major', 'critical'] },
@@ -2131,9 +2133,9 @@ const SPECS = [
     tier: 'write',
     description:
       'Correct an observation — keeping it a fact, with any reading of it moved to a cause: its title, body, where, '
-      + 'who, date, impact or tone. Who recorded it stays as it was. Title, where and who may be corrected, never '
-      + 'blanked. The count moves only through observation.seen and observation.merge; closing it is '
-      + 'observation.archive. (rules.read)',
+      + 'the elements it is about, who, date, impact or tone. Who recorded it stays as it was. Title, where and who '
+      + 'may be corrected, never blanked. The count moves only through observation.seen and observation.merge; '
+      + 'closing it is observation.archive. (rules.read)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2141,6 +2143,7 @@ const SPECS = [
         title: { type: 'string', description: 'A new title.' },
         body: { type: 'string', description: 'The body as markdown.' },
         where: { type: 'string', description: 'Where it was seen. Not blank.' },
+        about: { type: 'array', items: { type: 'string' }, description: 'The elements it is about, by id, all of them: an empty list takes them off.' },
         by: personArgument('Who saw it. Not blank.'),
         date: { type: 'string', description: 'The day it was first seen, yyyy-mm-dd.' },
         impact: { type: 'string', description: 'How much it matters.', enum: ['minor', 'major', 'critical'] },

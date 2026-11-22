@@ -499,7 +499,7 @@ export const LONGEST_FUNCTION = 150
 
 /** The units over the line on 26 September 2026: each file's largest, by rule. */
 export const GROWN = {
-  'src/agent/answer.ts': { complexity: 98, lines: 316 },
+  'src/agent/answer.ts': { complexity: 98, lines: 313 },
   'src/agent/handle.ts': { complexity: 27 },
   'src/agent/shell.ts': { complexity: 41 },
   'src/agent/tools.ts': { complexity: 33 },

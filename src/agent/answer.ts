@@ -58,9 +58,10 @@ import {
 import type { SolutionContext, SolutionPlan } from '../observations/solution'
 import type { Cause, Observation } from '../model/observation'
 import {
-  absorbedBy, causeAbsorbedBy, causeLabel, explainedBy, formatObservationNumber, isCauseMerged, isMerged, isRootCause, toneOf,
+  absorbedBy, causeAbsorbedBy, causeLabel, explainedBy, formatObservationNumber, isAbout, isCauseMerged, isMerged, isRootCause, toneOf,
   mergedInto, movedTo, observationsBelow,
 } from '../observations/observation'
+import { decisionsAbout, observationsOn } from '../observations/about'
 import { planAnswer } from './merge'
 import { movePlanAnswer } from './move'
 import { ofTone, TONES } from '../observations/filter'
@@ -230,10 +231,8 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
               : {}),
           }]
         }),
-        decisions: model.order.decisions
-          .map((id) => decisionsOf(model)[id])
-          .filter((adr) => adr.subjectId === element.id)
-          .map((adr) => decisionLine(adr, 'application')),
+        // What is said about it (ADR-0032, amended 22 November 2026): the decisions about it, and the open observations on it.
+        ...saidAbout(element.id, model, view),
       })
     }
 
@@ -788,6 +787,8 @@ function observationRows(args: Args, own: readonly Observation[], causes: readon
     // One tone, or every one (ADR-0038, amended §9); 3.7's all, problems and bright are read for one release.
     .filter((one) => listedTone(one, args.tone))
     .filter((one) => mine === undefined || isMine(one, mine))
+    // About one element, by id (ADR-0032, amended 22 November 2026).
+    .filter((one) => typeof args.about !== 'string' || isAbout(one, args.about))
     .filter((one) => analysed === undefined || (explainedBy(causes, one.id).length > 0) === analysed)
     .map((one) => observationLine(one, causes, own))
 }
@@ -816,6 +817,7 @@ export function observationLine(observation: Observation, causes: readonly Cause
     title: observation.title,
     date: observation.date,
     ...(observation.where ? { where: observation.where } : {}),
+    ...(observation.about?.length ? { about: observation.about } : {}),
     ...(observation.by ? { by: observation.by } : {}),
     impact: observation.impact,
     tone: toneOf(observation),
@@ -1138,6 +1140,23 @@ function diagramLine(diagram: Diagram, activeDiagramId: string) {
     ...(diagram.kind === 'drawing' && diagram.c4Level !== undefined ? { c4Level: diagram.c4Level } : {}),
     ...(pointsAt !== undefined ? { pointsAt } : {}),
     active: diagram.id === activeDiagramId,
+  }
+}
+
+/**
+ * The decisions this scope keeps about an element, and the open observations
+ * on it, this scope's and its scopes' below (ADR-0032, amended 22 November
+ * 2026): the tree's read reaches down without a load per scope, and a scope
+ * above or beside is read with `observations.list` addressed to it.
+ */
+function saidAbout(elementId: string, model: Model, view: ReadView) {
+  const below = view.tree?.analysisBelow?.(view.scopePath) ?? []
+  return {
+    decisions: decisionsAbout(model.order.decisions.map((id) => decisionsOf(model)[id]), elementId).map((adr) => decisionLine(adr, 'application')),
+    observations: observationsOn(observationList(model), below, view.scopePath, elementId).map(({ observation, scope }) => ({
+      id: observation.id, label: formatObservationNumber(observation.number), title: observation.title, tone: toneOf(observation),
+      ...(scope !== undefined ? { scope } : {}),
+    })),
   }
 }
 

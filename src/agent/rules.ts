@@ -405,7 +405,9 @@ const TOOL_RULES: Partial<Record<ToolName, string>> = {
     + 'fixed, addressed, no longer relevant — only when includeArchived is true. Each says its tone — bright '
     + '(something that works), neutral or problem (ADR-0038) — and who recorded it where that was kept; tone lists '
     + 'one tone alone, and recordedBy: "me" what the person you act for recorded or saw: by their account or entry, '
-    + 'a merged entry included, or by their full name typed as who saw it or kept as who recorded it.',
+    + 'a merged entry included, or by their full name typed as who saw it or kept as who recorded it. about lists '
+    + 'only the observations about one element, by id, and each observation answers the elements it is about as '
+    + 'about (ADR-0032, amended 22 November 2026).',
   'diagram.create':
     'Add a diagram: a new landscape by name, a C4 container view of one application seeded with its components and laid '
     + 'out on first open, a business architecture sheet over the journey and the areas this project already holds, '
@@ -594,7 +596,9 @@ const TOOL_RULES: Partial<Record<ToolName, string>> = {
     + 'no blame and no fix. Why it happens is a cause (cause.add); what to do about it is a solution '
     + '(solution.propose). When a person\'s account mixes them, record the facts here, put the rest where it '
     + 'belongs and say so. Seen again is observation.seen, not a new record; check observations.list first. It is '
-    + 'local to the scope it is recorded in, and every scope above reads it (ADR-0032): nothing is shared. Leave '
+    + 'local to the scope it is recorded in, and every scope above reads it (ADR-0032): nothing is shared. about '
+    + 'names the elements it is about, by id — elements this scope holds, its own or stand-ins, refused '
+    + 'agent.unknownId otherwise — while where stays in words beside it. Leave '
     + 'the body out for the template. Arguments: principles — Principles in force here that this record cites, in '
     + 'the same step (ADR-0041 §7); principles.suggest finds them. Adds to what it cites; principle.uncite takes '
     + 'one back. principles[].scope — The scope that keeps it ("" the organisation). Default: the scope open. '
@@ -721,7 +725,9 @@ const TOOL_RULES: Partial<Record<ToolName, string>> = {
     + 'interface.accept draws.',
   'element.describe':
     'Everything about one element: its fields, its documentation as markdown, the connections that end on it, where it '
-    + 'is drawn on each diagram, and the decisions recorded about it. A record carrying `ref` is a STAND-IN: the '
+    + 'is drawn on each diagram, the decisions this scope keeps about it, and the open observations on it here and '
+    + 'in the scopes below (id, label, title, tone, and scope where it is another; ADR-0032, amended 22 November '
+    + '2026). A record carrying `ref` is a STAND-IN: the '
     + 'thing is defined in the scope that `ref` names, its `name` and `ref` are caches of what is written there, '
     + 'and its description is the owner\'s, shown here and changed there. Everything else on a stand-in — '
     + 'lifecycle, dates, owner, vendor, technology, aspects — belongs to the owning scope and cannot be changed '
@@ -978,8 +984,10 @@ const TOOL_RULES: Partial<Record<ToolName, string>> = {
     + 'Default: the scope open. principles[].stance — A decision: supports (default) or deviates. An observation: '
     + 'holds (default), chafes or missing.',
   'observation.update':
-    'Correct an observation — keeping it a fact, with any reading of it moved to a cause: its title, body, where, who, '
-    + 'date, impact or tone. Who recorded it stays as it was. Title, where and who may be corrected, never blanked. '
+    'Correct an observation — keeping it a fact, with any reading of it moved to a cause: its title, body, where, the '
+    + 'elements it is about, who, date, impact or tone. Who recorded it stays as it was. Title, where and who may be '
+    + 'corrected, never blanked. about is the whole list of the elements it is about, by id, each one this scope '
+    + 'holds (agent.unknownId otherwise); an empty list takes them off. '
     + 'The count moves only through observation.seen and observation.merge; closing it is observation.archive. '
     + 'Arguments: principles — Principles in force here that this record cites, in the same step (ADR-0041 §7); '
     + 'principles.suggest finds them. Adds to what it cites; principle.uncite takes one back. principles[].scope — '

@@ -420,3 +420,36 @@ describe('merging', () => {
     expect(commandFor('observation.merge', { id: 'ob-1', into: 'ob-2' }, view(once))).toMatchObject({ ok: false })
   })
 })
+
+describe('the elements an observation is about (ADR-0032, amended 22 November 2026)', () => {
+  const element = { id: 'batch', name: 'Claims batch', kind: 'application' as const, lifecycle: 'live' as const, isManaged: true, aspects: {} }
+  const withElement: HostModel = { ...host, elements: [element] }
+  const belowAbout: ScopeAnalysis[] = [{ ...below[0]!, observations: [observation('in-1', 1, { about: ['batch'] })] }]
+
+  it('are recorded and corrected by id, an id this scope does not hold refused', () => {
+    const recorded = write(fromArrays(withElement), 'observation.record', { title: 'Batch late', where: 'Night run', by: 'W.S.', about: ['batch'] })
+    expect(recorded.model.observations!['ob-new-1']!.about).toEqual(['batch'])
+    expect(recorded.answer).toMatchObject({ about: ['batch'] })
+    expect(refusal(fromArrays(withElement), 'observation.record', { title: 'T', where: 'W', by: 'B', about: ['nowhere'] })).toContain('agent.unknownId')
+    const cleared = write(recorded.model, 'observation.update', { id: 'ob-new-1', about: [] })
+    expect(cleared.model.observations!['ob-new-1']).not.toHaveProperty('about')
+  })
+
+  it('filter observations.list, which answers them, and element.describe says the decisions about it and the observations on it', () => {
+    const model = fromArrays({
+      ...withElement,
+      observations: [observation('ob-1', 1, { about: ['batch'] }), observation('ob-2', 2)],
+      decisions: [{ id: 'adr-1', number: 1, title: 'Run the batch twice', status: 'proposed', date: '2026-09-01', body: '', signers: [], subjectId: 'batch' }],
+    })
+    const listed = read(model, 'observations.list', { about: 'batch' }) as { observations: { id: string; about?: string[] }[] }
+    expect(listed.observations.map((one) => [one.id, one.about])).toEqual([['ob-1', ['batch']]])
+    const described = parse(answer('element.describe', { id: 'batch' }, view(model, {
+      tree: { lookup: () => undefined, initiativesBelow: () => [], analysisBelow: () => belowAbout, rowsTo: () => [] },
+    }))) as { decisions: { id: string }[]; observations: unknown[] }
+    expect(described.decisions.map((one) => one.id)).toEqual(['adr-1'])
+    expect(described.observations).toEqual([
+      { id: 'ob-1', label: 'OB-0001', title: 'Observation 1', tone: 'neutral' },
+      { id: 'in-1', label: 'OB-0001', title: 'Observation 1', tone: 'neutral', scope: 'acme/claims/intake' },
+    ])
+  })
+})

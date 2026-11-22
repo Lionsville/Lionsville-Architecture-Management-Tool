@@ -35,9 +35,13 @@ import type { JsonRpcResponse, Relay } from './mcpProtocol'
  * Measured 22 November 2026 before the door was made lighter: 311,836 and
  * 10,974. Raised by 94 the same day for `app.open`'s `look` on a comparison
  * and on the observations about an element, which the other lanes opened.
+ * Raised by 542 for the elements an observation is about (ADR-0032, amended
+ * 22 November 2026): `about` on `observation.record`, `observation.update`
+ * and `observations.list`, three arguments an agent cannot use unseen, and
+ * a few words in two descriptions; the rest is `rules.read`'s.
  */
 export const CEILINGS = {
-  toolsList: 202_938,
+  toolsList: 203_480,
   instructions: 9_850,
 } as const
 
