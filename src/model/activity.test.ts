@@ -191,3 +191,32 @@ describe('summarise', () => {
   })
 
 })
+
+describe('a step of a kind that is said plainly', () => {
+  const plan = { id: 'tr-1', number: 1, title: 'Move the warehouse', status: 'draft' as const, elements: [], decisions: [], milestones: [], body: '' }
+  const citation = { id: 'ci-1', about: { kind: 'element' as const, id: 'crm' }, principle: { scope: '', id: 'pr-1' }, stance: 'supports' as const, on: '2026-10-25' }
+  const evaluation = { id: '-~billing', block: { scope: '', id: 'billing' }, contexts: [], options: [], coverage: {} }
+  const held = () => fromArrays(model({ transitions: [plan], citations: [citation], evaluations: [evaluation] }))
+
+  it('says a record added by what the command carries, under the word its kind gives', () => {
+    expect(summarise([{ type: 'transition.add', transition: { ...plan, id: 'tr-2', title: 'Close the depot' } }], held()))
+      .toEqual({ key: 'activity.planAdded', name: 'Close the depot' })
+    expect(summarise([{ type: 'citation.add', citation: { ...citation, id: 'ci-2' } }], held())).toEqual({ key: 'activity.citationAdded', name: 'CRM' })
+    expect(summarise([{ type: 'evaluation.add', evaluation: { ...evaluation, id: '-~crm', block: { scope: '', id: 'crm' } } }], held()))
+      .toEqual({ key: 'activity.evaluationAdded', name: 'CRM' })
+  })
+
+  it('says one changed or removed by what the scope held before the step', () => {
+    expect(summarise([{ type: 'transition.update', id: 'tr-1', patch: { title: 'Renamed' } }], held())).toEqual({ key: 'activity.planChanged', name: 'Move the warehouse' })
+    expect(summarise([{ type: 'transition.remove', id: 'tr-1' }], held())).toEqual({ key: 'activity.planRemoved', name: 'Move the warehouse' })
+    expect(summarise([{ type: 'citation.remove', id: 'ci-1' }], held())).toEqual({ key: 'activity.citationRemoved', name: 'CRM' })
+    expect(summarise([{ type: 'evaluation.update', id: '-~billing', patch: { contexts: ['c'] } }], held())).toEqual({ key: 'activity.evaluationChanged', name: 'Billing' })
+  })
+
+  it('names nothing where the scope did not hold it, and a block it does not know by its id', () => {
+    expect(summarise([{ type: 'transition.remove', id: 'tr-9' }], held())).toEqual({ key: 'activity.planRemoved', name: undefined })
+    expect(summarise([{ type: 'citation.update', id: 'ci-9', patch: { stance: 'supports' } }], held())).toEqual({ key: 'activity.citationChanged', name: undefined })
+    expect(summarise([{ type: 'evaluation.add', evaluation: { ...evaluation, id: 'acme~wms', block: { scope: 'acme', id: 'wms' } } }], held()))
+      .toEqual({ key: 'activity.evaluationAdded', name: 'wms' })
+  })
+})

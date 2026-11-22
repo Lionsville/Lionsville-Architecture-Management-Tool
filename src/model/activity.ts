@@ -23,13 +23,12 @@
  */
 import type { StringKey } from '../i18n/strings'
 import type { Command, CommandBody, Restored } from './commands'
-import {
-  assignmentsOf, causesOf, checkMarksOf, citationsOf, commentsOf, evaluationsOf, decisionsOf, experimentsOf, observationsOf, principlesOf, responsibilitiesOf, rolesOf,
-  solutionsOf, transitionsOf, unitTypesOf,
-} from './normalised'
+import { assignmentsOf, causesOf, checkMarksOf, commentsOf, responsibilitiesOf, rolesOf, unitTypesOf } from './normalised'
 import { checkEntry } from './checkCatalogue'
 import { commentedName } from './commentable'
 import type { Model } from './normalised'
+import { KIND_TABLE, LISTS_BY_KIND } from './recordKinds'
+import type { KindOf, KINDS, NamedAround, RecordList, RecordOf } from './recordKinds'
 import { RELATION_LABEL } from './relations'
 import type { RelationType } from './types'
 
@@ -167,6 +166,11 @@ function summariseCommands(commands: readonly Command[], before: Model): StepSum
   const uses = usesSet(flat, before)
   if (uses) return uses
 
+  // A cause made a root cause, or a cause again, says which; every other
+  // step of a kind that is said plainly says its three lines (`plainStep`).
+  if (lead.type === 'cause.update') return causeChanged(lead, before)
+  if (isSaidPlainly(lead)) return plainStep(lead, before)
+
   switch (lead.type) {
     case 'element.create':
       return { key: 'activity.elementAdded', name: lead.element.name, count: many('element.create') }
@@ -259,45 +263,6 @@ function summariseCommands(commands: readonly Command[], before: Model): StepSum
     case 'diagram.delete':
       return { key: 'activity.diagramDeleted', name: before.diagrams[lead.id]?.name }
 
-    case 'decision.add':
-      return { key: 'activity.decisionAdded', name: lead.decision.title }
-    case 'decision.update':
-      return { key: 'activity.decisionChanged', name: decisionsOf(before)[lead.id]?.title }
-    case 'decision.remove':
-      return { key: 'activity.decisionRemoved', name: decisionsOf(before)[lead.id]?.title }
-
-    case 'transition.add':
-      return { key: 'activity.planAdded', name: lead.transition.title }
-    case 'transition.update':
-      return { key: 'activity.planChanged', name: transitionsOf(before)[lead.id]?.title }
-    case 'transition.remove':
-      return { key: 'activity.planRemoved', name: transitionsOf(before)[lead.id]?.title }
-
-    case 'observation.add':
-      return { key: 'activity.observationAdded', name: lead.observation.title }
-    case 'observation.update':
-      return { key: 'activity.observationChanged', name: observationsOf(before)[lead.id]?.title }
-    case 'observation.remove':
-      return { key: 'activity.observationRemoved', name: observationsOf(before)[lead.id]?.title }
-    case 'cause.add':
-      return { key: 'activity.causeAdded', name: lead.cause.title }
-    case 'cause.update':
-      return causeChanged(lead, before)
-    case 'cause.remove':
-      return { key: 'activity.causeRemoved', name: causesOf(before)[lead.id]?.title }
-    case 'solution.add':
-      return { key: 'activity.solutionAdded', name: lead.solution.title }
-    case 'solution.update':
-      return { key: 'activity.solutionChanged', name: solutionsOf(before)[lead.id]?.title }
-    case 'solution.remove':
-      return { key: 'activity.solutionRemoved', name: solutionsOf(before)[lead.id]?.title }
-    case 'experiment.add':
-      return { key: 'activity.experimentAdded', name: lead.experiment.title }
-    case 'experiment.update':
-      return { key: 'activity.experimentChanged', name: experimentsOf(before)[lead.id]?.title }
-    case 'experiment.remove':
-      return { key: 'activity.experimentRemoved', name: experimentsOf(before)[lead.id]?.title }
-
     case 'project.settings':
       return { key: settingsKey(lead.patch) }
 
@@ -312,13 +277,10 @@ function summariseCommands(commands: readonly Command[], before: Model): StepSum
 }
 
 /** The commands `summarise` hands on: the operating model's, the assignments' and the marks'. */
-type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand | PrincipleCommand | CitationCommand | EvaluationCommand
+type FamilyCommand = OperatingCommand | AssignmentCommand | CheckMarkCommand | CommentCommand
 
 function familyStep(lead: FamilyCommand, flat: readonly CommandBody[], before: Model): StepSummary {
   if (isCommentCommand(lead)) return commentStep(lead, before)
-  if (isPrincipleCommand(lead)) return principleStep(lead, before)
-  if (isCitationCommand(lead)) return citationStep(lead, before)
-  if (isEvaluationCommand(lead)) return evaluationStep(lead, before)
   if (isCheckMarkCommand(lead)) return checkMarkStep(lead, before)
   return isAssignmentCommand(lead) ? assignmentStep(lead, flat, before) : operatingStep(lead, flat, before)
 }
@@ -328,54 +290,45 @@ function settingsKey(patch: Record<string, unknown>): StringKey {
   return Object.keys(patch).length === 1 && 'principleGroups' in patch ? 'activity.principleGroups' : 'activity.projectSettings'
 }
 
-/** A principle's commands (ADR-0041). */
-type PrincipleCommand = Extract<CommandBody, { type: `principle.${'add' | 'update' | 'remove'}` }>
+/** The kinds whose descriptor says a step is called by a word (`recordKinds.ts`). */
+type SaidList = { [L in RecordList]: (typeof KINDS)[L]['step'] extends { word: string } ? L : never }[RecordList]
+type SaidWord = { [L in SaidList]: (typeof KINDS)[L]['step'] extends { word: infer W extends string } ? W : never }[SaidList]
 
-function isPrincipleCommand(command: CommandBody): command is PrincipleCommand {
-  return command.type.startsWith('principle.')
+/** The plain commands of those kinds: what `plainStep` names. */
+type SaidPlainly = Extract<CommandBody, { type: `${KindOf<SaidList>}.${'add' | 'update' | 'remove'}` }>
+
+const SAID = { add: 'Added', update: 'Changed', remove: 'Removed' } as const
+
+// The three lines of every word a descriptor says are words there are: a
+// kind said plainly without its lines in the table does not compile.
+const LINES_HOLD: [`activity.${SaidWord}${(typeof SAID)[keyof typeof SAID]}`] extends [StringKey] ? true : never = true
+void LINES_HOLD
+
+function isSaidPlainly(command: CommandBody): command is SaidPlainly {
+  const [kind, verb] = command.type.split('.')
+  return Object.hasOwn(LISTS_BY_KIND, kind) && Object.hasOwn(SAID, verb)
+    && KIND_TABLE[LISTS_BY_KIND[kind as keyof typeof LISTS_BY_KIND]].step !== 'own'
 }
 
-function principleStep(lead: PrincipleCommand, before: Model): StepSummary {
-  if (lead.type === 'principle.add') return { key: 'activity.principleAdded', name: lead.principle.title }
-  const name = principlesOf(before)[lead.id]?.title
-  return { key: lead.type === 'principle.update' ? 'activity.principleChanged' : 'activity.principleRemoved', name }
-}
-
-/** A citation's commands (ADR-0041 §7): named by the record that cites. */
-type CitationCommand = Extract<CommandBody, { type: `citation.${'add' | 'update' | 'remove'}` }>
-
-function isCitationCommand(command: CommandBody): command is CitationCommand {
-  return command.type.startsWith('citation.')
-}
-
-const CITATION_STEP: Record<CitationCommand['type'], StringKey> = {
-  'citation.add': 'activity.citationAdded',
-  'citation.update': 'activity.citationChanged',
-  'citation.remove': 'activity.citationRemoved',
-}
-
-function citationStep(lead: CitationCommand, before: Model): StepSummary {
-  const citation = lead.type === 'citation.add' ? lead.citation : citationsOf(before)[lead.id]
-  return { key: CITATION_STEP[lead.type], name: citation ? commentedName(before, citation.about) : undefined }
-}
-
-/** An evaluation's commands (ADR-0043 §4): named by the block, where this scope knows it, and by its id where not. */
-type EvaluationCommand = Extract<CommandBody, { type: `evaluation.${'add' | 'update' | 'remove'}` }>
-
-function isEvaluationCommand(command: CommandBody): command is EvaluationCommand {
-  return command.type.startsWith('evaluation.')
-}
-
-const EVALUATION_STEP: Record<EvaluationCommand['type'], StringKey> = {
-  'evaluation.add': 'activity.evaluationAdded',
-  'evaluation.update': 'activity.evaluationChanged',
-  'evaluation.remove': 'activity.evaluationRemoved',
-}
-
-function evaluationStep(lead: EvaluationCommand, before: Model): StepSummary {
-  const evaluation = lead.type === 'evaluation.add' ? lead.evaluation : evaluationsOf(before)[lead.id]
-  const block = evaluation?.block.id
-  return { key: EVALUATION_STEP[lead.type], name: block === undefined ? undefined : before.elements[block]?.name ?? block }
+/**
+ * A step that leads with a record added, changed or removed, for the kinds
+ * that say no more than that: the word its descriptor gives, and the record
+ * as its kind names one — an added one from the command, any other as the
+ * scope held it before the step, and no name where it did not.
+ */
+function plainStep(lead: SaidPlainly, before: Model): StepSummary {
+  const [kind, verb] = lead.type.split('.') as [KindOf<SaidList>, keyof typeof SAID]
+  const list: SaidList = LISTS_BY_KIND[kind]
+  const described = KIND_TABLE[list]
+  if (described.step === 'own' || described.commands === 'own' || described.diff === 'own') return NOTHING
+  const sent = lead as unknown as Record<string, unknown> & { id: string }
+  const held = before[list] as Record<string, RecordOf[SaidList]> | undefined
+  const record = (verb === 'add' ? sent[described.commands.payload] : held?.[sent.id]) as RecordOf[SaidList] | undefined
+  // A record another names is named as the Activity list always has: an
+  // element by its name here, a record by what a thread on it is called.
+  const around: NamedAround = { element: (id) => before.elements[id]?.name, record: (about) => commentedName(before, about) }
+  const nameOf = described.nameOf as (record: RecordOf[SaidList], around: NamedAround) => string
+  return { key: `activity.${described.step.word}${SAID[verb]}` as StringKey, name: record === undefined ? undefined : nameOf(record, around) }
 }
 
 /** A comment's commands (ADR-0037). */

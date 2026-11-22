@@ -519,7 +519,7 @@ export const GROWN = {
   'src/editor/use-canvas-shortcuts.ts': { complexity: 33 },
   'src/editor/useEditorState.ts': { lines: 726 },
   'src/layout/tidy.ts': { complexity: 26, lines: 176 },
-  'src/model/activity.ts': { complexity: 82 },
+  'src/model/activity.ts': { complexity: 55 },
   'src/model/platformReport.ts': { complexity: 26 },
   'src/model/relations.ts': { complexity: 26 },
   'src/model/technologyLandscape.ts': { complexity: 39 },

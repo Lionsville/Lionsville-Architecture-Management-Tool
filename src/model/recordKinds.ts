@@ -107,6 +107,14 @@ export type KindDescriptor<L extends RecordList> = {
    * The first two are a plain list's only.
    */
   readonly restore: 'rows' | 'list' | 'own' | 'none'
+  /**
+   * What a step that leads with one of its plain commands is called
+   * (`activity.ts`): `activity.<word>Added`, `…Changed` and `…Removed`, named
+   * by `nameOf` — or `'own'` where a line says more than that: several ends
+   * counted, a library brought in, a rule with one line for all three. Only a
+   * plain list that a diff compares says a word.
+   */
+  readonly step: 'own' | { readonly word: string }
 } & Compared<L>
 
 /**
@@ -140,78 +148,91 @@ export const KINDS = {
     list: 'elements', kind: 'element', idOf: ownId, absentWhenEmpty: false,
     commands: 'own',
     restore: 'own',
+    step: 'own',
     diff: 'own',
   },
   relations: {
     list: 'relations', kind: 'relation', idOf: ownId, absentWhenEmpty: false,
     commands: 'own',
     restore: 'own',
+    step: 'own',
     diff: 'own',
   },
   diagrams: {
     list: 'diagrams', kind: 'diagram', idOf: ownId, absentWhenEmpty: false,
     commands: 'own',
     restore: 'own',
+    step: 'own',
     diff: 'own',
   },
   decisions: {
     list: 'decisions', kind: 'decision', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'decision' },
     restore: 'own',
+    step: { word: 'decision' },
     diff: 'compare', nameOf: (held) => held.title,
   },
   transitions: {
     list: 'transitions', kind: 'transition', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'transition' },
     restore: 'none',
+    step: { word: 'plan' },
     diff: 'compare', nameOf: (held) => held.title,
   },
   observations: {
     list: 'observations', kind: 'observation', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'observation' },
     restore: 'rows',
+    step: { word: 'observation' },
     diff: 'compare', nameOf: (held) => held.title,
   },
   causes: {
     list: 'causes', kind: 'cause', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'cause' },
     restore: 'rows',
+    step: { word: 'cause' },
     diff: 'compare', nameOf: (held) => held.title,
   },
   solutions: {
     list: 'solutions', kind: 'solution', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'solution' },
     restore: 'rows',
+    step: { word: 'solution' },
     diff: 'compare', nameOf: (held) => held.title,
   },
   experiments: {
     list: 'experiments', kind: 'experiment', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'experiment' },
     restore: 'rows',
+    step: { word: 'experiment' },
     diff: 'compare', nameOf: (held) => held.title,
   },
   unitTypes: {
     list: 'unitTypes', kind: 'unitType', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'unitType' },
     restore: 'rows',
+    step: 'own',
     diff: 'compare', nameOf: (held) => held.name,
   },
   roles: {
     list: 'roles', kind: 'role', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'role' },
     restore: 'rows',
+    step: 'own',
     diff: 'compare', nameOf: (held) => held.name,
   },
   responsibilities: {
     list: 'responsibilities', kind: 'responsibility', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'responsibility' },
     restore: 'rows',
+    step: 'own',
     diff: 'compare', nameOf: (held) => held.name,
   },
   operatingRules: {
     list: 'operatingRules', kind: 'operatingRule', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'rule' },
     restore: 'rows',
+    step: 'own',
     // One rule per kind, so its kind is what it is called.
     diff: 'compare', nameOf: (held) => held.id,
   },
@@ -219,6 +240,7 @@ export const KINDS = {
     list: 'assignments', kind: 'assignment', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'assignment' },
     restore: 'rows',
+    step: 'own',
     // By the unit it is in: a line kept with the history never names the person (ADR-0036 §8).
     diff: 'compare', nameOf: (held, around) => around.element(held.unitId) ?? held.unitId,
   },
@@ -227,12 +249,14 @@ export const KINDS = {
     list: 'checkMarks', kind: 'checkMark', idOf: checkMarkId, absentWhenEmpty: true,
     commands: 'own',
     restore: 'own',
+    step: 'own',
     diff: 'own',
   },
   comments: {
     list: 'comments', kind: 'comment', idOf: ownId, absentWhenEmpty: true,
     commands: 'own',
     restore: 'own',
+    step: 'own',
     // By the record it is about, as the scope calls it: a line never names the author, who is a register id (ADR-0036 §8).
     diff: 'compare', nameOf: (held, around) => around.record(held.about) ?? held.about.id,
   },
@@ -240,12 +264,14 @@ export const KINDS = {
     list: 'principles', kind: 'principle', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'principle' },
     restore: 'rows',
+    step: { word: 'principle' },
     diff: 'compare', nameOf: (held) => held.title,
   },
   citations: {
     list: 'citations', kind: 'citation', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'citation' },
     restore: 'own',
+    step: { word: 'citation' },
     // By the record that cites, as the scope calls it.
     diff: 'compare', nameOf: (held, around) => around.record(held.about) ?? held.about.id,
   },
@@ -253,6 +279,7 @@ export const KINDS = {
     list: 'evaluations', kind: 'evaluation', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'evaluation' },
     restore: 'list',
+    step: { word: 'evaluation' },
     // By the block, where this scope knows it.
     diff: 'compare', nameOf: (held, around) => around.element(held.block.id) ?? held.block.id,
   },
