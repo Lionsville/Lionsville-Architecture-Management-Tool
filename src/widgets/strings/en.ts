@@ -103,6 +103,7 @@ export const EN = {
   'kit.help.here': 'Help on this',
   'kit.help.on': 'Help on {about}',
   'kit.matrix.empty': 'nothing',
+  'kit.matrix.cellMenu': 'Choose…',
   'kit.matrix.foldable': 'folds',
   'kit.matrix.foldedColumn': '{group}, {count}',
   'kit.next.standing': 'Where it stands',

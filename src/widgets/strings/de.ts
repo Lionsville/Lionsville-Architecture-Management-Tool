@@ -104,6 +104,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'kit.help.here': 'Hilfe dazu',
   'kit.help.on': 'Hilfe zu {about}',
   'kit.matrix.empty': 'nichts',
+  'kit.matrix.cellMenu': 'Auswählen…',
   'kit.matrix.foldable': 'einklappbar',
   'kit.matrix.foldedColumn': '{group}, {count}',
   'kit.next.standing': 'Wo es steht',

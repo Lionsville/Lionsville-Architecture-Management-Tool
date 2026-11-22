@@ -2,9 +2,12 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The two grids of a building block (ADR-0043), each the one Matrix: a press
- * selects and reading a row writes nothing; Space moves a ball on a quarter, a
- * digit sets it, and the line under the grid says what the cell means, in words.
+ * The two grids of a building block (ADR-0043), each the one Matrix where a
+ * press writes (ADR-0043 §6): a press fills a ball a quarter more, ⇧-press a
+ * quarter less, and the cell's menu offers the five levels by name — and on a
+ * comparison, *Note…*. Space and a digit do the same from the keyboard, and the
+ * line under the grid says what the cell means, in words. Where nothing may be
+ * written a press only selects.
  *
  * - **The requirements**: the capabilities as rows, the usage contexts as
  *   columns, and in each cell how much that context needs that capability.
@@ -28,8 +31,10 @@ import { Dialog } from '../../widgets/kit/Dialog'
 import { TextField } from '../../widgets/kit/Field'
 import { Matrix } from '../../widgets/kit/Matrix'
 import type { MatrixPick } from '../../widgets/kit/Matrix'
+import type { MenuEntry } from '../../widgets/kit/Menu'
 import { useBlocks } from './BlocksContext'
 import { BallFigure, BallLegend } from './HarveyBall'
+import './Blocks.css'
 
 /** A building block as the grids read it: its requirements and its catalogue. */
 type BuildingBlock = Pick<DesignElement, 'id' | 'name' | 'capabilities' | 'contexts' | 'sbbs'>
@@ -74,6 +79,14 @@ function levelFor(key: string, level: Level): Level {
   return key === ' ' ? nextLevel(level) : Number(key) as Level
 }
 
+/** The cell's menu: the five levels by name, the one it is on ticked, and what else the grid offers there. */
+function levelMenu(words: Record<Level, StringKey>, level: Level, set: (level: Level) => void, t: ReturnType<typeof useStrings>['t'], more: readonly MenuEntry[] = []): MenuEntry[] {
+  return [
+    ...([0, 1, 2, 3, 4] as const).map((one) => ({ label: t(words[one]), checked: one === level, radio: true, onSelect: () => set(one) })),
+    ...(more.length ? [{ line: true } as const, ...more] : []),
+  ]
+}
+
 /** A capability's words, with the principle aspect it answers to. */
 function useCapabilityLabel() {
   const access = useBlocks()
@@ -96,6 +109,7 @@ export function RequirementsGrid({ block, onChange, rowEnd }: {
   const [contexts, setContexts] = useAhead(block.contexts ?? [])
   const [selected, setSelected] = useState<MatrixPick | null>(null)
   const capabilities = block.capabilities ?? []
+  const needAt = (pick: MatrixPick): Level => contexts.find((one) => one.id === pick.column)?.needs[pick.row] ?? 0
   const setNeed = (context: string, capability: string, level: Level) => {
     const next = contexts.map((one) => {
       if (one.id !== context) return one
@@ -120,9 +134,14 @@ export function RequirementsGrid({ block, onChange, rowEnd }: {
         {...(rowEnd ? { answer: { label: t('blocks.must'), of: (row: string) => { const one = capabilities.find((held) => held.id === row); return one ? rowEnd(one) : null } } } : {})}
         {...(onChange ? {
           keys: [' ', ...LEVEL_KEYS], hint: t('blocks.gridHint'),
-          onKey: (pick: MatrixPick, key: string) => setNeed(pick.column, pick.row, levelFor(key, contexts.find((one) => one.id === pick.column)?.needs[pick.row] ?? 0)),
+          onKey: (pick: MatrixPick, key: string) => setNeed(pick.column, pick.row, levelFor(key, needAt(pick))),
+          pressWrites: {
+            step: (pick: MatrixPick, by: 1 | -1) => setNeed(pick.column, pick.row, nextLevel(needAt(pick), by)),
+            menu: (pick: MatrixPick) => levelMenu(NEED_WORD, needAt(pick), (level) => setNeed(pick.column, pick.row, level), t),
+          },
         } : {})}
       />
+      {onChange && <p className="blocks-hint">{t('blocks.setBall')}</p>}
       <BallLegend />
     </div>
   )
@@ -167,10 +186,18 @@ export function EvaluationGrid({ block, evaluation: kept, onChange }: {
   const needSaid = (capability: string, need: Level) => (need > 0
     ? t('blocks.neededBy', { contexts: contextsDriving(block, evaluation.contexts, capability).join(', ') })
     : t('blocks.notNeededHere'))
+  const coverAt = (pick: MatrixPick): Level => evaluation.coverage[pick.column]?.[pick.row]?.level ?? 0
   const onKey = (pick: MatrixPick, key: string) => {
     if (pick.row === FIT_ROW) return
     if (key === 'n') { setNote(pick); return }
-    setCoverage(pick.column, pick.row, { level: levelFor(key, evaluation.coverage[pick.column]?.[pick.row]?.level ?? 0) })
+    setCoverage(pick.column, pick.row, { level: levelFor(key, coverAt(pick)) })
+  }
+  const pressWrites = {
+    step: (pick: MatrixPick, by: 1 | -1) => { if (pick.row !== FIT_ROW) setCoverage(pick.column, pick.row, { level: nextLevel(coverAt(pick), by) }) },
+    menu: (pick: MatrixPick) => (pick.row === FIT_ROW ? [] : levelMenu(
+      COVER_WORD, coverAt(pick), (level) => setCoverage(pick.column, pick.row, { level }), t,
+      [{ label: t('blocks.noteMenu'), onSelect: () => setNote(pick) }],
+    )),
   }
   return (
     <div className="guidance-grid" data-testid="evaluation-grid">
@@ -195,8 +222,9 @@ export function EvaluationGrid({ block, evaluation: kept, onChange }: {
             meaning: [t(COVER_WORD[level]), cell?.how].filter(Boolean).join(': '),
           }
         }}
-        {...(onChange ? { keys: [' ', ...LEVEL_KEYS, 'n'], hint: t('blocks.gridHintNote'), onKey } : {})}
+        {...(onChange ? { keys: [' ', ...LEVEL_KEYS, 'n'], hint: t('blocks.gridHintNote'), onKey, pressWrites } : {})}
       />
+      {onChange && <p className="blocks-hint">{t('blocks.setBallNote')}</p>}
       <BallLegend />
       <p className="guidance-record__intro">{t('blocks.fitExplains')}</p>
       {note && (

@@ -131,18 +131,43 @@ describe('a building block\'s page', () => {
     expect(screen.getByTestId('block-document')).toBeTruthy()
   })
 
-  it('draws the requirements as balls with a legend: a press selects and writes nothing, Space moves one a quarter', async () => {
+  it('draws the requirements as balls with a legend: a press moves one a quarter, ⇧-press back, and Space from the keyboard', async () => {
     const access = accessOver()
     page(access)
     onRequirements()
-    expect(screen.getByText(s('blocks.level3'))).toBeTruthy()
+    expect(screen.getByText(s('blocks.setBall'))).toBeTruthy()
     const cell = cellOf(/Routes by content, Many partners/)
+    // Essential, and a press more is not needed: after full, back to none.
     fireEvent.click(cell)
-    expect(access.update).not.toHaveBeenCalled()
-    fireEvent.focus(cell)
-    fireEvent.keyDown(cell, { key: ' ' })
-    expect(access.update).toHaveBeenCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, GATEWAY.contexts![1]] })
+    expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, GATEWAY.contexts![1]] })
+    fireEvent.click(cellOf(/Keeps an audit trail, Filings/), { shiftKey: true })
+    expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, { ...GATEWAY.contexts![1], needs: { 'cap-audit': 3 } }] })
+    const other = cellOf(/Keeps an audit trail, Many partners/)
+    fireEvent.focus(other)
+    fireEvent.keyDown(other, { key: '0' })
+    expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: {} }, { ...GATEWAY.contexts![1], needs: { 'cap-audit': 3 } }] })
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('offers a need\'s five levels by name on the cell\'s menu', async () => {
+    const access = accessOver()
+    page(access)
+    onRequirements()
+    fireEvent.contextMenu(cellOf(/Routes by content, Filings/))
+    expect(screen.getByRole('menuitemradio', { name: s('blocks.need0') }).getAttribute('aria-checked')).toBe('true')
+    fireEvent.click(screen.getByRole('menuitemradio', { name: s('blocks.need3') }))
+    expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [GATEWAY.contexts![0], { ...GATEWAY.contexts![1], needs: { 'cap-audit': 4, 'cap-route': 3 } }] })
+  })
+
+  it('writes nothing on a press where the person may only read', () => {
+    const access = accessOver({ mayWrite: () => false })
+    page(access)
+    onRequirements()
+    fireEvent.click(cellOf(/Routes by content, Many partners/))
+    fireEvent.contextMenu(cellOf(/Routes by content, Many partners/))
+    expect(screen.queryByRole('menu')).toBeNull()
+    expect(access.update).not.toHaveBeenCalled()
+    expect(screen.queryByText(s('blocks.setBall'))).toBeNull()
   })
 
   it('builds a second key on the first, before the tree has been read again', () => {
@@ -297,6 +322,21 @@ describe('a building block\'s page', () => {
     fireEvent.focus(cell)
     fireEvent.keyDown(cell, { key: ' ' })
     expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, coverage: { ...SALES.coverage, 'sb-a': { ...SALES.coverage['sb-a'], 'cap-audit': { level: 3, how: 'Logs only' } } } })
+  })
+
+  it('rates a comparison with the mouse alone: presses in a row, a level by name and a note from the cell\'s menu', async () => {
+    const access = accessOver()
+    page(access, { evaluation: 'sales' })
+    const ball = (row: RegExp, option: RegExp) => within(screen.getByRole('row', { name: row })).getAllByRole('gridcell').find((one) => option.test(one.getAttribute('aria-label') ?? ''))!
+    fireEvent.click(ball(/Routes by content/, /Managed bus/))
+    fireEvent.click(ball(/Routes by content/, /Managed bus/))
+    expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, coverage: { ...SALES.coverage, 'sb-b': { ...SALES.coverage['sb-b'], 'cap-route': { level: 4 } } } })
+    fireEvent.contextMenu(ball(/Keeps an audit trail/, /Broker A/))
+    fireEvent.click(await screen.findByRole('menuitem', { name: s('blocks.noteMenu') }))
+    const note = await screen.findByRole('textbox', { name: s('blocks.note') })
+    fireEvent.change(note, { target: { value: 'Signed logs' } })
+    fireEvent.click(screen.getByRole('button', { name: s('blocks.save') }))
+    expect(vi.mocked(access.updateEvaluation).mock.lastCall![1].coverage['sb-a']!['cap-audit']).toEqual({ level: 2, how: 'Signed logs' })
   })
 
   it('proposes a decision choosing the best option that fails no must, and opens it', async () => {

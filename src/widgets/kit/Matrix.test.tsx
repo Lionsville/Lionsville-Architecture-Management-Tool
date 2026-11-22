@@ -287,3 +287,52 @@ describe('a crossing that says more than one thing per row', () => {
     expect(screen.queryByRole('rowheader', { name: 'Bit' })).toBeNull()
   })
 })
+
+describe('a matrix whose press writes', () => {
+  const writes = () => {
+    const step = vi.fn()
+    const chosen = vi.fn()
+    const pressWrites = { step, menu: () => [{ label: 'Fully', onSelect: chosen }, { label: 'Note…', onSelect: vi.fn() }] }
+    return { step, chosen, pressWrites }
+  }
+
+  it('steps a cell on with a press and back with ⇧-press, selecting it as well', () => {
+    const { step, pressWrites } = writes()
+    const onSelect = vi.fn()
+    renderShell(<Matrix label="Ratings" {...BASE} onSelect={onSelect} pressWrites={pressWrites} />)
+    fireEvent.click(cell(/Order the backlog, Run/))
+    fireEvent.click(cell(/Order the backlog, Run/))
+    fireEvent.click(cell(/Warehouse team, Plan/), { shiftKey: true })
+    expect(step.mock.calls).toEqual([[{ row: 'order', column: 'run' }, 1], [{ row: 'order', column: 'run' }, 1], [{ row: 'team', column: 'plan' }, -1]])
+    expect(onSelect).toHaveBeenLastCalledWith({ row: 'team', column: 'plan' })
+  })
+
+  it('offers the cell\'s menu on a right press, on Enter and on the ⋯ of the cell picked, and writes nothing by opening it', async () => {
+    const { step, chosen, pressWrites } = writes()
+    renderShell(<Matrix label="Ratings" {...BASE} selected={{ row: 'order', column: 'run' }} pressWrites={pressWrites} />)
+    fireEvent.contextMenu(cell(/Order the backlog, Plan/))
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Fully' }))
+    expect(chosen).toHaveBeenCalledTimes(1)
+    const picked = cell(/Order the backlog, Run/)
+    fireEvent.click(within(picked).getByRole('button', { name: 'Choose…' }))
+    expect(await screen.findByRole('menuitem', { name: 'Note…' })).toBeTruthy()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+    picked.focus()
+    fireEvent.keyDown(picked, { key: 'Enter' })
+    expect(await screen.findByRole('menuitem', { name: 'Fully' })).toBeTruthy()
+    expect(step).not.toHaveBeenCalled()
+  })
+
+  it('leaves a RACI as it is: a press selects, Enter selects, and no ⋯ is drawn', () => {
+    const onSelect = vi.fn()
+    renderShell(<Matrix label="RACI" {...BASE} selected={{ row: 'order', column: 'run' }} onSelect={onSelect} />)
+    expect(screen.queryByRole('button', { name: 'Choose…' })).toBeNull()
+    fireEvent.contextMenu(cell(/Order the backlog, Run/))
+    expect(screen.queryByRole('menu')).toBeNull()
+  })
+
+  it('passes axe with the ⋯ drawn', async () => {
+    renderShell(<Matrix label="Ratings" {...BASE} selected={{ row: 'order', column: 'run' }} pressWrites={writes().pressWrites} />)
+    expect(await axeFindings()).toEqual([])
+  })
+})

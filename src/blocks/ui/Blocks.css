@@ -1,0 +1,7 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+/* What a building block's grids add to Guidance's own look (`principles/ui/Guidance.css`). */
+
+/* How a ball is set, said once beside the grid and quietly. */
+.blocks-hint { margin: 0; color: var(--ink-2); font-size: var(--t-small); }

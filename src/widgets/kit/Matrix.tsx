@@ -8,7 +8,11 @@
  *
  * A press selects and only selects: reading a row must not write a letter. A key
  * writes, and only where the screen says keys write (`keys`, handed in; a reader's
- * matrix has none). So ← ↑ → ↓ Home End walk, with one focus to tab to, and the
+ * matrix has none). A screen whose cells are a scale it steps along — a rating's
+ * balls, not a RACI's letters — may say a press writes there (`pressWrites`): a
+ * press moves the cell a step on, ⇧-press a step back, and the cell's menu — a
+ * second press, a right press, Enter, or the ⋯ on the cell picked — offers every
+ * value by name. Such a screen says so on the screen, beside the grid. So ← ↑ → ↓ Home End walk, with one focus to tab to, and the
  * headings are stops on the walk: Enter or Space on a heading folds what it heads.
  *
  * The rows are memoised and the column's crosshair is a `<col>`'s background, so a
@@ -19,6 +23,8 @@ import type { CSSProperties, KeyboardEvent, MouseEvent, ReactNode } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
 import { CaretIcon } from '../icons'
 import { Mark } from './Mark'
+import { Menu } from './Menu'
+import type { MenuEntry } from './Menu'
 import { commandKey, chordHeld } from './keys'
 import './Matrix.css'
 
@@ -65,6 +71,14 @@ export type MatrixCell = {
 
 export type MatrixPick = { readonly row: string; readonly column: string }
 
+/** A matrix whose press writes: a step on or back, and a menu of what the cell may be. */
+export type MatrixPressWrites = {
+  /** A press: `1`, a step on; `-1`, with ⇧, a step back. */
+  readonly step: (pick: MatrixPick, by: 1 | -1) => void
+  /** What the cell's menu offers. */
+  readonly menu: (pick: MatrixPick) => readonly MenuEntry[]
+}
+
 export type MatrixProps = {
   readonly label: string
   /** The heading over the rows' own column. */
@@ -82,6 +96,8 @@ export type MatrixProps = {
   /** The keys that write here, lower case, ' ' for Space. None is a matrix that only reads. */
   readonly keys?: readonly string[]
   readonly onKey?: (pick: MatrixPick, key: string) => void
+  /** A press writes here (see the head of this file); absent, a press selects and only selects. */
+  readonly pressWrites?: MatrixPressWrites
   /** What keys may be pressed, added to the line: *Press R, A, C, I or Space.* */
   readonly hint?: string
   readonly defaultFoldedRows?: readonly string[]
@@ -165,10 +181,12 @@ type CellProps = Pick<MatrixProps, 'cellOf' | 'absent'> & {
   readonly hovered: boolean
   readonly foldWord: string
   readonly emptyWord: string
+  /** The cell's menu's name, where a press writes: its ⋯ is drawn on the cell picked. */
+  readonly menuWord?: string | undefined
 }
 
 const MatrixRowView = memo(function MatrixRowView({
-  row, depth, foldable, folded, columns, rowIndex, answers, cellOf, absent, focusColumn, selectedColumn, crossed, hovered, foldWord, emptyWord,
+  row, depth, foldable, folded, columns, rowIndex, answers, cellOf, absent, focusColumn, selectedColumn, crossed, hovered, foldWord, emptyWord, menuWord,
 }: CellProps) {
   return (
     <tr data-crossed={crossed || undefined} data-hover={hovered || undefined} data-heading={row.heading || undefined} data-picked={selectedColumn !== null || undefined}>
@@ -196,6 +214,10 @@ const MatrixRowView = memo(function MatrixRowView({
           >
             {cell?.attention && <span className="kit-matrix__triangle"><Mark kind="review" /></span>}
             {cell?.show}
+            {menuWord !== undefined && selectedColumn === column.id && (
+              // A pointer's way to the menu it may not know a right press opens; the keyboard's is Enter, so it is no tab stop.
+              <button type="button" tabIndex={-1} className="kit-matrix__cellMenu" aria-label={menuWord} title={menuWord}>⋯</button>
+            )}
           </td>
         )
       })}
@@ -385,13 +407,47 @@ function useFocusWithin(table: { current: HTMLElement | null }): boolean {
   return inside
 }
 
+/**
+ * The cell's menu, where a press writes: opened on a right press, on Enter and
+ * on the ⋯ of the cell picked, anchored on the cell, and the focus back on the
+ * cell when it closes.
+ */
+function useCellMenu({ pressWrites, onSelect, rows, drawn, absent, moveTo }: Pick<MatrixProps, 'pressWrites' | 'onSelect' | 'absent'> & {
+  readonly rows: readonly { readonly row: MatrixRowDef }[]
+  readonly drawn: readonly Drawn[]
+  readonly moveTo: (at: At) => void
+}) {
+  const { t } = useStrings()
+  const [open, setOpen] = useState<{ pick: MatrixPick; anchor: HTMLElement } | null>(null)
+  const openMenu = (pick: MatrixPick, anchor: HTMLElement | null | undefined) => {
+    if (!pressWrites || !anchor || pressWrites.menu(pick).length === 0) return
+    onSelect?.(pick)
+    setOpen({ pick, anchor })
+  }
+  const onContextMenu = (event: MouseEvent<HTMLTableElement>) => {
+    if (!pressWrites) return
+    const cell = (event.target as HTMLElement).closest<HTMLElement>('[data-kit-cell]')
+    const [pressedRow = -1, pressedColumn = -1] = cell?.dataset.kitCell?.split(':').map(Number) ?? []
+    const rowDef = rows[pressedRow]
+    const columnDef = drawn[pressedColumn]
+    if (!cell || !rowDef || columnDef?.kind !== 'column' || absent?.(rowDef.row.id, columnDef.id)) return
+    event.preventDefault()
+    moveTo({ row: pressedRow, column: pressedColumn })
+    openMenu({ row: rowDef.row.id, column: columnDef.id }, cell)
+  }
+  const menu = pressWrites && open
+    ? <Menu open anchorEl={open.anchor} label={t('kit.matrix.cellMenu')} items={pressWrites.menu(open.pick)} onClose={() => { setOpen(null); open.anchor.focus() }} />
+    : null
+  return { openMenu, onContextMenu, menu }
+}
+
 /** A cell focused under the stuck heads is out of sight: brought out past them (the scroll's padding is their width). */
 function intoSight(cell: HTMLElement) {
   cell.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
 }
 
 export function Matrix({
-  label, rowHeading, rows, columns, columnGroups, cellOf, answer, answers: moreAnswers, selected, onSelect, keys, onKey, hint,
+  label, rowHeading, rows, columns, columnGroups, cellOf, answer, answers: moreAnswers, selected, onSelect, keys, onKey, hint, pressWrites,
   defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, openFoldable, onOpenColumn, absent, litColumn, wrapRows, groupBand, rotateHeads, dataGuide,
 }: MatrixProps) {
   const answers = useMemo(() => [...(answer ? [answer] : []), ...(moreAnswers ?? [])], [answer, moreAnswers])
@@ -409,6 +465,7 @@ export function Matrix({
   const wantFocus = useRef(false)
   const { hover, rowAt, columnAt, onPointerOver, leave } = usePointerCell()
   const inside = useFocusWithin(table)
+  const { openMenu, onContextMenu, menu } = useCellMenu({ pressWrites, onSelect, rows: shownRows, drawn, absent, moveTo: setAt })
 
   useLayoutEffect(() => {
     if (!wantFocus.current) return
@@ -466,20 +523,15 @@ export function Matrix({
       End: () => go(commandKey(event) ? shownRows.length - 1 : row, drawn.length - 1),
     }
     const step = walk[event.key]
-    if (step) {
+    if (step) { event.preventDefault(); step(); return }
+    if ((event.key === 'Enter' || event.key === ' ') && foldHere()) { event.preventDefault(); return }
+    // Where a press writes, Enter is the cell's menu, as the menu key is; elsewhere it selects.
+    const asksMenu = pressWrites !== undefined && (event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey) || event.key === 'Enter')
+    if ((asksMenu || event.key === 'Enter') && here) {
       event.preventDefault()
-      step()
-      return
-    }
-    if (event.key === 'Enter' || event.key === ' ') {
-      if (foldHere()) {
-        event.preventDefault()
-        return
-      }
-    }
-    if (event.key === 'Enter' && here) {
-      event.preventDefault()
-      if (!absent?.(here.row, here.column)) onSelect?.(here)
+      if (absent?.(here.row, here.column)) return
+      if (asksMenu) openMenu(here, event.target as HTMLElement)
+      else onSelect?.(here)
       return
     }
     const letter = event.key.toLowerCase()
@@ -507,9 +559,14 @@ export function Matrix({
     } else if (pressedColumn === -1 && rowDef) {
       pressRowName(target, rowDef)
     } else if (rowDef && columnDef?.kind === 'column') {
-      if (!absent?.(rowDef.row.id, columnDef.id)) onSelect?.({ row: rowDef.row.id, column: columnDef.id })
+      if (absent?.(rowDef.row.id, columnDef.id)) return
+      const pick = { row: rowDef.row.id, column: columnDef.id }
+      if (pressWrites && target.closest('.kit-matrix__cellMenu')) { openMenu(pick, cell); return }
+      onSelect?.(pick)
+      pressWrites?.step(pick, event.shiftKey ? -1 : 1)
     }
   }
+
 
   const onFocus = (event: { target: EventTarget | null }) => {
     const address = (event.target as HTMLElement).dataset?.kitCell?.split(':').map(Number)
@@ -520,9 +577,9 @@ export function Matrix({
   const line = hoverLine ?? (inside ? focusLine({ hereRow, hereColumn, here, hereCell, absent, hint: keys?.length ? hint : undefined, empty: t('kit.matrix.empty') }) : '')
 
   return (
-    <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-wrap={wrapRows || undefined} data-band={(groupBand && columnGroups) ? '' : undefined} data-guide={dataGuide}>
+    <div className="kit-matrix" data-rotate={rotateHeads || undefined} data-wrap={wrapRows || undefined} data-band={(groupBand && columnGroups) ? '' : undefined} data-press-writes={pressWrites ? '' : undefined} data-guide={dataGuide}>
       <div className="kit-matrix__scroll" style={{ '--kit-matrix-answers': answers.length } as CSSProperties} {...scrolling}>
-        <table ref={table} role="grid" aria-label={label} className="kit-matrix__table" onKeyDown={onKeyDown} onClick={onClick} onFocus={onFocus} onPointerOver={onPointerOver} onPointerLeave={leave}>
+        <table ref={table} role="grid" aria-label={label} className="kit-matrix__table" onKeyDown={onKeyDown} onClick={onClick} onContextMenu={onContextMenu} onFocus={onFocus} onPointerOver={onPointerOver} onPointerLeave={leave}>
           <colgroup>
             <col />
             {answers.map((one) => <col key={one.label} />)}
@@ -539,13 +596,14 @@ export function Matrix({
                 key={rowDef.id} row={rowDef} depth={depth} foldable={foldable} folded={folded} columns={drawn} rowIndex={index}
                 answers={answers} cellOf={cellOf} absent={absent} focusColumn={row === index ? column : null}
                 selectedColumn={selected?.row === rowDef.id ? selected.column : null} crossed={row === index} hovered={rowAt === index}
-                foldWord={t('kit.matrix.foldable')} emptyWord={t('kit.matrix.empty')}
+                foldWord={t('kit.matrix.foldable')} emptyWord={t('kit.matrix.empty')} menuWord={pressWrites ? t('kit.matrix.cellMenu') : undefined}
               />
             ))}
           </tbody>
         </table>
       </div>
       <div className="kit-matrix__line" role="status">{line}</div>
+      {menu}
     </div>
   )
 }
