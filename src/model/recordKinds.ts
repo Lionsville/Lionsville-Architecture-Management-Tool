@@ -6,19 +6,27 @@
  *
  * A kind of record is a list on the model — a key of `ModelOrder` — and what
  * is the same about it wherever it is read: the list it is kept in, the word
- * its records are named by, and how one says its id. Those were said again in
- * each table that has a line per list; here they are said once, and the
- * tables that only repeated them are derived from this one
- * (`recordKey.ts`'s kinds and lists first).
+ * its records are named by, how one says its id, whether the file may leave
+ * the list out, whether it is written by the plain three commands, how a
+ * whole restore puts it back, what a step on it is called and how a change to
+ * one is named. Those were said again in each table and each loop that has a
+ * line per list; here they are said once, and what only repeated them reads
+ * this: a record key's kinds and lists (`recordKey.ts`), the file's arrays
+ * indexed and written back (`normalised.ts`), a list put back on the model
+ * and the plain three built for it (`commands/rows.ts`, `commands/plain.ts`),
+ * a list said as commands (`commands.ts`), and the plain lists in a diff, a
+ * restore and the Activity list (`diff.ts`, `restore.ts`, `activity.ts`).
  *
  * The table is typed over the model's lists, so **a list with no entry does
  * not compile**: adding a list to `ModelOrder` fails here before it fails
  * anywhere else, and what is derived follows from the entry written to fix it.
  *
  * What a kind has of its own stays where it is — its type, its rules, what it
- * says to a search — and what only one layer knows stays in that layer, in a
- * table of its own over the same keys: this file names no file and no folder,
- * and no word of the agent's vocabulary.
+ * says to a search — and a kind that is more than plain says `'own'`, and the
+ * reader keeps its own lines for it. What only one layer knows stays in that
+ * layer, in a table of its own over the same keys (`searchable.ts`'s is one):
+ * this file names no file and no folder, and no word of the agent's
+ * vocabulary.
  *
  * It imports the kinds' own files and nothing that reads it, so every table
  * in the model may be derived from it without a loop.
