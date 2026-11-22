@@ -14,10 +14,11 @@
  * So the knowledge moves here, beside the kinds, and the search keeps none
  * of its own: each list a scope holds — every key of `ModelOrder` — declares
  * what a hit on one of its records is called, which of its words are matched,
- * which of them are prose, and which page it opens on. The table is typed
- * over those keys, so a list added to the model without a line here does not
- * compile, and `searchable.test.ts` says the same thing at run time over a
- * model that holds one of everything.
+ * which of them are prose, and which page it opens on. The table is a facet
+ * over the kinds' keys and records (`recordKinds.ts`, ADR-0050), so a list
+ * added to the model without a line here does not compile, and
+ * `searchable.test.ts` says the same thing at run time over a model that
+ * holds one of everything.
  *
  * A declaration is a function from a record to plain data. The search folds
  * that data once per record and keeps it for as long as the record object
@@ -35,19 +36,15 @@
  * shell maps them onto its own screens.
  */
 import type { Adr } from './adr'
-import type { Citation } from './citable'
-import type { Evaluation } from './evaluation'
 import type { Principle } from './principle'
 import type { Comment } from './comment'
 import type { CommentableKind } from './commentable'
 import type { PersonId, PersonRef } from './person'
 import { personIdOf, refText } from './person'
-import type { ModelOrder } from './normalised'
+import type { RecordList, RecordOf } from './recordKinds'
 import type { Cause, Experiment, Observation, Solution } from './observation'
-import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
+import type { Responsibility, Role, UnitType } from './operatingModel'
 import type { Transition } from './transition'
-import type { Assignment } from './units'
-import type { CheckMark } from './checkMarks'
 import { drawingProse } from './drawing'
 import type { DesignDiagram, DesignElement, ElementKind, Relation } from './types'
 
@@ -129,39 +126,14 @@ export type Searchable<R> = {
   readonly describe: (record: R) => SearchRecord | readonly SearchRecord[] | undefined
 }
 
-/** The record each list of the model holds. Keyed as `ModelOrder` is, and checked to be. */
-export type SearchableRecords = {
-  elements: DesignElement
-  relations: Relation
-  diagrams: DesignDiagram
-  decisions: Adr
-  transitions: Transition
-  observations: Observation
-  causes: Cause
-  solutions: Solution
-  experiments: Experiment
-  unitTypes: UnitType
-  roles: Role
-  responsibilities: Responsibility
-  operatingRules: OperatingRule
-  assignments: Assignment
-  checkMarks: CheckMark
-  comments: Comment
-  principles: Principle
-  citations: Citation
-  evaluations: Evaluation
-}
+/** The record each list of the model holds: the kinds' own table (`recordKinds.ts`), under the name the search knows it by. */
+export type SearchableRecords = RecordOf
 
 /** A scope's lists, as whoever read it has them: every one optional, a thin read has some. */
-export type SearchableModel = { readonly [K in keyof ModelOrder]?: readonly SearchableRecords[K][] }
+export type SearchableModel = { readonly [K in RecordList]?: readonly RecordOf[K][] }
 
-export type SearchTable = { readonly [K in keyof ModelOrder]: readonly Searchable<SearchableRecords[K]>[] }
-
-// A list on `SearchableRecords` that the model does not have is a line nobody
-// reads; this is the other half of the check `SearchTable` makes.
-type Exactly<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never
-const KEYS_MATCH: Exactly<keyof SearchableRecords, keyof ModelOrder> = true
-void KEYS_MATCH
+/** The search's line per list: a facet over the kinds' keys, so a list with no line does not compile. */
+export type SearchTable = { readonly [K in RecordList]: readonly Searchable<RecordOf[K]>[] }
 
 /** The register ids among some references, in order and once each; nothing where none is picked. */
 function peopleIn(...refs: readonly (PersonRef | undefined)[]): { people?: readonly PersonId[] } {
@@ -473,4 +445,4 @@ export const SEARCHABLE: SearchTable = {
 }
 
 /** The lists, in the order the search reads them and a list of hits is headed. */
-export const SEARCHABLE_LISTS = Object.keys(SEARCHABLE) as (keyof ModelOrder)[]
+export const SEARCHABLE_LISTS = Object.keys(SEARCHABLE) as RecordList[]
