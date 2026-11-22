@@ -24,6 +24,7 @@ import { handle } from './handle'
 import type { SessionView } from './handle'
 import type { AcrossWork, ChangeAcross, ChangedAcross } from './merge'
 import { OBSERVATIONS_METHOD } from './method'
+import { RULES } from './rules'
 import { REFUSAL_SENTENCE, toolSpec } from './tools'
 import type { AgentAnswer } from './tools'
 import type { TreeView } from './tree'
@@ -239,6 +240,7 @@ describe('observation.move', () => {
   it('is said in the method: a move cuts the links that explain it, and move.plan says which first', () => {
     expect(OBSERVATIONS_METHOD).toContain('a move cuts every link that explains it')
     expect(OBSERVATIONS_METHOD).toContain('move.plan says which first')
-    expect(toolSpec('observation.move').description).toContain('Not solution.move')
+    // Said in its rules, read on demand (ADR-0007, amended 22 November 2026).
+    expect(RULES['observation.move']?.text).toContain('Not solution.move')
   })
 })

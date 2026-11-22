@@ -527,3 +527,39 @@ which a model pays for by the character on every turn.
   the rows rather than of the scope's revision, so a list across the whole
   tree, and a host whose revision moves with every author, page the same way.
 * **An answer is compact JSON.** `json()` no longer indents.
+
+## Amended 22 November 2026 — what every tool shares is said once, and the rules are read on demand
+
+`tools/list` had grown to about 311,000 characters on the desktop — a client
+carries it on every turn — and about a third of it was the same words again:
+`scope`'s 421-character description written into 148 tools, `ifRevision`'s
+into 108, the person argument's into every field that names one. Policy
+travelled in descriptions too: `checks.list` alone was 3,341 characters.
+
+* **What every tool shares is said once.** Each schema says `scope`,
+  `ifRevision`, a person and a page in a line; the whole of each is a
+  paragraph handed over on connect by every host (`CONVENTIONS` in
+  `agent/method.ts`) and a rule of its own.
+* **A description says what the tool does and what it takes.** At most 400
+  characters, and an argument's at most 300 (`rules.test.ts`). What it said
+  beyond that — the rules, the refusals and their reasons, the long
+  arguments' detail — moved, whole and in the same words, to
+  `agent/rules.ts`: one table keyed by topic (`scope`, `ifRevision`,
+  `person`, `paging`, `batch`, `sheet`) and by tool. A description with more
+  there ends `(rules.read)`.
+* **`rules.read`** (`about`: a topic or a tool's name) answers one rule, and
+  with nothing asked, what there is to ask. A read with no scope and nothing
+  to guard, answered with or without a scope open, on every host. Whatever
+  else describes the vocabulary reads the same table.
+* **The instructions did not grow.** The sheet's paragraph says the three
+  links in a few lines and points at `rules.read sheet` for the rest; the
+  desktop's own paragraph lost what the descriptions say.
+* **A ceiling holds both** (`agent/door.test.ts`, the pattern
+  `build/storageLine.ts` keeps for its lists): `tools/list` as the desktop
+  answers it and the instructions, held to exactly what they measure, so a
+  change that adds to either raises the ceiling in the same diff, where a
+  reader sees it. Measured on 22 November 2026: `tools/list` 311,836 before
+  and 202,844 after, with two tools added (`rules.read`,
+  `evaluation.read`) and every list given its page; the instructions 10,974
+  before and 9,850 after. A server holds its own list to a ceiling where it
+  is built.

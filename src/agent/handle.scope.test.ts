@@ -26,7 +26,7 @@ import { MODEL_WORDS } from '../model/words'
 import { Driving } from './driving'
 import { handle } from './handle'
 import type { SessionView } from './handle'
-import { ABOUT_THE_APP, ON_THE_REGISTER, ON_THE_TREE, RESOURCE_LIST, RESOURCE_READ, TOOLS, TREE_WIDE } from './tools'
+import { ABOUT_THE_APP, ABOUT_THE_VOCABULARY, ON_THE_REGISTER, ON_THE_TREE, RESOURCE_LIST, RESOURCE_READ, TOOLS, TREE_WIDE } from './tools'
 import type { AgentAnswer } from './tools'
 import type { TreeView } from './tree'
 
@@ -158,7 +158,8 @@ describe('the vocabulary', () => {
       // filter, `evaluation.read` as the scope that evaluates, and `app.open`
       // as its destination (ADR-0019); the rest take none.
       if (['checks.list', 'views.list', 'assignments.list', 'evaluation.read', 'app.open'].includes(tool.name)) expect(has, tool.name).toBe(true)
-      else if (TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) || ON_THE_REGISTER.includes(tool.name) || ON_THE_TREE.includes(tool.name)) {
+      else if (TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) || ON_THE_REGISTER.includes(tool.name) || ON_THE_TREE.includes(tool.name)
+        || ABOUT_THE_VOCABULARY.includes(tool.name)) {
         expect(has, tool.name).toBe(false)
       } else expect(has, tool.name).toBe(true)
     }

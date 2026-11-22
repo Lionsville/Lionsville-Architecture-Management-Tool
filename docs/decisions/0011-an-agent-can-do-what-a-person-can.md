@@ -251,3 +251,12 @@ guessing the slug, and any bound on its size.
 * **At most 200 steps** (`MOST_STEPS`), refused `agent.tooManySteps`: one
   undo and one Activity line is what a batch is to a person, and a batch
   larger than that is several changes they should be able to tell apart.
+
+## Amended 22 November 2026 — the guard said once
+
+The guard is unchanged; how it is told is not. Every change's schema says
+`ifRevision` in one line, and the whole of it — what answers the revision,
+`agent.stale`, a batch's and a step's — is said once, on connect
+(`CONVENTIONS`) and in `rules.read ifRevision` (ADR-0007, amended the same
+day). The open question above is answered the same way it was: no warning
+on an unguarded write.

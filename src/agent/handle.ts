@@ -90,6 +90,7 @@ import type { OpenDocument } from './assignments'
 import type { OperatingRead } from './operatingModel'
 import type { TreeView } from './tree'
 import { paged, pagingOf } from './paging'
+import { readRules } from './rules'
 import { MOST_STEPS, resolved } from './batchSteps'
 import { diffModels } from '../model/diff'
 
@@ -290,6 +291,8 @@ const CROP_MARGIN = 60
  * pressed while it runs.
  */
 export async function handle(request: AgentRequest, session: SessionView | undefined, shell?: ShellView): Promise<AgentAnswer> {
+  // The vocabulary's own rules are the same wherever they are asked, with or without a scope open.
+  if (request.tool === 'rules.read') return readRules(request.args)
   // A list read answers its whole list, and is cut into a page here (`paging.ts`).
   const paging = pagingOf(request)
   if (paging && !('tool' in paging)) return paging

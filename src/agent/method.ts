@@ -98,21 +98,30 @@ export const TREE_TOOLS_PARAGRAPH =
  * an agent (ADR-0040 §4–§7). Three links join a function of the sheet to the
  * scopes, each written by a different tool in a different scope, and an
  * agent that is not told which is which writes the one it found first.
- * Handed over on connect beside {@link STRUCTURE_DEFAULTS} by every host.
+ * Handed over on connect beside {@link STRUCTURE_DEFAULTS} by every host; the
+ * whole of it, with how a sheet's poster is placed, is `rules.read sheet`
+ * (`rules.ts`, amended 22 November 2026), read when it is needed.
  */
 export const SHEET_MAPPING_PARAGRAPH =
-  'A function of a business sheet — an area, a grouping or a capability — is joined to the tree three ways, and they are told '
-  + 'apart. Who answers for it is a unit: relation.add with type assigned from the unit to the function, in the scope that defines '
-  + 'the function. Which domain it is handed to is the organisation\'s intent, top-down: element.update scopes on the definition, '
-  + 'in the scope that defines it, naming scopes below that one. Which domain took it up is the domain\'s own statement, '
-  + 'bottom-up: function.claim in the domain\'s scope, a stand-in of the function on its sheet, under which the domain files its '
-  + 'own capabilities. element.describe of a function says its domains and claimedBy; a function nobody handed on and no domain '
-  + 'took up is not yet mapped (checks.list). Handing on and taking up are two statements by two scopes: neither writes the other. '
-  + 'A sheet\'s poster is placed with the same tools as a board and needs no screen, being arithmetic on fixed sizes: element.place, moveBy, '
-  + 'placeNextTo, align and distribute move its blocks, an area or the journey by id and the stakeholder column as rail; a tile takes a cell; '
-  + 'diagram.tidy is First layout; diagram.inspect says where everything is and what overlaps, and nothing fixes an overlap by itself. '
-  + 'A tile moved to another area is element.update parentId, a fact on every view, while a place, a label and a free item (posterItem.add) are this view\'s only. '
-  + 'A label shown on a tile (diagram.update labels) is a display choice: taking one off ends nobody\'s assignment.'
+  'A function of a business sheet is joined to the tree three ways, told apart: a unit answers for it (relation.add '
+  + 'assigned, in the scope that defines it); it is handed to a domain (element.update scopes, in that scope); a domain '
+  + 'takes it up (function.claim, in the domain\'s scope). Neither writes the other. A sheet\'s poster is placed with a '
+  + 'board\'s tools and needs no screen (rules.read sheet).'
+
+/**
+ * What every tool shares, said once rather than in every schema (ADR-0007,
+ * amended 22 November 2026): `scope`, `ifRevision`, a person, a page, and
+ * where a tool's longer rules are. Each schema says them in a line; the
+ * whole of each is `rules.read`. Handed over on connect by every host, with
+ * no word about a screen in it.
+ */
+export const CONVENTIONS =
+  'Said once for every tool: scope is a scope\'s path, "" the organisation, the one open when left out (rules.read '
+  + 'scope). Every change answers the scope\'s revision: pass it as ifRevision when a call must not land on a scope that '
+  + 'moved on (rules.read ifRevision). A field naming a person takes { "person": id } from people.list, or text (rules.read '
+  + 'person). A list read answers a page; pass its next as cursor for the rest (rules.read paging). batch lands several '
+  + 'changes as one step, may try them first and use what an earlier step answered (rules.read batch). A description '
+  + 'ending (rules.read) has more: rules.read with about the tool\'s name.'
 
 /**
  * How principles, topics and building blocks hang together, said once for an
