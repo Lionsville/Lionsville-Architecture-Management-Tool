@@ -26,7 +26,7 @@ export function NewDiagramDialog({ name, onNameChange, onConfirm, s }: NewDiagra
   const empty = (name ?? '').trim().length === 0
   return (
     <FieldsDialog open={name !== null} onClose={() => onNameChange(null)} maxWidth="xs" fullWidth>
-      <DialogTitle>{s('shell.newDiagram')}</DialogTitle>
+      <DialogTitle>{s('common.newDiagram')}</DialogTitle>
       <DialogContent>
         <FieldBox
           autoFocus

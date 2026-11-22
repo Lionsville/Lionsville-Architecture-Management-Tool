@@ -63,7 +63,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.orphanOther':
     '{count} Containerdiagramme wurden gelöscht: ihre Anwendungen haben das Modell verlassen. Rückgängig bringt diese Diagramme nicht zurück.',
   'shell.duplicated': '„{name}“ dupliziert.',
-  'shell.deleted': '„{name}“ gelöscht.',
   'shell.undoPassed': 'Danach kamen andere Änderungen. Machen Sie diese zuerst rückgängig, oder holen Sie die Ansicht aus dem Verlauf zurück.',
   'shell.leftOutPart': '{count} × {label}',
   'shell.savedPicture': 'Bild gespeichert.',
@@ -119,8 +118,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.newMap': 'Abdeckung',
   'shell.newTechnology': 'Technologielandschaft',
   'shell.newDrawing': 'Zeichnung',
-  'shell.newChart': 'Organigramm',
-  'shell.newConway': 'Conway-Karte',
   'shell.drawingOf': '{name} · Zeichnung',
   'shell.drawingNotDrawn': 'Noch nichts gezeichnet',
   'shell.drawingElements': 'Elemente',
@@ -133,23 +130,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'shell.logoAdded': 'Logo „{name}“ zur eigenen Bibliothek hinzugefügt.',
   'shell.copyOf': '{name} (Kopie)',
   'shell.containerDiagram': '{name} · Container',
-  'shell.deleteDiagramTitle': 'Ansicht „{name}“ löschen?',
-  'shell.deleteBody.layer7':
-    'Die Platzierungen, Gruppen und Routen dieser Landschaft gehen verloren. Die Elemente selbst bleiben im Modell, und Containerdiagramme bleiben bestehen.',
-  'shell.deleteBody.container':
-    'Die Container dieser Ansicht gehen mit, und die Schnittstellen, die sie trugen, wandern auf die Anwendung. Die Anwendung selbst bleibt auf der Landschaft.',
-  'shell.deleteBody.sheet':
-    'Das Blatt geht, mit der Stelle, an der seine Blöcke auf dem Poster standen. Die Funktionen, Schritte und Beteiligten darauf bleiben im Modell.',
-  'shell.deleteBody.map':
-    'Die Karte geht. Sie wird aus den Funktionen und den Beziehungen angeordnet, die alle im Modell bleiben.',
-  'shell.deleteBody.technology':
-    'Die Technologielandschaft geht. Sie wird aus den Einträgen gelesen, also bleibt jede Anwendung, jeder Dienst und jede Plattform darauf im Modell.',
-  'shell.deleteBody.drawing':
-    'Die Zeichnung geht, mit allem, was darauf gezeichnet ist. Worauf sie verweist, bleibt im Modell.',
-  'shell.deleteBody.chart':
-    'Das Organigramm geht. Es wird aus den Einheiten angeordnet, also bleibt jede Einheit, Rolle und Zuordnung darauf bestehen.',
-  'shell.deleteBody.conway':
-    'Die Conway-Karte geht. Sie wird aus den Einheiten und den Anwendungen gelesen, die ihnen gehören, und die bleiben alle im Modell.',
   'shell.chooseBoard': 'Welches Board?',
   'shell.chooseBoardHint': '{name} ist auf mehr als einem Board gezeichnet.',
   'shell.chooseBoardAsOf': 'Stand {day}',
@@ -299,7 +279,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'change.geometry': '{count} verschoben auf {name}',
   'change.becameStandIn': '{name} ist jetzt ein Platzhalter für {scope}',
   'change.becameDefinition': '{name} wird jetzt hier definiert',
-  'shell.scopeCreated': '\u201e{name}\u201c angelegt.',
   'scope.kind.organisation': 'Organisation',
   'scope.kind.domain': 'Dom\u00e4ne',
   'scope.kind.programme': 'Programm',
@@ -386,7 +365,6 @@ export const DE: Record<keyof typeof EN, string> = {
   'share.copyFailed': 'Der Link konnte nicht kopiert werden. Markieren Sie ihn im Dialog und kopieren Sie ihn dort.',
   'share.noAddress': 'Arbeit, die hier aufbewahrt wird — in einem Ordner, in diesem Browser oder nirgends —, lässt sich nicht über einen Link öffnen: Niemand sonst erreicht sie unter einer Adresse. Ein Link lässt sich teilen, wo die Arbeit auf einem Server liegt, bei dem sich alle anmelden, die sie lesen dürfen.',
   'share.noPlace': 'Auf dem Bildschirm ist noch keine Stelle, auf die ein Link zeigen könnte. Öffnen Sie einen Bereich oder eine Startseite und versuchen Sie es erneut.',
-  'shell.documentation': 'Dokumentation',
   'shell.documentationTip': 'Die Dokumentationsseite des ausgewählten Elements öffnen',
   'shell.noElements': 'Es gibt noch nichts zu dokumentieren — fügen Sie zuerst ein Element hinzu.',
   'shell.placeUnknown': 'Die Adresse nennt eine Seite, die diese App nicht hat, deshalb wurde geöffnet, was zuletzt offen war.',
@@ -467,21 +445,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'library.drawn': '{name} ist auf dem Board',
   'library.standsIn': '{name} ist auf dem Board und verweist auf den Eintrag in {scope}',
   'library.owned': 'Dieser Bereich verantwortet {name} jetzt',
-  'pick.filedIn': 'eingeordnet in {scope}',
-  'pick.in': 'in {name}',
-  'pick.otherUnits': 'Von einem Typ, den das Modell nicht kennt',
-  'pick.otherActors': 'Andere in diesem Bereich',
   'sheetClaim.already': '{name} ist hier schon aufgegriffen.',
   'sheetClaim.refused': '{name} wurde nicht aufgegriffen: es ist keine Funktion eines Bereichs über diesem mehr.',
-  'pick.servesOne': 'ein {type} bedient eine Domäne',
-  'pick.readOnly': 'geführt, wo Sie nur lesen dürfen',
-  'pick.notWritten': 'Es wurde nichts geschrieben.',
-  'pick.findUnit': 'Eine Einheit suchen',
-  'pick.noUnit': 'Keine Einheit mit diesem Namen',
-  'pick.findScope': 'Einen Bereich suchen',
-  'pick.noScope': 'Kein Bereich mit diesem Namen',
-  'pick.findFunction': 'Ein Gebiet, eine Gruppe oder eine Fähigkeit suchen',
-  'pick.noFunction': 'Nichts mit diesem Namen',
   'check.interfaceUndeclared': '{source} → {target} läuft von {from} zu {to}, und zwischen beiden ist keine Zusammenarbeit festgehalten.',
   'check.interactionUnused': '{a} und {b} halten {mode} fest, und zwischen ihnen läuft keine Schnittstelle.',
   'check.applicationUnowned': '{name} hat keine Einheit: niemandem gehört sie.',

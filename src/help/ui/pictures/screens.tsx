@@ -32,11 +32,11 @@ export function StartPicture() {
 
 export function FramePicture() {
   return (
-    <Screen trail={TRAIL.slice(0, 2)} tree={TREE} tabs={[<Say key="d" k="shell.decisions" />, <Say key="o" k="shell.observations" />, <Say key="r" k="shell.roadmap" />]}>
+    <Screen trail={TRAIL.slice(0, 2)} tree={TREE} tabs={[<Say key="d" k="common.decisions" />, <Say key="o" k="common.observations" />, <Say key="r" k="common.roadmap" />]}>
       <div className="hp-home">
         <div className="hp-home__title">Warehouse</div>
         <Rows title={<Say k="org.viewsHere" />} rows={VIEWS.map((view) => <span key={view}>{view}</span>)} />
-        <Rows title={<Say k="org.keptHere" />} rows={[<span key="d"><Say k="shell.decisions" /> · 2</span>, <span key="o"><Say k="shell.observations" /> · 3</span>, <span key="r"><Say k="shell.roadmap" /> · 2</span>]} />
+        <Rows title={<Say k="org.keptHere" />} rows={[<span key="d"><Say k="common.decisions" /> · 2</span>, <span key="o"><Say k="common.observations" /> · 3</span>, <span key="r"><Say k="common.roadmap" /> · 2</span>]} />
       </div>
     </Screen>
   )
@@ -202,7 +202,7 @@ export function DecisionsPicture() {
 export function ObservationsPicture() {
   const node = (label: string, title: string, kind: 'obs' | 'cause' | 'root' | 'sol') => <div className="hp-node" data-kind={kind}><b>{label}</b> {title}</div>
   return (
-    <Screen crop trail={TRAIL} tabs={[<Say key="o" k="shell.observations" />]} on={0}>
+    <Screen crop trail={TRAIL} tabs={[<Say key="o" k="common.observations" />]} on={0}>
       <ViewBar items={[<Say key="s" k="observation.stageSeen" />, <b key="w"><Say k="observation.stageWhy" /></b>, <Say key="v" k="observation.stageSolve" />, <Say key="r" k="observation.stageResults" />]} />
       <div className="hp-lanes">
         <div>{node('OB-0001', 'Quoted one price, billed another', 'obs')}{node('OB-0002', 'Two delivery estimates', 'obs')}</div>

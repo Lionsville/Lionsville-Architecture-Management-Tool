@@ -57,10 +57,10 @@ export function unitChoices(at: ChoiceWords & {
       return {
         id: unit.id,
         label: unit.name,
-        group: typeName.get(unit.unitTypeId ?? '') ?? s('pick.otherUnits'),
+        group: typeName.get(unit.unitTypeId ?? '') ?? s('common.pick.otherUnits'),
         ...(refused !== undefined
           ? { note: refused, disabled: true }
-          : kept !== undefined ? { note: s('pick.filedIn', { scope: scopeName(kept) }) } : {}),
+          : kept !== undefined ? { note: s('common.pick.filedIn', { scope: scopeName(kept) }) } : {}),
       }
     })
 }
@@ -92,7 +92,7 @@ export function functionChoices(at: ChoiceWords & {
   const named = (id: ElementId | undefined) => (id === undefined ? undefined : nameHere.get(id) ?? index.lookup(id)?.name)
   const row = (id: ElementId, name: string, parentId: ElementId | undefined, path: ScopePath): PickOption => {
     const parent = named(parentId)
-    return { id, label: name, group: scopeName(path), ...(parent !== undefined ? { note: s('pick.in', { name: parent }) } : {}) }
+    return { id, label: name, group: scopeName(path), ...(parent !== undefined ? { note: s('common.pick.in', { name: parent }) } : {}) }
   }
   const elsewhere = index.entries()
     .filter((entry) => entry.kind === 'function' && entry.master !== undefined && entry.master !== scope && !nameHere.has(entry.id))
@@ -139,7 +139,7 @@ export function parentChoices(at: ChoiceWords & {
     const refused = at.unitIds.includes(unit.id) ? s('unitMove.itself') : inside.has(unit.id) ? s('unitMove.inside') : unit.id === at.current ? s('unitMove.current') : undefined
     return {
       id: unit.id, label: unit.name, group: at.fits(unit.id) ? fitting : others,
-      ...(refused !== undefined ? { note: refused, disabled: true } : trail ? { note: s('pick.in', { name: trail }) } : {}),
+      ...(refused !== undefined ? { note: refused, disabled: true } : trail ? { note: s('common.pick.in', { name: trail }) } : {}),
     }
   })
   const all = [top, ...rows]

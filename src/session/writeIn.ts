@@ -114,5 +114,5 @@ export function refusalKey(written: WrittenIn): StringKey | undefined {
   if (written.ok || written.reason === 'unchanged') return undefined
   if (written.reason === 'gone') return 'shell.scopeGone'
   if (written.reason === 'readOnly') return 'shell.scopeReadOnly'
-  return written.reason.startsWith('shell.') || written.reason.startsWith('command.') ? written.reason as StringKey : 'pick.notWritten'
+  return written.reason.startsWith('shell.') || written.reason.startsWith('command.') ? written.reason as StringKey : 'common.pick.notWritten'
 }

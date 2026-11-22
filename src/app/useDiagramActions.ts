@@ -94,7 +94,7 @@ export function useDiagramActions(deps: {
 
   const [newDiagramName, setNewDiagramName] = useState<string | null>(null)
   const onCreateLayer7Diagram = useCallback(() => {
-    setNewDiagramName(s('shell.newDiagram'))
+    setNewDiagramName(s('common.newDiagram'))
   }, [session, s])
 
   const confirmNewDiagram = useCallback(() => {
@@ -148,7 +148,7 @@ export function useDiagramActions(deps: {
       session.setActiveDiagramId(left.order.diagrams[0] ?? id)
     }
     // The toast's Undo is this step, and only while it is still the newest: under a later one, ⌘Z would take back that one first.
-    notify(s('shell.deleted', { name: target.name }), 'success', {
+    notify(s('common.deleted', { name: target.name }), 'success', {
       undo: { onPress: () => { if (session.history().at(-1)?.stepId === step) session.undo(); else notify(s('shell.undoPassed'), 'info') } },
     })
   }, [deleteId, session, notify, s])

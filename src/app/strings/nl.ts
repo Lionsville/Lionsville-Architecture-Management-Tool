@@ -63,7 +63,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.orphanOther':
     '{count} containerdiagrammen zijn verwijderd: hun applicaties gingen uit het model. Die diagrammen komen met Ongedaan maken niet terug.',
   'shell.duplicated': '“{name}” gedupliceerd.',
-  'shell.deleted': '“{name}” verwijderd.',
   'shell.undoPassed': 'Er kwamen andere wijzigingen na. Maak die eerst ongedaan, of haal de weergave terug uit de geschiedenis.',
   'shell.leftOutPart': '{count} × {label}',
   'shell.savedPicture': 'Afbeelding bewaard.',
@@ -118,8 +117,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.newMap': 'Dekking',
   'shell.newTechnology': 'Technologielandschap',
   'shell.newDrawing': 'Tekening',
-  'shell.newChart': 'Organogram',
-  'shell.newConway': 'Conway-kaart',
   'shell.drawingOf': '{name} · tekening',
   'shell.drawingNotDrawn': 'Nog niets getekend',
   'shell.drawingElements': 'Elementen',
@@ -132,23 +129,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'shell.logoAdded': 'Logo “{name}” toegevoegd aan de eigen bibliotheek.',
   'shell.copyOf': '{name} (kopie)',
   'shell.containerDiagram': '{name} · containers',
-  'shell.deleteDiagramTitle': 'Weergave “{name}” verwijderen?',
-  'shell.deleteBody.layer7':
-    'De plaatsingen, groepen en routes van dit landschap gaan verloren. De elementen zelf blijven in het model, en containerdiagrammen blijven staan.',
-  'shell.deleteBody.container':
-    'De containers op deze weergave gaan mee, en de koppelvlakken die zij droegen verhuizen naar de applicatie. De applicatie zelf blijft op het landschap.',
-  'shell.deleteBody.sheet':
-    'Het blad gaat weg, met waar de blokken op de poster stonden. De functies, stappen en belanghebbenden erop blijven in het model.',
-  'shell.deleteBody.map':
-    'De kaart gaat weg. Ze wordt ingedeeld uit de functies en de relaties, die allemaal in het model blijven.',
-  'shell.deleteBody.technology':
-    'Het technologielandschap gaat weg. Het wordt uit de vastleggingen gelezen, dus elke applicatie, dienst en elk platform erop blijft in het model.',
-  'shell.deleteBody.drawing':
-    'De tekening gaat weg, met alles wat erop getekend is. Waar ze naar verwijst, blijft in het model.',
-  'shell.deleteBody.chart':
-    'Het organogram gaat weg. Het wordt ingedeeld uit de eenheden, dus elke eenheid, rol en toewijzing erop blijft bestaan.',
-  'shell.deleteBody.conway':
-    'De Conway-kaart gaat weg. Ze wordt gelezen uit de eenheden en de applicaties die zij bezitten, die allemaal in het model blijven.',
   'shell.chooseBoard': 'Welk bord?',
   'shell.chooseBoardHint': '{name} staat op meer dan één bord.',
   'shell.chooseBoardAsOf': 'Per {day}',
@@ -298,7 +278,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'change.geometry': '{count} verplaatst op {name}',
   'change.becameStandIn': '{name} verwijst nu naar {scope}',
   'change.becameDefinition': '{name} wordt nu hier gedefinieerd',
-  'shell.scopeCreated': '\u201c{name}\u201d aangemaakt.',
   'scope.kind.organisation': 'Organisatie',
   'scope.kind.domain': 'Domein',
   'scope.kind.programme': 'Programma',
@@ -382,7 +361,6 @@ export const NL: Record<keyof typeof EN, string> = {
   'share.copyFailed': 'De link kon niet worden gekopieerd. Selecteer hem in het venster en kopieer hem daar.',
   'share.noAddress': 'Werk dat hier wordt bewaard — in een map, in deze browser of nergens — is niet met een link te openen: niemand anders bereikt het op een adres. Een link kan worden gedeeld waar werk op een server staat waarop iedereen die het mag lezen zich aanmeldt.',
   'share.noPlace': 'Er staat nog geen plek op het scherm om naar te linken. Open een scope of een startpagina en probeer het opnieuw.',
-  'shell.documentation': 'Documentatie',
   'shell.documentationTip': 'Open de documentatiepagina van het geselecteerde element',
   'shell.noElements': 'Er is nog niets om te documenteren \u2014 voeg eerst een element toe.',
   'shell.placeUnknown': 'Het adres noemt een pagina die deze app niet heeft, dus hij is geopend waar hij was.',
@@ -463,21 +441,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'library.drawn': '{name} staat op het bord',
   'library.standsIn': '{name} staat op het bord en verwijst naar het record in {scope}',
   'library.owned': 'Dit niveau beheert {name} nu',
-  'pick.filedIn': 'ingedeeld in {scope}',
-  'pick.in': 'in {name}',
-  'pick.otherUnits': 'Van een type dat het model niet kent',
-  'pick.otherActors': 'Anderen in deze scope',
   'sheetClaim.already': '{name} is hier al opgepakt.',
   'sheetClaim.refused': '{name} is niet opgepakt: het is geen functie meer van een scope boven deze.',
-  'pick.servesOne': 'een {type} bedient één domein',
-  'pick.readOnly': 'bijgehouden waar je alleen mag lezen',
-  'pick.notWritten': 'Er is niets weggeschreven.',
-  'pick.findUnit': 'Zoek een eenheid',
-  'pick.noUnit': 'Geen eenheid met die naam',
-  'pick.findScope': 'Zoek een scope',
-  'pick.noScope': 'Geen scope met die naam',
-  'pick.findFunction': 'Zoek een gebied, groep of capability',
-  'pick.noFunction': 'Niets met die naam',
   'check.interfaceUndeclared': '{source} → {target} loopt van {from} naar {to}, en tussen die twee is geen samenwerking vastgelegd.',
   'check.interactionUnused': '{a} en {b} leggen {mode} vast, en er loopt geen koppelvlak tussen hen.',
   'check.applicationUnowned': '{name} heeft geen eenheid: niemand bezit haar.',

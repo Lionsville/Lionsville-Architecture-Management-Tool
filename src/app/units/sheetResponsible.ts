@@ -68,7 +68,7 @@ export function sheetResponsibleOf(at: SheetResponsibleAt, open: () => SheetWays
   const units = new Map(organisation.units.filter(isUnit).map((unit) => [unit.id, unit]))
   const others = model.elements
     .filter((element) => element.kind === 'actor' && !units.has(element.id) && !isUnit(element))
-    .map((element) => ({ id: element.id, label: element.name, group: s('pick.otherActors') }))
+    .map((element) => ({ id: element.id, label: element.name, group: s('common.pick.otherActors') }))
   // The domain of a function: this scope where it defines it, its master's where it is a stand-in here.
   const domainOf = (functionId: ElementId) => {
     const held = model.elements.find((element) => element.id === functionId)

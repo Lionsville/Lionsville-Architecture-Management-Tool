@@ -123,7 +123,7 @@ function ServedByField({ options, value, onChange, s }: NonNullable<NewScopeDial
           )
         : (
             <PickToAdd
-              options={options} label={s('org.servedByAdd')} field={s('pick.findUnit')} nothing={s('pick.noUnit')}
+              options={options} label={s('org.servedByAdd')} field={s('common.pick.findUnit')} nothing={s('common.pick.noUnit')}
               onPick={onChange} testId="new-scope-served-by-add" disabled={options.every((one) => one.disabled === true)}
             />
           )}

@@ -132,7 +132,7 @@ function ownRows(props: ScopeHomeProps, principles: { own: number; inForce: numb
   const finding = pages.roadmap.findingOpens
   return [
     {
-      id: 'open-observations', label: s('shell.observations'), icon: <ObservationIcon />, guide: 'org.card.observations',
+      id: 'open-observations', label: s('common.observations'), icon: <ObservationIcon />, guide: 'org.card.observations',
       fact: observationsFact(pages, localObservations, s), holds: holdsObservations(pages, localObservations), open: () => open(at, { page: 'observations' }),
     },
     ...(principles ? [{
@@ -141,7 +141,7 @@ function ownRows(props: ScopeHomeProps, principles: { own: number; inForce: numb
       holds: principles.own > 0, row: principles.inForce > 0, open: () => open(at, { page: 'principles' }),
     }] : []),
     {
-      id: 'open-decisions', label: s('shell.decisions'), icon: <DecisionIcon />, guide: 'org.card.decisions',
+      id: 'open-decisions', label: s('common.decisions'), icon: <DecisionIcon />, guide: 'org.card.decisions',
       fact: decisionsFact(pages, s), holds: pages.decisions.total > 0, open: () => open(at, { page: 'decisions' }),
       ...(latest ? { end: (
         <Button variant="quiet" size="small" data-testid="open-latest-decision" title={s('org.latest', { name: `${formatAdrNumber(latest.number)} ${latest.title}` })} onClick={() => open(at, { page: 'decisions', id: latest.id })}>
@@ -150,14 +150,14 @@ function ownRows(props: ScopeHomeProps, principles: { own: number; inForce: numb
       ) } : {}),
     },
     {
-      id: 'open-roadmap', label: s('shell.roadmap'), icon: <TimelineIcon />, guide: 'org.card.roadmap',
+      id: 'open-roadmap', label: s('common.roadmap'), icon: <TimelineIcon />, guide: 'org.card.roadmap',
       fact: roadmapFact(pages, initiatives, s, language), holds: pages.roadmap.total + initiatives > 0, open: () => open(at, { page: 'roadmap' }),
       ...(finding ? { end: (
         <Button variant="quiet" size="small" data-testid="open-roadmap-finding" aria-label={`${s('org.findingShow')}: ${s('org.openFinding')}`} onClick={() => onFinding(finding)}>{s('org.findingShow')}</Button>
       ) } : {}),
     },
     {
-      id: 'open-documentation', label: s('shell.documentation'), icon: <DocumentIcon />,
+      id: 'open-documentation', label: s('common.documentation'), icon: <DocumentIcon />,
       fact: draws ? s(pages.documentation.described === 1 ? 'org.describedOne' : 'org.describedOther', { count: pages.documentation.described, total: pages.documentation.elements }) : '',
       holds: draws && pages.documentation.described > 0, open: () => open(at, { page: 'documentation' }),
     },
@@ -309,8 +309,8 @@ const isViewPage = (page: string) => ['board', 'sheet', 'map', 'technology', 'dr
 
 /** What a place with no name of its own is called on a row. */
 const PAGE_WORD: Partial<Record<string, StringKey>> = {
-  decisions: 'shell.decisions', observations: 'shell.observations', roadmap: 'shell.roadmap', documentation: 'shell.documentation',
-  principles: 'principles.card', plan: 'shell.roadmap', element: 'shell.documentation', document: 'shell.documentation',
+  decisions: 'common.decisions', observations: 'common.observations', roadmap: 'common.roadmap', documentation: 'common.documentation',
+  principles: 'principles.card', plan: 'common.roadmap', element: 'common.documentation', document: 'common.documentation',
 }
 
 const STANDS: Record<NearbyWork['stands'], StringKey> = { below: 'org.nearBelow', beside: 'org.nearBeside', above: 'org.nearAbove' }

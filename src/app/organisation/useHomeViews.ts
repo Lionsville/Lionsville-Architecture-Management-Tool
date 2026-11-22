@@ -143,7 +143,7 @@ export function useHomeViews({ repositories, refresh, notify, onFailure, onKeptR
     setDialog({ kind: 'none' })
     change(path, s('org.undoDeleteView', { name: view.name }), (held) => deleteViewCommands(held, view.id))
       .then((step) => {
-        if (step) notify(s('shell.deleted', { name: view.name }), 'success', { undo: { onPress: () => takeBack(step) } })
+        if (step) notify(s('common.deleted', { name: view.name }), 'success', { undo: { onPress: () => takeBack(step) } })
         return undefined
       })
       .catch((cause: unknown) => failed('organisation.deleteBoard', cause))

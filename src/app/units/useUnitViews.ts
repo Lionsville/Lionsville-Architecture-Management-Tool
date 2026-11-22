@@ -24,8 +24,8 @@ export type UnitViews = {
 }
 
 const MADE = {
-  chart: { prefix: 'oc', name: 'shell.newChart' },
-  conway: { prefix: 'cw', name: 'shell.newConway' },
+  chart: { prefix: 'oc', name: 'common.newChart' },
+  conway: { prefix: 'cw', name: 'common.newConway' },
 } as const
 
 /** As much of the open scope's session as making a view takes: one command, and the view it leaves on the tab. */

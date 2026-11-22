@@ -38,7 +38,7 @@ export function ShellDialogs({
     <>
       <ConfirmDialog
         open={diagramToDelete !== undefined}
-        title={s('shell.deleteDiagramTitle', { name: diagramToDelete?.name ?? '' })}
+        title={s('common.deleteDiagramTitle', { name: diagramToDelete?.name ?? '' })}
         body={s(deleteBody)}
         confirmLabel={s('common.delete')}
         cancelLabel={s('common.cancel')}

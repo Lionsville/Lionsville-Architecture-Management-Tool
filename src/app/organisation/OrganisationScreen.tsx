@@ -540,7 +540,7 @@ function HomeViewDialogs({ organisation, s }: { organisation: Organisation; s: T
     <>
       <ConfirmDialog
         open={asked.kind === 'delete'}
-        title={s('shell.deleteDiagramTitle', { name: asked.kind === 'delete' ? asked.view.name : '' })}
+        title={s('common.deleteDiagramTitle', { name: asked.kind === 'delete' ? asked.view.name : '' })}
         // What goes with it, said of the kind of view it is.
         body={s(DELETE_VIEW_BODY[asked.kind === 'delete' ? asked.view.kind : 'layer7'])}
         confirmLabel={s('common.delete')}

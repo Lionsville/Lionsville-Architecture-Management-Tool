@@ -129,7 +129,6 @@ export const EN = {
   'shell.orphanOther':
     '{count} container views were deleted: their applications left the model. Undo does not bring those views back.',
   'shell.duplicated': '“{name}” duplicated.',
-  'shell.deleted': '“{name}” deleted.',
   'shell.undoPassed': 'Other changes came after it. Undo those first, or bring the view back from History.',
   /**
    * A count and what it counts, with no grammar between them. The label is a
@@ -209,13 +208,12 @@ export const EN = {
    * partway. Naming what it did not reach is the difference between a job half
    * done and a job half done in silence.
    */
+  /** Said as `common.newDiagram` by this tree's own screens (ADR-0049); kept under this name for a build composed from this one that names it. */
   'shell.newDiagram': 'New landscape',
   'shell.newSheet': 'Business architecture',
   'shell.newMap': 'Coverage',
   'shell.newTechnology': 'Technology landscape',
   'shell.newDrawing': 'Drawing',
-  'shell.newChart': 'Organisation chart',
-  'shell.newConway': 'Conway map',
   'shell.drawingOf': '{name} · drawing',
   'shell.drawingNotDrawn': 'Nothing drawn yet',
   /** The palette the editor opens with: the scope's elements. */
@@ -234,24 +232,6 @@ export const EN = {
   'shell.copyOf': '{name} (copy)',
   /** The name a newly created container view gets. */
   'shell.containerDiagram': '{name} · containers',
-  'shell.deleteDiagramTitle': 'Delete view “{name}”?',
-  /** What deleting a view takes with it, said of its own kind: a laid-out view loses nothing but itself. */
-  'shell.deleteBody.layer7':
-    'The placements, groups and routes of this landscape are lost. The elements themselves stay in the model, and container views remain.',
-  'shell.deleteBody.container':
-    'The containers on this view go with it, and the interfaces they carried move up to the application. The application itself stays on the landscape.',
-  'shell.deleteBody.sheet':
-    'The sheet goes, with where its blocks were placed on its poster. The functions, steps and stakeholders on it stay in the model.',
-  'shell.deleteBody.map':
-    'The map goes. It is laid out from the functions and the rows, which all stay in the model.',
-  'shell.deleteBody.technology':
-    'The technology landscape goes. It is read from the records, so every application, service and platform on it stays in the model.',
-  'shell.deleteBody.drawing':
-    'The drawing goes, with everything drawn on it. What it points at stays in the model.',
-  'shell.deleteBody.chart':
-    'The organisation chart goes. It is laid out from the units, so every unit, role and assignment on it stays.',
-  'shell.deleteBody.conway':
-    'The Conway map goes. It is read from the units and the applications they own, which all stay in the model.',
   /**
    * What you are working from — the first thing on the bar, because it was
    * the one thing the bar did not say (ADR-0005). A folder by its name: the
@@ -442,7 +422,6 @@ export const EN = {
   // field on it changing and does not read as one.
   'change.becameStandIn': '{name} is now a stand-in of {scope}',
   'change.becameDefinition': '{name} is now defined here',
-  'shell.scopeCreated': '\u201c{name}\u201d created.',
   'scope.kind.organisation': 'Organisation',
   'scope.kind.domain': 'Domain',
   'scope.kind.programme': 'Programme',
@@ -550,7 +529,6 @@ export const EN = {
   'share.noPlace': 'There is no place on screen to link to yet. Open a scope or a home, and try again.',
 
   // --- the shell's top bar: the three pages beside the canvas -------------
-  'shell.documentation': 'Documentation',
   'shell.documentationTip': 'Open the documentation page of the selected element',
   'shell.noElements': 'There is nothing to document yet \u2014 add an element first.',
   /** The address the app opened from named a page it has no such thing as, or a view or record that is not there (ADR-0033). */
@@ -560,6 +538,7 @@ export const EN = {
   'shell.placeNoScopeSettings': 'There is no scope “{scope}”, so these are the organisation’s settings.',
   'shell.pendingRecovered': 'Recovered a change that hadn’t finished saving.',
   'shell.pendingPartly': 'A change from a tab that closed before it was saved could not be put back, because this scope has changed since.',
+  /** Three said as `common.` keys by this tree's own screens (ADR-0049); kept under these names for a build composed from this one that names them. */
   'shell.decisions': 'Decisions',
   'shell.decisionsTip': 'Architecture decision records \u2014 for the group, the landscape and each application',
   'shell.observations': 'Observations',
@@ -661,21 +640,8 @@ export const EN = {
   'library.drawn': '{name} is on the board',
   'library.standsIn': '{name} is on the board, standing in for the record in {scope}',
   'library.owned': 'This scope answers for {name} now',
-  'pick.filedIn': 'filed in {scope}',
-  'pick.in': 'in {name}',
-  'pick.otherUnits': 'Of a type the model does not hold',
-  'pick.otherActors': 'Others in this scope',
   'sheetClaim.already': '{name} is taken up here already.',
   'sheetClaim.refused': '{name} was not taken up: it is no longer a function of a scope above this one.',
-  'pick.servesOne': 'a {type} serves one domain',
-  'pick.readOnly': 'kept where you may only read',
-  'pick.notWritten': 'Nothing was written.',
-  'pick.findUnit': 'Find a unit',
-  'pick.noUnit': 'No unit by that name',
-  'pick.findScope': 'Find a scope',
-  'pick.noScope': 'No scope by that name',
-  'pick.findFunction': 'Find an area, grouping or capability',
-  'pick.noFunction': 'Nothing by that name',
   /**
    * The Conway map's findings, each under its check (`model/checkCatalogue.ts`),
    * which says what the kind is; its over-limit is the tree's

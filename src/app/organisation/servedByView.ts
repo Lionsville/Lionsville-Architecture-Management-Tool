@@ -94,7 +94,7 @@ export function servingChoicesOf(index: ScopeIndex, scope: ScopePath | undefined
     // A type that serves one domain is offered, and said why it cannot take a second.
     refuse: (unit) => (spans.has(unit.unitTypeId ?? '') || scopesServed(unit, filedIn).length === 0
       ? undefined
-      : words.s('pick.servesOne', { type: typeName.get(unit.unitTypeId ?? '') ?? '' })),
+      : words.s('common.pick.servesOne', { type: typeName.get(unit.unitTypeId ?? '') ?? '' })),
   })
 }
 
@@ -103,7 +103,7 @@ export function servingChoicesOf(index: ScopeIndex, scope: ScopePath | undefined
  * read is shown, and said so, since adding it would be a step there.
  */
 export function pickableBy(choices: readonly PickOption[], mayChange: (unitId: ElementId) => boolean, words: Pick<ChoiceWords, 's'>): PickOption[] {
-  return choices.map((one) => (one.disabled || mayChange(one.id) ? one : { ...one, disabled: true, note: words.s('pick.readOnly') }))
+  return choices.map((one) => (one.disabled || mayChange(one.id) ? one : { ...one, disabled: true, note: words.s('common.pick.readOnly') }))
 }
 
 /**

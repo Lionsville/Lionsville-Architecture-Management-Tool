@@ -31,8 +31,8 @@ const MODEL_VIEWS: readonly { kind: ModelViewKind; name: StringKey; line: String
   { kind: 'sheet', name: 'shell.newSheet', line: 'newView.sheetLine' },
   { kind: 'map', name: 'shell.newMap', line: 'newView.mapLine' },
   { kind: 'technology', name: 'shell.newTechnology', line: 'newView.technologyLine' },
-  { kind: 'chart', name: 'shell.newChart', line: 'newView.chartLine' },
-  { kind: 'conway', name: 'shell.newConway', line: 'newView.conwayLine' },
+  { kind: 'chart', name: 'common.newChart', line: 'newView.chartLine' },
+  { kind: 'conway', name: 'common.newConway', line: 'newView.conwayLine' },
 ]
 
 export type NewViewDialogProps = {

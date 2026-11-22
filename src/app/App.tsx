@@ -620,7 +620,7 @@ function useShellParts(props: AppProps, refusals?: WriteRefusals): ShellParts {
   // The tree's four gestures, lent to the agent over the same operations the organisation screen uses (ADR-0040 §3).
   const scopes = useAgentScopes({
     repositories, index: () => tree.index, writable, openPath: () => project?.path, treeChanged,
-    listed: () => findings.shellTree.scopes(), boardName: () => s('shell.newDiagram'),
+    listed: () => findings.shellTree.scopes(), boardName: () => s('common.newDiagram'),
     today: props.today ?? localToday, notify: toasts.notify, s,
     client: () => (agentServer.status.kind === 'connected' ? agentServer.status.client.name : undefined),
   })
@@ -849,7 +849,7 @@ export function screenWord(screen: Screen, s: Translate, model?: { elements: rea
   const id = screen.page && 'id' in screen.page ? screen.page.id : undefined
   if (page === 'document') {
     const element = id === undefined ? undefined : model?.elements.find((one) => one.id === id)
-    return [element?.name, s('shell.documentation')].filter(Boolean).join(' — ')
+    return [element?.name, s('common.documentation')].filter(Boolean).join(' — ')
   }
   const word = PAGE_WORDS[page]
   if (page === 'decisions' && id !== undefined) {

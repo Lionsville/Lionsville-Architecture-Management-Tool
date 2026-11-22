@@ -436,7 +436,7 @@ function Serves({ element, scope, scopes, scopeLabel, onOpenHome, type, editable
         {editable && more && (
           <PickToAdd
             options={offered} label={s('unit.servesAdd')}
-            field={s('pick.findScope')} nothing={s('pick.noScope')} testId="unit-serves-add"
+            field={s('common.pick.findScope')} nothing={s('common.pick.noScope')} testId="unit-serves-add"
             onPick={(one) => onChange(scopesWith(element, one, filedIn), one)}
             disabled={offered.length === 0}
           />
@@ -474,7 +474,7 @@ function AnswersFor({ element, scope, model, index, dispatch, newRowId, writeIn,
     if (master === undefined || !writeIn) return
     void writeIn(master, () => [{ type: 'relation.create', relation: relation(id) }]).then(
       (written) => setRefused(refusalKey(written)),
-      () => setRefused('pick.notWritten'),
+      () => setRefused('common.pick.notWritten'),
     )
   }
   return (
@@ -491,7 +491,7 @@ function AnswersFor({ element, scope, model, index, dispatch, newRowId, writeIn,
         ))}
         {editable && (
           <PickToAdd
-            options={offered} label={s('unit.answersForAdd')} field={s('pick.findFunction')} nothing={s('pick.noFunction')}
+            options={offered} label={s('unit.answersForAdd')} field={s('common.pick.findFunction')} nothing={s('common.pick.noFunction')}
             testId="unit-answers-for-add" onPick={pick} disabled={offered.length === 0}
           />
         )}

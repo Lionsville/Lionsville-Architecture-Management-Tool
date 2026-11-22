@@ -120,7 +120,7 @@ function claimsOf(at: SheetClaimsAt, latest: () => SheetClaimsAt): SheetClaims {
     id: entry.id,
     label: entry.name,
     group: scopeTrail(entry.master, at.scopeName),
-    ...(within.length > 0 ? { note: s('pick.in', { name: within.join(' › ') }) } : {}),
+    ...(within.length > 0 ? { note: s('common.pick.in', { name: within.join(' › ') }) } : {}),
   }))
   return {
     choices,

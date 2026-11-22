@@ -178,7 +178,7 @@ function ServesField({ serves, spans, scopes, scopeLabel, onChange, s }: {
         {more && (
           <PickToAdd
             options={scopeChoices({ scopes, leave: serves, scopeName: scopeLabel, s })} label={s('chart.addServesAdd')}
-            field={s('pick.findScope')} nothing={s('pick.noScope')} testId="new-unit-serves-add"
+            field={s('common.pick.findScope')} nothing={s('common.pick.noScope')} testId="new-unit-serves-add"
             onPick={(path) => onChange([...serves, path])}
           />
         )}

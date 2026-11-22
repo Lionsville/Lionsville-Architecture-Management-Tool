@@ -180,7 +180,7 @@ function useActing(props: ConwayPageProps, setInteracting: (one: Interacting) =>
       if (scope === undefined || !declare.writeIn) return
       void declare.writeIn(scope, () => [{ type: 'element.update', id, patch }]).then(
         (written) => { const key = refusalKey(written); if (key) declare.onRefused?.(key) },
-        () => declare.onRefused?.('pick.notWritten'),
+        () => declare.onRefused?.('common.pick.notWritten'),
       )
     }
     return {

@@ -15,7 +15,7 @@ import '../../../widgets/kit/HelpPress.css'
 import { Btn, Rows, Say, Screen, SidePanel, Tree } from './parts'
 
 const TREE = <Tree at="Warehouse" rows={[['Acme Logistics', 0], ['Warehouse', 1], ['Shared platforms', 1], ['Topics', 1]]} />
-const PLACES = [<Say key="d" k="shell.decisions" />, <Say key="o" k="shell.observations" />, <Say key="r" k="shell.roadmap" />]
+const PLACES = [<Say key="d" k="common.decisions" />, <Say key="o" k="common.observations" />, <Say key="r" k="common.roadmap" />]
 
 /** `crop`: the home is what the step is about, and the cut is its. */
 function Home({ mark, crop }: { mark?: 'views'; crop?: boolean }) {
@@ -26,7 +26,7 @@ function Home({ mark, crop }: { mark?: 'views'; crop?: boolean }) {
       <div data-mark={mark === 'views' || undefined}>
         <Rows title={<Say k="org.viewsHere" />} rows={[<span key="a">Application landscape</span>, <span key="b">Organisation chart</span>]} />
       </div>
-      <Rows title={<Say k="org.keptHere" />} rows={[<span key="d"><Say k="shell.decisions" /> · 2</span>, <span key="o"><Say k="shell.observations" /> · 3</span>]} />
+      <Rows title={<Say k="org.keptHere" />} rows={[<span key="d"><Say k="common.decisions" /> · 2</span>, <span key="o"><Say k="common.observations" /> · 3</span>]} />
     </div>
   )
 }

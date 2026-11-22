@@ -339,7 +339,7 @@ export function useOrganisation({
   const setNewScopeWithBoard = useCallback((withBoard: boolean) => setDialog((held) => (held.kind === 'newScope' ? { ...held, withBoard } : held)), [])
   const setNewScopeServedBy = useCallback((unitId: ElementId | undefined) => setDialog((held) => servedByPicked(held, unitId)), [])
   const addBoard = useCallback((path: ScopePath) => {
-    setDialog({ kind: 'newBoard', path, name: s('shell.newDiagram') })
+    setDialog({ kind: 'newBoard', path, name: s('common.newDiagram') })
   }, [s])
   const setNewBoardName = useCallback((name: string) => setDialog((held) => (held.kind === 'newBoard' ? { ...held, name } : held)), [])
 
@@ -363,7 +363,7 @@ export function useOrganisation({
       // The tree's own gesture (`projects/scopeTree.ts`), the agent's as well:
       // a scope the listing could not read in the way is refused, not written over.
       const made = await createScopeAt(scopes, {
-        parent: wanted.parent, name: wanted.name, withBoard: wanted.withBoard, boardName: s('shell.newDiagram'), ancestors: 'make',
+        parent: wanted.parent, name: wanted.name, withBoard: wanted.withBoard, boardName: s('common.newDiagram'), ancestors: 'make',
       })
       if ('refused' in made) return refuseInTheWay(onFailure)
       if (wanted.type) await changeScope(scopes, made.path, () => [{ type: 'scope.describe', patch: typeChosen(wanted.type) }])
@@ -371,7 +371,7 @@ export function useOrganisation({
       refresh()
       onTreeChanged?.()
       onHome?.(made.path)
-      notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
+      notify(s('common.scopeCreated', { name: wanted.name }), 'success')
       if (wanted.servedBy !== undefined && link) await link(made.path, wanted.servedBy, wanted.name)
     })()).catch((cause: unknown) => {
       // Where work is kept refusing is what the standing notice says, and it
@@ -406,7 +406,7 @@ export function useOrganisation({
       let board = ''
       const next = await changeScope(scopes, wanted.path, (held) => {
         const diagram: DesignDiagram = {
-          id: claimKey(s('shell.newDiagram'), new Set(idsIn(held.model))),
+          id: claimKey(s('common.newDiagram'), new Set(idsIn(held.model))),
           kind: 'layer7', name: wanted.name, members: [], geometry: { nodes: [] },
           ...(held.model.defaultAspectConfig ? { aspectConfig: [...held.model.defaultAspectConfig] } : {}),
         }
@@ -417,7 +417,7 @@ export function useOrganisation({
       onEnter(next, { page: 'board', id: board })
       refresh()
       onTreeChanged?.()
-      notify(s('shell.scopeCreated', { name: wanted.name }), 'success')
+      notify(s('common.scopeCreated', { name: wanted.name }), 'success')
     })()).catch((cause: unknown) => {
       onFailure('organisation.board', cause)
       onKeptResult(false, cause)

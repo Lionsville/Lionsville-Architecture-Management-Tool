@@ -34,10 +34,10 @@ export function placeShows(place: FramePlace, page: Page | undefined): boolean {
 
 /** A scope's own pages, on the right of row two, on every scope. */
 export const SCOPE_PLACES: readonly FramePlace[] = [
-  { page: 'documentation', label: 'shell.documentation' },
-  { page: 'decisions', label: 'shell.decisions' },
-  { page: 'observations', label: 'shell.observations' },
-  { page: 'roadmap', label: 'shell.roadmap' },
+  { page: 'documentation', label: 'common.documentation' },
+  { page: 'decisions', label: 'common.decisions' },
+  { page: 'observations', label: 'common.observations' },
+  { page: 'roadmap', label: 'common.roadmap' },
 ]
 
 /** The organisation's: the foot of the tree, and the top of More. */

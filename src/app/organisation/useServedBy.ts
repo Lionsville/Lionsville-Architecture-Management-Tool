@@ -119,7 +119,7 @@ export function useServedBy(deps: {
       }
       const key = refusalKey(written)
       if (key) notify(s(key), 'error')
-    }, (cause: unknown) => failed('organisation.servedBy', cause, 'pick.notWritten'))
+    }, (cause: unknown) => failed('organisation.servedBy', cause, 'common.pick.notWritten'))
   }, [write, onTreeChanged, notify, failed, scopeName, typeNames, s])
   // Named by the caller: a scope made a moment ago is not in the tree these names were read from.
   const link = useCallback(async (scope: ScopePath, unitId: ElementId, name: string) => {
@@ -127,14 +127,14 @@ export function useServedBy(deps: {
     const notLinked = (why: string) => notify(
       `${why} ${s('org.newScopeNotLinked', { unit: asked?.kept.name ?? unitId, scope: name })}`, 'warning',
     )
-    if (!asked) { notLinked(s('pick.notWritten')); return }
+    if (!asked) { notLinked(s('common.pick.notWritten')); return }
     try {
       const written = await asked.written
       if (written.ok) { onTreeChanged(); return }
-      notLinked(s(refusalKey(written) ?? 'pick.notWritten'))
+      notLinked(s(refusalKey(written) ?? 'common.pick.notWritten'))
     } catch (cause: unknown) {
       failed('organisation.servedBy.link', cause)
-      notLinked(s('pick.notWritten'))
+      notLinked(s('common.pick.notWritten'))
     }
   }, [write, onTreeChanged, notify, failed, s])
   const mayChange = useCallback((unitId: ElementId) => {

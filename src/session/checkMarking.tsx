@@ -149,7 +149,7 @@ export function checkMarking(deps: {
     if (here(scope)) { open?.dispatch(command); return }
     void writeIn?.(scope, (held) => (unchanged(held.model) ? undefined : [command])).then(
       (written) => { const key = refusalKey(written); if (key) onRefused?.(key) },
-      () => onRefused?.('pick.notWritten'),
+      () => onRefused?.('common.pick.notWritten'),
     )
   }
   /** Several commands as one step on the scope that keeps them: nothing written where there was nothing to do. */
@@ -163,7 +163,7 @@ export function checkMarking(deps: {
       if (key) onRefused?.(key)
       return written.ok
     } catch {
-      onRefused?.('pick.notWritten')
+      onRefused?.('common.pick.notWritten')
       return false
     }
   }

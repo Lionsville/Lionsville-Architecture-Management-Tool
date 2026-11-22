@@ -12,12 +12,12 @@ import type { DesignDiagram } from '../model'
  * the same sentence of the same view.
  */
 export const DELETE_VIEW_BODY: { readonly [K in DesignDiagram['kind']]: StringKey } = {
-  layer7: 'shell.deleteBody.layer7',
-  container: 'shell.deleteBody.container',
-  sheet: 'shell.deleteBody.sheet',
-  map: 'shell.deleteBody.map',
-  technology: 'shell.deleteBody.technology',
-  drawing: 'shell.deleteBody.drawing',
-  chart: 'shell.deleteBody.chart',
-  conway: 'shell.deleteBody.conway',
+  layer7: 'common.deleteBody.layer7',
+  container: 'common.deleteBody.container',
+  sheet: 'common.deleteBody.sheet',
+  map: 'common.deleteBody.map',
+  technology: 'common.deleteBody.technology',
+  drawing: 'common.deleteBody.drawing',
+  chart: 'common.deleteBody.chart',
+  conway: 'common.deleteBody.conway',
 }

@@ -57,7 +57,7 @@ describe('a change written in the scope that keeps it', () => {
     expect(refusalKey(gone)).toBe('shell.scopeGone')
     expect(refusalKey({ ok: false, reason: 'readOnly' })).toBe('shell.scopeReadOnly')
     expect(refusalKey({ ok: false, reason: 'command.gone' })).toBe('command.gone')
-    expect(refusalKey({ ok: false, reason: 'something else' })).toBe('pick.notWritten')
+    expect(refusalKey({ ok: false, reason: 'something else' })).toBe('common.pick.notWritten')
     expect(refusalKey({ ok: true })).toBeUndefined()
   })
 

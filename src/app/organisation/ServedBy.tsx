@@ -71,7 +71,7 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
           <Typography sx={QUIET}>
             {[
               row.managers.length ? row.managers.map(person).join(', ') : s('org.servedByNoManager'),
-              row.filedIn !== scope ? s('pick.filedIn', { scope: scopeName(row.filedIn) }) : '',
+              row.filedIn !== scope ? s('common.pick.filedIn', { scope: scopeName(row.filedIn) }) : '',
             ].filter(Boolean).join(' · ')}
           </Typography>
           {row.mayStop && servedBy.mayChange(row.id) && (
@@ -90,7 +90,7 @@ export function ServedBy({ scope, servedBy, scopeName, compact, onLeave, s }: {
       <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
         {none}
         <PickToAdd
-          options={choices} label={s('org.servedByAdd')} field={s('pick.findUnit')} nothing={s('pick.noUnit')}
+          options={choices} label={s('org.servedByAdd')} field={s('common.pick.findUnit')} nothing={s('common.pick.noUnit')}
           onPick={(unitId) => servedBy.add(scope, unitId)} testId="served-by-add"
           // Open even where nothing may be picked: the list says why each may not.
           disabled={choices.length === 0}
