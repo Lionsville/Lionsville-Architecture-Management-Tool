@@ -5,7 +5,8 @@
   says is its own), as built the same day; amended 22 November 2026 (a step
   resent and a scope subscribed again, in the contract), as built the same day;
   amended 22 November 2026 (the surface a build composed from this one
-  imports), as built the same day
+  imports), as built the same day; amended 22 November 2026 (a source says
+  what it cannot keep yet), as built the same day
 * Date: 2026-09-21
 * Deciders: Wouter Simons
 * Extends: ADR-0002 (every change is a command through one reducer), ADR-0005
@@ -1242,6 +1243,59 @@ list, and `npm run composed:write` rewrites the list. Two things are cut from
 a line so that a change stays one line that can be read, and that file says
 both: a union of many members is said by the name it was declared under, and
 a line still too wide says what its type is written as.
+
+## Amended — the one a source that keeps less than this build writes needed
+
+*Amended 22 November 2026.* A record gains a field in the release that needs
+it, and every source this tree ships keeps a record whole, so the three of
+them keep the field the day it is written. A source composed from outside may
+not: where its work is kept can be an older build of its own, filled and read
+by people who have not updated it yet. A field written there all the same is
+dropped where it is kept, or the whole change is refused in words about a
+field the person never saw. Nothing in the parts a provider hands over said
+*not yet*; the choice was to hide the release from that source's people
+altogether, or to let them write what will not be kept.
+
+* **A source says what it cannot keep yet, a part at a time.**
+  `ProviderParts.cannotKeep` (`platform/sourceProvider.ts`'s
+  `SourceCannotKeep`) is one function: asked about a part, it answers the key
+  of a sentence from the provider's own table — why, and for how long — or
+  nothing where the part is kept. A part is a field of a record, named by its
+  kind and its own name (`UnkeptPart`), and the list holds only the parts this
+  build knows how to hold back: one today, `observation.about` (ADR-0032,
+  amended 22 November 2026).
+* **Where the part would have been offered, the sentence stands instead.**
+  The field that picks it draws the source's sentence in place of its control
+  and offers nothing to press, so a person is told rather than left to find a
+  field gone. What the part would have filtered or listed is drawn as it is
+  for a record that names nothing.
+* **An agent is refused what a person is not offered** (ADR-0011). A call
+  whose argument names the part — to write it, or to read by it — is refused
+  `agent.notKeptHere` with the same sentence, in English, before a command is
+  made. A read by the part is refused and not answered empty: an empty list
+  would say nothing is known to be about the thing, which nobody knows.
+* **Asked each time, and never remembered.** The answer moves while the source
+  is open, the day its store catches up, so nothing here keeps it: a screen
+  asks when it draws and a tool when it is called.
+* **It hides and it says; it does not guard.** Whether a change carrying the
+  part may leave the machine is the source's own to refuse, at its own door,
+  the way it refuses any other step. This seam is how its people learn of it
+  before they have written anything.
+
+Absent for all three core sources, which keep every part, and then no screen
+and no tool asks anything.
+
+**As built, 22 November 2026.** `SourceCannotKeep` and `UnkeptPart` in
+`platform/sourceProvider.ts`, `cannotKeep` on `ProviderParts`, taken off with
+the rest of what a source said when another opens (`composition.ts`'s
+`overSource`). The shell hands it down once as a context (`widgets/unkept.ts`),
+as it hands down the session's memory, so no page between carries it:
+`observations/ui/AboutField.tsx` asks about its own part on the form and in
+the editor, and `app/useWorkspaceAgentView.ts` gives the same function to the
+agent's view of the open scope (`SessionView.unkept`), where
+`agent/unkept.ts` turns an answer into the refusal for `observation.record`,
+`observation.update` and `observations.list`. Both names are on the surface
+(`composed/process/provider`).
 
 ## More Information
 

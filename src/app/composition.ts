@@ -696,7 +696,8 @@ export function overSource(shell: Shell, parts: SourceParts): Shell {
     sourceStatus: _status, onSourceWork: _work, sourceFailure: _failure, onScopeSession: _session,
     publishesSteps: _publishes, readOnlyAt: _readOnly, opensAt: _opensAt, changes: _changes,
     own: _own, historyNoteKey: _historyNote, historyKept: _historyKept, writeAfterMs: _writeAfter, pendingSteps: _pending, sayings: _sayings, settled: _settled,
-    shareAddress: _share, drawingOrigin: _drawing, people: _people, comments: _comments, attachments: _attachments, accent: _accent, ...rest
+    shareAddress: _share, drawingOrigin: _drawing, people: _people, comments: _comments, attachments: _attachments, cannotKeep: _cannotKeep,
+    accent: _accent, ...rest
   } = shell
   return { ...rest, ...parts, preferences: parts.preferences ?? shell.preferences }
 }

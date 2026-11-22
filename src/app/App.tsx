@@ -103,6 +103,8 @@ import { useTreeFindings, useTreeIndex } from './useTreeFindings'
 import type { ShellParts } from './shellParts'
 import { SessionFolds } from '../session/sessionFolds'
 import { SessionMemoryContext } from '../widgets/sessionMemory'
+import { UnkeptContext } from '../widgets/unkept'
+import type { Unkept } from '../widgets/unkept'
 
 /**
  * What `App` does to a store.
@@ -436,6 +438,8 @@ export function App(given: AppProps) {
       <ViewerKeepProvider value={keeps}>
       {/* Files a document may point at, where the open source keeps them. */}
       <AttachmentsProvider value={props.provider?.attachments}>
+      {/* What the open source cannot keep yet, for the field that would have offered it. */}
+      <UnkeptContext.Provider value={props.provider?.cannotKeep as Unkept | undefined}>
       <Box sx={{ height: '100vh', width: '100vw', display: 'flex', flexDirection: 'column' }}>
         {/* Inside the theme, so the fallback is painted in the user's colours,
             and around the two screens rather than around everything: a crash
@@ -467,6 +471,7 @@ export function App(given: AppProps) {
           onExited={toasts.exited}
         />
       </Box>
+      </UnkeptContext.Provider>
       </AttachmentsProvider>
       </ViewerKeepProvider>
       </DensityContext.Provider>

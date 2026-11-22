@@ -29,6 +29,7 @@ import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
 import type { Args, Handler, Prepared, WriteView } from './shared'
 import { personArgument } from './shared'
+import { notKept } from '../unkept'
 
 /** The two lists as they stand, and the ways every verb reads and answers over them. */
 type Work = {
@@ -150,10 +151,13 @@ export const recordObservation: Handler = (args, view) => {
  * The elements an observation is about, by id (ADR-0032, amended 22 November
  * 2026): each one an element this scope holds, its own or a stand-in, or the
  * call is refused naming the first that is not. An empty list takes them all
- * off; absent says nothing.
+ * off; absent says nothing. Named where the source cannot keep them yet, the
+ * call is refused in the source's words and nothing of it is written.
  */
 function aboutArgument(args: Args, view: WriteView): string[] | AgentAnswer | undefined {
   if (!Array.isArray(args.about)) return undefined
+  const unkept = notKept(view, 'observation.about', 'about')
+  if (unkept) return unkept
   const ids = args.about.filter((one): one is string => typeof one === 'string')
   const unknown = ids.find((id) => !view.model.elements[id])
   return unknown === undefined ? ids : refused('agent.unknownId', `element ${unknown}: name an element this scope holds (elements.list)`)

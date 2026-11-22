@@ -686,6 +686,12 @@ describe('the shell over what a source just opened', () => {
     expect(overSource(before, { repositories, source: { kind: 'browser' } } as unknown as SourceParts).attachments).toBeUndefined()
   })
 
+  it('takes what a source said it cannot keep with it, so the next source is offered every part', () => {
+    const repositories = {} as SourceParts['repositories']
+    const before = { cannotKeep: () => 'elsewhere.aboutNotKept' } as unknown as Shell
+    expect(overSource(before, { repositories, source: { kind: 'browser' } } as unknown as SourceParts).cannotKeep).toBeUndefined()
+  })
+
   it('takes off the address a link to the source before started from, and keeps the one the new source gives', () => {
     const repositories = memoryRepositories()
     const before: Shell = {

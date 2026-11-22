@@ -3744,6 +3744,12 @@ export type AgentRefusal =
    * written rather than leave it to the door.
    */
   | 'agent.mayNotModerate'
+  /**
+   * An argument names a part of a record that the source the scope is kept in
+   * cannot keep yet (`SessionView.unkept`): the detail names the argument and
+   * says, in the source's words, why and for how long.
+   */
+  | 'agent.notKeptHere'
   /** The person pressed Stop on the driving banner (ADR-0019), and nobody has asked to start again. */
   | 'agent.stopped'
   /** The person is writing something on screen that moving the app would drop: theirs to keep or leave. */
@@ -3910,6 +3916,9 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
   'agent.principleCited': 'A record cites that principle, so it stays: retire it with principle.update status retired. The detail says which scopes cite it.',
+  'agent.notKeptHere':
+    'Where this work is kept cannot keep that part of a record yet, so nothing was written or read. The detail names the '
+    + 'argument and says why. Call again without it, and tell the person what was left out and why.',
   'agent.mayNotModerate':
     'That comment is somebody else\'s, and the person you act for may not remove other people\'s comments in this scope. '
     + 'Its author may remove it, or someone who moderates the scope; ask the person whether to reply to it instead.',

@@ -933,8 +933,11 @@ src/widgets/      Presentation with no opinions: icons, one confirm dialog,
                   session under a key, from the shell's folds handed down as
                   a context (`sessionMemory`); a page made ready for paper
                   (`printPage`), work that waits on a window nobody can see
-                  (`outOfSight`), a page's tab in the address (`placeTab`), and
-                  what a person left a view at (`useViewerKeep`).
+                  (`outOfSight`), a page's tab in the address (`placeTab`),
+                  what a person left a view at (`useViewerKeep`), and what
+                  the open source cannot keep yet, handed down as a context
+                  for the field that would have offered it (`unkept`,
+                  ADR-0022 amended 22 November 2026).
                     kit/              one design system (ADR-0045; `kit/README.md`
                                       says the architecture and lists every
                                       part): `tokens`, every colour and measure

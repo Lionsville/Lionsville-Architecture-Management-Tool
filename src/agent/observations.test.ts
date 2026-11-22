@@ -435,6 +435,34 @@ describe('the elements an observation is about (ADR-0032, amended 22 November 20
     expect(cleared.model.observations!['ob-new-1']).not.toHaveProperty('about')
   })
 
+  /**
+   * A source that cannot keep the field yet says so (ADR-0022, amended 22
+   * November 2026): the argument is refused in its sentence before a command
+   * is made, the rest of the tool works as ever, and a read by an element is
+   * refused too — an empty list would say nothing is known to be about it.
+   */
+  it('are refused in the source\'s own words where the source cannot keep them yet, and nothing else is', () => {
+    const said = 'Elsewhere cannot keep which elements an observation is about until it is updated.'
+    const elsewhere = { unkept: (part: string) => (part === 'observation.about' ? said : undefined) }
+    const model = fromArrays(withElement)
+    for (const [tool, args] of [
+      ['observation.record', { title: 'Batch late', where: 'Night run', by: 'W.S.', about: ['batch'] }],
+      ['observation.update', { id: 'ob-1', about: ['batch'] }],
+      ['observation.update', { id: 'ob-1', about: [] }],
+    ] as const) {
+      const refused = commandFor(tool, args, view(model, elsewhere))
+      expect(refused).toMatchObject({ ok: false, refusal: 'agent.notKeptHere' })
+      expect((refused as { detail?: string }).detail).toBe('"about": Elsewhere cannot keep which elements an observation is about until it is updated.')
+    }
+    expect(answer('observations.list', { about: 'batch' }, view(model, elsewhere))).toMatchObject({ ok: false, refusal: 'agent.notKeptHere' })
+    // Without the argument the same tools answer, and what is written names no element.
+    const out = prepared(commandFor('observation.record', { title: 'Batch late', where: 'Night run', by: 'W.S.' }, view(model, elsewhere)))
+    expect(JSON.stringify(out.command)).not.toContain('"about"')
+    expect(answer('observations.list', {}, view(model, elsewhere)).ok).toBe(true)
+    // And a source that keeps the part is asked and answers nothing.
+    expect(prepared(commandFor('observation.update', { id: 'ob-1', about: ['batch'] }, view(model, { unkept: () => undefined }))).command).toBeTruthy()
+  })
+
   it('filter observations.list, which answers them, and element.describe says the decisions about it and the observations on it', () => {
     const model = fromArrays({
       ...withElement,

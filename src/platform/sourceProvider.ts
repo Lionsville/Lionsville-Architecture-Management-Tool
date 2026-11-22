@@ -110,6 +110,33 @@ export type SourceWorkChanged = (listener: () => void) => () => void
 export type SourceFailure = (cause: unknown) => string | undefined
 
 /**
+ * A part of a record that a place work is kept may not be able to keep yet
+ * (ADR-0022, amended 22 November 2026): a field this build writes, named by
+ * its record's kind and its own name. One line per part this build knows how
+ * to hold back; a part is added here with the screen and the tool that then
+ * ask about it.
+ */
+export type UnkeptPart = 'observation.about'
+
+/**
+ * What a source cannot keep yet, asked a part at a time: the key of the
+ * sentence that says why and for how long, from the provider's own table
+ * (`i18n`'s `registerStrings`), or nothing where the part is kept.
+ *
+ * A source may keep less than this build writes — a store that is filled by
+ * an older build of its own, a format somebody else reads. Written all the
+ * same, the part would be dropped where the work is kept, or the whole change
+ * refused there in words about a field the person never saw. So the source
+ * says it first: where the part would have been offered the sentence stands
+ * instead, and an agent that names it is refused with the same sentence
+ * (`agent.notKeptHere`), before anything is written.
+ *
+ * Asked whenever a screen draws or a tool is called and never remembered: the
+ * answer moves while the source is open, the day its store catches up.
+ */
+export type SourceCannotKeep = (part: UnkeptPart) => StringKey | (string & {}) | undefined
+
+/**
  * The way in for a person, as a description rather than a screen.
  *
  * A label the shell can render beside the ones it already offers; the

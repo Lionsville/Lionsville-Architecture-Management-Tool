@@ -13,7 +13,8 @@
  * that holds it; `src/composed/SURFACE.txt` is what the whole offers.
  */
 export type {
-  SourceActivityLine, SourceChip, SourceFailure, SourceLocation, SourceMenuEntry, SourceRecentActivity, SourceStatus, SourceWork,
+  SourceActivityLine, SourceCannotKeep, SourceChip, SourceFailure, SourceLocation, SourceMenuEntry, SourceRecentActivity, SourceStatus, SourceWork,
+  UnkeptPart,
 } from '../../platform/sourceProvider'
 export type {
   BarButtonProps, Problem, ProblemAction, SourceAttachments, SourceBand, SourceChanges, SourceComments, SourceFrame, SourceOpen, SourcePageProps,

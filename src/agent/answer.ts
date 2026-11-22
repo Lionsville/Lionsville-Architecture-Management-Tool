@@ -47,6 +47,8 @@ import type { SearchableModel, SearchKind } from '../model/searchable'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, SEARCH_HIT_KINDS, text, toolSpec } from './tools'
 import { withCommentCount, listComments } from './commenting'
+import { notKept } from './unkept'
+import type { UnkeptSaid } from './unkept'
 import { identityOf } from './tree'
 import type { TreeView } from './tree'
 import { causeList, experimentList, observationList, observationsOf, solutionList } from '../model/normalised'
@@ -118,6 +120,8 @@ export type ReadView = {
    * the handler (`persons.ts`).
    */
   readonly register?: AgentRegister
+  /** What the source cannot keep yet, a part at a time (`SessionView.unkept`): absent, every part is kept. */
+  readonly unkept?: UnkeptSaid['unkept']
 }
 
 type Args = Record<string, unknown>
@@ -261,7 +265,7 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
         diagrams: model.order.diagrams.map((id) => diagramLine(model.diagrams[id], view.activeDiagramId)),
       })
 
-    case 'observations.list': return json({ observations: observationLines(args, view) })
+    case 'observations.list': return observationsListed(args, view)
 
     case 'observation.read': {
       const own = observationList(model)
@@ -734,6 +738,16 @@ export function findCause(list: readonly Cause[], idOrLabel: string): Cause | un
   // CA and RC share the number (ADR-0032 §3): either label finds the cause.
   const number = /^(?:(?:ca|rc)-?)?(\d+)$/i.exec(idOrLabel.trim())
   return number ? list.find((one) => one.number === Number(number[1])) : undefined
+}
+
+/**
+ * `observations.list`, answered — or refused where it asks by an element and
+ * the source cannot keep which elements an observation is about: an empty
+ * list there would read as *nothing is said about it*, which nobody knows.
+ */
+function observationsListed(args: Args, view: ReadView): AgentAnswer {
+  const refusal = typeof args.about === 'string' ? notKept(view, 'observation.about', 'about') : undefined
+  return refusal ?? json({ observations: observationLines(args, view) })
 }
 
 /** `observations.list`: this scope's own, or with `below` those of every scope below it. */

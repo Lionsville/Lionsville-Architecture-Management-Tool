@@ -12,9 +12,11 @@ import { treeRecords } from '../projects/treeRecords'
 import type { HistoryRepository } from '../ports/HistoryRepository'
 import type { ChangesOf } from '../agent/changes'
 import { useRecordChangesAccess } from './history/useRecordChangesAccess'
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useContext, useEffect, useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
+import { translator } from '../i18n'
 import type { Translate } from '../i18n'
+import type { StringKey } from '../i18n/strings'
 import type { Adr } from '../decisions/adr'
 import type { DesignElement, Relation } from '../model'
 import type { ChangeAcross } from '../agent/merge'
@@ -38,6 +40,8 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes } from '../projects/scopePath'
 import { typedByUnitType } from '../projects/scopeType'
 import type { WriteIn } from '../session/writeIn'
+import { UnkeptContext } from '../widgets/unkept'
+import type { Unkept } from '../widgets/unkept'
 import type { ScopePath } from '../projects/scopePath'
 import { technologyRows } from '../projects/technologyRegister'
 import type { WorkspaceAgentView } from './useAgentShell'
@@ -51,6 +55,19 @@ import type { ModelSession } from './useModelSession'
 import type { WorkspacePages } from './useWorkspacePages'
 import type { PeopleRegisterAccess } from '../people/ui/access'
 import type { SourceComments } from '../ports/ProviderParts'
+
+/**
+ * A source's word about a part as an agent is told it: its sentence in
+ * English, as every refusal's detail is, read from the registry here because
+ * the agent's own modules load no table of words.
+ */
+function saidInEnglish(said: Unkept | undefined): Unkept | undefined {
+  if (!said) return undefined
+  return (part) => {
+    const key = said(part)
+    return key === undefined ? undefined : translator('en')(key as StringKey)
+  }
+}
 
 export function useWorkspaceAgentView(deps: {
   session: ModelSession
@@ -126,6 +143,9 @@ export function useWorkspaceAgentView(deps: {
     return register?.current ? register.current() : register?.people
   }, [])
   const here = useCallback(() => scope, [scope])
+  const notKeptHere = useContext(UnkeptContext)
+  // What the open source cannot keep yet, as the screens are told it: an agent is refused what a person is not offered.
+  const unkept = useMemo(() => saidInEnglish(notKeptHere), [notKeptHere])
   const changes = useRecordChangesAccess({ history: deps.history, scopes: reader, here })
   const changesOf = useMemo<ChangesOf | undefined>(() => (changes ? async (about, elsewhere, limit) => {
     const { entries, more } = await changes.entriesOf(about, elsewhere)
@@ -169,6 +189,7 @@ export function useWorkspaceAgentView(deps: {
     recorder: (account) => peopleRef.current?.recorder?.(account),
     // And whether they may remove somebody else's, where the source says (ADR-0037 §5).
     ...(comments?.mayModerate ? { mayModerate: () => comments.mayModerate?.(scope) ?? true } : {}),
+    unkept,
     ...(changeAcross ? { changeAcross } : {}),
     ...(landSteps ? { landSteps } : {}),
     ...(followScopeTypes ? { followScopeTypes } : {}),
@@ -177,7 +198,7 @@ export function useWorkspaceAgentView(deps: {
     session, scope, ancestorRecords, documentStatus, readOnly, makeId, today, s, renderer, save, putPicture, scopes, reader,
     page, settled, openPlan, openView, openDecisions, openObservations, openRoadmap, closePages, showElement, openDocumentation,
     openPlatformReport, openServiceReport, indexRef, rowsElsewhereRef, leaveDocumentation, pages.selectOn, changeAcross, landSteps, peopleNow,
-    followScopeTypes, comments, changesOf, pages.drawings.editing,
+    followScopeTypes, comments, changesOf, pages.drawings.editing, unkept,
   ])
   useEffect(() => {
     onAgentSession?.(agentView)

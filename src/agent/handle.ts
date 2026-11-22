@@ -24,6 +24,7 @@ import type { OpenRecords } from './records'
 import { listChanges } from './changes'
 import type { ChangesOf } from './changes'
 import type { StringKey } from '../i18n/strings'
+import type { UnkeptPart } from '../platform/sourceProvider'
 import type { StepSummary } from '../model/activity'
 import { nodeFigure } from '../model/kinds'
 import type { Adr } from '../model/adr'
@@ -169,6 +170,15 @@ export type SessionView = {
    * `agent.mayNotModerate` by the tool, before anything reaches a door.
    */
   mayModerate?(): boolean
+  /**
+   * What the source this scope is kept in cannot keep yet, a part at a time
+   * (`platform/sourceProvider.ts`'s `SourceCannotKeep`, as the screens are
+   * told it): the source's sentence, said in English, or nothing. Absent, or
+   * answering nothing, every part is kept, which is every core source; where
+   * it answers, a call that names the part is refused `agent.notKeptHere`
+   * with that sentence, before anything is written.
+   */
+  unkept?: ((part: UnkeptPart) => string | undefined) | undefined
   /** The canvas, where there is one. Absent in a test with no window, and every see-tool then refuses. */
   renderer?: RendererView
   /**
@@ -745,7 +755,7 @@ async function readOperating(tool: OperatingRead, args: unknown, tree: TreeView 
 /** A read over a scope that is not open, answered from its document as it stands on disk. */
 async function readElsewhere(
   tool: ReadTool, args: unknown, asked: string, tree: TreeView | undefined, register?: AgentRegister,
-  who: Pick<ReadView, 'me' | 'account'> = {},
+  who: Pick<ReadView, 'me' | 'account' | 'unkept'> = {},
 ): Promise<AgentAnswer> {
   const wrong = checkArguments(toolSpec(tool).inputSchema, args)
   if (wrong) return refused('agent.badArguments', wrong)
@@ -769,11 +779,16 @@ function clientOf(shell: ShellView | undefined): Partial<WriteView> {
   return client !== undefined ? { client } : {}
 }
 
-/** Who the agent acts for, as the session says: the person, and the account where the source has accounts. */
-function whoOf(session: SessionView): Pick<ReadView, 'me' | 'account'> {
+/**
+ * Who the agent acts for, as the session says: the person, and the account
+ * where the source has accounts. And what that source cannot keep yet, which
+ * every view of the scope is told beside them.
+ */
+function whoOf(session: SessionView): Pick<ReadView, 'me' | 'account' | 'unkept'> {
   return {
     ...(session.me ? { me: session.me } : {}),
     ...(session.account ? { account: session.account } : {}),
+    ...(session.unkept ? { unkept: session.unkept } : {}),
   }
 }
 

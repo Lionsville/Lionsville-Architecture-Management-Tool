@@ -15,6 +15,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
 import { translator } from '../../i18n'
+import { registerStrings } from '../../i18n/strings'
+import { UnkeptContext } from '../../widgets/unkept'
 import type { HostModel } from '../../model/hostModel'
 import type { Cause, Observation, ScopeAnalysis } from '../observation'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
@@ -383,6 +385,32 @@ describe('the elements a new observation is about (ADR-0032, amended 22 November
     fireEvent.click(screen.getByTestId('form-record'))
     const made = lastChange(onChange).observations.at(-1)!
     expect(made).toMatchObject({ where: 'Pick station 3', about: ['wms', 'labels'] })
+  })
+
+  /**
+   * Where the open source cannot keep the field yet (ADR-0022, amended 22
+   * November 2026): the source's sentence stands where the picker would, there
+   * is nothing to press, and what is recorded names no element.
+   */
+  it('are not offered where the source cannot keep them yet, which the field says in the source\'s words', async () => {
+    registerStrings('en', { 'elsewhere.aboutNotKept': 'Elsewhere cannot keep which elements an observation is about until it is updated.' })
+    const onChange = vi.fn()
+    renderShell(
+      <UnkeptContext.Provider value={(part) => (part === 'observation.about' ? 'elsewhere.aboutNotKept' : undefined)}>
+        <ObservationsPage
+          open onClose={() => {}} model={withElements} groupName="Acme" below={below} scopeLabel={(path) => path}
+          onChange={onChange} s={translator('en')} language="en" makeId={(prefix) => `${prefix}-${++ids}`} today={() => '2026-09-20'}
+          renderMarkdown={(md) => <MarkdownView markdown={md} />}
+        />
+      </UnkeptContext.Provider>,
+    )
+    openForm()
+    fill('Labels print twice')
+    expect(screen.getByTestId('form-about-unkept').textContent).toBe('Elsewhere cannot keep which elements an observation is about until it is updated.')
+    expect(screen.queryByTestId('form-about-pick')).toBeNull()
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByTestId('form-record'))
+    expect(lastChange(onChange).observations.at(-1)).not.toHaveProperty('about')
   })
 
   it('is not offered for a scope below, whose elements this page does not hold', () => {

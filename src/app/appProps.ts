@@ -23,7 +23,7 @@ import type { ThemeMode } from '../platform/theme'
 import type { WindowChrome } from '../platform/windowChrome'
 import type { WorkingSource } from '../platform/workingSource'
 import type {
-  SourceChip, SourceFailure, SourceRecentActivity, SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
+  SourceCannotKeep, SourceChip, SourceFailure, SourceRecentActivity, SourceStatus, SourceWayIn, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { HostControls } from '../ports/HostControls'
@@ -315,6 +315,8 @@ export type AppProvider = {
   comments?: SourceComments
   /** The files a document may point at, where the open source keeps them (`ProviderParts.attachments`). */
   attachments?: SourceAttachments
+  /** What the open source cannot keep yet of what this build writes (`ProviderParts.cannotKeep`). */
+  cannotKeep?: SourceCannotKeep
   /**
    * What the open source's provider calls a source of its kind, says of where
    * everything is kept, says removing a scope takes with it, and says of a

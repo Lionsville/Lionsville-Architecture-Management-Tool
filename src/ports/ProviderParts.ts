@@ -26,7 +26,7 @@ import type { PersonId } from '../model/person'
 import type { DistinctPair } from '../people/distinct'
 import type { PeopleAction, Person, PolicyHold } from '../people/person'
 import type {
-  SourceFailure, SourceLanding, SourceStatus, SourceWork, SourceWorkChanged,
+  SourceCannotKeep, SourceFailure, SourceLanding, SourceStatus, SourceWork, SourceWorkChanged,
 } from '../platform/sourceProvider'
 import type { WorkingSource } from '../platform/workingSource'
 import type { ScopeSnapshot } from '../projects/scope'
@@ -143,6 +143,12 @@ export type ProviderParts<Own = unknown> = {
    * write, and may remove any comment there.
    */
   comments?: SourceComments
+  /**
+   * What this source cannot keep yet of what this build writes
+   * (`platform/sourceProvider.ts`'s `SourceCannotKeep`; ADR-0022, amended 22
+   * November 2026). Absent for all three core sources, which keep every part.
+   */
+  cannotKeep?: SourceCannotKeep
   /**
    * Files a document may point at, where this source keeps them. Absent for all
    * three core sources: then the editor offers neither a button nor a drop, and
