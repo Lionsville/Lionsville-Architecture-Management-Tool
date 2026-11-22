@@ -113,15 +113,24 @@ Beside the vocabulary and not in it (`codeTools.ts`):
 | `simulate` | Runs a script that changes things, on a copy, and lands nothing (§5) |
 | `run` | Lands what a simulation tried, by its token (§6) |
 | `discard` | Lets a simulation go |
+| `call` | Runs one tool by its plain name with its plain arguments, through the host's own path for a plain call: what a script may not do (§5) is a call away, so a client that carries only these six lacks nothing |
 
 A client is offered the vocabulary as tools, these in its place, or both
-(`RespondOptions.mode` in `mcpProtocol.ts`: `tools`, which is what every
-client was offered before and is still what it is offered when nothing is
-said; `code`; `both`). One decision for the list and the call, as a host's
-`tools` predicate is: a tool a mode leaves out is answered
-`agent.unknownTool` when called, with where it is instead. A host's own tools
-are listed in every mode. On connect a client in `code` or `both` is told so
-in a sentence after what the host says of itself.
+(`RespondOptions.mode` in `mcpProtocol.ts`: `tools`, which is what the
+protocol offers when a host says nothing; `code`; `both`). One decision for
+the list and the call, as a host's `tools` predicate is: a tool a mode leaves
+out is answered `agent.unknownTool` when called, with where it is instead. A
+host's own tools are listed in every mode. On connect a client in `code` or
+`both` is told so in a sentence after what the host says of itself.
+
+**The app offers both unless the person chooses** (`AgentMode`,
+`DEFAULT_AGENT_MODE` in `platform/agentServer.ts`): *Connect an agent…* has
+the choice under its switch — *Tools*, *Scripts*, *Both* — with what the
+difference is behind a press; it is kept in `mcp.json` beside the switch,
+through the server being turned off, and holds from a client's next request.
+A client may also name a mode in its own address, `…/mcp?mode=code`, which
+is offered whatever the choice. `both` takes nothing a client had away, which
+is why it is where the app starts; it saves nothing either.
 
 ### 3. The sandbox
 
@@ -250,14 +259,23 @@ them reaches a line.
 
 ## Consequences
 
-* `tools/list` in `code` is the definitions of code mode's tools, and the
-  map `api.describe` answers with nothing asked is under 9,000 characters;
-  the whole vocabulary's signatures are about 29,000. `both` saves nothing:
-  the saving comes when a client takes `code`.
+* `tools/list` as the app answers it is 203,480 characters as tools, 4,089
+  in `code` and 207,558 in `both`; the instructions 9,850, 10,502 and
+  10,216. Each is held to exactly that (`agent/door.test.ts`). The map
+  `api.describe` answers with nothing asked is under 9,000 characters, and
+  the whole vocabulary's signatures about 29,000. `both` saves nothing: the
+  saving comes when a client takes `code`.
+* The app's bundle is 82 kB larger on the web and 128 kB on the desktop,
+  none of it in the first download, and inside both budgets as they stood:
+  code mode, its host and the interpreter's glue are scripts fetched with
+  the first script an agent sends.
 * A join over the tree is one call and what crosses the door is what the
   script returned.
 * Two packages on the dependency policy's list, and a WebAssembly file of
-  about 500 kB that a build publishes beside its scripts, as the router's is.
+  503 kB that a build publishes beside its scripts as `quickjs.wasm`
+  (`build/quickjsWasm.ts`), as the router's is, and that the bundle's budget
+  does not count. The package's own reference to that file is taken out of
+  its loader, so it ships once.
 * The tool table is now also the source of an API: a schema changed is a
   signature changed, shown in `api.snapshot.txt`.
 * The answers have no types yet, so a script reads an answer as a plain call
@@ -279,21 +297,25 @@ and somebody else's; the same ids from the same script; a host told nothing
 a script said; a person under a pseudonym in what a script returns. The
 handler's own suites hold the three writes a trial refuses. `pure.test.ts`
 still loads the agent in a plain node process, and `quickjs.test.ts` loads
-the interpreter's file alone in one.
+the interpreter's file alone in one. `app/useAgentGateway.test.tsx` runs a
+script, a simulation, its run and its undo through the whole shell;
+`electron/main/mcp.test.ts` holds the mode with the real client; and the
+desktop's smoke run fetches the interpreter over the app's own scheme, runs
+a script in the page under its content security policy, stops an endless
+one, and lands and undoes a change.
 
 ## Not built
 
-* **The app's own host**: the sandbox in the page over the live session, the
-  WebAssembly file published beside the bundle, and the mode as a setting.
-  The port, the trial, `landOnSession` and the limits for it are here and
-  tested; nothing in the app calls them yet.
-* **`call`**, the tool that runs one plain tool by name, which makes `code`
-  self-sufficient for what a script may not do.
-* **Types for what a method answers.**
+* **Types for what a method answers.** Every method answers
+  `Promise<unknown>`.
 * **A merge across the tree tried in a script.** It is refused; landing
   several scopes' trials as one is what a host with several writers does, and
   the plan of a merge is not yet one of them.
-* **Making `code` what a client is offered when it says nothing.**
+* **Making `code` what a client is offered when nobody chose**, and any day
+  on which the plain tools stop being offered.
+* **A trail of scripts in the app.** What the app logs of an agent's call is
+  the tool's name and how it was answered, which for a script is `query` and
+  its outcome.
 
 ## More Information
 
