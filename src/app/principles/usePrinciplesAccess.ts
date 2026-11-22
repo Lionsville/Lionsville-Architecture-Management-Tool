@@ -38,10 +38,22 @@ import type { PrincipleInForce } from '../../principles/suggest'
 import { ancestorScopes } from '../../projects/scopePath'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeIndex } from '../../projects/scopeIndex'
-import type { ModelSession } from '../useModelSession'
+import type { Model } from '../../model'
+
+/**
+ * As much of the open scope's session as the principles take: the model as
+ * the file has it and indexed, one command at a time, and whether anything
+ * may be written.
+ */
+export type PrinciplesSession = {
+  model: HostModel
+  indexed: () => Model
+  dispatch: (command: Command) => unknown
+  readOnly: boolean
+}
 
 export type PrinciplesDeps = {
-  session: Pick<ModelSession, 'model' | 'indexed' | 'dispatch' | 'readOnly'>
+  session: PrinciplesSession
   /** The open scope. */
   scope: ScopePath
   /**

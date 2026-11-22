@@ -29,9 +29,9 @@ import {
   causeList, causesToCommands, experimentList, experimentsToCommands, fromArrays, observationList,
   citationsToCommands, commentsToCommands, observationsToCommands, solutionList, solutionsToCommands, transaction,
 } from '../model'
-import type { Command, Model } from '../model'
+import type { Cause, Command, Comment, Experiment, Model, Observation, Solution } from '../model'
+import type { Citation } from '../model/citable'
 import type { CommandRefusal } from '../model/reducer'
-import type { ChangeBelow, ChangedBelow, ObservationWork } from '../observations/ui/ObservationsPage'
 import { ShellError } from '../platform/errors'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import { changeScope } from '../projects/scopeAccess'
@@ -39,11 +39,35 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopePath } from '../projects/scopePath'
 import { holdWrite } from './writeRefusals'
 
+/**
+ * A scope's analysis as a change below is handed it and hands it back: the
+ * four lists, and the comments and citations where the change carries any.
+ * The observations page's own `ObservationWork`, said in the model's words,
+ * because what a window lends may not read a page; the page's type and this
+ * one are held to each other where the workspace hands the hook to the page.
+ */
+export type WorkBelow = {
+  observations: Observation[]
+  causes: Cause[]
+  solutions: Solution[]
+  experiments: Experiment[]
+  comments?: Comment[]
+  citations?: readonly Citation[]
+}
+
+/** Where a change below went: landed, refused with the writer's key or because the scope is only read, or not made. */
+export type ChangedBelow =
+  | { ok: true }
+  | { ok: false; reason: CommandRefusal | 'shell.scopeReadOnly' | 'readOnly' | 'gone' | 'unchanged' }
+
+/** A change to a scope below, landed as that scope's step; `change` may be called more than once, so it only answers. */
+export type ChangeBelow = (path: string, change: (work: WorkBelow) => WorkBelow | undefined) => Promise<ChangedBelow>
+
 /** As much of a scope repository as a change below takes: read a scope, and apply a step to it. */
 export type BelowScopes = ScopeReader & Pick<ScopeRepository, 'apply' | 'settle'>
 
 /** The one step a change makes, from the scope's lists before it and after. */
-export function stepFor(model: Model, next: ObservationWork): Command | undefined {
+export function stepFor(model: Model, next: WorkBelow): Command | undefined {
   const commands = [
     ...observationsToCommands(model, next.observations), ...causesToCommands(model, next.causes),
     ...solutionsToCommands(model, next.solutions), ...experimentsToCommands(model, next.experiments),
@@ -73,7 +97,7 @@ export function refusalOf(error: unknown): ChangedBelow | undefined {
  * to change, or no such scope.
  */
 export async function landBelow(
-  scopes: BelowScopes, path: ScopePath, change: (work: ObservationWork) => ObservationWork | undefined,
+  scopes: BelowScopes, path: ScopePath, change: (work: WorkBelow) => WorkBelow | undefined,
 ): Promise<ChangedBelow> {
   let made = false
   let found = false

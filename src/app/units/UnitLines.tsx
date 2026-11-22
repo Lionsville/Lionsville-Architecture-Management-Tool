@@ -35,7 +35,7 @@ import { everyLineOn, holdersAt, personOf, reportingLinesOn, slotsOf } from '../
 import type { Organisation, ReportingLineOn } from '../../model/units'
 import { usePersonNames } from '../../people/ui/names'
 import type { PersonNames } from '../../people/ui/names'
-import { reportingLineColours } from '../theme'
+import { reportingLineColours } from './reportingLineColours'
 import { LineTargetForm } from './LineTargetForm'
 import { refusalWords } from './lineWords'
 

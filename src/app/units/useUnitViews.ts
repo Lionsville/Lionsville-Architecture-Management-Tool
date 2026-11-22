@@ -11,10 +11,10 @@
  */
 import { useCallback } from 'react'
 import { toDiagram } from '../../model'
+import type { Command } from '../../model'
 import type { MakeId } from '../../model/keys'
 import { laidOutView } from '../../model/orgChart'
 import type { Translate } from '../../i18n'
-import type { ModelSession } from '../useModelSession'
 
 export type UnitViewKind = 'chart' | 'conway'
 
@@ -28,7 +28,10 @@ const MADE = {
   conway: { prefix: 'cw', name: 'shell.newConway' },
 } as const
 
-export function useUnitViews(deps: { session: Pick<ModelSession, 'dispatch'>; makeId: MakeId; s: Translate }): UnitViews {
+/** As much of the open scope's session as making a view takes: one command, and the view it leaves on the tab. */
+export type ViewMaker = { dispatch: (command: Command, options?: { activeDiagramId?: string }) => unknown }
+
+export function useUnitViews(deps: { session: ViewMaker; makeId: MakeId; s: Translate }): UnitViews {
   const { session, makeId, s } = deps
   const create = useCallback((kind: UnitViewKind) => {
     const view = laidOutView(kind, makeId(MADE[kind].prefix), s(MADE[kind].name))
