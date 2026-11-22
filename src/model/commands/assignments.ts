@@ -15,12 +15,10 @@
  * reorganisation passes through every one of them.
  */
 import { isDay } from '../lifecycle'
-import { assignmentsOf } from '../normalised'
 import type { Assignment } from '../units'
-import { gone, ok, outOfOrder, taken } from './handler'
-import type { CommandTable, PatchKeys } from './handler'
-import { drop, patched, put, withRows } from './rows'
-import { patchWrites } from './writes'
+import { outOfOrder } from './handler'
+import type { PatchKeys } from './handler'
+import { plainFamily } from './plain'
 
 /** Every field of an assignment but its id. */
 const ASSIGNMENT_FIELDS: PatchKeys<'assignment.update'> = {
@@ -32,42 +30,7 @@ export function assignmentDaysInOrder(assignment: Pick<Assignment, 'from' | 'unt
   return !(isDay(assignment.from) && isDay(assignment.until) && assignment.until < assignment.from)
 }
 
-export const ASSIGNMENT_COMMANDS = {
-  'assignment.add': {
-    carries: { assignment: true },
-    writes: (command) => [`assignment/${command.assignment.id}`],
-    apply(model, command, { meta }) {
-      const { assignment, at } = command
-      if (assignment.id in assignmentsOf(model)) return taken
-      if (!assignmentDaysInOrder(assignment)) return outOfOrder
-      const rows = put(assignmentsOf(model), model.order.assignments, assignment.id, assignment, at)
-      return ok(withRows(model, 'assignments', rows), { type: 'assignment.remove', id: assignment.id }, meta)
-    },
-  },
-
-  'assignment.update': {
-    carries: { id: true, patch: true },
-    patch: { keys: ASSIGNMENT_FIELDS, row: (model, command) => assignmentsOf(model)[command.id] },
-    writes: (command) => patchWrites(`assignment/${command.id}`, command.patch),
-    apply(model, command, { meta }) {
-      const held = assignmentsOf(model)[command.id]
-      if (!held) return gone
-      const { row, inverse } = patched(held, command.patch)
-      if (!assignmentDaysInOrder(row)) return outOfOrder
-      const rows = put(assignmentsOf(model), model.order.assignments, command.id, row)
-      return ok(withRows(model, 'assignments', rows), { type: 'assignment.update', id: command.id, patch: inverse }, meta)
-    },
-  },
-
-  'assignment.remove': {
-    carries: { id: true },
-    writes: (command) => [`assignment/${command.id}`],
-    apply(model, command, { meta }) {
-      const held = assignmentsOf(model)[command.id]
-      if (!held) return gone
-      const at = model.order.assignments.indexOf(command.id)
-      const rows = drop(assignmentsOf(model), model.order.assignments, command.id)
-      return ok(withRows(model, 'assignments', rows), { type: 'assignment.add', assignment: held, at }, meta)
-    },
-  },
-} satisfies Partial<CommandTable>
+export const ASSIGNMENT_COMMANDS = plainFamily('assignments', {
+  fields: ASSIGNMENT_FIELDS,
+  refuses: (_model, assignment) => (assignmentDaysInOrder(assignment) ? undefined : outOfOrder),
+})

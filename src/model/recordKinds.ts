@@ -88,6 +88,14 @@ export type KindDescriptor<L extends RecordList> = {
    * landscape always has.
    */
   readonly absentWhenEmpty: boolean
+  /**
+   * How its records are written. The plain three — `<kind>.add` carrying the
+   * record under `payload`, `<kind>.update` an id and a patch, `<kind>.remove`
+   * an id, each the others' inverse — or `'own'` where its commands are
+   * another shape: an element's and a view's, a mark's two, a comment's five.
+   * `commands/plain.ts` holds the vocabulary to what is said here.
+   */
+  readonly commands: 'own' | { readonly payload: string }
 }
 
 /** One descriptor per list of the model: a list without one does not compile. */
@@ -96,26 +104,26 @@ export type KindTable = { readonly [L in RecordList]: KindDescriptor<L> }
 const ownId = (record: { id: string }): string => record.id
 
 export const KINDS = {
-  elements: { list: 'elements', kind: 'element', idOf: ownId, absentWhenEmpty: false },
-  relations: { list: 'relations', kind: 'relation', idOf: ownId, absentWhenEmpty: false },
-  diagrams: { list: 'diagrams', kind: 'diagram', idOf: ownId, absentWhenEmpty: false },
-  decisions: { list: 'decisions', kind: 'decision', idOf: ownId, absentWhenEmpty: true },
-  transitions: { list: 'transitions', kind: 'transition', idOf: ownId, absentWhenEmpty: true },
-  observations: { list: 'observations', kind: 'observation', idOf: ownId, absentWhenEmpty: true },
-  causes: { list: 'causes', kind: 'cause', idOf: ownId, absentWhenEmpty: true },
-  solutions: { list: 'solutions', kind: 'solution', idOf: ownId, absentWhenEmpty: true },
-  experiments: { list: 'experiments', kind: 'experiment', idOf: ownId, absentWhenEmpty: true },
-  unitTypes: { list: 'unitTypes', kind: 'unitType', idOf: ownId, absentWhenEmpty: true },
-  roles: { list: 'roles', kind: 'role', idOf: ownId, absentWhenEmpty: true },
-  responsibilities: { list: 'responsibilities', kind: 'responsibility', idOf: ownId, absentWhenEmpty: true },
-  operatingRules: { list: 'operatingRules', kind: 'operatingRule', idOf: ownId, absentWhenEmpty: true },
-  assignments: { list: 'assignments', kind: 'assignment', idOf: ownId, absentWhenEmpty: true },
+  elements: { list: 'elements', kind: 'element', idOf: ownId, absentWhenEmpty: false, commands: 'own' },
+  relations: { list: 'relations', kind: 'relation', idOf: ownId, absentWhenEmpty: false, commands: 'own' },
+  diagrams: { list: 'diagrams', kind: 'diagram', idOf: ownId, absentWhenEmpty: false, commands: 'own' },
+  decisions: { list: 'decisions', kind: 'decision', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'decision' } },
+  transitions: { list: 'transitions', kind: 'transition', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'transition' } },
+  observations: { list: 'observations', kind: 'observation', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'observation' } },
+  causes: { list: 'causes', kind: 'cause', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'cause' } },
+  solutions: { list: 'solutions', kind: 'solution', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'solution' } },
+  experiments: { list: 'experiments', kind: 'experiment', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'experiment' } },
+  unitTypes: { list: 'unitTypes', kind: 'unitType', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'unitType' } },
+  roles: { list: 'roles', kind: 'role', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'role' } },
+  responsibilities: { list: 'responsibilities', kind: 'responsibility', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'responsibility' } },
+  operatingRules: { list: 'operatingRules', kind: 'operatingRule', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'rule' } },
+  assignments: { list: 'assignments', kind: 'assignment', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'assignment' } },
   // A mark has no id of its own: it is its check and the key of its subjects.
-  checkMarks: { list: 'checkMarks', kind: 'checkMark', idOf: checkMarkId, absentWhenEmpty: true },
-  comments: { list: 'comments', kind: 'comment', idOf: ownId, absentWhenEmpty: true },
-  principles: { list: 'principles', kind: 'principle', idOf: ownId, absentWhenEmpty: true },
-  citations: { list: 'citations', kind: 'citation', idOf: ownId, absentWhenEmpty: true },
-  evaluations: { list: 'evaluations', kind: 'evaluation', idOf: ownId, absentWhenEmpty: true },
+  checkMarks: { list: 'checkMarks', kind: 'checkMark', idOf: checkMarkId, absentWhenEmpty: true, commands: 'own' },
+  comments: { list: 'comments', kind: 'comment', idOf: ownId, absentWhenEmpty: true, commands: 'own' },
+  principles: { list: 'principles', kind: 'principle', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'principle' } },
+  citations: { list: 'citations', kind: 'citation', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'citation' } },
+  evaluations: { list: 'evaluations', kind: 'evaluation', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'evaluation' } },
 } as const satisfies KindTable
 
 /** The lists, in the order the model keeps them. */
@@ -126,6 +134,12 @@ export const OPTIONAL_LISTS = RECORD_LIST_NAMES.filter((list) => KINDS[list].abs
 
 /** The kind one list's records are named by, as a type. */
 export type KindOf<L extends RecordList> = (typeof KINDS)[L]['kind']
+
+/** The lists whose records are written by the plain three commands. */
+export type PlainList = { [L in RecordList]: (typeof KINDS)[L]['commands'] extends { payload: string } ? L : never }[RecordList]
+
+/** The key a plain list's `add` carries its record under, as a type. */
+export type PayloadOf<L extends PlainList> = (typeof KINDS)[L]['commands'] extends { payload: infer P extends string } ? P : never
 
 /** Every kind of record the model keeps in a list. */
 export type ListedKind = KindOf<RecordList>
