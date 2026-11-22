@@ -22,19 +22,12 @@
  * Pure: what a screen says, what the store holds next, and what the row draws.
  */
 import { viewPage } from '../../agent/screen'
-import type { Destination, Page, Screen } from '../../agent/screen'
+import type { Destination, Screen } from '../../agent/screen'
 import type { DesignDiagram } from '../../model/types'
+import type { LastView } from './frameStore'
 import type { RecentPlace } from './recentPlaces'
 
-/** A view somebody was on: where it is, what it and its scope were called then, and the page that opens it. */
-export type LastView = {
-  readonly scope: string
-  /** The scope's name then, for a way back that says where it leads. */
-  readonly in: string
-  readonly page: Page
-  readonly id: string
-  readonly name: string
-}
+export type { LastView }
 
 /** What the frame keeps: the last view of each scope, and the scope worked in last. */
 export type LastViews = {

@@ -19,11 +19,9 @@ import type { Destination, FramePanel, Page } from '../../agent/screen'
 import type { CheckKey } from '../../model/checkCatalogue'
 import type { DocumentStatus } from '../../projects/documentSession'
 import type { ScopePath } from '../../projects/scopePath'
-import type { PaletteLine } from '../../search/ui/GlobalSearchDialog'
 import type { StackedBand } from '../../widgets/kit/Band'
-import type { ActivityEntry, ActivityMenuProps } from '../ActivityMenu'
+import type { ActivityEntry, RecentActivity } from '../../session/activity'
 import { leaveWithDrafts } from '../../widgets/kit/drafts'
-import type { LastView } from './lastView'
 
 /** A view named in row two, on a screen that draws no tabs of its own: a home. */
 export type FrameView = { readonly id: string; readonly name: string; readonly kind: string }
@@ -59,7 +57,7 @@ export type ScreenFacts = {
   readonly sourceStatus?: boolean
   readonly alsoHere?: readonly string[]
   readonly activity?: () => readonly ActivityEntry[]
-  readonly recentActivity?: ActivityMenuProps['recent']
+  readonly recentActivity?: RecentActivity
   readonly activityKept?: boolean
   /**
    * The open scope's changes the place would not take, while it will not: a
@@ -83,6 +81,16 @@ export type ScreenFacts = {
   readonly agentRun?: () => { readonly steps: number; readonly undo?: () => void; readonly putBack?: () => void } | undefined
   /** How a scope's type stands to the units that serve it, for the tree's rows to mark a disagreement. */
   readonly typeLink?: (path: ScopePath) => TypeLink | undefined
+}
+
+/** A view somebody was on: where it is, what it and its scope were called then, and the page that opens it. */
+export type LastView = {
+  readonly scope: string
+  /** The scope's name then, for a way back that says where it leads. */
+  readonly in: string
+  readonly page: Page
+  readonly id: string
+  readonly name: string
 }
 
 /** Where a walk through a check is: the rest is read afresh, so the band can see the finding clear. */
@@ -173,7 +181,24 @@ export function frameStore(initial: Partial<FrameState> = {}): FrameStore {
 
 export const FrameStoreContext = createContext<FrameStore | undefined>(undefined)
 
-export type { PaletteLine }
+/**
+ * A line of ⌘K that is not a record, as the search dialog takes one
+ * (`search/ui/GlobalSearchDialog`'s `PaletteLine`): its heading, its words,
+ * its key, where it is, how it ranks and reads, and what it does. Said here
+ * as well, because what a window lends may not read a page; the two are held
+ * to each other where a screen hands these lines to the dialog.
+ */
+export type PaletteLine = {
+  readonly id: string
+  readonly group: string
+  readonly label: string
+  readonly keys?: string
+  readonly hint?: string
+  readonly lead?: boolean
+  readonly stays?: boolean
+  readonly action?: boolean
+  readonly run: () => void
+}
 
 /** What ⌘K offers beside the records, for what is typed; both screens' palettes read it. */
 export const FrameCommandsContext = createContext<(asked: string) => readonly PaletteLine[]>(() => [])
