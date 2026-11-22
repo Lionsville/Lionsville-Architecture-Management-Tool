@@ -32,7 +32,7 @@ export type AgentClient = {
 }
 
 /**
- * What a client is offered of the agent's vocabulary (ADR-0050): every tool
+ * What a client is offered of the agent's vocabulary (ADR-0051): every tool
  * by its own definition, `tools`; the few tools of code mode in their place,
  * through which the same vocabulary is reached from a script, `code`; or
  * `both` beside each other. Down here because the server's settings keep it,

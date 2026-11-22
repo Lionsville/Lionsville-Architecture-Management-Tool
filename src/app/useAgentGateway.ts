@@ -29,7 +29,7 @@ import type { AgentGateway } from '../ports/AgentGateway'
 const loadHandle = () => import('../agent/handle').then((held) => held.handle)
 
 /**
- * Code mode (ADR-0050), fetched with the first script: the tools that run
+ * Code mode (ADR-0051), fetched with the first script: the tools that run
  * one, the host they run it against, and the interpreter — its glue a
  * script of its own and its WebAssembly a file beside the app
  * (`build/quickjsWasm.ts`), neither of them loaded by a window nobody sends

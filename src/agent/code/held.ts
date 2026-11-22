@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The simulations waiting to be run (ADR-0050): what a script would change,
+ * The simulations waiting to be run (ADR-0051): what a script would change,
  * kept under a token until it is landed, discarded or too old.
  *
  * What is kept is **the commands, not the script**. A run lands exactly what

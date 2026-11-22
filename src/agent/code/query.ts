@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Code mode's tools, answered (ADR-0050): a script run against a host, its
+ * Code mode's tools, answered (ADR-0051): a script run against a host, its
  * calls counted and its answer measured.
  *
  * `query` is the script that reads. Every call it makes is one the host

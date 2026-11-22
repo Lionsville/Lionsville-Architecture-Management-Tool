@@ -234,7 +234,7 @@ export type SessionView = {
    */
   followScopeTypes?: FollowScopeTypes
   /**
-   * This session is a trial of a script (ADR-0050, `code/trialSession.ts`):
+   * This session is a trial of a script (ADR-0051, `code/trialSession.ts`):
    * a copy of one scope, whose changes land later as that scope's one step.
    * What would also write another scope — a merge across the tree, a unit
    * removed with what other scopes keep of it, a unit linked to domains whose
@@ -318,7 +318,7 @@ export async function handle(request: AgentRequest, session: SessionView | undef
 async function handled(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell || !isToolName(request.tool) || !drives(request.tool)) return answerRequest(request, session, shell)
   // A call tried on a copy changes nothing and moves nothing, so it starts no session and puts up no banner:
-  // the run that lands it is what drives (ADR-0050).
+  // the run that lands it is what drives (ADR-0051).
   if (session?.inScript) return answerRequest(request, session, shell)
   // A write with nothing open goes nowhere and is refused below; it should
   // not put a banner up on the way. Only moving the app drives from a home —
@@ -466,7 +466,7 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
  */
 function acrossScopes(tool: ToolName, args: Record<string, unknown>, session: SessionView): Promise<AgentAnswer> | undefined {
   if (tool === 'element.remove') return removeUnitAcross(args, session)
-  // A trial is one scope: a merge that writes another is not tried in part (ADR-0050).
+  // A trial is one scope: a merge that writes another is not tried in part (ADR-0051).
   if (session.inScript && mergesAcross(MERGE_KIND[tool], withoutGuard(args) as Record<string, unknown>, writeView(session), session.today())) {
     return Promise.resolve(refused('agent.notInScript', `${tool} here also writes another scope, and a script tries one scope at a time: use the plain tool, or call`))
   }
@@ -486,7 +486,7 @@ function removeUnitAcross(args: Record<string, unknown>, session: SessionView): 
   if (!session.landSteps && !session.inScript) return undefined
   const worked = unitRemoval(withoutGuard(args) as Record<string, unknown>, writeView(session))
   if (!worked || !isUnitRemoval(worked) || worked.others.size === 0) return undefined
-  // A trial lands one scope: the command path would remove the unit here and leave what the other scopes keep of it (ADR-0050).
+  // A trial lands one scope: the command path would remove the unit here and leave what the other scopes keep of it (ADR-0051).
   if (!session.landSteps) {
     return Promise.resolve(refused('agent.notInScript',
       `removing this unit also writes ${[...worked.others.keys()].map((scope) => scope || 'the organisation').join(', ')}, and a script tries one scope at a time: use the plain tool, or call`))
@@ -521,7 +521,7 @@ async function landCommand(tool: ToolName, prepared: Prepared, model: Model, ses
 
 /**
  * A unit linked to domains whose types would follow it, in a trial of a
- * script (ADR-0050): each type is written in its own scope's header, which a
+ * script (ADR-0051): each type is written in its own scope's header, which a
  * trial of one scope cannot try, so the link is refused whole rather than
  * landed with the types left unset. Nothing for any other write.
  */

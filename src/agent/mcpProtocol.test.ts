@@ -146,7 +146,7 @@ describe('the protocol on its own', () => {
 })
 
 /**
- * What a client is offered (ADR-0050): the vocabulary, the tools of code
+ * What a client is offered (ADR-0051): the vocabulary, the tools of code
  * mode in its place, or both — one decision for the list and for a call.
  */
 describe('the mode a client is offered', () => {

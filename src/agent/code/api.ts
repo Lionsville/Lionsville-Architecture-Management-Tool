@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The vocabulary as a script sees it (ADR-0050): one object, `lv`, generated
+ * The vocabulary as a script sees it (ADR-0051): one object, `lv`, generated
  * from the tool table, so a script calls what a plain call calls and nothing
  * is said twice.
  *

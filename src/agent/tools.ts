@@ -3727,11 +3727,11 @@ export type AgentRefusal =
   | 'agent.badReference'
   /** A batch of more steps than one may hold (`batchSteps.ts`'s `MOST_STEPS`). */
   | 'agent.tooManySteps'
-  /** A script met one of its limits and was stopped (ADR-0050, `code/limits.ts`): the detail names it. */
+  /** A script met one of its limits and was stopped (ADR-0051, `code/limits.ts`): the detail names it. */
   | 'agent.scriptLimit'
   /** A script threw, or would not compile: the detail is its own message, cut short. */
   | 'agent.scriptFailed'
-  /** A call a script may not make (ADR-0050, `code/api.ts`): the detail says where to make it instead. */
+  /** A call a script may not make (ADR-0051, `code/api.ts`): the detail says where to make it instead. */
   | 'agent.notInScript'
   /** A simulation's token that is not held: never given, used, discarded, expired, or somebody else's. */
   | 'agent.unknownSimulation'

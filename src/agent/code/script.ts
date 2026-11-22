@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * One script, run against a host (ADR-0050): what `query` and `simulate`
+ * One script, run against a host (ADR-0051): what `query` and `simulate`
  * share. A script is handed to the sandbox with `lv` built from the host's
  * tools; every call out of it is counted, charged and refused here where a
  * script may not make it, before the kind of script decides how it is

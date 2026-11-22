@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * Code mode's host over a live session (ADR-0050): how the app on a person's
+ * Code mode's host over a live session (ADR-0051): how the app on a person's
  * screen fills `CodeHost`, written here rather than in the shell so it is
  * tested in node beside the handler it calls.
  *

@@ -34,7 +34,7 @@ export async function listen(options: {
   relay: Relay
   server: ServerIdentity
   /**
-   * What a client is offered (ADR-0050), asked for every request so the
+   * What a client is offered (ADR-0051), asked for every request so the
    * person's choice holds from the next one on. A client that names a mode in
    * its address, `…/mcp?mode=code`, is offered that one whatever the choice.
    */

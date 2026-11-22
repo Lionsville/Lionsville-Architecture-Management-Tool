@@ -27,7 +27,7 @@ export type AgentServer = {
   openDialog: () => void
   closeDialog: () => void
   changeEnabled: (enabled: boolean) => void
-  /** What an agent is offered, chosen in the dialog (ADR-0050). */
+  /** What an agent is offered, chosen in the dialog (ADR-0051). */
   changeMode: (mode: AgentMode) => void
   newToken: () => void
 }

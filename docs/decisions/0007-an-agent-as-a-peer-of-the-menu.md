@@ -568,7 +568,7 @@ travelled in descriptions too: `checks.list` alone was 3,341 characters.
 
 The vocabulary is still the one contract, and the handler still the one
 place a call is answered. What a client is *offered* of it is now a choice
-(ADR-0050): the tools as before, which is what a client gets when it says
+(ADR-0051): the tools as before, which is what a client gets when it says
 nothing; the tools of code mode in their place — `api.describe`, `query`,
 `simulate`, `run`, `discard` — through which the same vocabulary is reached
 as methods of one object in a script; or both.

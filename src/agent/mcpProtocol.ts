@@ -132,7 +132,7 @@ export type RespondOptions = {
    */
   readonly hostTools?: readonly ToolSpec<string>[]
   /**
-   * What this client is offered (ADR-0050): the vocabulary as `tools`, the
+   * What this client is offered (ADR-0051): the vocabulary as `tools`, the
    * tools of code mode in its place (`code`), or `both`. `tools` when
    * unsaid, which is what every client was offered before there was a
    * choice. One decision for the list and the call, as `tools` is: a tool a

@@ -247,7 +247,7 @@ export async function setAgentEnabled(enabled: boolean): Promise<AgentServerStat
   return agentStatus()
 }
 
-/** What a client is offered, from its next request on (ADR-0050). Kept with the switch. */
+/** What a client is offered, from its next request on (ADR-0051). Kept with the switch. */
 export async function setAgentMode(mode: AgentMode): Promise<AgentServerStatus> {
   await saveSettings({ ...settings, mode })
   log('agent', `offering ${mode}`)

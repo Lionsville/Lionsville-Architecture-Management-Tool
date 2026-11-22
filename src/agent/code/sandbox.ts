@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The seam a script is run behind (ADR-0050): somewhere that runs text it
+ * The seam a script is run behind (ADR-0051): somewhere that runs text it
  * did not write, with nothing in reach but the calls it is handed.
  *
  * A port, because where a script runs is the host's and what a script may do

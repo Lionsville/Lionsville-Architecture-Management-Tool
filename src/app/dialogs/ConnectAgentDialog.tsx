@@ -23,7 +23,7 @@
  * this shell's own section instead of over it: both ways exist there, and
  * hiding one of two true answers to pick a favourite is not this dialog's call.
  *
- * Under the switch, while it is on: what an agent is offered (ADR-0050) —
+ * Under the switch, while it is on: what an agent is offered (ADR-0051) —
  * every tool one by one, the few through which it reaches them from a
  * script, or both — with what the difference is behind a press, since most
  * people never need to choose.
@@ -80,7 +80,7 @@ export type ConnectAgentDialogProps = {
   status?: AgentServerStatus
   readOnly?: boolean
   onEnabledChange: (enabled: boolean) => void
-  /** What an agent is offered, chosen (ADR-0050). Absent, the choice is not drawn. */
+  /** What an agent is offered, chosen (ADR-0051). Absent, the choice is not drawn. */
   onModeChange?: (mode: AgentMode) => void
   onNewToken: () => void
   /** Through the `HostControls` seam, so a test can see what was copied. */

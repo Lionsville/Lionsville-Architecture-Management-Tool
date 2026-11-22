@@ -3,7 +3,7 @@
 
 /**
  * A method's signature, written from the schema its tool is checked against
- * (ADR-0050): what a script may pass, as TypeScript, because that is the
+ * (ADR-0051): what a script may pass, as TypeScript, because that is the
  * notation a model reads an API in and a fifth of the characters the same
  * schema costs as JSON.
  *

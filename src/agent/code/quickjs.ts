@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The sandbox that ships (ADR-0050): QuickJS compiled to WebAssembly, an
+ * The sandbox that ships (ADR-0051): QuickJS compiled to WebAssembly, an
  * interpreter inside an interpreter.
  *
  * **Why this one.** A script must not reach the process it runs in, and the

@@ -46,7 +46,7 @@ export const CEILINGS = {
 } as const
 
 /**
- * The same two as a client carries them in the other two modes (ADR-0050):
+ * The same two as a client carries them in the other two modes (ADR-0051):
  * the tools of code mode in place of the vocabulary, and both. Held the same
  * way, so the saving a client is told of is the saving it gets: a tool or a
  * sentence added to code mode fails until its number is raised here.

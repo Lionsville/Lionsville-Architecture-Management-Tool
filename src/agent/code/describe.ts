@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * `api.describe` (ADR-0050): the API a script sees, said as much at a time
+ * `api.describe` (ADR-0051): the API a script sees, said as much at a time
  * as was asked.
  *
  * The point of a script is that a client does not carry the vocabulary on

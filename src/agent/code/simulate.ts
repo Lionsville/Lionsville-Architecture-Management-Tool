@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * `simulate`, `run` and `discard` (ADR-0050): a script that changes things
+ * `simulate`, `run` and `discard` (ADR-0051): a script that changes things
  * is tried before it lands.
  *
  * `simulate` runs the script with every scope it touches on a trial

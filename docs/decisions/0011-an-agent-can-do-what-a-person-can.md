@@ -265,7 +265,7 @@ on an unguarded write.
 
 `batch` is still several commands as one step, and its dry run still says
 what they would do. What a batch cannot do is read, decide and then write.
-A script can (ADR-0050): `simulate` runs it with every scope it touches on a
+A script can (ADR-0051): `simulate` runs it with every scope it touches on a
 copy, each write built and refused by the handler as a plain one is, and
 answers what would change with a token; `run` lands exactly those commands
 as one step for each scope, each held to the revision it was tried at.

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * `quickjs.wasm`, published beside the app (ADR-0050).
+ * `quickjs.wasm`, published beside the app (ADR-0051).
  *
  * The interpreter an agent's script runs in is WebAssembly shipped inside
  * `node_modules/@jitl/quickjs-wasmfile-release-sync`, and the page loads it

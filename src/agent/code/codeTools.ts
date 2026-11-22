@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The tools of code mode (ADR-0050): the few a client carries instead of the
+ * The tools of code mode (ADR-0051): the few a client carries instead of the
  * whole vocabulary, which it then reaches through a script.
  *
  * Beside the vocabulary and not in it. `TOOLS` is the table every method of

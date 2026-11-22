@@ -831,7 +831,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
       return bytes.byteLength + ' bytes, ' + type
     })()`))
 
-  // The interpreter an agent's script runs in (ADR-0050), published the same way and for the same reason.
+  // The interpreter an agent's script runs in (ADR-0051), published the same way and for the same reason.
   results.push(await check(window, 'quickjs.wasm loads and compiles', `
     (async () => {
       const response = await fetch('/quickjs.wasm')
@@ -1138,7 +1138,7 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     return `"${current.name}" at ${current.path}, ${current.elements} elements, ${current.activeDiagramId} on screen`
   }))
 
-  // A script (ADR-0050), in the page's own interpreter: fetched over app://,
+  // A script (ADR-0051), in the page's own interpreter: fetched over app://,
   // compiled under the CSP, and run against the session on screen. A change
   // is tried on a copy, landed as one step, and taken back with undo.
   results.push(await checkHere('the agent reads with a script, tries a change and lands it as one step', async () => {

@@ -307,7 +307,7 @@ describe('element.remove on a unit', () => {
     })
     const alone = elsewhere(session('customer', customer))
     expect(refusal(await ask('element.remove', { id: 'webshop' }, alone))?.[0]).toBe('agent.scopeNotOpen')
-    // A trial of a script is one scope: said as that, and where to go instead (ADR-0050).
+    // A trial of a script is one scope: said as that, and where to go instead (ADR-0051).
     expect(refusal(await ask('element.remove', { id: 'webshop' }, { ...elsewhere(session('customer', customer)), inScript: true })))
       .toEqual(['agent.notInScript', 'removing this unit also writes shipping, and a script tries one scope at a time: use the plain tool, or call'])
     const landed: ReadonlyMap<string, readonly Command[]>[] = []

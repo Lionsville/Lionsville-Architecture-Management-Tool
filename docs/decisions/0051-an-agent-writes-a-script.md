@@ -1,4 +1,4 @@
-# ADR-0050 — An agent writes a script: read in one call, tried before it lands
+# ADR-0051 — An agent writes a script: read in one call, tried before it lands
 
 * Status: accepted, 22 November 2026; implemented, 22 November 2026 (4.1.0, not yet released), but for what *Not built* lists
 * Date: 2026-11-22

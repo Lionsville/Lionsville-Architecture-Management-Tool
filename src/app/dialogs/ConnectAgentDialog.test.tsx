@@ -160,7 +160,7 @@ describe('ConnectAgentDialog, with a source that answers for agents itself', () 
     expect(screen.queryByTestId('agent-source-panel')).toBeNull()
   })
 
-  it('offers what an agent is given while the server is on: both unless chosen, and the difference behind a press (ADR-0050)', () => {
+  it('offers what an agent is given while the server is on: both unless chosen, and the difference behind a press (ADR-0051)', () => {
     const onModeChange = vi.fn()
     const { rerender } = renderShell(<ConnectAgentDialog {...base} status={listening} onModeChange={onModeChange} />)
     const choice = screen.getByRole('radiogroup', { name: 'What an agent is offered' })

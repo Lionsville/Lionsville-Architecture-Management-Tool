@@ -144,7 +144,7 @@ describe('an SDK client against the server', () => {
     await expect(fetch(agentEndpoint(listener.port))).rejects.toThrow()
   })
 
-  it('offers what the app was set to, from the next request on, and a mode named in the address over it (ADR-0050)', async () => {
+  it('offers what the app was set to, from the next request on, and a mode named in the address over it (ADR-0051)', async () => {
     const wire = relay()
     let mode: AgentMode = 'both'
     const listener = await listen({ port: 0, token: TOKEN, relay: wire.relay, server: { name: 'lvarch-test', version: '0.0.0' }, mode: () => mode })

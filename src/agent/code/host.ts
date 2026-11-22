@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * What code mode asks of the host it runs on (ADR-0050): a seam, filled by
+ * What code mode asks of the host it runs on (ADR-0051): a seam, filled by
  * the app over its live session and by any other host over whatever it has.
  *
  * The rule the seam exists for: **a call out of a script is answered by the

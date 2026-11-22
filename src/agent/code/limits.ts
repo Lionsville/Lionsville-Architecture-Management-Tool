@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * What a script may cost (ADR-0050), and the sentence each limit is refused
+ * What a script may cost (ADR-0051), and the sentence each limit is refused
  * with.
  *
  * A script is somebody else's code run where the work is kept, so every

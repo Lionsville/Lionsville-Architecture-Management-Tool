@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * A scope tried on a copy (ADR-0050): the session a script's calls are
+ * A scope tried on a copy (ADR-0051): the session a script's calls are
  * answered over, so that what a script changes is changed nowhere yet.
  *
  * A trial holds one scope's model as it was when the script first touched it

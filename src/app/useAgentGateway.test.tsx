@@ -170,7 +170,7 @@ describe('the agent seam, bound to the shell', () => {
     expect(parsed(await ask('project.current'))).toMatchObject({ name: 'Warehouse landscape' })
   })
 
-  it('runs a script against the project that is open, and lands what one tried as one step on screen (ADR-0050)', async () => {
+  it('runs a script against the project that is open, and lands what one tried as one step on screen (ADR-0051)', async () => {
     const { gateway, ask } = fakeGateway()
     renderApp({ agent: gateway, boot: { initialProject: project } })
     await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
