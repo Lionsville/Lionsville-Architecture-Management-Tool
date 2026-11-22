@@ -22,13 +22,15 @@
  *   by resolution rather than by syntax, so no spelling of an import is missed;
  *   a string that only looks like a path resolves to nothing and is left.
  * - **Paths in the held lists.** A moved file's path from the root, quoted, in
- *   any script; and under `build/`, the same path from `src/`, which is how
- *   the scans there name a file.
+ *   any script; and under `build/` and `src/`, the same path from `src/`,
+ *   which is how the scans and a few tests there name a file. A comment that
+ *   says a file's whole path between backticks is quoted too, and follows.
  * - **The order of a sorted list**, for each `--sort`: a run of one-entry
  *   lines that a rewrite changed is put back in order.
  *
- * What it does not do is prose. A comment that names a moved file by path is
- * listed at the end, to be read and put right by hand in a commit of its own.
+ * What it does not do is prose. A comment that names a moved file by part of
+ * its path, or without its ending, is listed at the end, to be read and put
+ * right by hand in a commit of its own.
  */
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -108,12 +110,12 @@ function withSpecifiers(file, text, said) {
 
 const escaped = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
-/** A moved file's path, quoted, wherever a script holds it in a list; under `build/` from `src/` too. */
+/** A moved file's path, quoted, wherever a script holds it in a list; under `build/` and `src/` from `src/` too. */
 function withPaths(file, text, said) {
   let next = text
   for (const [from, to] of moved) {
     const forms = [[from, to]]
-    if (file.startsWith('build/') && from.startsWith('src/') && to.startsWith('src/')) forms.push([from.slice(4), to.slice(4)])
+    if (/^(?:build|src)\//.test(file) && from.startsWith('src/') && to.startsWith('src/')) forms.push([from.slice(4), to.slice(4)])
     for (const [was, is] of forms) {
       if (!next.includes(was)) continue
       next = next.replace(new RegExp(`(['"\`])${escaped(was)}\\1`, 'g'), (_, quote) => {
