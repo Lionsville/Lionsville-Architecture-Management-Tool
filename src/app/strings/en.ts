@@ -460,6 +460,17 @@ export const EN = {
   'agent.enable': 'Accept agent connections',
   'agent.listening': 'Listening on port {port}.',
   'agent.connected': '{name} is connected.',
+  'agent.mode': 'What an agent is offered',
+  'agent.modeTools': 'Tools',
+  'agent.modeCode': 'Scripts',
+  'agent.modeBoth': 'Both',
+  'agent.modeWhy': 'What is the difference?',
+  'agent.modeNote':
+    'With Tools an agent is given every tool one by one, and carries all their descriptions on every turn. With Scripts it is '
+    + 'given a handful instead and reaches the same tools from a script it writes: several reads in one call, and a change '
+    + 'tried and shown to you before it lands. That is much lighter to carry, and suits a capable agent. Both offers the two '
+    + 'side by side, and is what an agent gets unless you choose. A client can also say which it wants in its own address: '
+    + 'add ?mode=code, ?mode=tools or ?mode=both to the endpoint.',
   'agent.moved':
     'Port {from} was taken when the app started, so it listens on {port} now. An agent configured with the old port needs the new address.',
   /** A browser tab: the explanation stands, and this replaces the switch. */

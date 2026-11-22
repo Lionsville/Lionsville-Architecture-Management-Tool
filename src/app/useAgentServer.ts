@@ -11,7 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import type { Translate } from '../i18n'
 import { AGENT_OFF } from '../platform/agentServer'
-import type { AgentServerStatus } from '../platform/agentServer'
+import type { AgentMode, AgentServerStatus } from '../platform/agentServer'
 import { reasonOf } from '../platform/errors'
 import type { AgentGateway } from '../ports/AgentGateway'
 import type { ToolbarAgent } from './BarEnd'
@@ -27,6 +27,8 @@ export type AgentServer = {
   openDialog: () => void
   closeDialog: () => void
   changeEnabled: (enabled: boolean) => void
+  /** What an agent is offered, chosen in the dialog (ADR-0050). */
+  changeMode: (mode: AgentMode) => void
   newToken: () => void
 }
 
@@ -60,10 +62,14 @@ export function useAgentServer(deps: {
     if (!agent) return
     void agent.configure({ enabled }).then(setStatus, (cause: unknown) => changeFailed('agent.configure', cause))
   }, [agent, changeFailed])
+  const changeMode = useCallback((mode: AgentMode) => {
+    if (!agent) return
+    void agent.configure({ mode }).then(setStatus, (cause: unknown) => changeFailed('agent.configure', cause))
+  }, [agent, changeFailed])
   const newToken = useCallback(() => {
     if (!agent) return
     void agent.newToken().then(setStatus, (cause: unknown) => changeFailed('agent.newToken', cause))
   }, [agent, changeFailed])
   const bar = useMemo(() => ({ status, onOpen: openDialog }), [status, openDialog])
-  return { status, bar, dialogOpen, openDialog, closeDialog, changeEnabled, newToken }
+  return { status, bar, dialogOpen, openDialog, closeDialog, changeEnabled, changeMode, newToken }
 }

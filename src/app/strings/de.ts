@@ -312,6 +312,18 @@ export const DE: Record<keyof typeof EN, string> = {
   'agent.enable': 'Agentenverbindungen annehmen',
   'agent.listening': 'Lauscht an Port {port}.',
   'agent.connected': '{name} ist verbunden.',
+  'agent.mode': 'Was einem Agenten angeboten wird',
+  'agent.modeTools': 'Werkzeuge',
+  'agent.modeCode': 'Skripte',
+  'agent.modeBoth': 'Beides',
+  'agent.modeWhy': 'Worin liegt der Unterschied?',
+  'agent.modeNote':
+    'Mit Werkzeuge erhält ein Agent jedes Werkzeug einzeln und trägt alle Beschreibungen in jeder Runde mit. Mit Skripte '
+    + 'erhält er stattdessen eine Handvoll und erreicht dieselben Werkzeuge aus einem Skript, das er schreibt: mehrere '
+    + 'Lesevorgänge in einem Aufruf, und eine Änderung, die erst ausprobiert und Ihnen gezeigt wird, bevor sie übernommen '
+    + 'wird. Das ist deutlich leichter mitzutragen und passt zu einem fähigen Agenten. Beides bietet die zwei nebeneinander '
+    + 'an und ist, was ein Agent erhält, solange Sie nichts wählen. Ein Client kann auch in seiner eigenen Adresse sagen, was '
+    + 'er möchte: ?mode=code, ?mode=tools oder ?mode=both an die Adresse anhängen.',
   'agent.moved':
     'Port {from} war beim Start der App belegt, daher lauscht sie jetzt an {port}. Ein Agent, der mit dem alten Port eingerichtet ist, braucht die neue Adresse.',
   'agent.desktopOnly': 'Einen Agenten zu verbinden braucht die Desktop-App — nur sie kann auf diesem Rechner lauschen. Öffnen Sie diesen Bereich in der Desktop-App; der Schalter steht dort in diesem Dialog.',

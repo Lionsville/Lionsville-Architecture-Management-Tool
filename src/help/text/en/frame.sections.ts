@@ -51,7 +51,7 @@ export const SECTIONS: SectionTexts = {
     ['Press Activity.', 'Read the steps; the newest is undone with {key:Mod+Z}.', 'Press History… at the foot for everything before.', 'Press × or {key:Escape} to close.'],
     'After a board laid itself out as it opened, Activity shows Moved 33 elements, Laid out automatically: nobody\'s step, which {key:Mod+Z} passes over.',
     '{key:Escape} closes it'],
-  'frame.agent': ['Connect an agent', 'Lets a coding agent such as Claude Code read the organisation and make changes you can see and undo. The desktop app listens on this machine; in a browser the dialog explains and links to the desktop app.',
+  'frame.agent': ['Connect an agent', 'Lets a coding agent such as Claude Code read the organisation and make changes you can see and undo. The desktop app listens on this machine; in a browser the dialog explains and links to the desktop app. Under the switch you choose what an agent is offered: every tool one by one, a few through which it writes scripts, or both.',
     'Row one, Agent; also ⋯ › Connect an agent….',
     ['Press Agent.', 'On the desktop, switch it on and copy the address and token into your agent\'s settings.', 'Press Close.'],
     'Connect Claude Code to the desktop app, then ask it to list the applications in Application landscape.'],

@@ -617,6 +617,7 @@ export function AppDialogs({ parts }: { parts: ShellParts }) {
         onClose={agentServer.closeDialog}
         status={props.agent ? agentServer.status : undefined}
         onEnabledChange={agentServer.changeEnabled}
+        onModeChange={agentServer.changeMode}
         onNewToken={agentServer.newToken}
         copyText={props.hostControls.copyText}
         /* Built here rather than named there, so the dialog stays a dialog: it

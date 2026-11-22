@@ -2931,6 +2931,43 @@ de bouwsteen doet — aannemen doe jij. Als hij een beschrijving of een besluit
 schrijft, verwijst hij naar een weergave, een element, een principe, een
 evaluatie, een besluit of een waarneming met dezelfde woorden die
 *Invoegen ▾* schrijft.` },
+    { title: `Scripts: meerdere leesacties in één aanroep, een wijziging eerst geprobeerd`, text: `Een agent krijgt elke tool afzonderlijk aangeboden, een handvol waarmee hij
+dezelfde tools bereikt vanuit een script dat hij schrijft, of beide. **Een
+agent koppelen…** heeft de keuze onder de schakelaar — *Losse tools*, *Via
+scripts*, *Beide* — en een agent krijgt beide zolang je niets kiest. Een
+client kan ook in zijn eigen adres zeggen welke hij wil, door
+\`?mode=code\`, \`?mode=tools\` of \`?mode=both\` toe te voegen.
+
+Met elke tool afzonderlijk draagt een agent al hun beschrijvingen mee bij
+elke beurt van je gesprek met hem, en een antwoord waar meerdere leesacties
+voor nodig zijn is evenveel aanroepen. Met scripts draagt hij zes
+beschrijvingen mee en vraagt hij de rest op wanneer hij die nodig heeft. Een
+script dat leest, voegt samen, filtert en telt in één aanroep: welke
+applicaties geen eigenaar hebben en wat daarover is waargenomen, is één
+antwoord en geen lijst van lijsten.
+
+Een script dat iets wijzigt wordt **eerst geprobeerd**. De agent voert het
+uit op een kopie en krijgt te horen wat er zou veranderen — welke records
+erbij komen, wijzigen en verdwijnen, in de woorden van je eigen landschap —
+en er is dan nog niets veranderd. Hij hoort je dat te laten zien. Als je
+akkoord bent, voert hij precies door wat is geprobeerd, als **één stap**: één
+regel in Activiteit onder zijn naam, één {key:Mod+Z}. Is de scope intussen
+veranderd, dan wordt er niets doorgevoerd en probeert de agent het opnieuw op
+de scope zoals die nu is. Wat is geprobeerd blijft een kwartier bewaard en
+wordt één keer doorgevoerd.
+
+De strook onderaan verschijnt wanneer de wijzigingen van een script worden
+doorgevoerd, niet terwijl ze worden geprobeerd, en **Stoppen** weigert het
+doorvoeren zoals het elke wijziging weigert.
+
+Een script draait binnen de app, afgesloten van alles behalve je landschap:
+het kan niet bij het netwerk, je bestanden of iets anders op deze computer.
+Het wordt gestopt wanneer het te lang duurt, te veel geheugen gebruikt of te
+veel tegelijk vraagt, en de agent krijgt te horen waardoor. Wat een
+afbeelding tekent, de app verplaatst, de boom van scopes of het
+personenregister wijzigt of een waarneming naar een andere scope verplaatst,
+gaat niet vanuit een script; dat doet de agent met één aanroep per keer,
+zoals voorheen.` },
     { title: `Bibliotheken`, text: `Een agent leest het besturingsmodel met \`unitTypes.list\`, \`roles.list\` en
 \`responsibilities.list\`, vanuit de organisatie welke scope er ook open is, en
 wijzigt het met \`unitType.add\`, \`unitType.update\`, \`role.add\` en

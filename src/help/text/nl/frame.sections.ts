@@ -51,7 +51,7 @@ export const SECTIONS: SectionTexts = {
     ['Klik op Activiteit.', 'Lees de stappen; de nieuwste maak je ongedaan met {key:Mod+Z}.', 'Klik onderaan op Geschiedenis… voor alles daarvoor.', 'Klik op × of druk op {key:Escape} om te sluiten.'],
     'Nadat een bord zichzelf bij het openen indeelde, toont Activiteit 33 elementen verplaatst, Automatisch ingedeeld: van niemand, en {key:Mod+Z} slaat het over.',
     '{key:Escape} sluit het'],
-  'frame.agent': ['Een agent koppelen', 'Laat een coding agent zoals Claude Code de organisatie lezen en wijzigingen maken die je ziet en ongedaan kunt maken. De desktop-app luistert op deze computer; in een browser legt het venster het uit en verwijst het naar de desktop-app.',
+  'frame.agent': ['Een agent koppelen', 'Laat een coding agent zoals Claude Code de organisatie lezen en wijzigingen maken die je ziet en ongedaan kunt maken. De desktop-app luistert op deze computer; in een browser legt het venster het uit en verwijst het naar de desktop-app. Onder de schakelaar kies je wat een agent krijgt aangeboden: elke tool afzonderlijk, een paar waarmee hij scripts schrijft, of beide.',
     'Rij één, Agent; ook ⋯ › Een agent koppelen….',
     ['Klik op Agent.', 'Zet het op de desktop aan en kopieer het adres en het token naar de instellingen van je agent.', 'Klik op Sluiten.'],
     'Koppel Claude Code aan de desktop-app en vraag het de applicaties in Application landscape op te sommen.'],

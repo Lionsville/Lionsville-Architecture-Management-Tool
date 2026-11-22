@@ -51,7 +51,7 @@ export const SECTIONS: SectionTexts = {
     ['Klicken Sie auf Aktivität.', 'Lesen Sie die Schritte; den neuesten nehmen Sie mit {key:Mod+Z} zurück.', 'Klicken Sie unten auf Verlauf… für alles davor.', 'Klicken Sie auf ×, oder drücken Sie {key:Escape}, um zu schließen.'],
     'Nachdem sich ein Board beim Öffnen selbst angeordnet hat, zeigt Aktivität 33 Elemente verschoben, Automatisch angeordnet: von niemandem, und {key:Mod+Z} überspringt es.',
     '{key:Escape} schließt es'],
-  'frame.agent': ['Einen Agenten verbinden', 'Lässt einen Coding-Agenten wie Claude Code die Organisation lesen und Änderungen machen, die Sie sehen und rückgängig machen können. Die Desktop-App lauscht auf diesem Computer; im Browser erklärt der Dialog es und verweist auf die Desktop-App.',
+  'frame.agent': ['Einen Agenten verbinden', 'Lässt einen Coding-Agenten wie Claude Code die Organisation lesen und Änderungen machen, die Sie sehen und rückgängig machen können. Die Desktop-App lauscht auf diesem Computer; im Browser erklärt der Dialog es und verweist auf die Desktop-App. Unter dem Schalter wählen Sie, was einem Agenten angeboten wird: jedes Werkzeug einzeln, einige wenige, mit denen er Skripte schreibt, oder beides.',
     'Erste Zeile, Agent; auch ⋯ › Einen Agenten verbinden….',
     ['Klicken Sie auf Agent.', 'Schalten Sie es auf dem Desktop ein und kopieren Sie Adresse und Token in die Einstellungen Ihres Agenten.', 'Klicken Sie auf Schließen.'],
     'Verbinden Sie Claude Code mit der Desktop-App und bitten Sie ihn, die Anwendungen in Application landscape aufzulisten.'],

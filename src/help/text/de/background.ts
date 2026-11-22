@@ -3085,6 +3085,44 @@ die Entscheidung vorschlagen, die daraus folgt, wie
 Schreibt er eine Beschreibung oder eine Entscheidung, verweist er auf eine
 Ansicht, ein Element, ein Prinzip, eine Bewertung, eine Entscheidung oder eine
 Beobachtung mit denselben Worten, die *Einfügen ▾* schreibt.` },
+    { title: `Skripte: mehrere Lesevorgänge in einem Aufruf, eine Änderung erst ausprobiert`, text: `Einem Agenten wird jedes Werkzeug einzeln angeboten, eine Handvoll, über die
+er dieselben Werkzeuge aus einem Skript erreicht, das er schreibt, oder
+beides. **Einen Agenten verbinden…** hat die Auswahl unter dem Schalter —
+*Werkzeuge*, *Skripte*, *Beides* — und ein Agent erhält beides, solange Sie
+nichts wählen. Ein Client kann auch in seiner eigenen Adresse sagen, was er
+möchte, indem er \`?mode=code\`, \`?mode=tools\` oder \`?mode=both\`
+anhängt.
+
+Mit jedem Werkzeug einzeln trägt ein Agent alle Beschreibungen in jeder
+Runde Ihres Gesprächs mit ihm mit, und eine Antwort, die mehrere
+Lesevorgänge braucht, sind ebenso viele Aufrufe. Mit Skripten trägt er sechs
+Beschreibungen mit und fragt den Rest ab, wenn er ihn braucht. Ein Skript,
+das liest, verbindet, filtert und zählt in einem Aufruf: Welche Anwendungen
+keinen Eigentümer haben und was dazu beobachtet wurde, ist eine Antwort und
+keine Liste von Listen.
+
+Ein Skript, das etwas ändert, wird **erst ausprobiert**. Der Agent führt es
+auf einer Kopie aus und erfährt, was sich ändern würde — welche Einträge
+hinzukämen, sich änderten und entfielen, in den Worten Ihrer eigenen
+Landschaft — und noch ist nichts geändert. Er soll Ihnen das zeigen. Wenn
+Sie zustimmen, übernimmt er genau das, was ausprobiert wurde, als **einen
+Schritt**: eine Zeile in Aktivität unter seinem Namen, ein {key:Mod+Z}. Hat
+sich der Bereich inzwischen geändert, wird nichts übernommen, und der Agent
+probiert es auf dem Bereich aus, wie er jetzt ist. Was ausprobiert wurde,
+bleibt fünfzehn Minuten erhalten und wird einmal übernommen.
+
+Der Streifen am unteren Rand erscheint, wenn die Änderungen eines Skripts
+übernommen werden, nicht während sie ausprobiert werden, und **Stopp** lehnt
+das Übernehmen ab wie jede Änderung.
+
+Ein Skript läuft innerhalb der App, abgeschottet von allem außer Ihrer
+Landschaft: Es erreicht weder das Netzwerk noch Ihre Dateien noch sonst
+etwas auf diesem Computer. Es wird angehalten, wenn es zu lange dauert, zu
+viel Speicher braucht oder zu viel auf einmal verlangt, und der Agent
+erfährt, woran es lag. Was ein Bild zeichnet, die App bewegt, den Baum der
+Bereiche oder das Personenregister ändert oder eine Beobachtung in einen
+anderen Bereich verschiebt, geschieht nicht aus einem Skript; das macht der
+Agent mit einem Aufruf nach dem anderen, wie bisher.` },
     { title: `Bibliotheken`, text: `Ein Agent liest das Betriebsmodell mit \`unitTypes.list\`, \`roles.list\` und
 \`responsibilities.list\` aus der Organisation, welcher Bereich auch geöffnet
 ist, und ändert es mit \`unitType.add\`, \`unitType.update\`, \`role.add\` und

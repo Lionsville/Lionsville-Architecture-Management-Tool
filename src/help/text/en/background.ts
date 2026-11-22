@@ -2715,6 +2715,38 @@ propose the decision it becomes, as **Propose a decision…** on the block's pag
 does — accepting it is yours. When it writes a description or a decision, it
 refers to a view, an element, a principle, an evaluation, a decision or an
 observation in the same words *Insert ▾* writes.` },
+    { title: `Scripts: several reads in one call, a change tried first`, text: `An agent is offered every tool one by one, a handful through which it reaches
+the same tools from a script it writes, or both. **Connect an agent…** has
+the choice under the switch — *Tools*, *Scripts*, *Both* — and an agent gets
+both unless you choose. A client can also say which it wants in its own
+address, by adding \`?mode=code\`, \`?mode=tools\` or \`?mode=both\`.
+
+With every tool one by one, an agent carries all their descriptions on every
+turn of your conversation with it, and an answer that needs several reads is
+that many calls. With scripts it carries six descriptions and asks for the
+rest when it needs it. A script that reads joins, filters and counts in one
+call: which applications have no owner, and what was observed about them, is
+one answer and not a list of lists.
+
+A script that changes things is **tried first**. The agent runs it on a copy
+and is told what would change — which records would be added, changed and
+removed, in your landscape's own words — and nothing has changed yet. It is
+expected to show you that. When you agree, it lands exactly what was tried,
+as **one step**: one line in Activity under its name, one {key:Mod+Z}. If the
+scope has changed in the meantime, nothing lands and the agent tries again
+on the scope as it is. What was tried is kept for fifteen minutes and lands
+once.
+
+The strip along the bottom appears when a script's changes land, not while
+they are tried, and **Stop** refuses a landing as it refuses any change.
+
+A script runs inside the app, shut off from everything but your landscape:
+it cannot reach the network, your files or anything else on this computer.
+It is stopped when it takes too long, uses too much memory or asks too much
+at once, and the agent is told which. What draws a picture, moves the app,
+changes the tree of scopes or the people register, or moves an observation
+to another scope is not done from a script; the agent does those one call
+at a time, as before.` },
     { title: `Libraries`, text: `An agent reads the operating model with \`unitTypes.list\`, \`roles.list\` and
 \`responsibilities.list\`, from the organisation whatever scope is open, and
 changes it with \`unitType.add\`, \`unitType.update\`, \`role.add\` and

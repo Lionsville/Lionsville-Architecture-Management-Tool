@@ -23,6 +23,11 @@
  * this shell's own section instead of over it: both ways exist there, and
  * hiding one of two true answers to pick a favourite is not this dialog's call.
  *
+ * Under the switch, while it is on: what an agent is offered (ADR-0050) —
+ * every tool one by one, the few through which it reaches them from a
+ * script, or both — with what the difference is behind a press, since most
+ * people never need to choose.
+ *
  * The recipes are strings with placeholders (`app/strings/`), filled here
  * with the port and the token main reported. `readOnly` hides the switch and
  * the token, not the explanation. An ordinary dialog, not fullscreen, so it
@@ -42,10 +47,12 @@ import Stack from '@mui/material/Stack'
 import Tab from '@mui/material/Tab'
 import Tabs from '@mui/material/Tabs'
 import Typography from '@mui/material/Typography'
+import { Segmented } from '../../widgets/kit/Segmented'
 import { Switch } from '../../widgets/kit/Switch'
+import { WhyNote } from '../../widgets/kit/WhyNote'
 import type { StringKey, Translate } from '../../i18n'
-import type { AgentServerStatus } from '../../platform/agentServer'
-import { agentEndpoint } from '../../platform/agentServer'
+import type { AgentMode, AgentServerStatus } from '../../platform/agentServer'
+import { AGENT_MODES, DEFAULT_AGENT_MODE, agentEndpoint } from '../../platform/agentServer'
 import { DESKTOP_APP_LINK } from '../../platform/menu'
 
 /** The clients the app carries a recipe for, and the one line for the rest. */
@@ -56,6 +63,9 @@ const RECIPES: readonly { readonly id: string; readonly tab: StringKey; readonly
   { id: 'cursor', tab: 'agent.tabCursor', recipe: 'agent.recipeCursor' },
   { id: 'other', tab: 'agent.tabOther', recipe: 'agent.recipeOther' },
 ]
+
+/** What each mode is called on the control. */
+const MODE_LABEL: Readonly<Record<AgentMode, StringKey>> = { tools: 'agent.modeTools', code: 'agent.modeCode', both: 'agent.modeBoth' }
 
 /** How long "Copied" stands in for "Copy". */
 const COPIED_MS = 2000
@@ -70,6 +80,8 @@ export type ConnectAgentDialogProps = {
   status?: AgentServerStatus
   readOnly?: boolean
   onEnabledChange: (enabled: boolean) => void
+  /** What an agent is offered, chosen (ADR-0050). Absent, the choice is not drawn. */
+  onModeChange?: (mode: AgentMode) => void
   onNewToken: () => void
   /** Through the `HostControls` seam, so a test can see what was copied. */
   copyText: (text: string) => Promise<void>
@@ -87,7 +99,7 @@ export type ConnectAgentDialogProps = {
 }
 
 export function ConnectAgentDialog({
-  open, onClose, status, readOnly = false, onEnabledChange, onNewToken, copyText, sourcePanel, s,
+  open, onClose, status, readOnly = false, onEnabledChange, onModeChange, onNewToken, copyText, sourcePanel, s,
 }: ConnectAgentDialogProps) {
   const [tab, setTab] = useState(RECIPES[0].id)
   const [copied, setCopied] = useState(false)
@@ -143,6 +155,17 @@ export function ConnectAgentDialog({
                     : s('agent.listening', { port: status.port })}
                   {status.movedFrom !== undefined && ` ${s('agent.moved', { from: status.movedFrom, port: status.port })}`}
                 </Typography>
+              )}
+              {on && onModeChange && (
+                <>
+                  <Segmented
+                    label={s('agent.mode')}
+                    options={AGENT_MODES.map((mode) => ({ value: mode, label: s(MODE_LABEL[mode]) }))}
+                    value={status.mode ?? DEFAULT_AGENT_MODE}
+                    onChange={onModeChange}
+                  />
+                  <WhyNote label={s('agent.modeWhy')} data-testid="agent-mode-note">{s('agent.modeNote')}</WhyNote>
+                </>
               )}
             </>
           )}

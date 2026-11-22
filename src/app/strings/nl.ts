@@ -308,6 +308,18 @@ export const NL: Record<keyof typeof EN, string> = {
   'agent.enable': 'Agentverbindingen toestaan',
   'agent.listening': 'Luistert op poort {port}.',
   'agent.connected': '{name} is gekoppeld.',
+  'agent.mode': 'Wat een agent krijgt aangeboden',
+  'agent.modeTools': 'Losse tools',
+  'agent.modeCode': 'Via scripts',
+  'agent.modeBoth': 'Beide',
+  'agent.modeWhy': 'Wat is het verschil?',
+  'agent.modeNote':
+    'Met Losse tools krijgt een agent elke tool afzonderlijk en draagt hij al hun beschrijvingen bij elke beurt mee. Met Via scripts '
+    + 'krijgt hij er een handvol voor in de plaats en bereikt hij dezelfde tools vanuit een script dat hij schrijft: meerdere '
+    + 'leesacties in één aanroep, en een wijziging die eerst wordt geprobeerd en aan jou getoond voordat ze wordt doorgevoerd. '
+    + 'Dat is veel lichter om mee te dragen en past bij een capabele agent. Beide biedt de twee naast elkaar, en is wat een '
+    + 'agent krijgt zolang je niets kiest. Een client kan ook in zijn eigen adres zeggen welke hij wil: zet ?mode=code, '
+    + '?mode=tools of ?mode=both achter het adres.',
   'agent.moved':
     'Poort {from} was bezet toen de app startte, dus hij luistert nu op {port}. Een agent die met de oude poort is ingesteld heeft het nieuwe adres nodig.',
   'agent.desktopOnly': 'Een agent koppelen vraagt de desktop-app — alleen die kan op deze machine luisteren. Open deze scope in de desktop-app; de schakelaar staat daar in dit venster.',

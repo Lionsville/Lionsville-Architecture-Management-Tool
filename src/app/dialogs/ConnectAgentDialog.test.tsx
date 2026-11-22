@@ -159,4 +159,31 @@ describe('ConnectAgentDialog, with a source that answers for agents itself', () 
     expect(screen.getByTestId('agent-recipe')).toBeDefined()
     expect(screen.queryByTestId('agent-source-panel')).toBeNull()
   })
+
+  it('offers what an agent is given while the server is on: both unless chosen, and the difference behind a press (ADR-0050)', () => {
+    const onModeChange = vi.fn()
+    const { rerender } = renderShell(<ConnectAgentDialog {...base} status={listening} onModeChange={onModeChange} />)
+    const choice = screen.getByRole('radiogroup', { name: 'What an agent is offered' })
+    expect(within(choice).getAllByRole('radio').map((one) => [one.textContent, one.getAttribute('aria-checked')])).toEqual([
+      ['Tools', 'false'], ['Scripts', 'false'], ['Both', 'true'],
+    ])
+    fireEvent.click(within(choice).getByRole('radio', { name: 'Scripts' }))
+    expect(onModeChange).toHaveBeenCalledWith('code')
+    rerender(<ConnectAgentDialog {...base} status={{ ...listening, mode: 'code' }} onModeChange={onModeChange} />)
+    expect(within(screen.getByRole('radiogroup', { name: 'What an agent is offered' })).getByRole('radio', { name: 'Scripts' }).getAttribute('aria-checked')).toBe('true')
+    // Why one would choose is said when asked, not before.
+    expect(screen.queryByText(/much lighter to carry/)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: /What is the difference\?/ }))
+    expect(screen.getByText(/much lighter to carry/)).toBeDefined()
+  })
+
+  it('offers no choice while the server is off, under readOnly, or in a browser tab', () => {
+    const onModeChange = vi.fn()
+    for (const props of [{ status: { kind: 'off' } as AgentServerStatus }, { status: listening, readOnly: true }, { status: undefined }]) {
+      const { unmount } = renderShell(<ConnectAgentDialog {...base} {...props} onModeChange={onModeChange} />)
+      expect(screen.queryByRole('radiogroup', { name: 'What an agent is offered' })).toBeNull()
+      unmount()
+    }
+  })
 })
+
