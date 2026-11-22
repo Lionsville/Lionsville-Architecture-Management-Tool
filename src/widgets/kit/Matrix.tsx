@@ -67,6 +67,12 @@ export type MatrixCell = {
   readonly tone?: MatrixTone
   /** Asks for attention: fill, border and a triangle, so it is never hue alone. */
   readonly attention?: boolean
+  /**
+   * Falls short of what its row asks, less loudly than `attention`: an edge in
+   * the attention ink and no fill. Never hue alone either: what it shows says
+   * by how much.
+   */
+  readonly short?: boolean
 }
 
 export type MatrixPick = { readonly row: string; readonly column: string }
@@ -207,7 +213,7 @@ const MatrixRowView = memo(function MatrixRowView({
         return (
           <td
             key={column.id} role="gridcell" className="kit-matrix__cell" data-kit-cell={`${rowIndex}:${index}`}
-            data-tone={cell?.tone} data-attention={cell?.attention || undefined}
+            data-tone={cell?.tone} data-attention={cell?.attention || undefined} data-short={cell?.short || undefined}
             aria-selected={selectedColumn === column.id}
             aria-label={`${row.label}, ${column.label}: ${cell?.meaning ?? emptyWord}`}
             tabIndex={focusColumn === index ? 0 : -1}

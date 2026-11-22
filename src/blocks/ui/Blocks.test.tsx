@@ -311,6 +311,35 @@ describe('a building block\'s page', () => {
     expect(await axeFindings()).toEqual([])
   })
 
+  it('shows its answer: the options in rank order with rank and fit on top, a gap marked by how much, harder on a must', () => {
+    page(accessOver(), { evaluation: 'sales' })
+    const heads = screen.getAllByRole('columnheader').map((one) => one.textContent)
+    expect(heads.findIndex((one) => one?.includes('Managed bus'))).toBeLessThan(heads.findIndex((one) => one?.includes('Broker A')))
+    expect(heads.find((one) => one?.includes('Managed bus'))).toContain('No. 1, 67 %')
+    expect(heads.find((one) => one?.includes('Broker A'))).toContain('No. 2, fails a must')
+    const audit = within(screen.getByRole('row', { name: /Keeps an audit trail/ })).getAllByRole('gridcell')
+    const brokerAudit = audit.find((one) => /Broker A/.test(one.getAttribute('aria-label') ?? ''))!
+    expect(brokerAudit.hasAttribute('data-attention')).toBe(true)
+    expect(brokerAudit.textContent).toContain('−2')
+    expect(brokerAudit.getAttribute('aria-label')).toContain(s('blocks.shortOfMust'))
+    const busRoute = within(screen.getByRole('row', { name: /Routes by content/ })).getAllByRole('gridcell').find((one) => /Managed bus/.test(one.getAttribute('aria-label') ?? ''))!
+    expect(busRoute.hasAttribute('data-short')).toBe(true)
+    expect(busRoute.textContent).toContain('−2')
+  })
+
+  it('keeps to the gaps where asked, and leaves out what is not needed here until asked for it', () => {
+    const covered: Evaluation = { ...SALES, coverage: { 'sb-a': { 'cap-route': { level: 4 }, 'cap-audit': { level: 4 } }, 'sb-b': { 'cap-route': { level: 4 }, 'cap-audit': { level: 2 } } } }
+    const block = { ...INDEXED, capabilities: [...GATEWAY.capabilities!, { id: 'cap-spare', text: 'Speaks a spare protocol' }] }
+    page(accessOver({ block: () => ({ scope: 'topics/integration', block }), evaluationsOf: () => [{ scope: 'sales', evaluation: covered }] }), { evaluation: 'sales' })
+    expect(screen.queryByRole('row', { name: /Speaks a spare protocol/ })).toBeNull()
+    fireEvent.click(screen.getByRole('switch', { name: s('blocks.showNotNeeded', { count: 1 }) }))
+    expect(screen.getByRole('row', { name: /Speaks a spare protocol/ }).textContent).toContain(s('blocks.notNeededRow'))
+    fireEvent.click(screen.getByRole('switch', { name: s('blocks.gapsOnly') }))
+    expect(screen.queryByRole('row', { name: /Routes by content/ })).toBeNull()
+    expect(screen.queryByRole('row', { name: /Speaks a spare protocol/ })).toBeNull()
+    expect(screen.getByRole('row', { name: /Keeps an audit trail/ })).toBeTruthy()
+  })
+
   it('changes a scope\'s evaluation: a context, an option dropped with the choice on it, a ball', () => {
     const access = accessOver()
     page(access, { evaluation: 'sales' })

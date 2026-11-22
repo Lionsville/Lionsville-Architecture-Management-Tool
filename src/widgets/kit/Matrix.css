@@ -218,3 +218,7 @@
   cursor: pointer;
 }
 .kit-matrix__cellMenu:hover { color: var(--ink); }
+
+/* Short of what the row asks: the attention edge without its fill, which `attention` keeps for the harder case. */
+.kit-matrix tr .kit-matrix__cell[data-short]:not([data-attention]) { box-shadow: inset 0 0 0 1px var(--state-attention-border); }
+.kit-matrix tr .kit-matrix__cell[data-short][aria-selected='true'] { box-shadow: inset 0 0 0 2px var(--selected-edge); }

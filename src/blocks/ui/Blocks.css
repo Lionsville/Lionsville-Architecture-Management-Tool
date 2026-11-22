@@ -5,3 +5,19 @@
 
 /* How a ball is set, said once beside the grid and quietly. */
 .blocks-hint { margin: 0; color: var(--ink-2); font-size: var(--t-small); }
+
+/* Over a comparison's grid: its two switches and how a ball is set, on one line, so the grid starts high. */
+.blocks-gridBar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
+.blocks-gridBar .blocks-hint { flex: 1 1 24ch; }
+
+/* By how much a ball falls short of what is needed here: a figure beside it, never a tint alone. */
+.blocks-short { font-size: var(--t-small); font-weight: var(--fw-strong); color: var(--ink-2); }
+.kit-matrix__cell[data-attention] .blocks-short { color: var(--ink); }
+
+/* An option's rank and fit at the top of its column; a failed must said in the strong ink. */
+.blocks-rank { white-space: nowrap; }
+.blocks-rank[data-fails] { color: var(--ink); font-weight: var(--fw-strong); }
+
+/* A comparison's contexts and options side by side, with the contexts' chapters after them: one band, not three. */
+.blocks-choices { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s-2) var(--s-5); }
+.blocks-chapters { display: flex; flex-wrap: wrap; gap: var(--s-2); align-self: flex-end; font-size: var(--t-small); }

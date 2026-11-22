@@ -21,6 +21,7 @@ import { MoreMenu } from '../../widgets/kit/Menu'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
 import { EvaluationGrid } from './EvaluationGrid'
+import './Blocks.css'
 
 const toggled = (list: readonly string[], item: string) => (list.includes(item) ? list.filter((one) => one !== item) : [...list, item])
 
@@ -55,33 +56,33 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
   const used = (block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id))
   return (
     <div className="guidance-record__body" data-testid="evaluation-view">
+      {/* One line for the way back, the name and the acts, so the grid starts high on a small screen. */}
       <div className="guidance-record__line">
         <button type="button" className="guidance__link" onClick={onBack}>{t('blocks.backToWhereUsed')}</button>
-      </div>
-      <div className="guidance-record__line">
         <h2 className="guidance-record__title">{t('blocks.evaluationTitle', { block: block.name, scope: access.scopeLabel(scope) })}</h2>
         <span className="guidance-read__spring" />
         {may && <Button variant="primary" disabled={evaluation.options.length === 0 || evaluation.contexts.length === 0} onClick={() => setProposing(true)} data-testid="block-propose">{t('blocks.propose')}</Button>}
         {may && <MoreMenu items={[{ label: t('blocks.removeEvaluation'), final: true, onSelect: () => setRemoving(true) }]} />}
       </div>
-      <p className="guidance-record__intro">{t('blocks.evaluationIntro')}</p>
       {chosen && (
         <Band
           tone="info" title={t('blocks.chosenHere', { name: chosen.name })}
           {...(evaluation.decidedBy ? { action: <Button variant="quiet" onClick={() => access.openDecision(scope, evaluation.decidedBy!)}>{t('blocks.openDecision')}</Button> } : {})}
         />
       )}
-      <Choices legend={t('blocks.contextsHere')} items={block.contexts ?? []} on={evaluation.contexts} readOnly={!may} testId="evaluation-context" onToggle={(id) => save({ ...evaluation, contexts: toggled(evaluation.contexts, id) })} />
-      {used.length > 0 && (
-        <div className="guidance-record__line">
-          {used.map((one) => <button key={one.id} type="button" className="guidance__link" onClick={() => onChapter(one.id)}>{t('blocks.chapterOf', { name: one.name })}</button>)}
-        </div>
-      )}
-      <Choices
-        legend={t('blocks.optionsHere')} items={(block.sbbs ?? []).filter((one) => one.status !== 'retired' || evaluation.options.includes(one.id))} on={evaluation.options}
-        readOnly={!may} testId="evaluation-option"
-        onToggle={(id) => save({ ...evaluation, options: toggled(evaluation.options, id), ...(evaluation.chosen === id ? { chosen: undefined, decidedBy: undefined } : {}) })}
-      />
+      <div className="blocks-choices">
+        <Choices legend={t('blocks.contextsHere')} items={block.contexts ?? []} on={evaluation.contexts} readOnly={!may} testId="evaluation-context" onToggle={(id) => save({ ...evaluation, contexts: toggled(evaluation.contexts, id) })} />
+        <Choices
+          legend={t('blocks.optionsHere')} items={(block.sbbs ?? []).filter((one) => one.status !== 'retired' || evaluation.options.includes(one.id))} on={evaluation.options}
+          readOnly={!may} testId="evaluation-option"
+          onToggle={(id) => save({ ...evaluation, options: toggled(evaluation.options, id), ...(evaluation.chosen === id ? { chosen: undefined, decidedBy: undefined } : {}) })}
+        />
+        {used.length > 0 && (
+          <div className="blocks-chapters">
+            {used.map((one) => <button key={one.id} type="button" className="guidance__link" onClick={() => onChapter(one.id)}>{t('blocks.chapterOf', { name: one.name })}</button>)}
+          </div>
+        )}
+      </div>
       {evaluation.contexts.length === 0 && <Band tone="info" title={t('blocks.pickContextFirst')} />}
       <EvaluationGrid block={block} evaluation={evaluation} {...(may ? { onChange: save } : {})} />
       {proposing && <ProposeDialog row={row} scope={scope} evaluation={evaluation} onClose={() => setProposing(false)} />}

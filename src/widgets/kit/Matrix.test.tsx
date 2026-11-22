@@ -336,3 +336,11 @@ describe('a matrix whose press writes', () => {
     expect(await axeFindings()).toEqual([])
   })
 })
+
+describe('a cell that falls short', () => {
+  it('is said by an attribute of its own, apart from attention', () => {
+    renderShell(<Matrix label="Ratings" {...BASE} cellOf={(row, column) => (row === 'team' && column === 'plan' ? { show: '−1', meaning: 'one short', short: true } : null)} />)
+    expect(cell(/Warehouse team, Plan/).hasAttribute('data-short')).toBe(true)
+    expect(cell(/Warehouse team, Plan/).hasAttribute('data-attention')).toBe(false)
+  })
+})
