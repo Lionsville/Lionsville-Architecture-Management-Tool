@@ -6,11 +6,12 @@
  * (ADR-0026): observations, causes, solutions and experiments, each added,
  * patched and removed.
  */
-import { causesOf, experimentsOf, observationsOf, solutionsOf } from '../normalised'
+import { causesOf, observationsOf, solutionsOf } from '../normalised'
 import type { Model } from '../normalised'
 import type { Cause } from '../observation'
 import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys, Refused } from './handler'
+import { plainFamily } from './plain'
 import { drop, patched, put, withRows } from './rows'
 import { patchWrites } from './writes'
 import { sameValue } from '../recordKey'
@@ -103,118 +104,11 @@ export const OBSERVATION_COMMANDS = {
   },
 } satisfies Partial<CommandTable>
 
-export const CAUSE_COMMANDS = {
-  'cause.add': {
-    carries: { cause: true },
-    writes: (command) => [`cause/${command.cause.id}`],
-    apply(model, command, { meta }) {
-      const { cause, at } = command
-      if (cause.id in causesOf(model)) return taken
-      const rows = put(causesOf(model), model.order.causes, cause.id, cause, at)
-      return ok(withRows(model, 'causes', rows), { type: 'cause.remove', id: cause.id }, meta)
-    },
-  },
+export const CAUSE_COMMANDS = plainFamily('causes', {
+  fields: CAUSE_FIELDS,
+  refuses: (model, _cause, command, held) => (command.type === 'cause.update' && held ? rootRefusal(model, held, command.patch) : undefined),
+})
 
-  'cause.update': {
-    carries: { id: true, patch: true },
-    patch: { keys: CAUSE_FIELDS, row: (model, command) => causesOf(model)[command.id] },
-    writes: (command) => patchWrites(`cause/${command.id}`, command.patch),
-    apply(model, command, { meta }) {
-      const held = causesOf(model)[command.id]
-      if (!held) return gone
-      const refused = rootRefusal(model, held, command.patch)
-      if (refused) return refused
-      const { row, inverse } = patched(held, command.patch)
-      const rows = put(causesOf(model), model.order.causes, command.id, row)
-      return ok(withRows(model, 'causes', rows), { type: 'cause.update', id: command.id, patch: inverse }, meta)
-    },
-  },
+export const SOLUTION_COMMANDS = plainFamily('solutions', { fields: SOLUTION_FIELDS })
 
-  'cause.remove': {
-    carries: { id: true },
-    writes: (command) => [`cause/${command.id}`],
-    apply(model, command, { meta }) {
-      const held = causesOf(model)[command.id]
-      if (!held) return gone
-      const at = model.order.causes.indexOf(command.id)
-      const rows = drop(causesOf(model), model.order.causes, command.id)
-      return ok(withRows(model, 'causes', rows), { type: 'cause.add', cause: held, at }, meta)
-    },
-  },
-} satisfies Partial<CommandTable>
-
-export const SOLUTION_COMMANDS = {
-  'solution.add': {
-    carries: { solution: true },
-    writes: (command) => [`solution/${command.solution.id}`],
-    apply(model, command, { meta }) {
-      const { solution, at } = command
-      if (solution.id in solutionsOf(model)) return taken
-      const rows = put(solutionsOf(model), model.order.solutions, solution.id, solution, at)
-      return ok(withRows(model, 'solutions', rows), { type: 'solution.remove', id: solution.id }, meta)
-    },
-  },
-
-  'solution.update': {
-    carries: { id: true, patch: true },
-    patch: { keys: SOLUTION_FIELDS, row: (model, command) => solutionsOf(model)[command.id] },
-    writes: (command) => patchWrites(`solution/${command.id}`, command.patch),
-    apply(model, command, { meta }) {
-      const held = solutionsOf(model)[command.id]
-      if (!held) return gone
-      const { row, inverse } = patched(held, command.patch)
-      const rows = put(solutionsOf(model), model.order.solutions, command.id, row)
-      return ok(withRows(model, 'solutions', rows), { type: 'solution.update', id: command.id, patch: inverse }, meta)
-    },
-  },
-
-  'solution.remove': {
-    carries: { id: true },
-    writes: (command) => [`solution/${command.id}`],
-    apply(model, command, { meta }) {
-      const held = solutionsOf(model)[command.id]
-      if (!held) return gone
-      const at = model.order.solutions.indexOf(command.id)
-      const rows = drop(solutionsOf(model), model.order.solutions, command.id)
-      return ok(withRows(model, 'solutions', rows), { type: 'solution.add', solution: held, at }, meta)
-    },
-  },
-} satisfies Partial<CommandTable>
-
-export const EXPERIMENT_COMMANDS = {
-  'experiment.add': {
-    carries: { experiment: true },
-    writes: (command) => [`experiment/${command.experiment.id}`],
-    apply(model, command, { meta }) {
-      const { experiment, at } = command
-      if (experiment.id in experimentsOf(model)) return taken
-      const rows = put(experimentsOf(model), model.order.experiments, experiment.id, experiment, at)
-      return ok(withRows(model, 'experiments', rows), { type: 'experiment.remove', id: experiment.id }, meta)
-    },
-  },
-
-  'experiment.update': {
-    carries: { id: true, patch: true },
-    patch: { keys: EXPERIMENT_FIELDS, row: (model, command) => experimentsOf(model)[command.id] },
-    writes: (command) => patchWrites(`experiment/${command.id}`, command.patch),
-    apply(model, command, { meta }) {
-      const held = experimentsOf(model)[command.id]
-      if (!held) return gone
-      const { row, inverse } = patched(held, command.patch)
-      const rows = put(experimentsOf(model), model.order.experiments, command.id, row)
-      return ok(withRows(model, 'experiments', rows), { type: 'experiment.update', id: command.id, patch: inverse }, meta)
-    },
-  },
-
-  'experiment.remove': {
-    carries: { id: true },
-    writes: (command) => [`experiment/${command.id}`],
-    apply(model, command, { meta }) {
-      const held = experimentsOf(model)[command.id]
-      if (!held) return gone
-      const at = model.order.experiments.indexOf(command.id)
-      const rows = drop(experimentsOf(model), model.order.experiments, command.id)
-      return ok(withRows(model, 'experiments', rows), { type: 'experiment.add', experiment: held, at }, meta)
-    },
-  },
-} satisfies Partial<CommandTable>
+export const EXPERIMENT_COMMANDS = plainFamily('experiments', { fields: EXPERIMENT_FIELDS })

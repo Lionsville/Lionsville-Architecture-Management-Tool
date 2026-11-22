@@ -12,13 +12,10 @@
  * principle that is removed is a question about every scope below, which no
  * one scope's step can ask: the screen and the agent ask it first.
  */
-import { principlesOf } from '../normalised'
 import type { Principle } from '../principle'
 import { aspectsRefusal, sharpenRefusal } from '../principle'
-import { gone, ok, taken } from './handler'
-import type { CommandTable, PatchKeys, Refused } from './handler'
-import { drop, patched, put, withRows } from './rows'
-import { patchWrites } from './writes'
+import type { PatchKeys, Refused } from './handler'
+import { plainFamily } from './plain'
 
 /** Every field of a principle but its id. */
 const PRINCIPLE_FIELDS: PatchKeys<'principle.update'> = {
@@ -36,44 +33,7 @@ function principleRefusal(next: Principle, held?: Principle): Refused | undefine
   return undefined
 }
 
-export const PRINCIPLE_COMMANDS = {
-  'principle.add': {
-    carries: { principle: true },
-    writes: (command) => [`principle/${command.principle.id}`],
-    apply(model, command, { meta }) {
-      const { principle, at } = command
-      if (principle.id in principlesOf(model)) return taken
-      const refused = principleRefusal(principle)
-      if (refused) return refused
-      const rows = put(principlesOf(model), model.order.principles, principle.id, principle, at)
-      return ok(withRows(model, 'principles', rows), { type: 'principle.remove', id: principle.id }, meta)
-    },
-  },
-
-  'principle.update': {
-    carries: { id: true, patch: true },
-    patch: { keys: PRINCIPLE_FIELDS, row: (model, command) => principlesOf(model)[command.id] },
-    writes: (command) => patchWrites(`principle/${command.id}`, command.patch),
-    apply(model, command, { meta }) {
-      const held = principlesOf(model)[command.id]
-      if (!held) return gone
-      const { row, inverse } = patched(held, command.patch)
-      const refused = principleRefusal(row, held)
-      if (refused) return refused
-      const rows = put(principlesOf(model), model.order.principles, command.id, row)
-      return ok(withRows(model, 'principles', rows), { type: 'principle.update', id: command.id, patch: inverse }, meta)
-    },
-  },
-
-  'principle.remove': {
-    carries: { id: true },
-    writes: (command) => [`principle/${command.id}`],
-    apply(model, command, { meta }) {
-      const held = principlesOf(model)[command.id]
-      if (!held) return gone
-      const at = model.order.principles.indexOf(command.id)
-      const rows = drop(principlesOf(model), model.order.principles, command.id)
-      return ok(withRows(model, 'principles', rows), { type: 'principle.add', principle: held, at }, meta)
-    },
-  },
-} satisfies Partial<CommandTable>
+export const PRINCIPLE_COMMANDS = plainFamily('principles', {
+  fields: PRINCIPLE_FIELDS,
+  refuses: (_model, principle, _command, held) => principleRefusal(principle, held),
+})
