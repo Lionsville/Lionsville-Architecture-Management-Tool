@@ -7,6 +7,7 @@
  * the linter is handed a file at a path that does not exist and asked what it
  * thinks.
  */
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { ESLint } from 'eslint'
 import { describe, expect, it } from 'vitest'
@@ -62,6 +63,62 @@ describe('the import matrix', () => {
   it('still refuses what a module\'s row does not allow', async () => {
     const said = await layeringAt('src/model/one.ts', "import { App } from '../app/App'\nexport const one = App\n")
     expect(said.join('\n')).toMatch(/model is the bottom of the tree/)
+  })
+})
+
+/**
+ * The tier between the features and the shell (ADR-0049): a seam the window
+ * fills, and the modules composed of features over it, in a fixed order. A
+ * composed module reads the features its row names and what is before it in
+ * that order; nothing below the tier reads it, and it never reads the shell.
+ */
+describe('a module composed of features', () => {
+  it('may import a feature its row names, and the seam', async () => {
+    const reading = "import { organisationFacts } from '../operating/organisationFacts'\nimport { holdWrite } from '../session/writeRefusals'\nexport const one = [organisationFacts, holdWrite]\n"
+    expect(await layeringAt('src/units/one.ts', reading)).toEqual([])
+  })
+
+  it('may not import the shell', async () => {
+    const reading = "import { App } from '../app/App'\nexport const one = App\n"
+    expect((await layeringAt('src/units/one.ts', reading)).join('\n')).toMatch(/it knows no frame, no workspace and no boot/)
+    expect((await layeringAt('src/session/one.ts', reading)).join('\n')).toMatch(/the shell fills it/)
+    expect((await layeringAt('src/guidance/one.ts', reading)).join('\n')).toMatch(/what a page of any of them is handed/)
+    expect((await layeringAt('src/organisation/one.ts', reading)).join('\n')).toMatch(/It knows no frame and no boot/)
+  })
+
+  it('is not imported by a feature it is composed of', async () => {
+    const reading = "import { ChartPage } from '../units/ChartPage'\nexport const one = ChartPage\n"
+    expect((await layeringAt('src/editor/one.ts', reading)).join('\n')).toMatch(/The editor takes a model and emits batches/)
+  })
+
+  it('does not reach the seam from below, nor a composed module after it from one before', async () => {
+    const chart = "import { ChartPage } from '../units/ChartPage'\nexport const one = ChartPage\n"
+    expect((await layeringAt('src/session/one.ts', chart)).join('\n')).toMatch(/the shell fills it/)
+    const home = "import { ScopeHome } from '../organisation/ScopeHome'\nexport const one = ScopeHome\n"
+    expect((await layeringAt('src/units/one.ts', home)).join('\n')).toMatch(/it knows no frame, no workspace and no boot/)
+    expect((await layeringAt('src/guidance/one.ts', home)).join('\n')).toMatch(/what a page of any of them is handed/)
+  })
+
+  /**
+   * A composed module is called what the domain calls things, and so are
+   * files elsewhere: the rule reads where a specifier goes and not a name in
+   * it, and a barrel would be reached by a specifier it could not tell from
+   * such a file.
+   */
+  it('is not a file elsewhere that carries its name, and has no barrel to be mistaken for one', async () => {
+    const unitsFile = "import type { Assignment } from '../units'\nimport { isUnit } from '../../model/units'\nexport const one = isUnit as unknown as Assignment\n"
+    expect(await layeringAt('src/model/commands/one.ts', unitsFile)).toEqual([])
+    const tools = "import { organisationKnown } from './organisation'\nexport const one = organisationKnown\n"
+    expect(await layeringAt('src/agent/write/one.ts', tools)).toEqual([])
+    for (const module of ['session', 'units', 'guidance', 'organisation']) {
+      expect(existsSync(`${root}src/${module}/index.ts`) || existsSync(`${root}src/${module}/index.tsx`), module).toBe(false)
+    }
+  })
+
+  it('is imported by the shell, and by a composed module after it', async () => {
+    const reading = "import { ChartPage } from '../units/ChartPage'\nimport { drawRef } from '../guidance/RefDrawings'\nexport const one = [ChartPage, drawRef]\n"
+    expect(await layeringAt('src/app/one.ts', reading)).toEqual([])
+    expect(await layeringAt('src/organisation/one.ts', reading)).toEqual([])
   })
 })
 

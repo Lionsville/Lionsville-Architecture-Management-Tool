@@ -44,6 +44,15 @@ import { relative } from 'node:path'
  * imports `app`: it is the composition root, and a module that needs something
  * from it takes it as a prop.
  *
+ * Between the features and `app` is a tier where a feature is composed of
+ * features (ADR-0049): `session`, the seam a window fills, and over it `units`,
+ * `guidance` and `organisation`, in that order. Each may import the features
+ * its row names, the seam, and the composed modules before it in the list —
+ * never one after it, so no loop is possible — and only `app` and a composed
+ * module later in the list may import one of them. None may import `app`.
+ * They are refused by a rule of their own (`COMPOSED`, below), because their
+ * names are also files' names elsewhere.
+ *
  * Generated rather than written out, because a hand-written matrix is where the
  * eleventh row quietly disagrees with the other ten — and because a per-module
  * `no-restricted-imports` block REPLACES the rule rather than adding to it, so
@@ -60,7 +69,7 @@ import { relative } from 'node:path'
 const MODULES = [
   'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'comments', 'principles', 'blocks', 'decisions', 'observations',
   'operating', 'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
-  'help', 'app',
+  'help', 'session', 'units', 'guidance', 'organisation', 'app',
 ]
 
 const MAY_IMPORT = {
@@ -100,6 +109,15 @@ const MAY_IMPORT = {
   // The help is a page of its own (`help/index.html`), loaded beside the app and
   // never inside it: it draws with the kit and the words, and knows no screen.
   help: ['i18n', 'platform', 'widgets'],
+  // The composed tier (ADR-0049), in the order of the list above: the seam
+  // first, then each module over the ones before it.
+  session: ['model', 'i18n', 'platform', 'widgets', 'ports', 'projects', 'agent'],
+  units: ['model', 'i18n', 'platform', 'widgets', 'people', 'operating', 'business', 'editor', 'projects', 'agent', 'session'],
+  guidance: ['model', 'i18n', 'platform', 'widgets', 'documentation', 'decisions', 'observations', 'principles', 'blocks', 'projects', 'session'],
+  organisation: [
+    'model', 'i18n', 'platform', 'widgets', 'people', 'documentation', 'comments', 'principles', 'blocks', 'decisions', 'observations',
+    'roadmap', 'business', 'search', 'editor', 'projects', 'agent', 'ports', 'session', 'units', 'guidance',
+  ],
   // `platform/node` is the one thing the top of the tree may not have either:
   // `app` is the renderer, and code that says `node:` cannot be in it.
   app: MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'app' && m !== 'platform/node'),
@@ -131,6 +149,10 @@ const WHY = {
   adapters: 'An adapter fills one seam: the model, projects, ports, platform and the agent\'s vocabulary are all it may know — and, of the analysis, what older data meant (`observations/rootsFromSolutions`, ADR-0032 §9), which every place work is kept reads the same way.',
   providers: 'A provider is a place work is kept, whole: its implementation, its way in and its chrome (ADR-0022, ADR-0031 §4). It may draw, in the language that is on, and name how it keeps work; only the composition root registers one, and it knows no screen of the app\'s.',
   help: 'The help is its own page beside the app: the kit, the words and the platform\'s facts are all it may know, so it opens with nothing open and adds nothing to the app\'s first download.',
+  session: 'What a window lends the pages drawn in it: a write in another scope under its rights, a refusal held, a finding marked, the folds kept while it is open, where a press may go. It draws no page and chooses nothing; the shell fills it (ADR-0049).',
+  units: 'The organisation as units, drawn: the chart, the Conway map, a unit made, moved and deleted. Composed of the modules it names and of what the window lends; it knows no frame, no workspace and no boot (ADR-0049).',
+  guidance: 'Principles, building blocks and references read over the tree: what a page of any of them is handed, and how a reference is drawn. Composed of the modules it names and of what the window lends (ADR-0049).',
+  organisation: 'A scope\'s home and what is read over the whole tree from it: the register, the checks, the topics, who serves it, its settings. It knows no frame and no boot (ADR-0049).',
   app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
 }
 
@@ -331,6 +353,33 @@ const NARROW_EDGES = {
 }
 
 /**
+ * THE COMPOSED TIER IS REFUSED BY WHERE A SPECIFIER GOES, NOT BY A NAME IN IT.
+ *
+ * Every other module is refused with a `group`, which is matched the way a
+ * gitignore line is: a pattern ending in a module's name covers any specifier
+ * with that name as a segment. That has been exact for as long as no file was
+ * called what a module is called. The composed modules are called what the
+ * domain calls things, and files already are too: `model/units.ts` is what
+ * the organisation's units are, and `agent/write/organisation.ts` is a family
+ * of tools. A group naming `units` would refuse the model its own file.
+ *
+ * So these four are left out of every group and refused by a pattern that
+ * reads the shape of the path: a specifier that climbs and then goes into the
+ * module's folder — `../units/ChartPage`, `../../session/writeIn` — and
+ * nothing else. `../units` on its own is a file beside the importer's folder,
+ * which is why **a composed module has no barrel**: an `index.ts` there would
+ * be reached by a specifier this pattern cannot tell from that file.
+ * `build/layering.test.ts` holds both, and that there is none.
+ */
+const COMPOSED = ['session', 'units', 'guidance', 'organisation']
+
+/** A specifier that climbs out of where it is written and into one of `modules`. */
+const into = (modules) => `^(\\.\\./)+(?:${modules.join('|')})/`
+
+/** The composed modules `from` may not import: every one its row does not name. */
+const composedRefusedTo = (from) => COMPOSED.filter((to) => to !== from && !MAY_IMPORT[from].includes(to))
+
+/**
  * A specifier into `to` that is not under `within`, or that climbs back out of
  * it with `..`: what a narrow edge still refuses.
  */
@@ -353,10 +402,12 @@ const IMPORT_MATRIX = MODULES.map((from) => ({
         {
           group: MODULES
             .filter((to) => to !== from && !MAY_IMPORT[from].includes(to))
+            .filter((to) => !COMPOSED.includes(to))
             .filter((to) => !(NARROW_EDGES[from] ?? []).some((edge) => edge.to === to))
             .flatMap((to) => [`**/${to}/**`, `**/${to}`]),
           message: WHY[from],
         },
+        ...(composedRefusedTo(from).length > 0 ? [{ regex: into(composedRefusedTo(from)), message: WHY[from] }] : []),
         ...(NARROW_EDGES[from] ?? []).map((edge) => ({ regex: outside(edge), message: WHY[from] })),
         ...(PURE.includes(from) ? [{
           group: SCREEN_PACKAGES,
