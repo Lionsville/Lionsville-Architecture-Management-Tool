@@ -31,11 +31,12 @@
  * - A count the caller keeps (calls, writes): the call answers `stop`.
  *
  * **One runtime a script, one module for all of them.** A runtime holds
- * nothing of the script before it. The module is the compiled interpreter,
- * kept. It is let go of where the host's own stack overflowed under the
- * interpreter — a script nested deeper than the host's stack before it met
- * its own limit — because nothing unwound the interpreter's stack then, and
- * the next script gets a new one.
+ * nothing of the script before it. The module is the interpreter's
+ * instance, kept while scripts end of themselves. It is let go of whole,
+ * and the next script given a new one, where a script was stopped or left
+ * work behind it — its runtime is not torn down around what it still held —
+ * and where the host's own stack overflowed under the interpreter, since
+ * nothing unwound the interpreter's stack then.
  *
  * The only file that imports the interpreter, and it imports nothing else
  * of this tree but types, so a thread that runs it loads this file alone.
@@ -290,11 +291,23 @@ class Run {
     return outcome
   }
 
-  /** Let go of everything the script held. A runtime that will not be let go of is not trusted again. */
+  /**
+   * Let go of everything the script held, where it ended of itself with
+   * nothing left waiting. A script that was stopped, or that left a call or a
+   * job behind it, still holds values the runtime would have to be torn down
+   * around: that runtime is left as it is and its interpreter let go of whole
+   * instead, which frees the same memory and cannot fail halfway.
+   */
   dispose(): void {
+    if (this.stopped !== undefined || this.pending.size > 0 || this.broken) {
+      this.broken = true
+      return
+    }
     try {
-      for (const deferred of this.pending) deferred.dispose()
-      this.pending.clear()
+      if (this.runtime.hasPendingJob()) {
+        this.broken = true
+        return
+      }
       this.vm.dispose()
       this.runtime.dispose()
     } catch {
