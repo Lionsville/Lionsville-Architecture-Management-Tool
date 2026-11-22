@@ -4,8 +4,10 @@
 /**
  * The surface, for a process with no screen: the model.
  *
- * What a landscape is made of, what a change to it is, and the one writer: the
- * records, the commands, the reducer and the arithmetic over them.
+ * What a landscape is made of and the arithmetic over it: the records, the
+ * model indexed by id, a change said as commands, and what a step is called.
+ * The writer of a change is an entry of its own, because it reaches every
+ * kind of command and most of what reads the model never writes.
  *
  * A build composed from this one imports this entry and never the files behind
  * it (ADR-0022, amended), so those may move. Names only, each from the file
@@ -22,8 +24,6 @@ export {
   causesToCommands, commentsToCommands, duplicateDiagram, experimentsToCommands, observationsToCommands, placeOn, solutionsToCommands, transaction,
 } from '../../model/commands'
 export type { Command } from '../../model/commands'
-export type { CommandRefusal, CommandType, WriteKey } from '../../model/commands/handler'
-export { COMMAND_TABLE } from '../../model/commands/table'
 export { EVERYTHING } from '../../model/commands/writes'
 export type { Comment } from '../../model/comment'
 export { diffModels } from '../../model/diff'
@@ -38,10 +38,6 @@ export type { ContentAddress, ImageEntry, ImageFolder, ImageName } from '../../m
 export { claimKey, idPolicy, idsIn } from '../../model/keys'
 export { isDay, isGoneOn, today } from '../../model/lifecycle'
 export {
-  holdsAllIn, managedReach, managingRoleIds, onlyAssignments, onlyPeopleIn, reachesAssignment, reachesHolder, reachesPosition,
-} from '../../model/managing'
-export type { ManagedReach } from '../../model/managing'
-export {
   causeList, causesOf, commentList, commentsOf, decisionsOf, diagramList, elementList, experimentList, experimentsOf, fromArrays, fromDiagram,
   observationList, observationsOf, relationList, solutionList, solutionsOf, toArrays, toDiagram, transitionList, transitionsOf,
 } from '../../model/normalised'
@@ -54,7 +50,6 @@ export type { PersonId } from '../../model/person'
 export { CANVAS_KINDS, NODE_SIZES } from '../../model/placement'
 export { RECORD_LISTS, SCOPE_RECORD, recordsChanged, sameValue, stableText } from '../../model/recordKey'
 export type { RecordKey, RecordKind } from '../../model/recordKey'
-export { apply, applyGuarded, writesOf } from '../../model/reducer'
 export type { Transition } from '../../model/transition'
 export type { DesignDiagram, DesignElement, DocumentImage, ElementId, ElementKind, Geometry, Relation, RelationType } from '../../model/types'
 export { dayBefore, endingFor, leavingStep, personOf, restoringFor, returningStep, runsOn } from '../../model/units'

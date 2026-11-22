@@ -2,19 +2,17 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /**
- * The surface, for a process with no screen: the agent.
+ * The surface, for a process with no screen: the agent's vocabulary.
  *
- * The vocabulary, the handler, the protocol its server speaks and what each
- * asks of its host (ADR-0007): everything a process that answers an agent
- * loads, and nothing a screen is drawn with.
+ * The tools, their schemas and refusals, the protocol the agent's server
+ * speaks, and what each asks of its host (ADR-0007). The handler is an entry
+ * of its own.
  *
  * A build composed from this one imports this entry and never the files behind
  * it (ADR-0022, amended), so those may move. Names only, each from the file
  * that holds it; `src/composed/SURFACE.txt` is what the whole offers.
  */
 export { Driving } from '../../agent/driving'
-export { handle } from '../../agent/handle'
-export type { FollowScopeTypes, HistoryEntry, SessionView } from '../../agent/handle'
 export { RPC, isJsonRpcRequest, respond } from '../../agent/mcpProtocol'
 export type { JsonRpcRequest, JsonRpcResponse, Relay } from '../../agent/mcpProtocol'
 export type { AcrossWork, ChangeAcross, ChangedAcross } from '../../agent/merge'

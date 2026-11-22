@@ -8,6 +8,14 @@ node/examples · seedExample · function · (repositories: CarryFrom, key: strin
 node/examples · shippedExample · function · (key: string) => Promise<ExampleProject | undefined>
 node/workingFile · readWorkingFile · function · (repositories: BringInto, bytes: Uint8Array<ArrayBufferLike>, options?: ReadOptions) => Promise<ReadIn | { refused: OpenRefusal; }>
 node/workingFile · writeWorkingFile · function · (repositories: CarryFrom, options?: { from?: string | undefined; withoutNames?: boolean | undefined; recorder?: RecorderSource | undefined; }) => Promise<CarriedOut>
+process/address · ROOT_SCOPE · const · string
+process/address · ScopePath · type · string
+process/address · ancestorScopes · function · (path: string) => string[]
+process/address · isSafeScopePath · function · (value: unknown) => value is string
+process/address · isWithinScope · function · (path: string, within: string) => boolean
+process/address · parentScope · function · (path: string) => string | undefined
+process/address · scopePathLabel · function · (path: string) => string
+process/address · scopeSegments · function · (path: string) => string[]
 process/agent · AcrossWork · type · Analysis & { solutions: Solution[]; experiments: Experiment[]; comments?: Comment[] | undefined; }
 process/agent · AgentAnswer · type · { readonly ok: false; readonly refusal: AgentRefusal; readonly detail?: string | undefined; } | { readonly ok: true; readonly content: readonly ToolContent[]; }
 process/agent · AgentRefusal · type · "agent.badArguments" | "agent.busy" | "agent.cancelled" | "agent.conflict" | "agent.draftOpen" | "agent.failed" | "agent.locked" | "agent.mayNotModerate" | "agent.noAnswer" | "agent.noProject" | "agent.noRegister" | "agent.noScreen" | "agent.noTree" | "agent.notDrawn" | "agent.notYours" | "agent.off" | "agent.planned" | "agent.possibleDuplicate" | "agent.principleCited" | "agent.readOnly" | "agent.saveFailed" | "agent.scopeNotOpen" | "agent.stale" | "agent.stopped" | "agent.tooLarge" | "agent.unitsInside" | "agent.unknownId" | "agent.unknownScope" | "agent.unknownTool" | "agent.windowHidden" | "check.ownedElsewhere" | "claim.definedHere" | "claim.notAbove" | "gesture.barrier" | "merge.archived" | "merge.linkForbidden" | "merge.merged" | "merge.mixedTone" | "merge.notADay" | "merge.nothing" | "merge.survivorAbsorbed" | "merge.unverified" | "move.archived" | "move.merged" | "move.moved" | "move.sameScope" | "move.unknownScope" | "people.badDay" | "people.badDistinct" | "people.badEmail" | "people.badMerge" | "people.forgotten" | "people.mergeAsks" | "people.merged" | "people.nameRequired" | "people.notActive" | "people.notForgotten" | "people.notLeft" | "people.unknown" | "reportingLine.loop" | "reportingLine.self" | "scope.isOpen" | "scope.notEmpty" | "scope.organisation" | "scope.scopesBelow" | "scope.unreadable" | "shell.badScopePath" | "shell.scopeIntoItself" | "shell.scopeTaken" | CommandRefusal
@@ -15,8 +23,6 @@ process/agent · AgentRequest · type · { readonly id: string; readonly tool: s
 process/agent · ChangeAcross · type · (paths: readonly string[], change: (held: ReadonlyMap<string, AcrossWork>) => ReadonlyMap<string, AcrossWork> | undefined | { refused: string; }) => Promise<ChangedAcross>
 process/agent · ChangedAcross · type · { ok: false; reason: string; refused?: string | undefined; scope?: string | undefined; changed?: readonly string[] | undefined; } | { ok: true; changed: readonly string[]; unsaved?: true | undefined; }
 process/agent · Driving · class · new (clock?: () => string): Driving { current: () => DrivingState; latest: () => DrivingSession | undefined; admit: (tool: ToolName, client: string | undefined) => AgentRefusal | undefined; start: (client: string | undefined, purpose?: string | undefined) => void; end: (by: "agent" | "client" | "person") => void; onStop: (listener: () => void) => () => void; onChange: (listener: () => void) => () => void }
-process/agent · FollowScopeTypes · type · (follow: ReadonlyMap<string, string>) => Promise<readonly string[]>
-process/agent · HistoryEntry · type · { readonly at: number; readonly origin?: "agent" | "remote" | undefined; readonly by?: string | undefined; readonly via?: string | undefined; readonly summary: StepSummary; readonly commands: readonly Command[]; readonly barrier?: StringKey | undefined; }
 process/agent · InputSchema · type · { readonly type: "object"; readonly properties: Readonly<Record<string, ArgumentSchema>>; readonly required?: readonly string[] | undefined; readonly additionalProperties: false; }
 process/agent · JsonRpcRequest · type · { jsonrpc: "2.0"; id?: JsonRpcId | undefined; method: string; params?: unknown; }
 process/agent · JsonRpcResponse · type · { jsonrpc: "2.0"; id: JsonRpcId; error: { code: number; message: string; data?: unknown; }; } | { jsonrpc: "2.0"; id: JsonRpcId; result: unknown; }
@@ -33,7 +39,6 @@ process/agent · STRUCTURE_DEFAULTS · const · string
 process/agent · ScopeHeader · type · { name?: string | undefined; description?: null | string | undefined; kind?: "domain" | "landscape" | "organisation" | "programme" | "team" | "topic" | null | undefined; unitTypeId?: null | string | undefined; client?: null | string | undefined; links?: null | readonly { label: string; url: string; }[] | undefined; relevantTo?: null | readonly { path: string; from?: string | undefined; until?: string | undefined; }[] | undefined; }
 process/agent · ScopeRead · type · { readonly path: string; readonly name: string; readonly revision: string; readonly holds: ScopeHolds; readonly below: readonly string[]; readonly hiddenBelow: number; readonly unreadable?: true | undefined; }
 process/agent · ScopesView · type · { read(path: string): Promise<ScopeRead | undefined>; create(asked: { parent: string; name: string; withBoard: boolean; topic?: boolean | undefined; }): Promise<TreeRefused | { path: string; name: string; kind: "domain" | "landscape" | "topic"; revision: string; board?: undefined | { id: string; name: string; }; }>; serve(path: string, unitId: string): Promise<ServedFrom | TreeRefused>; describe(path: string, header: ScopeHeader): Promise<TreeRefused | { path: string; changed: readonly (keyof ScopeHeader)[]; }>; move(path: string, parent: string): Promise<TreeRefused | { from: string; to: string; carried: readonly string[]; notCarried: readonly { scope: string; reason: string; }[]; units?: readonly { id: string; scope: string; }[] | undefined; }>; remove(path: string, why: { expects: string; holds: ScopeHolds; personSaid?: string | undefined; }): Promise<TreeRefused | { removed: readonly string[]; rightsRevoked?: number | undefined; }>; }
-process/agent · SessionView · type · { indexed(): Model; current(): HostModel; activeDiagramId(): string; scopePath(): string; ancestorDecisions(): readonly Adr[]; changesOf?: ChangesOf | undefined; blocked(): "agent.conflict" | "agent.readOnly" | undefined; noScreen?: boolean | undefined; dispatch(command: Command, options?: undefined | { activeDiagramId?: string | undefined; }): HostModel | undefined; ids: IdPolicy; makeId: MakeId; today(): string; translate: Translate; containerName(applicationName: string): string; ownedElsewhere?(id: string, patch: Partial<DesignElement>): undefined | { owner?: string | undefined; }; standInFor?(id: string): DesignElement | undefined; people?(): readonly Person[] | undefined; me?(): string | undefined; account?(): undefined | { readonly id: string; readonly name: string; }; recorder?: RecorderSource | undefined; mayModerate?(): boolean; renderer?: RendererView | undefined; tree?: TreeView | undefined; revision(): number; history(): readonly HistoryEntry[]; undo(): void; undoRun?(of: AgentSessionOf): boolean; images(): readonly ImageEntry[]; addImage?(image: DocumentImage): Promise<void> | void; save(): Promise<void>; changeAcross?: ChangeAcross | undefined; landSteps?: LandSteps | undefined; followScopeTypes?: FollowScopeTypes | undefined; }
 process/agent · ShellView · type · { tree?: TreeView | undefined; people?: PeopleView | undefined; scopes?: ScopesView | undefined; translate?: Translate | undefined; screen(): Screen; open(to: Required<Pick<Destination, "scope">> & Destination): Promise<void> | void; client(): string | undefined; driving: Driving; draft?(): boolean; }
 process/agent · TOOLS · const · readonly ToolSpec<ToolName>[]
 process/agent · TOOL_NAMES · const · readonly (ToolName)[]
@@ -44,7 +49,6 @@ process/agent · TreeRefusal · type · "agent.readOnly" | "agent.stale" | "agen
 process/agent · TreeRefused · type · { readonly refused: TreeRefusal; readonly scope?: string | undefined; readonly detail?: string | undefined; }
 process/agent · TreeView · type · { scopes(): readonly TreeScope[]; listed?(): boolean; lookup(id: string): TreeEntry | undefined; register(): readonly TreeEntry[]; technology?(): readonly TreeTechnologyRow[]; findings(day?: string | undefined): readonly TreeFinding[]; initiativesBelow(path: string): readonly { scope: string; transition: Transition; }[]; analysisBelow?(path: string): readonly ScopeAnalysis[]; explainedFromAbove?(path: string): ReadonlyMap<string, readonly CauseAbove[]>; rowsTo?(id: string, types?: readonly RelationType[] | undefined): readonly Relation[]; rowsOf?(id: string): readonly { scope: string; relation: Relation; }[]; units?(): readonly { scope: string; unit: DesignElement; }[]; assignments?(): readonly { scope: string; assignment: Assignment; }[]; checkMarks?(): readonly { scope: string; mark: CheckMark; }[]; moves?(): readonly { scope: string; move: TransitionMove; }[]; records?(): TreeRecords; operatingModel?(): { unitTypes: readonly UnitType[]; roles: readonly Role[]; responsibilities: readonly Responsibility[]; operatingRules: readonly OperatingRule[]; aspectScales?: readonly AspectScale[] | undefined; }; read(path: string): Promise<ForeignScope | undefined>; }
 process/agent · checkArguments · function · (schema: InputSchema | RowSchema, args: unknown) => string | undefined
-process/agent · handle · function · (request: AgentRequest, session: SessionView | undefined, shell?: ShellView | undefined) => Promise<AgentAnswer>
 process/agent · isJsonRpcRequest · function · (value: unknown) => value is JsonRpcRequest
 process/agent · isToolName · function · (value: unknown) => value is ToolName
 process/agent · isTreeTool · function · (tool: string) => tool is "scope.create" | "scope.move" | "scope.remove" | "scope.update"
@@ -53,6 +57,10 @@ process/agent · listChecks · function · (tree: TreeView | undefined, rawArgs:
 process/agent · refused · function · (refusal: AgentRefusal, detail?: string | undefined) => AgentAnswer
 process/agent · respond · function · (message: JsonRpcRequest, relay: Relay, server: ServerIdentity, options?: RespondOptions) => Promise<JsonRpcResponse | undefined>
 process/agent · toolSpec · function · (name: ToolName) => ToolSpec<ToolName>
+process/agentHandler · FollowScopeTypes · type · (follow: ReadonlyMap<string, string>) => Promise<readonly string[]>
+process/agentHandler · HistoryEntry · type · { readonly at: number; readonly origin?: "agent" | "remote" | undefined; readonly by?: string | undefined; readonly via?: string | undefined; readonly summary: StepSummary; readonly commands: readonly Command[]; readonly barrier?: StringKey | undefined; }
+process/agentHandler · SessionView · type · { indexed(): Model; current(): HostModel; activeDiagramId(): string; scopePath(): string; ancestorDecisions(): readonly Adr[]; changesOf?: ChangesOf | undefined; blocked(): "agent.conflict" | "agent.readOnly" | undefined; noScreen?: boolean | undefined; dispatch(command: Command, options?: undefined | { activeDiagramId?: string | undefined; }): HostModel | undefined; ids: IdPolicy; makeId: MakeId; today(): string; translate: Translate; containerName(applicationName: string): string; ownedElsewhere?(id: string, patch: Partial<DesignElement>): undefined | { owner?: string | undefined; }; standInFor?(id: string): DesignElement | undefined; people?(): readonly Person[] | undefined; me?(): string | undefined; account?(): undefined | { readonly id: string; readonly name: string; }; recorder?: RecorderSource | undefined; mayModerate?(): boolean; renderer?: RendererView | undefined; tree?: TreeView | undefined; revision(): number; history(): readonly HistoryEntry[]; undo(): void; undoRun?(of: AgentSessionOf): boolean; images(): readonly ImageEntry[]; addImage?(image: DocumentImage): Promise<void> | void; save(): Promise<void>; changeAcross?: ChangeAcross | undefined; landSteps?: LandSteps | undefined; followScopeTypes?: FollowScopeTypes | undefined; }
+process/agentHandler · handle · function · (request: AgentRequest, session: SessionView | undefined, shell?: ShellView | undefined) => Promise<AgentAnswer>
 process/analysis · ObservationTab · type · "analysis" | "analysis-list" | "analysis-map" | "register" | "results" | "solutions" | "solutions-list" | "solutions-map"
 process/analysis · coverageOf · function · (relations: readonly Relation[], elsewhere?: readonly Relation[]) => Map<string, FunctionCoverage>
 process/analysis · isLive · function · (solution: Pick<Solution, "state">) => boolean
@@ -82,12 +90,8 @@ process/format · ManifestScope · type · { path: string; name: string; files: 
 process/format · OBSERVATIONS_FOLDER · const · "observations"
 process/format · OBSERVATION_SUBFOLDERS · const · readonly string[]
 process/format · PICTURES · const · "images"
-process/format · SCOPE_FILE · const · "scope.json"
 process/format · SCOPE_FOLDERS · const · readonly string[]
-process/format · SCOPE_FORMAT_VERSION · const · 18
 process/format · WorkingFileManifest · type · { type: "lionsville-architecture-manifest"; version: 1; scopes: ManifestScope[]; omitted?: undefined | { path: string; files: string[]; }[]; }
-process/format · bringIn · function · (into: BringInto, opened: Opened, options?: BringOptions) => Promise<BroughtIn>
-process/format · carryScopes · function · (scopes: readonly ScopeSnapshot[], people?: readonly Person[], removed?: readonly string[], distinct?: readonly DistinctPair[]) => Promise<CarriedOut>
 process/format · compareManifests · function · (expected: WorkingFileManifest, landed: WorkingFileManifest) => ManifestDifference | undefined
 process/format · drawingPictureFile · function · (address: string) => string | undefined
 process/format · imageNameOfFile · function · (file: string, taken: Set<string>) => string
@@ -95,10 +99,14 @@ process/format · isBinaryPath · function · (path: string) => boolean
 process/format · isFormatPath · function · (path: string) => boolean
 process/format · manifestOf · function · (scopes: readonly ScopeSnapshot[], top?: string) => Promise<WorkingFileManifest>
 process/format · namesInDocuments · function · (model: HostModel, nameOf: (file: string) => string | undefined) => HostModel
-process/format · open · function · (bytes: Uint8Array<ArrayBufferLike>, at: string) => Promise<Opened | { refused: OpenRefusal; }>
 process/format · openScopeFolder · function · (files: readonly FolderFile[], path: string, failed?: readonly string[]) => ScopeSnapshot | undefined
 process/format · pictureFileOf · function · (source: string) => string | undefined
 process/format · scopeFiles · function · (scope: ScopeSnapshot) => FolderFile[]
+process/formatVersion · SCOPE_FILE · const · "scope.json"
+process/formatVersion · SCOPE_FORMAT_VERSION · const · 18
+process/interchange · bringIn · function · (into: BringInto, opened: Opened, options?: BringOptions) => Promise<BroughtIn>
+process/interchange · carryScopes · function · (scopes: readonly ScopeSnapshot[], people?: readonly Person[], removed?: readonly string[], distinct?: readonly DistinctPair[]) => Promise<CarriedOut>
+process/interchange · open · function · (bytes: Uint8Array<ArrayBufferLike>, at: string) => Promise<Opened | { refused: OpenRefusal; }>
 process/look · AccentAnswer · type · { ok: false; why: "no-hue"; } | { ok: false; why: "not-a-colour"; } | { ok: false; why: "status-hue"; status: StatusHue; } | { ok: true; shades: AccentShades; }
 process/look · AccentShades · type · { light: Partial<Record<ColourToken, string>>; dark: Partial<Record<ColourToken, string>>; }
 process/look · ColourToken · type · "accent" | "accent-soft" | "agent" | "agent-soft" | "axis-day" | "axis-today" | "bad" | "bad-soft" | "c4-container-fill" | "c4-container-line" | "c4-context-fill" | "canvas-ground" | "card-edge" | "card-surface" | "cat-1" | "cat-1-soft" | "cat-2" | "cat-2-soft" | "cat-3" | "cat-3-soft" | "cat-4" | "cat-4-soft" | "cat-5" | "cat-5-soft" | "cat-6" | "cat-6-soft" | "chain-root" | "cov-apps" | "cov-apps-soft" | "cov-moving" | "cov-moving-soft" | "cov-none" | "cov-none-soft" | "cov-people" | "cov-people-soft" | "crosshair" | "diff-after" | "diff-after-soft" | "diff-before" | "diff-before-soft" | "drop-ok" | "drop-warn" | "editing-bar" | "exception" | "exception-soft" | "field-focus" | "focus-ring" | "grid-line" | "ground" | "guide-ring" | "harvey-need" | "heat-1" | "heat-2" | "heat-3" | "heat-4" | "heat-5" | "info" | "info-soft" | "ink" | "ink-2" | "ink-3" | "ink-dim" | "ink-empty" | "leaves" | "lens-1" | "lens-1-soft" | "lens-2" | "lens-2-soft" | "lens-3" | "lens-3-soft" | "lens-4" | "lens-4-soft" | "lens-5" | "lens-5-soft" | "lens-6" | "lens-6-soft" | "life-gone" | "life-gone-soft" | "life-live" | "life-live-soft" | "life-planned" | "life-planned-soft" | "life-retiring" | "life-retiring-soft" | "line" | "line-delivered" | "line-exception" | "line-focus" | "line-implied" | "line-ink" | "line-issue" | "line-quiet" | "line-reports-from" | "line-reports-to" | "line-runs" | "line-signal" | "line-strong" | "line-structure" | "line-uses" | "link-outline" | "looking" | "looking-soft" | "ok" | "ok-soft" | "on-accent" | "on-heat-1" | "on-heat-2" | "on-heat-3" | "on-heat-4" | "on-heat-5" | "on-poster-title" | "poster-title" | "press-hover" | "progress-fill" | "progress-track" | "raci-a" | "raci-a-ink" | "raci-r" | "rail-bad" | "rail-good" | "rail-neutral" | "scrim" | "scrim-solid" | "selected-edge" | "selected-soft" | "shadow" | "skeleton" | "state-attention-border" | "status-managed" | "status-none" | "status-offline" | "status-offline-soft" | "status-partial" | "status-risk" | "status-unset" | "surface" | "surface-2" | "surface-raised" | "warn" | "warn-soft" | "weight-fix" | "weight-fix-soft" | "weight-note" | "weight-note-soft" | "weight-review" | "weight-review-soft" | "zone-edge" | "zone-fill"
@@ -110,15 +118,21 @@ process/look · SCALE · const · { readonly 'font-ui': "\"Source Sans 3\",\"Sou
 process/look · coloursOf · function · (mode: Mode, shades?: AccentShades | undefined) => Colours
 process/look · deriveAccent · function · (input: string) => AccentAnswer
 process/look · tokenVariables · function · (mode: Mode, shades?: AccentShades | undefined) => Record<string, string>
+process/managing · ManagedReach · type · { readonly held: readonly string[]; readonly units: ReadonlySet<string>; readonly below: ReadonlySet<string>; readonly elsewhere?: ReadonlySet<string> | undefined; readonly lines?: ReadonlySet<string> | undefined; readonly overrides?: ReadonlySet<string> | undefined; readonly holders?: ReadonlySet<string> | undefined; readonly away?: ReadonlySet<string> | undefined; }
+process/managing · holdsAllIn · function · (organisation: Pick<Organisation, "assignments">, reach: ManagedReach, people: readonly string[], day: string, canonical?: (id: string) => string) => boolean
+process/managing · managedReach · function · (organisation: Organisation, person: string, day: string, canonical?: ((id: string) => string) | undefined) => ManagedReach | undefined
+process/managing · managingRoleIds · function · (organisation: Pick<Organisation, "roles">) => ReadonlySet<string>
+process/managing · onlyAssignments · function · (command: { type: string; commands?: readonly { type: string; }[] | undefined; }) => boolean
+process/managing · onlyPeopleIn · function · (model: Model, commands: readonly Command[], reach: ManagedReach, managing: ReadonlySet<string>) => boolean
+process/managing · reachesAssignment · function · (reach: ManagedReach, assignment: Pick<Assignment, "roleId" | "unitId"> & { readonly id?: string | undefined; }, managing: ReadonlySet<string>) => boolean
+process/managing · reachesHolder · function · (reach: ManagedReach, assignment: Pick<Assignment, "roleId" | "unitId"> & { readonly id?: string | undefined; }) => boolean
+process/managing · reachesPosition · function · (reach: ManagedReach, unitId: string, roleId: string) => boolean
 process/model · Adr · type · { id: string; number: number; title: string; status: AdrStatus; date: string; body: string; subjectId?: string | undefined; supersededBy?: string | undefined; chooses?: undefined | { evaluation: string; option: string; }; supersedes?: string[] | undefined; proposedBy?: PersonRef | undefined; proposedAs?: string | undefined; reason?: string | undefined; signers: AdrSigner[]; }
 process/model · Assignment · type · { id: string; unitId: string; roleId: string; person: PickedPerson; share?: number | undefined; from?: string | undefined; until?: string | undefined; acting?: true | undefined; reportsTo?: AssignmentReportingLine[] | undefined; endedByLeaving?: undefined | { until?: string | undefined; }; }
 process/model · CANVAS_KINDS · const · readonly ElementKind[] & readonly CanvasKind[]
-process/model · COMMAND_TABLE · const · CommandTable
 process/model · Cause · type · { id: string; number: number; title: string; state: CauseState; root?: true | undefined; body: string; explains: CauseLink[]; history?: CauseEvent[] | undefined; }
 process/model · CheckMark · type · { check: CheckKey; key: string; reason?: string | undefined; on: string; }
 process/model · Command · type · CommandBody & CommandMeta
-process/model · CommandRefusal · type · "command.aspectNumber" | "command.aspectsEmpty" | "command.badBlock" | "command.badEvaluation" | "command.badGroups" | "command.badReply" | "command.badScale" | "command.commentRemoved" | "command.datesOutOfOrder" | "command.gone" | "command.hostedOnContainers" | "command.interactsEnds" | "command.markFix" | "command.notAField" | "command.notCitable" | "command.notCommentable" | "command.ownedElsewhere" | "command.reasonMissing" | "command.recordedByFixed" | "command.recordedByNotYours" | "command.refinesEnds" | "command.refinesLevel" | "command.rootAddressed" | "command.rootExplained" | "command.sharpenNote" | "command.taken" | "command.technologyEnds" | "command.titleEmpty" | "command.unknownRecord"
-process/model · CommandType · type · "assignment.add" | "assignment.remove" | "assignment.update" | "board.set" | "box.remove" | "box.set" | "cause.add" | "cause.remove" | "cause.update" | "cell.remove" | "cell.set" | "checkMark.add" | "checkMark.remove" | "citation.add" | "citation.remove" | "citation.update" | "comment.add" | "comment.put" | "comment.remove" | "comment.take" | "comment.update" | "decision.add" | "decision.remove" | "decision.update" | "diagram.create" | "diagram.delete" | "diagram.rename" | "diagram.settings" | "diagram.update" | "element.create" | "element.delete" | "element.link" | "element.rate" | "element.update" | "evaluation.add" | "evaluation.remove" | "evaluation.update" | "experiment.add" | "experiment.remove" | "experiment.update" | "group.remove" | "group.set" | "member.remove" | "member.set" | "node.remove" | "node.set" | "observation.add" | "observation.remove" | "observation.update" | "operatingRule.add" | "operatingRule.remove" | "operatingRule.update" | "poster.item.add" | "poster.item.place" | "poster.item.remove" | "poster.item.update" | "principle.add" | "principle.remove" | "principle.update" | "project.settings" | "relation.create" | "relation.delete" | "relation.update" | "responsibility.add" | "responsibility.remove" | "responsibility.update" | "restore" | "role.add" | "role.remove" | "role.update" | "route.clear" | "route.set" | "solution.add" | "solution.remove" | "solution.update" | "standin.refresh" | "transaction" | "transition.add" | "transition.remove" | "transition.update" | "unitType.add" | "unitType.remove" | "unitType.update"
 process/model · Comment · type · { readonly id: string; readonly about: RecordKey; readonly by: PickedPerson; readonly at: string; readonly body: string; readonly replyTo?: string | undefined; readonly edited?: string | undefined; readonly removed?: CommentRemoved | undefined; readonly via?: string | undefined; readonly from?: CommentFrom | undefined; }
 process/model · ContentAddress · type · string
 process/model · DesignDiagram · interface · { id: string; kind: "chart" | "container" | "conway" | "drawing" | "layer7" | "map" | "sheet" | "technology"; name: string; author?: string | undefined; client?: string | undefined; documentDate?: string | undefined; asOf?: string | undefined; showTitleBlock?: boolean | undefined; applicationElementId?: string | undefined; elementId?: string | undefined; c4Level?: C4Level | undefined; drawing?: DrawingContent | undefined; journeyId?: string | undefined; lanes?: string[] | undefined; areas?: string[] | undefined; showActors?: boolean | undefined; areaSpans?: Record<string, number> | undefined; columns?: number | undefined; paper?: SheetPaper | undefined; labels?: string[] | undefined; poster?: PosterSettings | undefined; members: DiagramMember[]; groups?: DiagramGroup[] | undefined; lines?: DiagramLine[] | undefined; aspectConfig?: AspectConfigEntry[] | undefined; showAspects?: boolean | undefined; autoRoute?: boolean | undefined; showDeployment?: boolean | undefined; colourBy?: "category" | "coveredBy" | "domains" | "lifecycle" | "owner" | "platform" | "retiring" | "technology" | "technologyLifecycle" | "vendor" | "who" | `aspect:${string}` | `one:${string}` | undefined; geometry?: Geometry | undefined }
@@ -136,7 +150,6 @@ process/model · ImageEntry · type · { readonly name: string; readonly mediaTy
 process/model · ImageFolder · type · string
 process/model · ImageName · type · string
 process/model · LAYER7_CANVAS · const · Rect
-process/model · ManagedReach · type · { readonly held: readonly string[]; readonly units: ReadonlySet<string>; readonly below: ReadonlySet<string>; readonly elsewhere?: ReadonlySet<string> | undefined; readonly lines?: ReadonlySet<string> | undefined; readonly overrides?: ReadonlySet<string> | undefined; readonly holders?: ReadonlySet<string> | undefined; readonly away?: ReadonlySet<string> | undefined; }
 process/model · Model · type · Omit<HostModel, "assignments" | "causes" | "checkMarks" | "citations" | "comments" | "decisions" | "diagrams" | "elements" | "evaluations" | "experiments" | "observations" | "operatingRules" | "principles" | "relations" | "responsibilities" | "roles" | "solutions" | "transitions" | "unitTypes"> & { elements: Record<string, DesignElement>; relations: Record<string, Relation>; diagrams: Record<string, Diagram>; decisions?: Record<string, Adr> | undefined; transitions?: Record<string, Transition> | undefined; observations?: Record<string, Observation> | undefined; causes?: Record<string, Cause> | undefined; solutions?: Record<string, Solution> | undefined; experiments?: Record<string, Experiment> | undefined; unitTypes?: Record<string, UnitType> | undefined; roles?: Record<string, Role> | undefined; responsibilities?: Record<string, Responsibility> | undefined; operatingRules?: Record<string, OperatingRule> | undefined; assignments?: Record<string, Assignment> | undefined; checkMarks?: Record<string, CheckMark> | undefined; comments?: Record<string, Comment> | undefined; principles?: Record<string, Principle> | undefined; citations?: Record<string, Citation> | undefined; evaluations?: Record<string, Evaluation> | undefined; order: ModelOrder; }
 process/model · ModelChange · type · { kind: ChangeKind; what: ChangeSubject; id: string; name: string; on?: string | undefined; relationType?: RelationType | undefined; onId?: string | undefined; fields?: string[] | undefined; count?: number | undefined; refChanged?: undefined | { to?: string | undefined; }; }
 process/model · NODE_SIZES · const · Record<NodeFigure, { width: number; height: number; }>
@@ -159,9 +172,6 @@ process/model · ScopeAnalysis · type · { scope: string; observations: readonl
 process/model · Solution · type · { id: string; number: number; title: string; state: SolutionState; addresses: SolutionLink[]; benefit?: SolutionSize | undefined; cost?: SolutionSize | undefined; validatedWith: string[]; attempts: EarlierAttempt[]; noneKnown?: true | undefined; whyNow?: string | undefined; waived?: string | undefined; droppedFrom?: SolutionState | undefined; dropNote?: string | undefined; decision?: string | undefined; plan?: string | undefined; body: string; history: SolutionEvent[]; }
 process/model · StepSummary · type · { key: StringKey; name?: string | undefined; count?: number | undefined; asOf?: string | undefined; typeKey?: StringKey | undefined; from?: string | undefined; to?: string | undefined; about?: string | undefined; }
 process/model · Transition · type · { id: string; number: number; title: string; status: TransitionStatus; from?: string | undefined; to?: string | undefined; owner?: PersonRef | undefined; initiative?: true | undefined; elements: TransitionElement[]; moves?: TransitionMove[] | undefined; decisions: string[]; milestones: TransitionMilestone[]; body: string; doneOn?: string | undefined; }
-process/model · WriteKey · type · string
-process/model · apply · function · (model: Model, command: Command) => ApplyResult
-process/model · applyGuarded · function · (model: Model, command: Command) => ApplyResult
 process/model · canvasRect · function · (geometry?: BoardGeometry | undefined) => Rect
 process/model · causeList · function · (model: Model) => Cause[]
 process/model · causesOf · function · (model: Model) => Record<string, Cause>
@@ -187,7 +197,6 @@ process/model · experimentsToCommands · function · (model: Model, next: reado
 process/model · findings · function · ({ model, today, platformTree }: CheckContext) => Finding[]
 process/model · fromArrays · function · (host: HostModel) => Model
 process/model · fromDiagram · function · (diagram: Diagram) => DesignDiagram
-process/model · holdsAllIn · function · (organisation: Pick<Organisation, "assignments">, reach: ManagedReach, people: readonly string[], day: string, canonical?: (id: string) => string) => boolean
 process/model · idPolicy · function · (taken: () => Iterable<string>) => IdPolicy
 process/model · idsIn · function · (model: { elements: readonly { id: string; }[]; relations: readonly { id: string; }[]; diagrams: readonly { id: string; }[]; }) => string[]
 process/model · imageEntryOf · function · (name: string, bytes: Uint8Array<ArrayBufferLike>) => Promise<ImageEntry>
@@ -200,18 +209,11 @@ process/model · imageNameRefusal · function · (name: unknown) => "shell.image
 process/model · isDay · function · (value: unknown) => value is string
 process/model · isGoneOn · function · (element: { lifecycleDates?: Partial<Record<"live" | "retired" | "retiring", string>> | undefined; }, day: string) => boolean
 process/model · leavingStep · function · (assignments: readonly Assignment[], persons: ReadonlySet<string>, lastDay: string, meta?: CommandMeta) => undefined | { command: Command; ended: number; }
-process/model · managedReach · function · (organisation: Organisation, person: string, day: string, canonical?: ((id: string) => string) | undefined) => ManagedReach | undefined
-process/model · managingRoleIds · function · (organisation: Pick<Organisation, "roles">) => ReadonlySet<string>
 process/model · observationList · function · (model: Model) => Observation[]
 process/model · observationsOf · function · (model: Model) => Record<string, Observation>
 process/model · observationsToCommands · function · (model: Model, next: readonly Observation[]) => Command[]
-process/model · onlyAssignments · function · (command: { type: string; commands?: readonly { type: string; }[] | undefined; }) => boolean
-process/model · onlyPeopleIn · function · (model: Model, commands: readonly Command[], reach: ManagedReach, managing: ReadonlySet<string>) => boolean
 process/model · personOf · function · (assignment: Pick<Assignment, "person">) => string
 process/model · placeOn · function · (diagramId: string, placed: readonly PlacedNode[], at?: number[] | undefined, meta?: CommandMeta) => Command
-process/model · reachesAssignment · function · (reach: ManagedReach, assignment: Pick<Assignment, "roleId" | "unitId"> & { readonly id?: string | undefined; }, managing: ReadonlySet<string>) => boolean
-process/model · reachesHolder · function · (reach: ManagedReach, assignment: Pick<Assignment, "roleId" | "unitId"> & { readonly id?: string | undefined; }) => boolean
-process/model · reachesPosition · function · (reach: ManagedReach, unitId: string, roleId: string) => boolean
 process/model · recordsChanged · function · (before: Model, after: Model) => RecordKey[]
 process/model · relationList · function · (model: Model) => Relation[]
 process/model · restoringFor · function · (assignments: readonly Assignment[], persons: ReadonlySet<string>, lastDay: string) => ({ type: "assignment.update"; id: string; patch: Partial<Assignment>; } & CommandMeta)[]
@@ -229,7 +231,6 @@ process/model · today · function · (now?: Date) => string
 process/model · transaction · function · (commands: Command[], meta?: CommandMeta) => Command
 process/model · transitionList · function · (model: Model) => Transition[]
 process/model · transitionsOf · function · (model: Model) => Record<string, Transition>
-process/model · writesOf · function · (command: Command) => readonly string[] | undefined
 process/model · zoneRect · function · (zone: Layer7Zone, geometry?: BoardGeometry | undefined) => Rect
 process/model · zoneSizes · function · (geometry?: BoardGeometry | undefined) => Record<ResizableZone, number>
 process/people · Changed · type · { people: Person[]; changed: string[]; removed: string[]; tombstones: string[]; distinct: DistinctPair[]; distinctChanged: boolean; }
@@ -292,6 +293,13 @@ process/provider · SourceStatus · type · "clean" | "conflict" | "dirty" | "ex
 process/provider · SourceWork · type · { readonly status: SourceStatus; readonly editedWhileSaving: boolean; }
 process/provider · StatusTone · type · "busy" | "offline" | "problem" | "reading" | "saved" | "waiting"
 process/provider · StepFold · type · { changeId: string; commands: Command[]; inverses: Command[]; }
+process/reducer · COMMAND_TABLE · const · CommandTable
+process/reducer · CommandRefusal · type · "command.aspectNumber" | "command.aspectsEmpty" | "command.badBlock" | "command.badEvaluation" | "command.badGroups" | "command.badReply" | "command.badScale" | "command.commentRemoved" | "command.datesOutOfOrder" | "command.gone" | "command.hostedOnContainers" | "command.interactsEnds" | "command.markFix" | "command.notAField" | "command.notCitable" | "command.notCommentable" | "command.ownedElsewhere" | "command.reasonMissing" | "command.recordedByFixed" | "command.recordedByNotYours" | "command.refinesEnds" | "command.refinesLevel" | "command.rootAddressed" | "command.rootExplained" | "command.sharpenNote" | "command.taken" | "command.technologyEnds" | "command.titleEmpty" | "command.unknownRecord"
+process/reducer · CommandType · type · "assignment.add" | "assignment.remove" | "assignment.update" | "board.set" | "box.remove" | "box.set" | "cause.add" | "cause.remove" | "cause.update" | "cell.remove" | "cell.set" | "checkMark.add" | "checkMark.remove" | "citation.add" | "citation.remove" | "citation.update" | "comment.add" | "comment.put" | "comment.remove" | "comment.take" | "comment.update" | "decision.add" | "decision.remove" | "decision.update" | "diagram.create" | "diagram.delete" | "diagram.rename" | "diagram.settings" | "diagram.update" | "element.create" | "element.delete" | "element.link" | "element.rate" | "element.update" | "evaluation.add" | "evaluation.remove" | "evaluation.update" | "experiment.add" | "experiment.remove" | "experiment.update" | "group.remove" | "group.set" | "member.remove" | "member.set" | "node.remove" | "node.set" | "observation.add" | "observation.remove" | "observation.update" | "operatingRule.add" | "operatingRule.remove" | "operatingRule.update" | "poster.item.add" | "poster.item.place" | "poster.item.remove" | "poster.item.update" | "principle.add" | "principle.remove" | "principle.update" | "project.settings" | "relation.create" | "relation.delete" | "relation.update" | "responsibility.add" | "responsibility.remove" | "responsibility.update" | "restore" | "role.add" | "role.remove" | "role.update" | "route.clear" | "route.set" | "solution.add" | "solution.remove" | "solution.update" | "standin.refresh" | "transaction" | "transition.add" | "transition.remove" | "transition.update" | "unitType.add" | "unitType.remove" | "unitType.update"
+process/reducer · WriteKey · type · string
+process/reducer · apply · function · (model: Model, command: Command) => ApplyResult
+process/reducer · applyGuarded · function · (model: Model, command: Command) => ApplyResult
+process/reducer · writesOf · function · (command: Command) => readonly string[] | undefined
 process/repositories · Applied · type · { revisions: readonly string[]; setAside?: readonly string[] | undefined; }
 process/repositories · CarriedOut · type · Parcel & { without: readonly string[]; }
 process/repositories · Created · type · { id: string; revision: string; }
@@ -333,85 +341,49 @@ process/repositories · SettingsOf · type · { of: "organisation"; } | { of: "p
 process/repositories · SettingsRepository · interface · { readonly id: string; read: (of: SettingsOf) => Promise<Settings>; write: (of: SettingsOf, patch: SettingsPatch) => Promise<Settings> }
 process/repositories · StepsFor · type · { scope: string; steps: readonly ScopeStep[]; expects?: string | undefined; }
 process/repositories · UnreadKept · type · { text: string; mediaType: string; extension: string; }
-process/scopes · CHECK_LABEL · const · Record<TreeCheckKey, StringKey>
-process/scopes · DescribeCommand · type · { type: "scope.describe"; patch: DescribePatch; }
-process/scopes · Finding · type · { key: TreeCheckKey; scope: string; id: string; name: string; scopes?: string[] | undefined; fields?: string[] | undefined; detail?: string | undefined; information?: true | undefined; view?: string | undefined; person?: string | undefined; count?: number | undefined; limit?: number | undefined; }
+process/scopeState · DescribeCommand · type · { type: "scope.describe"; patch: DescribePatch; }
+process/scopeState · ImageCommand · type · { type: "image.add"; image: ImageEntry; } | { type: "image.remove"; name: string; }
+process/scopeState · ReplaceCommand · type · { type: "scope.replace"; content: ScopeContent; putBack?: undefined | { subject: string; }; }
+process/scopeState · Revision · type · string
+process/scopeState · STEP_ELSEWHERE · const · "step.elsewhere"
+process/scopeState · ScopeAddress · type · string
+process/scopeState · ScopeCommand · type · Command | DescribeCommand | ImageCommand | ReplaceCommand
+process/scopeState · ScopeContent · type · ScopeDescription & { model: HostModel; images: readonly ImageEntry[]; }
+process/scopeState · ScopeDescription · type · { kind?: ScopeKind | undefined; unitTypeId?: string | undefined; client?: string | undefined; links?: RecordLink[] | undefined; relevantTo?: TopicLink[] | undefined; activeDiagramId?: string | undefined; logoLibrary?: UploadedLogo[] | undefined; }
+process/scopeState · ScopeId · type · string
+process/scopeState · ScopeRefusal · type · "shell.badScopePath" | "shell.imageBadEntry" | "shell.imageBadName" | "shell.imageBadType" | "shell.imageBytesGone" | "shell.laterNotReplaced" | "shell.scopeGone" | "shell.scopeHasChildren" | "shell.scopeIntoItself" | "shell.scopeMoved" | "shell.scopeReadOnly" | "shell.scopeTaken" | "shell.unreadableNotSaved" | "step.elsewhere" | CommandRefusal
+process/scopeState · ScopeState · type · ScopeDescription & { model: HostModel; images: readonly ImageEntry[]; } & { id: string; address: string; revision: string; updatedAt?: string | undefined; unreadable?: readonly string[] | undefined; later?: true | undefined; }
+process/scopeState · ScopeStep · type · { stepId: string; command: ScopeCommand; at: number; }
+process/scopeState · applySteps · function · (content: ScopeContent, steps: readonly ScopeStep[]) => StepsApplied | StepsRefused
+process/scopeState · emptyContent · function · (name: string, description?: ScopeDescription) => ScopeContent
+process/scopeState · partlyReadRefusal · function · (state: Pick<ScopeState, "later">, steps: readonly ScopeStep[]) => "shell.laterNotReplaced" | "shell.unreadableNotSaved" | undefined
+process/scopeState · putBackOf · function · (steps: readonly ScopeStep[]) => undefined | { subject: string; }
 process/scopes · HOLDS_NOTHING · const · ScopeHolds
-process/scopes · ImageCommand · type · { type: "image.add"; image: ImageEntry; } | { type: "image.remove"; name: string; }
-process/scopes · ROOT_SCOPE · const · string
-process/scopes · ReplaceCommand · type · { type: "scope.replace"; content: ScopeContent; putBack?: undefined | { subject: string; }; }
-process/scopes · Revision · type · string
-process/scopes · STEP_ELSEWHERE · const · "step.elsewhere"
-process/scopes · ScopeAddress · type · string
-process/scopes · ScopeCommand · type · Command | DescribeCommand | ImageCommand | ReplaceCommand
-process/scopes · ScopeContent · type · ScopeDescription & { model: HostModel; images: readonly ImageEntry[]; }
-process/scopes · ScopeDescription · type · { kind?: ScopeKind | undefined; unitTypeId?: string | undefined; client?: string | undefined; links?: RecordLink[] | undefined; relevantTo?: TopicLink[] | undefined; activeDiagramId?: string | undefined; logoLibrary?: UploadedLogo[] | undefined; }
 process/scopes · ScopeHolds · type · { readonly views: number; readonly elements: number; readonly relations: number; readonly decisions: number; readonly plans: number; readonly observations: number; readonly causes: number; readonly solutions: number; readonly experiments: number; readonly assignments: number; readonly comments: number; readonly marks: number; readonly operatingModel: number; readonly pictures: number; readonly viewNames: readonly string[]; }
-process/scopes · ScopeId · type · string
-process/scopes · ScopeIndex · type · { lookup(id: string): IndexEntry | undefined; register(): IndexEntry[]; entries(): IndexEntry[]; takenIds(): Set<string>; rowsTo(id: string, types?: readonly RelationType[] | undefined): IndexedRelation[]; rowsOf(id: string): IndexedRelation[]; initiativesBelow(path: string): IndexedTransition[]; analysisBelow(path: string): IndexedAnalysis[]; analyses(): IndexedAnalysis[]; principlesAt(path: string): ScopePrinciples; citations(): readonly KeptCitation[]; buildingBlocks(): readonly KeptBlock[]; evaluations(): readonly KeptEvaluation[]; principleScopes(): readonly string[]; explainedFromAbove(path: string): Map<string, CauseAbove[]>; absorbedFrom(path: string): Map<string, Absorption>; units(): IndexedUnit[]; assignments(): IndexedAssignment[]; checkMarks(): KeptCheckMark[]; operatingModel(): IndexedOperatingModel; moves(): IndexedMove[]; unitPlans(): IndexedUnitPlan[]; organisation(): Organisation; scopes(): string[]; scopeTypes(): ReadonlyMap<string, string>; }
 process/scopes · ScopeKind · type · "domain" | "landscape" | "organisation" | "programme" | "team" | "topic"
-process/scopes · ScopePath · type · string
-process/scopes · ScopeRefusal · type · "shell.badScopePath" | "shell.imageBadEntry" | "shell.imageBadName" | "shell.imageBadType" | "shell.imageBytesGone" | "shell.laterNotReplaced" | "shell.scopeGone" | "shell.scopeHasChildren" | "shell.scopeIntoItself" | "shell.scopeMoved" | "shell.scopeReadOnly" | "shell.scopeTaken" | "shell.unreadableNotSaved" | "step.elsewhere" | CommandRefusal
 process/scopes · ScopeSnapshot · type · { path: string; id?: string | undefined; model: HostModel; activeDiagramId: string; logoLibrary: UploadedLogo[]; kind?: ScopeKind | undefined; unitTypeId?: string | undefined; client?: string | undefined; links?: RecordLink[] | undefined; relevantTo?: TopicLink[] | undefined; imageLibrary?: CarriedImage[] | undefined; drawingPictures?: CarriedDrawingPicture[] | undefined; images?: readonly ImageEntry[] | undefined; updatedAt?: string | undefined; unreadable?: readonly string[] | undefined; later?: true | undefined; unread?: readonly string[] | undefined; carried?: Readonly<Record<string, unknown>> | undefined; revision?: string | undefined; }
-process/scopes · ScopeState · type · ScopeDescription & { model: HostModel; images: readonly ImageEntry[]; } & { id: string; address: string; revision: string; updatedAt?: string | undefined; unreadable?: readonly string[] | undefined; later?: true | undefined; }
-process/scopes · ScopeStep · type · { stepId: string; command: ScopeCommand; at: number; }
 process/scopes · ScopeSummary · type · { path: string; id?: string | undefined; name: string; unnamed?: true | undefined; kind?: ScopeKind | undefined; unitTypeId?: string | undefined; client?: string | undefined; description?: string | undefined; personal?: true | undefined; links?: RecordLink[] | undefined; relevantTo?: TopicLink[] | undefined; diagrams: number; children: ScopeSummary[]; updatedAt?: string | undefined; unreadable?: readonly string[] | undefined; }
 process/scopes · Settings · type · { readonly [key: string]: SettingValue; }
 process/scopes · SettingsPatch · type · { readonly [key: string]: SettingValue | SettingsPatch | null; }
 process/scopes · TOPICS_PLACE · const · string
-process/scopes · TreeScopes · type · ScopeReader & Pick<ScopeRepository, "apply" | "create" | "move" | "remove">
-process/scopes · ancestorScopes · function · (path: string) => string[]
-process/scopes · applySteps · function · (content: ScopeContent, steps: readonly ScopeStep[]) => StepsApplied | StepsRefused
 process/scopes · bareScope · function · (path: string, name: string, kind?: ScopeKind | undefined) => ScopeSnapshot
 process/scopes · blank · function · (scope: ScopeSnapshot | ScopeState) => boolean
 process/scopes · bytesFromText · function · (text: string) => Uint8Array<ArrayBufferLike>
-process/scopes · carriedOf · function · (images: Pick<ImageRepository, "bytes">, scope: string, library: readonly ImageEntry[]) => Promise<CarriedImage[]>
-process/scopes · changeScope · function · (scopes: ScopeReader & Pick<ScopeRepository, "apply">, address: string, change: (held: ScopeSnapshot) => readonly ScopeCommand[] | undefined) => Promise<ScopeSnapshot | undefined>
 process/scopes · commentAsIndexed · function · (comment: Comment) => Comment | undefined
-process/scopes · copyExampleInto · function · (example: ExampleProject, root: ScopeSummary, rootHoldsWork?: boolean) => ScopeSnapshot[]
-process/scopes · createScopeAt · function · (scopes: TreeScopes, asked: CreateAsked) => Promise<Made | NotMade>
-process/scopes · describeScopeAt · function · (scopes: TreeScopes, path: string, header: ScopeHeader) => Promise<undefined | { changed: (keyof ScopeHeader)[]; }>
-process/scopes · documentFindings · function · (deps: { scope: string; model: HostModel; index: ScopeIndex; business?: BusinessFindings | undefined; }) => Finding[]
-process/scopes · drawingPicturesOf · function · (images: Pick<ImageRepository, "bytesAt">, scope: string, model: { diagrams: readonly { kind: string; drawing?: undefined | { picture?: string | undefined; }; }[]; }) => Promise<CarriedDrawingPicture[]>
-process/scopes · emptyContent · function · (name: string, description?: ScopeDescription) => ScopeContent
-process/scopes · fileTopicsPlace · function · (scopes: TreeScopes, name: string) => Promise<void>
-process/scopes · findingsOfOrganisation · function · (at: OrganisationAt, day: string, canonical?: ((id: string) => string) | undefined) => Finding[]
 process/scopes · fingerprint · function · (parts: Iterable<Uint8Array<ArrayBufferLike> | string>) => string
 process/scopes · flattenScopes · function · (root: ScopeSummary) => ScopeSummary[]
 process/scopes · holdsOf · function · (scope: CountedScope) => ScopeHolds
-process/scopes · identityFindings · function · (index: ScopeIndex) => Finding[]
-process/scopes · indexScopes · function · (models: readonly ScopeModel[]) => ScopeIndex
 process/scopes · isLinkList · function · (value: unknown) => value is RecordLink[]
 process/scopes · isSafeLinkUrl · function · (url: string) => boolean
-process/scopes · isSafeScopePath · function · (value: unknown) => value is string
 process/scopes · isScopeKind · function · (value: unknown) => value is ScopeKind
-process/scopes · isWithinScope · function · (path: string, within: string) => boolean
 process/scopes · labelSlug · function · (label: string) => string
-process/scopes · mayApplyPatch · function · (patch: Partial<DesignElement>, id: string, scope: string, index: ScopeIndex, held?: Pick<DesignElement, "ref"> | undefined) => EditRefusal | true
-process/scopes · moveScopeUnder · function · (scopes: TreeScopes, index: Pick<OrganisationIndex, "read">, from: string, parent: string, options?: { listing?: ScopeSummary | undefined; strict?: boolean | undefined; }) => Promise<MovedUnder | undefined>
-process/scopes · nodeAt · function · (tree: ScopeTree, address: string) => ScopeNode | undefined
-process/scopes · nodesOf · function · (node: ScopeNode) => ScopeNode[]
-process/scopes · organisationAt · function · (index: ScopeIndex) => OrganisationAt
-process/scopes · organisationFindings · function · (index: ScopeIndex, day?: string) => Finding[]
-process/scopes · parentScope · function · (path: string) => string | undefined
-process/scopes · partlyReadRefusal · function · (state: Pick<ScopeState, "later">, steps: readonly ScopeStep[]) => "shell.laterNotReplaced" | "shell.unreadableNotSaved" | undefined
 process/scopes · patchSettings · function · (held: Settings, patch: SettingsPatch) => Settings
-process/scopes · putBackOf · function · (steps: readonly ScopeStep[]) => undefined | { subject: string; }
-process/scopes · readScope · function · (scopes: ScopeReader, address: string) => Promise<ScopeSnapshot | undefined>
 process/scopes · readWhole · function · (state: { readonly unreadable?: readonly unknown[] | undefined; readonly later?: true | undefined; }) => boolean
-process/scopes · removeScopeAt · function · (scopes: TreeScopes, path: string, expects?: string | undefined, options?: RemoveOptions) => Promise<string[] | undefined>
-process/scopes · scopePathLabel · function · (path: string) => string
-process/scopes · scopeSegments · function · (path: string) => string[]
-process/scopes · serveScopeBy · function · (deps: { scopes: ScopeReader & Pick<ScopeRepository, "apply">; index: ScopeIndex; writable: (path: string) => boolean; today: string; }, path: string, unitId: string) => Promise<Served | { refused: string; scope?: string | undefined; }>
-process/scopes · snapshotOf · function · (state: ScopeState) => ScopeSnapshot
 process/scopes · stableJson · function · (value: unknown) => string
 process/scopes · standInOf · function · (entry: IndexEntry, ref: string) => DesignElement
 process/scopes · summariseStep · function · (command: ScopeCommand, before: Model) => StepSummary
-process/scopes · summaryOf · function · (tree: ScopeTree) => ScopeSummary
-process/scopes · technologyRows · function · (index: ScopeIndex, findings?: readonly Finding[]) => TechnologyRow[]
 process/scopes · textFromBytes · function · (bytes: Uint8Array<ArrayBufferLike>) => string
 process/scopes · topicFiledUnder · function · (nodes: readonly TopicNode[], parent: string, place?: string) => string
-process/scopes · treeRecords · function · (index: Pick<ScopeIndex, "buildingBlocks" | "citations" | "evaluations" | "principleScopes" | "principlesAt">, scopes: readonly RecordScope[], day: string) => TreeRecords
 process/scopes · typedByUnitType · function · (unitTypeId: string) => { unitTypeId: string; kind: null; }
 process/screen · Destination · type · { readonly scope?: string | undefined; readonly page?: Page | undefined; readonly id?: string | undefined; readonly tab?: string | undefined; readonly day?: string | undefined; readonly look?: string | undefined; readonly panel?: "activity" | "settle" | "source" | "work" | undefined; readonly list?: string | undefined; readonly finding?: string | undefined; readonly line?: string | undefined; readonly field?: string | undefined; readonly select?: string | undefined; readonly group?: string | undefined; readonly pair?: string | undefined; readonly colour?: string | undefined; readonly focus?: string | undefined; readonly lines?: "dotted" | "exceptions" | "off" | "person" | undefined; readonly edit?: boolean | undefined; }
 process/screen · HOME_PAGES · const · readonly (Page)[]
@@ -422,6 +394,34 @@ process/screen · Place · type · Destination & { readonly scope: string; }
 process/screen · Screen · type · { readonly open?: undefined | { readonly path: string; readonly name: string; readonly view?: ScreenView | undefined; readonly noView?: boolean | undefined; }; readonly home?: undefined | { readonly path: string; readonly name: string; }; readonly page?: ScreenPage | undefined; readonly panel?: "activity" | "settle" | "source" | "work" | undefined; readonly list?: string | undefined; readonly finding?: string | undefined; }
 process/screen · arrived · function · (screen: Screen, to: Destination, scope: string) => boolean
 process/screen · scopeOf · function · (screen: Screen) => string | undefined
+process/tree · CHECK_LABEL · const · Record<TreeCheckKey, StringKey>
+process/tree · Finding · type · { key: TreeCheckKey; scope: string; id: string; name: string; scopes?: string[] | undefined; fields?: string[] | undefined; detail?: string | undefined; information?: true | undefined; view?: string | undefined; person?: string | undefined; count?: number | undefined; limit?: number | undefined; }
+process/tree · ScopeIndex · type · { lookup(id: string): IndexEntry | undefined; register(): IndexEntry[]; entries(): IndexEntry[]; takenIds(): Set<string>; rowsTo(id: string, types?: readonly RelationType[] | undefined): IndexedRelation[]; rowsOf(id: string): IndexedRelation[]; initiativesBelow(path: string): IndexedTransition[]; analysisBelow(path: string): IndexedAnalysis[]; analyses(): IndexedAnalysis[]; principlesAt(path: string): ScopePrinciples; citations(): readonly KeptCitation[]; buildingBlocks(): readonly KeptBlock[]; evaluations(): readonly KeptEvaluation[]; principleScopes(): readonly string[]; explainedFromAbove(path: string): Map<string, CauseAbove[]>; absorbedFrom(path: string): Map<string, Absorption>; units(): IndexedUnit[]; assignments(): IndexedAssignment[]; checkMarks(): KeptCheckMark[]; operatingModel(): IndexedOperatingModel; moves(): IndexedMove[]; unitPlans(): IndexedUnitPlan[]; organisation(): Organisation; scopes(): string[]; scopeTypes(): ReadonlyMap<string, string>; }
+process/tree · TreeScopes · type · ScopeReader & Pick<ScopeRepository, "apply" | "create" | "move" | "remove">
+process/tree · carriedOf · function · (images: Pick<ImageRepository, "bytes">, scope: string, library: readonly ImageEntry[]) => Promise<CarriedImage[]>
+process/tree · changeScope · function · (scopes: ScopeReader & Pick<ScopeRepository, "apply">, address: string, change: (held: ScopeSnapshot) => readonly ScopeCommand[] | undefined) => Promise<ScopeSnapshot | undefined>
+process/tree · copyExampleInto · function · (example: ExampleProject, root: ScopeSummary, rootHoldsWork?: boolean) => ScopeSnapshot[]
+process/tree · createScopeAt · function · (scopes: TreeScopes, asked: CreateAsked) => Promise<Made | NotMade>
+process/tree · describeScopeAt · function · (scopes: TreeScopes, path: string, header: ScopeHeader) => Promise<undefined | { changed: (keyof ScopeHeader)[]; }>
+process/tree · documentFindings · function · (deps: { scope: string; model: HostModel; index: ScopeIndex; business?: BusinessFindings | undefined; }) => Finding[]
+process/tree · drawingPicturesOf · function · (images: Pick<ImageRepository, "bytesAt">, scope: string, model: { diagrams: readonly { kind: string; drawing?: undefined | { picture?: string | undefined; }; }[]; }) => Promise<CarriedDrawingPicture[]>
+process/tree · fileTopicsPlace · function · (scopes: TreeScopes, name: string) => Promise<void>
+process/tree · findingsOfOrganisation · function · (at: OrganisationAt, day: string, canonical?: ((id: string) => string) | undefined) => Finding[]
+process/tree · identityFindings · function · (index: ScopeIndex) => Finding[]
+process/tree · indexScopes · function · (models: readonly ScopeModel[]) => ScopeIndex
+process/tree · mayApplyPatch · function · (patch: Partial<DesignElement>, id: string, scope: string, index: ScopeIndex, held?: Pick<DesignElement, "ref"> | undefined) => EditRefusal | true
+process/tree · moveScopeUnder · function · (scopes: TreeScopes, index: Pick<OrganisationIndex, "read">, from: string, parent: string, options?: { listing?: ScopeSummary | undefined; strict?: boolean | undefined; }) => Promise<MovedUnder | undefined>
+process/tree · nodeAt · function · (tree: ScopeTree, address: string) => ScopeNode | undefined
+process/tree · nodesOf · function · (node: ScopeNode) => ScopeNode[]
+process/tree · organisationAt · function · (index: ScopeIndex) => OrganisationAt
+process/tree · organisationFindings · function · (index: ScopeIndex, day?: string) => Finding[]
+process/tree · readScope · function · (scopes: ScopeReader, address: string) => Promise<ScopeSnapshot | undefined>
+process/tree · removeScopeAt · function · (scopes: TreeScopes, path: string, expects?: string | undefined, options?: RemoveOptions) => Promise<string[] | undefined>
+process/tree · serveScopeBy · function · (deps: { scopes: ScopeReader & Pick<ScopeRepository, "apply">; index: ScopeIndex; writable: (path: string) => boolean; today: string; }, path: string, unitId: string) => Promise<Served | { refused: string; scope?: string | undefined; }>
+process/tree · snapshotOf · function · (state: ScopeState) => ScopeSnapshot
+process/tree · summaryOf · function · (tree: ScopeTree) => ScopeSummary
+process/tree · technologyRows · function · (index: ScopeIndex, findings?: readonly Finding[]) => TechnologyRow[]
+process/tree · treeRecords · function · (index: Pick<ScopeIndex, "buildingBlocks" | "citations" | "evaluations" | "principleScopes" | "principlesAt">, scopes: readonly RecordScope[], day: string) => TreeRecords
 process/words · DEFAULT_TRANSLATE · const · Translate
 process/words · LANGUAGES · const · readonly ("de" | "en" | "nl")[]
 process/words · LOCALE · const · Record<"de" | "en" | "nl", string>
@@ -436,6 +436,11 @@ process/words · registerStrings · function · (language: "de" | "en" | "nl", t
 process/words · t · function · (language: "de" | "en" | "nl", key: StringKey, params?: StringParams | undefined) => string
 process/words · translator · function · (language: "de" | "en" | "nl") => Translate
 renderer/boot · (effect) · import · 1
+renderer/guide · GuideBox · type · { readonly left: number; readonly top: number; readonly width: number; readonly height: number; }
+renderer/guide · GuideDock · function · (props: GuideDockProps) => Element
+renderer/guide · GuideOffset · type · { readonly x: number; readonly y: number; }
+renderer/guide · GuideRing · function · ({ target, dock, tag }: { target: GuideBox; dock?: GuideBox | undefined; tag?: boolean | undefined; }) => Element
+renderer/guide · keptOnScreen · function · (offset: GuideOffset, dock: { readonly width: number; readonly height: number; }, view: { readonly width: number; readonly height: number; }, gutter?: number) => GuideOffset
 renderer/help · HelpChapterOutline · type · { readonly id: string; readonly first?: readonly string[] | undefined; readonly sections: readonly HelpSectionOutline[]; }
 renderer/help · HelpText · type · { readonly start?: GettingStartedText | undefined; readonly chapters: Readonly<Record<string, ChapterText>>; readonly sections: Readonly<Record<string, SectionText>>; readonly background: Readonly<Record<string, readonly Background[]>>; }
 renderer/help · forgetHelpChapters · function · () => void
@@ -451,10 +456,6 @@ renderer/kit · Dialog · function · ({ open, size, title, children, actions, o
 renderer/kit · FRESH_VIEW · const · ListView
 renderer/kit · FilterWords · function · ({ find, onFind, findLabel, noFind, fields, filters, onFilters, filterExtra, words, onClear, filterGuide, groups, group, onGroup, columns, shownColumns, onColumns, density, onDensity, onReset, shown, summary, actions, dataGuide, }: FilterWordsProps) => Element
 renderer/kit · ForwardIcon · function · ({ size }: IconProps) => Element
-renderer/kit · GuideBox · type · { readonly left: number; readonly top: number; readonly width: number; readonly height: number; }
-renderer/kit · GuideDock · function · (props: GuideDockProps) => Element
-renderer/kit · GuideOffset · type · { readonly x: number; readonly y: number; }
-renderer/kit · GuideRing · function · ({ target, dock, tag }: { target: GuideBox; dock?: GuideBox | undefined; tag?: boolean | undefined; }) => Element
 renderer/kit · IconButton · function · ({ label, size, reason, pressed, tip, children, onClick, type, ...rest }: IconButtonProps) => Element
 renderer/kit · List · function · ({ label, groups, wrap, density, columns, itemLabel, itemSortable, sort, onSort, selectedId, onOpen, checked, onCheckedChange, bulkActions, defaultFolded, folded: foldedTold, onFold, onOpenGroup, onRowDragStart, empty, more, doors, dataGuide, rowGuide, }: ListProps) => Element
 renderer/kit · ListGroup · type · { readonly id: string; readonly label: string; readonly rows: readonly ListRow[]; readonly count?: number | undefined; }
@@ -476,7 +477,6 @@ renderer/kit · TabPanel · function · ({ id, value, children }: { id: string; 
 renderer/kit · Tabs · function · <V extends string = string>({ label, items, value, onChange, id, "data-guide": guide }: TabsProps<V>) => Element
 renderer/kit · TextField · function · ({ label, hint, error, required, rows, value, onChange, ...rest }: Words & Omit<InputProps, "onChange" | "value"> & { value: string; onChange: (value: string) => void; rows?: number | undefined; }) => Element
 renderer/kit · arrivingPage · function · (props: { open?: boolean | undefined; windowChrome?: undefined | { topInset?: number | undefined; }; }) => Element | null
-renderer/kit · keptOnScreen · function · (offset: GuideOffset, dock: { readonly width: number; readonly height: number; }, view: { readonly width: number; readonly height: number; }, gutter?: number) => GuideOffset
 renderer/kit · listed · function · <T>(items: readonly T[], view: ListView, how: ListHow<T>) => readonly ListedGroup<T>[]
 renderer/kit · rovedIndex · function · (key: string, index: number, count: number) => number | undefined
 renderer/kit · usePlaceTab · function · (first: string, of?: string | undefined) => readonly [string, (tab: string) => void]
@@ -520,14 +520,14 @@ testing/domain · readWhole · function · (repositories: { scopes: ScopeReader;
 testing/domain · sealBytes · function · (plain: Uint8Array<ArrayBufferLike>, password: string, options?: { iterations?: number | undefined; }) => Promise<Uint8Array<ArrayBufferLike>>
 testing/domain · workingFileBytes · function · (scopes: readonly ScopeSnapshot[], manifest?: WorkingFileManifest | undefined, people?: readonly Person[], removed?: readonly string[], distinct?: readonly DistinctPair[]) => Uint8Array<ArrayBufferLike>
 testing/domain · writeCommand · function · (model: Pick<HostModel, "elements"> & { readonly assignments?: readonly Assignment[] | undefined; }, write: GestureWrite) => Command
-testing/fixtures · FakeDirectory · class · new (name?: string, options?: { canMove?: boolean | undefined; }): FakeDirectory { readonly kind: "directory"; readonly name: string; getDirectoryHandle: (name: string, options?: undefined | { create?: boolean | undefined; }) => Promise<DirectoryHandleLike>; getFileHandle: (name: string, options?: undefined | { create?: boolean | undefined; }) => Promise<FileHandleLike>; removeEntry: (name: string, options?: undefined | { recursive?: boolean | undefined; }) => Promise<void>; values: () => AsyncIterableIterator<DirectoryHandleLike | FileHandleLike>; moveEntry: ((from: string, to: string) => Promise<void>) | undefined; writeRaw: (name: string, contents: Uint8Array<ArrayBufferLike> | string) => void; paths: (within?: string) => string[] }
-testing/fixtures · InMemoryCommandChannel · class · new (options?: InMemoryCommandChannelOptions): InMemoryCommandChannel { readonly id: "memory"; connect: (by: string) => CommandChannel; publish: (step: StepEnvelope) => Promise<PublishAnswer>; subscribe: (scope: string, after: number, on: (step: SequencedStep) => void, onGap: () => void) => () => void; presence: (scope: string) => Promise<readonly string[]>; head: (scope: string) => Model }
+testing/fillings · FakeDirectory · class · new (name?: string, options?: { canMove?: boolean | undefined; }): FakeDirectory { readonly kind: "directory"; readonly name: string; getDirectoryHandle: (name: string, options?: undefined | { create?: boolean | undefined; }) => Promise<DirectoryHandleLike>; getFileHandle: (name: string, options?: undefined | { create?: boolean | undefined; }) => Promise<FileHandleLike>; removeEntry: (name: string, options?: undefined | { recursive?: boolean | undefined; }) => Promise<void>; values: () => AsyncIterableIterator<DirectoryHandleLike | FileHandleLike>; moveEntry: ((from: string, to: string) => Promise<void>) | undefined; writeRaw: (name: string, contents: Uint8Array<ArrayBufferLike> | string) => void; paths: (within?: string) => string[] }
+testing/fillings · InMemoryCommandChannel · class · new (options?: InMemoryCommandChannelOptions): InMemoryCommandChannel { readonly id: "memory"; connect: (by: string) => CommandChannel; publish: (step: StepEnvelope) => Promise<PublishAnswer>; subscribe: (scope: string, after: number, on: (step: SequencedStep) => void, onGap: () => void) => () => void; presence: (scope: string) => Promise<readonly string[]>; head: (scope: string) => Model }
+testing/fillings · folderRepositories · function · (opening: FolderOpening) => Repositories
+testing/fillings · memoryGit · function · (root: DirectoryHandleLike, author?: string) => FolderGit
+testing/fillings · memoryRepositories · function · (store?: MemoryStore, by?: string) => Repositories
 testing/fixtures · connection · function · (id: string, sourceId: string, targetId: string, overrides?: Partial<Relation>) => Relation
 testing/fixtures · diagram · function · (id: string, overrides?: Partial<V3Diagram>) => DesignDiagram
 testing/fixtures · element · function · (id: string, overrides?: Partial<DesignElement>) => DesignElement
-testing/fixtures · folderRepositories · function · (opening: FolderOpening) => Repositories
-testing/fixtures · memoryGit · function · (root: DirectoryHandleLike, author?: string) => FolderGit
-testing/fixtures · memoryRepositories · function · (store?: MemoryStore, by?: string) => Repositories
 testing/fixtures · placement · function · (elementId: string, overrides?: Partial<PlacedNode>) => PlacedNode
 testing/fixtures · syntheticModel · function · (size: SyntheticSize | SyntheticSpec) => HostModel
 testing/help · CHAPTERS · const · readonly HelpChapterOutline[]

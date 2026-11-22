@@ -1385,17 +1385,26 @@ src/composed/     The surface a build composed from this one imports
                   that re-export names from the files that hold them, and hold
                   no code. Nothing in this tree imports it.
                     process/          for a process with no screen, and so for
-                                      any: model · scopes · repositories ·
-                                      channel · provider · format · agent ·
-                                      screen · people · analysis · look ·
-                                      words · platform · desktop
+                                      any: model · reducer · managing ·
+                                      address · scopes · scopeState · tree ·
+                                      repositories · channel · provider ·
+                                      format · formatVersion · interchange ·
+                                      agent · agentHandler · screen · people ·
+                                      analysis · look · words · platform ·
+                                      desktop
                     node/             for a process with a node under it:
                                       workingFile · examples
-                    renderer/         for the page: provider · kit · markdown ·
-                                      words · help · helpPage, and `boot`, the
-                                      one entry imported for what it does
+                    renderer/         for the page: provider · kit · guide ·
+                                      markdown · words · help · helpPage, and
+                                      `boot`, the one entry imported for what
+                                      it does
                     testing/          for a suite: contracts · fixtures ·
-                                      render · session · domain · words · help
+                                      fillings · render · session · domain ·
+                                      words · help
+                                      An entry is as narrow as what its files
+                                      reach: every importer of an entry loads
+                                      all of it, so a file that loads little
+                                      is not put with one that loads much
                     SURFACE.txt       every name offered and its type, and
                                       every type of this tree those name: the
                                       list the tree is held to

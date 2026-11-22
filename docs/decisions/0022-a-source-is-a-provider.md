@@ -1189,12 +1189,16 @@ a breaking change said in the release notes. The files had no list.
   by changing the entry's line, and the build that imports the entry does not
   know.
 * **Many small lists, never one barrel.** A module on an entry is evaluated by
-  every importer of that entry, so an entry is as narrow as its topic: the
-  writer of a description is apart from the kit because it is not in the first
-  download, the help's page apart from the help's chapters, what the desktop's
-  main process loads apart from everything a page loads. `export *` is
-  refused, and so is a module's barrel, which carries its module's pages with
-  its arithmetic.
+  every importer of that entry, so an entry is as narrow as what its files
+  reach: a file that loads little is not on an entry with one that loads
+  much. A scope's address is apart from everything a scope holds, the number
+  of the folder's format apart from the code that reads one, the reducer
+  apart from the records it writes, the agent's handler apart from its
+  vocabulary; the writer of a description is apart from the kit because it is
+  not in the first download, the help's page apart from the help's chapters,
+  and what the desktop's main process loads apart from everything a page
+  loads. `export *` is refused, and so is a module's barrel, which carries its
+  module's pages with its arithmetic.
 * **The surface is held by a list of names and types.**
   `src/composed/SURFACE.txt` says every name every entry offers, what it is and
   its type, and after them every type of this tree those name, followed until
@@ -1220,7 +1224,7 @@ composed from this one comes to need is a line in an entry and a line in the
 list, and until then it is not importable — which is the point: what crosses
 is decided here, in a place a reader can find.
 
-**As built, 22 November 2026.** Thirty entries under `src/composed/`, holding
+**As built, 22 November 2026.** Forty entries under `src/composed/`, holding
 the names a build composed from this one imported the day the surface was
 cut. Their rows in the import matrix (`eslint.config.js`): a process entry may
 read the modules that compute, the folder's format and the two files of the
