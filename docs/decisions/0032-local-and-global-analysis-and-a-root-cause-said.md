@@ -588,3 +588,57 @@ tool reads another scope.
 The organisation has a global analysis of its own: one observation, and a
 root cause that explains it and the landscape's *Two systems compute a
 price*, so View local on the organisation draws a line across the boundary.
+
+## Amended, 22 November 2026 — an observation names the elements it is about
+
+*Which observations are open on this application?* could not be answered: an
+observation said where it was seen in words only (`where`), and a word is not an
+element. A decision has named what it is about since ADR-0012 §7, and the
+question about an element is asked of both.
+
+**An observation may name the elements it is about**: `about`, element ids, in
+the order picked, absent where it names none. Each is an element the scope
+holds, its own or a stand-in's, addressed exactly as a decision's `subjectId`
+is: an id is the tree's (ADR-0012 §2), so a promotion, a demotion or a transfer
+leaves the reference resolving, and nothing has to follow it. `where` stays, as
+text; the two say different things and an observation may say both.
+
+* **It is a field like the others.** `observation.update` may name it
+  (ADR-0028), the reducer, the diff, a restore and the Activity list treat it as
+  any other field, and `aboutOf` keeps each id once and an empty list as none.
+* **A merge** leaves the survivor about every element any record of the set was
+  about, the survivor's first, unless the merge chose (`ObservationValues.about`).
+* **A move** carries the ids. The plan says which the target does not hold
+  (`MovePlan.dangling`) before anything is written, and the target's checks say
+  it afterwards.
+* **A reference to nothing is a finding, never a refusal**:
+  `check.observationAboutGone`, a review — the element may have gone on
+  purpose, and the observation is still true about it as history — about the
+  observation, the element in `fields`. An element removed leaves the reference
+  where it is. A merged, moved or archived observation is history and is not
+  checked.
+* **On disk** it is `about:`, a row per id, in the observation's front matter.
+  The folder format turns to 18 for it: a 17 reads as an 18 whose observations
+  name none, the pass rewrites the headers and nothing else, and a build that
+  reads 17 refuses an 18 rather than drop the rows. Browser storage and memory
+  keep a record whole, so their content format does not turn.
+
+**The element's record asks the question.** *Decisions about this* and
+*Observations on this* stand on an element's record and in the panel beside a
+board, each counted in its head, quiet when empty, a row one press to the record
+on its page (`observations/about.ts`: `decisionsAbout`, `observationsOn`). The
+decisions are the open scope's own: no other scope's decisions are in the tree's
+read (ADR-0029), and the section says so. The observations are every scope's the
+index read (§1), the open scope's from its session, with no load per row
+(ADR-0004).
+
+**The Observations page filters by element**: *About*, in the one filter model
+(`observations/filter.ts`), keeps the observations about any element chosen with
+what lies behind them, as the tone does. It is the page's look in its address,
+`about=<id>` once per element (ADR-0033), the shape the operating model's look
+has, so a link and an agent's `app.open` reach the same list with no new word.
+
+At the agent, `observation.record` and `observation.update` take `about`,
+`observations.list` filters by an element and answers the references, and
+`element.describe` answers the decisions about the element and the observations
+on it.

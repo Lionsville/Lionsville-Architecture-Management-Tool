@@ -99,3 +99,10 @@ so an answer that was right stays right. `kinds` narrows the answer.
   scope is open, and the scopes above are searched for their decisions
   only. Putting them in the read is a cost on every open, not on the search,
   and is a decision about the read rather than about this.
+
+## Amended, 22 November 2026 — an observation says the elements it is about
+
+An observation may name the elements it is about (ADR-0032, amended 22 November
+2026), and says them to a search as a decision says its subject: in `about`, by
+id, for the row to name. The words matched are unchanged; an element's name is
+not one of an observation's words, as it is not one of a decision's.

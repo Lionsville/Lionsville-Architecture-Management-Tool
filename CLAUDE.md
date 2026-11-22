@@ -513,8 +513,12 @@ src/observations/ What was seen, what lies behind it (ADR-0021), and what is
                                       chain stands, and how much of a large
                                       scope's map is drawn when it opens
                     filter            the one filter model the three tabs share —
-                                      scopes, Obs, Cause, RC, search, and the
+                                      scopes, Obs, Cause, RC, search, About
+                                      (the page's look, `about=<id>`), and the
                                       chains they keep — and saved filters
+                    about             the decisions about an element and the
+                                      open observations on it, across the
+                                      scopes the index read (ADR-0032, amended)
                     form · wording    what the new observation asks and refuses,
                                       Seen before?, and the wording hint's lists
                     rootsFromSolutions   what an analysis kept before a root

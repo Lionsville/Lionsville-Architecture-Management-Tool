@@ -647,3 +647,6 @@ elsewhere. Standing them over an open scope needs a second session beside the
 open one, or their writes carried through it, and neither is decided here. The
 way back above leads from them to the view. A scope's settings, a source's own
 pages and its page for agents are pages of a home as before.
+## Amended 22 November 2026: the observations page's look
+
+The observations page says the elements its list is filtered by as its look, `#/<scope>/-/observations?look=about%3D<id>`, `about=<id>` once per element (ADR-0032, amended 22 November 2026), in the shape the operating model's look already has. No new word: `look` is a place's already, so the filter is in the history, a link carries it, and `app.open` takes it on the observations page as it does on the operating model's. The screen says it in `ScreenPage`'s `look` for that page as for the operating model.
