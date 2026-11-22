@@ -7,10 +7,10 @@
  * Logistics: a cluster at the root serving two domains, a shipping domain.
  */
 import { describe, expect, it } from 'vitest'
-import type { HostModel } from '../../model/hostModel'
-import type { DesignElement } from '../../model/types'
-import { indexScopes } from '../../projects/scopeIndex'
-import { conwayMap } from '../../model/conway'
+import type { HostModel } from '../model/hostModel'
+import type { DesignElement } from '../model/types'
+import { indexScopes } from '../projects/scopeIndex'
+import { conwayMap } from '../model/conway'
 import { conwayInputAround, conwayInputHere, unitLanding, unitViewsHere } from './unitViewsHere'
 
 const actor = (id: string, name: string, over: Partial<DesignElement> = {}): DesignElement => ({

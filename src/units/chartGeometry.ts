@@ -8,7 +8,7 @@
  * the boxes is what made the old lines hard to follow. Pure, so a route is
  * tested without a browser to measure in.
  */
-import type { ChartShape } from '../../model/orgChart'
+import type { ChartShape } from '../model/orgChart'
 
 export type Rect = { left: number; top: number; right: number; bottom: number }
 export type Point = { x: number; y: number }

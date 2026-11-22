@@ -12,23 +12,23 @@
  */
 import { useMemo } from 'react'
 import type { ComponentProps, ReactElement, ReactNode } from 'react'
-import type { PageView } from '../../editor'
-import type { DesignDiagram, ElementId } from '../../model/types'
-import type { ScopePath } from '../../projects/scopePath'
-import { lazyPart } from '../../widgets/lazyPart'
-import type { WorkspaceParts } from '../workspaceParts'
-import { pictureFailed, savePicture } from '../savePicture'
-import type { ChartPage as ChartPageShape } from './ChartPage'
-import type { ConwayPage as ConwayPageShape } from './ConwayPage'
-import type { AssignmentInspector as AssignmentInspectorShape } from './AssignmentInspector'
-import type { ChartSummary as ChartSummaryShape } from './ChartSummary'
-import { unitLanding, unitViewsHere } from './unitViewsHere'
-import { planBodyTemplate } from '../../roadmap/planTemplate'
-import { helpAt } from '../helpAt'
-import { PANEL_HELP } from '../../platform/helpPlaces'
-import type { UnitMaking } from './useNewUnit'
-import { flattenScopes } from '../../projects/scope'
-import { ROOT_SCOPE } from '../../projects/scopePath'
+import type { PageView } from '../editor'
+import type { DesignDiagram, ElementId } from '../model/types'
+import type { ScopePath } from '../projects/scopePath'
+import { lazyPart } from '../widgets/lazyPart'
+import type { WorkspaceParts } from './workspaceParts'
+import { pictureFailed, savePicture } from './savePicture'
+import type { ChartPage as ChartPageShape } from '../units/ChartPage'
+import type { ConwayPage as ConwayPageShape } from '../units/ConwayPage'
+import type { AssignmentInspector as AssignmentInspectorShape } from '../units/AssignmentInspector'
+import type { ChartSummary as ChartSummaryShape } from '../units/ChartSummary'
+import { unitLanding, unitViewsHere } from '../units/unitViewsHere'
+import { planBodyTemplate } from '../roadmap/planTemplate'
+import { helpAt } from './helpAt'
+import { PANEL_HELP } from '../platform/helpPlaces'
+import type { UnitMaking } from '../units/useNewUnit'
+import { flattenScopes } from '../projects/scope'
+import { ROOT_SCOPE } from '../projects/scopePath'
 
 /**
  * A chart and a Conway map are tabs, never the first view: each page arrives
@@ -36,18 +36,18 @@ import { ROOT_SCOPE } from '../../projects/scopePath'
  * download does not carry them.
  */
 const ChartPage = lazyPart<ComponentProps<typeof ChartPageShape>>(
-  () => import('./ChartPage').then((held) => held.ChartPage), { warm: true },
+  () => import('../units/ChartPage').then((held) => held.ChartPage), { warm: true },
 )
 const ConwayPage = lazyPart<ComponentProps<typeof ConwayPageShape>>(
-  () => import('./ConwayPage').then((held) => held.ConwayPage), { warm: true },
+  () => import('../units/ConwayPage').then((held) => held.ConwayPage), { warm: true },
 )
 /** An assignment in the inspector arrives with the first one chosen. */
 const AssignmentInspector = lazyPart<ComponentProps<typeof AssignmentInspectorShape>>(
-  () => import('./AssignmentInspector').then((held) => held.AssignmentInspector),
+  () => import('../units/AssignmentInspector').then((held) => held.AssignmentInspector),
 )
 /** The chart's summary arrives with the first chart whose inspector is open with nothing picked. */
 const ChartSummary = lazyPart<ComponentProps<typeof ChartSummaryShape>>(
-  () => import('./ChartSummary').then((held) => held.ChartSummary),
+  () => import('../units/ChartSummary').then((held) => held.ChartSummary),
 )
 
 type Kind = 'chart' | 'conway'

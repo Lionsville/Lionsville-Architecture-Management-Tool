@@ -28,8 +28,8 @@ import type { TypeLink } from '../../projects/scopeType'
 /** Moved to `projects/scopeType.ts`, where a host with no screen links a unit too (ADR-0040 §1). */
 export { typeFollowingUnit } from '../../projects/scopeType'
 import type { PickOption } from '../../widgets/PickToAdd'
-import { unitChoices } from '../units/choices'
-import type { ChoiceWords } from '../units/choices'
+import { unitChoices } from '../../units/choices'
+import type { ChoiceWords } from '../../units/choices'
 
 /** One unit serving the scope. */
 export type ServingRow = {

@@ -21,17 +21,17 @@
  * scope's as its session has them, the rest the index's — so the chart names
  * the plan beside a unit's first and last day.
  */
-import { conwayApplication } from '../../model/conway'
-import type { ConwayApplication, ConwayInput, ConwayInteraction, ConwayRow } from '../../model/conway'
-import type { HostModel } from '../../model/hostModel'
-import type { ElementId, Relation } from '../../model/types'
-import { isUnit, organisationOn, unitsBelow } from '../../model/units'
-import type { UnitLike } from '../../model/units'
-import type { OrganisationAt } from '../../projects/checks'
-import { unitPlansOf } from '../../projects/scopeIndex'
-import type { ScopeIndex } from '../../projects/scopeIndex'
-import { isWithinScope } from '../../projects/scopePath'
-import type { ScopePath } from '../../projects/scopePath'
+import { conwayApplication } from '../model/conway'
+import type { ConwayApplication, ConwayInput, ConwayInteraction, ConwayRow } from '../model/conway'
+import type { HostModel } from '../model/hostModel'
+import type { ElementId, Relation } from '../model/types'
+import { isUnit, organisationOn, unitsBelow } from '../model/units'
+import type { UnitLike } from '../model/units'
+import type { OrganisationAt } from '../projects/checks'
+import { unitPlansOf } from '../projects/scopeIndex'
+import type { ScopeIndex } from '../projects/scopeIndex'
+import { isWithinScope } from '../projects/scopePath'
+import type { ScopePath } from '../projects/scopePath'
 import { organisationHere } from './organisationHere'
 
 export type UnitViewsHere = {

@@ -24,11 +24,11 @@
  * is the organisation (`model/serving.scopesServed`); one inside another
  * serves through it. Pure, and no words.
  */
-import type { UnitType, UnitTypeId } from '../../model/operatingModel'
-import { unitTypeRank } from '../../model/unitOrder'
-import { mayHaveParent, unitTypeOn } from '../../model/units'
-import type { DesignElement, ElementId } from '../../model/types'
-import type { ScopePath } from '../../projects/scopePath'
+import type { UnitType, UnitTypeId } from '../model/operatingModel'
+import { unitTypeRank } from '../model/unitOrder'
+import { mayHaveParent, unitTypeOn } from '../model/units'
+import type { DesignElement, ElementId } from '../model/types'
+import type { ScopePath } from '../projects/scopePath'
 
 /** The types a new unit may have under a unit of `parentType`, or at the top where it is absent, in rank order. */
 export function typesThatMaySit(types: readonly UnitType[], parentType: UnitTypeId | undefined, day: string): UnitType[] {

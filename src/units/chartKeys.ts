@@ -7,9 +7,9 @@
  * picked and F focuses on it. What a fold hides is not walked. Pure, over the
  * units drawn, so the walk is tested with no page.
  */
-import type { ChartUnit } from '../../model/orgChart'
-import type { ElementId } from '../../model/types'
-import { chordHeld } from '../../widgets/kit/keys'
+import type { ChartUnit } from '../model/orgChart'
+import type { ElementId } from '../model/types'
+import { chordHeld } from '../widgets/kit/keys'
 
 export type TreeStep = 'up' | 'down' | 'previous' | 'next'
 

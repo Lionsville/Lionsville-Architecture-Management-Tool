@@ -11,10 +11,10 @@
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
-import { translator } from '../../i18n'
-import type { UnitDeletion, UnitsChoice } from '../../model/unitDeletion'
-import { axeFindings } from '../testing/axe'
-import { renderShell } from '../testing/renderShell'
+import { translator } from '../i18n'
+import type { UnitDeletion, UnitsChoice } from '../model/unitDeletion'
+import { axeFindings } from '../app/testing/axe'
+import { renderShell } from '../app/testing/renderShell'
 import { UnitDeletionParts } from './UnitDeletionParts'
 
 afterEach(() => cleanup())

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import { tokensOf } from '../../widgets/kit/tokens'
+import { tokensOf } from '../widgets/kit/tokens'
 
 /**
  * The three colours a reporting line takes on the organisation chart for the

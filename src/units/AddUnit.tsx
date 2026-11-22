@@ -8,8 +8,8 @@
  * **Where nothing may sit**, it says so: a *+ Unit at the top* that may make
  * nothing is disabled, with the reason and the way to change it beside it.
  */
-import type { Translate } from '../../i18n'
-import { Button } from '../../widgets/kit/Button'
+import type { Translate } from '../i18n'
+import { Button } from '../widgets/kit/Button'
 import type { UnitOffer } from './useNewUnit'
 
 /** *+ Unit at the top*, or — where nothing may be made there — the same disabled, with why and the way on. */

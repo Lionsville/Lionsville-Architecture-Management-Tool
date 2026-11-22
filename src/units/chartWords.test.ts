@@ -7,7 +7,7 @@
  * it is folded; and what the whole chart holds, for its summary.
  */
 import { describe, expect, it } from 'vitest'
-import { translator } from '../../i18n'
+import { translator } from '../i18n'
 import { rollUpWords, servesBadge, summaryWords, unitBadges } from './chartWords'
 import type { BadgeReading } from './chartWords'
 

@@ -6,8 +6,8 @@
  * §4): every assignment under one of their ids, the role and the unit by name.
  */
 import { describe, expect, it } from 'vitest'
-import type { Person } from '../../people/person'
-import { indexScopes } from '../../projects/scopeIndex'
+import type { Person } from '../people/person'
+import { indexScopes } from '../projects/scopeIndex'
 import { heldAssignments, idsOfPerson, ownedByRule, reportingOf } from './held'
 
 const people: Person[] = [

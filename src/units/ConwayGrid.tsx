@@ -9,17 +9,17 @@
  * the rest. It writes nothing: the kit's Matrix hands in no keys here.
  */
 import type { ReactNode } from 'react'
-import type { StringKey, Translate } from '../../i18n'
-import { plural } from '../../i18n/strings'
-import type { ConwayInteraction, ConwayMap } from '../../model/conway'
-import { pairId } from '../../model/conwayReading'
-import type { PairReading, PairStanding } from '../../model/conwayReading'
-import { INTERACTION_MODES, INTERACTION_MODE_LABEL } from '../../model/relations'
-import type { ElementId, InteractionMode } from '../../model/types'
-import { Mark } from '../../widgets/kit/Mark'
-import type { MarkKind } from '../../widgets/kit/Mark'
-import { Matrix } from '../../widgets/kit/Matrix'
-import type { MatrixCell } from '../../widgets/kit/Matrix'
+import type { StringKey, Translate } from '../i18n'
+import { plural } from '../i18n/strings'
+import type { ConwayInteraction, ConwayMap } from '../model/conway'
+import { pairId } from '../model/conwayReading'
+import type { PairReading, PairStanding } from '../model/conwayReading'
+import { INTERACTION_MODES, INTERACTION_MODE_LABEL } from '../model/relations'
+import type { ElementId, InteractionMode } from '../model/types'
+import { Mark } from '../widgets/kit/Mark'
+import type { MarkKind } from '../widgets/kit/Mark'
+import { Matrix } from '../widgets/kit/Matrix'
+import type { MatrixCell } from '../widgets/kit/Matrix'
 
 /** The one letter a mode is marked with, in the reader's language. */
 const MODE_MARK: Record<InteractionMode, StringKey> = {

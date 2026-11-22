@@ -92,17 +92,6 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/app/principles/Citations.test.tsx', // 3 s
   'src/app/principles/PrinciplesPage.test.tsx', // 12 s
   'src/app/questionDialogs.test.tsx', // 7 s
-  'src/app/units/AssignmentInspector.test.tsx', // 5 s
-  'src/app/units/ChartFolding.test.tsx', // 17 s
-  'src/app/units/ChartMove.test.tsx', // 7 s
-  'src/app/units/ChartNewUnit.test.tsx', // 7 s
-  'src/app/units/ChartOrder.test.tsx', // 4 s
-  'src/app/units/ChartPage.test.tsx', // 16 s
-  'src/app/units/ChartReading.test.tsx', // 4 s
-  'src/app/units/ConwayPage.test.tsx', // 7 s
-  'src/app/units/EndedHolders.test.tsx', // 2 s
-  'src/app/units/PlanOrganisation.test.tsx', // 7 s
-  'src/app/units/UnitSection.test.tsx', // 20 s
   'src/app/useAgentGateway.test.tsx', // 5 s
   'src/app/useProjectFiles.test.tsx', // 7 s
   'src/app/useSheet.test.tsx', // 4 s
@@ -176,6 +165,17 @@ export const LOCAL_ONLY: readonly string[] = [
   'src/search/ui/GlobalSearchDialog.test.tsx', // 3 s
   'src/technology/ui/PlatformReportPage.test.tsx', // 2 s
   'src/technology/ui/TechnologyLandscapePage.test.tsx', // 7 s
+  'src/units/AssignmentInspector.test.tsx', // 5 s
+  'src/units/ChartFolding.test.tsx', // 17 s
+  'src/units/ChartMove.test.tsx', // 7 s
+  'src/units/ChartNewUnit.test.tsx', // 7 s
+  'src/units/ChartOrder.test.tsx', // 4 s
+  'src/units/ChartPage.test.tsx', // 16 s
+  'src/units/ChartReading.test.tsx', // 4 s
+  'src/units/ConwayPage.test.tsx', // 7 s
+  'src/units/EndedHolders.test.tsx', // 2 s
+  'src/units/PlanOrganisation.test.tsx', // 7 s
+  'src/units/UnitSection.test.tsx', // 20 s
   'src/widgets/FindingMarks.test.tsx', // 3 s
   'src/widgets/FindingsList.test.tsx', // 3 s
   'src/widgets/PickToAdd.test.tsx', // 2 s

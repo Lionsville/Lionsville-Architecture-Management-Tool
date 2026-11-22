@@ -19,10 +19,10 @@
  * in a corner of its own, so a line appearing moves nothing.
  */
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
-import type { Translate } from '../../i18n'
-import type { ChartShape } from '../../model/orgChart'
-import { KeyStrip } from '../../widgets/kit/KeyStrip'
-import { arrowAt, Line, LineLabel } from '../../widgets/kit/Line'
+import type { Translate } from '../i18n'
+import type { ChartShape } from '../model/orgChart'
+import { KeyStrip } from '../widgets/kit/KeyStrip'
+import { arrowAt, Line, LineLabel } from '../widgets/kit/Line'
 import { connectorsOf, pathOf, placeTags, routeAround } from './chartGeometry'
 import type { LineEnd, Point, Rect } from './chartGeometry'
 import type { ChartLine, ChartLineEnd } from './chartLines'

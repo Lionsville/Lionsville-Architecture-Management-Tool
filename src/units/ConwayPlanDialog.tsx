@@ -8,13 +8,13 @@
  * keeps is not put on a plan here; the sentence says it stays for the plan's
  * author to bring in.
  */
-import type { Translate } from '../../i18n'
-import type { Command } from '../../model/commands'
-import type { HostModel } from '../../model/hostModel'
-import { nextTransitionNumber } from '../../model/transition'
-import type { ElementId } from '../../model/types'
-import { Dialog } from '../../widgets/kit/Dialog'
-import { Picker } from '../../widgets/kit/Picker'
+import type { Translate } from '../i18n'
+import type { Command } from '../model/commands'
+import type { HostModel } from '../model/hostModel'
+import { nextTransitionNumber } from '../model/transition'
+import type { ElementId } from '../model/types'
+import { Dialog } from '../widgets/kit/Dialog'
+import { Picker } from '../widgets/kit/Picker'
 import type { UnitViewsHere } from './unitViewsHere'
 
 export function ConwayPlanDialog({ ids, model, here, declare, onClose, onOpenPlan, t }: {

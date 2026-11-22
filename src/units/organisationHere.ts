@@ -15,15 +15,15 @@
  * `assigned` rows: a unit just made responsible for a capability here is
  * checked against the domains it serves at once (3.6.1).
  */
-import type { HostModel } from '../../model/hostModel'
-import { isUnit } from '../../model/units'
-import type { Assignment } from '../../model/units'
-import { ownsOf } from '../../model/conway'
-import { organisationAt } from '../../projects/checks'
-import type { AssignedRow, OrganisationAt } from '../../projects/checks'
-import { movesOf } from '../../projects/scopeIndex'
-import type { ScopeIndex } from '../../projects/scopeIndex'
-import type { ScopePath } from '../../projects/scopePath'
+import type { HostModel } from '../model/hostModel'
+import { isUnit } from '../model/units'
+import type { Assignment } from '../model/units'
+import { ownsOf } from '../model/conway'
+import { organisationAt } from '../projects/checks'
+import type { AssignedRow, OrganisationAt } from '../projects/checks'
+import { movesOf } from '../projects/scopeIndex'
+import type { ScopeIndex } from '../projects/scopeIndex'
+import type { ScopePath } from '../projects/scopePath'
 
 export function organisationHere(index: ScopeIndex, scope: ScopePath, model: HostModel): OrganisationAt {
   const base = organisationAt(index)

@@ -10,11 +10,11 @@
  * is drawn, so it starts with nothing on it but its name.
  */
 import { useCallback } from 'react'
-import { toDiagram } from '../../model'
-import type { Command } from '../../model'
-import type { MakeId } from '../../model/keys'
-import { laidOutView } from '../../model/orgChart'
-import type { Translate } from '../../i18n'
+import { toDiagram } from '../model'
+import type { Command } from '../model'
+import type { MakeId } from '../model/keys'
+import { laidOutView } from '../model/orgChart'
+import type { Translate } from '../i18n'
 
 export type UnitViewKind = 'chart' | 'conway'
 

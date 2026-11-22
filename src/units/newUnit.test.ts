@@ -7,7 +7,7 @@
  * the record it is.
  */
 import { describe, expect, it } from 'vitest'
-import type { UnitType } from '../../model/operatingModel'
+import type { UnitType } from '../model/operatingModel'
 import { asksServes, filedInChoice, filedInDefault, newUnitElement, typesThatMaySit } from './newUnit'
 
 const DAY = '2026-10-12'

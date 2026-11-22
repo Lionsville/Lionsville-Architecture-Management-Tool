@@ -25,9 +25,9 @@ import { usePlatformReport } from './usePlatformReport'
 import type { PlatformReading } from './usePlatformReport'
 import type { TechnologyLandscapes } from './useTechnologyLandscape'
 import { useDrawing } from './useDrawing'
-import { useChartChoice } from './units/useChartChoice'
-import { useUnitViews } from './units/useUnitViews'
-import type { UnitViewKind, UnitViews } from './units/useUnitViews'
+import { useChartChoice } from '../units/useChartChoice'
+import { useUnitViews } from '../units/useUnitViews'
+import type { UnitViewKind, UnitViews } from '../units/useUnitViews'
 import { useViewSelect } from './useViewSelect'
 
 export type WorkspacePages = ReturnType<typeof useWorkspacePages>

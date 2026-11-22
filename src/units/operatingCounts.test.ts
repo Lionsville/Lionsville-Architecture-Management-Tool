@@ -7,10 +7,10 @@
  * its session has them, and who holds a role before it is removed.
  */
 import { describe, expect, it } from 'vitest'
-import type { HostModel } from '../../model/hostModel'
-import type { DesignElement } from '../../model/types'
-import type { Assignment } from '../../model/units'
-import { indexScopes } from '../../projects/scopeIndex'
+import type { HostModel } from '../model/hostModel'
+import type { DesignElement } from '../model/types'
+import type { Assignment } from '../model/units'
+import { indexScopes } from '../projects/scopeIndex'
 import { roleHoldersHere, unitCountsHere } from './operatingCounts'
 
 const TODAY = '2026-10-11'

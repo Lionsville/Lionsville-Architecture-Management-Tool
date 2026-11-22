@@ -19,7 +19,7 @@ import type { HostModel } from '../model/hostModel'
 import { isBlankRef } from '../model/person'
 import { applicationOwnersOn } from '../model/owners'
 import { isUnit } from '../model/units'
-import { organisationHere } from './units/organisationHere'
+import { organisationHere } from '../units/organisationHere'
 import { platformTreeOf } from './platformTree'
 import type { Relation } from '../model'
 import { describeLeverage, leverageOf } from '../model'
@@ -37,10 +37,10 @@ import type { ModelSession } from './useModelSession'
 import { useOwnerDescriptions } from './useOwnerDescriptions'
 import type { PeopleRegisterAccess } from '../people/ui/access'
 import { lazyPart } from '../widgets/lazyPart'
-import type { UnitSection as UnitSectionShape } from './units/UnitSection'
+import type { UnitSection as UnitSectionShape } from '../units/UnitSection'
 import type { WriteIn } from '../session/writeIn'
-import type { LandPeopleMoves } from './units/landPeopleMoves'
-import { UnitDeletionParts, unitDeletionSlot } from './units/unitDeletionSlot'
+import type { LandPeopleMoves } from '../units/landPeopleMoves'
+import { UnitDeletionParts, unitDeletionSlot } from '../units/unitDeletionSlot'
 
 /**
  * An actor's unit section, with its dialogs to assign and to declare an
@@ -49,7 +49,7 @@ import { UnitDeletionParts, unitDeletionSlot } from './units/unitDeletionSlot'
  * a unit says, which a board asks for only once its confirmation is up.
  */
 const UnitSection = lazyPart<ComponentProps<typeof UnitSectionShape>>(
-  () => import('./units/UnitSection').then((held) => held.UnitSection), { brings: [UnitDeletionParts] },
+  () => import('../units/UnitSection').then((held) => held.UnitSection), { brings: [UnitDeletionParts] },
 )
 
 export function useWorkspaceOwnership(deps: {

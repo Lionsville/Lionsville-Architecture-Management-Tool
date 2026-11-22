@@ -27,17 +27,17 @@ import { PrinciplesPages } from './principles/PrinciplesPages'
 import { lazyPart } from '../widgets/lazyPart'
 import { ArrivingDialog, arrivingPage } from '../widgets/Arriving'
 import type { WorkspaceParts } from './workspaceParts'
-import type { EndedHolders as EndedHoldersShape, SlotHolders as SlotHoldersShape } from './units/EndedHolders'
-import { organisationHere } from './units/organisationHere'
+import type { EndedHolders as EndedHoldersShape, SlotHolders as SlotHoldersShape } from '../units/EndedHolders'
+import { organisationHere } from '../units/organisationHere'
 import { leaveWithDrafts } from '../widgets/kit/drafts'
 import { heldThroughType } from '../model/units'
 import { refuseRoleLines, refuseSlotLine } from '../model/reporting'
-import { refusalWords } from './units/lineWords'
+import { refusalWords } from '../units/lineWords'
 import type { SlotTakeOut } from '../operating/ui/OperatingModelPage'
-import { backToTheModel, operatingFactsHere, roleHoldersHere, unitCountsHere } from './units/operatingCounts'
+import { backToTheModel, operatingFactsHere, roleHoldersHere, unitCountsHere } from '../units/operatingCounts'
 import type {
   PlanMoves as PlanMovesShape, PlanOrganisation as PlanOrganisationShape, PlanOrganisationProps,
-} from './units/PlanOrganisation'
+} from '../units/PlanOrganisation'
 
 /**
  * A platform's report and a service's are pages reached from a card, never the
@@ -100,16 +100,16 @@ const OperatingModelPage = lazyPart<ComponentProps<typeof OperatingModelPageShap
  * first of them drawn.
  */
 const PlanMoves = lazyPart<ComponentProps<typeof PlanMovesShape>>(
-  () => import('./units/PlanOrganisation').then((held) => held.PlanMoves),
+  () => import('../units/PlanOrganisation').then((held) => held.PlanMoves),
 )
 const PlanOrganisation = lazyPart<ComponentProps<typeof PlanOrganisationShape>>(
-  () => import('./units/PlanOrganisation').then((held) => held.PlanOrganisation),
+  () => import('../units/PlanOrganisation').then((held) => held.PlanOrganisation),
 )
 const EndedHolders = lazyPart<ComponentProps<typeof EndedHoldersShape>>(
-  () => import('./units/EndedHolders').then((held) => held.EndedHolders),
+  () => import('../units/EndedHolders').then((held) => held.EndedHolders),
 )
 const SlotHolders = lazyPart<ComponentProps<typeof SlotHoldersShape>>(
-  () => import('./units/EndedHolders').then((held) => held.SlotHolders),
+  () => import('../units/EndedHolders').then((held) => held.SlotHolders),
 )
 
 /**

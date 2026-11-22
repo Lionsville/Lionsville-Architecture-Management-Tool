@@ -22,19 +22,19 @@
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { Translate } from '../../i18n'
-import type { Command } from '../../model/commands'
-import { walk } from '../../model/orgChart'
-import type { ChartUnit, OrgChart } from '../../model/orgChart'
-import type { ElementId } from '../../model/types'
-import type { ScopePath } from '../../projects/scopePath'
+import type { Translate } from '../i18n'
+import type { Command } from '../model/commands'
+import { walk } from '../model/orgChart'
+import type { ChartUnit, OrgChart } from '../model/orgChart'
+import type { ElementId } from '../model/types'
+import type { ScopePath } from '../projects/scopePath'
 import { NewUnitDialog } from './NewUnitDialog'
 import type { NewUnitForm, NewUnitNone } from './NewUnitDialog'
 import { newUnitElement, typesThatMaySit } from './newUnit'
 import type { UnitViewsHere } from './unitViewsHere'
 import { followTypeIn, typeFollowingHere } from './followType'
-import { refusalKey } from '../../session/writeIn'
-import type { WriteIn } from '../../session/writeIn'
+import { refusalKey } from '../session/writeIn'
+import type { WriteIn } from '../session/writeIn'
 
 /** What making a unit from the chart is handed by the workspace. */
 export type UnitMaking = {

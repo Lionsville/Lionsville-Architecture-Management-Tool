@@ -9,19 +9,19 @@
  * the tree with the open scope's session laid over it (`organisationHere`),
  * so a unit made a second ago is counted at once.
  */
-import type { Command } from '../../model/commands'
-import type { HostModel } from '../../model/hostModel'
-import type { RoleId, UnitTypeId } from '../../model/operatingModel'
-import { pickedPerson } from '../../model/person'
-import { holdingFrom, personOf, unitCountsOn } from '../../model/units'
-import { organisationFacts } from '../../operating/organisationFacts'
-import type { OrganisationFacts, OutsideTheModel } from '../../operating/organisationFacts'
-import type { RoleHolders } from '../../operating/ui/RemoveConfirm'
-import type { Person } from '../../people/person'
-import { personText, registerOf } from '../../people/shown'
-import type { ScopeIndex } from '../../projects/scopeIndex'
-import type { ScopePath } from '../../projects/scopePath'
-import type { Translate } from '../../i18n'
+import type { Command } from '../model/commands'
+import type { HostModel } from '../model/hostModel'
+import type { RoleId, UnitTypeId } from '../model/operatingModel'
+import { pickedPerson } from '../model/person'
+import { holdingFrom, personOf, unitCountsOn } from '../model/units'
+import { organisationFacts } from '../operating/organisationFacts'
+import type { OrganisationFacts, OutsideTheModel } from '../operating/organisationFacts'
+import type { RoleHolders } from '../operating/ui/RemoveConfirm'
+import type { Person } from '../people/person'
+import { personText, registerOf } from '../people/shown'
+import type { ScopeIndex } from '../projects/scopeIndex'
+import type { ScopePath } from '../projects/scopePath'
+import type { Translate } from '../i18n'
 import { organisationHere } from './organisationHere'
 
 /** How many units of each type there are on `day`. */

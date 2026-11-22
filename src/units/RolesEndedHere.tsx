@@ -8,11 +8,11 @@
  * confirmation asks for it (`business/ui/FunctionInspector.SheetResponsible`);
  * a board's says the same sentences (`editor/EditorDialogs`).
  */
-import type { Translate } from '../../i18n'
-import { rolesEndedSentences } from '../../model/deletion'
-import type { DeletionSummary } from '../../model/deletion'
-import { usePersonNames } from '../../people/ui/names'
-import { RolesEnded } from '../../widgets/RolesEnded'
+import type { Translate } from '../i18n'
+import { rolesEndedSentences } from '../model/deletion'
+import type { DeletionSummary } from '../model/deletion'
+import { usePersonNames } from '../people/ui/names'
+import { RolesEnded } from '../widgets/RolesEnded'
 
 export function RolesEndedHere({ summary, role, unit, s }: {
   summary: Pick<DeletionSummary, 'roles' | 'earlierAssignments'>

@@ -7,15 +7,15 @@
  * and the unit by the names the organisation gives them and the scope that
  * keeps it. Read off the index the shell already holds; nothing loads for it.
  */
-import type { PersonId } from '../../model/person'
-import { isBlankRef } from '../../model/person'
-import { unitsByRule } from '../../model/owners'
-import { scopesServed } from '../../model/serving'
-import { holdersAt, isExceptionPlacement, linesOfHolder, managersOfHolder, personOf, runsOn } from '../../model/units'
-import type { Assignment, Organisation } from '../../model/units'
-import type { HeldAssignment, OwnedByRule, Reporting, ReportingPerson } from '../../people/hold'
-import type { Person } from '../../people/person'
-import type { ScopeIndex } from '../../projects/scopeIndex'
+import type { PersonId } from '../model/person'
+import { isBlankRef } from '../model/person'
+import { unitsByRule } from '../model/owners'
+import { scopesServed } from '../model/serving'
+import { holdersAt, isExceptionPlacement, linesOfHolder, managersOfHolder, personOf, runsOn } from '../model/units'
+import type { Assignment, Organisation } from '../model/units'
+import type { HeldAssignment, OwnedByRule, Reporting, ReportingPerson } from '../people/hold'
+import type { Person } from '../people/person'
+import type { ScopeIndex } from '../projects/scopeIndex'
 
 /** Every id that is one person's: the entry, and the ones a merge folded into it. */
 export function idsOfPerson(id: PersonId, people: readonly Person[]): Set<PersonId> {

@@ -10,12 +10,12 @@
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, RefObject } from 'react'
-import { CANVAS_FLOAT, canvasRooms } from '../../widgets/kit/canvasRoom'
-import { canvasZoomProps, clampZoom, NO_INSETS, ZOOM_FLOOR, ZOOM_HOME } from '../../widgets/kit/zoom'
-import { textScale } from '../../widgets/kit/tokens'
-import { useTextScale } from '../../widgets/kit/useTextScale'
-import type { Insets, Point } from '../../widgets/kit/zoom'
-import { steppedZoomTarget, useCanvasZoom } from '../../widgets/kit/useCanvasZoom'
+import { CANVAS_FLOAT, canvasRooms } from '../widgets/kit/canvasRoom'
+import { canvasZoomProps, clampZoom, NO_INSETS, ZOOM_FLOOR, ZOOM_HOME } from '../widgets/kit/zoom'
+import { textScale } from '../widgets/kit/tokens'
+import { useTextScale } from '../widgets/kit/useTextScale'
+import type { Insets, Point } from '../widgets/kit/zoom'
+import { steppedZoomTarget, useCanvasZoom } from '../widgets/kit/useCanvasZoom'
 
 /**
  * The zoom that fits a drawing of this size in this pane, never above 100%, never below the floor, each

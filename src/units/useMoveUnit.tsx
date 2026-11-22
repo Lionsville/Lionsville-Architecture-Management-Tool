@@ -15,11 +15,11 @@
  */
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { StringKey, Translate } from '../../i18n'
-import type { PersonId } from '../../model/person'
-import type { ElementId } from '../../model/types'
-import type { Organisation } from '../../model/units'
-import type { ScopePath } from '../../projects/scopePath'
+import type { StringKey, Translate } from '../i18n'
+import type { PersonId } from '../model/person'
+import type { ElementId } from '../model/types'
+import type { Organisation } from '../model/units'
+import type { ScopePath } from '../projects/scopePath'
 import type { LandPeopleMoves, PeopleMoved } from './landPeopleMoves'
 import { MoveUnitDialog } from './MoveUnitDialog'
 

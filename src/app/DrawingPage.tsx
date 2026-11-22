@@ -18,7 +18,7 @@ import { MORE_PLACES, ORGANISATION_PLACES, SCOPE_PLACES } from './frame/places'
 import type { DrawingViewProps } from './DrawingView'
 import { NewViewDialog } from './NewViewDialog'
 import { printDocument } from './savePicture'
-import { unitLanding } from './units/unitViewsHere'
+import { unitLanding } from '../units/unitViewsHere'
 import type { WorkspaceParts } from './workspaceParts'
 
 /** Many of a kind, as the palette's groups head them. */

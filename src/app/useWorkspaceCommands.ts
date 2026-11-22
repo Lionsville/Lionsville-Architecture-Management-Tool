@@ -22,7 +22,7 @@ import type { ModelSession } from './useModelSession'
 import type { ProjectFiles } from './useProjectFiles'
 import type { Sheets } from './useSheet'
 import type { WorkspacePages } from './useWorkspacePages'
-import { unitLanding } from './units/unitViewsHere'
+import { unitLanding } from '../units/unitViewsHere'
 
 /**
  * What the File menu asks for, what the web's overflow asks for, and what

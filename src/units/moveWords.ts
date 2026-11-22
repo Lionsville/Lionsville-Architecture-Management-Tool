@@ -2,10 +2,10 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 /** Who manages a unit moved, in words, for the dialog and the panel alike. */
-import type { Translate } from '../../i18n'
-import type { PersonId } from '../../model/person'
-import type { ElementId } from '../../model/types'
-import type { Manager, Organisation } from '../../model/units'
+import type { Translate } from '../i18n'
+import type { PersonId } from '../model/person'
+import type { ElementId } from '../model/types'
+import type { Manager, Organisation } from '../model/units'
 
 export function managedByWords(organisation: Organisation, name: (id: ElementId) => string, personName: (person: PersonId) => string, s: Translate) {
   const roleName = (id: string) => organisation.roles.find((one) => one.id === id)?.name ?? id

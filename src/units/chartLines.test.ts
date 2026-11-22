@@ -9,10 +9,10 @@
  * none where both ends fold into one box, and a finding drawn on its line.
  */
 import { describe, expect, it } from 'vitest'
-import type { Role, UnitType } from '../../model/operatingModel'
-import { orgChart } from '../../model/orgChart'
-import type { DesignElement } from '../../model/types'
-import type { Assignment, Organisation } from '../../model/units'
+import type { Role, UnitType } from '../model/operatingModel'
+import { orgChart } from '../model/orgChart'
+import type { DesignElement } from '../model/types'
+import type { Assignment, Organisation } from '../model/units'
 import { chartExceptions, chartWideLines, holderLines } from './chartLines'
 
 const DAY = '2026-10-16'

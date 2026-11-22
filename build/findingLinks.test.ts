@@ -52,15 +52,15 @@ describe('findings', () => {
   it('are said only by the components that say them as links', () => {
     expect(naming(/\bCHECK_SENTENCE\b/)).toEqual(['roadmap/labels.ts', 'roadmap/ui/FindingSentence.tsx'])
     expect(naming(/\bfindingSentence\b/)).toEqual([
-      'app/organisation/attention.ts', 'app/units/ChartSummary.tsx', 'app/units/PlanStillOpen.tsx', 'app/units/UnitSection.tsx',
-      'projects/checks.ts',
+      'app/organisation/attention.ts', 'projects/checks.ts',
+      'units/ChartSummary.tsx', 'units/PlanStillOpen.tsx', 'units/UnitSection.tsx',
     ])
   })
 
   it('are listed in the one list of findings wherever a screen lists them', () => {
     expect(naming(/<FindingsList\b/)).toEqual([
-      'app/units/ChartSummary.tsx', 'app/units/PlanStillOpen.tsx',
-      'app/units/UnitSection.tsx', 'roadmap/ui/RoadmapFindings.tsx',
+      'roadmap/ui/RoadmapFindings.tsx', 'units/ChartSummary.tsx',
+      'units/PlanStillOpen.tsx', 'units/UnitSection.tsx',
     ])
   })
 

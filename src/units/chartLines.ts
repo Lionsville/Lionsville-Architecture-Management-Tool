@@ -24,12 +24,12 @@
  * that does is drawn on it — `vacant` where nobody holds what it lands on,
  * `loop` where it is part of a loop that day.
  */
-import type { LineKind } from '../../model/operatingModel'
-import type { ChartUnit, OrgChart } from '../../model/orgChart'
-import { reportingLoops } from '../../model/reporting'
-import type { ElementId } from '../../model/types'
-import { everyLineOn, holdersAt, holdersOn, isExceptionPlacement, linesOfHolder, personLinesOn, personOf, positionKey } from '../../model/units'
-import type { Assignment, LineSource, Organisation, ReportingLineOn } from '../../model/units'
+import type { LineKind } from '../model/operatingModel'
+import type { ChartUnit, OrgChart } from '../model/orgChart'
+import { reportingLoops } from '../model/reporting'
+import type { ElementId } from '../model/types'
+import { everyLineOn, holdersAt, holdersOn, isExceptionPlacement, linesOfHolder, personLinesOn, personOf, positionKey } from '../model/units'
+import type { Assignment, LineSource, Organisation, ReportingLineOn } from '../model/units'
 
 /**
  * One end of a line on the chart: a unit's box, the row of a role where it is

@@ -13,18 +13,18 @@
  * so two units of one name in two domains are told apart. A unit not there
  * on the day is not offered.
  */
-import type { Translate } from '../../i18n'
-import type { ElementId } from '../../model'
-import type { HostModel } from '../../model/hostModel'
-import { compareUnits, unitTypeRank } from '../../model/unitOrder'
-import { organisationOn, unitsAbove, unitsBelow, unitsOn } from '../../model/units'
-import type { Organisation, UnitLike } from '../../model/units'
-import { isServable } from '../../model/serving'
-import type { FiledIn } from '../../model/serving'
-import type { ScopeIndex } from '../../projects/scopeIndex'
-import type { ScopePath } from '../../projects/scopePath'
-import { scopeTrail } from '../../projects/scopeLabel'
-import type { PickOption } from '../../widgets/PickToAdd'
+import type { Translate } from '../i18n'
+import type { ElementId } from '../model'
+import type { HostModel } from '../model/hostModel'
+import { compareUnits, unitTypeRank } from '../model/unitOrder'
+import { organisationOn, unitsAbove, unitsBelow, unitsOn } from '../model/units'
+import type { Organisation, UnitLike } from '../model/units'
+import { isServable } from '../model/serving'
+import type { FiledIn } from '../model/serving'
+import type { ScopeIndex } from '../projects/scopeIndex'
+import type { ScopePath } from '../projects/scopePath'
+import { scopeTrail } from '../projects/scopeLabel'
+import type { PickOption } from '../widgets/PickToAdd'
 
 /**
  * Where a picker's rows are said: what a scope is called, and the words.

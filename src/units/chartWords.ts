@@ -20,12 +20,12 @@
  * A unit type's name is written whole (4.0.0): the cut word of 3.7.3
  * (*Organi. unit*) was read by nobody, and the boxes have room for it.
  */
-import type { Language, Translate } from '../../i18n'
-import { formatDay } from '../../i18n/dates'
-import { plural } from '../../i18n/strings'
-import type { ChartRollUp, ChartUnit } from '../../model/orgChart'
-import { transitionLabel } from '../../model/transition'
-import type { ScopePath } from '../../projects/scopePath'
+import type { Language, Translate } from '../i18n'
+import { formatDay } from '../i18n/dates'
+import { plural } from '../i18n/strings'
+import type { ChartRollUp, ChartUnit } from '../model/orgChart'
+import { transitionLabel } from '../model/transition'
+import type { ScopePath } from '../projects/scopePath'
 import type { UnitPlans } from './unitViewsHere'
 
 /** How many domains a badge names in full; beyond it, it names one fewer and counts the rest. */

@@ -8,20 +8,20 @@
  * a stray drop must never change the structure. What it does is said first, by
  * the same plan the dialog elsewhere asks (`useMovePlan`).
  */
-import type { Translate } from '../../i18n'
-import type { PersonId } from '../../model/person'
-import type { ElementId } from '../../model/types'
-import type { UnitMovePlan, UnitMoveRefusal } from '../../model/unitMove'
-import type { Organisation } from '../../model/units'
-import { Button } from '../../widgets/kit/Button'
-import { Panel } from '../../widgets/kit/Panel'
-import { Picker } from '../../widgets/kit/Picker'
-import type { PickerOption } from '../../widgets/kit/Picker'
-import type { PickOption } from '../../widgets/PickToAdd'
+import type { Translate } from '../i18n'
+import type { PersonId } from '../model/person'
+import type { ElementId } from '../model/types'
+import type { UnitMovePlan, UnitMoveRefusal } from '../model/unitMove'
+import type { Organisation } from '../model/units'
+import { Button } from '../widgets/kit/Button'
+import { Panel } from '../widgets/kit/Panel'
+import { Picker } from '../widgets/kit/Picker'
+import type { PickerOption } from '../widgets/kit/Picker'
+import type { PickOption } from '../widgets/PickToAdd'
 import type { MovePlanning } from './MoveUnitDialog'
 import { refusalText } from './MoveUnitDialog'
 import { managedByWords } from './moveWords'
-import { PANEL_HELP } from '../../platform/helpPlaces'
+import { PANEL_HELP } from '../platform/helpPlaces'
 
 export type MovePanelProps = {
   unitId: ElementId

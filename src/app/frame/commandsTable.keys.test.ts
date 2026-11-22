@@ -97,7 +97,7 @@ const LOCAL: Record<Chord, { file: string; shows: RegExp }> = {
   'mod+shift+7': { file: 'documentation/ui/MarkdownToolbar.tsx', shows: /shortcut: '⇧7'/ },
   'mod+shift+9': { file: 'documentation/ui/MarkdownToolbar.tsx', shows: /shortcut: '⇧9'/ },
   // Up a level on the organisation chart.
-  'shift+enter': { file: 'app/units/chartKeys.ts', shows: /case 'Enter': return event\.shiftKey \? 'up'/ },
+  'shift+enter': { file: 'units/chartKeys.ts', shows: /case 'Enter': return event\.shiftKey \? 'up'/ },
   'alt+f10': { file: 'documentation/ui/MarkdownEditor.tsx', shows: /event\.altKey && event\.key === 'F10'/ },
   'mod+enter': { file: 'documentation/ui/MarkdownEditor.tsx', shows: /mod && event\.key === 'Enter'/ },
   // Every canvas's zoom (`widgets/kit/zoom`), over the poster, the maps and the roadmap's axis.

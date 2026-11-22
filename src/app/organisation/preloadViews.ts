@@ -22,8 +22,8 @@ const SCRIPTS: Record<Kind, () => Promise<unknown>> = {
   map: () => import('../../business/ui/MapPage'),
   technology: () => import('../../technology/ui/TechnologyLandscapePage'),
   drawing: () => import('../DrawingView'),
-  chart: () => import('../units/ChartPage'),
-  conway: () => import('../units/ConwayPage'),
+  chart: () => import('../../units/ChartPage'),
+  conway: () => import('../../units/ConwayPage'),
   observations: () => import('../../observations/ui/ObservationsPage'),
 }
 

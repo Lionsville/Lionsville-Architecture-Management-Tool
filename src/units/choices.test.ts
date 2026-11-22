@@ -9,11 +9,11 @@
  * defines them; and whether a unit serves a function's domain.
  */
 import { describe, expect, it } from 'vitest'
-import { translator } from '../../i18n'
-import type { DesignElement } from '../../model'
-import type { HostModel } from '../../model/hostModel'
-import type { UnitType } from '../../model/operatingModel'
-import { indexScopes } from '../../projects/scopeIndex'
+import { translator } from '../i18n'
+import type { DesignElement } from '../model'
+import type { HostModel } from '../model/hostModel'
+import type { UnitType } from '../model/operatingModel'
+import { indexScopes } from '../projects/scopeIndex'
 import { functionChoices, scopeChoices, unitChoices } from './choices'
 import { sheetResponsibleFor, sheetResponsibleOf } from './sheetResponsible'
 

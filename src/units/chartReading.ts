@@ -11,12 +11,12 @@
  * hides.
  */
 import { useMemo } from 'react'
-import { findingsByUnit, orgChart, walk } from '../../model/orgChart'
-import type { OrgChart } from '../../model/orgChart'
-import type { PersonId } from '../../model/person'
-import type { ElementId } from '../../model/types'
-import { findingsOfOrganisation } from '../../projects/checks'
-import type { Finding } from '../../projects/checks'
+import { findingsByUnit, orgChart, walk } from '../model/orgChart'
+import type { OrgChart } from '../model/orgChart'
+import type { PersonId } from '../model/person'
+import type { ElementId } from '../model/types'
+import { findingsOfOrganisation } from '../projects/checks'
+import type { Finding } from '../projects/checks'
 import type { UnitViewsHere } from './unitViewsHere'
 
 export type ChartReading = {

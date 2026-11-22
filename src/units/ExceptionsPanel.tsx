@@ -8,15 +8,15 @@
  * so *where do we depart from the model?* had no answer. Where one is true for
  * many people it is the model that should change, so the way there is said here.
  */
-import type { Translate } from '../../i18n'
-import { pickedPerson } from '../../model/person'
-import type { Organisation } from '../../model/units'
-import { personOf } from '../../model/units'
-import type { ElementId } from '../../model/types'
-import type { PersonNames } from '../../people/ui/names'
-import { Panel, PanelSection } from '../../widgets/kit/Panel'
+import type { Translate } from '../i18n'
+import { pickedPerson } from '../model/person'
+import type { Organisation } from '../model/units'
+import { personOf } from '../model/units'
+import type { ElementId } from '../model/types'
+import type { PersonNames } from '../people/ui/names'
+import { Panel, PanelSection } from '../widgets/kit/Panel'
 import type { ChartException } from './chartLines'
-import { PANEL_HELP } from '../../platform/helpPlaces'
+import { PANEL_HELP } from '../platform/helpPlaces'
 
 export function ExceptionsPanel({ exceptions, organisation, names, onGoTo, onOperating, onClose, t }: {
   exceptions: readonly ChartException[]; organisation: Organisation; names: PersonNames

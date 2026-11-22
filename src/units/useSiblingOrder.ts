@@ -23,12 +23,12 @@
  * so a managing role's right does not reach it.
  */
 import { useMemo, useState } from 'react'
-import type { StringKey, Translate } from '../../i18n'
-import type { Command } from '../../model/commands'
-import type { DesignElement, ElementId } from '../../model/types'
-import { siblingsOfType, unitMovedTo } from '../../model/unitOrder'
-import { organisationOn } from '../../model/units'
-import type { ScopePath } from '../../projects/scopePath'
+import type { StringKey, Translate } from '../i18n'
+import type { Command } from '../model/commands'
+import type { DesignElement, ElementId } from '../model/types'
+import { siblingsOfType, unitMovedTo } from '../model/unitOrder'
+import { organisationOn } from '../model/units'
+import type { ScopePath } from '../projects/scopePath'
 import type { LandPeopleMoves, PeopleMoved } from './landPeopleMoves'
 import type { UnitViewsHere } from './unitViewsHere'
 

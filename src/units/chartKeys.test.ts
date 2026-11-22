@@ -3,7 +3,7 @@
 
 /** The arrows walk the tree as it is drawn, and what a fold hides is not walked. */
 import { describe, expect, it } from 'vitest'
-import type { ChartUnit } from '../../model/orgChart'
+import type { ChartUnit } from '../model/orgChart'
 import { chartKey, stepInTree } from './chartKeys'
 
 const unit = (id: string, children: ChartUnit[] = []): ChartUnit => ({ id, name: id, serves: [], slots: [], others: [], children, ended: false })

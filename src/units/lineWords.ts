@@ -6,9 +6,9 @@
  * loop as `Role (Unit) → Role (Unit)`, by the names the organisation gives
  * them, and the day it would close on; one to itself in a word.
  */
-import type { Translate } from '../../i18n'
-import type { LineRefusal } from '../../model/reporting'
-import type { LinePosition, Organisation } from '../../model/units'
+import type { Translate } from '../i18n'
+import type { LineRefusal } from '../model/reporting'
+import type { LinePosition, Organisation } from '../model/units'
 
 /** A chain of roles in units, by name. */
 export function chainWords(chain: readonly LinePosition[], organisation: Pick<Organisation, 'units' | 'roles'>): string {

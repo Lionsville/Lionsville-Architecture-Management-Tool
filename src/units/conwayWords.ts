@@ -7,10 +7,10 @@
  * organisation — one sentence each, wherever it is listed. Apart from the
  * page, so a list that only says them does not bring the map with it.
  */
-import type { Translate } from '../../i18n'
-import type { ConwayFinding } from '../../model/conway'
-import { INTERACTION_MODE_LABEL } from '../../model/relations'
-import { CHECK_LABEL } from '../../projects/checks'
+import type { Translate } from '../i18n'
+import type { ConwayFinding } from '../model/conway'
+import { INTERACTION_MODE_LABEL } from '../model/relations'
+import { CHECK_LABEL } from '../projects/checks'
 import type { UnitViewsHere } from './unitViewsHere'
 
 /** One finding, in words. */

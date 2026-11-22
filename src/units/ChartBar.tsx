@@ -8,13 +8,13 @@
  * every canvas, and finding is on the outline.
  */
 import type { ReactNode } from 'react'
-import { CHART_LINES } from '../../agent/screen'
-import type { ChartLines } from '../../agent/screen'
-import type { StringKey, Translate } from '../../i18n'
-import { CHART_LEVELS } from '../../model/orgChart'
-import { DayControl } from '../../widgets/kit/DayControl'
-import { Segmented } from '../../widgets/kit/Segmented'
-import { ViewBar, ViewBarButton, ViewBarLabelled, ViewBarMenu } from '../../widgets/kit/ViewBar'
+import { CHART_LINES } from '../agent/screen'
+import type { ChartLines } from '../agent/screen'
+import type { StringKey, Translate } from '../i18n'
+import { CHART_LEVELS } from '../model/orgChart'
+import { DayControl } from '../widgets/kit/DayControl'
+import { Segmented } from '../widgets/kit/Segmented'
+import { ViewBar, ViewBarButton, ViewBarLabelled, ViewBarMenu } from '../widgets/kit/ViewBar'
 import { CHART_PEOPLE } from './useChartFolds'
 import type { ChartPeople } from './useChartFolds'
 
