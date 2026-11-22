@@ -4,6 +4,7 @@
   the accent seam and the language at the root; the screens moved onto the kit
   the same day (*As built: the screens on the kit*, below); implemented,
   7 November 2026 (4.0.0, not yet released)
+* Amended: 22 November 2026, a ratchet on reaching past the kit (below)
 * Date: 2026-11-07
 * Deciders: Wouter Simons
 * Extends: ADR-0022 (source providers), ADR-0044 (one way every page behaves)
@@ -176,3 +177,29 @@ What did not move: MUI still draws beneath the kit, as §1 said, and a dialog a 
 composed from this one draws for itself is that build's. `build/literalColours.test.ts`
 keeps the files that still hold a literal colour to the count each holds, and
 `build/literalFontSizes.test.ts` keeps a size from being written outside the scale.
+
+## Amended 22 November 2026: a ratchet on reaching past the kit
+
+The driver was reuse enforced, and only one kind of reuse was: a menu, a popover or
+a popper outside the kit fails `build/surfaces.test.ts`. Everything else a screen
+takes from MUI directly, or styles inline with `sx`, was left to habit, and habit is
+what the kit exists to replace.
+
+`build/kitRatchet.ts` measures two things in every shipped file under `src/`
+outside `src/widgets/kit/`: how many names it imports from `@mui/*` and `@emotion/*`
+(a default, a namespace, each named binding, types and re-exports included), and
+how many `sx` props it writes. It parses the file with the TypeScript compiler, so
+a string or a comment is not counted. `build/kitRatchetList.ts` holds each file that
+measured anything when the ratchet arrived to exactly those two numbers, as `GROWN`
+holds a unit's size: a file not on the list must measure nothing, a file that grew
+fails ("compose the kit"), and a file that shrank fails too until its entry comes
+down, so nothing grows back into the room. `node build/kitRatchet.ts --write`
+(`npm run kit -- --write`) lowers and removes entries to what the tree measures, and
+refuses to raise one or add one; it writes one file a line, sorted, so two changes
+that each lower their own files rarely meet. `build/kitRatchet.test.ts` runs in
+`npm run check` and on the runner, and prints the totals.
+
+When it arrived, 152 files held 570 imported names and 902 `sx` props between them.
+Nothing was converted with it: the list is where the work starts, and it only goes
+down. A build composed from this one may run the same file by path over its own
+sources with a list of its own.

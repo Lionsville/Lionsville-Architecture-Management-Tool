@@ -1579,7 +1579,10 @@ whose contract is `ports/CommandChannel.contract.ts`.
   inset of its own: `build/windowArea.test.ts` reads the tree for both.
 - Both themes must keep working; a colour is a token (`widgets/kit/tokens.ts`,
   `build/literalColours.test.ts`), and a screen composes the kit
-  (`widgets/kit/README.md`).
+  (`widgets/kit/README.md`): outside the kit, a file's names imported from
+  MUI and Emotion and its `sx` props are held by `build/kitRatchet.test.ts` to
+  exactly its entry in `build/kitRatchetList.ts`, a new file to none, and
+  `npm run kit -- --write` lowers the list and never raises it.
 - Keep existing tests green. If a test pins behaviour you are deliberately
   changing, flip it in the same change and say so.
 - Errors from the pure modules and the adapters carry a **key**

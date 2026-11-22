@@ -17,6 +17,7 @@
     "coverage": "node --experimental-strip-types build/coverage.ts",
     "deps": "node build/dependencies.ts",
     "dev": "vite",
+    "kit": "node build/kitRatchet.ts",
     "dev:desktop": "electron-vite dev",
     "dist:desktop": "node build/fetchDrawio.ts && electron-vite build && electron-builder",
     "lint": "eslint src electron build",
