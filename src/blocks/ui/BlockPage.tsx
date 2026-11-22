@@ -50,12 +50,14 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
   const [evaluating, setEvaluating] = useState<string | undefined>(openOn)
   const [editAsked, setEditAsked] = useState(false)
   const shown = useRef(id)
+  // A request, and only a request: the block, the comparison asked for and the
+  // request's nonce. `setTab` is the frame's and stable (`usePlaceTab`); an
+  // effect that ran on anything else closed the comparison after every write.
   useEffect(() => {
     if (!open) return
-    setEvaluating(openOn)
-    // Another block opens on About; a reload stays on the tab its address says.
-    if (openOn !== undefined) setTab('used')
-    else if (shown.current !== id) setTab('about')
+    if (openOn !== undefined) { setEvaluating(openOn); setTab('used') }
+    // Another block opens on About; the first, and a reload, on the tab its address says.
+    else if (shown.current !== undefined && shown.current !== id) { setEvaluating(undefined); setTab('about') }
     shown.current = id
   }, [open, openOn, id, nonce, setTab])
   const document = useBlockDocument(id ?? '')

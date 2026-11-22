@@ -8,7 +8,7 @@
  * segment). A page asks here instead of holding a `useState`. With no frame above
  * it, as in a page's own test, it behaves as that `useState` would.
  */
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { readListView, writeListView } from './kit/listView'
 import type { ListView } from './kit/listView'
 
@@ -60,13 +60,27 @@ export const PlaceListContext = createContext<PlaceLists | undefined>(undefined)
 
 export const PlaceTabContext = createContext<PlaceTabs | undefined>(undefined)
 
+/**
+ * The frame's value as it is now, read when a setter is called rather than when
+ * it was made: the frame's value is made again on every step it looks at, and a
+ * setter that changed with it moved every effect that named it — a page that
+ * set its tab from an effect set it again after each write (4.1.0).
+ */
+function useLatest<T>(value: T): { readonly current: T } {
+  const held = useRef(value)
+  held.current = value
+  return held
+}
+
 export function usePlaceTab(first: string, of?: string): readonly [string, (tab: string) => void] {
   const held = useContext(PlaceTabContext)
+  const latest = useLatest(held)
   const [own, setOwn] = useState(first)
+  // Stable for as long as the page is the same page: see `useLatest`.
   const choose = useCallback((tab: string) => {
     setOwn(tab)
-    held?.choose(tab, of)
-  }, [held, of])
+    latest.current?.choose(tab, of)
+  }, [latest, of])
   // In a frame the address is the truth: no tab said is the first, whatever was last pressed here.
   return [held ? held.tab ?? first : own, choose]
 }
@@ -74,11 +88,12 @@ export function usePlaceTab(first: string, of?: string): readonly [string, (tab:
 /** Which record of a page is up, in the address where there is a frame. Undefined is the list with nothing open over it. */
 export function usePlaceRecord(of: string, first?: string): readonly [string | undefined, (record: string | undefined) => void] {
   const held = useContext(PlaceTabContext)
+  const latest = useLatest(held)
   const [own, setOwn] = useState(first)
   const choose = useCallback((record: string | undefined) => {
     setOwn(record)
-    held?.chooseRecord?.(record, of)
-  }, [held, of])
+    latest.current?.chooseRecord?.(record, of)
+  }, [latest, of])
   return [!held?.chooseRecord ? own : held.recordOf === of ? held.record : undefined, choose]
 }
 
@@ -94,11 +109,12 @@ export function usePlaceGo(): ((to: PlaceTo) => void) | undefined {
  */
 export function usePlaceList(of: string): readonly [string, string | undefined, (list: string, pick: string | undefined) => void] {
   const held = useContext(PlaceListContext)
+  const latest = useLatest(held)
   const [own, setOwn] = useState<{ list: string; pick: string | undefined }>({ list: '', pick: undefined })
   const choose = useCallback((list: string, pick: string | undefined) => {
     setOwn({ list, pick })
-    held?.choose(list, pick, of)
-  }, [held, of])
+    latest.current?.choose(list, pick, of)
+  }, [latest, of])
   return held ? [held.list ?? '', held.pick, choose] : [own.list, own.pick, choose]
 }
 
@@ -155,16 +171,17 @@ export function useViewFacets(viewId: string): readonly [ViewFacets, (patch: Vie
  */
 export function usePlaceLook(of?: string): readonly [string | undefined, (look: string | undefined) => void] {
   const held = useContext(PlaceTabContext)
+  const latest = useLatest(held)
   const [own, setOwn] = useState<string | undefined>(undefined)
   const choose = useCallback((look: string | undefined) => {
     setOwn(look)
-    held?.chooseLook?.(look, of)
-  }, [held, of])
+    latest.current?.chooseLook?.(look, of)
+  }, [latest, of])
   return [held ? held.look : own, choose]
 }
 
 /** The tab another place will open on, said on the way there. Nothing with no frame above. */
 export function usePlaceTabFor(page: string): (tab: string) => void {
-  const held = useContext(PlaceTabContext)
-  return useCallback((tab: string) => { held?.chooseFor?.(page, tab) }, [held, page])
+  const latest = useLatest(useContext(PlaceTabContext))
+  return useCallback((tab: string) => { latest.current?.chooseFor?.(page, tab) }, [latest, page])
 }

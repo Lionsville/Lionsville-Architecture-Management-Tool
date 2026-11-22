@@ -177,6 +177,13 @@ export function HomePages({ sourcePage, pages, at, register, technology, registe
   )
 }
 
+/** Whether this home has been read at least once since it came up: a read again is not an arrival. */
+function useReadOnce(ready: boolean, at: ScopePath): boolean {
+  const [seen, setSeen] = useState<ScopePath | undefined>(ready ? at : undefined)
+  if (ready && seen !== at) setSeen(at)
+  return ready || seen === at
+}
+
 /**
  * The register of building blocks over this home, and a block's page over it
  * where one is picked (ADR-0043 §8): closing a block's page comes back to the
@@ -190,8 +197,12 @@ export function BlocksDoors({ pages, at, windowChrome, ready, back = () => windo
   const { openPage, asked, close } = pages
   const picked = openPage === 'blocks' && asked?.page === 'blocks' ? asked.select : undefined
   // Opened before the tree is read — from a link, or by an agent — the block is
-  // not yet anywhere to be found: the page is arriving, not the home bare.
-  if (openPage === 'blocks' && !ready) return arrivingPage({ windowChrome })
+  // not yet anywhere to be found: the page is arriving, not the home bare. Only
+  // the first time for this home: every write reads the home again, and a page
+  // taken down for that read came back on its list, a comparison closed under
+  // the person rating it (4.1.0).
+  const readOnce = useReadOnce(ready, at)
+  if (openPage === 'blocks' && !readOnce) return arrivingPage({ windowChrome })
   return (
     <>
       <BlocksRegisterPage open={openPage === 'blocks' && picked === undefined} at={at} onClose={close} windowChrome={windowChrome} />
