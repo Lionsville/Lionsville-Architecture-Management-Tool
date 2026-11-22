@@ -24,24 +24,18 @@
  * element. A record key is a kind and an id and nothing under them.
  */
 import type { Model } from './normalised'
+import { KINDS, LISTS_BY_KIND, RECORD_LIST_NAMES } from './recordKinds'
+import type { ListedKind } from './recordKinds'
 
 /**
  * The kinds of record a scope holds: one per list the model keeps
- * (`ModelOrder`), the pictures its documents show, and the scope itself — its
- * name, its description and what it says about itself, which a history lists
- * as a thing like any other.
+ * (`ModelOrder`, each named in `recordKinds.ts`), the pictures its documents
+ * show, and the scope itself — its name, its description and what it says
+ * about itself, which a history lists as a thing like any other.
  */
-export type RecordKind =
-  | 'element' | 'relation' | 'diagram' | 'decision' | 'transition'
-  | 'observation' | 'cause' | 'solution' | 'experiment'
-  | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment' | 'checkMark'
-  | 'comment' | 'principle' | 'citation' | 'evaluation' | 'image' | 'scope'
+export type RecordKind = ListedKind | 'image' | 'scope'
 
-export const RECORD_KINDS: readonly RecordKind[] = [
-  'element', 'relation', 'diagram', 'decision', 'transition',
-  'observation', 'cause', 'solution', 'experiment',
-  'unitType', 'role', 'responsibility', 'operatingRule', 'assignment', 'checkMark', 'comment', 'principle', 'citation', 'evaluation', 'image', 'scope',
-]
+export const RECORD_KINDS: readonly RecordKind[] = [...RECORD_LIST_NAMES.map((list) => KINDS[list].kind), 'image', 'scope']
 
 /**
  * One record. `id` is the record's own id — an element's, a view's, an
@@ -62,13 +56,7 @@ export function sameRecord(one: RecordKey, other: RecordKey): boolean {
 }
 
 /** Each kind of record the model holds, and the list it is kept in: one per key of `ModelOrder`. */
-export const RECORD_LISTS = {
-  element: 'elements', relation: 'relations', diagram: 'diagrams', decision: 'decisions',
-  transition: 'transitions', observation: 'observations', cause: 'causes', solution: 'solutions',
-  experiment: 'experiments',
-  unitType: 'unitTypes', role: 'roles', responsibility: 'responsibilities', operatingRule: 'operatingRules',
-  assignment: 'assignments', checkMark: 'checkMarks', comment: 'comments', principle: 'principles', citation: 'citations', evaluation: 'evaluations',
-} as const satisfies Partial<Record<RecordKind, keyof Model>>
+export const RECORD_LISTS = LISTS_BY_KIND satisfies Partial<Record<RecordKind, keyof Model>>
 
 type Listed = keyof typeof RECORD_LISTS
 
