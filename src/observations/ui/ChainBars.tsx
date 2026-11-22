@@ -49,21 +49,34 @@ export type ChainFilterProps = {
   onShowArchived: (show: boolean) => void
   /** Columns are the Seen list's. */
   columns?: { readonly choices: readonly { id: string; label: string }[]; readonly shown: readonly string[]; readonly onChange: (next: readonly string[]) => void }
+  /** An element's name by id, for the elements the observations in view are about; the id where absent. */
+  elementName?: ((id: string) => string) | undefined
   s: Translate
 }
 
+/** Every element an observation in view is about, and any filtered by that none names now, by name. */
+function aboutOptions(f: PictureFilters, name: (id: string) => string): { value: string; label: string }[] {
+  const ids = new Set([...f.inView.flatMap((one) => one.observations.flatMap((ob) => ob.about ?? [])), ...(f.filters.about ?? [])])
+  return [...ids].map((id) => ({ value: id, label: name(id) })).sort((a, b) => a.label.localeCompare(b.label))
+}
+
 /** What the stages' one bar offers — Find, Filter and the Seen list's View — for the page's `ListPage`. */
-export function chainFilterWords({ f, scopeLabel, showMerged, onShowMerged, showArchived, onShowArchived, columns, s }: ChainFilterProps): Omit<FilterWordsProps, 'actions'> {
+export function chainFilterWords({ f, scopeLabel, showMerged, onShowMerged, showArchived, onShowArchived, columns, elementName, s }: ChainFilterProps): Omit<FilterWordsProps, 'actions'> {
   const set = (patch: Partial<Filters>) => f.setFilters({ ...f.filters, ...patch })
+  const named = elementName ?? ((id: string) => id)
+  const about = aboutOptions(f, named)
   const fields: FilterField[] = [
     { id: 'tone', label: s('observation.toneLabel'), guide: 'observations.tone', options: OBSERVATION_TONES.map((one) => ({ value: one, label: s(TONE_WORD[one]) })) },
     { id: 'whose', label: s('observation.whoseLabel'), guide: 'observations.mine', options: [{ value: 'mine', label: s('observation.whoseMine') }] },
+    // The elements the observations are about (ADR-0032, amended): offered where any is named.
+    ...(about.length ? [{ id: 'about', label: s('observation.aboutField'), options: about }] : []),
     { id: 'show', label: s('observation.showLabel'), options: [{ value: 'merged', label: s('observation.showMerged') }, { value: 'archived', label: s('observation.showArchived') }] },
   ]
   const tones = OBSERVATION_TONES.filter((one) => !f.filters.tonesOff.includes(one))
   const filters = {
     ...(tones.length < OBSERVATION_TONES.length ? { tone: tones } : {}),
     ...(f.filters.mine ? { whose: ['mine'] } : {}),
+    ...(f.filters.about?.length ? { about: f.filters.about } : {}),
     ...(showMerged || showArchived ? { show: [...(showMerged ? ['merged'] : []), ...(showArchived ? ['archived'] : [])] } : {}),
   }
   const onFilters = (next: Readonly<Record<string, readonly string[]>>) => {
@@ -71,6 +84,7 @@ export function chainFilterWords({ f, scopeLabel, showMerged, onShowMerged, show
     set({
       tonesOff: on ? OBSERVATION_TONES.filter((one) => !on.includes(one)) : [],
       mine: (next.whose ?? []).includes('mine'),
+      about: next.about ?? [],
     })
     onShowMerged((next.show ?? []).includes('merged'))
     onShowArchived((next.show ?? []).includes('archived'))

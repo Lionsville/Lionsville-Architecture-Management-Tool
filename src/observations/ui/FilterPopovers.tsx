@@ -138,6 +138,7 @@ export function describeFilters(filters: Filters, s: Translate): string {
     filters.scopesOff.length > 0 && s('observation.savedScopesOff', { count: filters.scopesOff.length }),
     filters.tonesOff.length > 0 && OBSERVATION_TONES.filter((one) => !filters.tonesOff.includes(one)).map((one) => s(TONE_WORD[one])).join(', '),
     filters.mine && s('observation.whoseMine'),
+    Boolean(filters.about?.length) && `${s('observation.aboutField')}: ${filters.about?.length ?? 0}`,
   ].filter(Boolean).join(' · ')
 }
 

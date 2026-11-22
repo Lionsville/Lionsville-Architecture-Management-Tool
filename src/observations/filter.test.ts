@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  NO_FILTERS, SAVED_FILTERS_KEY, activeFilters, applyFilters, filterRecords, readSavedFilters, recallFilter, saveFilter,
+  NO_FILTERS, SAVED_FILTERS_KEY, aboutLook, aboutOfLook, activeFilters, applyFilters, filterRecords, readSavedFilters, recallFilter, saveFilter,
 } from './filter'
 import type { Filters } from './filter'
 import { pictureLinks, solutionKey } from './graph'
@@ -264,5 +264,37 @@ describe('saved filters', () => {
       { name: 'Bright', filters: { ...NO_FILTERS, tonesOff: ['neutral', 'problem'] } },
       { name: 'Odd tone', filters: NO_FILTERS },
     ])
+  })
+})
+
+describe('the element filter (ADR-0032, amended 22 November 2026)', () => {
+  const here: ScopeAnalysis = {
+    scope: '', solutions: [], experiments: [],
+    observations: [
+      observation('o1', 1, 'Invoices twice', { about: ['billing'] }),
+      observation('o2', 2, 'Stock wrong', { about: ['wms', 'ledger'] }),
+      observation('o3', 3, 'Nobody named'),
+    ],
+    causes: [cause('c1', 1, 'Retries', [{ id: 'o1', strength: 'normal' }]), cause('c2', 2, 'Late sync', [{ id: 'o2', strength: 'normal' }])],
+  }
+  const run = (about: string[]) => applyFilters(filterRecords([here], ''), pictureLinks([here], ''), { ...NO_FILTERS, about })
+
+  it('keeps the observations about any element named, with what lies behind them', () => {
+    expect([...run(['billing']).visible].sort()).toEqual(['c1', 'o1'])
+    expect([...run(['ledger', 'billing']).visible].sort()).toEqual(['c1', 'c2', 'o1', 'o2'])
+    expect(activeFilters({ ...NO_FILTERS, about: ['billing'] }, [''])).toBe(1)
+    expect(run([]).filtering).toBe(false)
+  })
+
+  it('is the page’s look in the address, an element at a time, and read back', () => {
+    expect(aboutLook(['crm', 'erp'])).toBe('about=crm&about=erp')
+    expect(aboutOfLook('about=crm&about=erp&about=crm')).toEqual(['crm', 'erp'])
+    expect(aboutLook([])).toBeUndefined()
+    expect(aboutOfLook('unit=x')).toBeUndefined()
+  })
+
+  it('is kept with a saved filter, and a hand’s mistake is passed over', () => {
+    const saved = readSavedFilters({ [SAVED_FILTERS_KEY]: [{ name: 'Billing', filters: { about: ['billing', 3] } }, { name: 'None', filters: { about: 'x' } }] })
+    expect(saved.map((one) => one.filters.about)).toEqual([['billing'], undefined])
   })
 })

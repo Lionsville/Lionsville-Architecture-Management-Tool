@@ -21,7 +21,7 @@
  * holds until the person zooms. A filter or the scopes changing moves no zoom.
  */
 import { useCallback, useMemo, useState } from 'react'
-import { NO_FILTERS, activeFilters, applyFilters, filterRecords, recallFilter, saveFilter } from '../filter'
+import { NO_FILTERS, aboutLook, aboutOfLook, activeFilters, applyFilters, filterRecords, recallFilter, saveFilter } from '../filter'
 import type { FilterResult, Filters, SavedFilter, SavedFilters } from '../filter'
 import { nodeKey, pictureCounts, pictureLinks } from '../graph'
 import type { PictureCounts } from '../graph'
@@ -33,6 +33,7 @@ import type { Translate } from '../../i18n'
 import { ZOOM_CEILING, ZOOM_FLOOR } from '../../widgets/kit/zoom'
 import type { ZoomRange } from '../../widgets/kit/zoom'
 import { usePersonNames } from '../../people/ui/names'
+import { usePlaceLook } from '../../widgets/placeTab'
 
 /** How the picture is looked at: the size of its marks, the zoom, and whether the zoom is the fitted one. */
 export type PictureView = {
@@ -136,7 +137,16 @@ export function usePictureFilters(deps: {
   const hasBelow = below.length > 0
   const [localWanted, setLocalWanted] = useState(true)
   const viewLocal = hasBelow && localWanted
-  const [filters, setFiltersRaw] = useState<Filters>(NO_FILTERS)
+  const [held, setFiltersRaw] = useState<Filters>(NO_FILTERS)
+  // The elements filtered by are the page's look, in its address (ADR-0032, amended): a link and an agent's `app.open` reach the same list.
+  const [look, setLook] = usePlaceLook('observations')
+  const aboutSaid = aboutLook(aboutOfLook(look))
+  const filters = useMemo<Filters>(() => {
+    const { about: _held, ...rest } = held
+    void _held
+    const about = aboutOfLook(aboutSaid)
+    return about ? { ...rest, about } : rest
+  }, [held, aboutSaid])
   const view = usePictureView()
 
   const inView = useMemo(() => (viewLocal ? [here, ...below] : [here]), [viewLocal, here, below])
@@ -150,7 +160,11 @@ export function usePictureFilters(deps: {
   const result = useMemo(() => applyFilters(records, links, filters), [records, links, filters])
   const hiddenLocal = useMemo(() => (viewLocal ? 0 : below.reduce((sum, one) => sum + recordsIn(one), 0)), [viewLocal, below])
 
-  const setFilters = useCallback((next: Filters) => setFiltersRaw(next), [])
+  const setFilters = useCallback((next: Filters) => {
+    setFiltersRaw(next)
+    const wanted = aboutLook(next.about)
+    if (wanted !== aboutSaid) setLook(wanted)
+  }, [aboutSaid, setLook])
   const clear = useCallback(() => setFilters(NO_FILTERS), [setFilters])
   const setViewLocal = useCallback((on: boolean) => setLocalWanted(on), [])
 

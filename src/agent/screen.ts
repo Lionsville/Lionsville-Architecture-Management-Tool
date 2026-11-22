@@ -213,7 +213,11 @@ export type Destination = {
    * whoever opens it sees the same band.
    */
   readonly day?: string
-  /** What the page is looking at within its tab, in its own words as a query: the operating model's part and unit. */
+  /**
+   * What the page is looking at within its tab, in its own words as a query:
+   * the operating model's part and unit, the observations page's elements
+   * (`about=<id>`, once per element; ADR-0032, amended 22 November 2026).
+   */
   readonly look?: string
   /** A frame panel open beside the place (`FRAME_PANELS`); a page of `work` or `activity` says the same over a home. */
   readonly panel?: FramePanel
@@ -257,7 +261,7 @@ export type Destination = {
 /** What is up over a scope, or on its home. Absent on a Screen means the active view itself. */
 export type ScreenPage =
   | { readonly page: 'decisions'; readonly id?: string; readonly tab?: string }
-  | { readonly page: 'observations'; readonly id?: string; readonly tab?: string }
+  | { readonly page: 'observations'; readonly id?: string; readonly tab?: string; readonly look?: string }
   | { readonly page: 'roadmap'; readonly tab?: string }
   /** The operating model (ADR-0036), at the organisation, on one item where one is picked. */
   | { readonly page: 'operating'; readonly id?: string; readonly tab?: string; readonly look?: string }

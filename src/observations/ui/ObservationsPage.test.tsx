@@ -24,6 +24,7 @@ import { renderShell } from '../../app/testing/renderShell'
 import { SeamWidthsProvider } from '../../widgets/useSeamWidth'
 import { DraftQuestion, draftHeld } from '../../widgets/kit/drafts'
 import type { SeamWidths } from '../../widgets/useSeamWidth'
+import { PlaceTabContext } from '../../widgets/placeTab'
 
 afterEach(() => cleanup())
 
@@ -1166,5 +1167,29 @@ describe('a map opens readable', () => {
     const marker = within(card as HTMLElement).getByTestId('picture-marker')
     const ys = [...card.querySelectorAll('text')].filter((one) => (one as Element) !== marker).map((one) => one.getAttribute('y'))
     expect(ys).not.toContain(marker.getAttribute('y'))
+  })
+})
+
+describe('the observations on one element (ADR-0032, amended 22 November 2026)', () => {
+  const about: HostModel = {
+    ...model,
+    elements: [{ id: 'batch', name: 'Claims batch', kind: 'application', lifecycle: 'live', isManaged: true, aspects: {} }],
+    observations: [observation({ about: ['batch'] }), observation({ id: 'o2', number: 2, title: 'Same change released twice', impact: 'minor', seen: 1 })],
+  }
+
+  it('opens filtered by the look an address or an agent says, and names the element on the record', () => {
+    const chooseLook = vi.fn()
+    renderShell(
+      <PlaceTabContext.Provider value={{ tab: 'register', choose: () => {}, look: 'about=batch', chooseLook }}>
+        <ObservationsPage
+          open onClose={() => {}} model={about} groupName="Acme" below={[]} onChange={vi.fn()} s={translator('en')} language="en"
+          makeId={(prefix) => `${prefix}-${++ids}`} today={() => '2026-09-20'} renderMarkdown={(md) => <MarkdownView markdown={md} />}
+        />
+      </PlaceTabContext.Provider>,
+    )
+    expect(screen.getByTestId('observation-row-o1')).toBeTruthy()
+    expect(screen.queryByTestId('observation-row-o2')).toBeNull()
+    fireEvent.click(screen.getByTestId('observation-row-o1'))
+    expect(screen.getByTestId('observation-about').textContent).toBe('Claims batch')
   })
 })

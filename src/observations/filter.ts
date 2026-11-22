@@ -26,6 +26,11 @@
  *   explains or answers an observation of the tone asked stays, and so does
  *   one that explains no observation at all.
  *
+ * - **About** (ADR-0032, amended 22 November 2026): elements, by id — the
+ *   observations about any of them, kept as the tone keeps its own, with what
+ *   lies behind them. In the address as the page's look, `about=<id>`, once
+ *   per element.
+ *
  * A record is kept when it holds for every filter that is on, so filters
  * narrow each other. What matched is said apart from what came with it, so a
  * match can be outlined and the rest drawn plainly.
@@ -69,6 +74,8 @@ export type Filters = {
   tonesOff: readonly ObservationTone[]
   /** Only mine: recorded or seen by me, by id or by my full name as typed (`recordedBy.ts`). */
   mine: boolean
+  /** Only the observations about any of these elements, by id (ADR-0032, amended); absent or empty, off. */
+  about?: readonly string[]
 }
 
 export const NO_FILTERS: Filters = { scopesOff: [], observations: '', causes: '', roots: '', search: '', tonesOff: [], mine: false }
@@ -92,6 +99,8 @@ export type FilterRecord = {
   tone?: ObservationTone
   /** An observation recorded by me, or seen by me. */
   mine?: true
+  /** The elements an observation is about. */
+  about?: readonly string[]
 }
 
 /** From the record on the left to the record behind it. */
@@ -115,6 +124,7 @@ const TEXT = ['observations', 'causes', 'roots', 'search'] as const
 export function activeFilters(filters: Filters, scopes: readonly string[]): number {
   const texts = TEXT.filter((field) => filters[field].trim() !== '').length
   return texts + (scopes.some((scope) => filters.scopesOff.includes(scope)) ? 1 : 0) + (filters.tonesOff.length > 0 ? 1 : 0) + (filters.mine ? 1 : 0)
+    + (filters.about?.length ? 1 : 0)
 }
 
 /**
@@ -123,12 +133,13 @@ export function activeFilters(filters: Filters, scopes: readonly string[]): numb
  * leads to as well. Nothing, while it is `all`.
  */
 function toneKeeps(pool: readonly FilterRecord[], behind: ReadonlyMap<string, readonly string[]>, filters: Filters): Set<string> | undefined {
-  if (filters.tonesOff.length === 0 && !filters.mine) return undefined
+  if (filters.tonesOff.length === 0 && !filters.mine && !filters.about?.length) return undefined
   const kept = new Set<string>()
   const dropped = new Set<string>()
   for (const record of pool) {
     if (record.kind !== 'observation') continue
     const shown = !filters.tonesOff.includes(record.tone ?? 'neutral') && (!filters.mine || record.mine === true)
+      && (!filters.about?.length || (record.about ?? []).some((id) => filters.about!.includes(id)))
     const into = shown ? kept : dropped
     for (const key of walk(record.key, behind)) into.add(key)
   }
@@ -220,6 +231,7 @@ export function filterRecords(
         key, scope, kind: 'observation', counted: !gone.has(key) && !isArchived(one),
         tone: toneOf(one),
         ...(isMine(one) ? { mine: true as const } : {}),
+        ...(one.about?.length ? { about: one.about } : {}),
         text: [formatObservationNumber(one.number), one.title, one.where, named(one.by), one.body],
       }
     }),
@@ -281,6 +293,8 @@ export function readSavedFilters(stored: unknown): SavedFilter[] {
           ? held.tonesOff.filter((one): one is ObservationTone => one === 'bright' || one === 'neutral' || one === 'problem')
           : held.tone === 'bright' ? ['neutral', 'problem'] : held.tone === 'problems' ? ['bright'] : [],
         mine: held.mine === true,
+        ...(Array.isArray(held.about) && held.about.some((one) => typeof one === 'string')
+          ? { about: held.about.filter((one): one is string => typeof one === 'string') } : {}),
       },
     }]
   })
@@ -293,6 +307,23 @@ export function saveFilter(list: readonly SavedFilter[], name: string, filters: 
   const saved = { name: trimmed, filters: { ...filters, scopesOff: [...filters.scopesOff] } }
   const at = list.findIndex((one) => one.name === trimmed)
   return at < 0 ? [...list, saved] : list.map((one, index) => (index === at ? saved : one))
+}
+
+/**
+ * The look the page says in its address for the element filter, `about=<id>`
+ * once per element — the operating model's look's shape — or none.
+ */
+export function aboutLook(about: readonly string[] | undefined): string | undefined {
+  if (!about?.length) return undefined
+  const query = new URLSearchParams()
+  for (const id of about) query.append('about', id)
+  return query.toString()
+}
+
+/** The elements a look names, each once, or none. */
+export function aboutOfLook(look: string | undefined): string[] | undefined {
+  const about = look ? [...new Set(new URLSearchParams(look).getAll('about').filter(Boolean))] : []
+  return about.length ? about : undefined
 }
 
 /** A saved filter put back on, over the scopes in view: a scope no longer there is left out. */

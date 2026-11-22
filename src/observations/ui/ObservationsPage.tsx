@@ -1081,7 +1081,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
               filter={chainFilterWords({
                 f, scopeLabel: labelOf, showMerged, onShowMerged: setShowMerged, showArchived, onShowArchived: setShowArchived,
                 ...(stage === 'register' ? { columns: { choices: observationColumns(s), shown: shownColumns, onChange: setShownColumns } } : {}),
-                s,
+                elementName: readerCtx.elementName, s,
               })}
               tools={tools} {...(create ? { create } : {})} body="fill" counted={<span data-testid="picture-count">{stageSaid[stage]}</span>}
             >
