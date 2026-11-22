@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import type { AgentAnswer } from '../tools'
 import { codeMode } from './query'
 import type { CodeMode } from './query'
-import { RETAIL, hostOver, said, sessionOver } from './testing/codeHost'
+import { RETAIL, hostOver, said, sessionOver, shellOver } from './testing/codeHost'
 import type { TestHost } from './testing/codeHost'
 
 const ask = (mode: CodeMode, host: TestHost, tool: string, args: object): Promise<AgentAnswer> => mode.answer({ id: '1', tool, args }, host)
@@ -199,6 +199,20 @@ describe('a simulation run', () => {
     expect(host.session.history()).toHaveLength(0)
     // A script that would change something is told so while it is tried, too.
     expect(await ask(mode, host, 'simulate', { script: 'await lv.elements.update({ id: "pos", name: "Tills" })' })).toMatchObject({ ok: false, refusal: 'agent.scriptFailed' })
+  })
+
+  it('drives when it lands and not while it is tried: the banner goes up at the run, and Stop refuses it', async () => {
+    const [mode, shell] = [codeMode(), shellOver()]
+    const host = hostOver({ shell })
+    const tried = await simulate(mode, host, 'await lv.elements.update({ id: "pos", name: "Tills" })')
+    expect(shell.driving.current().session).toBeUndefined()
+    await ask(mode, host, 'run', { token: tried.token })
+    expect(shell.driving.current().session).toMatchObject({ client: 'a test client', calls: 1 })
+    // The person presses Stop: a script may still be tried, and nothing of it lands.
+    shell.driving.end('person')
+    const next = await simulate(mode, host, 'await lv.elements.update({ id: "pos", name: "Point of sale" })')
+    expect(await ask(mode, host, 'run', { token: next.token })).toMatchObject({ ok: false, refusal: 'agent.stopped' })
+    expect(host.session.history()).toHaveLength(1)
   })
 
   it('says a person in what a simulation answers as an answer says one', async () => {

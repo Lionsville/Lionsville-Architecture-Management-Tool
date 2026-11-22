@@ -317,6 +317,9 @@ export async function handle(request: AgentRequest, session: SessionView | undef
 
 async function handled(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!shell || !isToolName(request.tool) || !drives(request.tool)) return answerRequest(request, session, shell)
+  // A call tried on a copy changes nothing and moves nothing, so it starts no session and puts up no banner:
+  // the run that lands it is what drives (ADR-0050).
+  if (session?.inScript) return answerRequest(request, session, shell)
   // A write with nothing open goes nowhere and is refused below; it should
   // not put a banner up on the way. Only moving the app drives from a home —
   // and the register's writes, which are the organisation's and work with

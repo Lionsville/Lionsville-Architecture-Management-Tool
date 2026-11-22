@@ -17,7 +17,6 @@ import type { Observation } from '../../../model/observation'
 import { apply } from '../../../model/reducer'
 import { laidOut } from '../../../model/testFixtures'
 import { Driving } from '../../driving'
-import { handle, withNames } from '../../handle'
 import type { HistoryEntry, SessionView } from '../../handle'
 import type { PeopleView } from '../../../agent/people'
 import type { ShellView } from '../../shell'
@@ -27,7 +26,7 @@ import type { CodeHost, ScriptReport } from '../host'
 import { DESKTOP_LIMITS } from '../limits'
 import type { ScriptLimits } from '../limits'
 import { quickjsSandbox } from '../quickjs'
-import { landOnSession } from '../simulate'
+import { sessionHost } from '../sessionHost'
 
 const application = (id: string, name: string, over: object = {}) => ({
   id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {}, ...over,
@@ -141,24 +140,22 @@ export type TestHost = CodeHost & {
   readonly asked: string[]
 }
 
-/** Code mode's host as the app fills it: the open scope's session, the handler, and nothing landed by a call out of a script. */
+/** Code mode's host as the app fills it (`sessionHost.ts`), with what it was asked and told kept for the test. */
 export function hostOver(parts: { limits?: Partial<ScriptLimits>; shell?: ShellView; session?: ReturnType<typeof sessionOver>; holder?: string } = {}): TestHost {
   const session = parts.session ?? sessionOver(RETAIL, 'acme/retail')
   const shell = parts.shell ?? shellOver()
   const lines: ScriptReport[] = []
   const asked: string[] = []
+  const host = sessionHost({ session: () => session, shell, sandbox: () => Promise.resolve(sandbox), limits: { ...DESKTOP_LIMITS, ...parts.limits } })
   return {
+    ...host,
     session, lines, asked,
-    holder: parts.holder ?? 'somebody',
-    limits: { ...DESKTOP_LIMITS, ...parts.limits },
-    sandbox: () => Promise.resolve(sandbox),
+    holder: parts.holder ?? host.holder,
     ask: (request, over) => {
       asked.push(request.tool)
-      return handle(request, over ? over(session) : session, shell)
+      return host.ask(request, over)
     },
-    named: (answer) => withNames(answer, session, shell),
     report: (line) => { lines.push(line) },
-    land: (simulation) => Promise.resolve(landOnSession(simulation, session, shell)),
   }
 }
 
