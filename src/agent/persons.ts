@@ -172,7 +172,7 @@ export function answerWithRecorders(answer: AgentAnswer, register: AgentRegister
       if (block.type !== 'text' || !block.text.includes('"recordedBy"')) return block
       try {
         const read: unknown = JSON.parse(block.text)
-        return { ...block, text: JSON.stringify(withRecorders(read, (by) => recorderSaid(by, register, source)), undefined, 2) }
+        return { ...block, text: JSON.stringify(withRecorders(read, (by) => recorderSaid(by, register, source))) }
       } catch {
         return block
       }
@@ -198,7 +198,7 @@ export function answerWithNames(answer: AgentAnswer, words: PersonWords, withhol
       if (block.type !== 'text' || !(block.text.includes('"person"') || (withhold && /"(signed|proposed)As"/.test(block.text)))) return block
       try {
         const read: unknown = JSON.parse(block.text)
-        return { ...block, text: JSON.stringify(withPersonNames(read, words, withhold, apart), undefined, 2) }
+        return { ...block, text: JSON.stringify(withPersonNames(read, words, withhold, apart)) }
       } catch {
         return block
       }
