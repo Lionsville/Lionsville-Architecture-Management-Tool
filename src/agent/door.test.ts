@@ -33,10 +33,11 @@ import type { JsonRpcResponse, Relay } from './mcpProtocol'
  * where the server is built.
  *
  * Measured 22 November 2026 before the door was made lighter: 311,836 and
- * 10,974.
+ * 10,974. Raised by 94 the same day for `app.open`'s `look` on a comparison
+ * and on the observations about an element, which the other lanes opened.
  */
 export const CEILINGS = {
-  toolsList: 202_844,
+  toolsList: 202_938,
   instructions: 9_850,
 } as const
 

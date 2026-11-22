@@ -3463,7 +3463,7 @@ const SPECS = [
           description: 'The page\'s tab: observations register, analysis(-list, -map), solutions(-list, -map), results; people people, review, privacy; register applications, services, platforms; conway grid, lines.',
           get enum() { return [...new Set(Object.values(PAGE_TABS).flat())] },
         },
-        look: { type: 'string', description: 'What the page looks at within its tab. Operating model, on responsibilities: part=<group name>, part=* for the whole organisation, unit=<unit id>; select=<id> opens an item.' },
+        look: { type: 'string', description: 'What the page looks at within its tab. Operating model, on responsibilities: part=<group name>, part=* for the whole organisation, unit=<unit id>; select=<id> opens an item. Blocks, tab used: at=<scope path>, that scope\'s comparison. Observations: about=<element id>.' },
         select: { type: 'string', description: 'An element to select on the board, sheet, map, technology landscape, organisation chart or Conway map being opened.' },
         field: {
           type: 'string',
