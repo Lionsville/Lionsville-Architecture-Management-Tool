@@ -86,6 +86,10 @@ export const policy: Policy = {
   // `dependencies` is empty on purpose (`electron-builder.cjs`), so this list,
   // and not `package.json`, is where "what ships" is decided.
   runtime: {
+    '@jitl/quickjs-wasmfile-release-sync': {
+      licence: 'MIT',
+      why: 'The interpreter an agent\'s script runs in, compiled to WebAssembly: the file itself, loaded on the first script and never before.',
+    },
     '@modelcontextprotocol/sdk': {
       licence: 'MIT',
       why: 'Named by the desktop smoke run, which drives the app as an agent would; loaded from node_modules at run time and never bundled, and listed because the scan reads its type import as an import.',
@@ -101,6 +105,10 @@ export const policy: Policy = {
     'html-to-image': { licence: 'MIT', why: 'Exporting a board or a laid-out page as a picture.' },
     'libavoid-js': { licence: 'LGPL-2.1-or-later', why: 'Orthogonal routing of the lines around the boxes; see its licence exception.' },
     'mermaid': { licence: 'MIT', why: 'Diagrams written in a description, drawn in the documentation.' },
+    'quickjs-emscripten-core': {
+      licence: 'MIT',
+      why: 'The interpreter an agent\'s script runs in, with a memory limit and a deadline; WebAssembly, loaded on the first script and never before.',
+    },
     'react': { licence: 'MIT', why: 'Every screen is a React tree.' },
     'react-dom': { licence: 'MIT', why: 'The UI, in a browser and in the desktop window.' },
     'react-markdown': { licence: 'MIT', why: 'Descriptions and decision records are markdown, drawn without HTML.' },
