@@ -82,6 +82,23 @@ describe('the way back row two offers', () => {
     expect(wayBack(held, { ...onBoard, home: { path: '', name: 'Acme' }, page: { page: 'register' } }, 'freight', anywhere)).toBeUndefined()
   })
 
+  it('is none while any view is up with nothing over it: the one just left is not offered between two tabs', () => {
+    const another: Screen = { open: { path: 'freight', name: 'Freight', view: { id: 'in-2027', name: 'Landscape in 2027', kind: 'layer7' } } }
+    expect(wayBack(held, another, 'freight', anywhere)).toBeUndefined()
+    const elsewhere: Screen = { open: { path: 'rail', name: 'Rail', view: { id: 'tracks', name: 'Tracks', kind: 'layer7' } } }
+    expect(wayBack(held, elsewhere, 'rail', anywhere)).toBeUndefined()
+  })
+
+  it('is none under a page of the same scope that stands over another of its views', () => {
+    const over: Screen = { open: { path: 'freight', name: 'Freight', view: { id: 'in-2027', name: 'Landscape in 2027', kind: 'layer7' } }, page: { page: 'decisions' } }
+    expect(wayBack(held, over, 'freight', anywhere)).toBeUndefined()
+  })
+
+  it('is there under a page of another scope, and names the scope it leads to', () => {
+    const over: Screen = { open: { path: 'rail', name: 'Rail', view: { id: 'tracks', name: 'Tracks', kind: 'layer7' } }, page: { page: 'decisions' } }
+    expect(wayBack(held, over, 'rail', anywhere)).toEqual({ to: { scope: 'freight', page: 'board', id: 'landscape' }, name: 'Application landscape', in: 'Freight' })
+  })
+
   it('is there under a page for a view that has no tab of its own', () => {
     const containers: LastView = { scope: 'freight', in: 'Freight', page: 'board', id: 'wms', name: 'Warehouse Management' }
     const onContainers: Screen = { open: { path: 'freight', name: 'Freight', view: { id: 'wms', name: 'Warehouse Management', kind: 'container' } }, page: { page: 'roadmap' } }

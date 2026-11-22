@@ -111,17 +111,30 @@ export type WayBack = { readonly to: Destination & { scope: string }; readonly n
 const hasTab = (kind: string) => kind !== 'container' && kind !== 'map'
 
 /**
- * The way back row two offers on this screen, or none: no view was worked on
- * yet, the view is the one that is up with nothing over it, its tab stands in
- * the row under the page that is up — a second way to the same press, which at
- * a narrow window pushed the scope's pages out of the row — its scope is gone,
- * or the home that is up lists its scope's views and it is not among them.
+ * The way back row two offers on this screen, or none.
+ *
+ * None before any view was worked on, where its scope is gone, and where the
+ * home that is up lists its scope's views and it is not among them. And none
+ * **while a view is up with nothing over it**, whichever view: either it is
+ * the one last worked on, or it is about to be. The last view is noted only
+ * once the window's history settles on it, and on a server that takes a
+ * moment; offering the view just left in that moment drew a way back for an
+ * instant between two tabs and pushed the whole row over and back.
+ *
+ * Under a page of the same scope its views' tabs stand in the row, and a tab
+ * is the way back: a second press to the same place pushed the scope's pages
+ * out of the row in a narrow window. So there it is offered only for the view
+ * the page stands over, where that view has no tab of its own.
  */
 export function wayBack(held: LastViews, screen: Screen, at: string, facts: WayBackFacts): WayBack | undefined {
   const last = newestView(held)
   if (!last) return undefined
-  const under = screen.open?.path === last.scope && screen.open.view?.id === last.id ? screen.open.view : undefined
-  if (under && (screen.page === undefined || hasTab(under.kind))) return undefined
+  const open = screen.open
+  if (open?.view && screen.page === undefined) return undefined
+  if (open && open.path === last.scope) {
+    const under = open.view
+    if (!under || under.id !== last.id || hasTab(under.kind)) return undefined
+  }
   if (!facts.scopeIs(last.scope)) return undefined
   const listed = facts.homeViews?.scope === last.scope ? facts.homeViews.views : undefined
   const now = listed?.find((view) => view.id === last.id)
