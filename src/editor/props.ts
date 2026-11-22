@@ -540,6 +540,47 @@ export interface EditorPlans {
 }
 
 /**
+ * One record said about an element, as its record lists it (ADR-0032, amended
+ * 22 November 2026): a decision about it or an observation on it, said by the
+ * host in words — a decision's status and an observation's tone are other
+ * modules' vocabulary, which the editor may not name.
+ */
+export interface AboutRecordRow {
+  kind: 'decision' | 'observation';
+  id: string;
+  /** `ADR-0003`, `OB-0012`. */
+  label: string;
+  title: string;
+  /** The status, or the tone, as the person reads it. */
+  status: string;
+  /** An observation's tone, for its mark; absent on a decision. */
+  tone?: 'bright' | 'neutral' | 'problem';
+  /** The scope it lives in, named, where that is not the one open; absent for this scope's. */
+  scope?: string;
+  where?: string;
+}
+
+/** What is said about one element, and how far the host looked. */
+export interface AboutRecords {
+  decisions: readonly AboutRecordRow[];
+  observations: readonly AboutRecordRow[];
+  /** The observations were read across the tree; absent or false, this scope's only. */
+  observationsAcross?: boolean;
+}
+
+/**
+ * The decisions about an element and the observations on it (ADR-0032,
+ * amended), for its record and the panel beside the board: asked per element,
+ * answered by the host, which holds the decisions and the tree's analysis; and
+ * a row opened on its page, the board giving way to it. Absent, the record
+ * lists neither: a canvas mounted in a test knows no decision.
+ */
+export interface EditorRecordsAbout {
+  about(elementId: ElementId): AboutRecords;
+  onOpen(row: AboutRecordRow): void;
+}
+
+/**
  * Which records on this board another scope answers for (ADR-0012 §10).
  *
  * The editor may not know that a scope tree exists — a canvas that knew what a
@@ -789,6 +830,8 @@ export interface SolutionDesignEditorProps {
   history?: EditorHistoryRequests;
   requests?: EditorRequests;
   plans?: EditorPlans;
+  /** See {@link EditorRecordsAbout}. */
+  records?: EditorRecordsAbout;
   /** See {@link EditorOwnership}. Absent = this document answers for everything. */
   ownership?: EditorOwnership;
   layout?: EditorLayoutReports;

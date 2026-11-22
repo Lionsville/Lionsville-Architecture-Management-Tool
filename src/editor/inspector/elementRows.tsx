@@ -56,6 +56,8 @@ import { LogoGrid } from '../nodes/LogoGrid';
 import { useResolvedLogo } from '../nodes/logoRegistry';
 import { useUsesPicker } from '../useInspectorState';
 import { DASH, RowSet, pickEdit } from './rowTools';
+import { AboutList, AboutSections, aboutHeading } from './AboutRecords';
+import type { AboutRecords } from '../props';
 import type { RowSpec, Surface } from './rowTools';
 import { claimKey } from '../../widgets/kit/keys';
 import { focusLeaves } from '../../widgets/kit/Surface';
@@ -674,6 +676,7 @@ function ElementRows({ ctx, onHelp }: { ctx: Ctx; onHelp(help: string | undefine
         />
       )}
       <RowSet rows={insideRows(ctx)} surface="panel" title={t('inspector.insideIt')} readOnly={readOnly} />
+      {props.records && <AboutSections records={props.records.about(element.id)} onOpen={props.records.onOpen} t={t} />}
     </>
   );
 }
@@ -751,16 +754,20 @@ export function PanelAppearance({ props, onHelp }: { props: ElementInspectorProp
 }
 
 /** The record's sections, in the order the page reads them, each its own row list. */
-export const RECORD_SECTIONS = ['properties', 'record', 'aspects', 'connected', 'principles', 'comments'] as const;
+export const RECORD_SECTIONS = ['properties', 'record', 'aspects', 'connected', 'decisions', 'observations', 'principles', 'comments'] as const;
 export type RecordSectionId = (typeof RECORD_SECTIONS)[number];
 
-/** Which sections a kind has, and what each is headed. Aspects only where the kind has them: no empty tab, no empty heading. */
-export function recordSectionsOf(element: DesignElement, t: Translate): { id: RecordSectionId; heading: string }[] {
+/**
+ * Which sections a kind has, and what each is headed. Aspects only where the kind has them: no empty tab, no empty heading.
+ * The decisions about it and the observations on it where the host says (`about`), each headed with its count, an empty one too.
+ */
+export function recordSectionsOf(element: DesignElement, t: Translate, about?: AboutRecords): { id: RecordSectionId; heading: string }[] {
   const all: { id: RecordSectionId; heading: string }[] = [
     { id: 'properties', heading: t('inspector.properties') },
     { id: 'record', heading: t('record.title') },
     { id: 'aspects', heading: t('section.operationalAspects') },
     { id: 'connected', heading: t('inspector.connected') },
+    ...(about ? [{ id: 'decisions' as const, heading: aboutHeading('decisions', about, t) }, { id: 'observations' as const, heading: aboutHeading('observations', about, t) }] : []),
     { id: 'principles', heading: t('inspector.principles') },
     { id: 'comments', heading: t('inspector.comments') },
   ];
@@ -792,6 +799,9 @@ export function RecordSectionBody({ props, section, unit }: { props: ElementInsp
           <RecordChanges about={{ kind: 'element', id: element.id }} first="added" />
         </div>
       );
+    case 'decisions':
+    case 'observations':
+      return props.records ? <AboutList kind={section} records={props.records.about(element.id)} onOpen={props.records.onOpen} t={ctx.t} /> : null;
     case 'principles':
       // The principles it follows (ADR-0041 §12), under the page's own heading.
       return <CitationsSection about={{ kind: 'element', id: element.id }} subject={`${element.name}\n${element.description ?? ''}`} readOnly={readOnly} headed={false} />;

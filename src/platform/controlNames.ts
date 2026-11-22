@@ -61,7 +61,7 @@ export const CONTROL_NAMES = [
   // An element's record, in the inspector.
   'record.party', 'record.replace', 'record.uses',
   // Its text, and the window it is written in (Cancel and Done carry -cancel and -save).
-  'record.editText', 'record.writing',
+  'record.editText', 'record.writing', 'record.decisionsAbout', 'record.observationsOn',
   // The register, and the technology register drawn by the same page.
   'register.row', 'register.tabs', 'register.colMaster', 'register.colDrawn', 'register.colFindings', 'register.openRow',
   'technologyRegister.row', 'technologyRegister.colMaster', 'technologyRegister.colFindings',

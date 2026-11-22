@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import type { ReactNode } from 'react';
-import type { AnsweredBy, EditorOwnership, PartyElsewhere, ShowOnDoor, UnitSlot } from './props';
+import type { AnsweredBy, EditorOwnership, EditorRecordsAbout, PartyElsewhere, ShowOnDoor, UnitSlot } from './props';
 import type { DesignDiagram, DesignElement, DesignModel, ElementId } from '../model/types';
 import type { MarkdownRenderOptions } from '../documentation/documentation';
 import type { LeverageLine } from '../model/leverage';
@@ -128,6 +128,8 @@ export interface ElementInspectorProps {
   answeredBy?: AnsweredBy;
   /** The plans over the landscape, for those that touch it. Absent = no such row. */
   plans?: { list: readonly Transition[]; onOpen(transitionId: string): void };
+  /** The decisions about it and the observations on it (ADR-0032, amended). Absent = neither section. */
+  records?: EditorRecordsAbout;
   /** The view's own settings, where its columns are said. Absent = no way there from here. */
   /** The day the board beside it shows, which goes along into what is under it. */
   dayShown?: string;

@@ -88,7 +88,7 @@ export function EditorDocumentationPage({ props, state, readOnly, docs, onReques
       renderMarkdown={props.renderMarkdown}
       onAddImage={readOnly ? undefined : props.onAddImage}
       images={readOnly ? undefined : props.images}
-      recordSections={(shown) => recordSectionsOf(shown, t).map((section) => ({
+      recordSections={(shown) => recordSectionsOf(shown, t, inspector.records?.about(shown.id)).map((section) => ({
         id: section.id,
         heading: section.heading,
         children: <SectionThroughDoors inspector={inspector} section={section.id} />,
@@ -128,6 +128,7 @@ function doorsThrough(p: ElementInspectorProps, through: (go: () => void) => voi
     ...(p.onCreateDrawing ? { onCreateDrawing: via(p.onCreateDrawing) } : {}),
     ...(p.onOpenDrawing ? { onOpenDrawing: via(p.onOpenDrawing) } : {}),
     ...(p.plans ? { plans: { ...p.plans, onOpen: via(p.plans.onOpen) } } : {}),
+    ...(p.records ? { records: { ...p.records, onOpen: via(p.records.onOpen) } } : {}),
     ...(p.onOpenView ? { onOpenView: via(p.onOpenView) } : {}),
     ...(p.onNavigate ? { onNavigate: via(p.onNavigate) } : {}),
   };
@@ -174,6 +175,8 @@ function recordInspector({ props, state, readOnly, docs, element, diagram, onReq
       : undefined,
     // The plan takes the page's place, at its own address, as a decision's *Linked to* does: Back comes back to this page.
     plans: props.plans ? { list: props.plans.list, onOpen: (id) => { docs.close(); props.plans?.onOpen(id); } } : undefined,
+    // A decision or an observation takes the page's place the same way.
+    ...(props.records ? { records: { about: props.records.about, onOpen: (row) => { docs.close(); props.records?.onOpen(row); } } } : {}),
     onOpenView: (id) => { docs.close(); props.document.onActiveDiagramChange(id); },
     onNavigate: docs.open,
   };

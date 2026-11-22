@@ -23,6 +23,7 @@ import type { TechnologyLandscapePage as TechnologyLandscapePageShape } from '..
 import { unitViewInspector, unitViewPage } from './units/UnitViewPages'
 import { unitLanding } from './units/unitViewsHere'
 import { ErrorBoundary } from './ErrorBoundary'
+import { useRecordsAbout } from './useRecordsAbout'
 import { FrameStoreContext, throughGuard } from './frame/frameStore'
 import { drawingViewProps, NewViewFor } from './DrawingPage'
 import { foldKey } from './sessionFolds'
@@ -68,6 +69,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
   const frame = useContext(FrameStoreContext)
   /** A tab is the most ordinary press on the screen, and it is asked about like every other way out. */
   const tabMove = (id: string, go: () => void) => throughGuard(frame, { page: 'board', id }, go)
+  const records = useEditorRecords(parts)
   return (
     <Box sx={{ flex: '1 1 auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <ErrorBoundary where="editor" diagnostics={props.host.diagnostics} controls={props.host.controls} s={s}>
@@ -96,6 +98,7 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
           onOpen: parts.pages.plans.openPlan,
           onReplace: parts.pages.plans.startReplace,
         }}
+        records={records}
         ownership={ownership}
         layout={{ onError: seams.onLayoutError, onSettled: session.onLayoutSettled }}
         preferences={{ initial: props.preferences.initial, onChange: props.preferences.onChange }}
@@ -131,6 +134,21 @@ export function WorkspaceEditor({ parts }: { parts: WorkspaceParts }) {
       <NewViewFor parts={parts} />
     </Box>
   )
+}
+
+/** The decisions about an element and the observations on it, and each opened over the board (ADR-0032, amended). */
+function useEditorRecords(parts: WorkspaceParts) {
+  const { session, readings, pages } = parts
+  const { onOpenScope } = parts.props.navigation
+  const open = useMemo(() => ({
+    decision: (id: string) => pages.openDecisions(id),
+    observation: (id: string) => pages.openObservations(id),
+    elsewhere: onOpenScope ? (scope: string, id: string) => onOpenScope(scope, { page: 'observations', id }) : undefined,
+  }), [pages, onOpenScope])
+  return useRecordsAbout({
+    decisions: session.model.decisions, observations: session.model.observations, tree: readings.analysisTree,
+    here: parts.props.project.path, scopeLabel: readings.scopeLabel, t: parts.props.shell.s,
+  }, open)
 }
 
 /** What the editor is handed that the workspace keeps stable across renders. */

@@ -386,7 +386,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
     fireEvent.click(document.querySelector('[data-guide="board.colour"]') as HTMLElement)
     fireEvent.click(await screen.findByRole('menuitemcheckbox', { name: 'Technology lifecycle' }))
   }]],
-  [['an application’s record', ['record.replace', 'record.uses', 'record.editText'], () => recordOf('billing')],
+  [['an application’s record', ['record.replace', 'record.uses', 'record.editText', 'record.decisionsAbout', 'record.observationsOn'], () => recordOf('billing')],
     ['its text, being written', ['record.writing'], async () => {
       fireEvent.click(document.querySelector('[data-guide="record.editText"]') as HTMLElement)
       await screen.findByLabelText('Documentation source (markdown)')

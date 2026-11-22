@@ -19,3 +19,9 @@
 
 /* A way to another view ("Show on technology landscape ›") is a press on the screen, and nothing on paper. */
 @media print { .inspector-note .kit-panel__link { display: none !important; } }
+/* What is said about an element (ADR-0032, amended): a status word before each record, and the scope it lives in after. */
+.inspector-about { display: flex; flex-direction: column; gap: var(--s-1); min-width: 0; }
+.inspector-about__status { color: var(--ink-2); font-size: var(--t-small); }
+.inspector-about__status[data-tone="problem"] { color: var(--warn); }
+.inspector-about__status[data-tone="bright"] { color: var(--ok); }
+.inspector-about__where { color: var(--ink-3); }

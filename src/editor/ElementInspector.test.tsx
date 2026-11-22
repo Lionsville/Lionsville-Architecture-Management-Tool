@@ -103,6 +103,8 @@ function renderInspector(
     move?: ElementInspectorProps['move'];
     /** Make a drawing anchored to the element. */
     onCreateDrawing?: (id: string) => void;
+    /** What is said about it, as the host answers (ADR-0032, amended). */
+    records?: ElementInspectorProps['records'];
   } = {},
 ) {
   const dia = opts.dia ?? diagram();
@@ -133,6 +135,7 @@ function renderInspector(
         unitSection={opts.unitSection}
         move={opts.move}
         onCreateDrawing={opts.onCreateDrawing}
+        {...(opts.records ? { records: opts.records } : {})}
       />
     </ThemeProvider>,
   );
@@ -165,7 +168,7 @@ function renderRecord(el: DesignElement, over: Partial<ElementInspectorProps> = 
   const dia = diagram();
   render(
     <ThemeProvider theme={testTheme}>
-      {recordSectionsOf(el, (key) => (en as Record<string, string>)[key] ?? key).map((section) => (
+      {recordSectionsOf(el, (key) => (en as Record<string, string>)[key] ?? key, over.records?.about(el.id)).map((section) => (
         <RecordSectionBody
           key={section.id} section={section.id}
           props={{ element: el, model: model(el, dia), diagram: dia, readOnly: false, actions: proxied, onRequestDelete: vi.fn(), ...over }}
@@ -499,11 +502,45 @@ describe('ElementInspector: a record another scope answers for', () => {
   });
 });
 
+describe('what is said about it, beside the board (ADR-0032, amended 22 November 2026)', () => {
+  it('heads each list with its count, says an empty one quietly, and opens a row', () => {
+    const onOpen = vi.fn();
+    const observation = { kind: 'observation' as const, id: 'ob-1', label: 'OB-0001', title: 'Invoices twice', status: 'Problem', tone: 'problem' as const, scope: 'retail', where: 'Retail' };
+    renderInspector(element(), { records: { about: () => ({ decisions: [], observations: [observation], observationsAcross: true }), onOpen } });
+    expect(screen.getByRole('heading', { name: en['inspector.decisionsAbout'] }).parentElement?.textContent).toContain('0');
+    expect(screen.getByTestId('record-decisions-about').textContent).toContain(en['inspector.noDecisionsAbout']);
+    expect(screen.getByTestId('record-observations-about').textContent).not.toContain(en['inspector.observationsHere']);
+    expect(screen.getByTestId('about-observation-ob-1').textContent).toBe('Problem OB-0001 Invoices twice · Retail');
+    fireEvent.click(screen.getByTestId('about-observation-ob-1'));
+    expect(onOpen).toHaveBeenCalledWith(observation);
+  });
+});
+
 describe('The record: the same rows, every field shown', () => {
   it('lays out its sections in order, aspects only for a kind that has them', () => {
     const t = (key: string) => (en as Record<string, string>)[key] ?? key;
-    expect(recordSectionsOf(element(), t).map((one) => one.id)).toEqual([...RECORD_SECTIONS]);
+    const about = { decisions: [], observations: [] };
+    expect(recordSectionsOf(element(), t, about).map((one) => one.id)).toEqual([...RECORD_SECTIONS]);
     expect(recordSectionsOf(element({ kind: 'actor' }), t).map((one) => one.id)).not.toContain('aspects');
+    // What is said about it only where the host says, a canvas in a test knowing no decision.
+    expect(recordSectionsOf(element(), t).map((one) => one.id)).not.toContain('decisions');
+  });
+
+  it('lists the decisions about it and the observations on it, counted, each one press to its record (ADR-0032, amended)', () => {
+    const t = (key: string) => (en as Record<string, string>)[key] ?? key;
+    const onOpen = vi.fn();
+    const about = {
+      decisions: [{ kind: 'decision' as const, id: 'adr-1', label: 'ADR-0001', title: 'Keep the ledger', status: 'Accepted' }],
+      observations: [],
+    };
+    expect(recordSectionsOf(element(), (key, vars) => (key === 'inspector.aboutCount' ? `${String(vars?.name)} (${String(vars?.count)})` : t(key)), about)
+      .filter((one) => one.id === 'decisions' || one.id === 'observations').map((one) => one.heading))
+      .toEqual(['inspector.decisionsAbout (1)', 'inspector.observationsOn (0)'].map((one) => one.replace(/^[a-zA-Z.]+/, (key) => t(key))));
+    renderRecord(element(), { records: { about: () => about, onOpen } });
+    expect(screen.getByTestId('record-observations-about').textContent).toContain(t('inspector.noObservationsOn'));
+    expect(screen.getByTestId('record-observations-about').textContent).toContain(t('inspector.observationsHere'));
+    fireEvent.click(screen.getByTestId('about-decision-adr-1'));
+    expect(onOpen).toHaveBeenCalledWith(about.decisions[0]);
   });
 
   it('shows the empty ones as a quiet dash, and each may still be pressed', () => {
