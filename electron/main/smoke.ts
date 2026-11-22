@@ -1165,6 +1165,37 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     return `${read.result.total} elements in ${read.calls} call; a change tried, landed and undone on ${tried.result}`
   }))
 
+  // What an agent is offered, chosen where a person chooses it: the glyph on
+  // the frame, the dialog, the second of three. Through the dialog and the
+  // channel to main, so the setting is the one a client's next request meets.
+  results.push(await checkHere('Connect an agent offers what an agent is given, and the choice holds from the next request on', async () => {
+    const choose = (index: number) => page(`(() => {
+      const group = document.querySelector('[data-testid="connect-agent-dialog"] [role="radiogroup"]')
+      if (!group) return ''
+      group.querySelectorAll('[role="radio"]')[${index}].click()
+      return 'pressed'
+    })()`)
+    const chosen = () => page(`(() => {
+      const group = document.querySelector('[data-testid="connect-agent-dialog"] [role="radiogroup"]')
+      return group ? [...group.querySelectorAll('[role="radio"]')].map((one) => one.getAttribute('aria-checked')).join(',') : ''
+    })()`)
+    await page(`document.querySelector('[data-guide="frame.agent"]').click()`)
+    await untilRead('the choice in the dialog', chosen, (held) => held === 'false,false,true')
+    await choose(1)
+    await untilRead('scripts chosen', chosen, (held) => held === 'false,true,false')
+    const scripts = (await client!.listTools()).tools.map((tool) => tool.name)
+    if (scripts.join(',') !== 'api.describe,query,simulate,run,discard,call') throw new Error(`in scripts the tools are ${scripts.join(',').slice(0, 200)}`)
+    const status = agentStatus()
+    if (status.kind === 'off' || status.mode !== 'code') throw new Error(`main says ${JSON.stringify({ ...status, token: undefined })}`)
+    await choose(2)
+    await untilRead('both chosen again', chosen, (held) => held === 'false,false,true')
+    const both = (await client!.listTools()).tools.length
+    if (both < 100) throw new Error(`with both there are ${both} tools`)
+    await page(`(() => { const close = [...document.querySelectorAll('[data-testid="connect-agent-dialog"] button')].at(-1); close.click(); return 'closed' })()`)
+    await untilRead('the dialog closed', () => page(`String(document.querySelector('[data-testid="connect-agent-dialog"]') === null)`), (held) => held === 'true')
+    return `six tools as scripts, ${both} with both`
+  }))
+
   // The four things only the renderer can do, through the same client: a
   // picture of the board comes back as an image block with the transform
   // beside it, and pointing at an element is answered.
