@@ -45,6 +45,17 @@ export const CEILINGS = {
   instructions: 9_850,
 } as const
 
+/**
+ * The same two as a client carries them in the other two modes (ADR-0050):
+ * the tools of code mode in place of the vocabulary, and both. Held the same
+ * way, so the saving a client is told of is the saving it gets: a tool or a
+ * sentence added to code mode fails until its number is raised here.
+ */
+export const CODE_CEILINGS = {
+  code: { toolsList: 4_089, instructions: 10_502 },
+  both: { toolsList: 207_558, instructions: 10_216 },
+} as const
+
 const server = { name: 'Lionsville Architect', version: 'test' }
 
 function relayOver(session: SessionView): Relay {
@@ -78,6 +89,24 @@ describe('what the door costs to carry', () => {
       return []
     })
     expect(wrong).toEqual([])
+  })
+
+  it('holds what a client carries in code mode, and with both, to their ceilings, exactly', async () => {
+    const quiet: Relay = { ask: () => Promise.reject(new Error('not asked')), onInitialized: () => {}, onClosed: () => {} }
+    const wrong: string[] = []
+    for (const mode of ['code', 'both'] as const) {
+      const listed = JSON.stringify(resultOf(await respond({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, quiet, server, { mode })))
+      const opened = resultOf(await respond({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, quiet, server, { mode }))
+      const measured = { toolsList: listed.length, instructions: String(opened.instructions).length }
+      for (const [what, length] of Object.entries(measured)) {
+        const ceiling = CODE_CEILINGS[mode][what as keyof typeof measured]
+        if (length !== ceiling) wrong.push(`${mode}.${what} is ${length} characters, and its ceiling says ${ceiling}`)
+      }
+    }
+    expect(wrong).toEqual([])
+    // What the choice is for: a client in code mode carries a fortieth of the tool list.
+    expect(CODE_CEILINGS.code.toolsList * 40).toBeLessThan(CEILINGS.toolsList)
+    expect(CODE_CEILINGS.both.toolsList).toBeGreaterThan(CEILINGS.toolsList)
   })
 })
 

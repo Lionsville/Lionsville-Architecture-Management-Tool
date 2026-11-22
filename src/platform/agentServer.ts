@@ -32,17 +32,40 @@ export type AgentClient = {
 }
 
 /**
+ * What a client is offered of the agent's vocabulary (ADR-0050): every tool
+ * by its own definition, `tools`; the few tools of code mode in their place,
+ * through which the same vocabulary is reached from a script, `code`; or
+ * `both` beside each other. Down here because the server's settings keep it,
+ * the dialog shows it and the protocol reads it.
+ */
+export const AGENT_MODES = ['tools', 'code', 'both'] as const
+export type AgentMode = (typeof AGENT_MODES)[number]
+
+/** What a client is offered where nobody chose: both, so nothing a client had is taken away. */
+export const DEFAULT_AGENT_MODE: AgentMode = 'both'
+
+/** The mode a stored value or an address names, or nothing where it names none. */
+export function agentModeFrom(value: unknown): AgentMode | undefined {
+  return (AGENT_MODES as readonly unknown[]).includes(value) ? value as AgentMode : undefined
+}
+
+/** The name an address says the mode under: `…/mcp?mode=code`. */
+export const AGENT_MODE_PARAMETER = 'mode'
+
+/**
  * The three things main reports about the server, and the only three. Off is
  * the default; listening carries what the dialog needs to show; connected
  * names the client, so the app can say *Claude Code* rather than *an agent*.
  */
 export type AgentServerStatus =
   | { readonly kind: 'off' }
-  | { readonly kind: 'listening'; readonly port: number; readonly token: string; readonly movedFrom?: number }
+  | { readonly kind: 'listening'; readonly port: number; readonly token: string; readonly movedFrom?: number; readonly mode?: AgentMode }
   | {
     readonly kind: 'connected'
     readonly port: number
     readonly token: string
+    /** What a client is offered; {@link DEFAULT_AGENT_MODE} where unsaid. */
+    readonly mode?: AgentMode
     /** The port the settings named, when it was busy and this one was taken instead. */
     readonly movedFrom?: number
     readonly client: AgentClient
@@ -60,6 +83,8 @@ export type AgentServerSettings = {
   readonly enabled: boolean
   readonly port?: number
   readonly token?: string
+  /** What a client is offered, where the person chose; kept while the server is off, too. */
+  readonly mode?: AgentMode
 }
 
 export const DEFAULT_AGENT_SETTINGS: AgentServerSettings = { enabled: false }
@@ -69,12 +94,14 @@ export function readAgentSettings(stored: unknown): AgentServerSettings {
   const raw = stored as Record<string, unknown>
   const port = raw['port']
   const token = raw['token']
+  const mode = agentModeFrom(raw['mode'])
   return {
     enabled: raw['enabled'] === true,
+    ...(mode !== undefined ? { mode } : {}),
     ...(typeof port === 'number' && Number.isInteger(port) && port > 0 && port < 65536 ? { port } : {}),
     ...(typeof token === 'string' && token.length >= 16 ? { token } : {}),
   }
 }
 
-/** What the dialog may change. The port and the token are main's to mint. */
-export type AgentServerPatch = { readonly enabled: boolean }
+/** What the dialog may change: the switch, or what a client is offered. The port and the token are main's to mint. */
+export type AgentServerPatch = { readonly enabled?: boolean; readonly mode?: AgentMode }

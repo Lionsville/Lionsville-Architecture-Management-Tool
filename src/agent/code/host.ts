@@ -69,4 +69,10 @@ export type CodeHost = {
    * lands nothing, and `run` is then refused.
    */
   land?(simulation: Simulation): Promise<AgentAnswer>
+  /**
+   * One plain call, whole: the host's own path for a tool called by name,
+   * landing what it changes and keeping whatever trail a plain call keeps.
+   * What `call` runs. Absent where the host offers no plain calls.
+   */
+  plain?(request: AgentRequest): Promise<AgentAnswer>
 }

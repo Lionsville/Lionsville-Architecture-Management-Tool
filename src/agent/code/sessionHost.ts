@@ -47,5 +47,6 @@ export function sessionHost({ session, shell, sandbox, limits = DESKTOP_LIMITS }
     },
     named: (answer) => withNames(answer, session(), shell),
     land: (simulation) => Promise.resolve(landOnSession(simulation, session(), shell)),
+    plain: (request) => handle(request, session(), shell),
   }
 }

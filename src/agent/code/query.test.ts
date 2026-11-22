@@ -13,6 +13,7 @@ import type { Person } from '../../people/person'
 import type { PeopleView } from '../../agent/people'
 import { TOOLS } from '../tools'
 import { apiOf } from './api'
+import { CODE_TOOLS } from './codeTools'
 import { codeMode } from './query'
 import { DESKTOP_LIMITS, SHARED_HOST_LIMITS } from './limits'
 import { hostOver, said, shellOver } from './testing/codeHost'
@@ -250,3 +251,39 @@ describe('api.describe', () => {
     expect(areas.app).toBeUndefined()
   })
 })
+
+describe('call', () => {
+  const call = (args: object, host = hostOver()) => codeMode().answer({ id: '1', tool: 'call', args }, host)
+
+  it('runs one tool by its plain name, as a plain call is run: what it changes lands at once', async () => {
+    const host = hostOver()
+    expect(said(await call({ tool: 'elements.list', args: { kind: 'application', fields: ['name'] } }, host)).total).toBe(3)
+    expect(said(await call({ tool: 'element.update', args: { id: 'pos', name: 'Tills' } }, host))).toMatchObject({ revision: 1 })
+    expect(host.session.history()).toHaveLength(1)
+    // What a script may not do is what it is for: the tree, here refused by the handler for want of one, not by code mode.
+    expect(await call({ tool: 'scope.create', args: { parent: 'acme', name: 'New' } }, host)).toMatchObject({ ok: false, refusal: 'agent.noTree' })
+    expect(said(await call({ tool: 'project.current' }, host)).name).toBe('Retail')
+  })
+
+  it('refuses a name nobody has, one of code mode\'s own, and arguments that are not its own', async () => {
+    expect(await call({ tool: 'nothing.here' })).toMatchObject({ ok: false, refusal: 'agent.unknownTool' })
+    expect(await call({ tool: 'query', args: { script: 'return 1' } })).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+    expect(await call({ args: {} })).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+    expect(await call({ tool: 'elements.list', args: { kind: 'spaceship' } })).toMatchObject({ ok: false, refusal: 'agent.badArguments' })
+    const without = { ...hostOver() }
+    delete (without as { plain?: unknown }).plain
+    expect(await call({ tool: 'elements.list' }, without)).toMatchObject({ ok: false, refusal: 'agent.unknownTool' })
+  })
+})
+
+describe('the tools of code mode', () => {
+  it('say what they do in at most 400 characters, and an argument in at most 300, as every tool does', () => {
+    for (const tool of CODE_TOOLS) {
+      expect(tool.description.length, tool.name).toBeLessThanOrEqual(400)
+      for (const [key, spec] of Object.entries(tool.inputSchema.properties)) expect(spec.description.length, `${tool.name}.${key}`).toBeLessThanOrEqual(300)
+    }
+    // And take no name the vocabulary has.
+    for (const tool of CODE_TOOLS) expect(TOOLS.some((one) => (one.name as string) === tool.name), tool.name).toBe(false)
+  })
+})
+

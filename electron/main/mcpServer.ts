@@ -15,7 +15,8 @@
  */
 import { createServer } from 'node:http'
 import type { IncomingMessage, Server, ServerResponse } from 'node:http'
-import { AGENT_ENDPOINT_PATH, AGENT_HOST } from '../../src/platform/agentServer'
+import { AGENT_ENDPOINT_PATH, AGENT_HOST, AGENT_MODE_PARAMETER, agentModeFrom } from '../../src/platform/agentServer'
+import type { AgentMode } from '../../src/platform/agentServer'
 import { serve } from '../../src/agent/mcpProtocol'
 import type { Relay, ServerIdentity } from '../../src/agent/mcpProtocol'
 
@@ -32,6 +33,12 @@ export async function listen(options: {
   token: string
   relay: Relay
   server: ServerIdentity
+  /**
+   * What a client is offered (ADR-0050), asked for every request so the
+   * person's choice holds from the next one on. A client that names a mode in
+   * its address, `…/mcp?mode=code`, is offered that one whatever the choice.
+   */
+  mode?: () => AgentMode
 }): Promise<AgentListener> {
   const server = createServer((request, response) => {
     void handle(request, response, options).catch(() => {
@@ -73,7 +80,7 @@ function bind(server: Server, port: number): Promise<number> {
 async function handle(
   request: IncomingMessage,
   response: ServerResponse,
-  options: { token: string; relay: Relay; server: ServerIdentity },
+  options: { token: string; relay: Relay; server: ServerIdentity; mode?: () => AgentMode },
 ): Promise<void> {
   const body = await readBody(request)
   if (body === undefined) {
@@ -88,7 +95,10 @@ async function handle(
     authorization: header(request, 'authorization'),
     contentType: header(request, 'content-type'),
     body,
-  }, { token: options.token, endpoint: AGENT_ENDPOINT_PATH, relay: options.relay, server: options.server })
+  }, {
+    token: options.token, endpoint: AGENT_ENDPOINT_PATH, relay: options.relay, server: options.server,
+    mode: agentModeFrom(url.searchParams.get(AGENT_MODE_PARAMETER)) ?? options.mode?.() ?? 'tools',
+  })
 
   response.writeHead(decision.status, decision.headers ?? {})
   response.end(decision.body ?? '')

@@ -13,9 +13,9 @@
  * caller, and a line about it for the host's trail. `simulate.ts` runs the
  * script that changes things through the same run, over trials.
  */
-import { refused } from '../tools'
+import { checkArguments, refused } from '../tools'
 import type { AgentAnswer, AgentRequest } from '../tools'
-import { isCodeTool } from './codeTools'
+import { codeToolSpec, isCodeTool } from './codeTools'
 import { describeApi } from './describe'
 import { heldSimulations } from './held'
 import type { CodeHost } from './host'
@@ -47,6 +47,20 @@ const QUERY: ScriptKind = {
   answered: (running) => ({ calls: running.counted.calls }),
 }
 
+/**
+ * `call`: one plain tool by its name, through the host's own path for one.
+ * What makes a client that carries only code mode's tools whole: a picture,
+ * the app, the tree and the register are not a script's, and are a call away.
+ */
+function plainCall(request: AgentRequest, host: CodeHost): Promise<AgentAnswer> {
+  const wrong = checkArguments(codeToolSpec('call').inputSchema, request.args)
+  if (wrong) return Promise.resolve(refused('agent.badArguments', wrong))
+  const { tool, args } = request.args as { tool: string; args?: Record<string, unknown> }
+  if (isCodeTool(tool)) return Promise.resolve(refused('agent.badArguments', `${tool} is one of code mode's own tools: call it itself`))
+  if (!host.plain) return Promise.resolve(refused('agent.unknownTool', 'call'))
+  return host.plain({ id: request.id, tool, args: args ?? {} })
+}
+
 export function codeMode(): CodeMode {
   /** Who has a script running: one at a time each. */
   const running = new Set<string>()
@@ -61,6 +75,7 @@ export function codeMode(): CodeMode {
         case 'simulate': return runScript(simulating(simulations), request.args, host, running)
         case 'run': return land(request.args, host, simulations)
         case 'discard': return Promise.resolve(discard(request.args, host, simulations))
+        case 'call': return plainCall(request, host)
         default: {
           const unexpected: never = request.tool
           return Promise.resolve(refused('agent.unknownTool', unexpected))

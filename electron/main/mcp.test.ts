@@ -17,7 +17,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import type { AgentAnswer, AgentRequest } from '../../src/agent/tools'
 import { json, refused } from '../../src/agent/tools'
-import type { AgentClient } from '../../src/platform/agentServer'
+import type { AgentClient, AgentMode } from '../../src/platform/agentServer'
 import { agentEndpoint } from '../../src/platform/agentServer'
 import { listen } from './mcpServer'
 import type { AgentListener } from './mcpServer'
@@ -143,4 +143,46 @@ describe('an SDK client against the server', () => {
     open = []
     await expect(fetch(agentEndpoint(listener.port))).rejects.toThrow()
   })
+
+  it('offers what the app was set to, from the next request on, and a mode named in the address over it (ADR-0050)', async () => {
+    const wire = relay()
+    let mode: AgentMode = 'both'
+    const listener = await listen({ port: 0, token: TOKEN, relay: wire.relay, server: { name: 'lvarch-test', version: '0.0.0' }, mode: () => mode })
+    open.push(listener)
+    const named = async (address = agentEndpoint(listener.port)) => {
+      const client = new Client({ name: 'test-agent', version: '1.2.3' })
+      await client.connect(new StreamableHTTPClientTransport(new URL(address), { requestInit: { headers: { Authorization: `Bearer ${TOKEN}` } } }))
+      const names = (await client.listTools()).tools.map((tool) => tool.name)
+      const instructions = client.getInstructions() ?? ''
+      await client.close()
+      return { names, instructions }
+    }
+    const both = await named()
+    expect(both.names).toEqual(expect.arrayContaining(['elements.list', 'query', 'simulate', 'run', 'call']))
+    expect(both.instructions).toContain('This server also takes scripts.')
+    mode = 'code'
+    expect((await named()).names).toEqual(['api.describe', 'query', 'simulate', 'run', 'discard', 'call'])
+    // A client says which it wants in its own address, whatever the app is set to.
+    const tools = await named(`${agentEndpoint(listener.port)}?mode=tools`)
+    expect(tools.names).toContain('elements.list')
+    expect(tools.names).not.toContain('query')
+    expect(tools.instructions).not.toContain('scripts')
+    // A word that is no mode is no choice: the app's stands.
+    expect((await named(`${agentEndpoint(listener.port)}?mode=everything`)).names).toHaveLength(6)
+  })
+
+  it('relays a script to the app by its tool\'s name, as any call', async () => {
+    const wire = relay()
+    const listener = await listen({ port: 0, token: TOKEN, relay: wire.relay, server: { name: 'lvarch-test', version: '0.0.0' }, mode: () => 'code' })
+    open.push(listener)
+    const client = await connect(listener.port)
+    await client.callTool({ name: 'query', arguments: { script: 'return 1' } })
+    expect(wire.asked).toEqual([{ id: expect.any(String), tool: 'query', args: { script: 'return 1' } }])
+    // A plain tool is not offered one by one in this mode, and is not relayed.
+    const plain = await client.callTool({ name: 'elements.list', arguments: {} })
+    expect(plain.isError).toBe(true)
+    expect(wire.asked).toHaveLength(1)
+    await client.close()
+  })
 })
+

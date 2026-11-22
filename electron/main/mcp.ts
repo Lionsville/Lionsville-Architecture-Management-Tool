@@ -31,9 +31,9 @@ import { join } from 'node:path'
 import type { AgentAnswer, AgentRequest } from '../../src/agent/tools'
 import { refused } from '../../src/agent/tools'
 import type {
-  AgentClient, AgentServerPatch, AgentServerSettings, AgentServerStatus,
+  AgentClient, AgentMode, AgentServerPatch, AgentServerSettings, AgentServerStatus,
 } from '../../src/platform/agentServer'
-import { AGENT_OFF, DEFAULT_AGENT_SETTINGS, readAgentSettings } from '../../src/platform/agentServer'
+import { AGENT_OFF, DEFAULT_AGENT_MODE, DEFAULT_AGENT_SETTINGS, agentModeFrom, readAgentSettings } from '../../src/platform/agentServer'
 import { writeWhole } from './fileStore'
 import { log } from './log'
 import { listen } from './mcpServer'
@@ -96,7 +96,7 @@ function mintToken(): string {
 
 export function agentStatus(): AgentServerStatus {
   if (!listener || !settings.token) return AGENT_OFF
-  const base = { port: listener.port, token: settings.token, ...(movedFrom !== undefined ? { movedFrom } : {}) }
+  const base = { port: listener.port, token: settings.token, mode: settings.mode ?? DEFAULT_AGENT_MODE, ...(movedFrom !== undefined ? { movedFrom } : {}) }
   return client ? { kind: 'connected', ...base, client } : { kind: 'listening', ...base }
 }
 
@@ -204,12 +204,14 @@ async function start(): Promise<void> {
       },
     },
     server: { name: 'lionsville-architecture-management-tool', version: app.getVersion() },
+    // Read for every request: the person's choice in the dialog holds from the next call on.
+    mode: () => settings.mode ?? DEFAULT_AGENT_MODE,
   })
   movedFrom = wanted !== 0 && listener.port !== wanted ? wanted : undefined
   if (movedFrom !== undefined) log('agent', `port ${movedFrom} was busy; listening on ${listener.port} instead`)
   else log('agent', `listening on ${listener.port}`)
   if (settings.port !== listener.port || settings.token !== token) {
-    await saveSettings({ enabled: true, port: listener.port, token })
+    await saveSettings({ ...settings, enabled: true, port: listener.port, token })
   }
   throttleEverywhere()
   broadcast()
@@ -239,8 +241,17 @@ export async function setAgentEnabled(enabled: boolean): Promise<AgentServerStat
     await start()
   } else {
     await stop()
-    await saveSettings({ enabled: false })
+    // The port and the token are forgotten; what a client is offered is the person's choice, and is kept.
+    await saveSettings({ enabled: false, ...(settings.mode !== undefined ? { mode: settings.mode } : {}) })
   }
+  return agentStatus()
+}
+
+/** What a client is offered, from its next request on (ADR-0050). Kept with the switch. */
+export async function setAgentMode(mode: AgentMode): Promise<AgentServerStatus> {
+  await saveSettings({ ...settings, mode })
+  log('agent', `offering ${mode}`)
+  broadcast()
   return agentStatus()
 }
 
@@ -289,6 +300,8 @@ export function registerAgentChannel(): void {
   ipcMain.handle('agent:status', (): AgentServerStatus => agentStatus())
   ipcMain.handle('agent:configure', (_event, patch: unknown): Promise<AgentServerStatus> => {
     const held = (patch ?? {}) as Partial<AgentServerPatch>
+    const mode = agentModeFrom(held.mode)
+    if (mode !== undefined) return setAgentMode(mode)
     if (typeof held.enabled !== 'boolean') return Promise.resolve(agentStatus())
     return setAgentEnabled(held.enabled)
   })

@@ -14,17 +14,10 @@
  *
  * A name here is published surface, as a tool's is.
  */
+import type { AgentMode } from '../../platform/agentServer'
 import type { ToolSpec } from '../tools'
 
-/**
- * What a client is offered: the vocabulary as tools, code mode's tools in
- * its place, or both beside each other. A client that takes `code` carries
- * a handful of definitions on every turn instead of every tool's.
- */
-export const AGENT_MODES = ['tools', 'code', 'both'] as const
-export type AgentMode = (typeof AGENT_MODES)[number]
-
-export const CODE_TOOL_NAMES = ['api.describe', 'query', 'simulate', 'run', 'discard'] as const
+export const CODE_TOOL_NAMES = ['api.describe', 'query', 'simulate', 'run', 'discard', 'call'] as const
 export type CodeToolName = (typeof CODE_TOOL_NAMES)[number]
 
 const SCRIPT = {
@@ -108,6 +101,23 @@ export const CODE_TOOLS: readonly ToolSpec<CodeToolName>[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: 'call',
+    tier: 'write',
+    description:
+      'Run one tool by its plain name with its plain arguments, as a tool call outside a script is run: for what a '
+      + 'script may not do, which api.describe lists under notInScripts — a picture of a view, moving the app, the '
+      + 'tree of scopes, the people register, moving an observation. What it changes lands at once.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        tool: { type: 'string', description: 'The tool, by its own name: diagram.render, scope.create, app.open.' },
+        args: { type: 'object', description: 'Its arguments, as that tool takes them, scope and ifRevision included.', additionalProperties: true },
+      },
+      required: ['tool'],
+      additionalProperties: false,
+    },
+  },
 ]
 
 export function isCodeTool(name: string): name is CodeToolName {
@@ -130,5 +140,6 @@ export function codeInstructions(mode: AgentMode): string {
     + 'changes things and lands nothing; show the person what it would change, and run lands exactly that once they agree.'
   if (mode === 'both') return `This server also takes scripts. ${scripts}`
   return 'This server is in code mode: the tools named here are not offered one by one, they are methods of lv in a script, '
-    + `under the same names but for a few api.describe lists (elements.list is lv.elements.list). ${scripts}`
+    + `under the same names but for a few api.describe lists (elements.list is lv.elements.list). ${scripts} `
+    + 'What a script may not do — a picture, moving the app, the tree, the register — call runs by the tool\'s own name.'
 }

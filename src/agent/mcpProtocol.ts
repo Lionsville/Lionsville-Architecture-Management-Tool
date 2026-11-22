@@ -30,9 +30,8 @@
 import type { AgentAnswer, AgentRequest, ToolContent, ToolSpec } from './tools'
 import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS, refused } from './tools'
 import { randomUUID } from 'node:crypto'
-import type { AgentClient } from '../platform/agentServer'
+import type { AgentClient, AgentMode } from '../platform/agentServer'
 import { CODE_TOOLS, codeInstructions, isCodeTool } from './code/codeTools'
-import type { AgentMode } from './code/codeTools'
 import { CONVENTIONS, OBSERVATIONS_METHOD, RECORDS_PARAGRAPH, SHEET_MAPPING_PARAGRAPH, STRUCTURE_DEFAULTS, TREE_TOOLS_PARAGRAPH } from './method'
 
 /**

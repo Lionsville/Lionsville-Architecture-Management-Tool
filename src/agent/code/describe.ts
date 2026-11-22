@@ -41,6 +41,7 @@ function how(limits: ScriptLimits): string {
     + 'Return what you want back; it is answered as JSON. '
     + 'query runs a script that reads. simulate runs one that changes things, on a copy: it answers what would change '
     + 'in each scope, and a token; run lands exactly that as one step for each scope, discard forgets it. '
+    + 'call runs one tool by its plain name, for what a script may not do (notInScripts below). '
     + `Limits: ${limits.scriptBytes / 1024} kB of script, ${limits.cpuMs / 1000} s of processing, ${limits.wallMs / 1000} s in all, `
     + `${limits.calls} calls, ${limits.writes} of them changes, ${limits.resultBytes / 1024} kB returned; one script at a time. `
     + 'Ask api.describe for an area to see its signatures, for a method to see its arguments, for a topic to read a rule.'
