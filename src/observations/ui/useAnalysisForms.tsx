@@ -38,6 +38,7 @@ import { nodeKey } from '../graph'
 import { LinkDialog } from './LinkForm'
 import { WhyLadder } from './WhyLadder'
 import type { LinkCandidate, LinkSpec } from './LinkForm'
+import type { AboutChoice } from './AboutField'
 import { NewObservationPanel, RecordedPanel } from './ObservationForm'
 import { SeenDialog } from './ObservationDialogs'
 import type { FormScope, RecordRequest } from './ObservationForm'
@@ -98,8 +99,8 @@ export function useAnalysisForms(deps: {
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   /** *This is the root cause*, with what stands in the way: read through the page, which knows what explains a cause from above. */
   rootStep: (id: string, scope?: string) => { onRoot?: () => void; rootRefused?: string }
-  /** Propose a solution for a root the ladder reached. */
-  onPropose?: ((causeId: string) => void) | undefined
+  /** Propose a solution for a root the ladder reached; and the elements a new observation here may be about (ADR-0032, amended). */
+  onPropose?: ((causeId: string) => void) | undefined; elements?: readonly AboutChoice[] | undefined
 }): AnalysisForms {
   const { work, below, commit, makeId, today, s, scopeLabel, nameOf, select } = deps
   const [creating, setCreating] = useState(false)
@@ -199,7 +200,7 @@ export function useAnalysisForms(deps: {
   }
 
   const scopes: FormScope[] = [
-    { label: s('observation.formScopeHere', { name: deps.scopeName }), name: deps.scopeName, observations: work.observations, causes: work.causes },
+    { label: s('observation.formScopeHere', { name: deps.scopeName }), name: deps.scopeName, observations: work.observations, causes: work.causes, ...(deps.elements ? { elements: deps.elements } : {}) },
     ...(onChangeBelow && deps.local ? below.map((one) => ({
       scope: one.scope, label: s('observation.formScopeBelow', { name: (deps.scopeTrail ?? scopeLabel)(one.scope) }), name: scopeLabel(one.scope),
       observations: one.observations, causes: one.causes,

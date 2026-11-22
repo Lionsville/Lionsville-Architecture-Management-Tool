@@ -753,7 +753,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const readerRef = useRef<ReaderContext | undefined>(undefined)
   /** The new observation, the ladder and the link dialog, and where what they make lands (ADR-0032 §2, §6). */
   const forms = offTheRecordForms(useAnalysisForms({
-    work, below, local: f.viewLocal, path: props.path, scopeName: model.name, commit, readOnly, onChangeBelow: props.onChangeBelow,
+    work, below, local: f.viewLocal, path: props.path, scopeName: model.name, commit, readOnly, onChangeBelow: props.onChangeBelow, elements: model.elements,
     makeId, today, s, scopeLabel, scopeTrail: props.scopeTrail, nameOf, select: setSelectedKey, renderMarkdown: props.renderMarkdown,
     rootStep: (id, scope) => {
       const ctx = readerRef.current
@@ -853,7 +853,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
   const readerCtx: ReaderContext = {
     here: here.scope, work, below, plans, context, decisions: model.decisions ?? [], transitions: model.transitions ?? [],
     ...(explainedAbove ? { explainedAbove } : {}), explainedAboveOf: aboveOf,
-    readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms, lifecycle,
+    readOnly, today, scopeName: model.name, s, nameOf, scopeLabel, commit, forms, lifecycle, elementName: (id) => model.elements.find((one) => one.id === id)?.name ?? id,
     ask: {
       archive: setArchiving, merge: (observation, scope) => mergeAt('observation', observation.id, scope),
       mergeCause: (cause, scope) => mergeAt('cause', cause.id, scope),
@@ -1104,7 +1104,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
           </DraftArea>
         )}
         <RecordEditor
-          editing={editing} onClose={() => setEditingKey(undefined)} today={today()}
+          editing={editing} onClose={() => setEditingKey(undefined)} today={today()} elements={model.elements}
           renderMarkdown={props.renderMarkdown} onAddImage={props.onAddImage} images={props.images} s={s}
         />
         <PictureMenu at={menu?.at} actions={menu ? withCopyLink(menuActions(menu.target), menu.target, resolve, copyLinkOf(props, stage), s) : []} onClose={() => setMenu(undefined)} />

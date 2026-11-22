@@ -360,3 +360,38 @@ describe('after recording', () => {
     expect(screen.queryByTestId('form-recorded')).toBeNull()
   })
 })
+
+describe('the elements a new observation is about (ADR-0032, amended 22 November 2026)', () => {
+  const withElements: HostModel = {
+    ...model,
+    elements: [
+      { id: 'wms', name: 'Warehouse system', kind: 'application', lifecycle: 'live', isManaged: true, aspects: {} },
+      { id: 'labels', name: 'Label printing', kind: 'function', lifecycle: 'live', isManaged: true, aspects: {} },
+    ],
+  }
+
+  it('are picked from this scope beside where it was seen, and recorded with it', async () => {
+    const { onChange } = mount({ model: withElements })
+    openForm()
+    fill('Labels print twice')
+    expect(screen.getByTestId('form-about').textContent).toContain('No element named')
+    fireEvent.click(screen.getByTestId('form-about-pick'))
+    fireEvent.click(screen.getByRole('option', { name: 'Warehouse system' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Label printing' }))
+    expect(within(screen.getByTestId('form-about')).getByRole('button', { name: /Warehouse system/ })).toBeTruthy()
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(screen.getByTestId('form-record'))
+    const made = lastChange(onChange).observations.at(-1)!
+    expect(made).toMatchObject({ where: 'Pick station 3', about: ['wms', 'labels'] })
+  })
+
+  it('is not offered for a scope below, whose elements this page does not hold', () => {
+    mount({ model: withElements })
+    openForm()
+    expect(screen.getByTestId('form-about')).toBeTruthy()
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Scope' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Intake (local)' }))
+    expect(screen.queryByTestId('form-about')).toBeNull()
+  })
+})
+

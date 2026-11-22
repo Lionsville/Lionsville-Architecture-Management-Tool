@@ -201,7 +201,7 @@ function PreviewFacts({ held, ctx }: { held: Selected; ctx: ReaderContext }) {
   if (held.kind !== 'observation' && held.kind !== 'below') return null
   const scope = held.kind === 'below' ? held.scope : undefined
   const day = (date: string) => formatDay(date, language)
-  const said = observationFacts(held.observation, { names, day, s: ctx.s, fromScope: scope !== undefined ? ctx.scopeLabel(scope) : undefined })
+  const said = observationFacts(held.observation, { names, day, s: ctx.s, fromScope: scope !== undefined ? ctx.scopeLabel(scope) : undefined, elementName: ctx.elementName })
   return (
     <>
       {said.map((one) => <PreviewFact key={one.label} label={one.label}><span data-testid={one.testId}>{one.value}</span></PreviewFact>)}

@@ -58,6 +58,8 @@ import { usePersonNames } from '../../people/ui/names'
 import { PersonRefField } from '../../people/ui/PersonRefField'
 import { claimKey, commandKey } from '../../widgets/kit/keys'
 import { LeaveQuestion, useDraft } from '../../widgets/kit/drafts'
+import { AboutField } from './AboutField'
+import type { AboutChoice } from './AboutField'
 
 /** A scope an observation may be recorded in, and what the form reads of it. */
 export type FormScope = {
@@ -69,6 +71,12 @@ export type FormScope = {
   name: string
   observations: readonly Observation[]
   causes: readonly Cause[]
+  /**
+   * The elements it may be about, where the page holds that scope's: the open
+   * scope's. Absent for a scope below, and then nothing is offered to pick
+   * and a new record there is about none: what one scope holds is not another's.
+   */
+  elements?: readonly AboutChoice[]
 }
 
 export type RecordRequest = { scope?: string; fields: ObservationFields; causes: CauseChoice[] }
@@ -203,7 +211,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
     if (Object.keys(problems).length) { setShown(problems); return }
     props.onRecord({
       ...(scope?.scope !== undefined ? { scope: scope.scope } : {}),
-      fields: { ...fields, title: fields.title.trim(), where: fields.where.trim(), by: personRefOf(fields.by) ?? '', body },
+      fields: { ...fields, title: fields.title.trim(), where: fields.where.trim(), about: scope?.elements ? fields.about ?? [] : [], by: personRefOf(fields.by) ?? '', body },
       causes: rows.map(({ key: _key, ...choice }) => { void _key; return choice }),
     })
   }
@@ -266,6 +274,7 @@ export function NewObservationPanel(props: NewObservationPanelProps) {
           required label={s('observation.whereField')} value={fields.where} onChange={(value) => set('where', value)}
           example={exampleFor('where', s)} problem={problemText('where', shown.where, s)} testId="form-where"
         />
+        {scope?.elements && <AboutField value={fields.about ?? []} elements={scope.elements} onChange={(about) => setFields((held) => ({ ...held, about }))} s={s} />}
         <PersonRefField
           required label={s('observation.byField')} value={fields.by} onChange={(value) => set('by', value)} names={names}
           error={shown.by !== undefined} helperText={problemText('by', shown.by, s) ?? exampleFor('by', s)}

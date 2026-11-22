@@ -477,7 +477,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   // A cause starts from what it explains: the form's New cause, not the bar's.
   ['a new observation being written', [
     'observations.newCause', 'observationForm.causes', 'observationForm.existingCause', 'observationForm.record',
-    'observationForm.description', 'observationForm.tone',
+    'observationForm.description', 'observationForm.tone', 'observationForm.about',
   ], async () => {
     const page = placePageNow()!
     fireEvent.click(within(page).getByTestId('observation-tab-register'))

@@ -43,7 +43,7 @@ import { PreviewFact } from '../../widgets/kit/Preview'
 import { observationBody, observationProblems, observationSections } from '../form'
 import type { ObservationSections } from '../form'
 import {
-  causeLabel, causeTemplate, formatObservationNumber, OBSERVATION_IMPACTS, OBSERVATION_TONES, toneOf,
+  aboutField, aboutOf, causeLabel, causeTemplate, formatObservationNumber, OBSERVATION_IMPACTS, OBSERVATION_TONES, toneOf,
 } from '../observation'
 import type { Cause, Observation, ObservationImpact, ObservationPatch, ObservationTone } from '../observation'
 import { IMPACT_LABEL, SIZE_LABEL, TONE_WORD } from '../observationScope'
@@ -51,6 +51,11 @@ import { experimentTemplate, formatExperimentNumber, formatSolutionNumber, SOLUT
 import type { EarlierAttempt, Experiment, Solution, SolutionPatch, SolutionSize } from '../solution'
 import { exampleFor, problemText } from './ObservationForm'
 import { observationFacts, renderedBody } from './Readers'
+import { AboutField } from './AboutField'
+import type { AboutChoice } from './AboutField'
+
+/** The ids a draft keeps a line each. */
+const idsOf = (text: string): string[] => text.split('\n').filter(Boolean)
 
 export type RecordEditing =
   | { kind: 'observation'; record: Observation; onSave: (patch: ObservationPatch) => void }
@@ -66,6 +71,8 @@ export type RecordEditorProps = {
   renderMarkdown: (md: string, options?: MarkdownRenderOptions) => ReactNode
   onAddImage?: ((file: File) => Promise<string | undefined>) | undefined
   images?: DocumentImages | undefined
+  /** The elements this scope holds, which an observation may be about (ADR-0032, amended); absent, none is offered. */
+  elements?: readonly AboutChoice[] | undefined
   s: Translate
 }
 
@@ -96,7 +103,8 @@ function draftOf(editing: RecordEditing): Draft {
   const { record } = editing
   const base = { title: record.title, body: record.body }
   switch (editing.kind) {
-    case 'observation': return { ...base, where: editing.record.where ?? '', date: editing.record.date, impact: editing.record.impact, tone: toneOf(editing.record) }
+    // The elements it is about as one line of ids, so a change to them is a changed field like any other.
+    case 'observation': return { ...base, where: editing.record.where ?? '', about: (editing.record.about ?? []).join('\n'), date: editing.record.date, impact: editing.record.impact, tone: toneOf(editing.record) }
     case 'cause': return base
     case 'solution': return {
       ...base, benefit: editing.record.benefit ?? '', cost: editing.record.cost ?? '', whyNow: editing.record.whyNow ?? '',
@@ -128,7 +136,7 @@ export function RecordEditor(props: RecordEditorProps) {
   return <OpenEditor key={`${editing.kind}:${editing.record.id}`} {...props} editing={editing} s={s} />
 }
 
-function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, images, s }: RecordEditorProps & { editing: RecordEditing }) {
+function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, images, elements, s }: RecordEditorProps & { editing: RecordEditing }) {
   // Side by side is what the desktop's documents open on where there is room. It writes one document and reads the other in the same scroll.
   const roomBeside = useMediaQuery(ROOM_BESIDE, { noSsr: true })
   const opensBeside = useMediaQuery(OPENS_BESIDE, { noSsr: true })
@@ -162,6 +170,7 @@ function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, image
     if (changed) {
       const patch: Record<string, unknown> = {}
       for (const key of changedFields) patch[key] = draft[key] === '' && (key === 'benefit' || key === 'cost') ? undefined : draft[key]
+      if (changedFields.includes('about')) patch.about = idsOf(draft.about ?? '')
       if (changedFields.includes('validatedWith')) patch.validatedWith = namesOf(draft.validatedWith ?? '')
       if (triedChanged) Object.assign(patch, { attempts: tried.attempts.filter(isTold), noneKnown: tried.noneKnown && tried.attempts.filter(isTold).length === 0 })
       if (body !== startBody) patch.body = body
@@ -218,7 +227,7 @@ function OpenEditor({ editing, onClose, today, renderMarkdown, onAddImage, image
   })()
 
   const aside = editing.kind === 'cause' ? undefined : (
-    <RecordFacts editing={editing} draft={draft} set={set} by={by} onBy={setBy} tried={tried} onTried={setTried} today={today} shown={shown} reading={shownView === 'preview'} s={s} />
+    <RecordFacts editing={editing} elements={elements} draft={draft} set={set} by={by} onBy={setBy} tried={tried} onTried={setTried} today={today} shown={shown} reading={shownView === 'preview'} s={s} />
   )
   return (
     <FocusedWindow
@@ -272,8 +281,9 @@ function ReadingColumn({ parts, draft, body, renderMarkdown, s }: {
 }
 
 /** The column of facts beside the document: written, or, for an observation under Preview, read. */
-function RecordFacts({ editing, draft, set, by, onBy, tried, onTried, today, shown, reading, s }: {
+function RecordFacts({ editing, elements, draft, set, by, onBy, tried, onTried, today, shown, reading, s }: {
   editing: Exclude<RecordEditing, { kind: 'cause' }>
+  elements: readonly AboutChoice[] | undefined
   draft: Draft
   set: (field: string, value: string) => void
   by: PersonRef | undefined
@@ -315,6 +325,7 @@ function RecordFacts({ editing, draft, set, by, onBy, tried, onTried, today, sho
             label={s('observation.whereField')} rows={2} required value={draft.where} onChange={(value) => set('where', value)}
             hint={exampleFor('where', s)} {...(shown('where') ? { error: shown('where') as string } : {})} data-testid="editor-where"
           />
+          {elements && <AboutField value={idsOf(draft.about ?? '')} elements={elements} onChange={(ids) => set('about', ids.join('\n'))} s={s} testId="editor-about" />}
           {personField(s('observation.byField'), 'observation-by-field', shown('by'), exampleFor('by', s))}
         </>
       )
@@ -378,7 +389,7 @@ function TriedBefore({ tried, onChange, s }: { tried: Tried; onChange: (next: Tr
 function readRecord(record: Observation, draft: Draft, by: PersonRef | undefined): Observation {
   return {
     ...record, where: draft.where, date: draft.date, impact: draft.impact as ObservationImpact, tone: draft.tone as ObservationTone,
-    ...(by === undefined ? {} : { by }),
+    ...(by === undefined ? {} : { by }), ...aboutField(aboutOf(idsOf(draft.about ?? ''))),
   }
 }
 

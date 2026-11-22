@@ -241,6 +241,8 @@ export type ObservationReaderProps = {
   scopeLabel?: (path: string) => string
   /** Present for an observation of a scope below: read here, added to there, changed there. */
   fromScope?: { path: string; label: string }
+  /** An element's name by id, for what it is about; the id is said where absent. */
+  elementName?: ((id: string) => string) | undefined
   /** The causes that explain it: its own scope's, with `scope` where that is a scope below. */
   explainedBy: readonly { cause: Cause; link: CauseLink; scope?: string }[]
   /** Where it went, when it was merged away — here, or in a scope above. */
@@ -334,7 +336,7 @@ export function ObservationReader(props: ObservationReaderProps) {
           side={(
             <ObservationFacts
               observation={observation} names={names} s={s} day={day} fromScope={fromScope} label={label}
-              explainedBy={props.explainedBy} onOpen={props.onOpen}
+              explainedBy={props.explainedBy} onOpen={props.onOpen} elementName={props.elementName}
               unlink={(causeId, scope) => (!standing || (scope !== undefined && !props.mayChangeBelow) ? undefined : () => props.onUnlink(causeId, scope))}
             />
           )}
@@ -351,7 +353,11 @@ export function ObservationReader(props: ObservationReaderProps) {
 }
 
 /** What an observation's preview says beside its text, each a label over a value that wraps. */
-export function observationFacts(one: Observation, facts: { names: PersonNames; day: (date: string) => string; s: Translate; fromScope?: string | undefined }) {
+export function observationFacts(one: Observation, facts: {
+  names: PersonNames; day: (date: string) => string; s: Translate; fromScope?: string | undefined
+  /** An element's name by id, where the page knows this scope's; the id where it does not. */
+  elementName?: ((id: string) => string) | undefined
+}) {
   const { names, day, s } = facts
   const lastSeen = [...one.history].reverse().find((event) => event.kind === 'seen')?.date
   const seen = s('observation.seenTimes', { count: one.seen })
@@ -360,6 +366,7 @@ export function observationFacts(one: Observation, facts: { names: PersonNames; 
     { label: s('observation.impactField'), value: s(IMPACT_LABEL[one.impact]), testId: 'observation-impact' },
     { label: s('observation.dateField'), value: day(one.date) },
     { label: s('observation.whereField'), value: one.where || '—' },
+    { label: s('observation.aboutField'), value: aboutText(one, facts.elementName), testId: 'observation-about' },
     { label: s('observation.byField'), value: names.text(one.by) || '—', testId: 'observation-by' },
     ...(one.recordedBy ? [{ label: s('observation.colRecordedBy'), value: recordedByText(one.recordedBy, names, s) || s('observation.recordedByUnknown'), testId: 'observation-recorded-by' }] : []),
     { label: s('observation.colSeen'), value: lastSeen ? s('observation.seenLast', { times: seen, date: day(lastSeen) }) : seen, testId: 'observation-seen' },
@@ -367,9 +374,15 @@ export function observationFacts(one: Observation, facts: { names: PersonNames; 
   ]
 }
 
+/** The elements it is about, by name, in the order picked; a dash for none. */
+export function aboutText(one: Pick<Observation, 'about'>, elementName?: (id: string) => string): string {
+  return (one.about ?? []).map((id) => elementName?.(id) ?? id).join(', ') || '—'
+}
+
 /** The facts of an observation as its reader lists them, in the order every surface and the editor say them (`observationFacts`), then what explains it. */
-function ObservationFacts({ observation, names, s, day, fromScope, label, explainedBy, onOpen, unlink }: {
+function ObservationFacts({ observation, names, s, day, fromScope, label, explainedBy, onOpen, unlink, elementName }: {
   observation: Observation
+  elementName: ObservationReaderProps['elementName']
   names: PersonNames
   s: Translate
   day: (date: string) => string
@@ -387,6 +400,8 @@ function ObservationFacts({ observation, names, s, day, fromScope, label, explai
       <Term>{s('observation.dateField')}</Term><Value>{day(observation.date)}</Value>
       <Term>{s('observation.whereField')}</Term>
       <Value><Box component="span" sx={quiet(Boolean(observation.where))}>{observation.where || '—'}</Box></Value>
+      <Term>{s('observation.aboutField')}</Term>
+      <Value testId="observation-about"><Box component="span" sx={quiet(Boolean(observation.about?.length))}>{aboutText(observation, elementName)}</Box></Value>
       <Term>{s('observation.byField')}</Term>
       <Value testId="observation-by"><Box component="span" sx={quiet(Boolean(observation.by))}>{names.text(observation.by) || '—'}</Box></Value>
       <Term>{s('observation.colRecordedBy')}</Term>

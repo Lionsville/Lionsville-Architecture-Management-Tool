@@ -31,6 +31,8 @@ import type { Analysis, Cause, CauseLink, CauseStrength, ObservationImpact, Obse
 export type ObservationFields = {
   title: string
   where: string
+  /** The elements it is about, by id, picked beside where (ADR-0032, amended 22 November 2026). */
+  about?: string[]
   /** Who saw it: a person picked from the register, or text (ADR-0036 §8). */
   by: PersonRef
   /** `yyyy-mm-dd`: the day it was first seen. */

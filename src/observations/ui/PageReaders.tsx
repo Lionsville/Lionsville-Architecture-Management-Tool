@@ -169,6 +169,8 @@ export type ReaderContext = {
   images?: DocumentImages
   /** *Copy link* to the record on show, where the host can make one (ADR-0033): every reader offers it, read-only too. */
   copyLink?: ((selected: Selected) => void) | undefined
+  /** An element's name by id, for what an observation is about (ADR-0032, amended). */
+  elementName?: ((id: string) => string) | undefined
 }
 
 /** What the record says, however it is framed (`RecordViews`). */
@@ -233,6 +235,7 @@ export function observationProps(one: Observation, scope: string | undefined, se
   return {
     observation: one,
     fromScope: scope !== undefined ? { path: scope, label: ctx.scopeLabel(scope) } : undefined,
+    elementName: ctx.elementName,
     explainedBy: explainers.map(({ cause, scope: at }) => ({
       cause, link: cause.explains.find((held) => held.id === one.id)!, ...(at !== undefined ? { scope: at } : {}),
     })),
