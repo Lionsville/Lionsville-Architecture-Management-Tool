@@ -9,7 +9,7 @@ import { moveBlocked, moveNote, moveTargets, withEveryScope } from './moveScreen
 
 const t = translator('en')
 const trail = (path: string) => (path === '' ? 'Port' : path.split('/').join(' › '))
-const OK: MovePlan = { ok: true, number: 3, revived: false, cut: [], restored: [], comments: 0, observation: {} as never, writes: [] }
+const OK: MovePlan = { ok: true, number: 3, revived: false, cut: [], restored: [], comments: 0, dangling: [], observation: {} as never, writes: [] }
 
 describe('moveTargets', () => {
   it('offers every other scope nearest first, by its path, and says why one cannot be picked', () => {

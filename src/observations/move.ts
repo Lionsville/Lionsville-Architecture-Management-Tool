@@ -38,7 +38,9 @@
  * ## What travels
  *
  * Its thread (ADR-0037 §6, `comments/travel.ts`), in the same writes —
- * where both scopes' comments were handed in.
+ * where both scopes' comments were handed in. The elements it is about go
+ * with it as ids, which are the tree's; those the target does not hold are
+ * said before anything is written (`dangling`), and reported there after.
  */
 import type { Cause, CauseStrength, Observation, ObservationEvent, ScopeAnalysis } from '../model/observation'
 import type { Comment } from '../model/comment'
@@ -66,6 +68,13 @@ export type MoveRequest = {
   scopes: readonly ScopeAnalysis[]
   /** The day of the move, `yyyy-mm-dd`. */
   date: string
+  /**
+   * Whether the target holds an element, its own or a stand-in: what tells
+   * the elements the record is about that resolve there from those that
+   * would dangle (ADR-0032, amended 22 November 2026). Absent: none is said
+   * to dangle, which a caller with no tree to ask says.
+   */
+  holds?: (id: string) => boolean
 }
 
 /**
@@ -99,6 +108,12 @@ export type MovePlan =
     restored: MoveLink[]
     /** How many comments go with it. */
     comments: number
+    /**
+     * The elements it is about that the target holds no record of. They go
+     * with it all the same — the ids are the tree's — and the target's
+     * checks report them until the target draws them or somebody takes them off.
+     */
+    dangling: string[]
     /** The record as the target holds it. */
     observation: Observation
     /** What each scope's lists become: the source first, the target next, the rest in path order. */
@@ -362,6 +377,7 @@ export function planMove(request: MoveRequest): MovePlan {
     cut,
     restored: tombstone ? linksTo(held, { scope: to, id: from.id }) : [],
     comments,
+    dangling: request.holds ? (record.about ?? []).filter((id) => !request.holds!(id)) : [],
     observation: arrived,
     writes: lists.writes(from.scope, to),
   }

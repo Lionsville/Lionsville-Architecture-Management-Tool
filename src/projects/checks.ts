@@ -39,7 +39,7 @@ import type { StringKey, Translate } from '../i18n/strings'
 import { OWNER_DETAIL } from '../model'
 import type { DesignElement, ElementId, OwnerDetailField, Relation } from '../model'
 import type { HostModel } from '../model/hostModel'
-import { causeLabel, liveCauses } from '../observations/observation'
+import { causeLabel, formatObservationNumber, isArchived, liveCauses, liveObservations } from '../observations/observation'
 import { accountabilityGaps } from '../model/operatingModel'
 import { ownsOf } from '../model/conway'
 import { today } from '../model/lifecycle'
@@ -86,6 +86,9 @@ import type { TreeCheckKey } from '../model/checkCatalogue'
  *   nothing makes any more, kept and drawn. Names the cause below that
  *   explains that observation, where there is one — linking that one instead
  *   is the repair;
+ * - `check.observationAboutGone` — an observation here about an element
+ *   this scope does not hold (ADR-0032, amended 22 November 2026): the
+ *   observation, the element in `fields` and its name in `detail`;
  * - `check.accountability` — a responsibility of the operating model that is
  *   not exactly one role's *A* (ADR-0036 §2): nobody is accountable for it,
  *   or several roles are, named in `detail` where there are;
@@ -163,6 +166,7 @@ export const CHECK_LABEL: Record<TreeCheckKey, StringKey> = {
   'check.uncovered': 'check.uncovered',
   'check.offeredNotShared': 'check.offeredNotShared',
   'check.causeExplainsObservationBelow': 'check.causeExplainsObservationBelow',
+  'check.observationAboutGone': 'check.observationAboutGone',
   'check.accountability': 'check.accountability',
   'check.unitTypeNowhere': 'check.unitTypeNowhere',
   'check.roleVacant': 'check.roleVacant',
@@ -255,6 +259,7 @@ export const CHECK_SHORT: Record<TreeCheckKey, { one: StringKey; other: StringKe
   'check.causeExplainsObservationBelow': {
     one: 'check.short.causeExplainsObservationBelow.one', other: 'check.short.causeExplainsObservationBelow.other',
   },
+  'check.observationAboutGone': { one: 'check.short.observationAboutGone.one', other: 'check.short.observationAboutGone.other' },
   'check.accountability': { one: 'check.short.accountability.one', other: 'check.short.accountability.other' },
   'check.unitTypeNowhere': { one: 'check.short.unitTypeNowhere.one', other: 'check.short.unitTypeNowhere.other' },
   'check.roleVacant': { one: 'check.short.roleVacant.one', other: 'check.short.roleVacant.other' },
@@ -590,6 +595,7 @@ export function documentFindings(deps: {
   }
   return [
     ...found, ...drawingLinkFindings(scope, model, held), ...causesOverObservationsBelow(scope, model, index),
+    ...observationsAboutGone(scope, model, held, index),
     ...operatingModelFindings(scope, model),
   ]
 }
@@ -650,6 +656,30 @@ function drawingLinkFindings(scope: ScopePath, model: HostModel, held: ReadonlyS
         name: diagram.name,
         fields: [link.elementId],
         detail: link.elementId,
+      })
+    }
+  }
+  return found
+}
+
+/**
+ * An observation about an element this scope does not hold (ADR-0032,
+ * amended 22 November 2026): removed since, or moved here from a scope that
+ * held it. One per element named, the observation's record and the element
+ * in `fields` — the record's kind first, so the finding opens on the
+ * observations page as a citation's does. A merged, moved or archived one is
+ * history, and what it names contradicts nothing.
+ */
+function observationsAboutGone(scope: ScopePath, model: HostModel, held: ReadonlySet<ElementId>, index: ScopeIndex): Finding[] {
+  const found: Finding[] = []
+  for (const observation of liveObservations(model.observations ?? [])) {
+    if (isArchived(observation)) continue
+    for (const id of observation.about ?? []) {
+      if (held.has(id)) continue
+      found.push({
+        key: 'check.observationAboutGone', scope, id: observation.id,
+        name: `${formatObservationNumber(observation.number)} ${observation.title}`,
+        fields: ['observation', observation.id, id], detail: index.lookup(id)?.name ?? id,
       })
     }
   }

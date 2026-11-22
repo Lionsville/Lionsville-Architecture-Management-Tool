@@ -56,7 +56,7 @@ import type { AttentionItem } from './attention'
  */
 export const FOUND_WHERE_OPEN: ReadonlySet<CheckKey> = new Set<CheckKey>([
   'check.notDrawn', 'check.ownedElsewhere', 'check.danglingEnd', 'check.drawingLinkMissing',
-  'check.unmapped', 'check.uncovered', 'check.causeExplainsObservationBelow',
+  'check.unmapped', 'check.uncovered', 'check.causeExplainsObservationBelow', 'check.observationAboutGone',
 ])
 
 /** Where an instance is fixed: a scope opened on a page, or a person on the People page. */

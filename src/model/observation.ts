@@ -123,6 +123,15 @@ export type Observation = {
   /** Where it was seen: a system, a desk, a job, a meeting. Prose, not an id. */
   where?: string
   /**
+   * The elements it is about, by id, in the order they were picked (ADR-0032,
+   * amended 22 November 2026): each one an element this scope holds, its own
+   * or a stand-in, addressed as a decision's `subjectId` is. An id is the same
+   * across the tree, so a reference survives a promotion, a transfer or a move
+   * of the record, and one the scope no longer holds is reported, never
+   * dropped. Absent, never empty: `where` says it in words, and may as well.
+   */
+  about?: string[]
+  /**
    * Who saw it, or who wrote it down: a person picked from the register, or
    * text — a name, initials, a team (ADR-0036 §8).
    */

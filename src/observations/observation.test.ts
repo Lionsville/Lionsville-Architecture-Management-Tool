@@ -9,7 +9,7 @@ import {
   mergeObservations, newCause, newObservation,
   nextCauseNumber, nextObservationNumber, removeCause, removeObservation, rootCauses, seenAgain, seenDayProblem,
   setArchived, setNoted, isNoted, waitingObservations, unlinkCause, updateCause, updateObservation, verifyCause, withConfirmation, withReason,
-  causeTemplate, causeAbsorbedBy, isCauseMerged, liveCauses, mergedInto,
+  causeTemplate, causeAbsorbedBy, isCauseMerged, liveCauses, mergedInto, aboutOf, aboutTogether, isAbout,
 } from './observation'
 import type { Analysis, Cause, LinkContext, Observation, ScopeAnalysis } from './observation'
 
@@ -429,5 +429,24 @@ describe('Noted: read, and it wants no cause (ADR-0038, amended 7 November 2026)
 
   it('waits only while nothing explains it', () => {
     expect(waitingObservations(list(), (id) => id === 'o1').map((one) => one.id)).toEqual(['o2'])
+  })
+})
+
+describe('the elements an observation is about (ADR-0032, amended 22 November 2026)', () => {
+  it('keeps each id once, in the order given, and none as nothing', () => {
+    expect(aboutOf([' crm', 'erp', 'crm', ''])).toEqual(['crm', 'erp'])
+    expect(aboutOf([])).toBeUndefined()
+    expect(aboutTogether(['a'], undefined, ['b', 'a'])).toEqual(['a', 'b'])
+  })
+  it('is given at the start, and changed or taken off by a patch', () => {
+    const made = newObservation({ id: 'o1', number: 1, title: 'T', date: '2026-09-08', t, about: ['crm', 'crm'] })
+    expect(made.about).toEqual(['crm'])
+    expect(isAbout(made, 'crm')).toBe(true)
+    expect(newObservation({ id: 'o2', number: 2, title: 'T', date: '2026-09-08', t }).about).toBeUndefined()
+    const [changed] = updateObservation([made], 'o1', { about: ['erp'] })
+    expect(changed!.about).toEqual(['erp'])
+    const [cleared] = updateObservation([made], 'o1', { about: [] })
+    expect(cleared!.about).toBeUndefined()
+    expect('about' in cleared!).toBe(false)
   })
 })

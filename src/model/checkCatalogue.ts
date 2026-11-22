@@ -50,7 +50,7 @@ export const TREE_CHECK_KEYS = [
   'check.conflict', 'check.kindClash', 'check.drift', 'check.dangling', 'check.danglingEnd', 'check.proposal',
   'check.ownedElsewhere', 'check.unattributed', 'check.notDrawn', 'check.drawingLinkMissing',
   'check.unmapped', 'check.uncovered', 'check.offeredNotShared', 'check.causeExplainsObservationBelow',
-  'check.accountability', 'check.unitTypeNowhere',
+  'check.observationAboutGone', 'check.accountability', 'check.unitTypeNowhere',
   'check.roleVacant', 'check.roleOverMax', 'check.unitMisplaced', 'check.unitSpans', 'check.unitOverLimit',
   'check.assignmentEnded', 'check.assignmentOrphaned', 'check.unitTypeEnded', 'check.personOverloaded', 'check.unitNotServing',
   'check.reportingLoop', 'check.reportingDangling', 'check.reportingAmbiguous', 'check.reportingVacant',
@@ -387,6 +387,12 @@ const ENTRIES = {
     name: 'check.name.causeExplainsObservationBelow', why: 'check.why.causeExplainsObservationBelow',
     how: 'check.how.causeExplainsObservationBelow',
     category: 'analysis', weight: 'review', actions: ['openCause'],
+  },
+  // A review: the element may have gone on purpose, and the observation is
+  // still true about it as history (ADR-0032, amended 22 November 2026).
+  'check.observationAboutGone': {
+    name: 'check.name.observationAboutGone', why: 'check.why.observationAboutGone', how: 'check.how.observationAboutGone',
+    category: 'analysis', weight: 'review', actions: ['openRecord'],
   },
   // --- principles (ADR-0041 §10) -------------------------------------------
   'check.principleUnused': {

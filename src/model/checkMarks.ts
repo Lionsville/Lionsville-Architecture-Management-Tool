@@ -138,6 +138,8 @@ const SCOPED_SUBJECTS: Record<ScopedCheckKey, (finding: ScopedFinding) => string
   /** The service, and the applications using it from another team: a new one is a new conversation. */
   'check.offeredNotShared': withFields,
   /** The cause, the scope below and the observation there: not the cause it suggests linking instead. */
+  /** The observation, and the element it names: another element gone is another question. */
+  'check.observationAboutGone': (finding) => [finding.id, ...(finding.fields ?? []).slice(2)],
   'check.causeExplainsObservationBelow': (finding) => [finding.id, ...(finding.scopes ?? []).slice(0, 1), ...(finding.fields ?? []).slice(0, 1)],
   /** The responsibility, and the roles accountable for it where there are several. */
   'check.accountability': withFields,

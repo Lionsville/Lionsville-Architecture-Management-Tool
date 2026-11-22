@@ -55,6 +55,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.principleChafes': '{name} reibt in {count} Beobachtungen',
   'check.principleChafesOne': '{name} reibt in 1 Beobachtung',
   'check.citationGone': 'Ein Eintrag zitiert {name}, das hier nicht gilt',
+  'check.observationAboutGone': '{name} betrifft {detail}, das dieser Bereich nicht hält',
   'check.relevantGone': 'Eine Verknüpfung mit {name}, das nicht da ist',
 
   'check.short.conflict.one': '{count} Konflikt',
@@ -129,6 +130,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'check.short.principleUnused.other': '{count} Prinzipien, die nirgends zitiert werden',
   'check.short.principleChafes.one': '{count} Prinzip, das reibt',
   'check.short.principleChafes.other': '{count} Prinzipien, die reiben',
+  'check.short.observationAboutGone.one': '{count} Beobachtung zu etwas, das nicht hier ist',
+  'check.short.observationAboutGone.other': '{count} Beobachtungen zu etwas, das nicht hier ist',
   'check.short.citationGone.one': '{count} Verweis auf ein Prinzip, das nicht da ist',
   'check.short.citationGone.other': '{count} Verweise auf Prinzipien, die nicht da sind',
   'check.short.relevantGone.one': '{count} Verknüpfung mit einem Bereich, der nicht da ist',

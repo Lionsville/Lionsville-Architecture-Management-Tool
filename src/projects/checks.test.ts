@@ -538,3 +538,30 @@ describe('a unit type that sits nowhere', () => {
     expect(keys(documentFindings({ scope: '', model: placed, index }))).not.toContain('check.unitTypeNowhere')
   })
 })
+
+describe('an observation about an element this scope does not hold (ADR-0032, amended 22 November 2026)', () => {
+  const observation = (id: string, number: number, over: Partial<Observation> = {}): Observation => ({
+    id, number, title: id, date: '2026-09-01', impact: 'minor', seen: 1, body: '', history: [{ date: '2026-09-01', kind: 'recorded' }], ...over,
+  })
+  const here = document({
+    elements: [element('billing'), standIn('erp', 'retail')],
+    observations: [
+      observation('ob-1', 1, { about: ['billing', 'erp', 'gone', 'elsewhere'] }),
+      observation('ob-2', 2, { about: ['gone'], archived: true }),
+      observation('ob-3', 3, { about: ['gone'], history: [{ date: '2026-09-01', kind: 'recorded' }, { date: '2026-09-02', kind: 'merged', id: 'ob-1' }] }),
+    ],
+  })
+  const index = indexScopes([
+    scope('', []),
+    scope('retail', [element('erp'), element('elsewhere', { name: 'Elsewhere' })]),
+  ])
+
+  it('is found once per element named and not held, its own and a stand-in being held, history left alone', () => {
+    const found = documentFindings({ scope: '', model: here, index }).filter((one) => one.key === 'check.observationAboutGone')
+    expect(found).toEqual([
+      { key: 'check.observationAboutGone', scope: '', id: 'ob-1', name: 'OB-0001 ob-1', fields: ['observation', 'ob-1', 'gone'], detail: 'gone' },
+      { key: 'check.observationAboutGone', scope: '', id: 'ob-1', name: 'OB-0001 ob-1', fields: ['observation', 'ob-1', 'elsewhere'], detail: 'Elsewhere' },
+    ])
+    expect(findingSentence(found[1]!, translator('en'), (path) => path)).toBe('OB-0001 ob-1 is about Elsewhere, which this scope does not hold')
+  })
+})

@@ -89,10 +89,10 @@ function pick(model: HostModel) {
 }
 
 describe('format 17', () => {
-  it('is what a scope is written at now, one past 16', () => {
-    expect(SCOPE_FORMAT_VERSION).toBe(16 + 1)
+  it('is what a scope is written at, or a format past it', () => {
+    expect(SCOPE_FORMAT_VERSION).toBeGreaterThanOrEqual(16 + 1)
     const header = scopeFiles(organisation()).find((file) => file.path === SCOPE_FILE)!
-    expect(JSON.parse(textOf(header)).version).toBe(17)
+    expect(JSON.parse(textOf(header)).version).toBe(SCOPE_FORMAT_VERSION)
     expect(JSON.parse(textOf(header)).aspectScales).toEqual(said.aspectScales)
   })
 

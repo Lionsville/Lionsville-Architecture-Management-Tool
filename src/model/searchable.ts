@@ -300,6 +300,8 @@ const observation: Searchable<Observation> = {
     title: ob.title,
     fields: [ob.where, refText(ob.by)],
     ...peopleIn(ob.by),
+    // The elements it is about, for the row to name, as a decision says its subject (ADR-0029, amended 22 November 2026).
+    ...(ob.about?.length ? { about: ob.about } : {}),
     prose: ob.body,
     label: numbered('OB', ob.number),
     status: ob.archived ? 'archived' : ob.impact,

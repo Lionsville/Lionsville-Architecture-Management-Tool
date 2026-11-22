@@ -270,3 +270,19 @@ describe('what travels with a move (ADR-0037 §6)', () => {
     expect(written(plan).get('north')!.comments).toEqual([said('cm-1', 'o7')])
   })
 })
+
+describe('the elements a moved observation is about (ADR-0032, amended 22 November 2026)', () => {
+  const source = scope('north', { observations: [observation('o7', { number: 7, about: ['billing', 'crm'] })] })
+  const target = scope('south')
+
+  it('go with it, and those the target does not hold are said to dangle', () => {
+    const plan = planMove({ from: { scope: 'north', id: 'o7' }, to: 'south', scopes: [scope(''), source, target], date: DAY, holds: (id) => id === 'billing' })
+    expect(plan.ok && plan.dangling).toEqual(['crm'])
+    expect(ob(written(plan), 'south', 'o7').about).toEqual(['billing', 'crm'])
+  })
+
+  it('are said to dangle by nobody where the caller has no tree to ask', () => {
+    const plan = move([scope(''), source, target], { scope: 'north', id: 'o7' }, 'south')
+    expect(plan.ok && plan.dangling).toEqual([])
+  })
+})

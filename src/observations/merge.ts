@@ -46,7 +46,8 @@ import type {
   Cause, CauseLink, CauseState, CauseStrength, Observation, ObservationImpact, ScopeAnalysis, Solution,
 } from '../model/observation'
 import {
-  causeEvidence, isArchived, isCauseMerged, isMerged, isRootCause, isScopeAboveOrHere, isScopeBelow, toneOf, tonesMerge,
+  aboutField, aboutOf, aboutTogether, causeEvidence, isArchived, isCauseMerged, isMerged, isRootCause, isScopeAboveOrHere, isScopeBelow, toneOf,
+  tonesMerge,
 } from './observation'
 import type { LinkRefusal } from './observation'
 import { carryCitations } from '../model/citable'
@@ -71,6 +72,8 @@ export type RecordAt = { scope: string; id: string }
 export type ObservationValues = {
   title: string
   where?: string
+  /** The elements it is about (ADR-0032, amended 22 November 2026): every record's, unless chosen. */
+  about?: string[]
   /** Who saw it: a person picked from the register, or text (ADR-0036 §8). */
   by?: PersonRef
   impact: ObservationImpact
@@ -217,6 +220,7 @@ export function observationDefaults(survivor: Observation, absorbed: readonly Ob
   return {
     title: survivor.title,
     ...(survivor.where !== undefined ? { where: survivor.where } : {}),
+    ...aboutField(aboutTogether(survivor.about, ...absorbed.map((one) => one.about))),
     ...(survivor.by !== undefined ? { by: survivor.by } : {}),
     impact: survivor.impact,
     date: days[0] ?? survivor.date,
@@ -653,6 +657,10 @@ function foldObservations(work: Work, request: Extract<MergeRequest, { kind: 'ob
       if (values.where.trim()) next.where = values.where.trim()
       else delete next.where
     }
+    // One thing seen twice is about everything either was about, unless the merge chose (ADR-0032, amended).
+    const about = values.about !== undefined ? aboutOf(values.about) : aboutTogether(one.about, ...taken.map(({ one: held }) => held.about))
+    if (about) next.about = about
+    else delete next.about
     if (values.by !== undefined) {
       const by = personRefOf(values.by)
       if (by !== undefined) next.by = by

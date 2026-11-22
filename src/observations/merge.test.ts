@@ -427,3 +427,31 @@ describe('what travels with a merge (ADR-0037 §6)', () => {
     expect(written(plan).get('')?.comments).toBeUndefined()
   })
 })
+
+describe('the elements a merged observation is about (ADR-0032, amended 22 November 2026)', () => {
+  const here = scope('', {
+    observations: [observation('o1', { about: ['billing'] }), observation('o2', { about: ['ledger', 'billing'] })],
+  })
+  const north = scope('north', { observations: [observation('n1', { about: ['crm'] })] })
+  const request: MergeRequest = {
+    kind: 'observation', survivor: { scope: '', id: 'o1' }, absorbed: [{ scope: '', id: 'o2' }, { scope: 'north', id: 'n1' }], scopes: [here, north], date: DAY,
+  }
+
+  it('is every element any of them was about, the survivor\'s first, each once', () => {
+    expect(observationDefaults(here.observations[0]!, [here.observations[1]!, north.observations[0]!]).about).toEqual(['billing', 'ledger', 'crm'])
+    const survivor = written(planMerge(request)).get('')!.observations.find((one) => one.id === 'o1')!
+    expect(survivor.about).toEqual(['billing', 'ledger', 'crm'])
+  })
+
+  it('is what the merge chose, where it chose, and none where it chose none', () => {
+    const chosen = written(planMerge({ ...request, values: { about: ['ledger'] } })).get('')!.observations.find((one) => one.id === 'o1')!
+    expect(chosen.about).toEqual(['ledger'])
+    const none = written(planMerge({ ...request, values: { about: [] } })).get('')!.observations.find((one) => one.id === 'o1')!
+    expect(none.about).toBeUndefined()
+  })
+
+  it('is both records\' in a merge within the scope too', () => {
+    const after = mergeObservations({ observations: [...here.observations], causes: [] }, 'o2', 'o1', DAY)
+    expect(after.observations.find((one) => one.id === 'o1')!.about).toEqual(['billing', 'ledger'])
+  })
+})

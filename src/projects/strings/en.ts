@@ -71,6 +71,7 @@ export const EN = {
   'check.principleChafes': '{name} chafes in {count} observations',
   'check.principleChafesOne': '{name} chafes in 1 observation',
   'check.citationGone': 'A record cites {name}, which does not read here',
+  'check.observationAboutGone': '{name} is about {detail}, which this scope does not hold',
   'check.relevantGone': 'A link to {name}, which is not there',
 
   /**
@@ -151,6 +152,8 @@ export const EN = {
   'check.short.principleUnused.other': '{count} principles nothing cites',
   'check.short.principleChafes.one': '{count} principle that chafes',
   'check.short.principleChafes.other': '{count} principles that chafe',
+  'check.short.observationAboutGone.one': '{count} observation about something not here',
+  'check.short.observationAboutGone.other': '{count} observations about something not here',
   'check.short.citationGone.one': '{count} citation of a principle that is not there',
   'check.short.citationGone.other': '{count} citations of principles that are not there',
   'check.short.relevantGone.one': '{count} link to a scope that is not there',

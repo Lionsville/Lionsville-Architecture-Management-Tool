@@ -113,6 +113,8 @@ export function observationFileText(observation: Observation): string {
     number: observation.number,
     date: observation.date,
     where: observation.where,
+    // The elements it is about, by id, a row each (format 18); none is written as nothing, as before.
+    about: observation.about?.length ? observation.about.map((id) => ({ id })) : undefined,
     ...personFrontMatter('by', observation.by),
     impact: observation.impact,
     // A bright spot or a problem (ADR-0038, amended §9); a neutral one says nothing, as every
@@ -241,6 +243,7 @@ export function observationFromFile(text: string, path: string): Observation | u
   if (number === undefined) return undefined
   const date = frontMatterString(fields, 'date') ?? ''
   const where = frontMatterString(fields, 'where')
+  const about = [...new Set(frontMatterRows(fields, 'about').flatMap((row) => (typeof row.id === 'string' && row.id.trim() ? [row.id.trim()] : [])))]
   const by = frontMatterPerson(fields, 'by')
   const seen = frontMatterNumber(fields, 'seen')
   const history = historyFrom(frontMatterRows(fields, 'history'))
@@ -250,6 +253,7 @@ export function observationFromFile(text: string, path: string): Observation | u
     title,
     date,
     ...(where ? { where } : {}),
+    ...(about.length ? { about } : {}),
     ...(by !== undefined ? { by } : {}),
     impact: impactOf(frontMatterString(fields, 'impact')),
     ...toneFrom(frontMatterString(fields, 'tone'), frontMatterString(fields, 'bright')),

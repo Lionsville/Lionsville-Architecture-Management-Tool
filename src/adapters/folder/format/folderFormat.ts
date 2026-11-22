@@ -277,8 +277,14 @@ export { SCOPE_FORMAT_VERSION }
  * as one (`model/ownerField.ts`). A 16 is a 17 that says none of them, so the
  * pass rewrites the headers and nothing else; a 16 reader would drop all of it
  * on its way back, so it refuses a 17.
+ *
+ * **18 adds the elements an observation is about** (ADR-0032, amended 22
+ * November 2026): `about:` in its front matter, a row per element id, absent
+ * where it names none. A 17 is an 18 whose observations name none, so the
+ * pass rewrites the headers and nothing else; a 17 reader would drop the rows
+ * on its way back, so it refuses an 18.
  */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 
 /**
  * The second half of a view's pair of files: where it ended up.

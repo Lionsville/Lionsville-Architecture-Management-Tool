@@ -163,6 +163,8 @@ export function newObservation(args: {
   date: string
   t: Translate
   where?: string
+  /** The elements it is about, by id (ADR-0032, amended 22 November 2026). */
+  about?: readonly string[]
   /** Who saw it: a person picked from the register, or text (ADR-0036 §8). */
   by?: PersonRef
   impact?: ObservationImpact
@@ -177,12 +179,14 @@ export function newObservation(args: {
   const { id, number, title, date, t } = args
   const where = args.where?.trim()
   const by = personRefOf(args.by)
+  const about = aboutOf(args.about)
   return {
     id,
     number,
     title: title.trim(),
     date,
     ...(where ? { where } : {}),
+    ...(about ? { about } : {}),
     ...(by ? { by } : {}),
     impact: args.impact ?? 'minor',
     ...toneField(args.tone ?? (args.bright ? 'bright' : 'neutral')),
@@ -206,6 +210,31 @@ export function newCause(args: { id: string; number: number; title: string; t: T
   }
 }
 
+/**
+ * The elements a record is about, as it keeps them: each id once, blanks
+ * dropped, in the order given — or nothing, which is how a record about no
+ * element is kept (ADR-0032, amended 22 November 2026).
+ */
+export function aboutOf(ids: readonly string[] | undefined): string[] | undefined {
+  const kept = [...new Set((ids ?? []).map((id) => id.trim()).filter(Boolean))]
+  return kept.length ? kept : undefined
+}
+
+/** Both records' elements, the first's first: what a merge leaves the survivor about. */
+export function aboutTogether(...lists: readonly (readonly string[] | undefined)[]): string[] | undefined {
+  return aboutOf(lists.flatMap((one) => one ?? []))
+}
+
+/** The field as a record spreads it: nothing where it is about no element. */
+export function aboutField(about: string[] | undefined): Pick<Observation, 'about'> {
+  return about ? { about } : {}
+}
+
+/** Whether a record names this element as one it is about. */
+export function isAbout(one: Pick<Observation, 'about'>, elementId: string): boolean {
+  return one.about?.includes(elementId) ?? false
+}
+
 // --- one observation -------------------------------------------------------------------
 
 function replace(list: readonly Observation[], id: string, change: (one: Observation) => Observation): Observation[] {
@@ -221,7 +250,7 @@ function withEvent(one: Observation, event: ObservationEvent): Observation {
  * through the verbs below. `bright` says which it is, a problem (`false`) or
  * a bright spot (`true`), and may be changed later as any field is.
  */
-export type ObservationPatch = Partial<Pick<Observation, 'title' | 'body' | 'where' | 'by' | 'impact' | 'date'>> & {
+export type ObservationPatch = Partial<Pick<Observation, 'title' | 'body' | 'where' | 'about' | 'by' | 'impact' | 'date'>> & {
   bright?: boolean
   tone?: ObservationTone
 }
@@ -231,6 +260,11 @@ export function updateObservation(list: readonly Observation[], id: string, patc
     const { bright, tone, ...rest } = patch
     const next: Observation = { ...one, ...rest }
     if (patch.where !== undefined && !patch.where.trim()) delete next.where
+    if (patch.about !== undefined) {
+      const about = aboutOf(patch.about)
+      if (about) next.about = about
+      else delete next.about
+    }
     if (patch.by !== undefined) {
       const by = personRefOf(patch.by)
       if (by !== undefined) next.by = by
@@ -464,7 +498,7 @@ export function mergeObservations(analysis: Analysis, from: string, into: string
   return {
     observations: observations.map((one) => {
       if (one.id === into) {
-        return withEvent({ ...one, seen: one.seen + absorbed.seen }, { date, kind: 'absorbed', id: from, seen: absorbed.seen })
+        return withEvent({ ...one, ...aboutField(aboutTogether(one.about, absorbed.about)), seen: one.seen + absorbed.seen }, { date, kind: 'absorbed', id: from, seen: absorbed.seen })
       }
       if (one.id === from) return withEvent(one, { date, kind: 'merged', id: into })
       return one
@@ -492,7 +526,7 @@ export function absorbFromBelow(
   if (absorbedBy(observations, from.observation.id, from.scope)) return analysis
   return {
     observations: replace(observations, into, (one) => withEvent(
-      { ...one, seen: one.seen + from.observation.seen },
+      { ...one, ...aboutField(aboutTogether(one.about, from.observation.about)), seen: one.seen + from.observation.seen },
       { date, kind: 'absorbed', id: from.observation.id, scope: from.scope, seen: from.observation.seen },
     )),
     causes: relink(causes, { id: from.observation.id, scope: from.scope }, into),

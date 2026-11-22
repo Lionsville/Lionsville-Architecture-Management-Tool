@@ -84,7 +84,7 @@ export type AttentionItem = {
 const ON_THE_PRINCIPLES_PAGE: ReadonlySet<string> = new Set(['check.principleUnused', 'check.principleChafes'])
 
 /** A citation that names a principle not there: opened on the record that cites, where it is fixed. */
-const ON_THE_RECORD: ReadonlySet<string> = new Set(['check.citationGone'])
+const ON_THE_RECORD: ReadonlySet<string> = new Set(['check.citationGone', 'check.observationAboutGone'])
 
 /** Where a finding opens other than on the record it names as an element. */
 function pageOf(key: string): Pick<AttentionItem, 'page'> {
