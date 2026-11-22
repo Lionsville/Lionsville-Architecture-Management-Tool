@@ -216,7 +216,8 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       from the lines; a replacement as one
                                       transaction (ADR-0010)
                     keys              addressing, slugs, where a new id comes from
-                    normalised        the model indexed by id; fromArrays/toArrays
+                    normalised        the model indexed by id; fromArrays/toArrays,
+                                      one loop over the lists a file may leave out
                     commands · reducer  what a change IS, and the one writer
                     commands/         one entry per kind of command, by family,
                                       and the table `apply` looks it up in —
@@ -226,7 +227,12 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                                       the fields it carries, the keys its patch
                                       may name (any other is refused), what it
                                       writes (`writesOf`) and its guard
-                                      (`applyGuarded`)
+                                      (`applyGuarded`). A plain list's add,
+                                      update and remove are built from its
+                                      descriptor (`plain.ts`: `plainFamily`),
+                                      the family saying its fields and its
+                                      refusal; `rows.ts`'s `withRows` puts any
+                                      list back (ADR-0050)
                     activity          what a step is called, for a list to read
                     routes · floatingEdgeMath   where a line leaves a box
                     hostModel · containerDiagram
@@ -253,16 +259,33 @@ src/model/        What a landscape is made of, and the arithmetic over it.
                     imageName         an image's name in its scope's library, its
                                       image folder, the `image:` reference, and
                                       the content address of its bytes (ADR-0031 §3)
+                    recordKinds       every kind of record described once
+                                      (ADR-0050): `KINDS`, an entry per list of
+                                      the model, typed over `ModelOrder` so a
+                                      list with no entry does not compile — the
+                                      list, the word its records go by, how one
+                                      says its id, whether the file may leave it
+                                      out, whether it is written by the plain
+                                      three commands, how a whole restore puts
+                                      it back, what a step on it is called, how
+                                      a diff names one, or `'own'` where a kind
+                                      is more than plain. It names no file, no
+                                      folder and no tool; what only one layer
+                                      knows is that layer's table over the same
+                                      keys. It imports the kinds' files and none
+                                      that reads it
                     recordKey         a record by kind and id, and the records that
                                       differ between two models: what a thing's
-                                      history is asked by (ADR-0031 §1)
+                                      history is asked by (ADR-0031 §1); its
+                                      kinds and lists are read off `recordKinds`
                     clipboard · equality   what copies, and what counts as the same
                     diff              what changed, in the landscape's own terms
                     restore           going back as one command (ADR-0008)
                     textSearch        the one rule for "found"
                     searchable        what each list's records say to a search:
-                                      typed over `ModelOrder`, so a list with no
-                                      line does not compile (ADR-0029)
+                                      a facet over the kinds' keys and records,
+                                      so a list with no line does not compile
+                                      (ADR-0029, ADR-0050)
                     adr               what a decision record IS (rules: decisions/)
                     person            a person as the model names one: a
                                       `PersonRef`, `{ person: id }` into the
@@ -1620,6 +1643,34 @@ above the seam changes** — not `main.tsx`, not a component, not a test.
 
 The same holds for `PreferencesStore`, `DocumentGateway` and `CommandChannel`,
 whose contract is `ports/CommandChannel.contract.ts`.
+
+## Adding a kind of record
+
+A kind of record is a list on the model, and **what is the same about every
+kind is said once**, in `model/recordKinds.ts` (ADR-0050). A plain kind — one
+whose records are added, patched and removed and nothing more — is, in
+`model/`: its type; its field on `HostModel`; its list in `ModelOrder` and on
+`Model`; **its entry in `KINDS`**; its three commands in `commands.ts`; a
+family in `commands/` that says its fields and what the writer refuses
+(`plainFamily`), spread into `commands/table.ts`; its line in `SEARCHABLE`,
+empty where it says nothing to a search; and its words in three languages.
+The entry gives it its place in a record key, in `fromArrays` and `toArrays`,
+in a diff, in a whole restore and in the Activity list, with no line in any
+of them. A kind that is more than plain says `'own'` for the part that is, and
+that reader keeps lines of its own for it.
+
+Start by adding the list to `ModelOrder`: the compiler names the entry that
+is missing, and then, as the kind is carried through, the commands' table,
+the search's table, the words of its step, the keys of a change's line
+(`app/history/changeLine.ts`) and the tables a folder's history is asked by
+(`adapters/folder/FolderHistory.ts`); `commands/table.test.ts` and the
+inverse property test name the lists they keep of every command. **Nothing
+names what keeps the records**, which is written per kind and by hand: its
+file's codec, the folder's format and its store (`adapters/folder/`), an
+index entry (`adapters/repositories/KeptIndex.ts`), the index over the tree,
+a copy's counts and what a move readdresses (`projects/`), a clause in the
+repository contract, and the agent's tools. A kind the folder's format does
+not write is not kept, and no suite says so until one is written for it.
 
 ## Conventions
 

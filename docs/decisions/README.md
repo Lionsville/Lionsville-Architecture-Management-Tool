@@ -127,3 +127,4 @@ now, with their words unchanged.
 | [0047](0047-a-confirmed-or-assumed-mark.md) | A confirmed or assumed mark on elements and lines | 2026-11-07 | — |
 | [0048](0048-a-sheet-can-be-placed.md) | A sheet can be placed, and read as a poster | 2026-11-07 | — |
 | [0049](0049-a-feature-may-be-composed-of-features.md) | A feature may be composed of features, below the shell | 2026-11-22 | — |
+| [0050](0050-every-kind-of-record-is-described-once.md) | Every kind of record is described once | 2026-11-22 | — |
