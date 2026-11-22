@@ -38,8 +38,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { foldedAtLevel, foldedOnFirstOpen, unitsAboveIn } from '../../model/orgChart'
 import type { OrgChart } from '../../model/orgChart'
 import type { ElementId } from '../../model/types'
-import { opened, toggled } from '../sessionFolds'
-import type { SessionFolds } from '../sessionFolds'
+import { opened, toggled } from '../../session/sessionFolds'
+import type { SessionFolds } from '../../session/sessionFolds'
 
 export type ChartFolds = {
   /** The units folded on the chart: what is under each is not drawn. */

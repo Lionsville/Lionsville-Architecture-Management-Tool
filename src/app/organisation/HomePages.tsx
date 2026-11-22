@@ -37,7 +37,7 @@ import type { HomeChecks, TreeRead } from './useHomeChecks'
 import type { HomePagesState } from './useHomePages'
 import type { Organisation } from './useOrganisation'
 import type { PeopleAccess } from './usePeopleRegister'
-import type { OrgPageRequest } from '../homePages'
+import type { OrgPageRequest } from '../../session/homePages'
 
 const RegisterPage = lazyPart<ComponentProps<typeof RegisterPageShape>>(
   () => import('./RegisterPage').then((held) => held.RegisterPage), { warm: true, until: (props) => props.open, fallback: arrivingPage },

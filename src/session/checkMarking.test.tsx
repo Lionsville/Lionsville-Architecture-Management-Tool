@@ -16,10 +16,10 @@ import type { ConwayFinding } from '../model/conway'
 import type { HostModel } from '../model/hostModel'
 import type { ScopeSnapshot } from '../projects/scope'
 import { indexScopes } from '../projects/scopeIndex'
-import { renderShell } from './testing/renderShell'
+import { renderShell } from '../app/testing/renderShell'
 import { checkMarking, CheckMarkingContext, useFindingMarks } from './checkMarking'
 import type { CheckMarking } from './checkMarking'
-import type { WriteIn } from './units/writeIn'
+import type { WriteIn } from './writeIn'
 
 afterEach(() => cleanup())
 

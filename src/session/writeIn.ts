@@ -18,14 +18,14 @@
  * refused here, and by the repository again, whatever they manage (§12).
  */
 import { useCallback } from 'react'
-import type { StringKey } from '../../i18n'
-import type { ScopeCommand } from '../../projects/scopeState'
-import { ShellError } from '../../platform/errors'
-import type { ScopeSnapshot } from '../../projects/scope'
-import { changeScope, changeScopes } from '../../projects/scopeAccess'
-import type { ScopePath } from '../../projects/scopePath'
-import type { BelowScopes } from '../useChangeBelow'
-import { holdWrite } from '../writeRefusals'
+import type { StringKey } from '../i18n'
+import type { ScopeCommand } from '../projects/scopeState'
+import { ShellError } from '../platform/errors'
+import type { ScopeSnapshot } from '../projects/scope'
+import { changeScope, changeScopes } from '../projects/scopeAccess'
+import type { ScopePath } from '../projects/scopePath'
+import type { BelowScopes } from './useChangeBelow'
+import { holdWrite } from './writeRefusals'
 
 /** Where a change to another scope went: landed, or why not — a refusal by its key. */
 export type WrittenIn = { ok: true } | { ok: false; reason: 'unchanged' | 'gone' | 'readOnly' | (string & {}) }

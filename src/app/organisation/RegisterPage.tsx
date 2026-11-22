@@ -53,7 +53,7 @@ import { Tabs } from '../../widgets/kit/Tabs'
 import { Toast } from '../../widgets/kit/Toast'
 import type { ToastWords } from '../../widgets/kit/Toast'
 
-import { useCheckMarking } from '../checkMarking'
+import { useCheckMarking } from '../../session/checkMarking'
 import { FindingActions } from './FindingActions'
 import type { RegisterRow } from './register'
 import { applicationHow, findingsByRecord, isRegisterTab, platformHow, platformsOf, serviceHow, servicesOf, weightsOf } from './registerView'

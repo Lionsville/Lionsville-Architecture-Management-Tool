@@ -6,8 +6,8 @@
  * when, what the bar says about that, and the session handed to whoever
  * answers for the source.
  */
-import { handOver, stepsSummary, unwatched, watchLanded } from './writeRefusals'
-import type { WriteRefusal } from './writeRefusals'
+import { handOver, stepsSummary, unwatched, watchLanded } from '../session/writeRefusals'
+import type { WriteRefusal } from '../session/writeRefusals'
 import type { StepSummary } from '../model'
 import type { ScopeStep } from '../projects/scopeState'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

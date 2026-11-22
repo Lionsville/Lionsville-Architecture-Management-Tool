@@ -33,8 +33,8 @@ import type { NewUnitForm, NewUnitNone } from './NewUnitDialog'
 import { newUnitElement, typesThatMaySit } from './newUnit'
 import type { UnitViewsHere } from './unitViewsHere'
 import { followTypeIn, typeFollowingHere } from './followType'
-import { refusalKey } from './writeIn'
-import type { WriteIn } from './writeIn'
+import { refusalKey } from '../../session/writeIn'
+import type { WriteIn } from '../../session/writeIn'
 
 /** What making a unit from the chart is handed by the workspace. */
 export type UnitMaking = {

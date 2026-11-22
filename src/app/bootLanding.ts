@@ -17,9 +17,9 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import { ancestorScopes, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { SourceLanding } from '../platform/sourceProvider'
-import type { InitialPage } from './initialPage'
+import type { InitialPage } from '../session/initialPage'
 import { factsOf } from './placeLanding'
-import { initialPageFor } from './initialPage'
+import { initialPageFor } from '../session/initialPage'
 import type { HeldScope } from './placeLanding'
 
 /** Where the first paint is: a scope open on a view or a page, or a scope's home and its page. */

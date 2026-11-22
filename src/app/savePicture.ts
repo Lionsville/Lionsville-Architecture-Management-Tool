@@ -4,7 +4,7 @@
 /** A view's picture to a file the person picks, said as saved or why not: every view's Export… and a drawing's. */
 import type { Diagnostics } from '../ports/Diagnostics'
 import { refused } from '../widgets/pictureRefused'
-import { handOver } from './handOver'
+import { handOver } from '../session/handOver'
 import type { PrintOutcome } from './useProjectFiles'
 import type { WorkspaceParts } from './workspaceParts'
 

@@ -12,7 +12,7 @@
 import type { Translate } from '../../i18n'
 import type { DesignDiagram } from '../../model'
 import { ConfirmDialog } from '../../widgets/ConfirmDialog'
-import { DELETE_VIEW_BODY } from './deleteViewBody'
+import { DELETE_VIEW_BODY } from '../../session/deleteViewBody'
 import { NewDiagramDialog } from './NewDiagramDialog'
 
 export type ShellDialogsProps = {

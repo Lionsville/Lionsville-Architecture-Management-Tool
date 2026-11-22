@@ -27,8 +27,8 @@ import type { TreeFindings } from './useTreeFindings'
 import type { CarriedOut } from '../ports/Interchange'
 import type { AdoptScopes } from './workingFileFlows'
 import type { FrameStore } from './frame/frameStore'
-import type { SessionFolds } from './sessionFolds'
-import type { WriteRefusals } from './writeRefusals'
+import type { SessionFolds } from '../session/sessionFolds'
+import type { WriteRefusals } from '../session/writeRefusals'
 
 /**
  * The shell's state, as the hooks that hold it hand it out: one object per

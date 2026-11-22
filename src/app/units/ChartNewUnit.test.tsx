@@ -30,7 +30,7 @@ import { axeFindings } from '../testing/axe'
 import { ChartPage } from './ChartPage'
 import type { UnitMaking } from './useNewUnit'
 import { unitViewsHere } from './unitViewsHere'
-import type { WriteIn, WrittenIn } from './writeIn'
+import type { WriteIn, WrittenIn } from '../../session/writeIn'
 
 afterEach(() => cleanup())
 

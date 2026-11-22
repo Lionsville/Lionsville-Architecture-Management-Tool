@@ -52,9 +52,9 @@ import { ShellError } from '../platform/errors'
 import { changeScopes } from '../projects/scopeAccess'
 import type { ScopePath } from '../projects/scopePath'
 import type { ScopeCommand } from '../projects/scopeState'
-import { stepFor } from './useChangeBelow'
-import type { BelowScopes } from './useChangeBelow'
-import { holdWrite } from './writeRefusals'
+import { stepFor } from '../session/useChangeBelow'
+import type { BelowScopes } from '../session/useChangeBelow'
+import { holdWrite } from '../session/writeRefusals'
 
 /** The open scope, as a change across reads and writes it: through the session over it. */
 export type AcrossSession = {

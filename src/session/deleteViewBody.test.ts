@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { translator } from '../../i18n'
+import { translator } from '../i18n'
 import { DELETE_VIEW_BODY } from './deleteViewBody'
 
 const LANGUAGES = ['en', 'nl', 'de'] as const

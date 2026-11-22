@@ -31,7 +31,7 @@
  * it always has. *Keep mine* writes ours onto theirs, and puts on screen the
  * scope as that left it.
  */
-import type { WriteRefusal } from './writeRefusals'
+import type { WriteRefusal } from '../session/writeRefusals'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState } from 'react'
 import {
   AUTOSAVE_IDLE_MS, documentSession, hasUnsavedWork, openSession, shouldSaveNow,

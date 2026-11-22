@@ -14,7 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { flattenScopes } from '../../projects/scope'
 import type { ScopeSummary } from '../../projects/scope'
 import type { ScopePath } from '../../projects/scopePath'
-import { toggled } from '../sessionFolds'
+import { toggled } from '../../session/sessionFolds'
 
 export type ScopeFolds = {
   /** Every scope, until it is opened: one with nothing filed under it may still have a topic to show. */

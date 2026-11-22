@@ -43,8 +43,8 @@ import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ScopePath } from '../projects/scopePath'
 import { AcceptedFindings, MarkAsIntended } from '../widgets/FindingMarks'
 import type { AcceptedFinding } from '../widgets/FindingMarks'
-import { refusalKey } from './units/writeIn'
-import type { WriteIn } from './units/writeIn'
+import { refusalKey } from './writeIn'
+import type { WriteIn } from './writeIn'
 
 /** What a list asks of the marks: which hold, where a finding's may be made, and the two moves. */
 export type CheckMarking = {

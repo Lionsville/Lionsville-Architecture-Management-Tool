@@ -20,8 +20,8 @@
 import { boardsDrawing } from '../model'
 import { viewFor } from '../agent/screen'
 import type { ScopeSnapshot } from '../projects/scope'
-import { isViewPageName } from './initialPage'
-import type { InitialPage, ViewPageName } from './initialPage'
+import { isViewPageName } from '../session/initialPage'
+import type { InitialPage, ViewPageName } from '../session/initialPage'
 
 export type PageLanding =
   | { readonly home: true }

@@ -18,7 +18,7 @@ import type { ElementId } from '../../model/types'
 import type { OrganisationAt } from '../../projects/checks'
 import type { ScopePath } from '../../projects/scopePath'
 import { typedByUnitType, typeToFollow } from '../../projects/scopeType'
-import type { WriteIn } from './writeIn'
+import type { WriteIn } from '../../session/writeIn'
 
 /**
  * The type `scope` follows when a unit of `unitTypeId` is linked to it, given

@@ -38,7 +38,7 @@ import { useOwnerDescriptions } from './useOwnerDescriptions'
 import type { PeopleRegisterAccess } from '../people/ui/access'
 import { lazyPart } from '../widgets/lazyPart'
 import type { UnitSection as UnitSectionShape } from './units/UnitSection'
-import type { WriteIn } from './units/writeIn'
+import type { WriteIn } from '../session/writeIn'
 import type { LandPeopleMoves } from './units/landPeopleMoves'
 import { UnitDeletionParts, unitDeletionSlot } from './units/unitDeletionSlot'
 

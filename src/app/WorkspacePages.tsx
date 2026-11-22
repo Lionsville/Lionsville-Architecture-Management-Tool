@@ -6,7 +6,7 @@
  * decisions and the observations, the roadmap and a plan on it, and a
  * platform's report and a service's.
  */
-import { handOver } from './handOver'
+import { handOver } from '../session/handOver'
 import { createElement, useMemo } from 'react'
 import type { ComponentProps, ReactNode } from 'react'
 import { isLookingAway, shownAsOf } from '../editor'

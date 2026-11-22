@@ -25,7 +25,7 @@ import { placeWhole, readScope } from '../projects/scopeAccess'
 import { emptyContent } from '../projects/scopeState'
 import { landAcross, useChangeAcross } from './useChangeAcross'
 import type { AcrossDeps } from './useChangeAcross'
-import type { BelowScopes } from './useChangeBelow'
+import type { BelowScopes } from '../session/useChangeBelow'
 
 afterEach(() => cleanup())
 

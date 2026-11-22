@@ -26,13 +26,13 @@ import type { ScopePath } from '../../projects/scopePath'
 import type { OrganisationIndex } from '../../ports/OrganisationIndex'
 import { createScopeAt, describeScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt } from '../../projects/scopeTree'
 import type { TreeScopes } from '../../projects/scopeTree'
-import type { InitialPage } from '../initialPage'
+import type { InitialPage } from '../../session/initialPage'
 import {
   choosableScopes, endedOn, relevantPlaces, stoppedToday, TOPICS_PLACE, topicRowsAt, topicsInForce, topicsOf, topicsRelevantAt, withDays, withLink, withoutLink,
 } from '../../projects/topics'
 import type { TopicLink } from '../../projects/topics'
 import { ShellError } from '../../platform/errors'
-import { refusalKey, writeIn } from '../units/writeIn'
+import { refusalKey, writeIn } from '../../session/writeIn'
 import type { TopicKeeps, TopicsAccess, TopicSummary } from './TopicsContext'
 
 export type TopicsDeps = {

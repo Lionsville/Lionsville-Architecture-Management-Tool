@@ -10,7 +10,7 @@
  */
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { AlertColor } from '@mui/material/Alert'
-import type { ToastUndo } from './reporting'
+import type { ToastUndo } from '../session/reporting'
 
 /** What a toast may offer to do about itself — one button, at most. */
 export type ToastAction = { label: string; onClick: () => void }

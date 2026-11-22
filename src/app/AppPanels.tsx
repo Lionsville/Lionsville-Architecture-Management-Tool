@@ -43,9 +43,9 @@ import type { BarButtonProps, SourceChromeProps } from '../ports/ProviderParts'
 import { sourceLabel } from './ShellToolbar'
 import type { ToolbarChip } from './ShellToolbar'
 import { reasonIn } from './messageFor'
-import { checkMarking, CheckMarkingContext } from './checkMarking'
-import type { CheckMarking } from './checkMarking'
-import { useWriteIn } from './units/writeIn'
+import { checkMarking, CheckMarkingContext } from '../session/checkMarking'
+import type { CheckMarking } from '../session/checkMarking'
+import { useWriteIn } from '../session/writeIn'
 import { takenUpHere } from './sheetMapping'
 
 /** One of the three: nowhere to keep anything yet, a scope open, or a home. */

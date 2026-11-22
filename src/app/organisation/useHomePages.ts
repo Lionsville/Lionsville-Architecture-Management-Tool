@@ -14,7 +14,7 @@
  * of either.
  */
 import { useCallback, useEffect, useState } from 'react'
-import type { OrgPage, OrgPageRequest } from '../homePages'
+import type { OrgPage, OrgPageRequest } from '../../session/homePages'
 
 export type HomePagesState = {
   /** The page up, or none. */

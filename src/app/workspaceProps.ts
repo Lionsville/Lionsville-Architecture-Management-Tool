@@ -45,7 +45,7 @@ import type { KeepNotice } from './useKeepNotice'
 import type { Notify } from './useToasts'
 import type { AdoptScopes, ChooseDestination, LandingPrompts } from './workingFileFlows'
 import type { CarriedOut, Interchange } from '../ports/Interchange'
-import type { SessionFolds } from './sessionFolds'
+import type { SessionFolds } from '../session/sessionFolds'
 
 /** Where this scope is kept, and what the source it is kept in says about it. */
 export type WorkspaceSource = {

@@ -44,7 +44,7 @@ import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
 import type { SourceFrame, SourcePageEntry, SourceYourWorkProps } from '../ports/ProviderParts'
 import type { ComponentType } from 'react'
-import type { SourceSayings } from './sourceSayings'
+import type { SourceSayings } from '../session/sourceSayings'
 import type { ProblemAction, SourceAttachments, SourceChanges, SourceComments, SourcePeople } from '../ports/ProviderParts'
 
 export type { SourceSayings }

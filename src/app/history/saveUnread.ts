@@ -13,7 +13,7 @@ import { slug } from '../../model/keys'
 import { reasonOf } from '../../platform/errors'
 import type { SavedDocument } from '../../ports/DocumentGateway'
 import type { HistoryEntry, HistoryRepository } from '../../ports/HistoryRepository'
-import { handOver } from '../handOver'
+import { handOver } from '../../session/handOver'
 import type { Notify } from '../useToasts'
 
 /** The file's name: the scope's, the entry's day, what it holds, and the ending the history gave it. */

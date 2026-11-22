@@ -36,7 +36,7 @@ import type { ScopeIndex } from '../../projects/scopeIndex'
 import type { ScopePath } from '../../projects/scopePath'
 import { FindingsList } from '../../widgets/FindingsList'
 import type { FindingActions } from '../../widgets/FindingsList'
-import { useFindingMarks } from '../checkMarking'
+import { useFindingMarks } from '../../session/checkMarking'
 import type { MoveNames } from './MovePeople'
 import { conwayInputAround } from './unitViewsHere'
 

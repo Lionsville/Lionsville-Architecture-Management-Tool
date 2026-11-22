@@ -52,8 +52,8 @@ import type { ManagesPeople } from '../../model/managing'
 import { changeScopes } from '../../projects/scopeAccess'
 import type { ScopePath } from '../../projects/scopePath'
 import type { ScopeCommand } from '../../projects/scopeState'
-import type { BelowScopes } from '../useChangeBelow'
-import { holdWrite } from '../writeRefusals'
+import type { BelowScopes } from '../../session/useChangeBelow'
+import { holdWrite } from '../../session/writeRefusals'
 
 /** Why the open scope's part of a move written across scopes cannot be undone here. */
 export const MOVE_BARRIER: StringKey = 'move.barrier'

@@ -31,7 +31,7 @@ import type { Notify } from './useToasts'
 import { landWorkingFile, savedWithout, sealedWorkingFile, unsealedBytes } from './workingFileFlows'
 import type { CarryChoice } from './workingFileFlows'
 import type { AdoptScopes, ChooseDestination, LandingPrompts, OpenedWorkingFile, ReadScope } from './workingFileFlows'
-import { handOver } from './handOver'
+import { handOver } from '../session/handOver'
 import { putBackSaid } from './history/useProjectHistory'
 
 /**

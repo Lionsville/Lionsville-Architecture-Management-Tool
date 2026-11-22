@@ -31,7 +31,7 @@ import { statusWord } from './statusWord'
 import { useFrameState } from './frameStore'
 import type { OwnWork, ScreenFacts } from './frameStore'
 import { PANEL_HELP } from '../../platform/helpPlaces'
-import type { WriteRefusal } from '../writeRefusals'
+import type { WriteRefusal } from '../../session/writeRefusals'
 import { notKeptSentence, refusalReason } from '../notKept'
 import { stepWords } from '../stepWords'
 

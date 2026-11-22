@@ -66,7 +66,7 @@ import {
   newerDrawing, pointMessage, printMessage, replyTo, savedDrawing, savedStatus, savedXml, svgBytes, unsavedStatus,
   type DrawingLook, type DrawingMode, type FrameEvent, type PaletteElement,
 } from './drawingProtocol'
-import { handOver as handOverFile } from './handOver'
+import { handOver as handOverFile } from '../session/handOver'
 import { pictureLog } from './savePicture'
 import { printPicture } from './drawingExport'
 import type { PrintHost } from './drawingExport'

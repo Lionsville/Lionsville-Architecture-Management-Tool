@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
-import type { StringKey } from '../../i18n'
-import type { DesignDiagram } from '../../model'
+import type { StringKey } from '../i18n'
+import type { DesignDiagram } from '../model'
 
 /**
  * What the question before deleting a view says it takes with it, by the kind

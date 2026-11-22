@@ -9,10 +9,10 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, renderHook } from '@testing-library/react'
-import { memoryRepositories } from '../../adapters/memory/memoryRepositories'
-import type { DesignElement } from '../../model'
-import { placeWhole, readScope } from '../../projects/scopeAccess'
-import { emptyContent } from '../../projects/scopeState'
+import { memoryRepositories } from '../adapters/memory/memoryRepositories'
+import type { DesignElement } from '../model'
+import { placeWhole, readScope } from '../projects/scopeAccess'
+import { emptyContent } from '../projects/scopeState'
 import { refusalKey, useWriteIn, writeIn } from './writeIn'
 
 afterEach(() => cleanup())

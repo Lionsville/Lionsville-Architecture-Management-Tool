@@ -22,12 +22,12 @@ import { ShellError } from '../../platform/errors'
 import type { ScopeSnapshot } from '../../projects/scope'
 import { refusalOf } from '../../projects/refusalTag'
 import { changeScope, landed, stepOf } from '../../projects/scopeAccess'
-import { holdWrite, whenLanded } from '../writeRefusals'
+import { holdWrite, whenLanded } from '../../session/writeRefusals'
 import type { ScopeCommand, ScopeId } from '../../projects/scopeState'
 import type { ScopePath } from '../../projects/scopePath'
 import type { Repositories } from '../../ports/Repositories'
 import type { FrameStep } from '../frame/frameStore'
-import type { ToastUndo } from '../reporting'
+import type { ToastUndo } from '../../session/reporting'
 
 /** A view as its row names it. */
 export type HomeView = { readonly id: string; readonly name: string; readonly kind: DesignDiagram['kind'] }

@@ -8,7 +8,7 @@
  * it before would: with the view's folds kept for the session, none of them
  * shut, and every role a unit must fill drawn.
  */
-import { foldKey, SessionFolds } from '../sessionFolds'
+import { foldKey, SessionFolds } from '../../session/sessionFolds'
 
 /** A session in which the view was left with nothing folded, on the chart and in the outline. */
 export function leftUnfolded(scope: string, viewId: string): SessionFolds {

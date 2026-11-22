@@ -536,7 +536,7 @@ export const GROWN = {
   // one answer per page and per place, and a few hooks at 153 and 154 lines. Each goes down when it is taken apart.
   'src/agent/place.ts': { complexity: 35 },
   'src/agent/screen.ts': { complexity: 26 },
-  'src/app/initialPage.ts': { complexity: 26 },
+  'src/session/initialPage.ts': { complexity: 26 },
   'src/app/frame/AppFrame.tsx': { complexity: 33 },
   'src/app/history/useProjectHistory.ts': { lines: 153 },
   'src/app/main.tsx': { complexity: 33 },

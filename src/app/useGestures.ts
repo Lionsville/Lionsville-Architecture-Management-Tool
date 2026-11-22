@@ -44,7 +44,7 @@ import { changeScope } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
 import type { ScopeRepository } from '../ports/ScopeRepository'
 import type { Notify } from './useToasts'
-import { holdWrite } from './writeRefusals'
+import { holdWrite } from '../session/writeRefusals'
 
 /** Which dialog is up. One at a time, because both are about one record. */
 export type GestureChoice =

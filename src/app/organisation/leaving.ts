@@ -46,7 +46,7 @@ import type { Person } from '../../people/person'
 import type { Repositories } from '../../ports/Repositories'
 import { changeScopes } from '../../projects/scopeAccess'
 import type { ScopeCommand } from '../../projects/scopeState'
-import { holdWrite } from '../writeRefusals'
+import { holdWrite } from '../../session/writeRefusals'
 
 /** Why the open scope's part of a leave cannot be undone there. */
 export const LEAVE_BARRIER: StringKey = 'leave.barrier'
