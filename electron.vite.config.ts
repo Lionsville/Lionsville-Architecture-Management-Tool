@@ -12,6 +12,7 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 import { libavoidWasm } from './build/libavoidWasm'
+import { quickjsWasm } from './build/quickjsWasm'
 import { oneElk } from './build/oneElk'
 import { bundleBudget, DESKTOP_BUDGET } from './build/bundleBudget'
 import { bundleChecks } from './build/bundleChecks'
@@ -79,7 +80,7 @@ export default defineConfig({
     root,
     // The web build's checks, over the renderer: it is the same page.
     plugins: [
-      react(), libavoidWasm(root), oneElk(root), bundleBudget(DESKTOP_BUDGET),
+      react(), libavoidWasm(root), quickjsWasm(root), oneElk(root), bundleBudget(DESKTOP_BUDGET),
       bundleChecks({ root, browser: true, notices: resolve(root, 'THIRD-PARTY-NOTICES.md') }),
     ],
     worker: { format: 'es' },

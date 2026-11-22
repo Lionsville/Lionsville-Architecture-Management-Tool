@@ -1,6 +1,7 @@
 node_modules/
 dist/
 public/libavoid.wasm
+public/quickjs.wasm
 public/_marks/
 vendor/solution-design/node_modules/
 .DS_Store

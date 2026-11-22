@@ -831,6 +831,17 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
       return bytes.byteLength + ' bytes, ' + type
     })()`))
 
+  // The interpreter an agent's script runs in (ADR-0050), published the same way and for the same reason.
+  results.push(await check(window, 'quickjs.wasm loads and compiles', `
+    (async () => {
+      const response = await fetch('/quickjs.wasm')
+      if (!response.ok) throw new Error('fetch ' + response.status)
+      const type = response.headers.get('content-type')
+      const bytes = await response.arrayBuffer()
+      await WebAssembly.compile(bytes)
+      return bytes.byteLength + ' bytes, ' + type
+    })()`))
+
   // Wrap the constructor before anything routes. The shell's worker factory is
   // lazy, so this is early enough as long as no project is open yet.
   results.push(await check(window, 'worker constructor instrumented', `

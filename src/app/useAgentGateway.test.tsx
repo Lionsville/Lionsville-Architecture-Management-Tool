@@ -67,6 +67,12 @@ vi.mock('../editor', async (importOriginal) => {
   }
 })
 
+// The interpreter as node finds it: the page fetches its file by address, and there is no page here.
+vi.mock('../agent/code/quickjs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../agent/code/quickjs')>()
+  return { ...actual, quickjsSandbox: () => actual.quickjsSandbox() }
+})
+
 afterEach(() => cleanup())
 
 const project: ScopeSnapshot = {
@@ -163,4 +169,34 @@ describe('the agent seam, bound to the shell', () => {
     await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
     expect(parsed(await ask('project.current'))).toMatchObject({ name: 'Warehouse landscape' })
   })
+
+  it('runs a script against the project that is open, and lands what one tried as one step on screen (ADR-0050)', async () => {
+    const { gateway, ask } = fakeGateway()
+    renderApp({ agent: gateway, boot: { initialProject: project } })
+    await waitFor(() => expect(screen.getByTestId('rename-billing')).toBeDefined())
+
+    expect(Object.keys(parsed(await ask('api.describe')).areas as object)).toContain('elements')
+    expect(parsed(await ask('query', { script: 'return (await lv.elements.list()).elements.map((one) => one.name)' }))).toMatchObject({ result: ['Billing'] })
+
+    const tried = parsed(await ask('simulate', { script: 'await lv.elements.update({ id: "billing", name: "Invoicing" }); return (await lv.elements.describe({ id: "billing" })).name' }))
+    expect(tried).toMatchObject({ result: 'Invoicing', scopes: [{ scope: 'acme/landscape', writes: 1 }] })
+    // Tried on a copy: the project on screen still says what it said.
+    expect(parsed(await ask('element.describe', { id: 'billing' })).name).toBe('Billing')
+    expect(parsed(await ask('run', { token: tried.token }))).toMatchObject({ landed: [{ scope: 'acme/landscape', writes: 1 }] })
+    expect(parsed(await ask('element.describe', { id: 'billing' })).name).toBe('Invoicing')
+    // One step of the agent's, which undo takes back as it takes back any.
+    expect(parsed(await ask('undo'))).toMatchObject({ undone: expect.any(Array) as unknown[] })
+    expect(parsed(await ask('element.describe', { id: 'billing' })).name).toBe('Billing')
+  })
+
+  it('answers a script with nothing open from where the work is kept, and lands nothing', async () => {
+    const { gateway, ask, bound } = fakeGateway()
+    renderApp({ agent: gateway, repositories: heldRepositories([project]), boot: { initialProject: undefined } })
+    await waitFor(() => expect(bound()).toBe(true))
+    const read = parsed(await ask('query', { script: 'return (await lv.in("acme/landscape").elements.list()).total' }))
+    expect(read.result).toBe(1)
+    const tried = await ask('simulate', { script: 'await lv.in("acme/landscape").elements.update({ id: "billing", name: "Invoicing" })' })
+    expect(tried).toMatchObject({ ok: false, refusal: 'agent.scriptFailed' })
+  })
 })
+

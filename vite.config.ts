@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { libavoidWasm } from './build/libavoidWasm'
+import { quickjsWasm } from './build/quickjsWasm'
 import { oneElk } from './build/oneElk'
 import { bundleBudget, WEB_BUDGET } from './build/bundleBudget'
 import { bundleChecks } from './build/bundleChecks'
@@ -15,7 +16,7 @@ export default defineConfig({
   // what it emits — one React, nothing only Node has, no secret, every package
   // noticed: build/bundleChecks.ts.
   plugins: [
-    react(), libavoidWasm(__dirname), oneElk(__dirname), bundleBudget(),
+    react(), libavoidWasm(__dirname), quickjsWasm(__dirname), oneElk(__dirname), bundleBudget(),
     bundleChecks({ root: __dirname, browser: true, notices: `${__dirname}/THIRD-PARTY-NOTICES.md` }),
   ],
   // Vite's own warning fires for every chunk over 500 kB, which this app has
