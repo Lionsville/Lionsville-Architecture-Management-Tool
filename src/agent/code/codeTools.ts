@@ -1,0 +1,94 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
+
+/**
+ * The tools of code mode (ADR-0050): the few a client carries instead of the
+ * whole vocabulary, which it then reaches through a script.
+ *
+ * Beside the vocabulary and not in it. `TOOLS` is the table every method of
+ * `lv` is generated from, and a tool that runs a script is not a method a
+ * script calls; so these are specs of their own, in the shape a host's own
+ * tools are described (`ToolSpec<string>`), listed by the protocol according
+ * to the mode a client asked for (`mcpProtocol.ts`), and answered by
+ * `answerCode` (`query.ts`) wherever the vocabulary's handler is bound.
+ *
+ * A name here is published surface, as a tool's is.
+ */
+import type { ToolSpec } from '../tools'
+
+/**
+ * What a client is offered: the vocabulary as tools, code mode's tools in
+ * its place, or both beside each other. A client that takes `code` carries
+ * a handful of definitions on every turn instead of every tool's.
+ */
+export const AGENT_MODES = ['tools', 'code', 'both'] as const
+export type AgentMode = (typeof AGENT_MODES)[number]
+
+export const CODE_TOOL_NAMES = ['api.describe', 'query'] as const
+export type CodeToolName = (typeof CODE_TOOL_NAMES)[number]
+
+const SCRIPT = {
+  type: 'string',
+  description: 'The body of an async function with lv in scope: await its calls and return what you want back, as JSON.',
+} as const
+
+const DEFAULT_SCOPE = {
+  type: 'string',
+  description: 'The scope lv is bound to, as a path ("" the organisation); lv.in(path) binds another.',
+} as const
+
+export const CODE_TOOLS: readonly ToolSpec<CodeToolName>[] = [
+  {
+    name: 'api.describe',
+    tier: 'read',
+    description:
+      'The API a script sees, on demand. With nothing asked: how a script is written, its limits, and every area of lv '
+      + 'with its methods. With area: each method\'s signature and what it does. With method, or area and detail '
+      + '"full": the arguments said one by one and the method\'s rules. With topic: one of the rules every method shares.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        area: { type: 'string', description: 'An area of lv, such as elements; "lv" for the methods on lv itself.' },
+        method: { type: 'string', description: 'One method, such as elements.list.' },
+        detail: { type: 'string', description: 'full: with an area, every argument said and each method\'s rules.', enum: ['full'] },
+        topic: { type: 'string', description: 'A rule every method shares, by its name in the answer with nothing asked.' },
+      },
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'query',
+    tier: 'read',
+    description:
+      'Run a script that reads: any number of lv calls joined, filtered and counted in one call, answered with what the '
+      + 'script returns. It changes nothing; a call that would is refused inside it. api.describe says what lv holds.',
+    inputSchema: {
+      type: 'object',
+      properties: { script: SCRIPT, scope: DEFAULT_SCOPE },
+      required: ['script'],
+      additionalProperties: false,
+    },
+  },
+]
+
+export function isCodeTool(name: string): name is CodeToolName {
+  return (CODE_TOOL_NAMES as readonly string[]).includes(name)
+}
+
+export function codeToolSpec(name: CodeToolName): ToolSpec<CodeToolName> {
+  return CODE_TOOLS.find((tool) => tool.name === name)!
+}
+
+/**
+ * What a client is told on connect about code mode, after what the host says
+ * of itself: one sentence where the tools are offered too, and where they
+ * are not, how what that paragraph names as a tool is reached instead.
+ */
+export function codeInstructions(mode: AgentMode): string {
+  if (mode === 'tools') return ''
+  const scripts = 'api.describe says what a script sees and query runs one that reads: where an answer takes several reads '
+    + 'joined, filtered or counted, write one script rather than make the calls one by one.'
+  if (mode === 'both') return `This server also takes scripts. ${scripts}`
+  return 'This server is in code mode: the tools named here are not offered one by one, they are methods of lv in a script, '
+    + `under the same names but for a few api.describe lists (elements.list is lv.elements.list). ${scripts}`
+}

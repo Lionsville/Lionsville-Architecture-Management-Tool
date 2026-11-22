@@ -145,7 +145,7 @@ const SCOPE_KINDS = ['organisation', 'domain', 'programme', 'team', 'landscape',
 const ID = (what: string): ArgumentSchema => ({ type: 'string', description: `The id of the ${what}.` })
 
 /** A principle somewhere in the tree. */
-const PRINCIPLE_REF: ArgumentSchema = {
+export const PRINCIPLE_REF: ArgumentSchema = {
   type: 'object', description: 'The other principle, with the scope that keeps it ("" the organisation). Default: the scope open.',
   properties: { scope: { type: 'string', description: 'The scope that keeps it.' }, id: { type: 'string', description: 'Its id.' } },
   required: ['id'], additionalProperties: false,
@@ -160,7 +160,7 @@ const ASPECT_FIELDS: Record<string, ArgumentSchema> = {
 }
 
 /** The principles a decision or an observation cites as it is written, in the one step. */
-const PRINCIPLES_CITED: ArgumentSchema = {
+export const PRINCIPLES_CITED: ArgumentSchema = {
   type: 'array', description: 'Principles this record cites, in the same step (ADR-0041 §7; principles.suggest).',
   items: {
     type: 'object', description: 'One principle cited.',
@@ -3521,7 +3521,7 @@ export type ToolOfTier<T extends ToolTier> = Extract<(typeof SPECS)[number], { r
  * lands. Added here rather than written into thirty schemas, so no write can
  * forget it.
  */
-const REVISION_GUARD: ArgumentSchema = {
+export const REVISION_GUARD: ArgumentSchema = {
   type: 'integer',
   description: 'Refused if the scope moved past it.',
   minimum: 0,
@@ -3541,7 +3541,7 @@ const LOOKS_ONLY: readonly string[] = ['diagram.inspect', 'diagram.render', 'foc
  * The three tree-wide reads are the exception — they are about every scope at
  * once — and `checks.list` spells its own `scope` as a filter.
  */
-const SCOPE_ARGUMENT: ArgumentSchema = {
+export const SCOPE_ARGUMENT: ArgumentSchema = {
   type: 'string',
   description: 'Scope path; "" the organisation.',
 }
@@ -3727,6 +3727,14 @@ export type AgentRefusal =
   | 'agent.badReference'
   /** A batch of more steps than one may hold (`batchSteps.ts`'s `MOST_STEPS`). */
   | 'agent.tooManySteps'
+  /** A script met one of its limits and was stopped (ADR-0050, `code/limits.ts`): the detail names it. */
+  | 'agent.scriptLimit'
+  /** A script threw, or would not compile: the detail is its own message, cut short. */
+  | 'agent.scriptFailed'
+  /** A call a script may not make (ADR-0050, `code/api.ts`): the detail says where to make it instead. */
+  | 'agent.notInScript'
+  /** A simulation's token that is not held: never given, used, discarded, expired, or somebody else's. */
+  | 'agent.unknownSimulation'
   | 'agent.notYours'
   | 'agent.saveFailed'
   /**
@@ -3893,6 +3901,12 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.tooManySteps':
     'A batch holds at most 200 steps. Split the work into several batches, each one change the person can tell apart, '
     + 'and pass the revision each answers as the next one\'s ifRevision.',
+  'agent.scriptLimit': 'The script met one of its limits and was stopped. The detail says which, and what to do instead.',
+  'agent.scriptFailed': 'The script threw an error or could not be read as a script, and nothing was changed. The detail is its own message.',
+  'agent.notInScript': 'A script may not make that call. The detail says why, and where to make it instead.',
+  'agent.unknownSimulation':
+    'No simulation is held under that token: it was run or discarded already, it is older than 15 minutes, the app or '
+    + 'the server was restarted, or it is another caller\'s. Simulate again.',
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
   'agent.principleCited': 'A record cites that principle, so it stays: retire it with principle.update status retired. The detail says which scopes cite it.',

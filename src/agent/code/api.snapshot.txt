@@ -1,0 +1,264 @@
+type PersonRef = string | { person: string }
+type PrincipleRef = { scope?: string; id: string }
+type PrinciplesCited = { id: string; scope?: string; aspect?: number; stance?: "supports" | "deviates" | "holds" | "chafes" | "missing"; reason?: string }[]
+type ListArgs = { cursor?: string; fields?: string[]; limit?: number }
+
+// lv.project
+current(): Promise<unknown>  // project.current
+export(args?: { format?: "json" | "markdown" }): Promise<unknown>  // project.export
+save(): Promise<unknown> // not in a script  // project.save
+
+// lv.app
+current(): Promise<unknown> // not in a script  // app.current
+open(args?: { scope?: string; page?: "home" | "board" | "sheet" | "map" | "technology" | "drawing" | "chart" | "conway" | "decisions" | "observations" | "roadmap" | "plan" | "element" | "document" | "documentation" | "platform" | "service" | "register" | "technologyRegister" | "people" | "operating" | "checks" | "principles" | "topics" | "blocks" | "work" | "activity" | "settings" | "preferences" | "agents" | "history"; id?: string; tab?: "register" | "analysis" | "solutions" | "results" | "analysis-list" | "analysis-map" | "solutions-list" | "solutions-map" | "people" | "review" | "privacy" | "applications" | "services" | "platforms" | "structure" | "roles" | "responsibilities" | "exceptions" | "libraries" | "principles" | "topics" | "blocks" | "found" | "accepted" | "about" | "requirements" | "options" | "used" | "all" | "here" | "above" | "plans" | "findings" | "general" | "links" | "exports" | "landscapes" | "changes" | "connect" | "grid" | "lines" | "interfaces" | "units" | "milestones" | "restsOn" | "document" | "boards" | "history" | "comments" | "chain" | "matrix" | "names" | "overview" | "poster" | "design"; look?: string; select?: string; field?: "name" | "filedUnder" | "type" | "description"; day?: string; group?: string; pair?: string; colour?: string; focus?: string; lines?: "off" | "person" | "dotted" | "exceptions"; edit?: boolean }): Promise<unknown> // not in a script  // app.open
+
+// lv.rules
+read(args?: { about?: string }): Promise<unknown>  // rules.read
+
+// lv.scopes
+list(args?: ListArgs): Promise<unknown>  // scopes.list
+create(args: { parent: string; name: string; withBoard?: boolean; topic?: boolean; servedBy?: string }): Promise<unknown> // not in a script  // scope.create
+update(args: { path: string; name?: string; description?: string; kind?: "organisation" | "domain" | "programme" | "team" | "landscape" | "topic"; unitTypeId?: string; client?: string; links?: { label: string; url: string }[]; relevantTo?: { path: string; from?: string; until?: string }[] }): Promise<unknown> // not in a script  // scope.update
+move(args: { path: string; parent: string }): Promise<unknown> // not in a script  // scope.move
+remove(args: { path: string; removeContents?: boolean; personSaid?: string }): Promise<unknown> // not in a script  // scope.remove
+
+// lv.views
+list(args?: { scope?: string; kind?: "layer7" | "container" | "sheet" | "map" | "technology" | "drawing" | "chart" | "conway" } & ListArgs): Promise<unknown>  // views.list
+
+// lv.register
+list(args?: { query?: string } & ListArgs): Promise<unknown>  // register.list
+
+// lv.technology
+list(args?: { kind?: "platformService" | "platform"; query?: string } & ListArgs): Promise<unknown>  // technology.list
+use(args: { elementId: string; targetIds: string[] }): Promise<unknown>  // technology.use
+
+// lv.principles
+list(args?: { own?: boolean } & ListArgs): Promise<unknown>  // principles.list
+read(args: { id: string }): Promise<unknown>  // principle.read
+suggest(args: { text: string; about?: { kind: "decision" | "observation" | "solution" | "transition" | "element"; id: string }; limit?: number }): Promise<unknown>  // principles.suggest
+add(args: { title: string; statement: string; aspects: string[]; regime?: "fixed" | "flexible"; status?: "candidate" | "accepted"; question?: string; rationale?: string; implications?: string; keywords?: string[]; groups?: string[] }): Promise<unknown>  // principle.add
+update(args: { id: string; title?: string; statement?: string; regime?: "fixed" | "flexible"; status?: "candidate" | "accepted" | "retired"; rationale?: string; implications?: string; question?: string; keywords?: string[]; groups?: string[]; note?: string }): Promise<unknown>  // principle.update
+uncite(args: { id: string }): Promise<unknown>  // principle.uncite
+setGroups(args: { groups: { id?: string; name: string; description?: string }[] }): Promise<unknown>  // principleGroups.set
+relate(args: { id: string; kind: "tension" | "refines"; to: PrincipleRef }): Promise<unknown>  // principle.relate
+unrelate(args: { id: string; kind: "tension" | "refines"; to: PrincipleRef }): Promise<unknown>  // principle.unrelate
+merge(args: { into: string; from: string[] }): Promise<unknown>  // principle.merge
+remove(args: { id: string }): Promise<unknown>  // principle.remove
+
+// lv.topics
+list(args?: ListArgs): Promise<unknown>  // topics.list
+
+// lv.blocks
+list(args?: { id?: string } & ListArgs): Promise<unknown>  // blocks.list
+update(args: { id: string; capabilities?: { id?: string; text: string; must?: boolean; function?: string }[]; contexts?: { id?: string; name: string; description?: string; needs: Record<string, unknown> }[]; sbbs?: { id?: string; name: string; supplier?: string; sort: "product" | "service" | "inHouse"; status?: "candidate" | "evaluated" | "inUse" | "retired"; elements?: string[] }[] }): Promise<unknown>  // block.update
+
+// lv.evaluations
+read(args: { block: string; blockScope?: string; scope?: string }): Promise<unknown>  // evaluation.read
+rate(args: { block: PrincipleRef; option?: string; capability?: string; level?: number; how?: string; cells?: { option: string; capability: string; level: number; how?: string }[] }): Promise<unknown>  // evaluation.rate
+add(args: { block: string; contexts?: string[]; copyFrom?: string }): Promise<unknown>  // evaluation.add
+propose(args: { block: string; option: string }): Promise<unknown>  // evaluation.propose
+
+// lv.references
+list(args?: { query?: string } & ListArgs): Promise<unknown>  // references.list
+
+// lv.checks
+list(args?: { scope?: string; on?: string; key?: string; notes?: boolean; information?: boolean } & ListArgs): Promise<unknown>  // checks.list
+
+// lv.people
+list(args?: { state?: "active" | "left" | "forgotten"; query?: string } & ListArgs): Promise<unknown>  // people.list
+add(args: { name: string; email?: string; kind?: "internal" | "external"; addAnyway?: boolean }): Promise<unknown> // not in a script  // person.add
+leave(args: { id: string; on?: string }): Promise<unknown> // not in a script  // person.leave
+takeBackLeaving(args: { id: string }): Promise<unknown> // not in a script  // person.takeBackLeaving
+
+// lv.elements
+list(args?: { kind?: "actor" | "step" | "function" | "process" | "application" | "component" | "platform" | "platformService"; parentId?: string; diagramId?: string; query?: string } & ListArgs): Promise<unknown>  // elements.list
+describe(args: { id: string }): Promise<unknown>  // element.describe
+add(args: { name: string; certainty?: "confirmed" | "assumed"; description?: string; category?: string; vendor?: string; technology?: string; platformArchetype?: "place" | "service" | "network"; shared?: boolean; lifecycle?: "planned" | "live" | "retiring" | "retired"; isManaged?: boolean; owner?: PersonRef; outside?: boolean; partyId?: string; order?: number; lane?: string; liveOn?: string; retiringOn?: string; retiredOn?: string; successorId?: string; aspects?: Record<string, "managed" | "partial" | "none" | "atRisk">; accentColor?: string; iconKey?: string; icon?: string; unitTypeId?: string; scopes?: string[]; extraSlots?: { roleId: string; min: number; max?: number }[]; kind?: "actor" | "step" | "function" | "process" | "application" | "component" | "platform" | "platformService"; parentId?: string; diagramId?: string; zone?: "actors" | "inputChannels" | "externalSystems" | "landscape" | "management"; domainGroup?: string; x?: number; y?: number }): Promise<unknown>  // element.add
+update(args: { id: string; name?: string; certainty?: "confirmed" | "assumed"; description?: string; category?: string; vendor?: string; technology?: string; platformArchetype?: "place" | "service" | "network"; shared?: boolean; lifecycle?: "planned" | "live" | "retiring" | "retired"; isManaged?: boolean; owner?: PersonRef; outside?: boolean; partyId?: string; order?: number; lane?: string; liveOn?: string; retiringOn?: string; retiredOn?: string; successorId?: string; aspects?: Record<string, "managed" | "partial" | "none" | "atRisk">; accentColor?: string; iconKey?: string; icon?: string; unitTypeId?: string; scopes?: string[]; extraSlots?: { roleId: string; min: number; max?: number }[]; parentId?: string }): Promise<unknown>  // element.update
+rate(args: { id: string; aspect: string; value: number }): Promise<unknown>  // element.rate
+remove(args: { id: string; units?: string }): Promise<unknown>  // element.remove
+place(args: { id: string; diagramId?: string; x?: number; y?: number; zone?: "actors" | "inputChannels" | "externalSystems" | "landscape" | "management"; domainGroup?: string; width?: number; height?: number; cell?: { col: number; row: number; span?: number } }): Promise<unknown>  // element.place
+draw(args: { id: string; diagramId?: string; x?: number; y?: number; zone?: "actors" | "inputChannels" | "externalSystems" | "landscape" | "management"; domainGroup?: string }): Promise<unknown>  // element.draw
+undraw(args: { id: string; diagramId?: string }): Promise<unknown>  // element.undraw
+
+// lv.connections
+list(args?: { elementId?: string; diagramId?: string } & ListArgs): Promise<unknown>  // connections.list
+add(args: { sourceId: string; targetId: string; label?: string; certainty?: "confirmed" | "assumed"; protocol?: string; technology?: string; refines?: string; isBidirectional?: boolean; validFrom?: string; validUntil?: string; color?: string; lineStyle?: "solid" | "dashed" | "dotted" }): Promise<unknown>  // connect
+update(args: { id: string; label?: string; certainty?: "confirmed" | "assumed"; protocol?: string; technology?: string; refines?: string; isBidirectional?: boolean; validFrom?: string; validUntil?: string; color?: string; lineStyle?: "solid" | "dashed" | "dotted" }): Promise<unknown>  // connection.update
+updateMany(args: { items: { id: string; label?: string; certainty?: "confirmed" | "assumed"; protocol?: string; technology?: string; refines?: string; isBidirectional?: boolean; validFrom?: string; validUntil?: string; color?: string; lineStyle?: "solid" | "dashed" | "dotted" }[] }): Promise<unknown>  // connections.update
+remove(args: { id: string }): Promise<unknown>  // connection.remove
+removeMany(args: { ids: string[] }): Promise<unknown>  // connections.remove
+
+// lv.diagrams
+list(args?: ListArgs): Promise<unknown>  // diagrams.list
+create(args: { kind: "layer7" | "container" | "sheet" | "map" | "technology" | "drawing" | "chart" | "conway"; name?: string; applicationId?: string; elementId?: string; level?: "context" | "container" | "component" }): Promise<unknown>  // diagram.create
+update(args: { id: string; journeyId?: string; lanes?: string[]; areas?: string[]; showActors?: boolean; paper?: "wide" | "A4" | "A3" | "A2" | "A1" | "A0" | "fit"; labels?: string[]; poster?: { tile?: "s" | "m" | "l"; bandRows?: number; foot?: string }; columns?: number; areaSpans?: Record<string, unknown>; asOf?: string; colourBy?: string; showDeployment?: boolean; xml?: string }): Promise<unknown>  // diagram.update
+inspect(args?: { diagramId?: string; limit?: number }): Promise<unknown>  // diagram.inspect
+render(args?: { diagramId?: string; elementIds?: string[]; x?: number; y?: number; width?: number; height?: number; maxPixels?: number; pageWidth?: number }): Promise<unknown> // not in a script  // diagram.render
+tidy(args?: { diagramId?: string; tiles?: boolean }): Promise<unknown> // not in a script  // diagram.tidy
+route(args?: { diagramId?: string }): Promise<unknown> // not in a script  // diagram.route
+
+// lv.decisions
+list(args?: { subjectId?: string; applicationId?: string } & ListArgs): Promise<unknown>  // decisions.list
+read(args: { id: string }): Promise<unknown>  // decision.read
+propose(args: { title: string; body?: string; subjectId?: string; applicationId?: string; signers?: { name: PersonRef; role?: string; verdict?: "approved" | "rejected"; signedAt?: string }[]; planIds?: string[]; supersedes?: string[]; proposedBy?: PersonRef; principles?: PrinciplesCited }): Promise<unknown>  // decision.propose
+update(args: { id: string; title?: string; body?: string; date?: string; signers?: { name: PersonRef; role?: string; verdict?: "approved" | "rejected"; signedAt?: string }[]; supersedes?: string[]; proposedBy?: PersonRef; principles?: PrinciplesCited }): Promise<unknown>  // decision.update
+remove(args: { id: string }): Promise<unknown>  // decision.remove
+transition(args: { id: string; status: "proposed" | "reviewing" | "accepted" | "rejected" | "superseded"; supersededBy?: string; reason?: string }): Promise<unknown>  // decision.transition
+
+// lv.observations
+list(args?: { impact?: "minor" | "major" | "critical"; tone?: "bright" | "neutral" | "problem" | "all" | "problems"; recordedBy?: "me"; analysed?: boolean; includeMerged?: boolean; includeArchived?: boolean; below?: boolean; about?: string } & ListArgs): Promise<unknown>  // observations.list
+read(args: { id: string }): Promise<unknown>  // observation.read
+record(args: { title: string; body?: string; where: string; about?: string[]; by: PersonRef; date?: string; impact?: "minor" | "major" | "critical"; tone?: "bright" | "neutral" | "problem"; bright?: boolean; principles?: PrinciplesCited }): Promise<unknown>  // observation.record
+update(args: { id: string; title?: string; body?: string; where?: string; about?: string[]; by?: PersonRef; date?: string; impact?: "minor" | "major" | "critical"; tone?: "bright" | "neutral" | "problem"; bright?: boolean; principles?: PrinciplesCited }): Promise<unknown>  // observation.update
+seen(args: { id: string; date?: string; note?: string }): Promise<unknown>  // observation.seen
+archive(args: { id: string; note?: string; restore?: boolean }): Promise<unknown>  // observation.archive
+note(args: { id: string; reason?: string; takeBack?: boolean }): Promise<unknown>  // observation.note
+merge(args: { into: string; intoScope?: string; absorb?: { id: string; scope?: string }[]; values?: { title?: string; where?: string; by?: PersonRef; impact?: "minor" | "major" | "critical"; date?: string; body?: string }; links?: { key: string; move?: boolean; strength?: "strong" | "normal" | "weak" }[]; id?: string; fromScope?: string }): Promise<unknown>  // observation.merge
+move(args: { id: string; to: string }): Promise<unknown> // not in a script  // observation.move
+remove(args: { id: string }): Promise<unknown>  // observation.remove
+
+// lv.causes
+list(args?: { state?: "assumed" | "verified"; root?: boolean; includeMerged?: boolean } & ListArgs): Promise<unknown>  // causes.list
+read(args: { id: string }): Promise<unknown>  // cause.read
+add(args: { title: string; body?: string; state?: "assumed" | "verified"; root?: boolean; explains?: { id: string; scope?: string; strength?: "strong" | "normal" | "weak" }[] }): Promise<unknown>  // cause.add
+update(args: { id: string; title?: string; body?: string; state?: "assumed" | "verified"; root?: boolean }): Promise<unknown>  // cause.update
+link(args: { id: string; explains: string; explainsScope?: string; strength?: "strong" | "normal" | "weak" }): Promise<unknown>  // cause.link
+unlink(args: { id: string; explains: string; explainsScope?: string }): Promise<unknown>  // cause.unlink
+remove(args: { id: string }): Promise<unknown>  // cause.remove
+merge(args: { into: string; intoScope?: string; absorb: { id: string; scope?: string }[]; values?: { title?: string; state?: "assumed" | "verified"; root?: boolean; body?: string }; links?: { key: string; move?: boolean; strength?: "strong" | "normal" | "weak" }[] }): Promise<unknown>  // cause.merge
+
+// lv.preview
+merge(args: { kind: "observation" | "cause"; into: string; intoScope?: string; absorb: { id: string; scope?: string }[]; values?: { title?: string; where?: string; by?: PersonRef; impact?: "minor" | "major" | "critical"; date?: string; body?: string; state?: "assumed" | "verified"; root?: boolean }; links?: { key: string; move?: boolean; strength?: "strong" | "normal" | "weak" }[] }): Promise<unknown>  // merge.plan
+move(args: { id: string; to: string }): Promise<unknown>  // move.plan
+
+// lv.solutions
+list(args?: { phase?: "idea" | "shaped" | "testing" | "proven" | "adopted" | "implemented" | "dropped"; causeId?: string; includeDropped?: boolean } & ListArgs): Promise<unknown>  // solutions.list
+read(args: { id: string }): Promise<unknown>  // solution.read
+propose(args: { title: string; addresses?: { id: string; strength?: "strong" | "normal" | "weak" }[]; body?: string }): Promise<unknown>  // solution.propose
+update(args: { id: string; title?: string; body?: string; benefit?: "small" | "medium" | "large"; cost?: "small" | "medium" | "large"; validatedWith?: string[]; attempts?: { when?: string; what: string; why: string }[]; noneKnown?: boolean; whyNow?: string }): Promise<unknown>  // solution.update
+address(args: { id: string; cause: string; strength?: "strong" | "normal" | "weak" }): Promise<unknown>  // solution.address
+unaddress(args: { id: string; cause: string }): Promise<unknown>  // solution.unaddress
+move(args: { id: string; to: "idea" | "shaped" | "testing" | "proven" | "adopted" }): Promise<unknown>  // solution.move
+waive(args: { id: string; reason: string }): Promise<unknown>  // solution.waive
+drop(args: { id: string; note: string }): Promise<unknown>  // solution.drop
+restore(args: { id: string }): Promise<unknown>  // solution.restore
+decide(args: { id: string; body?: string }): Promise<unknown>  // solution.decide
+plan(args: { id: string }): Promise<unknown>  // solution.plan
+remove(args: { id: string }): Promise<unknown>  // solution.remove
+
+// lv.experiments
+list(args?: { outcome?: "planned" | "running" | "confirmed" | "refuted" | "inconclusive"; solutionId?: string } & ListArgs): Promise<unknown>  // experiments.list
+read(args: { id: string }): Promise<unknown>  // experiment.read
+plan(args: { tests: string[]; title: string; hypothesis: string; measure?: string; where?: string; by?: PersonRef; from?: string; to?: string; body?: string; strength?: Record<string, "strong" | "normal" | "weak"> }): Promise<unknown>  // experiment.plan
+update(args: { id: string; title?: string; hypothesis?: string; measure?: string; where?: string; by?: PersonRef; from?: string; to?: string; result?: string; body?: string; tests?: string[]; strength?: Record<string, "strong" | "normal" | "weak"> }): Promise<unknown>  // experiment.update
+conclude(args: { id: string; outcome: "planned" | "running" | "confirmed" | "refuted" | "inconclusive"; result?: string; to?: string }): Promise<unknown>  // experiment.conclude
+remove(args: { id: string }): Promise<unknown>  // experiment.remove
+
+// lv.comments
+list(args?: { about?: { kind: "observation" | "cause" | "solution" | "experiment" | "element" | "decision" | "transition" | "principle"; id: string } } & ListArgs): Promise<unknown>  // comments.list
+add(args: { about: { kind: "observation" | "cause" | "solution" | "experiment" | "element" | "decision" | "transition" | "principle"; id: string }; body: string; replyTo?: string }): Promise<unknown>  // comment.add
+update(args: { id: string; body: string }): Promise<unknown>  // comment.update
+remove(args: { id: string }): Promise<unknown>  // comment.remove
+
+// lv.unitTypes
+list(args?: ListArgs): Promise<unknown>  // unitTypes.list
+add(args: { name: string; purpose?: string; top?: boolean; within?: string[]; spans?: boolean; slots?: { roleId: string; min: number; max?: number; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[] }[]; limit?: number; order?: number; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // unitType.add
+update(args: { id: string; name?: string; purpose?: string; top?: boolean; within?: string[]; spans?: boolean; slots?: { roleId: string; min: number; max?: number; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[] }[]; limit?: number; order?: number; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // unitType.update
+
+// lv.aspectScales
+list(args?: ListArgs): Promise<unknown>  // aspectScales.list
+set(args: { key: string; label: string; code?: string; min?: number; max?: number }): Promise<unknown>  // aspectScale.set
+remove(args: { key: string }): Promise<unknown>  // aspectScale.remove
+
+// lv.roles
+list(args?: { unitTypeId?: string; responsibilityId?: string } & ListArgs): Promise<unknown>  // roles.list
+add(args: { name: string; short?: string; purpose?: string; manages?: boolean; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[]; duties?: { responsibilityId: string; raci: "R" | "A" | "C" | "I" }[]; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // role.add
+update(args: { id: string; name?: string; short?: string; purpose?: string; manages?: boolean; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[]; duties?: { responsibilityId: string; raci: "R" | "A" | "C" | "I" }[]; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // role.update
+
+// lv.responsibilities
+list(args?: { group?: string } & ListArgs): Promise<unknown>  // responsibilities.list
+
+// lv.assignments
+list(args?: { scope?: string; unitId?: string; roleId?: string; personId?: string; on?: string; all?: boolean } & ListArgs): Promise<unknown>  // assignments.list
+add(args: { unitId: string; roleId: string; personId: string; share?: number; from?: string; until?: string; acting?: boolean; reportsTo?: { to: { unitId: string; roleId: string; person?: string }; kind?: "solid" | "dotted"; from?: string; until?: string }[] }): Promise<unknown>  // assignment.add
+update(args: { id: string; share?: number; acting?: boolean; from?: string; until?: string; reportsTo?: { to: { unitId: string; roleId: string; person?: string }; kind?: "solid" | "dotted"; from?: string; until?: string }[] }): Promise<unknown>  // assignment.update
+end(args: { id: string; on?: string }): Promise<unknown>  // assignment.end
+
+// lv.plans
+list(args?: { status?: "draft" | "agreed" | "running" | "done" | "abandoned"; elementId?: string } & ListArgs): Promise<unknown>  // plans.list
+read(args: { id: string }): Promise<unknown>  // plan.read
+replace(args: { elementId: string; newName?: string; existingId?: string; stays?: boolean; alsoRetiring?: string[]; shadowFrom: string; cutover: string }): Promise<unknown>  // plan.replace
+port(args: { planId: string; connectionId?: string; toId?: string; on: string }): Promise<unknown>  // plan.port
+unport(args: { planId: string; connectionId: string }): Promise<unknown>  // plan.unport
+create(args: { title: string; status?: "draft"; from?: string; to?: string; owner?: PersonRef; initiative?: boolean; body?: string; introduces?: string[]; retires?: string[]; changes?: string[]; decisionIds?: string[] }): Promise<unknown>  // plan.create
+update(args: { id: string; title?: string; status?: "draft" | "agreed" | "running" | "done" | "abandoned"; from?: string; to?: string; owner?: PersonRef; initiative?: boolean; body?: string; introduces?: string[]; retires?: string[]; changes?: string[]; decisionIds?: string[] }): Promise<unknown>  // plan.update
+remove(args: { id: string }): Promise<unknown>  // plan.remove
+move(args: { planId: string; unitId: string; parentId?: string; on?: string; remove?: boolean }): Promise<unknown>  // plan.move
+
+// lv.reports
+platform(args: { platformId: string }): Promise<unknown>  // platform.report
+service(args: { serviceId: string }): Promise<unknown>  // service.report
+
+// lv.roadmap
+check(): Promise<unknown>  // roadmap.check
+
+// lv.activity
+list(args?: ListArgs): Promise<unknown>  // activity.list
+
+// lv.changes
+list(args: { about: { kind: "observation" | "cause" | "solution" | "experiment" | "element" | "decision" | "transition" | "principle"; id: string } } & ListArgs): Promise<unknown>  // changes.list
+
+// lv.images
+list(args?: ListArgs): Promise<unknown>  // images.list
+upload(args: { name: string; data: string; type?: "image/png" | "image/jpeg" | "image/svg+xml" | "image/webp" }): Promise<unknown> // not in a script  // image.upload
+
+// lv
+search(args: { query: string; limit?: number; kinds?: ("element" | "documentation" | "view" | "relation" | "adr" | "plan" | "milestone" | "observation" | "cause" | "solution" | "experiment" | "unitType" | "role" | "responsibility" | "comment" | "principle" | "person")[] }): Promise<unknown>  // search
+
+// lv.interfaces
+accept(args: { id: string }): Promise<unknown>  // interface.accept
+
+// lv.relations
+add(args: { type: "flow" | "supports" | "serves" | "realises" | "assigned" | "uses" | "hostedOn" | "interacts"; sourceId: string; targetId: string; label?: string; certainty?: "confirmed" | "assumed"; validFrom?: string; validUntil?: string; mode?: "collaboration" | "service" | "facilitating" }): Promise<unknown>  // relation.add
+update(args: { id: string; type?: "flow" | "supports" | "serves" | "realises" | "assigned" | "uses" | "hostedOn" | "interacts"; label?: string; certainty?: "confirmed" | "assumed"; validFrom?: string; validUntil?: string; mode?: "collaboration" | "service" | "facilitating" }): Promise<unknown>  // relation.update
+remove(args: { id: string }): Promise<unknown>  // relation.remove
+
+// lv.functions
+claim(args: { id: string; diagramId?: string }): Promise<unknown>  // function.claim
+
+// lv.citations
+add(args: { about: { kind: "decision" | "observation" | "solution" | "transition" | "element"; id: string }; principle: PrincipleRef; aspect?: number; stance: "supports" | "deviates" | "holds" | "chafes" | "missing"; reason?: string }): Promise<unknown>  // citation.add
+
+// lv.aspects
+add(args: { principle: string; text: string; nature?: "design" | "behaviour"; signal?: string; steering?: string; note?: string }): Promise<unknown>  // aspect.add
+update(args: { principle: string; number: number; text?: string; nature?: "design" | "behaviour"; signal?: string; steering?: string; note?: string }): Promise<unknown>  // aspect.update
+remove(args: { principle: string; number: number; note?: string }): Promise<unknown>  // aspect.remove
+
+// lv.reportingLines
+set(args: { unitId: string; roleId: string; to?: { unitId: string; roleId: string; person?: string }; kind?: "solid" | "dotted"; from?: string; until?: string }): Promise<unknown>  // reportingLine.set
+remove(args: { unitId: string; roleId: string; kind?: "solid" | "dotted" }): Promise<unknown>  // reportingLine.remove
+list(args?: { unitId?: string; roleId?: string; toUnitId?: string; personId?: string; on?: string } & ListArgs): Promise<unknown>  // reportingLines.list
+
+// lv.milestones
+add(args: { planId: string; date: string; name: string }): Promise<unknown>  // milestone.add
+update(args: { planId: string; name: string; date?: string; newName?: string }): Promise<unknown>  // milestone.update
+remove(args: { planId: string; name: string }): Promise<unknown>  // milestone.remove
+
+// lv.posterItems
+add(args: { diagramId?: string; kind: "note" | "picture"; text?: string; image?: string; alt?: string; x?: number; y?: number; width?: number; height?: number }): Promise<unknown>  // posterItem.add
+update(args: { id: string; diagramId?: string; text?: string; image?: string; alt?: string }): Promise<unknown>  // posterItem.update
+remove(args: { id: string; diagramId?: string }): Promise<unknown>  // posterItem.remove
+
+// lv.canvas
+focus(args: { elementId: string }): Promise<unknown> // not in a script  // focus
+moveBy(args: { elementIds: string[]; dx: number; dy: number; diagramId?: string }): Promise<unknown>  // moveBy
+placeNextTo(args: { elementId: string; anchorId: string; side?: "right" | "left" | "above" | "below"; gap?: number; diagramId?: string }): Promise<unknown>  // placeNextTo
+group(args: { name: string; elementIds?: string[]; color?: string; diagramId?: string }): Promise<unknown>  // group
+ungroup(args: { name: string; elementIds?: string[]; diagramId?: string }): Promise<unknown>  // ungroup
+align(args: { elementIds: string[]; axis: "left" | "centerX" | "right" | "top" | "centerY" | "bottom"; diagramId?: string }): Promise<unknown>  // align
+distribute(args: { elementIds: string[]; axis: "horizontal" | "vertical"; diagramId?: string }): Promise<unknown>  // distribute
+
+// lv.session
+start(args?: { purpose?: string }): Promise<unknown> // not in a script  // session.start
+end(): Promise<unknown> // not in a script  // session.end

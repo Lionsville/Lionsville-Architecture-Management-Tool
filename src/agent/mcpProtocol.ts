@@ -31,6 +31,8 @@ import type { AgentAnswer, AgentRequest, ToolContent, ToolSpec } from './tools'
 import { REFUSAL_SENTENCE, RESOURCE_LIST, RESOURCE_READ, TOOLS, refused } from './tools'
 import { randomUUID } from 'node:crypto'
 import type { AgentClient } from '../platform/agentServer'
+import { CODE_TOOLS, codeInstructions, isCodeTool } from './code/codeTools'
+import type { AgentMode } from './code/codeTools'
 import { CONVENTIONS, OBSERVATIONS_METHOD, RECORDS_PARAGRAPH, SHEET_MAPPING_PARAGRAPH, STRUCTURE_DEFAULTS, TREE_TOOLS_PARAGRAPH } from './method'
 
 /**
@@ -130,6 +132,16 @@ export type RespondOptions = {
    * by that name is the vocabulary's.
    */
   readonly hostTools?: readonly ToolSpec<string>[]
+  /**
+   * What this client is offered (ADR-0050): the vocabulary as `tools`, the
+   * tools of code mode in its place (`code`), or `both`. `tools` when
+   * unsaid, which is what every client was offered before there was a
+   * choice. One decision for the list and the call, as `tools` is: a tool a
+   * mode leaves out of `tools/list` is answered `agent.unknownTool` when it
+   * is called, with where to find it instead. A host's own tools are listed
+   * in every mode.
+   */
+  readonly mode?: AgentMode
 }
 
 /** The see-tier tools that change nothing: a report, and a picture. */
@@ -148,7 +160,7 @@ export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
 export async function respond(
   message: JsonRpcRequest, relay: Relay, server: ServerIdentity, options: RespondOptions = {},
 ): Promise<JsonRpcResponse | undefined> {
-  const has = (tool: ToolSpec): boolean => options.tools?.(tool) ?? true
+  const mode = options.mode ?? 'tools'
   if (message.id === undefined) {
     // `notifications/initialized` and the like: acknowledged by the 202.
     return undefined
@@ -171,7 +183,7 @@ export async function respond(
         protocolVersion: typeof wanted === 'string' && SPOKEN_VERSIONS.includes(wanted) ? wanted : PROTOCOL_VERSION,
         capabilities: { tools: {}, resources: {} },
         serverInfo: server,
-        instructions: options.instructions ?? INSTRUCTIONS,
+        instructions: [options.instructions ?? INSTRUCTIONS, codeInstructions(mode)].filter(Boolean).join(' '),
       })
     }
 
@@ -179,7 +191,13 @@ export async function respond(
       return ok({})
 
     case 'tools/list':
-      return ok({ tools: [...TOOLS.filter(has).map(listed), ...hostToolsOf(options).map(listedForHost)] })
+      return ok({
+        tools: [
+          ...TOOLS.filter((tool) => offered(tool, options)).map(listed),
+          ...(mode === 'tools' ? [] : CODE_TOOLS.map(listedForHost)),
+          ...hostToolsOf(options).map(listedForHost),
+        ],
+      })
 
     case 'tools/call': {
       const name = params['name']
@@ -187,8 +205,8 @@ export async function respond(
       // A tool this host said it does not have is a tool it does not have, and
       // the answer says so here rather than after a round trip to a relay that
       // would have refused it anyway.
-      const spec = TOOLS.find((tool) => tool.name === name)
-      if (spec && !has(spec)) return ok(toolResult(refused('agent.unknownTool', name)))
+      const notHere = notOffered(name, options)
+      if (notHere) return ok(toolResult(notHere))
       const answer = await relay.ask({ id: String(id), tool: name, args: params['arguments'] ?? {} })
       return ok(toolResult(answer))
     }
@@ -211,6 +229,23 @@ export async function respond(
     default:
       return fail(RPC.methodNotFound, `method not found: ${message.method}`)
   }
+}
+
+/** Whether a tool of the vocabulary is offered: the host has it, and the mode offers the vocabulary as tools. */
+function offered(tool: ToolSpec, options: RespondOptions): boolean {
+  return options.mode !== 'code' && (options.tools?.(tool) ?? true)
+}
+
+/** The refusal a call by this name meets before the relay is asked, where the list left it out; nothing where it is offered. */
+function notOffered(name: string, options: RespondOptions): AgentAnswer | undefined {
+  const spec = TOOLS.find((tool) => tool.name === name)
+  if (spec && !offered(spec, options)) {
+    // Left out by the mode rather than by the host: it is there, as a method of `lv`.
+    const inAScript = options.mode === 'code' && (options.tools?.(spec) ?? true)
+    return refused('agent.unknownTool', inAScript ? `${name} is not offered as a tool in code mode: call it in a script (api.describe)` : name)
+  }
+  if ((options.mode ?? 'tools') === 'tools' && isCodeTool(name)) return refused('agent.unknownTool', name)
+  return undefined
 }
 
 /** One of the vocabulary's tools, as `tools/list` says it. */
@@ -243,7 +278,7 @@ function listedForHost(tool: ToolSpec<string>) {
 
 /** The host's own tools that may be listed: none that takes a name the vocabulary has. */
 function hostToolsOf(options: RespondOptions): readonly ToolSpec<string>[] {
-  return (options.hostTools ?? []).filter((tool) => !TOOLS.some((held) => held.name === tool.name))
+  return (options.hostTools ?? []).filter((tool) => !TOOLS.some((held) => held.name === tool.name) && !isCodeTool(tool.name))
 }
 
 /** The JSON an ok answer's first text block carries, or nothing. */

@@ -330,8 +330,11 @@ async function registerFor(session: SessionView | undefined, shell: ShellView | 
   return people ? agentRegister(people, undefined) : undefined
 }
 
-/** Every person an answer names by id, said by name or pseudonym (`persons.ts`); the register read only when one is there. */
-async function withNames(said: AgentAnswer, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
+/**
+ * Every person an answer names by id, said by name or pseudonym (`persons.ts`); the register read only when one is there.
+ * Exported for what answers beside this handler and must say a person the same way (`code/`).
+ */
+export async function withNames(said: AgentAnswer, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
   if (!mayNamePeople(said)) return said
   const register = await registerFor(session, shell)
   // Who recorded it first: an account leaves no answer, with a register to read or without one.

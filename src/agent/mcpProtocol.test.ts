@@ -12,6 +12,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ToolSpec } from './tools'
 import { json, refused } from './tools'
+import { CODE_TOOL_NAMES } from './code/codeTools'
 import { authorised, respond, toolResult } from './mcpProtocol'
 
 const TOKEN = 'a-token-long-enough-to-be-one-0123456789'
@@ -143,3 +144,65 @@ describe('the protocol on its own', () => {
     })
   })
 })
+
+/**
+ * What a client is offered (ADR-0050): the vocabulary, the tools of code
+ * mode in its place, or both — one decision for the list and for a call.
+ */
+describe('the mode a client is offered', () => {
+  const server = { name: 's', version: '1' }
+  const asked: string[] = []
+  const relay = { ask: async (request: { tool: string }) => { asked.push(request.tool); return json({}) }, onInitialized: () => {}, onClosed: () => {} }
+  const names = async (options: Parameters<typeof respond>[3]) => {
+    const listed = await respond({ jsonrpc: '2.0', id: 1, method: 'tools/list' }, relay, server, options)
+    return ((listed as { result: { tools: { name: string }[] } }).result.tools).map((tool) => tool.name)
+  }
+  const call = async (name: string, options: Parameters<typeof respond>[3]) => {
+    const answer = await respond({ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name, arguments: {} } }, relay, server, options)
+    return (answer as { result: { isError?: boolean; content: { text: string }[] } }).result
+  }
+  const ours: ToolSpec<string> = { name: 'host.own', tier: 'read', description: 'The host\'s own.', inputSchema: { type: 'object', properties: {}, additionalProperties: false } }
+
+  it('is the vocabulary and nothing of code mode when unsaid, as it was', async () => {
+    const offered = await names({})
+    expect(offered).toContain('elements.list')
+    expect(offered).not.toContain('query')
+    expect(await names({ mode: 'tools' })).toEqual(offered)
+    expect((await call('query', {})).content[0].text).toMatch(/^agent\.unknownTool/)
+  })
+
+  it('is code mode\'s tools alone in code, with the host\'s own, and a plain tool called is told where it went', async () => {
+    const offered = await names({ mode: 'code', hostTools: [ours] })
+    expect(offered).toEqual([...CODE_TOOL_NAMES, 'host.own'])
+    asked.length = 0
+    const refusedCall = await call('elements.list', { mode: 'code' })
+    expect(refusedCall.isError).toBe(true)
+    expect(refusedCall.content[0].text).toContain('call it in a script')
+    // A tool the host does not have is not there in a script either, and is not said to be.
+    expect((await call('focus', { mode: 'code', tools: (tool) => tool.tier !== 'see' })).content[0].text).not.toContain('script')
+    expect(asked).toEqual([])
+    await call('query', { mode: 'code' })
+    expect(asked).toEqual(['query'])
+  })
+
+  it('is both beside each other in both, the vocabulary first', async () => {
+    const offered = await names({ mode: 'both', hostTools: [ours] })
+    expect(offered.slice(-CODE_TOOL_NAMES.length - 1)).toEqual([...CODE_TOOL_NAMES, 'host.own'])
+    expect(offered).toContain('elements.list')
+  })
+
+  it('never lists a host\'s tool under a name code mode has', async () => {
+    expect((await names({ mode: 'both', hostTools: [{ ...ours, name: 'query' }] })).filter((name) => name === 'query')).toHaveLength(1)
+  })
+
+  it('says on connect that scripts are taken, after what the host says of itself', async () => {
+    const said = async (mode: 'tools' | 'code' | 'both') => {
+      const opened = await respond({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }, relay, server, { instructions: 'A host.', mode })
+      return (opened as { result: { instructions: string } }).result.instructions
+    }
+    expect(await said('tools')).toBe('A host.')
+    expect(await said('both')).toMatch(/^A host\. This server also takes scripts\./)
+    expect(await said('code')).toMatch(/^A host\. This server is in code mode/)
+  })
+})
+
