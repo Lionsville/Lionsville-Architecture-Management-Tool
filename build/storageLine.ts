@@ -7,8 +7,9 @@
  *
  * **No imports across the line.** Nothing outside the implementations
  * (`src/adapters/`, `src/platform/node/`, `electron/`), the providers built on
- * them (`src/providers/`) and the composition root imports an implementation,
- * or the folder format. The import matrix in
+ * them (`src/providers/`), the composition root and the surface a build
+ * composed from this one imports (`src/composed/`, which passes names on and
+ * holds no code) imports an implementation, or the folder format. The import matrix in
  * `eslint.config.js` already keeps `adapters` out of every module but the
  * composition root; what it cannot say is that a file *inside* the domain's
  * own modules is the folder format and belongs with the folder's
@@ -60,6 +61,16 @@ import type { Graph } from './cycles'
 export const IMPLEMENTATIONS: readonly string[] = ['src/adapters/', 'src/providers/', 'src/platform/node/', 'electron/']
 export const COMPOSITION_ROOT = 'src/app/composition.ts'
 
+/**
+ * The surface a build composed from this one imports (ADR-0022, amended). It
+ * is a list of names and holds no code, and among what it offers is the
+ * folder's own format, to a process that keeps a folder and runs the format
+ * as a library, and the node side. So its entries name both, and say storage
+ * words in the names they pass on; nothing in this tree imports them, so the
+ * domain learns nothing by it.
+ */
+export const COMPOSED_SURFACE = 'src/composed/'
+
 export function isImplementation(file: string): boolean {
   return IMPLEMENTATIONS.some((prefix) => file.startsWith(prefix))
 }
@@ -74,7 +85,7 @@ export function isWordsTable(file: string): boolean {
 }
 
 export function mayKnowStorage(file: string): boolean {
-  return isImplementation(file) || file === COMPOSITION_ROOT
+  return isImplementation(file) || file === COMPOSITION_ROOT || file.startsWith(COMPOSED_SURFACE)
 }
 
 /**

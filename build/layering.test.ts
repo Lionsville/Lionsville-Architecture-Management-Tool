@@ -33,6 +33,7 @@ const HEADER = '// SPDX-License-Identifier: AGPL-3.0-only\n// SPDX-FileCopyright
 
 const LAYERING = [
   'layering/known-module', 'no-restricted-imports', '@typescript-eslint/no-restricted-imports', 'no-restricted-globals',
+  'no-restricted-syntax',
 ]
 
 /** What the layering rules say about `source`, were it at `path`. */
@@ -119,6 +120,84 @@ describe('a module composed of features', () => {
     const reading = "import { ChartPage } from '../units/ChartPage'\nimport { drawRef } from '../guidance/RefDrawings'\nexport const one = [ChartPage, drawRef]\n"
     expect(await layeringAt('src/app/one.ts', reading)).toEqual([])
     expect(await layeringAt('src/organisation/one.ts', reading)).toEqual([])
+  })
+})
+
+/**
+ * The surface a build composed from this one imports (ADR-0022, amended):
+ * entries that pass names on, a folder per kind of process that loads them.
+ * Nothing in this tree imports them, each kind reads what its process may
+ * load, and an entry is a list of names from files and nothing else.
+ */
+describe('the surface for a build composed from this one', () => {
+  const offering = (from: string) => `export { one } from '${from}'\n`
+
+  it('is imported by nothing in this tree, not by the shell and not by the composition root', async () => {
+    const reading = "import { apply } from '../composed/process/model'\nexport const one = apply\n"
+    expect((await layeringAt('src/model/one.ts', reading)).join('\n')).toMatch(/model is the bottom of the tree/)
+    expect((await layeringAt('src/app/one.ts', reading)).join('\n')).toMatch(/ProjectStore/)
+    expect((await layeringAt('src/organisation/one.ts', reading)).join('\n')).toMatch(/It knows no frame and no boot/)
+    expect((await layeringAt('src/app/composition.ts', reading)).join('\n')).toMatch(/nothing in this tree imports it/)
+    const fixtures = "import { element } from '../composed/testing/fixtures'\nexport const one = element\n"
+    expect((await layeringAt('src/app/one.ts', fixtures)).join('\n')).toMatch(/ProjectStore/)
+  })
+
+  it('lets a process entry read what computes, the folder\'s format and the two files of the kit that are data', async () => {
+    for (const from of [
+      '../../model/reducer', '../../projects/scopePath', '../../ports/Repositories', '../../agent/tools', '../../people/person',
+      '../../observations/observation', '../../business/coverage', '../../i18n/strings', '../../platform/errors',
+      '../../adapters/folder/format/folderFormat', '../../widgets/kit/tokens', '../../widgets/kit/accent',
+    ]) {
+      expect(await layeringAt('src/composed/process/one.ts', offering(from)), from).toEqual([])
+    }
+  })
+
+  it('refuses a process entry everything that draws, every other implementation, and the node side', async () => {
+    for (const from of [
+      '../../app/App', '../../editor/graph', '../../widgets/kit/Button', '../../widgets/icons', '../../widgets/kit/tokens/../Button',
+      '../../documentation/ui/MarkdownView', '../../adapters/memory/memoryRepositories', '../../adapters/folder/folderRepositories',
+      '../../adapters/folder/format/../memoryGit', '../../providers/folder/folderSource', '../../platform/node/git', '../../session/places',
+    ]) {
+      expect((await layeringAt('src/composed/process/one.ts', offering(from))).join('\n'), from).toMatch(/A process entry is loaded by a process with no screen/)
+    }
+    // A barrel carries its module's pages, and a pure module names the file.
+    expect((await layeringAt('src/composed/process/one.ts', offering('../../people'))).length).toBeGreaterThan(0)
+  })
+
+  it('lets a node entry read the node side and what that folder reads, and nothing else', async () => {
+    expect(await layeringAt('src/composed/node/one.ts', offering('../../platform/node/workingFile'))).toEqual([])
+    expect(await layeringAt('src/composed/node/one.ts', offering('../../projects/scope'))).toEqual([])
+    for (const from of ['../../agent/tools', '../../app/App', '../../adapters/folder/folderRepositories']) {
+      expect((await layeringAt('src/composed/node/one.ts', offering(from))).join('\n'), from).toMatch(/A node entry re-exports what only a process with a node under it may load/)
+    }
+  })
+
+  it('lets a renderer entry read the shell and what the shell reads, and no implementation', async () => {
+    for (const from of ['../../app/composition', '../../widgets/kit/Button', '../../units/ChartPage', '../../session/places', '../../model/reducer']) {
+      expect(await layeringAt('src/composed/renderer/one.ts', offering(from)), from).toEqual([])
+    }
+    for (const from of ['../../adapters/memory/memoryRepositories', '../../providers/folder/folderSource', '../../platform/node/git']) {
+      expect((await layeringAt('src/composed/renderer/one.ts', offering(from))).join('\n'), from).toMatch(/A renderer entry re-exports what the shell may read/)
+    }
+  })
+
+  it('lets a testing entry reach across the tree, as test support does', async () => {
+    const reaching = "export { memoryRepositories } from '../../adapters/memory/memoryRepositories'\nexport { renderShell } from '../../app/testing/renderShell'\n"
+    expect(await layeringAt('src/composed/testing/one.ts', reaching)).toEqual([])
+  })
+
+  it('holds an entry to names re-exported from a file: no star, no barrel, no other entry, no code', async () => {
+    const said = async (source: string) => (await layeringAt('src/composed/renderer/one.ts', source)).join('\n')
+    expect(await said("export * from '../../model/reducer'\n")).toMatch(/`export \*` offers whatever the file comes to hold/)
+    expect(await said(offering('../../model'))).toMatch(/never a module's barrel/)
+    expect(await said(offering('../../model/index'))).toMatch(/never a module's barrel/)
+    expect(await said(offering('./kit'))).toMatch(/never another entry/)
+    expect(await said(offering('../process/model'))).toMatch(/never another entry/)
+    expect(await said('export const one = 1\n')).toMatch(/holds no code/)
+    expect(await said("import { apply } from '../../model/reducer'\nexport { apply }\n")).toMatch(/imports nothing to use/)
+    expect(await said("export { one } from '../../model/reducer'\nconsole.log(1)\n")).toMatch(/holds no code/)
+    // The one entry that is an import for what it does.
+    expect(await said("import '../../app/main'\n")).toBe('')
   })
 })
 

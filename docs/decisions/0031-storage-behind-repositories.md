@@ -1,7 +1,9 @@
 # ADR-0031 — Storage behind repositories: the domain speaks no storage language
 
 * Status: accepted, 29 September 2026; implemented, 30 September 2026
-  (where each part was built: *As built, in sum*, the last section)
+  (where each part was built: *As built, in sum*, the last section); amended
+  22 November 2026 (the surface a build composed from this one imports may
+  name the folder's format), as built the same day
 * Date: 2026-09-29
 * Deciders: Wouter Simons
 * Supersedes:
@@ -1486,3 +1488,17 @@ back from its history or a working file (*a scope put back whole*); the
 examples are the domain's (*the examples in the domain*); and a move is an
 entry in the history of every scope it moved, which Activity follows by
 identity (*a move in a scope's history*).
+
+## Amended, 22 November 2026: the surface names the folder's format
+
+§4 lists who may import an implementation or the folder's format. A build
+composed from this one that keeps a folder in a process of its own runs the
+format as a library, and imports it through the surface that build is given
+(`src/composed/`, ADR-0022 as amended the same day). So the surface's entries
+are a fourth place that may name the format, and the node side: they pass
+names on and hold no code, and nothing in this tree imports them, so the
+domain learns nothing by it. `build/storageLine.ts` says so as
+`COMPOSED_SURFACE`, beside the implementations and the composition root, and
+its exceptions stay at none. Of the implementations the surface offers the
+format and nothing else to a build; the fillings that keep work nowhere are
+offered to suites only (`composed/testing/`).

@@ -53,6 +53,15 @@ import { relative } from 'node:path'
  * They are refused by a rule of their own (`COMPOSED`, below), because their
  * names are also files' names elsewhere.
  *
+ * Over all of it is the surface a build composed from this one imports
+ * (ADR-0022, amended): `composed/`, four folders of small entries, one per
+ * kind of process that loads them. An entry re-exports names from the files
+ * that hold them and holds no code. `composed/process` computes and may be
+ * loaded anywhere; `composed/node` may say what `platform/node` says;
+ * `composed/renderer` may read what `app` reads, and `app`; and
+ * `composed/testing` is test support under another name. No row lists any of
+ * them, so nothing in this tree imports its own surface.
+ *
  * Generated rather than written out, because a hand-written matrix is where the
  * eleventh row quietly disagrees with the other ten — and because a per-module
  * `no-restricted-imports` block REPLACES the rule rather than adding to it, so
@@ -70,7 +79,11 @@ const MODULES = [
   'model', 'layout', 'i18n', 'platform', 'platform/node', 'widgets', 'people', 'documentation', 'comments', 'principles', 'blocks', 'decisions', 'observations',
   'operating', 'roadmap', 'business', 'technology', 'search', 'projects', 'editor', 'agent', 'ports', 'adapters', 'providers',
   'help', 'session', 'units', 'guidance', 'organisation', 'app',
+  'composed/process', 'composed/node', 'composed/renderer', 'composed/testing',
 ]
+
+/** The surface's four folders: in the list so every row refuses them, and left out of `app`'s. */
+const isSurface = (module) => module.startsWith('composed/')
 
 const MAY_IMPORT = {
   model: ['i18n', 'platform'],
@@ -120,7 +133,18 @@ const MAY_IMPORT = {
   ],
   // `platform/node` is the one thing the top of the tree may not have either:
   // `app` is the renderer, and code that says `node:` cannot be in it.
-  app: MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'app' && m !== 'platform/node'),
+  app: MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'app' && m !== 'platform/node' && !isSurface(m)),
+  // The surface (ADR-0022, amended). A process entry reads the modules that
+  // compute, and two files and one folder besides (`NARROW_EDGES`); a node
+  // entry reads what `platform/node` reads, and `platform/node`; a renderer
+  // entry reads what the shell reads, and the shell. The testing entries are
+  // exempt, as `app/testing/` is (`EXEMPT`), so their row is never asked.
+  'composed/process': ['model', 'i18n', 'platform', 'projects', 'ports', 'agent', 'people', 'observations', 'business'],
+  'composed/node': ['model', 'i18n', 'platform', 'projects', 'platform/node'],
+  'composed/renderer': [
+    ...MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'platform/node' && !isSurface(m)),
+  ],
+  'composed/testing': [],
 }
 
 const WHY = {
@@ -154,6 +178,10 @@ const WHY = {
   guidance: 'Principles, building blocks and references read over the tree: what a page of any of them is handed, and how a reference is drawn. Composed of the modules it names and of what the window lends (ADR-0049).',
   organisation: 'A scope\'s home and what is read over the whole tree from it: the register, the checks, the topics, who serves it, its settings. It knows no frame and no boot (ADR-0049).',
   app: 'Ask for a ProjectStore / PreferencesStore / DocumentGateway; src/app/composition.ts picks which.',
+  'composed/process': 'A process entry is loaded by a process with no screen: it re-exports from the modules that compute, the folder\'s own format and the two files of the kit that are data (`tokens`, `accent`), and from nothing that draws (ADR-0022, amended).',
+  'composed/node': 'A node entry re-exports what only a process with a node under it may load: `platform/node` and what that folder may read (ADR-0022, amended).',
+  'composed/renderer': 'A renderer entry re-exports what the shell may read, and the shell: never an implementation, a provider or anything that says `node:` (ADR-0022, amended).',
+  'composed/testing': 'A testing entry re-exports test support: the contracts, the fixtures and the harness (ADR-0022, amended).',
 }
 
 /**
@@ -167,7 +195,7 @@ const WHY = {
  * `no-restricted-imports` instead of adding to it, and the matrix would silently
  * stop applying to exactly the modules that most need it.
  */
-const PURE = ['model', 'layout', 'platform', 'platform/node', 'ports', 'projects', 'i18n', 'agent']
+const PURE = ['model', 'layout', 'platform', 'platform/node', 'ports', 'projects', 'i18n', 'agent', 'composed/process', 'composed/node']
 const SCREEN_PACKAGES = ['react', 'react-dom', 'react/*', '@mui/*', '@emotion/*', '@xyflow/*']
 
 /**
@@ -234,7 +262,12 @@ const COMPOSES_THE_TABLE = [
  * the files that compose the tables, and `LanguageContext` — a language needs
  * a context to travel in, and it is the one screen-shaped file down here.
  */
-const EXEMPT = { i18n: ['src/i18n/LanguageContext.tsx', ...COMPOSES_THE_TABLE] }
+const EXEMPT = {
+  i18n: ['src/i18n/LanguageContext.tsx', ...COMPOSES_THE_TABLE],
+  // Test support that a build composed from this one imports: exempt as
+  // `app/testing/` is, and for the same reason.
+  'composed/testing': ['src/composed/testing/**'],
+}
 
 /**
  * THE LICENCE, ON EVERY FILE.
@@ -347,9 +380,19 @@ const knownModule = {
  * stays refused. Nothing under `adapters/folder/format/` may import
  * `platform/node` in return — the adapters row already says so — and
  * `build/layering.test.ts` holds both.
+ *
+ * The surface's process entries have the same edge for the same reason — a
+ * process with no screen that keeps a folder runs the folder's format as a
+ * library — and one narrower still: of `widgets`, the two files of the kit
+ * that are data and arithmetic, the token table and the accent rule, which a
+ * server's own pages wear. `only` names files where `within` names a folder.
  */
 const NARROW_EDGES = {
   'platform/node': [{ to: 'adapters', within: 'folder/format' }],
+  'composed/process': [
+    { to: 'adapters', within: 'folder/format' },
+    { to: 'widgets', within: 'kit', only: ['tokens', 'accent'] },
+  ],
 }
 
 /**
@@ -381,9 +424,12 @@ const composedRefusedTo = (from) => COMPOSED.filter((to) => to !== from && !MAY_
 
 /**
  * A specifier into `to` that is not under `within`, or that climbs back out of
- * it with `..`: what a narrow edge still refuses.
+ * it with `..`: what a narrow edge still refuses. With `only`, a specifier
+ * into `to` that is not exactly one of those files of `within`.
  */
-const outside = ({ to, within }) => `(^|/)${to}(/(?!${within}/).*|/${within}/(.*/)?\\.\\.(/.*)?)?$`
+const outside = ({ to, within, only }) => (only
+  ? `(^|/)${to}(/(?!${within}/(${only.join('|')})$).*)?$`
+  : `(^|/)${to}(/(?!${within}/).*|/${within}/(.*/)?\\.\\.(/.*)?)?$`)
 
 const IMPORT_MATRIX = MODULES.map((from) => ({
   files: [`src/${from}/**/*.{ts,tsx}`],
@@ -472,6 +518,43 @@ const TRANSLATION_SLICES = [
     files: ['src/i18n/strings.ts', 'src/i18n/strings.*.ts', 'src/i18n/interpolate.ts', 'src/i18n/languages.ts', 'src/i18n/table.ts'],
     ignores: ['**/*.test.ts'],
     rules: { 'no-restricted-globals': ['error', ...STORAGE_GLOBALS, ...NO_BROWSER] },
+  },
+]
+
+/**
+ * AN ENTRY OF THE SURFACE IS A LIST OF NAMES.
+ *
+ * A build composed from this one imports `src/composed/` and nothing else of
+ * `src/` (ADR-0022, amended), so that a file behind it may move without that
+ * build knowing. That holds for as long as an entry says, name by name, what
+ * it offers and where each name is kept: `export { apply } from
+ * '../../model/reducer'`. An `export *` offers whatever its file comes to
+ * hold, a module's barrel offers its pages with its arithmetic — which is how
+ * a process with no screen comes to load React — and a line of code in an
+ * entry is a second place a thing is defined.
+ *
+ * So an entry holds re-exports by name from a file, and nothing else. One
+ * entry, the renderer's boot, is an import for what it does, because the app's
+ * boot has no name to offer. `build/composedSurface.test.ts` holds the rest:
+ * that each name comes from the file that declares it, under its own name,
+ * and that the whole is what `src/composed/SURFACE.txt` says it is.
+ */
+// A selector's pattern ends at the first slash it meets, so a slash is written `\\x2F`.
+const NOT_A_FILE = '^(\\.\\.\\x2F)+[^\\x2F]+$|\\x2Findex$'
+const SURFACE_ENTRIES = [
+  {
+    files: ['src/composed/**/*.ts'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': ['error',
+        { selector: 'ExportAllDeclaration', message: 'An entry of the surface re-exports by name: `export *` offers whatever the file comes to hold.' },
+        { selector: `:matches(ExportNamedDeclaration, ImportDeclaration)[source.value=/${NOT_A_FILE}/]`, message: 'An entry of the surface names the file that holds the name, never a module\'s barrel.' },
+        { selector: ':matches(ExportNamedDeclaration, ImportDeclaration)[source.value=/^(?!\\.\\.\\x2F\\.\\.\\x2F)/]', message: 'An entry of the surface names a file of a module, never another entry: a name is offered once.' },
+        { selector: 'ExportNamedDeclaration[source=null], ExportDefaultDeclaration', message: 'An entry of the surface holds no code: declare it in its module and re-export it here by name.' },
+        { selector: 'ImportDeclaration[specifiers.length>0]', message: 'An entry of the surface imports nothing to use: it re-exports by name.' },
+        { selector: 'Program > :not(ExportNamedDeclaration, ExportAllDeclaration, ExportDefaultDeclaration, ImportDeclaration)', message: 'An entry of the surface holds no code: a re-export by name, and nothing else.' },
+      ],
+    },
   },
 ]
 
@@ -667,7 +750,18 @@ export default tseslint.config(
     rules: { 'layering/known-module': 'error' },
   },
   ...IMPORT_MATRIX,
+  {
+    // The composition root is outside the matrix, because it is the one file
+    // that may name a filling; its own tree's surface is not one.
+    files: ['src/app/composition.ts'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        patterns: [{ group: ['**/composed/**'], message: 'The surface is for a build composed from this one: nothing in this tree imports it.' }],
+      }],
+    },
+  },
   ...TRANSLATION_SLICES,
+  ...SURFACE_ENTRIES,
   ...UNIT_SIZE,
 
 )

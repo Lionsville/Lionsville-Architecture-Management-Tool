@@ -43,9 +43,14 @@ function sources(dir: string): string[] {
   })
 }
 
-/** Which files name a table, other than a test. */
+/**
+ * Which files name a table, other than a test — and other than the surface a
+ * build composed from this one imports (`composed/`), whose entries pass a
+ * name on and say nothing with it.
+ */
 function naming(pattern: RegExp): string[] {
-  return sources(src).filter((file) => pattern.test(readFileSync(file, 'utf8'))).map((file) => relative(src, file)).sort()
+  return sources(src).filter((file) => pattern.test(readFileSync(file, 'utf8'))).map((file) => relative(src, file))
+    .filter((file) => !file.startsWith('composed/')).sort()
 }
 
 describe('findings', () => {

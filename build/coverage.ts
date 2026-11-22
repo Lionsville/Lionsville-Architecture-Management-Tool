@@ -86,6 +86,9 @@ export const FLOORS: ReadonlyArray<readonly [component: string, floor: Floor]> =
   ['src/guidance', { lines: 84, branches: 61 }],
   ['src/organisation', { lines: 88, branches: 80 }],
   ['src/app', { lines: 84, branches: 76 }],
+  // The surface a build composed from this one imports (ADR-0022, amended):
+  // lists of names with no line to run, so it reads as whole, as the ports do.
+  ['src/composed', { lines: 100, branches: 100 }],
   ['electron/main', { lines: 24, branches: 20 }],
   ['electron/preload', { lines: 14, branches: 100 }],
 ]
