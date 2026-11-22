@@ -44,12 +44,13 @@ import type {
   OperatingRule, Responsibility, ResponsibilityId, Role, RoleId, UnitType, UnitTypeId,
 } from './operatingModel'
 import type { Assignment, AssignmentId } from './units'
-import { checkMarkId } from './checkMarks'
 import type { CheckMark, CheckMarkId } from './checkMarks'
 import type { Comment, CommentId } from './comment'
 import type { Principle, PrincipleId } from './principle'
 import type { Citation, CitationId } from './citable'
 import type { Evaluation, EvaluationId } from './evaluation'
+import { KINDS, OPTIONAL_LISTS } from './recordKinds'
+import type { RecordList } from './recordKinds'
 
 export type RelationId = string
 /** A dashed group's id — unique on its diagram, and nowhere else (ADR-0012 §6). */
@@ -551,123 +552,19 @@ export function fromArrays(host: HostModel): Model {
   out.relations = relations
   out.diagrams = Object.fromEntries(
     Object.entries(diagrams).map(([id, d]) => [id, toDiagram(d)]))
-  let decisionOrder: AdrId[] = []
-  if (host.decisions !== undefined) {
-    const [decisions, order] = index(host.decisions, (a) => a.id)
-    out.decisions = decisions
-    decisionOrder = order
+  const order = { elements: elementOrder, relations: relationOrder, diagrams: diagramOrder } as ModelOrder
+  // Every other list is optional in the file, and indexed the same way: by
+  // the id its kind says (`recordKinds.ts`), absent where the file had none.
+  const lists = out as unknown as Record<RecordList, Record<string, unknown>>
+  for (const list of OPTIONAL_LISTS) {
+    const rows = host[list] as readonly unknown[] | undefined
+    order[list] = []
+    if (rows === undefined) continue
+    const [by, ids] = index(rows, KINDS[list].idOf as (row: unknown) => string)
+    lists[list] = by
+    order[list] = ids
   }
-  let transitionOrder: TransitionId[] = []
-  if (host.transitions !== undefined) {
-    const [transitions, order] = index(host.transitions, (t) => t.id)
-    out.transitions = transitions
-    transitionOrder = order
-  }
-  let observationOrder: ObservationId[] = []
-  if (host.observations !== undefined) {
-    const [observations, order] = index(host.observations, (o) => o.id)
-    out.observations = observations
-    observationOrder = order
-  }
-  let causeOrder: CauseId[] = []
-  if (host.causes !== undefined) {
-    const [causes, order] = index(host.causes, (c) => c.id)
-    out.causes = causes
-    causeOrder = order
-  }
-  let solutionOrder: SolutionId[] = []
-  if (host.solutions !== undefined) {
-    const [solutions, order] = index(host.solutions, (one) => one.id)
-    out.solutions = solutions
-    solutionOrder = order
-  }
-  let experimentOrder: ExperimentId[] = []
-  if (host.experiments !== undefined) {
-    const [experiments, order] = index(host.experiments, (one) => one.id)
-    out.experiments = experiments
-    experimentOrder = order
-  }
-  let unitTypeOrder: UnitTypeId[] = []
-  if (host.unitTypes !== undefined) {
-    const [unitTypes, order] = index(host.unitTypes, (one) => one.id)
-    out.unitTypes = unitTypes
-    unitTypeOrder = order
-  }
-  let roleOrder: RoleId[] = []
-  if (host.roles !== undefined) {
-    const [roles, order] = index(host.roles, (one) => one.id)
-    out.roles = roles
-    roleOrder = order
-  }
-  let responsibilityOrder: ResponsibilityId[] = []
-  if (host.responsibilities !== undefined) {
-    const [responsibilities, order] = index(host.responsibilities, (one) => one.id)
-    out.responsibilities = responsibilities
-    responsibilityOrder = order
-  }
-  let ruleOrder: string[] = []
-  if (host.operatingRules !== undefined) {
-    const [rules, order] = index(host.operatingRules, (one) => one.id)
-    out.operatingRules = rules
-    ruleOrder = order
-  }
-  let assignmentOrder: AssignmentId[] = []
-  if (host.assignments !== undefined) {
-    const [assignments, order] = index(host.assignments, (one) => one.id)
-    out.assignments = assignments
-    assignmentOrder = order
-  }
-  let markOrder: CheckMarkId[] = []
-  if (host.checkMarks !== undefined) {
-    const [marks, order] = index(host.checkMarks, checkMarkId)
-    out.checkMarks = marks
-    markOrder = order
-  }
-  let commentOrder: CommentId[] = []
-  if (host.comments !== undefined) {
-    const [comments, order] = index(host.comments, (one) => one.id)
-    out.comments = comments
-    commentOrder = order
-  }
-  let citationOrder: CitationId[] = []
-  if (host.citations !== undefined) {
-    const [citations, order] = index(host.citations, (one) => one.id)
-    out.citations = citations
-    citationOrder = order
-  }
-  let evaluationOrder: EvaluationId[] = []
-  if (host.evaluations !== undefined) {
-    const [evaluations, order] = index(host.evaluations, (one) => one.id)
-    out.evaluations = evaluations
-    evaluationOrder = order
-  }
-  let principleOrder: PrincipleId[] = []
-  if (host.principles !== undefined) {
-    const [principles, order] = index(host.principles, (one) => one.id)
-    out.principles = principles
-    principleOrder = order
-  }
-  out.order = {
-    elements: elementOrder,
-    relations: relationOrder,
-    diagrams: diagramOrder,
-    decisions: decisionOrder,
-    transitions: transitionOrder,
-    observations: observationOrder,
-    causes: causeOrder,
-    solutions: solutionOrder,
-    experiments: experimentOrder,
-    unitTypes: unitTypeOrder,
-    roles: roleOrder,
-    responsibilities: responsibilityOrder,
-    operatingRules: ruleOrder,
-    assignments: assignmentOrder,
-    checkMarks: markOrder,
-    comments: commentOrder,
-    principles: principleOrder,
-    citations: citationOrder,
-    evaluations: evaluationOrder,
-  }
+  out.order = order
   return out
 }
 
@@ -677,38 +574,11 @@ export function toArrays(model: Model): HostModel {
   out.elements = unindex(model.elements, model.order.elements)
   out.relations = unindex(model.relations, model.order.relations)
   out.diagrams = model.order.diagrams.map((id) => fromDiagram(model.diagrams[id]))
-  if (model.decisions !== undefined) {
-    out.decisions = unindex(model.decisions, model.order.decisions)
+  const lists = out as unknown as Record<RecordList, unknown[]>
+  for (const list of OPTIONAL_LISTS) {
+    const by = model[list] as Record<string, unknown> | undefined
+    if (by !== undefined) lists[list] = unindex(by, model.order[list])
   }
-  if (model.transitions !== undefined) {
-    out.transitions = unindex(model.transitions, model.order.transitions)
-  }
-  if (model.observations !== undefined) {
-    out.observations = unindex(model.observations, model.order.observations)
-  }
-  if (model.causes !== undefined) {
-    out.causes = unindex(model.causes, model.order.causes)
-  }
-  if (model.solutions !== undefined) {
-    out.solutions = unindex(model.solutions, model.order.solutions)
-  }
-  if (model.experiments !== undefined) {
-    out.experiments = unindex(model.experiments, model.order.experiments)
-  }
-  if (model.unitTypes !== undefined) out.unitTypes = unindex(model.unitTypes, model.order.unitTypes)
-  if (model.roles !== undefined) out.roles = unindex(model.roles, model.order.roles)
-  if (model.responsibilities !== undefined) {
-    out.responsibilities = unindex(model.responsibilities, model.order.responsibilities)
-  }
-  if (model.operatingRules !== undefined) {
-    out.operatingRules = unindex(model.operatingRules, model.order.operatingRules)
-  }
-  if (model.assignments !== undefined) out.assignments = unindex(model.assignments, model.order.assignments)
-  if (model.checkMarks !== undefined) out.checkMarks = unindex(model.checkMarks, model.order.checkMarks)
-  if (model.comments !== undefined) out.comments = unindex(model.comments, model.order.comments)
-  if (model.principles !== undefined) out.principles = unindex(model.principles, model.order.principles)
-  if (model.citations !== undefined) out.citations = unindex(model.citations, model.order.citations)
-  if (model.evaluations !== undefined) out.evaluations = unindex(model.evaluations, model.order.evaluations)
   delete out.order
   return out
 }

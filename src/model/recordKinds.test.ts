@@ -2,9 +2,9 @@
 // SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV
 
 import { describe, expect, it } from 'vitest'
-import { fromArrays } from './normalised'
+import { fromArrays, toArrays } from './normalised'
 import { RECORD_KINDS, RECORD_LISTS } from './recordKey'
-import { KINDS, LISTS_BY_KIND, RECORD_LIST_NAMES } from './recordKinds'
+import { KINDS, LISTS_BY_KIND, OPTIONAL_LISTS, RECORD_LIST_NAMES } from './recordKinds'
 import type { KindTable } from './recordKinds'
 
 const KEY = 'check.unattributed'
@@ -34,6 +34,25 @@ describe('the kinds of record, described once', () => {
     const table: KindTable = KINDS
     expect(table.elements.idOf({ id: 'crews', kind: 'application', name: 'Crews', lifecycle: 'live', isManaged: true, aspects: {} })).toBe('crews')
     expect(table.checkMarks.idOf({ check: KEY, key: 'crews', on: '2026-10-11' })).toBe(`${KEY} crews`)
+  })
+})
+
+describe('a list the file may leave out', () => {
+  it('is every list but the three a landscape always has', () => {
+    expect(RECORD_LIST_NAMES.filter((list) => !OPTIONAL_LISTS.includes(list))).toEqual(['elements', 'relations', 'diagrams'])
+  })
+
+  it('comes back absent where the file had none and empty where it was empty, each of them', () => {
+    const bare = { name: 'Acme', elements: [], relations: [], diagrams: [] }
+    const absent = fromArrays(bare)
+    for (const list of OPTIONAL_LISTS) {
+      expect(list in absent).toBe(false)
+      expect(absent.order[list]).toEqual([])
+      const empty = fromArrays({ ...bare, [list]: [] })
+      expect(empty[list]).toEqual({})
+      expect(toArrays(empty)[list]).toEqual([])
+    }
+    expect(toArrays(absent)).toEqual(bare)
   })
 })
 

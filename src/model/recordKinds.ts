@@ -81,6 +81,13 @@ export type KindDescriptor<L extends RecordList> = {
   readonly kind: string
   /** A record's id: its own `id` for every list but the marks, whose id is worked out. */
   readonly idOf: (record: RecordOf[L]) => string
+  /**
+   * Whether absence is not emptiness for this list: optional in the file, so
+   * one the file did not carry comes back absent, and one emptied is gone
+   * rather than present and empty. True of every list but the three a
+   * landscape always has.
+   */
+  readonly absentWhenEmpty: boolean
 }
 
 /** One descriptor per list of the model: a list without one does not compile. */
@@ -89,30 +96,33 @@ export type KindTable = { readonly [L in RecordList]: KindDescriptor<L> }
 const ownId = (record: { id: string }): string => record.id
 
 export const KINDS = {
-  elements: { list: 'elements', kind: 'element', idOf: ownId },
-  relations: { list: 'relations', kind: 'relation', idOf: ownId },
-  diagrams: { list: 'diagrams', kind: 'diagram', idOf: ownId },
-  decisions: { list: 'decisions', kind: 'decision', idOf: ownId },
-  transitions: { list: 'transitions', kind: 'transition', idOf: ownId },
-  observations: { list: 'observations', kind: 'observation', idOf: ownId },
-  causes: { list: 'causes', kind: 'cause', idOf: ownId },
-  solutions: { list: 'solutions', kind: 'solution', idOf: ownId },
-  experiments: { list: 'experiments', kind: 'experiment', idOf: ownId },
-  unitTypes: { list: 'unitTypes', kind: 'unitType', idOf: ownId },
-  roles: { list: 'roles', kind: 'role', idOf: ownId },
-  responsibilities: { list: 'responsibilities', kind: 'responsibility', idOf: ownId },
-  operatingRules: { list: 'operatingRules', kind: 'operatingRule', idOf: ownId },
-  assignments: { list: 'assignments', kind: 'assignment', idOf: ownId },
+  elements: { list: 'elements', kind: 'element', idOf: ownId, absentWhenEmpty: false },
+  relations: { list: 'relations', kind: 'relation', idOf: ownId, absentWhenEmpty: false },
+  diagrams: { list: 'diagrams', kind: 'diagram', idOf: ownId, absentWhenEmpty: false },
+  decisions: { list: 'decisions', kind: 'decision', idOf: ownId, absentWhenEmpty: true },
+  transitions: { list: 'transitions', kind: 'transition', idOf: ownId, absentWhenEmpty: true },
+  observations: { list: 'observations', kind: 'observation', idOf: ownId, absentWhenEmpty: true },
+  causes: { list: 'causes', kind: 'cause', idOf: ownId, absentWhenEmpty: true },
+  solutions: { list: 'solutions', kind: 'solution', idOf: ownId, absentWhenEmpty: true },
+  experiments: { list: 'experiments', kind: 'experiment', idOf: ownId, absentWhenEmpty: true },
+  unitTypes: { list: 'unitTypes', kind: 'unitType', idOf: ownId, absentWhenEmpty: true },
+  roles: { list: 'roles', kind: 'role', idOf: ownId, absentWhenEmpty: true },
+  responsibilities: { list: 'responsibilities', kind: 'responsibility', idOf: ownId, absentWhenEmpty: true },
+  operatingRules: { list: 'operatingRules', kind: 'operatingRule', idOf: ownId, absentWhenEmpty: true },
+  assignments: { list: 'assignments', kind: 'assignment', idOf: ownId, absentWhenEmpty: true },
   // A mark has no id of its own: it is its check and the key of its subjects.
-  checkMarks: { list: 'checkMarks', kind: 'checkMark', idOf: checkMarkId },
-  comments: { list: 'comments', kind: 'comment', idOf: ownId },
-  principles: { list: 'principles', kind: 'principle', idOf: ownId },
-  citations: { list: 'citations', kind: 'citation', idOf: ownId },
-  evaluations: { list: 'evaluations', kind: 'evaluation', idOf: ownId },
+  checkMarks: { list: 'checkMarks', kind: 'checkMark', idOf: checkMarkId, absentWhenEmpty: true },
+  comments: { list: 'comments', kind: 'comment', idOf: ownId, absentWhenEmpty: true },
+  principles: { list: 'principles', kind: 'principle', idOf: ownId, absentWhenEmpty: true },
+  citations: { list: 'citations', kind: 'citation', idOf: ownId, absentWhenEmpty: true },
+  evaluations: { list: 'evaluations', kind: 'evaluation', idOf: ownId, absentWhenEmpty: true },
 } as const satisfies KindTable
 
 /** The lists, in the order the model keeps them. */
 export const RECORD_LIST_NAMES = Object.keys(KINDS) as RecordList[]
+
+/** The lists the file may leave out, in the same order. */
+export const OPTIONAL_LISTS = RECORD_LIST_NAMES.filter((list) => KINDS[list].absentWhenEmpty)
 
 /** The kind one list's records are named by, as a type. */
 export type KindOf<L extends RecordList> = (typeof KINDS)[L]['kind']
