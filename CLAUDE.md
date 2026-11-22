@@ -1406,7 +1406,8 @@ src/composed/     The surface a build composed from this one imports
                                       address · scopes · scopeState · tree ·
                                       repositories · channel · provider ·
                                       format · formatVersion · interchange ·
-                                      agent · agentHandler · screen · people ·
+                                      agent · agentHandler · agentCode ·
+                                      agentSandbox · screen · people ·
                                       analysis · findings · look · words ·
                                       platform · desktop
                     node/             for a process with a node under it:

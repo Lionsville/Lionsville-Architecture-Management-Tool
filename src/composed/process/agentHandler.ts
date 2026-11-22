@@ -12,5 +12,5 @@
  * it (ADR-0022, amended), so those may move. Names only, each from the file
  * that holds it; `src/composed/SURFACE.txt` is what the whole offers.
  */
-export { handle } from '../../agent/handle'
+export { handle, withNames } from '../../agent/handle'
 export type { FollowScopeTypes, HistoryEntry, SessionView } from '../../agent/handle'

@@ -11,6 +11,8 @@
  * it (ADR-0022, amended), so those may move. Names only, each from the file
  * that holds it; `src/composed/SURFACE.txt` is what the whole offers.
  */
+export { AGENT_MODE_PARAMETER, DEFAULT_AGENT_MODE, agentModeFrom } from '../../platform/agentServer'
+export type { AgentMode } from '../../platform/agentServer'
 export type { ControlName } from '../../platform/controlNames'
 export { RING_SIZE, formatDiagnostic } from '../../platform/diagnostics'
 export type { DiagnosticEntry } from '../../platform/diagnostics'
