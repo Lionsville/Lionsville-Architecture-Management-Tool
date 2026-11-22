@@ -60,6 +60,8 @@
 .chain-read__text { min-width: 0; overflow-wrap: anywhere; }
 .chain-read__side { order: -1; display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; }
 .chain-facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--s-1) var(--s-5); margin: 0; overflow-wrap: anywhere; }
+/* A fact nobody has said yet reads quieter than one that is there. */
+.chain-facts__none { color: var(--ink-2); }
 @container (min-width: 900px) {
   .chain-read__page { display: grid; grid-template-columns: minmax(0, var(--w-document)) 18rem; justify-content: center; align-items: start; gap: var(--s-6); }
   .chain-read__side { order: 0; position: sticky; top: 0; padding-inline-start: var(--s-4); border-inline-start: 1px solid var(--line); }

@@ -401,7 +401,7 @@ function ObservationFacts({ observation, names, s, day, fromScope, label, explai
       <Term>{s('observation.whereField')}</Term>
       <Value><Box component="span" sx={quiet(Boolean(observation.where))}>{observation.where || '—'}</Box></Value>
       <Term>{s('observation.aboutField')}</Term>
-      <Value testId="observation-about"><Box component="span" sx={quiet(Boolean(observation.about?.length))}>{aboutText(observation, elementName)}</Box></Value>
+      <Value testId="observation-about"><span className={observation.about?.length ? undefined : 'chain-facts__none'}>{aboutText(observation, elementName)}</span></Value>
       <Term>{s('observation.byField')}</Term>
       <Value testId="observation-by"><Box component="span" sx={quiet(Boolean(observation.by))}>{names.text(observation.by) || '—'}</Box></Value>
       <Term>{s('observation.colRecordedBy')}</Term>
