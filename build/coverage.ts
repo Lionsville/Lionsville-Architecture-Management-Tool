@@ -79,12 +79,12 @@ export const FLOORS: ReadonlyArray<readonly [component: string, floor: Floor]> =
   ['src/ports', { lines: 100, branches: 100 }],
   ['src/adapters', { lines: 88, branches: 81 }],
   ['src/providers', { lines: 90, branches: 83 }],
-  // The composed tier (ADR-0049), each at what the files measured in app/ under
-  // their own suites the day they were given a row, 22 November 2026.
-  ['src/session', { lines: 92, branches: 80 }],
-  ['src/units', { lines: 91, branches: 79 }],
-  ['src/guidance', { lines: 82, branches: 60 }],
-  ['src/organisation', { lines: 81, branches: 72 }],
+  // The composed tier (ADR-0049), measured on 22 November 2026 once the files had
+  // moved: the lowest of three runs of the shell's suites and their own.
+  ['src/session', { lines: 97, branches: 86 }],
+  ['src/units', { lines: 94, branches: 83 }],
+  ['src/guidance', { lines: 84, branches: 61 }],
+  ['src/organisation', { lines: 88, branches: 80 }],
   ['src/app', { lines: 84, branches: 76 }],
   ['electron/main', { lines: 24, branches: 20 }],
   ['electron/preload', { lines: 14, branches: 100 }],
