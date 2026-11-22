@@ -18,6 +18,9 @@
 import { EN as adapters } from '../adapters/strings/en'
 import { EN as providers } from '../providers/strings/en'
 import { EN as app } from '../app/strings/en'
+import { EN as units } from '../units/strings/en'
+import { EN as guidance } from '../guidance/strings/en'
+import { EN as organisation } from '../organisation/strings/en'
 import { EN as decisions } from '../decisions/strings/en'
 import { EN as observations } from '../observations/strings/en'
 import { EN as operating } from '../operating/strings/en'
@@ -42,6 +45,9 @@ export const EN = {
   ...adapters,
   ...providers,
   ...app,
+  ...units,
+  ...guidance,
+  ...organisation,
   ...decisions,
   ...observations,
   ...operating,

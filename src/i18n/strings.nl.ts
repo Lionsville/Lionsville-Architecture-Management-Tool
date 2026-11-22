@@ -10,6 +10,9 @@
 import { NL as adapters } from '../adapters/strings/nl'
 import { NL as providers } from '../providers/strings/nl'
 import { NL as app } from '../app/strings/nl'
+import { NL as units } from '../units/strings/nl'
+import { NL as guidance } from '../guidance/strings/nl'
+import { NL as organisation } from '../organisation/strings/nl'
 import { NL as decisions } from '../decisions/strings/nl'
 import { NL as observations } from '../observations/strings/nl'
 import { NL as operating } from '../operating/strings/nl'
@@ -34,6 +37,9 @@ export const NL = {
   ...adapters,
   ...providers,
   ...app,
+  ...units,
+  ...guidance,
+  ...organisation,
   ...decisions,
   ...observations,
   ...operating,

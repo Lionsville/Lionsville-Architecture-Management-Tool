@@ -36,6 +36,9 @@ import { fillKeys } from './keyNames';
 import { EN as adaptersEn } from '../adapters/strings/en';
 import { EN as providersEn } from '../providers/strings/en';
 import { EN as appEn } from '../app/strings/en';
+import { EN as unitsEn } from '../units/strings/en';
+import { EN as guidanceEn } from '../guidance/strings/en';
+import { EN as organisationEn } from '../organisation/strings/en';
 import { EN as decisionsEn } from '../decisions/strings/en';
 import { EN as observationsEn } from '../observations/strings/en';
 import { EN as operatingEn } from '../operating/strings/en';
@@ -62,6 +65,7 @@ const SLICES: Record<string, Record<string, string>> = {
   documentation: documentationEn, editor: editorEn, model: modelEn, platform: platformEn,
   scopes: projectsEn, roadmap: roadmapEn, search: searchEn, business: businessEn,
   technology: technologyEn, observations: observationsEn, providers: providersEn, people: peopleEn, comments: commentsEn, principles: principlesEn, blocks: blocksEn, widgets: widgetsEn, operating: operatingEn, help: helpEn,
+  units: unitsEn, guidance: guidanceEn, organisation: organisationEn,
 };
 
 /** English is the schema, so its keys are THE keys. */

@@ -10,6 +10,9 @@
 import { DE as adapters } from '../adapters/strings/de'
 import { DE as providers } from '../providers/strings/de'
 import { DE as app } from '../app/strings/de'
+import { DE as units } from '../units/strings/de'
+import { DE as guidance } from '../guidance/strings/de'
+import { DE as organisation } from '../organisation/strings/de'
 import { DE as decisions } from '../decisions/strings/de'
 import { DE as observations } from '../observations/strings/de'
 import { DE as operating } from '../operating/strings/de'
@@ -34,6 +37,9 @@ export const DE = {
   ...adapters,
   ...providers,
   ...app,
+  ...units,
+  ...guidance,
+  ...organisation,
   ...decisions,
   ...observations,
   ...operating,
