@@ -14,7 +14,6 @@
  * but the hooks below it do not, and each asks for its own slice. Nothing here
  * knows whether a project lives in browser storage, on disk or on a server.
  */
-import type { SettingsField } from '../projects/scopeTree'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ComponentType } from 'react'
 import Box from '@mui/material/Box'
@@ -24,8 +23,8 @@ import { LanguageProvider } from '../i18n'
 import { plural } from '../i18n/strings'
 import type { StringKey, Translate } from '../i18n'
 import '../widgets/kit/fonts/fonts.css'
-import type { Command, ElementId } from '../model'
-import type { ObservationTab, Page, Screen } from '../agent/screen'
+import type { Command } from '../model'
+import type { Page, Screen } from '../agent/screen'
 import { VIEW_PAGES } from '../agent/screen'
 import { FOUND_PLACES, ORGANISATION_PLACES, SCOPE_PLACES } from './frame/places'
 import { isViewPageName } from './pageLanding'
@@ -33,18 +32,17 @@ import type { Diagnostic, DiagnosticEntry } from '../platform/diagnostics'
 import { reasonOf, ShellError } from '../platform/errors'
 import { messageFor } from './messageFor'
 import { flattenScopes } from '../projects/scope'
-import type { ScopeKind, ScopeSnapshot, ScopeSummary } from '../projects/scope'
-import type { AspectConfigEntry } from '../model/types'
-import type { TypeChoice } from '../projects/scopeType'
+import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import type { CarryChoice } from './workingFileFlows'
 import {
   modelsOf, readWhole, refusedError, stepOf,
 } from '../projects/scopeAccess'
-import type { RecordLink } from '../projects/links'
 import { SCOPE_MOVED } from '../projects/revision'
 import { readingAfterWrites } from '../projects/readsAfterWrites'
 import { ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
+import type { InitialPage, ViewPageName } from './initialPage'
+import type { ScopeSettingsPatch } from './scopeSettings'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly, sourceKey } from '../platform/workingSource'
 import { recentFrom, RECENT_KEY, rememberSettled, renamedIn } from './frame/recentPlaces'
@@ -62,6 +60,7 @@ import type {
 import { useMouseHistoryButtons } from './BackForward'
 import { ErrorBoundary, ProblemOfferContext } from './ErrorBoundary'
 import { idAt, useOrganisation } from './organisation/useOrganisation'
+import { usePreloadViews } from './organisation/preloadViews'
 import { useAgentScopes } from './agentScopes'
 import { ToastBar } from './ToastBar'
 import { DraftQuestion } from '../widgets/kit/drafts'
@@ -371,114 +370,10 @@ function frameFromAddress(boot: AppProps['boot']) {
   }
 }
 
-/** The pages that are a view's tab: a board, and each laid-out kind and a drawing (`agent/screen`'s `VIEW_PAGES`). */
-export type ViewPageName = 'board' | 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'
-
-/**
- * Which page the workspace should be showing the moment it appears.
- *
- * The organisation's own pages are reached from the cards on its screen, and
- * the root scope that holds them usually draws nothing at all — its decisions,
- * its plans and its business architecture are what it has, and a canvas is not.
- * Without this, pressing *Open* on a card would land a person on an empty board
- * with the page they asked for still shut.
- *
- * Shell vocabulary rather than either screen's: one screen says it and the
- * other obeys it, and a type that lived in either would make them import each
- * other.
- */
-export type InitialPage =
-  /** The decisions page, on one record when an id is given (ADR-0019). */
-  | { page: 'decisions'; id?: string }
-  /**
-   * The observations page (ADR-0021), on one observation or cause when an id
-   * is given, and on one of its tabs when a tab is (ADR-0019, amended).
-   */
-  | { page: 'observations'; id?: string; tab?: ObservationTab }
-  | { page: 'roadmap'; select?: string }
-  /**
-   * The operating model (ADR-0036): kept at the organisation and opened there,
-   * on one unit type, role or responsibility when an id is given.
-   */
-  | { page: 'operating'; id?: string }
-  /** A scope's principles (ADR-0041), on one principle when an id is given. */
-  | { page: 'principles'; id?: string }
-  /** A platform's report, or a service's (ADR-0013, ADR-0014): derived, opened by id, never made. */
-  | { page: 'platform'; id: ElementId }
-  | { page: 'service'; id: ElementId }
-  /**
-   * A view on its tab, by id — or, with none, the one on the scope's tab where
-   * it is of that kind and else the first; a scope with none of that kind
-   * lands on its home, because an open never makes a view (ADR-0019, amended).
-   * `select` is an element selected there where it is drawn there, and `tab`
-   * the reading it opens on, where it has more than one.
-   */
-  | { page: ViewPageName; id?: string; select?: ElementId; tab?: string; edit?: boolean }
-  /**
-   * A new sheet, enterprise map or technology landscape, made the moment the
-   * scope opens: the person's own *Make…* and *New board…* on a home, which is
-   * the one way onto a view that writes one.
-   */
-  | { page: 'make'; kind: 'sheet' | 'map' | 'technology' | 'drawing' | 'chart' | 'conway'; name?: string }
-  /** One plan, on its page over the roadmap — an initiative opened where it lives (ADR-0012 §7). */
-  | { page: 'plan'; id: string }
-  /**
-   * A record, selected on the board that draws it — a row of the register,
-   * opened where it is answered for.
-   */
-  | { page: 'element'; id: ElementId; line?: string; field?: string }
-  /**
-   * A record's page — the document and the record's fields — opened in the
-   * scope that answers for it, which is where the fields may be written.
-   */
-  | { page: 'document'; id: ElementId }
-  /** The documentation page as the bar opens it: on the selected element, or the first. */
-  | { page: 'documentation' }
-  /**
-   * Not a page, and here anyway: *link* (ADR-0012 §10), asked the moment the
-   * scope opens.
-   *
-   * A gesture is applied by the session that holds the scope — one `Command`,
-   * one undo step, one Activity line — so the register's *Link…* cannot do it
-   * where it stands. What it can do is open the scope that should yield and
-   * ask there, which is this.
-   */
-  | { page: 'link'; id: ElementId; to: ScopePath }
-
-/** What the settings dialogs may change about a scope, whatever level it is. */
-export type ScopeSettingsPatch = {
-  name: string
-  client?: string
-  description?: string
-  links?: RecordLink[]
-  /** The built-in kind, where the caller speaks that vocabulary alone; `type` says both and wins where given. */
-  kind?: ScopeKind
-  /**
-   * What the scope is, as the one picker holds it (ADR-0036, amended 17
-   * October 2026): a unit type of the operating model, a built-in kind, or
-   * nothing — and whichever of the two is not said is cleared.
-   */
-  type?: TypeChoice
-  /**
-   * Where it is filed, when that is what changed.
-   *
-   * Absent means "leave the address alone", which is what a rename does and
-   * what every field above does. Present and different is a move: the scope
-   * and everything under it go to their new addresses together, identities and
-   * all (`ScopeRepository.move`).
-   */
-  parent?: ScopePath
-  /** Who an exported picture names where it has none of its own. */
-  defaultAuthor?: string
-  /** The aspects a new landscape starts with. */
-  defaultAspectConfig?: AspectConfigEntry[]
-  /**
-   * The fields this change is about, where the page says: only those are
-   * written, so a change made again after another landed (`writeRefusals`)
-   * does not put the other back. Absent writes every field, as the agent does.
-   */
-  changed?: readonly SettingsField[]
-}
+// The page a scope opens on and what its settings may change are said in files of
+// their own, so a page can name them without importing the shell; they are still
+// exported here, where a build composed from this one reads them.
+export type { InitialPage, ViewPageName, ScopeSettingsPatch }
 
 export type { AppBoot, AppHost, AppProps, AppProvider } from './appProps'
 
@@ -929,6 +824,8 @@ function useShellBase(props: AppProps) {
     writable,
     s,
   })
+  // What the home up lists, fetched while it is idle, so the first press on one is not a download.
+  usePreloadViews(organisation.ready, organisation.root, organisation.at)
   refreshTree.current = organisation.refresh
   idOf.current = (path) => idAt(organisation.tree, path)
   return {

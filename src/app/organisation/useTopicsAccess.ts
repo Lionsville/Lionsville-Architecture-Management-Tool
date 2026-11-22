@@ -26,7 +26,7 @@ import type { ScopePath } from '../../projects/scopePath'
 import type { OrganisationIndex } from '../../ports/OrganisationIndex'
 import { createScopeAt, describeScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt } from '../../projects/scopeTree'
 import type { TreeScopes } from '../../projects/scopeTree'
-import type { InitialPage } from '../App'
+import type { InitialPage } from '../initialPage'
 import {
   choosableScopes, endedOn, relevantPlaces, stoppedToday, TOPICS_PLACE, topicRowsAt, topicsInForce, topicsOf, topicsRelevantAt, withDays, withLink, withoutLink,
 } from '../../projects/topics'

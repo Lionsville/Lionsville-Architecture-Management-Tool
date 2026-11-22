@@ -27,7 +27,7 @@ import type { ScopeCommand, ScopeId } from '../../projects/scopeState'
 import type { ScopePath } from '../../projects/scopePath'
 import type { Repositories } from '../../ports/Repositories'
 import type { FrameStep } from '../frame/frameStore'
-import type { ToastUndo } from '../useToasts'
+import type { ToastUndo } from '../reporting'
 
 /** A view as its row names it. */
 export type HomeView = { readonly id: string; readonly name: string; readonly kind: DesignDiagram['kind'] }

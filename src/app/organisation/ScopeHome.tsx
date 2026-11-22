@@ -48,10 +48,10 @@ import type { RegisterSummary } from './register'
 import type { TechnologySummary } from '../../projects/technologyRegister'
 import { plural } from '../../i18n/strings'
 import type { FindingTarget } from '../../roadmap/findingTarget'
-import type { InitialPage } from '../App'
+import type { InitialPage } from '../initialPage'
 import { viewActions } from '../../editor/viewActions'
 import type { HomeView } from './useHomeViews'
-import type { OrgPage } from '../useShellAgent'
+import type { OrgPage } from '../homePages'
 
 /** The presses a home's rows lead to. */
 export type HomeDoors = {

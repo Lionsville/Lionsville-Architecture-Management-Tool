@@ -21,6 +21,7 @@ import { ShareLinkDialog } from './dialogs/ShareLinkDialog'
 import { ErrorBoundary } from './ErrorBoundary'
 import { HistoryPage } from './history/lazyHistoryPage'
 import { useHistoryPlace } from './history/useHistoryPlace'
+import { useRecordChangesAccess } from './history/useRecordChangesAccess'
 import { SnapshotDialog } from './history/SnapshotDialog'
 import { FirstRun } from './organisation/FirstRun'
 import { OrganisationScreen } from './organisation/OrganisationScreen'
@@ -243,6 +244,9 @@ function useHomeMarking(parts: ShellParts): CheckMarking {
   )
 }
 
+/** Nothing is open on a home: a reader of a record's changes there names the scope it reads, and one that names none means the organisation. */
+const AT_THE_ORGANISATION = () => ROOT_SCOPE
+
 /**
  * Where a home writes its topics (ADR-0042) and its building blocks and
  * evaluations (ADR-0043): the source's scopes, its index to move one by, the
@@ -257,13 +261,14 @@ function useHomeTopics(parts: ShellParts): HomeStore {
   written.current = parts.writes.treeChanged
   const treeIndex = parts.tree.index
   const { makeId, hostControls, documents } = parts.props
+  const changes = useRecordChangesAccess({ history: repositories.history, scopes: repositories.scopes, here: AT_THE_ORGANISATION })
   return useMemo(() => ({
     scopes: repositories.scopes, index: repositories.index, notify, treeIndex, makeId,
-    ...(repositories.history ? { history: repositories.history } : {}),
+    ...(changes ? { changes } : {}),
     copyText: (text: string) => hostControls.copyText(text),
     saveDocument: (doc: { name: string; mediaType: string; text: string }) => documents.save(doc),
     written: () => { refresh(); written.current() },
-  }), [repositories, refresh, notify, treeIndex, makeId, hostControls, documents])
+  }), [repositories, refresh, notify, treeIndex, makeId, hostControls, documents, changes])
 }
 
 function Home({ parts }: { parts: ShellParts }) {

@@ -29,14 +29,14 @@ import { useShellPreferences } from './useShellPreferences'
 import type { PreferencesWriter, ShellPreferences } from './useShellPreferences'
 import { useKeepNotice } from './useKeepNotice'
 import type { KeepReport } from './useKeepNotice'
+import type { Failed } from './reporting'
 import { useToasts } from './useToasts'
 import type { Notify, ToastAction, Toasts } from './useToasts'
 import { isFault, notKeptSentence } from './notKept'
 import type { KeepFailedKey } from './notKept'
 import { refusalOf } from '../projects/refusalTag'
 
-/** Report a failure to the trail, and — with a key — to the person as well. */
-export type Failed = (where: string, cause: unknown, key?: StringKey) => void
+export type { Failed }
 
 export type ShellServices = {
   toasts: Toasts

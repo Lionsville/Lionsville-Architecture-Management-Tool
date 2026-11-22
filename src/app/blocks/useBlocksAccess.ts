@@ -28,7 +28,7 @@ import { ancestorScopes, isWithinScope, ROOT_SCOPE } from '../../projects/scopeP
 import type { ScopePath } from '../../projects/scopePath'
 import { choosableScopes, topicsInForce } from '../../projects/topics'
 import type { BlocksAccess, EvaluationRow } from '../../blocks/ui/BlocksContext'
-import type { InitialPage } from '../App'
+import type { InitialPage } from '../initialPage'
 import type { BelowScopes } from '../useChangeBelow'
 import { handOver } from '../handOver'
 import { refusalKey, writeIn } from '../units/writeIn'

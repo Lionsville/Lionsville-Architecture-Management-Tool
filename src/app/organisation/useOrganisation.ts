@@ -42,14 +42,14 @@ import type { ScopePath } from '../../projects/scopePath'
 import { changeScope, ensureScope, readScope, readScopeKnown, summaryOf } from '../../projects/scopeAccess'
 import { createScopeAt, fileTopicsPlace, moveScopeUnder, removeScopeAt, writeSettings } from '../../projects/scopeTree'
 import type { Repositories } from '../../ports/Repositories'
-import { opensOnNothing } from '../useShellNavigation'
+import { opensOnNothing } from '../initialPage'
 import { holdWrite } from '../writeRefusals'
 import { useScopeFolds } from './useScopeFolds'
-import type { ToastUndo } from '../useToasts'
+import type { ToastUndo } from '../reporting'
 import { useHomeViews } from './useHomeViews'
 import type { HomeViews } from './useHomeViews'
-import { usePreloadViews } from './preloadViews'
-import type { InitialPage, ScopeSettingsPatch } from '../App'
+import type { InitialPage } from '../initialPage'
+import type { ScopeSettingsPatch } from '../scopeSettings'
 import { isTopic, TOPICS_PLACE, topicFiledUnder } from '../../projects/topics'
 import { typeChosen } from '../../projects/scopeType'
 
@@ -282,8 +282,6 @@ function useHomeReads({ scopes, active, at, revision, onFailure }: {
     return () => { live = false }
   }, [scopes, active, at, revision])
 
-  // What this home lists, fetched while it is idle, so the first press on one is not a download.
-  usePreloadViews(ready, root, at)
   return { tree, root, ready, listed, listFailed, listedNow: listed && listedAt === revision }
 }
 

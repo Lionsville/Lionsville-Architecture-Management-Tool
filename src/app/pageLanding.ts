@@ -18,18 +18,16 @@
  * opens on is the screen it stays on. Pure: the shell holds the state.
  */
 import { boardsDrawing } from '../model'
-import { VIEW_PAGES, viewFor } from '../agent/screen'
+import { viewFor } from '../agent/screen'
 import type { ScopeSnapshot } from '../projects/scope'
-import type { InitialPage, ViewPageName } from './App'
+import { isViewPageName } from './initialPage'
+import type { InitialPage, ViewPageName } from './initialPage'
 
 export type PageLanding =
   | { readonly home: true }
   | { readonly page?: InitialPage; readonly activeDiagramId?: string }
 
-/** A page that is a view's tab, as `screen.ts` lists them. */
-export function isViewPageName(page: string | undefined): page is ViewPageName {
-  return page !== undefined && (VIEW_PAGES as readonly string[]).includes(page)
-}
+export { isViewPageName }
 
 function isViewPage(page: InitialPage): page is Extract<InitialPage, { page: ViewPageName }> {
   return isViewPageName(page.page)

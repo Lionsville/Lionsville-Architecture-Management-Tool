@@ -44,21 +44,10 @@ import type { PreferencesWriter } from './useShellPreferences'
 import type { ChooseDestination } from './workingFileFlows'
 import type { SourceFrame, SourcePageEntry, SourceYourWorkProps } from '../ports/ProviderParts'
 import type { ComponentType } from 'react'
+import type { SourceSayings } from './sourceSayings'
 import type { ProblemAction, SourceAttachments, SourceChanges, SourceComments, SourcePeople } from '../ports/ProviderParts'
 
-/** A provider's sentences about its source, as keys of its own table. */
-export type SourceSayings = {
-  readonly labelKey?: StringKey | (string & {})
-  readonly whereKey?: StringKey | (string & {})
-  /** What can lose the work here, for *Your work* and the first run. */
-  readonly riskKey?: StringKey | (string & {})
-  readonly removeKey?: StringKey | (string & {})
-  readonly unreadableKey?: StringKey | (string & {})
-  /** What a change this place would not take means here (`SourceProvider.keepFailedKey`). */
-  readonly keepFailedKey?: StringKey | (string & {})
-  /** The status word while a refused change stands, naming this place (`SourceProvider.refusedWordKey`). */
-  readonly refusedWordKey?: StringKey | (string & {})
-}
+export type { SourceSayings }
 
 /** What the composition root read before the first render, and what went wrong on the way. */
 export type AppBoot = {

@@ -34,6 +34,7 @@ import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { InitialPage, SourceOpen } from './App'
+import type { OrgPage, OrgPageRequest } from './homePages'
 import { initialPageFor } from './bootLanding'
 import type { OpenEnds } from './useShellNavigation'
 import { useAgentShell } from './useAgentShell'
@@ -42,28 +43,7 @@ import { landingFor } from './placeLanding'
 import { usePlaceHistory } from './usePlaceHistory'
 import type { Notify } from './useToasts'
 
-export type OrgPage = 'register' | 'technologyRegister' | 'people' | 'checks' | 'topics' | 'blocks' | 'settings' | 'agents'
-
-/**
- * What the shell asks of the organisation screen: one of its pages, or the
- * home itself with none over it. With a nonce, because the same thing
- * asked for twice is two requests and a prop that did not change is none.
- * `select` is the person the People page picks, where one was asked for:
- * not part of the place, as an element selected on a view is not.
- */
-export type OrgPageRequest = {
-  page: OrgPage | 'home'; nonce: number; select?: string
-  /** On the Checks page, the finding to come back to under the check picked. */
-  finding?: string
-  /** The tab a request lands on, where a page with tabs is asked for by a way in to one of them. */
-  tab?: string
-  /** On a block's page, the scope whose evaluation to open on (ADR-0043). */
-  evaluation?: string
-  /** Opened from another screen — a reader, a reference — so closing it goes back there (ADR-0033), not to the register. */
-  returns?: true
-  /** On the settings page, the field to give the focus to (`PAGE_FIELDS`): *Move to…* lands on *Filed under*. */
-  field?: string
-}
+export type { OrgPage, OrgPageRequest }
 
 /** What an address picks on a home's page: on the settings page, the field to focus. */
 function pickOf(page: OrgPage, pick: string | undefined): Pick<OrgPageRequest, 'select' | 'field'> {

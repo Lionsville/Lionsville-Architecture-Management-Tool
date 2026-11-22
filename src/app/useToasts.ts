@@ -10,15 +10,12 @@
  */
 import { useCallback, useMemo, useRef, useState } from 'react'
 import type { AlertColor } from '@mui/material/Alert'
+import type { ToastUndo } from './reporting'
 
 /** What a toast may offer to do about itself — one button, at most. */
 export type ToastAction = { label: string; onClick: () => void }
 
-/**
- * A change that landed, and the step that takes it back: drawn by the kit's
- * toast, whose button says Undo with its key, rather than as an offer.
- */
-export type ToastUndo = { undo: { onPress: () => void; shortcut?: string } }
+export type { ToastUndo }
 
 /**
  * One message. The key restarts the bar when a new message arrives.

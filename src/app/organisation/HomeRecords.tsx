@@ -10,10 +10,8 @@
  * down once. Where the shell keeps no store for them, nothing is handed down
  * and none of them is drawn.
  */
-import { ROOT_SCOPE } from '../../projects/scopePath'
-import type { HistoryRepository } from '../../ports/HistoryRepository'
 import { RecordChangesProvider } from '../../comments/ui/RecordChanges'
-import { useRecordChangesAccess } from '../history/useRecordChangesAccess'
+import type { RecordChangesAccess } from '../../comments/ui/RecordChanges'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { BlocksProvider } from '../../blocks/ui/BlocksContext'
@@ -34,8 +32,12 @@ export type HomeStore = Pick<TopicsDeps, 'scopes' | 'index' | 'written' | 'notif
   /** The tree's index as it stands: every block and every evaluation. */
   treeIndex: ScopeIndex
   makeId: (prefix: string) => string
-  /** The source's history, where a record's changes are read (ADR-0038, amended §11); absent where it keeps none. */
-  history?: HistoryRepository
+  /**
+   * A record's changes as the readers read them (ADR-0038, amended §11),
+   * filled by the shell from the source's history; absent where it keeps
+   * none. Nothing is open on a home, so every reader here names its scope.
+   */
+  changes?: RecordChangesAccess
   /** The host's clipboard and its save, for what a page carries out: a comparison as a table or a CSV. */
   copyText?: (text: string) => Promise<void>
   saveDocument?: (doc: { name: string; mediaType: string; text: string }) => Promise<void | 'cancelled'>
@@ -82,12 +84,10 @@ function WithRecords({ store, reads, children }: { store: HomeStore; reads: Read
   const topics = useTopicsAccess({ ...store, ...reads, blocksAt })
   const blocks = useBlocksAccess({ ...store, ...reads, index: treeIndex })
   const references = useHomeReferences(treeIndex, reads, blocks.scopeLabel)
-  // Nothing is open on a home: every reader here names the scope it reads.
-  const changes = useRecordChangesAccess({ history: store.history, scopes: store.scopes, here: () => ROOT_SCOPE })
   return (
     <TopicsProvider value={topics}>
       <BlocksProvider value={blocks}><ReferencesProvider value={references}>
-        <RecordChangesProvider value={changes}>{children}</RecordChangesProvider>
+        <RecordChangesProvider value={store.changes}>{children}</RecordChangesProvider>
       </ReferencesProvider></BlocksProvider>
     </TopicsProvider>
   )

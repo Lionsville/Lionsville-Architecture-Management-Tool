@@ -11,7 +11,8 @@ import { bareScope } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { ROOT_SCOPE, scopePathLabel } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
-import type { InitialPage } from './App'
+import { opensOnNothing } from './initialPage'
+import type { InitialPage } from './initialPage'
 import { pageLanding } from './pageLanding'
 import { ensureScope, readScope, readScopeKnown } from '../projects/scopeAccess'
 import type { ScopeReader } from '../projects/scopeAccess'
@@ -24,31 +25,8 @@ import type { ShellPreferences } from './useShellPreferences'
 
 export type ShellNavigation = ReturnType<typeof useShellNavigation>
 
-/**
- * Is this a page a scope has before anything is written in it — its decisions,
- * its observations, its roadmap, or a sheet, map or technology landscape the
- * person asked to be made? Those open on a scope with no document. A page that
- * names a record, a plan or a view names something that has to be there, and
- * a scope that is not there is then one somebody removed, not one to make; a
- * view's page with no id opens one that is there, and a scope with no
- * document has none (`pageLanding`).
- */
-export function opensOnNothing(page: InitialPage | undefined): boolean {
-  if (page === undefined) return false
-  switch (page.page) {
-    case 'decisions':
-    case 'observations':
-    case 'operating':
-    case 'principles':
-      return page.id === undefined
-    case 'roadmap':
-    case 'documentation':
-    case 'make':
-      return true
-    default:
-      return false
-  }
-}
+export { opensOnNothing }
+
 
 /** The view pages that open the scope's view of that kind when they name none. */
 const LANDS_ON_A_VIEW: readonly string[] = ['board', 'sheet', 'map', 'technology', 'chart', 'conway']

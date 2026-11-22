@@ -10,7 +10,6 @@ import type { ViewFacets } from '../widgets/placeTab'
 import { nearestPlace, viewFacetsOf } from '../agent/place'
 import type { Place } from '../agent/place'
 import { FRAME_PAGES, HOME_PAGES, VIEW_PAGES, viewFor } from '../agent/screen'
-import type { Destination, ObservationTab } from '../agent/screen'
 import { isOpenableScope, onView } from '../projects/scope'
 import type { ScopeSnapshot } from '../projects/scope'
 import { readScopes } from '../projects/scopeAccess'
@@ -18,9 +17,9 @@ import type { ScopeReader } from '../projects/scopeAccess'
 import { ancestorScopes, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
 import type { SourceLanding } from '../platform/sourceProvider'
-import type { InitialPage } from './App'
+import type { InitialPage } from './initialPage'
 import { factsOf } from './placeLanding'
-import { isViewPageName } from './pageLanding'
+import { initialPageFor } from './initialPage'
 import type { HeldScope } from './placeLanding'
 
 /** Where the first paint is: a scope open on a view or a page, or a scope's home and its page. */
@@ -276,31 +275,7 @@ function nearestLanding(nearest: ScopePath, place: Place): BootLanding {
   return nearest === ROOT_SCOPE ? scopeNotThere(place) : { ...homeOf(nearest), notice: 'shell.placeGone' }
 }
 
-/**
- * The page a scope opens on for a destination — an agent's (ADR-0019), a
- * provider's, a search hit's, a place in the history (ADR-0033): the same
- * words, so the vocabularies cannot drift. A home page is the shell's own
- * business and never reaches here; a view's page with no id is resolved
- * against the scope once it is read (`pageLanding`), and never makes a view.
- */
-export function initialPageFor(to: Destination): InitialPage | undefined {
-  const id = to.id !== undefined ? { id: to.id } : {}
-  if (isViewPageName(to.page)) return { page: to.page, ...id, ...(to.select !== undefined ? { select: to.select } : {}), ...(to.tab !== undefined ? { tab: to.tab } : {}), ...(to.edit ? { edit: true } : {}) }
-  switch (to.page) {
-    case 'decisions': return { page: 'decisions', ...id }
-    case 'observations': return { page: 'observations', ...id, ...(to.tab !== undefined ? { tab: to.tab as ObservationTab } : {}) }
-    case 'roadmap': return { page: 'roadmap', ...(to.select !== undefined ? { select: to.select } : {}) }
-    case 'operating': return { page: 'operating', ...id }
-    case 'principles': return { page: 'principles', ...id }
-    case 'plan': return to.id !== undefined ? { page: 'plan', id: to.id } : { page: 'roadmap' }
-    case 'element': return to.id !== undefined ? { page: 'element', id: to.id, ...(to.line !== undefined ? { line: to.line } : {}), ...(to.field !== undefined ? { field: to.field } : {}) } : undefined
-    case 'document': return to.id !== undefined ? { page: 'document', id: to.id } : { page: 'documentation' }
-    case 'documentation': return { page: 'documentation' }
-    case 'platform': return to.id !== undefined ? { page: 'platform', id: to.id } : undefined
-    case 'service': return to.id !== undefined ? { page: 'service', id: to.id } : undefined
-    default: return undefined
-  }
-}
+export { initialPageFor }
 
 /**
  * Which scope the boot must read before the first paint: none for a home,
