@@ -89,6 +89,7 @@ import type { AgentRegister } from './persons'
 import type { OpenDocument } from './assignments'
 import type { OperatingRead } from './operatingModel'
 import type { TreeView } from './tree'
+import { paged, pagingOf } from './paging'
 
 /** What the handler needs from the live session. Every one of these is on `ModelSession`. */
 export type SessionView = {
@@ -287,7 +288,11 @@ const CROP_MARGIN = 60
  * pressed while it runs.
  */
 export async function handle(request: AgentRequest, session: SessionView | undefined, shell?: ShellView): Promise<AgentAnswer> {
-  return withNames(await handled(request, session, shell), session, shell)
+  // A list read answers its whole list, and is cut into a page here (`paging.ts`).
+  const paging = pagingOf(request)
+  if (paging && !('tool' in paging)) return paging
+  if (!paging) return withNames(await handled(request, session, shell), session, shell)
+  return withNames(paged(await handled({ ...request, args: paging.args }, session, shell), paging), session, shell)
 }
 
 async function handled(request: AgentRequest, session: SessionView | undefined, shell: ShellView | undefined): Promise<AgentAnswer> {
@@ -788,7 +793,7 @@ function readHere(request: AgentRequest, view: ReadView, session: SessionView): 
 function listActivity(rawArgs: unknown, session: SessionView): AgentAnswer {
   const wrong = checkArguments(toolSpec('activity.list').inputSchema, rawArgs)
   if (wrong) return refused('agent.badArguments', wrong)
-  const limit = ((rawArgs ?? {}) as { limit?: number }).limit ?? 20
+  const limit = ((rawArgs ?? {}) as { limit?: number }).limit ?? Number.POSITIVE_INFINITY
   const steps = [...session.history()].reverse().slice(0, limit).map((step) => ({
     at: new Date(step.at).toISOString(),
     // Not an enum: a step that came from elsewhere is named by its author, so

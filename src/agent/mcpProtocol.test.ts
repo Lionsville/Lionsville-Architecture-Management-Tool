@@ -136,7 +136,7 @@ describe('the protocol on its own', () => {
   })
 
   it('turns an answer into a result, and a refusal into an error result', () => {
-    expect(toolResult(json({ a: 1 }))).toEqual({ content: [{ type: 'text', text: '{\n  "a": 1\n}' }] })
+    expect(toolResult(json({ a: 1 }))).toEqual({ content: [{ type: 'text', text: '{"a":1}' }] })
     expect(toolResult(refused('agent.off'))).toEqual({
       content: [{ type: 'text', text: 'agent.off: The app is not accepting agent connections. Turn them on in Connect an agent.' }],
       isError: true,

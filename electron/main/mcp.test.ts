@@ -96,7 +96,7 @@ describe('an SDK client against the server', () => {
     const client = await connect(listener.port)
     const result = await client.callTool({ name: 'project.current', arguments: {} })
     expect(asked).toEqual([{ id: expect.any(String), tool: 'project.current', args: {} }])
-    expect(result.content).toEqual([{ type: 'text', text: '{\n  "name": "Landscape"\n}' }])
+    expect(result.content).toEqual([{ type: 'text', text: '{"name":"Landscape"}' }])
     expect(result.isError).toBeFalsy()
     await client.close()
   })

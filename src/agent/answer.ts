@@ -159,7 +159,7 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
       // the whole business layer and filtering it by hand.
       const parentId = args.parentId as string | undefined
       if (parentId !== undefined && !model.elements[parentId]) return refused('agent.unknownId', `element ${parentId}`)
-      const limit = (args.limit as number | undefined) ?? 200
+      const limit = (args.limit as number | undefined) ?? Number.POSITIVE_INFINITY
       const rows: ReturnType<typeof elementLine>[] = []
       let total = 0
       for (const id of diagram ? diagram.order.members : model.order.elements) {
@@ -238,7 +238,7 @@ function answerTool(tool: Exclude<ReadTool, 'comments.list'>, rawArgs: unknown, 
     }
 
     case 'connections.list': {
-      const limit = (args.limit as number | undefined) ?? 500
+      const limit = (args.limit as number | undefined) ?? Number.POSITIVE_INFINITY
       const diagram = args.diagramId === undefined ? undefined : model.diagrams[args.diagramId as string]
       if (args.diagramId !== undefined && !diagram) return refused('agent.unknownId', `diagram ${String(args.diagramId)}`)
       if (args.elementId !== undefined && !model.elements[args.elementId as string]) {

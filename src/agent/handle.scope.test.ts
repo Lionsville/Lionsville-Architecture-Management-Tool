@@ -275,7 +275,7 @@ describe('the three reads about the tree', () => {
 
   it('answers over nothing when the session has no tree', async () => {
     const out = parsed(await handle({ id: '1', tool: 'register.list', args: {} }, session({ tree: undefined })))
-    expect(out).toEqual({ total: 0, some: [] })
+    expect(out).toEqual({ total: 0, shown: 0, some: [] })
   })
 })
 

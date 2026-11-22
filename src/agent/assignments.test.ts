@@ -436,8 +436,8 @@ describe('a reorganisation at the agent (ADR-0036 §6)', () => {
     const days: (string | undefined)[] = []
     const withChecks = session('customer', customer)
     const asked = { ...withChecks, tree: { ...tree(), findings: (day?: string) => { days.push(day); return [] } } }
-    expect(parsed(await ask('checks.list', { on: '2027-01-01' }, asked))).toEqual({ day: '2027-01-01', total: 0, some: [] })
-    expect(parsed(await ask('checks.list', {}, asked))).toEqual({ total: 0, some: [] })
+    expect(parsed(await ask('checks.list', { on: '2027-01-01' }, asked))).toEqual({ day: '2027-01-01', total: 0, shown: 0, some: [] })
+    expect(parsed(await ask('checks.list', {}, asked))).toEqual({ total: 0, shown: 0, some: [] })
     expect(days).toEqual(['2027-01-01', undefined])
   })
 })

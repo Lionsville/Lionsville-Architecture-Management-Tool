@@ -112,7 +112,8 @@ function screenOf(session: OpenScope | undefined): Screen {
 
 // --- views.list ------------------------------------------------------------------
 
-const VIEWS_LIMIT = 500
+/** Every one: the handler cuts the list into pages (`paging.ts`). */
+const VIEWS_LIMIT = Number.POSITIVE_INFINITY
 
 /**
  * Every view, scope by scope. The index carries no views on purpose

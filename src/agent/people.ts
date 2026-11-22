@@ -75,7 +75,7 @@ function listPeople(view: PeopleView, args: Record<string, unknown>): Promise<Ag
   return view.read().then(({ people, policy, distinct }) => {
     const state = args.state as PersonState | undefined
     const query = typeof args.query === 'string' ? args.query : ''
-    const limit = typeof args.limit === 'number' ? args.limit : 200
+    const limit = typeof args.limit === 'number' ? args.limit : Number.POSITIVE_INFINITY
     const shown = entriesOf(people).filter((person) => !state || person.state === state).map((person) => told(person, policy))
     const matching = query.trim() ? shown.filter((person) => matchesQuery(query, [person.name, person.id])) : shown
     return json({

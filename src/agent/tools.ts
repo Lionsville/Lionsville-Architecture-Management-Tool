@@ -669,7 +669,6 @@ const SPECS = [
           description: 'Only views of this kind.',
           enum: ['layer7', 'container', 'sheet', 'map', 'technology', 'drawing', 'chart', 'conway'],
         },
-        limit: { type: 'integer', description: 'At most this many. Default 500.', minimum: 1, maximum: 5000 },
       },
       additionalProperties: false,
     },
@@ -687,7 +686,6 @@ const SPECS = [
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Only applications whose name, id or master contains every word.' },
-        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
       additionalProperties: false,
     },
@@ -709,7 +707,6 @@ const SPECS = [
       properties: {
         kind: { type: 'string', description: 'Only services, or only platforms. Default both.', enum: ['platformService', 'platform'] },
         query: { type: 'string', description: 'Only rows whose name, id, master or maintainer contains every word.' },
-        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
       additionalProperties: false,
     },
@@ -850,7 +847,6 @@ const SPECS = [
         key: { type: 'string', description: 'Only findings with this key.' },
         notes: { type: 'boolean', description: 'Include the notes: findings whose check is weighed a note, information that may well be intended. Default false.' },
         information: { type: 'boolean', description: 'The same as notes, by its older name.' },
-        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
       additionalProperties: false,
     },
@@ -1003,7 +999,6 @@ const SPECS = [
       properties: {
         state: { type: 'string', description: 'Only entries in this state. Default all.', enum: PERSON_STATES },
         query: { type: 'string', description: 'Only entries whose name as shown, or id, contains every word.' },
-        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
       additionalProperties: false,
     },
@@ -1083,7 +1078,6 @@ const SPECS = [
         parentId: { type: 'string', description: 'Only the elements filed directly under this one: a function\'s capabilities, a phase\'s steps, an application\'s components, an actor group\'s actors.' },
         diagramId: { type: 'string', description: 'Only elements drawn on this diagram.' },
         query: { type: 'string', description: 'Only elements whose name, category, vendor or technology contains every word.' },
-        limit: { type: 'integer', description: 'At most this many. Default 200.', minimum: 1, maximum: 2000 },
       },
       additionalProperties: false,
     },
@@ -1115,7 +1109,6 @@ const SPECS = [
       properties: {
         elementId: { type: 'string', description: 'Only connections that start or end on this element.' },
         diagramId: { type: 'string', description: 'Only connections whose both ends are drawn on this diagram.' },
-        limit: { type: 'integer', description: 'At most this many. Default 500.', minimum: 1, maximum: 5000 },
       },
       additionalProperties: false,
     },
@@ -1324,7 +1317,6 @@ const SPECS = [
       type: 'object',
       properties: {
         about: COMMENT_ABOUT,
-        limit: { type: 'integer', description: 'Without about: how many of the newest. Default 20.', minimum: 1, maximum: 200 },
       },
       additionalProperties: false,
     },
@@ -1445,7 +1437,6 @@ const SPECS = [
         personId: { type: 'string', description: 'Only this person\'s, by register id (people.list); an id merged into theirs counts.' },
         on: { type: 'string', description: 'The day, yyyy-mm-dd. Default: today.' },
         all: { type: 'boolean', description: 'Every assignment, over or still to begin as well. Default false.' },
-        limit: { type: 'integer', description: 'At most this many. Default 500.', minimum: 1, maximum: 5000 },
       },
       additionalProperties: false,
     },
@@ -1536,7 +1527,7 @@ const SPECS = [
       + 'the newest steps while they are an agent\'s.',
     inputSchema: {
       type: 'object',
-      properties: { limit: { type: 'integer', description: 'At most this many. Default 20.', minimum: 1, maximum: 200 } },
+      properties: {},
       additionalProperties: false,
     },
   },
@@ -1551,7 +1542,6 @@ const SPECS = [
       type: 'object',
       properties: {
         about: COMMENT_ABOUT,
-        limit: { type: 'integer', description: 'At most this many entries. Default 20.', minimum: 1, maximum: 100 },
       },
       required: ['about'],
       additionalProperties: false,
@@ -3935,13 +3925,73 @@ export const ON_THE_TREE: readonly string[] = ['scope.create', 'scope.update', '
  */
 export const ABOUT_THE_APP: readonly string[] = ['app.current', 'app.open', 'session.start', 'session.end']
 
+/** A list read's page: how many rows one answer holds unless asked, and the most it holds when asked. */
+export type ListPage = {
+  readonly limit: number
+  readonly max: number
+  /** The answer's keys its rows may be under, first found first; the tool's noun and then `some` when unsaid. */
+  readonly rows?: readonly string[]
+}
+
+const PAGE: ListPage = { limit: 100, max: 1000 }
+
+/**
+ * Every list read, and its page. A list is cut into pages by the handler
+ * (`paging.ts`) rather than by each read, so every one of them continues with
+ * a `cursor`, answers only the `fields` asked for and has a default and a
+ * maximum `limit` — said here once, as `scope` is, and no list can forget it.
+ * Where a read had a limit of its own, its default and its most are kept.
+ */
+export const LISTS: Readonly<Partial<Record<ToolName, ListPage>>> = {
+  'scopes.list': { limit: 500, max: 5000 },
+  'views.list': { limit: 500, max: 5000, rows: ['some'] },
+  'register.list': { limit: 200, max: 2000, rows: ['some'] },
+  'technology.list': { limit: 200, max: 2000, rows: ['some'] },
+  'checks.list': { limit: 200, max: 2000, rows: ['some'] },
+  'principles.list': { ...PAGE, rows: ['principles', 'scopes'] },
+  'topics.list': PAGE,
+  'blocks.list': PAGE,
+  'references.list': PAGE,
+  'people.list': { limit: 200, max: 2000 },
+  'elements.list': { limit: 200, max: 2000 },
+  'connections.list': { limit: 500, max: 5000 },
+  'diagrams.list': PAGE,
+  'decisions.list': PAGE,
+  'observations.list': PAGE,
+  'causes.list': PAGE,
+  'solutions.list': PAGE,
+  'experiments.list': PAGE,
+  'comments.list': { limit: 20, max: 200, rows: ['comments', 'thread'] },
+  'unitTypes.list': PAGE,
+  'aspectScales.list': PAGE,
+  'roles.list': PAGE,
+  'responsibilities.list': PAGE,
+  'assignments.list': { limit: 500, max: 5000 },
+  'plans.list': PAGE,
+  'activity.list': { limit: 20, max: 200, rows: ['steps'] },
+  'changes.list': { limit: 20, max: 100 },
+  'images.list': PAGE,
+  'reportingLines.list': { ...PAGE, rows: ['lines'] },
+}
+
+/** The three arguments every list read takes, its page's numbers said in its `limit`. */
+export function pagingArguments(page: ListPage): Record<'cursor' | 'fields' | 'limit', ArgumentSchema> {
+  return {
+    cursor: { type: 'string', description: 'Continue: the next an earlier page of this question answered.' },
+    fields: { type: 'array', description: 'Only these fields of each row; id is always kept.', items: { type: 'string' } },
+    limit: { type: 'integer', description: `Rows per page. Default ${page.limit}.`, minimum: 1, maximum: page.max },
+  }
+}
+
 export const TOOLS: readonly ToolSpec[] = SPECS.map((tool): ToolSpec => {
+  const page = LISTS[tool.name]
   const properties = {
     ...tool.inputSchema.properties,
     ...(TREE_WIDE.includes(tool.name) || ABOUT_THE_APP.includes(tool.name) || ON_THE_REGISTER.includes(tool.name)
       || ON_THE_TREE.includes(tool.name) ? {} : { scope: SCOPE_ARGUMENT }),
     ...(tool.tier === 'read' || tool.tier === 'drive' || LOOKS_ONLY.includes(tool.name) || ON_THE_REGISTER.includes(tool.name)
       || ON_THE_TREE.includes(tool.name) ? {} : { ifRevision: REVISION_GUARD }),
+    ...(page ? pagingArguments(page) : {}),
   }
   return { ...tool, inputSchema: { ...tool.inputSchema, properties } }
 })
@@ -4017,6 +4067,11 @@ export type AgentRefusal =
   | 'agent.failed'
   | 'agent.planned'
   | 'agent.stale'
+  /**
+   * A cursor whose list changed under it, and the row its page ended on is no
+   * longer in it: where the next page starts is not known, so it is not guessed.
+   */
+  | 'agent.pageMoved'
   | 'agent.notYours'
   | 'agent.saveFailed'
   /**
@@ -4173,6 +4228,9 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.failed': 'The call failed where it was answered. Asking again fails the same way; tell the person, with the detail, so it can be put right.',
   'agent.planned': 'That interface was already dated by another plan, or by hand. Take that port back first.',
   'agent.stale': 'The project has changed since the revision this call named. Read it again and decide again.',
+  'agent.pageMoved':
+    'The list changed since the page that answered this cursor, and the row that page ended on is gone, so where the next '
+    + 'page starts is not known. Ask again without cursor for the list as it stands now.',
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
   'agent.principleCited': 'A record cites that principle, so it stays: retire it with principle.update status retired. The detail says which scopes cite it.',
@@ -4281,9 +4339,13 @@ export function text(value: string): AgentAnswer {
   return { ok: true, content: [{ type: 'text', text: value }] }
 }
 
-/** An answer that is data: JSON, indented, so a model and a person both read it. */
+/**
+ * An answer that is data: JSON, compact. It was indented for a person to read,
+ * and a model pays for every space of it on every turn: an indented list of a
+ * few hundred rows is a third whitespace.
+ */
 export function json(value: unknown): AgentAnswer {
-  return text(JSON.stringify(value, undefined, 2))
+  return text(JSON.stringify(value))
 }
 
 // --- checking a call against its own schema ------------------------------------

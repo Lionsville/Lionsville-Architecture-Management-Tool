@@ -116,7 +116,7 @@ export async function listAssignments(
   return json({
     day,
     total: lines.length,
-    assignments: lines.slice(0, typeof args.limit === 'number' ? args.limit : 500),
+    assignments: lines.slice(0, typeof args.limit === 'number' ? args.limit : Number.POSITIVE_INFINITY),
     ...(unit ? unitAnswer(unit, organisation, day, { roleName, unitName, named }) : {}),
   })
 }

@@ -37,7 +37,8 @@ import { json, refused } from './tools'
 import type { Args, Handler } from './write/shared'
 
 /** How many of a scope's newest comments `comments.list` answers where no record is named. */
-const NEWEST = 20
+/** Every one: the handler cuts the list into pages (`paging.ts`). */
+const NEWEST = Number.POSITIVE_INFINITY
 
 /** A numbered record by its id, or by what people call it — `OB-3`, `ob-0003`, the bare number — as the other tools find one. */
 function numbered(list: readonly { id: string; number: number }[], idOrLabel: string, prefix: string): string | undefined {

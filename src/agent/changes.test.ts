@@ -29,7 +29,7 @@ describe('changes.list (ADR-0038, amended §11)', () => {
       { at: '2026-10-20T00:00:00.000Z', by: 'Bo', via: 'An agent', what: 'changed tone' },
       { at: '2026-10-01T00:00:00.000Z', by: 'Ada', what: 'Created' },
     ])
-    expect(changesOf).toHaveBeenCalledWith({ kind: 'observation', id: 'ob-1' }, undefined, 20)
+    expect(changesOf).toHaveBeenCalledWith({ kind: 'observation', id: 'ob-1' }, undefined, 100)
   })
 
   it('reads another scope\'s record by its id', async () => {

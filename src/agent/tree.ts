@@ -232,7 +232,8 @@ export function listScopes(tree: TreeView | undefined, open: string | undefined,
   return json({ ...(open !== undefined ? { open } : { open: null, hint: 'nothing is open; app.open opens a scope' }), total: scopes.length, scopes })
 }
 
-const REGISTER_LIMIT = 200
+/** Every one: the handler cuts the list into pages (`paging.ts`). */
+const REGISTER_LIMIT = Number.POSITIVE_INFINITY
 
 export function listRegister(tree: TreeView | undefined, rawArgs: unknown): AgentAnswer {
   const args = (rawArgs ?? {}) as Args
@@ -313,7 +314,8 @@ export function listTechnology(tree: TreeView | undefined, rawArgs: unknown): Ag
   return json({ total, some: rows })
 }
 
-const CHECKS_LIMIT = 200
+/** Every one: the handler cuts the list into pages (`paging.ts`). */
+const CHECKS_LIMIT = Number.POSITIVE_INFINITY
 
 /**
  * The tree's findings, and apart from them the ones a person marked as

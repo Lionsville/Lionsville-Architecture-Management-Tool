@@ -101,8 +101,8 @@ describe('answers', () => {
     expect(refused('agent.badArguments', 'why')).toEqual({ ok: false, refusal: 'agent.badArguments', detail: 'why' })
   })
 
-  it('carries data as one indented JSON text block', () => {
-    expect(json({ a: 1 })).toEqual({ ok: true, content: [{ type: 'text', text: '{\n  "a": 1\n}' }] })
+  it('carries data as one compact JSON text block, which a model pays for by the character', () => {
+    expect(json({ a: 1, b: [2] })).toEqual({ ok: true, content: [{ type: 'text', text: '{"a":1,"b":[2]}' }] })
   })
 })
 

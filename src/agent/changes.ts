@@ -32,7 +32,8 @@ export async function listChanges(
   const about = elsewhere === undefined ? aboutOf(session.indexed(), args.about) : { kind: args.about.kind, id: args.about.id } as RecordKey
   if ('ok' in about) return about
   if (!session.changesOf) return json({ about, kept: false, changes: [] })
-  const read = await session.changesOf(about, elsewhere, args.limit ?? 20)
+  // Asked for as many as a page may hold: the handler cuts the page (`paging.ts`).
+  const read = await session.changesOf(about, elsewhere, args.limit ?? 100)
   return json({
     about,
     kept: true,

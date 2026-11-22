@@ -498,3 +498,32 @@ already read with the app closed; ADR-0004 for the generated landscape the
 inspect report is tested and budgeted against; ADR-0005 for the preference
 scope the switch lives in, the menu said once, and the top bar this glyph sits
 beside.
+
+## Amended 22 November 2026 — a list continues, and an answer is compact
+
+Thirteen list reads took a `limit` and answered `{ total, shown }` with no
+way to ask for the rest; six took no limit at all; no read let a caller say
+which fields it wanted; and every answer was JSON indented by two spaces,
+which a model pays for by the character on every turn.
+
+* **Every list read pages** (`agent/paging.ts`, the lists and their numbers
+  in `LISTS` in `tools.ts`). The read answers its whole list to the handler,
+  which answers one page: `limit` rows — a default and a maximum per list,
+  the numbers a read had before kept where it had them — `total` and
+  `shown`, and `next`, an opaque cursor, while there are more. `fields`
+  keeps only the fields named of each row, and its `id`. The three are added
+  to every `*.list` by the vocabulary as `scope` is, so no list can forget
+  them.
+* **The cursor is held to the question and to the list.** It carries the
+  position, a fingerprint of the arguments other than the page's own, and a
+  fingerprint of the rows as that page read them, with the key of the last
+  row shown. A cursor from another question is refused. Where the list is as
+  it was, the next page follows on. Where it moved — something was written
+  between two pages — the next page starts after the row the last one ended
+  on and says `moved: true`: what was added or removed before that row is
+  not in the pages already read, and a caller that needs the list whole
+  reads it again without a cursor. Where that row is gone, the place is not
+  known and the call is refused, `agent.pageMoved`. The fingerprint is of
+  the rows rather than of the scope's revision, so a list across the whole
+  tree, and a host whose revision moves with every author, page the same way.
+* **An answer is compact JSON.** `json()` no longer indents.
