@@ -24,6 +24,9 @@ import { useBlocks } from './BlocksContext'
 import { SORT_WORD } from './EvaluationGrid'
 import type { BlockRow } from './BlocksContext'
 
+/** A column of the catalogue beside the name: half the name's share of what is left. */
+const NARROW = 'minmax(0, 0.5fr)'
+
 export const STATUS_WORD: Record<SolutionBlockStatus, StringKey> = {
   candidate: 'blocks.statusCandidate', evaluated: 'blocks.statusEvaluated', inUse: 'blocks.statusInUse', retired: 'blocks.statusRetired',
 }
@@ -71,9 +74,10 @@ export function BlockSolutions({ row }: { row: BlockRow }) {
         <div data-testid="block-solutions">
           <List
             label={t('blocks.solutions')} itemLabel={t('blocks.name')} groups={[{ id: '', label: '', rows }]}
+            // The name takes the width: the other six are short words or often empty, and an even share cut the name at 1024 px.
             columns={[
-              { id: 'supplier', label: t('blocks.supplier') }, { id: 'sort', label: t('blocks.sort') }, { id: 'status', label: t('blocks.status') },
-              { id: 'weighed', label: t('blocks.weighedIn') }, { id: 'chosen', label: t('blocks.chosenIn') }, { id: 'elements', label: t('blocks.isElement') },
+              { id: 'supplier', label: t('blocks.supplier'), width: NARROW }, { id: 'sort', label: t('blocks.sort'), width: 'auto' }, { id: 'status', label: t('blocks.status'), width: 'auto' },
+              { id: 'weighed', label: t('blocks.weighedIn'), width: NARROW }, { id: 'chosen', label: t('blocks.chosenIn'), width: NARROW }, { id: 'elements', label: t('blocks.isElement'), width: NARROW },
             ]}
           />
         </div>
@@ -139,10 +143,10 @@ export function SolutionDialog({ row, onClose }: { row: BlockRow; onClose: (made
   }
   return (
     <Dialog
-      open size="m" title={t('blocks.addSbbTitle')} onClose={() => onClose()}
+      open size="m" title={t('blocks.addSbbTitle')} onClose={() => onClose()} onSubmit={() => { if (name.trim()) add() }}
       actions={{
         cancel: { onClick: () => onClose(), label: t('common.cancel') },
-        outcome: { disabled: !name.trim(), onClick: add, 'data-testid': 'sbb-add', label: t('blocks.add') },
+        outcome: { type: 'submit', disabled: !name.trim(), 'data-testid': 'sbb-add', label: t('blocks.add') },
       }}
     >
       <TextField autoFocus label={t('blocks.name')} value={name} onChange={setName} data-testid="sbb-name" />

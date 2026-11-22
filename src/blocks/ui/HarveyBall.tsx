@@ -36,12 +36,16 @@ const LEVEL_WORD: Record<Level, StringKey> = {
   0: 'blocks.level0', 1: 'blocks.level1', 2: 'blocks.level2', 3: 'blocks.level3', 4: 'blocks.level4',
 }
 
-/** The balls, in words. */
-export function BallLegend() {
+/**
+ * The balls, in words: how far something is covered by default, and what a
+ * need is called where the balls are needs — a grid of needs read against a
+ * legend of coverage said *not at all* for *Not needed*.
+ */
+export function BallLegend({ words = LEVEL_WORD, label = 'blocks.legend' }: { words?: Record<Level, StringKey>; label?: StringKey }) {
   const { t } = useStrings()
   return (
-    <ul className="guidance-legend" aria-label={t('blocks.legend')}>
-      {([0, 1, 2, 3, 4] as const).map((level) => <li key={level}><BallFigure level={level} size={14} />{t(LEVEL_WORD[level])}</li>)}
+    <ul className="guidance-legend" aria-label={t(label)}>
+      {([0, 1, 2, 3, 4] as const).map((level) => <li key={level}><BallFigure level={level} size={14} />{t(words[level])}</li>)}
     </ul>
   )
 }

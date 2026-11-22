@@ -70,6 +70,12 @@ function accessOver(over: Partial<BlocksAccess> = {}): BlocksAccess {
   }
 }
 
+/** The last change to the block, worked out over the block as its scope holds it where it was handed as a function. */
+const patchOf = (access: BlocksAccess) => {
+  const patch = vi.mocked(access.update).mock.lastCall![1]
+  return typeof patch === 'function' ? patch(GATEWAY) : patch
+}
+
 const page = (access: BlocksAccess, extra: { evaluation?: string } = {}) => renderShell(
   <BlocksProvider value={access}><BlockPage open id="blk-gw" {...extra} onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>,
 )
@@ -203,13 +209,50 @@ describe('a building block\'s page', () => {
     fireEvent.click(screen.getByTestId('block-add-capability'))
     fireEvent.change(screen.getByTestId('capability-text'), { target: { value: 'Signs every message' } })
     fireEvent.click(screen.getByTestId('capability-add'))
-    expect(access.update).toHaveBeenLastCalledWith('blk-gw', { capabilities: [...GATEWAY.capabilities!, { id: 'cap-new', text: 'Signs every message' }] })
+    expect(patchOf(access)).toEqual({ capabilities: [...GATEWAY.capabilities!, { id: 'cap-new', text: 'Signs every message' }] })
     fireEvent.click(screen.getByRole('button', { name: s('blocks.moreOf', { name: 'Routes by content' }) }))
     fireEvent.click(await screen.findByRole('menuitem', { name: s('blocks.remove') }))
     expect(access.update).toHaveBeenLastCalledWith('blk-gw', {
       capabilities: [GATEWAY.capabilities![1]],
       contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, GATEWAY.contexts![1]],
     })
+  })
+
+  it('adds capabilities one after another: Enter adds and the dialog stays for the next, each onto what the scope holds', () => {
+    const access = accessOver()
+    page(access)
+    onRequirements()
+    fireEvent.click(screen.getByTestId('block-add-capability'))
+    fireEvent.change(screen.getByTestId('capability-text'), { target: { value: 'Signs every message' } })
+    fireEvent.submit(screen.getByTestId('capability-text').closest('form')!)
+    expect(patchOf(access)).toEqual({ capabilities: [...GATEWAY.capabilities!, { id: 'cap-new', text: 'Signs every message' }] })
+    expect(screen.getByRole('status').textContent).toBe(s('blocks.added', { name: 'Signs every message' }))
+    expect(screen.getByTestId('capability-text')).toHaveProperty('value', '')
+    fireEvent.change(screen.getByTestId('capability-text'), { target: { value: 'Retries' } })
+    fireEvent.click(screen.getByTestId('capability-add-next'))
+    expect(access.update).toHaveBeenCalledTimes(2)
+  })
+
+  it('takes a pasted list as one step, a ! a must, and none the block has twice', () => {
+    const access = accessOver()
+    page(access)
+    onRequirements()
+    fireEvent.click(screen.getByTestId('block-add-capability'))
+    fireEvent.click(screen.getByTestId('capability-list-toggle'))
+    fireEvent.change(screen.getByTestId('capability-list'), { target: { value: '- Signs every message!\nRoutes by content\n! Retries' } })
+    expect(screen.getByRole('status').textContent).toBe(s('blocks.listedMusts', { count: 2, musts: 2 }))
+    fireEvent.click(screen.getByTestId('capability-add-list'))
+    expect(access.update).toHaveBeenCalledTimes(1)
+    expect(patchOf(access)).toEqual({ capabilities: [...GATEWAY.capabilities!, { id: 'cap-new', text: 'Signs every message', must: true }, { id: 'cap-new', text: 'Retries', must: true }] })
+    expect(screen.queryByTestId('capability-list')).toBeNull()
+  })
+
+  it('says what a need is called under the need grid, not how far something is covered', () => {
+    page(accessOver())
+    onRequirements()
+    const legend = screen.getByRole('list', { name: s('blocks.needLegend') })
+    expect(legend.textContent).toContain(s('blocks.need4'))
+    expect(legend.textContent).not.toContain(s('blocks.level4'))
   })
 
   it('reads its document, opens a context\'s chapter from its head, and lists the principles it cites', async () => {

@@ -17,6 +17,7 @@ import { SelectField, TextField } from '../../widgets/kit/Field'
 import { MenuButton, MoreMenu } from '../../widgets/kit/Menu'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
+import { capabilitiesFrom } from './capabilityList'
 import { RequirementsGrid } from './EvaluationGrid'
 
 export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter: (context: string) => void }) {
@@ -76,36 +77,73 @@ export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter
   )
 }
 
+/**
+ * A capability, or a list of them: *Add and next* — and Enter — adds one and
+ * stays for the next, *Add* adds and closes, and *Paste a list…* takes a list
+ * one per line as one step (`capabilitiesFrom`). Each is added to the block as
+ * the scope holds it, so a second added before the tree is read again does not
+ * drop the first.
+ */
 function CapabilityDialog({ row, onClose }: { row: BlockRow; onClose: () => void }) {
   const access = useBlocks()
   const { t } = useStrings()
   const [text, setText] = useState('')
   const [must, setMust] = useState(false)
   const [aspect, setAspect] = useState('')
+  const [listing, setListing] = useState(false)
+  const [list, setList] = useState('')
+  const [added, setAdded] = useState<string | undefined>(undefined)
+  const [round, setRound] = useState(0)
   if (!access) return null
   const aspects = access.aspectChoices(row.scope)
-  const add = () => {
+  const append = (made: readonly BlockCapability[]) => access.update(row.block.id, (held) => ({ capabilities: [...(held.capabilities ?? []), ...made] }))
+  const addOne = (next: boolean) => {
+    if (!text.trim()) return
     const picked = aspects[Number(aspect)]?.aspect
-    const capability: BlockCapability = {
-      id: access.makeId('cap'), text: text.trim(), ...(must ? { must: true as const } : {}), ...(aspect !== '' && picked ? { aspect: picked } : {}),
-    }
-    access.update(row.block.id, { capabilities: [...(row.block.capabilities ?? []), capability] })
+    append([{ id: access.makeId('cap'), text: text.trim(), ...(must ? { must: true as const } : {}), ...(aspect !== '' && picked ? { aspect: picked } : {}) }])
+    if (!next) { onClose(); return }
+    setAdded(text.trim())
+    setText('')
+    setMust(false)
+    setRound((count) => count + 1)
+  }
+  const listed = capabilitiesFrom(list, (row.block.capabilities ?? []).map((one) => one.text))
+  const addListed = () => {
+    if (listed.length === 0) return
+    append(listed.map((one) => ({ id: access.makeId('cap'), text: one.text, ...(one.must ? { must: true as const } : {}) })))
     onClose()
   }
+  const toggle = { onClick: () => setListing((was) => !was), label: listing ? t('blocks.oneByOne') : t('blocks.pasteList'), 'data-testid': 'capability-list-toggle' }
   return (
     <Dialog
-      open size="m" title={t('blocks.addCapabilityTitle')} onClose={onClose}
-      actions={{
+      open size="m" title={t('blocks.addCapabilityTitle')} onClose={onClose} onSubmit={listing ? addListed : () => addOne(true)}
+      actions={listing ? {
         cancel: { onClick: onClose, label: t('common.cancel') },
-        outcome: { disabled: !text.trim(), onClick: add, 'data-testid': 'capability-add', label: t('blocks.add') },
+        aside: [toggle],
+        outcome: { type: 'submit', disabled: listed.length === 0, 'data-testid': 'capability-add-list', label: t('blocks.addListed', { count: listed.length }) },
+      } : {
+        cancel: { onClick: onClose, label: added ? t('common.close') : t('common.cancel') },
+        aside: [toggle],
+        also: [{ disabled: !text.trim(), onClick: () => addOne(false), 'data-testid': 'capability-add', label: t('blocks.add') }],
+        outcome: { type: 'submit', disabled: !text.trim(), 'data-testid': 'capability-add-next', label: t('blocks.addAndNext') },
       }}
     >
-      <TextField autoFocus label={t('blocks.capabilityText')} hint={t('blocks.capabilityHelp')} value={text} onChange={setText} data-testid="capability-text" />
-      <label className="guidance-form__tick"><input type="checkbox" checked={must} onChange={(event) => setMust(event.target.checked)} />{t('blocks.mustLabel')}</label>
-      <SelectField
-        label={t('blocks.aspectField')} value={aspect} onChange={setAspect}
-        options={[{ value: '', label: t('blocks.noAspect') }, ...aspects.map((one, index) => ({ value: String(index), label: one.label }))]}
-      />
+      {listing ? (
+        <>
+          <TextField autoFocus rows={8} label={t('blocks.listField')} hint={t('blocks.listHelp')} value={list} onChange={setList} data-testid="capability-list" />
+          {listed.length > 0 && <p role="status">{t('blocks.listedMusts', { count: listed.length, musts: listed.filter((one) => one.must).length })}</p>}
+        </>
+      ) : (
+        <>
+          <TextField key={round} autoFocus label={t('blocks.capabilityText')} hint={t('blocks.capabilityHelp')} value={text} onChange={setText} data-testid="capability-text" />
+          <label className="guidance-form__tick"><input type="checkbox" checked={must} onChange={(event) => setMust(event.target.checked)} />{t('blocks.mustLabel')}</label>
+          <SelectField
+            label={t('blocks.aspectField')} value={aspect} onChange={setAspect}
+            options={[{ value: '', label: t('blocks.noAspect') }, ...aspects.map((one, index) => ({ value: String(index), label: one.label }))]}
+          />
+          {added && <p role="status">{t('blocks.added', { name: added })}</p>}
+        </>
+      )}
     </Dialog>
   )
 }
@@ -126,10 +164,10 @@ function ContextDialog({ row, onClose }: { row: BlockRow; onClose: () => void })
   }
   return (
     <Dialog
-      open size="m" title={t('blocks.addContextTitle')} onClose={onClose}
+      open size="m" title={t('blocks.addContextTitle')} onClose={onClose} onSubmit={() => { if (name.trim()) add() }}
       actions={{
         cancel: { onClick: onClose, label: t('common.cancel') },
-        outcome: { disabled: !name.trim(), onClick: add, 'data-testid': 'context-add', label: t('blocks.add') },
+        outcome: { type: 'submit', disabled: !name.trim(), 'data-testid': 'context-add', label: t('blocks.add') },
       }}
     >
       <p>{t('blocks.contextIntro')}</p>

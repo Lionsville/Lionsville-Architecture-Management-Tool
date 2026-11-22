@@ -146,7 +146,7 @@ export function RequirementsGrid({ block, onChange, rowEnd }: {
         } : {})}
       />
       {onChange && <p className="blocks-hint">{t('blocks.setBall')}</p>}
-      <BallLegend />
+      <BallLegend words={NEED_WORD} label="blocks.needLegend" />
     </div>
   )
 }
