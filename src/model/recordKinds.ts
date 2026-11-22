@@ -97,6 +97,16 @@ export type KindDescriptor<L extends RecordList> = {
    * `commands/plain.ts` holds the vocabulary to what is said here.
    */
   readonly commands: 'own' | { readonly payload: string }
+  /**
+   * How a whole restore puts the list back (`restore.ts`). `'rows'`: each
+   * record as it was, added or patched by what differs, in the order it was
+   * kept, then those gone removed. `'list'`: the list handed back whole
+   * (`listToCommands`), once every other record is back. `'own'`: the restore
+   * says more of the kind than either — a locked decision kept, a thread put
+   * back after its record. `'none'`: a whole restore leaves the list as it is.
+   * The first two are a plain list's only.
+   */
+  readonly restore: 'rows' | 'list' | 'own' | 'none'
 } & Compared<L>
 
 /**
@@ -129,71 +139,85 @@ export const KINDS = {
   elements: {
     list: 'elements', kind: 'element', idOf: ownId, absentWhenEmpty: false,
     commands: 'own',
+    restore: 'own',
     diff: 'own',
   },
   relations: {
     list: 'relations', kind: 'relation', idOf: ownId, absentWhenEmpty: false,
     commands: 'own',
+    restore: 'own',
     diff: 'own',
   },
   diagrams: {
     list: 'diagrams', kind: 'diagram', idOf: ownId, absentWhenEmpty: false,
     commands: 'own',
+    restore: 'own',
     diff: 'own',
   },
   decisions: {
     list: 'decisions', kind: 'decision', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'decision' },
+    restore: 'own',
     diff: 'own',
   },
   transitions: {
     list: 'transitions', kind: 'transition', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'transition' },
+    restore: 'none',
     diff: 'own',
   },
   observations: {
     list: 'observations', kind: 'observation', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'observation' },
+    restore: 'own',
     diff: 'own',
   },
   causes: {
     list: 'causes', kind: 'cause', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'cause' },
+    restore: 'own',
     diff: 'own',
   },
   solutions: {
     list: 'solutions', kind: 'solution', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'solution' },
+    restore: 'own',
     diff: 'own',
   },
   experiments: {
     list: 'experiments', kind: 'experiment', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'experiment' },
+    restore: 'own',
     diff: 'own',
   },
   unitTypes: {
     list: 'unitTypes', kind: 'unitType', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'unitType' },
+    restore: 'own',
     diff: 'own',
   },
   roles: {
     list: 'roles', kind: 'role', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'role' },
+    restore: 'own',
     diff: 'own',
   },
   responsibilities: {
     list: 'responsibilities', kind: 'responsibility', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'responsibility' },
+    restore: 'own',
     diff: 'own',
   },
   operatingRules: {
     list: 'operatingRules', kind: 'operatingRule', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'rule' },
+    restore: 'own',
     diff: 'own',
   },
   assignments: {
     list: 'assignments', kind: 'assignment', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'assignment' },
+    restore: 'rows',
     // By the unit it is in: a line kept with the history never names the person (ADR-0036 §8).
     diff: 'compare', nameOf: (held, around) => around.element(held.unitId) ?? held.unitId,
   },
@@ -201,27 +225,32 @@ export const KINDS = {
   checkMarks: {
     list: 'checkMarks', kind: 'checkMark', idOf: checkMarkId, absentWhenEmpty: true,
     commands: 'own',
+    restore: 'own',
     diff: 'own',
   },
   comments: {
     list: 'comments', kind: 'comment', idOf: ownId, absentWhenEmpty: true,
     commands: 'own',
+    restore: 'own',
     diff: 'own',
   },
   principles: {
     list: 'principles', kind: 'principle', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'principle' },
+    restore: 'own',
     diff: 'own',
   },
   citations: {
     list: 'citations', kind: 'citation', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'citation' },
+    restore: 'own',
     // By the record that cites, as the scope calls it.
     diff: 'compare', nameOf: (held, around) => around.record(held.about) ?? held.about.id,
   },
   evaluations: {
     list: 'evaluations', kind: 'evaluation', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'evaluation' },
+    restore: 'list',
     // By the block, where this scope knows it.
     diff: 'compare', nameOf: (held, around) => around.element(held.block.id) ?? held.block.id,
   },

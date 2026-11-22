@@ -543,6 +543,29 @@ export function duplicateDiagram(
   return { type: 'diagram.create', diagram: copy, at: model.order.diagrams.indexOf(id) + 1 }
 }
 
+/** The plain three commands of one list, as whoever builds them from a list's name says them. */
+export type PlainCommands<L extends PlainList> = {
+  add: (record: RecordOf[L]) => Command
+  update: (id: string, patch: Partial<RecordOf[L]>) => Command
+  remove: (id: string) => Command
+}
+
+/**
+ * The plain three of one list, said in its kind's own words: the type and the
+ * payload its descriptor names (`recordKinds.ts`), which `commands/plain.ts`
+ * holds the vocabulary to — so a reader that takes a list builds its commands
+ * without a line per list.
+ */
+export function plainCommands<L extends PlainList>(list: L): PlainCommands<L> {
+  const { kind, commands: { payload } } = KINDS[list] as { kind: string; commands: { payload: string } }
+  const say = (command: { type: string } & Record<string, unknown>) => command as unknown as Command
+  return {
+    add: (record) => say({ type: `${kind}.add`, [payload]: record }),
+    update: (id, patch) => say({ type: `${kind}.update`, id, patch }),
+    remove: (id) => say({ type: `${kind}.remove`, id }),
+  }
+}
+
 /**
  * A whole list of records, said as the changes that get there — for any list
  * written by the plain three commands (`recordKinds.ts`).
@@ -558,18 +581,14 @@ export function duplicateDiagram(
  * written is honest: what it cannot tell apart, nothing downstream can either.
  */
 export function listToCommands<L extends PlainList>(model: Model, list: L, next: readonly RecordOf[L][]): Command[] {
-  const { kind, commands: { payload } } = KINDS[list] as { kind: string; commands: { payload: string } }
-  const held = (model[list] ?? {}) as Record<string, RecordOf[L]>
+  const say = plainCommands(list)
+  const held = (model[list] ?? {}) as Record<string, RecordOf[L] | undefined>
   const wanted = new Set(next.map((one) => one.id))
-  // Said in the kind's own words, which `commands/plain.ts` holds the vocabulary to.
-  const say = (command: { type: string } & Record<string, unknown>) => command as unknown as Command
-  const commands = model.order[list].filter((id) => !wanted.has(id)).map((id) => say({ type: `${kind}.remove`, id }))
+  const commands = model.order[list].filter((id) => !wanted.has(id)).map((id) => say.remove(id))
   for (const one of next) {
-    const before = held[one.id] as RecordOf[L] | undefined
-    if (!before) commands.push(say({ type: `${kind}.add`, [payload]: one }))
-    else if (JSON.stringify(before) !== JSON.stringify(one)) {
-      commands.push(say({ type: `${kind}.update`, id: one.id, patch: replacement(before, one) }))
-    }
+    const before = held[one.id]
+    if (!before) commands.push(say.add(one))
+    else if (JSON.stringify(before) !== JSON.stringify(one)) commands.push(say.update(one.id, replacement(before, one)))
   }
   return commands
 }

@@ -29,14 +29,16 @@
 import { isAdrLocked } from './adr'
 import { isMarkable } from './checkMarks'
 import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from './commands'
-import { citationsToCommands, commentsToCommands, evaluationsToCommands } from './commands'
+import { citationsToCommands, commentsToCommands, listToCommands, plainCommands } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  assignmentsOf, boxesOf, causesOf, checkMarksOf, citationList, commentList, evaluationList, principlesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
+  boxesOf, causesOf, checkMarksOf, citationList, commentList, principlesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
   responsibilitiesOf, rolesOf, routesOf, solutionsOf, toDiagram, unitTypesOf,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
 import { edgeRoutesOf, splitRoutes } from './routes'
+import { KINDS, RECORD_LIST_NAMES } from './recordKinds'
+import type { PlainList, RecordList, RecordOf } from './recordKinds'
 import { FIXED_ON_A_STANDIN } from './standIn'
 import type { DesignElement, DiagramSettings, Relation } from './types'
 import type { OperatingRuleKind } from './operatingModel'
@@ -254,14 +256,68 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
     if (!thenExperiments[id]) commands.push({ type: 'experiment.remove', id })
   }
   commands.push(...operatingBack(then, now))
+  const lists = listsBack(then, now)
+  commands.push(...lists.rows)
   commands.push(...principlesBack(then, now))
   commands.push(...threads.filter((command) => command.type !== 'comment.take'))
   commands.push(...cited.filter((command) => command.type !== 'citation.remove'))
-  // The evaluations of building blocks as they were (ADR-0043 §4): records of their own, named by their block.
-  commands.push(...evaluationsToCommands(now, evaluationList(then)))
+  commands.push(...lists.last)
 
   const restored: Restored = { what: 'project', name: then.name, asOf }
   return { ok: true, command: { type: 'restore', restored, commands }, dropped, kept }
+}
+
+/**
+ * Every list its descriptor says a whole restore puts back the plain way
+ * (`recordKinds.ts`), in the order the model keeps them: `rows`, record by
+ * record, and `last`, the lists handed back whole once every other record is
+ * back. The marks are written in their place among them, as they always were.
+ */
+function listsBack(then: Model, now: Model): { rows: Command[]; last: Command[] } {
+  const rows: Command[] = []
+  const last: Command[] = []
+  for (const list of RECORD_LIST_NAMES) {
+    const how = KINDS[list].restore
+    if (how === 'rows') rows.push(...rowsBack(list as PlainList, then, now))
+    else if (how === 'list') last.push(...listToCommands(now, list as PlainList, listOf(then, list as PlainList)))
+    else if (list === 'checkMarks') rows.push(...marksBack(then, now))
+  }
+  return { rows, last }
+}
+
+// A list restored the plain way is written by the plain three: a descriptor
+// that says `rows` or `list` of any other list does not compile.
+type RestoredPlainly = { [L in RecordList]: (typeof KINDS)[L]['restore'] extends 'rows' | 'list' ? L : never }[RecordList]
+const PLAIN_ONLY: [RestoredPlainly] extends [PlainList] ? true : never = true
+void PLAIN_ONLY
+
+/** A list's records in the order the model keeps them. */
+function listOf<L extends PlainList>(model: Model, list: L): RecordOf[L][] {
+  const by = (model[list] ?? {}) as Record<string, RecordOf[L]>
+  return model.order[list].map((id) => by[id])
+}
+
+/**
+ * One list as it was, record by record: nothing in it locks, so each record
+ * the snapshot held is added, or patched by what differs, and each it did
+ * not hold is removed.
+ */
+function rowsBack<L extends PlainList>(list: L, then: Model, now: Model): Command[] {
+  const say = plainCommands(list)
+  const was = (then[list] ?? {}) as Record<string, RecordOf[L] | undefined>
+  const is = (now[list] ?? {}) as Record<string, RecordOf[L] | undefined>
+  const commands: Command[] = []
+  for (const id of then.order[list]) {
+    const target = was[id] as RecordOf[L]
+    const current = is[id]
+    if (!current) commands.push(say.add(target))
+    else {
+      const patch = differing(current, target)
+      if (Object.keys(patch).length) commands.push(say.update(id, patch))
+    }
+  }
+  for (const id of now.order[list]) if (!was[id]) commands.push(say.remove(id))
+  return commands
 }
 
 /** The principles as they were (ADR-0041): the list whole, as the observations restore. */
@@ -281,8 +337,8 @@ function principlesBack(then: Model, now: Model): Command[] {
 }
 
 /**
- * The operating model and the assignments as they were (ADR-0036): every
- * list whole, as the observations restore — nothing in them locks.
+ * The operating model as it was (ADR-0036): every list whole, as the
+ * observations restore — nothing in them locks.
  */
 function operatingBack(then: Model, now: Model): Command[] {
   const commands: Command[] = []
@@ -313,11 +369,6 @@ function operatingBack(then: Model, now: Model): Command[] {
     (rule) => ({ type: 'operatingRule.add', rule }),
     (id, patch) => ({ type: 'operatingRule.update', id: id as OperatingRuleKind, patch }),
     (id) => ({ type: 'operatingRule.remove', id: id as OperatingRuleKind }))
-  // Who held which role, as it was (ADR-0036 §4): a list like the others.
-  back(assignmentsOf(then), assignmentsOf(now), { then: then.order.assignments, now: now.order.assignments },
-    (assignment) => ({ type: 'assignment.add', assignment }), (id, patch) => ({ type: 'assignment.update', id, patch }),
-    (id) => ({ type: 'assignment.remove', id }))
-  commands.push(...marksBack(then, now))
   return commands
 }
 

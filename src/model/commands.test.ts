@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type { Citation } from './citable'
 import {
   causesToCommands, citationsToCommands, decisionsToCommands, evaluationsToCommands, experimentsToCommands, listToCommands,
-  observationsToCommands, solutionsToCommands,
+  observationsToCommands, plainCommands, solutionsToCommands,
 } from './commands'
 import { fromArrays } from './normalised'
 import type { Role } from './operatingModel'
@@ -14,6 +14,16 @@ import { applyAll } from './reducer'
 const lead: Role = { id: 'lead', name: 'Lead', duties: [] }
 const coach: Role = { id: 'coach', name: 'Coach', short: 'C', duties: [] }
 const scope = (roles?: Role[]) => fromArrays({ name: 'Acme', elements: [], relations: [], diagrams: [], ...(roles ? { roles } : {}) })
+
+describe('the plain three of a list, in its kind’s own words', () => {
+  it('says each under the type and the payload its descriptor names', () => {
+    const say = plainCommands('operatingRules')
+    expect(say.add({ id: 'domainOwner', role: 'lead' })).toEqual({ type: 'operatingRule.add', rule: { id: 'domainOwner', role: 'lead' } })
+    expect(say.update('domainOwner', { role: 'coach' })).toEqual({ type: 'operatingRule.update', id: 'domainOwner', patch: { role: 'coach' } })
+    expect(say.remove('domainOwner')).toEqual({ type: 'operatingRule.remove', id: 'domainOwner' })
+    expect(plainCommands('roles').add(lead)).toEqual({ type: 'role.add', role: lead })
+  })
+})
 
 describe('a whole list, said as the changes that get there', () => {
   it('says nothing where the list is as it was', () => {

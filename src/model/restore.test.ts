@@ -292,3 +292,69 @@ describe('a sheet\'s places (ADR-0048)', () => {
     expect(landed.ok && toArrays(landed.model).diagrams[0].geometry?.cells).toEqual([{ id: 'tile', col: 1, row: 0 }])
   })
 })
+
+describe('restoring the lists a whole restore puts back the plain way', () => {
+  const person = { person: 'pe-0000000000000001' }
+  const unit = element('unit', 'Unit', { kind: 'actor' })
+  const held = (id: string, over: object = {}) => ({ id, unitId: 'unit', roleId: 'lead', person, ...over })
+  const evaluated = (id: string, over: object = {}) => ({ id: `-~${id}`, block: { scope: '', id }, contexts: [], options: [], coverage: {}, ...over })
+  const mark = { check: 'check.unattributed' as const, key: 'billing', on: '2026-09-01' }
+  const principle = {
+    id: 'pr-1', number: 1, title: 'One writer', statement: 'S', aspects: [{ id: 'a1', number: 1, text: 'T', nature: 'design' as const }],
+    lastAspect: 1, groups: [], regime: 'flexible' as const, status: 'candidate' as const,
+  }
+  const was = then({
+    elements: [...then().elements, unit],
+    assignments: [held('as-kept'), held('as-changed', { from: '2026-01-01' }), held('as-back')],
+    evaluations: [evaluated('billing'), evaluated('crm', { contexts: ['c'] })],
+    checkMarks: [mark],
+    principles: [principle],
+  })
+  const is = then({
+    elements: [...then().elements, unit],
+    assignments: [held('as-new'), held('as-changed', { from: '2026-01-01', until: '2026-06-30', share: 0.5 }), held('as-kept')],
+    evaluations: [evaluated('crm', { contexts: [], chosen: undefined }), evaluated('unit')],
+  })
+  const commands = () => {
+    const result = restoreCommand(fromArrays(was), fromArrays(is), undefined, '2026-09-03')
+    if (!result.ok || result.command.type !== 'restore') throw new Error('refused')
+    return result.command.commands
+  }
+
+  it('says an assignment record by record: added, patched by what differs, in the order kept, then those gone removed', () => {
+    expect(commands().filter((command) => command.type.startsWith('assignment.'))).toEqual([
+      { type: 'assignment.update', id: 'as-changed', patch: { until: undefined, share: undefined } },
+      { type: 'assignment.add', assignment: held('as-back') },
+      { type: 'assignment.remove', id: 'as-new' },
+    ])
+  })
+
+  it('says the evaluations as the list handed back whole: those gone first, a changed one by its whole row', () => {
+    expect(commands().filter((command) => command.type.startsWith('evaluation.'))).toEqual([
+      { type: 'evaluation.remove', id: '-~unit' },
+      { type: 'evaluation.add', evaluation: evaluated('billing') },
+      { type: 'evaluation.update', id: '-~crm', patch: { id: '-~crm', block: { scope: '', id: 'crm' }, contexts: ['c'], options: [], coverage: {}, chosen: undefined } },
+    ])
+  })
+
+  it('writes them where it always has: assignments, the marks, the principles, and the evaluations last', () => {
+    expect(commands().map((command) => command.type)).toEqual([
+      'assignment.update', 'assignment.add', 'assignment.remove', 'checkMark.add', 'principle.add',
+      'evaluation.remove', 'evaluation.add', 'evaluation.update',
+    ])
+  })
+
+  it('lands on what the snapshot held, and is undone in one step', () => {
+    const { after, model, inverse } = restored(was, is, undefined)
+    expect(after.assignments).toEqual([held('as-changed', { from: '2026-01-01' }), held('as-kept'), held('as-back')])
+    expect(after.evaluations).toEqual([evaluated('crm', { contexts: ['c'] }), evaluated('billing')])
+    const undone = apply(model, inverse)
+    expect(undone.ok && toArrays(undone.model)).toEqual(JSON.parse(JSON.stringify(is)))
+  })
+
+  it('leaves the plans as they are: a whole restore does not put a plan back', () => {
+    const plan = { id: 'tr-1', number: 1, title: 'Move', status: 'draft' as const, elements: [], decisions: [], milestones: [], body: '' }
+    const result = restoreCommand(fromArrays(then({ transitions: [plan] })), fromArrays(then({ transitions: [{ ...plan, title: 'Moved since' }] })), undefined, '2026-09-03')
+    expect(result.ok && result.command.type === 'restore' && result.command.commands).toEqual([])
+  })
+})
