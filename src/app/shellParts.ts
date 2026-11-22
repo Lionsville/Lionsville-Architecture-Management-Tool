@@ -38,7 +38,7 @@ import type { WriteRefusals } from '../session/writeRefusals'
  */
 export interface ShellParts {
   props: AppProps
-  /** What the frame holds across screens, and what the screen under it says (`frame/frameStore.ts`). */
+  /** What the frame holds across screens, and what the screen under it says (`session/frameStore.ts`). */
   frame: FrameStore
   /** May this person change the scope at this path? */
   writable: (path: ScopePath) => boolean

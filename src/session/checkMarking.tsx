@@ -18,7 +18,7 @@
  * is open, the mark is a command through its session: one step, one undo, in
  * its Activity list at once. Anywhere else it is that scope's step, written
  * through the source's repositories under that scope's rights
- * (`units/writeIn.ts`), the way *Served by* and *Responsible for* write a
+ * (`writeIn.ts`), the way *Served by* and *Responsible for* write a
  * link kept elsewhere — never a step on the open session, whose undo would
  * otherwise take back another scope's mark. A scope the person may only read
  * offers no mark and no *Take back*; neither does a fix, which is fixed in

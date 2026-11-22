@@ -5,7 +5,7 @@
  * What a part of a page keeps open or shown for the session: a set of
  * strings under a key, recalled the next time the part is drawn and kept
  * every time it changes — and never saved, which is the rule the scope tree,
- * the chart and its outline keep (`app/sessionFolds.ts`, ADR-0036 amended 11
+ * the chart and its outline keep (`session/sessionFolds.ts`, ADR-0036 amended 11
  * October 2026). A fold is what somebody is doing this minute; a preference
  * would open next week with something hidden for a reason nobody can
  * reconstruct.
@@ -17,7 +17,7 @@
  */
 import { createContext, useCallback, useContext, useState } from 'react'
 
-/** Where the sets are kept: `app/sessionFolds.SessionFolds` is one. */
+/** Where the sets are kept: `session/sessionFolds.SessionFolds` is one. */
 export type SessionMemory = {
   keep(key: string, held: ReadonlySet<string>): void
   recall(key: string): ReadonlySet<string> | undefined

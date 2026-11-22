@@ -6,7 +6,7 @@
  * says, off the index the shell holds (`servedByView.ts`), and its two edits —
  * a unit added, a unit taken off — each one `unit.scopes` written as a step
  * in the scope that keeps the unit, under that scope's rights
- * (`units/writeIn.ts`). Nothing is open on a home, so there is no session to
+ * (`session/writeIn.ts`). Nothing is open on a home, so there is no session to
  * go through; the tree is read again once a step lands, and the index with it.
  *
  * A unit that said nothing served the scope it is filed in, and goes on

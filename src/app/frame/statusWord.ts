@@ -40,7 +40,7 @@ export type StatusFacts = {
   readonly own?: OwnWork | undefined
   /**
    * A write made outside the open session that did not land and has been
-   * neither made again nor put back (`app/writeRefusals`): ahead of
+   * neither made again nor put back (`session/writeRefusals`): ahead of
    * everything, because every other word here would call that work safe.
    */
   readonly refused?: boolean | undefined

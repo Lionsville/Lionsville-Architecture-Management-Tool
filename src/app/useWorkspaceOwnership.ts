@@ -76,7 +76,7 @@ export function useWorkspaceOwnership(deps: {
   chartMove?: { current: ((unitId: string) => boolean) | undefined }
   units: {
     people: PeopleRegisterAccess | undefined; today: string; day?: string; makeId: (prefix: string) => string; scopePaths: readonly ScopePath[]
-    /** A link kept in another scope, written there (`units/writeIn.ts`): a capability elsewhere picked for *Responsible for*. */
+    /** A link kept in another scope, written there (`session/writeIn.ts`): a capability elsewhere picked for *Responsible for*. */
     writeIn?: WriteIn
     /** A scope's home: where a domain a unit serves opens (ADR-0036, amended 13 October 2026). */
     openResponsibilities?: (unitId: string) => void

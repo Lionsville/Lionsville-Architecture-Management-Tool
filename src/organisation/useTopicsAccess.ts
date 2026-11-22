@@ -4,7 +4,7 @@
 /**
  * The topics, wired (ADR-0042): read off the tree's listing, which says each
  * scope's `relevantTo`, and written as steps in the topic that keeps the link,
- * under its rights (`units/writeIn.ts`) — whichever end the link is made
+ * under its rights (`session/writeIn.ts`) — whichever end the link is made
  * from. Nothing is open on a home, so there is no session to go through; the
  * tree is read again once a step lands.
  *

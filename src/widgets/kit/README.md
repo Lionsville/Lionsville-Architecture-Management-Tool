@@ -133,7 +133,7 @@ a person, a link and an agent alike:
 
 1. `agent/screen.ts`: its name in `PAGES` (and `HOME_PAGES` where it is the
    organisation's), and its tabs in `PAGE_TABS`.
-2. `app/frame/places.ts`: a line in `SCOPE_PLACES`, `ORGANISATION_PLACES` or
+2. `session/places.ts`: a line in `SCOPE_PLACES`, `ORGANISATION_PLACES` or
    `MORE_PLACES`. Row two, the foot of the tree, More and ⌘K all read that table.
 3. Say it on the screen: `useWorkspacePages`'s `page()` for a scope's page,
    `useHomePages` for a home's. `app.open` and Back then arrive through `openFor`.
@@ -150,7 +150,7 @@ the way `app.open` goes (`navigation.onOpenScope` from inside a workspace). Neve
 close a page and open another by hand; opening one closes the others.
 
 **What only a screen knows** it tells the frame with `useFrameFacts` from
-`app/frame/frameStore.ts`: its undo and redo, its save state, the way into its
+`session/frameStore.ts`: its undo and redo, its save state, the way into its
 search and settings, its bands. A workspace and a home do this already, and a page
 under them does not need to. A band that belongs to one screen goes in `bands`;
 `BandStack` never shows two, and the agent's comes first.

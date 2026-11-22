@@ -18,7 +18,7 @@
  * button on a row, because twenty repeated buttons are noise and two ways to open
  * told apart only by a tooltip are a trap.
  *
- * It lives in `app/organisation/` and not in `projects/ui/`: the index belongs to
+ * It lives in `organisation/` and not in `projects/ui/`: the index belongs to
  * `projects`, which may not import React. The arithmetic is `register.ts`,
  * `registerView.ts` and `projects/technologyRegister.ts`, pure and tested in node.
  */

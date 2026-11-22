@@ -88,7 +88,7 @@ export function useWorkspaceAgentView(deps: {
    * Absent, such a removal is refused.
    */
   landSteps?: LandSteps
-  /** Another scope's step under its rights (`units/writeIn.ts`): how the agent gives a scope its type (ADR-0036, amended 17 October 2026). */
+  /** Another scope's step under its rights (`session/writeIn.ts`): how the agent gives a scope its type (ADR-0036, amended 17 October 2026). */
   writeIn?: WriteIn
   /** The people register, as the shell holds it: who an assignment may name (ADR-0036). */
   people?: PeopleRegisterAccess

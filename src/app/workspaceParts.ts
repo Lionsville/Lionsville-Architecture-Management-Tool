@@ -88,7 +88,7 @@ export interface WorkspaceParts {
   landMoves: LandPeopleMoves
   /** A finding marked as intended from any list here, and a mark taken back (ADR-0036, amended): handed down as a context. */
   marking: CheckMarking
-  /** A change kept in another scope, written there under its rights (`units/writeIn.ts`): a unit made on the chart and filed elsewhere. */
+  /** A change kept in another scope, written there under its rights (`session/writeIn.ts`): a unit made on the chart and filed elsewhere. */
   unitWrites: { writeIn: WriteIn; writable: (path: ScopePath) => boolean }
   dialogs: WorkspaceDialogState
   /** The day each board is being looked at, which is nobody's write (ADR-0027). */

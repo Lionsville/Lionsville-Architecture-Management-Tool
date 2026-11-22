@@ -3,7 +3,7 @@
 
 /**
  * Which refused write a cause or an answer is, by the number the app's watch
- * on its repositories gave it (`app/writeRefusals.ts`): what lets the field
+ * on its repositories gave it (`session/writeRefusals.ts`): what lets the field
  * that made the write take back the very refusal it caused, and no other,
  * once it has been tried again or put back.
  *

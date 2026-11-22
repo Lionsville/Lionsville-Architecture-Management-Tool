@@ -5,7 +5,7 @@
  * The building blocks, wired (ADR-0043): read off the tree's index — every
  * block where it is kept, every scope's evaluation of one — and written as
  * steps in the scope that keeps the record, under its rights
- * (`units/writeIn.ts`): a block's requirements and catalogue where the block
+ * (`session/writeIn.ts`): a block's requirements and catalogue where the block
  * is kept, an evaluation and the decision it becomes where the scope that is
  * choosing is. Nothing is open on a home, so there is no session to go
  * through; the tree is read again once a step lands.

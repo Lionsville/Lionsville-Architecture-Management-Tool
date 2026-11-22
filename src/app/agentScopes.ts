@@ -8,7 +8,7 @@
  *
  * **A change to the tree is each scope's own step**, under that scope's
  * rights, never a step on the open session's stack — the rule
- * `units/writeIn.ts` keeps. So **the scope open in the workspace is the
+ * `session/writeIn.ts` keeps. So **the scope open in the workspace is the
  * session's to change**: describing it, and moving or removing it or a scope
  * above it, is refused `scope.isOpen`, and the agent opens the home first,
  * where a person changes the tree too. Making a scope anywhere, and
