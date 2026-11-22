@@ -390,6 +390,61 @@ export function describeCommandChannel(name: string, make: MakeCommandChannel): 
     })
 
     /**
+     * …and still where it landed, however far the scope has moved since. A
+     * sender that lost the answer sends the step again after others have been
+     * sequenced, and on a base it has learned since: the answer is the `seq`
+     * the step was given then, not the head now, and nothing is sequenced. A
+     * channel that answered the head, or sequenced the step again, would hand
+     * the sender a number it never landed at — and everybody else a step that
+     * makes a record twice, which the second time is `command.taken`.
+     */
+    it('answers a stepId that already landed with the seq where it landed, whatever came after', async () => {
+      const channel = await one()
+      const mine = channel.connect('me')
+      const theirs = channel.connect('you')
+      const here = await channel.listen(channel.connect('watching'))
+      const landed = seqOf(await channel.publish(mine, addBilling, { stepId: 'answer-lost' }))
+      await channel.publish(theirs, renameCrews)
+      await channel.publish(theirs, renameDepot)
+
+      expect(seqOf(await channel.publish(mine, addBilling, { stepId: 'answer-lost', base: landed + 2 }))).toBe(landed)
+      expect(seqOf(await channel.publish(mine, addBilling, { stepId: 'answer-lost', base: 0 }))).toBe(landed)
+      expect(here.seen.map((step) => step.stepId)).toEqual(['answer-lost', expect.any(String), expect.any(String)])
+      expect(here.seen.map((step) => step.seq)).toEqual([landed, landed + 1, landed + 2])
+      expect(replay(here.seen).elements.billing.name).toBe('Billing')
+      here.stop()
+    })
+
+    /**
+     * A session that leaves a scope and opens it again subscribes again on the
+     * channel it already has, from the number it now holds. What it was handed
+     * before that number is not handed again — the model it holds has it, and
+     * a step applied twice is refused at the second go — and what came after
+     * it is handed once.
+     */
+    it('hands a subscriber that subscribes again from a seq it holds nothing it already has', async () => {
+      const channel = await one()
+      const mine = channel.connect('me')
+      const theirs = channel.connect('you')
+      const first = await channel.listen(mine)
+      await channel.publish(theirs, addBilling)
+      await channel.publish(theirs, renameCrews)
+      const held = first.seen[first.seen.length - 1].seq
+      first.stop()
+      await channel.settle()
+
+      await channel.publish(theirs, renameDepot)
+      const again = await channel.listen(mine, held)
+      expect(again.gaps()).toBe(0)
+      expect(again.seen.map((step) => step.seq)).toEqual([held + 1])
+      await channel.publish(theirs, { type: 'diagram.rename', id: 'l7', name: 'Later' })
+      expect(again.seen.map((step) => step.seq)).toEqual([held + 1, held + 2])
+      // Together, each step once: the model they make is everybody's.
+      expect(replay([...first.seen, ...again.seen]).elements.depot.name).toBe('Depot planning')
+      again.stop()
+    })
+
+    /**
      * A trace context is the sender's, and changes nothing about the step: it
      * lands where it would have landed, nobody else is handed it, and a
      * channel that says which trace it recorded the publish under says the one

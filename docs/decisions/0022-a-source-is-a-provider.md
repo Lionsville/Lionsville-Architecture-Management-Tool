@@ -2,7 +2,8 @@
 
 * Status: accepted; amended 1 October 2026 (a button of a provider's own in
   the bar, an action on a problem, a host's own tools, and a move a provider
-  says is its own), as built the same day
+  says is its own), as built the same day; amended 22 November 2026 (a step
+  resent and a scope subscribed again, in the contract), as built the same day
 * Date: 2026-09-21
 * Deciders: Wouter Simons
 * Extends: ADR-0002 (every change is a command through one reducer), ADR-0005
@@ -1134,6 +1135,34 @@ handed over only when pressed, and no button while the action cannot be taken; `
 `App.destination.test.tsx` a provider's move; `composition.test.tsx` the
 registry answering the button and the action for the open source's provider
 and for nobody else.
+
+## Amended — the two a channel that is cut, resent and resubscribed needed
+
+*Amended 22 November 2026.* A filling that carries steps over a connection
+that can go at any moment resends a step whose answer it did not hear, and
+subscribes again on the same channel when a scope is opened again. The
+contract said that a `stepId` already answered repeats its answer, and that a
+new subscriber from `after` sees what it missed and nothing twice; it did not
+say what either means once the scope has moved on, or for a subscriber that
+was there before. Both are where a step is applied twice, and a step that
+makes a record applied twice is `command.taken` for an id nobody else took —
+the refusal whose repair is to mint another id, which here repairs nothing.
+So `command.taken` keeps meaning one thing only, and the contract says the
+two clauses every filling must show:
+
+* **A `stepId` that already landed is answered where it landed.** Sent again
+  after other steps have been sequenced, and on any `base`, it is answered the
+  `seq` it was given the first time — never the head now — and nothing is
+  sequenced.
+* **A subscriber that subscribes again from a `seq` it holds is handed nothing
+  it already has.** What came after that `seq` is handed once, and what came
+  before it not at all.
+
+**As built, 22 November 2026.** Two clauses in
+`ports/CommandChannel.contract.ts`, *answers a stepId that already landed with
+the seq where it landed, whatever came after* and *hands a subscriber that
+subscribes again from a seq it holds nothing it already has*;
+`adapters/memory/InMemoryCommandChannel.ts` passes both unchanged.
 
 ## More Information
 
