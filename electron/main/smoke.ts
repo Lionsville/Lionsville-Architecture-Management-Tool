@@ -1138,6 +1138,33 @@ export async function runSmoke(window: BrowserWindow, shown: { readyToShow(): bo
     return `"${current.name}" at ${current.path}, ${current.elements} elements, ${current.activeDiagramId} on screen`
   }))
 
+  // A script (ADR-0050), in the page's own interpreter: fetched over app://,
+  // compiled under the CSP, and run against the session on screen. A change
+  // is tried on a copy, landed as one step, and taken back with undo.
+  results.push(await checkHere('the agent reads with a script, tries a change and lands it as one step', async () => {
+    const current = await agent<{ elements: number }>('project.current')
+    const read = await agent<{ result: { total: number; isolated: string[] }; calls: number }>('query', {
+      script: 'const { total } = await lv.elements.list({ limit: 1 }); return { total, isolated: [typeof window, typeof fetch, typeof process, typeof require] }',
+    })
+    if (read.result.total !== current.elements) throw new Error(`the script counted ${read.result.total} elements, project.current ${current.elements}`)
+    if (read.result.isolated.some((kind) => kind !== 'undefined')) throw new Error(`the script reached ${read.result.isolated.join(', ')}`)
+    const spun = await client!.callTool({ name: 'query', arguments: { script: 'for (;;) {}' } }) as ToolAnswer
+    if (!spun.isError || !/limit: cpu/.test(spun.content[0]?.text ?? '')) throw new Error(`an endless script was answered ${spun.content[0]?.text}`)
+    const tried = await agent<{ token?: string; result: string; scopes: { writes: number }[] }>('simulate', {
+      script: 'const [first] = (await lv.elements.list({ limit: 1 })).elements; await lv.elements.update({ id: first.id, name: first.name + " (smoke)" }); return first.id',
+    })
+    if (!tried.token || tried.scopes[0]?.writes !== 1) throw new Error(`simulate answered ${JSON.stringify(tried).slice(0, 200)}`)
+    const before = await agent<{ name: string }>('element.describe', { id: tried.result })
+    if (before.name.endsWith('(smoke)')) throw new Error('a simulation changed the model')
+    await agent('run', { token: tried.token })
+    const after = await agent<{ name: string }>('element.describe', { id: tried.result })
+    if (!after.name.endsWith('(smoke)')) throw new Error(`the run did not land: ${after.name}`)
+    await agent('undo')
+    const back = await agent<{ name: string }>('element.describe', { id: tried.result })
+    if (back.name !== before.name) throw new Error(`undo left ${back.name}`)
+    return `${read.result.total} elements in ${read.calls} call; a change tried, landed and undone on ${tried.result}`
+  }))
+
   // The four things only the renderer can do, through the same client: a
   // picture of the board comes back as an image block with the transform
   // beside it, and pointing at an element is answered.
