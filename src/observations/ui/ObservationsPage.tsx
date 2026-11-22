@@ -734,7 +734,7 @@ export function ObservationsPage(props: ObservationsPageProps) {
     open, request: { id: initialId, nonce: initialNonce, tab: props.initialTab ? stageOfTab(props.initialTab).stage : undefined }, work, below, shown: recordIdOf(selected, selectedKey), tab: stage,
     onShown: props.onShown, select: setSelectedKey,
     land: ({ tab: to, key }) => {
-      f.clear()
+      f.clear(key === undefined)
       if (to) setStageRaw(to)
       setFull(false)
       const named = props.initialTab ? stageOfTab(props.initialTab) : undefined

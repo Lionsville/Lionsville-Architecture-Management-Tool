@@ -70,7 +70,8 @@ export function clampZoom(zoom: number): number {
 export type PictureFilters = {
   filters: Filters
   setFilters: (next: Filters) => void
-  clear: () => void
+  /** Every filter off; with `keepAbout`, the elements filtered by stay, as a page landing on no record keeps its look. */
+  clear: (keepAbout?: boolean) => void
   /** How many filters are on, for the count on *Filters*. */
   active: number
   result: FilterResult
@@ -165,7 +166,8 @@ export function usePictureFilters(deps: {
     const wanted = aboutLook(next.about)
     if (wanted !== aboutSaid) setLook(wanted)
   }, [aboutSaid, setLook])
-  const clear = useCallback(() => setFilters(NO_FILTERS), [setFilters])
+  // Landing on no record keeps the elements the address asked for: the look is how a link and an agent filter the page (ADR-0033, amended).
+  const clear = useCallback((keepAbout?: boolean) => setFilters(keepAbout && filters.about ? { ...NO_FILTERS, about: filters.about } : NO_FILTERS), [setFilters, filters.about])
   const setViewLocal = useCallback((on: boolean) => setLocalWanted(on), [])
 
   const list = useMemo(() => saved?.list ?? [], [saved])
