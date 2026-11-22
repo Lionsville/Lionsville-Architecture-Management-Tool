@@ -157,7 +157,7 @@ export type {
 export type { Command, CommandBody, CommandMeta, ProjectPatch, DiagramPatch, Restored } from './commands'
 export {
   transaction, reverse, isNothing, NOTHING, replacement, duplicateDiagram, decisionsToCommands, observationsToCommands, causesToCommands,
-  solutionsToCommands, experimentsToCommands, commentsToCommands, citationsToCommands, evaluationsToCommands,
+  solutionsToCommands, experimentsToCommands, commentsToCommands, citationsToCommands, evaluationsToCommands, listToCommands,
   fieldEdit,
 } from './commands'
 export type { ApplyResult, CommandRefusal } from './reducer'

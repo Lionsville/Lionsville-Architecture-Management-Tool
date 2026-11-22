@@ -47,7 +47,9 @@ import type { Comment, CommentId, CommentRemoved } from './comment'
 import type {
   AdrId, CauseId, RelationId, Diagram, DiagramId, ExperimentId, GroupId, Model, ObservationId, SolutionId, TransitionId,
 } from './normalised'
-import { causesOf, citationsOf, commentsOf, decisionsOf, evaluationsOf, experimentsOf, observationsOf, solutionsOf } from './normalised'
+import { commentsOf } from './normalised'
+import { KINDS } from './recordKinds'
+import type { PlainList, RecordOf } from './recordKinds'
 import type {
   DesignElement, DiagramGroup, DiagramMember, DiagramSettings, DomainGroupRect,
   EdgeRoute, ElementId, Geometry, NodeGeometry, PlacedNode, PosterCell, PosterItem, PosterItemPlace, Relation,
@@ -542,146 +544,69 @@ export function duplicateDiagram(
 }
 
 /**
- * A whole list of decision records, said as the changes that get there.
+ * A whole list of records, said as the changes that get there — for any list
+ * written by the plain three commands (`recordKinds.ts`).
  *
- * The decisions page edits a list and hands the result back, which is the shape
- * that suited a model you replaced wholesale. Until it dispatches for itself,
- * this works out what actually moved — so undo puts back one record rather than
- * a list, and an untouched record keeps its identity.
+ * A page that edits a list and hands the result back, a merge or a move
+ * handing back what a scope is to hold, a restore: each has the list as it is
+ * to be, which is the shape that suited a model replaced wholesale. This works
+ * out what actually moved — so undo puts back one record rather than a list,
+ * and an untouched record keeps its identity. Those gone are removed first,
+ * and the rest added or changed in the list's order.
+ *
+ * Records are small, flat and built by one factory, so comparing them as
+ * written is honest: what it cannot tell apart, nothing downstream can either.
  */
-export function decisionsToCommands(model: Model, next: readonly Adr[]): Command[] {
-  const held = decisionsOf(model)
-  const wanted = new Set(next.map((adr) => adr.id))
-  const commands: Command[] = []
-  for (const id of model.order.decisions) {
-    if (!wanted.has(id)) commands.push({ type: 'decision.remove', id })
-  }
-  for (const adr of next) {
-    const before = held[adr.id]
-    if (!before) commands.push({ type: 'decision.add', decision: adr })
-    else if (!sameAdr(before, adr)) {
-      commands.push({ type: 'decision.update', id: adr.id, patch: replacement(before, adr) })
-    }
-  }
-  return commands
-}
-
-/**
- * Records are small, flat and built by one factory, so this is honest: what it
- * cannot tell apart, nothing downstream can either.
- */
-function sameAdr(a: Adr, b: Adr): boolean {
-  return JSON.stringify(a) === JSON.stringify(b)
-}
-
-/**
- * A whole list of observations, said as the changes that get there — the
- * observations page hands its lists back the way the decisions page does, and
- * for the same reason ⌘Z should put back one record rather than a list.
- */
-export function observationsToCommands(model: Model, next: readonly Observation[]): Command[] {
-  const held = observationsOf(model)
+export function listToCommands<L extends PlainList>(model: Model, list: L, next: readonly RecordOf[L][]): Command[] {
+  const { kind, commands: { payload } } = KINDS[list] as { kind: string; commands: { payload: string } }
+  const held = (model[list] ?? {}) as Record<string, RecordOf[L]>
   const wanted = new Set(next.map((one) => one.id))
-  const commands: Command[] = []
-  for (const id of model.order.observations) {
-    if (!wanted.has(id)) commands.push({ type: 'observation.remove', id })
-  }
+  // Said in the kind's own words, which `commands/plain.ts` holds the vocabulary to.
+  const say = (command: { type: string } & Record<string, unknown>) => command as unknown as Command
+  const commands = model.order[list].filter((id) => !wanted.has(id)).map((id) => say({ type: `${kind}.remove`, id }))
   for (const one of next) {
-    const before = held[one.id]
-    if (!before) commands.push({ type: 'observation.add', observation: one })
+    const before = held[one.id] as RecordOf[L] | undefined
+    if (!before) commands.push(say({ type: `${kind}.add`, [payload]: one }))
     else if (JSON.stringify(before) !== JSON.stringify(one)) {
-      commands.push({ type: 'observation.update', id: one.id, patch: replacement(before, one) })
+      commands.push(say({ type: `${kind}.update`, id: one.id, patch: replacement(before, one) }))
     }
   }
   return commands
+}
+
+/** The decision records, as the decisions page hands its list back. */
+export function decisionsToCommands(model: Model, next: readonly Adr[]): Command[] {
+  return listToCommands(model, 'decisions', next)
+}
+
+/** The observations, as the observations page hands its lists back. */
+export function observationsToCommands(model: Model, next: readonly Observation[]): Command[] {
+  return listToCommands(model, 'observations', next)
 }
 
 /** The causes, likewise. */
 export function causesToCommands(model: Model, next: readonly Cause[]): Command[] {
-  const held = causesOf(model)
-  const wanted = new Set(next.map((one) => one.id))
-  const commands: Command[] = []
-  for (const id of model.order.causes) {
-    if (!wanted.has(id)) commands.push({ type: 'cause.remove', id })
-  }
-  for (const one of next) {
-    const before = held[one.id]
-    if (!before) commands.push({ type: 'cause.add', cause: one })
-    else if (JSON.stringify(before) !== JSON.stringify(one)) {
-      commands.push({ type: 'cause.update', id: one.id, patch: replacement(before, one) })
-    }
-  }
-  return commands
+  return listToCommands(model, 'causes', next)
 }
 
 /** The solutions, likewise (ADR-0026). */
 export function solutionsToCommands(model: Model, next: readonly Solution[]): Command[] {
-  const held = solutionsOf(model)
-  const wanted = new Set(next.map((one) => one.id))
-  const commands: Command[] = []
-  for (const id of model.order.solutions) {
-    if (!wanted.has(id)) commands.push({ type: 'solution.remove', id })
-  }
-  for (const one of next) {
-    const before = held[one.id]
-    if (!before) commands.push({ type: 'solution.add', solution: one })
-    else if (JSON.stringify(before) !== JSON.stringify(one)) {
-      commands.push({ type: 'solution.update', id: one.id, patch: replacement(before, one) })
-    }
-  }
-  return commands
+  return listToCommands(model, 'solutions', next)
 }
 
 /** The experiments, likewise (ADR-0026). */
 export function experimentsToCommands(model: Model, next: readonly Experiment[]): Command[] {
-  const held = experimentsOf(model)
-  const wanted = new Set(next.map((one) => one.id))
-  const commands: Command[] = []
-  for (const id of model.order.experiments) {
-    if (!wanted.has(id)) commands.push({ type: 'experiment.remove', id })
-  }
-  for (const one of next) {
-    const before = held[one.id]
-    if (!before) commands.push({ type: 'experiment.add', experiment: one })
-    else if (JSON.stringify(before) !== JSON.stringify(one)) {
-      commands.push({ type: 'experiment.update', id: one.id, patch: replacement(before, one) })
-    }
-  }
-  return commands
+  return listToCommands(model, 'experiments', next)
 }
 
-/**
- * A whole list of citations, said as the changes that get there (ADR-0041
- * §7): what a merge or a move hands back for a scope it writes. Those gone are
- * removed first and the rest added or changed in the list's order.
- */
+/** The citations (ADR-0041 §7): what a merge or a move hands back for a scope it writes. */
 export function citationsToCommands(model: Model, next: readonly Citation[]): Command[] {
-  const held = citationsOf(model)
-  const wanted = new Set(next.map((one) => one.id))
-  const commands: Command[] = model.order.citations.filter((id) => !wanted.has(id)).map((id) => ({ type: 'citation.remove' as const, id }))
-  for (const one of next) {
-    const before = held[one.id]
-    if (!before) commands.push({ type: 'citation.add', citation: one })
-    else if (JSON.stringify(before) !== JSON.stringify(one)) commands.push({ type: 'citation.update', id: one.id, patch: replacement(before, one) })
-  }
-  return commands
+  return listToCommands(model, 'citations', next)
 }
 
-/**
- * A whole list of evaluations of building blocks, said as the changes that get
- * there (ADR-0043 §4): what a restore hands back. Those gone are removed first
- * and the rest added or changed in the list's order.
- */
+/** The evaluations of building blocks (ADR-0043 §4): what a restore hands back. */
 export function evaluationsToCommands(model: Model, next: readonly Evaluation[]): Command[] {
-  const held = evaluationsOf(model)
-  const wanted = new Set(next.map((one) => one.id))
-  const commands: Command[] = model.order.evaluations.filter((id) => !wanted.has(id)).map((id) => ({ type: 'evaluation.remove' as const, id }))
-  for (const one of next) {
-    const before = held[one.id]
-    if (!before) commands.push({ type: 'evaluation.add', evaluation: one })
-    else if (JSON.stringify(before) !== JSON.stringify(one)) commands.push({ type: 'evaluation.update', id: one.id, patch: replacement(before, one) })
-  }
-  return commands
+  return listToCommands(model, 'evaluations', next)
 }
 
 /**
