@@ -1390,8 +1390,8 @@ src/composed/     The surface a build composed from this one imports
                                       repositories · channel · provider ·
                                       format · formatVersion · interchange ·
                                       agent · agentHandler · screen · people ·
-                                      analysis · look · words · platform ·
-                                      desktop
+                                      analysis · findings · look · words ·
+                                      platform · desktop
                     node/             for a process with a node under it:
                                       workingFile · examples
                     renderer/         for the page: provider · kit · guide ·

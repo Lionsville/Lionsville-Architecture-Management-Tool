@@ -4,8 +4,8 @@
 /**
  * The surface, for the page: the words, on a screen.
  *
- * The language that is on, as a context and a hook, and the few words the
- * shell says that a page beside it says the same way.
+ * The language that is on, as a context and a hook, and a time of day said
+ * the way the shell says one.
  *
  * A build composed from this one imports this entry and never the files behind
  * it (ADR-0022, amended), so those may move. Names only, each from the file
@@ -13,4 +13,3 @@
  */
 export { clockTime } from '../../app/clockTime'
 export { LanguageProvider, useStrings } from '../../i18n/LanguageContext'
-export { CHECK_SENTENCE } from '../../roadmap/labels'

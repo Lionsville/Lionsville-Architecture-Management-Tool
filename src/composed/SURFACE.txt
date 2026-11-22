@@ -82,6 +82,7 @@ process/desktop · SecretStore · type · { read(name: string): Promise<string |
 process/desktop · USER_DATA_NAME · const · "Lionsville Architecture Management Tool"
 process/desktop · hookOrigins · function · () => readonly HookOrigin[]
 process/desktop · registerDesktopHook · function · (hook: DesktopHook) => void
+process/findings · CHECK_SENTENCE · const · Record<FindingKind, StringKey>
 process/format · DECISIONS_FOLDER · const · "decisions"
 process/format · FolderFile · type · { path: string; bytes: Uint8Array<ArrayBufferLike>; } | { path: string; text: string; }
 process/format · IMAGES_FOLDER · const · "images"
@@ -493,7 +494,6 @@ renderer/provider · sourceChip · function · (source: WorkingSource) => ((work
 renderer/provider · sourceChipFace · function · (source: WorkingSource) => SourceChipFace | undefined
 renderer/provider · sourceChipPanel · function · (source: WorkingSource) => SourceChipPanel | undefined
 renderer/provider · sourceDescription · function · (source: WorkingSource) => (string & {}) | StringKey | undefined
-renderer/words · CHECK_SENTENCE · const · Record<FindingKind, StringKey>
 renderer/words · LanguageProvider · function · ({ language, children, }: { language: "de" | "en" | "nl"; children: ReactNode; }) => Element
 renderer/words · clockTime · function · (at: Date, language: "de" | "en" | "nl") => string
 renderer/words · useStrings · function · () => Strings

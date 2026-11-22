@@ -135,11 +135,13 @@ const MAY_IMPORT = {
   // `app` is the renderer, and code that says `node:` cannot be in it.
   app: MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'app' && m !== 'platform/node' && !isSurface(m)),
   // The surface (ADR-0022, amended). A process entry reads the modules that
-  // compute, and two files and one folder besides (`NARROW_EDGES`); a node
+  // compute — and the pure files of three that also draw, whose `ui/` and
+  // whose barrel the rule for a module that computes refuses it — and two
+  // files and one folder besides (`NARROW_EDGES`); a node
   // entry reads what `platform/node` reads, and `platform/node`; a renderer
   // entry reads what the shell reads, and the shell. The testing entries are
   // exempt, as `app/testing/` is (`EXEMPT`), so their row is never asked.
-  'composed/process': ['model', 'i18n', 'platform', 'projects', 'ports', 'agent', 'people', 'observations', 'business'],
+  'composed/process': ['model', 'i18n', 'platform', 'projects', 'ports', 'agent', 'people', 'observations', 'business', 'roadmap'],
   'composed/node': ['model', 'i18n', 'platform', 'projects', 'platform/node'],
   'composed/renderer': [
     ...MODULES.filter((m) => m !== 'adapters' && m !== 'providers' && m !== 'platform/node' && !isSurface(m)),

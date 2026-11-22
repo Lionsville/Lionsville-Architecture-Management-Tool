@@ -145,7 +145,7 @@ describe('the surface for a build composed from this one', () => {
   it('lets a process entry read what computes, the folder\'s format and the two files of the kit that are data', async () => {
     for (const from of [
       '../../model/reducer', '../../projects/scopePath', '../../ports/Repositories', '../../agent/tools', '../../people/person',
-      '../../observations/observation', '../../business/coverage', '../../i18n/strings', '../../platform/errors',
+      '../../observations/observation', '../../business/coverage', '../../roadmap/labels', '../../i18n/strings', '../../platform/errors',
       '../../adapters/folder/format/folderFormat', '../../widgets/kit/tokens', '../../widgets/kit/accent',
     ]) {
       expect(await layeringAt('src/composed/process/one.ts', offering(from)), from).toEqual([])
@@ -160,7 +160,8 @@ describe('the surface for a build composed from this one', () => {
     ]) {
       expect((await layeringAt('src/composed/process/one.ts', offering(from))).join('\n'), from).toMatch(/A process entry is loaded by a process with no screen/)
     }
-    // A barrel carries its module's pages, and a pure module names the file.
+    // Of a module it may read, the pure files only: not a page, and not the barrel that carries one.
+    expect((await layeringAt('src/composed/process/one.ts', offering('../../roadmap/ui/RoadmapPage'))).join('\n')).toMatch(/a page belongs to whoever draws it/)
     expect((await layeringAt('src/composed/process/one.ts', offering('../../people'))).length).toBeGreaterThan(0)
   })
 
