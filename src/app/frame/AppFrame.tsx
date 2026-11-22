@@ -58,7 +58,9 @@ import type { CommandRow } from './commandsTable'
 import { scopeLines, startsWords, viewLines } from './paletteFind'
 import type { TreeView } from './paletteFind'
 import { FrameCommandsContext, useFrameState } from './frameStore'
-import type { FrameState, PaletteLine, ScreenFacts } from './frameStore'
+import type { FrameState, FrameStore, PaletteLine, ScreenFacts } from './frameStore'
+import { lastViewOf, wayBack, withLastView } from './lastView'
+import type { WayBack } from './lastView'
 import { FOUND_PLACES, MORE_PLACES, ORGANISATION_PLACES, placeShows, SCOPE_PLACES } from './places'
 import type { FramePlace } from './places'
 import { ActivityPanel, statusOf, useWriteRefusals, YourWorkPanel } from './FramePanels'
@@ -109,7 +111,9 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
   useFrameKeys(parts, state)
   usePanelFocus(state.panel)
   useRememberPlace(parts, screen)
-  const lines = usePaletteLines(parts, at, go)
+  useLastView(frame, screen)
+  const back = useWayBack(parts, state, screen, at)
+  const lines = usePaletteLines(parts, at, go, back)
   const { lookAgain } = agent
   const openView = screen.open?.view
   const tabPage = page ?? (openView ? viewPage(openView.kind as DesignDiagram['kind']) : undefined)
@@ -172,7 +176,7 @@ export function AppFrame({ parts, children }: { parts: ShellParts; children: Rea
         <Frame
           pageUp={pageUp}
           rowOne={<RowOne parts={parts} state={state} at={at} />}
-          rowTwoStart={<RowTwoStart parts={parts} facts={facts} at={at} pageUp={pageUp} />}
+          rowTwoStart={<RowTwoStart parts={parts} facts={facts} at={at} pageUp={pageUp} back={back} />}
           rowTwoEnd={<RowTwoEnd parts={parts} at={at} page={page} />}
           band={<FrameBands parts={parts} facts={facts} />}
           tree={tree || undefined}
@@ -238,6 +242,27 @@ function useRememberPlace(parts: ShellParts, screen: Screen) {
     prefs.writePreference({ [RECENT_KEY]: { ...stored, [by]: remembered(recentFrom(stored, by), here) } })
     // Once per arrival, whatever else moves on the screen.
   }, [key])
+}
+
+/** The view under whatever is on screen is noted as the app arrives on it: what the way back in row two leads to (`lastView.ts`). */
+function useLastView(frame: FrameStore, screen: Screen) {
+  const seen = lastViewOf(screen)
+  const key = seen && `${seen.scope}\u0000${seen.id}\u0000${seen.name}\u0000${seen.in}`
+  const latest = useRef(seen)
+  latest.current = seen
+  useEffect(() => {
+    if (latest.current) frame.set(withLastView(frame.get(), latest.current))
+    // Once per view arrived at or renamed, whatever else moves on the screen.
+  }, [frame, key])
+}
+
+/** The way back row two offers here, where there is one: the view last worked on, unless it is the one that is up. */
+function useWayBack(parts: ShellParts, state: FrameState, screen: Screen, at: ScopePath): WayBack | undefined {
+  const { tree } = parts.organisation
+  const there = useMemo(() => new Set(flattenScopes(tree).map((scope) => scope.path)), [tree])
+  const facts = state.screen
+  const homeViews = facts?.kind === 'home' && facts.views ? { scope: facts.path, views: facts.views } : undefined
+  return wayBack(state, screen, at, { scopeIs: (path) => path === ROOT_SCOPE || there.has(path), ...(homeViews ? { homeViews } : {}) })
 }
 
 export function canOf(parts: ShellParts, facts: ScreenFacts | undefined) {
@@ -490,7 +515,7 @@ function useTreeViews(parts: ShellParts): { views: readonly TreeView[]; want: ()
   return { views: held?.of === tree ? held.views : [], want }
 }
 
-function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent']['openSomewhere']) {
+function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent']['openSomewhere'], back: WayBack | undefined) {
   const { services: { s }, commands: { bus }, organisation, writable } = parts
   const { tree } = organisation
   const language = parts.services.prefs.language
@@ -502,12 +527,16 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
   const can = canOf(parts, parts.frame.get().screen)
   const canKey = JSON.stringify(can)
   const hasAgentsPage = parts.props.provider?.frame?.Agents !== undefined
+  // The way back by the keyboard, from wherever the focus is: ⌘K, and its first words.
+  const backSaid = back && wayBackSaid(back, s)
+  const backKey = back && JSON.stringify(back.to)
   return useMemo(() => {
     const rows: PaletteLine[] = []
     // A command is found by its English name too, so *zoom* and *save* find it in any language.
     const english = translator('en')
     const alsoCalled = new Map<string, string>()
     const place = (one: FramePlace, scope: ScopePath) => rows.push({ id: `place:${one.page}`, group: s('frame.places'), label: s(one.label), run: () => go({ scope, page: one.page }) })
+    if (backSaid !== undefined && backKey !== undefined) rows.push({ id: 'place:lastView', group: s('frame.places'), label: backSaid, run: () => go(JSON.parse(backKey)) })
     rows.push({ id: 'place:home', group: s('frame.places'), label: s('frame.home'), run: () => go({ scope: at, page: 'home' }) })
     SCOPE_PLACES.forEach((one) => place(one, at))
     ORGANISATION_PLACES.forEach((one) => place(one, ROOT_SCOPE))
@@ -547,7 +576,7 @@ function usePaletteLines(parts: ShellParts, at: ScopePath, go: ShellParts['agent
         ...named.filter((row) => !row.lead),
       ]
     }
-  }, [s, language, at, go, send, canKey, hasAgentsPage, tree, views, want, organisation, mayFile])
+  }, [s, language, at, go, send, canKey, hasAgentsPage, tree, views, want, organisation, mayFile, backSaid, backKey])
 }
 
 /** The source's own page for agents: a place like any other, with an address and a way in with nothing open. */
@@ -935,7 +964,31 @@ function TreeGlyph() {
   )
 }
 
-function RowTwoStart({ parts, facts, at, pageUp }: { parts: ShellParts; facts: ScreenFacts | undefined; at: ScopePath; pageUp: boolean }) {
+/** The way back in words: the view's name, and its scope's where that is not the scope in the trail. */
+function wayBackSaid(back: WayBack, s: Translate): string {
+  return back.in !== undefined ? s('frame.lastViewIn', { name: back.name, scope: back.in }) : s('frame.lastView', { name: back.name })
+}
+
+/**
+ * The view last worked on, one press away on every page (ADR-0033, amended 22
+ * November 2026): right after Home, quieter than a tab, saying the view by its
+ * name. Its accessible name and its tooltip say where it leads in a sentence,
+ * with the scope where that is another than the one in the trail.
+ */
+function WayBackTab({ back, parts }: { back: WayBack; parts: ShellParts }) {
+  const { services: { s }, agent } = parts
+  const said = wayBackSaid(back, s)
+  return (
+    <Tooltip title={said}>
+      <button type="button" className="kit-frame__tab kit-frame__back" data-testid="frame-last-view" data-guide="frame.lastView" aria-label={said} onClick={() => agent.openSomewhere(back.to)}>
+        <span aria-hidden>‹</span>
+        <span className="kit-frame__back-name">{back.name}</span>
+      </button>
+    </Tooltip>
+  )
+}
+
+function RowTwoStart({ parts, facts, at, pageUp, back }: { parts: ShellParts; facts: ScreenFacts | undefined; at: ScopePath; pageUp: boolean; back: WayBack | undefined }) {
   const { services: { s }, agent } = parts
   const homeHere = !parts.nav.project && !pageUp
   // On a home the tree is what a person moves through, and the page beside it lists
@@ -950,6 +1003,7 @@ function RowTwoStart({ parts, facts, at, pageUp }: { parts: ShellParts; facts: S
       <button type="button" className="kit-frame__tab" aria-current={homeHere ? 'page' : undefined} data-testid="frame-home" data-guide="frame.home" onClick={() => agent.openSomewhere({ scope: at, page: 'home' })}>
         {s('frame.home')}
       </button>
+      {back && <WayBackTab back={back} parts={parts} />}
       {/* A home's views scroll, as a scope's tabs do, when the row has no room for them all. */}
       {tabs.length > 0 && (
         <div className="kit-frame__homeviews">

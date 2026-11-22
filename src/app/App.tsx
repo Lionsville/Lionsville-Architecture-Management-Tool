@@ -48,6 +48,7 @@ import type { ScopePath } from '../projects/scopePath'
 import { NO_WINDOW_CHROME } from '../platform/windowChrome'
 import { sourceIsReadOnly, sourceKey } from '../platform/workingSource'
 import { recentFrom, RECENT_KEY, renamedIn } from './frame/recentPlaces'
+import { lastViewsFrom, renamedView } from './frame/lastView'
 import type { WorkingSource } from '../platform/workingSource'
 import { textFromBytes } from '../projects/text'
 import { usePeopleRegister } from './organisation/usePeopleRegister'
@@ -827,6 +828,8 @@ function useShellBase(props: AppProps) {
     if (first?.edit && first.id !== undefined && first.page !== undefined && first.page !== 'drawing') askToEdit(first.page, first.id)
     return frameStore({
       pinned: prefs.readPreferences().treePinned === true,
+      // The view last worked on, off the list of places last worked in on this computer: a reload offers the same way back.
+      ...lastViewsFrom(recentFrom(prefs.readPreferences()[RECENT_KEY], sourceKey(source))),
       ...(first?.tab !== undefined && first.page !== undefined ? { tab: first.tab, tabOf: first.page } : {}),
       ...readingOf(boot.initialPage),
       // The colour said by an address is a sheet's or a map's reader's: a reload stays on it.
@@ -919,6 +922,7 @@ function useShellBase(props: AppProps) {
       const by = sourceKey(source)
       const stored = prefs.readPreferences()[RECENT_KEY] as Record<string, unknown> | undefined
       prefs.writePreference({ [RECENT_KEY]: { ...stored, [by]: renamedIn(recentFrom(stored, by), path, id, name) } })
+      frame.set(renamedView(frame.get(), path, id, name))
     },
     writable,
     s,

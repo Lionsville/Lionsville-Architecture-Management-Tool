@@ -1565,6 +1565,8 @@ export const NL: Record<keyof typeof EN, string> = {
   'frame.orderBy': 'Sorteren op',
   'frame.settingsOf': 'Instellingen van {name}…',
   'frame.home': 'Start',
+  'frame.lastView': 'Terug naar {name}',
+  'frame.lastViewIn': 'Terug naar {name} in {scope}',
   'frame.more': 'Meer',
   'frame.newView': 'Nieuwe weergave',
   'drawing.editing': '{name} bewerken',

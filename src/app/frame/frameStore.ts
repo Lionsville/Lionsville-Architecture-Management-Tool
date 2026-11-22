@@ -23,6 +23,7 @@ import type { PaletteLine } from '../../search/ui/GlobalSearchDialog'
 import type { StackedBand } from '../../widgets/kit/Band'
 import type { ActivityEntry, ActivityMenuProps } from '../ActivityMenu'
 import { leaveWithDrafts } from '../../widgets/kit/drafts'
+import type { LastView } from './lastView'
 
 /** A view named in row two, on a screen that draws no tabs of its own: a home. */
 export type FrameView = { readonly id: string; readonly name: string; readonly kind: string }
@@ -139,6 +140,9 @@ export type FrameState = {
   readonly preferences?: boolean
   /** The History page is up over this scope (`useHistoryPlace`): a place of its own, as the preferences are. */
   readonly history?: boolean
+  /** The view last worked on in each scope, and the scope worked in last: the way back row two offers (`lastView.ts`). */
+  readonly lastViews?: Readonly<Record<string, LastView>>
+  readonly lastScope?: string
   /** ⌘\: the tree docked on every screen, by this person's choice. */
   readonly pinned: boolean
 }

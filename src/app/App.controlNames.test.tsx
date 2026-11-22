@@ -517,7 +517,8 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['and written', ['decision.writing'], async () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Edit' }))
   }]],
-  [['the roadmap', ['roadmap.newPlan', 'roadmap.findings', 'roadmap.axis'], async () => {
+  // A page over a view keeps the way back to that view in row two.
+  [['the roadmap', ['roadmap.newPlan', 'roadmap.findings', 'roadmap.axis', 'frame.lastView'], async () => {
     await page('Roadmap')
   }],
   ['a plan', ['plan.addElement', 'plan.milestone', 'plan.addDecision', 'plan.page', 'plan.status', 'plan.move', 'plan.editText'], async () => {

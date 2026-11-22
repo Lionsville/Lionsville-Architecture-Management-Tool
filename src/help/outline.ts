@@ -47,6 +47,7 @@ export const CHAPTERS: readonly HelpChapterOutline[] = [
       { id: 'frame.checkUpdates', minor: true, menu: ['menu.checkForUpdates'], on: 'desktop' },
       { id: 'frame.overflow', minor: true, on: 'web', seeAlso: ['file.open', 'file.saveCopy', 'prefs.page'] },
       { id: 'frame.home', minor: true, controls: ['frame.home'], seeAlso: ['home.read'] },
+      { id: 'frame.lastView', minor: true, controls: ['frame.lastView'], seeAlso: ['frame.back', 'frame.viewTabs', 'home.continue'] },
       { id: 'frame.viewTabs', seeAlso: ['home.newView'] },
       { id: 'frame.pages', minor: true, seeAlso: ['frame.back', 'frame.more'] },
       { id: 'frame.more', minor: true, controls: ['frame.more'], seeAlso: ['tree.foot'] },

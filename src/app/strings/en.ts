@@ -1805,6 +1805,8 @@ export const EN = {
   'frame.orderBy': 'Order by',
   'frame.settingsOf': 'Settings of {name}…',
   'frame.home': 'Home',
+  'frame.lastView': 'Back to {name}',
+  'frame.lastViewIn': 'Back to {name} in {scope}',
   'frame.more': 'More',
   'frame.newView': 'New view',
   'drawing.editing': 'Editing {name}',

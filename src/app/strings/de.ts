@@ -1569,6 +1569,8 @@ export const DE: Record<keyof typeof EN, string> = {
   'frame.orderBy': 'Sortieren nach',
   'frame.settingsOf': 'Einstellungen von {name}…',
   'frame.home': 'Start',
+  'frame.lastView': 'Zurück zu {name}',
+  'frame.lastViewIn': 'Zurück zu {name} in {scope}',
   'frame.more': 'Mehr',
   'frame.newView': 'Neue Ansicht',
   'drawing.editing': '{name} bearbeiten',

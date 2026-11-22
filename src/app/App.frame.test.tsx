@@ -18,7 +18,8 @@ import { heldRepositories } from './testing/heldRepositories'
 import { placePage, placePageNow } from './testing/placePage'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { renderApp } from './testing/renderShell'
+import { renderApp, THIS_BROWSER } from './testing/renderShell'
+import { sourceKey } from '../platform/workingSource'
 
 beforeAll(() => installReactFlowMocks())
 afterEach(() => cleanup())
@@ -208,6 +209,59 @@ describe('row two on a home', () => {
     fireEvent.click(screen.getByTestId('tree-place-register'))
     await placePage()
     expect(within(screen.getByTestId('frame-places')).getByTestId('frame-new-view')).toBeDefined()
+  })
+})
+
+describe('the way back to the view last worked on', () => {
+  const chip = () => screen.queryByTestId('frame-last-view')
+
+  it('stands right after Home on the scope’s home, by the view’s name, and one press opens the view', async () => {
+    const { ask } = await home()
+    expect(chip()).toBeNull()
+    expect(parsed(await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })).arrived).toBe(true)
+    await within(screen.getByTestId('frame-views')).findByRole('tab', { name: 'The board', selected: true })
+    // The view itself is up: its tab says so, and nothing offers a way back to where you are.
+    expect(chip()).toBeNull()
+    fireEvent.click(screen.getByTestId('frame-home'))
+    const back = await screen.findByTestId('frame-last-view')
+    expect(back.textContent).toBe('‹The board')
+    expect(back.getAttribute('aria-label')).toBe('Back to The board')
+    expect(screen.getByTestId('frame-home').nextElementSibling).toBe(back)
+    fireEvent.click(back)
+    await within(screen.getByTestId('frame-views')).findByRole('tab', { name: 'The board', selected: true })
+    await waitFor(() => expect(chip()).toBeNull())
+    await waitFor(() => expect(window.location.hash).toBe('#/retail/depot/-/board/l7'))
+  })
+
+  it('names the scope where the page that is up is another’s, and is there over a page of the view’s own scope', async () => {
+    const { ask } = await home()
+    await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })
+    await ask('app.open', { scope: 'retail/depot', page: 'decisions' })
+    await placePage()
+    expect((await screen.findByTestId('frame-last-view')).getAttribute('aria-label')).toBe('Back to The board')
+    await ask('app.open', { scope: 'retail', page: 'home' })
+    await waitFor(() => expect(screen.getByTestId('crumb-current').textContent).toBe('Retail'))
+    expect(screen.getByTestId('frame-last-view').getAttribute('aria-label')).toBe('Back to The board in Depot')
+  })
+
+  it('is found by ⌘K, so the keyboard reaches it from wherever the focus is', async () => {
+    const { ask } = await home()
+    await ask('app.open', { scope: 'retail/depot', page: 'board', id: 'l7' })
+    fireEvent.click(screen.getByTestId('frame-home'))
+    await screen.findByTestId('frame-last-view')
+    fireEvent.click(screen.getByTestId('frame-find'))
+    fireEvent.click(await screen.findByRole('option', { name: /Back to The board/ }))
+    await within(screen.getByTestId('frame-views')).findByRole('tab', { name: 'The board', selected: true })
+  })
+
+  it('is there after a reload, off the places last worked in on this computer', async () => {
+    const recent = [{ scope: 'retail/depot', page: 'board', id: 'l7', name: 'The board', in: 'Depot', at: '2026-11-22T10:00:00.000Z' }]
+    renderApp({ repositories: heldRepositories(TREE()), boot: { initialProject: undefined, initialPreferences: { language: 'en', recentPlaces: { [sourceKey(THIS_BROWSER)]: recent } } } })
+    await screen.findByTestId('organisation-cards')
+    const back = await screen.findByTestId('frame-last-view')
+    expect(back.getAttribute('aria-label')).toBe('Back to The board in Depot')
+    fireEvent.click(back)
+    await within(screen.getByTestId('frame-views')).findByRole('tab', { name: 'The board', selected: true })
   })
 })
 
