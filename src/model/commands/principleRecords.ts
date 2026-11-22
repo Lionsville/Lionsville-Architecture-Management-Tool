@@ -17,7 +17,7 @@ import type { Principle } from '../principle'
 import { aspectsRefusal, sharpenRefusal } from '../principle'
 import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys, Refused } from './handler'
-import { drop, patched, put, withPrinciples } from './rows'
+import { drop, patched, put, withRows } from './rows'
 import { patchWrites } from './writes'
 
 /** Every field of a principle but its id. */
@@ -46,7 +46,7 @@ export const PRINCIPLE_COMMANDS = {
       const refused = principleRefusal(principle)
       if (refused) return refused
       const rows = put(principlesOf(model), model.order.principles, principle.id, principle, at)
-      return ok(withPrinciples(model, rows), { type: 'principle.remove', id: principle.id }, meta)
+      return ok(withRows(model, 'principles', rows), { type: 'principle.remove', id: principle.id }, meta)
     },
   },
 
@@ -61,7 +61,7 @@ export const PRINCIPLE_COMMANDS = {
       const refused = principleRefusal(row, held)
       if (refused) return refused
       const rows = put(principlesOf(model), model.order.principles, command.id, row)
-      return ok(withPrinciples(model, rows), { type: 'principle.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'principles', rows), { type: 'principle.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -73,7 +73,7 @@ export const PRINCIPLE_COMMANDS = {
       if (!held) return gone
       const at = model.order.principles.indexOf(command.id)
       const rows = drop(principlesOf(model), model.order.principles, command.id)
-      return ok(withPrinciples(model, rows), { type: 'principle.add', principle: held, at }, meta)
+      return ok(withRows(model, 'principles', rows), { type: 'principle.add', principle: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>

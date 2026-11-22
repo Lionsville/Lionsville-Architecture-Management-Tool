@@ -17,7 +17,7 @@
 import { operatingRulesOf, responsibilitiesOf, rolesOf, unitTypesOf } from '../normalised'
 import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys } from './handler'
-import { drop, patched, put, withOperating } from './rows'
+import { drop, patched, put, withRows } from './rows'
 import { patchWrites } from './writes'
 
 /** Every field of a unit type but its id. */
@@ -48,7 +48,7 @@ export const UNIT_TYPE_COMMANDS = {
       const { unitType, at } = command
       if (unitType.id in unitTypesOf(model)) return taken
       const rows = put(unitTypesOf(model), model.order.unitTypes, unitType.id, unitType, at)
-      return ok(withOperating(model, 'unitTypes', rows), { type: 'unitType.remove', id: unitType.id }, meta)
+      return ok(withRows(model, 'unitTypes', rows), { type: 'unitType.remove', id: unitType.id }, meta)
     },
   },
 
@@ -61,7 +61,7 @@ export const UNIT_TYPE_COMMANDS = {
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
       const rows = put(unitTypesOf(model), model.order.unitTypes, command.id, row)
-      return ok(withOperating(model, 'unitTypes', rows), { type: 'unitType.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'unitTypes', rows), { type: 'unitType.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -73,7 +73,7 @@ export const UNIT_TYPE_COMMANDS = {
       if (!held) return gone
       const at = model.order.unitTypes.indexOf(command.id)
       const rows = drop(unitTypesOf(model), model.order.unitTypes, command.id)
-      return ok(withOperating(model, 'unitTypes', rows), { type: 'unitType.add', unitType: held, at }, meta)
+      return ok(withRows(model, 'unitTypes', rows), { type: 'unitType.add', unitType: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>
@@ -86,7 +86,7 @@ export const ROLE_COMMANDS = {
       const { role, at } = command
       if (role.id in rolesOf(model)) return taken
       const rows = put(rolesOf(model), model.order.roles, role.id, role, at)
-      return ok(withOperating(model, 'roles', rows), { type: 'role.remove', id: role.id }, meta)
+      return ok(withRows(model, 'roles', rows), { type: 'role.remove', id: role.id }, meta)
     },
   },
 
@@ -99,7 +99,7 @@ export const ROLE_COMMANDS = {
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
       const rows = put(rolesOf(model), model.order.roles, command.id, row)
-      return ok(withOperating(model, 'roles', rows), { type: 'role.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'roles', rows), { type: 'role.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -111,7 +111,7 @@ export const ROLE_COMMANDS = {
       if (!held) return gone
       const at = model.order.roles.indexOf(command.id)
       const rows = drop(rolesOf(model), model.order.roles, command.id)
-      return ok(withOperating(model, 'roles', rows), { type: 'role.add', role: held, at }, meta)
+      return ok(withRows(model, 'roles', rows), { type: 'role.add', role: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>
@@ -124,7 +124,7 @@ export const RESPONSIBILITY_COMMANDS = {
       const { responsibility, at } = command
       if (responsibility.id in responsibilitiesOf(model)) return taken
       const rows = put(responsibilitiesOf(model), model.order.responsibilities, responsibility.id, responsibility, at)
-      return ok(withOperating(model, 'responsibilities', rows), { type: 'responsibility.remove', id: responsibility.id }, meta)
+      return ok(withRows(model, 'responsibilities', rows), { type: 'responsibility.remove', id: responsibility.id }, meta)
     },
   },
 
@@ -138,7 +138,7 @@ export const RESPONSIBILITY_COMMANDS = {
       const { row, inverse } = patched(held, command.patch)
       const rows = put(responsibilitiesOf(model), model.order.responsibilities, command.id, row)
       return ok(
-        withOperating(model, 'responsibilities', rows),
+        withRows(model, 'responsibilities', rows),
         { type: 'responsibility.update', id: command.id, patch: inverse },
         meta,
       )
@@ -153,7 +153,7 @@ export const RESPONSIBILITY_COMMANDS = {
       if (!held) return gone
       const at = model.order.responsibilities.indexOf(command.id)
       const rows = drop(responsibilitiesOf(model), model.order.responsibilities, command.id)
-      return ok(withOperating(model, 'responsibilities', rows), { type: 'responsibility.add', responsibility: held, at }, meta)
+      return ok(withRows(model, 'responsibilities', rows), { type: 'responsibility.add', responsibility: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>
@@ -166,7 +166,7 @@ export const OPERATING_RULE_COMMANDS = {
       const { rule, at } = command
       if (rule.id in operatingRulesOf(model)) return taken
       const rows = put(operatingRulesOf(model), model.order.operatingRules, rule.id, rule, at)
-      return ok(withOperating(model, 'operatingRules', rows), { type: 'operatingRule.remove', id: rule.id }, meta)
+      return ok(withRows(model, 'operatingRules', rows), { type: 'operatingRule.remove', id: rule.id }, meta)
     },
   },
 
@@ -179,7 +179,7 @@ export const OPERATING_RULE_COMMANDS = {
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
       const rows = put(operatingRulesOf(model), model.order.operatingRules, command.id, row)
-      return ok(withOperating(model, 'operatingRules', rows), { type: 'operatingRule.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'operatingRules', rows), { type: 'operatingRule.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -191,7 +191,7 @@ export const OPERATING_RULE_COMMANDS = {
       if (!held) return gone
       const at = model.order.operatingRules.indexOf(command.id)
       const rows = drop(operatingRulesOf(model), model.order.operatingRules, command.id)
-      return ok(withOperating(model, 'operatingRules', rows), { type: 'operatingRule.add', rule: held, at }, meta)
+      return ok(withRows(model, 'operatingRules', rows), { type: 'operatingRule.add', rule: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>

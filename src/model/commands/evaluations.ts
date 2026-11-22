@@ -11,7 +11,7 @@ import { evaluationRefusal } from '../evaluation'
 import { evaluationsOf } from '../normalised'
 import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys } from './handler'
-import { drop, patched, put, withEvaluations } from './rows'
+import { drop, patched, put, withRows } from './rows'
 import { patchWrites } from './writes'
 
 const EVALUATION_FIELDS: PatchKeys<'evaluation.update'> = {
@@ -29,7 +29,7 @@ export const EVALUATION_COMMANDS = {
       if (evaluation.id in evaluationsOf(model)) return taken
       if (evaluationRefusal(evaluation)) return BAD
       const rows = put(evaluationsOf(model), model.order.evaluations, evaluation.id, evaluation, at)
-      return ok(withEvaluations(model, rows), { type: 'evaluation.remove', id: evaluation.id }, meta)
+      return ok(withRows(model, 'evaluations', rows), { type: 'evaluation.remove', id: evaluation.id }, meta)
     },
   },
 
@@ -43,7 +43,7 @@ export const EVALUATION_COMMANDS = {
       const { row, inverse } = patched(held, command.patch)
       if (evaluationRefusal(row)) return BAD
       const rows = put(evaluationsOf(model), model.order.evaluations, command.id, row)
-      return ok(withEvaluations(model, rows), { type: 'evaluation.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'evaluations', rows), { type: 'evaluation.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -55,7 +55,7 @@ export const EVALUATION_COMMANDS = {
       if (!held) return gone
       const at = model.order.evaluations.indexOf(command.id)
       const rows = drop(evaluationsOf(model), model.order.evaluations, command.id)
-      return ok(withEvaluations(model, rows), { type: 'evaluation.add', evaluation: held, at }, meta)
+      return ok(withRows(model, 'evaluations', rows), { type: 'evaluation.add', evaluation: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>

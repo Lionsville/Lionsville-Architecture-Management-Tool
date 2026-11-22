@@ -18,7 +18,7 @@ import { checkMarkId, isMarkable } from '../checkMarks'
 import { checkMarksOf } from '../normalised'
 import { gone, ok, taken } from './handler'
 import type { CommandTable } from './handler'
-import { drop, put, withCheckMarks } from './rows'
+import { drop, put, withRows } from './rows'
 
 const markFix = { ok: false, reason: 'command.markFix' } as const
 
@@ -32,7 +32,7 @@ export const CHECK_MARK_COMMANDS = {
       const id = checkMarkId(mark)
       if (id in checkMarksOf(model)) return taken
       const rows = put(checkMarksOf(model), model.order.checkMarks, id, mark, at)
-      return ok(withCheckMarks(model, rows), { type: 'checkMark.remove', id }, meta)
+      return ok(withRows(model, 'checkMarks', rows), { type: 'checkMark.remove', id }, meta)
     },
   },
 
@@ -44,7 +44,7 @@ export const CHECK_MARK_COMMANDS = {
       if (!held) return gone
       const at = model.order.checkMarks.indexOf(command.id)
       const rows = drop(checkMarksOf(model), model.order.checkMarks, command.id)
-      return ok(withCheckMarks(model, rows), { type: 'checkMark.add', mark: held, at }, meta)
+      return ok(withRows(model, 'checkMarks', rows), { type: 'checkMark.add', mark: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>

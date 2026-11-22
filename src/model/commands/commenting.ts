@@ -26,7 +26,7 @@ import { commentsOf } from '../normalised'
 import type { Model } from '../normalised'
 import { gone, ok, taken } from './handler'
 import type { ApplyResult, CommandTable, CommandRefusal } from './handler'
-import { drop, put, withComments } from './rows'
+import { drop, put, withRows } from './rows'
 
 const refused = (reason: CommandRefusal) => ({ ok: false, reason }) as const
 
@@ -43,7 +43,7 @@ function addRefusal(model: Model, comment: Comment): CommandRefusal | undefined 
 /** A comment changed in place: the new row, and the step that puts the old one back. */
 function changed(model: Model, held: Comment, next: Comment, meta: CommandMeta): ApplyResult {
   const rows = put(commentsOf(model), model.order.comments, held.id, next)
-  return ok(withComments(model, rows), { type: 'comment.put', comment: held }, meta)
+  return ok(withRows(model, 'comments', rows), { type: 'comment.put', comment: held }, meta)
 }
 
 export const COMMENT_COMMANDS = {
@@ -56,7 +56,7 @@ export const COMMENT_COMMANDS = {
       const refusal = addRefusal(model, comment)
       if (refusal) return refused(refusal)
       const rows = put(commentsOf(model), model.order.comments, comment.id, comment, at)
-      return ok(withComments(model, rows), { type: 'comment.take', id: comment.id }, meta)
+      return ok(withRows(model, 'comments', rows), { type: 'comment.take', id: comment.id }, meta)
     },
   },
 
@@ -90,7 +90,7 @@ export const COMMENT_COMMANDS = {
       if (!held) return gone
       const at = model.order.comments.indexOf(command.id)
       const rows = drop(commentsOf(model), model.order.comments, command.id)
-      return ok(withComments(model, rows), { type: 'comment.put', comment: held, at }, meta)
+      return ok(withRows(model, 'comments', rows), { type: 'comment.put', comment: held, at }, meta)
     },
   },
 
@@ -101,7 +101,7 @@ export const COMMENT_COMMANDS = {
       const { comment, at } = command
       const held = commentsOf(model)[comment.id]
       const rows = put(commentsOf(model), model.order.comments, comment.id, comment, at)
-      return ok(withComments(model, rows), held ? { type: 'comment.put', comment: held } : { type: 'comment.take', id: comment.id }, meta)
+      return ok(withRows(model, 'comments', rows), held ? { type: 'comment.put', comment: held } : { type: 'comment.take', id: comment.id }, meta)
     },
   },
 } satisfies Partial<CommandTable>

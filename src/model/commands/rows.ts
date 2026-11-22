@@ -15,18 +15,10 @@
  * becomes absent the first time anything touches it. Nothing reads the
  * difference; `decisionsOf` and `routesOf` answer the same either way.
  */
-import type { Adr } from '../adr'
-import type { Transition } from '../transition'
-import type { Cause, Experiment, Observation, Solution } from '../observation'
-import type { OperatingRule, Responsibility, Role, UnitType } from '../operatingModel'
 import type { Diagram, DiagramId, Model, ModelOrder } from '../normalised'
-import type { Assignment } from '../units'
-import type { CheckMark } from '../checkMarks'
-import type { Comment } from '../comment'
-import type { Principle } from '../principle'
-import type { Citation } from '../citable'
-import type { Evaluation } from '../evaluation'
-import type { DesignElement, DiagramGroup, DiagramMember, EdgeRoute, Relation } from '../types'
+import { KINDS } from '../recordKinds'
+import type { RecordList } from '../recordKinds'
+import type { DiagramGroup, DiagramMember, EdgeRoute } from '../types'
 
 // --- indexed collections, immutably -----------------------------------------
 
@@ -93,165 +85,23 @@ function withOrder(model: Model, field: keyof ModelOrder, order: string[]): Mode
   return order === model.order[field] ? model.order : { ...model.order, [field]: order }
 }
 
-export function withElements(model: Model, rows: Rows<DesignElement>): Model {
-  return { ...model, elements: rows.by, order: withOrder(model, 'elements', rows.order) }
-}
-
-export function withRelations(model: Model, rows: Rows<Relation>): Model {
-  return { ...model, relations: rows.by, order: withOrder(model, 'relations', rows.order) }
-}
-
-export function withDiagrams(model: Model, rows: Rows<Diagram>): Model {
-  return { ...model, diagrams: rows.by, order: withOrder(model, 'diagrams', rows.order) }
-}
-
-export function withDecisions(model: Model, rows: Rows<Adr>): Model {
-  const order = withOrder(model, 'decisions', rows.order)
-  // Emptied means gone, not present and empty — see the note at the top.
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.decisions
-    return out
-  }
-  return { ...model, decisions: rows.by, order }
-}
-
-export function withTransitions(model: Model, rows: Rows<Transition>): Model {
-  const order = withOrder(model, 'transitions', rows.order)
-  // Emptied means gone, exactly as `decisions` is — see the note at the top.
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.transitions
-    return out
-  }
-  return { ...model, transitions: rows.by, order }
-}
-
-export function withObservations(model: Model, rows: Rows<Observation>): Model {
-  const order = withOrder(model, 'observations', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.observations
-    return out
-  }
-  return { ...model, observations: rows.by, order }
-}
-
-export function withCauses(model: Model, rows: Rows<Cause>): Model {
-  const order = withOrder(model, 'causes', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.causes
-    return out
-  }
-  return { ...model, causes: rows.by, order }
-}
-
-export function withSolutions(model: Model, rows: Rows<Solution>): Model {
-  const order = withOrder(model, 'solutions', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.solutions
-    return out
-  }
-  return { ...model, solutions: rows.by, order }
-}
-
-export function withExperiments(model: Model, rows: Rows<Experiment>): Model {
-  const order = withOrder(model, 'experiments', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.experiments
-    return out
-  }
-  return { ...model, experiments: rows.by, order }
-}
+/** The record one of the model's lists holds, as the model has it. */
+export type Held<L extends RecordList> = NonNullable<Model[L]>[string]
 
 /**
- * One of the operating model's lists (ADR-0036), put back: emptied means gone,
- * exactly as `decisions` is.
+ * One of the model's lists, put back: its records and its place in the order.
+ * A list the file may leave out is gone once emptied, not present and empty —
+ * see the note at the top — and which lists those are is said once, with the
+ * kinds (`recordKinds.ts`).
  */
-type OperatingLists = {
-  unitTypes: UnitType
-  roles: Role
-  responsibilities: Responsibility
-  operatingRules: OperatingRule
-}
-
-export function withOperating<K extends keyof OperatingLists>(model: Model, list: K, rows: Rows<OperatingLists[K]>): Model {
+export function withRows<L extends RecordList>(model: Model, list: L, rows: Rows<Held<L>>): Model {
   const order = withOrder(model, list, rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
+  if (rows.order.length === 0 && KINDS[list].absentWhenEmpty) {
+    const out: Partial<Model> = { ...model, order }
     delete out[list]
-    return out
+    return out as Model
   }
   return { ...model, [list]: rows.by, order }
-}
-
-/** The assignments (ADR-0036 §4), put back: emptied means gone, as every list of records. */
-export function withAssignments(model: Model, rows: Rows<Assignment>): Model {
-  const order = withOrder(model, 'assignments', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.assignments
-    return out
-  }
-  return { ...model, assignments: rows.by, order }
-}
-
-/** The marks as intended, put back: emptied means gone, as every list of records. */
-export function withCheckMarks(model: Model, rows: Rows<CheckMark>): Model {
-  const order = withOrder(model, 'checkMarks', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.checkMarks
-    return out
-  }
-  return { ...model, checkMarks: rows.by, order }
-}
-
-/** The citations, put back: emptied means gone, as every list of records (ADR-0041 §7). */
-export function withCitations(model: Model, rows: Rows<Citation>): Model {
-  const order = withOrder(model, 'citations', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.citations
-    return out
-  }
-  return { ...model, citations: rows.by, order }
-}
-
-/** The evaluations of building blocks, put back: emptied means gone (ADR-0043 §4). */
-export function withEvaluations(model: Model, rows: Rows<Evaluation>): Model {
-  const order = withOrder(model, 'evaluations', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.evaluations
-    return out
-  }
-  return { ...model, evaluations: rows.by, order }
-}
-
-/** The principles, put back: emptied means gone, as every list of records (ADR-0041). */
-export function withPrinciples(model: Model, rows: Rows<Principle>): Model {
-  const order = withOrder(model, 'principles', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.principles
-    return out
-  }
-  return { ...model, principles: rows.by, order }
-}
-
-/** The comments, put back: emptied means gone, as every list of records (ADR-0037). */
-export function withComments(model: Model, rows: Rows<Comment>): Model {
-  const order = withOrder(model, 'comments', rows.order)
-  if (rows.order.length === 0) {
-    const out = { ...model, order }
-    delete out.comments
-    return out
-  }
-  return { ...model, comments: rows.by, order }
 }
 
 export function setDiagram(model: Model, id: DiagramId, diagram: Diagram): Model {

@@ -13,7 +13,7 @@ import type { CitationShapeRefusal } from '../citable'
 import { citationsOf } from '../normalised'
 import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys, Refused } from './handler'
-import { drop, patched, put, withCitations } from './rows'
+import { drop, patched, put, withRows } from './rows'
 import { patchWrites } from './writes'
 
 const CITATION_FIELDS: PatchKeys<'citation.update'> = {
@@ -37,7 +37,7 @@ export const CITATION_COMMANDS = {
       const refused = command.put ? undefined : citationShapeRefusal(model, citation)
       if (refused) return REFUSAL[refused]
       const rows = put(citationsOf(model), model.order.citations, citation.id, citation, at)
-      return ok(withCitations(model, rows), { type: 'citation.remove', id: citation.id }, meta)
+      return ok(withRows(model, 'citations', rows), { type: 'citation.remove', id: citation.id }, meta)
     },
   },
 
@@ -52,7 +52,7 @@ export const CITATION_COMMANDS = {
       const refused = citationShapeRefusal(model, row)
       if (refused) return REFUSAL[refused]
       const rows = put(citationsOf(model), model.order.citations, command.id, row)
-      return ok(withCitations(model, rows), { type: 'citation.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'citations', rows), { type: 'citation.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -64,7 +64,7 @@ export const CITATION_COMMANDS = {
       if (!held) return gone
       const at = model.order.citations.indexOf(command.id)
       const rows = drop(citationsOf(model), model.order.citations, command.id)
-      return ok(withCitations(model, rows), { type: 'citation.add', citation: held, at, put: true }, meta)
+      return ok(withRows(model, 'citations', rows), { type: 'citation.add', citation: held, at, put: true }, meta)
     },
   },
 } satisfies Partial<CommandTable>

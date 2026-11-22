@@ -7,7 +7,7 @@ import type { Diagram } from '../normalised'
 import type { DiagramSettings } from '../types'
 import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys } from './handler'
-import { drop, patched, put, setDiagram, withDiagrams } from './rows'
+import { drop, patched, put, setDiagram, withRows } from './rows'
 import { patchWrites } from './writes'
 
 /** A view's machine-facing fields, and a sheet's own four (`DiagramPatch`). */
@@ -31,7 +31,7 @@ export const DIAGRAM_COMMANDS = {
       const { diagram, at } = command
       if (diagram.id in model.diagrams) return taken
       const rows = put(model.diagrams, model.order.diagrams, diagram.id, diagram, at)
-      return ok(withDiagrams(model, rows), { type: 'diagram.delete', id: diagram.id }, meta)
+      return ok(withRows(model, 'diagrams', rows), { type: 'diagram.delete', id: diagram.id }, meta)
     },
   },
 
@@ -94,7 +94,7 @@ export const DIAGRAM_COMMANDS = {
       // a scope like any other (ADR-0012, amended 8 November 2026).
       const at = model.order.diagrams.indexOf(command.id)
       return ok(
-        withDiagrams(model, drop(model.diagrams, model.order.diagrams, command.id)),
+        withRows(model, 'diagrams', drop(model.diagrams, model.order.diagrams, command.id)),
         { type: 'diagram.create', diagram, at },
         meta,
       )

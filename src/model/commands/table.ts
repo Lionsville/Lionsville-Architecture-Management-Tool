@@ -30,7 +30,7 @@ import { PROJECT_COMMANDS } from './project'
 import { DECISION_COMMANDS, TRANSITION_COMMANDS } from './records'
 import { RELATION_COMMANDS } from './relations'
 import { ROUTE_COMMANDS } from './routes'
-import { drop, withCitations, withComments } from './rows'
+import { drop, withRows } from './rows'
 import { COMMENTABLE, COMMENTABLE_KINDS } from '../commentable'
 import type { CommentableKind } from '../commentable'
 import { isAbout } from '../comment'
@@ -86,7 +86,7 @@ function takingThread<K extends CommandType>(kind: CommentableKind, entry: Comma
       model.order.comments.forEach((id, at) => {
         if (!isAbout(held[id], about)) return
         undo.push({ type: 'comment.put', comment: held[id], at })
-        next = withComments(next, drop(commentsOf(next), next.order.comments, id))
+        next = withRows(next, 'comments', drop(commentsOf(next), next.order.comments, id))
       })
       if (undo.length === 0) return result
       return { ok: true, model: next, inverse: transaction([result.inverse, ...undo], context.meta) }
@@ -122,7 +122,7 @@ function takingCitations<K extends CommandType>(kind: CitingKind, entry: Command
       model.order.citations.forEach((id, at) => {
         if (!isAboutRecord(held[id], about)) return
         undo.push({ type: 'citation.add', citation: held[id], at, put: true })
-        next = withCitations(next, drop(citationsOf(next), next.order.citations, id))
+        next = withRows(next, 'citations', drop(citationsOf(next), next.order.citations, id))
       })
       if (undo.length === 0) return result
       return { ok: true, model: next, inverse: transaction([result.inverse, ...undo], context.meta) }

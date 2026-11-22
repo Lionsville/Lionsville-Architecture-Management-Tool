@@ -12,7 +12,7 @@ import { refinementRefusal } from '../refines'
 import type { Relation } from '../types'
 import { gone, taken } from './handler'
 import type { ApplyResult, CommandTable, PatchKeys, Refused } from './handler'
-import { drop, patched, put, setDiagram, withRelations, withRoutes } from './rows'
+import { drop, patched, put, setDiagram, withRows, withRoutes } from './rows'
 import { patchWrites } from './writes'
 
 /** Every field of a relation but its id: what `relation.update` may name. */
@@ -43,7 +43,7 @@ export const RELATION_COMMANDS = {
       if (refused) return refused
       const rows = put(model.relations, model.order.relations, relation.id, relation, at)
       return landed(
-        withRelations(model, rows),
+        withRows(model, 'relations', rows),
         [{ type: 'relation.delete', id: relation.id }],
         relation.refines,
         meta,
@@ -63,7 +63,7 @@ export const RELATION_COMMANDS = {
       if (refused) return refused
       const rows = put(model.relations, model.order.relations, command.id, row)
       return landed(
-        withRelations(model, rows),
+        withRows(model, 'relations', rows),
         [{ type: 'relation.update', id: command.id, patch: inverse }],
         landingArriving(held, command.patch),
         meta,
@@ -102,7 +102,7 @@ function deleteRelation(model: Model, id: RelationId, meta: CommandMeta): ApplyR
   for (const landingId of next.order.relations) {
     if (next.relations[landingId].refines !== id) continue
     const { row, inverse } = patched(next.relations[landingId], { refines: undefined })
-    next = withRelations(next, put(next.relations, next.order.relations, landingId, row))
+    next = withRows(next, 'relations', put(next.relations, next.order.relations, landingId, row))
     undo.push({ type: 'relation.update', id: landingId, patch: inverse })
   }
   return { ok: true, model: next, inverse: transaction(undo, meta) }
@@ -182,14 +182,14 @@ function landed(model: Model, undo: Command[], arriving: string | undefined, met
   const rows = put(model.relations, model.order.relations, refined.id, row)
   return {
     ok: true,
-    model: withRelations(model, rows),
+    model: withRows(model, 'relations', rows),
     inverse: reverse([...undo, { type: 'relation.update', id: refined.id, patch: inverse }], meta),
   }
 }
 
 /** The relation and its geometry, gone from the model and from every diagram. */
 export function removeRelation(model: Model, id: RelationId): Model {
-  let next = withRelations(model, drop(model.relations, model.order.relations, id))
+  let next = withRows(model, 'relations', drop(model.relations, model.order.relations, id))
   for (const diagramId of next.order.diagrams) {
     const diagram = next.diagrams[diagramId]
     if (!routesOf(diagram)[id]) continue

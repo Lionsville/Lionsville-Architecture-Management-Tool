@@ -14,7 +14,7 @@ import { ownerFieldNamed, withOneOwner } from '../ownerField'
 import type { DesignElement, ElementId } from '../types'
 import { gone, ok, outOfOrder, taken } from './handler'
 import type { ApplyResult, CommandTable, PatchKeys } from './handler'
-import { drop, patched, put, setDiagram, withAssignments, withDiagrams, withElements, withMembers } from './rows'
+import { drop, patched, put, setDiagram, withRows, withMembers } from './rows'
 import type { Rows } from './rows'
 import { removeRelation } from './relations'
 import { patchWrites } from './writes'
@@ -43,7 +43,7 @@ export const ELEMENT_COMMANDS = {
       if (blockRefusal(element)) return badBlock
       if (ratingsRefusal(element)) return badScale
       const rows = put(model.elements, model.order.elements, element.id, element, at)
-      return ok(withElements(model, rows), { type: 'element.delete', id: element.id }, meta)
+      return ok(withRows(model, 'elements', rows), { type: 'element.delete', id: element.id }, meta)
     },
   },
 
@@ -72,7 +72,7 @@ export const ELEMENT_COMMANDS = {
       if (blockRefusal(row)) return badBlock
       if (ratingsRefusal(row)) return badScale
       const rows = put(model.elements, model.order.elements, command.id, row)
-      return ok(withElements(model, rows), { type: 'element.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'elements', rows), { type: 'element.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -91,7 +91,7 @@ export const ELEMENT_COMMANDS = {
       const { row } = patched(held, { ratings })
       if (ratingsRefusal(row)) return badScale
       const rows = put(model.elements, model.order.elements, command.id, row)
-      return ok(withElements(model, rows), { type: 'element.rate', id: command.id, aspect: command.aspect, ...(was !== undefined ? { value: was } : {}) }, meta)
+      return ok(withRows(model, 'elements', rows), { type: 'element.rate', id: command.id, aspect: command.aspect, ...(was !== undefined ? { value: was } : {}) }, meta)
     },
   },
 
@@ -128,7 +128,7 @@ export const ELEMENT_COMMANDS = {
         before.push({ id: entry.id, name: row.name, ref: row.ref! })
         rows = put(rows.by, rows.order, entry.id, { ...row, name: entry.name, ref: entry.ref })
       }
-      return ok(withElements(model, rows), { type: 'standin.refresh', entries: before }, meta)
+      return ok(withRows(model, 'elements', rows), { type: 'standin.refresh', entries: before }, meta)
     },
   },
 
@@ -153,7 +153,7 @@ export const ELEMENT_COMMANDS = {
       const next = asStandIn(held, command)
       const rows = put(model.elements, model.order.elements, command.id, next)
       return ok(
-        withElements(model, rows),
+        withRows(model, 'elements', rows),
         { type: 'element.update', id: command.id, patch: replacement(next, held) },
         meta,
       )
@@ -185,12 +185,12 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
   }))
 
   const undo: Command[] = [{ type: 'element.create', element, at: model.order.elements.indexOf(id) }]
-  let next = withElements(model, drop(model.elements, model.order.elements, id))
+  let next = withRows(model, 'elements', drop(model.elements, model.order.elements, id))
 
   model.order.diagrams.forEach((diagramId, at) => {
     if (!doomed.has(diagramId)) return
     undo.push({ type: 'diagram.create', diagram: model.diagrams[diagramId], at })
-    next = withDiagrams(next, drop(next.diagrams, next.order.diagrams, diagramId))
+    next = withRows(next, 'diagrams', drop(next.diagrams, next.order.diagrams, diagramId))
   })
 
   // Indices are read off the ORIGINAL order, and pushed in ascending order, so
@@ -276,7 +276,7 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
       const child = next.elements[childId]
       if (child.parentId !== id) continue
       const { row, inverse } = patched(child, { parentId: outFrom ? undefined : element.parentId })
-      next = withElements(next, put(next.elements, next.order.elements, childId, row))
+      next = withRows(next, 'elements', put(next.elements, next.order.elements, childId, row))
       undo.push({ type: 'element.update', id: childId, patch: inverse })
     }
   }
@@ -292,7 +292,7 @@ function deleteElement(model: Model, id: ElementId, meta: CommandMeta): ApplyRes
     const assignment = assignments[assignmentId]
     if (assignment.unitId !== id) return
     undo.push({ type: 'assignment.add', assignment, at })
-    next = withAssignments(next, drop(assignmentsOf(next), next.order.assignments, assignmentId))
+    next = withRows(next, 'assignments', drop(assignmentsOf(next), next.order.assignments, assignmentId))
   })
 
   return { ok: true, model: next, inverse: transaction(undo, meta) }

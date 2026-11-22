@@ -11,7 +11,7 @@ import type { Model } from '../normalised'
 import type { Cause } from '../observation'
 import { gone, ok, taken } from './handler'
 import type { CommandTable, PatchKeys, Refused } from './handler'
-import { drop, patched, put, withCauses, withExperiments, withObservations, withSolutions } from './rows'
+import { drop, patched, put, withRows } from './rows'
 import { patchWrites } from './writes'
 import { sameValue } from '../recordKey'
 
@@ -67,7 +67,7 @@ export const OBSERVATION_COMMANDS = {
       const { observation, at } = command
       if (observation.id in observationsOf(model)) return taken
       const rows = put(observationsOf(model), model.order.observations, observation.id, observation, at)
-      return ok(withObservations(model, rows), { type: 'observation.remove', id: observation.id }, meta)
+      return ok(withRows(model, 'observations', rows), { type: 'observation.remove', id: observation.id }, meta)
     },
   },
 
@@ -86,7 +86,7 @@ export const OBSERVATION_COMMANDS = {
       }
       const { row, inverse } = patched(held, command.patch)
       const rows = put(observationsOf(model), model.order.observations, command.id, row)
-      return ok(withObservations(model, rows), { type: 'observation.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'observations', rows), { type: 'observation.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -98,7 +98,7 @@ export const OBSERVATION_COMMANDS = {
       if (!held) return gone
       const at = model.order.observations.indexOf(command.id)
       const rows = drop(observationsOf(model), model.order.observations, command.id)
-      return ok(withObservations(model, rows), { type: 'observation.add', observation: held, at }, meta)
+      return ok(withRows(model, 'observations', rows), { type: 'observation.add', observation: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>
@@ -111,7 +111,7 @@ export const CAUSE_COMMANDS = {
       const { cause, at } = command
       if (cause.id in causesOf(model)) return taken
       const rows = put(causesOf(model), model.order.causes, cause.id, cause, at)
-      return ok(withCauses(model, rows), { type: 'cause.remove', id: cause.id }, meta)
+      return ok(withRows(model, 'causes', rows), { type: 'cause.remove', id: cause.id }, meta)
     },
   },
 
@@ -126,7 +126,7 @@ export const CAUSE_COMMANDS = {
       if (refused) return refused
       const { row, inverse } = patched(held, command.patch)
       const rows = put(causesOf(model), model.order.causes, command.id, row)
-      return ok(withCauses(model, rows), { type: 'cause.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'causes', rows), { type: 'cause.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -138,7 +138,7 @@ export const CAUSE_COMMANDS = {
       if (!held) return gone
       const at = model.order.causes.indexOf(command.id)
       const rows = drop(causesOf(model), model.order.causes, command.id)
-      return ok(withCauses(model, rows), { type: 'cause.add', cause: held, at }, meta)
+      return ok(withRows(model, 'causes', rows), { type: 'cause.add', cause: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>
@@ -151,7 +151,7 @@ export const SOLUTION_COMMANDS = {
       const { solution, at } = command
       if (solution.id in solutionsOf(model)) return taken
       const rows = put(solutionsOf(model), model.order.solutions, solution.id, solution, at)
-      return ok(withSolutions(model, rows), { type: 'solution.remove', id: solution.id }, meta)
+      return ok(withRows(model, 'solutions', rows), { type: 'solution.remove', id: solution.id }, meta)
     },
   },
 
@@ -164,7 +164,7 @@ export const SOLUTION_COMMANDS = {
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
       const rows = put(solutionsOf(model), model.order.solutions, command.id, row)
-      return ok(withSolutions(model, rows), { type: 'solution.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'solutions', rows), { type: 'solution.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -176,7 +176,7 @@ export const SOLUTION_COMMANDS = {
       if (!held) return gone
       const at = model.order.solutions.indexOf(command.id)
       const rows = drop(solutionsOf(model), model.order.solutions, command.id)
-      return ok(withSolutions(model, rows), { type: 'solution.add', solution: held, at }, meta)
+      return ok(withRows(model, 'solutions', rows), { type: 'solution.add', solution: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>
@@ -189,7 +189,7 @@ export const EXPERIMENT_COMMANDS = {
       const { experiment, at } = command
       if (experiment.id in experimentsOf(model)) return taken
       const rows = put(experimentsOf(model), model.order.experiments, experiment.id, experiment, at)
-      return ok(withExperiments(model, rows), { type: 'experiment.remove', id: experiment.id }, meta)
+      return ok(withRows(model, 'experiments', rows), { type: 'experiment.remove', id: experiment.id }, meta)
     },
   },
 
@@ -202,7 +202,7 @@ export const EXPERIMENT_COMMANDS = {
       if (!held) return gone
       const { row, inverse } = patched(held, command.patch)
       const rows = put(experimentsOf(model), model.order.experiments, command.id, row)
-      return ok(withExperiments(model, rows), { type: 'experiment.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'experiments', rows), { type: 'experiment.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -214,7 +214,7 @@ export const EXPERIMENT_COMMANDS = {
       if (!held) return gone
       const at = model.order.experiments.indexOf(command.id)
       const rows = drop(experimentsOf(model), model.order.experiments, command.id)
-      return ok(withExperiments(model, rows), { type: 'experiment.add', experiment: held, at }, meta)
+      return ok(withRows(model, 'experiments', rows), { type: 'experiment.add', experiment: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>

@@ -19,7 +19,7 @@ import { assignmentsOf } from '../normalised'
 import type { Assignment } from '../units'
 import { gone, ok, outOfOrder, taken } from './handler'
 import type { CommandTable, PatchKeys } from './handler'
-import { drop, patched, put, withAssignments } from './rows'
+import { drop, patched, put, withRows } from './rows'
 import { patchWrites } from './writes'
 
 /** Every field of an assignment but its id. */
@@ -41,7 +41,7 @@ export const ASSIGNMENT_COMMANDS = {
       if (assignment.id in assignmentsOf(model)) return taken
       if (!assignmentDaysInOrder(assignment)) return outOfOrder
       const rows = put(assignmentsOf(model), model.order.assignments, assignment.id, assignment, at)
-      return ok(withAssignments(model, rows), { type: 'assignment.remove', id: assignment.id }, meta)
+      return ok(withRows(model, 'assignments', rows), { type: 'assignment.remove', id: assignment.id }, meta)
     },
   },
 
@@ -55,7 +55,7 @@ export const ASSIGNMENT_COMMANDS = {
       const { row, inverse } = patched(held, command.patch)
       if (!assignmentDaysInOrder(row)) return outOfOrder
       const rows = put(assignmentsOf(model), model.order.assignments, command.id, row)
-      return ok(withAssignments(model, rows), { type: 'assignment.update', id: command.id, patch: inverse }, meta)
+      return ok(withRows(model, 'assignments', rows), { type: 'assignment.update', id: command.id, patch: inverse }, meta)
     },
   },
 
@@ -67,7 +67,7 @@ export const ASSIGNMENT_COMMANDS = {
       if (!held) return gone
       const at = model.order.assignments.indexOf(command.id)
       const rows = drop(assignmentsOf(model), model.order.assignments, command.id)
-      return ok(withAssignments(model, rows), { type: 'assignment.add', assignment: held, at }, meta)
+      return ok(withRows(model, 'assignments', rows), { type: 'assignment.add', assignment: held, at }, meta)
     },
   },
 } satisfies Partial<CommandTable>
