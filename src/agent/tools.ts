@@ -3379,9 +3379,10 @@ const SPECS = [
     tier: 'write',
     description:
       'Several changes as one undo step, all or nothing: each step names a write or placement tool and '
-      + 'its arguments, and is built against the model as the steps before it left it, so a step may use an '
-      + 'id an earlier one answered with. A step that is refused stops the whole batch before anything lands. '
-      + 'Answers with each step\'s answer.',
+      + 'its arguments, and is built against the model as the steps before it left it. A step uses what an '
+      + 'earlier one answered with { "$ref": "steps[0].id" } in place of a value. A step that is refused stops '
+      + 'the whole batch before anything lands. dryRun answers what would land and changes nothing. At most 200 '
+      + 'steps. Answers with each step\'s answer.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -3393,12 +3394,13 @@ const SPECS = [
             description: 'One tool call.',
             properties: {
               tool: { type: 'string', description: 'The tool, by name: any write tool, or moveBy, placeNextTo, element.place, element.draw, element.undraw, group, ungroup, align, distribute.' },
-              args: { type: 'object', description: 'Its arguments, as that tool takes them.', additionalProperties: true },
+              args: { type: 'object', description: 'Its arguments, as that tool takes them; any value may be { "$ref": "steps[n].field" }.', additionalProperties: true },
             },
             required: ['tool'],
             additionalProperties: false,
           },
         },
+        dryRun: { type: 'boolean', description: 'Build and check every step, answer each step\'s answer and the changes they would make, and land nothing.' },
       },
       required: ['steps'],
       additionalProperties: false,
@@ -4072,6 +4074,10 @@ export type AgentRefusal =
    * longer in it: where the next page starts is not known, so it is not guessed.
    */
   | 'agent.pageMoved'
+  /** A batch step's `{ "$ref": … }` names no earlier step, or a field that step did not answer. */
+  | 'agent.badReference'
+  /** A batch of more steps than one may hold (`batchSteps.ts`'s `MOST_STEPS`). */
+  | 'agent.tooManySteps'
   | 'agent.notYours'
   | 'agent.saveFailed'
   /**
@@ -4231,6 +4237,13 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
   'agent.pageMoved':
     'The list changed since the page that answered this cursor, and the row that page ended on is gone, so where the next '
     + 'page starts is not known. Ask again without cursor for the list as it stands now.',
+  'agent.badReference':
+    'A step\'s { "$ref": "steps[n].field" } names a step that is not before it, or a field that step did not answer; the detail '
+    + 'says which. Refer only to an earlier step, by its place in steps counted from 0, and to a field its answer holds: dry-run '
+    + 'the batch (dryRun true) to see what each step answers.',
+  'agent.tooManySteps':
+    'A batch holds at most 200 steps. Split the work into several batches, each one change the person can tell apart, '
+    + 'and pass the revision each answers as the next one\'s ifRevision.',
   'agent.notYours': 'The newest step is a person\'s, not an agent\'s; it is theirs to undo.',
   'agent.saveFailed': 'The project could not be saved; the app shows why.',
   'agent.principleCited': 'A record cites that principle, so it stays: retire it with principle.update status retired. The detail says which scopes cite it.',

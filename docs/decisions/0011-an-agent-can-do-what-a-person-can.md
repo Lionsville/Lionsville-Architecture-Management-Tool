@@ -223,3 +223,31 @@ keyboard.
   person's judgement about a moment, and the File menu is where it is made.*
   *Since ADR-0031 the folder and its git are the desktop's implementation of
   the repositories; what is said here is true of that implementation.*
+
+## Amended 22 November 2026 — a batch that can be tried, guarded, chained and bounded
+
+`batch` applied each step to a trial copy and landed one transaction, and
+left four things out: a way to see what would land without landing it, a
+step's own guard (a step's `ifRevision` was dropped with its `scope`), a
+way for a later step to name the id an earlier step minted other than
+guessing the slug, and any bound on its size.
+
+* **`dryRun: true`** builds and checks every step exactly as a batch that
+  lands, and answers each step's answer and `changes` — what the steps
+  would do to the scope, in the landscape's own terms (`model/diff.ts`'s
+  `diffModels`, the comparison the history reads) — with the revision it
+  was tried against, and dispatches nothing. Passing that revision as the
+  landing batch's `ifRevision` lands exactly what was tried, or nothing.
+* **A guard on the batch and on its steps.** The batch's own `ifRevision`
+  is met by the handler before any step is built, as every write's is. A
+  step's own is now held to the revision the batch started from and
+  refused `agent.stale` naming the step, rather than dropped.
+* **A step refers to an earlier answer**: any argument value may be
+  `{ "$ref": "steps[n].field" }` (with `.field` and `[i]` as deep as the
+  answer goes), replaced by that value before the step is built
+  (`agent/batchSteps.ts`). A reference to the step itself or a later one,
+  to a step that is not there, or to a field the answer does not hold is
+  refused `agent.badReference`, naming the step and the reference.
+* **At most 200 steps** (`MOST_STEPS`), refused `agent.tooManySteps`: one
+  undo and one Activity line is what a batch is to a person, and a batch
+  larger than that is several changes they should be able to tell apart.

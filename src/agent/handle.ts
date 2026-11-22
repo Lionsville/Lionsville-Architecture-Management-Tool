@@ -90,6 +90,8 @@ import type { OpenDocument } from './assignments'
 import type { OperatingRead } from './operatingModel'
 import type { TreeView } from './tree'
 import { paged, pagingOf } from './paging'
+import { MOST_STEPS, resolved } from './batchSteps'
+import { diffModels } from '../model/diff'
 
 /** What the handler needs from the live session. Every one of these is on `ModelSession`. */
 export type SessionView = {
@@ -971,30 +973,35 @@ function batchable(name: string): name is ToolName {
 
 /**
  * Each step is built against the model as the steps before it left it, so a
- * later step may use an id an earlier one minted — and every step is applied
- * to that trial model, so the refusal a step would meet at the reducer is
- * met here, before the person sees anything. What lands is one transaction.
+ * later step may use an id an earlier one minted — named, if it likes, with a
+ * reference to that step's answer (`batchSteps.ts`) — and every step is
+ * applied to that trial model, so the refusal a step would meet at the
+ * reducer is met here, before the person sees anything. What lands is one
+ * transaction; a dry run lands nothing and answers what would have, with what
+ * it would change in the landscape's own terms (`model/diff.ts`).
+ *
+ * The batch's own `ifRevision` is the handler's, met before this is called;
+ * a step's own is held to the revision the batch started from, rather than
+ * dropped, so a caller that guarded one step is not silently unguarded.
  */
 function batch(args: Record<string, unknown>, session: SessionView): AgentAnswer {
   const steps = args.steps as { tool: string; args?: unknown }[]
   if (steps.length === 0) return refused('agent.badArguments', 'a batch needs at least one step')
-  let model = session.indexed()
+  if (steps.length > MOST_STEPS) return refused('agent.tooManySteps', `${steps.length} steps, the most is ${MOST_STEPS}`)
+  const before = session.indexed()
+  let model = before
   // Ids over the trial model, so what one step mints the next cannot mint again.
   const ids = idPolicy(() => [...model.order.elements, ...model.order.relations, ...model.order.diagrams])
   const commands: Command[] = []
   const answers: unknown[] = []
   let activeDiagramId: string | undefined
   for (const [index, step] of steps.entries()) {
-    if (!batchable(step.tool)) return refused('agent.badArguments', `steps[${index}]: ${step.tool} cannot be part of a batch`)
-    const noScreen = wantsAScreen(step.tool, (step.args ?? {}) as Record<string, unknown>, session, model)
-    if (noScreen) return withDetail(noScreen, `steps[${index}]`)
-    // A step addressed to another scope is refused, not landed here: a batch
-    // is one transaction at THIS session (ADR-0012 §10).
-    const asked = scopeAsked(step.args)
-    if (asked !== undefined && asked !== session.scopePath()) {
-      return refused('agent.scopeNotOpen', `steps[${index}]: ${asked || 'the organisation'} is not the scope open in the app`)
-    }
-    const prepared = commandFor(step.tool, withoutGuard(step.args), writeView(session, {
+    const refs = resolved(step.args ?? {}, answers, index)
+    if ('ok' in refs) return refs
+    const stepArgs = refs.args as Record<string, unknown>
+    const wrong = stepRefused(step.tool, stepArgs, index, session, model)
+    if (wrong) return wrong
+    const prepared = commandFor(step.tool as ToolName, withoutGuard(stepArgs), writeView(session, {
       model, current: () => toArrays(model), ids,
       ...(activeDiagramId !== undefined ? { activeDiagramId } : {}),
     }))
@@ -1010,8 +1017,28 @@ function batch(args: Record<string, unknown>, session: SessionView): AgentAnswer
     const text = prepared.answer.ok && prepared.answer.content[0]?.type === 'text' ? prepared.answer.content[0].text : '{}'
     answers.push(JSON.parse(text))
   }
+  if (args.dryRun === true) {
+    return json({ dryRun: true, steps: answers, changes: diffModels(toArrays(before), toArrays(model)), revision: session.revision() })
+  }
   session.dispatch(transaction(commands, { origin: 'agent' }), activeDiagramId ? { activeDiagramId } : undefined)
   return json({ steps: answers, revision: session.revision() })
+}
+
+/** What refuses one step before it is built: a tool a batch may not hold, a screen, another scope, a revision moved. */
+function stepRefused(tool: string, args: Record<string, unknown>, index: number, session: SessionView, model: Model): AgentAnswer | undefined {
+  if (!batchable(tool)) return refused('agent.badArguments', `steps[${index}]: ${tool} cannot be part of a batch`)
+  const noScreen = wantsAScreen(tool, args, session, model)
+  if (noScreen) return withDetail(noScreen, `steps[${index}]`)
+  // A step addressed to another scope is refused, not landed here: a batch
+  // is one transaction at THIS session (ADR-0012 §10).
+  const asked = scopeAsked(args)
+  if (asked !== undefined && asked !== session.scopePath()) {
+    return refused('agent.scopeNotOpen', `steps[${index}]: ${asked || 'the organisation'} is not the scope open in the app`)
+  }
+  if (typeof args.ifRevision === 'number' && args.ifRevision !== session.revision()) {
+    return refused('agent.stale', `steps[${index}]: the project is at revision ${session.revision()}, not ${args.ifRevision}`)
+  }
+  return undefined
 }
 
 /**

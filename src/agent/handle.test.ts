@@ -449,6 +449,60 @@ describe('batch', () => {
     expect(await handle({ id: '5', tool: 'batch', args: { steps: [{ tool: 'element.add', args: { name: 'x' } }], ifRevision: 4 } }, held))
       .toMatchObject({ refusal: 'agent.stale' })
   })
+
+  it('lets a step use what an earlier one answered, by reference, resolved before it is built', async () => {
+    const held = session()
+    const out = parsed(await handle({ id: '1', tool: 'batch', args: { steps: [
+      { tool: 'element.add', args: { name: 'Billing' } },
+      { tool: 'connect', args: { sourceId: { $ref: 'steps[0].id' }, targetId: 'billing', label: 'invoices' } },
+    ] } }, held)) as { steps: { id: string }[] }
+    expect(out.steps[0].id).toBe('billing-2')
+    expect(Object.values(held.model().relations)[0]).toMatchObject({ sourceId: 'billing-2', targetId: 'billing' })
+  })
+
+  it('refuses a reference to itself, to a later step, to no step or to a field not answered, and lands none of it', async () => {
+    const held = session()
+    const asking = (ref: string) => handle({ id: '1', tool: 'batch', args: { steps: [
+      { tool: 'element.add', args: { name: 'CRM' } },
+      { tool: 'element.update', args: { id: { $ref: ref }, name: 'Customers' } },
+      { tool: 'element.add', args: { name: 'Later' } },
+    ] } }, held)
+    for (const ref of ['steps[1].id', 'steps[2].id', 'steps[9].id', 'steps[0].nothing', 'id']) {
+      expect(await asking(ref), ref).toMatchObject({ ok: false, refusal: 'agent.badReference', detail: expect.stringMatching(/^steps\[1\]: /) })
+    }
+    expect(held.history()).toHaveLength(0)
+  })
+
+  it('answers a dry run with every step and what would change, and lands nothing', async () => {
+    const held = session()
+    const out = parsed(await handle({ id: '1', tool: 'batch', args: { dryRun: true, steps: [
+      { tool: 'element.add', args: { name: 'CRM' } },
+      { tool: 'element.update', args: { id: 'billing', name: 'Invoicing' } },
+    ] } }, held)) as { dryRun: boolean; steps: { id: string }[]; changes: { kind: string; what: string; id: string }[]; revision: number }
+    expect(out).toMatchObject({ dryRun: true, revision: 0, steps: [{ id: 'crm' }, {}] })
+    expect(out.changes).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'added', what: 'element', id: 'crm' }),
+      expect.objectContaining({ kind: 'changed', what: 'element', id: 'billing', fields: ['name'] }),
+    ]))
+    expect(held.history()).toHaveLength(0)
+    expect(held.model().elements.crm).toBeUndefined()
+  })
+
+  it('holds a step\'s own revision to the one the batch started from, rather than dropping it', async () => {
+    const held = session()
+    expect(await handle({ id: '1', tool: 'batch', args: { steps: [{ tool: 'element.add', args: { name: 'CRM', ifRevision: 3 } }] } }, held))
+      .toMatchObject({ ok: false, refusal: 'agent.stale', detail: expect.stringMatching(/^steps\[0\]: /) })
+    expect(await handle({ id: '2', tool: 'batch', args: { steps: [{ tool: 'element.add', args: { name: 'CRM', ifRevision: 0 } }] } }, held))
+      .toMatchObject({ ok: true })
+  })
+
+  it('refuses more steps than a batch holds, and lands none of them', async () => {
+    const held = session()
+    const steps = Array.from({ length: 201 }, (_, at) => ({ tool: 'element.add', args: { name: `Thing ${at}` } }))
+    expect(await handle({ id: '1', tool: 'batch', args: { steps } }, held))
+      .toMatchObject({ ok: false, refusal: 'agent.tooManySteps', detail: '201 steps, the most is 200' })
+    expect(held.history()).toHaveLength(0)
+  })
 })
 
 describe('the four things only the renderer can do', () => {
