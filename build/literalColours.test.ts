@@ -20,7 +20,8 @@ import { describe, expect, it } from 'vitest'
 
 const CEILING: Record<string, number> = {
   'electron/main/index.ts': 2,
-  'src/agent/tools.ts': 3,
+  'src/agent/rules.ts': 5,
+  'src/agent/tools.ts': 1,
   'src/agent/write/canvas.ts': 1,
   'src/agent/write/connections.ts': 1,
   'src/agent/write/elements.ts': 1,
