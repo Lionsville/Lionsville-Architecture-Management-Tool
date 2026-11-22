@@ -41,6 +41,26 @@ describe('a row that folds', () => {
     expect(screen.getByRole('status').textContent).toBe('1')
   })
 
+  it('folds one for something that arrives, though the row is looked at twice before the fold is drawn', () => {
+    measured()
+    needs = (count) => 400 - count * 100
+    render(<Row />)
+    expect(screen.getByRole('status').textContent).toBe('0')
+    // A colleague's disc lands in the row: seen as a change in it and as a child resized, both before the next draw.
+    needs = (count) => 450 - count * 100
+    act(() => { watcher?.(); watcher?.() })
+    expect(screen.getByRole('status').textContent).toBe('1')
+  })
+
+  it('looks again once a fold is drawn, and folds the next where one was not enough', () => {
+    measured()
+    needs = (count) => 400 - count * 100
+    render(<Row />)
+    needs = (count) => 550 - count * 100
+    act(() => { watcher?.(); watcher?.() })
+    expect(screen.getByRole('status').textContent).toBe('2')
+  })
+
   it('stops at what it may fold', () => {
     measured()
     needs = () => 2000

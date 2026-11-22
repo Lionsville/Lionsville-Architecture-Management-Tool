@@ -18,26 +18,34 @@ export function useRowFold(most: number, again: unknown) {
   const [folded, setFolded] = useState(0)
   const [row, setRow] = useState<HTMLElement | null>(null)
   const widths = useRef<number[]>([])
+  // How many the row is drawn with, and how many were last asked for: apart from when a fold is on its way to the screen.
+  const drawn = useRef(0)
+  const asked = useRef(0)
   const anchor = useCallback((held: HTMLElement | null) => setRow(held?.parentElement ?? null), [])
 
   const look = useCallback(() => {
-    if (!row) return
-    setFolded((was) => {
-      const width = row.clientWidth
-      if ((row.scrollWidth > width || pastItsEnd(row)) && was < most) {
-        widths.current[was] = width
-        return was + 1
-      }
-      const last = widths.current[was - 1]
-      return was > 0 && last !== undefined && width > last ? was - 1 : was
-    })
+    // A fold asked for and not drawn yet: the row still stands as it did when it was measured, and
+    // a second look at it folds a second control for the one overflow, which no width then takes back.
+    // Something arriving in a row is seen twice, as a change in it and as a child resized; the draw looks again.
+    if (!row || asked.current !== drawn.current) return
+    const was = drawn.current
+    const width = row.clientWidth
+    const last = widths.current[was - 1]
+    let next = was
+    if ((row.scrollWidth > width || pastItsEnd(row)) && was < most) {
+      widths.current[was] = width
+      next = was + 1
+    } else if (was > 0 && last !== undefined && width > last) next = was - 1
+    if (next === was) return
+    asked.current = next
+    setFolded(next)
   }, [row, most])
 
   // A language or a text size changes what the row needs at the same width: everything back, and fold again.
-  useLayoutEffect(() => { widths.current = []; setFolded(0) }, [again])
+  useLayoutEffect(() => { widths.current = []; asked.current = 0; setFolded(0) }, [again])
   // Measured when the row or what is folded changes, and when something in it does — never on every render:
   // the frame draws again often, and a measure each time made the browser lay the page out mid-render.
-  useLayoutEffect(look, [look, folded, again])
+  useLayoutEffect(() => { drawn.current = folded; look() }, [look, folded, again])
   useLayoutEffect(() => {
     if (!row) return undefined
     const sized = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(look)
