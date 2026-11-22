@@ -132,6 +132,14 @@ describe('a unit\'s domains written by the agent give each the unit\'s type', ()
     expect(out).not.toHaveProperty('hint')
   })
 
+  it('is refused whole in a trial of a script, which cannot write another scope\'s header, and a link that gives no type is not', async () => {
+    const held = session({ inScript: true })
+    const out = await handle({ id: '1', tool: 'element.update', args: { id: 'ops', scopes: ['parcels'] } }, held)
+    expect(out).toMatchObject({ ok: false, refusal: 'agent.notInScript' })
+    expect(held.current().elements.find((one) => one.id === 'ops')?.scopes).toBeUndefined()
+    expect(await handle({ id: '1', tool: 'element.update', args: { id: 'ops', name: 'Operations' } }, held)).toMatchObject({ ok: true })
+  })
+
   it('names the type not set where the host writes only the scope open, and says where it is set', async () => {
     const out = parsed(await handle({ id: '1', tool: 'element.update', args: { id: 'ops', scopes: ['parcels'] } }, session()))
     expect(out.scopeTypes).toEqual([{ scope: 'parcels', unitTypeId: 'ut-team', unitType: 'Team', set: false }])

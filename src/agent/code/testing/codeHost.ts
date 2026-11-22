@@ -15,6 +15,7 @@ import { fromArrays, toArrays } from '../../../model/normalised'
 import type { Model } from '../../../model/normalised'
 import type { Observation } from '../../../model/observation'
 import { apply } from '../../../model/reducer'
+import { laidOut } from '../../../model/testFixtures'
 import { Driving } from '../../driving'
 import { handle, withNames } from '../../handle'
 import type { HistoryEntry, SessionView } from '../../handle'
@@ -26,6 +27,7 @@ import type { CodeHost, ScriptReport } from '../host'
 import { DESKTOP_LIMITS } from '../limits'
 import type { ScriptLimits } from '../limits'
 import { quickjsSandbox } from '../quickjs'
+import { landOnSession } from '../simulate'
 
 const application = (id: string, name: string, over: object = {}) => ({
   id, kind: 'application' as const, name, lifecycle: 'live' as const, isManaged: true, aspects: {}, ...over,
@@ -45,7 +47,7 @@ export const RETAIL: HostModel = {
     application('loyalty', 'Loyalty', { owner: 'Marketing' }),
   ],
   relations: [],
-  diagrams: [],
+  diagrams: [laidOut({ id: 'l7', kind: 'layer7', name: 'Landscape', placements: [] })],
   observations: [
     observation('ob-1', 1, { title: 'Picking lists late', about: ['wms'], impact: 'major' }),
     observation('ob-2', 2, { title: 'Till freezes', about: ['pos'] }),
@@ -91,7 +93,7 @@ export function sessionOver(host: HostModel, path: string, over: Partial<Session
     model: () => model,
     indexed: () => model,
     current: () => toArrays(model),
-    activeDiagramId: () => '',
+    activeDiagramId: () => host.diagrams[0]?.id ?? '',
     scopePath: () => path,
     ancestorDecisions: () => [],
     blocked: () => undefined,
@@ -156,6 +158,7 @@ export function hostOver(parts: { limits?: Partial<ScriptLimits>; shell?: ShellV
     },
     named: (answer) => withNames(answer, session, shell),
     report: (line) => { lines.push(line) },
+    land: (simulation) => Promise.resolve(landOnSession(simulation, session, shell)),
   }
 }
 

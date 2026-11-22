@@ -371,6 +371,13 @@ describe('a merge across scopes', () => {
     expect(out).toMatchObject({ ok: false, refusal: 'agent.scopeNotOpen' })
   })
 
+  it('is refused agent.notInScript in a trial of a script, which is one scope, and a merge inside that scope is not', async () => {
+    const across = await handle({ id: '1', tool: 'observation.merge', args: { into: 'ob-1', absorb: [{ id: 'in-1', scope: INTAKE }] } }, session({ inScript: true }))
+    expect(across).toMatchObject({ ok: false, refusal: 'agent.notInScript', detail: expect.stringContaining('also writes another scope') as string })
+    const inside = session({ inScript: true })
+    expect(await handle({ id: '1', tool: 'observation.merge', args: { into: 'ob-1', absorb: [{ id: 'ob-2' }] } }, inside)).toMatchObject({ ok: true })
+  })
+
   it('lands through a host that writes several scopes, every record written where it lives', async () => {
     const { asked, written, changeAcross } = host(everyScope())
     const at = session({ changeAcross })

@@ -68,7 +68,7 @@ describe('a query', () => {
       return refusals
     `, host))
     expect((tried.result as [string, string][]).map(([key]) => key)).toEqual(Array.from({ length: 4 }, () => 'agent.notInScript'))
-    expect((tried.result as [string, string][])[0][1]).toBe('elements.add changes something, and a query only reads')
+    expect((tried.result as [string, string][])[0][1]).toBe('elements.add changes something, and a query only reads: simulate')
     expect((tried.result as [string, string][])[1][1]).toContain('use the plain tool, or call')
     expect(host.asked).toEqual([])
     expect(host.session.history()).toHaveLength(0)

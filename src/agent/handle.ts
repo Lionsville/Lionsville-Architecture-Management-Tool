@@ -50,7 +50,7 @@ import { isLayoutRefusal } from '../layout/elkLayout'
 import type { Translate } from '../i18n/strings'
 import { formatAdrNumber } from '../decisions/adr'
 import { answer } from './answer'
-import { landAcross } from './merge'
+import { landAcross, mergesAcross } from './merge'
 import { moveObservation } from './move'
 import { isUnitRemoval, unitRemoval } from './write/removeUnit'
 import type { ChangeAcross } from './merge'
@@ -233,6 +233,21 @@ export type SessionView = {
    * and the types are then named and not set.
    */
   followScopeTypes?: FollowScopeTypes
+  /**
+   * This session is a trial of a script (ADR-0050, `code/trialSession.ts`):
+   * a copy of one scope, whose changes land later as that scope's one step.
+   * What would also write another scope — a merge across the tree, a unit
+   * removed with what other scopes keep of it, a unit linked to domains whose
+   * types follow — cannot be tried on it, and is refused `agent.notInScript`
+   * rather than landed in part.
+   */
+  inScript?: true
+  /**
+   * The ids spoken for beyond this scope's own records, where the host knows
+   * of any: every id a tree's other scopes hold. What a trial keeps its new
+   * ids clear of, as the session's own policy does.
+   */
+  takenIds?(): Iterable<string>
 }
 
 /** The scopes' types to follow, by path, and the paths that were written. */
@@ -448,6 +463,10 @@ async function answerRequest(request: AgentRequest, session: SessionView | undef
  */
 function acrossScopes(tool: ToolName, args: Record<string, unknown>, session: SessionView): Promise<AgentAnswer> | undefined {
   if (tool === 'element.remove') return removeUnitAcross(args, session)
+  // A trial is one scope: a merge that writes another is not tried in part (ADR-0050).
+  if (session.inScript && mergesAcross(MERGE_KIND[tool], withoutGuard(args) as Record<string, unknown>, writeView(session), session.today())) {
+    return Promise.resolve(refused('agent.notInScript', `${tool} here also writes another scope, and a script tries one scope at a time: use the plain tool, or call`))
+  }
   // Two scopes, always (ADR-0038 §4): landed by the host, or refused here where it cannot.
   if (tool === 'observation.move') {
     return Promise.resolve(moveObservation(withoutGuard(args) as Record<string, unknown>, writeView(session), session.today(), session.changeAcross))
@@ -461,9 +480,14 @@ function acrossScopes(tool: ToolName, args: Record<string, unknown>, session: Se
  * host lands nothing across, and the command path then answers.
  */
 function removeUnitAcross(args: Record<string, unknown>, session: SessionView): Promise<AgentAnswer> | undefined {
-  if (!session.landSteps) return undefined
+  if (!session.landSteps && !session.inScript) return undefined
   const worked = unitRemoval(withoutGuard(args) as Record<string, unknown>, writeView(session))
   if (!worked || !isUnitRemoval(worked) || worked.others.size === 0) return undefined
+  // A trial lands one scope: the command path would remove the unit here and leave what the other scopes keep of it (ADR-0050).
+  if (!session.landSteps) {
+    return Promise.resolve(refused('agent.notInScript',
+      `removing this unit also writes ${[...worked.others.keys()].map((scope) => scope || 'the organisation').join(', ')}, and a script tries one scope at a time: use the plain tool, or call`))
+  }
   const trial = apply(session.indexed(), worked.open)
   if (!trial.ok) return Promise.resolve(refused(trial.reason))
   const steps = new Map(worked.others)
@@ -485,9 +509,24 @@ function removeUnitAcross(args: Record<string, unknown>, session: SessionView): 
 async function landCommand(tool: ToolName, prepared: Prepared, model: Model, session: SessionView): Promise<AgentAnswer> {
   const trial = apply(model, prepared.command)
   if (!trial.ok) return refused(trial.reason)
+  const notTried = followsInScript(tool, prepared.command, session)
+  if (notTried) return notTried
   session.dispatch(prepared.command, prepared.activeDiagramId ? { activeDiagramId: prepared.activeDiagramId } : undefined)
   const followed = await followTypesOf(tool, prepared.command, session)
   return withRevision(followed ? withFollowed(prepared.answer, followed) : prepared.answer, session)
+}
+
+/**
+ * A unit linked to domains whose types would follow it, in a trial of a
+ * script (ADR-0050): each type is written in its own scope's header, which a
+ * trial of one scope cannot try, so the link is refused whole rather than
+ * landed with the types left unset. Nothing for any other write.
+ */
+function followsInScript(tool: ToolName, command: Command, session: SessionView): AgentAnswer | undefined {
+  if (!session.inScript || (tool !== 'element.add' && tool !== 'element.update')) return undefined
+  const unit = unitLinked(command, session)
+  if (!unit || scopeTypesToFollow(session.tree, unit, unit.scopes, session.today()).size === 0) return undefined
+  return refused('agent.notInScript', 'linking this unit to domains gives each its type, which is written in that scope, and a script tries one scope at a time: use the plain tool, or call')
 }
 
 /**

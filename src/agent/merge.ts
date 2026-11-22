@@ -367,6 +367,18 @@ function workOf(write: ScopeAnalysis): AcrossWork {
 }
 
 /**
+ * Whether a merge with these arguments would write a scope other than the
+ * call's own: one a session that writes a single scope cannot land. False
+ * for a tool that does not merge, and for a merge refused before it writes.
+ */
+export function mergesAcross(kind: MergeKind | undefined, args: Args, view: MergeView, date: string): boolean {
+  if (!kind) return false
+  const planned = planFor(kind, args, view, date)
+  if ('ok' in planned || mergeRefused(planned) || choiceRefused(planned)) return false
+  return !writesOf(planned).every((scope) => scope === view.scopePath)
+}
+
+/**
  * Land a merge that writes other scopes through a host that writes several
  * as one: planned again over every scope as the host reads it, and each
  * scope's lists handed back. Nothing where the merge writes only the call's

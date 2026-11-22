@@ -24,7 +24,7 @@ import type { ToolSpec } from '../tools'
 export const AGENT_MODES = ['tools', 'code', 'both'] as const
 export type AgentMode = (typeof AGENT_MODES)[number]
 
-export const CODE_TOOL_NAMES = ['api.describe', 'query'] as const
+export const CODE_TOOL_NAMES = ['api.describe', 'query', 'simulate', 'run', 'discard'] as const
 export type CodeToolName = (typeof CODE_TOOL_NAMES)[number]
 
 const SCRIPT = {
@@ -69,6 +69,45 @@ export const CODE_TOOLS: readonly ToolSpec<CodeToolName>[] = [
       additionalProperties: false,
     },
   },
+  {
+    name: 'simulate',
+    tier: 'read',
+    description:
+      'Try a script that changes things, and land nothing: every call is answered as it would be, on a copy of each scope '
+      + 'it writes. Answers what would change in each scope, each call\'s answer, every refusal, what the script returned, '
+      + 'and a token. Show the person the changes; run lands exactly them, discard forgets them.',
+    inputSchema: {
+      type: 'object',
+      properties: { script: SCRIPT, scope: DEFAULT_SCOPE },
+      required: ['script'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'run',
+    tier: 'write',
+    description:
+      'Land what a simulation tried: the same changes, as one step for each scope it wrote, all of them or none. The '
+      + 'script is not run again. Refused agent.stale where a scope has changed since it was tried, and '
+      + 'agent.unknownSimulation for a token used, discarded, older than 15 minutes or not yours: simulate again.',
+    inputSchema: {
+      type: 'object',
+      properties: { token: { type: 'string', description: 'The token simulate answered.' } },
+      required: ['token'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'discard',
+    tier: 'write',
+    description: 'Forget a simulation without landing it. Nothing was changed by it, and nothing is by this.',
+    inputSchema: {
+      type: 'object',
+      properties: { token: { type: 'string', description: 'The token simulate answered.' } },
+      required: ['token'],
+      additionalProperties: false,
+    },
+  },
 ]
 
 export function isCodeTool(name: string): name is CodeToolName {
@@ -87,7 +126,8 @@ export function codeToolSpec(name: CodeToolName): ToolSpec<CodeToolName> {
 export function codeInstructions(mode: AgentMode): string {
   if (mode === 'tools') return ''
   const scripts = 'api.describe says what a script sees and query runs one that reads: where an answer takes several reads '
-    + 'joined, filtered or counted, write one script rather than make the calls one by one.'
+    + 'joined, filtered or counted, write one script rather than make the calls one by one. simulate tries a script that '
+    + 'changes things and lands nothing; show the person what it would change, and run lands exactly that once they agree.'
   if (mode === 'both') return `This server also takes scripts. ${scripts}`
   return 'This server is in code mode: the tools named here are not offered one by one, they are methods of lv in a script, '
     + `under the same names but for a few api.describe lists (elements.list is lv.elements.list). ${scripts}`

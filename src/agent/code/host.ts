@@ -15,6 +15,7 @@
  */
 import type { SessionView } from '../handle'
 import type { AgentAnswer, AgentRefusal, AgentRequest, ToolSpec } from '../tools'
+import type { Simulation } from './held'
 import type { ScriptLimit, ScriptLimits } from './limits'
 import type { Sandbox } from './sandbox'
 
@@ -25,7 +26,7 @@ import type { Sandbox } from './sandbox'
  * carries somebody's landscape, and a trail is read by other people.
  */
 export type ScriptReport = {
-  readonly op: 'query'
+  readonly op: 'query' | 'simulate' | 'run' | 'discard'
   /** SHA-256 of the script's text, as hex: which script, without the script. */
   readonly hash: string
   readonly bytes: number
@@ -61,4 +62,11 @@ export type CodeHost = {
   named?(answer: AgentAnswer): Promise<AgentAnswer>
   /** One line about a script, where the host keeps a trail. */
   report?(line: ScriptReport): void
+  /**
+   * Land a simulation: every scope's commands as that scope's one step, each
+   * only where the scope is still at the revision it was tried at and this
+   * caller may still write it, all of them or none. Absent where the host
+   * lands nothing, and `run` is then refused.
+   */
+  land?(simulation: Simulation): Promise<AgentAnswer>
 }
