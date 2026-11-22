@@ -67,7 +67,7 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
     ...(access.saveCsv ? [{ label: t('blocks.saveCsv'), onSelect: () => access.saveCsv!(comparisonFileName(block.name, access.scopeLabel(scope)), asCsv(table())), 'data-testid': 'evaluation-csv' }] : []),
   ]
   return (
-    <div className="guidance-record__body" data-testid="evaluation-view">
+    <div className="guidance-record__body blocks-body" data-testid="evaluation-view">
       {/* One line for the way back, the name and the acts, so the grid starts high on a small screen. */}
       <div className="guidance-record__line">
         <button type="button" className="guidance__link" onClick={onBack}>{t('blocks.backToWhereUsed')}</button>

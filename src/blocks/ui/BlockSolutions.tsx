@@ -24,8 +24,8 @@ import { useBlocks } from './BlocksContext'
 import { SORT_WORD } from './EvaluationGrid'
 import type { BlockRow } from './BlocksContext'
 
-/** A column of the catalogue beside the name: half the name's share of what is left. */
-const NARROW = 'minmax(0, 0.5fr)'
+/** A column of the catalogue beside the name: less than half the name's share of what is left, the name wrapping where it is longer still. */
+const NARROW = 'minmax(0, 0.4fr)'
 
 export const STATUS_WORD: Record<SolutionBlockStatus, StringKey> = {
   candidate: 'blocks.statusCandidate', evaluated: 'blocks.statusEvaluated', inUse: 'blocks.statusInUse', retired: 'blocks.statusRetired',
@@ -73,7 +73,7 @@ export function BlockSolutions({ row }: { row: BlockRow }) {
       {sbbs.length === 0 ? <p className="guidance-record__intro">{t('blocks.solutionsEmpty')}</p> : (
         <div data-testid="block-solutions">
           <List
-            label={t('blocks.solutions')} itemLabel={t('blocks.name')} groups={[{ id: '', label: '', rows }]}
+            wrap label={t('blocks.solutions')} itemLabel={t('blocks.name')} groups={[{ id: '', label: '', rows }]}
             // The name takes the width: the other six are short words or often empty, and an even share cut the name at 1024 px.
             columns={[
               { id: 'supplier', label: t('blocks.supplier'), width: NARROW }, { id: 'sort', label: t('blocks.sort'), width: 'auto' }, { id: 'status', label: t('blocks.status'), width: 'auto' },

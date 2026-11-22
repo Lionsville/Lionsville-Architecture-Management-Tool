@@ -248,15 +248,14 @@ export function EvaluationGrid({ block, evaluation: kept, onChange }: {
   }
   const rowLabel = (one: CapabilityReading) => [labelOf(one.capability), one.capability.must ? t('blocks.must') : '', one.needed || evaluation.contexts.length === 0 ? '' : t('blocks.notNeededRow')].filter(Boolean).join(' · ')
   return (
-    <div className="guidance-grid" data-testid="evaluation-grid">
+    <div className="guidance-grid blocks-compare" data-testid="evaluation-grid">
       <div className="blocks-gridBar">
         <Switch checked={gapsOnly} onChange={setGapsOnly} label={t('blocks.gapsOnly')} data-testid="evaluation-gaps" />
         {notNeeded > 0 && <Switch checked={all} onChange={setAll} label={t('blocks.showNotNeeded', { count: notNeeded })} data-testid="evaluation-all" />}
-        {onChange && <span className="blocks-hint">{t('blocks.setBallNote')}</span>}
       </div>
       {gapsOnly && shown.length === 0 && reading.options.length > 0 && <p className="blocks-hint">{t('blocks.noGaps')}</p>}
       <Matrix
-        label={t('blocks.evaluationGrid')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected}
+        wrapRows label={t('blocks.evaluationGrid')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected}
         rows={[...shown.map((one) => ({ id: one.capability.id, label: rowLabel(one) })), { id: FIT_ROW, label: t('blocks.fitHere') }]}
         columns={reading.options.map((option) => ({
           id: option.sbb.id, label: [option.sbb.name, option.sbb.supplier, t(SORT_WORD[option.sbb.sort])].filter(Boolean).join(', '),
@@ -280,6 +279,8 @@ export function EvaluationGrid({ block, evaluation: kept, onChange }: {
         }}
         {...(onChange ? { keys: [' ', ...LEVEL_KEYS, 'n'], hint: t('blocks.gridHintNote'), onKey, pressWrites } : {})}
       />
+      {/* How a ball is set, under the grid with the legend: above it, it pushed the grid down on a small screen. */}
+      {onChange && <p className="blocks-hint">{t('blocks.setBallNote')}</p>}
       <BallLegend />
       <p className="blocks-hint">{t('blocks.fitExplains')}</p>
       {note && (

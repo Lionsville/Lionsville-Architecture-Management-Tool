@@ -35,6 +35,7 @@ import { BlockSolutions } from './BlockSolutions'
 import { BlockWhereUsed } from './BlockWhereUsed'
 import { useBlocks } from './BlocksContext'
 import { comparisonIn, comparisonLook } from './comparisonPlace'
+import './Blocks.css'
 
 type TabKey = 'about' | 'requirements' | 'options' | 'used'
 
@@ -114,7 +115,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
           {now === 'used' && evaluating !== undefined
             ? <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />
             : (
-              <div className="guidance-record__body">
+              <div className="guidance-record__body blocks-body">
                 {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} document={document} writing={editAsked} />}
                 {now === 'requirements' && <BlockRequirements row={row} onChapter={toChapter} />}
                 {now === 'options' && <BlockSolutions row={row} />}

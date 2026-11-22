@@ -8,7 +8,7 @@
 
 /* Over a comparison's grid: its two switches and how a ball is set, on one line, so the grid starts high. */
 .blocks-gridBar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
-.blocks-gridBar .blocks-hint { flex: 1 1 24ch; }
+
 
 /* By how much a ball falls short of what is needed here: a figure beside it, never a tint alone. */
 .blocks-short { font-size: var(--t-small); font-weight: var(--fw-strong); color: var(--ink-2); }
@@ -27,3 +27,10 @@
 .blocks-fits__one { display: inline-flex; align-items: center; gap: var(--s-1); white-space: nowrap; }
 .blocks-fits__fit { color: var(--ink-2); }
 .blocks-fits__one[data-fails] .blocks-fits__fit { color: var(--ink); font-weight: var(--fw-strong); }
+
+/* A block's page body is a grid whose one track may not grow past the page: a wide grid scrolls in its own box,
+   rather than pushing the head's acts and the grid's last columns off the right edge at 1024 px. */
+.blocks-body { grid-template-columns: minmax(0, 1fr); }
+
+/* A comparison's capabilities take less of the width than a need grid's: the options' columns are the answer. */
+.guidance-grid.blocks-compare .kit-matrix { --kit-matrix-head: clamp(200px, 24vw, 440px); }
