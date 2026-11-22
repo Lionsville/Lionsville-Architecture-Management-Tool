@@ -21,3 +21,9 @@
 /* A comparison's contexts and options side by side, with the contexts' chapters after them: one band, not three. */
 .blocks-choices { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--s-2) var(--s-5); }
 .blocks-chapters { display: flex; flex-wrap: wrap; gap: var(--s-2); align-self: flex-end; font-size: var(--t-small); }
+
+/* One block across scopes: each option a scope weighs with its fit, on the scope's row. */
+.blocks-fits { display: inline-flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); }
+.blocks-fits__one { display: inline-flex; align-items: center; gap: var(--s-1); white-space: nowrap; }
+.blocks-fits__fit { color: var(--ink-2); }
+.blocks-fits__one[data-fails] .blocks-fits__fit { color: var(--ink); font-weight: var(--fw-strong); }

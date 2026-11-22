@@ -4,8 +4,10 @@
 /**
  * A building block's *Comparisons* (ADR-0043 §4, §7; the tab was *Where used*): each scope's evaluation of
  * it, a row each, and *Evaluate for a scope…* — offering to copy the ratings of a
- * scope that evaluated it before, which are the new scope's own from then on. A row
- * opens that evaluation; accepting the decision it proposes writes the choice.
+ * scope that evaluated it before, which are the new scope's own from then on. Each
+ * row says each option that scope weighs with its fit, best first, the chosen one
+ * marked, so one block reads across scopes from here. A row opens that comparison;
+ * accepting the decision it proposes writes the choice.
  */
 import { useState } from 'react'
 import { useStrings } from '../../i18n/LanguageContext'
@@ -13,6 +15,11 @@ import { Button } from '../../widgets/kit/Button'
 import { Dialog } from '../../widgets/kit/Dialog'
 import { SelectField } from '../../widgets/kit/Field'
 import { List } from '../../widgets/kit/List'
+import { Mark } from '../../widgets/kit/Mark'
+import type { Evaluation } from '../../model/evaluation'
+import { readComparison } from './comparisonReading'
+import { fitWord } from './EvaluationGrid'
+import './Blocks.css'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
 import { EvaluationView } from './EvaluationView'
@@ -39,7 +46,7 @@ export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter }: {
     id: rowOf(scope), text: access.scopeLabel(scope),
     cells: {
       contexts: (block.contexts ?? []).filter((one) => evaluation.contexts.includes(one.id)).map((one) => one.name).join(', ') || '—',
-      options: evaluation.options.map(sbbName).filter(Boolean).join(', ') || '—',
+      options: <OptionFits row={row} evaluation={evaluation} />,
       chosen: sbbName(evaluation.chosen) ?? t('blocks.notChosen'),
     },
   }))
@@ -61,6 +68,23 @@ export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter }: {
       )}
       {adding && <EvaluateDialog row={row} onClose={(made) => { setAdding(false); if (made !== undefined) onEvaluate(made) }} />}
     </>
+  )
+}
+
+/** The options one scope weighs, best first, each with its fit or *fails a must*, the chosen one marked. */
+function OptionFits({ row, evaluation }: { row: BlockRow; evaluation: Evaluation }) {
+  const { t } = useStrings()
+  const { options } = readComparison(row.block, evaluation)
+  if (options.length === 0) return <>—</>
+  return (
+    <span className="blocks-fits">
+      {options.map((option) => (
+        <span key={option.sbb.id} className="blocks-fits__one" data-fails={option.fit.failsMust.length > 0 || undefined}>
+          {option.sbb.name} <span className="blocks-fits__fit">{fitWord(option.fit, t)}</span>
+          {option.chosen && <Mark kind="agree" label={t('blocks.chosen')} />}
+        </span>
+      ))}
+    </span>
   )
 }
 

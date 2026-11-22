@@ -392,6 +392,16 @@ describe('a building block\'s page', () => {
     await waitFor(() => expect(access.evaluate).toHaveBeenCalledWith('blk-gw', 'stock', ['cx-filings'], 'sales'))
   })
 
+  it('reads one block across scopes: on each scope\'s row, each option weighed with its fit, best first, the chosen marked', async () => {
+    page(accessOver())
+    fireEvent.click(screen.getByRole('tab', { name: s('blocks.whereUsed') }))
+    const row = screen.getByRole('row', { name: /Sales/ })
+    const fits = [...row.querySelectorAll('.blocks-fits__one')].map((one) => one.textContent)
+    expect(fits).toEqual(['Managed bus 67 %', 'Broker A fails a must'])
+    expect(within(row).getByRole('img', { name: s('blocks.chosen') })).toBeTruthy()
+    expect(await axeFindings()).toEqual([])
+  })
+
   it('offers no evaluation for a scope this person may not write', () => {
     page(accessOver({ mayWrite: (scope) => scope !== 'stock' }))
     fireEvent.click(screen.getByRole('tab', { name: s('blocks.whereUsed') }))

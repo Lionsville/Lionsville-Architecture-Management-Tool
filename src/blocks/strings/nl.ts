@@ -64,7 +64,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'blocks.noEvaluations': 'Nog geen scope heeft opties voor deze bouwsteen vergeleken.',
   'blocks.colScope': 'Scope',
   'blocks.colContexts': 'Gebruikscontexten',
-  'blocks.colOptions': 'Gewogen opties',
+  'blocks.colOptions': 'Gewogen opties, beste eerst',
   'blocks.colChosen': 'Gekozen',
   'blocks.notChosen': 'nog niets gekozen',
   'blocks.evaluateFor': 'Vergelijken voor een scope…',

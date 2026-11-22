@@ -62,7 +62,7 @@ export const EN = {
   'blocks.noEvaluations': 'No scope has compared options for this block yet.',
   'blocks.colScope': 'Scope',
   'blocks.colContexts': 'Usage contexts',
-  'blocks.colOptions': 'Options weighed',
+  'blocks.colOptions': 'Options weighed, best first',
   'blocks.colChosen': 'Chosen',
   'blocks.notChosen': 'nothing chosen yet',
   'blocks.evaluateFor': 'Compare for a scope…',

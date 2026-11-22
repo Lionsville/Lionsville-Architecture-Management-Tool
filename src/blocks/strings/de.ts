@@ -64,7 +64,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'blocks.noEvaluations': 'Noch kein Bereich hat Optionen für diesen Baustein verglichen.',
   'blocks.colScope': 'Bereich',
   'blocks.colContexts': 'Nutzungskontexte',
-  'blocks.colOptions': 'Abgewogene Optionen',
+  'blocks.colOptions': 'Abgewogene Optionen, beste zuerst',
   'blocks.colChosen': 'Gewählt',
   'blocks.notChosen': 'noch nichts gewählt',
   'blocks.evaluateFor': 'Für einen Bereich vergleichen…',
