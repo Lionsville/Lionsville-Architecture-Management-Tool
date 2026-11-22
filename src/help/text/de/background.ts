@@ -2980,23 +2980,42 @@ vier Reitern:
   eine Lösung sie vollständig abdecken muss, und seine **Nutzungskontexte**,
   die Situationen, in denen er genutzt wird, in Worten, die je sagen, wie viel
   sie von jeder Fähigkeit brauchen: ein Harvey Ball von leer bis voll, mit einer
-  Legende. Ein Klick wählt eine Zelle und schreibt nichts; die Leertaste geht ein
-  Viertel weiter, und 0 bis 4 setzt ihn. **Mehr** bei einer Zeile entfernt eine
-  Fähigkeit, und der Name eines Nutzungskontexts öffnet sein Kapitel.
+  Legende, wie jeder Bedarf heißt. Ein Klick auf eine Kugel füllt sie um ein
+  Viertel mehr (nach voll wieder leer), {key:Shift} mit Klick um ein Viertel
+  weniger, und Rechtsklick oder {key:Enter} bietet die fünf Stufen mit
+  Namen; {key:Space} und 0 bis 4 tun dasselbe mit der Tastatur.
+  **+ Fähigkeit…** fügt eine hinzu und bleibt für die nächste stehen
+  (**Hinzufügen und nächste**, oder {key:Enter}), und **Eine Liste
+  einfügen…** nimmt eine Liste mit einer pro Zeile in einem Schritt, ein ! am
+  Anfang oder Ende einer Zeile macht sie zum Muss. **Mehr** bei einer Zeile
+  entfernt eine Fähigkeit, und der Name eines Nutzungskontexts öffnet sein
+  Kapitel.
 - **Optionen** — der Katalog: Produkte, Dienste und Eigenentwicklungen, die
   ihn liefern könnten, je mit Anbieter und Status, und die Elemente in der
   Landschaft, die sie sind.
-- **Vergleiche** — die **Bewertung** jedes Bereichs. **Für einen Bereich vergleichen…**
-  beginnt eine für einen Bereich, mit den dort geltenden Kontexten, auf Wunsch
-  mit den Bewertungen eines anderen Bereichs als Ausgangspunkt. Im Raster wird
-  jede Option gegen jede Fähigkeit bewertet; die **Passung** ist, wie viel von
-  dem, was dieser Bereich braucht, sie abdeckt, und eine Option, die ein Muss
-  nicht vollständig abdeckt, scheidet aus, wie gut sie auch passt.
+- **Vergleiche** — der **Vergleich** der Optionen durch jeden Bereich, eine
+  Zeile je Bereich, mit jeder Option, die er abwägt, und ihrer Eignung, die
+  beste zuerst, und der gewählten. **Für einen Bereich vergleichen…** beginnt
+  einen, mit den dort geltenden Kontexten, auf Wunsch mit den Bewertungen
+  eines anderen Bereichs, und öffnet ihn. Im Raster wird jede Option gegen jede
+  Fähigkeit bewertet wie der Bedarf, und **Notiz…** im Menü einer Zelle (oder
+  N) schreibt das Wie; die Optionen stehen in der Reihenfolge ihres Rangs, je
+  mit Rang und **Passung** oben — wie viel von dem, was dieser Bereich braucht,
+  sie abdeckt — und *scheitert an einem Muss*, wo sie ein Muss nicht voll
+  abdeckt, wie gut sie auch passt. Eine Zelle unter dem hier Gebrauchten sagt,
+  um wie viele Viertel (−2), und ist gefüllt, wo das ein Muss verfehlt. **Nur
+  Lücken** behält die Zeilen, auf denen eine Option zu wenig bietet, und was
+  kein Kontext hier braucht, bleibt weg, bis Sie danach fragen. **Mehr**
+  kopiert den Vergleich als Tabelle oder speichert ihn als CSV.
 
-**Eine Entscheidung vorschlagen…** bei einer Bewertung entwirft eine
+Ein Vergleich hat eine eigene Adresse, sodass Neuladen, Zurück und ein Link
+auf ihm landen, und die Startseite eines Bereichs nennt die Vergleiche, die
+er angestellt hat, am Ende seiner Zeile **Bausteine**.
+
+**Eine Entscheidung vorschlagen…** bei einem Vergleich entwirft eine
 Entscheidung in diesem Bereich, mit den Optionen, ihrer Passung und den
 Treibern ausgefüllt. Sobald die Entscheidung auf der Entscheidungsseite ihres
-Bereichs angenommen ist, hält die Bewertung die gewählte Lösung fest, und die
+Bereichs angenommen ist, hält der Vergleich die gewählte Lösung fest, und die
 Inspektoren ihrer Elemente und die Bibliothek sagen, dass sie für diesen
 Bereich gewählt wurden.` },
   ],

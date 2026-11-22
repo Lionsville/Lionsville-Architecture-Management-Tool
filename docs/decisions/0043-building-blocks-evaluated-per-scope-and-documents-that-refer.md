@@ -5,7 +5,8 @@
   seen (§1–§8, §13); references in documents and live views (§9–§11); the
   agent's tools (§12), by other names and without `evaluation.remove`;
   amended 22 November 2026 (the comparison: set with the mouse, its answer
-  shown, a place of its own), accepted and built
+  shown, a place of its own, read across scopes, carried out; requirements
+  entered as a list), accepted and built
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0009 §3 (a document that computes), ADR-0012 §7 (a decision
@@ -392,4 +393,25 @@ the block's page on *Comparisons*, its look naming the scope. A scope's home
 lists the comparisons that scope made on its *Building blocks* row, each two
 presses from the home, and *Compare for a scope… → Start* opens the comparison
 it started.
+
+**One block across scopes.** Each scope's row on *Comparisons* says every
+option that scope weighs with its fit or *fails a must*, best first, and marks
+the one chosen, so a block is read across scopes without opening each.
+
+**A comparison is carried out** from its *More* menu: *Copy as a table*,
+through the host's clipboard, and *Save as CSV…*, through the save every
+export uses. Both are one pure function over the same reading
+(`blocks/ui/comparisonTable.ts`): the options in rank order with rank, fit and
+choice, then each capability with its must, its need and each option's
+coverage, shortfall and note, every level a figure out of four beside its
+word. Anybody who may read the comparison may carry it out.
+
+**Requirements are entered as fast as they are known.** The capability dialog
+adds one and stays for the next (*Add and next*, and Enter), and *Paste a
+list…* takes one capability per line as one step: a `!` at the start or the
+end of a line marks a must, a list's bullets and numbers are left off, and a
+capability the block has already is not added twice
+(`blocks/ui/capabilityList.ts`). Each is added onto the block as its scope
+holds it, so a second added before the tree is read again keeps the first.
+The need grid has a legend of its own, in the words of a need.
 

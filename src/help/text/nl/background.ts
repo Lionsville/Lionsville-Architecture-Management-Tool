@@ -2833,22 +2833,39 @@ tabbladen:
   oplossing die volledig moet afdekken, en zijn **gebruikscontexten**, de
   situaties waarin hij gebruikt wordt, in woorden, die elk zeggen hoeveel ze
   van elke capability nodig hebben: een Harvey ball van leeg tot vol, met een
-  legenda. Een klik kiest een cel en schrijft niets; spatie gaat een kwart verder,
-  en 0 tot 4 zet hem. **Meer** op een rij haalt een capability weg, en de naam
-  van een gebruikscontext opent zijn hoofdstuk.
+  legenda van hoe elke behoefte heet. Een klik op een bol vult hem een kwart
+  meer (na vol weer leeg), {key:Shift} met een klik een kwart minder, en
+  rechtsklikken of {key:Enter} biedt de vijf behoeften bij naam; {key:Space} en 0 tot 4
+  doen hetzelfde met het toetsenbord. **+ Capaciteit…** voegt er een toe en
+  blijft staan voor de volgende (**Toevoegen en volgende**, of {key:Enter}), en
+  **Een lijst plakken…** neemt een lijst met één per regel in één stap, een !
+  aan het begin of eind van een regel maakt er een must van. **Meer** op een
+  rij haalt een capability weg, en de naam van een gebruikscontext opent zijn
+  hoofdstuk.
 - **Opties** — de catalogus: producten, diensten en wat zelf gebouwd
   wordt dat hem kan leveren, elk met leverancier en status, en de elementen
   in het landschap die het zijn.
-- **Vergelijkingen** — de **beoordeling** van elke scope. **Vergelijken
-  voor een scope…** begint er een, met de contexten die daar gelden,
-  eventueel met de scores van de beoordeling van een andere scope. In het
-  raster wordt elke optie gescoord op elke capability; de **fit** is hoeveel
-  van wat deze scope nodig heeft zij afdekt, en een optie die een must niet
-  volledig afdekt valt af, wat haar fit ook is.
+- **Vergelijkingen** — de **vergelijking** van de opties door elke scope, een
+  regel elk, met elke optie die die scope weegt en haar fit, de beste eerst,
+  en de gekozen. **Vergelijken voor een scope…** begint er een, met de
+  contexten die daar gelden, eventueel met de scores van een andere scope, en
+  opent haar. In het raster wordt elke optie op elke capability gescoord zoals
+  de behoeften, en **Notitie…** in het menu van een cel (of N) schrijft hoe; de
+  opties staan in de volgorde van hun rang, elk met rang en **fit** bovenaan —
+  hoeveel van wat deze scope nodig heeft zij afdekt — en *valt af op een must*
+  waar zij een must niet volledig afdekt, wat haar fit ook is. Een cel onder
+  wat hier nodig is, zegt hoeveel kwarten te weinig (−2), en is gevuld waar dat
+  een must mist. **Alleen tekorten** houdt de regels waarop een optie tekortschiet,
+  en wat geen context hier nodig heeft, blijft weg tot je erom vraagt. **Meer**
+  kopieert de vergelijking als tabel, of bewaart haar als CSV.
 
-**Een besluit voorstellen…** bij een beoordeling zet een besluit klaar in die
+Een vergelijking heeft een eigen adres, zodat herladen, Terug en een link
+erop uitkomen, en de startpagina van een scope noemt de vergelijkingen die zij
+maakte aan het eind van haar regel **Bouwstenen**.
+
+**Een besluit voorstellen…** bij een vergelijking zet een besluit klaar in die
 scope, met de opties, hun fit en de drijfveren ingevuld. Zodra het besluit op
-de besluitenpagina van zijn scope is aanvaard, legt de beoordeling de gekozen
+de besluitenpagina van zijn scope is aanvaard, legt de vergelijking de gekozen
 oplossing vast, en zeggen de inspectors van haar elementen en de bibliotheek
 dat ze voor die scope gekozen zijn.` },
   ],

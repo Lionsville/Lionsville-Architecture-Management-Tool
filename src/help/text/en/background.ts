@@ -2624,23 +2624,38 @@ list folded away, on four tabs:
 - **Requirements** — its **capabilities**, one sentence each and a *must*
   where a solution has to cover it fully, and its **usage contexts**, the
   situations it is used in, said in words, each saying how much it needs of
-  every capability: a Harvey ball from empty to full, with a legend. A press
-  selects a cell and writes nothing; Space moves it on a quarter, and 0 to 4 sets
-  it. **More** on a row removes a capability, and a usage context's name opens
-  its chapter.
+  every capability: a Harvey ball from empty to full, with a legend of what
+  each need is called. A press on a ball fills it a quarter more (after full,
+  back to empty), {key:Shift} and a press a quarter less, and a right press or {key:Enter}
+  offers the five needs by name; {key:Space} and 0 to 4 do the same from the
+  keyboard. **+ Capability…** adds one and stays for the next (**Add and next**,
+  or {key:Enter}), and **Paste a list…** takes a list one per line as one step, a !
+  at the start or the end of a line marking a must. **More** on a row removes
+  a capability, and a usage context's name opens its chapter.
 - **Options** — the catalogue: products, services and what is built in
   house that could deliver it, each with its supplier and status, and the
   elements in the landscape that are it.
-- **Comparisons** — every scope's **evaluation**. **Compare for a scope…**
-  starts one, with the contexts that apply there, optionally copying the
-  ratings of another scope's. In the grid each option is rated against each
-  capability, N writes a note on how, and a cell with one says *note*; the
-  **fit** is how much of what this scope needs it covers, and
-  an option that does not fully cover a must fails whatever its fit.
+- **Comparisons** — every scope's **comparison** of the options, a row each,
+  saying each option that scope weighs with its fit, best first, and the one
+  chosen. **Compare for a scope…** starts one, with the contexts that apply
+  there, optionally copying the ratings of another scope's, and opens it. In
+  its grid each option is rated against each capability as the needs are, and
+  **Note…** on a cell's menu (or N) writes how; the options stand in the order
+  of their rank, each with its rank and **fit** at its top — how much of what
+  this scope needs it covers — and *fails a must* where it does not fully
+  cover a must, whatever its fit. A cell below what is needed here says by how
+  many quarters (−2), and is filled where that fails a must. **Gaps only**
+  keeps the rows an option falls short on, and what no context here needs is
+  left out until asked for. **More** copies the comparison as a table, or
+  saves it as CSV.
 
-**Propose a decision…** on an evaluation drafts a decision in that scope
+A comparison has an address of its own, so a reload, Back and a link land on
+it, and a scope's home lists the comparisons it made at the end of its
+**Building blocks** row.
+
+**Propose a decision…** on a comparison drafts a decision in that scope
 with the options, their fit and the drivers filled in. Once the decision is
-accepted on its scope's decisions page, the evaluation records the chosen
+accepted on its scope's decisions page, the comparison records the chosen
 option, and its elements' inspectors and the library say they were chosen
 for that scope.` },
   ],
