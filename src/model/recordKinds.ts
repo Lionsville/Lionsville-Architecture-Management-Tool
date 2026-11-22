@@ -33,6 +33,7 @@ import type { ModelOrder } from './normalised'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
 import type { Principle } from './principle'
+import type { RecordKey } from './recordKey'
 import type { Transition } from './transition'
 import type { DesignDiagram, DesignElement, Relation } from './types'
 import type { Assignment } from './units'
@@ -96,6 +97,27 @@ export type KindDescriptor<L extends RecordList> = {
    * `commands/plain.ts` holds the vocabulary to what is said here.
    */
   readonly commands: 'own' | { readonly payload: string }
+} & Compared<L>
+
+/**
+ * How two versions of the list are compared (`diff.ts`): record by record,
+ * each change named by what `nameOf` answers — or `'own'` where the diff
+ * says more than that of the kind: what a relation is, what came onto a view.
+ */
+type Compared<L extends RecordList> =
+  | { readonly diff: 'own' }
+  | { readonly diff: 'compare'; readonly nameOf: (record: RecordOf[L], around: NamedAround) => string }
+
+/**
+ * What a record named by another is named from: what the scope calls its
+ * elements and its records, as whoever asks has them — a diff from whichever
+ * version still holds the thing.
+ */
+export type NamedAround = {
+  /** What an element is called, or nothing where it is not held. */
+  readonly element: (id: string) => string | undefined
+  /** What a record is called, by its key: its title or its name, or nothing where it is not held. */
+  readonly record: (about: RecordKey) => string | undefined
 }
 
 /** One descriptor per list of the model: a list without one does not compile. */
@@ -104,26 +126,105 @@ export type KindTable = { readonly [L in RecordList]: KindDescriptor<L> }
 const ownId = (record: { id: string }): string => record.id
 
 export const KINDS = {
-  elements: { list: 'elements', kind: 'element', idOf: ownId, absentWhenEmpty: false, commands: 'own' },
-  relations: { list: 'relations', kind: 'relation', idOf: ownId, absentWhenEmpty: false, commands: 'own' },
-  diagrams: { list: 'diagrams', kind: 'diagram', idOf: ownId, absentWhenEmpty: false, commands: 'own' },
-  decisions: { list: 'decisions', kind: 'decision', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'decision' } },
-  transitions: { list: 'transitions', kind: 'transition', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'transition' } },
-  observations: { list: 'observations', kind: 'observation', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'observation' } },
-  causes: { list: 'causes', kind: 'cause', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'cause' } },
-  solutions: { list: 'solutions', kind: 'solution', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'solution' } },
-  experiments: { list: 'experiments', kind: 'experiment', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'experiment' } },
-  unitTypes: { list: 'unitTypes', kind: 'unitType', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'unitType' } },
-  roles: { list: 'roles', kind: 'role', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'role' } },
-  responsibilities: { list: 'responsibilities', kind: 'responsibility', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'responsibility' } },
-  operatingRules: { list: 'operatingRules', kind: 'operatingRule', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'rule' } },
-  assignments: { list: 'assignments', kind: 'assignment', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'assignment' } },
+  elements: {
+    list: 'elements', kind: 'element', idOf: ownId, absentWhenEmpty: false,
+    commands: 'own',
+    diff: 'own',
+  },
+  relations: {
+    list: 'relations', kind: 'relation', idOf: ownId, absentWhenEmpty: false,
+    commands: 'own',
+    diff: 'own',
+  },
+  diagrams: {
+    list: 'diagrams', kind: 'diagram', idOf: ownId, absentWhenEmpty: false,
+    commands: 'own',
+    diff: 'own',
+  },
+  decisions: {
+    list: 'decisions', kind: 'decision', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'decision' },
+    diff: 'own',
+  },
+  transitions: {
+    list: 'transitions', kind: 'transition', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'transition' },
+    diff: 'own',
+  },
+  observations: {
+    list: 'observations', kind: 'observation', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'observation' },
+    diff: 'own',
+  },
+  causes: {
+    list: 'causes', kind: 'cause', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'cause' },
+    diff: 'own',
+  },
+  solutions: {
+    list: 'solutions', kind: 'solution', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'solution' },
+    diff: 'own',
+  },
+  experiments: {
+    list: 'experiments', kind: 'experiment', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'experiment' },
+    diff: 'own',
+  },
+  unitTypes: {
+    list: 'unitTypes', kind: 'unitType', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'unitType' },
+    diff: 'own',
+  },
+  roles: {
+    list: 'roles', kind: 'role', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'role' },
+    diff: 'own',
+  },
+  responsibilities: {
+    list: 'responsibilities', kind: 'responsibility', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'responsibility' },
+    diff: 'own',
+  },
+  operatingRules: {
+    list: 'operatingRules', kind: 'operatingRule', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'rule' },
+    diff: 'own',
+  },
+  assignments: {
+    list: 'assignments', kind: 'assignment', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'assignment' },
+    // By the unit it is in: a line kept with the history never names the person (ADR-0036 §8).
+    diff: 'compare', nameOf: (held, around) => around.element(held.unitId) ?? held.unitId,
+  },
   // A mark has no id of its own: it is its check and the key of its subjects.
-  checkMarks: { list: 'checkMarks', kind: 'checkMark', idOf: checkMarkId, absentWhenEmpty: true, commands: 'own' },
-  comments: { list: 'comments', kind: 'comment', idOf: ownId, absentWhenEmpty: true, commands: 'own' },
-  principles: { list: 'principles', kind: 'principle', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'principle' } },
-  citations: { list: 'citations', kind: 'citation', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'citation' } },
-  evaluations: { list: 'evaluations', kind: 'evaluation', idOf: ownId, absentWhenEmpty: true, commands: { payload: 'evaluation' } },
+  checkMarks: {
+    list: 'checkMarks', kind: 'checkMark', idOf: checkMarkId, absentWhenEmpty: true,
+    commands: 'own',
+    diff: 'own',
+  },
+  comments: {
+    list: 'comments', kind: 'comment', idOf: ownId, absentWhenEmpty: true,
+    commands: 'own',
+    diff: 'own',
+  },
+  principles: {
+    list: 'principles', kind: 'principle', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'principle' },
+    diff: 'own',
+  },
+  citations: {
+    list: 'citations', kind: 'citation', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'citation' },
+    // By the record that cites, as the scope calls it.
+    diff: 'compare', nameOf: (held, around) => around.record(held.about) ?? held.about.id,
+  },
+  evaluations: {
+    list: 'evaluations', kind: 'evaluation', idOf: ownId, absentWhenEmpty: true,
+    commands: { payload: 'evaluation' },
+    // By the block, where this scope knows it.
+    diff: 'compare', nameOf: (held, around) => around.element(held.block.id) ?? held.block.id,
+  },
 } as const satisfies KindTable
 
 /** The lists, in the order the model keeps them. */
@@ -131,6 +232,9 @@ export const RECORD_LIST_NAMES = Object.keys(KINDS) as RecordList[]
 
 /** The lists the file may leave out, in the same order. */
 export const OPTIONAL_LISTS = RECORD_LIST_NAMES.filter((list) => KINDS[list].absentWhenEmpty)
+
+/** The table as its type says it, for a reader that takes a list it does not know by name. */
+export const KIND_TABLE: KindTable = KINDS
 
 /** The kind one list's records are named by, as a type. */
 export type KindOf<L extends RecordList> = (typeof KINDS)[L]['kind']

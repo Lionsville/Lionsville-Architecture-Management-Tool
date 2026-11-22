@@ -270,3 +270,55 @@ describe('a sheet\'s places (ADR-0048)', () => {
     expect(changes.find((change) => change.id === 's')?.fields).toEqual(expect.arrayContaining(['labels', 'poster']))
   })
 })
+
+describe('a list compared record by record, as its kind says it is named', () => {
+  const assignment = { id: 'as-1', unitId: 'crews', roleId: 'lead', person: { person: 'pe-1' } }
+  const citation = { id: 'ci-1', about: { kind: 'decision' as const, id: 'adr-1' }, principle: { scope: '', id: 'pr-1' }, stance: 'supports' as const, on: '2026-10-25' }
+  const evaluation = { id: '-~crews', block: { scope: '', id: 'crews' }, contexts: [], options: [], coverage: {} }
+  const decision = { id: 'adr-1', number: 1, title: 'Queue over polling', status: 'proposed' as const, date: '2026-10-01', body: '', signers: [] }
+
+  it('names an assignment by its unit, a citation by the record that cites and an evaluation by its block', () => {
+    const changes = diffModels(model(), model({ decisions: [decision], assignments: [assignment], citations: [citation], evaluations: [evaluation] }))
+    expect(changes).toEqual([
+      { kind: 'added', what: 'decision', id: 'adr-1', name: 'Queue over polling' },
+      { kind: 'added', what: 'assignment', id: 'as-1', name: 'Crews' },
+      { kind: 'added', what: 'citation', id: 'ci-1', name: 'Queue over polling' },
+      { kind: 'added', what: 'evaluation', id: '-~crews', name: 'Crews' },
+    ])
+  })
+
+  it('names one whose unit, record or block is gone from the version that had it, and by its id where neither has', () => {
+    const held = model({ decisions: [decision], assignments: [assignment], citations: [citation], evaluations: [evaluation] })
+    const bare = { ...model(), elements: [] }
+    expect(diffModels(held, bare).filter((change) => change.what !== 'element' && change.what !== 'decision')).toEqual([
+      { kind: 'removed', what: 'assignment', id: 'as-1', name: 'Crews' },
+      { kind: 'removed', what: 'citation', id: 'ci-1', name: 'Queue over polling' },
+      { kind: 'removed', what: 'evaluation', id: '-~crews', name: 'Crews' },
+    ])
+    const nowhere = { assignments: [{ ...assignment, unitId: 'gone' }], citations: [{ ...citation, about: { kind: 'decision' as const, id: 'adr-9' } }], evaluations: [{ ...evaluation, block: { scope: 'acme', id: 'elsewhere' } }] }
+    expect(diffModels(model(), model(nowhere)).map((change) => change.name)).toEqual(['gone', 'adr-9', 'elsewhere'])
+  })
+
+  it('says which fields of one changed, sorted, and in which order the kinds are read', () => {
+    const before = model({ assignments: [assignment], citations: [citation], evaluations: [evaluation] })
+    const after = model({
+      assignments: [{ ...assignment, until: '2026-12-31', share: 0.5 }],
+      citations: [{ ...citation, stance: 'deviates' as const, reason: 'Cost' }],
+      evaluations: [{ ...evaluation, chosen: 'reisinfo' }],
+    })
+    expect(diffModels(before, after)).toEqual([
+      { kind: 'changed', what: 'assignment', id: 'as-1', name: 'Crews', fields: ['share', 'until'] },
+      { kind: 'changed', what: 'citation', id: 'ci-1', name: 'adr-1', fields: ['reason', 'stance'] },
+      { kind: 'changed', what: 'evaluation', id: '-~crews', name: 'Crews', fields: ['chosen'] },
+    ])
+  })
+
+  it('reads every kind in the order the model keeps its lists, then what is on a view and where', () => {
+    const everything = diffModels({ name: 'Acme', elements: [], relations: [], diagrams: [] }, {
+      ...model(), evaluations: [evaluation], citations: [citation], comments: [], assignments: [assignment], decisions: [decision],
+      roles: [{ id: 'lead', name: 'Lead', duties: [] }],
+    })
+    expect([...new Set(everything.map((change) => change.what))])
+      .toEqual(['element', 'relation', 'diagram', 'decision', 'role', 'assignment', 'citation', 'evaluation'])
+  })
+})

@@ -32,24 +32,32 @@ import type { Adr } from './adr'
 import type { Transition } from './transition'
 import type { Cause, Experiment, Observation, Solution } from './observation'
 import type { OperatingRule, Responsibility, Role, UnitType } from './operatingModel'
-import type { Assignment } from './units'
 import { checkMarkId } from './checkMarks'
 import type { CheckMark } from './checkMarks'
 import type { Principle } from './principle'
-import type { Citation } from './citable'
 import type { Comment } from './comment'
-import type { Evaluation } from './evaluation'
 import { RECORD_LISTS } from './recordKey'
 import type { RecordKey } from './recordKey'
+import { KIND_TABLE, KINDS, RECORD_LIST_NAMES } from './recordKinds'
+import type { ListedKind, NamedAround, RecordList, RecordOf } from './recordKinds'
 import type { DesignDiagram, DesignElement, Relation, RelationType } from './types'
 
 export type ChangeKind = 'added' | 'removed' | 'changed'
 
-/** What a change happened to. Ordered as the list is read, most meaningful first. */
-export type ChangeSubject =
-  | 'element' | 'relation' | 'diagram' | 'decision' | 'transition' | 'observation' | 'cause' | 'solution' | 'experiment'
-  | 'unitType' | 'role' | 'responsibility' | 'operatingRule' | 'assignment' | 'checkMark'
-  | 'comment' | 'principle' | 'citation' | 'evaluation' | 'membership' | 'geometry'
+/**
+ * What a change happened to: a record of one of the model's lists, by its
+ * kind (`recordKinds.ts`), what is on a view, or where it ended up.
+ */
+export type ChangeSubject = ListedKind | 'membership' | 'geometry'
+
+/**
+ * The order a list of changes is read in, most meaningful first: the lists in
+ * the order the model keeps them — what a landscape is, the lines between,
+ * the boards, the decisions and plans, what was seen and done about it, the
+ * organisation — and last the geometry, which is the largest diff and the
+ * smallest news.
+ */
+const READ_IN: readonly ChangeSubject[] = [...RECORD_LIST_NAMES.map((list) => KINDS[list].kind), 'membership', 'geometry']
 
 export type ModelChange = {
   kind: ChangeKind
@@ -326,12 +334,26 @@ export function diffModels(before: HostModel, after: HostModel): ModelChange[] {
 
   changes.push(...operatingChanges(before, after))
 
-  const order: ChangeSubject[] = [
-    'element', 'relation', 'diagram', 'decision', 'transition', 'observation', 'cause', 'solution', 'experiment',
-    'unitType', 'role', 'responsibility', 'operatingRule', 'assignment', 'checkMark',
-    'comment', 'principle', 'citation', 'evaluation', 'membership', 'geometry',
-  ]
-  return changes.sort((a, b) => order.indexOf(a.what) - order.indexOf(b.what))
+  // Every list the descriptors say is compared record by record, and named as they say.
+  const around: NamedAround = {
+    element: (id) => (after.elements.find((one) => one.id === id) ?? before.elements.find((one) => one.id === id))?.name,
+    record: (about) => recordName(after, about) ?? recordName(before, about),
+  }
+  for (const list of RECORD_LIST_NAMES) changes.push(...listChanges(list, before, after, around))
+
+  return changes.sort((a, b) => READ_IN.indexOf(a.what) - READ_IN.indexOf(b.what))
+}
+
+/** One list compared record by record, where its descriptor says that is all there is to it; nothing where the diff has its own. */
+function listChanges<L extends RecordList>(list: L, before: HostModel, after: HostModel, around: NamedAround): ModelChange[] {
+  const kind = KIND_TABLE[list]
+  if (kind.diff !== 'compare') return []
+  const { idOf, nameOf } = kind
+  const held = (model: HostModel) => (model[list] ?? []) as unknown as readonly RecordOf[L][]
+  const by = (model: HostModel) => new Map(held(model).map((one) => [idOf(one), one]))
+  const was = by(before)
+  const now = by(after)
+  return ids(was, now).flatMap((id) => compare(kind.kind as ChangeSubject, id, was.get(id), now.get(id), (one) => nameOf(one, around)))
 }
 
 /** The operating model (ADR-0036), each list by the name the organisation gives its items. */
@@ -346,39 +368,17 @@ function operatingChanges(before: HostModel, after: HostModel): ModelChange[] {
   each<Role>('role', before.roles, after.roles, (held) => held.name)
   each<Responsibility>('responsibility', before.responsibilities, after.responsibilities, (held) => held.name)
   each<OperatingRule>('operatingRule', before.operatingRules, after.operatingRules, (held) => held.id)
-  // An assignment by the unit it is in: a diff is kept with the history, and
-  // never names the person (ADR-0036 §8).
-  const unitName = (id: string) => after.elements.find((one) => one.id === id)?.name
-    ?? before.elements.find((one) => one.id === id)?.name ?? id
-  each<Assignment>('assignment', before.assignments, after.assignments, (held) => unitName(held.unitId))
   changes.push(...markChanges(before, after))
   changes.push(...commentChanges(before, after))
   changes.push(...principleChanges(before, after))
-  changes.push(...evaluationChanges(before, after))
   return changes
 }
 
-/** The evaluations of building blocks (ADR-0043 §4), named by the block where this scope knows it. */
-function evaluationChanges(before: HostModel, after: HostModel): ModelChange[] {
-  const was = byId(before.evaluations ?? [])
-  const now = byId(after.evaluations ?? [])
-  const nameOf = (held: Evaluation) => after.elements.find((one) => one.id === held.block.id)?.name
-    ?? before.elements.find((one) => one.id === held.block.id)?.name ?? held.block.id
-  return ids(was, now).flatMap((id) => compare<Evaluation>('evaluation', id, was.get(id), now.get(id), nameOf))
-}
-
-/**
- * The principles (ADR-0041), by their titles, and the citations of them by
- * this scope's records (§7), named by the record that cites, as a comment is.
- */
+/** The principles (ADR-0041), by their titles. */
 function principleChanges(before: HostModel, after: HostModel): ModelChange[] {
   const was = byId(before.principles ?? [])
   const now = byId(after.principles ?? [])
-  const principles = ids(was, now).flatMap((id) => compare<Principle>('principle', id, was.get(id), now.get(id), (held) => held.title))
-  const wasCited = byId(before.citations ?? [])
-  const nowCited = byId(after.citations ?? [])
-  const nameOf = (citation: Citation) => recordName(after, citation.about) ?? recordName(before, citation.about) ?? citation.about.id
-  return [...principles, ...ids(wasCited, nowCited).flatMap((id) => compare<Citation>('citation', id, wasCited.get(id), nowCited.get(id), nameOf))]
+  return ids(was, now).flatMap((id) => compare<Principle>('principle', id, was.get(id), now.get(id), (held) => held.title))
 }
 
 /** What a scope calls one of its records, by its key: its title or its name. */
