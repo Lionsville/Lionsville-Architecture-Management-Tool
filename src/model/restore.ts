@@ -32,8 +32,7 @@ import type { BoardPatch, Command, DiagramPatch, ProjectPatch, Restored } from '
 import { citationsToCommands, commentsToCommands, listToCommands, plainCommands } from './commands'
 import type { Diagram, Model } from './normalised'
 import {
-  boxesOf, causesOf, checkMarksOf, citationList, commentList, principlesOf, decisionsOf, experimentsOf, fromDiagram, groupList, groupsOf, observationsOf, operatingRulesOf,
-  responsibilitiesOf, rolesOf, routesOf, solutionsOf, toDiagram, unitTypesOf,
+  boxesOf, checkMarksOf, citationList, commentList, decisionsOf, fromDiagram, groupList, groupsOf, routesOf, toDiagram,
 } from './normalised'
 import { memberOf, nodeGeometryOf, placedNodes } from './placement'
 import { edgeRoutesOf, splitRoutes } from './routes'
@@ -41,7 +40,6 @@ import { KINDS, RECORD_LIST_NAMES } from './recordKinds'
 import type { PlainList, RecordList, RecordOf } from './recordKinds'
 import { FIXED_ON_A_STANDIN } from './standIn'
 import type { DesignElement, DiagramSettings, Relation } from './types'
-import type { OperatingRuleKind } from './operatingModel'
 
 /** The same shape `adapters/folder/format/historyPath.ts` asks a history by; the model's own word for it. */
 export type RestoreSubject = { what: 'diagram' | 'description' | 'decision'; id: string }
@@ -195,70 +193,10 @@ function restoreProject(then: Model, now: Model, asOf: string): RestoreResult {
     else commands.push({ type: 'decision.remove', id })
   }
 
-  // Observations and causes restore whole (ADR-0021): nothing locks them.
-  const thenObservations = observationsOf(then)
-  const nowObservations = observationsOf(now)
-  for (const id of then.order.observations) {
-    const target = thenObservations[id]
-    const current = nowObservations[id]
-    if (!current) commands.push({ type: 'observation.add', observation: target })
-    else {
-      const patch = differing(current, target)
-      if (Object.keys(patch).length) commands.push({ type: 'observation.update', id, patch })
-    }
-  }
-  for (const id of now.order.observations) {
-    if (!thenObservations[id]) commands.push({ type: 'observation.remove', id })
-  }
-  const thenCauses = causesOf(then)
-  const nowCauses = causesOf(now)
-  for (const id of then.order.causes) {
-    const target = thenCauses[id]
-    const current = nowCauses[id]
-    if (!current) commands.push({ type: 'cause.add', cause: target })
-    else {
-      const patch = differing(current, target)
-      if (Object.keys(patch).length) commands.push({ type: 'cause.update', id, patch })
-    }
-  }
-  for (const id of now.order.causes) {
-    if (!thenCauses[id]) commands.push({ type: 'cause.remove', id })
-  }
-
-  // Solutions and experiments likewise (ADR-0026): a solution's decision
-  // record locks itself, and the solution only names it.
-  const thenSolutions = solutionsOf(then)
-  const nowSolutions = solutionsOf(now)
-  for (const id of then.order.solutions) {
-    const target = thenSolutions[id]
-    const current = nowSolutions[id]
-    if (!current) commands.push({ type: 'solution.add', solution: target })
-    else {
-      const patch = differing(current, target)
-      if (Object.keys(patch).length) commands.push({ type: 'solution.update', id, patch })
-    }
-  }
-  for (const id of now.order.solutions) {
-    if (!thenSolutions[id]) commands.push({ type: 'solution.remove', id })
-  }
-  const thenExperiments = experimentsOf(then)
-  const nowExperiments = experimentsOf(now)
-  for (const id of then.order.experiments) {
-    const target = thenExperiments[id]
-    const current = nowExperiments[id]
-    if (!current) commands.push({ type: 'experiment.add', experiment: target })
-    else {
-      const patch = differing(current, target)
-      if (Object.keys(patch).length) commands.push({ type: 'experiment.update', id, patch })
-    }
-  }
-  for (const id of now.order.experiments) {
-    if (!thenExperiments[id]) commands.push({ type: 'experiment.remove', id })
-  }
-  commands.push(...operatingBack(then, now))
+  // Every other list restores whole: nothing in them locks. A solution's
+  // decision record locks itself, and the solution only names it.
   const lists = listsBack(then, now)
   commands.push(...lists.rows)
-  commands.push(...principlesBack(then, now))
   commands.push(...threads.filter((command) => command.type !== 'comment.take'))
   commands.push(...cited.filter((command) => command.type !== 'citation.remove'))
   commands.push(...lists.last)
@@ -317,58 +255,6 @@ function rowsBack<L extends PlainList>(list: L, then: Model, now: Model): Comman
     }
   }
   for (const id of now.order[list]) if (!was[id]) commands.push(say.remove(id))
-  return commands
-}
-
-/** The principles as they were (ADR-0041): the list whole, as the observations restore. */
-function principlesBack(then: Model, now: Model): Command[] {
-  const was = principlesOf(then)
-  const is = principlesOf(now)
-  const commands: Command[] = []
-  for (const id of then.order.principles) {
-    if (!is[id]) commands.push({ type: 'principle.add', principle: was[id] })
-    else {
-      const patch = differing(is[id], was[id])
-      if (Object.keys(patch).length) commands.push({ type: 'principle.update', id, patch })
-    }
-  }
-  for (const id of now.order.principles) if (!was[id]) commands.push({ type: 'principle.remove', id })
-  return commands
-}
-
-/**
- * The operating model as it was (ADR-0036): every list whole, as the
- * observations restore — nothing in them locks.
- */
-function operatingBack(then: Model, now: Model): Command[] {
-  const commands: Command[] = []
-  const back = <T extends object>(
-    was: Record<string, T>, is: Record<string, T>, order: { then: string[]; now: string[] },
-    add: (row: T) => Command, update: (id: string, patch: Partial<T>) => Command, remove: (id: string) => Command,
-  ) => {
-    for (const id of order.then) {
-      const current = is[id]
-      if (!current) commands.push(add(was[id]))
-      else {
-        const patch = differing(current, was[id])
-        if (Object.keys(patch).length) commands.push(update(id, patch))
-      }
-    }
-    for (const id of order.now) if (!was[id]) commands.push(remove(id))
-  }
-  back(unitTypesOf(then), unitTypesOf(now), { then: then.order.unitTypes, now: now.order.unitTypes },
-    (unitType) => ({ type: 'unitType.add', unitType }), (id, patch) => ({ type: 'unitType.update', id, patch }),
-    (id) => ({ type: 'unitType.remove', id }))
-  back(rolesOf(then), rolesOf(now), { then: then.order.roles, now: now.order.roles },
-    (role) => ({ type: 'role.add', role }), (id, patch) => ({ type: 'role.update', id, patch }),
-    (id) => ({ type: 'role.remove', id }))
-  back(responsibilitiesOf(then), responsibilitiesOf(now), { then: then.order.responsibilities, now: now.order.responsibilities },
-    (responsibility) => ({ type: 'responsibility.add', responsibility }),
-    (id, patch) => ({ type: 'responsibility.update', id, patch }), (id) => ({ type: 'responsibility.remove', id }))
-  back(operatingRulesOf(then), operatingRulesOf(now), { then: then.order.operatingRules, now: now.order.operatingRules },
-    (rule) => ({ type: 'operatingRule.add', rule }),
-    (id, patch) => ({ type: 'operatingRule.update', id: id as OperatingRuleKind, patch }),
-    (id) => ({ type: 'operatingRule.remove', id: id as OperatingRuleKind }))
   return commands
 }
 

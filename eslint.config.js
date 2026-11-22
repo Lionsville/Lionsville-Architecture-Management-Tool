@@ -522,7 +522,6 @@ export const GROWN = {
   'src/model/activity.ts': { complexity: 82 },
   'src/model/platformReport.ts': { complexity: 26 },
   'src/model/relations.ts': { complexity: 26 },
-  'src/model/restore.ts': { complexity: 45 },
   'src/model/technologyLandscape.ts': { complexity: 39 },
   'src/observations/ui/ObservationForm.tsx': { lines: 157 },
   'src/observations/ui/ObservationsPage.tsx': { complexity: 68, lines: 462 },

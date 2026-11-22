@@ -169,49 +169,49 @@ export const KINDS = {
   observations: {
     list: 'observations', kind: 'observation', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'observation' },
-    restore: 'own',
+    restore: 'rows',
     diff: 'compare', nameOf: (held) => held.title,
   },
   causes: {
     list: 'causes', kind: 'cause', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'cause' },
-    restore: 'own',
+    restore: 'rows',
     diff: 'compare', nameOf: (held) => held.title,
   },
   solutions: {
     list: 'solutions', kind: 'solution', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'solution' },
-    restore: 'own',
+    restore: 'rows',
     diff: 'compare', nameOf: (held) => held.title,
   },
   experiments: {
     list: 'experiments', kind: 'experiment', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'experiment' },
-    restore: 'own',
+    restore: 'rows',
     diff: 'compare', nameOf: (held) => held.title,
   },
   unitTypes: {
     list: 'unitTypes', kind: 'unitType', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'unitType' },
-    restore: 'own',
+    restore: 'rows',
     diff: 'compare', nameOf: (held) => held.name,
   },
   roles: {
     list: 'roles', kind: 'role', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'role' },
-    restore: 'own',
+    restore: 'rows',
     diff: 'compare', nameOf: (held) => held.name,
   },
   responsibilities: {
     list: 'responsibilities', kind: 'responsibility', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'responsibility' },
-    restore: 'own',
+    restore: 'rows',
     diff: 'compare', nameOf: (held) => held.name,
   },
   operatingRules: {
     list: 'operatingRules', kind: 'operatingRule', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'rule' },
-    restore: 'own',
+    restore: 'rows',
     // One rule per kind, so its kind is what it is called.
     diff: 'compare', nameOf: (held) => held.id,
   },
@@ -239,7 +239,7 @@ export const KINDS = {
   principles: {
     list: 'principles', kind: 'principle', idOf: ownId, absentWhenEmpty: true,
     commands: { payload: 'principle' },
-    restore: 'own',
+    restore: 'rows',
     diff: 'compare', nameOf: (held) => held.title,
   },
   citations: {
