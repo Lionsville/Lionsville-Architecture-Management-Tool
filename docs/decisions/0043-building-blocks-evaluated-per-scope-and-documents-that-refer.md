@@ -437,3 +437,43 @@ had no read for it, and `evaluation.rate` wrote one cell per call.
 * **`evaluation.rate` takes `cells`** — a list of `{ option, capability,
   level, how }` — as well as one cell, all in one step. Half a cell, or no
   cell at all, is refused.
+
+## Amended 24 November 2026: a ball is picked before it is filled, and a capability has a text
+
+Two things about the grids of §6, and one about where they are read (§8).
+
+* **The first press picks.** A press on a ball filled it at once, so a
+  comparison read with the pointer was a comparison changed, and the ⋯ on
+  the cell picked covered the note and the shortfall the cell says. A press
+  now picks a cell and writes nothing; a press on the cell picked steps it,
+  ⇧-press back. The cell's menu is a right press or Enter; its ⋯ is drawn
+  only where the pointer is a finger, which has no right press. A press
+  beside the grid, or Escape, lets go of the pick (`Matrix`'s `onDeselect`).
+  The keys are as they were: Space and a digit write on the cell in focus.
+* **A capability has a text, and it is a chapter.** A capability was one
+  sentence in a list. What it asks, why, how it is judged and its pictures
+  are now a chapter of the block's document under the capability's own
+  words, a heading one level under a usage context's and under one heading
+  for all of them (`model/blockChapters.ts`: `requirementHeading`,
+  `chapterBody`, `withChapterBody`, `withChapterRenamed`). It is the
+  document's, as §2 made a usage context's chapter the document's: read on
+  *About*, searched, kept, carried in a working file and referred to as the
+  document is, with the pictures and references a document may hold, and no
+  field, format or command is added. The chapter is found by its heading: a
+  capability renamed carries its chapter to the new words in the same step
+  (`withCapability`), one removed leaves its chapter in the document to be
+  kept or cut by a person, and a heading changed by hand in the document
+  lets go of its capability, which then reads as having no text.
+* **A capability opens beside its grid.** Its name, on *Requirements* and in
+  a comparison, opens the one panel (`CapabilityPanel`): the chapter, the
+  aspect it delivers, how much each usage context needs it, and from a
+  comparison how far each option covers it there, with the note. ✎ Edit, on
+  the panel and under ⋯ on its row, writes its words, its *must*, its aspect
+  and its chapter in a full window, one step in the scope that keeps the
+  block (`CapabilityEditor`).
+* **The comparisons are read where the block is.** Each scope's grid is
+  drawn, read-only, under the block's document in its large preview and on
+  *About*, with *Open the comparison*; where no scope compares yet, the
+  requirements are drawn instead. The head of both offers the way to a
+  comparison: a button where one scope compares, a menu where several do
+  (`BlockComparisons`, `ComparisonWays`).
