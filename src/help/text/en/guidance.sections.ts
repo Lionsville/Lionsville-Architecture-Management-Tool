@@ -107,7 +107,7 @@ export const SECTIONS: SectionTexts = {
     'Open its home at the foot of the reader; Open principles beside Principles it keeps; a topic row ↗ in the scope tree.',
     ['Open the topic.', 'Press Open its home, or Open principles.'],
     'Open Integration\'s home to write a principle kept in the topic.'],
-  'blocks.read': ['Read the building blocks', 'Every building block, under where it is kept, with how many scopes evaluate it; a press shows a preview of its text and facts, and Open full record opens its page. Move to… under ⋯, on the preview and on the page, keeps the block in another topic or scope: its document, the principles it cites and its comments go with it, and every comparison keeps pointing at it.',
+  'blocks.read': ['Read the building blocks', 'Every building block, under where it is kept, with how many scopes evaluate it; a press shows a preview of its text and facts, and Open full record opens its page. Under its text the preview and About draw each scope\'s comparison, with Open the comparison, and the head has a button to it. Move to… under ⋯, on the preview and on the page, keeps the block in another topic or scope: its document, the principles it cites and its comments go with it, and every comparison keeps pointing at it.',
     'Guidance > Building blocks, at #/-/blocks; the Building blocks row under Kept here on a home; {key:Mod+K} Building blocks.',
     ['Open the Building blocks tab.', 'Search, press a block, then Open full record.'],
     'Open Message gateway, kept in Integration and evaluated by two scopes.',
