@@ -24,6 +24,10 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
 - **A building block moves to another topic or scope.** *Move to…* under ⋯ on
   its page and its preview: its document, pictures, the principles it cites
   and its comments go with it, and every comparison keeps pointing at it.
+- **A cell is said in words right under its row.** Pointing at a ball, or at
+  a name the row cuts short, shows the whole of it at once directly below
+  that row — the level, the note, the shortfall — where it used to stand
+  under the grid, out of sight in a block of many capabilities.
 - The Find button reads to a screen reader as it reads on screen, off a Mac
   too.
 
