@@ -76,6 +76,13 @@ export type BlocksAccess = {
   updateEvaluation(scope: string, evaluation: Evaluation): void
   /** A scope's evaluation taken away. */
   removeEvaluation(scope: string, evaluation: string): void
+  /**
+   * A block kept in another topic or scope from now on, under the id it has:
+   * its document, the principles it cites and its comments with it, and every
+   * scope's evaluation naming its new place. Nothing is written unless the
+   * person may change every scope it writes; landed or not, the access says.
+   */
+  move(block: string, to: string): Promise<boolean>
   /** *Propose a decision…* from a scope's evaluation, choosing `option`: the decision's id once it is there. */
   propose(scope: string, block: string, option: string): Promise<string | undefined>
   /** The scope that keeps a block, open: where its principles are cited. */

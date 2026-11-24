@@ -15,6 +15,7 @@ import type { RecordChangesAccess } from '../comments/ui/RecordChanges'
 import { useMemo } from 'react'
 import type { ReactNode } from 'react'
 import { BlocksProvider } from '../blocks/ui/BlocksContext'
+import type { BlockMovePictures } from '../projects/blockMove'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import type { ScopePath } from '../projects/scopePath'
 import { useBlocksAccess } from '../guidance/useBlocksAccess'
@@ -32,6 +33,8 @@ export type HomeStore = Pick<TopicsDeps, 'scopes' | 'index' | 'written' | 'notif
   /** The tree's index as it stands: every block and every evaluation. */
   treeIndex: ScopeIndex
   makeId: (prefix: string) => string
+  /** The source's pictures: what a building block's document shows goes with it when it moves (ADR-0043, amended 24 November 2026). */
+  images?: BlockMovePictures
   /**
    * A record's changes as the readers read them (ADR-0038, amended §11),
    * filled by the shell from the source's history; absent where it keeps

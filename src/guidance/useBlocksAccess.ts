@@ -22,6 +22,7 @@ import type { DesignElement } from '../model/types'
 import { flattenScopes } from '../projects/scope'
 import type { ScopeSnapshot, ScopeSummary } from '../projects/scope'
 import { readScope } from '../projects/scopeAccess'
+import type { BlockMovePictures } from '../projects/blockMove'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { scopeDisplayName } from '../projects/scopeLabel'
 import { ancestorScopes, isWithinScope, ROOT_SCOPE } from '../projects/scopePath'
@@ -32,11 +33,14 @@ import type { InitialPage } from '../session/initialPage'
 import type { BelowScopes } from '../session/useChangeBelow'
 import { handOver } from '../session/handOver'
 import { refusalKey, writeIn } from '../session/writeIn'
+import { moveBlock } from './moveBlock'
 
 export type BlocksDeps = {
   tree: ScopeSummary
   index: Pick<ScopeIndex, 'buildingBlocks' | 'evaluations' | 'principlesAt' | 'citations' | 'entries' | 'lookup'>
   scopes: BelowScopes
+  /** The source's pictures, where the shell hands them: what a block's document shows goes with it when it moves. */
+  images?: BlockMovePictures
   writable: (path: ScopePath) => boolean
   /** The tree read again, and the index with it, once a step lands. */
   written: () => void
@@ -159,6 +163,10 @@ export function blocksAccess(deps: BlocksDeps, version: number): BlocksAccess {
       })
     },
     removeEvaluation: (scope, id) => { void land(deps, scope, () => [{ type: 'evaluation.remove', id }]) },
+    move: async (block, to) => {
+      const row = read.block(block)
+      return row ? moveBlock({ ...deps, scopeLabel: read.scopeLabel }, { block, from: row.scope, to }) : false
+    },
     propose: async (scope, block, option) => {
       const row = read.block(block)
       const evaluation = row ? read.evaluationsOf(block).find((one) => one.scope === scope)?.evaluation : undefined

@@ -65,6 +65,7 @@ function accessOver(over: Partial<BlocksAccess> = {}): BlocksAccess {
     evaluateChoices: () => [{ path: 'stock', name: 'Stock', depth: 1 }],
     document: vi.fn(async () => GATEWAY.description), create: vi.fn(async () => 'blk-new'), update: vi.fn(), evaluate: vi.fn(async () => true), updateEvaluation: vi.fn(), removeEvaluation: vi.fn(),
     propose: vi.fn(async () => 'adr-9'), openDecision: vi.fn(), openScope: vi.fn(), openBlock: vi.fn(),
+    move: vi.fn(async () => true),
     makeId: (prefix) => `${prefix}-new`, today: () => '2026-11-02',
     ...over,
   }

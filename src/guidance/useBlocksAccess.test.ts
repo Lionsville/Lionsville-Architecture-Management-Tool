@@ -10,11 +10,13 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 import { memoryRepositories } from '../adapters/memory/memoryRepositories'
+import type { Comment } from '../model/comment'
 import type { HostModel } from '../model/hostModel'
+import type { ImageEntry } from '../model/imageName'
 import type { Principle } from '../model/principle'
 import type { Repositories } from '../ports/Repositories'
 import { translator } from '../i18n/strings'
-import { contentOf, modelsOf, placeWhole, readScope, summaryOf } from '../projects/scopeAccess'
+import { contentOf, keptAt, modelsOf, nodeAt, placeWhole, readScope, stepOf, summaryOf } from '../projects/scopeAccess'
 import { indexScopes } from '../projects/scopeIndex'
 import { adrGate, adrOpenItems } from '../decisions/adr'
 import { blocksAccess } from './useBlocksAccess'
@@ -205,5 +207,151 @@ describe('a comparison carried out', () => {
     const { deps, access } = await wired(repositories, { copyText: vi.fn(async () => { throw new Error('denied') }) })
     access.copyText!('x')
     await vi.waitFor(() => expect(deps.notify).toHaveBeenCalledWith(s('blocks.tableCopyFailed'), 'error'))
+  })
+})
+
+describe('a building block moved to another topic', () => {
+  const AT = '2026-11-20T09:00:00.000Z'
+  const asked: Comment = { id: 'cm-1', about: { kind: 'element', id: 'blk-gw' }, by: { person: 'pe-1' }, at: AT, body: 'Who runs this?' }
+  const BYTES = new Uint8Array([1, 2, 3])
+
+  /** A topic keeping a cited, commented block whose document shows a picture of that topic; two scopes compare it, one decided. */
+  async function organisation(): Promise<{ repositories: Repositories; picture: ImageEntry }> {
+    const repositories = memoryRepositories()
+    await place(repositories, '', { name: 'Acme', principles: [least] })
+    await place(repositories, 'topics/integration', {
+      name: 'Integration',
+      elements: [{
+        id: 'blk-gw', kind: 'buildingBlock', name: 'Message gateway', lifecycle: 'live', isManaged: false, aspects: {},
+        description: 'What it is.\n\n![Routing](image:routing.png)\n',
+        capabilities: [{ id: 'cap-route', text: 'Routes by content' }],
+        contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-route': 4 } }],
+        sbbs: [{ id: 'sb-a', name: 'Broker A', sort: 'product', status: 'candidate' }],
+      }],
+      citations: [{ id: 'ci-1', about: { kind: 'element', id: 'blk-gw' }, principle: { scope: '', id: 'pr-1' }, stance: 'supports', on: DAY }],
+      comments: [asked],
+    })
+    await place(repositories, 'topics/security', { name: 'Security' })
+    await place(repositories, 'sales', { name: 'Sales' })
+    await place(repositories, 'stock', { name: 'Stock' })
+    const topic = nodeAt(await repositories.scopes.tree(), 'topics/integration')!.id
+    const picture: ImageEntry = { name: 'routing.png', mediaType: 'image/png', size: BYTES.length, width: 4, height: 3, contentAddress: keptAt(await repositories.images.put(topic, 'routing.png', BYTES)) }
+    await repositories.scopes.apply([{ scope: topic, steps: [stepOf({ type: 'image.add', image: picture })] }])
+    const { access } = await wired(repositories)
+    await access.evaluate('blk-gw', 'sales', ['cx-partners'])
+    await access.evaluate('blk-gw', 'stock', [])
+    const sales = (await again(repositories)).evaluationsOf('blk-gw').find((one) => one.scope === 'sales')!.evaluation
+    ;(await again(repositories)).updateEvaluation('sales', { ...sales, options: ['sb-a'], coverage: { 'sb-a': { 'cap-route': { level: 4 } } } })
+    await vi.waitFor(async () => expect((await readScope(repositories.scopes, 'sales'))?.model.evaluations?.[0]?.options).toEqual(['sb-a']))
+    await (await again(repositories)).propose('sales', 'blk-gw', 'sb-a')
+    return { repositories, picture }
+  }
+
+  const idOf = async (repositories: Repositories, path: string) => nodeAt(await repositories.scopes.tree(), path)!.id
+
+  it('keeps it in the target with its document, citations, thread and pictures, every comparison naming its new place, written as one with the target first', async () => {
+    const { repositories, picture } = await organisation()
+    const apply = vi.spyOn(repositories.scopes, 'apply')
+    const written = vi.fn()
+    const { access, deps } = await wired(repositories, { images: repositories.images, written })
+    expect(await access.move('blk-gw', 'topics/security')).toBe(true)
+    expect(deps.notify).toHaveBeenCalledWith(s('blocks.moved', { name: 'Message gateway', scope: 'Security' }), 'success')
+    expect(written).toHaveBeenCalledTimes(1)
+    // One apply: the target, the scopes that compare it, the source last.
+    expect(apply).toHaveBeenCalledTimes(1)
+    expect(apply.mock.calls[0][0].map((work) => work.scope)).toEqual(await Promise.all(['topics/security', 'sales', 'stock', 'topics/integration'].map((path) => idOf(repositories, path))))
+
+    const now = await again(repositories)
+    expect(now.block('blk-gw')?.scope).toBe('topics/security')
+    expect(await now.document('blk-gw')).toBe('What it is.\n\n![Routing](image:routing.png)\n')
+    expect(now.citationsOf('blk-gw')).toEqual([{ label: 'PR-0001 Least privilege', stance: 'supports' }])
+    const target = (await readScope(repositories.scopes, 'topics/security'))!
+    expect(target.model.comments).toEqual([{ ...asked, from: { kind: 'element', id: 'blk-gw', scope: 'topics/integration' } }])
+    expect(target.images).toEqual([picture])
+    expect((await repositories.images.bytes(target.id!, 'routing.png'))?.bytes).toEqual(BYTES)
+    const source = (await readScope(repositories.scopes, 'topics/integration'))!
+    expect([source.model.elements, source.model.comments ?? [], source.model.citations ?? []]).toEqual([[], [], []])
+    // The source keeps its picture: other documents there may show it.
+    expect(source.images).toEqual([picture])
+
+    expect(now.evaluationsOf('blk-gw').map((one) => [one.scope, one.evaluation.id, one.evaluation.block.scope])).toEqual([
+      ['sales', 'topics.security~blk-gw', 'topics/security'], ['stock', 'topics.security~blk-gw', 'topics/security'],
+    ])
+    const sales = (await readScope(repositories.scopes, 'sales'))!.model
+    expect(sales.evaluations![0]).toMatchObject({ contexts: ['cx-partners'], options: ['sb-a'], coverage: { 'sb-a': { 'cap-route': { level: 4 } } } })
+    // The decision proposed from the comparison still chooses in it, so accepting it writes the choice.
+    expect(sales.decisions![0].chooses).toEqual({ evaluation: 'topics.security~blk-gw', option: 'sb-a' })
+    // And moved back, it comes home: the thread says no other place.
+    expect(await now.move('blk-gw', 'topics/integration')).toBe(true)
+    expect((await readScope(repositories.scopes, 'topics/integration'))!.model.comments).toEqual([asked])
+  })
+
+  it('writes nothing where the person may not change a scope that compares it, and names that scope', async () => {
+    const { repositories } = await organisation()
+    const apply = vi.spyOn(repositories.scopes, 'apply')
+    const put = vi.spyOn(repositories.images, 'put')
+    const { access, deps } = await wired(repositories, { images: repositories.images, writable: (path) => path !== 'stock' })
+    expect(await access.move('blk-gw', 'topics/security')).toBe(false)
+    expect(deps.notify).toHaveBeenCalledWith(s('blocks.moveNotAllowed', { scope: 'Stock' }), 'error')
+    expect([apply.mock.calls.length, put.mock.calls.length]).toEqual([0, 0])
+    expect((await again(repositories)).block('blk-gw')?.scope).toBe('topics/integration')
+    // The source and the target are asked the same way.
+    for (const closed of ['topics/integration', 'topics/security']) {
+      const one = await wired(repositories, { images: repositories.images, writable: (path) => path !== closed })
+      expect(await one.access.move('blk-gw', 'topics/security')).toBe(false)
+    }
+    expect(apply).not.toHaveBeenCalled()
+  })
+
+  it('says a refusal of the plan and one of the place work is kept, and writes nothing', async () => {
+    const { repositories } = await organisation()
+    const { access, deps } = await wired(repositories, { images: repositories.images })
+    expect(await access.move('blk-gw', 'topics/integration')).toBe(false)
+    expect(deps.notify).toHaveBeenLastCalledWith(s('blocks.moveSameScope', { scope: 'Integration' }), 'error')
+    expect(await access.move('blk-none', 'topics/security')).toBe(false)
+    // A scope the tree no longer holds, though the dialog offered it.
+    expect(await access.move('blk-gw', 'topics/gone')).toBe(false)
+    expect(deps.notify).toHaveBeenLastCalledWith(s('blocks.moveUnknownScope', { scope: 'gone' }), 'error')
+    // The place refuses the write: its own key is said, and the block stays.
+    vi.spyOn(repositories.scopes, 'apply').mockResolvedValueOnce({ refused: 'shell.scopeReadOnly' })
+    expect(await access.move('blk-gw', 'topics/security')).toBe(false)
+    expect(deps.notify).toHaveBeenLastCalledWith(s('shell.scopeReadOnly'), 'error')
+    expect((await again(repositories)).block('blk-gw')?.scope).toBe('topics/integration')
+    // The target already defines the id.
+    await place(repositories, 'topics/security', { name: 'Security', elements: [{ id: 'blk-gw', kind: 'buildingBlock', name: 'Another', lifecycle: 'live', isManaged: false, aspects: {} }] })
+    expect(await access.move('blk-gw', 'topics/security')).toBe(false)
+    expect(deps.notify).toHaveBeenLastCalledWith(s('blocks.moveTaken', { scope: 'Security' }), 'error')
+  })
+
+  it('refuses a block whose document shows pictures where the host hands none, rather than leave them behind', async () => {
+    const { repositories } = await organisation()
+    const { access, deps } = await wired(repositories)
+    expect(await access.move('blk-gw', 'topics/security')).toBe(false)
+    expect(deps.notify).toHaveBeenLastCalledWith(s('blocks.movePicturesStay'), 'error')
+    expect((await again(repositories)).block('blk-gw')?.scope).toBe('topics/integration')
+    // The same picture already in the target: nothing to take along, so it moves.
+    const { picture } = { picture: (await readScope(repositories.scopes, 'topics/integration'))!.images![0] }
+    const target = await idOf(repositories, 'topics/security')
+    await repositories.images.put(target, picture.name, BYTES)
+    await repositories.scopes.apply([{ scope: target, steps: [stepOf({ type: 'image.add', image: picture })] }])
+    expect(await (await again(repositories)).move('blk-gw', 'topics/security')).toBe(true)
+  })
+
+  it('leaves a stand-in where a view of the source draws it', async () => {
+    const repositories = memoryRepositories()
+    const gateway = { id: 'blk-gw', kind: 'buildingBlock' as const, name: 'Gateway', lifecycle: 'live' as const, isManaged: false, aspects: {}, description: 'What it is.\n' }
+    await place(repositories, 'topics/integration', {
+      name: 'Integration', elements: [gateway],
+      diagrams: [{ id: 'board', kind: 'layer7', name: 'Board', members: [{ id: 'blk-gw' }], geometry: { nodes: [{ id: 'blk-gw', x: 0, y: 0 }] } }],
+    })
+    await place(repositories, 'sales', { name: 'Sales' })
+    const { access } = await wired(repositories)
+    expect(await access.move('blk-gw', 'sales')).toBe(true)
+    const source = (await readScope(repositories.scopes, 'topics/integration'))!.model
+    expect(source.elements).toEqual([{ id: 'blk-gw', kind: 'buildingBlock', name: 'Gateway', ref: 'sales', lifecycle: 'live', isManaged: false, aspects: {} }])
+    expect(source.diagrams[0].members).toEqual([{ id: 'blk-gw' }])
+    const now = await again(repositories)
+    expect(now.block('blk-gw')?.scope).toBe('sales')
+    expect(await now.document('blk-gw')).toBe('What it is.\n')
   })
 })

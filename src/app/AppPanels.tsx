@@ -263,7 +263,7 @@ function useHomeTopics(parts: ShellParts): HomeStore {
   const { makeId, hostControls, documents } = parts.props
   const changes = useRecordChangesAccess({ history: repositories.history, scopes: repositories.scopes, here: AT_THE_ORGANISATION })
   return useMemo(() => ({
-    scopes: repositories.scopes, index: repositories.index, notify, treeIndex, makeId,
+    scopes: repositories.scopes, index: repositories.index, images: repositories.images, notify, treeIndex, makeId,
     ...(changes ? { changes } : {}),
     copyText: (text: string) => hostControls.copyText(text),
     saveDocument: (doc: { name: string; mediaType: string; text: string }) => documents.save(doc),

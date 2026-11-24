@@ -51,8 +51,12 @@ import { fromArrays } from '../model/normalised'
 import { apply } from '../model/reducer'
 import type { RecordKey } from '../model/recordKey'
 import type { DesignElement } from '../model/types'
+import type { ImageRepository } from '../ports/ImageRepository'
 import { definitionCommand } from './gestures'
 import type { ScopePath } from './scopePath'
+
+/** As much of a picture repository as taking a block's pictures along asks: one scope's bytes read, and put for another. */
+export type BlockMovePictures = Pick<ImageRepository, 'bytes' | 'put'>
 
 /** One scope as the move reads it: its records, and its picture library where a repository keeps one. */
 export type BlockMoveScope = {
