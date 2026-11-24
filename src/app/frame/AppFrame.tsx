@@ -799,6 +799,9 @@ function FindField({ openSearch, s, least }: { openSearch: (() => void) | undefi
         <SearchIcon size={14} />
         <span className="kit-frame__find-word" aria-hidden>{s('frame.find')}</span>
         <span className="kit-frame__find-short" aria-hidden>{s('frame.findShort')}</span>
+        {/* A space in the text between the words and the key: without one the button reads "…commandCtrl K" to
+            anything that reads its text, which its name does not contain. A row draws no box for it. */}
+        {' '}
         <span className="kit-frame__kbd" aria-hidden>{chord}</span>
       </button>
     </Tooltip>

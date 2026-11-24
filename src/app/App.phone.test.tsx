@@ -59,7 +59,14 @@ describe('a phone', () => {
       const status = screen.getByTestId('saved-indicator')
       expect(status.dataset.folded).toBe('true')
       expect(status.getAttribute('aria-label')).not.toBe('')
-      expect(screen.getByTestId('frame-find').getAttribute('aria-label')).toMatch(/^Find or run a command (⌘K|Ctrl K)$/)
+      const find = screen.getByTestId('frame-find')
+      expect(find.getAttribute('aria-label')).toMatch(/^Find or run a command (⌘K|Ctrl K)$/)
+      // And its name holds the words it shows as they read: the words, a space, the key (WCAG 2.5.3). Without the
+      // space its text read "…commandCtrl K", which the name does not contain; a browser's check said so off a Mac.
+      const shown = [...find.childNodes].filter((node) => !(node instanceof HTMLElement && node.classList.contains('kit-frame__find-short')))
+        .map((node) => node.textContent ?? '').join('').replace(/\s+/g, ' ').trim()
+      expect(shown).toMatch(/^Find or run a command (⌘K|Ctrl K)$/)
+      expect(find.getAttribute('aria-label')).toContain(shown)
       fireEvent.click(screen.getAllByTestId('overflow-button')[0])
       fireEvent.click(await screen.findByRole('menuitem', { name: 'Forward' }))
       expect(forward).toHaveBeenCalledTimes(1)
