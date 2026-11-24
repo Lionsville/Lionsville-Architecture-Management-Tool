@@ -28,7 +28,10 @@ import { RecordActions } from '../../widgets/kit/RecordActions'
 import { Tabs } from '../../widgets/kit/Tabs'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceLook, usePlaceTab } from '../../widgets/placeTab'
+import { withoutCapability } from '../../model/buildingBlock'
 import { BlockAbout, BlockTextWindow, useBlockDocument } from './BlockAbout'
+import { ComparisonWays } from './BlockComparisons'
+import { CapabilityEditor, CapabilityPanel } from './Capability'
 import { useEditAsked } from '../../widgets/kit/editOnArrival'
 import { BlockRequirements } from './BlockRequirements'
 import { BlockSolutions } from './BlockSolutions'
@@ -61,6 +64,10 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
     if (scope !== undefined) setTab('used')
   }, [setLook, setTab])
   const [editAsked, setEditAsked] = useState(false)
+  // The capability read beside a grid, and the one being written: the page's, since the panel stands beside whichever grid is up.
+  const [reading, setReading] = useState<string | undefined>(undefined)
+  const [writing, setWriting] = useState<string | undefined>(undefined)
+  useEffect(() => { setReading(undefined); setWriting(undefined) }, [id])
   const shown = useRef(id)
   // A request, and only a request: the block, the comparison asked for and the
   // request's nonce. `setTab` is the frame's and stable (`usePlaceTab`); an
@@ -85,6 +92,14 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
   // Leaving the page leaves its comparison: the register it closes onto has none.
   const close = () => { setEvaluating(undefined); onClose() }
   const now = (['about', 'requirements', 'options', 'used'] as const).find((one) => one === tab) ?? 'about'
+  const capabilities = block.capabilities ?? []
+  const comparing = now === 'used' && evaluating !== undefined
+  const compared = comparing ? access.evaluationsOf(block.id).find((one) => one.scope === evaluating) : undefined
+  const read = now === 'requirements' || comparing ? capabilities.find((one) => one.id === reading) : undefined
+  const dropCapability = (capability: string) => {
+    setReading(undefined)
+    access.update(block.id, { capabilities: capabilities.filter((one) => one.id !== capability), contexts: withoutCapability(block.contexts ?? [], capability) })
+  }
   return (
     <PageDialog open={open} topInset={windowChrome.topInset} onClose={close} aria-label={block.name}>
       <GuidanceFrame tab="blocks">
@@ -96,6 +111,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
             <span className="guidance-read__spring" />
             {/* The block's text is its record's text: ✎ Edit in the head, as on every record (`RecordActions`). */}
             <RecordActions
+              verbs={<ComparisonWays row={row} onOpen={setEvaluating} />}
               {...(access.mayWrite(scope) ? { edit: { onPress: () => setEditAsked(true), testId: 'block-document-edit' } } : {})}
               more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => access.openScope(scope), 'data-testid': 'block-open-scope' }]}
             />
@@ -112,18 +128,32 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
               ]}
             />
           </div>
-          {now === 'used' && evaluating !== undefined
-            ? <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />
-            : (
-              <div className="guidance-record__body blocks-body">
-                {now === 'about' && <BlockAbout row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} document={document} writing={editAsked} />}
-                {now === 'requirements' && <BlockRequirements row={row} onChapter={toChapter} />}
-                {now === 'options' && <BlockSolutions row={row} />}
-                {now === 'used' && <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />}
-              </div>
+          <div className="blocks-work">
+            {comparing
+              ? <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} onOpenCapability={setReading} />
+              : (
+                <div className="guidance-record__body blocks-body">
+                  {now === 'about' && (
+                    <BlockAbout
+                      row={row} chapter={chapter} onChapterShown={() => setChapter(undefined)} document={document} writing={editAsked}
+                      onComparison={setEvaluating} onRequirements={() => setTab('requirements')}
+                    />
+                  )}
+                  {now === 'requirements' && <BlockRequirements row={row} onChapter={toChapter} onOpenCapability={setReading} onEditCapability={setWriting} />}
+                  {now === 'options' && <BlockSolutions row={row} />}
+                  {now === 'used' && <BlockWhereUsed row={row} evaluating={evaluating} onEvaluate={setEvaluating} onChapter={toChapter} />}
+                </div>
+              )}
+            {read && (
+              <CapabilityPanel
+                row={row} capability={read} document={document} comparison={compared}
+                onEdit={() => setWriting(read.id)} onRemove={() => dropCapability(read.id)} onClose={() => setReading(undefined)}
+              />
             )}
+          </div>
         </div>
         <BlockTextWindow row={row} document={document} asked={editAsked} onDone={() => setEditAsked(false)} />
+        <CapabilityEditor row={row} capability={capabilities.find((one) => one.id === writing)} document={document} onDone={() => setWriting(undefined)} />
       </GuidanceFrame>
     </PageDialog>
   )

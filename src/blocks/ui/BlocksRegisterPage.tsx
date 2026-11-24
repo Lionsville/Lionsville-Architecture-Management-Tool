@@ -26,6 +26,7 @@ import { askToEdit } from '../../widgets/kit/editOnArrival'
 import { PageDialog } from '../../widgets/PageDialog'
 import { usePlaceList } from '../../widgets/placeTab'
 import { useBlockDocument } from './BlockAbout'
+import { BlockComparisons, ComparisonWays } from './BlockComparisons'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow, BlocksAccess } from './BlocksContext'
 import { scopeOptions } from './scopeOptions'
@@ -49,11 +50,13 @@ function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; ro
   const { t } = useStrings()
   const { block, scope } = row
   const document = useBlockDocument(block.id)
+  const toComparison = (at: string) => { onSelect(null); access.openBlock(block.id, at) }
   return (
     <Preview
       ids={ids} currentId={block.id} onSelect={onSelect} title={block.name} listWord={t('blocks.listWord')}
       openFull={{ onPress: () => { onSelect(null); access.openBlock(block.id) } }}
       actions={<RecordActions
+        verbs={<ComparisonWays row={row} onOpen={toComparison} />}
         // The block's text is written on its page: ✎ Edit opens it there, already writing.
         {...(access.mayWrite(scope) ? { edit: { onPress: () => { askToEdit('blocks', block.id); onSelect(null); access.openBlock(block.id) }, testId: 'block-preview-edit' } } : {})}
         more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => { onSelect(null); access.openScope(scope) } }]} />}
@@ -69,6 +72,8 @@ function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; ro
     >
       {document.text === undefined ? null
         : document.text.trim() ? <MarkdownView markdown={document.text} /> : <p className="guidance-read__empty">{t('blocks.documentEmpty')}</p>}
+      {/* What the block comes to, read by scrolling on: each scope's grid, and the way to it. */}
+      <BlockComparisons row={row} onOpen={toComparison} />
     </Preview>
   )
 }

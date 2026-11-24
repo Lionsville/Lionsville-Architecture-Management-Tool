@@ -45,7 +45,10 @@ function Choices({ legend, items, on, onToggle, readOnly, testId }: {
   )
 }
 
-export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRow; scope: string; onBack: () => void; onChapter: (context: string) => void }) {
+export function EvaluationView({ row, scope, onBack, onChapter, onOpenCapability }: {
+  row: BlockRow; scope: string; onBack: () => void; onChapter: (context: string) => void
+  onOpenCapability?: (capability: string) => void
+}) {
   const access = useBlocks()
   const { t } = useStrings()
   const [proposing, setProposing] = useState(false)
@@ -96,7 +99,7 @@ export function EvaluationView({ row, scope, onBack, onChapter }: { row: BlockRo
         )}
       </div>
       {evaluation.contexts.length === 0 && <Band tone="info" title={t('blocks.pickContextFirst')} />}
-      <EvaluationGrid block={block} evaluation={evaluation} {...(may ? { onChange: save } : {})} />
+      <EvaluationGrid block={block} evaluation={evaluation} {...(may ? { onChange: save } : {})} {...(onOpenCapability ? { onOpenCapability } : {})} />
       {proposing && <ProposeDialog row={row} scope={scope} evaluation={evaluation} onClose={() => setProposing(false)} />}
       <Dialog
         open={removing} title={t('blocks.removeEvaluationTitle', { scope: access.scopeLabel(scope) })} onClose={() => setRemoving(false)}

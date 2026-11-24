@@ -97,6 +97,37 @@ describe('the register of building blocks', () => {
     expect(access.openBlock).toHaveBeenCalledWith('blk-gw')
   })
 
+  it('reads a block\'s comparison under its document in the preview, and goes to it from the head and from the grid', async () => {
+    const access = accessOver()
+    renderShell(<BlocksProvider value={access}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
+    fireEvent.click(screen.getByRole('row', { name: /Message gateway/ }))
+    const reader = screen.getByRole('dialog')
+    const read = within(reader).getByTestId('block-read-comparison')
+    expect(within(read).getByRole('heading', { name: s('blocks.comparisonIn', { scope: 'Sales' }) })).toBeTruthy()
+    // Read-only there: a press on a ball picked writes nothing.
+    const cell = within(read).getAllByRole('gridcell').find((one) => /Routes by content, Managed bus/.test(one.getAttribute('aria-label') ?? ''))!
+    fireEvent.click(cell)
+    fireEvent.click(cell)
+    expect(access.updateEvaluation).not.toHaveBeenCalled()
+    fireEvent.click(within(read).getByRole('button', { name: s('blocks.openComparison') }))
+    expect(access.openBlock).toHaveBeenLastCalledWith('blk-gw', 'sales')
+  })
+
+  it('offers the way to a comparison in the preview\'s head: one scope a button, several a menu, none nothing', async () => {
+    const access = accessOver()
+    const view = renderShell(<BlocksProvider value={access}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
+    fireEvent.click(screen.getByRole('row', { name: /Message gateway/ }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByTestId('block-to-comparison'))
+    expect(access.openBlock).toHaveBeenLastCalledWith('blk-gw', 'sales')
+    view.unmount()
+    const none = accessOver({ evaluationsOf: () => [] })
+    renderShell(<BlocksProvider value={none}><BlocksRegisterPage open at="" select="blk-gw" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
+    const reader = screen.getByRole('dialog')
+    expect(within(reader).queryByTestId('block-to-comparison')).toBeNull()
+    // Nobody compares yet: the requirements are the balls there are.
+    expect(within(reader).getByTestId('block-read-requirements')).toBeTruthy()
+  })
+
   it('says what a block is for and which of the three is wanted where there are none, with New only for who may write', async () => {
     renderShell(<BlocksProvider value={accessOver({ blocks: () => [] })}><BlocksRegisterPage open at="" onClose={() => {}} windowChrome={NO_WINDOW_CHROME} /></BlocksProvider>)
     expect(screen.getByText(s('guidance.empty.blocksTitle'))).toBeTruthy()
@@ -149,15 +180,23 @@ describe('a building block\'s page', () => {
     expect(screen.getByTestId('block-document')).toBeTruthy()
   })
 
-  it('draws the requirements as balls with a legend: a press moves one a quarter, ⇧-press back, and Space from the keyboard', async () => {
+  it('draws the requirements as balls with a legend: a press picks one, a press on the one picked moves it a quarter, ⇧-press back, and Space from the keyboard', async () => {
     const access = accessOver()
     page(access)
     onRequirements()
-    expect(screen.getByText(s('blocks.setBall'))).toBeTruthy()
+    expect(screen.getByText(`${s('blocks.setBall')} ${s('blocks.nameOpens')}`)).toBeTruthy()
     const cell = cellOf(/Routes by content, Many partners/)
+    // The first press picks and writes nothing: a grid is read by pointing at it.
+    fireEvent.click(cell)
+    expect(access.update).not.toHaveBeenCalled()
+    expect(cell.getAttribute('aria-selected')).toBe('true')
     // Essential, and a press more is not needed: after full, back to none.
     fireEvent.click(cell)
     expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, GATEWAY.contexts![1]] })
+    // A press beside the grid lets go of the pick.
+    fireEvent.pointerDown(screen.getByRole('tab', { name: s('blocks.requirements') }))
+    expect(cell.getAttribute('aria-selected')).toBe('false')
+    fireEvent.click(cellOf(/Keeps an audit trail, Filings/))
     fireEvent.click(cellOf(/Keeps an audit trail, Filings/), { shiftKey: true })
     expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-audit': 2 } }, { ...GATEWAY.contexts![1], needs: { 'cap-audit': 3 } }] })
     const other = cellOf(/Keeps an audit trail, Many partners/)
@@ -182,10 +221,11 @@ describe('a building block\'s page', () => {
     page(access)
     onRequirements()
     fireEvent.click(cellOf(/Routes by content, Many partners/))
+    fireEvent.click(cellOf(/Routes by content, Many partners/))
     fireEvent.contextMenu(cellOf(/Routes by content, Many partners/))
     expect(screen.queryByRole('menu')).toBeNull()
     expect(access.update).not.toHaveBeenCalled()
-    expect(screen.queryByText(s('blocks.setBall'))).toBeNull()
+    expect(screen.queryByText(s('blocks.setBall'), { exact: false })).toBeNull()
   })
 
   it('builds a second key on the first, before the tree has been read again', () => {
@@ -197,6 +237,65 @@ describe('a building block\'s page', () => {
     fireEvent.keyDown(cell, { key: ' ' })
     fireEvent.keyDown(cell, { key: ' ' })
     expect(access.update).toHaveBeenLastCalledWith('blk-gw', { contexts: [{ id: 'cx-partners', name: 'Many partners', needs: { 'cap-route': 4, 'cap-audit': 4 } }, GATEWAY.contexts![1]] })
+  })
+
+  it('opens a capability beside the grid from its name: its chapter, its aspect, what each use needs of it', async () => {
+    const access = accessOver({ document: vi.fn(async () => `${GATEWAY.description}\n## Requirements\n\n### Routes by content\n\nReads the message itself.\n`) })
+    page(access)
+    onRequirements()
+    fireEvent.click(screen.getByRole('rowheader', { name: /Routes by content/ }))
+    const panel = await screen.findByRole('complementary', { name: 'Routes by content' })
+    expect((await within(panel).findByTestId('capability-chapter')).textContent).toContain('Reads the message itself.')
+    expect(panel.textContent).toContain(s('blocks.capabilityNeeds'))
+    expect(panel.textContent).toContain(s('blocks.need4'))
+    expect(await axeFindings()).toEqual([])
+    fireEvent.click(within(panel).getByRole('button', { name: 'Close' }))
+    expect(screen.queryByRole('complementary', { name: 'Routes by content' })).toBeNull()
+  })
+
+  it('edits a line in a full window: its words, its must and its chapter, as one step that carries the chapter to the new words', async () => {
+    const access = accessOver({ document: vi.fn(async () => `${GATEWAY.description}\n## Requirements\n\n### Routes by content\n\nReads the message itself.\n`) })
+    page(access)
+    onRequirements()
+    await screen.findByTestId('requirements-grid')
+    fireEvent.click(screen.getByRole('button', { name: s('blocks.moreOf', { name: 'Routes by content' }) }))
+    fireEvent.click(await screen.findByRole('menuitem', { name: s('blocks.editCapability') }))
+    const text = await screen.findByTestId('capability-edit-text')
+    fireEvent.change(within(text).queryByRole('textbox') ?? text, { target: { value: 'Routes on content' } })
+    fireEvent.click(screen.getByTestId('capability-edit-must'))
+    fireEvent.click(screen.getByRole('button', { name: s('blocks.save') }))
+    const patch = patchOf(access)
+    expect(patch.capabilities![0]).toEqual({ id: 'cap-route', text: 'Routes on content', must: true })
+    // What the scope holds had no chapter for it: the patch carries no document then, and one where it has.
+    expect(patch.description).toBeUndefined()
+    const update = vi.mocked(access.update).mock.lastCall![1]
+    const over = typeof update === 'function' ? update({ ...GATEWAY, description: '### Routes by content\n\nReads the message itself.\n' }) : update
+    expect(over.description).toBe('### Routes on content\n\nReads the message itself.\n')
+  })
+
+  it('offers nothing to write on a capability\'s panel to a person who may only read', async () => {
+    page(accessOver({ mayWrite: () => false }))
+    onRequirements()
+    fireEvent.click(screen.getByRole('rowheader', { name: /Routes by content/ }))
+    const panel = await screen.findByRole('complementary', { name: 'Routes by content' })
+    expect(within(panel).queryByTestId('capability-edit')).toBeNull()
+    expect(within(panel).queryByTestId('capability-write')).toBeNull()
+    expect(await within(panel).findByText(s('blocks.capabilityEmpty'))).toBeTruthy()
+  })
+
+  it('reads a comparison under the document on About and goes to it from there and from the head', async () => {
+    page(accessOver())
+    const read = await screen.findByTestId('block-read-comparison')
+    fireEvent.click(within(read).getByRole('button', { name: s('blocks.openComparison') }))
+    expect(await screen.findByTestId('evaluation-view')).toBeTruthy()
+    fireEvent.click(screen.getByRole('tab', { name: s('blocks.about') }))
+    fireEvent.click(screen.getByTestId('block-to-comparison'))
+    expect(await screen.findByTestId('evaluation-view')).toBeTruthy()
+    // From a comparison a capability's panel says how far each option covers it there.
+    fireEvent.click(screen.getByRole('rowheader', { name: /Keeps an audit trail/ }))
+    const panel = await screen.findByRole('complementary', { name: 'Keeps an audit trail' })
+    expect(panel.textContent).toContain(s('blocks.capabilityCovers', { scope: 'Sales' }))
+    expect(panel.textContent).toContain('Logs only')
   })
 
   it('adds a usage context with its chapter in the document, in one change', () => {
@@ -416,6 +515,8 @@ describe('a building block\'s page', () => {
     const access = accessOver()
     page(access, { evaluation: 'sales' })
     const ball = (row: RegExp, option: RegExp) => within(screen.getByRole('row', { name: row })).getAllByRole('gridcell').find((one) => option.test(one.getAttribute('aria-label') ?? ''))!
+    fireEvent.click(ball(/Routes by content/, /Managed bus/))
+    expect(access.updateEvaluation).not.toHaveBeenCalled()
     fireEvent.click(ball(/Routes by content/, /Managed bus/))
     fireEvent.click(ball(/Routes by content/, /Managed bus/))
     expect(access.updateEvaluation).toHaveBeenLastCalledWith('sales', { ...SALES, coverage: { ...SALES.coverage, 'sb-b': { ...SALES.coverage['sb-b'], 'cap-route': { level: 4 } } } })

@@ -16,6 +16,7 @@ import { MarkdownEditor } from '../../documentation/ui/MarkdownEditor'
 import { MarkdownView } from '../../documentation/ui/MarkdownView'
 import { FocusedWindow, useWritingView } from '../../widgets/kit/FocusedWindow'
 import { PanelSection } from '../../widgets/kit/Panel'
+import { BlockComparisons } from './BlockComparisons'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow } from './BlocksContext'
 
@@ -55,12 +56,15 @@ export function useBlockDocument(block: string): { text: string | undefined; wro
 
 export type BlockDocument = ReturnType<typeof useBlockDocument>
 
-export function BlockAbout({ row, chapter, onChapterShown, document, writing }: {
+export function BlockAbout({ row, chapter, onChapterShown, document, writing, onComparison, onRequirements }: {
   row: BlockRow; chapter: string | undefined; onChapterShown: () => void
   /** The block's text, read once by the page, which writes it from any tab (`BlockTextWindow`). */
   document: BlockDocument
   /** The text is being written over the page: a chapter waits until it is read again. */
   writing: boolean
+  /** A scope's comparison, and the block's requirements, opened from where they are read under the document. */
+  onComparison: (scope: string) => void
+  onRequirements: () => void
 }) {
   const access = useBlocks()
   const { t } = useStrings()
@@ -76,6 +80,7 @@ export function BlockAbout({ row, chapter, onChapterShown, document, writing }: 
         {document.text === undefined ? null
           : document.text.trim() ? <MarkdownView markdown={document.text} /> : <p className="guidance-read__empty">{t('blocks.documentEmpty')}</p>}
       </div>
+      <BlockComparisons row={row} onOpen={onComparison} onRequirements={onRequirements} />
       <PanelSection title={t('blocks.principles')}>
         {cited.length === 0 && <p className="guidance-read__empty">{t('blocks.citesNone')}</p>}
         {cited.map((one) => (

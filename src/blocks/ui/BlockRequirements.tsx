@@ -20,7 +20,13 @@ import type { BlockRow } from './BlocksContext'
 import { capabilitiesFrom } from './capabilityList'
 import { RequirementsGrid } from './EvaluationGrid'
 
-export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter: (context: string) => void }) {
+export function BlockRequirements({ row, onChapter, onOpenCapability, onEditCapability }: {
+  row: BlockRow
+  onChapter: (context: string) => void
+  /** A capability read beside the grid, and written in the full window: the page's, which draws both. */
+  onOpenCapability: (capability: string) => void
+  onEditCapability: (capability: string) => void
+}) {
   const access = useBlocks()
   const { t } = useStrings()
   const [adding, setAdding] = useState<'capability' | 'context' | undefined>(undefined)
@@ -42,7 +48,7 @@ export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter
   const rowEnd = (one: BlockCapability) => (may ? (
     <span className="guidance-record__rowEnd">
       <input type="checkbox" checked={one.must === true} onChange={(event) => setMust(one, event.target.checked)} aria-label={t('blocks.mustOf', { name: one.text })} />
-      <MoreMenu label={t('blocks.moreOf', { name: one.text })} items={[{ label: t('blocks.remove'), final: true, onSelect: () => dropCapability(one.id) }]} />
+      <MoreMenu label={t('blocks.moreOf', { name: one.text })} items={[{ label: t('blocks.editCapability'), onSelect: () => onEditCapability(one.id) }, { label: t('blocks.remove'), final: true, onSelect: () => dropCapability(one.id) }]} />
     </span>
   ) : (one.must ? t('blocks.must') : null))
   return (
@@ -50,7 +56,7 @@ export function BlockRequirements({ row, onChapter }: { row: BlockRow; onChapter
       <p className="guidance-record__intro">{t('blocks.requirementsIntro')}</p>
       {capabilities.length === 0 && contexts.length === 0
         ? <p className="guidance-record__intro">{t('blocks.requirementsEmpty')}</p>
-        : <RequirementsGrid block={block} rowEnd={rowEnd} {...(may ? { onChange: (next) => access.update(block.id, next) } : {})} />}
+        : <RequirementsGrid block={block} rowEnd={rowEnd} onOpenCapability={onOpenCapability} {...(may ? { onChange: (next) => access.update(block.id, next) } : {})} />}
       {contexts.length > 0 && (
         <div className="guidance-record__line">
           <span className="guidance-read__quiet">{t('blocks.usageContexts')}</span>

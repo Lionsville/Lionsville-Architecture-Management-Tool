@@ -34,3 +34,33 @@
 
 /* A comparison's capabilities take less of the width than a need grid's: the options' columns are the answer. */
 .guidance-grid.blocks-compare .kit-matrix { --kit-matrix-head: clamp(200px, 24vw, 440px); }
+
+/* A block's page with a capability read beside its grid: the grid keeps its own scroll, the panel its own. */
+.blocks-work { display: flex; flex: 1; min-height: 0; }
+.blocks-work > .guidance-record__body { min-width: 0; }
+@media (max-width: 900px) {
+  .blocks-work { flex-direction: column; }
+  .blocks-work > .kit-panel { width: 100%; height: auto; max-height: 50%; border-inline-start: 0; border-block-start: 1px solid var(--line); }
+}
+
+/* A capability's name opens what is written about it, and says it can be pressed. */
+.guidance-grid[data-opens] tbody .kit-matrix__rowHead { cursor: pointer; }
+.guidance-grid[data-opens] tbody .kit-matrix__rowHead:hover .kit-matrix__rowName { text-decoration: underline; text-underline-offset: 2px; }
+.guidance-grid[data-opens] tbody tr:last-child .kit-matrix__rowHead { cursor: default; }
+.guidance-grid[data-opens] tbody tr:last-child .kit-matrix__rowHead:hover .kit-matrix__rowName { text-decoration: none; }
+
+/* A capability in its panel: its chapter at the panel's measure, pictures no wider than it. */
+.blocks-chapter { overflow-wrap: anywhere; }
+.blocks-chapter img { max-width: 100%; height: auto; }
+.blocks-panelLine { margin: 0; }
+.blocks-panelNote { flex-basis: 100%; color: var(--ink-2); font-size: var(--t-small); }
+
+/* A capability written in the full window: its line's fields over its chapter. */
+.blocks-capabilityEdit { display: flex; flex-direction: column; flex: 1; min-height: 0; gap: var(--s-3); }
+.blocks-capabilityEdit__line { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--s-3); }
+@media (max-width: 900px) { .blocks-capabilityEdit__line { grid-template-columns: minmax(0, 1fr); } }
+
+/* A comparison read under the block's document: its scope, the way to it, its grid. */
+.blocks-read { display: grid; gap: var(--s-2); min-width: 0; }
+.blocks-read__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
+.blocks-read__head h3 { margin: 0; font-size: var(--t-body); font-weight: var(--fw-strong); }

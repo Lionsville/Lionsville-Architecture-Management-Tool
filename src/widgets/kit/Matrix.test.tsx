@@ -6,6 +6,7 @@
  * The crossing: a press only selects, a key writes where keys write, one focus
  * walks by the arrows through the headings too, and the line says where you are.
  */
+import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, screen, within } from '@testing-library/react'
 import { axeFindings } from '../../app/testing/axe'
@@ -296,18 +297,50 @@ describe('a matrix whose press writes', () => {
     return { step, chosen, pressWrites }
   }
 
-  it('steps a cell on with a press and back with ⇧-press, selecting it as well', () => {
+  /** The grid as a screen holds it: the pick kept, and let go of. */
+  function Held({ pressWrites, onDeselect }: { pressWrites: ReturnType<typeof writes>['pressWrites']; onDeselect?: () => void }) {
+    const [selected, setSelected] = useState<{ row: string; column: string } | null>(null)
+    return (
+      <>
+        <Matrix label="Ratings" {...BASE} selected={selected} onSelect={setSelected} onDeselect={() => { setSelected(null); onDeselect?.() }} pressWrites={pressWrites} />
+        <p>Beside the grid</p>
+      </>
+    )
+  }
+
+  it('picks a cell on the first press and writes nothing; a press on the cell picked steps it on, ⇧-press back', () => {
     const { step, pressWrites } = writes()
-    const onSelect = vi.fn()
-    renderShell(<Matrix label="Ratings" {...BASE} onSelect={onSelect} pressWrites={pressWrites} />)
+    renderShell(<Held pressWrites={pressWrites} />)
     fireEvent.click(cell(/Order the backlog, Run/))
+    expect(step).not.toHaveBeenCalled()
+    expect(cell(/Order the backlog, Run/).getAttribute('aria-selected')).toBe('true')
     fireEvent.click(cell(/Order the backlog, Run/))
+    fireEvent.click(cell(/Order the backlog, Run/), { shiftKey: true })
+    // Another cell: picked, not written.
     fireEvent.click(cell(/Warehouse team, Plan/), { shiftKey: true })
-    expect(step.mock.calls).toEqual([[{ row: 'order', column: 'run' }, 1], [{ row: 'order', column: 'run' }, 1], [{ row: 'team', column: 'plan' }, -1]])
-    expect(onSelect).toHaveBeenLastCalledWith({ row: 'team', column: 'plan' })
+    expect(step.mock.calls).toEqual([[{ row: 'order', column: 'run' }, 1], [{ row: 'order', column: 'run' }, -1]])
+    expect(cell(/Warehouse team, Plan/).getAttribute('aria-selected')).toBe('true')
   })
 
-  it('offers the cell\'s menu on a right press, on Enter and on the ⋯ of the cell picked, and writes nothing by opening it', async () => {
+  it('lets go of the pick on a press outside the grid and on Escape, and not on a press in a menu over it', async () => {
+    const { pressWrites } = writes()
+    const onDeselect = vi.fn()
+    renderShell(<Held pressWrites={pressWrites} onDeselect={onDeselect} />)
+    const picked = () => cell(/Order the backlog, Run/)
+    fireEvent.click(picked())
+    fireEvent.contextMenu(picked())
+    fireEvent.pointerDown(await screen.findByRole('menuitem', { name: 'Note…' }))
+    expect(onDeselect).not.toHaveBeenCalled()
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Escape' })
+    fireEvent.pointerDown(screen.getByText('Beside the grid'))
+    expect(picked().getAttribute('aria-selected')).toBe('false')
+    fireEvent.click(picked())
+    fireEvent.keyDown(picked(), { key: 'Escape' })
+    expect(picked().getAttribute('aria-selected')).toBe('false')
+    expect(onDeselect).toHaveBeenCalledTimes(2)
+  })
+
+  it('offers the cell\'s menu on a right press, on Enter and on the ⋯ a finger is shown on the cell picked, and writes nothing by opening it', async () => {
     const { step, chosen, pressWrites } = writes()
     renderShell(<Matrix label="Ratings" {...BASE} selected={{ row: 'order', column: 'run' }} pressWrites={pressWrites} />)
     fireEvent.contextMenu(cell(/Order the backlog, Plan/))

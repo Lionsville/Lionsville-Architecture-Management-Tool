@@ -3,11 +3,13 @@
 
 /**
  * The two grids of a building block (ADR-0043), each the one Matrix where a
- * press writes (ADR-0043 §6): a press fills a ball a quarter more, ⇧-press a
- * quarter less, and the cell's menu offers the five levels by name — and on a
- * comparison, *Note…*. Space and a digit do the same from the keyboard, and the
- * line under the grid says what the cell means, in words. Where nothing may be
- * written a press only selects.
+ * press writes (ADR-0043 §6, amended 24 November 2026): a press picks a ball, a
+ * press on the ball picked fills it a quarter more, ⇧-press a quarter less, and
+ * the cell's menu — a right press or Enter — offers the five levels by name, and
+ * on a comparison *Note…*. A press beside the grid lets go of the pick. Space
+ * and a digit write from the keyboard, and the line under the grid says what the
+ * cell means, in words. Where nothing may be written a press only selects. A
+ * capability's name opens what is written about it (`CapabilityPanel`).
  *
  * - **The requirements**: the capabilities as rows, the usage contexts as
  *   columns, and in each cell how much that context needs that capability.
@@ -106,12 +108,14 @@ function useCapabilityLabel() {
 }
 
 /** The requirements: capabilities by usage context, each cell how much it is needed. */
-export function RequirementsGrid({ block, onChange, rowEnd }: {
+export function RequirementsGrid({ block, onChange, rowEnd, onOpenCapability }: {
   block: BuildingBlock
   /** The block's contexts as they are to be; absent: read-only. */
   onChange?: (next: Pick<DesignElement, 'contexts'>) => void
   /** What may be done to a capability, at the end of its row. */
   rowEnd?: (capability: Capability) => ReactNode
+  /** A capability's name pressed: what is written about it, opened beside the grid. */
+  onOpenCapability?: (capability: string) => void
 }) {
   const { t } = useStrings()
   const labelOf = useCapabilityLabel()
@@ -131,9 +135,10 @@ export function RequirementsGrid({ block, onChange, rowEnd }: {
     onChange?.({ contexts: next })
   }
   return (
-    <div className="guidance-grid" data-testid="requirements-grid">
+    <div className="guidance-grid" data-opens={onOpenCapability ? '' : undefined} data-testid="requirements-grid">
       <Matrix
-        label={t('blocks.requirements')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected}
+        label={t('blocks.requirements')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected} onDeselect={() => setSelected(null)}
+        {...(onOpenCapability ? { onOpenRow: onOpenCapability } : {})}
         rows={capabilities.map((one) => ({ id: one.id, label: labelOf(one) }))}
         columns={contexts.map((one) => ({ id: one.id, label: one.name }))}
         cellOf={(row, column) => {
@@ -150,7 +155,7 @@ export function RequirementsGrid({ block, onChange, rowEnd }: {
           },
         } : {})}
       />
-      {onChange && <p className="blocks-hint">{t('blocks.setBall')}</p>}
+      {(onChange || onOpenCapability) && <p className="blocks-hint">{[onChange ? t('blocks.setBall') : '', onOpenCapability ? t('blocks.nameOpens') : ''].filter(Boolean).join(' ')}</p>}
       <BallLegend words={NEED_WORD} label="blocks.needLegend" />
     </div>
   )
@@ -204,11 +209,15 @@ function shownCapabilities(reading: ComparisonReading, contexts: number, gapsOnl
 }
 
 /** One scope's evaluation: what it needs, and how far each option covers it, the options in the order of their rank. */
-export function EvaluationGrid({ block, evaluation: kept, onChange }: {
+export function EvaluationGrid({ block, evaluation: kept, onChange, onOpenCapability, plain = false }: {
   block: BuildingBlock
   evaluation: Evaluation
   /** Absent: read-only. */
   onChange?: (next: Evaluation) => void
+  /** A capability's name pressed: what is written about it, opened beside the grid. */
+  onOpenCapability?: (capability: string) => void
+  /** The grid alone, where several are read one under another and the legend is said once after them. */
+  plain?: boolean
 }) {
   const { t } = useStrings()
   const labelOf = useCapabilityLabel()
@@ -248,14 +257,15 @@ export function EvaluationGrid({ block, evaluation: kept, onChange }: {
   }
   const rowLabel = (one: CapabilityReading) => [labelOf(one.capability), one.capability.must ? t('blocks.must') : '', one.needed || evaluation.contexts.length === 0 ? '' : t('blocks.notNeededRow')].filter(Boolean).join(' · ')
   return (
-    <div className="guidance-grid blocks-compare" data-testid="evaluation-grid">
+    <div className="guidance-grid blocks-compare" data-opens={onOpenCapability ? '' : undefined} data-testid="evaluation-grid">
       <div className="blocks-gridBar">
         <Switch checked={gapsOnly} onChange={setGapsOnly} label={t('blocks.gapsOnly')} data-testid="evaluation-gaps" />
         {notNeeded > 0 && <Switch checked={all} onChange={setAll} label={t('blocks.showNotNeeded', { count: notNeeded })} data-testid="evaluation-all" />}
       </div>
       {gapsOnly && shown.length === 0 && reading.options.length > 0 && <p className="blocks-hint">{t('blocks.noGaps')}</p>}
       <Matrix
-        wrapRows label={t('blocks.evaluationGrid')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected}
+        wrapRows label={t('blocks.evaluationGrid')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected} onDeselect={() => setSelected(null)}
+        {...(onOpenCapability ? { onOpenRow: (row: string) => { if (row !== FIT_ROW) onOpenCapability(row) } } : {})}
         rows={[...shown.map((one) => ({ id: one.capability.id, label: rowLabel(one) })), { id: FIT_ROW, label: t('blocks.fitHere') }]}
         columns={reading.options.map((option) => ({
           id: option.sbb.id, label: [option.sbb.name, option.sbb.supplier, t(SORT_WORD[option.sbb.sort])].filter(Boolean).join(', '),
@@ -280,9 +290,9 @@ export function EvaluationGrid({ block, evaluation: kept, onChange }: {
         {...(onChange ? { keys: [' ', ...LEVEL_KEYS, 'n'], hint: t('blocks.gridHintNote'), onKey, pressWrites } : {})}
       />
       {/* How a ball is set, under the grid with the legend: above it, it pushed the grid down on a small screen. */}
-      {onChange && <p className="blocks-hint">{t('blocks.setBallNote')}</p>}
-      <BallLegend />
-      <p className="blocks-hint">{t('blocks.fitExplains')}</p>
+      {(onChange || onOpenCapability) && <p className="blocks-hint">{[onChange ? t('blocks.setBallNote') : '', onOpenCapability ? t('blocks.nameOpens') : ''].filter(Boolean).join(' ')}</p>}
+      {!plain && <BallLegend />}
+      {!plain && <p className="blocks-hint">{t('blocks.fitExplains')}</p>}
       {note && (
         <NoteDialog
           value={evaluation.coverage[note.column]?.[note.row]?.how ?? ''}

@@ -27,18 +27,20 @@ import { scopeOptions } from './scopeOptions'
 
 const rowOf = (scope: string) => `at:${scope}`
 
-export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter }: {
+export function BlockWhereUsed({ row, evaluating, onEvaluate, onChapter, onOpenCapability }: {
   row: BlockRow
   /** The scope whose evaluation is open; none, the list. */
   evaluating: string | undefined
   onEvaluate: (scope: string | undefined) => void
   onChapter: (context: string) => void
+  /** A capability read beside a comparison's grid. */
+  onOpenCapability?: (capability: string) => void
 }) {
   const access = useBlocks()
   const { t } = useStrings()
   const [adding, setAdding] = useState(false)
   if (!access) return null
-  if (evaluating !== undefined) return <EvaluationView row={row} scope={evaluating} onBack={() => onEvaluate(undefined)} onChapter={onChapter} />
+  if (evaluating !== undefined) return <EvaluationView row={row} scope={evaluating} onBack={() => onEvaluate(undefined)} onChapter={onChapter} {...(onOpenCapability ? { onOpenCapability } : {})} />
   const { block } = row
   const evaluations = access.evaluationsOf(block.id)
   const sbbName = (id: string | undefined) => (block.sbbs ?? []).find((one) => one.id === id)?.name

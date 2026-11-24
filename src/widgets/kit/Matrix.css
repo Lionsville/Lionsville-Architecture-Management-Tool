@@ -199,11 +199,13 @@
 
 /* Where a press writes, a ⇧-press steps back: it must not select the page's text on the way. */
 .kit-matrix[data-press-writes] .kit-matrix__cell { cursor: pointer; user-select: none; }
+/* The cell's menu is a right press or Enter. A finger has neither, and only a finger is shown the ⋯: over a
+   cell this small it covers what the cell says. */
 .kit-matrix__cellMenu {
   position: absolute;
   inset-block-end: 1px;
   inset-inline-end: 1px;
-  display: inline-flex;
+  display: none;
   align-items: center;
   justify-content: center;
   min-width: 1rem;
@@ -217,6 +219,7 @@
   line-height: 1;
   cursor: pointer;
 }
+@media (pointer: coarse) { .kit-matrix__cellMenu { display: inline-flex; } }
 .kit-matrix__cellMenu:hover { color: var(--ink); }
 
 /* Short of what the row asks: the attention edge without its fill, which `attention` keeps for the harder case. */
