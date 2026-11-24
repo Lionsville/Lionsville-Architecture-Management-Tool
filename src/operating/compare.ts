@@ -30,10 +30,12 @@
  *
  * A unit type's `order` — where it stands in its lane — and a role's or a
  * responsibility's are the organisation's alone: a library has none, so they
- * are never a difference.
+ * are never a difference. Nor are a role's description, what a duty says
+ * beside its letter, and where it was read (ADR-0052): a duty is compared by
+ * its letter, and one that differs is shown as it reads, `A/R` with it.
  */
 import type { BasedOn, Placed, Responsibility, Role, UnitType } from '../model/operatingModel'
-import { slotRange } from '../model/operatingModel'
+import { raciSaid, slotRange } from '../model/operatingModel'
 import type { Based, OperatingLists } from './bringIn'
 import { entryOf } from './library'
 import type { Library, LibraryLanguage, LibraryResponsibility, LibraryRole, LibraryUnitType } from './library'
@@ -235,6 +237,8 @@ function withinSince(at: At, item: UnitType, placed: Placed): Difference[] {
 function roleDifferences(at: At, item: Role, entry: LibraryRole): Difference[] {
   const dutiesThere = new Map(entry.duties.map((duty) => [duty.responsibility, duty.raci as string] as const))
   const dutiesHere = keyed(at, item.duties.map((duty) => [duty.responsibility, duty.raci as string] as const), dutiesThere)
+  const shown = keyed(at, item.duties.map((duty) => [duty.responsibility, raciSaid(duty) as string] as const), dutiesThere)
+  for (const [entry, raci] of dutiesHere) if (raci !== dutiesThere.get(entry)) dutiesHere.set(entry, shown.get(entry) ?? raci)
   return [
     ...nameField(at, item.name, entry.name[at.language]),
     ...field(at, 'short', item.short, entry.short),

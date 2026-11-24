@@ -13,7 +13,7 @@
 import { fieldEdit, transaction } from '../model/commands'
 import type { Command } from '../model/commands'
 import { dutiesWith, inOwnOrder, linesSaid, linesWith, nextRaci, raciOf, responsibilityGroups } from '../model/operatingModel'
-import type { OperatingRule, OperatingRuleKind, Raci, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
+import type { DutySaid, OperatingRule, OperatingRuleKind, Raci, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
 import { renumbered, unitTypeLanes } from '../model/unitOrder'
 import { distinct } from './bringIn'
 import type { OperatingLists } from './bringIn'
@@ -55,7 +55,7 @@ export function editUnitType(id: string, field: 'name' | 'purpose', value: strin
   return { type: 'unitType.update', id, patch: { [field]: field === 'name' || value !== '' ? value : undefined }, coalesce: fieldEdit(id, field) }
 }
 
-export function editRole(id: string, field: 'name' | 'short' | 'purpose', value: string): Command {
+export function editRole(id: string, field: 'name' | 'short' | 'purpose' | 'description', value: string): Command {
   return { type: 'role.update', id, patch: { [field]: field === 'name' || value !== '' ? value : undefined }, coalesce: fieldEdit(id, field) }
 }
 
@@ -270,9 +270,9 @@ export function itemOf(model: OperatingLists, id: string | undefined): Operating
   return responsibility ? { kind: 'responsibility', item: responsibility } : undefined
 }
 
-/** A role's part in a responsibility set to a letter, or taken away: one step, whatever it was. */
-export function setRaci(role: Role, responsibility: string, raci: Raci | undefined): Command {
-  return { type: 'role.update', id: role.id, patch: { duties: dutiesWith(role.duties, responsibility, raci) } }
+/** A role's part in a responsibility set to a letter, with what is said beside it, or taken away: one step, whatever it was. */
+export function setRaci(role: Role, responsibility: string, raci: Raci | undefined, said?: DutySaid): Command {
+  return { type: 'role.update', id: role.id, patch: { duties: dutiesWith(role.duties, responsibility, raci, said) } }
 }
 
 /**

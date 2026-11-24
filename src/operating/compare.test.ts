@@ -19,6 +19,7 @@ import type { Library } from './library'
 import { SAFE } from './libraries/safe'
 import { SCRUM } from './libraries/scrum'
 import { TEAM_TOPOLOGIES } from './libraries/teamTopologies'
+import { dutiesWith, settledDuty } from '../model/operatingModel'
 import { applyAll, empty, listsOf } from './testing'
 
 function counter(): (prefix: string) => string {
@@ -73,6 +74,17 @@ describe('comparing with the libraries', () => {
     expect(compareWithLibraries(listsOf(edited), [SCRUM])).toEqual([
       { item: { kind: 'role', id: developer.id, name: 'Developer' }, what: 'duty', about: 'Order the backlog', there: 'C' },
     ])
+  })
+
+  it('never counts a description or what a duty says beside its letter, and shows a letter that differs as it reads', () => {
+    const model = withScrum()
+    const owner = listsOf(model).roles.find((role) => role.basedOn?.entry === 'product-owner')!
+    const said = owner.duties.map((duty) => settledDuty({ ...duty, alsoResponsible: true, certainty: 'assumed', source: 'Role book' }))
+    const held = applyAll(model, [{ type: 'role.update', id: owner.id, patch: { description: 'At length.', duties: said } }])
+    expect(compareWithLibraries(listsOf(held), [SCRUM])).toEqual([])
+    const plan = owner.duties.find((duty) => duty.raci === 'C')!
+    const both = applyAll(model, [{ type: 'role.update', id: owner.id, patch: { duties: dutiesWith(owner.duties, plan.responsibility, 'A', { alsoResponsible: true }) } }])
+    expect(compareWithLibraries(listsOf(both), [SCRUM])).toMatchObject([{ what: 'duty', here: 'A/R', there: 'C' }])
   })
 
   it('says the organisation\'s own items are its own', () => {

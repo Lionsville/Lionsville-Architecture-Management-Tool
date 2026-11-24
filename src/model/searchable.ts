@@ -341,7 +341,8 @@ const role: Searchable<Role> = {
   kind: 'role',
   order: 'name',
   describe: (held) => ({
-    id: held.id, title: held.name, fields: [held.short], prose: held.purpose, opens: { page: 'operating', id: held.id },
+    id: held.id, title: held.name, fields: [held.short],
+    prose: [held.purpose, held.description].filter(Boolean).join('\n\n') || undefined, opens: { page: 'operating', id: held.id },
   }),
 }
 

@@ -3,10 +3,10 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  accountabilityGaps, accountableFor, dutiesWith, isOperatingRuleKind, isRaci, nextRaci, raciOf,
-  responsibilityGroups, slotRange, typesHolding,
+  accountabilityGaps, accountableFor, dutiesReplaced, dutiesWith, isOperatingRuleKind, isRaci, isResponsible, nextRaci, raciOf, raciSaid,
+  responsibilityGroups, responsibleFor, settledDuty, settledRole, slotRange, typesHolding, RACI_LETTERS,
 } from './operatingModel'
-import type { Responsibility, Role, UnitType } from './operatingModel'
+import type { Duty, Responsibility, Role, UnitType } from './operatingModel'
 
 const role = (id: string, duties: Role['duties'] = []): Role => ({ id, name: id, duties })
 const responsibility = (id: string, group?: string): Responsibility => ({ id, name: id, ...(group ? { group } : {}) })
@@ -43,6 +43,60 @@ describe('a role\'s duties', () => {
     expect(isRaci('X')).toBe(false)
     expect(isOperatingRuleKind('applicationOwner')).toBe(true)
     expect(isOperatingRuleKind('owner')).toBe(false)
+  })
+})
+
+describe('what a duty says beside its letter', () => {
+  const full: Duty = { responsibility: 'a', raci: 'A', alsoResponsible: true, certainty: 'confirmed', source: 'Role book, page 4' }
+
+  it('reads an A that is responsible too as A/R, among the responsible and once among the accountable', () => {
+    expect(raciSaid(full)).toBe('A/R')
+    expect(raciSaid({ raci: 'R', alsoResponsible: true })).toBe('R')
+    expect(RACI_LETTERS.filter((raci) => isResponsible({ raci }))).toEqual(['R'])
+    expect(isResponsible({ raci: 'C', alsoResponsible: true })).toBe(false)
+    const roles = [role('both', [full]), role('does', [{ responsibility: 'a', raci: 'R' }]), role('owns', [{ responsibility: 'a', raci: 'A' }])]
+    expect(responsibleFor(roles, 'a').map((one) => one.id)).toEqual(['both', 'does'])
+    expect(accountableFor(roles, 'a').map((one) => one.id)).toEqual(['both', 'owns'])
+  })
+
+  it('keeps the source and drops the mark on another letter, unless the same change says one', () => {
+    expect(dutiesWith([full], 'a', 'C')).toEqual([{ responsibility: 'a', raci: 'C', source: 'Role book, page 4' }])
+    expect(dutiesWith([full], 'a', 'C', { certainty: 'assumed' }))
+      .toEqual([{ responsibility: 'a', raci: 'C', certainty: 'assumed', source: 'Role book, page 4' }])
+  })
+
+  it('keeps everything on the same letter, and takes off what is said to go', () => {
+    expect(dutiesWith([full], 'a', 'A')).toEqual([full])
+    expect(dutiesWith([full], 'a', 'A', { alsoResponsible: false, certainty: null, source: ' ' })).toEqual([{ responsibility: 'a', raci: 'A' }])
+    expect(dutiesWith([], 'a', 'R', { alsoResponsible: true, source: 'Interview' })).toEqual([{ responsibility: 'a', raci: 'R', source: 'Interview' }])
+  })
+
+  it('takes the whole duty with the letter', () => {
+    expect(dutiesWith([full], 'a', undefined, { source: 'Interview' })).toEqual([])
+  })
+
+  it('replaces a list without losing what the letters given do not speak of', () => {
+    const held: Duty[] = [full, { responsibility: 'b', raci: 'R', certainty: 'assumed', source: 'Interview' }]
+    expect(dutiesReplaced(held, [{ responsibility: 'b', raci: 'C' }, { responsibility: 'a', raci: 'A' }, { responsibility: 'c', raci: 'I', source: 'New' }]))
+      .toEqual([{ responsibility: 'b', raci: 'C', source: 'Interview' }, full, { responsibility: 'c', raci: 'I', source: 'New' }])
+  })
+
+  it('settles every combination once and for all', () => {
+    const also = [undefined, true, false], marks = [undefined, 'confirmed', 'guessed'], sources = [undefined, '', '  ', 'Read here']
+    for (const raci of RACI_LETTERS) for (const alsoResponsible of also) for (const certainty of marks) for (const source of sources) {
+      const settled = settledDuty({ responsibility: 'a', raci, alsoResponsible, certainty, source } as Duty)
+      expect(settledDuty(settled)).toBe(settled)
+      expect(settled).toStrictEqual({
+        responsibility: 'a', raci, ...(raci === 'A' && alsoResponsible ? { alsoResponsible: true } : {}),
+        ...(certainty === 'confirmed' ? { certainty } : {}), ...(source === 'Read here' ? { source } : {}),
+      })
+    }
+  })
+
+  it('settles a role\'s description, and only the fields given', () => {
+    expect(settledRole({ description: ' \n' })).toStrictEqual({ description: undefined })
+    expect(settledRole({ description: '## Activities\n' })).toStrictEqual({ description: '## Activities\n' })
+    expect(settledRole({ name: 'Lead' })).toStrictEqual({ name: 'Lead' })
   })
 })
 

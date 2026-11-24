@@ -165,8 +165,17 @@ const unitType = (r: Random, id: string) => ({
   id, name: r.pick(WORDS) || 'Team', within: [], slots: r.chance(0.5) ? [{ role: 'ro-1', min: 1, max: 1 }] : [],
   ...(r.chance(0.5) ? { top: true } : {}),
 })
+/** What a duty says beside its letter: its own generator, so the models the other commands are counted over stay the ones they were. */
+const dutySaid = (id: string) => {
+  const own = random(id.length * 17 + id.charCodeAt(id.length - 1))
+  return {
+    ...(own.chance(0.5) ? { alsoResponsible: true as const } : {}),
+    ...(own.chance(0.5) ? { certainty: own.pick(['confirmed', 'assumed'] as const) } : {}),
+    ...(own.chance(0.5) ? { source: 'Role book, page 4' } : {}),
+  }
+}
 const role = (r: Random, id: string) => ({
-  id, name: r.pick(WORDS) || 'Lead', duties: r.chance(0.5) ? [{ responsibility: 'rs-1', raci: 'A' as const }] : [],
+  id, name: r.pick(WORDS) || 'Lead', duties: r.chance(0.5) ? [{ responsibility: 'rs-1', raci: 'A' as const, ...dutySaid(id) }] : [],
   ...(r.chance(0.3) ? { manages: true } : {}),
 })
 const assignment = (r: Random, id: string) => ({
@@ -400,7 +409,8 @@ const COMMANDS: { [K in CommandType]: (r: Random, model: Model) => Extract<Comma
   'role.update': (r, m) => ({
     type: 'role.update', id: held(r, m.order.roles, 'ro'),
     patch: {
-      ...(r.chance(0.6) ? { duties: [{ responsibility: 'rs-1', raci: r.pick(['R', 'A', 'C', 'I'] as const) }] } : {}),
+      ...(r.chance(0.6) ? { duties: [{ responsibility: 'rs-1', raci: r.pick(['R', 'A', 'C', 'I'] as const), ...dutySaid(`${m.order.elements.length}`) }] } : {}),
+      ...(m.order.elements.length % 2 ? { description: ['', '## Activities', ' '][m.order.relations.length % 3] } : {}),
       ...(r.chance(0.5) ? { manages: either(r, true) } : {}),
       ...(r.chance(0.5) ? { purpose: either(r, 'Leads it.') } : {}),
     },

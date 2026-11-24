@@ -14,6 +14,7 @@
  * Taking a role out of the slots and duties that name it is the caller's
  * transaction, said as the commands that do it.
  */
+import { settledRole } from '../operatingModel'
 import type { PatchKeys } from './handler'
 import { plainFamily } from './plain'
 
@@ -25,8 +26,8 @@ const UNIT_TYPE_FIELDS: PatchKeys<'unitType.update'> = {
 
 /** Every field of a role but its id. */
 const ROLE_FIELDS: PatchKeys<'role.update'> = {
-  name: true, short: true, purpose: true, duties: true, manages: true, reportsTo: true, order: true, basedOn: true, alsoBasedOn: true,
-  from: true, until: true, successors: true,
+  name: true, short: true, purpose: true, description: true, duties: true, manages: true, reportsTo: true, order: true, basedOn: true,
+  alsoBasedOn: true, from: true, until: true, successors: true,
 }
 
 /** Every field of a responsibility but its id. */
@@ -39,7 +40,7 @@ const RULE_FIELDS: PatchKeys<'operatingRule.update'> = { role: true }
 
 export const UNIT_TYPE_COMMANDS = plainFamily('unitTypes', { fields: UNIT_TYPE_FIELDS })
 
-export const ROLE_COMMANDS = plainFamily('roles', { fields: ROLE_FIELDS })
+export const ROLE_COMMANDS = plainFamily('roles', { fields: ROLE_FIELDS, settles: settledRole })
 
 export const RESPONSIBILITY_COMMANDS = plainFamily('responsibilities', { fields: RESPONSIBILITY_FIELDS })
 

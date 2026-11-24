@@ -55,6 +55,10 @@ export type Certainty = 'confirmed' | 'assumed';
 
 export const CERTAINTIES: readonly Certainty[] = ['confirmed', 'assumed'];
 
+export function isCertainty(value: unknown): value is Certainty {
+  return (CERTAINTIES as readonly unknown[]).includes(value);
+}
+
 /** One configured aspect column on a layer7 diagram (ordered). */
 export interface AspectConfigEntry {
   /**

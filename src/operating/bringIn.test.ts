@@ -225,8 +225,14 @@ describe('placements chosen before the step', () => {
 describe('reuse chosen before the step', () => {
   it('brings nothing for a role the organisation has, and the slots name the role it has', () => {
     const before = ownModel()
-    const lead = roleNamed(before, 'Product lead')
-    const model = brought(before, { library: SCRUM, entries: ['scrum-team'], reuse: { 'product-owner': lead.id } })
+    const plain = roleNamed(before, 'Product lead')
+    // What it says at length and beside a letter stays its own, whatever is matched to it.
+    const lead = {
+      ...plain, description: 'At length.',
+      duties: [...plain.duties, { responsibility: 'rs-kept', raci: 'A' as const, alsoResponsible: true as const, certainty: 'assumed' as const, source: 'Role book' }],
+    }
+    const held = applyAll(before, [{ type: 'role.update', id: lead.id, patch: { description: lead.description, duties: lead.duties } }])
+    const model = brought(held, { library: SCRUM, entries: ['scrum-team'], reuse: { 'product-owner': lead.id } })
     const lists = listsOf(model)
     expect(lists.roles.filter((one) => one.basedOn?.entry === 'product-owner')).toEqual([])
     expect(lists.unitTypes.find((one) => one.basedOn?.entry === 'scrum-team')?.slots[0]).toEqual({ role: lead.id, min: 1, max: 1 })

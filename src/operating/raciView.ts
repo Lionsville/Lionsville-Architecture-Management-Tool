@@ -13,7 +13,7 @@
  *
  * Pure, and no words.
  */
-import { accountableFor, inOwnOrder, raciOf, responsibilityGroups } from '../model/operatingModel'
+import { accountableFor, dutyOf, inOwnOrder, raciOf, raciSaid, responsibilityGroups } from '../model/operatingModel'
 import type { Responsibility, Role, RoleId } from '../model/operatingModel'
 import { matrixOf } from './matrixView'
 import type { MatrixView } from './matrixView'
@@ -128,12 +128,18 @@ function cell(text: string): string {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text
 }
 
+/** What a role's cell says: its letter, `A/R`, or nothing. */
+function said(role: Role, responsibility: string): string {
+  const duty = dutyOf(role, responsibility)
+  return duty ? raciSaid(duty) : ''
+}
+
 /** A grid as a spreadsheet takes it: a row per responsibility, a column per role, and what it needs last. */
 export function raciCsv(roles: readonly Role[], rows: readonly RaciRow[], words: { group: string; responsibility: string; needs: string; need: (count: number) => string; noGroup: string }, allRoles: readonly Role[]): string {
   const lines = [[words.group, words.responsibility, ...roles.map((role) => role.name), words.needs]]
   for (const { responsibility, group } of rows) {
     const need = needOf(allRoles, responsibility.id)
-    lines.push([group || words.noGroup, responsibility.name, ...roles.map((role) => raciOf(role, responsibility.id) ?? ''), need === undefined ? '' : words.need(need)])
+    lines.push([group || words.noGroup, responsibility.name, ...roles.map((role) => said(role, responsibility.id)), need === undefined ? '' : words.need(need)])
   }
   return `${lines.map((line) => line.map(cell).join(',')).join('\n')}\n`
 }

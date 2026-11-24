@@ -28,6 +28,9 @@
  * Pure, and no words: the screen has the tables.
  */
 
+import { isCertainty } from './types'
+import type { Certainty } from './types'
+
 /** The four letters of a duty, in the order a cell cycles through them. */
 export const RACI_LETTERS = ['R', 'A', 'C', 'I'] as const
 
@@ -197,10 +200,31 @@ export type UnitType = Dated & {
   alsoBasedOn?: BasedOn[]
 }
 
-/** One responsibility a role has a part in, and which part. */
+/**
+ * One responsibility a role has a part in, and which part (ADR-0052).
+ *
+ * `raci` is one letter. `alsoResponsible` is said beside an *A* only: the role
+ * that is accountable does the work too, a cell read as `A/R`. `certainty` is
+ * whether the letter has been checked, absent being nobody having said, and
+ * `source` where it was read, in plain words. A duty that says none of the
+ * three is every duty from before format 19.
+ */
 export type Duty = {
   responsibility: ResponsibilityId
   raci: Raci
+  alsoResponsible?: true
+  certainty?: Certainty
+  source?: string
+}
+
+/**
+ * What may be said of a duty beside its letter: a field left out says nothing
+ * about it, and `null` (or a blank source, or `false`) takes it away.
+ */
+export type DutySaid = {
+  readonly alsoResponsible?: boolean | null
+  readonly certainty?: Certainty | null
+  readonly source?: string | null
 }
 
 /**
@@ -218,7 +242,10 @@ export type Role = Dated & {
   name: string
   /** A few letters for a tight column: the matrix's heading. */
   short?: string
+  /** What it is for, in one sentence. */
   purpose?: string
+  /** What the role is, at length, in markdown: its activities, what it asks of a person (ADR-0052). */
+  description?: string
   duties: Duty[]
   manages?: boolean
   /** Where its holders report, wherever the role is held (ADR-0039 §2, amended): a unit type's slot or a unit may say otherwise. */
@@ -283,20 +310,98 @@ export type OperatingRule = {
 
 // --- the arithmetic -------------------------------------------------------------
 
-/** A role's part in a responsibility, or nothing. */
+/** A role's duty in a responsibility, whole, or nothing. */
+export function dutyOf(role: Pick<Role, 'duties'>, responsibility: ResponsibilityId): Duty | undefined {
+  return role.duties.find((duty) => duty.responsibility === responsibility)
+}
+
+/** A role's letter in a responsibility, or nothing. */
 export function raciOf(role: Pick<Role, 'duties'>, responsibility: ResponsibilityId): Raci | undefined {
-  return role.duties.find((duty) => duty.responsibility === responsibility)?.raci
+  return dutyOf(role, responsibility)?.raci
+}
+
+/** Whether a duty makes its role responsible: an *R*, or an *A* that is responsible too. */
+export function isResponsible(duty: Pick<Duty, 'raci' | 'alsoResponsible'>): boolean {
+  return duty.raci === 'R' || (duty.raci === 'A' && duty.alsoResponsible === true)
+}
+
+/** What a duty's cell shows: its letter, or `A/R`. */
+export function raciSaid(duty: Pick<Duty, 'raci' | 'alsoResponsible'>): Raci | 'A/R' {
+  return duty.raci === 'A' && isResponsible(duty) ? 'A/R' : duty.raci
+}
+
+/** A text with something in it, as it is; blank is absent. */
+const filled = (text: unknown): string | undefined => (typeof text === 'string' && text.trim() ? text : undefined)
+
+/**
+ * A duty as it is kept: also responsible only beside an *A*, a mark of the two
+ * there are, and no blank source. The same duty back where it already is.
+ */
+export function settledDuty(duty: Duty): Duty {
+  const { responsibility, raci, alsoResponsible, certainty, source } = duty
+  const also = raci === 'A' && alsoResponsible === true
+  const marked = isCertainty(certainty)
+  const read = filled(source)
+  if (also === 'alsoResponsible' in duty && marked === 'certainty' in duty && (read !== undefined) === 'source' in duty) return duty
+  return {
+    responsibility, raci, ...(also ? { alsoResponsible: true } : {}), ...(marked ? { certainty } : {}), ...(read !== undefined ? { source: read } : {}),
+  }
+}
+
+/**
+ * The fields of a role as they are kept: each duty settled, and a blank
+ * description said as absent. What a role is added or patched with goes
+ * through it at the writer, so no caller can leave one behind.
+ */
+export function settledRole<R extends Partial<Role>>(fields: R): R {
+  const { duties, description } = fields
+  return {
+    ...fields,
+    ...(Array.isArray(duties) ? { duties: duties.map(settledDuty) } : {}),
+    ...(description !== undefined ? { description: filled(description) } : {}),
+  }
+}
+
+/**
+ * A duty with its letter set and whatever else is said. Another letter keeps
+ * where it was read and drops the mark, which was about the letter that was
+ * there, unless the same change says one; the same letter keeps both.
+ */
+function dutyWith(held: Duty | undefined, responsibility: ResponsibilityId, raci: Raci, said: DutySaid): Duty {
+  const certainty = said.certainty !== undefined ? said.certainty ?? undefined : held?.raci === raci ? held.certainty : undefined
+  const also = said.alsoResponsible === undefined ? held?.alsoResponsible : said.alsoResponsible === true || undefined
+  const source = said.source === undefined ? held?.source : said.source ?? undefined
+  return settledDuty({
+    responsibility, raci, ...(also ? { alsoResponsible: true } : {}), ...(certainty ? { certainty } : {}), ...(source ? { source } : {}),
+  })
 }
 
 /**
  * A role's duties with its part in one responsibility set, changed or taken
- * away (`undefined`). A changed duty keeps its place; a new one goes last.
+ * away whole (`undefined`), and what `said` says of it beside the letter. A
+ * changed duty keeps its place; a new one goes last.
  */
-export function dutiesWith(duties: readonly Duty[], responsibility: ResponsibilityId, raci: Raci | undefined): Duty[] {
+export function dutiesWith(
+  duties: readonly Duty[], responsibility: ResponsibilityId, raci: Raci | undefined, said: DutySaid = {},
+): Duty[] {
   const at = duties.findIndex((duty) => duty.responsibility === responsibility)
   if (raci === undefined) return at < 0 ? [...duties] : duties.filter((_, index) => index !== at)
-  if (at < 0) return [...duties, { responsibility, raci }]
-  return duties.map((duty, index) => (index === at ? { responsibility, raci } : duty))
+  if (at < 0) return [...duties, dutyWith(undefined, responsibility, raci, said)]
+  return duties.map((duty, index) => (index === at ? dutyWith(duty, responsibility, raci, said) : duty))
+}
+
+/**
+ * A role's whole list of duties replaced by the one given, each by the same
+ * rules as one cell: a duty that is in both keeps what `given` does not speak
+ * of. What a caller that says only letters must use, so a list sent back with
+ * one letter added loses nobody's source.
+ */
+export function dutiesReplaced(
+  held: readonly Duty[], given: readonly (Pick<Duty, 'responsibility' | 'raci'> & DutySaid)[],
+): Duty[] {
+  return given.map((one) => dutyWith(
+    held.find((duty) => duty.responsibility === one.responsibility), one.responsibility, one.raci, one,
+  ))
 }
 
 /** The next letter a cell shows when it is pressed: none, R, A, C, I, and none again. */
@@ -309,6 +414,14 @@ export function nextRaci(current: Raci | undefined): Raci | undefined {
 /** The roles accountable for one responsibility, in the order they are listed. */
 export function accountableFor(roles: readonly Role[], responsibility: ResponsibilityId): Role[] {
   return roles.filter((role) => raciOf(role, responsibility) === 'A')
+}
+
+/** The roles responsible for one responsibility, an accountable one that is responsible too among them. */
+export function responsibleFor(roles: readonly Role[], responsibility: ResponsibilityId): Role[] {
+  return roles.filter((role) => {
+    const duty = dutyOf(role, responsibility)
+    return duty !== undefined && isResponsible(duty)
+  })
 }
 
 /**

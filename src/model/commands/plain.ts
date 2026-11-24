@@ -59,6 +59,12 @@ export type PlainRules<L extends PlainList> = {
   refuses?: (
     model: Model, next: Held<L>, command: CommandOf<AddOf<L>> | CommandOf<UpdateOf<L>>, held?: Held<L>,
   ) => Refused | undefined
+  /**
+   * The fields given, as they are kept: asked of a record added and of a
+   * patch. A field it answers as `undefined` is absent. Settling what is
+   * settled changes nothing, so an inverse puts back exactly what was there.
+   */
+  settles?: <F extends Partial<Held<L>>>(given: F) => F
   /** What the `add` that undoes a removal carries beside the record and its place. */
   putBack?: Partial<CommandOf<AddOf<L>>>
 }
@@ -74,12 +80,14 @@ export function plainFamily<L extends PlainList>(list: L, rules: PlainRules<L>):
   const rowsOf = (model: Model) => (model[list] ?? {}) as Record<string, Row>
   const landed = (model: Model, rows: { by: Record<string, Row>; order: string[] }) => withRows(model, list, rows as never)
   const refuses = rules.refuses as ((model: Model, next: Row, command: Sent, held?: Row) => Refused | undefined) | undefined
+  const settles = rules.settles as (<F extends object>(given: F) => F) | undefined
   const family = {
     [`${kind}.add`]: {
       carries: { [payload]: true },
       writes: (command: Sent) => [`${kind}/${(command[payload] as Row).id}`],
       apply(model: Model, command: Sent, { meta }: Context) {
-        const row = command[payload] as Row
+        const given = command[payload] as Row
+        const row = settles ? (patched({}, settles(given)).row as Row) : given
         if (row.id in rowsOf(model)) return taken
         const refused = refuses?.(model, row, command)
         if (refused) return refused
@@ -95,7 +103,7 @@ export function plainFamily<L extends PlainList>(list: L, rules: PlainRules<L>):
       apply(model: Model, command: Sent, { meta }: Context) {
         const held = rowsOf(model)[command.id] as Row | undefined
         if (!held) return gone
-        const { row, inverse } = patched(held, command.patch)
+        const { row, inverse } = patched(held, settles ? settles(command.patch) : command.patch)
         const refused = refuses?.(model, row, command, held)
         if (refused) return refused
         const rows = put(rowsOf(model), model.order[list], command.id, row)

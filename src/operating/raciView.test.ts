@@ -4,6 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Responsibility, Role } from '../model/operatingModel'
 import { ALL_OF_THE_MATRIX } from './matrixView'
+import { partWords } from './ui/reading'
 import { needOf, raciCsv, raciGrid, raciParts, readLook, rowsNeeding, writeLook } from './raciView'
 
 const row = (id: string, group: string): Responsibility => ({ id, name: `Row ${id}`, group })
@@ -79,5 +80,9 @@ describe('the export', () => {
     const rows = [{ responsibility: { id: 'c', name: 'Run, and restore' }, group: 'Move' }]
     const csv = raciCsv(MODEL.roles.slice(3), rows, { group: 'Group', responsibility: 'Responsibility', needs: 'Needs', noGroup: 'None', need: (count) => `${count} A` }, MODEL.roles)
     expect(csv).toBe('Group,Responsibility,Role r4,Role r5,Needs\nMove,"Run, and restore",A,A,2 A\n')
+    const both = { ...MODEL.roles[3], duties: [{ responsibility: 'c', raci: 'A' as const, alsoResponsible: true as const }] }
+    expect(raciCsv([both], rows, { group: 'G', responsibility: 'R', needs: 'N', noGroup: 'None', need: String }, [both]))
+      .toBe('G,R,Role r4,N\nMove,"Run, and restore",A/R,\n')
+    expect(partWords(both.duties)).toBe('1 A, 1 R')
   })
 })

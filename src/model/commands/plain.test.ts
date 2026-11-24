@@ -15,8 +15,8 @@ const refused = { ok: false, reason: 'command.titleEmpty' } as const
 const asked: string[] = []
 const ROLES = plainFamily('roles', {
   fields: {
-    name: true, short: true, purpose: true, duties: true, manages: true, reportsTo: true, order: true, basedOn: true, alsoBasedOn: true,
-    from: true, until: true, successors: true,
+    name: true, short: true, purpose: true, description: true, duties: true, manages: true, reportsTo: true, order: true, basedOn: true,
+    alsoBasedOn: true, from: true, until: true, successors: true,
   },
   refuses(_model, role, command, held) {
     asked.push(`${command.type} ${held?.name ?? '-'} → ${role.name}`)

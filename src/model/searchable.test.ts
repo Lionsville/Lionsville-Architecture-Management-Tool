@@ -28,6 +28,14 @@ describe('what each kind of record says to a search', () => {
     expect([...made].sort()).toEqual(SEARCH_KINDS.filter((kind) => kind !== 'person').sort())
   })
 
+  it('finds a role by its purpose and by its description', () => {
+    const [role] = [SEARCHABLE.roles].flat()
+    const prose = (over: object) => (role.describe({ id: 'ro-1', name: 'Lead', duties: [], ...over }) as { prose?: string }).prose
+    expect(prose({ purpose: 'Leads.', description: '## Activities' })).toBe('Leads.\n\n## Activities')
+    expect(prose({ description: '## Activities' })).toBe('## Activities')
+    expect(prose({})).toBeUndefined()
+  })
+
   it('gives every record of the generated landscape an id, a title and a place to open', () => {
     const model = syntheticModel('small')
     for (const [list, declarations] of Object.entries(SEARCHABLE)) {

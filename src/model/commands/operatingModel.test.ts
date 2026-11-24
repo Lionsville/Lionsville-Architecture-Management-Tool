@@ -43,6 +43,31 @@ describe('a unit type, a role, a responsibility and a rule at the writer', () =>
     expect(undone.ok && 'roles' in toArrays(undone.model)).toBe(false)
   })
 
+  it('keeps what a role and its duties say at length, settled, and undoes to what was there', () => {
+    const empty = organisation()
+    const added = apply(empty, { type: 'role.add', role: {
+      ...owner, description: ' ', duties: [{ responsibility: 'rs-1', raci: 'R', alsoResponsible: true, source: '' }],
+    } })
+    expect(added.ok && added.model.roles?.['ro-po']).toStrictEqual({ ...owner, duties: [{ responsibility: 'rs-1', raci: 'R' }] })
+    const held = organisation({ roles: [{ ...owner, description: 'Was.' }] })
+    const duties = [{ responsibility: 'rs-1', raci: 'A' as const, alsoResponsible: true as const, certainty: 'assumed' as const, source: 'Role book' }]
+    const changed = apply(held, { type: 'role.update', id: 'ro-po', patch: { description: '## Activities', duties } })
+    expect(changed.ok && changed.model.roles?.['ro-po']).toStrictEqual({ ...owner, description: '## Activities', duties })
+    expect(changed.ok && apply(changed.model, changed.inverse)).toMatchObject({ ok: true, model: held })
+    const cleared = apply(held, { type: 'role.update', id: 'ro-po', patch: { description: '  ' } })
+    expect(cleared.ok && 'description' in cleared.model.roles!['ro-po']).toBe(false)
+    expect(writesOf({ type: 'role.update', id: 'ro-po', patch: { description: 'x', duties } })).toEqual(['role/ro-po/description', 'role/ro-po/duties'])
+  })
+
+  it('brings what a role says at length back in a restore, and lists it as a change', () => {
+    const then = organisation({ roles: [{ ...owner, description: 'Then.', duties: [{ ...owner.duties[0], alsoResponsible: true, certainty: 'confirmed', source: 'Role book' }] }] })
+    const now = organisation({ roles: [owner] })
+    expect(diffModels(toArrays(now), toArrays(then))).toHaveLength(1)
+    const back = restoreCommand(then, now, undefined, '2026-10-01')
+    if (!back.ok) throw new Error(back.reason)
+    expect(toArrays(applied(now, back.command)).roles).toEqual(toArrays(then).roles)
+  })
+
   it('refuses a second record on an id that is taken', () => {
     const held = organisation({ roles: [owner] })
     expect(apply(held, { type: 'role.add', role: { ...owner, name: 'Another' } })).toEqual({ ok: false, reason: 'command.taken' })

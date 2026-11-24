@@ -5,8 +5,8 @@
  * The model as sentences: how many a slot holds, and where its holders report.
  * Defaults read as plain text, and only what this level changes speaks up.
  */
-import { linesSaid } from '../../model/operatingModel'
-import type { LineKind, ReportsTo, Role, RoleSlot } from '../../model/operatingModel'
+import { isResponsible, linesSaid } from '../../model/operatingModel'
+import type { Duty, LineKind, ReportsTo, Role, RoleSlot } from '../../model/operatingModel'
 import type { Translate } from '../../i18n'
 
 export function howManyWords(slot: Pick<RoleSlot, 'min' | 'max'>, t: Translate): string {
@@ -39,10 +39,10 @@ export function slotReading(slot: Pick<RoleSlot, 'reportsTo'>, role: Pick<Role, 
   return { line: linesSaid(role?.reportsTo).find((one) => one.kind === kind), own: false }
 }
 
-/** A role's letters counted: *2 A, 1 R*. */
-export function partWords(duties: readonly { raci: string }[]): string {
+/** A role's letters counted: *2 A, 1 R*. One that is accountable and responsible counts under both. */
+export function partWords(duties: readonly Pick<Duty, 'raci' | 'alsoResponsible'>[]): string {
   return ['A', 'R', 'C', 'I'].flatMap((letter) => {
-    const count = duties.filter((duty) => duty.raci === letter).length
+    const count = duties.filter((duty) => duty.raci === letter || (letter === 'R' && isResponsible(duty))).length
     return count > 0 ? [`${count} ${letter}`] : []
   }).join(', ')
 }
