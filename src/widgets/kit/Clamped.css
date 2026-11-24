@@ -1,0 +1,23 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* SPDX-FileCopyrightText: 2024–2026 Lionsville Group BV */
+
+.kit-clamped__body { min-width: 0; }
+/* A block of its own: a first heading's margin is measured with the words. */
+.kit-clamped__body > div { display: flow-root; }
+.kit-clamped__body[data-folded] {
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black calc(100% - 2.5rem), transparent);
+}
+.kit-clamped__more {
+  min-height: var(--target-min);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link, var(--accent));
+  font: inherit;
+  font-size: var(--t-small);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.kit-clamped__more:focus-visible { outline: var(--focus-ring-width) solid var(--focus-ring); outline-offset: 2px; }

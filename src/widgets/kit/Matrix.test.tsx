@@ -393,6 +393,14 @@ describe('a matrix that says its line at the row', () => {
   })
 })
 
+describe('a cell not settled', () => {
+  it('is said by an attribute of its own, over any tone', () => {
+    renderShell(<Matrix label="RACI" {...BASE} cellOf={(row, column) => (row === 'team' && column === 'plan' ? { show: 'A', meaning: 'Accountable, assumed', tone: 'solid', dashed: true } : null)} />)
+    expect(cell(/Warehouse team, Plan/).hasAttribute('data-dashed')).toBe(true)
+    expect(cell(/Warehouse team, Plan/).dataset.tone).toBe('solid')
+  })
+})
+
 describe('a cell that falls short', () => {
   it('is said by an attribute of its own, apart from attention', () => {
     renderShell(<Matrix label="Ratings" {...BASE} cellOf={(row, column) => (row === 'team' && column === 'plan' ? { show: '−1', meaning: 'one short', short: true } : null)} />)

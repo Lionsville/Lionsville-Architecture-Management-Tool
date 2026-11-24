@@ -212,6 +212,16 @@
 .kit-matrix tr[data-picked] > td,
 .kit-matrix tr[data-picked] > th { background: var(--accent-soft); }
 
+/* Not settled: the dash is the sign, as everywhere, in the ink the cell's own letter is drawn in. */
+.kit-matrix__cell[data-dashed]::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1.5px dashed currentColor;
+  border-radius: var(--r-1);
+  pointer-events: none;
+}
+
 /* Where a press writes, a ⇧-press steps back: it must not select the page's text on the way. */
 .kit-matrix[data-press-writes] .kit-matrix__cell { cursor: pointer; user-select: none; }
 /* The cell's menu is a right press or Enter. A finger has neither, and only a finger is shown the ⋯: over a

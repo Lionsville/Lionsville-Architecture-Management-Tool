@@ -78,6 +78,8 @@ export type MatrixCell = {
    * by how much.
    */
   readonly short?: boolean
+  /** Not settled: a dashed edge inside the cell, over any tone. What it means says why. */
+  readonly dashed?: boolean
 }
 
 export type MatrixPick = { readonly row: string; readonly column: string }
@@ -229,7 +231,7 @@ const MatrixRowView = memo(function MatrixRowView({
         return (
           <td
             key={column.id} role="gridcell" className="kit-matrix__cell" data-kit-cell={`${rowIndex}:${index}`}
-            data-tone={cell?.tone} data-attention={cell?.attention || undefined} data-short={cell?.short || undefined}
+            data-tone={cell?.tone} data-attention={cell?.attention || undefined} data-short={cell?.short || undefined} data-dashed={cell?.dashed || undefined}
             aria-selected={selectedColumn === column.id}
             aria-label={`${row.label}, ${column.label}: ${cell?.meaning ?? emptyWord}`}
             tabIndex={focusColumn === index ? 0 : -1}
