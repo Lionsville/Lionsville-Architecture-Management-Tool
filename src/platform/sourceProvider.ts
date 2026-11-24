@@ -116,7 +116,9 @@ export type SourceFailure = (cause: unknown) => string | undefined
  * to hold back; a part is added here with the screen and the tool that then
  * ask about it.
  */
-export type UnkeptPart = 'observation.about'
+export type UnkeptPart =
+  | 'observation.about'
+  | 'role.description' | 'duty.alsoResponsible' | 'duty.certainty' | 'duty.source'
 
 /**
  * What a source cannot keep yet, asked a part at a time: the key of the

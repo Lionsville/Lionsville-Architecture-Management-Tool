@@ -75,10 +75,10 @@ function organisation(): ScopeSnapshot {
 }
 
 describe('format 18', () => {
-  it('is what a scope is written at now, one past 17', () => {
-    expect(SCOPE_FORMAT_VERSION).toBe(17 + 1)
+  it('is what a scope is written at, or a format past it', () => {
+    expect(SCOPE_FORMAT_VERSION).toBeGreaterThanOrEqual(17 + 1)
     const header = scopeFiles(organisation()).find((file) => file.path === SCOPE_FILE)!
-    expect(JSON.parse(textOf(header)).version).toBe(18)
+    expect(JSON.parse(textOf(header)).version).toBe(SCOPE_FORMAT_VERSION)
   })
 
   it('writes a row per element, and nothing for an observation about none', () => {

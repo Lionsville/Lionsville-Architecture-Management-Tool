@@ -283,8 +283,14 @@ export { SCOPE_FORMAT_VERSION }
  * where it names none. A 17 is an 18 whose observations name none, so the
  * pass rewrites the headers and nothing else; a 17 reader would drop the rows
  * on its way back, so it refuses an 18.
+ *
+ * **19 adds what a role and its duties say at length** (ADR-0052): a role's
+ * `description`, and a duty's `alsoResponsible`, `certainty` and `source` in
+ * `_operating/roles.json`, each absent where nothing is said. An 18 is a 19
+ * that says none of them, so the pass rewrites the headers and nothing else;
+ * an 18 reader would drop them on its way back, so it refuses a 19.
  */
-const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+const READABLE_SCOPE_VERSIONS: readonly number[] = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
 
 /**
  * The second half of a view's pair of files: where it ended up.

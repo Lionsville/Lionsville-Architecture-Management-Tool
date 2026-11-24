@@ -56,8 +56,13 @@
  * 17 October 2026 in the same format, one object still read. A line of a kind
  * other than solid or dotted is passed over and the slot kept; one that names
  * no role says the holders report by nesting.
+ *
+ * A role's `description`, and a duty's `alsoResponsible`, `certainty` and
+ * `source` (ADR-0052), came with format 19, which a build that would drop them
+ * refuses. A role or a duty that says none of them is written as it was.
  */
-import { isLineKind, isOperatingRuleKind, isRaci } from '../../../model/operatingModel'
+import { isCertainty } from '../../../model/types'
+import { isLineKind, isOperatingRuleKind, isRaci, settledDuty } from '../../../model/operatingModel'
 import type {
   BasedOn, Duty, OperatingRule, Placed, ReportsTo, Responsibility, Role, RoleSlot, UnitType, UnitTypeBasedOn,
 } from '../../../model/operatingModel'
@@ -183,8 +188,14 @@ function slotOf(value: unknown): RoleSlot[] {
 
 function dutyOf(value: unknown): Duty[] {
   if (!value || typeof value !== 'object') return []
-  const { responsibility, raci } = value as Record<string, unknown>
-  return typeof responsibility === 'string' && isRaci(raci) ? [{ responsibility, raci }] : []
+  const { responsibility, raci, alsoResponsible, certainty, source } = value as Record<string, unknown>
+  if (typeof responsibility !== 'string' || !isRaci(raci)) return []
+  return [settledDuty({
+    responsibility, raci,
+    ...(alsoResponsible === true ? { alsoResponsible: true } : {}),
+    ...(isCertainty(certainty) ? { certainty } : {}),
+    ...(text(source) !== undefined ? { source: text(source) } : {}),
+  })]
 }
 
 function unitTypeOf(row: Record<string, unknown>): UnitType[] {
@@ -215,6 +226,7 @@ function roleOf(row: Record<string, unknown>): Role[] {
     name: text(row.name) ?? '',
     ...(text(row.short) !== undefined ? { short: text(row.short) } : {}),
     ...(text(row.purpose) !== undefined ? { purpose: text(row.purpose) } : {}),
+    ...(text(row.description)?.trim() ? { description: text(row.description) } : {}),
     duties: Array.isArray(row.duties) ? row.duties.flatMap(dutyOf) : [],
     ...(row.manages === true ? { manages: true } : {}),
     ...reportsToOf(row.reportsTo),
