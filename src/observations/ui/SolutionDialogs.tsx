@@ -10,7 +10,7 @@
  * Each says what it wants and lets the page perform it, as the observation
  * dialogs do: the page owns the lists, the numbering and the date.
  */
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useFreshFor } from '../../widgets/useFreshFor'
 import Button from '@mui/material/Button'
 import { FieldBox } from '../../widgets/kit/FieldBox'
@@ -59,11 +59,12 @@ export function NewSolutionDialog({ open, causes, causeId, onCancel, onCreate, r
   const [addresses, setAddresses] = useState<SolutionLink[]>([])
   const [picking, setPicking] = useState(false)
   const [missing, setMissing] = useState(false)
-  useEffect(() => {
-    if (!open) return
+  // Afresh when it opens, or opens for another cause — not when the causes are read again under it: on a
+  // source others write, that is every step of theirs, and it emptied a title being typed.
+  useFreshFor(open ? { causeId: causeId ?? '' } : undefined, (asked) => asked.causeId, () => {
     setTitle(''); setBody(solutionTemplate(s)); setMissing(false); setPicking(false)
     setAddresses(causeId && causes.some((one) => one.id === causeId) ? [{ id: causeId, strength: 'strong' }] : [])
-  }, [open, causeId, causes, s])
+  })
   const submit = () => {
     if (!title.trim()) { setMissing(true); return }
     onCreate({ title: title.trim(), body, addresses })
