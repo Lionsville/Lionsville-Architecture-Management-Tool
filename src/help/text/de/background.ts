@@ -2980,10 +2980,16 @@ vier Reitern:
   eine Lösung sie vollständig abdecken muss, und seine **Nutzungskontexte**,
   die Situationen, in denen er genutzt wird, in Worten, die je sagen, wie viel
   sie von jeder Fähigkeit brauchen: ein Harvey Ball von leer bis voll, mit einer
-  Legende, wie jeder Bedarf heißt. Ein Klick auf eine Kugel füllt sie um ein
-  Viertel mehr (nach voll wieder leer), {key:Shift} mit Klick um ein Viertel
+  Legende, wie jeder Bedarf heißt. Ein Klick auf eine Kugel wählt sie und
+  schreibt nichts; ein Klick auf die gewählte Kugel füllt sie um ein Viertel
+  mehr (nach voll wieder leer), {key:Shift} mit Klick um ein Viertel
   weniger, und Rechtsklick oder {key:Enter} bietet die fünf Stufen mit
-  Namen; {key:Space} und 0 bis 4 tun dasselbe mit der Tastatur.
+  Namen; {key:Space} und 0 bis 4 schreiben mit der Tastatur, und ein Klick
+  neben das Raster gibt die Auswahl frei. Der Name einer Fähigkeit öffnet
+  sie neben dem Raster: was über sie geschrieben steht, den Aspekt, den sie
+  liefert, und wie sehr jede Nutzung sie braucht; **Bearbeiten** dort, oder
+  unter **Mehr** in ihrer Zeile, schreibt ihre Worte, ihr Muss und ihren
+  Text, der ein Kapitel im Dokument des Bausteins ist.
   **+ Fähigkeit…** fügt eine hinzu und bleibt für die nächste stehen
   (**Hinzufügen und nächste**, oder {key:Enter}), und **Eine Liste
   einfügen…** nimmt eine Liste mit einer pro Zeile in einem Schritt, ein ! am

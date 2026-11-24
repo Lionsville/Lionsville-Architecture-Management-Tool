@@ -64,3 +64,12 @@
 .blocks-read { display: grid; gap: var(--s-2); min-width: 0; }
 .blocks-read__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
 .blocks-read__head h3 { margin: 0; font-size: var(--t-body); font-weight: var(--fw-strong); }
+
+/* Beside a grid the panel takes a third of the page at most, and the capabilities' column gives way to the
+   options', which are what the grid is read for. */
+.blocks-work > .kit-panel { --kit-panel-w: clamp(20rem, 30vw, 30rem); }
+.blocks-work:has(> .kit-panel) .guidance-grid .kit-matrix { --kit-matrix-head: clamp(160px, 16vw, 280px); }
+
+/* Under a block's document in its preview, where nothing spaces the parts. */
+.kit-preview .blocks-read { margin-block-start: var(--s-4); }
+.kit-preview .blocks-read ~ .guidance-legend { margin-block-start: var(--s-3); }

@@ -2625,10 +2625,15 @@ list folded away, on four tabs:
   where a solution has to cover it fully, and its **usage contexts**, the
   situations it is used in, said in words, each saying how much it needs of
   every capability: a Harvey ball from empty to full, with a legend of what
-  each need is called. A press on a ball fills it a quarter more (after full,
-  back to empty), {key:Shift} and a press a quarter less, and a right press or {key:Enter}
-  offers the five needs by name; {key:Space} and 0 to 4 do the same from the
-  keyboard. **+ Capability…** adds one and stays for the next (**Add and next**,
+  each need is called. A press on a ball picks it and writes nothing; a press
+  on the ball picked fills it a quarter more (after full, back to empty),
+  {key:Shift} and a press a quarter less, and a right press or {key:Enter}
+  offers the five needs by name; {key:Space} and 0 to 4 write from the
+  keyboard, and a press beside the grid lets go of the pick. A capability's
+  name opens it beside the grid: what is written about it, the aspect it
+  delivers and how much each use needs it; **Edit** there, or under **More**
+  on its row, writes its words, its must and its text, which is a chapter of
+  the block's document. **+ Capability…** adds one and stays for the next (**Add and next**,
   or {key:Enter}), and **Paste a list…** takes a list one per line as one step, a !
   at the start or the end of a line marking a must. **More** on a row removes
   a capability, and a usage context's name opens its chapter.

@@ -78,7 +78,7 @@ export function CapabilityPanel({ row, capability, document, comparison, onEdit,
   }
   return (
     <Panel
-      wide kind={t('blocks.capability')} name={capability.text} nameOf={capability.id} onClose={onClose}
+      kind={t('blocks.capability')} name={capability.text} nameOf={capability.id} onClose={onClose}
       {...(may ? { onRename: rename } : {})}
       {...(capability.must ? { facts: t('blocks.mustLabel') } : {})}
       actions={may ? (

@@ -2833,10 +2833,16 @@ tabbladen:
   oplossing die volledig moet afdekken, en zijn **gebruikscontexten**, de
   situaties waarin hij gebruikt wordt, in woorden, die elk zeggen hoeveel ze
   van elke capability nodig hebben: een Harvey ball van leeg tot vol, met een
-  legenda van hoe elke behoefte heet. Een klik op een bol vult hem een kwart
-  meer (na vol weer leeg), {key:Shift} met een klik een kwart minder, en
-  rechtsklikken of {key:Enter} biedt de vijf behoeften bij naam; {key:Space} en 0 tot 4
-  doen hetzelfde met het toetsenbord. **+ Capaciteit…** voegt er een toe en
+  legenda van hoe elke behoefte heet. Een klik op een bol kiest hem en schrijft
+  niets; een klik op de gekozen bol vult hem een kwart meer (na vol weer
+  leeg), {key:Shift} met een klik een kwart minder, en rechtsklikken of
+  {key:Enter} biedt de vijf behoeften bij naam; {key:Space} en 0 tot 4
+  schrijven met het toetsenbord, en een klik naast het raster laat de keuze
+  los. De naam van een capaciteit opent haar naast het raster: wat erover
+  geschreven is, het aspect dat ze levert en hoeveel elk gebruik haar nodig
+  heeft; **Bewerken** daar, of onder **Meer** op haar regel, schrijft haar
+  woorden, haar must en haar tekst, die een hoofdstuk van het document van
+  de bouwsteen is. **+ Capaciteit…** voegt er een toe en
   blijft staan voor de volgende (**Toevoegen en volgende**, of {key:Enter}), en
   **Een lijst plakken…** neemt een lijst met één per regel in één stap, een !
   aan het begin of eind van een regel maakt er een must van. **Meer** op een
