@@ -14,8 +14,8 @@
  * their order in it, then by name, those that sit nowhere last.
  */
 import type { HostModel } from '../model/hostModel'
-import { accountableFor, linesSaid, raciOf, typesHolding } from '../model/operatingModel'
-import type { BasedOn, Dated, ReportsToSaid, Responsibility, Role, UnitType, UnitTypeBasedOn, UnitTypeId } from '../model/operatingModel'
+import { accountableFor, dutyOf, inOwnOrder, linesSaid, raciOf, responsibleFor, typesHolding } from '../model/operatingModel'
+import type { BasedOn, Dated, Duty, ReportsToSaid, Responsibility, Role, UnitType, UnitTypeBasedOn, UnitTypeId } from '../model/operatingModel'
 import { unitTypeLanes } from '../model/unitOrder'
 import type { AgentAnswer, ToolName } from './tools'
 import { checkArguments, json, refused, toolSpec } from './tools'
@@ -98,19 +98,30 @@ export function unitTypeLine(
   }
 }
 
-/** One role as the agent reads it. */
-export function roleLine(role: Role, model: OperatingDocument) {
+/** What a duty says beside its letter, each only where said (ADR-0052). */
+function dutyLine(duty: Duty) {
+  return {
+    raci: duty.raci,
+    ...(duty.alsoResponsible ? { alsoResponsible: true } : {}),
+    ...(duty.certainty !== undefined ? { certainty: duty.certainty } : {}),
+    ...(duty.source !== undefined ? { source: duty.source } : {}),
+  }
+}
+
+/** One role as the agent reads it: its description where that was asked for, else only that there is one. */
+export function roleLine(role: Role, model: OperatingDocument, described = false) {
   const responsibilities = model.responsibilities ?? []
   return {
     id: role.id,
     name: role.name,
     ...(role.short ? { short: role.short } : {}),
     ...(role.purpose ? { purpose: role.purpose } : {}),
+    ...(role.description ? described ? { description: role.description } : { described: true } : {}),
     ...(role.manages ? { manages: true } : {}),
     ...(role.order !== undefined ? { order: role.order } : {}),
     ...reportsToLine(role.reportsTo, model.roles ?? []),
     duties: role.duties.map((duty) => ({
-      responsibilityId: duty.responsibility, responsibility: named(responsibilities, duty.responsibility).name, raci: duty.raci,
+      responsibilityId: duty.responsibility, responsibility: named(responsibilities, duty.responsibility).name, ...dutyLine(duty),
     })),
     heldIn: typesHolding(model.unitTypes ?? [], role.id).map((type) => ({ id: type.id, name: type.name })),
     ...datedLine(role, model.roles ?? []),
@@ -133,9 +144,9 @@ function reportsToLine(said: ReportsToSaid | undefined, roles: readonly Role[]) 
   }
 }
 
-/** One responsibility as the agent reads it, with every role's part and the finding where there is one. */
+/** One responsibility as the agent reads it, with every role's part, who is accountable and who responsible, and the finding where there is one. */
 export function responsibilityLine(responsibility: Responsibility, model: OperatingDocument) {
-  const roles = model.roles ?? []
+  const roles = inOwnOrder(model.roles ?? [])
   const accountable = accountableFor(roles, responsibility.id)
   const finding = accountable.length === 1 ? {} : { finding: accountable.length === 0 ? 'nobody is accountable' : `${accountable.length} roles are accountable` }
   return {
@@ -145,10 +156,11 @@ export function responsibilityLine(responsibility: Responsibility, model: Operat
     ...(responsibility.group ? { group: responsibility.group } : {}),
     ...(responsibility.order !== undefined ? { order: responsibility.order } : {}),
     raci: roles.flatMap((role) => {
-      const raci = raciOf(role, responsibility.id)
-      return raci ? [{ roleId: role.id, role: role.name, raci }] : []
+      const duty = dutyOf(role, responsibility.id)
+      return duty ? [{ roleId: role.id, role: role.name, ...dutyLine(duty) }] : []
     }),
     accountable: accountable.map((role) => ({ id: role.id, name: role.name })),
+    responsible: responsibleFor(roles, responsibility.id).map((role) => ({ id: role.id, name: role.name })),
     ...finding,
     ...basedOnLine(responsibility),
   }
@@ -174,19 +186,24 @@ export function answerOperating(tool: OperatingRead, rawArgs: unknown, model: Op
       if (args.unitTypeId !== undefined && args.unitTypeId !== null && !type) return refused('agent.unknownId', `unit type ${String(args.unitTypeId)}`)
       const duty = typeof args.responsibilityId === 'string' ? args.responsibilityId : undefined
       if (duty !== undefined && !responsibilities.some((one) => one.id === duty)) return refused('agent.unknownId', `responsibility ${duty}`)
+      const id = typeof args.id === 'string' ? args.id : undefined
+      if (id !== undefined && !roles.some((one) => one.id === id)) return refused('agent.unknownId', `role ${id}`)
+      // A description is a page of text, so a list gives them only when asked.
+      const described = id !== undefined || (Array.isArray(args.fields) && args.fields.includes('description'))
       return json({
         scope: '',
-        roles: roles
+        roles: inOwnOrder(roles)
+          .filter((role) => id === undefined || role.id === id)
           .filter((role) => !type || type.slots.some((slot) => slot.role === role.id))
           .filter((role) => duty === undefined || raciOf(role, duty) !== undefined)
-          .map((role) => roleLine(role, model)),
+          .map((role) => roleLine(role, model, described)),
         rules: (model.operatingRules ?? []).map((rule) => ({ kind: rule.id, roleId: rule.role, role: named(roles, rule.role).name })),
       })
     }
     case 'responsibilities.list':
       return json({
         scope: '',
-        responsibilities: responsibilities
+        responsibilities: inOwnOrder(responsibilities)
           .filter((one) => typeof args.group !== 'string' || (one.group ?? '') === args.group)
           .map((one) => responsibilityLine(one, model)),
       })

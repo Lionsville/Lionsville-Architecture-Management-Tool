@@ -3137,7 +3137,13 @@ ist, und ändert es, während die Organisation der geöffnete Bereich ist:
 \`add\`, \`update\` und \`remove\` auf \`unitType\`, \`role\` und
 \`responsibility\`, die Rolle, die eine Regel nennt, mit \`operatingRule.set\`,
 und bis zu 500 Zellen der RACI in einem Schritt mit \`raci.set\`, wobei die
-anderen Zellen bleiben, wie sie sind. Eine Verantwortung nimmt den Anteil
+anderen Zellen bleiben, wie sie sind. Neben einem Buchstaben sagt er, ob eine
+rechenschaftspflichtige Rolle auch durchführt (\`alsoResponsible\`), ob der Buchstabe
+geprüft ist (\`certainty\`) und wo er gelesen wurde (\`source\`): ein nicht
+genanntes Feld bleibt, null leert es, und ein anderer Buchstabe nimmt die
+Gewissheit weg. Die \`description\` einer Rolle schreibt er mit \`role.add\` und
+\`role.update\`; \`roles.list\` gibt sie für eine Rolle mit \`id\`, oder wo
+\`fields\` danach fragt. Eine Verantwortung nimmt den Anteil
 jeder Rolle daran mit. Eine Rolle oder ein Einheitstyp wird erst entfernt,
 wenn nichts mehr sie oder ihn verwendet: \`agent.inUse\` nennt, was das tut, in
 jedem Bereich, auch eine beendete Zuordnung, und \`agent.notAllRead\` sagt,

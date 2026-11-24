@@ -2786,3 +2786,9 @@ still one letter, may say that an accountable role is responsible too
 (`alsoResponsible`, read as `A/R`), whether the letter has been checked
 (`certainty`) and where it was read (`source`). One `A` per responsibility, its
 finding and the rules are unchanged. The folder format is 19 with it.
+
+The agent's tools of §13 say them as well: `role.add`, `role.update` and
+`raci.set` write them, under the rule that what a call leaves out stays, and
+`raci.set` may leave the letter out. `roles.list` and `responsibilities.list` say
+them, in the organisation's own order, and a description only when asked
+(ADR-0052, *As built: the agent's tools*).

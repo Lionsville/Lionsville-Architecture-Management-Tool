@@ -17,12 +17,15 @@ import { isDay } from '../../model/lifecycle'
 import { operatingRulesOf, responsibilitiesOf, rolesOf, unitTypesOf } from '../../model/normalised'
 import type { Model } from '../../model/normalised'
 import { toArrays } from '../../model/normalised'
-import { linesSaid } from '../../model/operatingModel'
-import type { Dated, Duty, Raci, ReportsTo, Role, RoleSlot, UnitType } from '../../model/operatingModel'
+import { dutiesReplaced, isRaci, linesSaid } from '../../model/operatingModel'
+import type { Dated, Duty, DutySaid, ReportsTo, Role, RoleSlot, UnitType } from '../../model/operatingModel'
 import { refuseRoleLines, refuseSlotLine } from '../../model/reporting'
 import { roleLine, unitTypeLine } from '../operatingModel'
 import type { AgentAnswer } from '../tools'
 import { json, refused } from '../tools'
+import { notKept } from '../unkept'
+import { dutyNotKept, dutySaid, wrongBeside } from './duties'
+import type { GivenDuty } from './duties'
 import { daysOf, kindOf, lineRefused, organisationOfView } from './reporting'
 import type { Args, Handler, Prepared, WriteView } from './shared'
 
@@ -140,19 +143,29 @@ function withinOf(given: unknown, model: Model, self: string | undefined): strin
   return within
 }
 
-/** The duties as given, every responsibility one the organisation holds, each once. */
-function dutiesOf(given: unknown, model: Model): Duty[] | AgentAnswer {
-  const responsibilities = responsibilitiesOf(model)
-  const duties: Duty[] = []
-  for (const [index, one] of ((given as Record<string, unknown>[] | undefined) ?? []).entries()) {
+/**
+ * The duties as given, every responsibility one the organisation holds, each
+ * once, in place of those held: a duty in both keeps what the call does not
+ * say (ADR-0052 §4), so a list of letters sent back loses nobody's source.
+ */
+function dutiesOf(given: unknown, held: readonly Duty[], view: WriteView): Duty[] | AgentAnswer {
+  const responsibilities = responsibilitiesOf(view.model)
+  const duties: (Pick<Duty, 'responsibility' | 'raci'> & DutySaid)[] = []
+  const rows = (given as Record<string, unknown>[] | undefined) ?? []
+  const unkept = dutyNotKept(view, rows as GivenDuty[])
+  if (unkept) return unkept
+  for (const [index, one] of rows.entries()) {
     const responsibility = one.responsibilityId as string
     if (!responsibilities[responsibility]) return refused('agent.unknownId', `duties[${index}]: responsibility ${responsibility}`)
     if (duties.some((duty) => duty.responsibility === responsibility)) {
       return refused('agent.badArguments', `duties[${index}]: ${responsibility} is given twice; a role has one part in a responsibility`)
     }
-    duties.push({ responsibility, raci: one.raci as Raci })
+    if (!isRaci(one.raci)) return refused('agent.badArguments', `duties[${index}]: "raci" is the letter; leave the duty out to take the part away`)
+    const wrong = wrongBeside(one, one.raci)
+    if (wrong) return refused('agent.badArguments', `duties[${index}]: ${wrong}`)
+    duties.push({ responsibility, raci: one.raci, ...dutySaid(one) })
   }
-  return duties
+  return dutiesReplaced(held, duties)
 }
 
 /**
@@ -203,12 +216,17 @@ function unitTypePatch(args: Args, model: Model, self: string | undefined): Part
 }
 
 /** The fields of a role the request gives, checked. */
-function rolePatch(args: Args, model: Model, self?: string): Partial<Role> | AgentAnswer {
+function rolePatch(args: Args, view: WriteView, self?: string): Partial<Role> | AgentAnswer {
+  const { model } = view
+  const unkept = args.description !== undefined ? notKept(view, 'role.description', 'description') : undefined
+  if (unkept) return unkept
   const dated = datedPatch(args, self === undefined ? undefined : rolesOf(model)[self], rolesOf(model), self)
   if ('ok' in dated) return dated
-  const patch: Partial<Role> = { ...textPatch(args, 'short'), ...textPatch(args, 'purpose'), ...flagPatch(args, 'manages'), ...orderPatch(args), ...dated }
+  const patch: Partial<Role> = {
+    ...textPatch(args, 'short'), ...textPatch(args, 'purpose'), ...textPatch(args, 'description'), ...flagPatch(args, 'manages'), ...orderPatch(args), ...dated,
+  }
   if ('duties' in args && args.duties !== null) {
-    const duties = dutiesOf(args.duties, model)
+    const duties = dutiesOf(args.duties, self === undefined ? [] : rolesOf(model)[self].duties, view)
     if ('ok' in duties) return duties
     patch.duties = duties
   }
@@ -282,7 +300,7 @@ export const addRole: Handler = (args, view) => {
   if (wrong) return wrong
   const name = nameOf(args.name)
   if (typeof name !== 'string') return name
-  const patch = rolePatch(args, view.model)
+  const patch = rolePatch(args, view)
   if ('ok' in patch) return patch
   const role = laid<Role>({ id: freshId('ro', view.model, view), name, duties: [] }, patch)
   // A new role's own line can point only at itself in the same unit, since nothing holds it yet; still asked, so the answer is one.
@@ -299,7 +317,7 @@ export const updateRole: Handler = (args, view) => {
   if (!held) return refused('agent.unknownId', `role ${String(args.id)}`)
   const name = 'name' in args && args.name !== null ? nameOf(args.name) : undefined
   if (name !== undefined && typeof name !== 'string') return name
-  const patch = rolePatch(args, view.model, held.id)
+  const patch = rolePatch(args, view, held.id)
   if ('ok' in patch) return patch
   const loop = 'reportsTo' in patch ? roleLoop(view, held.id, patch.reportsTo as ReportsTo[] | undefined) : undefined
   if (loop) return loop

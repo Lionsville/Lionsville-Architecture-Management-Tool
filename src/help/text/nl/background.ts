@@ -2980,7 +2980,13 @@ zoals voorheen.` },
 wijzigt het terwijl de organisatie de open scope is: \`add\`, \`update\` en
 \`remove\` op \`unitType\`, \`role\` en \`responsibility\`, de rol die een regel
 noemt met \`operatingRule.set\`, en tot 500 cellen van de RACI in één stap met
-\`raci.set\`, waarbij de andere cellen blijven zoals ze zijn. Een
+\`raci.set\`, waarbij de andere cellen blijven zoals ze zijn. Naast een letter
+zegt hij of een eindverantwoordelijke rol ook uitvoert (\`alsoResponsible\`), of de
+letter is nagegaan (\`certainty\`) en waar die gelezen is (\`source\`): een veld dat
+niet genoemd wordt blijft, null maakt het leeg, en een andere letter neemt de
+zekerheid weg. De \`description\` van een rol schrijft hij met \`role.add\` en
+\`role.update\`; \`roles.list\` geeft die voor één rol met \`id\`, of waar \`fields\`
+erom vraagt. Een
 verantwoordelijkheid neemt het aandeel van elke rol erin mee. Een rol of
 eenheidstype gaat pas weg als niets het meer gebruikt: \`agent.inUse\` noemt wat
 dat doet, in welke scope ook, ook een beëindigde toewijzing, en

@@ -42,9 +42,13 @@ import type { JsonRpcResponse, Relay } from './mcpProtocol'
  * Raised by 5,420 on 24 November 2026 for the rest of the operating model
  * (ADR-0036, amended that day): seven tools, about half of it the `scope` and
  * `ifRevision` each takes, and `order` on a role.
+ * Raised by 1,158 the same day for a role's description and what a duty says
+ * beside its letter (ADR-0052): `description` and three fields of a duty on
+ * `role.add` and `role.update`, the three on a cell of `raci.set`, and `id` on
+ * `roles.list`; when to use them is `rules.read`'s.
  */
 export const CEILINGS = {
-  toolsList: 208_900,
+  toolsList: 210_058,
   instructions: 9_850,
 } as const
 
@@ -56,7 +60,7 @@ export const CEILINGS = {
  */
 export const CODE_CEILINGS = {
   code: { toolsList: 4_089, instructions: 10_502 },
-  both: { toolsList: 212_978, instructions: 10_216 },
+  both: { toolsList: 214_136, instructions: 10_216 },
 } as const
 
 const server = { name: 'Lionsville Architect', version: 'test' }

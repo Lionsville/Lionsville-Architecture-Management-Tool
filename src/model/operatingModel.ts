@@ -311,13 +311,18 @@ export type OperatingRule = {
 // --- the arithmetic -------------------------------------------------------------
 
 /** A role's duty in a responsibility, whole, or nothing. */
-export function dutyOf(role: Pick<Role, 'duties'>, responsibility: ResponsibilityId): Duty | undefined {
+export function dutyOf(role: { readonly duties: readonly Duty[] }, responsibility: ResponsibilityId): Duty | undefined {
   return role.duties.find((duty) => duty.responsibility === responsibility)
 }
 
 /** A role's letter in a responsibility, or nothing. */
 export function raciOf(role: Pick<Role, 'duties'>, responsibility: ResponsibilityId): Raci | undefined {
   return dutyOf(role, responsibility)?.raci
+}
+
+/** Whether two duties in one responsibility say the same, letter and all; two that are absent do. */
+export function sameDuty(a: Duty | undefined, b: Duty | undefined): boolean {
+  return a?.raci === b?.raci && a?.alsoResponsible === b?.alsoResponsible && a?.certainty === b?.certainty && a?.source === b?.source
 }
 
 /** Whether a duty makes its role responsible: an *R*, or an *A* that is responsible too. */

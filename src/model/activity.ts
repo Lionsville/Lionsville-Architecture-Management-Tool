@@ -27,6 +27,7 @@ import { assignmentsOf, causesOf, checkMarksOf, commentsOf, responsibilitiesOf, 
 import { checkEntry } from './checkCatalogue'
 import { commentedName } from './commentable'
 import type { Model } from './normalised'
+import { dutyOf, sameDuty } from './operatingModel'
 import { KIND_TABLE, LISTS_BY_KIND } from './recordKinds'
 import type { KindOf, KINDS, NamedAround, RecordList, RecordOf } from './recordKinds'
 import { RELATION_LABEL } from './relations'
@@ -450,8 +451,8 @@ function operatingStep(lead: OperatingCommand, flat: readonly CommandBody[], bef
 }
 
 /**
- * How many cells of the RACI a step sets, where it sets several roles' duties
- * and does nothing else: naming the first role would say a part of it.
+ * How many cells of the RACI a step sets, by a letter or by what is said
+ * beside one, where it sets several roles' duties and does nothing else: naming the first role would say a part of it.
  */
 function cellsSet(flat: readonly CommandBody[], before: Model): number | undefined {
   if (flat.length < 2) return undefined
@@ -460,8 +461,8 @@ function cellsSet(flat: readonly CommandBody[], before: Model): number | undefin
     if (command.type !== 'role.update' || Object.keys(command.patch).join() !== 'duties') return undefined
     const held = rolesOf(before)[command.id]?.duties ?? []
     const next = command.patch.duties ?? []
-    const letterOf = (duties: typeof held, id: string) => duties.find((duty) => duty.responsibility === id)?.raci
-    count += [...new Set([...held, ...next].map((duty) => duty.responsibility))].filter((id) => letterOf(held, id) !== letterOf(next, id)).length
+    count += [...new Set([...held, ...next].map((duty) => duty.responsibility))]
+      .filter((id) => !sameDuty(dutyOf({ duties: held }, id), dutyOf({ duties: next }, id))).length
   }
   return count
 }

@@ -304,6 +304,10 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
     { args: { kind: 'domainOwner', roleId: null }, on: [['role.add', { name: 'Coach' }], ['operatingRule.set', { kind: 'domainOwner', roleId: 'ro-new-1' }]], at: '' },
   ],
   'raci.set': [{
+    args: { cells: [{ roleId: 'ro-new-1', responsibilityId: 'rs-new-1', certainty: 'assumed', source: 'Role book' }] },
+    on: [['role.add', { name: 'Coach', description: 'Helps.' }], ['responsibility.add', { name: 'Plan the week' }],
+      ['raci.set', { cells: [{ roleId: 'ro-new-1', responsibilityId: 'rs-new-1', raci: 'A', alsoResponsible: true }] }]], at: '',
+  }, {
     args: { cells: [{ roleId: 'ro-new-1', responsibilityId: 'rs-new-1', raci: 'A' }] },
     on: [['role.add', { name: 'Coach' }], ['responsibility.add', { name: 'Plan the week' }]], at: '',
   }],

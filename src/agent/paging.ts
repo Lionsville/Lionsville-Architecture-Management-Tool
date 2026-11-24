@@ -39,7 +39,7 @@ export type Paging = {
   readonly limit: number
   readonly fields?: readonly string[]
   readonly cursor?: Cursor
-  /** The arguments the read itself is handed: the page's taken out. */
+  /** The arguments the read itself is handed: the page's taken out, `fields` too unless the read asks for it. */
   readonly args: Args
   /** The question, as a fingerprint: what a cursor is held to. */
   readonly asked: string
@@ -65,13 +65,14 @@ export function pagingOf(request: Pick<AgentRequest, 'tool' | 'args'>): Paging |
   )
   if (wrong) return refused('agent.badArguments', wrong)
   const asked = fingerprint(stable(args))
+  const handed = page.readsFields && Array.isArray(fields) ? { ...args, fields } : args
   const read = typeof cursor === 'string' ? cursorOf(cursor) : undefined
   if (typeof cursor === 'string' && !read) return refused('agent.badArguments', '"cursor" is not one this server answered: ask again without it')
   if (read && read.asked !== asked) {
     return refused('agent.badArguments', '"cursor" answered another question: ask it with the arguments of the page that gave it, or without cursor')
   }
   return {
-    tool: request.tool as ToolName, page, args, asked,
+    tool: request.tool as ToolName, page, args: handed, asked,
     limit: typeof limit === 'number' ? limit : page.limit,
     ...(Array.isArray(fields) ? { fields: fields as string[] } : {}),
     ...(read ? { cursor: read } : {}),

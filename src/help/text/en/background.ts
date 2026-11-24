@@ -2759,7 +2759,12 @@ at a time, as before.` },
 changes it while the organisation is the scope open: \`add\`, \`update\` and
 \`remove\` on \`unitType\`, \`role\` and \`responsibility\`, the role a rule
 names with \`operatingRule.set\`, and up to 500 cells of the RACI in one step
-with \`raci.set\`, the other cells staying as they are. A responsibility takes
+with \`raci.set\`, the other cells staying as they are. Beside a letter it says
+whether an accountable role is responsible too (\`alsoResponsible\`), whether the
+letter was checked (\`certainty\`) and where it was read (\`source\`): a field left
+out stays, null clears it, and another letter takes the certainty away. A role's
+\`description\` is written with \`role.add\` and \`role.update\`; \`roles.list\` gives
+it for one role by \`id\`, or where \`fields\` asks for it. A responsibility takes
 every role's part in it along. A role or a unit type is removed only when
 nothing uses it any more: \`agent.inUse\` names what does, in any scope, an
 ended assignment too, and \`agent.notAllRead\` says that not every scope could

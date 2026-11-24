@@ -710,8 +710,9 @@ const TOOL_RULES: Partial<Record<ToolName, string>> = {
     + 'words that it is to go with all of it, call again with removeContents and their words in personSaid. Answers '
     + 'what went, by kind.',
   'roles.list':
-    'The organisation\'s roles (ADR-0036): name, short name and purpose, its duties — a responsibility each, marked R, '
-    + 'A, C or I — whether whoever holds it manages the people of the unit and of the units below (manages), where '
+    'The organisation\'s roles in its own order (ADR-0036): name, short name and purpose, described: true where there is a '
+    + 'description — given with id, or with description in fields — its duties — a responsibility each, marked R, '
+    + 'A, C or I, with alsoResponsible, certainty and source where said (raci.set) — whether whoever holds it manages the people of the unit and of the units below (manages), where '
     + 'its holders report wherever it is held (reportsTo, ADR-0039; reportingLines.list lands each line on a unit), '
     + 'the unit types that hold it, the library entry it was based on (basedOn) and those it was matched to when a '
     + 'library was brought in (alsoBasedOn), and the rules that name a role. Kept at the organisation, and answered '
@@ -799,8 +800,10 @@ const TOOL_RULES: Partial<Record<ToolName, string>> = {
     + 'protocol — and a container line says which interface it "refines" (ADR-0013). Filter to those ending on one '
     + 'element, or to those drawn on one diagram.',
   'role.add':
-    'Add a role to the organisation\'s operating model, in its own words: a purpose, its duties — a responsibility each '
-    + 'from responsibilities.list, marked R (responsible), A (accountable), C (consulted) or I (informed) — and '
+    'Add a role to the organisation\'s operating model, in its own words: a purpose of one sentence, a description at '
+    + 'length (markdown: what it does, what it asks of a person, the job families that may hold it), its duties — a responsibility each '
+    + 'from responsibilities.list, marked R (responsible), A (accountable), C (consulted) or I (informed), with '
+    + 'alsoResponsible, certainty and source as raci.set says them — and '
     + 'whether its holder manages the people of the unit (manages), and where its holders report wherever it is '
     + 'held (reportsTo). A role is held in a unit type through that type\'s slots (unitType.update). At the '
     + 'organisation, which must be the scope open. Arguments: reportsTo — Where the holders of this role report, '
@@ -1045,15 +1048,22 @@ const TOOL_RULES: Partial<Record<ToolName, string>> = {
     'Remove a responsibility. Every role\'s part in it goes with it in the same step, as it does on the page, and the '
     + 'answer lists them (partsRemoved): say them to the person, and ask first where somebody is accountable.',
   'raci.set':
-    'Set cells of the RACI: each names a role, a responsibility and the letter, null to take the role\'s part away. At '
+    'Set cells of the RACI: each names a role, a responsibility and the letter, null to take the role\'s part away whole. '
+    + 'Beside the letter, each kept where left out and cleared by null (ADR-0052): alsoResponsible, an A that does the '
+    + 'work too, A/R, refused beside another letter; certainty, about the letter in that cell; source, where it was '
+    + 'read. Leave raci out to change only those. Another letter keeps the source and takes certainty away unless the '
+    + 'cell says one; changed names it in fields. A letter read from a document: say where in source, and confirmed '
+    + 'only where somebody checked it. A letter you infer: assumed. No A in the source: leave it missing, the finding '
+    + 'says so, and never guess one. At '
     + 'most 500 in a call, one step and one undo; a cell not named stays as it is, where duties on role.update '
-    + 'replaces a role\'s whole list. Every id that is not there is named before anything is written, and a cell '
+    + 'replaces a role\'s whole list, a duty in both keeping what it does not say. Every id that is not there is named before anything is written, and a cell '
     + 'given twice is refused. A responsibility not exactly one role\'s A is a finding, answered in findings, never a '
-    + 'refusal. Write the letters a source or the person gives, not a guess. A role or a responsibility made by an '
+    + 'refusal. A role or a responsibility made by an '
     + 'earlier step of a batch is named with its reference.',
   'role.update':
-    'Change a role. Only the fields given change; duties and reportsTo replace their lists; null clears the short name, '
-    + 'the purpose, manages, the order and reportsTo. A blank name is refused. At the organisation, which must be the scope '
+    'Change a role. Only the fields given change; duties and reportsTo replace their lists, a duty in '
+    + 'both lists keeping the alsoResponsible, certainty and source not said (raci.set); null clears the short name, '
+    + 'the purpose, the description, manages, the order and reportsTo. A blank name is refused. At the organisation, which must be the scope '
     + 'open. Arguments: reportsTo — Where the holders of this role report, wherever the role is held: at most one '
     + 'line of each kind, solid (a line manager\'s, which decides who manages them) and dotted (functional, shown '
     + 'and deciding nothing). Each lands on the holders of roleId in the same unit where within is true, else in '

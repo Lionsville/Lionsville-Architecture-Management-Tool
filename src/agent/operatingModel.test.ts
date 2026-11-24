@@ -185,8 +185,9 @@ describe('the operating model\'s three lists', () => {
         id: 'rs-order', name: 'Order the backlog', group: 'Deliver',
         raci: [{ roleId: 'ro-po', role: 'Product owner', raci: 'A' }, { roleId: 'ro-dev', role: 'Developer', raci: 'C' }],
         accountable: [{ id: 'ro-po', name: 'Product owner' }],
+        responsible: [],
       },
-      { id: 'rs-run', name: 'Run it', group: 'Deliver', raci: [], accountable: [], finding: 'nobody is accountable' },
+      { id: 'rs-run', name: 'Run it', group: 'Deliver', raci: [], accountable: [], responsible: [], finding: 'nobody is accountable' },
     ])
     const plan = (parsed(await ask('responsibilities.list', {}, session('', organisation))).responsibilities as Record<string, unknown>[])[1]
     expect(plan.finding).toBe('2 roles are accountable')

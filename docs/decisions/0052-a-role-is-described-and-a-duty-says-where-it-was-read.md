@@ -1,8 +1,8 @@
 # ADR-0052 — A role is described, and a duty says who does the work and where it was read
 
 * Status: accepted, 24 November 2026; implemented in part, 24 November 2026
-  (not yet released): the model, the folder format and the search, *As built*
-  below; the screens and the agent's tools are not yet built
+  (not yet released): the model, the folder format, the search and the
+  agent's tools, *As built* below; the screens are not yet built
 * Date: 2026-11-24
 * Deciders: Wouter Simons
 * Extends: ADR-0036 §2 (the operating model), ADR-0047 (the mark, now on a duty
@@ -137,3 +137,31 @@ and the roles do. The format's codec is `operatingFile.ts`; the working file and
 every other serialisation read the same files. No entry of `KINDS` changed, as
 ADR-0050 says of a field added. The count of a role's letters and the CSV
 export read `A/R`.
+
+## As built, 24 November 2026: the agent's tools
+
+`role.add` and `role.update` take `description`, and in `duties` the three fields
+beside a letter; a list of duties goes through `dutiesReplaced`, so one that says
+only letters keeps the rest. `raci.set` takes the three on a cell, and its letter
+may be left out: a field left out keeps what is there, null clears it, a null
+letter takes the duty whole and may say nothing else. `alsoResponsible` beside a
+letter that is not an `A` is **refused**, where the writer drops it: an agent that
+says it has read the matrix wrong, and is told. The answer names the fields that
+changed beside a letter, a mark another letter took away among them. Activity
+counts a cell by any of them (`sameDuty`).
+
+`responsibilities.list` says the fields and who is `responsible`. `roles.list` says
+the fields of a duty and, of a description, only that there is one (`described`);
+it gives the text for one role by `id`, or where `fields` names it, so a list is
+never forty pages nobody asked for. Both are in the organisation's own order. A
+list read is handed `fields` only where it says it reads them
+(`ListPage.readsFields`); every other is projected after the read, as before.
+
+Where the source cannot keep one of the four parts, naming it is refused
+`agent.notKeptHere` in the source's sentence before anything is written, and the
+letters and everything else go on. A read is not refused: an absent field says
+nothing was kept, which is so.
+
+The rules say when: a letter read from a document says where, one inferred is
+`assumed`, and an `A` the source does not give is left missing for the finding to
+say. The tool list's ceiling is raised by 1,158 characters.

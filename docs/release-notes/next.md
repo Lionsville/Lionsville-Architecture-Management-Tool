@@ -59,6 +59,14 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
   in one step that one undo takes back, leaving the other cells as they are.
   It removes a role or a unit type only when nothing in any scope uses it any
   more, ended assignments included; otherwise it is told what does.
+- **An agent writes a role's description and what stands beside a letter**:
+  `A/R`, confirmed or assumed, and where it was read. A cell changes without its
+  letter changing, what a call leaves out stays, and a list of letters sent back
+  loses nobody's source. The Activity list counts a cell changed that way too.
+- **The agent's lists of roles and responsibilities are in the organisation's
+  own order.** A responsibility says who is responsible beside who is
+  accountable; a role gives its description when asked for by `id` or `fields`,
+  and `described` says there is one.
 
 ## For a build composed from this one
 

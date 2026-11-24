@@ -29,6 +29,7 @@ import type { CommandRefusal } from '../model/reducer'
 import type { MergeLinkRefusal } from '../observations/merge'
 import { CHART_LINES, PAGE_FIELDS, PAGE_TABS, pagesKnown } from './screen'
 import { OPERATING_RULE_KINDS, RACI_LETTERS } from '../model/operatingModel'
+import { CERTAINTIES } from '../model/types'
 import { isPersonRef } from '../model/person'
 import { PERSON_KINDS, PERSON_STATES } from '../people/person'
 import type { PeopleRefusal } from '../people/person'
@@ -557,10 +558,18 @@ const UNIT_TYPE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
   ...DATED_FIELDS('unit type'),
 }
 
+/** What is said of a duty beside its letter (ADR-0052): a role's duties and a cell of the RACI share it. */
+const DUTY_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
+  alsoResponsible: { type: 'boolean', description: 'Beside an A: responsible too (A/R).' },
+  certainty: { type: 'string', description: 'Whether the letter was checked. Null: nobody said.', enum: CERTAINTIES },
+  source: { type: 'string', description: 'Where the letter was read.' },
+}
+
 /** What a role says beside its name (ADR-0036): the fields `role.add` and `role.update` share. */
 const ROLE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
   short: { type: 'string', description: 'A few letters, for the matrix\'s heading.' },
   purpose: { type: 'string', description: 'What the role is for, in the organisation\'s own words.' },
+  description: { type: 'string', description: 'The role at length, as markdown.' },
   manages: { type: 'boolean', description: 'Whoever holds it manages the people of the unit and of the units below it. The app holds the flag and grants nothing.' },
   reportsTo: REPORTS_TO('wherever the role is held'),
   duties: {
@@ -572,6 +581,7 @@ const ROLE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
       properties: {
         responsibilityId: { type: 'string', description: 'The responsibility, by id (responsibilities.list).' },
         raci: { type: 'string', description: 'R responsible, A accountable, C consulted, I informed.', enum: ['R', 'A', 'C', 'I'] },
+        ...DUTY_FIELDS,
       },
       required: ['responsibilityId', 'raci'],
       additionalProperties: false,
@@ -1272,11 +1282,11 @@ const SPECS = [
     tier: 'read',
     description:
       'The organisation\'s roles (ADR-0036): name, short, purpose, duties (R, A, C, I), manages, reportsTo, the unit '
-      + 'types that hold it, basedOn, and the rules that name a role. unitTypeId and responsibilityId filter. '
-      + '(rules.read)',
+      + 'types that hold it, basedOn, and the rules that name a role. A description only by id or in fields. (rules.read)',
     inputSchema: {
       type: 'object',
       properties: {
+        id: { type: 'string', description: 'Only this role, with its description.' },
         unitTypeId: { type: 'string', description: 'Only the roles this unit type holds.' },
         responsibilityId: { type: 'string', description: 'Only the roles with a part in this responsibility.' },
       },
@@ -1288,7 +1298,7 @@ const SPECS = [
     tier: 'read',
     description:
       'What somebody in the organisation has to do (ADR-0036), grouped — by value stream, for example — with every role\'s '
-      + 'part in it (R, A, C or I), the roles accountable, and a finding where it is not exactly one role\'s A: nobody is '
+      + 'part in it (R, A, C or I), the roles accountable and responsible, and a finding where it is not exactly one role\'s A: nobody is '
       + 'accountable, or several are. Kept at the organisation, and answered from there.',
     inputSchema: {
       type: 'object',
@@ -2670,7 +2680,7 @@ const SPECS = [
     name: 'role.add',
     tier: 'write',
     description:
-      'Add a role to the operating model: name, short, purpose, duties (R, A, C, I by responsibility), manages, '
+      'Add a role to the operating model: name, short, purpose, description, duties (R, A, C, I by responsibility), manages, '
       + 'reportsTo, order. Held in a unit type through its slots. At the organisation, which must be open. (rules.read)',
     inputSchema: {
       type: 'object',
@@ -2684,7 +2694,7 @@ const SPECS = [
     tier: 'write',
     description:
       'Change a role. Only the fields given change; duties and reportsTo replace their lists; null clears the short '
-      + 'name, the purpose, manages, the order and reportsTo. A blank name is refused. At the organisation, which must be the '
+      + 'name, the purpose, the description, manages, the order and reportsTo. A blank name is refused. At the organisation, which must be the '
       + 'scope open. (rules.read)',
     inputSchema: {
       type: 'object',
@@ -2751,7 +2761,7 @@ const SPECS = [
   {
     name: 'raci.set',
     tier: 'write',
-    description: 'Set cells of the RACI, at most 500, as one step; every other cell stays. At the organisation. (rules.read)',
+    description: 'Set cells of the RACI, at most 500, as one step; a field left out and every other cell stay. At the organisation. (rules.read)',
     inputSchema: {
       type: 'object',
       properties: {
@@ -2765,8 +2775,9 @@ const SPECS = [
               roleId: { type: 'string', description: 'The role, by id.' },
               responsibilityId: { type: 'string', description: 'The responsibility, by id.' },
               raci: { type: 'string', description: 'R responsible, A accountable, C consulted, I informed. Null clears the cell.', enum: RACI_LETTERS },
+              ...DUTY_FIELDS,
             },
-            required: ['roleId', 'responsibilityId', 'raci'],
+            required: ['roleId', 'responsibilityId'],
             additionalProperties: false,
           },
         },
@@ -3673,6 +3684,8 @@ export type ListPage = {
   readonly max: number
   /** The answer's keys its rows may be under, first found first; the tool's noun and then `some` when unsaid. */
   readonly rows?: readonly string[]
+  /** The read is handed `fields` as well: it gives some field only when asked. */
+  readonly readsFields?: true
 }
 
 const PAGE: ListPage = { limit: 100, max: 1000 }
@@ -3706,7 +3719,7 @@ export const LISTS: Readonly<Partial<Record<ToolName, ListPage>>> = {
   'comments.list': { limit: 20, max: 200, rows: ['comments', 'thread'] },
   'unitTypes.list': PAGE,
   'aspectScales.list': PAGE,
-  'roles.list': PAGE,
+  'roles.list': { ...PAGE, readsFields: true },
   'responsibilities.list': PAGE,
   'assignments.list': { limit: 500, max: 5000 },
   'plans.list': PAGE,
