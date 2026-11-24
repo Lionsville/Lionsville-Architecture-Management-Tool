@@ -1,8 +1,8 @@
 # ADR-0052 — A role is described, and a duty says who does the work and where it was read
 
-* Status: accepted, 24 November 2026; implemented in part, 24 November 2026
-  (not yet released): the model, the folder format, the search and the
-  agent's tools, *As built* below; the screens are not yet built
+* Status: accepted, 24 November 2026; implemented, 24 November 2026
+  (not yet released): the model, the folder format and the search, the agent's
+  tools and the screens, *As built* below
 * Date: 2026-11-24
 * Deciders: Wouter Simons
 * Extends: ADR-0036 §2 (the operating model), ADR-0047 (the mark, now on a duty
@@ -165,3 +165,24 @@ nothing was kept, which is so.
 The rules say when: a letter read from a document says where, one inferred is
 `assumed`, and an `A` the source does not give is left missing for the finding to
 say. The tool list's ceiling is raised by 1,158 characters.
+
+## As built, 24 November 2026: the screens
+
+A role's reader shows the description under the purpose, through the kit's
+`Clamped` (its first part and one press for the rest), and writes it in the
+full window, one step on Save. The grid's cell shows `A/R`; an assumed letter
+has a dashed edge, the sign ADR-0047 has everywhere, and a confirmed one and one
+nobody said anything of look alike. Under the grid the picker offers `A/R` as a
+letter, and beside a cell's letter the mark and the source; `/`, `M` and `S` do
+the same from the keyboard, and the keys and presses that set a letter are as
+they were. `A` is `A` alone, so it takes *also responsible* away; that is not
+another letter and the mark stays.
+
+Space steps the letter: from `A/R` it goes to `C` as from `A`. It skips *none*
+where the cell has a source, because emptying a cell takes the source with it;
+`–` and Delete empty it. The CSV still says letters only.
+
+The role's and the responsibility's readers say the letter, the mark and the
+source, and the responsibility counts its letters, an `A/R` under both. *Filter*
+gained *Certainty* once any letter is marked. A part the open source cannot keep
+says the source's sentence in its control's place and has no key.

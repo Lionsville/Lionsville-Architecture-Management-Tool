@@ -34,24 +34,22 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
 ## Operating model
 
 - **A role has a description**, in markdown, beside its purpose: what it does
-  and what it asks of a person, at length. Searching finds its words.
+  and what it asks of a person, at length. Its reader shows it under the
+  purpose, the first part of a long one, so the role's responsibilities stay
+  in reach; it is written in the full window. Searching finds its words.
 - **A responsibility's letter says more.** A role that is accountable and does
   the work too is `A/R` in one cell, and counts wherever the responsible are
   counted; the CSV export says it. A letter may be marked confirmed or assumed,
-  and may say where it was read. Another letter keeps where it was read and
-  takes the mark away (ADR-0052).
+  and may say where it was read: below the grid once a cell is picked, or with
+  `/`, M and S. An assumed letter is dashed, and *Filter* finds the rows with
+  one. The line under the grid, the role and the responsibility say all of it
+  in words. Another letter keeps where it was read and takes the mark away, and
+  Space no longer empties a cell that says where it was read (ADR-0052).
+- **Role names on their side are no longer cut short** in the grid of
+  responsibilities, where the window has the height.
 - **The folder format is 19.** Every older folder and working file opens as it
   did. An older app refuses one written by this version rather than drop what it
   does not know.
-
-## Observations
-
-- **A new solution's title is no longer emptied while it is typed.** The
-  *New solution* form started afresh whenever its causes were read again,
-  which on a server is whenever anybody's change arrives; *Propose* then said
-  the title was missing.
-
-## The operating model
 
 - **An agent writes all of the model.** It adds, changes and removes
   responsibilities, says which role owns an application or a domain, gives
@@ -67,6 +65,13 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
   own order.** A responsibility says who is responsible beside who is
   accountable; a role gives its description when asked for by `id` or `fields`,
   and `described` says there is one.
+
+## Observations
+
+- **A new solution's title is no longer emptied while it is typed.** The
+  *New solution* form started afresh whenever its causes were read again,
+  which on a server is whenever anybody's change arrives; *Propose* then said
+  the title was missing.
 
 ## For a build composed from this one
 

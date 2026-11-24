@@ -2792,3 +2792,9 @@ The agent's tools of §13 say them as well: `role.add`, `role.update` and
 `raci.set` may leave the letter out. `roles.list` and `responsibilities.list` say
 them, in the organisation's own order, and a description only when asked
 (ADR-0052, *As built: the agent's tools*).
+
+On the page, *As built, 4.0.0* stands with this added: a role's reader has the
+description under the purpose; the cell picked offers `A/R` among the letters
+and, beside a letter, its mark and source, each with a key; an assumed letter is
+dashed; the readers say what the cell says; and Space does not empty a cell that
+has a source (ADR-0052, *As built: the screens*).
