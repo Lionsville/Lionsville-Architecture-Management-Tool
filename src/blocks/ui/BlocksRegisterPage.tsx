@@ -29,6 +29,7 @@ import { useBlockDocument } from './BlockAbout'
 import { BlockComparisons, ComparisonWays } from './BlockComparisons'
 import { useBlocks } from './BlocksContext'
 import type { BlockRow, BlocksAccess } from './BlocksContext'
+import { useMoveBlock } from './MoveBlockDialog'
 import { scopeOptions } from './scopeOptions'
 
 /** Where each block is evaluated, the scopes that chose marked ✓. */
@@ -51,6 +52,7 @@ function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; ro
   const { block, scope } = row
   const document = useBlockDocument(block.id)
   const toComparison = (at: string) => { onSelect(null); access.openBlock(block.id, at) }
+  const moving = useMoveBlock(row)
   return (
     <Preview
       ids={ids} currentId={block.id} onSelect={onSelect} title={block.name} listWord={t('blocks.listWord')}
@@ -59,7 +61,7 @@ function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; ro
         verbs={<ComparisonWays row={row} onOpen={toComparison} />}
         // The block's text is written on its page: ✎ Edit opens it there, already writing.
         {...(access.mayWrite(scope) ? { edit: { onPress: () => { askToEdit('blocks', block.id); onSelect(null); access.openBlock(block.id) }, testId: 'block-preview-edit' } } : {})}
-        more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => { onSelect(null); access.openScope(scope) } }]} />}
+        more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => { onSelect(null); access.openScope(scope) } }, ...moving.more]} />}
       facts={(
         <>
           <PreviewFact label={t('blocks.colKeptIn')}>{access.scopeLabel(scope)}</PreviewFact>
@@ -74,6 +76,7 @@ function BlockPreview({ access, row, ids, onSelect }: { access: BlocksAccess; ro
         : document.text.trim() ? <MarkdownView markdown={document.text} /> : <p className="guidance-read__empty">{t('blocks.documentEmpty')}</p>}
       {/* What the block comes to, read by scrolling on: each scope's grid, and the way to it. */}
       <BlockComparisons row={row} onOpen={toComparison} />
+      {moving.dialog}
     </Preview>
   )
 }

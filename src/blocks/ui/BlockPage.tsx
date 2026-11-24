@@ -38,6 +38,7 @@ import { BlockSolutions } from './BlockSolutions'
 import { BlockWhereUsed } from './BlockWhereUsed'
 import { useBlocks } from './BlocksContext'
 import { comparisonIn, comparisonLook } from './comparisonPlace'
+import { useMoveBlock } from './MoveBlockDialog'
 import './Blocks.css'
 
 type TabKey = 'about' | 'requirements' | 'options' | 'used'
@@ -86,6 +87,8 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
     if (asked && access?.mayWrite(asked.scope)) setEditAsked(true)
   })
   const row = id ? access?.block(id) : undefined
+  // The block keeps its id when it moves, so the page stays on it: only where it is kept changes under it.
+  const moving = useMoveBlock(row)
   if (!access || !row) return null
   const { block, scope } = row
   const toChapter = (context: string) => { setChapter((block.contexts ?? []).find((one) => one.id === context)?.name); setEvaluating(undefined); setTab('about') }
@@ -113,7 +116,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
             <RecordActions
               verbs={<ComparisonWays row={row} onOpen={setEvaluating} />}
               {...(access.mayWrite(scope) ? { edit: { onPress: () => setEditAsked(true), testId: 'block-document-edit' } } : {})}
-              more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => access.openScope(scope), 'data-testid': 'block-open-scope' }]}
+              more={[{ label: t('blocks.openIn', { scope: access.scopeLabel(scope) }), onSelect: () => access.openScope(scope), 'data-testid': 'block-open-scope' }, ...moving.more]}
             />
           </div>
           <div className="guidance-record__tabs">
@@ -154,6 +157,7 @@ export function BlockPage({ open, id, evaluation: openOn, nonce, onClose, window
         </div>
         <BlockTextWindow row={row} document={document} asked={editAsked} onDone={() => setEditAsked(false)} />
         <CapabilityEditor row={row} capability={capabilities.find((one) => one.id === writing)} document={document} onDone={() => setWriting(undefined)} />
+        {moving.dialog}
       </GuidanceFrame>
     </PageDialog>
   )
