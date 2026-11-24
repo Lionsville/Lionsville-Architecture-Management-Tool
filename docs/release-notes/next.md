@@ -60,7 +60,7 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
 - **An agent writes a role's description and what stands beside a letter**:
   `A/R`, confirmed or assumed, and where it was read. A cell changes without its
   letter changing, what a call leaves out stays, and a list of letters sent back
-  loses nobody's source. The Activity list counts a cell changed that way too.
+  loses nobody's source.
 - **The agent's lists of roles and responsibilities are in the organisation's
   own order.** A responsibility says who is responsible beside who is
   accountable; a role gives its description when asked for by `id` or `fields`,

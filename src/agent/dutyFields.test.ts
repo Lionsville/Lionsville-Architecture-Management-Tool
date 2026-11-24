@@ -85,7 +85,7 @@ describe('a cell', () => {
     expect(out).toMatchObject({ set: 2, changed: [{ ...PO, raci: 'A', was: 'A', fields: ['certainty'] }, { ...DEV, raci: 'R', was: 'R', fields: ['source'] }] })
     expect(dutiesOf(on, 'ro-po')).toEqual([{ ...ORDER, certainty: 'assumed' }])
     expect(dutiesOf(on, 'ro-dev')).toEqual([{ responsibility: 'rs-order', raci: 'R', source: 'Interview' }])
-    // Two roles in one step, neither a letter: counted all the same.
+    // Two roles in one step, neither a letter.
     expect(on.history()[0].summary).toEqual({ key: 'activity.raciSet', count: 2 })
   })
 

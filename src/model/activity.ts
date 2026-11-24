@@ -27,7 +27,6 @@ import { assignmentsOf, causesOf, checkMarksOf, commentsOf, responsibilitiesOf, 
 import { checkEntry } from './checkCatalogue'
 import { commentedName } from './commentable'
 import type { Model } from './normalised'
-import { dutyOf, sameDuty } from './operatingModel'
 import { KIND_TABLE, LISTS_BY_KIND } from './recordKinds'
 import type { KindOf, KINDS, NamedAround, RecordList, RecordOf } from './recordKinds'
 import { RELATION_LABEL } from './relations'
@@ -429,8 +428,8 @@ function operatingStep(lead: OperatingCommand, flat: readonly CommandBody[], bef
   if (brought > 0 && lead.type.endsWith('.add')) return { key: 'activity.broughtIn', count: brought }
   const matched = matchesRecorded(flat, before)
   if (matched > 0) return { key: 'activity.matchedIn', count: matched }
-  const cells = cellsSet(flat, before)
-  if (cells !== undefined) return { key: 'activity.raciSet', count: cells }
+  const parts = partsSet(flat)
+  if (parts !== undefined) return { key: 'activity.raciSet', count: parts }
   switch (lead.type) {
     case 'unitType.add': return { key: 'activity.unitTypeAdded', name: lead.unitType.name }
     case 'unitType.update': return { key: 'activity.unitTypeChanged', name: unitTypesOf(before)[lead.id]?.name }
@@ -451,20 +450,15 @@ function operatingStep(lead: OperatingCommand, flat: readonly CommandBody[], bef
 }
 
 /**
- * How many cells of the RACI a step sets, by a letter or by what is said
- * beside one, where it sets several roles' duties and does nothing else: naming the first role would say a part of it.
+ * How many roles' parts in the RACI a step sets, where it sets several and does
+ * nothing else: naming the first role would say a part of it. Counted off the
+ * step alone, never against the model before it: a reader of the list may hold
+ * only the model as it is now, and a count against that is wrong.
  */
-function cellsSet(flat: readonly CommandBody[], before: Model): number | undefined {
+function partsSet(flat: readonly CommandBody[]): number | undefined {
   if (flat.length < 2) return undefined
-  let count = 0
-  for (const command of flat) {
-    if (command.type !== 'role.update' || Object.keys(command.patch).join() !== 'duties') return undefined
-    const held = rolesOf(before)[command.id]?.duties ?? []
-    const next = command.patch.duties ?? []
-    count += [...new Set([...held, ...next].map((duty) => duty.responsibility))]
-      .filter((id) => !sameDuty(dutyOf({ duties: held }, id), dutyOf({ duties: next }, id))).length
-  }
-  return count
+  const whole = flat.every((command) => command.type === 'role.update' && Object.keys(command.patch).join() === 'duties')
+  return whole ? flat.length : undefined
 }
 
 /**

@@ -2637,7 +2637,7 @@ organisation, each one command under the agent's name:
   take the part away. One step and one undo; a cell not named is untouched, where
   `duties` on `role.update` replaces a role's whole list. Every id that is not there
   is named before anything is written. The answer says the findings the cells leave;
-  none of them refuses. A step over several roles is *Set n cells of the RACI*.
+  none of them refuses. A step over several roles is *Changed the RACI of n roles*.
 * **`order`** on `role.add` and `role.update`.
 * **`role.remove` and `unitType.remove`**: refused `agent.inUse` while anything still
   uses the record, naming what. The page asks a person, says who holds the role, and

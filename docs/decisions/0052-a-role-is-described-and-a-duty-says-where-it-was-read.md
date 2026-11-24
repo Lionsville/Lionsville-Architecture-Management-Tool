@@ -148,7 +148,7 @@ letter takes the duty whole and may say nothing else. `alsoResponsible` beside a
 letter that is not an `A` is **refused**, where the writer drops it: an agent that
 says it has read the matrix wrong, and is told. The answer names the fields that
 changed beside a letter, a mark another letter took away among them. Activity
-counts a cell by any of them (`sameDuty`).
+counts the roles a step changes, off the step alone.
 
 `responsibilities.list` says the fields and who is `responsible`. `roles.list` says
 the fields of a duty and, of a description, only that there is one (`described`);

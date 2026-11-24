@@ -417,7 +417,7 @@ export const EN = {
   'activity.responsibilityChanged': 'Changed the responsibility {name}',
   'activity.responsibilityRemoved': 'Deleted the responsibility {name}',
   'activity.operatingRuleChanged': 'Changed the operating rules',
-  'activity.raciSet': 'Set {count} cells of the RACI',
+  'activity.raciSet': 'Changed the RACI of {count} roles',
   'activity.broughtIn': 'Brought in {count} items from a library',
   'activity.matchedIn': 'Matched {count} items of a library to your own',
   'activity.assignmentAdded': 'Assigned someone in {name}',
