@@ -27,6 +27,13 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
 - The Find button reads to a screen reader as it reads on screen, off a Mac
   too.
 
+## Observations
+
+- **A new solution's title is no longer emptied while it is typed.** The
+  *New solution* form started afresh whenever its causes were read again,
+  which on a server is whenever anybody's change arrives; *Propose* then said
+  the title was missing.
+
 ## For a build composed from this one
 
 - **A source may say what it cannot keep yet.** `ProviderParts.cannotKeep`
