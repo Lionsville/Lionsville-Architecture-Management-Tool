@@ -22,6 +22,7 @@ import { OperatingModelPage } from './OperatingModelPage'
 import type { SlotTakeOut } from './OperatingModelPage'
 import { organisationFacts } from '../organisationFacts'
 import type { OrganisationFacts } from '../organisationFacts'
+import { UnkeptContext } from '../../widgets/unkept'
 import { chooseValue } from '../../widgets/kit/testing/select'
 
 afterEach(() => cleanup())
@@ -209,6 +210,76 @@ describe('the operating model\'s page', () => {
     fireEvent.click(within(screen.getByTestId('operating-cell-picker')).getByRole('button', { name: 'none' }))
     expect(cell('Plan the routes', 'Planner').textContent).toBe('')
     expect(await axeFindings()).toEqual([])
+  })
+
+  it('writes A/R, the mark and the source with a key, and says the cell whole in words', async () => {
+    show(MODEL())
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    const at = () => cell('Plan the routes', 'Planner')
+    const press = (key: string) => fireEvent.keyDown(at(), { key })
+    press('/')
+    expect(at().textContent).toBe('A/R')
+    press('m')
+    expect(at().getAttribute('data-dashed')).toBe('true')
+    press('s')
+    const source = screen.getByTestId('operating-cell-source')
+    expect(document.activeElement).toBe(source)
+    fireEvent.change(source, { target: { value: 'Handbook, page 4' } })
+    fireEvent.keyDown(source, { key: 'Enter' })
+    expect(document.activeElement).toBe(at())
+    expect(at().getAttribute('aria-label')).toBe('Plan the routes, Planner: Accountable and responsible · Assumed · Source: Handbook, page 4')
+    // Escape keeps what was there, and closes nothing.
+    press('s')
+    fireEvent.change(screen.getByTestId('operating-cell-source'), { target: { value: 'Elsewhere' } })
+    fireEvent.keyDown(screen.getByTestId('operating-cell-source'), { key: 'Escape' })
+    expect(document.activeElement).toBe(at())
+    expect(at().getAttribute('aria-label')).toContain('Handbook, page 4')
+    // A alone is A alone, and is not another letter; a letter changed keeps the source and not the mark.
+    press('a')
+    expect(at().textContent).toBe('A')
+    expect(at().getAttribute('data-dashed')).toBe('true')
+    press('r')
+    expect(at().getAttribute('aria-label')).toBe('Plan the routes, Planner: Responsible · Source: Handbook, page 4')
+    expect(await axeFindings()).toEqual([])
+  })
+
+  it('offers the same beside the letters for a press, and nothing beside a cell with none', () => {
+    show(MODEL())
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    fireEvent.click(cell('Keep it safe', 'Planner'))
+    expect(screen.queryByTestId('operating-cell-mark')).toBeNull()
+    const picker = within(screen.getByTestId('operating-cell-picker'))
+    fireEvent.click(picker.getByRole('button', { name: 'Accountable and responsible' }))
+    expect(cell('Keep it safe', 'Planner').textContent).toBe('A/R')
+    chooseValue(screen.getByTestId('operating-cell-mark'), 'assumed')
+    expect(cell('Keep it safe', 'Planner').getAttribute('data-dashed')).toBe('true')
+    fireEvent.change(screen.getByTestId('operating-cell-source'), { target: { value: ' An interview ' } })
+    fireEvent.blur(screen.getByTestId('operating-cell-source'))
+    expect(cell('Keep it safe', 'Planner').getAttribute('aria-label')).toContain('Source: An interview')
+    fireEvent.click(picker.getByRole('button', { name: 'Accountable' }))
+    expect(cell('Keep it safe', 'Planner').textContent).toBe('A')
+    // Nobody else's row says assumed: the filter finds this one.
+    fireEvent.click(screen.getByRole('button', { name: /Filter/ }))
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Assumed' }))
+    expect(screen.queryByRole('rowheader', { name: 'Plan the routes', hidden: true })).toBeNull()
+    expect(screen.getByRole('rowheader', { name: 'Keep it safe', hidden: true })).toBeTruthy()
+  })
+
+  it('says in its place what the open source cannot keep of a cell, and offers no key for it', () => {
+    const sent: Command[] = []
+    renderShell(
+      <UnkeptContext.Provider value={(part) => (part.startsWith('duty.') ? 'elsewhere.notKept' : undefined)}>
+        <Harness start={MODEL()} sent={sent} />
+      </UnkeptContext.Provider>,
+    )
+    fireEvent.click(screen.getByRole('tab', { name: 'Responsibilities' }))
+    fireEvent.click(cell('Plan the routes', 'Planner'))
+    const before = sent.length
+    for (const key of ['/', 'm', 's']) fireEvent.keyDown(cell('Plan the routes', 'Planner'), { key })
+    expect(sent).toHaveLength(before)
+    expect(screen.queryByRole('button', { name: 'Accountable and responsible' })).toBeNull()
+    expect(screen.queryByTestId('operating-cell-source')).toBeNull()
+    expect(screen.getAllByTestId('operating-cell-unkept')).toHaveLength(1)
   })
 
   it('keeps the count whole through a part, and shows only what needs one A', () => {

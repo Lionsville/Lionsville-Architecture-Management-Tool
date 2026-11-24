@@ -138,6 +138,8 @@ export const CONTROL_NAMES = [
   'operating.raciUnit', 'operating.raciExport', 'operating.arrange', 'operating.exceptions', 'operating.exceptionsBar',
   'operating.libraries', 'operating.libraryPreview', 'operating.typeLimit',
   'operating.fromLibrary', 'operating.startFromLibrary', 'operating.libraryList', 'operating.comingIn', 'operating.cameIn',
+  // A role's description, read in its reader and written from it (ADR-0052).
+  'operating.roleDescription',
   // The Conway map: its bar, its two readings, the panel beside them.
   'conway.reading', 'conway.groupBy', 'conway.findMe', 'conway.verdict', 'conway.grid', 'conway.show', 'conway.showUnowned', 'conway.reader',
   'conway.finding', 'conway.owners', 'conway.sayHow', 'conway.planAway', 'conway.removeSaid', 'conway.modelInterface', 'conway.makeUnits', 'conway.addInteraction',

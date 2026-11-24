@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest'
 import { apply } from '../model/reducer'
 import {
-  addSlot, cycleRaci, editResponsibility, editRole, editUnitType, itemOf, newResponsibility, newRole, newUnitType,
+  addSlot, cycleRaci, setRaci, editResponsibility, editRole, editUnitType, itemOf, newResponsibility, newRole, newUnitType,
   moveGroup, moveResponsibility, moveRole, moveUnitType, removeResponsibility, removeRole, removeSlot, removeUnitType, setDay, setFlag, setLimit, setRule, setSlot, setSuccessors,
   setWithin,
 } from './edit'
@@ -67,6 +67,15 @@ describe('the operating model\'s page, said as commands', () => {
     const seen = []
     for (let n = 0; n < 5; n += 1) { press(); seen.push(cell()) }
     expect(seen).toEqual(['R', 'A', 'C', 'I', undefined])
+  })
+
+  it('cycles round the letters where a cell says where it was read, so stepping never loses it', () => {
+    let model = applyAll(small(), [setRaci(listsOf(small()).roles[0], 'rs-2', 'A', { alsoResponsible: true, certainty: 'assumed', source: 'Handbook, page 4' })])
+    const cell = () => listsOf(model).roles[0].duties.find((duty) => duty.responsibility === 'rs-2')
+    const seen = []
+    for (let n = 0; n < 4; n += 1) { model = applyAll(model, [cycleRaci(listsOf(model).roles[0], 'rs-2')]); seen.push(cell()) }
+    // From A/R as from A; the mark was the old letter's.
+    expect(seen).toEqual(['C', 'I', 'R', 'A'].map((raci) => ({ responsibility: 'rs-2', raci, source: 'Handbook, page 4' })))
   })
 
   it('edits a unit type\'s slots, flags, place and limit', () => {

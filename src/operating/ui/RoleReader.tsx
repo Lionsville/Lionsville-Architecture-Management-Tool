@@ -3,7 +3,7 @@
 
 /**
  * A role read, beside the structure or the grid and in the Roles list's preview:
- * where it is held and by whom, its lines as text with Change, what it answers
+ * its purpose and what it is at length, where it is held and by whom, its lines as text with Change, what it answers
  * for, and each unit that holds it with who holds it there, each a way to its
  * place in the organisation. Nothing here is stored for the reader.
  */
@@ -16,9 +16,11 @@ import { PropertyRow, PropertyRows } from '../../widgets/kit/Field'
 import { PanelSection } from '../../widgets/kit/Panel'
 import { PreviewFact } from '../../widgets/kit/Preview'
 import { editRole, moveRole, setFlag, setRoleReportsTo } from '../edit'
+import { DutyLine } from './dutyWords'
 import { LinesEditor } from './LinesEditor'
 import { Fold, OverTime, Prose, readerFoot, SourceWord, stackedFrame, Tick } from './ReaderParts'
 import type { ReaderFrame, ReaderParts } from './ReaderParts'
+import { RoleDescription } from './RoleDescription'
 import { roleNamed } from './reading'
 import { ReportedBy } from './SlotReader'
 
@@ -78,6 +80,7 @@ export function RoleReader({ role, parts, partName, partDuties, frame = stackedF
     <div data-testid="operating-role-reader">
       <Prose label={t('operating.purpose')} value={role.purpose ?? ''} readOnly={readOnly} render={parts.renderMarkdown}
         onChange={(next) => dispatch(editRole(role.id, 'purpose', next))} testId="operating-purpose" />
+      <RoleDescription role={role} parts={parts} />
       <PanelSection>
         {lineRow('solid', t('operating.lineSolid'))}
         {lineRow('dotted', t('operating.lineDotted'))}
@@ -91,10 +94,9 @@ export function RoleReader({ role, parts, partName, partDuties, frame = stackedF
         {shownDuties.length === 0
           ? <span className="op-quiet">{t('operating.noDuties')}</span>
           : shownDuties.map((duty) => (
-            <div className="op-duty" key={duty.responsibility}>
-              <b>{duty.raci}</b>
+            <DutyLine key={duty.responsibility} duty={duty} t={t}>
               <button type="button" className="op-link" onClick={() => parts.onSelect(duty.responsibility)}>{model.responsibilities.find((one) => one.id === duty.responsibility)?.name ?? duty.responsibility}</button>
-            </div>
+            </DutyLine>
           ))}
       </PanelSection>
       {facts && places.length > 0 && (

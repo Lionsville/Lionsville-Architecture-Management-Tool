@@ -9,7 +9,16 @@
  * it is.
  */
 import { inOwnOrder, raciOf, responsibilityGroups } from '../model/operatingModel'
-import type { Responsibility, Role, RoleId } from '../model/operatingModel'
+import { CERTAINTIES } from '../model/types'
+import type { Certainty } from '../model/types'
+import type { Duty, Responsibility, Role, RoleId } from '../model/operatingModel'
+
+/** What is said of a letter's certainty, nobody having said being one to look for too. */
+export type DutyMark = Certainty | 'unsaid'
+
+export const DUTY_MARKS: readonly DutyMark[] = [...CERTAINTIES, 'unsaid']
+
+export const markOf = (duty: Pick<Duty, 'certainty'>): DutyMark => duty.certainty ?? 'unsaid'
 
 export type MatrixOrder = 'own' | 'name'
 
@@ -18,12 +27,15 @@ export type MatrixView = {
   roles: readonly RoleId[]
   /** The groups kept, `''` being the responsibilities in no group; none picked keeps them all. */
   groups: readonly string[]
+  /** The marks kept: the responsibilities with a letter so marked; none picked keeps them all. */
+  marks: readonly DutyMark[]
   order: MatrixOrder
 }
 
 export const ALL_OF_THE_MATRIX: MatrixView = {
   roles: [],
   groups: [],
+  marks: [],
   order: 'own',
 }
 

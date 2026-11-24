@@ -36,6 +36,15 @@ describe('the grid a look leaves', () => {
     expect(grid.headings).toBe(false)
   })
 
+  it('keeps the rows with a letter marked as asked, of the roles it can show', () => {
+    const marked = { ...MODEL, roles: MODEL.roles.map((one) => ({ ...one, duties: one.duties.map((duty) => (one.id === 'r1' && duty.responsibility === 'a' ? { ...duty, certainty: 'assumed' as const } : duty)) })) }
+    const rows = (marks: ('assumed' | 'confirmed' | 'unsaid')[], unit?: string[]) => raciGrid(marked, { whole: true }, { ...ALL_OF_THE_MATRIX, marks }, unit, []).rows.map((one) => one.responsibility.id)
+    expect(rows(['assumed'])).toEqual(['a'])
+    expect(rows(['confirmed'])).toEqual([])
+    expect(rows(['unsaid'])).toEqual(['b', 'c'])
+    expect(rows(['assumed'], ['r2'])).toEqual([])
+  })
+
   it('shows every row under its heading in the whole organisation', () => {
     const grid = raciGrid(MODEL, { whole: true }, ALL_OF_THE_MATRIX, undefined, [])
     expect(grid.rows).toHaveLength(3)

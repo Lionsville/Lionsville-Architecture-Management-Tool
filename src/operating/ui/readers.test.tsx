@@ -15,6 +15,7 @@ import { renderShell } from '../../app/testing/renderShell'
 import type { Role } from '../../model/operatingModel'
 import type { OperatingModel } from '../edit'
 import type { OrganisationFacts, OutsideTheModel } from '../organisationFacts'
+import { UnkeptContext } from '../../widgets/unkept'
 import { ExceptionsTab } from './ExceptionsTab'
 import { ResponsibilityReader } from './ResponsibilityReader'
 import { RoleReader } from './RoleReader'
@@ -145,6 +146,57 @@ function parts(more: Partial<ReaderParts> = {}): ReaderParts {
 const roleOf = (id: string) => MODEL.roles.find((one) => one.id === id) as Role
 
 const place = (n: number, holders: { name: string; acting?: boolean }[] = []) => ({ unit: { id: `u${n}`, name: `Unit ${n}`, scope: 'acme' }, holders, vacant: holders.length ? 0 : 1 })
+
+describe('a role described', () => {
+  const described = { ...roleOf('dev'), description: '## What it does\n\n- Builds' } as Role
+
+  it('reads the description and writes it in the full window, kept by Save as one step', async () => {
+    const held = parts({ renderMarkdown: (text) => <div data-testid="rendered">{text}</div> })
+    renderShell(<RoleReader role={described} parts={held} />)
+    expect(screen.getByTestId('rendered').textContent).toContain('What it does')
+    fireEvent.click(screen.getByTestId('operating-role-description-edit'))
+    const box = await screen.findByRole('textbox', { name: 'Description' })
+    fireEvent.change(box, { target: { value: 'Other words' } })
+    expect(held.dispatch).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(held.dispatch).toHaveBeenCalledTimes(1)
+    expect(held.dispatch).toHaveBeenCalledWith(expect.objectContaining({ type: 'role.update', id: 'dev', patch: { description: 'Other words' } }))
+  })
+
+  it('offers to describe one that is not, only where it may be written and kept', () => {
+    renderShell(<RoleReader role={roleOf('dev')} parts={parts()} />)
+    expect(screen.getByRole('button', { name: 'Describe the role' })).toBeTruthy()
+    cleanup()
+    renderShell(<RoleReader role={roleOf('dev')} parts={parts({ readOnly: true })} />)
+    expect(screen.queryByTestId('operating-role-description')).toBeNull()
+    cleanup()
+    renderShell(<RoleReader role={described} parts={parts({ readOnly: true })} />)
+    expect(screen.getByTestId('operating-role-description').textContent).toContain('Builds')
+    expect(screen.queryByTestId('operating-role-description-edit')).toBeNull()
+    cleanup()
+    renderShell(<UnkeptContext.Provider value={() => 'elsewhere.notKept'}><RoleReader role={roleOf('dev')} parts={parts()} /></UnkeptContext.Provider>)
+    expect(screen.queryByTestId('operating-role-description-edit')).toBeNull()
+    expect(screen.getByTestId('operating-role-description-unkept')).toBeTruthy()
+  })
+})
+
+describe('what is said beside a letter', () => {
+  const said = { ...MODEL, roles: [
+    { id: 'lead', name: 'Lead', duties: [{ responsibility: 'plan', raci: 'A', alsoResponsible: true, certainty: 'assumed', source: 'Handbook, page 4' }] },
+    { id: 'dev', name: 'Developer', duties: [{ responsibility: 'plan', raci: 'R', certainty: 'confirmed' }] },
+  ] } as unknown as OperatingModel
+
+  it('is read in the role and in the responsibility, an A/R counted under both', () => {
+    renderShell(<RoleReader role={said.roles[0]} parts={parts({ model: said })} />)
+    expect(screen.getByTestId('operating-duty').textContent).toBe('A/RPlan the work Assumed · Source: Handbook, page 4')
+    expect(screen.getByText('A/R').hasAttribute('data-assumed')).toBe(true)
+    cleanup()
+    renderShell(<ResponsibilityReader responsibility={said.responsibilities[0]} parts={parts({ model: said })} />)
+    expect(screen.getAllByTestId('operating-duty').map((one) => one.textContent)).toEqual(['A/RLead Assumed · Source: Handbook, page 4', 'RDeveloper Confirmed'])
+    expect(screen.getByText('1 A, 2 R')).toBeTruthy()
+    expect(screen.getByText('R').hasAttribute('data-assumed')).toBe(false)
+  })
+})
 
 describe('a role read', () => {
   it('says its letters in the part looked at, then all of them, and goes to a responsibility', () => {

@@ -12,7 +12,7 @@
  */
 import { fieldEdit, transaction } from '../model/commands'
 import type { Command } from '../model/commands'
-import { dutiesWith, inOwnOrder, linesSaid, linesWith, nextRaci, raciOf, responsibilityGroups } from '../model/operatingModel'
+import { dutiesWith, dutyOf, inOwnOrder, linesSaid, linesWith, nextRaci, raciOf, responsibilityGroups } from '../model/operatingModel'
 import type { DutySaid, OperatingRule, OperatingRuleKind, Raci, ReportsTo, Responsibility, Role, RoleSlot, UnitType } from '../model/operatingModel'
 import { renumbered, unitTypeLanes } from '../model/unitOrder'
 import { distinct } from './bringIn'
@@ -210,9 +210,16 @@ export function removeSlot(type: UnitType, index: number): Command {
   return { type: 'unitType.update', id: type.id, patch: { slots: type.slots.filter((_, at) => at !== index) } }
 }
 
-/** A cell of the matrix pressed: the role's part in the responsibility goes to the next letter. */
+/**
+ * A cell stepped with Space: the role's part in the responsibility goes to the
+ * next letter. The step is the letter's: from `A/R` it goes to `C`, as from `A`,
+ * and *also responsible*, which means nothing there, goes with the letter. Where
+ * the cell says where it was read it goes round the letters and never through
+ * none, which would take that with it: only – takes the whole part away.
+ */
 export function cycleRaci(role: Role, responsibility: string): Command {
-  return { type: 'role.update', id: role.id, patch: { duties: dutiesWith(role.duties, responsibility, nextRaci(raciOf(role, responsibility))) } }
+  const held = dutyOf(role, responsibility)
+  return setRaci(role, responsibility, nextRaci(held?.raci) ?? (held?.source !== undefined ? nextRaci(undefined) : undefined))
 }
 
 /** A rule set to a role, or taken away. */

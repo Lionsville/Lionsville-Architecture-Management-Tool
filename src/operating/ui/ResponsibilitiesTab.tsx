@@ -28,7 +28,7 @@ import { TreeList } from '../../widgets/kit/TreeList'
 import type { TreeNode } from '../../widgets/kit/TreeList'
 import { newResponsibility } from '../edit'
 import type { OperatingModel } from '../edit'
-import { groupsOf } from '../matrixView'
+import { DUTY_MARKS, groupsOf } from '../matrixView'
 import type { MatrixView } from '../matrixView'
 import type { OrganisationFacts, UnitFact } from '../organisationFacts'
 import { needOf, raciCsv, raciGrid, raciParts, rowsNeeding } from '../raciView'
@@ -135,7 +135,7 @@ const needingIn = (unitRoles: readonly string[] | undefined, needing: readonly {
   (unitRoles ? needing.filter((row) => model.roles.some((role) => unitRoles.includes(role.id) && role.duties.some((duty) => duty.responsibility === row.id))).length : undefined)
 
 const noRowsWord = (unit: UnitFact | undefined, view: MatrixView) =>
-  (unit && view.roles.length === 0 && view.groups.length === 0 ? 'operating.unitNoPart' : 'operating.filterEmpty')
+  (unit && view.roles.length === 0 && view.groups.length === 0 && view.marks.length === 0 ? 'operating.unitNoPart' : 'operating.filterEmpty')
 
 const gridTitle = (look: RaciLook, unit: UnitFact | undefined, part: string | undefined, t: Translate): string => {
   if (look.whole) return t('operating.wholeOrganisation')
@@ -230,6 +230,7 @@ function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrang
 }) {
   const { t } = useStrings()
   const groupOptions = groupsOf(model.responsibilities)
+  const marked = view.marks.length > 0 || model.roles.some((role) => role.duties.some((duty) => duty.certainty !== undefined))
   return (
         <div className="op-actions">
           <Segmented
@@ -251,11 +252,13 @@ function GridBar({ model, facts, look, onLook, view, onView, arranging, onArrang
             <FilterWords
               find="" onFind={() => {}} noFind dataGuide="operating.filterRoles"
               fields={[
+                // First, for the roles under it may be many; where nobody has marked a letter there is nothing to look for by it.
+                ...(marked ? [{ id: 'marks', label: t('field.certainty'), options: DUTY_MARKS.map((mark) => ({ value: mark, label: t(`certainty.${mark}`) })) }] : []),
                 { id: 'roles', label: t('operating.filterRoles'), options: model.roles.map((role) => ({ value: role.id, label: role.name })) },
                 { id: 'groups', label: t('operating.filterGroups'), options: groupOptions.map((group) => ({ value: group, label: group || t('operating.noGroup') })) },
               ]}
-              filters={{ roles: view.roles, groups: view.groups }}
-              onFilters={(filters) => onView({ ...view, roles: filters.roles ?? [], groups: filters.groups ?? [] })}
+              filters={{ roles: view.roles, groups: view.groups, marks: view.marks }}
+              onFilters={(filters) => onView({ ...view, roles: filters.roles ?? [], groups: filters.groups ?? [], marks: DUTY_MARKS.filter((mark) => filters.marks?.includes(mark)) })}
             />
           </span>
           <Button variant="plain" aria-pressed={arranging} data-guide="operating.arrange" onClick={() => onArrange(!arranging)}>{t('operating.arrange')}</Button>

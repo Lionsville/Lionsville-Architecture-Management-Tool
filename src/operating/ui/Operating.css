@@ -91,8 +91,14 @@ button.op-line:hover { background: var(--surface-2); }
 .op-editor { display: grid; gap: var(--s-2); padding: var(--s-2) 0; }
 .op-editor__two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); }
 .op-refused { color: var(--bad); }
-.op-duty { display: grid; grid-template-columns: 1.4em minmax(0, 1fr); gap: var(--s-1); padding-block: 1px; }
+.op-duty { display: grid; grid-template-columns: 2.1em minmax(0, 1fr); gap: var(--s-1); padding-block: 1px; }
 .op-duty b { font-weight: var(--fw-strong); }
+/* The grid's dash, round the letter as there. */
+.op-duty b[data-assumed] { justify-self: start; align-self: start; padding-inline: 2px; border: 1px dashed currentColor; border-radius: var(--r-1); line-height: var(--lh-tight); }
+.op-describe { margin-block: var(--s-3); }
+/* Three signs where one stood: a size down, so the dash of an assumed one stays round them. */
+.op-both { font-size: var(--t-small); letter-spacing: -0.02em; }
+.op-write { display: flex; flex: 1; min-height: 480px; }
 .op-inplace { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-2); padding-block: 1px; }
 .op-vacant { color: var(--warn); }
 
@@ -111,12 +117,20 @@ button.op-line:hover { background: var(--surface-2); }
 /* Narrow, beside the record: the stuck name column gives way, so the role columns stay in sight and a letter set is seen.
    The grid scrolls sideways under the names; a name cut short says itself whole on hover. */
 .op-gridBox { container-type: inline-size; }
+/* A role's name on its side is the only thing a narrow column says of itself: whole where the window has the height. */
+.op-gridBox .kit-matrix[data-rotate] .kit-matrix__colName { max-height: min(12rem, 22vh); }
 @container (max-width: 44rem) {
   .op-gridBox .kit-matrix, .op-gridBox .kit-matrix[data-wrap] { --kit-matrix-head: 11rem; }
 }
 .op-gridHead { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-1) var(--s-3); }
 .op-gridHead h2 { margin: 0; font-size: var(--t-body); font-weight: var(--fw-strong); }
 .op-picker { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-1) var(--s-3); padding: var(--s-1) 0; }
+/* A select is as wide as what holds it: beside the letters it is as wide as its longest word. */
+.op-picker__mark { flex: 0 0 auto; width: 13rem; }
+/* The source takes the room the line has; the legend a line of its own under what is set. */
+.op-picker__source { flex: 1 1 16rem; max-width: 32rem; }
+.op-picker__source .kit-input { width: 100%; }
+.op-picker__legend { flex-basis: 100%; }
 .op-picker__letters { display: inline-flex; gap: 2px; }
 .op-arrange { display: flex; flex-direction: column; }
 .op-arrange__row { display: flex; align-items: center; gap: var(--s-2); padding-block: 1px; border-bottom: 1px solid var(--line); }

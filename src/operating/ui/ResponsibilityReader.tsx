@@ -3,7 +3,7 @@
 
 /** A responsibility read: what it is, its group, who has a part, and where it stands among its group's. */
 import { useId } from 'react'
-import { inOwnOrder, raciOf } from '../../model/operatingModel'
+import { dutyOf, inOwnOrder } from '../../model/operatingModel'
 import type { Responsibility } from '../../model/operatingModel'
 import { useStrings } from '../../i18n'
 import { Button } from '../../widgets/kit/Button'
@@ -13,6 +13,8 @@ import { editResponsibility, moveResponsibility } from '../edit'
 import { groupsOf } from '../matrixView'
 import { Prose, readerFoot, SourceWord, stackedFrame } from './ReaderParts'
 import type { ReaderFrame, ReaderParts } from './ReaderParts'
+import { DutyLine } from './dutyWords'
+import { partWords } from './reading'
 import { claimKey } from '../../widgets/kit/keys'
 
 export function ResponsibilityReader({ responsibility, parts, frame = stackedFrame }: { responsibility: Responsibility; parts: ReaderParts; frame?: ReaderFrame }) {
@@ -25,8 +27,8 @@ export function ResponsibilityReader({ responsibility, parts, frame = stackedFra
   const up = moveResponsibility(model, responsibility.id, -1)
   const down = moveResponsibility(model, responsibility.id, 1)
   const parties = inOwnOrder(model.roles).flatMap((role) => {
-    const raci = raciOf(role, responsibility.id)
-    return raci ? [{ role, raci }] : []
+    const duty = dutyOf(role, responsibility.id)
+    return duty ? [{ role, duty }] : []
   })
   // Its group, its place among the group's and where it came from: the facts beside the text.
   const facts = (
@@ -61,11 +63,11 @@ export function ResponsibilityReader({ responsibility, parts, frame = stackedFra
     <div data-testid="operating-responsibility-reader">
       <Prose label={t('operating.description')} value={responsibility.description ?? ''} readOnly={readOnly} render={parts.renderMarkdown}
         onChange={(next) => dispatch(editResponsibility(responsibility.id, 'description', next))} testId="operating-description" />
-      <PanelSection title={t('operating.whoHasPart')}>
+      <PanelSection title={t('operating.whoHasPart')} aside={parties.length ? partWords(parties.map((one) => one.duty)) : undefined}>
         {parties.length === 0
           ? <span className="op-quiet">{t('operating.nobodyHasPart')}</span>
-          : parties.map(({ role, raci }) => (
-            <div className="op-duty" key={role.id}><b>{raci}</b><button type="button" className="op-link" onClick={() => parts.onSelect(role.id)}>{role.name}</button></div>
+          : parties.map(({ role, duty }) => (
+            <DutyLine key={role.id} duty={duty} t={t}><button type="button" className="op-link" onClick={() => parts.onSelect(role.id)}>{role.name}</button></DutyLine>
           ))}
       </PanelSection>
       {parts.aside}

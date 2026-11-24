@@ -587,7 +587,7 @@ const JOURNEYS: readonly (readonly Screen[])[] = [
   ['its roles', ['operating.tabRoles', 'operating.roleList', 'operating.rules'], async () => {
     fireEvent.click(screen.getByRole('tab', { name: 'Roles' }))
   }],
-  ['a role read', ['operating.rolePreview'], async () => {
+  ['a role read', ['operating.rolePreview', 'operating.roleDescription'], async () => {
     fireEvent.click(document.querySelector('[data-kit-row^="row:"]') as Element)
     await screen.findByRole('dialog')
   }],

@@ -15,7 +15,7 @@
  */
 import { accountableFor, dutyOf, inOwnOrder, raciOf, raciSaid, responsibilityGroups } from '../model/operatingModel'
 import type { Responsibility, Role, RoleId } from '../model/operatingModel'
-import { matrixOf } from './matrixView'
+import { markOf, matrixOf } from './matrixView'
 import type { MatrixView } from './matrixView'
 
 /** What is looked at, as the address says it. */
@@ -92,6 +92,8 @@ export function raciGrid(model: Lists, look: RaciLook, view: MatrixView, unitRol
   const inUnit = unitRoles ? roles.filter((role) => unitRoles.includes(role.id)) : roles
   let rows: RaciRow[] = groups.flatMap(({ group, responsibilities }) => responsibilities.map((responsibility) => ({ responsibility, group })))
   if (unitRoles) rows = rows.filter(({ responsibility }) => inUnit.some((role) => raciOf(role, responsibility.id) !== undefined))
+  // A mark is a cell's, so it is asked of the roles the grid can show and not of the whole model.
+  if (view.marks.length) rows = rows.filter(({ responsibility }) => inUnit.some((role) => { const duty = dutyOf(role, responsibility.id); return duty !== undefined && view.marks.includes(markOf(duty)) }))
   if (look.needs) rows = rows.filter(({ responsibility }) => needOf(model.roles, responsibility.id) !== undefined)
   else if (look.row) rows = rows.filter(({ responsibility }) => responsibility.id === look.row)
   else if (!look.whole && look.part !== undefined) rows = rows.filter(({ group }) => group === look.part)
