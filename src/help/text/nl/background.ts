@@ -2838,7 +2838,8 @@ tabbladen:
   leeg), {key:Shift} met een klik een kwart minder, en rechtsklikken of
   {key:Enter} biedt de vijf behoeften bij naam; {key:Space} en 0 tot 4
   schrijven met het toetsenbord, en een klik naast het raster laat de keuze
-  los. De naam van een capaciteit opent haar naast het raster: wat erover
+  los. Wie een bol of een naam aanwijst, leest die direct onder de regel in
+  woorden, voluit waar de regel hem afkapt. De naam van een capaciteit opent haar naast het raster: wat erover
   geschreven is, het aspect dat ze levert en hoeveel elk gebruik haar nodig
   heeft; **Bewerken** daar, of onder **Meer** op haar regel, schrijft haar
   woorden, haar must en haar tekst, die een hoofdstuk van het document van

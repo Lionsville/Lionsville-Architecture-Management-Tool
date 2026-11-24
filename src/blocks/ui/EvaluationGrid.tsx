@@ -7,8 +7,9 @@
  * press on the ball picked fills it a quarter more, ⇧-press a quarter less, and
  * the cell's menu — a right press or Enter — offers the five levels by name, and
  * on a comparison *Note…*. A press beside the grid lets go of the pick. Space
- * and a digit write from the keyboard, and the line under the grid says what the
- * cell means, in words. Where nothing may be written a press only selects. A
+ * and a digit write from the keyboard, and a line right under the row the pointer
+ * or the focus is on says what the cell means, and a name cut short, in words: the
+ * foot of a grid of many capabilities is out of sight. Where nothing may be written a press only selects. A
  * capability's name opens what is written about it (`CapabilityPanel`).
  *
  * - **The requirements**: the capabilities as rows, the usage contexts as
@@ -137,7 +138,7 @@ export function RequirementsGrid({ block, onChange, rowEnd, onOpenCapability }: 
   return (
     <div className="guidance-grid" data-opens={onOpenCapability ? '' : undefined} data-testid="requirements-grid">
       <Matrix
-        label={t('blocks.requirements')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected} onDeselect={() => setSelected(null)}
+        lineAt="row" label={t('blocks.requirements')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected} onDeselect={() => setSelected(null)}
         {...(onOpenCapability ? { onOpenRow: onOpenCapability } : {})}
         rows={capabilities.map((one) => ({ id: one.id, label: labelOf(one) }))}
         columns={contexts.map((one) => ({ id: one.id, label: one.name }))}
@@ -264,7 +265,7 @@ export function EvaluationGrid({ block, evaluation: kept, onChange, onOpenCapabi
       </div>
       {gapsOnly && shown.length === 0 && reading.options.length > 0 && <p className="blocks-hint">{t('blocks.noGaps')}</p>}
       <Matrix
-        wrapRows label={t('blocks.evaluationGrid')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected} onDeselect={() => setSelected(null)}
+        wrapRows lineAt="row" label={t('blocks.evaluationGrid')} rowHeading={t('blocks.capability')} selected={selected} onSelect={setSelected} onDeselect={() => setSelected(null)}
         {...(onOpenCapability ? { onOpenRow: (row: string) => { if (row !== FIT_ROW) onOpenCapability(row) } } : {})}
         rows={[...shown.map((one) => ({ id: one.capability.id, label: rowLabel(one) })), { id: FIT_ROW, label: t('blocks.fitHere') }]}
         columns={reading.options.map((option) => ({

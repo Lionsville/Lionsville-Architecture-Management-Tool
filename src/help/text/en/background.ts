@@ -2629,7 +2629,9 @@ list folded away, on four tabs:
   on the ball picked fills it a quarter more (after full, back to empty),
   {key:Shift} and a press a quarter less, and a right press or {key:Enter}
   offers the five needs by name; {key:Space} and 0 to 4 write from the
-  keyboard, and a press beside the grid lets go of the pick. A capability's
+  keyboard, and a press beside the grid lets go of the pick. Pointing at a
+  ball or at a name says it in words right under its row, whole where the
+  row cuts it short. A capability's
   name opens it beside the grid: what is written about it, the aspect it
   delivers and how much each use needs it; **Edit** there, or under **More**
   on its row, writes its words, its must and its text, which is a chapter of

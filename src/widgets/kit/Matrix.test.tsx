@@ -370,6 +370,29 @@ describe('a matrix whose press writes', () => {
   })
 })
 
+describe('a matrix that says its line at the row', () => {
+  it('says the cell under the pointer in the line at once, shows none where there is nothing to say, and leaves the name its words alone', () => {
+    renderShell(<Matrix label="RACI" {...BASE} lineAt="row" />)
+    const line = screen.getByRole('status', { hidden: true })
+    expect(line.getAttribute('data-at')).toBe('row')
+    expect(line.hidden).toBe(true)
+    fireEvent.pointerOver(cell(/Order the backlog, Run/))
+    expect(line.hidden).toBe(false)
+    expect(line.textContent).toBe('Order the backlog × Run: responsible.')
+    expect(line.style.top).not.toBe('')
+    // The name's own tooltip would say it a second time, later.
+    expect(screen.getByText('Order the backlog').getAttribute('title')).toBeNull()
+    fireEvent.pointerLeave(screen.getByRole('grid'))
+    expect(line.hidden).toBe(true)
+  })
+
+  it('stays under the grid where nothing asks otherwise, the name with its tooltip', () => {
+    renderShell(<Matrix label="RACI" {...BASE} />)
+    expect(screen.getByRole('status').hasAttribute('data-at')).toBe(false)
+    expect(screen.getByText('Order the backlog').getAttribute('title')).toBe('Order the backlog')
+  })
+})
+
 describe('a cell that falls short', () => {
   it('is said by an attribute of its own, apart from attention', () => {
     renderShell(<Matrix label="Ratings" {...BASE} cellOf={(row, column) => (row === 'team' && column === 'plan' ? { show: '−1', meaning: 'one short', short: true } : null)} />)

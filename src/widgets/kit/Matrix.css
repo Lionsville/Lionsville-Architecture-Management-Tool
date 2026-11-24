@@ -171,6 +171,21 @@
   color: var(--ink-2);
   overflow-wrap: anywhere;
 }
+/* At a row: over what is under that row and never in the pointer's way, so the next row is still pressed
+   through it; it takes no room of its own, which the foot of a long grid would have out of sight. */
+.kit-matrix__line[data-at='row'] {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 4;
+  min-height: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-1);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  pointer-events: none;
+}
+.kit-matrix__line[data-at='row'][hidden] { display: none; }
 
 /* The band over the columns, and the headings stuck under it. */
 .kit-matrix { --kit-matrix-band: 0px; }

@@ -4,7 +4,8 @@
 /**
  * A crossing of two lists: a RACI, a coverage, a pair grid, ratings. The headings
  * stay fixed while the crossing scrolls, because a cell means nothing without its
- * row and its column; the crosshair and the line under the grid say which, in words.
+ * row and its column; the crosshair and the line under the grid say which, in words —
+ * or the line right under the row, where a screen asks for it there (`lineAt`).
  *
  * A press selects and only selects: reading a row must not write a letter. A key
  * writes, and only where the screen says keys write (`keys`, handed in; a reader's
@@ -121,6 +122,13 @@ export type MatrixProps = {
   readonly onOpenColumn?: (column: string) => void
   /** A crossing that is not there, such as a triangle's other half: drawn as nothing, and pressing it does nothing. */
   readonly absent?: (row: string, column: string) => boolean
+  /**
+   * Where the line that says a cell in words stands. `under` (the default) is under
+   * the grid. `row` is right under the row the pointer or the focus is on, at once
+   * and over what is below it: a grid of many rows has its foot out of sight, and a
+   * name cut short is read where it is cut.
+   */
+  readonly lineAt?: 'under' | 'row'
   /** The column lit from outside the grid, while what it names is open elsewhere. */
   readonly litColumn?: string
   /** Long names wrap to two lines rather than stopping at the edge. */
@@ -195,10 +203,12 @@ type CellProps = Pick<MatrixProps, 'cellOf' | 'absent'> & {
   readonly emptyWord: string
   /** The cell's menu's name, where a press writes: its ⋯ is on the cell picked, shown to a finger only (`Matrix.css`). */
   readonly menuWord?: string | undefined
+  /** The name's own tooltip, where no line under the row says it whole. */
+  readonly titled: boolean
 }
 
 const MatrixRowView = memo(function MatrixRowView({
-  row, depth, foldable, folded, columns, rowIndex, answers, cellOf, absent, focusColumn, selectedColumn, crossed, hovered, foldWord, emptyWord, menuWord,
+  row, depth, foldable, folded, columns, rowIndex, answers, cellOf, absent, focusColumn, selectedColumn, crossed, hovered, foldWord, emptyWord, menuWord, titled,
 }: CellProps) {
   return (
     <tr data-crossed={crossed || undefined} data-hover={hovered || undefined} data-heading={row.heading || undefined} data-picked={selectedColumn !== null || undefined}>
@@ -208,7 +218,7 @@ const MatrixRowView = memo(function MatrixRowView({
         aria-label={foldable ? `${row.label}, ${foldWord}` : undefined}
       >
         {foldable && <span className="kit-matrix__caret" data-folded={folded || undefined} aria-hidden="true"><CaretIcon /></span>}
-        <span className="kit-matrix__rowName" title={row.label}>{row.label}</span>
+        <span className="kit-matrix__rowName" title={titled ? row.label : undefined}>{row.label}</span>
         {row.mark !== undefined && <span className="kit-matrix__headMark">{row.mark}</span>}
       </th>
       {answers.map((answer, index) => <td key={answer.label} role="gridcell" className="kit-matrix__answer" style={{ '--kit-matrix-answer-at': index } as CSSProperties}>{answer.of(row.id)}</td>)}
@@ -471,6 +481,41 @@ function useDeselectOutside(root: { readonly current: HTMLElement | null }, pick
   }, [root, picked, onDeselect])
 }
 
+/**
+ * Where the line stands when it stands at a row: the distance from the grid's top
+ * to the foot of the row the pointer is on, or else the row in focus; `null` where
+ * it stands under the grid, or there is nothing to say.
+ */
+function useLineUnderRow(
+  root: { readonly current: HTMLElement | null }, table: { readonly current: HTMLElement | null },
+  at: number | null, said: string,
+): number | null {
+  const [top, setTop] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const held = root.current
+    const row = at === null || !said ? null : table.current?.querySelector(`[data-kit-cell^="${at}:"]`)?.closest('tr') ?? null
+    setTop(held && row ? row.getBoundingClientRect().bottom - held.getBoundingClientRect().top : null)
+  }, [root, table, at, said])
+  return top
+}
+
+/**
+ * The line that says a cell in words: under the grid, or right under a row of it —
+ * the row the pointer is on first, as its words are, and the row in focus where the
+ * pointer is off the grid.
+ */
+function MatrixLine({ root, table, atRow, row, line }: {
+  readonly root: { readonly current: HTMLElement | null }
+  readonly table: { readonly current: HTMLElement | null }
+  readonly atRow: boolean
+  readonly row: number | null
+  readonly line: string
+}) {
+  const top = useLineUnderRow(root, table, atRow ? row : null, line)
+  if (!atRow) return <div className="kit-matrix__line" role="status">{line}</div>
+  return <div className="kit-matrix__line" role="status" data-at="row" hidden={top === null || !line} style={top === null ? undefined : { top }}>{line}</div>
+}
+
 /** A cell focused under the stuck heads is out of sight: brought out past them (the scroll's padding is their width). */
 function intoSight(cell: HTMLElement) {
   cell.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
@@ -478,7 +523,7 @@ function intoSight(cell: HTMLElement) {
 
 export function Matrix({
   label, rowHeading, rows, columns, columnGroups, cellOf, answer, answers: moreAnswers, selected, onSelect, onDeselect, keys, onKey, hint, pressWrites,
-  defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, openFoldable, onOpenColumn, absent, litColumn, wrapRows, groupBand, rotateHeads, dataGuide,
+  defaultFoldedRows, defaultFoldedGroups, onFoldRow, onFoldGroup, onOpenRow, openFoldable, onOpenColumn, absent, lineAt = 'under', litColumn, wrapRows, groupBand, rotateHeads, dataGuide,
 }: MatrixProps) {
   const answers = useMemo(() => [...(answer ? [answer] : []), ...(moreAnswers ?? [])], [answer, moreAnswers])
   const { t } = useStrings()
@@ -632,13 +677,13 @@ export function Matrix({
                 key={rowDef.id} row={rowDef} depth={depth} foldable={foldable} folded={folded} columns={drawn} rowIndex={index}
                 answers={answers} cellOf={cellOf} absent={absent} focusColumn={row === index ? column : null}
                 selectedColumn={selected?.row === rowDef.id ? selected.column : null} crossed={row === index} hovered={rowAt === index}
-                foldWord={t('kit.matrix.foldable')} emptyWord={t('kit.matrix.empty')} menuWord={pressWrites ? t('kit.matrix.cellMenu') : undefined}
+                foldWord={t('kit.matrix.foldable')} emptyWord={t('kit.matrix.empty')} menuWord={pressWrites ? t('kit.matrix.cellMenu') : undefined} titled={lineAt !== 'row'}
               />
             ))}
           </tbody>
         </table>
       </div>
-      <div className="kit-matrix__line" role="status">{line}</div>
+      <MatrixLine root={root} table={table} atRow={lineAt === 'row'} row={hover?.row ?? (inside ? row : null)} line={line} />
       {menu}
     </div>
   )

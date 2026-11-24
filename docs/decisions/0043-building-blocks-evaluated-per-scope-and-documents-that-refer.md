@@ -451,6 +451,14 @@ Two things about the grids of §6, and one about where they are read (§8).
   only where the pointer is a finger, which has no right press. A press
   beside the grid, or Escape, lets go of the pick (`Matrix`'s `onDeselect`).
   The keys are as they were: Space and a digit write on the cell in focus.
+* **The line stands at the row.** What a cell means in words — the level, a
+  note, the shortfall — and a capability's name where the row cuts it short
+  were said in one line under the grid, which a block of many capabilities
+  has out of sight. In these two grids the line stands right under the row
+  the pointer or the focus is on, at once, over what is below it and never
+  in the pointer's way (`Matrix`'s `lineAt="row"`); the name's own delayed
+  tooltip goes, since the line says it. Other grids keep the line under
+  them until they ask for it at the row.
 * **A capability has a text, and it is a chapter.** A capability was one
   sentence in a list. What it asks, why, how it is judged and its pictures
   are now a chapter of the block's document under the capability's own

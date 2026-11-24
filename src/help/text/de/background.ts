@@ -2985,7 +2985,9 @@ vier Reitern:
   mehr (nach voll wieder leer), {key:Shift} mit Klick um ein Viertel
   weniger, und Rechtsklick oder {key:Enter} bietet die fünf Stufen mit
   Namen; {key:Space} und 0 bis 4 schreiben mit der Tastatur, und ein Klick
-  neben das Raster gibt die Auswahl frei. Der Name einer Fähigkeit öffnet
+  neben das Raster gibt die Auswahl frei. Wer auf eine Kugel oder einen
+  Namen zeigt, liest sie gleich unter der Zeile in Worten, ganz, wo die
+  Zeile sie kürzt. Der Name einer Fähigkeit öffnet
   sie neben dem Raster: was über sie geschrieben steht, den Aspekt, den sie
   liefert, und wie sehr jede Nutzung sie braucht; **Bearbeiten** dort, oder
   unter **Mehr** in ihrer Zeile, schreibt ihre Worte, ihr Muss und ihren
