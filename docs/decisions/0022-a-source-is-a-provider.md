@@ -1297,6 +1297,10 @@ agent's view of the open scope (`SessionView.unkept`), where
 `observation.update` and `observations.list`. Both names are on the surface
 (`composed/process/provider`).
 
+**Amended, 24 November 2026.** Four parts more, with folder format 19:
+`role.description`, `duty.alsoResponsible`, `duty.certainty` and `duty.source`
+(ADR-0052). The screens and tools that ask about them are not yet built.
+
 ## More Information
 
 ADR-0002 for the command and its inverse, which is the whole reason this is a

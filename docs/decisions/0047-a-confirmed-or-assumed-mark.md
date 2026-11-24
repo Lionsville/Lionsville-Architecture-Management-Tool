@@ -55,3 +55,8 @@ record shows the row always, a dash where nobody said. An assumed card on a boar
 is drawn with a dashed edge (`editor/nodes/NodeShell`). The word stands on the
 technology landscape's rows and in a container diagram's Lines list. The register's
 rows do not say it.
+
+## Amended, 24 November 2026 — the mark on a duty
+
+A role's duty carries the same mark, about its letter (ADR-0052): another letter
+takes it away unless the same change says one.

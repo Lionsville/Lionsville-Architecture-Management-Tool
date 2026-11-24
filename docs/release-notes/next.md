@@ -31,6 +31,19 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
 - The Find button reads to a screen reader as it reads on screen, off a Mac
   too.
 
+## Operating model
+
+- **A role has a description**, in markdown, beside its purpose: what it does
+  and what it asks of a person, at length. Searching finds its words.
+- **A responsibility's letter says more.** A role that is accountable and does
+  the work too is `A/R` in one cell, and counts wherever the responsible are
+  counted; the CSV export says it. A letter may be marked confirmed or assumed,
+  and may say where it was read. Another letter keeps where it was read and
+  takes the mark away (ADR-0052).
+- **The folder format is 19.** Every older folder and working file opens as it
+  did. An older app refuses one written by this version rather than drop what it
+  does not know.
+
 ## Observations
 
 - **A new solution's title is no longer emptied while it is typed.** The
@@ -50,3 +63,7 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
   (ADR-0022, amended 22 November 2026).
 - On the surface, `ProviderParts`, `SessionView` and `AgentRefusal` each
   gained what the line above names; nothing was renamed or removed.
+- `UnkeptPart` also names `role.description`, `duty.alsoResponsible`,
+  `duty.certainty` and `duty.source`, and `SourceCannotKeep` and `SessionView`
+  with it. `Role` and `Duty` gained those fields, each optional, and
+  `SCOPE_FORMAT_VERSION` is 19.

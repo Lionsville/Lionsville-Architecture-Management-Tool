@@ -129,3 +129,4 @@ now, with their words unchanged.
 | [0049](0049-a-feature-may-be-composed-of-features.md) | A feature may be composed of features, below the shell | 2026-11-22 | — |
 | [0050](0050-every-kind-of-record-is-described-once.md) | Every kind of record is described once | 2026-11-22 | — |
 | [0051](0051-an-agent-writes-a-script.md) | An agent writes a script: read in one call, tried before it lands | 2026-11-22 | — |
+| [0052](0052-a-role-is-described-and-a-duty-says-where-it-was-read.md) | A role is described, and a duty says who does the work and where it was read | 2026-11-24 | — |

@@ -2733,3 +2733,11 @@ organisation as CSV.
 What did not change: the records, their commands and the agent's tools. The
 *As built, 3.6.1* sections above stand as what the page was; their trays, the
 *Units and roles* tab, the inspector and a press that cycled a letter are gone.
+
+## Amended, 24 November 2026 — a role described, and more said of a duty
+
+ADR-0052 extends §2. A role has a `description` beside its purpose, and a duty,
+still one letter, may say that an accountable role is responsible too
+(`alsoResponsible`, read as `A/R`), whether the letter has been checked
+(`certainty`) and where it was read (`source`). One `A` per responsibility, its
+finding and the rules are unchanged. The folder format is 19 with it.
