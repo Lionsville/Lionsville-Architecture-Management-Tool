@@ -6,7 +6,8 @@
   agent's tools (§12), by other names and without `evaluation.remove`;
   amended 22 November 2026 (the comparison: set with the mouse, its answer
   shown, a place of its own, read across scopes, carried out; requirements
-  entered as a list), accepted and built
+  entered as a list), accepted and built; amended 24 November 2026 (a block
+  moved to another topic or scope), accepted and built
 * Date: 2026-10-25
 * Deciders: Wouter Simons
 * Extends: ADR-0009 §3 (a document that computes), ADR-0012 §7 (a decision
@@ -477,3 +478,72 @@ Two things about the grids of §6, and one about where they are read (§8).
   requirements are drawn instead. The head of both offers the way to a
   comparison: a button where one scope compares, a menu where several do
   (`BlockComparisons`, `ComparisonWays`).
+
+## Amended 24 November 2026: a building block moved to another topic or scope
+
+Where a block is kept was said once, when it was made. Topics are split and
+joined, and a block made in the scope that first needed it turns out to be
+the organisation's; the only way to keep it elsewhere was to make it again
+and lose every scope's comparison of it.
+
+**The same element, under the same id.** *Move to…* under ⋯ on a block's page
+and on its large preview asks where it is to be kept — the topics first, never
+the scope it is in, only a scope the person may change — and says what goes
+with it. It is offered to whoever may change the scope that keeps the block.
+The id does not change, so the block's page, its address and a `ref` to it in
+a document stay as they are; after a move from its page, the page is still on
+it.
+
+**What names where it is kept follows it.** Four things do:
+
+* **Each scope's evaluation** says the block's scope and is named from it
+  (§4). It is taken and put back where it stood under the id its new place
+  gives it, as a move of a scope does, with its contexts, options, ratings,
+  `chosen` and `decidedBy` as they were; a decision of that scope that
+  `chooses` in it names the new id, so one still proposed writes its choice
+  when it is accepted.
+* **The principles it cites** are citations kept beside it. They arrive with
+  it, one the target already says the same of said once.
+* **Its comments** go with it as a record's thread does on any move (ADR-0037
+  §6), each saying the scope it was written in, and nothing where it comes
+  back to that scope.
+* **The pictures its document names** are the source scope's library's. Their
+  bytes are put for the target and their entries added in the same step the
+  block arrives in, ahead of it. The source keeps them: other documents there
+  may show them.
+
+**The source is left without it, or with a stand-in.** Where nothing else in
+the source names the block, the element goes. Where something does — a view
+draws it, a connection ends on it, a drawing is anchored to it, an element is
+filed under it — deleting it would take the card and the lines with it, which
+nobody asked: the record becomes a stand-in of the target (ADR-0012 §3), kept
+where it is drawn, holding none of the block's document, requirements or
+catalogue. Whether a scope still names it is asked of the writer, as what a
+delete would take besides the record, its thread and its citations.
+
+**The target first, the source last, as one.** The plan
+(`projects/blockMove.ts`, pure) is one step per scope in the order they must
+land: the scope it arrives in, each scope that evaluates it, the scope it
+leaves. They are applied in one apply, each expecting what was read, so all
+land or none does, and in that order, so a place that could only land part
+would leave the block kept twice and never nowhere. **Every scope's step is
+under that scope's rights**: nothing is written unless the person may change
+each scope the move writes, and the one they may not is said by name.
+
+**Refused, as values**: to the scope it is kept in; from or to a scope that
+is not there; a block the source does not define; a target that already
+defines a record under its id; a scope that would then hold two evaluations
+of it; a picture the target already holds another of under the same name.
+Where the pictures cannot be reached, a block whose document shows some is
+not moved, rather than arriving without them.
+
+**What does not follow.** A view shown in its document, and a decision or an
+observation it refers to, are the source scope's own and read as gone from
+where the block is kept now (§10). A stand-in of the block in a third scope
+names the scope it left until that scope's stand-ins are refreshed, and is
+reported as drift until then (ADR-0012 §9). An evaluation's history is asked
+by its id, so a reference pinned before the move (`at:`) is drawn as the
+evaluation is now, saying it has changed since.
+
+No command, no field and no format is added: a move is written with the
+commands there were. It is the page's: no tool of the agent's makes one.

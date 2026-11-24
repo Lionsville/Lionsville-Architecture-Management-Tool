@@ -107,7 +107,7 @@ export const SECTIONS: SectionTexts = {
     'Open zijn startpagina onderaan de lezer; Principes openen naast Principes die het bewaart; een onderwerpregel ↗ in de boom van scopes.',
     ['Open het onderwerp.', 'Klik op Open zijn startpagina, of Principes openen.'],
     'Open de startpagina van Integration om een principe te schrijven dat in het onderwerp staat.'],
-  'blocks.read': ['De bouwstenen lezen', 'Elke bouwsteen, onder waar hij staat, met hoeveel scopes hem evalueren; een klik toont een voorbeeld van de tekst en feiten, en Open het hele record opent zijn pagina.',
+  'blocks.read': ['De bouwstenen lezen', 'Elke bouwsteen, onder waar hij staat, met hoeveel scopes hem evalueren; een klik toont een voorbeeld van de tekst en feiten, en Open het hele record opent zijn pagina. Verplaatsen… onder ⋯, op het voorbeeld en op de pagina, bewaart de bouwsteen in een ander onderwerp of een andere scope: zijn document, de principes die hij aanhaalt en zijn reacties gaan mee, en elke vergelijking blijft naar hem wijzen.',
     'Richtlijnen > Bouwstenen, op #/-/blocks; de regel Bouwstenen onder Hier vastgelegd op een startpagina; {key:Mod+K} Bouwstenen.',
     ['Open het tabblad Bouwstenen.', 'Zoek, klik op een bouwsteen, dan Open het hele record.'],
     'Open Message gateway, bewaard in Integration en geëvalueerd door twee scopes.',

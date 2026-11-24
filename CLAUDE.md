@@ -797,6 +797,11 @@ src/projects/     A scope: open, save, order, summarise, address, remember.
                                       ordered plan and a refusal with a key (§10)
                     readdress         a ref is an address, and a move carries the
                                       ones pointing into it (§3)
+                    blockMove         a building block moved to another scope, as
+                                      an ordered plan and a refusal as a value:
+                                      the target first, each scope that
+                                      evaluates it, the source last (ADR-0043,
+                                      amended 24 November 2026)
                     library           the register used as a library: drawing an
                                       application another scope defines is a
                                       stand-in, never a claim; one nobody defines
@@ -1253,6 +1258,9 @@ src/guidance/     Principles, building blocks and references read over the
                                       off the tree's index, written in the scope
                                       that keeps each, and a comparison carried
                                       out as a table or a file
+                    moveBlock         a block's move landed: every scope it
+                                      writes under its own rights, in one apply,
+                                      the pictures its document shows put first
                     RefDrawings       how a reference in a document is drawn
                                       (`drawRef`): a principle, a decision, an
                                       observation, a block, an evaluation
