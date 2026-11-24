@@ -2921,7 +2921,7 @@
     "kind": "landscape",
     "name": "Application landscape",
     "type": "lionsville-architecture",
-    "version": 18
+    "version": 19
   },
   "application-landscape/transitions/0001-retire-the-legacy-rater.md": [
     "---",
@@ -4859,7 +4859,7 @@
     "kind": "domain",
     "name": "Shared platforms",
     "type": "lionsville-architecture",
-    "version": 18
+    "version": 19
   },
   "scope.json": {
     "activeDiagramId": "business-architecture",
@@ -4872,7 +4872,7 @@
     "kind": "organisation",
     "name": "Acme Logistics",
     "type": "lionsville-architecture",
-    "version": 18
+    "version": 19
   },
   "topics/integration/_principles/0001-one-format-per-partner-message.md": [
     "---",
@@ -4991,7 +4991,7 @@
       }
     ],
     "type": "lionsville-architecture",
-    "version": 18
+    "version": 19
   },
   "topics/model.json": {
     "elements": [],
@@ -5004,6 +5004,6 @@
     "kind": "topic",
     "name": "Topics",
     "type": "lionsville-architecture",
-    "version": 18
+    "version": 19
   }
 }
