@@ -29,23 +29,28 @@ import type { Args, Handler, Prepared, WriteView } from './shared'
 /** The organisation's path: the one scope the operating model is written in. */
 const ORGANISATION = ''
 
-function atOrganisation(view: WriteView): AgentAnswer | undefined {
+export function atOrganisation(view: WriteView): AgentAnswer | undefined {
   return view.scopePath === ORGANISATION
     ? undefined
     : refused('agent.scopeNotOpen', 'the organisation, where the operating model is kept: app.open with scope "" first')
 }
 
 /** A name, trimmed, or the refusal for a blank one. */
-function nameOf(value: unknown): string | AgentAnswer {
+export function nameOf(value: unknown): string | AgentAnswer {
   const name = typeof value === 'string' ? value.trim() : ''
   return name ? name : refused('agent.badArguments', '"name" must not be blank')
 }
 
 /** Optional text: trimmed, and blank or null taken away. */
-function textPatch(args: Args, key: string): Record<string, string | undefined> {
+export function textPatch(args: Args, key: string): Record<string, string | undefined> {
   if (!(key in args)) return {}
   const value = typeof args[key] === 'string' ? (args[key] as string).trim() : ''
   return { [key]: value || undefined }
+}
+
+/** Where it stands among its own: a number, or taken away. */
+export function orderPatch(args: Args): { order?: number | undefined } {
+  return 'order' in args ? { order: typeof args.order === 'number' && Number.isFinite(args.order) ? args.order : undefined } : {}
 }
 
 /** A flag: true, or taken away. */
@@ -54,7 +59,7 @@ function flagPatch(args: Args, key: string): Record<string, true | undefined> {
 }
 
 /** An id the organisation does not mint itself twice: what `makeId` gave, made distinct. */
-function freshId(prefix: string, model: Model, view: WriteView): string {
+export function freshId(prefix: string, model: Model, view: WriteView): string {
   const taken = new Set([...model.order.unitTypes, ...model.order.roles, ...model.order.responsibilities])
   const id = view.makeId(prefix)
   let held = id
@@ -194,15 +199,14 @@ function unitTypePatch(args: Args, model: Model, self: string | undefined): Part
     patch.slots = slots
   }
   if ('limit' in args) patch.limit = typeof args.limit === 'number' ? args.limit : undefined
-  if ('order' in args) patch.order = typeof args.order === 'number' && Number.isFinite(args.order) ? args.order : undefined
-  return patch
+  return { ...patch, ...orderPatch(args) }
 }
 
 /** The fields of a role the request gives, checked. */
 function rolePatch(args: Args, model: Model, self?: string): Partial<Role> | AgentAnswer {
   const dated = datedPatch(args, self === undefined ? undefined : rolesOf(model)[self], rolesOf(model), self)
   if ('ok' in dated) return dated
-  const patch: Partial<Role> = { ...textPatch(args, 'short'), ...textPatch(args, 'purpose'), ...flagPatch(args, 'manages'), ...dated }
+  const patch: Partial<Role> = { ...textPatch(args, 'short'), ...textPatch(args, 'purpose'), ...flagPatch(args, 'manages'), ...orderPatch(args), ...dated }
   if ('duties' in args && args.duties !== null) {
     const duties = dutiesOf(args.duties, model)
     if ('ok' in duties) return duties
@@ -217,25 +221,26 @@ function rolePatch(args: Args, model: Model, self?: string): Partial<Role> | Age
 }
 
 /** A record with its patch laid over, absent fields taken out, as the writer will hold it. */
-function laid<T extends object>(held: T, patch: Partial<T>): T {
+export function laid<T extends object>(held: T, patch: Partial<T>): T {
   const next = { ...held, ...patch } as Record<string, unknown>
   for (const key of Object.keys(patch)) if (next[key] === undefined) delete next[key]
   return next as T
 }
 
 /** The model's operating lists after a change, for the answer to name what it points at. */
-function documentWith(model: Model, command: Command) {
+export function documentWith(model: Model, command: Command) {
   const arrays = toArrays(model)
   const swap = <T extends { id: string }>(list: T[] | undefined, row: T): T[] => {
     const held = list ?? []
     return held.some((one) => one.id === row.id) ? held.map((one) => (one.id === row.id ? row : one)) : [...held, row]
   }
   if (command.type === 'unitType.add') return { ...arrays, unitTypes: swap(arrays.unitTypes, command.unitType) }
+  if (command.type === 'responsibility.add') return { ...arrays, responsibilities: swap(arrays.responsibilities, command.responsibility) }
   if (command.type === 'role.add') return { ...arrays, roles: swap(arrays.roles, command.role) }
   return { ...arrays, operatingRules: Object.values(operatingRulesOf(model)) }
 }
 
-function prepared(command: Command, answer: AgentAnswer): Prepared {
+export function prepared(command: Command, answer: AgentAnswer): Prepared {
   return { command: { ...command, origin: 'agent' }, answer }
 }
 

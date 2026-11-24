@@ -2756,8 +2756,14 @@ to another scope is not done from a script; the agent does those one call
 at a time, as before.` },
     { title: `Libraries`, text: `An agent reads the operating model with \`unitTypes.list\`, \`roles.list\` and
 \`responsibilities.list\`, from the organisation whatever scope is open, and
-changes it with \`unitType.add\`, \`unitType.update\`, \`role.add\` and
-\`role.update\` while the organisation is the scope open. \`unitTypes.list\`
+changes it while the organisation is the scope open: \`add\`, \`update\` and
+\`remove\` on \`unitType\`, \`role\` and \`responsibility\`, the role a rule
+names with \`operatingRule.set\`, and up to 500 cells of the RACI in one step
+with \`raci.set\`, the other cells staying as they are. A responsibility takes
+every role's part in it along. A role or a unit type is removed only when
+nothing uses it any more: \`agent.inUse\` names what does, in any scope, an
+ended assignment too, and \`agent.notAllRead\` says that not every scope could
+be read. \`unitTypes.list\`
 gives each unit type its lane — 1 at the top, and below the deepest type it
 may sit in — and lists them by lane, then by their \`order\` in it, then by
 name, the ones that sit nowhere last.` },

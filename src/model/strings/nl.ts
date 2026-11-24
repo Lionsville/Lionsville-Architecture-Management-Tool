@@ -398,6 +398,7 @@ export const NL: Record<keyof typeof EN, string> = {
   'activity.responsibilityChanged': 'Verantwoordelijkheid {name} gewijzigd',
   'activity.responsibilityRemoved': 'Verantwoordelijkheid {name} verwijderd',
   'activity.operatingRuleChanged': 'De regels van het besturingsmodel gewijzigd',
+  'activity.raciSet': '{count} cellen van de RACI gezet',
   'activity.broughtIn': '{count} onderdelen uit een bibliotheek overgenomen',
   'activity.matchedIn': '{count} onderdelen uit een bibliotheek aan je eigen gekoppeld',
   'activity.assignmentAdded': 'Iemand toegewezen in {name}',

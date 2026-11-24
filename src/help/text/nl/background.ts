@@ -2977,8 +2977,15 @@ gaat niet vanuit een script; dat doet de agent met één aanroep per keer,
 zoals voorheen.` },
     { title: `Bibliotheken`, text: `Een agent leest het besturingsmodel met \`unitTypes.list\`, \`roles.list\` en
 \`responsibilities.list\`, vanuit de organisatie welke scope er ook open is, en
-wijzigt het met \`unitType.add\`, \`unitType.update\`, \`role.add\` en
-\`role.update\` terwijl de organisatie de open scope is. \`unitTypes.list\` geeft
+wijzigt het terwijl de organisatie de open scope is: \`add\`, \`update\` en
+\`remove\` op \`unitType\`, \`role\` en \`responsibility\`, de rol die een regel
+noemt met \`operatingRule.set\`, en tot 500 cellen van de RACI in één stap met
+\`raci.set\`, waarbij de andere cellen blijven zoals ze zijn. Een
+verantwoordelijkheid neemt het aandeel van elke rol erin mee. Een rol of
+eenheidstype gaat pas weg als niets het meer gebruikt: \`agent.inUse\` noemt wat
+dat doet, in welke scope ook, ook een beëindigde toewijzing, en
+\`agent.notAllRead\` zegt dat niet elke scope gelezen kon worden.
+\`unitTypes.list\` geeft
 elk eenheidstype zijn baan — 1 bovenaan, en onder het diepste type waaronder
 het mag vallen — en noemt ze per baan, dan op hun \`order\` daarin, dan op naam,
 die nergens onder vallen als laatste.` },

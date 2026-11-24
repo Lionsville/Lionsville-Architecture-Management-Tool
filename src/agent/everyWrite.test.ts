@@ -132,7 +132,7 @@ function view(model: Model, scopePath = 'acme/landscape'): WriteView {
     translate: DEFAULT_TRANSLATE,
     containerName: (name) => `${name} · containers`,
     // One function the organisation above defines, for function.claim to take up (ADR-0040 §5).
-    tree: { lookup: (id) => (id === ABOVE.id ? { ...ABOVE, master: 'acme', declarations: [], drawnIn: [], stale: [] } : undefined), initiativesBelow: () => [], analysisBelow: () => [], rowsTo: () => [] },
+    tree: { lookup: (id) => (id === ABOVE.id ? { ...ABOVE, master: 'acme', declarations: [], drawnIn: [], stale: [] } : undefined), initiativesBelow: () => [], analysisBelow: () => [], rowsTo: () => [], unread: () => [], units: () => [], assignments: () => [], scopes: () => [] },
     standInFor: (id) => (id === ABOVE.id ? { ...ABOVE, ref: 'acme', lifecycle: 'live', isManaged: false, aspects: {} } : undefined),
     me: () => 'pe-femke',
     now: () => '2026-09-20T10:00:00.000Z',
@@ -294,6 +294,19 @@ const EVERY_WRITE: { readonly [T in CommandTool]: readonly Case[] } = {
   'unitType.add': [{ args: { name: 'Squad', slots: [] }, at: '' }],
   'unitType.update': [{ args: { id: 'ut-new-1', name: 'Tribe', limit: 3 }, on: [['unitType.add', { name: 'Squad' }]], at: '' }],
   'role.add': [{ args: { name: 'Coach', manages: true }, at: '' }],
+  'unitType.remove': [{ args: { id: 'ut-new-1' }, on: [['unitType.add', { name: 'Squad' }]], at: '' }],
+  'role.remove': [{ args: { id: 'ro-new-1' }, on: [['role.add', { name: 'Coach' }]], at: '' }],
+  'responsibility.add': [{ args: { name: 'Plan the week', group: 'Plan', order: 1 }, at: '' }],
+  'responsibility.update': [{ args: { id: 'rs-new-1', name: 'Plan the month' }, on: [['responsibility.add', { name: 'Plan the week' }]], at: '' }],
+  'responsibility.remove': [{ args: { id: 'rs-new-1' }, on: [['responsibility.add', { name: 'Plan the week' }]], at: '' }],
+  'operatingRule.set': [
+    { args: { kind: 'domainOwner', roleId: 'ro-new-1' }, on: [['role.add', { name: 'Coach' }]], at: '' },
+    { args: { kind: 'domainOwner', roleId: null }, on: [['role.add', { name: 'Coach' }], ['operatingRule.set', { kind: 'domainOwner', roleId: 'ro-new-1' }]], at: '' },
+  ],
+  'raci.set': [{
+    args: { cells: [{ roleId: 'ro-new-1', responsibilityId: 'rs-new-1', raci: 'A' }] },
+    on: [['role.add', { name: 'Coach' }], ['responsibility.add', { name: 'Plan the week' }]], at: '',
+  }],
   'role.update': [{ args: { id: 'ro-new-1', purpose: 'Helps the team.' }, on: [['role.add', { name: 'Coach' }]], at: '' }],
   'assignment.add': [{ args: { unitId: 'squad', roleId: 'ro-po', personId: 'pe-femke', share: 50 }, on: [SQUAD] }],
   'assignment.end': [{ args: { id: 'as-new-1', on: '2026-12-31' }, on: [SQUAD, ['assignment.add', { unitId: 'squad', roleId: 'ro-po', personId: 'pe-femke' }]] }],

@@ -142,6 +142,14 @@ export type TreeView = {
    * there. Absent, the listing is the tree.
    */
   listed?(): boolean
+  /**
+   * The scopes the answers here leave out: listed, or known to be there, and
+   * not read. Empty where the units and the assignments below are every
+   * scope's, which is what a removal asks before it says nothing uses a
+   * record (ADR-0036, amended 24 November 2026). Absent, a host does not say,
+   * and such a removal is refused.
+   */
+  unread?(): readonly string[]
   lookup(id: ElementId): TreeEntry | undefined
   /** Every application in the organisation, by name (§2). */
   register(): readonly TreeEntry[]

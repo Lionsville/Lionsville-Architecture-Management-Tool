@@ -45,12 +45,14 @@ const AREA_OF: Readonly<Record<string, string>> = {
   interface: 'interfaces',
   milestone: 'milestones',
   observation: 'observations',
+  operatingRule: 'operatingRules',
   person: 'people',
   plan: 'plans',
   posterItem: 'posterItems',
   principle: 'principles',
   relation: 'relations',
   reportingLine: 'reportingLines',
+  responsibility: 'responsibilities',
   role: 'roles',
   scope: 'scopes',
   solution: 'solutions',
@@ -59,13 +61,13 @@ const AREA_OF: Readonly<Record<string, string>> = {
 
 /**
  * The nouns that are their own area: the ones already plural, and the ones
- * that are one thing and stay singular — the technology register, the
+ * that are one thing and stay singular — the RACI, the technology register, the
  * project, the activity log, the application register, the roadmap, the app
  * and its driving session.
  */
 const OWN_AREA: readonly string[] = [
   'activity', 'app', 'aspectScales', 'assignments', 'blocks', 'causes', 'changes', 'checks', 'comments', 'connections', 'decisions',
-  'diagrams', 'elements', 'experiments', 'images', 'observations', 'people', 'plans', 'principles', 'project', 'references',
+  'diagrams', 'elements', 'experiments', 'images', 'observations', 'people', 'plans', 'principles', 'project', 'raci', 'references',
   'register', 'reportingLines', 'responsibilities', 'roadmap', 'roles', 'rules', 'scopes', 'session', 'solutions', 'technology',
   'topics', 'unitTypes', 'views',
 ]

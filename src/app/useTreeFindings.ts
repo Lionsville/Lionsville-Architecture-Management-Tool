@@ -22,6 +22,7 @@ import { principleReadsAt, topicFindings } from '../projects/topics'
 import { today } from '../model/lifecycle'
 import { flattenScopes, isListed } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
+import { scopesUnread } from '../projects/scopeIndex'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes, ROOT_SCOPE } from '../projects/scopePath'
 import type { ScopePath } from '../projects/scopePath'
@@ -122,6 +123,7 @@ function useShellTree(
   treeRef.current = { tree, index, identity }
   return useMemo<TreeView>(() => ({
     listed: () => isListed(treeRef.current.tree),
+    unread: () => scopesUnread(treeRef.current.index, treeRef.current.tree),
     scopes: () => flattenScopes(treeRef.current.tree).map((held) => ({
       path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}),
       ...(held.unitTypeId !== undefined ? { unitTypeId: held.unitTypeId } : {}), views: held.diagrams,

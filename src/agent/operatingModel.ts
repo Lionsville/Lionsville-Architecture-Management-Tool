@@ -107,6 +107,7 @@ export function roleLine(role: Role, model: OperatingDocument) {
     ...(role.short ? { short: role.short } : {}),
     ...(role.purpose ? { purpose: role.purpose } : {}),
     ...(role.manages ? { manages: true } : {}),
+    ...(role.order !== undefined ? { order: role.order } : {}),
     ...reportsToLine(role.reportsTo, model.roles ?? []),
     duties: role.duties.map((duty) => ({
       responsibilityId: duty.responsibility, responsibility: named(responsibilities, duty.responsibility).name, raci: duty.raci,
@@ -142,6 +143,7 @@ export function responsibilityLine(responsibility: Responsibility, model: Operat
     name: responsibility.name,
     ...(responsibility.description ? { description: responsibility.description } : {}),
     ...(responsibility.group ? { group: responsibility.group } : {}),
+    ...(responsibility.order !== undefined ? { order: responsibility.order } : {}),
     raci: roles.flatMap((role) => {
       const raci = raciOf(role, responsibility.id)
       return raci ? [{ roleId: role.id, role: role.name, raci }] : []

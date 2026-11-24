@@ -165,6 +165,7 @@ remove(args: { id: string }): Promise<unknown>  // comment.remove
 list(args?: ListArgs): Promise<unknown>  // unitTypes.list
 add(args: { name: string; purpose?: string; top?: boolean; within?: string[]; spans?: boolean; slots?: { roleId: string; min: number; max?: number; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[] }[]; limit?: number; order?: number; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // unitType.add
 update(args: { id: string; name?: string; purpose?: string; top?: boolean; within?: string[]; spans?: boolean; slots?: { roleId: string; min: number; max?: number; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[] }[]; limit?: number; order?: number; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // unitType.update
+remove(args: { id: string }): Promise<unknown>  // unitType.remove
 
 // lv.aspectScales
 list(args?: ListArgs): Promise<unknown>  // aspectScales.list
@@ -173,11 +174,15 @@ remove(args: { key: string }): Promise<unknown>  // aspectScale.remove
 
 // lv.roles
 list(args?: { unitTypeId?: string; responsibilityId?: string } & ListArgs): Promise<unknown>  // roles.list
-add(args: { name: string; short?: string; purpose?: string; manages?: boolean; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[]; duties?: { responsibilityId: string; raci: "R" | "A" | "C" | "I" }[]; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // role.add
-update(args: { id: string; name?: string; short?: string; purpose?: string; manages?: boolean; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[]; duties?: { responsibilityId: string; raci: "R" | "A" | "C" | "I" }[]; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // role.update
+add(args: { name: string; short?: string; purpose?: string; manages?: boolean; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[]; duties?: { responsibilityId: string; raci: "R" | "A" | "C" | "I" }[]; order?: number; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // role.add
+update(args: { id: string; name?: string; short?: string; purpose?: string; manages?: boolean; reportsTo?: { roleId?: string; kind?: "solid" | "dotted"; within?: boolean; from?: string; until?: string }[]; duties?: { responsibilityId: string; raci: "R" | "A" | "C" | "I" }[]; order?: number; from?: string; until?: string; successors?: string[] }): Promise<unknown>  // role.update
+remove(args: { id: string }): Promise<unknown>  // role.remove
 
 // lv.responsibilities
 list(args?: { group?: string } & ListArgs): Promise<unknown>  // responsibilities.list
+add(args: { name: string; description?: string; group?: string; order?: number }): Promise<unknown>  // responsibility.add
+update(args: { id: string; name?: string; description?: string; group?: string; order?: number }): Promise<unknown>  // responsibility.update
+remove(args: { id: string }): Promise<unknown>  // responsibility.remove
 
 // lv.assignments
 list(args?: { scope?: string; unitId?: string; roleId?: string; personId?: string; on?: string; all?: boolean } & ListArgs): Promise<unknown>  // assignments.list
@@ -234,6 +239,12 @@ add(args: { about: { kind: "decision" | "observation" | "solution" | "transition
 add(args: { principle: string; text: string; nature?: "design" | "behaviour"; signal?: string; steering?: string; note?: string }): Promise<unknown>  // aspect.add
 update(args: { principle: string; number: number; text?: string; nature?: "design" | "behaviour"; signal?: string; steering?: string; note?: string }): Promise<unknown>  // aspect.update
 remove(args: { principle: string; number: number; note?: string }): Promise<unknown>  // aspect.remove
+
+// lv.operatingRules
+set(args: { kind: "applicationOwner" | "domainOwner"; roleId: string }): Promise<unknown>  // operatingRule.set
+
+// lv.raci
+set(args: { cells: { roleId: string; responsibilityId: string; raci: "R" | "A" | "C" | "I" }[] }): Promise<unknown>  // raci.set
 
 // lv.reportingLines
 set(args: { unitId: string; roleId: string; to?: { unitId: string; roleId: string; person?: string }; kind?: "solid" | "dotted"; from?: string; until?: string }): Promise<unknown>  // reportingLine.set

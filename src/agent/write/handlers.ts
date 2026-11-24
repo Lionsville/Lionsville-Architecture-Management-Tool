@@ -40,6 +40,8 @@ import {
   addMilestone, createPlan, moveUnit, port, removeMilestone, removePlan, replace, unport, updateMilestone, updatePlan,
 } from './plans'
 import { addRole, addUnitType, updateRole, updateUnitType } from './operatingModel'
+import { addResponsibility, removeResponsibility, setOperatingRule, setRaciCells, updateResponsibility } from './operatingRecords'
+import { removeRole, removeUnitType } from './operatingRemoval'
 import { addAssignment, endAssignment, updateAssignment } from './assignments'
 import { removeReportingLine, setReportingLine } from './reporting'
 import type { Handler } from './shared'
@@ -126,8 +128,15 @@ export const HANDLERS: { readonly [T in CommandTool]: Handler } = {
   'observation.remove': removeObservationTool,
   'unitType.add': addUnitType,
   'unitType.update': updateUnitType,
+  'unitType.remove': removeUnitType,
   'role.add': addRole,
   'role.update': updateRole,
+  'role.remove': removeRole,
+  'responsibility.add': addResponsibility,
+  'responsibility.update': updateResponsibility,
+  'responsibility.remove': removeResponsibility,
+  'operatingRule.set': setOperatingRule,
+  'raci.set': setRaciCells,
   'assignment.add': addAssignment,
   'assignment.update': updateAssignment,
   'assignment.end': endAssignment,

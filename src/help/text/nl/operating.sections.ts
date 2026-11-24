@@ -201,7 +201,7 @@ export const SECTIONS: SectionTexts = {
     'Het adres in de browser, of Bestand, Delen met een link….',
     ['Kies wat je wilt tonen.', 'Kopieer het adres, of gebruik Delen met een link….'],
     '#/-/operating/team opent het besturingsmodel op Team; #/-/operating?tab=responsibilities&look=part%3D* opent de RACI van de hele organisatie.'],
-  'operating.agent': ['Een agent het model laten lezen en wijzigen', 'Een agent leest het model met unitTypes.list, roles.list en responsibilities.list, wijzigt het met unitType.add, unitType.update, role.add en role.update, en brengt de app naar de pagina of een item met app.open page operating. Elke wijziging is een stap in Activiteit, ongedaan te maken met {key:Mod+Z}.',
+  'operating.agent': ['Een agent het model laten lezen en wijzigen', 'Een agent leest het model met unitTypes.list, roles.list en responsibilities.list, wijzigt het met add, update en remove op unitType, role en responsibility, met operatingRule.set en raci.set, en brengt de app naar de pagina of een item met app.open page operating. Elke wijziging is een stap in Activiteit, ongedaan te maken met {key:Mod+Z}.',
     'Agent in rij één, dan een gekoppelde client.',
     ['Koppel een agent.', 'Vraag hem bijvoorbeeld de rollen te noemen zonder verantwoordelijkheid waarvoor ze de A hebben.'],
     'Vraag de agent: geef Release manager de A voor Put a release into production.'],

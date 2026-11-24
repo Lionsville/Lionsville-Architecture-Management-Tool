@@ -3133,8 +3133,15 @@ anderen Bereich verschiebt, geschieht nicht aus einem Skript; das macht der
 Agent mit einem Aufruf nach dem anderen, wie bisher.` },
     { title: `Bibliotheken`, text: `Ein Agent liest das Betriebsmodell mit \`unitTypes.list\`, \`roles.list\` und
 \`responsibilities.list\` aus der Organisation, welcher Bereich auch geöffnet
-ist, und ändert es mit \`unitType.add\`, \`unitType.update\`, \`role.add\` und
-\`role.update\`, während die Organisation der geöffnete Bereich ist.
+ist, und ändert es, während die Organisation der geöffnete Bereich ist:
+\`add\`, \`update\` und \`remove\` auf \`unitType\`, \`role\` und
+\`responsibility\`, die Rolle, die eine Regel nennt, mit \`operatingRule.set\`,
+und bis zu 500 Zellen der RACI in einem Schritt mit \`raci.set\`, wobei die
+anderen Zellen bleiben, wie sie sind. Eine Verantwortung nimmt den Anteil
+jeder Rolle daran mit. Eine Rolle oder ein Einheitstyp wird erst entfernt,
+wenn nichts mehr sie oder ihn verwendet: \`agent.inUse\` nennt, was das tut, in
+jedem Bereich, auch eine beendete Zuordnung, und \`agent.notAllRead\` sagt,
+dass nicht jeder Bereich gelesen werden konnte.
 \`unitTypes.list\` gibt jedem Einheitstyp seine Bahn — 1 ganz oben, und unter
 dem tiefsten Typ, zu dem er gehören darf — und nennt sie nach Bahn, dann nach
 ihrer \`order\` darin, dann nach Namen, die, die nirgends hingehören, zuletzt.` },

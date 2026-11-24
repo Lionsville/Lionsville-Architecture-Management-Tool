@@ -1,6 +1,9 @@
 # ADR-0036 — An operating model, units as typed actors, and a register of people outside the history
 
-* Status: amended, 7 November 2026: an application's owner as one field, a leaving
+* Status: amended, 24 November 2026: an agent writes the rest of the operating
+  model — responsibilities, the rules, cells of the RACI, and the removal of a
+  role or a unit type nothing uses (*Amended, 24 November 2026*, below); as
+  built the same day, not yet released. Amended, 7 November 2026: an application's owner as one field, a leaving
   taken back, and people found by search (*Amended, 7 November 2026*, below), as built
   the same day, on the People page (*Take back leaving…*) and in ⌘K too;
   implemented, 7 November 2026 (4.0.0, not yet released). Accepted, 11 October 2026; as built, 11 October 2026, in eight
@@ -2618,6 +2621,48 @@ else, and never an address. A redirect is no second entry. No index folds a name
 
 **Format 17** carries `endedByLeaving`. A leaving from before it has no mark, so its
 ends do not come back: that is the safe side, since nothing says they were its.
+
+## Amended, 24 November 2026 — an agent writes the rest of the operating model
+
+§13 gave an agent the lists and, of the model, the unit types and the roles to add
+and change. The rest of what the page does to the model is a tool now, at the
+organisation, each one command under the agent's name:
+
+* **`responsibility.add`, `.update` and `.remove`**: name, description, group and
+  order. A removal takes every role's part in it with it in the same step, as the
+  page's does, and answers them (`partsRemoved`).
+* **`operatingRule.set`**: the role `applicationOwner` or `domainOwner` names; null
+  clears the rule.
+* **`raci.set`**: up to 500 cells, a role, a responsibility and a letter each, null to
+  take the part away. One step and one undo; a cell not named is untouched, where
+  `duties` on `role.update` replaces a role's whole list. Every id that is not there
+  is named before anything is written. The answer says the findings the cells leave;
+  none of them refuses. A step over several roles is *Set n cells of the RACI*.
+* **`order`** on `role.add` and `role.update`.
+* **`role.remove` and `unitType.remove`**: refused `agent.inUse` while anything still
+  uses the record, naming what. The page asks a person, says who holds the role, and
+  takes it out of the slots and the rules; nothing asks an agent, so nothing is taken
+  along. Looked at for a role: the slots and the lines of the unit types, the other
+  roles' lines and successors, the rules, every unit's own slots and lines, and every
+  assignment and holder's line, **ended ones too**, since they say who held it. For a
+  unit type: where the others may sit, their successors, every unit, and every scope
+  whose type it is. What a role says of itself goes with it. A library's own note of
+  where a type was placed (`basedOn.placed`) is a record, not a use.
+
+**A removal is decided on the whole tree or not at all.** The units and the
+assignments are the other scopes', so `TreeView.unread` says which scopes the answers
+leave out: a listed scope the index was not built from, or one the listing could not
+read. One there is, a tree not listed yet, or a host that does not say, and the
+removal is refused `agent.notAllRead`. A scope only its reader sees is no part of the
+organisation and is not counted.
+
+A removal reads the tree as it stands when it is asked. An assignment made in another
+scope in the same moment, or between a script's trial and its run, names a role that
+is gone — what a person's removal leaves as well, and the checks find.
+
+**What stays out** is what §13 left out: no tool removes an assignment, forgets,
+removes or merges a person, changes the policy, or marks a finding as intended. And
+no tool brings a library in.
 
 ## Open
 

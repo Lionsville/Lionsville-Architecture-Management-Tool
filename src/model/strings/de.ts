@@ -398,6 +398,7 @@ export const DE: Record<keyof typeof EN, string> = {
   'activity.responsibilityChanged': 'Verantwortung {name} geändert',
   'activity.responsibilityRemoved': 'Verantwortung {name} gelöscht',
   'activity.operatingRuleChanged': 'Die Regeln des Betriebsmodells geändert',
+  'activity.raciSet': '{count} Zellen der RACI gesetzt',
   'activity.broughtIn': '{count} Einträge aus einer Bibliothek übernommen',
   'activity.matchedIn': '{count} Einträge einer Bibliothek Ihren eigenen zugeordnet',
   'activity.assignmentAdded': 'Jemanden in {name} zugeordnet',

@@ -51,6 +51,15 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
   which on a server is whenever anybody's change arrives; *Propose* then said
   the title was missing.
 
+## The operating model
+
+- **An agent writes all of the model.** It adds, changes and removes
+  responsibilities, says which role owns an application or a domain, gives
+  roles and responsibilities their place, and sets up to 500 cells of the RACI
+  in one step that one undo takes back, leaving the other cells as they are.
+  It removes a role or a unit type only when nothing in any scope uses it any
+  more, ended assignments included; otherwise it is told what does.
+
 ## For a build composed from this one
 
 - **A source may say what it cannot keep yet.** `ProviderParts.cannotKeep`
@@ -67,3 +76,10 @@ words. Pasted into the GitHub release when it is cut, and emptied then.*
   `duty.certainty` and `duty.source`, and `SourceCannotKeep` and `SessionView`
   with it. `Role` and `Duty` gained those fields, each optional, and
   `SCOPE_FORMAT_VERSION` is 19.
+- **A tree says what it left out.** `TreeView.unread` (optional) names the
+  scopes a tree's answers do not cover, empty where they cover all. A host that
+  does not say it is refused `role.remove` and `unitType.remove` with the new
+  refusal `agent.notAllRead`; a record in use is refused `agent.inUse`.
+  `ToolName` gained `role.remove`, `unitType.remove`, `responsibility.add`,
+  `responsibility.update`, `responsibility.remove`, `operatingRule.set` and
+  `raci.set`.

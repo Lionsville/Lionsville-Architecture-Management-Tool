@@ -201,7 +201,7 @@ export const SECTIONS: SectionTexts = {
     'Die Adresse im Browser, oder Datei, Per Link teilen….',
     ['Wählen Sie, was Sie zeigen wollen.', 'Kopieren Sie die Adresse oder nutzen Sie Per Link teilen….'],
     '#/-/operating/team öffnet das Betriebsmodell auf Team; #/-/operating?tab=responsibilities&look=part%3D* öffnet die RACI der ganzen Organisation.'],
-  'operating.agent': ['Einen Agenten das Modell lesen und ändern lassen', 'Ein Agent liest das Modell mit unitTypes.list, roles.list und responsibilities.list, ändert es mit unitType.add, unitType.update, role.add und role.update und bringt die App mit app.open page operating zur Seite oder zu einem Element. Jede Änderung ist ein Schritt in Aktivität, mit {key:Mod+Z} rückgängig zu machen.',
+  'operating.agent': ['Einen Agenten das Modell lesen und ändern lassen', 'Ein Agent liest das Modell mit unitTypes.list, roles.list und responsibilities.list, ändert es mit add, update und remove auf unitType, role und responsibility, mit operatingRule.set und raci.set und bringt die App mit app.open page operating zur Seite oder zu einem Element. Jede Änderung ist ein Schritt in Aktivität, mit {key:Mod+Z} rückgängig zu machen.',
     'Agent in der ersten Zeile, dann ein verbundener Client.',
     ['Verbinden Sie einen Agenten.', 'Bitten Sie ihn etwa, die Rollen ohne Verantwortung zu nennen, für die sie das A haben.'],
     'Bitten Sie den Agenten: Geben Sie Release manager das A für Put a release into production.'],

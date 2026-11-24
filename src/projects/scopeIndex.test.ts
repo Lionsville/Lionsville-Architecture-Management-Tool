@@ -13,7 +13,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { DesignElement, Relation } from '../model'
 import type { Cause, Observation } from '../model/observation'
-import { indexOf, indexScopes, isMaster, ownerOf } from './scopeIndex'
+import { indexOf, indexScopes, isMaster, ownerOf, scopesUnread } from './scopeIndex'
 import { scopeTree } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
 
@@ -454,5 +454,18 @@ describe('the index — a scope\'s principles (ADR-0041 §1)', () => {
     expect(index.principlesAt('').groups).toEqual([{ id: 'pg-1', name: 'Data' }])
     expect(index.principlesAt('acme')).toEqual({ principles: [], groups: [] })
     expect(index.principlesAt('nowhere')).toEqual({ principles: [], groups: [] })
+  })
+})
+
+describe('what an index leaves out of a listing', () => {
+  const listing = (children: Partial<ScopeSummary>[], over: Partial<ScopeSummary> = {}): ScopeSummary => ({
+    ...scopeTree([]), children: children.map((one) => ({ ...scopeTree([]), ...one }) as ScopeSummary), ...over,
+  })
+  const over = (...paths: string[]) => ({ scopes: () => paths })
+
+  it('names a listed scope it was not built from and one that could not be listed, and neither the organisation nor a personal one', () => {
+    expect(scopesUnread(over('retail'), listing([{ path: 'retail' }]))).toEqual([])
+    expect(scopesUnread(over(), listing([{ path: 'retail' }, { path: 'mine', personal: true }]))).toEqual(['retail'])
+    expect(scopesUnread(over('retail'), listing([{ path: 'retail' }], { unreadable: ['closed'] }))).toEqual(['closed'])
   })
 })

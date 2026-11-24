@@ -39,9 +39,12 @@ import type { JsonRpcResponse, Relay } from './mcpProtocol'
  * 22 November 2026): `about` on `observation.record`, `observation.update`
  * and `observations.list`, three arguments an agent cannot use unseen, and
  * a few words in two descriptions; the rest is `rules.read`'s.
+ * Raised by 5,420 on 24 November 2026 for the rest of the operating model
+ * (ADR-0036, amended that day): seven tools, about half of it the `scope` and
+ * `ifRevision` each takes, and `order` on a role.
  */
 export const CEILINGS = {
-  toolsList: 203_480,
+  toolsList: 208_900,
   instructions: 9_850,
 } as const
 
@@ -53,7 +56,7 @@ export const CEILINGS = {
  */
 export const CODE_CEILINGS = {
   code: { toolsList: 4_089, instructions: 10_502 },
-  both: { toolsList: 207_558, instructions: 10_216 },
+  both: { toolsList: 212_978, instructions: 10_216 },
 } as const
 
 const server = { name: 'Lionsville Architect', version: 'test' }

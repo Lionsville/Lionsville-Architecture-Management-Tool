@@ -28,6 +28,7 @@
 import type { CommandRefusal } from '../model/reducer'
 import type { MergeLinkRefusal } from '../observations/merge'
 import { CHART_LINES, PAGE_FIELDS, PAGE_TABS, pagesKnown } from './screen'
+import { OPERATING_RULE_KINDS, RACI_LETTERS } from '../model/operatingModel'
 import { isPersonRef } from '../model/person'
 import { PERSON_KINDS, PERSON_STATES } from '../people/person'
 import type { PeopleRefusal } from '../people/person'
@@ -576,7 +577,15 @@ const ROLE_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
       additionalProperties: false,
     },
   },
+  order: { type: 'number', description: 'Where it stands among the roles, low first; those with none follow. Null clears it.' },
   ...DATED_FIELDS('role'),
+}
+
+/** What a responsibility says beside its name: the fields `responsibility.add` and `responsibility.update` share. */
+const RESPONSIBILITY_FIELDS: Readonly<Record<string, ArgumentSchema>> = {
+  description: { type: 'string', description: 'What it comes down to.' },
+  group: { type: 'string', description: 'What gathers it with others on the matrix.' },
+  order: { type: 'number', description: 'Where it stands, low first; those with none follow. Null clears it.' },
 }
 
 const SPECS = [
@@ -2662,7 +2671,7 @@ const SPECS = [
     tier: 'write',
     description:
       'Add a role to the operating model: name, short, purpose, duties (R, A, C, I by responsibility), manages, '
-      + 'reportsTo. Held in a unit type through its slots. At the organisation, which must be open. (rules.read)',
+      + 'reportsTo, order. Held in a unit type through its slots. At the organisation, which must be open. (rules.read)',
     inputSchema: {
       type: 'object',
       properties: { name: { type: 'string', description: 'What the organisation calls the role.' }, ...ROLE_FIELDS },
@@ -2675,12 +2684,94 @@ const SPECS = [
     tier: 'write',
     description:
       'Change a role. Only the fields given change; duties and reportsTo replace their lists; null clears the short '
-      + 'name, the purpose, manages and reportsTo. A blank name is refused. At the organisation, which must be the '
+      + 'name, the purpose, manages, the order and reportsTo. A blank name is refused. At the organisation, which must be the '
       + 'scope open. (rules.read)',
     inputSchema: {
       type: 'object',
       properties: { id: ID('role'), name: { type: 'string', description: 'A new name.' }, ...ROLE_FIELDS },
       required: ['id'],
+      additionalProperties: false,
+    },
+  },
+
+  {
+    name: 'role.remove',
+    tier: 'write',
+    description: 'Remove a role nothing uses any more; agent.inUse names what does, in any scope. At the organisation. (rules.read)',
+    inputSchema: { type: 'object', properties: { id: ID('role') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'unitType.remove',
+    tier: 'write',
+    description: 'Remove a unit type nothing uses any more; agent.inUse names what does, in any scope. At the organisation. (rules.read)',
+    inputSchema: { type: 'object', properties: { id: ID('unit type') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'responsibility.add',
+    tier: 'write',
+    description: 'Add a responsibility to the operating model. Who does it is raci.set. At the organisation.',
+    inputSchema: {
+      type: 'object',
+      properties: { name: { type: 'string', description: 'What has to be done.' }, ...RESPONSIBILITY_FIELDS },
+      required: ['name'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'responsibility.update',
+    tier: 'write',
+    description: 'Change a responsibility. Only the fields given change; null clears all but the name. At the organisation.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: ID('responsibility'), name: { type: 'string', description: 'A new name.' }, ...RESPONSIBILITY_FIELDS },
+      required: ['id'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'responsibility.remove',
+    tier: 'write',
+    description: 'Remove a responsibility and every role\'s part in it, answered as partsRemoved. At the organisation. (rules.read)',
+    inputSchema: { type: 'object', properties: { id: ID('responsibility') }, required: ['id'], additionalProperties: false },
+  },
+  {
+    name: 'operatingRule.set',
+    tier: 'write',
+    description: 'Say which role owns: an application, in the unit it belongs to, or a domain, in the unit that serves it. At the organisation.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', description: 'Which rule.', enum: OPERATING_RULE_KINDS },
+        roleId: { type: 'string', description: 'The role, by id. Null clears the rule.' },
+      },
+      required: ['kind', 'roleId'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'raci.set',
+    tier: 'write',
+    description: 'Set cells of the RACI, at most 500, as one step; every other cell stays. At the organisation. (rules.read)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        cells: {
+          type: 'array',
+          description: 'The cells, each once.',
+          items: {
+            type: 'object',
+            description: 'One role\'s part in one responsibility.',
+            properties: {
+              roleId: { type: 'string', description: 'The role, by id.' },
+              responsibilityId: { type: 'string', description: 'The responsibility, by id.' },
+              raci: { type: 'string', description: 'R responsible, A accountable, C consulted, I informed. Null clears the cell.', enum: RACI_LETTERS },
+            },
+            required: ['roleId', 'responsibilityId', 'raci'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['cells'],
       additionalProperties: false,
     },
   },
@@ -3783,6 +3874,10 @@ export type AgentRefusal =
    * choices for `units`.
    */
   | 'agent.unitsInside'
+  /** A role or a unit type to remove that something still uses; what does is named in the detail (ADR-0036, amended 24 November 2026). */
+  | 'agent.inUse'
+  /** A removal that needs every scope read, where not every one was; which, in the detail. */
+  | 'agent.notAllRead'
   /**
    * A field on a stand-in that the scope defining the thing answers for
    * (ADR-0012 §10). A `check.` key rather than an `agent.` one because it is
@@ -3884,6 +3979,12 @@ export const REFUSAL_SENTENCE: Record<AgentRefusal, string> = {
     + 'Ask them, naming the choices in the detail, then call element.remove again with units: "into:<id>" for '
     + 'another unit of its type, "up" to move them up anyway (they show as misplaced), or "delete" to remove them too. '
     + 'Do not choose for them.',
+  'agent.inUse':
+    'Something still uses that record; the detail names what. Change each of those first, with the person\'s agreement, '
+    + 'or give the record a last day (until) instead.',
+  'agent.notAllRead':
+    'Whether anything still uses that record cannot be said: not every scope was read, and the detail says which, or why. '
+    + 'Nothing was removed. A person can remove it on the operating model\'s page.',
   'agent.tooLarge': 'The board is too large for this operation.',
   'agent.locked': 'The decision record is accepted, rejected or superseded, and locked; nothing about it may change.',
   'agent.notDrawn': 'That element is not drawn on that diagram.',

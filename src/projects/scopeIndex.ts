@@ -67,9 +67,9 @@ import type { Evaluation } from '../model/evaluation'
 import type { Principle, PrincipleGroup } from '../model/principle'
 import type { KeptCheckMark } from '../model/checkMarks'
 import { ShellError } from '../platform/errors'
-import { flattenScopes } from './scope'
+import { flattenScopes, sharedScopes } from './scope'
 import type { ScopeModel, ScopeSnapshot, ScopeSummary } from './scope'
-import { scopeSegments } from './scopePath'
+import { ROOT_SCOPE, scopeSegments } from './scopePath'
 import type { ScopePath } from './scopePath'
 
 /**
@@ -891,6 +891,20 @@ export async function treeScopes(source: IndexSource): Promise<ScopeSnapshot[]> 
     throw new ShellError('shell.exportUnreadable', { paths: unreadable.map((path) => path || '/').join(', ') })
   }
   return loaded.filter((scope): scope is ScopeSnapshot => scope !== undefined)
+}
+
+/**
+ * The scopes a listing holds that this index was not built from, with those
+ * the listing itself could not read: what an answer over the whole tree would
+ * leave out. The organisation is not among them — whoever asks has it open —
+ * nor a scope only its reader sees, which is no part of the organisation.
+ */
+export function scopesUnread(index: Pick<ScopeIndex, 'scopes'>, listing: ScopeSummary): ScopePath[] {
+  const held = new Set(index.scopes())
+  return [
+    ...(listing.unreadable ?? []),
+    ...flattenScopes(sharedScopes(listing)).map((scope) => scope.path).filter((path) => path !== ROOT_SCOPE && !held.has(path)),
+  ]
 }
 
 /**

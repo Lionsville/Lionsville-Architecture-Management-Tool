@@ -1029,9 +1029,31 @@ const TOOL_RULES: Partial<Record<ToolName, string>> = {
     + 'place of the nesting, and a right a host grants from managing follows it. dotted: functional, shown and '
     + 'answered, and deciding nothing. Default solid. slots[].reportsTo[].within — True: the holders report to that '
     + 'role in the same unit (a developer to the team\'s tech lead).',
+  'role.remove':
+    'Remove a role from the operating model. Refused agent.inUse, naming each use, while a unit type has a slot for it '
+    + 'or a slot whose holders report to it, another role reports to it or names it as a successor, a rule names it, '
+    + 'a unit in any scope has a slot or a reporting line of its own with it, or an assignment in any scope names it '
+    + '— ended ones too, since they say who held it. Change each first; nothing is taken along but the role\'s own '
+    + 'duties, answered as partsRemoved. Where people held it, until on role.update is usually what is meant. Refused '
+    + 'agent.notAllRead where not every scope was read. Ask the person before removing.',
+  'unitType.remove':
+    'Remove a unit type from the operating model. Refused agent.inUse, naming each use, while a unit in any scope or a '
+    + 'scope is one, another type may sit in it, or another type names it as a successor. Change each first; nothing '
+    + 'is taken along but the type\'s own slots. Where units were one, until on unitType.update is usually what is '
+    + 'meant. Refused agent.notAllRead where not every scope was read. Ask the person before removing.',
+  'responsibility.remove':
+    'Remove a responsibility. Every role\'s part in it goes with it in the same step, as it does on the page, and the '
+    + 'answer lists them (partsRemoved): say them to the person, and ask first where somebody is accountable.',
+  'raci.set':
+    'Set cells of the RACI: each names a role, a responsibility and the letter, null to take the role\'s part away. At '
+    + 'most 500 in a call, one step and one undo; a cell not named stays as it is, where duties on role.update '
+    + 'replaces a role\'s whole list. Every id that is not there is named before anything is written, and a cell '
+    + 'given twice is refused. A responsibility not exactly one role\'s A is a finding, answered in findings, never a '
+    + 'refusal. Write the letters a source or the person gives, not a guess. A role or a responsibility made by an '
+    + 'earlier step of a batch is named with its reference.',
   'role.update':
     'Change a role. Only the fields given change; duties and reportsTo replace their lists; null clears the short name, '
-    + 'the purpose, manages and reportsTo. A blank name is refused. At the organisation, which must be the scope '
+    + 'the purpose, manages, the order and reportsTo. A blank name is refused. At the organisation, which must be the scope '
     + 'open. Arguments: reportsTo — Where the holders of this role report, wherever the role is held: at most one '
     + 'line of each kind, solid (a line manager\'s, which decides who manages them) and dotted (functional, shown '
     + 'and deciding nothing). Each lands on the holders of roleId in the same unit where within is true, else in '

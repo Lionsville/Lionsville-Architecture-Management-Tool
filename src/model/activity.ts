@@ -428,6 +428,8 @@ function operatingStep(lead: OperatingCommand, flat: readonly CommandBody[], bef
   if (brought > 0 && lead.type.endsWith('.add')) return { key: 'activity.broughtIn', count: brought }
   const matched = matchesRecorded(flat, before)
   if (matched > 0) return { key: 'activity.matchedIn', count: matched }
+  const cells = cellsSet(flat, before)
+  if (cells !== undefined) return { key: 'activity.raciSet', count: cells }
   switch (lead.type) {
     case 'unitType.add': return { key: 'activity.unitTypeAdded', name: lead.unitType.name }
     case 'unitType.update': return { key: 'activity.unitTypeChanged', name: unitTypesOf(before)[lead.id]?.name }
@@ -445,6 +447,23 @@ function operatingStep(lead: OperatingCommand, flat: readonly CommandBody[], bef
     case 'operatingRule.remove':
       return { key: 'activity.operatingRuleChanged' }
   }
+}
+
+/**
+ * How many cells of the RACI a step sets, where it sets several roles' duties
+ * and does nothing else: naming the first role would say a part of it.
+ */
+function cellsSet(flat: readonly CommandBody[], before: Model): number | undefined {
+  if (flat.length < 2) return undefined
+  let count = 0
+  for (const command of flat) {
+    if (command.type !== 'role.update' || Object.keys(command.patch).join() !== 'duties') return undefined
+    const held = rolesOf(before)[command.id]?.duties ?? []
+    const next = command.patch.duties ?? []
+    const letterOf = (duties: typeof held, id: string) => duties.find((duty) => duty.responsibility === id)?.raci
+    count += [...new Set([...held, ...next].map((duty) => duty.responsibility))].filter((id) => letterOf(held, id) !== letterOf(next, id)).length
+  }
+  return count
 }
 
 /**

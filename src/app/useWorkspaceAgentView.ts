@@ -36,6 +36,7 @@ import { takenUpHere } from './sheetMapping'
 import { mayApplyPatch } from '../projects/mayEdit'
 import { flattenScopes, isListed } from '../projects/scope'
 import type { ScopeSummary } from '../projects/scope'
+import { scopesUnread } from '../projects/scopeIndex'
 import type { ScopeIndex } from '../projects/scopeIndex'
 import { ancestorScopes } from '../projects/scopePath'
 import { typedByUnitType } from '../projects/scopeType'
@@ -275,6 +276,7 @@ export function agentTree(at: {
   const { session, scope, indexRef, rowsElsewhereRef, scopes, reader } = at
   return {
     listed: () => isListed(scopes),
+    unread: () => scopesUnread(indexRef.current, scopes),
     scopes: () => flattenScopes(scopes).map((held) => ({
       path: held.path, name: held.name, ...(held.kind ? { kind: held.kind } : {}),
       ...(held.unitTypeId !== undefined ? { unitTypeId: held.unitTypeId } : {}), views: held.diagrams,
